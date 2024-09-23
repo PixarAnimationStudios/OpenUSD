@@ -19,12 +19,12 @@
 #include "pxr/usd/usd/pyConversions.h"
 #include "pxr/usd/usdGeom/boundable.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
-
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 
 namespace {
@@ -36,7 +36,7 @@ _ComputeJointInfluences(const UsdSkelSkinningQuery& self, UsdTimeCode time)
     VtIntArray indices;
     VtFloatArray weights;
     if (self.ComputeJointInfluences(&indices, &weights, time)) {
-        return boost::python::make_tuple(indices, weights);
+        return pxr_boost::python::make_tuple(indices, weights);
     }
     return object();
 }
@@ -51,7 +51,7 @@ _ComputeVaryingJointInfluences(const UsdSkelSkinningQuery& self,
     VtFloatArray weights;
     if (self.ComputeVaryingJointInfluences(numPoints, &indices,
                                           &weights, time)) {
-        return boost::python::make_tuple(indices, weights);
+        return pxr_boost::python::make_tuple(indices, weights);
     }
     return object();
 }

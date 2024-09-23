@@ -73,3 +73,15 @@ def Sphere "otherSphere" {
 def Sphere "otherOtherScope" {
     float x = 444.4 
 }
+
+def RectLight "Light"
+{
+    float inputs:exposure = 3
+    float inputs:focus = 1
+    float inputs:height = 2
+    float inputs:intensity = 1
+    float inputs:width = 9
+    double3 xformOp:rotateXYZ = (-60, 31.5, 0)
+    double3 xformOp:translate = (3.6, 11.4, 6)
+    token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+}

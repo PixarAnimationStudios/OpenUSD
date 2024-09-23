@@ -34,9 +34,9 @@ wrapTf_TestPyStaticTokens()
     TF_PY_WRAP_PUBLIC_TOKENS("_testStaticTokens",
                              tfTestStaticTokens, TF_TEST_TOKENS);
 
-    boost::python::class_<_DummyScope, boost::noncopyable>
-        cls("_TestStaticTokens", boost::python::no_init);
-    boost::python::scope testScope = cls;
+    pxr_boost::python::class_<_DummyScope, boost::noncopyable>
+        cls("_TestStaticTokens", pxr_boost::python::no_init);
+    pxr_boost::python::scope testScope = cls;
 
     TF_PY_WRAP_PUBLIC_TOKENS_IN_CURRENT_SCOPE(
         tfTestStaticTokens, TF_TEST_TOKENS);

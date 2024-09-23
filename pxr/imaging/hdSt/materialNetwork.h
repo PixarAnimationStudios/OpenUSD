@@ -55,9 +55,6 @@ public:
     std::string const& GetVolumeCode() const;
 
     HDST_API
-    std::string const& GetGeometryCode() const;
-
-    HDST_API
     std::string const& GetDisplacementCode() const;
 
     HDST_API
@@ -99,7 +96,6 @@ private:
     TfToken _materialTag;
     std::string _fragmentSource;
     std::string _volumeSource;
-    std::string _geometrySource;
     std::string _displacementSource;
     VtDictionary _materialMetadata;
     HdSt_MaterialParamVector _materialParams;

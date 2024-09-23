@@ -2783,6 +2783,12 @@ UsdImagingDelegate::GetCategories(SdfPath const &id)
     // collection cache has no way to identify prototype paths, we must do the
     // check here where we have access to the adapter. Instances will receive
     // the correct list of collections via GetInstanceCategories().
+    //
+    // Note the IsChildPath clause below. This will produce categories for
+    // point instancer prims (but not native instancers).
+    // Targeting prototype prims under the point instancer prim (but not the
+    // point instancer prim itself) is not supported.
+    //
     _HdPrimInfo* primInfo = _GetHdPrimInfo(cachePath);
     if (primInfo &&
         primInfo->adapter &&
@@ -2800,6 +2806,11 @@ UsdImagingDelegate::GetInstanceCategories(SdfPath const &instancerId)
     SdfPath cachePath = ConvertIndexPathToCachePath(instancerId);
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo)) {
+        // GetInstanceCategories is implemented by the native instancing
+        // adapter, but *not* the point instancer adapter.
+        // GetCategories will return the categories for light linking
+        // collections that target the point instancer prim. See above.
+        //
         return primInfo->adapter
             ->GetInstanceCategories(primInfo->usdPrim);
     }

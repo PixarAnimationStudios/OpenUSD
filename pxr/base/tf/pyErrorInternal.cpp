@@ -12,12 +12,12 @@
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/registryManager.h"
 
-#include <boost/python/handle.hpp>
-#include <boost/python/object.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/object.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 TF_REGISTRY_FUNCTION(TfEnum) {
     TF_ADD_ENUM_NAME(TF_PYTHON_EXCEPTION);

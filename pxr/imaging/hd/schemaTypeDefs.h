@@ -46,6 +46,10 @@ using HdMaterialNetworkContainerSchema =
     HdSchemaBasedContainerSchema<class HdMaterialNetworkSchema>;
 using HdMaterialConnectionContainerSchema =
     HdSchemaBasedContainerSchema<HdMaterialConnectionSchema>;
+using HdExtComputationInputComputationContainerSchema =
+    HdSchemaBasedContainerSchema<class HdExtComputationInputComputationSchema>;
+using HdExtComputationOutputContainerSchema =
+    HdSchemaBasedContainerSchema<class HdExtComputationOutputSchema>;
 using HdSampledDataSourceContainerContainerSchema =
     HdSchemaBasedContainerSchema<HdSampledDataSourceContainerSchema>;
 

@@ -191,8 +191,13 @@ public:
     /// face triangulation or quadrangulation (which typically skips
     /// over hole faces) as well as for refined surfaces which take into
     /// account faces tagged as holes as well as other non-manifold faces.
+    /// Optionally, records the first edge index for each face.
+    /// Subsequent edge indices for each face are implicitly assigned
+    /// sequentially following the first edge index.
     HD_API
-    void EnumerateEdges(std::vector<GfVec2i> * edgeVerticesOut) const;
+    void EnumerateEdges(
+        std::vector<GfVec2i> * edgeVerticesOut,
+        std::vector<int> * firstEdgeIndexForFacesOut = nullptr) const;
 
     // --------------------------------------------------------------------
     /// \anchor PrimitiveParamEncoding
@@ -295,17 +300,26 @@ private:
 class HdMeshEdgeIndexTable
 {
 public:
+    HD_API
     explicit HdMeshEdgeIndexTable(HdMeshTopology const * topology);
+    HD_API
     ~HdMeshEdgeIndexTable();
 
+    HD_API
     bool GetVerticesForEdgeIndex(int edgeId, GfVec2i * edgeVerticesOut) const;
 
+    HD_API
     bool GetVerticesForEdgeIndices(
         std::vector<int> const & edgeIndices,
         std::vector<GfVec2i> * edgeVerticesOut) const;
 
+    HD_API
     bool GetEdgeIndices(GfVec2i const & edgeVertices,
                         std::vector<int> * edgeIndicesOut) const;
+
+    /// Returns the edge indices for all faces in faceIndices.
+    HD_API
+    VtIntArray CollectFaceEdgeIndices(VtIntArray const &faceIndices) const;
 
 private:
     struct _Edge{
@@ -344,6 +358,9 @@ private:
             return x + (y * (y + 1)) / 2;
         }
     };
+
+    HdMeshTopology const *_topology;
+    std::vector<int> _firstEdgeIndexForFaces;
 
     std::vector<GfVec2i> _edgeVertices;
     std::vector<_Edge> _edgesByIndex;

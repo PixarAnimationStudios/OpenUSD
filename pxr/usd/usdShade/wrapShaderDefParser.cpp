@@ -11,11 +11,11 @@
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/usdShade/shaderDefParser.h"
 
-#include <boost/python.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 // Expose the unique_ptr returned from `Parse()` as a raw ptr. The Python side
 // will be responsible for managing this object.

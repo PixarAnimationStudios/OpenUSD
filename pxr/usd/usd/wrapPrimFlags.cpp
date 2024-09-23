@@ -9,19 +9,19 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/primFlags.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/implicit.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/scope.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/implicit.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/scope.hpp"
 
 #include <string>
-
-using namespace boost::python;
 
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 // Python does not allow overloading logical operators ('and', 'or', etc).  Also
 // python's __nonzero__ (invoked by 'not') must return a python bool or int.

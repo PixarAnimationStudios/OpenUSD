@@ -321,7 +321,10 @@ _MakeNamedTextureHandle(
 
     const HdSamplerParameters samplerParameters(
         wrapModeS, wrapModeT, wrapModeR,
-        minFilter, HdMagFilterLinear);
+        minFilter, HdMagFilterLinear,
+        HdBorderColorTransparentBlack,
+        /*enableCompare*/false, HdCmpFuncNever,
+        /*maxAnisotropy*/1);
 
     HdStTextureHandleSharedPtr const textureHandle =
         resourceRegistry->AllocateTextureHandle(
@@ -451,7 +454,10 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdRenderIndex const &renderInde
 
         static const HdSamplerParameters envSamplerParameters(
             HdWrapRepeat, HdWrapClamp, HdWrapClamp,
-            HdMinFilterLinearMipmapLinear, HdMagFilterLinear);
+            HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
+            HdBorderColorTransparentBlack,
+            /*enableCompare*/false, HdCmpFuncNever,
+            /*maxAnisotropy*/1);
 
         _domeLightEnvironmentTextureHandle =
             resourceRegistry->AllocateTextureHandle(
@@ -541,7 +547,7 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdRenderIndex const &renderInde
                 HdWrapClamp, HdWrapClamp, HdWrapClamp,
                 HdMinFilterLinear, HdMagFilterLinear,
                 HdBorderColorOpaqueWhite, /*enableCompare*/true, 
-                HdCmpFuncLEqual};
+                HdCmpFuncLEqual, /*maxAnisotropy*/16};
 
             for (size_t i = prevNumShadowPasses; i < numShadowPasses; i++) {
                 HdStTextureHandleSharedPtr const textureHandle =

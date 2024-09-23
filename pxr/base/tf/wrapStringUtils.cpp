@@ -9,12 +9,12 @@
 
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/python/def.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/handle.hpp>
-#include <boost/python/overloads.hpp>
-#include <boost/python/return_value_policy.hpp>
-#include <boost/python/type_id.hpp>
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/overloads.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
+#include "pxr/external/boost/python/type_id.hpp"
 
 #include "pxr/base/tf/pyResultConversions.h"
 
@@ -23,9 +23,9 @@
 
 using std::string;
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

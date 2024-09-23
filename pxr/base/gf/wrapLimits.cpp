@@ -4,14 +4,14 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include <boost/python/scope.hpp>
+#include "pxr/external/boost/python/scope.hpp"
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/limits.h"
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void wrapLimits()
 {

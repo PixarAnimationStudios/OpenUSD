@@ -15,13 +15,13 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -141,7 +141,7 @@ _ComputeProxyPrim(UsdGeomImageable const &self)
     if (self){
         proxyPrim = self.ComputeProxyPrim(&renderPrim);
         if (proxyPrim){
-            return TfPyObjWrapper(boost::python::make_tuple(proxyPrim, 
+            return TfPyObjWrapper(pxr_boost::python::make_tuple(proxyPrim, 
                                                             renderPrim));
         }
     }

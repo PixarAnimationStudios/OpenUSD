@@ -5,14 +5,14 @@
 // https://openusd.org/license.
 //
 
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/class.hpp"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/defaultResolver.h"
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void
 wrapDefaultResolver()

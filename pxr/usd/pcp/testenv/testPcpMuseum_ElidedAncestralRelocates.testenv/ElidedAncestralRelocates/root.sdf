@@ -1,0 +1,53 @@
+#sdf 1.4.32
+(
+    """
+    This museum case demonstrates and verifies that relocates on ancestral nodes that
+    have been elided (due to another relocates) are properly elided too. The core
+    of this museum case are the relocations to /CharBase/Anim/Collision and 
+    /Char/Anim/Collision which, prior to the change associated with this museum case
+    and when combined with the ancestral variants in base.sdf, would cause prim index 
+    build failures for /Char/Anim/Collision. The relocates to <.../Colliders> are an
+    extra check against a prior existing crash when computing namespace children of 
+    the previously bad /Char/Anim/Collision prim index.
+    """
+    relocates = {
+        </CharBase/CharBaseRig/CollisionRig/Collision>: </CharBase/Anim/Collision>,
+        </CharBase/CharBaseRig/CollisionRig/Colliders>: </CharBase/Anim/Collision/Colliders>,
+        </Char/CharRig/CollisionRig/Collision>: </Char/Anim/Collision>,
+        </Char/CharRig/CollisionRig/Colliders>: </Char/Anim/Collision/Colliders>,
+    }
+)
+
+def Scope "CharBase" (
+    references = @base.sdf@</Rigs>   
+) {
+    over "Anim" {
+        over "Collision" (
+            doc = """This prim will have opinions from the 
+                /CharBase/CharBaseRig/CollisionRig/Collision relocate which
+                brings in opinions from 
+                /Rigs/CharBaseRig{rigVariant=default}CollisionRig/Collision"""
+        ) {       
+        }
+    }
+}
+
+def Scope "Char" (
+    references = </CharBase>
+) {
+    over "Anim" {
+        over "Collision" (
+        doc = """This prim will have opinions from the 
+            /Char/CharRig/CollisionRig/Collision relocate which brings 
+            in /Rigs/CharRig{rigVariant=default}CollisionRig/Collision.
+            But it will NOT have any opinions from /CharBase/Anim/Collsion
+            because that is an ancestral reference opinion that is elided
+            by the relocates. And because that ancestral reference is 
+            elided that means that the relocates arc to 
+            /CharBase/Anim/Collision is also elided (or more specifically,
+            never processed) for this prim index which is what this museum
+            case is intended to demonstrate and verify."""
+        ) {       
+        }
+    }
+}

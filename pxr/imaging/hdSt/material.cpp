@@ -106,7 +106,8 @@ _GetTextureHandleHash(
         samplerParams.magFilter,
         samplerParams.borderColor,
         samplerParams.enableCompare,
-        samplerParams.compareFunction);
+        samplerParams.compareFunction,
+        samplerParams.maxAnisotropy);
 }
 
 void
@@ -190,7 +191,6 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     bool markBatchesDirty = false;
 
     std::string fragmentSource;
-    std::string geometrySource;
     std::string displacementSource;
     std::string volumeSource;
     VtDictionary materialMetadata;
@@ -207,7 +207,6 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                                                     resourceRegistry.get());
             fragmentSource = _networkProcessor.GetFragmentCode();
             volumeSource = _networkProcessor.GetVolumeCode();
-            geometrySource = _networkProcessor.GetGeometryCode();
             displacementSource = _networkProcessor.GetDisplacementCode();
             materialMetadata = _networkProcessor.GetMetadata();
             materialTag = _networkProcessor.GetMaterialTag();
@@ -217,16 +216,12 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     // Use fallback shader when there is no source for
-    // fragment and geometry and displacement shader.
+    // fragment and displacement shader.
     if (fragmentSource.empty() &&
-        geometrySource.empty() &&
         displacementSource.empty()) {
 
         _InitFallbackShader();
         fragmentSource = _fallbackGlslfx->GetSurfaceSource();
-        // Note that we don't want displacement on purpose for the 
-        // fallback material.
-        geometrySource = std::string();
         materialMetadata = _fallbackGlslfx->GetMetadata();
     }
 
@@ -249,21 +244,17 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    // If we're updating the fragment or geometry source, we need to
+    // If we're updating the fragment or displacement source, we need to
     // rebatch anything that uses this material.
     std::string const& oldFragmentSource = 
         _materialNetworkShader->GetSource(HdShaderTokens->fragmentShader);
-    std::string const& oldGeometrySource = 
-        _materialNetworkShader->GetSource(HdShaderTokens->geometryShader);
     std::string const& oldDisplacementSource =
         _materialNetworkShader->GetSource(HdShaderTokens->displacementShader);
 
     markBatchesDirty |= (oldFragmentSource!=fragmentSource) || 
-                        (oldGeometrySource!=geometrySource) ||
                         (oldDisplacementSource!=displacementSource);
 
     _materialNetworkShader->SetFragmentSource(fragmentSource);
-    _materialNetworkShader->SetGeometrySource(geometrySource);
     _materialNetworkShader->SetDisplacementSource(displacementSource);
 
     bool hasDisplacement = !(displacementSource.empty());

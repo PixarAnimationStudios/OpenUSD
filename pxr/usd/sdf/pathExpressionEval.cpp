@@ -27,6 +27,18 @@ TF_CONDITIONALLY_COMPILE_TIME_ENABLED_DEBUG_CODES(
 #define DEBUG_MSG(...) \
     TF_DEBUG_MSG(SDF_PATH_EXPRESSION_EVAL, __VA_ARGS__)
 
+void
+Sdf_PathExpressionEvalBase::_PatternIncrSearchState::Pop(int newDepth)
+{
+    while (!_segmentMatchDepths.empty() &&
+           _segmentMatchDepths.back() >= newDepth) {
+        _segmentMatchDepths.pop_back();
+    }
+    if (newDepth <= _constantDepth) {
+        _constantDepth = -1;
+    }
+}
+
 SdfPredicateFunctionResult
 Sdf_PathExpressionEvalBase::_EvalExpr(
     TfFunctionRef<
@@ -111,6 +123,14 @@ _PatternImplBase::_Init(
     _stretchEnd = false;
     auto const &predicateExprs = pattern.GetPredicateExprs();
 
+    // A helper to close and append a segment to _segments.
+    auto closeAndAppendSegment = [this]() {
+        _segments.push_back({
+                _segments.empty() ? 0 : _segments.back().end,
+                _components.size()
+            });
+    };
+    
     // This will technically over-reserve by the number of 'stretch' (//)
     // components, but it's worth it to not thrash the heap.
     _components.reserve(pattern.GetComponents().size());
@@ -119,20 +139,17 @@ _PatternImplBase::_Init(
         SdfPathExpression::PathPattern::Component const &component = *iter;
         // A 'stretch' (//) component.
         if (component.IsStretch()) {
-            if (_components.empty()) {
-                _stretchBegin = true;
-            }
-            // If this is the end of the components, just mark that.
+            // If this is the end of the components, mark that.
             if (std::next(iter) == end) {
                 _stretchEnd = true;
             }
-            // Otherwise finish any existing segment & start a new segment.
+            // If this pattern begins with stretch, we don't yet have a segment.
+            if (_components.empty()) {
+                _stretchBegin = true;
+            }
+            // Otherwise this stretch completes a segment -- append it.
             else {
-                if (_segments.empty()) {
-                    _segments.push_back({ 0, 0 });
-                }
-                _segments.back().end = _components.size();
-                _segments.push_back({ _components.size(), _components.size() });
+                closeAndAppendSegment();
             }
             continue;
         }
@@ -155,12 +172,11 @@ _PatternImplBase::_Init(
                 linkPredicate(predicateExprs[component.predicateIndex]);
         }
     }
-    // Close the final segment.
-    if (!_components.empty()) {
-        if (_segments.empty()) {
-            _segments.push_back({ 0, 0 });
-        }
-        _segments.back().end = _components.size();
+    // Close the final segment if necessary, for patterns that do not end in
+    // stretch.  Patterns that do end in stretch close the final segment in the
+    // above loop.
+    if (!_stretchEnd && !_components.empty()) {
+        closeAndAppendSegment();
     }
 
     // Set the object types this pattern can match.  If the pattern isn't
@@ -184,6 +200,38 @@ _PatternImplBase::_Init(
         // No trailing stretch, and the final component requires a prim
         // name/regex match means this pattern can only match prims.
         _matchObjType = _MatchPrimOnly;
+    }
+
+    if (TfDebug::IsEnabled(SDF_PATH_EXPRESSION_EVAL)) {
+        auto stringifyComponent = [this](_Component const &component) {
+            std::string result = (component.type == ExplicitName)
+                ? TfStringPrintf(
+                    "'%s'", _explicitNames[component.patternIndex].c_str())
+                : TfStringPrintf("<regex %d>", component.patternIndex);
+            if (component.predicateIndex != -1) {
+                result += TfStringPrintf(" pred %d", component.predicateIndex);
+            }
+            return result;
+        };
+        std::vector<std::string> segmentStrs;
+        for (_Segment const &seg: _segments) {
+            std::vector<std::string> compStrs;
+            for (size_t i = seg.begin; i != seg.end; ++i) {
+                compStrs.push_back(stringifyComponent(_components[i]));
+            }
+            segmentStrs.push_back("[" + TfStringJoin(compStrs, ", ") + "]");
+        }
+        DEBUG_MSG("_PatternImplBase::_Init\n"
+                  "  pattern      : <%s>\n"
+                  "  prefix       : <%s>\n"
+                  "  stretchBegin : %d\n"
+                  "  stretchEnd   : %d\n"
+                  "  segments     : %s\n",
+                  pattern.GetText().c_str(),
+                  _prefix.GetAsString().c_str(),
+                  _stretchBegin,
+                  _stretchEnd,
+                  TfStringJoin(segmentStrs, ", ").c_str());
     }
 }
 
@@ -509,7 +557,7 @@ Sdf_PathExpressionEvalBase
             // The pattern allows arbitrary elements following the prefix. 
             DEBUG_MSG("_Next(<%s>) covered by stretch -> constant true\n",
                       path.GetAsString().c_str());
-            search._constantDepth = 0;
+            search._constantDepth = prefixElemCount;
             search._constantValue = true;
             return Result::MakeConstant(search._constantValue);
         }
@@ -520,7 +568,7 @@ Sdf_PathExpressionEvalBase
                       "constant false\n",
                       path.GetAsString().c_str(),
                       _prefix.GetAsString().c_str());
-            search._constantDepth = 0;
+            search._constantDepth = prefixElemCount;
             search._constantValue = false;
             return Result::MakeConstant(search._constantValue);
         }
@@ -583,8 +631,10 @@ Sdf_PathExpressionEvalBase
     // literal component matches first since those are the fastest to check.
 
     SdfPath workingPath = path;
-    auto compIter = make_reverse_iterator(_components.cbegin() + curSeg.end),
-        compEnd = make_reverse_iterator(_components.cbegin() + curSeg.begin);
+    auto compIter =
+        make_reverse_iterator(_components.cbegin() + curSeg.end);
+    const auto compEnd =
+        make_reverse_iterator(_components.cbegin() + curSeg.begin);
 
     // First pass explicit names & their predicates.
     for (; compIter != compEnd;
@@ -670,8 +720,10 @@ Sdf_PathExpressionEvalBase
     }
 
     // We have taken the next step, but we have more matching to do.
-    DEBUG_MSG("_Next(<%s>) partial yet incomplete match -> varying false\n",
-              path.GetAsString().c_str());
+    DEBUG_MSG("_Next(<%s>) partial yet incomplete match "
+              "(%zd of %zd segments) -> varying false\n",
+              path.GetAsString().c_str(),
+              search._segmentMatchDepths.size(), _segments.size());
     
     return Result::MakeVarying(false);
 }

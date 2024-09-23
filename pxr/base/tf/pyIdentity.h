@@ -20,13 +20,13 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include <boost/python/handle.hpp>
+#include "pxr/external/boost/python/handle.hpp"
 
 #include "pxr/base/tf/hashmap.h"
 
-// Specializations for boost::python::pointee and get_pointer for TfRefPtr and
+// Specializations for pxr_boost::python::pointee and get_pointer for TfRefPtr and
 // TfWeakPtr.
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 // TfWeakPtrFacade
 template <template <class> class X, class Y>
@@ -125,7 +125,7 @@ struct Tf_PyOwnershipHelper<Ptr,
         // Create a capsule to hold on to a heap-allocated instance of
         // Ptr. We'll set this as an attribute on the Python object so
         // it keeps the C++ object alive.
-        boost::python::handle<> capsule(
+        pxr_boost::python::handle<> capsule(
             PyCapsule_New(
                 new Ptr(ptr), "refptr",
                 +[](PyObject* capsule) {

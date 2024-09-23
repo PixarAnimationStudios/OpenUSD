@@ -10,12 +10,12 @@
 
 #include "pxr/base/tf/pyNoticeWrapper.h"
 
-#include <boost/python/scope.hpp>
-#include <boost/python/class.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/scope.hpp"
+#include "pxr/external/boost/python/class.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace
 {

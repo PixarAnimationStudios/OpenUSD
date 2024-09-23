@@ -7,14 +7,14 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
-#include <boost/python/handle.hpp>
+#include "pxr/external/boost/python/handle.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct TfPyExceptionState {
-    TfPyExceptionState(boost::python::handle<> const &type,
-                       boost::python::handle<> const &value,
-                       boost::python::handle<> const &trace) :
+    TfPyExceptionState(pxr_boost::python::handle<> const &type,
+                       pxr_boost::python::handle<> const &value,
+                       pxr_boost::python::handle<> const &trace) :
             _type(type), _value(value), _trace(trace) {}
 
     TF_API
@@ -32,9 +32,9 @@ struct TfPyExceptionState {
     TF_API
     static TfPyExceptionState Fetch();
 
-    boost::python::handle<> const &GetType() const { return _type; }
-    boost::python::handle<> const &GetValue() const { return _value; }
-    boost::python::handle<> const &GetTrace() const { return _trace; }
+    pxr_boost::python::handle<> const &GetType() const { return _type; }
+    pxr_boost::python::handle<> const &GetValue() const { return _value; }
+    pxr_boost::python::handle<> const &GetTrace() const { return _trace; }
 
     // Move this object's exception state into Python's current exception state,
     // as by PyErr_Restore().  This leaves this object's exception state clear.
@@ -47,7 +47,7 @@ struct TfPyExceptionState {
     std::string GetExceptionString() const;
 
 private:
-    boost::python::handle<> _type, _value, _trace;
+    pxr_boost::python::handle<> _type, _value, _trace;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

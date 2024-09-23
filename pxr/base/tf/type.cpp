@@ -95,9 +95,9 @@ struct TfType::_TypeInfo {
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     // Python class handle.
-    // We use handle<> rather than boost::python::object in case Python
+    // We use handle<> rather than pxr_boost::python::object in case Python
     // has not yet been initialized.
-    boost::python::handle<> pyClass;
+    pxr_boost::python::handle<> pyClass;
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
     // Direct base types.
@@ -188,11 +188,11 @@ struct TfType::_TypeInfo {
 };
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-// Comparison for boost::python::handle.
+// Comparison for pxr_boost::python::handle.
 struct Tf_PyHandleLess
 {
-    bool operator()(const boost::python::handle<> &lhs,
-                    const boost::python::handle<> &rhs) const {
+    bool operator()(const pxr_boost::python::handle<> &lhs,
+                    const pxr_boost::python::handle<> &rhs) const {
         return lhs.get() < rhs.get();
     }
 };
@@ -288,17 +288,17 @@ public:
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     void SetPythonClass(TfType::_TypeInfo *info,
-                        const boost::python::object & classObj) {
+                        const pxr_boost::python::object & classObj) {
         // Hold a reference to this PyObject in our map.
-        boost::python::handle<> handle(
-            boost::python::borrowed(classObj.ptr()));
+        pxr_boost::python::handle<> handle(
+            pxr_boost::python::borrowed(classObj.ptr()));
 
         info->pyClass = handle;
         _pyClassMap[handle] = info;
 
         // Do not overwrite the size of a C++ type.
         if (!info->sizeofType) {
-            info->sizeofType = TfSizeofType<boost::python::object>::value;
+            info->sizeofType = TfSizeofType<pxr_boost::python::object>::value;
         }
     }
 #endif // PXR_PYTHON_SUPPORT_ENABLED
@@ -321,9 +321,9 @@ public:
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     TfType::_TypeInfo *
-    FindByPythonClass(const boost::python::object &classObj) const {
-        boost::python::handle<> handle(
-            boost::python::borrowed(classObj.ptr()));
+    FindByPythonClass(const pxr_boost::python::object &classObj) const {
+        pxr_boost::python::handle<> handle(
+            pxr_boost::python::borrowed(classObj.ptr()));
         auto it = _pyClassMap.find(handle);
         return it != _pyClassMap.end() ? it->second : nullptr;
     }
@@ -349,7 +349,7 @@ private:
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     // Map of python class handles to _TypeInfo*.
-    typedef map<boost::python::handle<>,
+    typedef map<pxr_boost::python::handle<>,
                 TfType::_TypeInfo *, Tf_PyHandleLess> PyClassMap;
     PyClassMap _pyClassMap;
 #endif // PXR_PYTHON_SUPPORT_ENABLED
@@ -569,7 +569,7 @@ TfType::GetPythonClass() const
     ScopedLock lock(GetRegistryMutex(), /*write=*/false);
     
     if (_info->pyClass.get()) {
-        return TfPyObjWrapper(boost::python::object(_info->pyClass));
+        return TfPyObjWrapper(pxr_boost::python::object(_info->pyClass));
     }
     return TfPyObjWrapper();
 }
@@ -744,7 +744,7 @@ TfType::GetAllAncestorTypes(vector<TfType> *result) const
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 TfType const &
 TfType::_FindImplPyPolymorphic(PyPolymorphicBase const *ptr) {
-    using namespace boost::python;
+    using namespace pxr_boost::python;
     TfType ret;
     if (TfPyIsInitialized()) {
         TfPyLock lock;

@@ -30,8 +30,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sceneIndexPluginName, "HdPrman_RileyFallbackMaterialSceneIndexPlugin"))
 );
 
-static const char * const _rendererDisplayName = "Prman";
-
 #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
 
 static
@@ -384,12 +382,14 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 100;
 
-    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        _rendererDisplayName,
-        _tokens->sceneIndexPluginName,
-        /* inputArgs = */ nullptr,
-        insertionPhase,
-        HdSceneIndexPluginRegistry::InsertionOrderAtEnd);
+    for( auto const& rendererDisplayName : HdPrman_GetPluginDisplayNames()) {
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            rendererDisplayName,
+            _tokens->sceneIndexPluginName,
+            /* inputArgs = */ nullptr,
+            insertionPhase,
+            HdSceneIndexPluginRegistry::InsertionOrderAtEnd);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -8,6 +8,8 @@
 //
 #include "hdPrman/cone.h"
 
+#if PXR_VERSION >= 2208
+
 #include "hdPrman/renderParam.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
@@ -72,8 +74,12 @@ HdPrman_Cone::_ConvertGeometry(HdPrman_RenderParam *renderParam,
     primvars.SetFloat(RixStr.k_Ri_radius, radius);
     primvars.SetFloat(RixStr.k_Ri_height, height);
 
-    HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, 1, 0, 0, 0);
+    HdPrman_ConvertPrimvars(
+        sceneDelegate, id, primvars, 1, 0, 0, 0,
+        renderParam->GetShutterInterval());
     return primvars;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2208

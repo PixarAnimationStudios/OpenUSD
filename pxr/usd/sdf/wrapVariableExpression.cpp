@@ -12,17 +12,17 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/vt/value.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/scope.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/scope.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include <string>
 #include <vector>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void
 wrapVariableExpression()

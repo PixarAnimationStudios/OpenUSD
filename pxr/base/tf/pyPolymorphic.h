@@ -20,9 +20,9 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/type.h"
 
-#include <boost/python/object/class_detail.hpp>
-#include <boost/python/wrapper.hpp>
-#include <boost/python/has_back_reference.hpp>
+#include "pxr/external/boost/python/object/class_detail.hpp"
+#include "pxr/external/boost/python/wrapper.hpp"
+#include "pxr/external/boost/python/has_back_reference.hpp"
 
 #include <functional>
 #include <type_traits>
@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 template <typename Derived>
 struct TfPyPolymorphic :
     public TfType::PyPolymorphicBase,
-    public boost::python::wrapper<Derived>
+    public pxr_boost::python::wrapper<Derived>
 {
     typedef TfPyPolymorphic<Derived> This;
     typedef TfPyOverride Override;
@@ -42,9 +42,9 @@ struct TfPyPolymorphic :
     Override GetOverride(char const *func) const {
         TfPyLock pyLock;
 
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
-        // don't use boost::python::wrapper::get_override(), as it can return
+        // don't use pxr_boost::python::wrapper::get_override(), as it can return
         // the wrong result. instead, implement our own version which does
         // better
 
@@ -213,11 +213,11 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 // Specialize has_back_reference<> so that boost.python will pass
 // PyObject* as the 1st argument to TfPyPolymorphic's ctor.
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
     template <typename T>
     struct has_back_reference< PXR_NS::TfPyPolymorphic<T> >
-        : mpl::true_ {};
-}} // end namespace boost
+        : std::true_type {};
+}}
 
 PXR_NAMESPACE_OPEN_SCOPE
 

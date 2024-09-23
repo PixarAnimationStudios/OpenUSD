@@ -980,7 +980,6 @@ Sdf_WriteRelationship(
     bool hasComment           = !rel.GetComment().empty();
     bool hasTargets           = rel.HasField(SdfFieldKeys->TargetPaths);
     bool hasDefaultValue      = rel.HasField(SdfFieldKeys->Default);
-    bool hasTimeSamples       = rel.HasField(SdfFieldKeys->TimeSamples);
 
     bool hasCustom            = rel.IsCustom();
 
@@ -1130,14 +1129,6 @@ Sdf_WriteRelationship(
                 varyingStr.c_str(), rel.GetName().c_str());
             Sdf_WriteRelationshipTargetList(rel, targetPaths, out, indent, Sdf_WriteFlagDefault);
         }
-    }
-
-    if (hasTimeSamples) {
-        Sdf_FileIOUtility::Write(out, indent, "%srel %s.timeSamples = {\n",
-                                 varyingStr.c_str(),
-                                 rel.GetName().c_str());
-        Sdf_FileIOUtility::WriteTimeSamples(out, indent, rel);
-        Sdf_FileIOUtility::Puts(out, indent, "}\n");
     }
 
     // Write out the default value for the relationship if we have one...

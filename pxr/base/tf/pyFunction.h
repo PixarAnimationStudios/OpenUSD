@@ -14,12 +14,12 @@
 #include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/python/converter/from_python.hpp>
-#include <boost/python/converter/registered.hpp>
-#include <boost/python/converter/rvalue_from_python_data.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/handle.hpp>
-#include <boost/python/object.hpp>
+#include "pxr/external/boost/python/converter/from_python.hpp"
+#include "pxr/external/boost/python/converter/registered.hpp"
+#include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/object.hpp"
 
 #include <boost/function.hpp>
 
@@ -48,7 +48,7 @@ struct TfPyFunctionFromPython<Ret (Args...)>
         TfPyObjWrapper weak;
 
         Ret operator()(Args... args) {
-            using namespace boost::python;
+            using namespace pxr_boost::python;
             // Attempt to get the referenced callable object.
             TfPyLock lock;
             object callable(handle<>(borrowed(PyWeakref_GetObject(weak.ptr()))));
@@ -66,7 +66,7 @@ struct TfPyFunctionFromPython<Ret (Args...)>
         TfPyObjWrapper weakSelf;
 
         Ret operator()(Args... args) {
-            using namespace boost::python;
+            using namespace pxr_boost::python;
             // Attempt to get the referenced self parameter, then build a new
             // instance method and call it.
             TfPyLock lock;
@@ -88,7 +88,7 @@ struct TfPyFunctionFromPython<Ret (Args...)>
     template <typename FuncType>
     static void
     RegisterFunctionType() {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
         converter::registry::
             insert(&convertible, &construct<FuncType>, type_id<FuncType>());
     }
@@ -98,10 +98,10 @@ struct TfPyFunctionFromPython<Ret (Args...)>
     }
 
     template <typename FuncType>
-    static void construct(PyObject *src, boost::python::converter::
+    static void construct(PyObject *src, pxr_boost::python::converter::
                           rvalue_from_python_stage1_data *data) {
         using std::string;
-        using namespace boost::python;
+        using namespace pxr_boost::python;
         
         void *storage = ((converter::rvalue_from_python_storage<FuncType> *)
                          data)->storage.bytes;

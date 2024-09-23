@@ -11,18 +11,18 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_arg.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/copy_const_reference.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
 
 #include <string>
-
-using namespace boost::python;
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -75,16 +75,16 @@ _DecomposeRotation(const GfMatrix4d &rot,
 {
     double angle[4] = {
         thetaTwHint.ptr() != Py_None ? 
-            boost::python::extract<double>(thetaTwHint) : 0.0,
+            pxr_boost::python::extract<double>(thetaTwHint) : 0.0,
         thetaFBHint.ptr() != Py_None ? 
-            boost::python::extract<double>(thetaFBHint) : 0.0,
+            pxr_boost::python::extract<double>(thetaFBHint) : 0.0,
         thetaLRHint.ptr() != Py_None ? 
-            boost::python::extract<double>(thetaLRHint) : 0.0,
+            pxr_boost::python::extract<double>(thetaLRHint) : 0.0,
         thetaSwHint.ptr() != Py_None ? 
-            boost::python::extract<double>(thetaSwHint) : 0.0
+            pxr_boost::python::extract<double>(thetaSwHint) : 0.0
         };
     double swShift = swShiftIn.ptr() != Py_None ? 
-        boost::python::extract<double>(swShiftIn) : 0.0;
+        pxr_boost::python::extract<double>(swShiftIn) : 0.0;
 
     GfRotation::DecomposeRotation(
         rot, TwAxis, FBAxis, LRAxis, handedness,
@@ -111,13 +111,13 @@ _MatchClosestEulerRotation(
 {
     double angle[4] = {
         thetaTw.ptr() != Py_None ?
-            boost::python::extract<double>(thetaTw) : 0.0,
+            pxr_boost::python::extract<double>(thetaTw) : 0.0,
         thetaFB.ptr() != Py_None ?
-            boost::python::extract<double>(thetaFB) : 0.0,
+            pxr_boost::python::extract<double>(thetaFB) : 0.0,
         thetaLR.ptr() != Py_None ?
-            boost::python::extract<double>(thetaLR) : 0.0,
+            pxr_boost::python::extract<double>(thetaLR) : 0.0,
         thetaSw.ptr() != Py_None ?
-            boost::python::extract<double>(thetaSw) : 0.0
+            pxr_boost::python::extract<double>(thetaSw) : 0.0
         };
 
     GfRotation::MatchClosestEulerRotation(

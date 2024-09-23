@@ -6,7 +6,7 @@
 )
 
 def "CollectionTest" (
-    kind = "prop"
+    kind = "component"
     prepend apiSchemas = ["CollectionAPI:leafGeom", "CollectionAPI:allGeom", "CollectionAPI:allGeomProperties", "CollectionAPI:hasRelationships", "CollectionAPI:hasInstanceProxy", "CollectionAPI:coneProperties", "CollectionAPI:includesCollection", "CollectionAPI:includesNestedCollection", "CollectionAPI:excludeInstanceGeom", "CollectionAPI:invalidExpansionRule", "CollectionAPI:invalidExcludesExplicitOnly", "CollectionAPI:invalidExcludesExpandPrims", "CollectionAPI:invalidTopLevelRules", "CollectionAPI:withMembershipExpr", "CollectionAPI:expressionRef"]
 )
 {

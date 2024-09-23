@@ -97,10 +97,6 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderPass
     const TfToken denoiseEnable;
-    /// \brief "denoise:pass"
-    /// 
-    /// UsdRenderPass
-    const TfToken denoisePass;
     /// \brief "disableDepthOfField"
     /// 
     /// UsdRenderSettingsBase
@@ -213,10 +209,6 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderVar
     const TfToken sourceType;
-    /// \brief "RenderDenoisePass"
-    /// 
-    /// Schema identifer and family for UsdRenderDenoisePass
-    const TfToken RenderDenoisePass;
     /// \brief "RenderPass"
     /// 
     /// Schema identifer and family for UsdRenderPass

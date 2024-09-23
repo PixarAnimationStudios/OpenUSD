@@ -148,6 +148,63 @@ public:
     TfToken GetRoleName() const;
 
     /// @}
+
+    /// \name Time-sample API
+    /// @{
+    /// Returns the entire set of time samples.
+    SDF_API
+    SdfTimeSampleMap GetTimeSampleMap() const;
+
+    SDF_API
+    std::set<double> ListTimeSamples() const;
+
+    SDF_API
+    size_t GetNumTimeSamples() const;
+
+    SDF_API
+    bool GetBracketingTimeSamples(double time, double* tLower,
+                                  double* tUpper) const;
+
+    SDF_API
+    bool QueryTimeSample(double time, VtValue *value=NULL) const;
+    SDF_API
+    bool QueryTimeSample(double time, SdfAbstractDataValue *value) const;
+
+    template <class T>
+    bool QueryTimeSample(double time, T* data) const
+    {
+        if (!data) {
+            return QueryTimeSample(time);
+        }
+
+        SdfAbstractDataTypedValue<T> outValue(data);
+        const bool hasValue = QueryTimeSample(
+            time, static_cast<SdfAbstractDataValue *>(&outValue));
+
+        if (std::is_same<T, SdfValueBlock>::value) {
+            return hasValue && outValue.isValueBlock;
+        }
+
+        return hasValue && (!outValue.isValueBlock);
+    }
+
+    SDF_API
+    void SetTimeSample(double time, const VtValue & value);
+    SDF_API
+    void SetTimeSample(double time, const SdfAbstractDataConstValue& value);
+
+    template <class T>
+    void SetTimeSample(double time, const T& value)
+    {
+        const SdfAbstractDataConstTypedValue<T> inValue(&value);
+        const SdfAbstractDataConstValue& untypedInValue = inValue;
+        return SetTimeSample(time, untypedInValue);
+    }
+
+    SDF_API
+    void EraseTimeSample(double time);
+
+    /// @}
 };
 
 /// Convenience function to create an attributeSpec on a primSpec at the given

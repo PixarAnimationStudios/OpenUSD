@@ -4,17 +4,18 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/mapExpression.h"
 
 #include <string>
 
-using namespace boost::python;
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

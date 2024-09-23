@@ -14,14 +14,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#if PXR_VERSION > 2011
 HdPrman_Points::HdPrman_Points(SdfPath const& id)
     : BASE(id)
-#else
-HdPrman_Points::HdPrman_Points(SdfPath const& id,
-                               SdfPath const& instancerId)
-    : BASE(id, instancerId)
-#endif
 {
 }
 
@@ -61,7 +55,8 @@ HdPrman_Points::_ConvertGeometry(HdPrman_RenderParam *renderParam,
     *primType = RixStr.k_Ri_Points;
 
     HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, 1,
-                            npoints, npoints, npoints);
+                            npoints, npoints, npoints,
+                            renderParam->GetShutterInterval());
 
     return primvars;
 }

@@ -5,10 +5,16 @@
 // https://openusd.org/license.
 //
 #include "hdPrman/renderSettings.h"
+
+#if PXR_VERSION >= 2308
+
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/debugUtil.h"
 #include "hdPrman/camera.h"
 #include "hdPrman/cameraContext.h"
+#if PXR_VERSION <= 2308
+#include "hdPrman/renderDelegate.h"
+#endif
 #include "hdPrman/renderParam.h"
 #include "hdPrman/renderViewContext.h"
 #include "hdPrman/rixStrings.h"
@@ -41,12 +47,25 @@ TF_DEFINE_ENV_SETTING(HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS, false,
                       "the render settings prim when the render pass has "
                       "AOV bindings.");
 
+TF_DEFINE_ENV_SETTING(HD_PRMAN_RENDER_SETTINGS_BUNDLE_RENDER_PRODUCTS, false,
+                      "If true, all render products for the active render "
+                      "settings are rendered within the same render view.");
+
 TF_DEFINE_PRIVATE_TOKENS(
     _renderTerminalTokens, // properties in PxrRenderTerminalsAPI
     ((outputsRiIntegrator, "outputs:ri:integrator"))
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
     ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
 );
+
+#if PXR_VERSION <= 2308
+TF_DEFINE_PRIVATE_TOKENS(
+    _legacyTokens,
+    ((fallbackPath, "/Render/__HdsiRenderSettingsFilteringSceneIndex__FallbackSettings"))
+    ((renderScope, "/Render"))
+    (shutterInterval)
+);
+#endif
 
 
 namespace {
@@ -111,10 +130,15 @@ _HasNonFallbackRenderSettingsPrim(const HdSceneIndexBaseRefPtr &si)
         return false;
     }
     
+#if PXR_VERSION >= 2311
     const SdfPath &renderScope =
         HdsiRenderSettingsFilteringSceneIndex::GetRenderScope();
     const SdfPath &fallbackPrimPath =
         HdsiRenderSettingsFilteringSceneIndex::GetFallbackPrimPath();
+#else
+    const SdfPath &renderScope = SdfPath(_legacyTokens->renderScope);
+    const SdfPath &fallbackPrimPath = SdfPath(_legacyTokens->fallbackPath);
+#endif
 
     for (const SdfPath &path : HdSceneIndexPrimView(si, renderScope)) {
         if (path != fallbackPrimPath &&
@@ -124,6 +148,34 @@ _HasNonFallbackRenderSettingsPrim(const HdSceneIndexBaseRefPtr &si)
     }
     return false;
 }
+
+#if PXR_VERSION <= 2308
+CameraUtilConformWindowPolicy
+_ToConformWindowPolicy(const TfToken &token)
+{
+    if (token == HdAspectRatioConformPolicyTokens->adjustApertureWidth) {
+        return CameraUtilMatchVertically;
+    }
+    if (token == HdAspectRatioConformPolicyTokens->adjustApertureHeight) {
+        return CameraUtilMatchHorizontally;
+    }
+    if (token == HdAspectRatioConformPolicyTokens->expandAperture) {
+        return CameraUtilFit;
+    }
+    if (token == HdAspectRatioConformPolicyTokens->cropAperture) {
+        return CameraUtilCrop;
+    }
+    if (token == HdAspectRatioConformPolicyTokens->adjustPixelAspectRatio) {
+        return CameraUtilDontConform;
+    }
+
+    TF_WARN(
+        "Invalid aspectRatioConformPolicy value '%s', "
+        "falling back to expandAperture.", token.GetText());
+
+    return CameraUtilFit;
+}
+#endif
 
 // Update the camera path, framing and shutter curve on the camera context from
 // the render product.
@@ -149,7 +201,11 @@ _UpdateCameraContextFromProduct(
         CameraUtilFraming(
             displayWindow, dataWindow, product.pixelAspectRatio));
     cameraContext->SetWindowPolicy(
+#if PXR_VERSION <= 2308
+        _ToConformWindowPolicy(product.aspectRatioConformPolicy));
+#else
         HdUtils::ToConformWindowPolicy(product.aspectRatioConformPolicy));
+#endif
 #if HD_API_VERSION >= 64
     cameraContext->SetDisableDepthOfField(product.disableDepthOfField);
 #endif
@@ -175,6 +231,7 @@ _UpdateRileyCamera(
     }
 }
 
+#if PXR_VERSION >= 2405
 // Update the Frame number from the Stage Global Scene Index
 void
 _UpdateFrame(
@@ -196,18 +253,19 @@ _UpdateFrame(
         RixStr.k_Ri_Frame, VtValue(intFrame),
         /* role */ TfToken(), options);
 }
+#endif
 
 // Create/update the render view and associated resources based on the
 // render product.
 void
 _UpdateRenderViewContext(
-    HdRenderSettings::RenderProduct const &product,
+    HdRenderSettings::RenderProducts const &products,
     HdPrman_RenderParam *param,
     HdPrman_RenderViewContext *renderViewContext)
 {
     // The (lone) render view is managed by render param currently.
-    param->CreateRenderViewFromRenderSettingsProduct(
-        product, renderViewContext);
+    param->CreateRenderViewFromRenderSettingsProducts(
+        products, renderViewContext);
 }
 
 // Factor the product's motion blur opinion and camera's shutter.
@@ -362,6 +420,12 @@ HdPrman_RenderSettings::UpdateAndRender(
     for (size_t prodIdx = 0; prodIdx < numProducts; prodIdx++) {
         auto const &product = GetRenderProducts().at(prodIdx);
 
+        if (product.renderVars.empty()) {
+            TF_WARN("--- Skipping empty render product %s ...\n",
+                    product.name.GetText());
+            continue;
+        }
+
         TF_DEBUG(HDPRMAN_RENDER_PASS).Msg(
             "--- Processing render product %s ...\n", product.name.GetText()); 
 
@@ -382,9 +446,16 @@ HdPrman_RenderSettings::UpdateAndRender(
 
         // This _cannot_ be moved to Sync either because the render terminal
         // Sprims wouldn't have been updated.
-        _UpdateRenderViewContext(product, param, &renderViewContext);
+
+        if (TfGetEnvSetting(HD_PRMAN_RENDER_SETTINGS_BUNDLE_RENDER_PRODUCTS)) {
+            _UpdateRenderViewContext(
+                GetRenderProducts(), param, &renderViewContext);
+        } else {
+            _UpdateRenderViewContext(
+                {product}, param, &renderViewContext);
+        }
         
-        bool result =
+        const bool result =
             _SetOptionsAndRender(
                 cameraContext,
                 renderViewContext,
@@ -404,6 +475,11 @@ HdPrman_RenderSettings::UpdateAndRender(
         }
 
         success = success && result;
+
+        if (TfGetEnvSetting(HD_PRMAN_RENDER_SETTINGS_BUNDLE_RENDER_PRODUCTS)) {
+            // Done.
+            break;
+        }
     }
 
     return success;
@@ -453,7 +529,11 @@ void HdPrman_RenderSettings::_Sync(
     // against the fallback prim's opinion being committed on the first
     // SetOptions when an authored prim is present.
     //
+#if PXR_VERSION >= 2311
     if (GetId() == HdsiRenderSettingsFilteringSceneIndex::GetFallbackPrimPath()
+#else
+    if (GetId() == SdfPath(_legacyTokens->fallbackPath)
+#endif
         && _HasNonFallbackRenderSettingsPrim(terminalSi)) {
 
         TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
@@ -470,6 +550,7 @@ void HdPrman_RenderSettings::_Sync(
         _settingsOptions = _GenerateParamList(GetNamespacedSettings());
     }
 
+#if PXR_VERSION >= 2311
     if (*dirtyBits & HdRenderSettings::DirtyShutterInterval ||
         *dirtyBits & HdRenderSettings::DirtyNamespacedSettings) {
         if (GetShutterInterval().IsHolding<GfVec2d>()) {
@@ -480,11 +561,14 @@ void HdPrman_RenderSettings::_Sync(
                 &_settingsOptions);
         }
     }
+#endif
 
+#if PXR_VERSION >= 2405
     if (*dirtyBits & HdRenderSettings::DirtyFrameNumber ||
         *dirtyBits & HdRenderSettings::DirtyNamespacedSettings) {
         _UpdateFrame(terminalSi, &_settingsOptions);
     }
+#endif
 
     // XXX Preserve existing data flow for clients that don't populate the
     //     sceneGlobals.activeRenderSettingsPrim locator at the root prim of the
@@ -503,10 +587,19 @@ void HdPrman_RenderSettings::_Sync(
 
         param->SetDrivingRenderSettingsPrimPath(GetId());
 
+#if PXR_VERSION >= 2405
         if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings ||
             *dirtyBits & HdRenderSettings::DirtyActive ||
-            *dirtyBits & HdRenderSettings::DirtyShutterInterval || 
+            *dirtyBits & HdRenderSettings::DirtyShutterInterval ||
             *dirtyBits & HdRenderSettings::DirtyFrameNumber) {
+#elif PXR_VERSION >= 2311
+        if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings ||
+            *dirtyBits & HdRenderSettings::DirtyActive ||
+            *dirtyBits & HdRenderSettings::DirtyShutterInterval) {
+#else
+        if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings ||
+            *dirtyBits & HdRenderSettings::DirtyActive) {
+#endif
             
             // Handle attributes ...
             param->SetRenderSettingsPrimOptions(_settingsOptions);
@@ -584,7 +677,11 @@ HdPrman_RenderSettings::_ProcessRenderProducts(HdPrman_RenderParam *param)
     // during HdPrmanCamera::Sync. The riley shutter interval needs to
     // be set before any time-sampled primvars are synced.
     // 
+#if PXR_VERSION >= 2311
     if (GetShutterInterval().IsEmpty()) {
+#else
+    {
+#endif
         // Set the camera path here so that HdPrmanCamera::Sync can detect
         // whether it is syncing the current camera to set the riley shutter
         // interval. See SetRileyShutterIntervalFromCameraContextCameraPath
@@ -593,10 +690,22 @@ HdPrman_RenderSettings::_ProcessRenderProducts(HdPrman_RenderParam *param)
         param->GetCameraContext().SetCameraPath(cameraPath);
     }
 
+#if HD_API_VERSION >= 64
     // This will override the f-stop value on the camera
     param->GetCameraContext().SetDisableDepthOfField(
         GetRenderProducts().at(0).disableDepthOfField);
-    
+#endif
 }
 
+#if PXR_VERSION <= 2308
+bool
+HdPrman_RenderSettings::IsValid() const
+{
+    return (!GetRenderProducts().empty() &&
+            !GetRenderProducts()[0].cameraPath.IsEmpty());
+}
+#endif
+
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2308

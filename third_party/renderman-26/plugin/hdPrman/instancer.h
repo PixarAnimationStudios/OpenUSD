@@ -487,7 +487,7 @@ private:
     void _SyncPrimvars(const HdDirtyBits* dirtyBits);
 
     // Sync helper; caches the instancer and instance transforms
-    void _SyncTransforms(const HdDirtyBits* dirtyBits);
+    void _SyncTransforms(const HdDirtyBits* dirtyBits, HdPrman_RenderParam *);
 
     // Sync helper; caches instance or instancer categories as appropriate
     void _SyncCategories(const HdDirtyBits* dirtyBits);

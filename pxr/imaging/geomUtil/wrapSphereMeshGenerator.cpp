@@ -10,11 +10,11 @@
 
 #include "pxr/base/vt/types.h"
 
-#include <boost/python/class.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/class.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 static VtVec3fArray
 _WrapGeneratePoints(
@@ -35,6 +35,24 @@ _WrapGeneratePoints(
     return points;
 }
 
+static VtVec3fArray
+_WrapGenerateNormals(
+    const size_t numRadial,
+    const size_t numAxial)
+{
+    const size_t numNormals =
+        GeomUtilSphereMeshGenerator::ComputeNumNormals(numRadial, numAxial);
+    if (numNormals == 0) {
+        return VtVec3fArray();
+    }
+
+    VtVec3fArray normals(numNormals);
+    GeomUtilSphereMeshGenerator::GenerateNormals(
+        normals.begin(), numRadial, numAxial);
+
+    return normals;
+}
+
 void wrapSphereMeshGenerator()
 {
     using This = GeomUtilSphereMeshGenerator;
@@ -52,10 +70,19 @@ void wrapSphereMeshGenerator()
         .def("ComputeNumPoints", &This::ComputeNumPoints)
         .staticmethod("ComputeNumPoints")
 
+        .def("ComputeNumNormals", &This::ComputeNumNormals)
+        .staticmethod("ComputeNumNormals")
+
+        .def("GetNormalsInterpolation", &This::GetNormalsInterpolation)
+        .staticmethod("GetNormalsInterpolation")
+
         .def("GenerateTopology", &This::GenerateTopology)
         .staticmethod("GenerateTopology")
 
         .def("GeneratePoints", &_WrapGeneratePoints)
         .staticmethod("GeneratePoints")
+
+        .def("GenerateNormals", &_WrapGenerateNormals)
+        .staticmethod("GenerateNormals")
     ;
 }

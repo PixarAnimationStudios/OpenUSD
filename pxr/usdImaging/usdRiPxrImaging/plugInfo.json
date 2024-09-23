@@ -3,6 +3,13 @@
         {
             "Info": {
                 "Types": {
+                    "UsdRiPxrImagingAovLightAdapter": {
+                        "bases": [
+                            "UsdImagingLightAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "PxrAovLight"
+                    },
                     "UsdRiPxrImagingDisplayFilterAdapter": {
                         "bases": [
                             "UsdImagingPrimAdapter"

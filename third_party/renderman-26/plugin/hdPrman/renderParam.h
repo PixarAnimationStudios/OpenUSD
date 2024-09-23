@@ -236,8 +236,8 @@ public:
 
     void CreateRenderViewFromRenderSpec(const VtDictionary &renderSpec);
 
-    void CreateRenderViewFromRenderSettingsProduct(
-        HdRenderSettings::RenderProduct const &product,
+    void CreateRenderViewFromRenderSettingsProducts(
+        HdRenderSettings::RenderProducts const &products,
         HdPrman_RenderViewContext *renderViewContext);
 
     // Starts the render thread (if needed), and tells the render thread to
@@ -269,7 +269,8 @@ public:
     // with HdPrmanFramebuffer to transfer the result between the
     // render thread and the hydra render buffers.
     void CreateFramebufferAndRenderViewFromAovs(
-        const HdRenderPassAovBindingVector& aovBindings);
+        const HdRenderPassAovBindingVector& aovBindings,
+        const HdPrman_RenderSettings* renderSettings);
 
     // Deletes HdPrmanFramebuffer (created with
     // CreateRenderViewFromAovs). Can be called if there is no frame
@@ -584,6 +585,7 @@ HdPrman_ConvertPrimvars(
     int numVertex,
     int numVarying,
     int numFaceVarying,
+    const GfVec2d &shutterInterval,
     float time = 0.f);
 
 /// Check for any primvar opinions on the material that should be Riley primvars.

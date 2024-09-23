@@ -536,7 +536,7 @@ bool _PySeqToVtArray(VtValue *value,
     VtArray<T> result(len);
     ElemType *elem = result.data();
     for (Py_ssize_t i = 0; i != len; ++i) {
-        boost::python::handle<> h(PySequence_ITEM(obj.ptr(), i));
+        pxr_boost::python::handle<> h(PySequence_ITEM(obj.ptr(), i));
         if (!h) {
             if (PyErr_Occurred()) {
                 PyErr_Clear();
@@ -547,14 +547,14 @@ bool _PySeqToVtArray(VtValue *value,
                                _GetKeyPathText(*keyPath).c_str()));
             allValid = false;
         }
-        boost::python::extract<ElemType> e(h.get());
+        pxr_boost::python::extract<ElemType> e(h.get());
         if (!e.check()) {
             errMsgs->push_back(
                 TfStringPrintf("failed to cast sequence element "
                                "%s: %s%s to <%s>",
                                TfStringify(i).c_str(),
                                _GetDiagnosticStringForValue(
-                                   boost::python::extract<VtValue>(
+                                   pxr_boost::python::extract<VtValue>(
                                        h.get())).c_str(),
                                _GetKeyPathText(*keyPath).c_str(),
                                ArchGetDemangled<ElemType>().c_str()));
@@ -629,7 +629,7 @@ _PyObjToAnyVtArray(VtValue *value, std::vector<std::string> *errMsgs,
     }
     // Pull the type from the first element, and try to invoke the conversion
     // function to convert all elements.
-    boost::python::handle<> h(PySequence_ITEM(obj.ptr(), 0));
+    pxr_boost::python::handle<> h(PySequence_ITEM(obj.ptr(), 0));
     if (!h) {
         if (PyErr_Occurred()) {
             PyErr_Clear();
@@ -640,7 +640,7 @@ _PyObjToAnyVtArray(VtValue *value, std::vector<std::string> *errMsgs,
         *value = VtValue();
         return false;
     }
-    boost::python::extract<VtValue> e(h.get());
+    pxr_boost::python::extract<VtValue> e(h.get());
     if (!e.check()) {
         errMsgs->push_back(
             TfStringPrintf("failed to obtain first element from sequence%s",

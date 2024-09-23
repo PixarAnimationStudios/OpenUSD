@@ -9,12 +9,12 @@
 #include "pxr/usd/pcp/instanceKey.h"
 #include "pxr/usd/pcp/primIndex.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/operators.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/operators.hpp"
  
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

@@ -20,9 +20,9 @@
 
 #include "pxr/base/arch/fileSystem.h"
 
-#include <boost/python/borrowed.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/handle.hpp>
+#include "pxr/external/boost/python/borrowed.hpp"
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/handle.hpp"
 
 #include <deque>
 
@@ -34,10 +34,10 @@ using std::deque;
 using std::string;
 using std::vector;
 
-using boost::python::borrowed;
-using boost::python::dict;
-using boost::python::handle;
-using boost::python::object;
+using pxr_boost::python::borrowed;
+using pxr_boost::python::dict;
+using pxr_boost::python::handle;
+using pxr_boost::python::object;
 
 
 TfScriptModuleLoader::TfScriptModuleLoader()

@@ -2763,11 +2763,15 @@ _EvalNodeRelocations(
         Pcp_FormatSite(node.GetSite()).c_str());
 
     // Unlike other tasks, we skip processing if this node can't contribute 
-    // specs, but only if this node was introduced at this level at namespace.
-    // This additional check is needed because a descendant node might not
-    // have any specs and thus be marked as culled, but still have relocates
-    // that affect that node.
-    if (!node.CanContributeSpecs() && node.GetDepthBelowIntroduction() == 0) {
+    // specs.
+    //
+    // Note that this check relies on the fact that descendant nodes without any
+    // specs are not marked as culled until we're done building the prim index,
+    // as nodes without specs can still have relocates that affect that node.
+    // This fact makes sure that we are only skipping nodes that are truly 
+    // culled for reasons such as being elided due to another relocates node
+    // that throws away ancestral opinions.
+    if (!node.CanContributeSpecs()) {
         return;
     }
 

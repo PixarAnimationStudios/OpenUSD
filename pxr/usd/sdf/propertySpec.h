@@ -250,6 +250,9 @@ public:
     /// @{
 
     /// Returns the entire set of time samples.
+    ///
+    /// \deprecated
+    /// Use SdfAttributeSpec::GetTimeSampleMap instead.
     SDF_API
     SdfTimeSampleMap GetTimeSampleMap() const;
 

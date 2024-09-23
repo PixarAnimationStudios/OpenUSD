@@ -12,17 +12,17 @@
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/iterator.hpp>
-#include <boost/python/operators.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/copy_const_reference.hpp"
+#include "pxr/external/boost/python/iterator.hpp"
+#include "pxr/external/boost/python/operators.hpp"
 
 #include <sstream>
 #include <vector>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 static std::string
 _InvalidationRepr(

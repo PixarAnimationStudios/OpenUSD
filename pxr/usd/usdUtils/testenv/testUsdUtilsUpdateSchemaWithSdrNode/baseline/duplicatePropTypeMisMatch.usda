@@ -11,14 +11,16 @@ class "TestDuplicatePropsAPI" (
     uniform token inputs:colorMapGamma (
         allowedTokens = ["texture"]
         connectability = "interfaceOnly"
-        displayGroup = "Basic"
-        displayName = "Map Gamma"
-        doc = """
+        customData = {
+            string userDoc = """
                 uniform color mapping for gamma.
                 """
-    )
-    uniform token myRenderContext:usda:shaderId = "TestDuplicatePropsAPI" (
-        displayGroup = "Internal"
+            string userDocBrief = """
+                uniform color mapping for gamma.
+                """
+        }
+        displayGroup = "Basic"
+        displayName = "Map Gamma"
     )
     color3f outputs:resultRGB
 }

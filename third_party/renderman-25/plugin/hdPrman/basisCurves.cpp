@@ -16,14 +16,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#if PXR_VERSION > 2011
 HdPrman_BasisCurves::HdPrman_BasisCurves(SdfPath const& id)
     : BASE(id)
-#else
-HdPrman_BasisCurves::HdPrman_BasisCurves(SdfPath const& id,
-                                         SdfPath const& instancerId)
-    : BASE(id, instancerId)
-#endif
 {
 }
 
@@ -142,7 +136,8 @@ HdPrman_BasisCurves::_ConvertGeometry(HdPrman_RenderParam *renderParam,
 
     HdPrman_ConvertPrimvars(
         sceneDelegate, id, primvars, numCurves, vertexPrimvarCount,
-        varyingPrimvarCount, facevaryingPrimvarCount);
+        varyingPrimvarCount, facevaryingPrimvarCount,
+        renderParam->GetShutterInterval());
 
     return primvars;
 }

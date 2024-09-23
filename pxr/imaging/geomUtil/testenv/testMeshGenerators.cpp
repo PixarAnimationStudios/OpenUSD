@@ -11,6 +11,8 @@
 #include "pxr/imaging/geomUtil/coneMeshGenerator.h"
 #include "pxr/imaging/geomUtil/cuboidMeshGenerator.h"
 #include "pxr/imaging/geomUtil/cylinderMeshGenerator.h"
+#include "pxr/imaging/geomUtil/diskMeshGenerator.h"
+#include "pxr/imaging/geomUtil/planeMeshGenerator.h"
 #include "pxr/imaging/geomUtil/sphereMeshGenerator.h"
 #include "pxr/imaging/pxOsd/meshTopology.h"
 
@@ -43,6 +45,7 @@ template <typename T>
 static void
 _Log(PxOsdMeshTopology const &topology,
      VtArray<T> const &points,
+     VtArray<T> const &normals,
      std::ofstream &out)
 {
     out << "Topology:\n";
@@ -50,6 +53,9 @@ _Log(PxOsdMeshTopology const &topology,
 
     out << "Points:\n";
     out << "  " << points << std::endl << std::endl;
+
+    out << "Normals:\n";
+    out << "  " << normals << std::endl << std::endl;
 }
 
 }
@@ -78,10 +84,16 @@ static bool TestTopologyAndPointGeneration(
         const size_t numPoints =
             MeshGen::ComputeNumPoints(numRadial, numCapAxial, closedSweep);
         VtVec3fArray points(numPoints);
+
+        const size_t numNormals =
+            MeshGen::ComputeNumNormals(numRadial, numCapAxial, closedSweep);
+        VtVec3fArray normals(numNormals);
+
         if (closedSweep) {
             MeshGen::GeneratePoints(
                 points.begin(), numRadial, numCapAxial, radius, height);
-
+            MeshGen::GenerateNormals(
+                normals.begin(), numRadial, numCapAxial, radius, height);
         } else {
             MeshGen::GeneratePoints(
                 points.begin(), numRadial, numCapAxial,
@@ -89,9 +101,15 @@ static bool TestTopologyAndPointGeneration(
                 /* topRadius    =    */ radius,
                 height,
                 sweep);
+            MeshGen::GenerateNormals(
+                normals.begin(), numRadial, numCapAxial,
+                /* bottomRadius =    */ radius,
+                /* topRadius    =    */ radius,
+                height,
+                sweep);
         }
-        
-        _Log(topology, points, out);
+
+        _Log(topology, points, normals, out);
 
         _LogFooter(out);
     }
@@ -104,7 +122,7 @@ static bool TestTopologyAndPointGeneration(
         const size_t numRadial = 10;
         const float radius = 0.5, height = 2;
 
-        out << "radius = "   << radius 
+        out << "radius = "   << radius
             << ", height = " << height
             << ", sweep = "  << sweep
             << std::endl << std::endl;
@@ -115,10 +133,18 @@ static bool TestTopologyAndPointGeneration(
         const size_t numPoints =
             MeshGen::ComputeNumPoints(numRadial, closedSweep);
         VtVec3fArray points(numPoints);
+
+        const size_t numNormals =
+            MeshGen::ComputeNumNormals(numRadial, closedSweep);
+        VtVec3fArray normals(numNormals);
+
         MeshGen::GeneratePoints(
             points.begin(), numRadial, radius, height, sweep);
-        
-        _Log(topology, points, out);
+
+        MeshGen::GenerateNormals(
+            normals.begin(), numRadial, radius, height, sweep);
+
+        _Log(topology, points, normals, out);
 
         _LogFooter(out);
     }
@@ -136,9 +162,15 @@ static bool TestTopologyAndPointGeneration(
 
         const size_t numPoints = MeshGen::ComputeNumPoints();
         VtVec3fArray points(numPoints);
+
+        const size_t numNormals = MeshGen::ComputeNumNormals();
+        VtVec3fArray normals(numNormals);
+
         MeshGen::GeneratePoints(points.begin(), side, side, side);
-        
-        _Log(topology, points, out);
+
+        MeshGen::GenerateNormals(normals.begin());
+
+        _Log(topology, points, normals, out);
 
         _LogFooter(out);
     }
@@ -151,7 +183,7 @@ static bool TestTopologyAndPointGeneration(
         const size_t numRadial = 10;
         const float radius = 0.5, height = 2;
 
-        out << "radius = "   << radius 
+        out << "radius = "   << radius
             << ", height = " << height
             << ", sweep = "  << sweep
             << std::endl << std::endl;
@@ -162,9 +194,17 @@ static bool TestTopologyAndPointGeneration(
         const size_t numPoints =
             MeshGen::ComputeNumPoints(numRadial, closedSweep);
         VtVec3fArray points(numPoints);
+
+        const size_t numNormals =
+            MeshGen::ComputeNumNormals(numRadial, closedSweep);
+        VtVec3fArray normals(numNormals);
+
         if (closedSweep) {
             MeshGen::GeneratePoints(
                 points.begin(), numRadial, radius, height);
+
+            MeshGen::GenerateNormals(
+                normals.begin(), numRadial, radius, height);
 
         } else {
             MeshGen::GeneratePoints(
@@ -172,9 +212,15 @@ static bool TestTopologyAndPointGeneration(
                 /* bottomRadius = */ radius,
                 /* topRadius =    */ radius,
                 height, sweep);
+
+            MeshGen::GenerateNormals(
+                normals.begin(), numRadial,
+                /* bottomRadius = */ radius,
+                /* topRadius =    */ radius,
+                height, sweep);
         }
-        
-        _Log(topology, points, out);
+
+        _Log(topology, points, normals, out);
 
         _LogFooter(out);
     }
@@ -187,7 +233,7 @@ static bool TestTopologyAndPointGeneration(
         const size_t numRadial = 10, numAxial = 10;
         const float radius = 0.5;
 
-        out << "radius = "   << radius 
+        out << "radius = "   << radius
             << ", sweep = "  << sweep
             << std::endl << std::endl;
 
@@ -197,10 +243,156 @@ static bool TestTopologyAndPointGeneration(
         const size_t numPoints =
             MeshGen::ComputeNumPoints(numRadial, numAxial, closedSweep);
         VtVec3fArray points(numPoints);
+
+        const size_t numNormals =
+            MeshGen::ComputeNumNormals(numRadial, numAxial, closedSweep);
+        VtVec3fArray normals(numNormals);
+
         MeshGen::GeneratePoints(
             points.begin(), numRadial, numAxial, radius, sweep);
-        
-        _Log(topology, points, out);
+
+        MeshGen::GenerateNormals(
+            normals.begin(), numRadial, numAxial, sweep);
+
+        _Log(topology, points, normals, out);
+
+        _LogFooter(out);
+    }
+
+    {
+        _LogHeader("6. Plane", out);
+
+        using MeshGen = GeomUtilPlaneMeshGenerator;
+
+        const float width = 4.0;
+        const float length = 3.0;
+
+        out << "width = " << width << std::endl << std::endl;
+        out << "length = " << length << std::endl << std::endl;
+
+        const PxOsdMeshTopology topology = MeshGen::GenerateTopology();
+
+        const size_t numPoints = MeshGen::ComputeNumPoints();
+        VtVec3fArray points(numPoints);
+
+        const size_t numNormals = MeshGen::ComputeNumNormals();
+        VtVec3fArray normals(numNormals);
+
+        MeshGen::GeneratePoints(points.begin(), width, length);
+
+        MeshGen::GenerateNormals(normals.begin());
+
+        _Log(topology, points, normals, out);
+
+        _LogFooter(out);
+    }
+
+    {
+        _LogHeader("7. Tapered Capsule", out);
+
+        using MeshGen = GeomUtilCapsuleMeshGenerator;
+
+        const size_t numRadial = 10, numCapAxial = 4;
+        const float bottomRadius = 0.5, topRadius = 0.3, height = 2;
+
+        out << "bottomRadius = " << bottomRadius
+            << ", topRadius = "  << topRadius
+            << ", height = "     << height
+            << ", sweep = "      << sweep
+            << std::endl << std::endl;
+
+        const PxOsdMeshTopology topology =
+            MeshGen::GenerateTopology(numRadial, numCapAxial, closedSweep);
+
+        const size_t numPoints =
+            MeshGen::ComputeNumPoints(numRadial, numCapAxial, closedSweep);
+        VtVec3fArray points(numPoints);
+
+        const size_t numNormals =
+            MeshGen::ComputeNumNormals(numRadial, numCapAxial, closedSweep);
+        VtVec3fArray normals(numNormals);
+
+        MeshGen::GeneratePoints(
+            points.begin(), numRadial, numCapAxial,
+            bottomRadius, topRadius, height, sweep);
+
+        MeshGen::GenerateNormals(
+            normals.begin(), numRadial, numCapAxial,
+            bottomRadius, topRadius, height, sweep);
+
+        _Log(topology, points, normals, out);
+
+        _LogFooter(out);
+    }
+
+    {
+        _LogHeader("8. Tapered Cylinder", out);
+
+        using MeshGen = GeomUtilCylinderMeshGenerator;
+
+        const size_t numRadial = 10;
+        const float bottomRadius = 0.5, topRadius = 0.3, height = 2;
+
+        out << "bottomRadius = " << bottomRadius
+            << ", topRadius = "  << topRadius
+            << ", height = "     << height
+            << ", sweep = "      << sweep
+            << std::endl << std::endl;
+
+        const PxOsdMeshTopology topology =
+            MeshGen::GenerateTopology(numRadial, closedSweep);
+
+        const size_t numPoints =
+            MeshGen::ComputeNumPoints(numRadial, closedSweep);
+        VtVec3fArray points(numPoints);
+
+        const size_t numNormals =
+            MeshGen::ComputeNumNormals(numRadial, closedSweep);
+        VtVec3fArray normals(numNormals);
+
+        MeshGen::GeneratePoints(
+            points.begin(), numRadial,
+            bottomRadius, topRadius, height, sweep);
+
+        MeshGen::GenerateNormals(
+            normals.begin(), numRadial,
+            bottomRadius, topRadius, height, sweep);
+
+        _Log(topology, points, normals, out);
+
+        _LogFooter(out);
+    }
+
+    {
+        _LogHeader("9. Disk", out);
+
+        using MeshGen = GeomUtilDiskMeshGenerator;
+
+        const size_t numRadial = 10;
+        const float radius = 0.5;
+
+        out << "radius = "   << radius
+            << ", sweep = "      << sweep
+            << std::endl << std::endl;
+
+        const PxOsdMeshTopology topology =
+            MeshGen::GenerateTopology(numRadial, closedSweep);
+
+        const size_t numPoints =
+            MeshGen::ComputeNumPoints(numRadial, closedSweep);
+        VtVec3fArray points(numPoints);
+
+        const size_t numNormals =
+            MeshGen::ComputeNumNormals();
+        VtVec3fArray normals(numNormals);
+
+        MeshGen::GeneratePoints(
+            points.begin(), numRadial, radius, sweep);
+
+        MeshGen::GenerateNormals(
+            normals.begin());
+
+        _Log(topology, points, normals, out);
 
         _LogFooter(out);
     }
@@ -209,7 +401,7 @@ static bool TestTopologyAndPointGeneration(
 }
 
 int main()
-{ 
+{
     TfErrorMark mark;
 
     std::ofstream out1("generatedMeshes_closed.txt");

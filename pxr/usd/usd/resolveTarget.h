@@ -46,7 +46,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// is created for and can only be used in a UsdAttributeQuery for attributes 
 /// on this prim.
 ///
-/// \section Invalidation
+/// \section UsdResolveTarget_Invalidation Invalidation
 /// This object does not listen for change notification.  If a consumer is
 /// holding on to a UsdResolveTarget, it is their responsibility to dispose
 /// of it in response to a resync change to the associated prim. 

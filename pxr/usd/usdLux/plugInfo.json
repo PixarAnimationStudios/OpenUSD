@@ -14,6 +14,7 @@
                         "bases": [
                             "UsdGeomBoundable"
                         ], 
+                        "schemaIdentifier": "BoundableLightBase", 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdLuxCylinderLight": {
@@ -25,6 +26,7 @@
                             "UsdLuxBoundableLightBase"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "CylinderLight", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLuxDiskLight": {
@@ -36,6 +38,7 @@
                             "UsdLuxBoundableLightBase"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "DiskLight", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLuxDistantLight": {
@@ -46,6 +49,7 @@
                         "bases": [
                             "UsdLuxNonboundableLightBase"
                         ], 
+                        "schemaIdentifier": "DistantLight", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLuxDomeLight": {
@@ -56,6 +60,7 @@
                         "bases": [
                             "UsdLuxNonboundableLightBase"
                         ], 
+                        "schemaIdentifier": "DomeLight", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLuxDomeLight_1": {
@@ -66,6 +71,7 @@
                         "bases": [
                             "UsdLuxNonboundableLightBase"
                         ], 
+                        "schemaIdentifier": "DomeLight_1", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLuxGeometryLight": {
@@ -76,6 +82,7 @@
                         "bases": [
                             "UsdLuxNonboundableLightBase"
                         ], 
+                        "schemaIdentifier": "GeometryLight", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLuxLightAPI": {
@@ -87,6 +94,7 @@
                             "UsdAPISchemaBase"
                         ], 
                         "providesUsdShadeConnectableAPIBehavior": true, 
+                        "schemaIdentifier": "LightAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdLuxLightFilter": {
@@ -98,6 +106,7 @@
                             "UsdGeomXformable"
                         ], 
                         "providesUsdShadeConnectableAPIBehavior": true, 
+                        "schemaIdentifier": "LightFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLuxLightListAPI": {
@@ -108,6 +117,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "LightListAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdLuxListAPI": {
@@ -118,6 +128,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "ListAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdLuxMeshLightAPI": {
@@ -128,6 +139,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "MeshLightAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdLuxNonboundableLightBase": {
@@ -138,6 +150,7 @@
                         "bases": [
                             "UsdGeomXformable"
                         ], 
+                        "schemaIdentifier": "NonboundableLightBase", 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdLuxPluginLight": {
@@ -148,6 +161,7 @@
                         "bases": [
                             "UsdGeomXformable"
                         ], 
+                        "schemaIdentifier": "PluginLight", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLuxPluginLightFilter": {
@@ -158,6 +172,7 @@
                         "bases": [
                             "UsdLuxLightFilter"
                         ], 
+                        "schemaIdentifier": "PluginLightFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLuxPortalLight": {
@@ -169,6 +184,7 @@
                             "UsdLuxBoundableLightBase"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "PortalLight", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLuxRectLight": {
@@ -180,6 +196,7 @@
                             "UsdLuxBoundableLightBase"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "RectLight", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLuxShadowAPI": {
@@ -190,6 +207,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "ShadowAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdLuxShapingAPI": {
@@ -200,6 +218,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "ShapingAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdLuxSphereLight": {
@@ -211,6 +230,7 @@
                             "UsdLuxBoundableLightBase"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "SphereLight", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdLuxVolumeLightAPI": {
@@ -221,6 +241,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "VolumeLightAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdLux_DiscoveryPlugin": {

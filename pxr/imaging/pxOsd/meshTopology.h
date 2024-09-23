@@ -29,8 +29,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// or moved).
 ///
 /// To make changing certain properties easier, several methods are
-/// provided. WithScheme, WithHoleIndices, and WithSubdivTags will
-/// return copies of the object with certain specific properites changed.
+/// provided. WithScheme, WithOrientation, WithHoleIndices, and WithSubdivTags
+/// will return copies of the object with certain specific properites changed.
 ///
 /// \code{.cpp}
 /// PxOsdMeshTopology otherTopology =
@@ -151,6 +151,13 @@ public:
     /// compatibility, but has been deprecated.
     PXOSD_API PxOsdMeshTopology WithScheme(TfToken const& scheme) const {
         return PxOsdMeshTopology(scheme, GetOrientation(),
+                                 GetFaceVertexCounts(), GetFaceVertexIndices(),
+                                 GetHoleIndices(), GetSubdivTags());
+    }
+
+    /// Return a copy of the topology, changing only the orientation.
+    PXOSD_API PxOsdMeshTopology WithOrientation(TfToken const& orient) const {
+        return PxOsdMeshTopology(GetScheme(), orient,
                                  GetFaceVertexCounts(), GetFaceVertexIndices(),
                                  GetHoleIndices(), GetSubdivTags());
     }

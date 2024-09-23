@@ -265,14 +265,12 @@ UsdImagingCylinderAdapter::GetPoints(UsdPrim const& prim,
 
     VtVec3fArray points(numPoints);
 
-    const double sweepDegrees = 360;
     GeomUtilCylinderMeshGenerator::GeneratePoints(
         points.begin(),
         numRadial,
         radiusBottom,
         radiusTop,
         height,
-        sweepDegrees,
         &basis
     );
 

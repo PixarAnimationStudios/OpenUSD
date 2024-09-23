@@ -67,3 +67,13 @@ def Xform "Prim4"
     }
 }
 
+def Xform "BadLoopParams"
+{
+    # Loop params are invalid, because no knot at time 5.
+    # They should still be serialized and read back.
+    double kwerb.spline = {
+        loop: (5, 5, 1, 1, 0),
+        1: 14,
+        2: 22,
+    }
+}

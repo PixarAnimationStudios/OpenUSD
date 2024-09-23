@@ -25,17 +25,17 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/converter/from_python.hpp>
-#include <boost/python/converter/registered.hpp>
-#include <boost/python/converter/rvalue_from_python_data.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/refcount.hpp>
-#include <boost/python/scope.hpp>
-#include <boost/python/to_python_converter.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/converter/from_python.hpp"
+#include "pxr/external/boost/python/converter/registered.hpp"
+#include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/refcount.hpp"
+#include "pxr/external/boost/python/scope.hpp"
+#include "pxr/external/boost/python/to_python_converter.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include <string>
 
@@ -67,12 +67,12 @@ class Tf_PyEnumRegistry {
     }
     
     TF_API
-    void RegisterValue(TfEnum const &e, boost::python::object const &obj);
+    void RegisterValue(TfEnum const &e, pxr_boost::python::object const &obj);
 
     template <typename T>
     void RegisterEnumConversions() {
         // Register conversions to and from python.
-        boost::python::to_python_converter<T, _EnumToPython<T> >();
+        pxr_boost::python::to_python_converter<T, _EnumToPython<T> >();
         _EnumFromPython<T>();
     }
 
@@ -84,8 +84,8 @@ class Tf_PyEnumRegistry {
     template <typename T>
     struct _EnumFromPython {
         _EnumFromPython() {
-            boost::python::converter::registry::insert
-                (&convertible, &construct, boost::python::type_id<T>());
+            pxr_boost::python::converter::registry::insert
+                (&convertible, &construct, pxr_boost::python::type_id<T>());
         }
         static void *convertible(PyObject *obj) {
             TfHashMap<PyObject *, TfEnum, _ObjectHash> const &o2e =
@@ -101,10 +101,10 @@ class Tf_PyEnumRegistry {
             else
                 return (i != o2e.end() && i->second.IsA<T>()) ? obj : 0;
         }
-        static void construct(PyObject *src, boost::python::converter::
+        static void construct(PyObject *src, pxr_boost::python::converter::
                               rvalue_from_python_stage1_data *data) {
             void *storage =
-                ((boost::python::converter::
+                ((pxr_boost::python::converter::
                   rvalue_from_python_storage<T> *)data)->storage.bytes;
             new (storage) T(_GetEnumValue(src, (T *)0));
             data->convertible = storage;
@@ -147,7 +147,7 @@ TF_API_TEMPLATE_CLASS(TfSingleton<Tf_PyEnumRegistry>);
 
 // Private function used for __repr__ of wrapped enum types.
 TF_API
-std::string Tf_PyEnumRepr(boost::python::object const &self);
+std::string Tf_PyEnumRepr(pxr_boost::python::object const &self);
 
 // Private base class for types which are instantiated and exposed to python
 // for each registered enum type.
@@ -289,12 +289,12 @@ struct Tf_TypedPyEnumWrapper : Tf_PyEnumWrapper
     Tf_TypedPyEnumWrapper(std::string const &n, TfEnum const &val) :
         Tf_PyEnumWrapper(n, val) {}
 
-    static boost::python::object GetValueFromName(const std::string& name) {
+    static pxr_boost::python::object GetValueFromName(const std::string& name) {
         bool found = false;
         const TfEnum value = TfEnum::GetValueFromName<T>(name, &found);
         return found
-            ? boost::python::object(value)
-            : boost::python::object();
+            ? pxr_boost::python::object(value)
+            : pxr_boost::python::object();
     }
 };
 
@@ -311,9 +311,9 @@ std::string Tf_PyCleanEnumName(std::string name,
 // Adds attribute of given name with given value to given scope.
 // Issues a coding error if attribute by that name already existed.
 TF_API
-void Tf_PyEnumAddAttribute(boost::python::scope &s,
+void Tf_PyEnumAddAttribute(pxr_boost::python::scope &s,
                            const std::string &name,
-                           const boost::python::object &value);
+                           const pxr_boost::python::object &value);
 
 /// \class TfPyWrapEnum
 ///
@@ -323,7 +323,7 @@ void Tf_PyEnumAddAttribute(boost::python::scope &s,
 /// TfEnum system, and potentially providing automatic wrapping by using names
 /// registered with the \a TfEnum system and by making some assumptions about
 /// the way we structure our code.  Enums that are not registered with TfEnum
-/// may be manually wrapped using boost::python::enum_ instead.
+/// may be manually wrapped using pxr_boost::python::enum_ instead.
 ///
 /// Example usage.  For an enum that looks like this:
 /// \code
@@ -363,8 +363,8 @@ template <typename T, bool IsScopedEnum = !std::is_convertible<T, int>::value>
 struct TfPyWrapEnum {
 
 private:
-    typedef boost::python::class_<
-        Tf_TypedPyEnumWrapper<T>, boost::python::bases<Tf_PyEnumWrapper> >
+    typedef pxr_boost::python::class_<
+        Tf_TypedPyEnumWrapper<T>, pxr_boost::python::bases<Tf_PyEnumWrapper> >
     _EnumPyClassType;
 
 public:
@@ -375,7 +375,7 @@ public:
     /// stripped.
     explicit TfPyWrapEnum( std::string const &name = std::string())
     {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
         const bool explicitName = !name.empty();
 
@@ -447,7 +447,7 @@ public:
     /// If no explicit names have been registered, this will export the TfEnum
     /// registered names and values (if any).
     void _ExportValues(bool stripPackageName, _EnumPyClassType &enumClass) {
-        boost::python::list valueList;
+        pxr_boost::python::list valueList;
 
         for (const std::string& name : TfEnum::GetAllNames<T>()) {
             bool success = false;
@@ -461,7 +461,7 @@ public:
 
             // convert value to python.
             Tf_TypedPyEnumWrapper<T> wrappedValue(cleanedName, enumValue);
-            boost::python::object pyValue(wrappedValue);
+            pxr_boost::python::object pyValue(wrappedValue);
 
             // register it as the python object for this value.
             Tf_PyEnumRegistry::GetInstance().RegisterValue(enumValue, pyValue);
@@ -470,11 +470,11 @@ public:
             std::string valueName = wrappedValue.GetName();
             if (IsScopedEnum) {
                 // If scoped enum, enum values appear on the enumClass ...
-                boost::python::scope s(enumClass);
+                pxr_boost::python::scope s(enumClass);
                 Tf_PyEnumAddAttribute(s, valueName, pyValue);
             } else {
                 // ... otherwise, enum values appear on the enclosing scope.
-                boost::python::scope s;
+                pxr_boost::python::scope s;
                 Tf_PyEnumAddAttribute(s, valueName, pyValue);
             }
 
@@ -482,7 +482,7 @@ public:
         }
 
         // Add a tuple of all the values to the enum class.
-        enumClass.setattr("allValues", boost::python::tuple(valueList));
+        enumClass.setattr("allValues", pxr_boost::python::tuple(valueList));
     }
 
 };

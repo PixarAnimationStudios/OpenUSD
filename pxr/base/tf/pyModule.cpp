@@ -24,23 +24,23 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/python/docstring_options.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/handle.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/object/function.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/raw_function.hpp>
-#include <boost/python/scope.hpp>
+#include "pxr/external/boost/python/docstring_options.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/object/function.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/raw_function.hpp"
+#include "pxr/external/boost/python/scope.hpp"
 
 #include <string>
 
 using std::string;
 
-using namespace boost::python;
-
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 class Tf_ModuleProcessor {
 public:
@@ -97,12 +97,12 @@ private:
     {
         if (PyObject_HasAttrString(obj.ptr(), "__dict__")) {
             // In python 3 dict.items() returns a proxy view object, not a list.
-            // boost::python::extract<list> fails on these views, and raises:
+            // pxr_boost::python::extract<list> fails on these views, and raises:
             // 
             // TypeError: Expecting an object of type list; got an object of type
             // dict_items instead
             //
-            // A workaround is to use the boost::python::list constructor
+            // A workaround is to use the pxr_boost::python::list constructor
             object items_view = obj.attr("__dict__").attr("items")();
             list items(items_view);
             size_t lenItems = len(items);
@@ -207,8 +207,8 @@ public:
                 fullNamePrefix = &localPrefix;
             }
 
-            ret = boost::python::detail::make_raw_function(
-                boost::python::objects::py_function(
+            ret = pxr_boost::python::detail::make_raw_function(
+                pxr_boost::python::objects::py_function(
                     _InvokeWithErrorHandling(
                         fn, *fullNamePrefix + "." + name, *fullNamePrefix),
                     boost::mpl::vector1<PyObject *>(),
@@ -410,10 +410,10 @@ void Tf_PyInitWrapModule(
     // Provide a way to find the full mfb name of the package.  Can't use the
     // TfToken, because when we get here in loading Tf, TfToken has not yet been
     // wrapped.
-    boost::python::scope().attr("__MFB_FULL_PACKAGE_NAME") = packageName;
+    pxr_boost::python::scope().attr("__MFB_FULL_PACKAGE_NAME") = packageName;
 
     // Disable docstring auto signatures.
-    boost::python::docstring_options docOpts(true /*show user-defined*/,
+    pxr_boost::python::docstring_options docOpts(true /*show user-defined*/,
                                              false /*show signatures*/);
 
     // Do the wrapping.

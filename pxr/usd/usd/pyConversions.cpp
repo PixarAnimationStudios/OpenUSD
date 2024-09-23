@@ -21,7 +21,7 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/python/object.hpp>
+#include "pxr/external/boost/python/object.hpp"
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -39,7 +39,7 @@ UsdVtValueToPython(const VtValue &value)
 VtValue 
 UsdPythonToSdfType(TfPyObjWrapper pyVal, SdfValueTypeName const &targetType)
 {
-    using namespace boost::python;
+    using namespace pxr_boost::python;
 
     // Extract VtValue from python object.
     VtValue val;
@@ -69,7 +69,7 @@ UsdPythonToMetadataValue(
     const TfToken &key, const TfToken &keyPath, 
     TfPyObjWrapper pyVal, VtValue *result)
 {
-    using namespace boost::python;
+    using namespace pxr_boost::python;
 
     SdfSchema const &schema = SdfSchema::GetInstance();
 

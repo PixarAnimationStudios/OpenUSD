@@ -45,7 +45,7 @@ Use :ref:`toolset:usdview` to visualize and inspect the stage.
 
    .. image:: http://openusd.org/images/tut_helloworld_sphere_1.png
 
-#. You can refine the geometry with the :menuselection:`View --> Complexity`
+#. You can refine the geometry with the :menuselection:`Display --> Complexity`
    menu item or use the hotkeys :kbd:`Ctrl-+` and :kbd:`Ctrl--` to increase or
    decrease the refinement.
 

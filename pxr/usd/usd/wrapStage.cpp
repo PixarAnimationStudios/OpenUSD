@@ -24,14 +24,14 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/makePyConstructor.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 using std::string;
 
-using namespace boost::python;
-
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 class Usd_PcpCacheAccess
 {
@@ -48,7 +48,7 @@ namespace {
 
 static bool
 _Export(const UsdStagePtr &self, const std::string& filename, 
-        bool addSourceFileComment, const boost::python::dict& dict)
+        bool addSourceFileComment, const pxr_boost::python::dict& dict)
 {
     SdfLayer::FileFormatArguments args;
     std::string errMsg;
@@ -149,26 +149,26 @@ _GetEditTargetForLocalLayer(const UsdStagePtr &self,
 static void
 _ExpandPopulationMask(UsdStage &self,
                       Usd_PrimFlagsPredicate const &traversal,
-                      boost::python::object pyRelPred,
-                      boost::python::object pyAttrPred)
+                      pxr_boost::python::object pyRelPred,
+                      pxr_boost::python::object pyAttrPred)
 {
     using RelPredicate = std::function<bool (UsdRelationship const &)>;
     using AttrPredicate = std::function<bool (UsdAttribute const &)>;
     RelPredicate relPred;
     AttrPredicate attrPred;
     if (!pyRelPred.is_none()) {
-        relPred = boost::python::extract<RelPredicate>(pyRelPred);
+        relPred = pxr_boost::python::extract<RelPredicate>(pyRelPred);
     }
     if (!pyAttrPred.is_none()) {
-        attrPred = boost::python::extract<AttrPredicate>(pyAttrPred);
+        attrPred = pxr_boost::python::extract<AttrPredicate>(pyAttrPred);
     }
     return self.ExpandPopulationMask(traversal, relPred, attrPred);
 }
 
 static void
 _ExpandPopulationMaskDefault(UsdStage &self,
-                             boost::python::object pyRelPred,
-                             boost::python::object pyAttrPred)
+                             pxr_boost::python::object pyRelPred,
+                             pxr_boost::python::object pyAttrPred)
 {
     return _ExpandPopulationMask(
         self, UsdPrimDefaultPredicate, pyRelPred, pyAttrPred);
@@ -181,7 +181,7 @@ _GetColorConfigFallbacks()
     TfToken colorManagementSystem;
     UsdStage::GetColorConfigFallbacks(&colorConfiguration, 
                                       &colorManagementSystem);
-    return boost::python::make_tuple(colorConfiguration, colorManagementSystem);
+    return pxr_boost::python::make_tuple(colorConfiguration, colorManagementSystem);
 }
 
 } // anonymous namespace 
@@ -500,7 +500,7 @@ void wrapUsdStage()
         .def("Export", &_Export,
              (arg("filename"), 
               arg("addSourceFileComment")=true,
-              arg("args") = boost::python::dict()))
+              arg("args") = pxr_boost::python::dict()))
 
         .def("ExportToString", _ExportToString,
              arg("addSourceFileComment")=true)

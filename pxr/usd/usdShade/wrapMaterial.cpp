@@ -15,13 +15,13 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <string>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -145,7 +145,7 @@ void wrapUsdShadeMaterial()
 #include "pxr/usd/usd/pyEditContext.h"
 #include "pxr/usd/usdShade/utils.h"
 
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/tuple.hpp"
 
 namespace {
 
@@ -165,7 +165,7 @@ _WrapComputeSurfaceSource(const UsdShadeMaterial &self,
     TfToken sourceName;
     UsdShadeAttributeType sourceType;
     source = self.ComputeSurfaceSource({renderContext}, &sourceName, &sourceType);
-    return boost::python::make_tuple (source, sourceName, sourceType);
+    return pxr_boost::python::make_tuple (source, sourceName, sourceType);
 }
 
 static object
@@ -176,7 +176,7 @@ _WrapComputeDisplacementSource(const UsdShadeMaterial &self,
     TfToken sourceName;
     UsdShadeAttributeType sourceType;
     source = self.ComputeDisplacementSource({renderContext}, &sourceName, &sourceType);
-    return boost::python::make_tuple (source, sourceName, sourceType);
+    return pxr_boost::python::make_tuple (source, sourceName, sourceType);
 }
 
 static object
@@ -187,7 +187,7 @@ _WrapComputeVolumeSource(const UsdShadeMaterial &self,
     TfToken sourceName;
     UsdShadeAttributeType sourceType;
     source = self.ComputeVolumeSource({renderContext}, &sourceName, &sourceType);
-    return boost::python::make_tuple (source, sourceName, sourceType);
+    return pxr_boost::python::make_tuple (source, sourceName, sourceType);
 }
 
 WRAP_CUSTOM {

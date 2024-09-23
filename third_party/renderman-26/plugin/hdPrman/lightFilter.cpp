@@ -83,7 +83,8 @@ HdPrmanLightFilter::Sync(HdSceneDelegate *sceneDelegate,
 #endif
         std::lock_guard<std::mutex> lock(_syncToRileyMutex);
         _rileyIsInSync = false;
-        _SyncToRileyWithLock(sceneDelegate, param->AcquireRiley());
+        _SyncToRileyWithLock(
+            sceneDelegate, param, param->AcquireRiley());
     }
 
     *dirtyBits = HdChangeTracker::Clean;
@@ -92,24 +93,31 @@ HdPrmanLightFilter::Sync(HdSceneDelegate *sceneDelegate,
 void
 HdPrmanLightFilter::SyncToRiley(
     HdSceneDelegate *sceneDelegate,
+    HdPrman_RenderParam *param,
     riley::Riley *riley)
 {
     std::lock_guard<std::mutex> lock(_syncToRileyMutex);
     if (!_rileyIsInSync) {
-        _SyncToRileyWithLock(sceneDelegate, riley);
+        _SyncToRileyWithLock(sceneDelegate, param, riley);
     }
 }
 
 void
 HdPrmanLightFilter::_SyncToRileyWithLock(
     HdSceneDelegate *sceneDelegate,
+    HdPrman_RenderParam * param,
     riley::Riley *riley)
 {
     SdfPath const& id = GetId();
 
     // Sample transform
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
-    sceneDelegate->SampleTransform(id, &xf);
+    sceneDelegate->SampleTransform(id,
+#if HD_API_VERSION >= 68
+                                   param->GetShutterInterval()[0],
+                                   param->GetShutterInterval()[1],
+#endif
+                                   &xf);
     TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>
         xf_rt_values(xf.count);
     for (size_t i=0; i < xf.count; ++i) {

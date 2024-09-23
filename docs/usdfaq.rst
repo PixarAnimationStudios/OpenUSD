@@ -694,7 +694,7 @@ Build and Runtime Issues
 ========================
 
 How do I use the ``TF_DEBUG`` mechanism?
-####################################
+########################################
 
 The ``TF_DEBUG`` mechanism is a powerful tool for debugging USD applications. It
 allows you to enable and disable debugging output at runtime, and to control

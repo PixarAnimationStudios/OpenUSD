@@ -10,13 +10,13 @@
 #include "pxr/usd/usd/pyConversions.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include <boost/python.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/def.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/make_constructor.hpp"
+#include "pxr/external/boost/python/def.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 static UsdUtilsSparseAttrValueWriter *
 __init__(const UsdAttribute &attr, 
@@ -75,6 +75,6 @@ void wrapSparseValueWriter()
     ;
 
     // Register to and from vector conversions.
-    boost::python::to_python_converter<std::vector<UsdUtilsSparseAttrValueWriter>,
+    pxr_boost::python::to_python_converter<std::vector<UsdUtilsSparseAttrValueWriter>,
         TfPySequenceToPython<std::vector<UsdUtilsSparseAttrValueWriter> > >();
 }

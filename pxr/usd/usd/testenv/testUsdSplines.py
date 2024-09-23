@@ -184,6 +184,33 @@ class TestUsdSplines(unittest.TestCase):
         self._DoSerializationTest(
             "ValueTypes.TimeCode", spline, Sdf.ValueTypeNames.TimeCode)
 
+    def test_Serialization_Loops(self):
+        """
+        Test serialization of inner loop params.
+        """
+        spline = Ts.Spline()
+        spline.SetKnot(Ts.Knot(
+            time = 1,
+            value = 5,
+            nextInterp = Ts.InterpCurve,
+            preTanWidth = 1,
+            preTanSlope = 1,
+            postTanWidth = 1,
+            postTanSlope = 1))
+        lp = Ts.LoopParams()
+        lp.protoStart = 1
+        lp.protoEnd = 10
+        lp.numPostLoops = 1
+        spline.SetInnerLoopParams(lp)
+        self._DoSerializationTest("Loops.Valid", spline)
+
+        # In this version, there is no knot at the prototype start time, so the
+        # loop params are invalid.  They should be serialized and read back
+        # anyway.
+        lp.protoStart = 2
+        spline.SetInnerLoopParams(lp)
+        self._DoSerializationTest("Loops.Invalid", spline)
+
     def _DoLayerOffsetTest(self, case, attrType, timeValued, scale):
         """
         Test writing and reading splines across layer offsets.

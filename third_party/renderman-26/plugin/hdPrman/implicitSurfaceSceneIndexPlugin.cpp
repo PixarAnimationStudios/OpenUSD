@@ -6,6 +6,10 @@
 
 #include "hdPrman/implicitSurfaceSceneIndexPlugin.h"
 
+#if PXR_VERSION >= 2208
+
+#include "hdPrman/tokens.h"
+
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -23,8 +27,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((sceneIndexPluginName, "HdPrman_ImplicitSurfaceSceneIndexPlugin"))
 );
-
-static const char * const _pluginDisplayName = "Prman";
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -61,24 +63,36 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
                 HdPrimTypeTokens->cube, toMeshSrc,
                 HdPrimTypeTokens->cone, toMeshSrc,
                 HdPrimTypeTokens->cylinder, toMeshSrc,
+#if PXR_VERSION >= 2411
+                HdPrimTypeTokens->capsule, toMeshSrc,
+                HdPrimTypeTokens->plane, toMeshSrc);
+#else
                 HdPrimTypeTokens->capsule, toMeshSrc);
+#endif
     } else {
-        // Cone and cylinder need transforms updated, and cube and capsule still
-        // need to be tessellated.
+        // Cone and cylinder need transforms updated, and cube and capsule
+        // and plane still need to be tessellated.
         inputArgs =
             HdRetainedContainerDataSource::New(
                 HdPrimTypeTokens->cone, axisToTransformSrc,
                 HdPrimTypeTokens->cylinder, axisToTransformSrc,
                 HdPrimTypeTokens->cube, toMeshSrc,
+#if PXR_VERSION >= 2411
+                HdPrimTypeTokens->capsule, toMeshSrc,
+                HdPrimTypeTokens->plane, toMeshSrc);
+#else
                 HdPrimTypeTokens->capsule, toMeshSrc);
+#endif
     }
 
-    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        _pluginDisplayName,
-        _tokens->sceneIndexPluginName,
-        inputArgs,
-        insertionPhase,
-        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    for( auto const& pluginDisplayName : HdPrman_GetPluginDisplayNames() ) {
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            pluginDisplayName,
+            _tokens->sceneIndexPluginName,
+            inputArgs,
+            insertionPhase,
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    }
 }
 
 HdPrman_ImplicitSurfaceSceneIndexPlugin::
@@ -93,3 +107,5 @@ HdPrman_ImplicitSurfaceSceneIndexPlugin::_AppendSceneIndex(
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2208

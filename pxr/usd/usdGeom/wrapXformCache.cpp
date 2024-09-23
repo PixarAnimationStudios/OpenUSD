@@ -7,11 +7,11 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 
-#include <boost/python/class.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/class.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 

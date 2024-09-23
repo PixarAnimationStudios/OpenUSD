@@ -4,7 +4,7 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include <boost/python/def.hpp>
+#include "pxr/external/boost/python/def.hpp"
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -21,10 +21,11 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec4d.h"
 
-using namespace boost::python;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void wrapMath()
 {    
@@ -32,6 +33,10 @@ void wrapMath()
     def("IsClose", (bool (*)(double, double, double))GfIsClose);
     def("RadiansToDegrees", GfRadiansToDegrees);
     def("DegreesToRadians", GfDegreesToRadians);
+
+    def("SmoothStep", GfSmoothStep, 
+        (arg("slope0") = 0.0,
+         arg("slope1") = 0.0));
 
     def("Sqr", GfSqr<double>);
     def("Sqr", GfSqr<int>);

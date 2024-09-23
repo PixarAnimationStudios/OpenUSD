@@ -40,6 +40,7 @@ protected:
 
     class Cmd {
     public:
+        virtual ~Cmd() = default;
         /// returns true when need to pause/draw
         virtual bool Run(HdSt_TestDriver *driver) = 0;
     };

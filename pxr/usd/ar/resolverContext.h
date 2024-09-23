@@ -290,7 +290,7 @@ private:
         {
  #ifdef PXR_PYTHON_SUPPORT_ENABLED
             TfPyLock lock;
-            return boost::python::object(_context);
+            return pxr_boost::python::object(_context);
 #else
             return {};
 #endif

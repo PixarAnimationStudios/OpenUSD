@@ -30,9 +30,10 @@ TF_DEFINE_PUBLIC_TOKENS(HdExtComputationPrimvarsSchemaTokens,
     HD_EXT_COMPUTATION_PRIMVARS_SCHEMA_TOKENS);
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
+// --(END CUSTOM CODE: Schema Methods)--
 
 TfTokenVector
-HdExtComputationPrimvarsSchema::GetExtComputationPrimvarNames()
+HdExtComputationPrimvarsSchema::GetExtComputationPrimvarNames() const
 {
     if (_container) {
         return _container->GetNames();
@@ -42,13 +43,21 @@ HdExtComputationPrimvarsSchema::GetExtComputationPrimvarNames()
 }
 
 HdExtComputationPrimvarSchema
-HdExtComputationPrimvarsSchema::GetPrimvar(const TfToken &name)
+HdExtComputationPrimvarsSchema::GetExtComputationPrimvar(const TfToken &name) const
 {
     return HdExtComputationPrimvarSchema(
         _GetTypedDataSource<HdContainerDataSource>(name));
 }
 
-// --(END CUSTOM CODE: Schema Methods)--
+/*static*/
+HdContainerDataSourceHandle
+HdExtComputationPrimvarsSchema::BuildRetained(
+    const size_t count,
+    const TfToken * const names,
+    const HdDataSourceBaseHandle * const values)
+{
+    return HdRetainedContainerDataSource::New(count, names, values);
+}
 
 /*static*/
 HdExtComputationPrimvarsSchema

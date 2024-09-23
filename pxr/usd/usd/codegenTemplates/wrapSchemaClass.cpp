@@ -18,16 +18,19 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <string>
-
-using namespace boost::python;
 
 {% if useExportAPI %}
 {{ namespaceUsing }}
 
+using namespace pxr_boost::python;
+
 namespace {
+
+{% else %}
+using namespace pxr_boost::python;
 
 {% endif %}
 #define WRAP_CUSTOM                                                     \

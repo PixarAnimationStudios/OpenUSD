@@ -14,6 +14,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "Base", 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdContrivedDerived": {
@@ -24,6 +25,7 @@
                         "bases": [
                             "UsdContrivedBase"
                         ], 
+                        "schemaIdentifier": "Derived", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdContrivedDerivedNonAppliedAPI": {
@@ -34,6 +36,7 @@
                         "bases": [
                             "UsdContrivedNonAppliedAPI"
                         ], 
+                        "schemaIdentifier": "DerivedNonAppliedAPI", 
                         "schemaKind": "nonAppliedAPI"
                     }, 
                     "UsdContrivedEmptyMultipleApplyAPI": {
@@ -44,6 +47,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "EmptyMultipleApplyAPI", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "UsdContrivedMultipleApplyAPI": {
@@ -76,6 +80,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "MultipleApplyAPI", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "UsdContrivedMultipleApplyAPI_1": {
@@ -108,6 +113,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "MultipleApplyAPI_1", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "UsdContrivedNonAppliedAPI": {
@@ -118,6 +124,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "NonAppliedAPI", 
                         "schemaKind": "nonAppliedAPI"
                     }, 
                     "UsdContrivedPublicMultipleApplyAPI": {
@@ -128,6 +135,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PublicMultipleApplyAPI", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "UsdContrivedSingleApplyAPI": {
@@ -146,6 +154,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "SingleApplyAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdContrivedSingleApplyAPI_1": {
@@ -164,6 +173,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "SingleApplyAPI_1", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdContrivedTestHairman": {
@@ -175,6 +185,7 @@
                             "UsdTyped"
                         ], 
                         "extraInfo": "ExtraInfo", 
+                        "schemaIdentifier": "TestPxHairman", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdContrivedTestHairman_1": {
@@ -186,6 +197,7 @@
                             "UsdTyped"
                         ], 
                         "extraInfo": "ExtraInfo", 
+                        "schemaIdentifier": "TestPxHairman_1", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdContrivedTestNoVersion0_2": {
@@ -196,6 +208,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "TestNoVersion0_2", 
                         "schemaKind": "concreteTyped"
                     }
                 }

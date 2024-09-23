@@ -274,7 +274,7 @@ _PopulateLightFilterNodes(
         if (HdSprim *sprim = sceneDelegate->GetRenderIndex().GetSprim(
             HdPrimTypeTokens->lightFilter, filterPath)) {
             if (auto* lightFilter = dynamic_cast<HdPrmanLightFilter*>(sprim)) {
-                lightFilter->SyncToRiley(sceneDelegate, riley);
+                lightFilter->SyncToRiley(sceneDelegate, param, riley);
                 coordsysIds->push_back(lightFilter->GetCoordSysId());
             }
         } else {
@@ -798,7 +798,12 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
 
         // Sample transform
         HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
-        sceneDelegate->SampleTransform(id, &xf);
+        sceneDelegate->SampleTransform(id,
+#if HD_API_VERSION >= 68
+                                       param->GetShutterInterval()[0],
+                                       param->GetShutterInterval()[1],
+#endif
+                                       &xf);
 
         GfMatrix4d geomMat(1.0);
 

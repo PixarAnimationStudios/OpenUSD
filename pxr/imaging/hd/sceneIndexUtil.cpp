@@ -156,7 +156,7 @@ _RecurseInputScenes(HdSceneIndexBasePtr const &sceneIndex,
         return;
     }
 
-    for (HdSceneIndexBasePtr const &inputScene
+    for (HdSceneIndexBaseRefPtr const &inputScene
              : filteringSceneIndex->GetInputScenes()) {
         _RecurseInputScenes(
             inputScene,

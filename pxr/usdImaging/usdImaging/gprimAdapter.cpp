@@ -478,6 +478,10 @@ UsdImagingGprimAdapter::ProcessPropertyChange(UsdPrim const& prim,
         return HdChangeTracker::DirtyMaterialId |
                HdChangeTracker::DirtyPrimvar;
     }
+    // Material property edits should invalidate primvars.
+    if (TfStringStartsWith(propertyName.GetString(), "inputs:")) {
+        return HdChangeTracker::DirtyPrimvar;
+    }
     
     // Note: This doesn't handle "built-in" attributes that are treated as
     // primvars. That responsibility falls on the child adapter.

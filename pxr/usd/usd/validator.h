@@ -110,9 +110,12 @@ using UsdValidatePrimTaskFn = std::function<UsdValidationErrorVector(
 /// registered and cached in the UsdValidationRegistry.  UsdValidator can
 /// consist of any one of the 3 testing tasks: LayerTestingTask,
 /// StageTestingTask or PrimTestingTask, which correspond to testing the given
-/// SdfLayer, an entire UsdStage or a UsdPrim respectively. UsdValidator
-/// instances are immutable and non-copyable.
+/// SdfLayer, an entire UsdStage or a UsdPrim respectively. 
 ///
+/// UsdValidator instances are immutable and non-copyable. Note that all 
+/// validators which are registered with the UsdValidationRegistry are immortal.
+///
+/// \sa UsdValidationRegistry
 class UsdValidator
 {
 public:
@@ -215,6 +218,12 @@ private:
 /// If client failed to provide isSuite metadata for a UsdValidatorSuite
 /// instance then the validatorSuite will not be registered, and client will
 /// appropriately be warned.
+///
+/// UsdValidatorSuite instances are immutable and non-copyable. Note that all 
+/// validator suites which are registered with the UsdValidationRegistry are 
+/// immortal.
+///
+/// \sa UsdValidationRegistry
 class UsdValidatorSuite
 {
 public:

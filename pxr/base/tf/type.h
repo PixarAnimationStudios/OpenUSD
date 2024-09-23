@@ -345,7 +345,7 @@ public:
     ///
     /// \see Barrett, Cassels, Haahr, Moon, Playford, Withington.
     ///   "A Monotonic Superclass Linearization for Dylan."  OOPSLA 96.
-    ///   http://www.webcom.com/haahr/dylan/linearization-oopsla96.html
+    ///   https://opendylan.org/_static/c3-linearization.pdf
     ///
     TF_API
     void GetAllAncestorTypes(std::vector<TfType> *result) const;
@@ -404,7 +404,7 @@ public:
     ///
     /// This is what the C++ sizeof operator returns for the type, so this
     /// value is not very useful for Python types (it will always be
-    /// sizeof(boost::python::object)).
+    /// sizeof(pxr_boost::python::object)).
     ///
     TF_API
     size_t GetSizeof() const;

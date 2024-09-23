@@ -13,6 +13,7 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hf/diagnostic.h"
 #include "RiTypesHelper.h"
 
@@ -39,6 +40,9 @@ void
 HdPrmanCoordSys::_ResetCoordSys(HdPrman_RenderParam *param)
 {
     riley::Riley *riley = param->AcquireRiley();
+    if(!riley) {
+        return;
+    }
     if (_coordSysId != riley::CoordinateSystemId::InvalidId()) {
         riley->DeleteCoordinateSystem(_coordSysId);
         _coordSysId = riley::CoordinateSystemId::InvalidId();
@@ -59,13 +63,23 @@ HdPrmanCoordSys::Sync(HdSceneDelegate *sceneDelegate,
     const HdDirtyBits bits = *dirtyBits;
 
     riley::Riley *riley = param->AcquireRiley();
+    if(!riley) {
+        return;
+    }
 
+#if PXR_VERSION >= 2308
     HdCoordSys::Sync(sceneDelegate, renderParam, dirtyBits);
+#endif
 
     if (bits & AllDirty) {
         // Sample transform
         HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
-        sceneDelegate->SampleTransform(id, &xf);
+        sceneDelegate->SampleTransform(id,
+#if HD_API_VERSION >= 68
+                                       param->GetShutterInterval()[0],
+                                       param->GetShutterInterval()[1],
+#endif
+                                       &xf);
         TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>
             xf_rt_values(xf.count);
         for (size_t i=0; i < xf.count; ++i) {
@@ -82,10 +96,11 @@ HdPrmanCoordSys::Sync(HdSceneDelegate *sceneDelegate,
         if (_coordSysId != riley::CoordinateSystemId::InvalidId()) {
             riley->ModifyCoordinateSystem(_coordSysId, &xform, &attrs);
         } else {
-          _coordSysId = riley->CreateCoordinateSystem(
-              riley::UserId(
-                  stats::AddDataLocation(id.GetText()).GetValue()),
-              xform, attrs);
+            _coordSysId =
+                riley->CreateCoordinateSystem(
+                    riley::UserId(
+                        stats::AddDataLocation(id.GetText()).GetValue()),
+                    xform, attrs);
         }
     }
 

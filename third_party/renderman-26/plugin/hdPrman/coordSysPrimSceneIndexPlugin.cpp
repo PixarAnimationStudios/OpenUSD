@@ -6,6 +6,10 @@
 
 #include "hdPrman/coordSysPrimSceneIndexPlugin.h"
 
+#if PXR_VERSION >= 2308
+
+#include "hdPrman/tokens.h"
+
 #include "pxr/imaging/hdsi/coordSysPrimSceneIndex.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 
@@ -28,14 +32,16 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 1000;
+    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 900;
 
-    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        _pluginDisplayName,
-        _tokens->sceneIndexPluginName,
-        nullptr,
-        insertionPhase,
-        HdSceneIndexPluginRegistry::InsertionOrderAtEnd);
+    for( auto const& pluginDisplayName : HdPrman_GetPluginDisplayNames()) {
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            pluginDisplayName,
+            _tokens->sceneIndexPluginName,
+            nullptr,
+            insertionPhase,
+            HdSceneIndexPluginRegistry::InsertionOrderAtEnd);
+    }
 }
 
 HdPrman_CoordSysPrimSceneIndexPlugin::
@@ -50,3 +56,5 @@ HdPrman_CoordSysPrimSceneIndexPlugin::_AppendSceneIndex(
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2308

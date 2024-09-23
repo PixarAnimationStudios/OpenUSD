@@ -14,6 +14,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "ValidType_1", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdFallbackPrimTypesValidType_2": {
@@ -24,6 +25,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "ValidType_2", 
                         "schemaKind": "concreteTyped"
                     }
                 }

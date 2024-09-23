@@ -38,6 +38,7 @@
                         "bases": [
                             "UsdSchemaBase"
                         ], 
+                        "schemaIdentifier": "APISchemaBase", 
                         "schemaKind": "abstractBase"
                     }, 
                     "UsdClipsAPI": {
@@ -48,6 +49,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "ClipsAPI", 
                         "schemaKind": "nonAppliedAPI"
                     }, 
                     "UsdCollectionAPI": {
@@ -58,6 +60,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "CollectionAPI", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "UsdModelAPI": {
@@ -68,6 +71,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "ModelAPI", 
                         "schemaKind": "nonAppliedAPI"
                     }, 
                     "UsdSchemaBase": {
@@ -84,6 +88,7 @@
                         "bases": [
                             "UsdSchemaBase"
                         ], 
+                        "schemaIdentifier": "Typed", 
                         "schemaKind": "abstractBase"
                     }, 
                     "UsdUsdFileFormat": {
@@ -148,6 +153,9 @@
                 "Validators": {
                     "CompositionErrorTest": {
                         "doc": "Validator aims at providing all composition errors, which were generated while composing the stage."
+                    }, 
+                    "StageMetadataChecker": {
+                        "doc": "Stages that can be consumed as referencable assets must have a valid 'defaultPrim' specified."
                     }, 
                     "keywords": [
                         "UsdCoreValidators"

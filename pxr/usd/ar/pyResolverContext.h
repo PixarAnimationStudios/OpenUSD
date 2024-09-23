@@ -11,7 +11,7 @@
 /// Macros for creating Python bindings for objects used with 
 /// ArResolverContext.
 
-#include <boost/python/implicit.hpp>
+#include "pxr/external/boost/python/implicit.hpp"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/resolverContext.h"
@@ -32,7 +32,7 @@ template <class Context>
 void 
 ArWrapResolverContextForPython()
 {
-    boost::python::implicitly_convertible<Context, ArResolverContext>();
+    pxr_boost::python::implicitly_convertible<Context, ArResolverContext>();
 };
 
 #endif //doxygen

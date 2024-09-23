@@ -4,11 +4,11 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/reference_existing_object.hpp>
-#include <boost/python/return_value_policy.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/reference_existing_object.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/assetInfo.h"
@@ -20,9 +20,9 @@
 
 #include <boost/noncopyable.hpp>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 class Ar_PyAnnotatedBoolResult
     : public TfPyAnnotatedBoolResult<std::string>

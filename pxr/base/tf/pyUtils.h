@@ -26,11 +26,11 @@
 #include <string>
 #include <vector>
 
-#include <boost/python/dict.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/handle.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/type_id.hpp>
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/type_id.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -46,7 +46,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_API bool TfPyIsInitialized();
 
 /// Raises a Python \c IndexError with the given error \p msg and throws a
-/// boost::python::error_already_set exception. Callers must hold the GIL
+/// pxr_boost::python::error_already_set exception. Callers must hold the GIL
 /// before calling this function.
 TF_API void TfPyThrowIndexError(const char *msg);
 
@@ -57,7 +57,7 @@ inline void TfPyThrowIndexError(std::string const &msg)
 }
 
 /// Raises a Python \c RuntimeError with the given error \p msg and throws a
-/// boost::python::error_already_set exception. Callers must hold the GIL
+/// pxr_boost::python::error_already_set exception. Callers must hold the GIL
 /// before calling this function.
 TF_API void TfPyThrowRuntimeError(const char *msg);
 
@@ -68,7 +68,7 @@ inline void TfPyThrowRuntimeError(std::string const &msg)
 }
 
 /// Raises a Python \c StopIteration with the given error \p msg and throws a
-/// boost::python::error_already_set exception. Callers must hold the GIL
+/// pxr_boost::python::error_already_set exception. Callers must hold the GIL
 /// before calling this function.
 TF_API void TfPyThrowStopIteration(const char *msg);
 
@@ -79,7 +79,7 @@ inline void TfPyThrowStopIteration(std::string const &msg)
 }
 
 /// Raises a Python \c KeyError with the given error \p msg and throws a
-/// boost::python::error_already_set exception. Callers must hold the GIL
+/// pxr_boost::python::error_already_set exception. Callers must hold the GIL
 /// before calling this function.
 TF_API void TfPyThrowKeyError(const char *msg);
 
@@ -90,7 +90,7 @@ inline void TfPyThrowKeyError(std::string const &msg)
 }
 
 /// Raises a Python \c ValueError with the given error \p msg and throws a
-/// boost::python::error_already_set exception. Callers must hold the GIL
+/// pxr_boost::python::error_already_set exception. Callers must hold the GIL
 /// before calling this function.
 TF_API void TfPyThrowValueError(const char *msg);
 
@@ -101,7 +101,7 @@ inline void TfPyThrowValueError(std::string const &msg)
 }
 
 /// Raises a Python \c TypeError with the given error \p msg and throws a
-/// boost::python::error_already_set exception. Callers must hold the GIL
+/// pxr_boost::python::error_already_set exception. Callers must hold the GIL
 /// before calling this function.
 TF_API void TfPyThrowTypeError(const char *msg);
 
@@ -112,10 +112,10 @@ inline void TfPyThrowTypeError(std::string const &msg)
 }
 
 /// Return true iff \a obj is None.
-TF_API bool TfPyIsNone(boost::python::object const &obj);
+TF_API bool TfPyIsNone(pxr_boost::python::object const &obj);
 
 /// Return true iff \a obj is None.
-TF_API bool TfPyIsNone(boost::python::handle<> const &obj);
+TF_API bool TfPyIsNone(pxr_boost::python::handle<> const &obj);
 
 // Helper for \c TfPyObject().
 TF_API void Tf_PyObjectError(bool printError);
@@ -124,7 +124,7 @@ TF_API void Tf_PyObjectError(bool printError);
 /// wrapper code if necessary. Spams users if complainOnFailure is true and
 /// conversion fails.
 template <typename T>
-boost::python::object TfPyObject(T const &t, bool complainOnFailure = true) {
+pxr_boost::python::object TfPyObject(T const &t, bool complainOnFailure = true) {
     // initialize python if it isn't already, so at least we can try to return
     // an object
     if (!TfPyIsInitialized()) {
@@ -137,23 +137,23 @@ boost::python::object TfPyObject(T const &t, bool complainOnFailure = true) {
     // Will only be able to return objects which have been wrapped.
     // Returns None otherwise
     try {
-        return boost::python::object(t);
-    } catch (boost::python::error_already_set const &) {
+        return pxr_boost::python::object(t);
+    } catch (pxr_boost::python::error_already_set const &) {
         Tf_PyObjectError(complainOnFailure);
-        return boost::python::object();
+        return pxr_boost::python::object();
    }
 }
 
 inline
-boost::python::object TfPyObject(PyObject* t, bool complainOnFailure = true) {
+pxr_boost::python::object TfPyObject(PyObject* t, bool complainOnFailure = true) {
     TfPyLock pyLock;
-    return boost::python::object(boost::python::handle<>(t));
+    return pxr_boost::python::object(pxr_boost::python::handle<>(t));
 }
 
 /// Return repr(t).
 ///
 /// Calls PyObject_Repr on the given python object.
-TF_API std::string TfPyObjectRepr(boost::python::object const &t);
+TF_API std::string TfPyObjectRepr(pxr_boost::python::object const &t);
 
 /// Return repr(t).
 ///
@@ -188,10 +188,10 @@ std::string TfPyRepr(const std::vector<T> &v) {
 /// imported under their standard names. Additional globals may be provided in
 /// the \p extraGlobals dictionary.
 TF_API
-boost::python::object
+pxr_boost::python::object
 TfPyEvaluate(
     std::string const &expr,
-    boost::python::dict const &extraGlobals = boost::python::dict());
+    pxr_boost::python::dict const &extraGlobals = pxr_boost::python::dict());
 
 /// Return a positive index in the range [0,size).  If \a throwError is true,
 /// this will throw an index error if the resulting index is out of range.
@@ -200,25 +200,25 @@ int64_t
 TfPyNormalizeIndex(int64_t index, uint64_t size, bool throwError = false);
 
 /// Return the name of the class of \a obj.
-TF_API std::string TfPyGetClassName(boost::python::object const &obj);
+TF_API std::string TfPyGetClassName(pxr_boost::python::object const &obj);
 
 
 /// Return the python class object for \a type if \a type has been wrapped.
 /// Otherwise return None.
-TF_API boost::python::object
+TF_API pxr_boost::python::object
 TfPyGetClassObject(std::type_info const &type);
 
 /// Return the python class object for T if T has been wrapped.
 /// Otherwise return None.
 template <typename T>
-boost::python::object
+pxr_boost::python::object
 TfPyGetClassObject() {
     return TfPyGetClassObject(typeid(T));
 }
 
 TF_API
 void
-Tf_PyWrapOnceImpl(boost::python::type_info const &,
+Tf_PyWrapOnceImpl(pxr_boost::python::type_info const &,
                   std::function<void()> const&,
                   bool *);
 
@@ -243,7 +243,7 @@ TfPyWrapOnce(std::function<void()> const &wrapFunc)
         return;
     }
 
-    Tf_PyWrapOnceImpl(boost::python::type_id<T>(), wrapFunc, &isTypeWrapped);
+    Tf_PyWrapOnceImpl(pxr_boost::python::type_id<T>(), wrapFunc, &isTypeWrapped);
 }
 
 /// Load the python module \a moduleName.  This is used by some low-level
@@ -255,18 +255,18 @@ void Tf_PyLoadScriptModule(std::string const &name);
 
 /// Creates a python dictionary from a std::map.
 template <class Map>
-boost::python::dict TfPyCopyMapToDictionary(Map const &map) {
+pxr_boost::python::dict TfPyCopyMapToDictionary(Map const &map) {
     TfPyLock lock;
-    boost::python::dict d;
+    pxr_boost::python::dict d;
     for (typename Map::const_iterator i = map.begin(); i != map.end(); ++i)
         d[i->first] = i->second;
     return d;
 }
 
 template<class Seq>
-boost::python::list TfPyCopySequenceToList(Seq const &seq) {
+pxr_boost::python::list TfPyCopySequenceToList(Seq const &seq) {
     TfPyLock lock;
-    boost::python::list l;
+    pxr_boost::python::list l;
     for (typename Seq::const_iterator i = seq.begin();
          i != seq.end(); ++i)
         l.append(*i);
@@ -276,26 +276,26 @@ boost::python::list TfPyCopySequenceToList(Seq const &seq) {
 /// Create a python set from an iterable sequence.
 ///
 /// If Seq::value_type is not hashable, TypeError is raised via throwing
-/// boost::python::error_already_set.
+/// pxr_boost::python::error_already_set.
 template <class Seq>
-boost::python::object TfPyCopySequenceToSet(Seq const &seq) {
+pxr_boost::python::object TfPyCopySequenceToSet(Seq const &seq) {
     TfPyLock lock;
-    boost::python::handle<> set{boost::python::allow_null(PySet_New(nullptr))};
+    pxr_boost::python::handle<> set{pxr_boost::python::allow_null(PySet_New(nullptr))};
     if (!set) {
-        boost::python::throw_error_already_set();
+        pxr_boost::python::throw_error_already_set();
     }
     for (auto const& item : seq) {
-        boost::python::object obj(item);
+        pxr_boost::python::object obj(item);
         if (PySet_Add(set.get(), obj.ptr()) == -1) {
-            boost::python::throw_error_already_set();
+            pxr_boost::python::throw_error_already_set();
         }
     }
-    return boost::python::object(set);
+    return pxr_boost::python::object(set);
 }
 
 template<class Seq>
-boost::python::tuple TfPyCopySequenceToTuple(Seq const &seq) {
-    return boost::python::tuple(TfPyCopySequenceToList(seq));
+pxr_boost::python::tuple TfPyCopySequenceToTuple(Seq const &seq) {
+    return pxr_boost::python::tuple(TfPyCopySequenceToList(seq));
 }
 
 /// Create a python bytearray from an input buffer and size.
@@ -305,7 +305,7 @@ boost::python::tuple TfPyCopySequenceToTuple(Seq const &seq) {
 ///
 /// An invalid object handle is returned on failure.
 TF_API
-boost::python::object TfPyCopyBufferToByteArray(const char* buffer, size_t size);
+pxr_boost::python::object TfPyCopyBufferToByteArray(const char* buffer, size_t size);
 
 /// Return a vector of strings containing the current python traceback.
 ///
@@ -366,7 +366,7 @@ bool TfPyUnsetenv(const std::string & name);
 // Private helper method to TfPyEvaluateAndExtract.
 //
 TF_API bool Tf_PyEvaluateWithErrorCheck(
-    const std::string & expr, boost::python::object * obj);
+    const std::string & expr, pxr_boost::python::object * obj);
 
 /// Safely evaluates \p expr and extracts the return object of type T. If
 /// successful, returns \c true and sets *t to the return value, otherwise
@@ -377,18 +377,18 @@ bool TfPyEvaluateAndExtract(const std::string & expr, T * t)
     if (expr.empty())
         return false;
 
-    // Take the lock before doing anything with boost::python.
+    // Take the lock before doing anything with pxr_boost::python.
     TfPyLock lock;
 
     // Though TfPyEvaluate (called by Tf_PyEvaluateWithErroCheck) takes the
     // python lock, it is important that we lock before we initialize the 
-    // boost::python::object, since it will increment and decrement ref counts 
+    // pxr_boost::python::object, since it will increment and decrement ref counts 
     // outside of the call to TfPyEvaluate.
-    boost::python::object obj;
+    pxr_boost::python::object obj;
     if (!Tf_PyEvaluateWithErrorCheck(expr, &obj))
         return false;
 
-    boost::python::extract<T> extractor(obj);
+    pxr_boost::python::extract<T> extractor(obj);
 
     if (!extractor.check())
         return false;

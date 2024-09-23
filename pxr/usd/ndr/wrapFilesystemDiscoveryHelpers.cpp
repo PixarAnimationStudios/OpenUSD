@@ -10,13 +10,13 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include <boost/python.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/tuple.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 static NdrNodeDiscoveryResultVec
 _WrapFsHelpersDiscoverNodes(
@@ -38,7 +38,7 @@ _WrapFsHelpersSplitShaderIdentifier(const TfToken &identifier)
     NdrVersion version;
     if (NdrFsHelpersSplitShaderIdentifier(identifier,
             &family, &name, &version)) {
-        return boost::python::make_tuple(family, name, version);
+        return pxr_boost::python::make_tuple(family, name, version);
     } else {
         return object();
     }

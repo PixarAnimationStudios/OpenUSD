@@ -13,14 +13,14 @@
 #include <iostream>
 #include <string>
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace boost::python;
+using namespace pxr_boost::python;
 
 static void
 _DumpCoalescedDiagnosticsToStdout(UsdUtilsCoalescingDiagnosticDelegate& d)
@@ -46,30 +46,30 @@ _DumpUncoalescedDiagnosticsToStderr(UsdUtilsCoalescingDiagnosticDelegate& d)
     d.DumpUncoalescedDiagnostics(std::cerr);
 }
 
-static boost::python::list
+static pxr_boost::python::list
 _TakeUncoalescedDiagnostics(UsdUtilsCoalescingDiagnosticDelegate& d)
 {
-    boost::python::list result;
+    pxr_boost::python::list result;
     for (auto const& item : d.TakeUncoalescedDiagnostics()) {
         result.append(*item.get()); 
     }
     return result;
 }
 
-static boost::python::list
+static pxr_boost::python::list
 _TakeCoalescedDiagnostics(UsdUtilsCoalescingDiagnosticDelegate& d)
 {
-    boost::python::list result;
+    pxr_boost::python::list result;
     for (auto const& item : d.TakeCoalescedDiagnostics()) {
         result.append(item);
     }
     return result;
 }
 
-static boost::python::list
+static pxr_boost::python::list
 _GetUnsharedItems(UsdUtilsCoalescingDiagnosticDelegateItem const& d)
 {
-    boost::python::list result;
+    pxr_boost::python::list result;
     for (auto const& item : d.unsharedItems) {
         result.append(item);
     }

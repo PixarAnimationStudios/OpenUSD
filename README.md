@@ -31,6 +31,8 @@ visit our [forum](https://groups.google.com/forum/#!forum/usd-interest).
 
 If you are experiencing undocumented problems with the software, please 
 [file a bug](https://github.com/PixarAnimationStudios/OpenUSD/issues/new).
+If you need to report a security issue with the software, please review the 
+[Security Policy](SECURITY.md).
 
 Supported Platforms
 -------------------

@@ -38,9 +38,7 @@ TF_DEFINE_ENV_SETTING(
     "Warn when reading a text file larger than this number of MB "
     "(no warnings if set to 0)");
 
-PXR_NAMESPACE_CLOSE_SCOPE
-
-// Our interface to the YACC layer parser for parsing to SdfData.
+// Our interface to the parser for parsing to SdfData.
 extern bool Sdf_ParseLayer(
     const string& context, 
     const std::shared_ptr<PXR_NS::ArAsset>& asset,
@@ -56,8 +54,6 @@ extern bool Sdf_ParseLayerFromString(
     const string& version,
     PXR_NS::SdfDataRefPtr data,
     PXR_NS::SdfLayerHints *hints);
-
-PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {

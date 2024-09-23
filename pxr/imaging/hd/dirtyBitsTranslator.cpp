@@ -395,6 +395,9 @@ HdDirtyBitsTranslator::InstancerDirtyBitsToLocatorSet(TfToken const& primType,
     if (bits & HdChangeTracker::DirtyTransform) {
         set->append(HdXformSchema::GetDefaultLocator());
     }
+    if (bits & HdChangeTracker::DirtyCategories) {
+        set->append(HdInstanceCategoriesSchema::GetDefaultLocator());
+    }
 }
 
 /*static*/
@@ -931,6 +934,10 @@ HdDirtyBitsTranslator::InstancerLocatorSetToDirtyBits(
     HdDataSourceLocatorSet::const_iterator end = set.end();
     HdDirtyBits bits = HdChangeTracker::Clean;
 
+    if (_FindLocator(HdInstanceCategoriesSchema::GetDefaultLocator(), end, &it)) {
+        // We don't have an instance categories dirty bit.
+        bits |= HdChangeTracker::DirtyCategories;
+    }
     if (_FindLocator(HdInstancedBySchema::GetDefaultLocator(), end, &it)) {
         bits |= HdChangeTracker::DirtyInstancer;
     }

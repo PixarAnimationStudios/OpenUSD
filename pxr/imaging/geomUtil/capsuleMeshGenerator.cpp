@@ -30,10 +30,12 @@ GeomUtilCapsuleMeshGenerator::ComputeNumPoints(
         return 0;
     }
 
-    const size_t numRadialPoints =
-        _ComputeNumRadialPoints(numRadial, closedSweep);
-
-    return ((2 * numCapAxial) * numRadialPoints) + 2;
+    return _ComputeNumCappedQuadTopologyPoints(
+        numRadial,
+        /* numQuadStrips =  */ (2 * (numCapAxial - 1)) + 1,
+        /* bottomCapStyle = */ CapStyleSharedEdge,
+        /* topCapStyle =    */ CapStyleSharedEdge,
+        closedSweep);
 }
 
 // static
@@ -56,6 +58,33 @@ GeomUtilCapsuleMeshGenerator::GenerateTopology(
 }
 
 // static
+template<typename ScalarType>
+size_t
+GeomUtilCapsuleMeshGenerator::_ComputeNumBottomCapAxial(
+    const size_t numCapAxial,
+    const ScalarType latitudeRange)
+{
+    // Calculate the number of rings for the bottom cap porportional to the
+    // portion of a sphere that the bottom cap uses.
+    const ScalarType result =
+        GfRound(2 * numCapAxial * (0.5 * M_PI + latitudeRange) / M_PI);
+
+    // Convert to size_t and clamp so that there will be enough rings left over
+    // for the top to have at least minNumCapAxial rings.
+    const size_t maxNumCapAxial = (2 * numCapAxial) - minNumCapAxial;
+    return GfMin(GfMax(size_t(result), minNumCapAxial), maxNumCapAxial);
+}
+
+// static
+size_t
+GeomUtilCapsuleMeshGenerator::_ComputeNumTopCapAxial(
+    const size_t numCapAxial,
+    const size_t numBottomCapAxial)
+{
+    return (2 * numCapAxial) - numBottomCapAxial;
+}
+
+// static
 template<typename PointType>
 void
 GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
@@ -73,80 +102,118 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
         return;
     }
 
-    const ScalarType twoPi = 2.0 * M_PI;
-    const ScalarType sweepRadians =
-        GfClamp((ScalarType) GfDegreesToRadians(sweepDegrees), -twoPi, twoPi);
-    const bool closedSweep = GfIsClose(std::abs(sweepRadians), twoPi, 1e-6);
-
     // Construct a circular arc of unit radius in the XY plane.
-    const size_t numRadialPoints =
-        _ComputeNumRadialPoints(numRadial, closedSweep);
-    std::vector<std::array<ScalarType, 2>> ringXY(numRadialPoints);
+    const std::vector<std::array<ScalarType, 2>> ringXY =
+        _GenerateUnitArcXY<ScalarType>(numRadial, sweepDegrees);
 
-    for (size_t radIdx = 0; radIdx < numRadialPoints; ++radIdx) {
-        // Longitude range: [0, sweep]
-        const ScalarType longAngle =
-            (ScalarType(radIdx) / ScalarType(numRadial)) * sweepRadians;
-        ringXY[radIdx][0] = cos(longAngle);
-        ringXY[radIdx][1] = sin(longAngle);
-    }
+    // Initialize the center offset of the bottom (offset0) and top (offset1)
+    // spherical caps to 0.  These will be adjusted below by half of the height
+    // after first adjusting for the case when the radii are different.
+    ScalarType offset0 = 0;
+    ScalarType offset1 = 0;
 
+    // Initialize the radii of the bottom (radius0) and top (radius1) spherical
+    // caps to the given bottom and top radius of the cylindrical portion of the
+    // capsule.
+    ScalarType radius0 = bottomRadius;
+    ScalarType radius1 = topRadius;
+
+    // This angle represents the latitude where the bottom spherical cap will
+    // transition to the cylindrical portion of the capsule, as well as the
+    // angle where the top spherical cap begins after transitioning from the
+    // cylindrical portion.
     ScalarType latitudeRange = 0.0;
-    if (bottomRadius != topRadius)
-    {
-        // We're going to tesselate two spheres for the end caps. We need to
-        // calculate the latitude at which to clip the spheres, which we can
-        // derive from the line tangent to the two spheres.
-        // Consider the larger circle at (0,0) of radius r1 and the smaller
-        // at (0, height), of radius r2.
-        // Shrink both circles by r2 - i.e. one circle is reduced to a point.
-        const ScalarType rDiff = (bottomRadius - topRadius);
 
-        // Now, the latidude at which to clip the sphere is the angle of
-        // this point from the horizontal:
-        latitudeRange = atan(rDiff / height);
+    if (bottomRadius != topRadius && height != 0) {
+        // We need to calculate the angle where the transition should occur
+        // between the cylindrical and spherical caps of the capsule, as well
+        // as adjust the radii and center offsets of the spherical caps.
+        // Imagine the capsule aligned with the X-axis and in cross section in
+        // order to use trigonometry to determine these values.  For clarity,
+        // the spherical caps are omitted from this drawing.
+        //
+        //          A /---------
+        //           / |        --------
+        //          /  |                --------
+        //         /   |                        --------
+        //        /    | B                               -------- C
+        //       /     | - - - - - - - - - - - - - - - - - - - -/|
+        //      /      |                                       / |
+        //     /_______|______________________________________/__|
+        //   D         E                                     F    G
+        //
+        // |AE| bottomRadius   |CG| topRadius   |BC| height
+        //  D center of the bottom spherical cap
+        //  F center of the top spherical cap
+        //
+        // Triangles ADE, ABC, and CFG are all right triangles and are also
+        // similar because the tangents of the spherical caps must be tangent
+        // to the cylindrical portion of the capsule.  We need to calcuate
+        // |DE| and |FG| to determine the spherical cap center offsets, as well
+        // as |AD| and |CF| to determine the spherical cap radii.
+
+        // Calculate the slope of segment AC, using |AB| / |BC|.
+        const ScalarType slope = (bottomRadius - topRadius) / height;
+
+        // Use the slope and the law of similar triangles to calculate the
+        // spherical cap center offsets.  For the bottom cap that is:
+        //   |DE| / |AE| = |AB| / |BC|
+        //   |DE| / |AE| = slope
+        //   |DE|        = slope * |AE|
+        offset0 = -(slope * bottomRadius);
+        offset1 = -(slope * topRadius);
+
+        // Use the Pythagoream theorem to calculate the spherical cap radii.
+        //   |AD| = sqrt(|AE|^2 + |DE|^2)
+        //   |CF| = sqrt(|CG|^2 + |FG|^2)
+        radius0 = GfSqrt(GfSqr(bottomRadius) + GfSqr(offset0));
+        radius1 = GfSqrt(GfSqr(topRadius) + GfSqr(offset1));
+
+        // Use the slope to determine the angle at A of triangle ADE to
+        // calculate the latitude for transitioning between the spherical caps
+        // and the cylindrical portion of the capsule.
+        latitudeRange = atan(slope);
     }
+
+    // Adjust the sphere offsets to include the height.
+    offset0 -= 0.5 * height;
+    offset1 += 0.5 * height;
+
+    // Calculate the number of axial points of the sphere caps.
+    const size_t numCapAxial0 =
+        _ComputeNumBottomCapAxial(numCapAxial, latitudeRange);
+    const size_t numCapAxial1 =
+        _ComputeNumTopCapAxial(numCapAxial, numCapAxial0);
 
     // Bottom point:
-    ptWriter.Write(PointType(0.0, 0.0, -(bottomRadius + (0.5 * height))));
+    ptWriter.Write(PointType(0.0, 0.0, offset0 - radius0));
 
     // Bottom hemisphere latitude rings:
-    for (size_t axIdx = 1; axIdx < (numCapAxial + 1); ++axIdx) {
+    for (size_t axIdx = 1; axIdx < (numCapAxial0 + 1); ++axIdx) {
         // Latitude range: (-0.5pi, latitudeRange]
-        const ScalarType latAngle = GfLerp(double(axIdx) / double(numCapAxial),
+        const ScalarType latAngle = GfLerp(double(axIdx) / double(numCapAxial0),
             ScalarType(-0.5 * M_PI), latitudeRange);
 
-        const ScalarType radScale = cos(latAngle);
-        const ScalarType latitude =
-            -(0.5 * height) + (bottomRadius * sin(latAngle));
+        const ScalarType radScale = radius0 * cos(latAngle);
+        const ScalarType latitude = offset0 + (radius0 * sin(latAngle));
 
-        for (size_t radIdx = 0; radIdx < numRadialPoints; ++radIdx) {
-            ptWriter.Write(
-                PointType(radScale * bottomRadius * ringXY[radIdx][0],
-                          radScale * bottomRadius * ringXY[radIdx][1],
-                          latitude));
-        }
+        ptWriter.WriteArc(radScale, ringXY, latitude);
     }
 
     // Top hemisphere latitude rings:
-    for (size_t axIdx = 0; axIdx < numCapAxial; ++axIdx) {
+    for (size_t axIdx = 0; axIdx < numCapAxial1; ++axIdx) {
         // Latitude range: [latitudeRange, 0.5pi)
-        const ScalarType latAngle = GfLerp(double(axIdx) / double(numCapAxial),
+        const ScalarType latAngle = GfLerp(double(axIdx) / double(numCapAxial1),
             latitudeRange, ScalarType(0.5 * M_PI));
 
-        const ScalarType radScale = cos(latAngle);
-        const ScalarType latitude =
-            (0.5 * height) + (topRadius * sin(latAngle));
+        const ScalarType radScale = radius1 * cos(latAngle);
+        const ScalarType latitude = offset1 + (radius1 * sin(latAngle));
 
-        for (size_t radIdx = 0; radIdx < numRadialPoints; ++radIdx) {
-            ptWriter.Write(PointType(radScale * topRadius * ringXY[radIdx][0],
-                                     radScale * topRadius * ringXY[radIdx][1],
-                                     latitude));
-        }
+        ptWriter.WriteArc(radScale, ringXY, latitude);
     }
 
     // Top point:
-    ptWriter.Write(PointType(0.0, 0.0, topRadius + (0.5 * height)));
+    ptWriter.Write(PointType(0.0, 0.0, offset1 + radius1));
 }
 
 // Force-instantiate _GeneratePointsImpl for the supported point types.  Only
@@ -157,6 +224,96 @@ template GEOMUTIL_API void GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
     const float, const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3f>&);
 
 template GEOMUTIL_API void GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
+    const size_t, const size_t, const double, const double, const double,
+    const double, const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3d>&);
+
+
+// static
+template<typename PointType>
+void
+GeomUtilCapsuleMeshGenerator::_GenerateNormalsImpl(
+    const size_t numRadial,
+    const size_t numCapAxial,
+    const typename PointType::ScalarType bottomRadius,
+    const typename PointType::ScalarType topRadius,
+    const typename PointType::ScalarType height,
+    const typename PointType::ScalarType sweepDegrees,
+    const _PointWriter<PointType>& ptWriter)
+{
+    using ScalarType = typename PointType::ScalarType;
+
+    if ((numRadial < minNumRadial) || (numCapAxial < minNumCapAxial)) {
+        return;
+    }
+
+    // Construct a circular arc of unit radius in the XY plane.
+    const std::vector<std::array<ScalarType, 2>> ringXY =
+        _GenerateUnitArcXY<ScalarType>(numRadial, sweepDegrees);
+
+    // This angle represents the latitude where the bottom spherical cap will
+    // transition to the cylindrical portion of the capsule, as well as the
+    // angle where the top spherical cap begins after transitioning from the
+    // cylindrical portion.
+    ScalarType latitudeRange = 0.0;
+
+    if (bottomRadius != topRadius && height != 0) {
+        // See comments above in _GeneratePointsImpl for and explanation of the
+        // calculations in this section.
+
+        // Calculate the slope of segment AC, using |AB| / |BC|.
+        const ScalarType slope = (bottomRadius - topRadius) / height;
+
+        // Use the slope to determine the angle at A of triangle ADE to
+        // calculate the latitude for transitioning between the spherical caps
+        // and the cylindrical portion of the capsule.
+        latitudeRange = atan(slope);
+    }
+
+    // Calculate the number of axial points of the sphere caps.
+    const size_t numCapAxial0 =
+        _ComputeNumBottomCapAxial(numCapAxial, latitudeRange);
+    const size_t numCapAxial1 =
+        _ComputeNumTopCapAxial(numCapAxial, numCapAxial0);
+
+    // Bottom point:
+    ptWriter.WriteDir(PointType(0.0, 0.0, -1.0));
+
+    // Bottom hemisphere latitude rings:
+    for (size_t axIdx = 1; axIdx < (numCapAxial0 + 1); ++axIdx) {
+        // Latitude range: (-0.5pi, latitudeRange]
+        const ScalarType latAngle = GfLerp(double(axIdx) / double(numCapAxial0),
+            ScalarType(-0.5 * M_PI), latitudeRange);
+
+        const ScalarType radScale = cos(latAngle);
+        const ScalarType latitude = sin(latAngle);
+
+        ptWriter.WriteArcDir(radScale, ringXY, latitude);
+    }
+
+    // Top hemisphere latitude rings:
+    for (size_t axIdx = 0; axIdx < numCapAxial1; ++axIdx) {
+        // Latitude range: [latitudeRange, 0.5pi)
+        const ScalarType latAngle = GfLerp(double(axIdx) / double(numCapAxial1),
+            latitudeRange, ScalarType(0.5 * M_PI));
+
+        const ScalarType radScale = cos(latAngle);
+        const ScalarType latitude = sin(latAngle);
+
+        ptWriter.WriteArcDir(radScale, ringXY, latitude);
+    }
+
+    // Top point:
+    ptWriter.WriteDir(PointType(0.0, 0.0, 1.0));
+}
+
+// Force-instantiate _GenerateNormalsImpl for the supported point types.  Only
+// these instantiations will ever be needed due to the SFINAE machinery on the
+// calling method template (the public GeneratePoints, in the header).
+template GEOMUTIL_API void GeomUtilCapsuleMeshGenerator::_GenerateNormalsImpl(
+    const size_t, const size_t, const float, const float, const float,
+    const float, const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3f>&);
+
+template GEOMUTIL_API void GeomUtilCapsuleMeshGenerator::_GenerateNormalsImpl(
     const size_t, const size_t, const double, const double, const double,
     const double, const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3d>&);
 

@@ -4,13 +4,13 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/make_constructor.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/resolverContext.h"
@@ -19,9 +19,9 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -33,7 +33,7 @@ struct Ar_ResolverContextFromPython
     {
         converter::registry::push_back(
             &_convertible, &_construct,
-            boost::python::type_id<ArResolverContext>());
+            pxr_boost::python::type_id<ArResolverContext>());
     }
 
     static void* _convertible(PyObject* obj_ptr) 
@@ -72,9 +72,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Ar_ResolverContextPythonAccess
 {
 public:
-    static boost::python::list GetAsList(const ArResolverContext& ctx)
+    static pxr_boost::python::list GetAsList(const ArResolverContext& ctx)
     {
-        boost::python::list l;
+        pxr_boost::python::list l;
         for (const auto& data : ctx._contexts) {
             l.append(data->GetPythonObj().Get());
         }
@@ -96,7 +96,7 @@ public:
 PXR_NAMESPACE_CLOSE_SCOPE
 
 static ArResolverContext*
-_Create(const boost::python::object& obj)
+_Create(const pxr_boost::python::object& obj)
 {
     extract<ArResolverContext> convertToContext(obj);
     return new ArResolverContext(convertToContext());

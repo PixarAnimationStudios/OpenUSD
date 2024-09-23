@@ -745,7 +745,7 @@ Sdf_FileIOUtility::WriteSpline(
         out, indent, "post", spline.GetPostExtrapolation());
 
     // Inner loop params, if present.
-    if (spline.HasInnerLoops()) {
+    if (spline.GetInnerLoopParams() != TsLoopParams()) {
         const TsLoopParams lp = spline.GetInnerLoopParams();
         Write(out, indent + 1, "loop: (%s, %s, %d, %d, %s),\n",
             TfStringify(lp.protoStart).c_str(),
@@ -839,7 +839,7 @@ Sdf_FileIOUtility::_WriteDictionary(
             // Put quotes around the keyName if it is not a valid identifier
             string keyName = *(i->first);
             if (!TfIsValidIdentifier(keyName)) {
-                keyName = "\"" + keyName + "\"";
+                keyName = Quote(keyName);
             }
             if (value.IsHolding<VtDictionary>()) {
                 Write(out, multiLine ? indent+1 : 0, "dictionary %s = ",

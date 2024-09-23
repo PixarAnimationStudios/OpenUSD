@@ -116,6 +116,7 @@ pxr_library(hd
         materialNetwork2Interface
         materialNodeSchema
         materialNodeParameterSchema
+        materialOverrideSchema
         materialSchema
         mergingSceneIndex
         mesh
@@ -129,6 +130,7 @@ pxr_library(hd
         nurbsPatchTrimCurveSchema
         overlayContainerDataSource
         perfLog
+        planeSchema
         pluginRenderDelegateUniqueHandle
         points
         prefixingSceneIndex

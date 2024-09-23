@@ -17,23 +17,35 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define USD_VALIDATOR_NAME_TOKENS                   \
-    ((compositionErrorTest, "usd:CompositionErrorTest"))
+    ((compositionErrorTest, "usd:CompositionErrorTest")) \
+    ((stageMetadataChecker, "usd:StageMetadataChecker"))
 
 #define USD_VALIDATOR_KEYWORD_TOKENS                \
     (UsdCoreValidators)
 
+#define USD_VALIDATION_ERROR_NAME_TOKENS            \
+    ((compositionError, "CompositionError"))        \
+    ((missingDefaultPrim, "MissingDefaultPrim"))
+
+/// \def USD_VALIDATOR_NAME_TOKENS
 /// Tokens representing validator names. Note that for plugin provided
 /// validators, the names must be prefixed by usd:, which is the name of
 /// the usd plugin.
 TF_DECLARE_PUBLIC_TOKENS(UsdValidatorNameTokens, USD_API, 
                          USD_VALIDATOR_NAME_TOKENS);
 
+/// \def USD_VALIDATOR_KEYWORD_TOKENS
 /// Tokens representing keywords associated with any validator in the usd
-/// plugin. Cliends can use this to inspect validators contained within a
+/// plugin. Clients can use this to inspect validators contained within a
 /// specific keywords, or use these to be added as keywords to any new
 /// validator.
 TF_DECLARE_PUBLIC_TOKENS(UsdValidatorKeywordTokens, USD_API, 
                          USD_VALIDATOR_KEYWORD_TOKENS);
+
+/// \def USD_VALIDATION_ERROR_NAME_TOKENS
+/// Tokens representing validation error identifier.
+TF_DECLARE_PUBLIC_TOKENS(UsdValidationErrorNameTokens, USD_API, 
+                         USD_VALIDATION_ERROR_NAME_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

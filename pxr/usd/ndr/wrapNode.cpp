@@ -12,11 +12,11 @@
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/usd/ndr/node.h"
 
-#include <boost/python.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void wrapNode()
 {

@@ -54,7 +54,7 @@ _SupportsPresentation(
             DefaultVisual(dsp, DefaultScreen(dsp)));
         return vkGetPhysicalDeviceXlibPresentationSupportKHR(
                     physicalDevice, familyIndex, dsp, visualID);
-    #elif defined(VK_USE_PLATFORM_MACOS_MVK)
+    #elif defined(VK_USE_PLATFORM_METAL_EXT)
         // Presentation currently always supported on Metal / MoltenVk
         return true;
     #else
@@ -153,9 +153,12 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     queueInfo.queueCount = 1;
     queueInfo.pQueuePriorities = queuePriorities;
 
-    std::vector<const char*> extensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
+    std::vector<const char*> extensions;
+
+    // Not available if we're surfaceless (minimal Lavapipe build for example).
+    if (IsSupportedExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
+        extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    }
 
     // Allow certain buffers/images to have dedicated memory allocations to
     // improve performance on some GPUs.
@@ -265,15 +268,12 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     // Needed to write to storage buffers from fragment shader (eg. OIT).
     features.features.fragmentStoresAndAtomics =
         _capabilities->vkDeviceFeatures.fragmentStoresAndAtomics;
-
-    #if !defined(VK_USE_PLATFORM_MACOS_MVK)
-        // Needed for buffer address feature
-        features.features.shaderInt64 =
-            _capabilities->vkDeviceFeatures.shaderInt64;
-        // Needed for gl_primtiveID
-        features.features.geometryShader =
-            _capabilities->vkDeviceFeatures.geometryShader;
-    #endif
+    // Needed for buffer address feature
+    features.features.shaderInt64 =
+        _capabilities->vkDeviceFeatures.shaderInt64;
+    // Needed for gl_primtiveID
+    features.features.geometryShader =
+        _capabilities->vkDeviceFeatures.geometryShader;
 
     VkDeviceCreateInfo createInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
     createInfo.queueCreateInfoCount = 1;

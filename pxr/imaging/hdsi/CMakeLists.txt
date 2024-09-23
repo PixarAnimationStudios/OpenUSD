@@ -18,11 +18,13 @@ pxr_library(hdsi
     PUBLIC_CLASSES
         computeSceneIndexDiff
         coordSysPrimSceneIndex
+        extComputationDependencySceneIndex
         extComputationPrimvarPruningSceneIndex
         implicitSurfaceSceneIndex
         legacyDisplayStyleOverrideSceneIndex
         lightLinkingSceneIndex
         materialBindingResolvingSceneIndex
+        materialOverrideResolvingSceneIndex
         materialPrimvarTransferSceneIndex
         nurbsApproximatingSceneIndex
         pinnedCurveExpandingSceneIndex

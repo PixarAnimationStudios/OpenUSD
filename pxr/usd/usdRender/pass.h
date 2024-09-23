@@ -375,22 +375,6 @@ public:
     UsdRelationship CreateInputPassesRel() const;
 
 public:
-    // --------------------------------------------------------------------- //
-    // DENOISEPASS 
-    // --------------------------------------------------------------------- //
-    /// The The UsdRenderDenoisePass prim from which to 
-    /// source denoise settings.
-    /// 
-    ///
-    USDRENDER_API
-    UsdRelationship GetDenoisePassRel() const;
-
-    /// See GetDenoisePassRel(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create
-    USDRENDER_API
-    UsdRelationship CreateDenoisePassRel() const;
-
-public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 

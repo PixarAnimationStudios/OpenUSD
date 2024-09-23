@@ -251,7 +251,7 @@ private:
 /// It creates a list of strength ordering UsdPrimCompositionQueryArc that
 /// can be filtered by a combination of criteria and returned.
 ///
-/// \section Invalidation
+/// \section UsdPrimCompositionQuery_Invalidation Invalidation
 /// This object does not listen for change notification.  If a consumer is
 /// holding on to a UsdPrimCompositionQuery, it is their responsibility to
 /// dispose of it in response to a resync change to the associated prim.

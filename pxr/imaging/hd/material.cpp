@@ -272,7 +272,8 @@ _GetSamplerParameters(
                  nodeTypeId, parameters, sdrNode, nodePath),
              HdBorderColorTransparentBlack, 
              /*enableCompare*/false, 
-             HdCmpFuncNever };
+             HdCmpFuncNever,
+             /*maxAnisotropy*/16 };
 }
 
 HdSamplerParameters

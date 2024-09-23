@@ -21,15 +21,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#if PXR_VERSION > 2011
 HdPrman_Mesh::HdPrman_Mesh(SdfPath const& id, const bool isMeshLight)
     : BASE(id)
     , _isMeshLight(isMeshLight)
-#else
-HdPrman_Mesh::HdPrman_Mesh(SdfPath const& id,
-                           SdfPath const& instancerId)
-    : BASE(id, instancerId)
-#endif
 {
 }
 
@@ -300,7 +294,8 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
 
     HdPrman_ConvertPrimvars(
         sceneDelegate, id, primvars, nverts.size(), npoints, npoints,
-        verts.size());
+        verts.size(),
+        renderParam->GetShutterInterval());
 
     return primvars;
 }

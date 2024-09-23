@@ -5,7 +5,7 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
-#include <boost/python/def.hpp>
+#include "pxr/external/boost/python/def.hpp"
 
 #include "pxr/usd/usdUtils/flattenLayerStack.h"
 #include "pxr/usd/sdf/layer.h"
@@ -14,9 +14,9 @@
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/makePyConstructor.h"
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 static
 SdfLayerRefPtr
@@ -45,14 +45,14 @@ void wrapFlattenLayerStack()
     def("FlattenLayerStack",
         &_UsdUtilsFlattenLayerStack2,
         (arg("stage"), arg("tag")=std::string()),
-        boost::python::return_value_policy<
+        pxr_boost::python::return_value_policy<
         TfPyRefPtrFactory<SdfLayerHandle> >());
 
     TfPyFunctionFromPython<Py_UsdUtilsResolveAssetPathSig>();
     def("FlattenLayerStack",
         &_UsdUtilsFlattenLayerStack3,
         (arg("stage"), arg("resolveAssetPathFn"), arg("tag")=std::string()),
-        boost::python::return_value_policy<
+        pxr_boost::python::return_value_policy<
         TfPyRefPtrFactory<SdfLayerHandle> >());
 
     def("FlattenLayerStackResolveAssetPath",

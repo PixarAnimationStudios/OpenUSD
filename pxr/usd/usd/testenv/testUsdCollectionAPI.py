@@ -756,7 +756,8 @@ class TestUsdCollectionAPI(unittest.TestCase):
 
         self.assertEqual(
             Usd.ComputeIncludedPathsFromCollection(query, stage),
-            [Sdf.Path('/CollectionTest/Geom/Box'),
+            [Sdf.Path('/CollectionTest'),
+             Sdf.Path('/CollectionTest/Geom/Box'),
              Sdf.Path('/CollectionTest/Geom/Shapes/Cone'),
              Sdf.Path('/CollectionTest/Geom/Shapes/Cube'),
              Sdf.Path('/CollectionTest/Geom/Shapes/Cylinder'),

@@ -2,6 +2,8 @@ set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdSkel)
 
 pxr_library(usdSkel
+    INCLUDE_SCHEMA_FILES
+
     LIBRARIES
         arch
         gf
@@ -12,31 +14,27 @@ pxr_library(usdSkel
         sdf
         usd
         usdGeom
-        ${Boost_PYTHON_LIBRARY}
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
-        animation
         animMapper
         animQuery
         bakeSkinning
-        bindingAPI
-        blendShape
         blendShapeQuery
         cache
         debugCodes
         inbetweenShape
-        root
-        skeleton
         skeletonQuery
         skinningQuery
-        tokens
         topology
         utils
+        validatorTokens
+
+    CPPFILES
+        validators.cpp
 
     PUBLIC_HEADERS
         api.h
@@ -54,29 +52,17 @@ pxr_library(usdSkel
         __init__.py
 
     PYMODULE_CPPFILES
-        module.cpp
-        wrapAnimation.cpp
         wrapAnimMapper.cpp
         wrapAnimQuery.cpp
         wrapBakeSkinning.cpp
         wrapBlendShapeQuery.cpp
         wrapBinding.cpp
-        wrapBindingAPI.cpp
-        wrapBlendShape.cpp
         wrapCache.cpp
         wrapInbetweenShape.cpp
-        wrapRoot.cpp
-        wrapSkeleton.cpp
         wrapSkeletonQuery.cpp
         wrapSkinningQuery.cpp
-        wrapTokens.cpp
         wrapTopology.cpp
         wrapUtils.cpp
-
-    RESOURCE_FILES
-        generatedSchema.usda
-        plugInfo.json
-        schema.usda:usdSkel/schema.usda
 
     DOXYGEN_FILES
         overview.dox
@@ -92,6 +78,15 @@ pxr_library(usdSkel
         images/blendshapesWithInbetweens.svg
         images/influencesPrimvarLayout.svg
         images/unboundedInterpolationExample.svg
+)
+
+pxr_build_test(testUsdSkelValidators
+    LIBRARIES
+    tf
+    usd
+    usdSkel
+    CPPFILES
+    testenv/testUsdSkelValidators.cpp
 )
    
 pxr_test_scripts(
@@ -189,3 +184,9 @@ pxr_register_test(testUsdSkelUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelUtils"
     EXPECTED_RETURN_CODE 0
 )
+
+pxr_register_test(testUsdSkelValidators
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelValidators"
+    EXPECTED_RETURN_CODE 0
+)
+

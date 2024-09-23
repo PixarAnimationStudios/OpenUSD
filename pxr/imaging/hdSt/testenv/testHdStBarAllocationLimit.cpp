@@ -157,7 +157,7 @@ My_TestGLDrawing::AddLargeCurve(HdUnitTestDelegate *delegate)
 
             GfRotation orientation(GfVec3d(1, 0, 0), rotDegrees);
             transform.SetTransform(orientation, translation);
-            tmpPoint = tmpPoint * transform;
+            tmpPoint = GfVec4f(tmpPoint * transform);
             
             points.emplace_back(GfVec3f( tmpPoint[0],
                                          tmpPoint[1],

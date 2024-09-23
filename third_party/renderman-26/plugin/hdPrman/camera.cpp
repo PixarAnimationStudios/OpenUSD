@@ -8,6 +8,7 @@
 #include "hdPrman/cameraContext.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/version.h"
 
 #include <cmath>
 
@@ -27,13 +28,14 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((shutterOpenTime,   "ri:shutterOpenTime"))
-    ((shutterCloseTime,  "ri:shutterCloseTime"))
-    ((shutteropening,    "ri:shutteropening"))
-    ((apertureAngle,     "ri:apertureAngle"))
-    ((apertureDensity,   "ri:apertureDensity"))
-    ((apertureNSides,    "ri:apertureNSides"))
-    ((apertureRoundness, "ri:apertureRoundness"))
+    ((shutterOpenTime,    "ri:shutterOpenTime"))
+    ((shutterCloseTime,   "ri:shutterCloseTime"))
+    ((shutteropening,     "ri:shutteropening"))
+    ((apertureAngle,      "ri:apertureAngle"))
+    ((apertureDensity,    "ri:apertureDensity"))
+    ((apertureNSides,     "ri:apertureNSides"))
+    ((apertureRoundness,  "ri:apertureRoundness"))
+    ((projection_dofMult, "ri:projection:dofMult"))
 );
 
 static
@@ -68,6 +70,7 @@ HdPrmanCamera::HdPrmanCamera(SdfPath const& id)
   , _apertureDensity(0.0f)
   , _apertureNSides(0)
   , _apertureRoundness(1.0f)
+  , _dofMult(1.0f)
 {
 }
 
@@ -92,10 +95,6 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
     SdfPath const &id = GetId();
     // Save state of dirtyBits before HdCamera::Sync clears them.
     const HdDirtyBits bits = *dirtyBits;
-
-    if (bits & DirtyTransform) {
-        sceneDelegate->SampleTransform(id, &_sampleXforms);
-    }
 
     if (bits & AllDirty) {
         param->GetCameraContext().MarkCameraInvalid(id);
@@ -163,7 +162,9 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
         _apertureRoundness =
             sceneDelegate->GetCameraParamValue(id, _tokens->apertureRoundness)
                          .GetWithDefault<float>(1.0f);
-
+        _dofMult =
+            sceneDelegate->GetCameraParamValue(id, _tokens->projection_dofMult)
+                         .GetWithDefault<float>(1.0f);
         if (id == param->GetCameraContext().GetCameraPath()) {
             // Motion blur in Riley only works correctly if the
             // shutter interval is set before any rprims are synced
@@ -175,6 +176,20 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
             param->SetRileyShutterIntervalFromCameraContextCameraPath(
                 &sceneDelegate->GetRenderIndex());
         }
+    }
+
+    if (bits & DirtyTransform) {
+        // Do SampleTranform last.
+        //
+        // This is because it needs the shutter interval which is computed above.
+        //
+        sceneDelegate->SampleTransform(
+            id,
+#if HD_API_VERSION >= 68
+            param->GetShutterInterval()[0],
+            param->GetShutterInterval()[1],
+#endif
+            &_sampleXforms);
     }
 
     // XXX: Should we flip the proj matrix (RHS vs LHS) as well here?

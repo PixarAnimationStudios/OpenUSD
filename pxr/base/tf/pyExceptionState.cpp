@@ -10,13 +10,14 @@
 #include "pxr/base/tf/pyErrorInternal.h"
 #include "pxr/base/tf/pyLock.h"
 
-#include <boost/python/object.hpp>
-#include <boost/python/extract.hpp>
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/extract.hpp"
 
-using namespace boost::python;
 using std::string;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 TfPyExceptionState::TfPyExceptionState(TfPyExceptionState const &other)
 {
@@ -77,11 +78,11 @@ TfPyExceptionState::GetExceptionString() const
         object tbModule(handle<>(PyImport_ImportModule("traceback")));
         object exception =
             tbModule.attr("format_exception")(_type, _value, _trace);
-        boost::python::ssize_t size = len(exception);
-        for (boost::python::ssize_t i = 0; i != size; ++i) {
+        pxr_boost::python::ssize_t size = len(exception);
+        for (pxr_boost::python::ssize_t i = 0; i != size; ++i) {
             s += extract<string>(exception[i]);
         }
-    } catch (boost::python::error_already_set const &) {
+    } catch (pxr_boost::python::error_already_set const &) {
         // Just ignore the exception.
     }
     return s;

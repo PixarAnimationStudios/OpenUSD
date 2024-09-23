@@ -11,18 +11,18 @@
 #include "pxr/base/trace/reporter.h"
 #include "pxr/base/trace/collector.h"
 
-#include <boost/python/def.hpp>
-#include <boost/python/enum.hpp>
-#include <boost/python/list.hpp>
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/enum.hpp"
+#include "pxr/external/boost/python/list.hpp"
 
 #include <chrono>
 #include <string>
 #include <thread>
 
 using namespace std::chrono_literals;
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 // ----------------------------------------
 // A set of functions using TRACE_FUNCTION, TRACE_SCOPE

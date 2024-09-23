@@ -8,9 +8,9 @@
 /// \file usdUtils/wrapDependencies.cpp
 
 #include "pxr/pxr.h"
-#include <boost/python/def.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include "pxr/base/tf/makePyConstructor.h"
 #include "pxr/base/tf/pyFunction.h"
@@ -19,9 +19,9 @@
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/usdUtils/dependencies.h"
 
-namespace bp = boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace bp = pxr_boost::python;
 
 namespace {
 

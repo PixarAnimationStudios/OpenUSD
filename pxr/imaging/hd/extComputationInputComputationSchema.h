@@ -33,7 +33,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 // --(END CUSTOM CODE: Declares)--
 
 #define HD_EXT_COMPUTATION_INPUT_COMPUTATION_SCHEMA_TOKENS \
-    (name) \
     (sourceComputation) \
     (sourceComputationOutputName) \
 
@@ -61,9 +60,6 @@ public:
     /// @{
 
     HD_API
-    HdTokenDataSourceHandle GetName() const;
-
-    HD_API
     HdPathDataSourceHandle GetSourceComputation() const;
 
     HD_API
@@ -84,7 +80,6 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdTokenDataSourceHandle &name,
         const HdPathDataSourceHandle &sourceComputation,
         const HdTokenDataSourceHandle &sourceComputationOutputName
     );
@@ -99,9 +94,6 @@ public:
     {
     public:
         HD_API
-        Builder &SetName(
-            const HdTokenDataSourceHandle &name);
-        HD_API
         Builder &SetSourceComputation(
             const HdPathDataSourceHandle &sourceComputation);
         HD_API
@@ -113,7 +105,6 @@ public:
         HdContainerDataSourceHandle Build();
 
     private:
-        HdTokenDataSourceHandle _name;
         HdPathDataSourceHandle _sourceComputation;
         HdTokenDataSourceHandle _sourceComputationOutputName;
 

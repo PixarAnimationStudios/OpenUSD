@@ -9,12 +9,12 @@
 #include "pxr/base/ts/tsTest_SampleBezier.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python/def.hpp>
-#include <boost/python/return_value_policy.hpp>
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-using namespace boost::python;
+using namespace pxr_boost::python;
 
 
 void wrapTsTest_SampleBezier()

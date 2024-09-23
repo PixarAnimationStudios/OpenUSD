@@ -378,27 +378,6 @@ GfMatrix3d::operator*=(const GfMatrix3d &m)
 
     return *this;
 }
-
-/*
- * Define multiplication between floating vector and double matrix.
- */
-GfVec3f
-operator *(const GfVec3f &vec, const GfMatrix3d &m)
-{
-    return GfVec3f(
-        float(vec[0] * m._mtx[0][0] + vec[1] * m._mtx[1][0] + vec[2] * m._mtx[2][0]),
-        float(vec[0] * m._mtx[0][1] + vec[1] * m._mtx[1][1] + vec[2] * m._mtx[2][1]),
-        float(vec[0] * m._mtx[0][2] + vec[1] * m._mtx[1][2] + vec[2] * m._mtx[2][2]));
-}
-
-GfVec3f
-operator *(const GfMatrix3d& m, const GfVec3f &vec)
-{
-    return GfVec3f(
-        float(vec[0] * m._mtx[0][0] + vec[1] * m._mtx[0][1] + vec[2] * m._mtx[0][2]),
-        float(vec[0] * m._mtx[1][0] + vec[1] * m._mtx[1][1] + vec[2] * m._mtx[1][2]),
-        float(vec[0] * m._mtx[2][0] + vec[1] * m._mtx[2][1] + vec[2] * m._mtx[2][2]));
-}
 GfMatrix3d &
 GfMatrix3d::SetScale(double s)
 {

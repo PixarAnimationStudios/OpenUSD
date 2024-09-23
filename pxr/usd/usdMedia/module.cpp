@@ -11,9 +11,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(UsdMediaTokens);
-
-    // Generated schema.
-    TF_WRAP(UsdMediaAssetPreviewsAPI);
-    TF_WRAP(UsdMediaSpatialAudio);
+    // Generated Schema classes.  Do not remove or edit the following line.
+    #include "generatedSchema.module.h"
 }

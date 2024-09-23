@@ -17,7 +17,9 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
+#if PXR_VERSION >= 2308
 #include "pxr/imaging/hd/sphereSchema.h"
+#endif
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/xformSchema.h"
 
@@ -32,8 +34,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((geometryInstance, "RileyConversionGeometryInstance"))
     ((riRadius, "Ri:radius"))
 );
-
-static const char * const _rendererDisplayName = "Prman";
 
 namespace {
 
@@ -315,12 +315,14 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 101;
 
-    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        _rendererDisplayName,
-        _tokens->sceneIndexPluginName,
-        /* inputArgs = */ nullptr,
-        insertionPhase,
-        HdSceneIndexPluginRegistry::InsertionOrderAtEnd);
+    for( auto const& rendererDisplayName : HdPrman_GetPluginDisplayNames()) {
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            rendererDisplayName,
+            _tokens->sceneIndexPluginName,
+            /* inputArgs = */ nullptr,
+            insertionPhase,
+            HdSceneIndexPluginRegistry::InsertionOrderAtEnd);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

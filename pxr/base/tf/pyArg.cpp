@@ -11,17 +11,17 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/python/extract.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/slice.hpp>
-#include <boost/python/stl_iterator.hpp>
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/slice.hpp"
+#include "pxr/external/boost/python/stl_iterator.hpp"
 
 using std::string;
 using std::vector;
 
-using namespace boost::python;
-
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 static bool
 _ArgumentIsNamed(const std::string& name, const TfPyArg& arg)

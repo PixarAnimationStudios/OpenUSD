@@ -13,6 +13,7 @@ HdStRenderParam::HdStRenderParam()
     : _drawBatchesVersion(1)
     , _materialTagsVersion(1)
     , _geomSubsetDrawItemsVersion(1)
+    , _activeDrawTargetSetVersion(1)
     , _needsGarbageCollection(false)
 {
 }
@@ -165,5 +166,16 @@ HdStRenderParam::_HasTag(
     return it->second > 0;
 }
 
+void
+HdStRenderParam::MarkActiveDrawTargetSetDirty()
+{
+    ++_activeDrawTargetSetVersion;
+}
+
+unsigned int
+HdStRenderParam::GetActiveDrawTargetSetVersion() const
+{
+    return _activeDrawTargetSetVersion.load(std::memory_order_relaxed);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -11,11 +11,11 @@
 #include "pxr/usd/ndr/property.h"
 #include "pxr/usd/sdf/types.h"
 
-#include <boost/python.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 void wrapProperty()
 {
@@ -38,7 +38,6 @@ void wrapProperty()
             return_value_policy<TfPyMapToDictionary>())
         .def("IsConnectable", &This::IsConnectable)
         .def("CanConnectTo", &This::CanConnectTo)
-        .def("GetTypeAsSdfType", &This::GetTypeAsSdfType,
-            return_value_policy<TfPyPairToTuple>())
+        .def("GetTypeAsSdfType", &This::GetTypeAsSdfType)
         ;
 }

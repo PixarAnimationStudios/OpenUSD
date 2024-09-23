@@ -12,17 +12,17 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/implicit.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/implicit.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include <vector>
 
 using std::vector;
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -45,7 +45,7 @@ _GetConnectedSources(const UsdShadeInput &self)
     SdfPathVector invalidSourcePaths;
     UsdShadeInput::SourceInfoVector sources =
         self.GetConnectedSources(&invalidSourcePaths);
-    return boost::python::make_tuple(
+    return pxr_boost::python::make_tuple(
         std::vector<UsdShadeConnectionSourceInfo>(sources.begin(), sources.end()),
         invalidSourcePaths);
 }
@@ -58,7 +58,7 @@ _GetConnectedSource(const UsdShadeInput &self)
     UsdShadeAttributeType  sourceType;
     
     if (self.GetConnectedSource(&source, &sourceName, &sourceType)){
-        return boost::python::make_tuple(source, sourceName, sourceType);
+        return pxr_boost::python::make_tuple(source, sourceName, sourceType);
     } else {
         return object();
     }
@@ -77,7 +77,7 @@ _GetValueProducingAttribute(const UsdShadeInput &self)
 {
     UsdShadeAttributeType attrType;
     UsdAttribute attr = self.GetValueProducingAttribute(&attrType);
-    return boost::python::make_tuple(attr, attrType);
+    return pxr_boost::python::make_tuple(attr, attrType);
 }
 
 } // anonymous namespace 

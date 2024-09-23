@@ -17,18 +17,18 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_arg.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/copy_const_reference.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
 
 #include <string>
-
-using namespace boost::python;
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -141,7 +141,7 @@ void wrapRange1f()
         // __itruediv__ not added by .def( self /= double() ) above, which
         // happens when building with python 2, but we need it to support
         // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of boost::python that incorrectly wraps
+        // bug in the current version of pxr_boost::python that incorrectly wraps
         // in-place division with __idiv__ when building with python 3.
         cls.def("__itruediv__", __itruediv__, return_self<>());
     }

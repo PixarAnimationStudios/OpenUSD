@@ -7,16 +7,18 @@
 #ifndef PXR_BASE_TF_PY_SIGNATURE_EXT_H
 #define PXR_BASE_TF_PY_SIGNATURE_EXT_H
 
+#include "pxr/external/boost/python/common.hpp"
+
 #include <boost/mpl/vector.hpp>
 
-// This file extends boost::python::detail::get_signature to support member
+// This file extends pxr_boost::python::detail::get_signature to support member
 // function pointers that have lvalue ref-qualifiers.  For example:
 //
 // class Foo {
 //     void f() &;
 // };
 //
-// Without this extension, boost::python cannot wrap ref-qualified member
+// Without this extension, pxr_boost::python cannot wrap ref-qualified member
 // functions like this.
 //
 // This utility does not support rvalue ref-qualifiers.  There isn't really such
@@ -27,7 +29,7 @@
 // To use this utility, #include this file before any other file in your
 // wrapXXX.cpp file; the order matters.
 
-namespace boost { namespace python { namespace detail {
+namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 template <class Ret, class TheCls, class ... Args>
 auto get_signature(Ret (TheCls::*)(Args...) &, void* =nullptr) {
@@ -40,6 +42,6 @@ auto get_signature(Ret (TheCls::*)(Args...) const &, void* =nullptr) {
 
 }}}
 
-#include <boost/python/signature.hpp>
+#include "pxr/external/boost/python/signature.hpp"
 
 #endif // PXR_BASE_TF_PY_SIGNATURE_EXT_H

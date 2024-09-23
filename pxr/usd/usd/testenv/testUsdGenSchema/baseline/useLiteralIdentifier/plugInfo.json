@@ -14,6 +14,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "Base", 
                         "schemaKind": "abstractTyped"
                     }
                 }

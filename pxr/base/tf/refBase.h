@@ -134,7 +134,7 @@ private:
 /// "unique changed" facility of TfRefPtr.
 ///
 /// Derive from this class if you don't plan on wrapping your
-/// reference-counted object via boost::python.
+/// reference-counted object via pxr_boost::python.
 ///
 class TfSimpleRefBase : public TfRefBase {
 public:

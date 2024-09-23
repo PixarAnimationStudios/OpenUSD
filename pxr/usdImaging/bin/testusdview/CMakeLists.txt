@@ -441,7 +441,7 @@ pxr_register_test(testUsdviewFileArguments4
 pxr_register_test(testUsdviewFileArguments5
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testInvalidFileArg.py invalidSyntax.usda"
-    CLEAN_OUTPUT "(?:[A-Za-z]:)?/(?!refSphere2).*/"
+    CLEAN_OUTPUT "(?:[A-Za-z]:)?/.*(?=invalidSyntax)"
     STDERR_REDIRECT invalidSyntax_test_out
     DIFF_COMPARE invalidSyntax_test_out
     EXPECTED_RETURN_CODE 1
@@ -1149,6 +1149,10 @@ if(OPENCOLORIO_FOUND AND ${PXR_BUILD_OPENCOLORIO_PLUGIN})
             colorCorrectionOCIO_linear.png
             colorCorrectionSRGB.png
             colorCorrectionDisabled.png
+        FAIL 0.02
+        FAIL_PERCENT 0.01
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         ENV
             OCIO=test.ocio

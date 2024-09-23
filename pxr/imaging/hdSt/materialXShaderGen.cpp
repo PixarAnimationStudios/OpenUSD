@@ -77,7 +77,9 @@ R"(#if NUM_LIGHTS > 0
             // Note: in Storm, diffuse = lightColor * intensity;
             float intensity = max( max(light.diffuse.r, light.diffuse.g), 
                                    light.diffuse.b);
-            $lightData[u_numActiveLightSources].color = light.diffuse.rgb/intensity;
+            vec3 lightColor = (intensity == 0.0) 
+                ? light.diffuse.rgb : light.diffuse.rgb/intensity;
+            $lightData[u_numActiveLightSources].color = lightColor;
             $lightData[u_numActiveLightSources].intensity = intensity;
             
             // Attenuation 
@@ -658,8 +660,10 @@ HdStMaterialXShaderGen<Base>::emitLine(
     // When emitting the Light loop code for the Surface node, the variable
     // 'occlusion' represents shadow occlusion. We don't use MaterialX's
     // shadow implementation (hwShadowMap is false). Instead, use our own 
-    // per-light occlusion value calculated in mxInit() and stored in lightData
-    if (_emittingSurfaceNode && str == "vec3 L = lightShader.direction") {
+    // per-light occlusion value calculated in mxInit() and stored in lightData.
+    // Note: Metal uses float3, Glsl uses vec3, in the line we're looking for.
+    if (_emittingSurfaceNode && (str == "vec3 L = lightShader.direction" ||
+                                 str == "float3 L = lightShader.direction" )) {
         emitLine(
             "occlusion = u_lightData[activeLightIndex].shadowOcclusion", stage);
     }

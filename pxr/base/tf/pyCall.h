@@ -19,7 +19,7 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 
-#include <boost/python/call.hpp>
+#include "pxr/external/boost/python/call.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -33,13 +33,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \endcode
 /// Generally speaking, TfPyCall instances may be copied, assigned, destroyed,
 /// and invoked without the client holding the GIL.  However, if the \a Return
-/// template parameter is a \a boost::python::object (or a derived class, such
+/// template parameter is a \a pxr_boost::python::object (or a derived class, such
 /// as list or tuple) then the client must hold the GIL in order to invoke the
 /// call operator.
 template <typename Return>
 struct TfPyCall {
     /// Construct with callable \a c.  Constructing with a \c
-    /// boost::python::object works, since those implicitly convert to \c
+    /// pxr_boost::python::object works, since those implicitly convert to \c
     /// TfPyObjWrapper, however in that case the GIL must be held by the caller.
     explicit TfPyCall(TfPyObjWrapper const &c) : _callable(c) {}
 
@@ -59,9 +59,9 @@ TfPyCall<Return>::operator()(Args... args)
     // Do *not* call through if there's an active python exception.
     if (!PyErr_Occurred()) {
         try {
-            return boost::python::call<Return>
+            return pxr_boost::python::call<Return>
                 (_callable.ptr(), args...);
-        } catch (boost::python::error_already_set const &) {
+        } catch (pxr_boost::python::error_already_set const &) {
             // Convert any exception to TF_ERRORs.
             TfPyConvertPythonExceptionToTfErrors();
             PyErr_Clear();

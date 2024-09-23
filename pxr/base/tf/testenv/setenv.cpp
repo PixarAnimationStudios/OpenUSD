@@ -16,8 +16,8 @@
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/python/handle.hpp>
-#include <boost/python/extract.hpp>
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/extract.hpp"
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include <mutex>
@@ -26,11 +26,11 @@
 
 using std::string;
 
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
-using namespace boost::python;
-#endif // PXR_PYTHON_SUPPORT_ENABLED
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+using namespace pxr_boost::python;
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 static unsigned int
 _CheckResultInEnv(const string & envName, const string & envVal)

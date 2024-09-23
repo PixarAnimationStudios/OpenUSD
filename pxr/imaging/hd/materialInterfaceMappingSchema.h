@@ -41,6 +41,12 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialInterfaceMappingSchemaTokens, HD_API,
 
 //-----------------------------------------------------------------------------
 
+// The MaterialInterfaceMapping schema identifies a material node parameter
+// using its two members 'nodePath' and 'inputName'.
+//
+// See MaterialNetwork schema's documentation on its 'interfaceMappings'
+// member for an example.
+//
 
 class HdMaterialInterfaceMappingSchema : public HdSchema
 {
@@ -54,7 +60,12 @@ public:
     /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
+
+    /// Returns the data source locator relative to the material network for the
+    /// material node parameter indicated by the interface mapping.
+    /// Ie. Returns locator: nodes/<nodePath>/parameters/<inputName>
     HdDataSourceLocator BuildNetworkRelativeLocator();
+    
 // --(END CUSTOM CODE: Schema Methods)--
 
     /// \name Member accessor

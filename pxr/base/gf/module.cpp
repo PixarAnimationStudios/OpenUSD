@@ -13,6 +13,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 TF_WRAP_MODULE
 {
     TF_WRAP( BBox3d );
+    TF_WRAP( Color );
+    TF_WRAP( ColorSpace );
     TF_WRAP( DualQuatd );
     TF_WRAP( DualQuatf );
     TF_WRAP( DualQuath );

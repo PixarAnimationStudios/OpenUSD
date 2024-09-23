@@ -10,14 +10,16 @@ class "APIIdentifierMissingAPI" (
 {
     float inputs:intensity = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Basic"
-        displayName = "Intensity"
-        doc = """
+        customData = {
+            string userDoc = """
                 intensity: Itensity of the flame thrower.
                 """
-    )
-    uniform token myRenderContext:usda:shaderId = "APIIdentifierMissing" (
-        displayGroup = "Internal"
+            string userDocBrief = """
+                intensity: Itensity of the flame thrower.
+                """
+        }
+        displayGroup = "Basic"
+        displayName = "Intensity"
     )
     color3f outputs:resultRGB
 }

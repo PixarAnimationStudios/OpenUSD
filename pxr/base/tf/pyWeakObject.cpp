@@ -9,7 +9,7 @@
 #include "pxr/base/tf/pyWeakObject.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/class.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -73,8 +73,8 @@ int
 Tf_PyWeakObjectDeleter::WrapIfNecessary()
 {
     if (TfPyIsNone(TfPyGetClassObject<Tf_PyWeakObjectDeleter>())) {
-        boost::python::class_<Tf_PyWeakObjectDeleter>
-            ("Tf_PyWeakObject__Deleter", boost::python::no_init)
+        pxr_boost::python::class_<Tf_PyWeakObjectDeleter>
+            ("Tf_PyWeakObject__Deleter", pxr_boost::python::no_init)
             .def("__call__", &Tf_PyWeakObjectDeleter::Deleted);
     }
     return 1;
@@ -94,7 +94,7 @@ Tf_PyWeakObjectDeleter::Deleted(PyObject * /* weakRef */)
 }
 
 Tf_PyWeakObjectPtr
-Tf_PyWeakObject::GetOrCreate(boost::python::object const &obj)
+Tf_PyWeakObject::GetOrCreate(pxr_boost::python::object const &obj)
 {
     // If it's in the registry, return it.
     if (Tf_PyWeakObjectPtr p =
@@ -112,12 +112,12 @@ Tf_PyWeakObject::GetOrCreate(boost::python::object const &obj)
 }
 
 
-boost::python::object
+pxr_boost::python::object
 Tf_PyWeakObject::GetObject() const
 {
-    return boost::python::object
-        (boost::python::handle<>
-         (boost::python::borrowed(PyWeakref_GetObject(_weakRef.get()))));
+    return pxr_boost::python::object
+        (pxr_boost::python::handle<>
+         (pxr_boost::python::borrowed(PyWeakref_GetObject(_weakRef.get()))));
 }
 
 void
@@ -127,10 +127,10 @@ Tf_PyWeakObject::Delete()
     delete this;
 }
     
-Tf_PyWeakObject::Tf_PyWeakObject(boost::python::object const &obj)
+Tf_PyWeakObject::Tf_PyWeakObject(pxr_boost::python::object const &obj)
     : _weakRef(
         PyWeakref_NewRef(
-            obj.ptr(), boost::python::
+            obj.ptr(), pxr_boost::python::
             object(Tf_PyWeakObjectDeleter(TfCreateWeakPtr(this))).ptr()))
 {
     Tf_PyWeakObjectPtr self(this);

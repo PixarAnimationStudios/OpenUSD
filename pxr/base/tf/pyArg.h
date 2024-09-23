@@ -10,8 +10,8 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
 
-#include <boost/python/dict.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 #include <string>
 #include <vector>
 
@@ -21,7 +21,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Class representing a function argument.
 ///
-/// This is similar to \c boost::python::arg, except it's not opaque and
+/// This is similar to \c pxr_boost::python::arg, except it's not opaque and
 /// provides more fields for documentation purposes.
 class TfPyArg
 {
@@ -67,10 +67,10 @@ typedef std::vector<TfPyArg> TfPyArgs;
 /// arguments will cause a Python TypeError to be emitted. Otherwise,
 /// unmatched arguments will be added to the returned tuple or dict.
 TF_API
-std::pair<boost::python::tuple, boost::python::dict>
+std::pair<pxr_boost::python::tuple, pxr_boost::python::dict>
 TfPyProcessOptionalArgs(
-    const boost::python::tuple& args, 
-    const boost::python::dict& kwargs,
+    const pxr_boost::python::tuple& args, 
+    const pxr_boost::python::dict& kwargs,
     const TfPyArgs& expectedArgs,
     bool allowExtraArgs = false);
 

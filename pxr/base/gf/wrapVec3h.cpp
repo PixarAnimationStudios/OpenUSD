@@ -25,22 +25,22 @@
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec3i.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/overloads.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python/slice.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/make_constructor.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/overloads.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/external/boost/python/slice.hpp"
 
 #include <string>
-
-using namespace boost::python;
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -118,10 +118,10 @@ static size_t __hash__(GfVec3h const &self) {
 }
 
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(VecGetNormalized_overloads,
+PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(VecGetNormalized_overloads,
                                        GetNormalized, 0, 1);
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(VecNormalize_overloads, Normalize, 0, 1);
-BOOST_PYTHON_FUNCTION_OVERLOADS(GetNormalized_overloads,
+PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(VecNormalize_overloads, Normalize, 0, 1);
+PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(GetNormalized_overloads,
                                 GfGetNormalized, 1, 2);
 
 static GfHalf
@@ -130,7 +130,7 @@ NormalizeHelper(GfVec3h *vec, GfHalf eps = 0.001)
     return GfNormalize(vec, eps);
 }
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(Normalize_overloads, NormalizeHelper, 1, 2);
+PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(Normalize_overloads, NormalizeHelper, 1, 2);
 
  
 
@@ -142,7 +142,7 @@ OrthogonalizeBasisHelper( GfVec3h *v1, GfVec3h *v2, GfVec3h *v3,
 {
     return GfVec3h::OrthogonalizeBasis(v1, v2, v3, normalize, eps);
 }
-BOOST_PYTHON_FUNCTION_OVERLOADS(OrthogonalizeBasis_overloads,
+PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(OrthogonalizeBasis_overloads,
                                 OrthogonalizeBasisHelper, 4, 5)
 
 static tuple
@@ -151,10 +151,10 @@ BuildOrthonormalFrameHelper(const GfVec3h &self,
 {
     GfVec3h v1, v2;
     self.BuildOrthonormalFrame( &v1, &v2, eps );
-    return boost::python::make_tuple(v1, v2);
+    return pxr_boost::python::make_tuple(v1, v2);
 }
 
-BOOST_PYTHON_FUNCTION_OVERLOADS(BuildOrthonormalFrame_overloads,
+PXR_BOOST_PYTHON_FUNCTION_OVERLOADS(BuildOrthonormalFrame_overloads,
                                 BuildOrthonormalFrameHelper, 1, 2)
 
  
@@ -206,13 +206,13 @@ static void __setitem__(GfVec3h &self, int index, GfHalf value) {
 
 // Handles refcounting & extraction for PySequence_GetItem.
 static GfHalf _SequenceGetItem(PyObject *seq, Py_ssize_t i) {
-    boost::python::handle<> h(PySequence_GetItem(seq, i));
-    return extract<GfHalf>(boost::python::object(h));
+    pxr_boost::python::handle<> h(PySequence_GetItem(seq, i));
+    return extract<GfHalf>(pxr_boost::python::object(h));
 }
 
 static bool _SequenceCheckItem(PyObject *seq, Py_ssize_t i) {
-    boost::python::handle<> h(PySequence_GetItem(seq, i));
-    extract<GfHalf> e((boost::python::object(h)));
+    pxr_boost::python::handle<> h(PySequence_GetItem(seq, i));
+    extract<GfHalf> e((pxr_boost::python::object(h)));
     return e.check();
 }
 
@@ -308,7 +308,7 @@ struct FromPythonTuple {
     FromPythonTuple() {
         converter::registry::
             push_back(&_convertible, &_construct,
-                      boost::python::type_id<GfVec3h>());
+                      pxr_boost::python::type_id<GfVec3h>());
     }
 
   private:
@@ -349,10 +349,10 @@ struct FromPythonTuple {
 // This adds support for python's builtin pickling library
 // This is used by our Shake plugins which need to pickle entire classes
 // (including code), which we don't support in pxml.
-struct PickleSuite : boost::python::pickle_suite
+struct PickleSuite : pxr_boost::python::pickle_suite
 {
-    static boost::python::tuple getinitargs(const GfVec3h &v) {
-        return boost::python::make_tuple(v[0], v[1], v[2]);
+    static pxr_boost::python::tuple getinitargs(const GfVec3h &v) {
+        return pxr_boost::python::make_tuple(v[0], v[1], v[2]);
     }
 };
 
@@ -486,7 +486,7 @@ void wrapVec3h()
         // __itruediv__ not added by .def( self /= double() ) above, which
         // happens when building with python 2, but we need it to support
         // "from __future__ import division". This is also a workaround for a 
-        // bug in the current version of boost::python that incorrectly wraps
+        // bug in the current version of pxr_boost::python that incorrectly wraps
         // in-place division with __idiv__ when building with python 3.
         cls.def("__itruediv__", __itruediv__, return_self<>{});
     }

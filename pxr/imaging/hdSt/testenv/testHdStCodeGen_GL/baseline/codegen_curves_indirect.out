@@ -938,6 +938,9 @@ int GetPrimitiveEdgeId() {
 float GetSelectedEdgeOpacity() {
   return 0.0;
 }
+bool SelectWireframeFaceEdges() {
+  return false;
+}
 float HdGet_faceVisibility(int localIndex) {
   int index = GetAggregatedElementID();
   return float(faceVisibility[index]);
@@ -1465,6 +1468,9 @@ int GetPrimitiveEdgeId() {
 }
 float GetSelectedEdgeOpacity() {
   return 0.0;
+}
+bool SelectWireframeFaceEdges() {
+  return false;
 }
 float HdGet_faceVisibility(int localIndex) {
   int index = GetAggregatedElementID();
@@ -2218,6 +2224,9 @@ int GetPrimitiveEdgeId() {
 }
 float GetSelectedEdgeOpacity() {
   return 0.0;
+}
+bool SelectWireframeFaceEdges() {
+  return false;
 }
 float HdGet_faceVisibility(int localIndex) {
   int index = GetAggregatedElementID();

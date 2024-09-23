@@ -2272,11 +2272,10 @@ class Camera "Camera" (
     \\endcode
     \\note
     <b>Cameras in USD are always "Y up", regardless of the stage's orientation
-    (i.e. UsdGeomGetStageUpAxis()).</b>  This means that the inverse of 
-    'camXform' (the VIEW half of the <A HREF="http://www.glprogramming.com/red/chapter03.html#name2">MODELVIEW transform in OpenGL parlance</A>) 
-    will transform the world such that the camera is at the origin, looking 
-    down the -Z axis, with +Y as the up axis, and +X pointing to the right.
-    This describes a __right handed coordinate system__. 
+    (i.e. UsdGeomGetStageUpAxis()).</b> 'camXform' positions the camera in the 
+    world, and the inverse transforms the world such that the camera is at the 
+    origin, looking down the -Z axis, with +Y as the up axis, and +X pointing to 
+    the right. This describes a __right handed coordinate system__. 
 
     \\section UsdGeom_CameraUnits Units of Measure for Camera Properties
 

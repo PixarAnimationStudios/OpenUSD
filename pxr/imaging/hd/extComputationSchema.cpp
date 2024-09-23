@@ -32,25 +32,25 @@ TF_DEFINE_PUBLIC_TOKENS(HdExtComputationSchemaTokens,
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
 
-HdContainerDataSourceHandle
+HdSampledDataSourceContainerSchema
 HdExtComputationSchema::GetInputValues() const
 {
-    return _GetTypedDataSource<HdContainerDataSource>(
-        HdExtComputationSchemaTokens->inputValues);
+    return HdSampledDataSourceContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
+        HdExtComputationSchemaTokens->inputValues));
 }
 
-HdVectorDataSourceHandle
+HdExtComputationInputComputationContainerSchema
 HdExtComputationSchema::GetInputComputations() const
 {
-    return _GetTypedDataSource<HdVectorDataSource>(
-        HdExtComputationSchemaTokens->inputComputations);
+    return HdExtComputationInputComputationContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
+        HdExtComputationSchemaTokens->inputComputations));
 }
 
-HdVectorDataSourceHandle
+HdExtComputationOutputContainerSchema
 HdExtComputationSchema::GetOutputs() const
 {
-    return _GetTypedDataSource<HdVectorDataSource>(
-        HdExtComputationSchemaTokens->outputs);
+    return HdExtComputationOutputContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
+        HdExtComputationSchemaTokens->outputs));
 }
 
 HdStringDataSourceHandle
@@ -85,8 +85,8 @@ HdExtComputationSchema::GetElementCount() const
 HdContainerDataSourceHandle
 HdExtComputationSchema::BuildRetained(
         const HdContainerDataSourceHandle &inputValues,
-        const HdVectorDataSourceHandle &inputComputations,
-        const HdVectorDataSourceHandle &outputs,
+        const HdContainerDataSourceHandle &inputComputations,
+        const HdContainerDataSourceHandle &outputs,
         const HdStringDataSourceHandle &glslKernel,
         const HdDataSourceBaseHandle &cpuCallback,
         const HdSizetDataSourceHandle &dispatchCount,
@@ -145,7 +145,7 @@ HdExtComputationSchema::Builder::SetInputValues(
 
 HdExtComputationSchema::Builder &
 HdExtComputationSchema::Builder::SetInputComputations(
-    const HdVectorDataSourceHandle &inputComputations)
+    const HdContainerDataSourceHandle &inputComputations)
 {
     _inputComputations = inputComputations;
     return *this;
@@ -153,7 +153,7 @@ HdExtComputationSchema::Builder::SetInputComputations(
 
 HdExtComputationSchema::Builder &
 HdExtComputationSchema::Builder::SetOutputs(
-    const HdVectorDataSourceHandle &outputs)
+    const HdContainerDataSourceHandle &outputs)
 {
     _outputs = outputs;
     return *this;

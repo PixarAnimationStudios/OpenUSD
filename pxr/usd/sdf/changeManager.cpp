@@ -140,6 +140,26 @@ _InitChangeSerialNumber() {
     return value;
 }
 
+SdfChangeList
+Sdf_ChangeManager::ExtractLocalChanges(
+    const SdfLayerHandle &layer)
+{
+    SdfLayerChangeListVec &layerChanges = _data.local().changes;
+    SdfChangeList changeList;
+
+    auto result = std::find_if(layerChanges.begin(), layerChanges.end(), 
+    [&layer](const SdfLayerChangeListVec::value_type& item){
+        return item.first == layer;
+    });
+
+    if (result != layerChanges.end()) {
+        changeList = std::move((*result).second);
+        layerChanges.erase(result);
+    }
+
+    return changeList;
+}
+
 void
 Sdf_ChangeManager::_SendNotices(_Data *data)
 {

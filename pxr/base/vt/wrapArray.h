@@ -32,20 +32,20 @@
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/detail/api_placeholder.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/implicit.hpp>
-#include <boost/python/iterator.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/slice.hpp>
-#include <boost/python/type_id.hpp>
-#include <boost/python/overloads.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/copy_const_reference.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/detail/api_placeholder.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/implicit.hpp"
+#include "pxr/external/boost/python/iterator.hpp"
+#include "pxr/external/boost/python/make_constructor.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/external/boost/python/slice.hpp"
+#include "pxr/external/boost/python/type_id.hpp"
+#include "pxr/external/boost/python/overloads.hpp"
 
 #include <algorithm>
 #include <numeric>
@@ -58,7 +58,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Vt_WrapArray {
 
-using namespace boost::python;
+using namespace pxr_boost::python;
 
 using std::unique_ptr;
 using std::vector;
@@ -517,13 +517,13 @@ Vt_ConvertFromPySequenceOrIter(TfPyObjWrapper const &obj)
         Array result(len);
         ElemType *elem = result.data();
         for (Py_ssize_t i = 0; i != len; ++i) {
-            boost::python::handle<> h(PySequence_ITEM(obj.ptr(), i));
+            pxr_boost::python::handle<> h(PySequence_ITEM(obj.ptr(), i));
             if (!h) {
                 if (PyErr_Occurred())
                     PyErr_Clear();
                 return VtValue();
             }
-            boost::python::extract<ElemType> e(h.get());
+            pxr_boost::python::extract<ElemType> e(h.get());
             if (!e.check())
                 return VtValue();
             *elem++ = e();
@@ -532,13 +532,13 @@ Vt_ConvertFromPySequenceOrIter(TfPyObjWrapper const &obj)
     } else if (PyIter_Check(obj.ptr())) {
         Array result;
         while (PyObject *item = PyIter_Next(obj.ptr())) {
-            boost::python::handle<> h(item);
+            pxr_boost::python::handle<> h(item);
             if (!h) {
                 if (PyErr_Occurred())
                     PyErr_Clear();
                 return VtValue();
             }
-            boost::python::extract<ElemType> e(h.get());
+            pxr_boost::python::extract<ElemType> e(h.get());
             if (!e.check())
                 return VtValue();
             result.push_back(e());

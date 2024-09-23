@@ -20,6 +20,7 @@
                         ], 
                         "isUsdShadeContainer": true, 
                         "providesUsdShadeConnectableAPIBehavior": true, 
+                        "schemaIdentifier": "AutoApplyConnectableBehaviorContainerSetAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdShadeConnectableAPIBehaviorAutoApplyConnectableBehaviorNoRequiresEncapsulationAPI": {
@@ -36,6 +37,7 @@
                         ], 
                         "providesUsdShadeConnectableAPIBehavior": true, 
                         "requiresUsdShadeEncapsulation": false, 
+                        "schemaIdentifier": "AutoApplyConnectableBehaviorNoRequiresEncapsulationAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdShadeConnectableAPIBehaviorAutoApplyDefaultConnectableBehaviorAPI": {
@@ -51,6 +53,7 @@
                             "UsdAPISchemaBase"
                         ], 
                         "providesUsdShadeConnectableAPIBehavior": true, 
+                        "schemaIdentifier": "AutoApplyDefaultConnectableBehaviorAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdShadeConnectableAPIBehaviorDefaultConnectableBehaviorAPI": {
@@ -62,6 +65,7 @@
                             "UsdAPISchemaBase"
                         ], 
                         "providesUsdShadeConnectableAPIBehavior": true, 
+                        "schemaIdentifier": "DefaultConnectableBehaviorAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdShadeConnectableAPIBehaviorModifiedDefaultConnectableBehaviorAPI": {
@@ -75,6 +79,7 @@
                         "isUsdShadeContainer": true, 
                         "providesUsdShadeConnectableAPIBehavior": true, 
                         "requiresUsdShadeEncapsulation": false, 
+                        "schemaIdentifier": "ModifiedDefaultConnectableBehaviorAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdShadeConnectableAPIBehaviorUsdShadeTestAncestorConfiguredType": {
@@ -85,6 +90,7 @@
                         "bases": [
                             "UsdShadeNodeGraph"
                         ], 
+                        "schemaIdentifier": "UsdShadeTestAncestorConfiguredType", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdShadeConnectableAPIBehaviorUsdShadeTestPlugConfiguredType": {
@@ -98,6 +104,7 @@
                         "isUsdShadeContainer": false, 
                         "providesUsdShadeConnectableAPIBehavior": true, 
                         "requiresUsdShadeEncapsulation": false, 
+                        "schemaIdentifier": "UsdShadeTestPlugConfiguredType", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdShadeConnectableAPIBehaviorUsdShadeTestTyped": {
@@ -108,6 +115,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "UsdShadeTestTyped", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdShadeConnectableAPIBehaviorUsdShadeTestTypedHasAutoApplyContainer": {
@@ -118,6 +126,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "UsdShadeTestTypedHasAutoApplyContainer", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdShadeConnectableAPIBehaviorUsdShadeTestTypedHasAutoApplyDefault": {
@@ -128,6 +137,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "UsdShadeTestTypedHasAutoApplyDefault", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdShadeConnectableAPIBehaviorUsdShadeTestTypedHasAutoApplyRequiresEncapsulation": {
@@ -138,6 +148,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "UsdShadeTestTypedHasAutoApplyRequiresEncapsulation", 
                         "schemaKind": "concreteTyped"
                     }
                 }

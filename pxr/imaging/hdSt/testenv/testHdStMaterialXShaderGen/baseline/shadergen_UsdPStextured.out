@@ -236,7 +236,9 @@ void mxInit(vec4 Peye, vec3 Neye)
             // Note: in Storm, diffuse = lightColor * intensity;
             float intensity = max( max(light.diffuse.r, light.diffuse.g), 
                                    light.diffuse.b);
-            u_lightData[u_numActiveLightSources].color = light.diffuse.rgb/intensity;
+            vec3 lightColor = (intensity == 0.0) 
+                ? light.diffuse.rgb : light.diffuse.rgb/intensity;
+            u_lightData[u_numActiveLightSources].color = lightColor;
             u_lightData[u_numActiveLightSources].intensity = intensity;
             
             // Attenuation 

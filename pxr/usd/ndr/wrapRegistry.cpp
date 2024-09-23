@@ -10,11 +10,13 @@
 #include "pxr/usd/ndr/registry.h"
 #include "pxr/base/tf/pyAnnotatedBoolResult.h"
 
-#include <boost/python.hpp>
-#include <boost/python/return_internal_reference.hpp>
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/return_internal_reference.hpp"
+#include "pxr/external/boost/python/suite/indexing/vector_indexing_suite.hpp"
 
-using namespace boost::python;
+PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -26,8 +28,6 @@ bool NdrRegistry_ValidateProperty(
     std::string* errorMessage);
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-PXR_NAMESPACE_USING_DIRECTIVE
 
 struct Ndr_ValidatePropertyAnnotatedBool :
     public TfPyAnnotatedBoolResult<std::string>

@@ -626,7 +626,7 @@ from RenderMan. These are:
   interpolated over each face of the mesh. Bilinear interpolation is used for 
   interpolation between the four values.
 
-For a graphical illustration of these modes, see `Primvar Interpolation <https://github.com/usd-wg/assets/tree/main/test_assets/PrimvarInterpolation>`__
+For a graphical illustration of these modes, see `Primvar Interpolation <https://github.com/usd-wg/assets/tree/main/docs/PrimvarInterpolation>`__
 
 As :usda:`faceVarying` allows for per-vertex-per-face values, you can use this 
 interpolation to create discontinuous vertex UVs or normals. For example, with 
@@ -1141,11 +1141,29 @@ compression is applied. It is expected that more complex treatment of OpenEXR
 files including the construction of multilayer files will be completed by 
 pipeline tools.
 
+AV1 Image File Format (AVIF)
+============================
+
+The AV1 Image Format is a royalty-free open-source picture format, with modern 
+compression, flexible color specification, high dynamic range values, depth 
+images and alpha channels, and support for layered and sequential images. 
+
+The supported feature set in Hydra's builtin texture manager is currently 
+restricted to single frame images, which are decoded to linear Rec709 RGB or 
+RGBA if an alpha channel is present.
+
+Reading is implemented through the use of libaom, and libavif. 
+YUV to RGB decoding is accomplished by libyuv. 
+
+libaom is the reference codec library created by the Alliance for Open Media. 
+libavif is a portable C implementation of the AV1 Image File Format.
+
 See also:
 
 - `OpenEXR reference <https://openexr.com/en/latest/index.html#openexr>`__
 - `Rec709 standard <https://www.itu.int/rec/R-REC-BT.709-6-201506-I/en>`__
 - `Wikipedia entry on Rec709 standard <https://en.wikipedia.org/wiki/Rec._709>`__
+- `AV1 Image File Format specification <https://aomediacodec.github.io/av1-avif/>`__
 
 .. _render_camera:
 

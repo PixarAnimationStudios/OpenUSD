@@ -501,11 +501,12 @@ public:
     HD_API
     virtual TfToken GetRenderTag(SdfPath const& id);
 
-    /// Returns the prim categories.
+    /// Returns the prim categories. For instancer prims, the categories
+    /// returned apply to all its instances.
     HD_API
     virtual VtArray<TfToken> GetCategories(SdfPath const& id);
 
-    /// Returns the categories for all instances in the instancer.
+    /// Returns the categories for each of the instances in the instancer.
     HD_API
     virtual std::vector<VtArray<TfToken>>
     GetInstanceCategories(SdfPath const &instancerId);

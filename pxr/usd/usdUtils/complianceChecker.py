@@ -659,8 +659,7 @@ class ShaderPropertyTypeConformanceChecker(BaseRuleChecker):
         for inputName in shadeNode.GetInputNames():
             prop = shadeNode.GetInput(inputName)
             propName = prop.GetName()
-            sdfType, sdfHint = prop.GetTypeAsSdfType()
-            mapping[propName] = sdfType
+            mapping[propName] = prop.GetTypeAsSdfType().GetSdfType()
 
 
 

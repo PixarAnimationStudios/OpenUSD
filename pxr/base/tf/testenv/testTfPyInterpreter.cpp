@@ -10,12 +10,13 @@
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyLock.h"
 
-#include <boost/python/handle.hpp>
+#include "pxr/external/boost/python/handle.hpp"
 
 #include <string>
 
-using namespace boost::python;
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 static unsigned int
 testInterpreter(bool verbose)

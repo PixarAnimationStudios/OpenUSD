@@ -11,20 +11,20 @@
 
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
 #define PCP_GET_NODE_FN(nodeFn)                                         \
-    static boost::python::object                                        \
+    static pxr_boost::python::object                                        \
     _ ## nodeFn(const PcpNodeRef& node)                                 \
     {                                                                   \
         PcpNodeRef n = node.nodeFn();                                   \
-        return n ? boost::python::object(n) : boost::python::object();  \
+        return n ? pxr_boost::python::object(n) : pxr_boost::python::object();  \
     }
 
 PCP_GET_NODE_FN(GetParentNode);

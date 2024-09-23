@@ -374,7 +374,7 @@ class TestUsdLuxLight(unittest.TestCase):
 
         cylLight.CreateRadiusAttr(4.0)
         cylLight.CreateLengthAttr(10.0)
-        _VerifyExtentAndBBox(cylLight, [(-4.0, -4.0, -5.0), (4.0, 4.0, 5.0)])
+        _VerifyExtentAndBBox(cylLight, [(-5.0, -4.0, -4.0), (5.0, 4.0, 4.0)])
 
         sphereLight.CreateRadiusAttr(3.0)
         _VerifyExtentAndBBox(sphereLight, [(-3.0, -3.0, -3.0), (3.0, 3.0, 3.0)])
@@ -575,11 +575,12 @@ class TestUsdLuxLight(unittest.TestCase):
                 # Verify the node's input type maps back to USD property's type
                 # (with the noted above exceptions).
                 self.assertEqual(
-                    nodeInput.GetTypeAsSdfType()[0], expectedTypeName,
+                    nodeInput.GetTypeAsSdfType().GetSdfType(),
+                    expectedTypeName,
                     msg="{}.{} Type {} != {}".format(
                         str(node.GetName()),
                         str(nodeInput.GetName()),
-                        str(nodeInput.GetTypeAsSdfType()[0]),
+                        str(nodeInput.GetTypeAsSdfType().GetSdfType()),
                         str(expectedTypeName)))
                 # If the USD property type is an Asset, it will be listed in 
                 # the node's asset identifier inputs.

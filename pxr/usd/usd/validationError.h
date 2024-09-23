@@ -202,13 +202,16 @@ using UsdValidationErrorSites = std::vector<UsdValidationErrorSite>;
 ///
 /// A UsdValidationError instance contains important information, like:
 ///
+/// - Name - A name the validator writer provided for the error. This is then
+///        used to construct an identifier for the error. 
+///
 /// - UsdValidationErrorType - severity of an error, 
 ///
 /// - UsdValidationErrorSites - on what sites validationError was reported by a 
 ///                          validation task, 
 ///
-/// - Message - Message governing more information associated with the error. Such
-///           a message is provided by the validator writer, when providing
+/// - Message - Message providing more information associated with the error.
+///           Such a message is provided by the validator writer, when providing
 ///           implementation for the validation task function.
 /// 
 /// UsdValidationError instances will be stored in the UsdValidationContext
@@ -220,15 +223,17 @@ public:
     USD_API
     UsdValidationError();
 
-    /// Instantiate a ValidationError by providing its \p errorType, \p
-    /// errorSites and an \p errorMsg.
+    /// Instantiate a ValidationError by providing its \p name, \p errorType, 
+    /// \p errorSites and an \p errorMsg.
     USD_API
-    UsdValidationError(const UsdValidationErrorType &errorType, 
+    UsdValidationError(const TfToken &name,
+                       const UsdValidationErrorType &errorType, 
                        const UsdValidationErrorSites &errorSites, 
                        const std::string &errorMsg);
 
     bool operator==(const UsdValidationError& other) const {
-        return (_errorType == other._errorType) &&
+        return (_name == other._name) &&
+               (_errorType == other._errorType) &&
                (_errorSites == other._errorSites) &&
                (_errorMsg == other._errorMsg) &&
                (_validator == other._validator);
@@ -238,6 +243,18 @@ public:
         return !(*this == other);
     }
 
+    /// Returns the name token of the UsdValidationError
+    const TfToken& GetName() const &
+    {
+        return _name;
+    }
+
+    /// Returns the name token of the UsdValidationError by-value
+    TfToken GetName() &&
+    {
+        return std::move(_name);
+    }
+    
     /// Returns the UsdValidationErrorType associated with this
     /// UsdValidationError
     UsdValidationErrorType GetType() const
@@ -247,9 +264,16 @@ public:
 
     /// Returns the UsdValidationErrorSite associated with this
     /// UsdValidationError
-    const UsdValidationErrorSites& GetSites() const
+    const UsdValidationErrorSites& GetSites() const &
     {
         return _errorSites;
+    }
+
+    /// Returns the UsdValidationErrorSite associated with this
+    /// UsdValidationError by-value
+    UsdValidationErrorSites GetSites() &&
+    {
+        return std::move(_errorSites);
     }
 
     /// Returns the UsdValidator that reported this error.
@@ -267,6 +291,24 @@ public:
     {
         return _errorMsg;
     }
+
+    /// An identifier for the error constructed from the validator name this
+    /// error was generated from and its name.
+    ///
+    /// Since a validator may result in multiple distinct errors, the identifier
+    /// helps in distinguishing and categorizing the errors. The identifier
+    /// returned will be in the following form:
+    /// For a plugin validator: "plugName":"validatorName"."ErrorName"
+    /// For a non-plugin validator: "validatorName"."ErrorName"
+    ///
+    /// For an error that was generated without a name, the identifier will be
+    /// same as the validator name which generated the error.
+    ///
+    /// For an error which is created directly and not via 
+    /// UsdValidator::Validate() call, we throw a coding error, as its an
+    /// improper use of the API.
+    USD_API
+    TfToken GetIdentifier() const;
 
     /// Returns UsdValidationErrorType and ErrorMessage concatenated as a string
     USD_API
@@ -293,6 +335,7 @@ private:
 
     // These data members should not be modified other than during
     // initialization by the validate task functions.
+    TfToken _name;
     UsdValidationErrorType _errorType;
     UsdValidationErrorSites _errorSites;
     std::string _errorMsg;

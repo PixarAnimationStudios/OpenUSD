@@ -7,6 +7,7 @@
 #ifndef PXR_BASE_GF_NC_NANOCOLOR_H
 #define PXR_BASE_GF_NC_NANOCOLOR_H
 
+#include "pxr/base/arch/export.h"
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -14,9 +15,6 @@
 // multiple libraries can include the nanocolor library without symbol 
 // conflicts. The default is nc_1_0_ to indicate the 1.0 version of Nanocolor.
 //
-// pxr: note that the PXR namespace macros are in pxr/pxr.h which
-// is a C++ only header; so the generated namespace prefixes can't be
-// used here.
 #ifndef NCNAMESPACE
 #define NCNAMESPACE pxr_nc_1_0_
 #endif
@@ -28,7 +26,7 @@
 
 // NCAPI may be overridden externally to control symbol visibility.
 #ifndef NCAPI
-#define NCAPI
+#define NCAPI ARCH_HIDDEN
 #endif
 
 #ifdef __cplusplus

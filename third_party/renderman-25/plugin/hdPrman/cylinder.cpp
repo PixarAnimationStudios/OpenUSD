@@ -6,6 +6,8 @@
 //
 #include "hdPrman/cylinder.h"
 
+#if PXR_VERSION >= 2208
+
 #include "hdPrman/renderParam.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
@@ -71,8 +73,12 @@ HdPrman_Cylinder::_ConvertGeometry(HdPrman_RenderParam *renderParam,
     primvars.SetFloat(RixStr.k_Ri_zmin, -0.5f * height);
     primvars.SetFloat(RixStr.k_Ri_zmax,  0.5f * height);
 
-    HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, 1, 0, 0, 0);
+    HdPrman_ConvertPrimvars(
+        sceneDelegate, id, primvars, 1, 0, 0, 0,
+        renderParam->GetShutterInterval());
     return primvars;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2208

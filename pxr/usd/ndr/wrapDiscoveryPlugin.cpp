@@ -10,11 +10,11 @@
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/usd/ndr/discoveryPlugin.h"
 
-#include <boost/python.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 static void wrapDiscoveryPluginContext()
 {

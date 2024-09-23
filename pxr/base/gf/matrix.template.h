@@ -328,28 +328,6 @@ public:
 {% endfor %});
     }
 
-{% if SCL == 'double' %}
-    /// Returns the product of a matrix \e m and a column vector \e vec.
-    /// Note that the return type is a \c GfVec{{ DIM }}f.
-    ///
-    /// \deprecated
-    /// This function is deprecated, as it can result in unintentional loss of
-    /// precision. Call GfVec{{ SUFFIX }} operator *(const {{ MAT }}&, const GfVec{{ SUFFIX }} &)
-    /// instead and explicitly convert the result to GfVec3f, if necessary.
-    GF_API
-    friend GfVec{{ DIM }}f operator *(const {{ MAT }}& m, const GfVec{{ DIM }}f& vec);
-
-    /// Returns the product of row vector \e vec and a matrix \e m.
-    /// Note that the return type is a \c GfVec{{ DIM }}f.
-    ///
-    /// \deprecated
-    /// This function is deprecated, as it can result in unintentional loss of
-    /// precision. Call GfVec{{ SUFFIX }} operator *(const GfVec{{ SUFFIX }} &, const {{ MAT }}&)
-    /// instead and explicitly convert the result to GfVec3f, if necessary.
-    GF_API
-    friend GfVec{{ DIM }}f operator *(const GfVec{{ DIM }}f &vec, const {{ MAT }}& m);
-
-{% endif %}
 {% block customXformFunctions %}
 {% endblock customXformFunctions %}
 

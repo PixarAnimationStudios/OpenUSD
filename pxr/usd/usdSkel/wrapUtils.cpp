@@ -24,13 +24,13 @@
 #include "pxr/usd/usdSkel/topology.h"
 #include "pxr/usd/usdSkel/utils.h"
 
-#include <boost/python.hpp>
-#include <boost/python/extract.hpp>
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/extract.hpp"
 
-
-using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 
 namespace {
@@ -89,7 +89,7 @@ _DecomposeTransform(const Matrix4& mx)
         TF_CODING_ERROR("Failed decomposing transform. "
                         "The transform may be singular.");
     }
-    return boost::python::make_tuple(t, r, s);
+    return pxr_boost::python::make_tuple(t, r, s);
 }
 
 
@@ -104,7 +104,7 @@ _DecomposeTransforms(const TfSpan<Matrix4>& xforms)
         TF_CODING_ERROR("Failed decomposing transforms. "
                         "Some transforms may be singular.");
     }
-    return boost::python::make_tuple(t, r, s);
+    return pxr_boost::python::make_tuple(t, r, s);
 }
 
 

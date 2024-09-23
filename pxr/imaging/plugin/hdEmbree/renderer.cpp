@@ -6,21 +6,662 @@
 //
 #include "pxr/imaging/plugin/hdEmbree/renderer.h"
 
-#include "pxr/imaging/plugin/hdEmbree/renderBuffer.h"
 #include "pxr/imaging/plugin/hdEmbree/config.h"
-#include "pxr/imaging/plugin/hdEmbree/context.h"
+#include "pxr/imaging/plugin/hdEmbree/light.h"
 #include "pxr/imaging/plugin/hdEmbree/mesh.h"
+#include "pxr/imaging/plugin/hdEmbree/pxrPbrt/pbrtUtils.h"
+#include "pxr/imaging/plugin/hdEmbree/renderBuffer.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 
+#include "pxr/base/gf/color.h"
+#include "pxr/base/gf/colorSpace.h"
 #include "pxr/base/gf/matrix3f.h"
+#include "pxr/base/gf/range1f.h"
 #include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec3f.h"
 #include "pxr/base/work/loops.h"
 
 #include "pxr/base/tf/hash.h"
 
+#include <embree3/rtcore_common.h>
+#include <embree3/rtcore_geometry.h>
+#include <embree3/rtcore_scene.h>
+
+#include <tbb/tbb_stddef.h>
+#if TBB_INTERFACE_VERSION_MAJOR < 12
+#include <tbb/task_scheduler_init.h>
+#endif
+
+#include <algorithm>
 #include <chrono>
+#include <limits>
+#include <memory>
+#include <stdint.h>
 #include <thread>
+
+namespace {
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+// -------------------------------------------------------------------------
+// Constants
+// -------------------------------------------------------------------------
+
+template <typename T>
+constexpr T _pi = static_cast<T>(M_PI);
+
+constexpr float _rayHitContinueBias = 0.001f;
+
+constexpr float _minLuminanceCutoff = 1e-9f;
+
+constexpr GfVec3f _invalidColor = GfVec3f(-std::numeric_limits<float>::infinity());
+
+// -------------------------------------------------------------------------
+// Old TBB workaround - can remove once OneTBB is mandatory
+// -------------------------------------------------------------------------
+
+#if TBB_INTERFACE_VERSION_MAJOR < 12
+// Make the calling context respect PXR_WORK_THREAD_LIMIT, if run from a thread
+// other than the main thread (ie, the renderThread)
+class _ScopedThreadScheduler {
+public:
+    _ScopedThreadScheduler() {
+        auto limit = WorkGetConcurrencyLimitEnvSetting();
+        if (limit != 0) {
+            _tbbTaskSchedInit =
+                std::make_unique<tbb::task_scheduler_init>(limit);
+        }
+    }
+
+    std::unique_ptr<tbb::task_scheduler_init> _tbbTaskSchedInit;
+};
+#else
+class _ScopedThreadScheduler {
+};
+#endif
+
+// -------------------------------------------------------------------------
+// General Math Utilities
+// -------------------------------------------------------------------------
+
+inline float
+_Sqr(float x)
+{
+    return x*x;
+}
+
+// The latitudinal polar coordinate of v, in the range [0, pi]
+inline float
+_Theta(GfVec3f const& v)
+{
+    return acosf(GfClamp(v[2], -1.0f, 1.0f));
+}
+
+// The longitudinal polar coordinate of v, in the range [0, 2*pi)
+inline float
+_Phi(GfVec3f const& v)
+{
+    float p = atan2f(v[1], v[0]);
+    return p < 0.0f ? (p + 2.0f * _pi<float>) : p;
+}
+
+// Dot product, but set to 0 if less than 0 - ie, 0 for backward-facing rays
+inline float
+_DotZeroClip(GfVec3f const& a, GfVec3f const& b)
+{
+    return std::max(0.0f, GfDot(a, b));
+}
+
+float
+_Smoothstep(float t, GfRange1f range)
+{
+    const float length = range.GetSize();
+    if (length == 0) {
+        if (t <= range.GetMin()) {
+            // Note that in the case of t == range.GetMin(), we have a
+            // degenerate case where there's no clear answer what the "right"
+            // thing to do is.
+
+            // I arbitrarily chose 0.0 to return in this case, so at least we
+            // have consistent / well defined behavior; could have also done 1.0
+            // or 0.5...
+            return 0.0;
+        }
+        return 1.0;
+    }
+    t = GfClamp((t - range.GetMin())/length, 0.0f, 1.0f);
+    return t * t * (3.0f - 2.0f * t);
+}
+
+float
+_AreaRect(GfMatrix4f const& xf, float width, float height)
+{
+    const GfVec3f U = xf.TransformDir(GfVec3f{width, 0.0f, 0.0f});
+    const GfVec3f V = xf.TransformDir(GfVec3f{0.0f, height, 0.0f});
+    return GfCross(U, V).GetLength();
+}
+
+float
+_AreaSphere(GfMatrix4f const& xf, float radius)
+{
+    // Area of the ellipsoid
+    const float a = xf.TransformDir(GfVec3f{radius, 0.0f, 0.0f}).GetLength();
+    const float b = xf.TransformDir(GfVec3f{0.0f, radius, 0.0f}).GetLength();
+    const float c = xf.TransformDir(GfVec3f{0.0f, 0.0f, radius}).GetLength();
+    const float ab = powf(a*b, 1.6f);
+    const float ac = powf(a*c, 1.6f);
+    const float bc = powf(b*c, 1.6f);
+    return powf((ab + ac + bc) / 3.0f, 1.0f / 1.6f) * 4.0f * _pi<float>;
+}
+
+float
+_AreaDisk(GfMatrix4f const& xf, float radius)
+{
+    // Calculate surface area of the ellipse
+    const float a = xf.TransformDir(GfVec3f{radius, 0.0f, 0.0f}).GetLength();
+    const float b = xf.TransformDir(GfVec3f{0.0f, radius, 0.0f}).GetLength();
+    return _pi<float> * a * b;
+}
+
+float
+_AreaCylinder(GfMatrix4f const& xf, float radius, float length)
+{
+    const float c = xf.TransformDir(GfVec3f{length, 0.0f, 0.0f}).GetLength();
+    const float a = xf.TransformDir(GfVec3f{0.0f, radius, 0.0f}).GetLength();
+    const float b = xf.TransformDir(GfVec3f{0.0f, 0.0f, radius}).GetLength();
+    // Ramanujan's approximation to perimeter of ellipse
+    const float e =
+        _pi<float> * (3.0f * (a + b) - sqrtf((3.0f * a + b) * (a + 3.0f * b)));
+    return e * c;
+}
+
+// -------------------------------------------------------------------------
+// General Ray Utilities
+// -------------------------------------------------------------------------
+
+inline GfVec3f
+_CalculateHitPosition(RTCRayHit const& rayHit)
+{
+    return GfVec3f(rayHit.ray.org_x + rayHit.ray.tfar * rayHit.ray.dir_x,
+                   rayHit.ray.org_y + rayHit.ray.tfar * rayHit.ray.dir_y,
+                   rayHit.ray.org_z + rayHit.ray.tfar * rayHit.ray.dir_z);
+}
+
+// -------------------------------------------------------------------------
+// Color utilities
+// -------------------------------------------------------------------------
+
+const GfColorSpace _linRec709(GfColorSpaceNames->LinearRec709);
+const GfColorSpace _xyzColorSpace(GfColorSpaceNames->CIEXYZ);
+
+// Ideally, we could could move this to GfColor::GetLuminance()
+inline float
+_GetLuminance(GfColor const& color)
+{
+    GfColor xyzColor(color, _xyzColorSpace);
+    // The "Y" component in XYZ space is luminance
+    return xyzColor.GetRGB()[1];
+}
+
+const GfVec3f _rec709LuminanceComponents(
+    _GetLuminance(GfColor(GfVec3f::XAxis(), _linRec709)),
+    _GetLuminance(GfColor(GfVec3f::YAxis(), _linRec709)),
+    _GetLuminance(GfColor(GfVec3f::ZAxis(), _linRec709)));
+
+
+// Recreates UsdLuxBlackbodyTemperatureAsRgb in "pxr/usd/usdLux/blackbody.h"...
+/// But uses new GfColor functionality, since we shouldn't import usd into
+// imaging
+
+// Perhaps UsdLuxBlackbodyTemperatureAsRgb should be deprecated, and this made
+// a new utility function somewhere, for use by other HdRenderDelegates?
+// (Maybe in gf/color.h?)
+inline GfVec3f
+_BlackbodyTemperatureAsRgb(float kelvinColorTemp)
+{
+    auto tempColor = GfColor(_linRec709);
+    // Get color in Rec709 with luminance 1.0
+    tempColor.SetFromPlanckianLocus(kelvinColorTemp, 1.0f);
+    // We normalize to the luminance of (1,1,1) in Rec709
+    GfVec3f tempColorRGB = tempColor.GetRGB();
+    float rec709Luminance = GfDot(tempColorRGB, _rec709LuminanceComponents);
+    return tempColorRGB / rec709Luminance;
+}
+
+// -------------------------------------------------------------------------
+// Light sampling structures / utilities
+// -------------------------------------------------------------------------
+
+struct _ShapeSample {
+    GfVec3f pWorld;
+    GfVec3f nWorld;
+    GfVec2f uv;
+    float invPdfA;
+};
+
+struct _LightSample {
+    GfVec3f Li;
+    GfVec3f wI;
+    float dist;
+    float invPdfW;
+};
+
+GfVec3f
+_SampleLightTexture(HdEmbree_LightTexture const& texture, float s, float t)
+{
+    if (texture.pixels.empty()) {
+        return GfVec3f(0.0f);
+    }
+
+    int x = float(texture.width) * s;
+    int y = float(texture.height) * t;
+
+    return texture.pixels.at(y*texture.width + x);
+}
+
+_ShapeSample
+_SampleRect(GfMatrix4f const& xf, GfMatrix3f const& normalXform, float width,
+            float height, float u1, float u2)
+{
+    // Sample rectangle in object space
+    const GfVec3f pLight(
+      (u1 - 0.5f) * width,
+      (u2 - 0.5f) * height,
+      0.0f
+    );
+    const GfVec3f nLight(0.0f, 0.0f, -1.0f);
+    const GfVec2f uv(u1, u2);
+
+    // Transform to world space
+    const GfVec3f pWorld = xf.Transform(pLight);
+    const GfVec3f nWorld = (nLight * normalXform).GetNormalized();
+
+    const float area = _AreaRect(xf, width, height);
+
+    return _ShapeSample {
+        pWorld,
+        nWorld,
+        uv,
+        area
+    };
+}
+
+_ShapeSample
+_SampleSphere(GfMatrix4f const& xf, GfMatrix3f const& normalXform, float radius,
+              float u1, float u2)
+{
+    // Sample sphere in light space
+    const float z = 1.0 - 2.0 * u1;
+    const float r = sqrtf(std::max(0.0f, 1.0f - z*z));
+    const float phi = 2.0f * _pi<float> * u2;
+    GfVec3f pLight{r * std::cos(phi), r * std::sin(phi), z};
+    const GfVec3f nLight = pLight;
+    pLight *= radius;
+    const GfVec2f uv(u2, z);
+
+    // Transform to world space
+    const GfVec3f pWorld = xf.Transform(pLight);
+    const GfVec3f nWorld = (nLight * normalXform).GetNormalized();
+
+    const float area = _AreaSphere(xf, radius);
+
+    return _ShapeSample {
+        pWorld,
+        nWorld,
+        uv,
+        area
+    };
+}
+
+GfVec3f
+_SampleDiskPolar(float u1, float u2)
+{
+    const float r = sqrtf(u1);
+    const float theta = 2.0f * _pi<float> * u2;
+    return GfVec3f(r * cosf(theta), r * sinf(theta), 0.0f);
+}
+
+_ShapeSample
+_SampleDisk(GfMatrix4f const& xf, GfMatrix3f const& normalXform, float radius,
+            float u1, float u2)
+{
+    // Sample disk in light space
+    GfVec3f pLight = _SampleDiskPolar(u1, u2);
+    const GfVec3f nLight(0.0f, 0.0f, -1.0f);
+    const GfVec2f uv(pLight[0], pLight[1]);
+    pLight *= radius;
+
+    // Transform to world space
+    const GfVec3f pWorld = xf.Transform(pLight);
+    const GfVec3f nWorld = (nLight * normalXform).GetNormalized();
+
+    const float area = _AreaDisk(xf, radius);
+
+    return _ShapeSample {
+        pWorld,
+        nWorld,
+        uv,
+        area
+    };
+}
+
+_ShapeSample
+_SampleCylinder(GfMatrix4f const& xf, GfMatrix3f const& normalXform,
+                float radius,float length, float u1, float u2) {
+    float z = GfLerp(u1, -length/2.0f, length/2.0f);
+    float phi = u2 * 2.0f * _pi<float>;
+    // Compute cylinder sample position _pi_ and normal _n_ from $z$ and $\phi$
+    GfVec3f pLight = GfVec3f(z, radius * cosf(phi), radius * sinf(phi));
+    // Reproject _pObj_ to cylinder surface and compute _pObjError_
+    float hitRad = sqrtf(_Sqr(pLight[1]) + _Sqr(pLight[2]));
+    pLight[1] *= radius / hitRad;
+    pLight[2] *= radius / hitRad;
+
+    GfVec3f nLight(0.0f, pLight[1], pLight[2]);
+    nLight.Normalize();
+
+    // Transform to world space
+    const GfVec3f pWorld = xf.Transform(pLight);
+    const GfVec3f nWorld = (nLight * normalXform).GetNormalized();
+
+    const float area = _AreaCylinder(xf, radius, length);
+
+    return _ShapeSample {
+        pWorld,
+        nWorld,
+        GfVec2f(u2, u1),
+        area
+    };
+}
+
+_ShapeSample
+_IntersectAreaLight(HdEmbree_LightData const& light, RTCRayHit const& rayHit)
+{
+    // XXX: just rect lights at the moment, need to do the others
+    auto const& rect = std::get<HdEmbree_Rect>(light.lightVariant);
+
+    return _ShapeSample {
+        _CalculateHitPosition(rayHit),
+        GfVec3f(rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z),
+        GfVec2f(1.0f - rayHit.hit.u, rayHit.hit.v),
+        _AreaRect(light.xformLightToWorld, rect.width, rect.height)
+    };
+}
+
+float
+_EvalIES(HdEmbree_LightData const& light, GfVec3f const& wI)
+{
+    HdEmbree_IES const& ies = light.shaping.ies;
+
+    if (!ies.iesFile.valid()) {
+        // Either none specified or there was an error loading. In either case,
+        // just ignore
+        return 1.0f;
+    }
+
+    // emission direction in light space
+    GfVec3f wE = light.xformWorldToLight.TransformDir(wI).GetNormalized();
+
+    float theta = _Theta(wE);
+    float phi = _Phi(wE);
+    float norm = ies.normalize ? ies.iesFile.power() : 1.0f;
+
+    return ies.iesFile.eval(theta, phi, ies.angleScale) / norm;
+}
+
+GfVec3f
+_EvalLightBasic(HdEmbree_LightData const& light)
+{
+    // Our current material model is always 100% diffuse, so diffuse parameter
+    // is a stright multiplier
+    GfVec3f Le = light.color * light.intensity * light.diffuse * powf(2.0f, light.exposure);
+    if (light.enableColorTemperature) {
+        Le = GfCompMult(Le,
+            _BlackbodyTemperatureAsRgb(light.colorTemperature));
+    }
+    return Le;
+}
+
+_LightSample
+_EvalDistantLight(HdEmbree_LightData const& light, GfVec3f const& position,
+                    float u1, float u2)
+{
+    auto const& distant = std::get<HdEmbree_Distant>(light.lightVariant);
+
+    GfVec3f Le = _EvalLightBasic(light);
+
+    if (distant.halfAngleRadians > 0.0f)
+    {
+        if (light.normalize)
+        {
+            float sinTheta = sinf(distant.halfAngleRadians);
+            Le /= _Sqr(sinTheta) * _pi<float>;
+        }
+
+        // There's an implicit double-negation of the wI direction here
+        GfVec3f localDir = pxr_pbrt::SampleUniformCone(GfVec2f(u1, u2),
+                                              distant.halfAngleRadians);
+        GfVec3f wI = light.xformLightToWorld.TransformDir(localDir);
+        wI.Normalize();
+
+        return _LightSample {
+            Le,
+            wI,
+            std::numeric_limits<float>::max(),
+            pxr_pbrt::InvUniformConePDF(distant.halfAngleRadians)
+        };
+    }
+    else
+    {
+        // delta case, infinite pdf
+        GfVec3f wI = light.xformLightToWorld.TransformDir(
+            GfVec3f(0.0f, 0.0f, 1.0f));
+        wI.Normalize();
+
+        return _LightSample {
+            Le,
+            wI,
+            std::numeric_limits<float>::max(),
+            1.0f,
+        };
+    }
+}
+
+_LightSample
+_EvalAreaLight(HdEmbree_LightData const& light, _ShapeSample const& ss,
+               GfVec3f const& position)
+{
+    // Transform PDF from area measure to solid angle measure. We use the
+    // inverse PDF here to avoid division by zero when the surface point is
+    // behind the light
+    GfVec3f wI = ss.pWorld - position;
+    const float dist = wI.GetLength();
+    wI /= dist;
+    const float cosThetaOffNormal = _DotZeroClip(-wI, ss.nWorld);
+    float invPdfW = cosThetaOffNormal / _Sqr(dist) * ss.invPdfA;
+    GfVec3f lightNegZ = -light.xformLightToWorld.GetRow3(2).GetNormalized();
+    const float cosThetaOffZ = GfDot(-wI, lightNegZ);
+
+    // Combine the brightness parameters to get initial emission luminance
+    // (nits)
+    GfVec3f Le = cosThetaOffNormal > 0.0f ?
+        _EvalLightBasic(light)
+        : GfVec3f(0.0f);
+
+    // Multiply by the texture, if there is one
+    if (!light.texture.pixels.empty()) {
+        Le = GfCompMult(Le, _SampleLightTexture(light.texture, ss.uv[0],
+                                                1.0f - ss.uv[1]));
+    }
+
+    // If normalize is enabled, we need to divide the luminance by the surface
+    // area of the light, which for an area light is equivalent to multiplying
+    // by the area pdf, which is itself the reciprocal of the surface area
+    if (light.normalize && ss.invPdfA != 0) {
+        Le /= ss.invPdfA;
+    }
+
+    // Apply focus shaping
+    if (light.shaping.focus > 0.0f) {
+        const float ff = powf(GfAbs(cosThetaOffZ), light.shaping.focus);
+        const GfVec3f focusTint = GfLerp(ff, light.shaping.focusTint,
+                                         GfVec3f(1.0f));
+        Le = GfCompMult(Le, focusTint);
+    }
+
+    // Apply cone shaping
+    const float thetaCone = GfDegreesToRadians(light.shaping.coneAngle);
+    const float thetaSoft = GfLerp(light.shaping.coneSoftness, thetaCone, 0.0f);
+    const float thetaOffZ = acosf(cosThetaOffZ);
+    Le *= 1.0f - _Smoothstep(thetaOffZ, GfRange1f(thetaSoft, thetaCone));
+
+    // Apply IES
+    Le *= _EvalIES(light, wI);
+
+    return _LightSample {
+        Le,
+        wI,
+        dist,
+        invPdfW
+    };
+}
+
+_LightSample
+_SampleDomeLight(HdEmbree_LightData const& light, GfVec3f const& direction)
+{
+    float t = acosf(direction[1]) / _pi<float>;
+    float s = atan2f(direction[0], direction[2]) / (2.0f * _pi<float>);
+    s = 1.0f - fmodf(s+0.5f, 1.0f);
+
+    GfVec3f Li = light.texture.pixels.empty() ?
+        GfVec3f(1.0f)
+        : _SampleLightTexture(light.texture, s, t);
+
+    return _LightSample {
+        Li,
+        direction,
+        std::numeric_limits<float>::max(),
+        4.0f * _pi<float>
+    };
+}
+
+_LightSample
+_EvalDomeLight(HdEmbree_LightData const& light, GfVec3f const& W,
+                 float u1, float u2)
+{
+    GfVec3f U, V;
+    GfBuildOrthonormalFrame(W, &U, &V);
+
+    float z = u1;
+    float r = sqrtf(std::max(0.0f, 1.0f - _Sqr(z)));
+    float phi = 2.0f * _pi<float> * u2;
+
+    const GfVec3f wI =
+        (W * z + r * cosf(phi) * U + r * sinf(phi) * V).GetNormalized();
+
+    _LightSample ls = _SampleDomeLight(light, wI);
+    ls.invPdfW = 2.0f * _pi<float>;  // We only picked from the hemisphere
+
+    return ls;
+}
+
+class _LightSampler {
+public:
+    static _LightSample GetLightSample(HdEmbree_LightData const& lightData,
+                                       GfVec3f const& hitPosition,
+                                       GfVec3f const& normal,
+                                       float u1,
+                                       float u2)
+    {
+        _LightSampler lightSampler(lightData, hitPosition, normal, u1, u2);
+        return std::visit(lightSampler, lightData.lightVariant);
+    }
+
+    // callables to be used with std::visit
+    _LightSample operator()(HdEmbree_UnknownLight const& rect) {
+        // Could warn, but we should have already warned when lightVariant
+        // first created / set to HdEmbree_UnknownLight... and warning here
+        // could result in a LOT of spam
+        return _LightSample {
+            GfVec3f(0.0f),
+            GfVec3f(0.0f),
+            0.0f,
+            0.0f,
+        };
+    }
+
+    _LightSample operator()(HdEmbree_Rect const& rect) {
+        _ShapeSample shapeSample = _SampleRect(
+            _lightData.xformLightToWorld,
+            _lightData.normalXformLightToWorld,
+            rect.width,
+            rect.height,
+            _u1,
+            _u2);
+        return _EvalAreaLight(_lightData, shapeSample, _hitPosition);
+    }
+
+    _LightSample operator()(HdEmbree_Sphere const& sphere) {
+        _ShapeSample shapeSample = _SampleSphere(
+            _lightData.xformLightToWorld,
+            _lightData.normalXformLightToWorld,
+            sphere.radius,
+            _u1,
+            _u2);
+        return _EvalAreaLight(_lightData, shapeSample, _hitPosition);
+    }
+
+    _LightSample operator()(HdEmbree_Disk const& disk) {
+        _ShapeSample shapeSample = _SampleDisk(
+            _lightData.xformLightToWorld,
+            _lightData.normalXformLightToWorld,
+            disk.radius,
+            _u1,
+            _u2);
+        return _EvalAreaLight(_lightData, shapeSample, _hitPosition);
+    }
+
+    _LightSample operator()(HdEmbree_Cylinder const& cylinder) {
+        _ShapeSample shapeSample = _SampleCylinder(
+            _lightData.xformLightToWorld,
+            _lightData.normalXformLightToWorld,
+            cylinder.radius,
+            cylinder.length,
+            _u1,
+            _u2);
+        return _EvalAreaLight(_lightData, shapeSample, _hitPosition);
+    }
+
+    _LightSample operator()(HdEmbree_Dome const& dome) {
+        return _EvalDomeLight(_lightData, _normal, _u1, _u2);
+    }
+
+    _LightSample operator()(HdEmbree_Distant const& distant) {
+        return _EvalDistantLight(_lightData, _hitPosition, _u1, _u2);
+    }
+
+private:
+    _LightSampler(HdEmbree_LightData const& lightData,
+                 GfVec3f const& hitPosition,
+                 GfVec3f const& normal,
+                 float u1,
+                 float u2) :
+        _lightData(lightData),
+        _hitPosition(hitPosition),
+        _normal(normal),
+        _u1(u1),
+        _u2(u2)
+    {}
+
+    HdEmbree_LightData const& _lightData;
+    GfVec3f const& _hitPosition;
+    GfVec3f const& _normal;
+    float _u1;
+    float _u2;
+};
+
+}  // anonymous namespace
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -70,6 +711,12 @@ HdEmbreeRenderer::SetEnableSceneColors(bool enableSceneColors)
 }
 
 void
+HdEmbreeRenderer::SetRandomNumberSeed(int randomNumberSeed)
+{
+    _randomNumberSeed = randomNumberSeed;
+}
+
+void
 HdEmbreeRenderer::SetDataWindow(const GfRect2i &dataWindow)
 {
     _dataWindow = dataWindow;
@@ -104,6 +751,29 @@ HdEmbreeRenderer::SetAovBindings(
 
     // Re-validate the attachments.
     _aovBindingsNeedValidation = true;
+}
+
+
+void
+HdEmbreeRenderer::AddLight(SdfPath const& lightPath,
+                           HdEmbree_Light* light)
+{
+    ScopedLock lightsWriteLock(_lightsWriteMutex);
+    _lightMap[lightPath] = light;
+
+    if (light->IsDome()) {
+        _domes.push_back(light);
+    }
+}
+
+void
+HdEmbreeRenderer::RemoveLight(SdfPath const& lightPath, HdEmbree_Light* light)
+{
+    ScopedLock lightsWriteLock(_lightsWriteMutex);
+    _lightMap.erase(lightPath);
+    _domes.erase(std::remove_if(_domes.begin(), _domes.end(),
+                                [&light](auto& l){ return l == light; }),
+                 _domes.end());
 }
 
 bool
@@ -347,7 +1017,7 @@ _IsContained(const GfRect2i &rect, int width, int height)
 }
 
 void
-HdEmbreeRenderer::Render(HdRenderThread *renderThread)
+HdEmbreeRenderer::_PreRenderSetup()
 {
     _completedSamples.store(0);
 
@@ -398,9 +1068,14 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
         if (!_IsContained(_dataWindow, _width, _height)) {
             TF_CODING_ERROR(
                 "dataWindow is larger than render buffer");
-        
         }
     }
+}
+
+void
+HdEmbreeRenderer::Render(HdRenderThread *renderThread)
+{
+    _PreRenderSetup();
 
     // Render the image. Each pass through the loop adds a sample per pixel
     // (with jittered ray direction); the longer the loop runs, the less noisy
@@ -429,11 +1104,12 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 
         // Render by scheduling square tiles of the sample buffer in a parallel
         // for loop.
+        _ScopedThreadScheduler scheduler;
         // Always pass the renderThread to _RenderTiles to allow the first frame
         // to be interrupted.
         WorkParallelForN(numTilesX*numTilesY,
-            std::bind(&HdEmbreeRenderer::_RenderTiles, this, renderThread,
-                std::placeholders::_1, std::placeholders::_2));
+            std::bind(&HdEmbreeRenderer::_RenderTiles, this,
+                renderThread, i, std::placeholders::_1, std::placeholders::_2));
 
         // After the first pass, mark the single-sampled attachments as
         // converged and unmap them. If there are no multisampled attachments,
@@ -472,7 +1148,7 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 }
 
 void
-HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
+HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread, int sampleNum,
                                size_t tileStart, size_t tileEnd)
 {
     const unsigned int minX = _dataWindow.GetMinX();
@@ -497,13 +1173,21 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
 
     // Initialize the RNG for this tile (each tile creates one as
     // a lazy way to do thread-local RNGs).
-    size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
+    size_t seed;
+    if (_randomNumberSeed == -1) {
+        seed = std::chrono::system_clock::now().time_since_epoch().count();
+    } else {
+        seed = static_cast<size_t>(_randomNumberSeed);
+    }
     seed = TfHash::Combine(seed, tileStart);
+    seed = TfHash::Combine(seed, sampleNum);
     std::default_random_engine random(seed);
 
     // Create a uniform distribution for jitter calculations.
     std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
-    std::function<float()> uniform_float = std::bind(uniform_dist, random);
+    auto uniform_float = [&random, &uniform_dist]() {
+        return uniform_dist(random);
+    };
 
     // _RenderTiles gets a range of tiles; iterate through them.
     for (unsigned int tile = tileStart; tile < tileEnd; ++tile) {
@@ -527,7 +1211,6 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
         // Loop over pixels casting rays.
         for (unsigned int y = y0; y < y1; ++y) {
             for (unsigned int x = x0; x < x1; ++x) {
-
                 // Jitter the camera ray direction.
                 GfVec2f jitter(0.0f, 0.0f);
                 if (HdEmbreeConfig::GetInstance().jitterCamera) {
@@ -541,25 +1224,25 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
                 const float h(_dataWindow.GetHeight());
 
                 const GfVec3f ndc(
-                    2 * ((x + jitter[0] - minX) / w) - 1,
-                    2 * ((y + jitter[1] - minY) / h) - 1,
-                    -1);
+                    2.0f * ((x + jitter[0] - minX) / w) - 1.0f,
+                    2.0f * ((y + jitter[1] - minY) / h) - 1.0f,
+                    -1.0f);
                 const GfVec3f nearPlaneTrace(_inverseProjMatrix.Transform(ndc));
 
                 GfVec3f origin;
                 GfVec3f dir;
 
-                const bool isOrthographic = round(_projMatrix[3][3]) == 1;
+                const bool isOrthographic = round(_projMatrix[3][3]) == 1.0;
                 if (isOrthographic) {
                     // During orthographic projection: trace parallel rays
                     // from the near plane trace.
                     origin = nearPlaneTrace;
-                    dir = GfVec3f(0,0,-1);
+                    dir = GfVec3f(0.0f, 0.0f, -1.0f);
                 } else {
                     // Otherwise, assume this is a perspective projection;
                     // project from the camera origin through the
                     // near plane trace.
-                    origin = GfVec3f(0,0,0);
+                    origin = GfVec3f(0.0f, 0.0f, 0.0f);
                     dir = nearPlaneTrace;
                 }
                 // Transform camera rays to world space.
@@ -577,7 +1260,9 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
 /// Fill in an RTCRay structure from the given parameters.
 static void
 _PopulateRay(RTCRay *ray, GfVec3f const& origin, 
-             GfVec3f const& dir, float nearest)
+             GfVec3f const& dir, float nearest,
+             float furthest = std::numeric_limits<float>::infinity(),
+             HdEmbree_RayMask mask = HdEmbree_RayMask::All)
 {
     ray->org_x = origin[0];
     ray->org_y = origin[1];
@@ -589,24 +1274,25 @@ _PopulateRay(RTCRay *ray, GfVec3f const& origin,
     ray->dir_z = dir[2];
     ray->time = 0.0f;
 
-    ray->tfar = std::numeric_limits<float>::infinity();
-    ray->mask = -1;
+    ray->tfar = furthest;
+    ray->mask = static_cast<uint32_t>(mask);
 }
 
 /// Fill in an RTCRayHit structure from the given parameters.
 // note this containts a Ray and a RayHit
 static void
 _PopulateRayHit(RTCRayHit* rayHit, GfVec3f const& origin,
-             GfVec3f const& dir, float nearest)
+             GfVec3f const& dir, float nearest,
+             float furthest = std::numeric_limits<float>::infinity(),
+             HdEmbree_RayMask mask = HdEmbree_RayMask::All)
 {
     // Fill in defaults for the ray
-    _PopulateRay(&rayHit->ray, origin, dir, nearest);
+    _PopulateRay(&rayHit->ray, origin, dir, nearest, furthest, mask);
 
     // Fill in defaults for the hit
     rayHit->hit.primID = RTC_INVALID_GEOMETRY_ID;
     rayHit->hit.geomID = RTC_INVALID_GEOMETRY_ID;
 }
-
 
 /// Generate a random cosine-weighted direction ray (in the hemisphere
 /// around <0,0,1>).  The input is a pair of uniformly distributed random
@@ -618,13 +1304,50 @@ static GfVec3f
 _CosineWeightedDirection(GfVec2f const& uniform_float)
 {
     GfVec3f dir;
-    float theta = 2.0f * M_PI * uniform_float[0];
+    float theta = 2.0f * _pi<float> * uniform_float[0];
     float eta = uniform_float[1];
     float sqrteta = sqrtf(eta);
     dir[0] = cosf(theta) * sqrteta;
     dir[1] = sinf(theta) * sqrteta;
     dir[2] = sqrtf(1.0f-eta);
     return dir;
+}
+
+bool
+HdEmbreeRenderer::_RayShouldContinue(RTCRayHit const& rayHit) const {
+    if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID) {
+        // missed, don't continue
+        return false;
+    }
+
+    if (rayHit.hit.instID[0] == RTC_INVALID_GEOMETRY_ID) {
+        // not hit an instance, but a "raw" geometry. This should be a light
+        const HdEmbreeInstanceContext *instanceContext =
+            static_cast<HdEmbreeInstanceContext*>(
+                    rtcGetGeometryUserData(rtcGetGeometry(_scene,
+                                                          rayHit.hit.geomID)));
+
+        if (instanceContext->light == nullptr) {
+            // if this isn't a light, don't know what this is
+            return false;
+        }
+
+        auto const& light = instanceContext->light->LightData();
+
+        if ((rayHit.ray.mask & HdEmbree_RayMask::Camera)
+                && !light.visible_camera) {
+            return true;
+        } else if ((rayHit.ray.mask & HdEmbree_RayMask::Shadow)
+                && !light.visible_shadow) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    // XXX: otherwise this is a regular geo. we should handle visibility here
+    // too eventually
+    return false;
 }
 
 void
@@ -635,7 +1358,9 @@ HdEmbreeRenderer::_TraceRay(unsigned int x, unsigned int y,
     // Intersect the camera ray.
     RTCRayHit rayHit; // EMBREE_FIXME: use RTCRay for occlusion rays
     rayHit.ray.flags = 0;
-    _PopulateRayHit(&rayHit, origin, dir, 0.0f);
+    _PopulateRayHit(&rayHit, origin, dir, 0.0f,
+                    std::numeric_limits<float>::max(),
+                    HdEmbree_RayMask::Camera);
     {
       RTCIntersectContext context;
       rtcInitIntersectContext(&context);
@@ -654,6 +1379,13 @@ HdEmbreeRenderer::_TraceRay(unsigned int x, unsigned int y,
       rayHit.hit.Ng_x = -rayHit.hit.Ng_x;
       rayHit.hit.Ng_y = -rayHit.hit.Ng_y;
       rayHit.hit.Ng_z = -rayHit.hit.Ng_z;
+    }
+
+    if (_RayShouldContinue(rayHit)) {
+        GfVec3f hitPos = _CalculateHitPosition(rayHit);
+
+        _TraceRay(x, y, hitPos + dir * _rayHitContinueBias, dir, random);
+        return;
     }
 
     // Write AOVs to attachments that aren't converged.
@@ -711,16 +1443,23 @@ HdEmbreeRenderer::_ComputeId(RTCRayHit const& rayHit, TfToken const& idType,
         return false;
     }
 
+    if (rayHit.hit.instID[0] == RTC_INVALID_GEOMETRY_ID) {
+        // not hit an instance, but a "raw" geometry. This should be a light
+        return false;
+    }
+
     // Get the instance and prototype context structures for the hit prim.
     // We don't use embree's multi-level instancing; we
     // flatten everything in hydra. So instID[0] should always be correct.
     const HdEmbreeInstanceContext *instanceContext =
         static_cast<HdEmbreeInstanceContext*>(
-            rtcGetGeometryUserData(rtcGetGeometry(_scene, rayHit.hit.instID[0])));
+            rtcGetGeometryUserData(rtcGetGeometry(_scene,
+                                                  rayHit.hit.instID[0])));
 
     const HdEmbreePrototypeContext *prototypeContext =
         static_cast<HdEmbreePrototypeContext*>(
-            rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,rayHit.hit.geomID)));
+            rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,
+                                                  rayHit.hit.geomID)));
 
     if (idType == HdAovTokens->primId) {
         *id = prototypeContext->rprim->GetPrimId();
@@ -749,10 +1488,13 @@ HdEmbreeRenderer::_ComputeDepth(RTCRayHit const& rayHit,
         return false;
     }
 
+    if (rayHit.hit.instID[0] == RTC_INVALID_GEOMETRY_ID) {
+        // not hit an instance, but a "raw" geometry. This should be a light
+        return false;
+    }
+
     if (clip) {
-        GfVec3f hitPos = GfVec3f(rayHit.ray.org_x + rayHit.ray.tfar * rayHit.ray.dir_x,
-            rayHit.ray.org_y + rayHit.ray.tfar * rayHit.ray.dir_y,
-            rayHit.ray.org_z + rayHit.ray.tfar * rayHit.ray.dir_z);
+        GfVec3f hitPos = _CalculateHitPosition(rayHit);
 
         hitPos = GfVec3f(_viewMatrix.Transform(hitPos));
         hitPos = GfVec3f(_projMatrix.Transform(hitPos));
@@ -774,15 +1516,23 @@ HdEmbreeRenderer::_ComputeNormal(RTCRayHit const& rayHit,
         return false;
     }
 
+    if (rayHit.hit.instID[0] == RTC_INVALID_GEOMETRY_ID) {
+        // not hit an instance, but a "raw" geometry. This should be a light
+        return false;
+    }
+
     // We don't use embree's multi-level instancing; we
     // flatten everything in hydra. So instID[0] should always be correct.
     const HdEmbreeInstanceContext *instanceContext =
         static_cast<HdEmbreeInstanceContext*>(
-                rtcGetGeometryUserData(rtcGetGeometry(_scene,rayHit.hit.instID[0])));
+                rtcGetGeometryUserData(rtcGetGeometry(_scene,
+                                                      rayHit.hit.instID[0])));
 
     const HdEmbreePrototypeContext *prototypeContext =
         static_cast<HdEmbreePrototypeContext*>(
-                rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,rayHit.hit.geomID)));
+                rtcGetGeometryUserData(
+                    rtcGetGeometry(instanceContext->rootScene,
+                                   rayHit.hit.geomID)));
 
     GfVec3f n = -GfVec3f(rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z);
     auto it = prototypeContext->primvarMap.find(HdTokens->normals);
@@ -809,36 +1559,67 @@ HdEmbreeRenderer::_ComputePrimvar(RTCRayHit const& rayHit,
         return false;
     }
 
+    if (rayHit.hit.instID[0] == RTC_INVALID_GEOMETRY_ID) {
+        // not hit an instance, but a "raw" geometry. This should be a light
+        return false;
+    }
+
     // We don't use embree's multi-level instancing; we
     // flatten everything in hydra. So instID[0] should always be correct.
     const HdEmbreeInstanceContext *instanceContext =
         static_cast<HdEmbreeInstanceContext*>(
-                rtcGetGeometryUserData(rtcGetGeometry(_scene,rayHit.hit.instID[0])));
+                rtcGetGeometryUserData(rtcGetGeometry(_scene,
+                                                      rayHit.hit.instID[0])));
 
     const HdEmbreePrototypeContext *prototypeContext =
         static_cast<HdEmbreePrototypeContext*>(
-                rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,rayHit.hit.geomID)));
+                rtcGetGeometryUserData(
+                    rtcGetGeometry(instanceContext->rootScene,
+                                   rayHit.hit.geomID)));
 
     // XXX: This is a little clunky, although sample will early out if the
     // types don't match.
     auto it = prototypeContext->primvarMap.find(primvar);
     if (it != prototypeContext->primvarMap.end()) {
         const HdEmbreePrimvarSampler *sampler = it->second;
-        if (sampler->Sample(rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, value)) {
+        if (sampler->Sample(rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
+                            value)) {
             return true;
         }
         GfVec2f v2;
-        if (sampler->Sample(rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, &v2)) {
+        if (sampler->Sample(rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
+                            &v2)) {
             value->Set(v2[0], v2[1], 0.0f);
             return true;
         }
         float v1;
-        if (sampler->Sample(rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, &v1)) {
+        if (sampler->Sample(rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
+                            &v1)) {
             value->Set(v1, 0.0f, 0.0f);
             return true;
         }
     }
     return false;
+}
+
+float
+HdEmbreeRenderer::_Visibility(
+    GfVec3f const& position, GfVec3f const& direction, float dist) const
+{
+    RTCRay shadow;
+    shadow.flags = 0;
+    _PopulateRay(&shadow, position, direction, 0.001f, dist,
+                 HdEmbree_RayMask::Shadow);
+    {
+        RTCIntersectContext context;
+        rtcInitIntersectContext(&context);
+        rtcOccluded1(_scene,&context,&shadow);
+    }
+    // XXX: what do we do about shadow visibility (continuation) here?
+    // probably need to use rtcIntersect instead of rtcOccluded
+
+    // occluded sets tfar < 0 if the ray hit anything
+    return shadow.tfar > 0.0f;
 }
 
 GfVec4f
@@ -847,7 +1628,50 @@ HdEmbreeRenderer::_ComputeColor(RTCRayHit const& rayHit,
                                 GfVec4f const& clearColor)
 {
     if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID) {
-        return clearColor;
+        if (_domes.empty()) {
+            return clearColor;
+        }
+
+        // if we missed all geometry in the scene, evaluate the infinite lights
+        // directly
+        GfVec4f domeColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+        for (auto* dome : _domes) {
+            _LightSample ls = _SampleDomeLight(
+                dome->LightData(),
+                GfVec3f(rayHit.ray.dir_x,
+                        rayHit.ray.dir_y,
+                        rayHit.ray.dir_z)
+            );
+            domeColor[0] += ls.Li[0];
+            domeColor[1] += ls.Li[1];
+            domeColor[2] += ls.Li[2];
+        }
+        return domeColor;
+    }
+
+    if (rayHit.hit.instID[0] == RTC_INVALID_GEOMETRY_ID) {
+        // if it's not an instance then it's almost certainly a light
+        const HdEmbreeInstanceContext *instanceContext =
+            static_cast<HdEmbreeInstanceContext*>(
+                    rtcGetGeometryUserData(rtcGetGeometry(_scene,
+                                                          rayHit.hit.geomID)));
+
+        // if we hit a light, just evaluate the light directly
+        if (instanceContext->light != nullptr) {
+            auto const& light = instanceContext->light->LightData();
+            _ShapeSample ss = _IntersectAreaLight(light, rayHit);
+            _LightSample ls = _EvalAreaLight(light, ss,
+                GfVec3f(rayHit.ray.org_x, rayHit.ray.org_y, rayHit.ray.org_z));
+
+            return GfVec4f(ls.Li[0], ls.Li[1], ls.Li[2], 1.0f);
+        } else {
+            // should never get here. magenta warning!
+            TF_WARN("Unexpected runtime state - hit an an embree instance "
+                "that wasn't a geo or light");
+            return GfVec4f(1.0f, 0.0f, 1.0f, 1.0f);
+        }
+
     }
 
     // Get the instance and prototype context structures for the hit prim.
@@ -855,20 +1679,22 @@ HdEmbreeRenderer::_ComputeColor(RTCRayHit const& rayHit,
     // flatten everything in hydra. So instID[0] should always be correct.
     const HdEmbreeInstanceContext *instanceContext =
         static_cast<HdEmbreeInstanceContext*>(
-                rtcGetGeometryUserData(rtcGetGeometry(_scene,rayHit.hit.instID[0])));
+                rtcGetGeometryUserData(rtcGetGeometry(_scene,
+                                                      rayHit.hit.instID[0])));
 
     const HdEmbreePrototypeContext *prototypeContext =
         static_cast<HdEmbreePrototypeContext*>(
-                rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,rayHit.hit.geomID)));
+                rtcGetGeometryUserData(
+                    rtcGetGeometry(instanceContext->rootScene,
+                                   rayHit.hit.geomID)));
 
     // Compute the worldspace location of the rayHit hit.
-    GfVec3f hitPos = GfVec3f(rayHit.ray.org_x + rayHit.ray.tfar * rayHit.ray.dir_x,
-            rayHit.ray.org_y + rayHit.ray.tfar * rayHit.ray.dir_y,
-            rayHit.ray.org_z + rayHit.ray.tfar * rayHit.ray.dir_z);
+    GfVec3f hitPos = _CalculateHitPosition(rayHit);
 
     // If a normal primvar is present (e.g. from smooth shading), use that
     // for shading; otherwise use the flat face normal.
-    GfVec3f normal = -GfVec3f(rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z);
+    GfVec3f normal = -GfVec3f(rayHit.hit.Ng_x, rayHit.hit.Ng_y,
+                              rayHit.hit.Ng_z);
     auto it = prototypeContext->primvarMap.find(HdTokens->normals);
     if (it != prototypeContext->primvarMap.end()) {
         it->second->Sample(
@@ -877,12 +1703,12 @@ HdEmbreeRenderer::_ComputeColor(RTCRayHit const& rayHit,
 
     // If a color primvar is present, use that as diffuse color; otherwise,
     // use flat grey.
-    GfVec3f color = GfVec3f(0.5f, 0.5f, 0.5f);
+    GfVec3f materialColor = _invalidColor;
     if (_enableSceneColors) {
         auto it = prototypeContext->primvarMap.find(HdTokens->displayColor);
         if (it != prototypeContext->primvarMap.end()) {
             it->second->Sample(
-                rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, &color);
+                rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, &materialColor);
         }
     }
 
@@ -892,38 +1718,63 @@ HdEmbreeRenderer::_ComputeColor(RTCRayHit const& rayHit,
     // Make sure the normal is unit-length.
     normal.Normalize();
 
-    // Lighting model: (camera dot normal), i.e. diffuse-only point light
-    // centered on the camera.
-    GfVec3f dir = GfVec3f(rayHit.ray.dir_x, rayHit.ray.dir_y, rayHit.ray.dir_z);
-    float diffuseLight = fabs(GfDot(-dir, normal)) *
-        HdEmbreeConfig::GetInstance().cameraLightIntensity;
+    GfVec3f lightingColor(0.0f);
 
-    // Lighting gets modulated by an ambient occlusion term.
-    float aoLightIntensity =
-        _ComputeAmbientOcclusion(hitPos, normal, random);
+    // If there are no lights, then keep the existing camera light + AO path to
+    // be able to inspect the scene
+    if (_lightMap.empty())
+    {
+        // For ambient occlusion, default material is flat 50% gray
+        if (materialColor == _invalidColor) {
+            materialColor = GfVec3f(.5f);
+        }
 
-    // XXX: We should support opacity here...
+        // Lighting model: (camera dot normal), i.e. diffuse-only point light
+        // centered on the camera.
+        GfVec3f dir = GfVec3f(rayHit.ray.dir_x, rayHit.ray.dir_y,
+                              rayHit.ray.dir_z);
+        float diffuseLight = fabs(GfDot(-dir, normal)) *
+            HdEmbreeConfig::GetInstance().cameraLightIntensity;
 
-    // Return color * diffuseLight * aoLightIntensity.
-    GfVec3f finalColor = color * diffuseLight * aoLightIntensity;
+        // Lighting gets modulated by an ambient occlusion term.
+        float aoLightIntensity =
+            _ComputeAmbientOcclusion(hitPos, normal, random);
 
-    // Clamp colors to [0,1].
+        // XXX: We should support opacity here...
+
+        lightingColor = GfVec3f(diffuseLight * aoLightIntensity);
+    }
+    else
+    {
+        // For lighting, default material is 100% white
+        if (materialColor == _invalidColor) {
+            materialColor = GfVec3f(1.0f);
+        }
+
+        lightingColor = _ComputeLighting(
+            hitPos, normal,random, prototypeContext);
+    }
+    const GfVec3f finalColor = GfCompMult(materialColor, lightingColor);
+
+    // Clamp colors to > 0
     GfVec4f output;
-    output[0] = std::max(0.0f, std::min(1.0f, finalColor[0]));
-    output[1] = std::max(0.0f, std::min(1.0f, finalColor[1]));
-    output[2] = std::max(0.0f, std::min(1.0f, finalColor[2]));
+    output[0] = std::max(0.0f, finalColor[0]);
+    output[1] = std::max(0.0f, finalColor[1]);
+    output[2] = std::max(0.0f, finalColor[2]);
     output[3] = 1.0f;
     return output;
 }
 
 float
 HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
-                                           GfVec3f const& normal,
-                                           std::default_random_engine &random)
+                                            GfVec3f const& normal,
+                                            std::default_random_engine &random)
 {
     // Create a uniform random distribution for AO calculations.
     std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
-    std::function<float()> uniform_float = std::bind(uniform_dist, random);
+    auto uniform_float = [&random, &uniform_dist]() {
+        return uniform_dist(random);
+    };
 
     // 0 ambient occlusion samples means disable the ambient occlusion term.
     if (_ambientOcclusionSamples < 1) {
@@ -936,12 +1787,12 @@ HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
     // point. For the purposes of _CosineWeightedDirection, the normal needs
     // to map to (0,0,1), but since the distribution is radially symmetric
     // we don't care about the other axes.
-    GfMatrix3f basis(1);
+    GfMatrix3f basis(1.0f);
     GfVec3f xAxis;
-    if (fabsf(GfDot(normal, GfVec3f(0,0,1))) < 0.9f) {
-        xAxis = GfCross(normal, GfVec3f(0,0,1));
+    if (fabsf(GfDot(normal, GfVec3f(0.0f,0.0f,1.0f))) < 0.9f) {
+        xAxis = GfCross(normal, GfVec3f(0.0f,0.0f,1.0f));
     } else {
-        xAxis = GfCross(normal, GfVec3f(0,1,0));
+        xAxis = GfCross(normal, GfVec3f(0.0f,1.0f,0.0f));
     }
     GfVec3f yAxis = GfCross(normal, xAxis);
     basis.SetColumn(0, xAxis.GetNormalized());
@@ -996,6 +1847,68 @@ HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
     occlusionFactor /= _ambientOcclusionSamples;
 
     return occlusionFactor;
+}
+
+GfVec3f
+HdEmbreeRenderer::_ComputeLighting(
+    GfVec3f const& position,
+    GfVec3f const& normal,
+    std::default_random_engine &random,
+    HdEmbreePrototypeContext const* prototypeContext) const
+{
+    std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
+    auto uniform_float = [&random, &uniform_dist]() {
+        return uniform_dist(random);
+    };
+
+    GfVec3f finalColor(0.0f);
+    // For now just a 100% reflective diffuse BRDF
+    float brdf = 1.0f / _pi<float>;
+
+    // For now just iterate over all lights
+    /// XXX: simple uniform sampling may be better here
+    for (auto const& it : _lightMap)
+    {
+        auto const& light = it.second->LightData();
+        // Skip light if it's hidden
+        if (!light.visible)
+        {
+            continue;
+        }
+
+        // Sample the light
+        _LightSample ls = _LightSampler::GetLightSample(
+            light, position, normal, uniform_float(), uniform_float());
+        if (GfIsClose(ls.Li, GfVec3f(0.0f), _minLuminanceCutoff)) {
+            continue;
+        }
+
+        // Trace shadow
+        float vis = _Visibility(position, ls.wI, ls.dist * 0.99f);
+
+        // Add exitant luminance
+        float cosOffNormal = GfDot(ls.wI, normal);
+        if (cosOffNormal < 0.0f) {
+            bool doubleSided = false;
+            HdEmbreeMesh *mesh =
+                dynamic_cast<HdEmbreeMesh*>(prototypeContext->rprim);
+            if (mesh) {
+                doubleSided = mesh->EmbreeMeshIsDoubleSided();
+            }
+
+            if (doubleSided) {
+                cosOffNormal *= -1.0f;
+            } else {
+                cosOffNormal = 0.0f;
+            }
+        }
+        finalColor += ls.Li
+            * cosOffNormal
+            * brdf
+            * vis
+            * ls.invPdfW;
+    }
+    return finalColor;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

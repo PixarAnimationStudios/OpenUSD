@@ -4,19 +4,19 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include <boost/python/class.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_by_value.hpp>
-#include <boost/python/return_value_policy.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/return_by_value.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/defaultResolverContext.h"
 #include "pxr/usd/ar/pyResolverContext.h"
 #include "pxr/base/tf/pyUtils.h"
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 static std::string
 _Repr(const ArDefaultResolverContext& ctx)

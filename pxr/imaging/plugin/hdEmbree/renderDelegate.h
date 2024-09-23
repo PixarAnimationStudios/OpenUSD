@@ -23,7 +23,8 @@ class HdEmbreeRenderParam;
 #define HDEMBREE_RENDER_SETTINGS_TOKENS \
     (enableAmbientOcclusion)            \
     (enableSceneColors)                 \
-    (ambientOcclusionSamples)
+    (ambientOcclusionSamples)           \
+    (randomNumberSeed)
 
 // Also: HdRenderSettingsTokens->convergedSamplesPerPixel
 
