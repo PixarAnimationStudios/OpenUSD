@@ -16,6 +16,7 @@
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/dirtyBitsTranslator.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/extComputationCpuCallback.h"
 #include "pxr/imaging/hd/field.h"
 #include "pxr/imaging/hd/geomSubset.h"
 #include "pxr/imaging/hd/light.h"
@@ -2700,21 +2701,25 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationKernel(
 
 void
 HdSceneIndexAdapterSceneDelegate::InvokeExtComputation(
-        SdfPath const &computationId, HdExtComputationContext *context)
+        SdfPath const &computationId, HdExtComputationContext * const context)
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSceneIndexPrim prim = _GetInputPrim(computationId);
-    if (HdExtComputationSchema extComputation =
-            HdExtComputationSchema::GetFromParent(prim.dataSource)) {
-        HdExtComputationCallbackDataSourceHandle ds =
-            HdExtComputationCallbackDataSource::Cast(
-                extComputation.GetCpuCallback());
-        if (ds) {
-            ds->Invoke(context);
-        }
+    const HdSceneIndexPrim prim = _GetInputPrim(computationId);
+    const HdExtComputationSchema extComputation =
+        HdExtComputationSchema::GetFromParent(prim.dataSource);
+    HdExtComputationCpuCallbackDataSourceHandle const ds =
+        extComputation.GetCpuCallback();
+    if (!ds) {
+        return;
     }
+    HdExtComputationCpuCallbackSharedPtr const callback =
+        ds->GetTypedValue(0.0f);
+    if (!callback) {
+        return;
+    }
+    callback->Compute(context);
 }
 
 void 

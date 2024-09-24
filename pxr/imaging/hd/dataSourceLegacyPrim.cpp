@@ -8,6 +8,7 @@
 
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/dataSource.h"
+#include "pxr/imaging/hd/extComputationCpuCallback.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/meshTopology.h"
@@ -97,6 +98,24 @@ HdLegacyPrimTypeIsVolumeField(TfToken const &primType)
 
 namespace {
 
+class Hd_SceneDelegateExtComputationCpuCallback
+      : public HdExtComputationCpuCallback
+{
+public:
+    Hd_SceneDelegateExtComputationCpuCallback(
+        const SdfPath &id, HdSceneDelegate * const sceneDelegate)
+      : _id(id), _sceneDelegate(sceneDelegate) { }
+    
+    void Compute(HdExtComputationContext * const ctx) override
+    {
+        _sceneDelegate->InvokeExtComputation(_id, ctx);
+    }
+
+private:
+    const SdfPath _id;
+    HdSceneDelegate * const _sceneDelegate;
+};
+  
 class Hd_DataSourceLegacyPrimvarValue : public HdSampledDataSource
 {
 public:
@@ -1972,8 +1991,12 @@ public:
             std::string kernel = _sceneDelegate->GetExtComputationKernel(_id);
             return HdRetainedTypedSampledDataSource<std::string>::New(kernel);
         } else if (name == HdExtComputationSchemaTokens->cpuCallback) {
-            return HdExtComputationCallbackDataSource::New(
-                _id, _sceneDelegate);
+            return
+                HdRetainedTypedSampledDataSource<
+                    HdExtComputationCpuCallbackSharedPtr>::New(
+                        std::make_shared<
+                                Hd_SceneDelegateExtComputationCpuCallback>(
+                            _id, _sceneDelegate));
         } else if (name == HdExtComputationSchemaTokens->dispatchCount) {
             const VtValue vDispatch = _sceneDelegate->GetExtComputationInput(
                 _id, HdTokens->dispatchCount);
@@ -2340,14 +2363,6 @@ TfToken _InterpolationAsToken(HdInterpolation interpolation)
 }
 
 } //anonymous namespace
-
-// ----------------------------------------------------------------------------
-
-void
-HdExtComputationCallbackDataSource::Invoke(HdExtComputationContext *context)
-{
-    _sceneDelegate->InvokeExtComputation(_id, context);
-}
 
 // ----------------------------------------------------------------------------
 

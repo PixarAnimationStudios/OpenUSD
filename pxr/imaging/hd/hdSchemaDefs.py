@@ -1179,7 +1179,7 @@
             ('inputComputations', 'HdExtComputationInputComputationContainerSchema', {}),
             ('outputs', 'HdExtComputationOutputContainerSchema', {}),
             ('glslKernel', T_STRING, {}),
-            ('cpuCallback', T_BASE, {}),
+            ('cpuCallback', 'HdExtComputationCpuCallbackDataSource', {}),
             ('dispatchCount', T_SIZET, {}),
             ('elementCount', T_SIZET, {}),
         ],

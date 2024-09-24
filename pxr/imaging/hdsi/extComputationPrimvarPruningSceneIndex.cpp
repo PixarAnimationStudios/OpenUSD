@@ -12,6 +12,7 @@
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/dataSourceLegacyPrim.h"
 #include "pxr/imaging/hd/extComputationContextInternal.h"
+#include "pxr/imaging/hd/extComputationCpuCallback.h"
 #include "pxr/imaging/hd/extComputationSchema.h"
 #include "pxr/imaging/hd/extComputationInputComputationSchema.h"
 #include "pxr/imaging/hd/extComputationOutputSchema.h"
@@ -379,17 +380,22 @@ private:
                 // Execute computation ....
                 // Note: Handle only scene index emulated ext computations
                 //       via the cast below.
-                if (HdExtComputationCallbackDataSourceHandle callbackDs =
-                        HdExtComputationCallbackDataSource::Cast(
-                            cs.GetCpuCallback())) {
-                    
-                    callbackDs->Invoke(&executionContext);
-
-                } else {
+                HdExtComputationCpuCallbackDataSourceHandle const ds =
+                    cs.GetCpuCallback();
+                if (!ds) {
                     TF_WARN("Could not find CPU callback data source for %s",
                             compId.GetText());
                     continue;
                 }
+                HdExtComputationCpuCallbackSharedPtr const callback =
+                    ds->GetTypedValue(0.0f);
+                if (!callback) {
+                    TF_WARN("Invalid CPU callback for %s",
+                            compId.GetText());
+                    continue;
+                }
+
+                callback->Compute(&executionContext);
 
                 // ... and add outputs to the value store.
                 if (executionContext.HasComputationError()) {

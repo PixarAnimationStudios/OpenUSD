@@ -23,7 +23,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
-class HdExtComputationContext;
 
 #define HD_LEGACY_PRIMTYPE_TOKENS  \
     /* Bprims */                   \
@@ -32,32 +31,6 @@ class HdExtComputationContext;
 
 TF_DECLARE_PUBLIC_TOKENS(HdLegacyPrimTypeTokens, HD_API, 
                          HD_LEGACY_PRIMTYPE_TOKENS);
-
-/// \class HdExtComputationCallbackDataSource
-///
-/// This is a data source which holds a legacy ext computation. It is used
-/// only during emulation of legacy scene delegates but is exposed here as it
-/// is used by HdSceneIndexAdapterSceneDelegate for emulation of legacy
-/// render delegates.
-///
-class HdExtComputationCallbackDataSource : public HdDataSourceBase
-{
-public:
-    HD_DECLARE_DATASOURCE(HdExtComputationCallbackDataSource);
-
-    HdExtComputationCallbackDataSource(
-        const SdfPath &id, HdSceneDelegate *sceneDelegate)
-    : _id(id), _sceneDelegate(sceneDelegate) {}
-
-    HD_API
-    void Invoke(HdExtComputationContext *context);
-
-private:
-    SdfPath _id;
-    HdSceneDelegate *_sceneDelegate;
-};
-
-HD_DECLARE_DATASOURCE_HANDLES(HdExtComputationCallbackDataSource);
 
 /// \class HdDataSourceLegacyPrim
 ///

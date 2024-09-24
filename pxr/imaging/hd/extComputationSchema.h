@@ -31,6 +31,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 // --(BEGIN CUSTOM CODE: Declares)--
+
+using HdExtComputationCpuCallbackSharedPtr =
+    std::shared_ptr<class HdExtComputationCpuCallback>;
+using HdExtComputationCpuCallbackDataSource =
+    HdTypedSampledDataSource<HdExtComputationCpuCallbackSharedPtr>;
+using HdExtComputationCpuCallbackDataSourceHandle =
+    HdExtComputationCpuCallbackDataSource::Handle;
+
 // --(END CUSTOM CODE: Declares)--
 
 #define HD_EXT_COMPUTATION_SCHEMA_TOKENS \
@@ -88,7 +96,7 @@ public:
     HdStringDataSourceHandle GetGlslKernel() const;
 
     HD_API
-    HdDataSourceBaseHandle GetCpuCallback() const;
+    HdExtComputationCpuCallbackDataSourceHandle GetCpuCallback() const;
 
     HD_API
     HdSizetDataSourceHandle GetDispatchCount() const;
@@ -168,7 +176,7 @@ public:
         const HdContainerDataSourceHandle &inputComputations,
         const HdContainerDataSourceHandle &outputs,
         const HdStringDataSourceHandle &glslKernel,
-        const HdDataSourceBaseHandle &cpuCallback,
+        const HdExtComputationCpuCallbackDataSourceHandle &cpuCallback,
         const HdSizetDataSourceHandle &dispatchCount,
         const HdSizetDataSourceHandle &elementCount
     );
@@ -196,7 +204,7 @@ public:
             const HdStringDataSourceHandle &glslKernel);
         HD_API
         Builder &SetCpuCallback(
-            const HdDataSourceBaseHandle &cpuCallback);
+            const HdExtComputationCpuCallbackDataSourceHandle &cpuCallback);
         HD_API
         Builder &SetDispatchCount(
             const HdSizetDataSourceHandle &dispatchCount);
@@ -213,7 +221,7 @@ public:
         HdContainerDataSourceHandle _inputComputations;
         HdContainerDataSourceHandle _outputs;
         HdStringDataSourceHandle _glslKernel;
-        HdDataSourceBaseHandle _cpuCallback;
+        HdExtComputationCpuCallbackDataSourceHandle _cpuCallback;
         HdSizetDataSourceHandle _dispatchCount;
         HdSizetDataSourceHandle _elementCount;
 

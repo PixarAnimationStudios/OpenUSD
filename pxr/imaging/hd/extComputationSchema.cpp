@@ -60,10 +60,10 @@ HdExtComputationSchema::GetGlslKernel() const
         HdExtComputationSchemaTokens->glslKernel);
 }
 
-HdDataSourceBaseHandle
+HdExtComputationCpuCallbackDataSourceHandle
 HdExtComputationSchema::GetCpuCallback() const
 {
-    return _GetTypedDataSource<HdDataSourceBase>(
+    return _GetTypedDataSource<HdExtComputationCpuCallbackDataSource>(
         HdExtComputationSchemaTokens->cpuCallback);
 }
 
@@ -88,7 +88,7 @@ HdExtComputationSchema::BuildRetained(
         const HdContainerDataSourceHandle &inputComputations,
         const HdContainerDataSourceHandle &outputs,
         const HdStringDataSourceHandle &glslKernel,
-        const HdDataSourceBaseHandle &cpuCallback,
+        const HdExtComputationCpuCallbackDataSourceHandle &cpuCallback,
         const HdSizetDataSourceHandle &dispatchCount,
         const HdSizetDataSourceHandle &elementCount
 )
@@ -169,7 +169,7 @@ HdExtComputationSchema::Builder::SetGlslKernel(
 
 HdExtComputationSchema::Builder &
 HdExtComputationSchema::Builder::SetCpuCallback(
-    const HdDataSourceBaseHandle &cpuCallback)
+    const HdExtComputationCpuCallbackDataSourceHandle &cpuCallback)
 {
     _cpuCallback = cpuCallback;
     return *this;
