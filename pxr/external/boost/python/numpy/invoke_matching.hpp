@@ -26,6 +26,7 @@
 #include "pxr/external/boost/python/numpy/dtype.hpp"
 #include "pxr/external/boost/python/numpy/ndarray.hpp"
 #include <boost/mpl/integral_c.hpp>
+#include <type_traits>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
 namespace detail 
@@ -36,7 +37,7 @@ struct BOOST_NUMPY_DECL add_pointer_meta
   template <typename T>
   struct apply 
   {
-    typedef typename boost::add_pointer<T>::type type;
+    typedef typename std::add_pointer<T>::type type;
   };
 
 };
