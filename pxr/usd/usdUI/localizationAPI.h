@@ -329,6 +329,8 @@ public:
     UsdProperty GetLocalizedProperty(UsdProperty const &source) const;
 
     /// Creates an attribute with the given localization, or returns the attribute if one already exists
+    /// \p validate will check if localization can be applied to this attribute. Exercise caution when skipping
+    /// validation. \sa CanLocalize
     /// \note It is up to the developer to apply the localization API for this locale to the prim
     USDUI_API
     static UsdAttribute
@@ -337,17 +339,23 @@ public:
 
     /// A convenience method for calling the static version of this method with the localization derived
     /// from the instance name
+    /// \p validate will check if localization can be applied to this attribute. Exercise caution when skipping
+    /// validation. \sa CanLocalize
     USDUI_API
     UsdAttribute CreateLocalizedAttribute(UsdAttribute const &source, VtValue const &defaultValue,
                                           bool writeSparsely=false, bool validate=true) const;
 
     /// Creates a relationship with the given localization, or returns the relationship if one already exists
+    /// \p validate will check if localization can be applied to this attribute. Exercise caution when skipping
+    /// validation. \sa CanLocalize
     /// \note It is up to the developer to apply the localization API for this locale to the prim
     USDUI_API
     static UsdRelationship
     CreateLocalizedRelationship(UsdRelationship const &source, TfToken const &localization, bool validate=true);
 
     /// A convenience method for calling the static version of this method with the localization derived
+    /// \p validate will check if localization can be applied to this attribute. Exercise caution when skipping
+    /// validation. \sa CanLocalize
     /// from the instance name
     USDUI_API
     UsdRelationship CreateLocalizedRelationship(UsdRelationship const &source, bool validate=true) const;
