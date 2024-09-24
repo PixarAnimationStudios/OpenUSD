@@ -23,9 +23,11 @@
 # include "pxr/external/boost/python/detail/mpl2/not.hpp"
 # include "pxr/external/boost/python/detail/mpl2/and.hpp"
 # include "pxr/external/boost/python/detail/mpl2/or.hpp"
-# include <boost/tuple/tuple.hpp>
 # include "pxr/external/boost/python/detail/not_specified.hpp"
 # include "pxr/external/boost/python/detail/def_helper_fwd.hpp"
+
+# include <tuple>
+# include <utility>
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
@@ -40,57 +42,30 @@ namespace detail
   template <class Tuple, template <typename> class Predicate>
   struct tuple_extract;
 
-  // Implementation class for when the tuple's head type does not
-  // satisfy the Predicate
-  template <bool matched>
-  struct tuple_extract_impl
+  template <class... T, template <typename> class Predicate>
+  struct tuple_extract<std::tuple<T...>, Predicate>
   {
-      template <class Tuple, template <typename> class Predicate>
-      struct apply
+      template <class U>
+      using match_t = Predicate<typename add_lvalue_reference<U>::type>;
+
+      static constexpr size_t compute_index()
       {
-          typedef typename Tuple::head_type result_type;
-          
-          static typename Tuple::head_type extract(Tuple const& x)
-          {
-              return x.get_head();
-          }
-      };
-  };
+          size_t idx = 0;
+          ((match_t<T>::value ? true : (++idx, false)) || ...);
+          return idx;
+      }
 
-  // Implementation specialization for when the tuple's head type
-  // satisfies the predicate
-  template <>
-  struct tuple_extract_impl<false>
-  {
-      template <class Tuple, template <typename> class Predicate>
-      struct apply
+      static constexpr size_t match_index = compute_index();
+      static_assert(match_index < sizeof...(T), "No matches for predicate");
+
+      using tuple_type = std::tuple<T...>;
+      using result_type = 
+          typename std::tuple_element<match_index, tuple_type>::type;
+
+      static result_type extract(tuple_type const& x)
       {
-          // recursive application of tuple_extract on the tail of the tuple
-          typedef tuple_extract<typename Tuple::tail_type, Predicate> next;
-          typedef typename next::result_type result_type;
-          
-          static result_type extract(Tuple const& x)
-          {
-              return next::extract(x.get_tail());
-          }
-      };
-  };
-
-  // A metafunction which selects a version of tuple_extract_impl to
-  // use for the implementation of tuple_extract
-  template <class Tuple, template <typename> class Predicate>
-  struct tuple_extract_base_select
-  {
-      typedef typename Tuple::head_type head_type;
-      typedef Predicate<typename add_lvalue_reference<head_type>::type> match_t;
-      BOOST_STATIC_CONSTANT(bool, match = match_t::value);
-      typedef typename tuple_extract_impl<match>::template apply<Tuple,Predicate> type;
-  };
-
-  template <class Tuple, template <typename> class Predicate>
-  struct tuple_extract
-      : tuple_extract_base_select<Tuple, Predicate>::type
-  {
+          return std::get<match_index>(x);
+      }
   };
 
   //
@@ -158,7 +133,7 @@ namespace detail
       // A tuple type which begins with references to the supplied
       // arguments and ends with actual representatives of the default
       // types.
-      typedef boost::tuples::tuple<
+      typedef std::tuple<
           T1 const&
           , T2 const&
           , T3 const&
@@ -172,10 +147,10 @@ namespace detail
 
       // Constructors; these initialize an member of the tuple type
       // shown above.
-      def_helper(T1 const& a1) : m_all(a1,m_nil,m_nil,m_nil) {}
-      def_helper(T1 const& a1, T2 const& a2) : m_all(a1,a2,m_nil,m_nil) {}
-      def_helper(T1 const& a1, T2 const& a2, T3 const& a3) : m_all(a1,a2,a3,m_nil) {}
-      def_helper(T1 const& a1, T2 const& a2, T3 const& a3, T4 const& a4) : m_all(a1,a2,a3,a4) {}
+      def_helper(T1 const& a1) : m_all(a1,m_nil,m_nil,m_nil,{},{},{},{}) {}
+      def_helper(T1 const& a1, T2 const& a2) : m_all(a1,a2,m_nil,m_nil,{},{},{},{}) {}
+      def_helper(T1 const& a1, T2 const& a2, T3 const& a3) : m_all(a1,a2,a3,m_nil,{},{},{},{}) {}
+      def_helper(T1 const& a1, T2 const& a2, T3 const& a3, T4 const& a4) : m_all(a1,a2,a3,a4,{},{},{},{}) {}
 
    private: // types
       typedef typename default_implementation_extract<all_t>::result_type default_implementation_t;

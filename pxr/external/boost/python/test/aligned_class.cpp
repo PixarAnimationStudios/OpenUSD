@@ -15,10 +15,10 @@
 
 using namespace PXR_BOOST_NAMESPACE::python;
 
-struct BOOST_ALIGNMENT(32) X
+struct alignas(32) X
 {
     int x;
-    BOOST_ALIGNMENT(32) float f;
+    alignas(32) float f;
     X(int n, float _f) : x(n), f(_f)
     {
         assert((reinterpret_cast<uintptr_t>(&f) % 32) == 0);

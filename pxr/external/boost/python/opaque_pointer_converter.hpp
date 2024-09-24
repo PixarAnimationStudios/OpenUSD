@@ -30,8 +30,6 @@
 # include "pxr/external/boost/python/type_id.hpp"
 # include "pxr/external/boost/python/errors.hpp"
 
-# include <boost/implicit_cast.hpp>
-
 # include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
 # include <boost/mpl/identity.hpp>
 
@@ -71,7 +69,7 @@ private:
     static void* extract(PyObject* op)
     {
         return PyObject_TypeCheck(op, &type_object)
-            ? static_cast<python_instance*>(implicit_cast<void*>(op))->x
+            ? static_cast<python_instance*>(static_cast<void*>(op))->x
             : 0
             ;
     }
@@ -86,7 +84,7 @@ private:
         if ( python_instance *o = PyObject_New(python_instance, &type_object) )
         {
             o->x = x;
-            return static_cast<PyObject*>(implicit_cast<void*>(o));
+            return static_cast<PyObject*>(static_cast<void*>(o));
         }
         else
         {

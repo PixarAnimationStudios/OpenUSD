@@ -21,7 +21,7 @@
 # include "pxr/external/boost/python/detail/referent_storage.hpp"
 # include "pxr/external/boost/python/detail/destroy.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
-# include <boost/align/align.hpp>
+# include <memory>
 # include <cstddef>
 
 // Data management for potential rvalue conversions from Python to C++
@@ -148,7 +148,7 @@ inline rvalue_from_python_data<T>::~rvalue_from_python_data()
         size_t allocated = sizeof(this->storage);
         void *ptr = this->storage.bytes;
         void *aligned_storage =
-            ::boost::alignment::align(PXR_BOOST_NAMESPACE::python::detail::alignment_of<T>::value, 0, ptr, allocated);
+            std::align(PXR_BOOST_NAMESPACE::python::detail::alignment_of<T>::value, 0, ptr, allocated);
         python::detail::destroy_referent<ref_type>(aligned_storage);
     }
 }

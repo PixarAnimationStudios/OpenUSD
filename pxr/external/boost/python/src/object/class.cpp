@@ -742,7 +742,7 @@ void* instance_holder::allocate(PyObject* self_, std::size_t holder_offset, std:
 
         size_t allocated = holder_size + alignment;
         void* storage = (char*)self + holder_offset;
-        void* aligned_storage = ::boost::alignment::align(alignment, holder_size, storage, allocated);
+        void* aligned_storage = std::align(alignment, holder_size, storage, allocated);
 
         // Record the fact that the storage is occupied, noting where it starts
         const size_t offset = reinterpret_cast<uintptr_t>(aligned_storage) - reinterpret_cast<uintptr_t>(storage) + holder_offset;

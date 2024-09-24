@@ -84,8 +84,8 @@ struct make_instance
     static inline Holder* construct(void* storage, PyObject* instance, ::boost::reference_wrapper<T const> x)
     {
         size_t allocated = objects::additional_instance_size<Holder>::value;
-        void* aligned_storage = ::boost::alignment::align(PXR_BOOST_NAMESPACE::python::detail::alignment_of<Holder>::value,
-                                                          sizeof(Holder), storage, allocated);
+        void* aligned_storage = std::align(PXR_BOOST_NAMESPACE::python::detail::alignment_of<Holder>::value,
+                                           sizeof(Holder), storage, allocated);
         return new (aligned_storage) Holder(instance, x);
     }
 };

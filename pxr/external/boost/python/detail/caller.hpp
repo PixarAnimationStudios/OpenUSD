@@ -31,15 +31,56 @@
 #  include "pxr/external/boost/python/converter/context_result_converter.hpp"
 #  include "pxr/external/boost/python/converter/builtin_converters.hpp"
 
-#  include <boost/compressed_pair.hpp>
-
 #  include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
 #  include <boost/mpl/identity.hpp>
 #  include <boost/mpl/size.hpp>
 #  include <boost/mpl/at.hpp>
 #  include <boost/mpl/int.hpp>
 
+#  include <type_traits>
+
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
+
+// Helper for storing a function object and associated call policies,
+// applying the empty base class optimization for the call policies
+// if possible.
+template <
+    class Policies, 
+    // Apply EBCO if Policies is empty and not final (since we're going
+    // to derive from it in the specialization below)
+    bool EBCO = std::is_empty_v<Policies> && !std::is_final_v<Policies>
+>
+struct policies_holder
+{
+    policies_holder(Policies const& p) : m_p(p) { }
+    Policies& second() { return m_p; }
+    Policies const& second() const { return m_p; }
+
+private:
+    Policies m_p;
+};
+
+template <class Policies>
+struct policies_holder<Policies, true>
+    : protected Policies
+{
+    policies_holder(Policies const& p) : Policies(p) { }
+    Policies& second() { return *this; }
+    Policies const& second() const { return *this; }
+};
+
+template <class F, class Policies>
+struct function_and_policies : policies_holder<Policies>
+{
+    function_and_policies(F const& f, Policies const& p)
+        : policies_holder<Policies>(p), m_f(f) { }
+
+    F& first() { return m_f; }
+    F const& first() const { return m_f; }
+
+private:
+    F m_f;
+};
 
 template <int N>
 inline PyObject* get(mpl::int_<N>, PyObject* const& args_)
@@ -244,7 +285,7 @@ struct caller_arity<std::index_sequence<N...>>
             return  res;
         }
      private:
-        compressed_pair<F,Policies> m_data;
+        function_and_policies<F,Policies> m_data;
     };
 };
 
