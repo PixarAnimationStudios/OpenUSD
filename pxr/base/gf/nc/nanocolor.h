@@ -127,25 +127,6 @@ extern "C" {
  - srgb_texture:     The sRGB color space.
 */
 
-NCEXTERNC const char* Nc_acescg;
-NCEXTERNC const char* Nc_adobergb;
-NCEXTERNC const char* Nc_g18_ap1;
-NCEXTERNC const char* Nc_g18_rec709;
-NCEXTERNC const char* Nc_g22_ap1;
-NCEXTERNC const char* Nc_g22_rec709;
-NCEXTERNC const char* Nc_identity;
-NCEXTERNC const char* Nc_lin_adobergb;
-NCEXTERNC const char* Nc_lin_ap0;
-NCEXTERNC const char* Nc_lin_ap1;
-NCEXTERNC const char* Nc_lin_displayp3;
-NCEXTERNC const char* Nc_lin_rec709;
-NCEXTERNC const char* Nc_lin_rec2020;
-NCEXTERNC const char* Nc_lin_srgb;
-NCEXTERNC const char* Nc_raw;
-NCEXTERNC const char* Nc_srgb_displayp3;
-NCEXTERNC const char* Nc_sRGB;
-NCEXTERNC const char* Nc_srgb_texture;
-
 // Declare the public interface using the namespacing macro.
 #define NcColorSpaceEqual            NCCONCAT(NCNAMESPACE, ColorSpaceEqual)
 #define NcCreateColorSpace           NCCONCAT(NCNAMESPACE, CreateColorSpace)
@@ -162,7 +143,6 @@ NCEXTERNC const char* Nc_srgb_texture;
 #define NcInitColorSpaceLibrary      NCCONCAT(NCNAMESPACE, InitColorSpaceLibrary)
 #define NcKelvinToYxy                NCCONCAT(NCNAMESPACE, KelvinToYxy)
 #define NcMatchLinearColorSpace      NCCONCAT(NCNAMESPACE, MatchLinearColorSpace)
-#define NcRegisteredColorSpaceNames  NCCONCAT(NCNAMESPACE, RegisteredColorSpaceNames)
 #define NcRGBToXYZ                   NCCONCAT(NCNAMESPACE, RGBToXYZ)
 #define NcTransformColor             NCCONCAT(NCNAMESPACE, TransformColor)
 #define NcTransformColors            NCCONCAT(NCNAMESPACE, TransformColors)
@@ -182,16 +162,6 @@ NCEXTERNC const char* Nc_srgb_texture;
  * @return void
  */
 NCAPI void NcInitColorSpaceLibrary(void);
-
-/**
- * @brief Retrieves the names of the registered color spaces.
- * 
- * Retrieves the names of the color spaces that have been registered.
- * This function must not be called before NcInitColorSpaceLibrary is called.
- * 
- * @return Pointer to an array of strings containing the names of the registered color spaces.
- */
-NCAPI const char** NcRegisteredColorSpaceNames(void);
 
 /**
  * @brief Retrieves a named color space.

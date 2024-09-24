@@ -21,6 +21,12 @@ TF_REGISTRY_FUNCTION(TfType) {
 
 TF_DEFINE_PUBLIC_TOKENS(GfColorSpaceNames, GF_COLORSPACE_NAME_TOKENS);
 
+bool GfColorSpace::IsValid(const TfToken& name) {
+    // Retrieve the color space by name, if it exists in the built-in table.
+    auto colorSpace = NcGetNamedColorSpace(name.GetString().c_str());
+    return colorSpace != nullptr;
+}
+
 GfColorSpace::GfColorSpace(const TfToken& name)
 : _data(new _Data())
 {

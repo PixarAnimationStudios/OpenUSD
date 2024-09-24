@@ -14,14 +14,14 @@ def colorApproxEq(c1, c2):
 
 class TestGfColor(unittest.TestCase):
     def setUp(self):
-        self.csSRGB = Gf.ColorSpace(Gf.ColorSpaceNames.SRGB)
-        self.csLinearSRGB = Gf.ColorSpace(Gf.ColorSpaceNames.LinearSRGB)
+        self.csSRGB = Gf.ColorSpace(Gf.ColorSpaceNames.SRGBRec709)
+        self.csLinearSRGB = Gf.ColorSpace(Gf.ColorSpaceNames.LinearRec709)
         self.csLinearRec709 = Gf.ColorSpace(Gf.ColorSpaceNames.LinearRec709)
         self.csG22Rec709 = Gf.ColorSpace(Gf.ColorSpaceNames.G22Rec709)
         self.csAp0 = Gf.ColorSpace(Gf.ColorSpaceNames.LinearAP0)
-        self.csSRGBP3 = Gf.ColorSpace(Gf.ColorSpaceNames.SRGBDisplayP3)
+        self.csSRGBP3 = Gf.ColorSpace(Gf.ColorSpaceNames.SRGBP3D65)
         self.csLinearRec2020 = Gf.ColorSpace(Gf.ColorSpaceNames.LinearRec2020)
-        self.csIdentity = Gf.ColorSpace(Gf.ColorSpaceNames.Identity)
+        self.csIdentity = Gf.ColorSpace(Gf.ColorSpaceNames.Data)
 
         self.mauveLinear = Gf.Color(Gf.Vec3f(0.5, 0.25, 0.125), self.csLinearRec709)
         self.mauveGamma = Gf.Color(self.mauveLinear, self.csG22Rec709)
