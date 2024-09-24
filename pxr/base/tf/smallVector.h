@@ -12,6 +12,8 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/base/arch/defines.h"
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -817,6 +819,18 @@ private:
             _SetRemoteStorage(_Allocate(size));
             _capacity = size;
         }
+#if defined(ARCH_COMPILER_GCC) && ARCH_COMPILER_GCC_MAJOR < 11
+        else if constexpr (!_data.HasLocal) {
+            // When there's no local storage and we're not allocating remote
+            // storage, initialize the remote storage pointer to avoid 
+            // spurious compiler warnings about maybe-uninitialized values
+            // being used. 
+
+            // This clause can be removed upon upgrade to gcc 11 as 
+            // the new compiler no longer generates this warning in this case.
+            _data.SetRemoteStorage(nullptr);
+        }
+#endif
         _size = size;
     }
 
