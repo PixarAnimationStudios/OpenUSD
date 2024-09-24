@@ -29,7 +29,7 @@ main(int argc, char* argv[])
 
   // Make sure we create it with the right name
   std::string label = "The root prim";
-  auto defaultLabelName = TfToken("accessibility:label");
+  auto defaultLabelName = TfToken("accessibility:default:label");
   auto defaultLabel = defaultAPI.CreateLabelAttr(VtValue(label));
   TF_AXIOM(defaultLabel.GetName() == defaultLabelName);
 
@@ -43,7 +43,7 @@ main(int argc, char* argv[])
 
   // Make sure we create the description with the right name
   std::string description = "The greatest prim of all time";
-  auto defaultDescriptionName = TfToken("accessibility:description");
+  auto defaultDescriptionName = TfToken("accessibility:default:description");
   auto defaultDescription = defaultAPI.CreateDescriptionAttr(VtValue(std::string(description)));
   TF_AXIOM(defaultDescription.GetName() == defaultDescriptionName);
 
@@ -56,7 +56,7 @@ main(int argc, char* argv[])
 
   // Make sure we create the priority with the right name
   auto priority = UsdUITokens->high;
-  auto defaultPriorityName = TfToken("accessibility:priority");
+  auto defaultPriorityName = TfToken("accessibility:default:priority");
   auto defaultPriority = defaultAPI.CreatePriorityAttr(VtValue(priority));
   TF_AXIOM(defaultPriority.GetName() == defaultPriorityName);
 
