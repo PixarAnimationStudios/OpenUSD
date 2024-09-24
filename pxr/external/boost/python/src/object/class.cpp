@@ -763,7 +763,7 @@ void* instance_holder::allocate(PyObject* self_, std::size_t holder_offset, std:
         const uintptr_t padding = alignment == 1 ? 0 : ( alignment - (x & (alignment - 1)) );
         const size_t aligned_offset = sizeof(alignment_marker_t) + padding;
         void* const aligned_storage = (char *)base_storage + aligned_offset;
-        BOOST_ASSERT((char *) aligned_storage + holder_size <= (char *)base_storage + base_allocation);
+        assert((char *) aligned_storage + holder_size <= (char *)base_storage + base_allocation);
         alignment_marker_t* const marker_storage = reinterpret_cast<alignment_marker_t *>((char *)aligned_storage - sizeof(alignment_marker_t));
         *marker_storage = static_cast<alignment_marker_t>(padding);
         return aligned_storage;

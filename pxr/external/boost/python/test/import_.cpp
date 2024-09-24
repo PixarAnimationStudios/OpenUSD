@@ -10,7 +10,7 @@
 
 #include "pxr/external/boost/python.hpp"
 
-#include <boost/detail/lightweight_test.hpp>
+#include <cassert>
 #include <functional>
 #include <iostream>
 #include <sstream>
@@ -39,12 +39,12 @@ void import_test(char const *py_file_path)
   bpl::object import_ = bpl::import("import_");
   int value = bpl::extract<int>(import_.attr("value"));
   std::cout << value << std::endl;
-  BOOST_TEST(value == 42);
+  assert(value == 42);
 }
 
 int main(int argc, char **argv)
 {
-  BOOST_TEST(argc == 2);
+  assert(argc == 2);
 
   // Initialize the interpreter
   Py_Initialize();
@@ -53,19 +53,19 @@ int main(int argc, char **argv)
   {
     if (PyErr_Occurred())
     {
-      BOOST_ERROR("Python Error detected");
       PyErr_Print();
+      assert(!"Python Error detected");
     }
     else
     {
-        BOOST_ERROR("A C++ exception was thrown  for which "
+        assert(!"A C++ exception was thrown  for which "
                     "there was no exception handler registered.");
     }
   }
     
   // Boost.Python doesn't support Py_Finalize yet.
   // Py_Finalize();
-  return boost::report_errors();
+  return 0;
 }
 
 // Including this file makes sure

@@ -8,7 +8,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 #include "pxr/external/boost/python/type_id.hpp"
 
-#include <boost/detail/lightweight_test.hpp>
+#include <cassert>
 #include "pxr/external/boost/python/converter/pointer_type_id.hpp"
 
 int main()
@@ -19,30 +19,30 @@ int main()
         = PXR_BOOST_NAMESPACE::python::type_id<int>();
     
 
-    BOOST_TEST(pointer_type_id<int*>() == x);
-    BOOST_TEST(pointer_type_id<int const*>() == x);
-    BOOST_TEST(pointer_type_id<int volatile*>() == x);
-    BOOST_TEST(pointer_type_id<int const volatile*>() == x);
+    assert(pointer_type_id<int*>() == x);
+    assert(pointer_type_id<int const*>() == x);
+    assert(pointer_type_id<int volatile*>() == x);
+    assert(pointer_type_id<int const volatile*>() == x);
     
-    BOOST_TEST(pointer_type_id<int*&>() == x);
-    BOOST_TEST(pointer_type_id<int const*&>() == x);
-    BOOST_TEST(pointer_type_id<int volatile*&>() == x);
-    BOOST_TEST(pointer_type_id<int const volatile*&>() == x);
+    assert(pointer_type_id<int*&>() == x);
+    assert(pointer_type_id<int const*&>() == x);
+    assert(pointer_type_id<int volatile*&>() == x);
+    assert(pointer_type_id<int const volatile*&>() == x);
     
-    BOOST_TEST(pointer_type_id<int*const&>() == x);
-    BOOST_TEST(pointer_type_id<int const*const&>() == x);
-    BOOST_TEST(pointer_type_id<int volatile*const&>() == x);
-    BOOST_TEST(pointer_type_id<int const volatile*const&>() == x);
+    assert(pointer_type_id<int*const&>() == x);
+    assert(pointer_type_id<int const*const&>() == x);
+    assert(pointer_type_id<int volatile*const&>() == x);
+    assert(pointer_type_id<int const volatile*const&>() == x);
     
-    BOOST_TEST(pointer_type_id<int*volatile&>() == x);
-    BOOST_TEST(pointer_type_id<int const*volatile&>() == x);
-    BOOST_TEST(pointer_type_id<int volatile*volatile&>() == x);
-    BOOST_TEST(pointer_type_id<int const volatile*volatile&>() == x);
+    assert(pointer_type_id<int*volatile&>() == x);
+    assert(pointer_type_id<int const*volatile&>() == x);
+    assert(pointer_type_id<int volatile*volatile&>() == x);
+    assert(pointer_type_id<int const volatile*volatile&>() == x);
     
-    BOOST_TEST(pointer_type_id<int*const volatile&>() == x);
-    BOOST_TEST(pointer_type_id<int const*const volatile&>() == x);
-    BOOST_TEST(pointer_type_id<int volatile*const volatile&>() == x);
-    BOOST_TEST(pointer_type_id<int const volatile*const volatile&>() == x);
+    assert(pointer_type_id<int*const volatile&>() == x);
+    assert(pointer_type_id<int const*const volatile&>() == x);
+    assert(pointer_type_id<int volatile*const volatile&>() == x);
+    assert(pointer_type_id<int const volatile*const volatile&>() == x);
     
-    return boost::report_errors();
+    return 0;
 }

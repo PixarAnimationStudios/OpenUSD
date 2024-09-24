@@ -62,6 +62,27 @@ if (PXR_USE_INTERNAL_BOOST_PYTHON)
         # src/numpy/scalars.cpp
         # src/numpy/ufunc.cpp
     )
+
+    # By default CMake defines NDEBUG in CMAKE_CXX_FLAGS_<config> for
+    # non-debug build configurations, which applies to all targets
+    # created in this directory. This disables assert calls in unit
+    # tests, rendering them useless in those configurations.
+    #
+    # To avoid this, we remove NDEBUG from CMAKE_CXX_FLAGS_<config>
+    # and reapply it only to the main library itself below.
+    if (MSVC)
+        set(ndebug_flag "/DNDEBUG")
+    else()
+        set(ndebug_flag "-DNDEBUG")
+    endif()
+
+    foreach(config RELEASE RELWITHDEBINFO MINSIZEREL)
+        string(REPLACE
+            ${ndebug_flag} ""
+            CMAKE_CXX_FLAGS_${config} ${CMAKE_CXX_FLAGS_${config}}
+        )
+    endforeach()
+
 else()
     set(libs
         ${Boost_PYTHON_LIBRARY}
@@ -326,6 +347,11 @@ if (PXR_USE_INTERNAL_BOOST_PYTHON)
     # decorated with PXR_BOOST_PYTHON_DECL are exported.
     target_compile_definitions(python
         PRIVATE PXR_BOOST_PYTHON_SOURCE
+    )
+
+    # See comment about NDEBUG above.
+    target_compile_definitions(python
+        PRIVATE $<$<NOT:$<CONFIG:Debug>>:NDEBUG>
     )
 else()
     # Ensure symbol in build-workaround.cpp is exported on Windows,

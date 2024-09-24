@@ -32,32 +32,3 @@ extern "C" void (*old_translator)(unsigned, EXCEPTION_POINTERS*)
 # endif
 
 #endif // _WIN32
-
-#include <exception>
-#include "pxr/external/boost/python/extract.hpp"
-#include "pxr/external/boost/python/str.hpp"
-struct test_failure : std::exception
-{
-    test_failure(char const* expr, char const* /*function*/, char const* file, unsigned line)
-      : msg(file + PXR_BOOST_NAMESPACE::python::str(":%s:") % line + ": Boost.Python assertion failure: " + expr)
-    {}
-
-    ~test_failure() throw() {}
-    
-    char const* what() const throw()
-    {
-        return PXR_BOOST_NAMESPACE::python::extract<char const*>(msg)();
-    }
-
-    PXR_BOOST_NAMESPACE::python::str msg;
-};
-
-namespace boost
-{
-
-void assertion_failed(char const * expr, char const * function, char const * file, long line)
-{
-    throw ::test_failure(expr,function, file, line);
-}
-
-} // namespace boost

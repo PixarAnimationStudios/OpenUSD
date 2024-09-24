@@ -9,7 +9,7 @@
 #include "pxr/external/boost/python/detail/string_literal.hpp"
 //#include <stdio.h>
 
-#include <boost/detail/lightweight_test.hpp>
+#include <cassert>
 
 using namespace PXR_BOOST_NAMESPACE::python::detail;
     
@@ -42,5 +42,5 @@ int main()
     static_assert(!is_string_literal<int[20]>::value);
     static_assert(!is_string_literal<int const[20]>::value);
     static_assert(!is_string_literal<int const[3]>::value);
-    return boost::report_errors();
+    return 0;
 }

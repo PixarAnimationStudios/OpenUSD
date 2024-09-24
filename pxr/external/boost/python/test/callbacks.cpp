@@ -17,8 +17,7 @@
 #include "pxr/external/boost/python/reference_existing_object.hpp"
 #include "pxr/external/boost/python/call.hpp"
 #include "pxr/external/boost/python/object.hpp"
-#define BOOST_ENABLE_ASSERT_HANDLER
-#include <boost/assert.hpp>
+#include <cassert>
 
 using namespace PXR_BOOST_NAMESPACE::python;
 static_assert(converter::is_object_manager<handle<> >::value);
@@ -37,10 +36,10 @@ struct X
 {
     explicit X(int x) : x(x), magic(7654321) { ++counter; }
     X(X const& rhs) : x(rhs.x), magic(7654321) { ++counter; }
-    ~X() { BOOST_ASSERT(magic == 7654321); magic = 6666666; x = 9999; --counter; }
+    ~X() { assert(magic == 7654321); magic = 6666666; x = 9999; --counter; }
 
-    void set(int _x) { BOOST_ASSERT(magic == 7654321); this->x = _x; }
-    int value() const { BOOST_ASSERT(magic == 7654321); return x; }
+    void set(int _x) { assert(magic == 7654321); this->x = _x; }
+    int value() const { assert(magic == 7654321); return x; }
     static int count() { return counter; }
  private:
     void operator=(X const&);

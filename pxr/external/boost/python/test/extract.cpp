@@ -18,8 +18,6 @@
 #include "pxr/external/boost/python/implicit.hpp"
 #include <string>
 #include <boost/lexical_cast.hpp>
-#define BOOST_ENABLE_ASSERT_HANDLER
-#include <boost/assert.hpp>
 #include "test_class.hpp"
 
 using namespace PXR_BOOST_NAMESPACE::python;

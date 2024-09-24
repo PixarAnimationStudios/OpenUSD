@@ -7,8 +7,6 @@
 // Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //#include <stdio.h>
-#define BOOST_ENABLE_ASSERT_HANDLER
-#include <boost/assert.hpp>
 #include "pxr/external/boost/python/detail/indirect_traits.hpp"
 
 //#define print(expr) printf("%s ==> %s\n", #expr, expr)

@@ -9,7 +9,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #include "pxr/external/boost/python/cast.hpp"
-#include <boost/detail/lightweight_test.hpp>
+#include <cassert>
 
 struct X { long x; };
 struct Y : X, PyObject {};
@@ -28,12 +28,12 @@ int main()
     // the Python Stable ABI. We also look at ob_type instead of ob_refcnt since
     // the latter does not exist in Python builds with the GIL disabled.
 #if PY_VERSION_HEX < 0x030a00f0
-    BOOST_TEST(&Py_REFCNT(PXR_BOOST_NAMESPACE::python::upcast<PyObject>(&o)) == &Py_REFCNT(&o));
-    BOOST_TEST(&Py_REFCNT(PXR_BOOST_NAMESPACE::python::upcast<PyObject>(&y)) == &Py_REFCNT(&y));
+    assert(&Py_REFCNT(PXR_BOOST_NAMESPACE::python::upcast<PyObject>(&o)) == &Py_REFCNT(&o));
+    assert(&Py_REFCNT(PXR_BOOST_NAMESPACE::python::upcast<PyObject>(&y)) == &Py_REFCNT(&y));
 #else
-    BOOST_TEST(&PXR_BOOST_NAMESPACE::python::upcast<PyObject>(&o)->ob_type == &o.ob_base.ob_base.ob_type);
-    BOOST_TEST(&PXR_BOOST_NAMESPACE::python::upcast<PyObject>(&y)->ob_type == &y.ob_type);
+    assert(&PXR_BOOST_NAMESPACE::python::upcast<PyObject>(&o)->ob_type == &o.ob_base.ob_base.ob_type);
+    assert(&PXR_BOOST_NAMESPACE::python::upcast<PyObject>(&y)->ob_type == &y.ob_type);
 #endif
 
-    return boost::report_errors();
+    return 0;
 }
