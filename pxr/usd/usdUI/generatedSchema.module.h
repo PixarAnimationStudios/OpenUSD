@@ -10,3 +10,5 @@ TF_WRAP(UsdUINodeGraphNodeAPI);
 TF_WRAP(UsdUISceneGraphPrimAPI);
 TF_WRAP(UsdUIBackdrop);
 TF_WRAP(UsdUITokens);
+TF_WRAP(UsdUIAccessibilityAPI);
+TF_WRAP(UsdUILocalizationAPI);
