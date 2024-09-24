@@ -5,6 +5,8 @@
 // https://openusd.org/license.
 //
 #include "pxr/usd/usdUI/localizationAPI.h"
+
+#include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -234,6 +236,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
 bool UsdUILocalizationAPI::CanLocalize(UsdAttribute const &attribute) {
+    // Primvars are not allowed to be localized
+    if (UsdGeomPrimvar::IsPrimvar(attribute)) {
+        return false;
+    }
     // Currently, only string types are localizable
     return (attribute.GetTypeName() == SdfValueTypeNames->String);
 }
