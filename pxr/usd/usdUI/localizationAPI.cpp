@@ -233,6 +233,18 @@ PXR_NAMESPACE_CLOSE_SCOPE
 PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
+bool UsdUILocalizationAPI::CanLocalize(UsdAttribute const &attribute) {
+    // Currently, only string types are localizable
+    return (attribute.GetTypeName() == SdfValueTypeNames->String);
+}
+
+/* static */
+bool UsdUILocalizationAPI::CanLocalize([[maybe_unused]] UsdRelationship const &relationship) {
+    // Currently no relationships are allowed to be localized , but we provide the API for symmetry
+    return false;
+}
+
+/* static */
 UsdProperty
 UsdUILocalizationAPI::GetDefaultProperty(UsdProperty const &source) {
     const auto nameTokens = source.SplitName();
@@ -256,7 +268,7 @@ UsdUILocalizationAPI::GetDefaultProperty(UsdProperty const &source) {
     return prop;
 }
 
-
+/* static */
 TfToken UsdUILocalizationAPI::GetPropertyLanguage(UsdProperty const &prop) {
     auto nameTokens = prop.SplitName();
     if (nameTokens.size() < 3 || nameTokens[nameTokens.size() - 2] != UsdUITokens->lang) {
@@ -307,7 +319,7 @@ UsdUILocalizationAPI::GetLocalizedProperty(UsdProperty const &source) const {
 /* static */
 UsdAttribute
 UsdUILocalizationAPI::CreateLocalizedAttribute(UsdAttribute const &source, TfToken const &localization,
-                                               VtValue const &defaultValue, bool writeSparsely) {
+                                               VtValue const &defaultValue, bool writeSparsely, bool validate) {
     const auto prim = source.GetPrim();
     if (!prim) {
         TF_CODING_ERROR("Cannot find attributes parent prim");
@@ -346,6 +358,11 @@ UsdUILocalizationAPI::CreateLocalizedAttribute(UsdAttribute const &source, TfTok
         return {};
     }
 
+    if (validate && !UsdUILocalizationAPI::CanLocalize(defaultAttr)) {
+        TF_CODING_ERROR("This attribute type is not meant to be localized.");
+        return {};
+    }
+
     UsdAttribute attr(prim.CreateAttribute(
         UsdUILocalizationAPI::GetLocalizedPropertyName(source, localization),
         defaultAttr.GetTypeName(),
@@ -362,12 +379,12 @@ UsdUILocalizationAPI::CreateLocalizedAttribute(UsdAttribute const &source, TfTok
 
 UsdAttribute
 UsdUILocalizationAPI::CreateLocalizedAttribute(UsdAttribute const &source, VtValue const &defaultValue,
-                                               bool writeSparsely) const {
-    return CreateLocalizedAttribute(source, GetName(), defaultValue, writeSparsely);
+                                               bool writeSparsely, bool validate) const {
+    return CreateLocalizedAttribute(source, GetName(), defaultValue, writeSparsely, validate);
 }
 
 UsdRelationship
-UsdUILocalizationAPI::CreateLocalizedRelationship(UsdRelationship const &source, TfToken const &localization) {
+UsdUILocalizationAPI::CreateLocalizedRelationship(UsdRelationship const &source, TfToken const &localization, bool validate) {
     const auto prim = source.GetPrim();
     if (!prim) {
         TF_CODING_ERROR("Cannot find attributes parent prim");
@@ -386,6 +403,11 @@ UsdUILocalizationAPI::CreateLocalizedRelationship(UsdRelationship const &source,
         return {};
     }
 
+    if (validate && !UsdUILocalizationAPI::CanLocalize(defaultRel)) {
+        TF_CODING_ERROR("This relationship is not meant to be localized.");
+        return {};
+    }
+
     UsdRelationship rel(prim.CreateRelationship(
         UsdUILocalizationAPI::GetLocalizedPropertyName(source, localization),
         defaultRel.IsCustom()
@@ -396,8 +418,8 @@ UsdUILocalizationAPI::CreateLocalizedRelationship(UsdRelationship const &source,
 
 
 UsdRelationship
-UsdUILocalizationAPI::CreateLocalizedRelationship(UsdRelationship const &source) const{
-    return UsdUILocalizationAPI::CreateLocalizedRelationship(source, GetName());
+UsdUILocalizationAPI::CreateLocalizedRelationship(UsdRelationship const &source, bool validate) const{
+    return UsdUILocalizationAPI::CreateLocalizedRelationship(source, GetName(), validate);
 }
 
 /* static */
