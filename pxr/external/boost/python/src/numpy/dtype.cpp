@@ -10,7 +10,7 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #ifdef _MSC_VER
-#include <boost/cstdint.hpp>
+#include <cstdint>
 #endif
 #define PXR_BOOST_PYTHON_NUMPY_INTERNAL
 #include "pxr/external/boost/python/numpy/internal.hpp"

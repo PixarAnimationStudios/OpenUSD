@@ -30,7 +30,7 @@
 #  include "pxr/external/boost/python/detail/force_instantiate.hpp"
 #  include "pxr/external/boost/python/detail/preprocessor.hpp"
 
-#  include <boost/utility/addressof.hpp>
+#  include <memory>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
@@ -46,7 +46,7 @@ struct value_holder : instance_holder
       PyObject* self, A... a)
         : m_held(objects::do_unforward(a, 0)...)
     {
-        python::detail::initialize_wrapper(self, boost::addressof(this->m_held));
+        python::detail::initialize_wrapper(self, std::addressof(this->m_held));
     }
 
  private: // required holder implementation
@@ -90,12 +90,12 @@ private: // required holder implementation
 template <class Value>
 void* value_holder<Value>::holds(type_info dst_t, bool /*null_ptr_only*/)
 {
-    if (void* wrapped = holds_wrapped(dst_t, boost::addressof(m_held), boost::addressof(m_held)))
+    if (void* wrapped = holds_wrapped(dst_t, std::addressof(m_held), std::addressof(m_held)))
         return wrapped;
     
     type_info src_t = python::type_id<Value>();
-    return src_t == dst_t ? boost::addressof(m_held)
-        : find_static_type(boost::addressof(m_held), src_t, dst_t);
+    return src_t == dst_t ? std::addressof(m_held)
+        : find_static_type(std::addressof(m_held), src_t, dst_t);
 }
 
 template <class Value, class Held>

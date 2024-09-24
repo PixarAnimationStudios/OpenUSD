@@ -15,7 +15,7 @@
 #include "pxr/external/boost/python/tuple.hpp"
 #include "pxr/external/boost/python/dict.hpp"
 #include "pxr/external/boost/python/make_function.hpp"
-#include <boost/lexical_cast.hpp>
+#include <string>
 #include <cassert>
 #include "test_class.hpp"
 
@@ -38,7 +38,7 @@ object listify_string(char const* s)
 
 std::string x_rep(test_class<> const& x)
 {
-    return "X("  + boost::lexical_cast<std::string>(x.value()) + ")";
+    return "X("  + std::to_string(x.value()) + ")";
 }
 
 object apply_object_list(object f, list x)

@@ -22,7 +22,7 @@
 # include "pxr/external/boost/python/ssize_t.hpp"
 # include <string>
 # include <complex>
-# include <boost/limits.hpp>
+# include <limits>
 
 // Since all we can use to decide how to convert an object to_python
 // is its C++ type, there can be only one such converter for each

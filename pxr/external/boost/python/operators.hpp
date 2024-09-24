@@ -28,16 +28,24 @@
 # include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
 # include "pxr/external/boost/python/self.hpp"
 # include "pxr/external/boost/python/other.hpp"
-# include <boost/lexical_cast.hpp>
 # include "pxr/external/boost/python/refcount.hpp"
 # include "pxr/external/boost/python/detail/unwrap_wrapper.hpp"
 # include <string>
+# include <sstream>
 # include <complex>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 namespace detail
 {
+  template <class T>
+  std::string convert_to_string(T const& x)
+  {
+      std::stringstream s;
+      s << x;
+      return s.str();
+  }
+
   // This is essentially the old v1 to_python(). It will be eliminated
   // once the public interface for to_python is settled on.
   template <class T>
@@ -341,8 +349,8 @@ PXR_BOOST_PYTHON_UNARY_OPERATOR(int, long, int_)
 PXR_BOOST_PYTHON_UNARY_OPERATOR(long, PyLong_FromLong, long_)
 PXR_BOOST_PYTHON_UNARY_OPERATOR(float, double, float_)
 PXR_BOOST_PYTHON_UNARY_OPERATOR(complex, std::complex<double>, complex_)
-PXR_BOOST_PYTHON_UNARY_OPERATOR(str, lexical_cast<std::string>, str)
-PXR_BOOST_PYTHON_UNARY_OPERATOR(repr, lexical_cast<std::string>, repr)
+PXR_BOOST_PYTHON_UNARY_OPERATOR(str, convert_to_string, str)
+PXR_BOOST_PYTHON_UNARY_OPERATOR(repr, convert_to_string, repr)
 # undef PXR_BOOST_PYTHON_UNARY_OPERATOR
 
 }} // namespace PXR_BOOST_NAMESPACE::python

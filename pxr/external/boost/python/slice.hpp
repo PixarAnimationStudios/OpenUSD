@@ -24,8 +24,6 @@
 #include "pxr/external/boost/python/extract.hpp"
 #include "pxr/external/boost/python/converter/pytype_object_mgr_traits.hpp"
 
-#include <boost/iterator/iterator_traits.hpp>
-
 #include <iterator>
 #include <algorithm>
 
@@ -57,6 +55,13 @@ namespace detail
 class slice : public detail::slice_base
 {
     typedef detail::slice_base base;
+
+    template <class Iter>
+    struct iterator_difference
+    {
+        using type = typename std::iterator_traits<Iter>::difference_type;
+    };
+
  public:
     // Equivalent to slice(::)
     slice() : base(0,0,0) {}

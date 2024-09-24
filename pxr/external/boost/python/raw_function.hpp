@@ -24,7 +24,7 @@
 # include "pxr/external/boost/python/object/py_function.hpp"
 # include <boost/mpl/vector/vector10.hpp>
 
-# include <boost/limits.hpp>
+# include <limits>
 # include <cstddef>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 

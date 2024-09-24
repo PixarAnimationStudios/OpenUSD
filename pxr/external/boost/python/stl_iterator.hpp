@@ -21,21 +21,19 @@
 
 # include "pxr/external/boost/python/object/stl_iterator_core.hpp"
 
-# include <boost/iterator/iterator_facade.hpp>
-
 namespace PXR_BOOST_NAMESPACE { namespace python
 { 
 
 // An STL input iterator over a python sequence
 template<typename ValueT>
 struct stl_input_iterator
-  : boost::iterator_facade<
-        stl_input_iterator<ValueT>
-      , ValueT
-      , std::input_iterator_tag
-      , ValueT
-    >
 {
+    using difference_type = std::ptrdiff_t;
+    using value_type = ValueT;
+    using pointer = ValueT*;
+    using reference = ValueT;
+    using iterator_category = std::input_iterator_tag;
+
     stl_input_iterator()
       : impl_()
     {
@@ -47,9 +45,35 @@ struct stl_input_iterator
     {
     }
 
-private:
-    friend class boost::iterator_core_access;
+    stl_input_iterator& operator++()
+    {
+        increment();
+        return *this;
+    }
 
+    stl_input_iterator operator++(int)
+    {
+        stl_input_iterator old(*this);
+        increment();
+        return old;
+    }
+
+    ValueT operator*() const
+    {
+        return dereference();
+    }
+
+    friend bool operator==(stl_input_iterator const& lhs, stl_input_iterator const& rhs)
+    {
+        return lhs.equal(rhs);
+    }
+
+    friend bool operator!=(stl_input_iterator const& lhs, stl_input_iterator const& rhs)
+    {
+        return !(lhs == rhs);
+    }
+
+private:
     void increment()
     {
         this->impl_.increment();

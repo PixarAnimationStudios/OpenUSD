@@ -15,7 +15,6 @@
 #include "pxr/external/boost/python/call_method.hpp"
 #include "pxr/external/boost/python/pure_virtual.hpp"
 #include "pxr/external/boost/python/def.hpp"
-#include <boost/utility.hpp>
 
 using namespace PXR_BOOST_NAMESPACE::python;
 

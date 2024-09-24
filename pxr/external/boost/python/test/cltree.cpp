@@ -10,7 +10,6 @@
 #include "pxr/external/boost/python/module.hpp"
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/class.hpp"
-#include <boost/utility.hpp>
 
 /*  Non-modifiable definitions */
 

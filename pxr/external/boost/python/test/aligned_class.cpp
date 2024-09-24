@@ -11,7 +11,7 @@
 #include "pxr/external/boost/python/object.hpp"
 #include "pxr/external/boost/python/class.hpp"
 #include <cassert>
-#include <boost/cstdint.hpp>
+#include <cstdint>
 
 using namespace PXR_BOOST_NAMESPACE::python;
 

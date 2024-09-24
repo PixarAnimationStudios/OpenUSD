@@ -10,7 +10,6 @@
 
 #include "pxr/external/boost/python/detail/prefix.hpp"
 #include <boost/mpl/lambda.hpp> // #including this first is an intel6 workaround
-#include <boost/cstdint.hpp>
 
 #include "pxr/external/boost/python/object/class.hpp"
 #include "pxr/external/boost/python/object/instance.hpp"
@@ -29,6 +28,7 @@
 #include <functional>
 #include <vector>
 #include <cstddef>
+#include <cstdint>
 #include <new>
 #include <structmember.h>
 

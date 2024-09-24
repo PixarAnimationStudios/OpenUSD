@@ -21,10 +21,9 @@
 
 # include "pxr/external/boost/python/object_core.hpp"
 # include "pxr/external/boost/python/call.hpp"
-# include <boost/iterator/detail/enable_if.hpp>
 # include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 
-# include <boost/iterator/detail/config_def.hpp>
+# include <type_traits>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace api {
 
@@ -51,7 +50,7 @@ struct is_object_operators
 
 template <class L, class R, class T>
 struct enable_binary
-  : boost::iterators::enable_if<is_object_operators<L,R>, T>
+  : std::enable_if<is_object_operators<L,R>::value, T>
 {};
 #  define PXR_BOOST_PYTHON_BINARY_RETURN(T) typename enable_binary<L,R,T>::type
 
@@ -147,8 +146,6 @@ PXR_BOOST_PYTHON_INPLACE_OPERATOR(|=)
 # undef PXR_BOOST_PYTHON_INPLACE_OPERATOR
 
 }}} // namespace PXR_BOOST_NAMESPACE::python
-
-#include <boost/iterator/detail/config_undef.hpp>
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_OPERATORS_HPP

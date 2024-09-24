@@ -17,7 +17,6 @@
 #include "pxr/external/boost/python/return_value_policy.hpp"
 #include "pxr/external/boost/python/implicit.hpp"
 #include <string>
-#include <boost/lexical_cast.hpp>
 #include "test_class.hpp"
 
 using namespace PXR_BOOST_NAMESPACE::python;
@@ -97,7 +96,7 @@ bool check_X_ref(object x) { return extract<X&>(x).check(); }
 
 std::string x_rep(X const& x)
 {
-    return "X("  + boost::lexical_cast<std::string>(x.value()) + ")";
+    return "X("  + std::to_string(x.value()) + ")";
 }
 
 PXR_BOOST_PYTHON_MODULE(extract_ext)

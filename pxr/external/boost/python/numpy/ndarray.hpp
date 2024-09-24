@@ -24,12 +24,12 @@
  */
 
 #include "pxr/external/boost/python.hpp"
-#include <boost/utility/enable_if.hpp>
 #include "pxr/external/boost/python/detail/type_traits.hpp"
 #include "pxr/external/boost/python/numpy/numpy_object_mgr_traits.hpp"
 #include "pxr/external/boost/python/numpy/dtype.hpp"
 #include "pxr/external/boost/python/numpy/config.hpp"
 
+#include <type_traits>
 #include <vector>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
@@ -188,7 +188,7 @@ ndarray from_data_impl(void * data,
 		       Container strides,
 		       object const & owner,
 		       bool writeable,
-		       typename boost::enable_if< PXR_BOOST_NAMESPACE::python::detail::is_integral<typename Container::value_type> >::type * enabled = NULL)
+		       typename std::enable_if< PXR_BOOST_NAMESPACE::python::detail::is_integral<typename Container::value_type>::value >::type * enabled = NULL)
 {
   std::vector<Py_intptr_t> shape_(shape.begin(),shape.end());
   std::vector<Py_intptr_t> strides_(strides.begin(), strides.end());

@@ -14,7 +14,6 @@
 #include "pxr/external/boost/python/return_internal_reference.hpp"
 #include "pxr/external/boost/python/call_method.hpp"
 #include <boost/ref.hpp>
-#include <boost/utility.hpp>
 
 #include <cassert>
 
