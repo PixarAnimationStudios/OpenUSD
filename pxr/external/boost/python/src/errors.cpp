@@ -13,7 +13,7 @@
 #endif
 
 #include "pxr/external/boost/python/errors.hpp"
-#include <boost/cast.hpp>
+#include "pxr/external/boost/python/detail/integer_cast.hpp"
 #include "pxr/external/boost/python/detail/exception_handler.hpp"
 #include <exception>
 #include <new>
@@ -41,7 +41,7 @@ PXR_BOOST_PYTHON_DECL bool handle_exception_impl(std::function<void()> f)
     {
         PyErr_NoMemory();
     }
-    catch(const bad_numeric_cast& x)
+    catch(const detail::bad_integer_cast& x)
     {
         PyErr_SetString(PyExc_OverflowError, x.what());
     }

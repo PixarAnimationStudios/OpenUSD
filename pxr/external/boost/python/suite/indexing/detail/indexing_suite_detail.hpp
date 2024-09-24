@@ -20,7 +20,7 @@
 
 # include "pxr/external/boost/python/extract.hpp"
 # include <boost/get_pointer.hpp>
-# include <boost/numeric/conversion/cast.hpp>
+# include "pxr/external/boost/python/detail/integer_cast.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <vector>
 # include <map>
@@ -617,7 +617,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
                     from += max_index;
                 if (from < 0) // Clip lower bounds to zero
                     from = 0;
-                from_ = boost::numeric_cast<Index>(from);
+                from_ = integer_cast<Index>(from);
                 if (from_ > max_index) // Clip upper bounds to max_index.
                     from_ = max_index;
             }
@@ -631,7 +631,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
                     to += max_index;
                 if (to < 0)
                     to = 0;
-                to_ = boost::numeric_cast<Index>(to);
+                to_ = integer_cast<Index>(to);
                 if (to_ > max_index)
                     to_ = max_index;
             }

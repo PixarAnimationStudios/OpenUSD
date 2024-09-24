@@ -14,6 +14,7 @@
 #include "pxr/external/boost/python/refcount.hpp"
 
 #include "pxr/external/boost/python/detail/config.hpp"
+#include "pxr/external/boost/python/detail/integer_cast.hpp"
 #include "pxr/external/boost/python/detail/wrap_python.hpp"
 
 #include "pxr/external/boost/python/converter/builtin_converters.hpp"
@@ -23,9 +24,9 @@
 #include "pxr/external/boost/python/converter/shared_ptr_deleter.hpp"
 #include "pxr/external/boost/python/converter/pytype_function.hpp"
 
-#include <boost/cast.hpp>
 #include <string>
 #include <complex>
+#include <type_traits>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter {
 
@@ -155,24 +156,28 @@ namespace
   template <class T>
   struct signed_int_rvalue_from_python : int_rvalue_from_python_base
   {
+      static_assert(!std::is_floating_point<T>::value);
+
       static T extract(PyObject* intermediate)
       {
           long x = PyLong_AsLong(intermediate);
           if (PyErr_Occurred())
               throw_error_already_set();
-          return numeric_cast<T>(x);
+          return python::detail::integer_cast<T>(x);
       }
   };
 
   template <class T>
   struct unsigned_int_rvalue_from_python : int_rvalue_from_python_base
   {
+      static_assert(!std::is_floating_point<T>::value);
+
       static T extract(PyObject* intermediate)
       {
           unsigned long x = PyLong_AsUnsignedLong(intermediate);
           if (PyErr_Occurred())
               throw_error_already_set();
-          return numeric_cast<T>(x);
+          return python::detail::integer_cast<T>(x);
       }
   };
 #else // PY_VERSION_HEX >= 0x03000000
@@ -199,12 +204,14 @@ namespace
   template <class T>
   struct signed_int_rvalue_from_python : signed_int_rvalue_from_python_base
   {
+      static_assert(!std::is_floating_point<T>::value);
+
       static T extract(PyObject* intermediate)
       {
           long x = PyInt_AsLong(intermediate);
           if (PyErr_Occurred())
               throw_error_already_set();
-          return numeric_cast<T>(x);
+          return python::detail::integer_cast<T>(x);
       }
   };
   
@@ -230,6 +237,8 @@ namespace
   template <class T>
   struct unsigned_int_rvalue_from_python : unsigned_int_rvalue_from_python_base
   {
+      static_assert(!std::is_floating_point<T>::value);
+
       static T extract(PyObject* intermediate)
       {
           if (PyLong_Check(intermediate)) {
@@ -238,7 +247,7 @@ namespace
               unsigned long result = PyLong_AsUnsignedLong(intermediate);
               if (PyErr_Occurred())
                   throw_error_already_set();
-              return numeric_cast<T>(result);
+              return python::detail::integer_cast<T>(x);
           } else {
               // None of PyInt_AsUnsigned*() functions check for negative
               // overflow, so use PyInt_AS_LONG instead and check if number is
@@ -251,7 +260,7 @@ namespace
                                   " value to unsigned");
                   throw_error_already_set();
               }
-              return numeric_cast<T>(result);
+              return python::detail::integer_cast<T>(x);
           }
       }
   };
@@ -317,7 +326,7 @@ namespace
 #if PY_VERSION_HEX < 0x03000000
           if (PyInt_Check(intermediate))
           {
-              return numeric_cast<unsigned PXR_BOOST_PYTHON_LONG_LONG>(PyInt_AS_LONG(intermediate));
+              return python::detail::integer_cast<unsigned PXR_BOOST_PYTHON_LONG_LONG>(PyInt_AS_LONG(intermediate));
           }
           else
 #endif

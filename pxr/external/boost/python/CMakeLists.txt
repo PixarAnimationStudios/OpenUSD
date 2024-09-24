@@ -176,6 +176,7 @@ pxr_library(python
         detail/force_instantiate.hpp
         detail/if_else.hpp
         detail/indirect_traits.hpp
+        detail/integer_cast.hpp
         detail/invoke.hpp
         detail/is_auto_ptr.hpp
         detail/is_shared_ptr.hpp
