@@ -49,7 +49,6 @@ class SdfAssetPath;
 /// information for different aspects of the prim, such as size or color.
 /// 
 /// \note The API will use \em default as an instance name if no namespace is specified.
-/// When using "default" as the name, the instance name is elided from the attribute name.
 /// 
 /// There are several best practices for using this schema.:
 /// 
