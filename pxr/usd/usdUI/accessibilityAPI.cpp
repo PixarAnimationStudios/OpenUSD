@@ -164,12 +164,7 @@ static inline
 TfToken
 _GetNamespacedPropertyName(const TfToken instanceName, const TfToken propName)
 {
-    std::string propertyName = UsdUITokens->accessibility.GetString() + ":";
-    if (instanceName != UsdUITokens->default_) {
-        propertyName += instanceName.GetString() + ":";
-    }
-    propertyName += propName.GetString();
-    return TfToken(propertyName);
+    return UsdSchemaRegistry::MakeMultipleApplyNameInstance(propName, instanceName);
 }
 
 UsdAttribute
@@ -178,7 +173,7 @@ UsdUIAccessibilityAPI::GetLabelAttr() const
     return GetPrim().GetAttribute(
         _GetNamespacedPropertyName(
             GetName(),
-            UsdUITokens->label));
+            UsdUITokens->accessibility_MultipleApplyTemplate_Label));
 }
 
 UsdAttribute
@@ -187,7 +182,7 @@ UsdUIAccessibilityAPI::CreateLabelAttr(VtValue const &defaultValue, bool writeSp
     return UsdSchemaBase::_CreateAttr(
                        _GetNamespacedPropertyName(
                             GetName(),
-                           UsdUITokens->label),
+                           UsdUITokens->accessibility_MultipleApplyTemplate_Label),
                        SdfValueTypeNames->String,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -201,7 +196,7 @@ UsdUIAccessibilityAPI::GetDescriptionAttr() const
     return GetPrim().GetAttribute(
         _GetNamespacedPropertyName(
             GetName(),
-            UsdUITokens->description));
+            UsdUITokens->accessibility_MultipleApplyTemplate_Description));
 }
 
 UsdAttribute
@@ -210,7 +205,7 @@ UsdUIAccessibilityAPI::CreateDescriptionAttr(VtValue const &defaultValue, bool w
     return UsdSchemaBase::_CreateAttr(
                        _GetNamespacedPropertyName(
                             GetName(),
-                           UsdUITokens->description),
+                           UsdUITokens->accessibility_MultipleApplyTemplate_Description),
                        SdfValueTypeNames->String,
                        /* custom = */ false,
                        SdfVariabilityVarying,
@@ -224,7 +219,7 @@ UsdUIAccessibilityAPI::GetPriorityAttr() const
     return GetPrim().GetAttribute(
         _GetNamespacedPropertyName(
             GetName(),
-            UsdUITokens->priority));
+            UsdUITokens->accessibility_MultipleApplyTemplate_Priority));
 }
 
 UsdAttribute
@@ -233,7 +228,7 @@ UsdUIAccessibilityAPI::CreatePriorityAttr(VtValue const &defaultValue, bool writ
     return UsdSchemaBase::_CreateAttr(
                        _GetNamespacedPropertyName(
                             GetName(),
-                           UsdUITokens->priority),
+                           UsdUITokens->accessibility_MultipleApplyTemplate_Priority),
                        SdfValueTypeNames->Token,
                        /* custom = */ false,
                        SdfVariabilityUniform,
