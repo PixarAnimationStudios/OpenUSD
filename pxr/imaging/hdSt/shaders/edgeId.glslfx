@@ -11,6 +11,24 @@
 --- #import $TOOLS/hdSt/shaders/edgeId.glslfx
 
 --- --------------------------------------------------------------------------
+-- glsl EdgeId.Fragment.None
+
+int GetPrimitiveEdgeId()
+{
+    return -1;
+}
+
+float GetSelectedEdgeOpacity()
+{
+    return 0;
+}
+
+bool SelectWireframeFaceEdges()
+{
+    return false;
+}
+
+--- --------------------------------------------------------------------------
 -- glsl EdgeId.Fragment.Common
 
 // Determines whether a fragment is on or close to an unhidden triangle edge.

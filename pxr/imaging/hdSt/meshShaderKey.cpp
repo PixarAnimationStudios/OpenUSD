@@ -69,6 +69,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((selPointSelVS,               "Selection.Vertex.PointSel"))
 
     // edge id mixins (for edge picking & selection)
+    ((edgeIdNoneFS,                "EdgeId.Fragment.None"))
     ((edgeIdCommonFS,              "EdgeId.Fragment.Common"))
     ((edgeIdTriangleSurfFS,        "EdgeId.Fragment.TriangleSurface"))
     ((edgeIdTriangleLineFS,        "EdgeId.Fragment.TriangleLines"))
@@ -157,7 +158,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     bool hasInstancer,
     bool enableScalarOverride,
     bool pointsShadingEnabled,
-    bool forceOpaqueEdges)
+    bool forceOpaqueEdges,
+    bool surfaceEdgeIds)
     : primType(primitiveType)
     , cullStyle(cullStyle)
     , hasMirroredTransform(hasMirroredTransform)
@@ -200,8 +202,9 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                              geomStyle == HdMeshGeomStyleHullEdgeOnSurf;
 
     // Selected edges can be highlighted even if not otherwise displayed
-    const bool renderSelectedEdges = geomStyle == HdMeshGeomStyleSurf ||
-                                     geomStyle == HdMeshGeomStyleHull;
+    const bool renderSurfaceEdgeIds = surfaceEdgeIds &&
+                                      (geomStyle == HdMeshGeomStyleSurf ||
+                                       geomStyle == HdMeshGeomStyleHull);
 
     /* Normals configurations:
      * Smooth normals:
@@ -404,7 +407,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             && (isPrimTypeTris ||
                 isPrimTypeTriQuads)
             // whether we can skip generating coords for edges
-            && ((!renderWireframe && !renderEdges && !renderSelectedEdges) ||
+            && ((!renderWireframe && !renderEdges && !renderSurfaceEdgeIds) ||
                 hasFragmentShaderBarycentrics)
             // whether we can skip generating coords for per-face interpolation
             && (!hasPerFaceInterpolation ||
@@ -554,7 +557,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // EdgeId mixin(s) for edge picking and selection
     // Note: When rendering a mesh as points, we handle this in code gen.
-    if (!isPrimTypePoints) {
+    if (renderWireframe || renderEdges || renderSurfaceEdgeIds) {
         FS[fsIndex++] = _tokens->edgeIdCommonFS;
         if (isPrimTypeTris || isPrimTypePatchesBoxSplineTriangle) {
             if (polygonMode == HdPolygonModeLine) {
@@ -571,6 +574,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             }
             FS[fsIndex++] = _tokens->edgeIdQuadParamFS;
         }
+    } else if (!isPrimTypePoints) {
+        FS[fsIndex++] = _tokens->edgeIdNoneFS;
     }
 
     // PointId mixin for point picking and selection

@@ -220,7 +220,8 @@ _RegisterDrawItem(
         /*hasInstancer=*/false,
         /*enableScalarOverride=*/ true,
         /*isWidget*/ false,
-        /* forceOpaqueEdges */ true);
+        /* forceOpaqueEdges */ true,
+        /* surfaceEdgeIds */ true);
 
     // need to register to get batching works
     HdSt_GeometricShaderSharedPtr const geomShader = 
