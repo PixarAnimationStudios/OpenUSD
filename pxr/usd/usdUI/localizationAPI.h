@@ -83,6 +83,11 @@ class SdfAssetPath;
 /// \li If a less specific language choice is not available, pick the attribute without language specification.
 /// 
 ///
+/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
+/// that are text/tokens, the actual token is published and defined in \ref UsdUITokens.
+/// So to set an attribute to the value "rightHanded", use UsdUITokens->rightHanded
+/// as the value.
+///
 class UsdUILocalizationAPI : public UsdAPISchemaBase
 {
 public:
@@ -259,9 +264,9 @@ public:
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `uniform string language` |
-    /// | C++ Type | std::string |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->String |
+    /// | Declaration | `uniform token language` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
     USDUI_API
     UsdAttribute GetLanguageAttr() const;
