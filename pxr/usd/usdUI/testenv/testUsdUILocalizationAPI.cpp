@@ -66,7 +66,7 @@ main(int argc, char* argv[])
 
   auto baseRelName = TfToken("spam");
   auto baseRel = prim.CreateRelationship(baseRelName, false);
-  auto frRel = frAPI.CreateLocalizedRelationship(baseRel);
+  auto frRel = frAPI.CreateLocalizedRelationship(baseRel, false);
   TF_AXIOM(UsdUILocalizationAPI::GetLocalizedProperty(baseRel, fr_ca).GetPath() == frRel.GetPath());
 
   return EXIT_SUCCESS;
