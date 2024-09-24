@@ -5,8 +5,6 @@
 // https://openusd.org/license.
 //
 #include "pxr/usd/usdUI/localizationAPI.h"
-
-#include "tokens.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
