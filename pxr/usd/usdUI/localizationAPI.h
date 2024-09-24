@@ -290,6 +290,16 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+    /// Returns a boolean for whether an attribute can be localized or not.
+    /// The rules that govern this may be subject to change in the future.
+    USDUI_API
+    static bool CanLocalize(UsdAttribute const &attribute);
+
+    /// Returns a boolean for whether a relationship can be localized or not.
+    /// The rules that govern this may be subject to change in the future.
+    USDUI_API
+    static bool CanLocalize(UsdRelationship const &relationship);
+
     /// Returns the version of the property that has no localization specifics.
     /// If this cannot be found, a default constructed property is returned.
     /// If the input property doesn't specify a localization, it will be returned itself.
@@ -323,24 +333,24 @@ public:
     USDUI_API
     static UsdAttribute
     CreateLocalizedAttribute(UsdAttribute const &source, TfToken const &localization, VtValue const &defaultValue,
-                             bool writeSparsely=false);
+                             bool writeSparsely=false, bool validate=true);
 
     /// A convenience method for calling the static version of this method with the localization derived
     /// from the instance name
     USDUI_API
     UsdAttribute CreateLocalizedAttribute(UsdAttribute const &source, VtValue const &defaultValue,
-                                          bool writeSparsely=false) const;
+                                          bool writeSparsely=false, bool validate=true) const;
 
     /// Creates a relationship with the given localization, or returns the relationship if one already exists
     /// \note It is up to the developer to apply the localization API for this locale to the prim
     USDUI_API
     static UsdRelationship
-    CreateLocalizedRelationship(UsdRelationship const &source, TfToken const &localization);
+    CreateLocalizedRelationship(UsdRelationship const &source, TfToken const &localization, bool validate=true);
 
     /// A convenience method for calling the static version of this method with the localization derived
     /// from the instance name
     USDUI_API
-    UsdRelationship CreateLocalizedRelationship(UsdRelationship const &source) const;
+    UsdRelationship CreateLocalizedRelationship(UsdRelationship const &source, bool validate=true) const;
 
 
     /// Fills the map with all localized versions of the properties that have Applied schemas on the prim.
