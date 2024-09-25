@@ -14,7 +14,7 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/vt/array.h"
 
-#include <embree3/rtcore.h>
+#include <embree4/rtcore.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
