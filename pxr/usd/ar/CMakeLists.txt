@@ -57,6 +57,7 @@ pxr_library(ar
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapAsset.cpp
         wrapAssetInfo.cpp
         wrapDefaultResolverContext.cpp
         wrapDefaultResolver.cpp
@@ -83,6 +84,7 @@ pxr_test_scripts(
     testenv/testArAssetInfo.py
     testenv/testArAdvancedAPI.py
     testenv/testArDefaultResolver.py
+    testenv/testArOpenAsset.py
     testenv/testArPackageUtils.py
     testenv/testArResolvedPath.py
     testenv/testArResolverContext.py
