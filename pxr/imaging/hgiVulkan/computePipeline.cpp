@@ -72,12 +72,12 @@ HgiVulkanComputePipeline::HgiVulkanComputePipeline(
     pipeLayCreateInfo.setLayoutCount = (uint32_t)_vkDescriptorSetLayouts.size();
     pipeLayCreateInfo.pSetLayouts = _vkDescriptorSetLayouts.data();
 
-    TF_VERIFY(
+    TF_VERIFY_VK_RESULT(
         vkCreatePipelineLayout(
             _device->GetVulkanDevice(),
             &pipeLayCreateInfo,
             HgiVulkanAllocator(),
-            &_vkPipelineLayout) == VK_SUCCESS
+            &_vkPipelineLayout)
     );
 
     // Debug label
@@ -97,14 +97,14 @@ HgiVulkanComputePipeline::HgiVulkanComputePipeline(
     //
     HgiVulkanPipelineCache* pCache = device->GetPipelineCache();
 
-    TF_VERIFY(
+    TF_VERIFY_VK_RESULT(
         vkCreateComputePipelines(
             _device->GetVulkanDevice(),
             pCache->GetVulkanPipelineCache(),
             1,
             &pipeCreateInfo,
             HgiVulkanAllocator(),
-            &_vkPipeline) == VK_SUCCESS
+            &_vkPipeline)
     );
 
     // Debug label

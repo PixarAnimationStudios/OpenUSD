@@ -9,6 +9,7 @@
 #include "pxr/imaging/hgiVulkan/device.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/imaging/hgiVulkan/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -27,12 +28,12 @@ _CreateCommandPool(HgiVulkanDevice* device)
 
     VkCommandPool pool = nullptr;
 
-    TF_VERIFY(
+    TF_VERIFY_VK_RESULT(
         vkCreateCommandPool(
             device->GetVulkanDevice(),
             &poolCreateInfo,
             HgiVulkanAllocator(),
-            &pool) == VK_SUCCESS
+            &pool)
     );
 
     HgiVulkanCommandQueue::HgiVulkan_CommandPool* newPool =
@@ -110,9 +111,7 @@ HgiVulkanCommandQueue::SubmitToQueue(
         resourceInfo.signalSemaphoreCount = 1;
         resourceInfo.pSignalSemaphores = &semaphore;
 
-        TF_VERIFY(
-            vkQueueSubmit(_vkGfxQueue, 1, &resourceInfo, rFence) == VK_SUCCESS
-        );
+        TF_VERIFY_VK_RESULT(vkQueueSubmit(_vkGfxQueue, 1, &resourceInfo, rFence));
 
         _resourceCommandBuffer = nullptr;
     }
@@ -139,17 +138,13 @@ HgiVulkanCommandQueue::SubmitToQueue(
     // Record and submission order does not guarantee execution order.
     // VK docs: "Execution Model" & "Implicit Synchronization Guarantees".
     // The vulkan queue must be externally synchronized.
-    TF_VERIFY(
-        vkQueueSubmit(_vkGfxQueue, 1, &workInfo, wFence) == VK_SUCCESS
-    );
+    TF_VERIFY_VK_RESULT(vkQueueSubmit(_vkGfxQueue, 1, &workInfo, wFence));
 
     // Optional blocking wait
     if (wait == HgiSubmitWaitTypeWaitUntilCompleted) {
         static const uint64_t timeOut = 100000000000;
         VkDevice vkDevice = _device->GetVulkanDevice();
-        TF_VERIFY(
-            vkWaitForFences(vkDevice, 1, &wFence, VK_TRUE, timeOut)==VK_SUCCESS
-        );
+        TF_VERIFY_VK_RESULT(vkWaitForFences(vkDevice, 1, &wFence, VK_TRUE, timeOut));
         // When the client waits for the cmd buf to finish on GPU they will
         // expect to have the CompletedHandlers run. For example when the
         // client wants to do a GPU->CPU read back (memcpy)

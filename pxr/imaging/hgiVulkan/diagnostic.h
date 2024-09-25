@@ -66,6 +66,24 @@ void HgiVulkanBeginQueueLabel(
 HGIVULKAN_API
 void HgiVulkanEndQueueLabel(HgiVulkanDevice* device);
 
+/// Returns a string representation of VkResult
+HGIVULKAN_API
+const char* HgiVulkanResultString(VkResult result);
+
+/// Returns a string representation of the vulkan command and its result
+HGIVULKAN_API
+const char* HgiVulkanCommandResultString(const char* cmd, VkResult result);
+
+#define TF_VERIFY_VK_RESULT(cmd)                                        \
+  do {                                                                  \
+    const auto result = cmd;                                            \
+    if (ARCH_UNLIKELY(result != VK_SUCCESS)) {                          \
+      Tf_PostErrorHelper(TF_CALL_CONTEXT,                               \
+        TF_DIAGNOSTIC_CODING_ERROR_TYPE,                                \
+        std::string{HgiVulkanCommandResultString(#cmd, result)});       \
+    }                                                                   \
+  } while(0)
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

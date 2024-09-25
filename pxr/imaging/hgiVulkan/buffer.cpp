@@ -40,7 +40,7 @@ HgiVulkanBuffer::HgiVulkanBuffer(
     VkBufferCreateInfo bi = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     bi.size = desc.byteSize;
     bi.usage = HgiVulkanConversions::GetBufferUsage(desc.usage);
-    bi.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | 
+    bi.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     bi.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // gfx queue only
 
@@ -52,9 +52,7 @@ HgiVulkanBuffer::HgiVulkanBuffer(
     VmaAllocationCreateInfo ai = {};
     ai.preferredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT; // GPU efficient
 
-    TF_VERIFY(
-        vmaCreateBuffer(vma,&bi,&ai,&_vkBuffer,&_vmaAllocation,0) == VK_SUCCESS
-    );
+    TF_VERIFY_VK_RESULT(vmaCreateBuffer(vma,&bi,&ai,&_vkBuffer,&_vmaAllocation,0));
 
     // Debug label
     if (!_descriptor.debugName.empty()) {
@@ -150,11 +148,11 @@ HgiVulkanBuffer::GetCPUStagingAddress()
     }
 
     if (!_cpuStagingAddress) {
-        TF_VERIFY(
+        TF_VERIFY_VK_RESULT(
             vmaMapMemory(
-                _device->GetVulkanMemoryAllocator(), 
-                _stagingBuffer->GetVulkanMemoryAllocation(), 
-                &_cpuStagingAddress) == VK_SUCCESS
+                _device->GetVulkanMemoryAllocator(),
+                _stagingBuffer->GetVulkanMemoryAllocation(),
+                &_cpuStagingAddress)
         );
     }
 
@@ -210,7 +208,7 @@ HgiVulkanBuffer::CreateStagingBuffer(
     VkBufferCreateInfo bi = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     bi.size = desc.byteSize;
     bi.usage = HgiVulkanConversions::GetBufferUsage(desc.usage);
-    bi.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | 
+    bi.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
                 VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     bi.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // gfx queue only
 
@@ -221,14 +219,12 @@ HgiVulkanBuffer::CreateStagingBuffer(
 
     VkBuffer buffer = 0;
     VmaAllocation alloc = 0;
-    TF_VERIFY(
-        vmaCreateBuffer(vma, &bi, &ai, &buffer, &alloc, 0) == VK_SUCCESS
-    );
+    TF_VERIFY_VK_RESULT(vmaCreateBuffer(vma, &bi, &ai, &buffer, &alloc, 0));
 
     // Map the (HOST_VISIBLE) buffer and upload data
     if (desc.initialData) {
         void* map;
-        TF_VERIFY(vmaMapMemory(vma, alloc, &map) == VK_SUCCESS);
+        TF_VERIFY_VK_RESULT(vmaMapMemory(vma, alloc, &map));
         memcpy(map, desc.initialData, desc.byteSize);
         vmaUnmapMemory(vma, alloc);
     }
