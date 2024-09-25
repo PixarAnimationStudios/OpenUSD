@@ -224,7 +224,21 @@ HdSt_GenMaterialXShader(
     // not yet have a schema and is therefore not yet accessable here 
     mxDoc->setColorSpace("lin_rec709");
 
-    // Add the Direct Light mtlx file to the mxDoc 
+    // Initialize the unit system
+    mx::UnitConverterRegistryPtr unitRegistry = mx::UnitConverterRegistry::create();
+
+    // Register a converter for distance dimension
+    mx::UnitTypeDefPtr distanceTypeDef = mxDoc->getUnitTypeDef("distance");
+    mx::LinearUnitConverterPtr _distanceUnitConverter = mx::LinearUnitConverter::create(distanceTypeDef);
+    unitRegistry->addUnitConverter(distanceTypeDef,_distanceUnitConverter);
+
+    mx::UnitSystemPtr unitSystem = mx::UnitSystem::create(mxContext.getShaderGenerator().getTarget());
+    unitSystem->loadLibrary(stdLibraries);
+    unitSystem->setUnitConverterRegistry(unitRegistry);
+    mxContext.getShaderGenerator().setUnitSystem(unitSystem);
+    mxContext.getOptions().targetDistanceUnit = HdMtlxSceneUnit();
+    
+    // Add the Direct Light mtlx file to the mxDoc
     mx::DocumentPtr lightDoc = mx::createDocument();
     mx::readFromXmlString(lightDoc, mxDirectLightString);
     mxDoc->importLibrary(lightDoc);
@@ -1356,6 +1370,27 @@ size_t _BuildEquivalentMaterialNetwork(
                         outNode.parameters.emplace(
                             colorInputParam, 
                             colorInputValue); 
+                    }
+                }
+
+                const auto unitManagedInput =
+                    SdfPath::StripPrefixNamespace(param.first.GetString(),
+                        SdfFieldKeys->DisplayUnit);
+                // If this parameter is to indicate a dimension on a unit 
+                // managed input, find and add that corresponding input
+                if (unitManagedInput.second) {
+                    outNode.parameters.insert(param);
+
+                    // Get the parameter value for the input
+                    const TfToken unitInputParam(unitManagedInput.first);
+                    const auto unitInputIt =
+                        inNode.parameters.find(unitInputParam);
+                    if (unitInputIt != inNode.parameters.end()) {
+                        VtValue unitInputValue = unitInputIt->second;
+
+                        outNode.parameters.emplace(
+                            unitInputParam,
+                            unitInputValue);
                     }
                 }
             }

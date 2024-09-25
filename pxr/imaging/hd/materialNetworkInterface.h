@@ -63,6 +63,7 @@ public:
     {
         VtValue value;
         TfToken colorSpace;
+        VtValue displayUnit;
     };
 
     virtual NodeParamData GetNodeParameterData(
