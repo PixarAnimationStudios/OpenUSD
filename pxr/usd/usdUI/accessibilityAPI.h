@@ -92,7 +92,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdUIAccessibilityAPI(
-        const UsdPrim& prim=UsdPrim(), const TfToken &name=UsdUITokens->default_)
+        const UsdPrim& prim=UsdPrim(), const TfToken &name=TfToken())
         : UsdAPISchemaBase(prim, /*instanceName*/ name)
     { }
 
@@ -101,7 +101,7 @@ public:
     /// UsdUIAccessibilityAPI(schemaObj.GetPrim(), name), as it preserves
     /// SchemaBase state.
     explicit UsdUIAccessibilityAPI(
-        const UsdSchemaBase& schemaObj, const TfToken &name=UsdUITokens->default_)
+        const UsdSchemaBase& schemaObj, const TfToken &name)
         : UsdAPISchemaBase(schemaObj, /*instanceName*/ name)
     { }
 
@@ -215,7 +215,7 @@ public:
     ///
     USDUI_API
     static UsdUIAccessibilityAPI 
-    Apply(const UsdPrim &prim, const TfToken &name=UsdUITokens->default_);
+    Apply(const UsdPrim &prim, const TfToken &name);
 
 protected:
     /// Returns the kind of schema this class belongs to.
@@ -327,6 +327,18 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Creates an instance of the API with the default instance name.
+    /// /sa UsdUIAccessibilityAPI
+    static UsdUIAccessibilityAPI CreateDefaultAPI(const UsdPrim& prim);
+
+    /// Creates an instance of the API with a schema object using the default instance name.
+    /// /sa UsdUIAccessibilityAPI
+    static UsdUIAccessibilityAPI CreateDefaultAPI(const UsdSchemaBase& schemaObj);
+
+    /// Applies an instance of the API with the default instance name.
+    /// /sa Apply
+    static UsdUIAccessibilityAPI ApplyDefaultAPI(const UsdPrim& prim);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

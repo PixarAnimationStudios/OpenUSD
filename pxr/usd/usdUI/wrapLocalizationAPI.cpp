@@ -84,8 +84,8 @@ void wrapUsdUILocalizationAPI()
         cls("LocalizationAPI");
 
     cls
-        .def(init<UsdPrim, TfToken>((arg("prim"), arg("name")=UsdUITokens->default_)))
-        .def(init<UsdSchemaBase const&, TfToken>((arg("schemaObj"), arg("name")=UsdUITokens->default_)))
+        .def(init<UsdPrim, TfToken>((arg("prim"), arg("name"))))
+        .def(init<UsdSchemaBase const&, TfToken>((arg("schemaObj"), arg("name"))))
         .def(TfTypePythonClass())
 
         .def("Get",
@@ -110,7 +110,7 @@ void wrapUsdUILocalizationAPI()
         .def("CanApply", &_WrapCanApply, (arg("prim"), arg("name")))
         .staticmethod("CanApply")
 
-        .def("Apply", &This::Apply, (arg("prim"), arg("name")=UsdUITokens->default_))
+        .def("Apply", &This::Apply, (arg("prim"), arg("name")))
         .staticmethod("Apply")
 
         .def("GetSchemaAttributeNames",

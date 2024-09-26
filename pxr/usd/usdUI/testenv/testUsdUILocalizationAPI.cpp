@@ -24,7 +24,7 @@ main(int argc, char* argv[])
   auto stage = UsdStage::CreateInMemory();
   auto prim = stage->DefinePrim(SdfPath("/Root"));
 
-  auto api = UsdUILocalizationAPI::Apply(prim);
+  auto api = UsdUILocalizationAPI::ApplyDefaultAPI(prim);
   auto frAPI = UsdUILocalizationAPI::Apply(prim, fr_ca);
 
   auto language = api.CreateLanguageAttr(VtValue(en_us));
