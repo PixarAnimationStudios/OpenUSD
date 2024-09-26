@@ -85,10 +85,6 @@ struct UsdUITokensType {
     /// 
     /// The token that delineates language specifications on an attribute
     const TfToken lang;
-    /// \brief "localization:lang"
-    /// 
-    /// The non-namespaced version of the language localization attribute
-    const TfToken languageAttribute;
     /// \brief "localization"
     /// 
     /// Property namespace prefix for the UsdUILocalizationAPI schema.
