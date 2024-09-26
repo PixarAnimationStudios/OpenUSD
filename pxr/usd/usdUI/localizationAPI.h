@@ -106,7 +106,7 @@ public:
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
     explicit UsdUILocalizationAPI(
-        const UsdPrim& prim=UsdPrim(), const TfToken &name=UsdUITokens->default_)
+        const UsdPrim& prim=UsdPrim(), const TfToken &name=TfToken())
         : UsdAPISchemaBase(prim, /*instanceName*/ name)
     { }
 
@@ -115,7 +115,7 @@ public:
     /// UsdUILocalizationAPI(schemaObj.GetPrim(), name), as it preserves
     /// SchemaBase state.
     explicit UsdUILocalizationAPI(
-        const UsdSchemaBase& schemaObj, const TfToken &name=UsdUITokens->default_)
+        const UsdSchemaBase& schemaObj, const TfToken &name)
         : UsdAPISchemaBase(schemaObj, /*instanceName*/ name)
     { }
 
@@ -229,7 +229,7 @@ public:
     ///
     USDUI_API
     static UsdUILocalizationAPI 
-    Apply(const UsdPrim &prim, const TfToken &name=UsdUITokens->default_);
+    Apply(const UsdPrim &prim, const TfToken &name);
 
 protected:
     /// Returns the kind of schema this class belongs to.
@@ -290,6 +290,19 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+
+    /// Creates an instance of the API with the default instance name.
+    /// /sa UsdUILocalizationAPI
+    static UsdUILocalizationAPI CreateDefaultAPI(const UsdPrim& prim);
+
+    /// Creates an instance of the API with a schema object using the default instance name.
+    /// /sa UsdUILocalizationAPI
+    static UsdUILocalizationAPI CreateDefaultAPI(const UsdSchemaBase& schemaObj);
+
+    /// Applies an instance of the API with the default instance name.
+    /// /sa Apply
+    static UsdUILocalizationAPI ApplyDefaultAPI(const UsdPrim& prim);
+
     /// Returns a boolean for whether an attribute can be localized or not.
     /// The rules that govern this may be subject to change in the future.
     USDUI_API

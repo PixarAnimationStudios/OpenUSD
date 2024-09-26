@@ -5,8 +5,6 @@
 // https://openusd.org/license.
 //
 #include "pxr/usd/usdUI/localizationAPI.h"
-
-#include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
 
@@ -170,17 +168,13 @@ UsdUILocalizationAPI::GetLanguageAttr() const
 {
     return GetPrim().GetAttribute(
         _GetNamespacedPropertyName(
-            UsdUiTokens->default_, // Always return the one from the default instance name
+            GetName(),
             UsdUITokens->localization_MultipleApplyTemplate_Language));
 }
 
 UsdAttribute
 UsdUILocalizationAPI::CreateLanguageAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
-    if (GetName() != UsdUiTokens->default_) {
-        TF_CODING_ERROR("The language attr may only be created with the default API instance name.");
-        return {};
-    }
     return UsdSchemaBase::_CreateAttr(
                        _GetNamespacedPropertyName(
                             GetName(),
@@ -251,7 +245,24 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usdGeom/primvar.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+/*static*/
+UsdUILocalizationAPI UsdUILocalizationAPI::CreateDefaultAPI(const UsdPrim& prim) {
+    return UsdUILocalizationAPI(prim, UsdUITokens->default_);
+}
+
+/*static*/
+UsdUILocalizationAPI UsdUILocalizationAPI::CreateDefaultAPI(const UsdSchemaBase& schemaObj) {
+    return UsdUILocalizationAPI(schemaObj, UsdUITokens->default_);
+}
+
+/*static*/
+UsdUILocalizationAPI UsdUILocalizationAPI::ApplyDefaultAPI(const UsdPrim& prim) {
+    return UsdUILocalizationAPI::Apply(prim, UsdUITokens->default_);
+}
 
 /* static */
 bool UsdUILocalizationAPI::CanLocalize(UsdAttribute const &attribute) {
