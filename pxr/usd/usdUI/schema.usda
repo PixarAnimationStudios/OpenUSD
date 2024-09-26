@@ -327,10 +327,6 @@ class "LocalizationAPI" (
                 string value = "lang"
                 string doc = """The token that delineates language specifications on an attribute"""
             }
-            dictionary languageAttribute = {
-                string value = "localization:lang"
-                string doc = """The non-namespaced version of the language localization attribute"""
-            }
         }
     }
 ) {
