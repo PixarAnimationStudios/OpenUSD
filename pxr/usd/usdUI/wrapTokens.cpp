@@ -27,7 +27,6 @@ void wrapUsdUITokens()
     _ADD_TOKEN(cls, high);
     _ADD_TOKEN(cls, label);
     _ADD_TOKEN(cls, lang);
-    _ADD_TOKEN(cls, languageAttribute);
     _ADD_TOKEN(cls, localization);
     _ADD_TOKEN(cls, localization_MultipleApplyTemplate_Language);
     _ADD_TOKEN(cls, low);
