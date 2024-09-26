@@ -3053,15 +3053,28 @@ _GetAsRtUString(const HdAovSettingsMap & m, const TfToken & key)
 void
 HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
     const HdRenderPassAovBindingVector& aovBindings,
-    const HdPrman_RenderSettings* renderSettings)
+    HdPrman_RenderSettings* renderSettings)
 {
     if (!_framebuffer) {
         _framebuffer = std::make_unique<HdPrmanFramebuffer>();
     }
 
-    if(_UpdateFramebufferClearValues(aovBindings)) {
-        // AOVs are the same and updating the clear values succeeded,
-        // nothing more to do.
+    static bool useRenderSettingsProductsForInteractiveRenderView =
+        TfGetEnvSetting(HD_PRMAN_INTERACTIVE_RENDER_WITH_RENDER_SETTINGS);
+    
+    const bool dirtyProductsOnRenderSettingsPrim =
+           useRenderSettingsProductsForInteractiveRenderView
+        && renderSettings
+        && renderSettings->GetAndResetHasDirtyProducts();
+
+    // Note that if only the clear color has changed, it isn't considered
+    // dirty in the context of this function (i.e., neither the framebuffer
+    // not the render view needs to be modified/re-created).
+    const bool dirtyAovBindings =
+        !_UpdateFramebufferClearValues(aovBindings);
+    
+    if (!dirtyAovBindings && !dirtyProductsOnRenderSettingsPrim) {
+        // Render view is the same. Nothing more to do.
         return;
     }
 
@@ -3075,35 +3088,39 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
 
     // Displays & Display Channels
     HdPrman_RenderViewDesc renderViewDesc;
-    std::vector<size_t> renderOutputIndices;
-    HdPrmanFramebuffer::AovDescVector aovDescs;
 
-    _ComputeRenderOutputAndAovDescs(
-        aovBindings,
-        IsXpu(),
-        &renderViewDesc.renderOutputDescs,
-        &renderOutputIndices,
-        &aovDescs);
+    // Process AOV bindings.
+    {
+        std::vector<size_t> renderOutputIndices;
+        HdPrmanFramebuffer::AovDescVector aovDescs;
 
-    _framebuffer->CreateAovBuffers(aovDescs);
+        _ComputeRenderOutputAndAovDescs(
+            aovBindings,
+            IsXpu(),
+            &renderViewDesc.renderOutputDescs,
+            &renderOutputIndices,
+            &aovDescs);
 
-    RtParamList displayParams;
-    static const RtUString us_hydra("hydra");
-    _CreateRileyDisplay(RixStr.k_framebuffer,
-                        us_hydra,
-                        renderViewDesc,
-                        renderOutputIndices,
-                        displayParams,
-                        IsXpu());
+        _framebuffer->CreateAovBuffers(aovDescs);
 
-    renderViewDesc.cameraId = GetCameraContext().GetCameraId();
-    renderViewDesc.integratorId = GetActiveIntegratorId();
-    renderViewDesc.sampleFilterList = GetSampleFilterList();
-    renderViewDesc.displayFilterList = GetDisplayFilterList();
-    renderViewDesc.resolution = GetResolution();
+        RtParamList displayParams;
+        static const RtUString us_hydra("hydra");
+        _CreateRileyDisplay(RixStr.k_framebuffer,
+                            us_hydra,
+                            renderViewDesc,
+                            renderOutputIndices,
+                            displayParams,
+                            IsXpu());
 
-    if (TfGetEnvSetting(HD_PRMAN_INTERACTIVE_RENDER_WITH_RENDER_SETTINGS) &&
-            renderSettings) {
+        renderViewDesc.cameraId = GetCameraContext().GetCameraId();
+        renderViewDesc.integratorId = GetActiveIntegratorId();
+        renderViewDesc.sampleFilterList = GetSampleFilterList();
+        renderViewDesc.displayFilterList = GetDisplayFilterList();
+        renderViewDesc.resolution = GetResolution();
+    }
+
+    if (useRenderSettingsProductsForInteractiveRenderView && renderSettings) {
+
         // Get the descriptors for the render settings products.
         // N.B. this overrides the camera opinion on the product.  That
         // isn't the intent in case it becomes a problem.
@@ -3138,7 +3155,10 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
     }
 
     TF_DEBUG(HDPRMAN_RENDER_PASS)
-        .Msg("Create Riley RenderView from AOV bindings.\n");
+        .Msg("Create Riley RenderView from AOV bindings: #renderOutputs = %zu"
+             " ,#displays = %zu.\n", renderViewDesc.renderOutputDescs.size(),
+             renderViewDesc.displayDescs.size());
+
     GetRenderViewContext().CreateRenderView(renderViewDesc, riley);
 }
 

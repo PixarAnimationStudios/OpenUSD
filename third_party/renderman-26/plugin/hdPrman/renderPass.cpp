@@ -217,8 +217,6 @@ _HasLegacyRenderSpec(
             renderDelegate->GetRenderSetting<VtDictionary>(
                 HdPrmanRenderSettingsTokens->experimentalRenderSpec, {});
 
-        TF_DEBUG(HDPRMAN_RENDER_PASS).Msg("Has legacy render spec = %d\n",
-            !legacyRenderSpec->empty());
         return !legacyRenderSpec->empty();
     }
 

@@ -367,7 +367,7 @@ HdPrman_RenderSettings::DriveRenderPass(
         (driveRenderPassWithAovBindings || !renderPassHasAovBindings) &&
         !interactive;
 
-    TF_DEBUG(HDPRMAN_RENDER_PASS).Msg(
+    TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
         "Drive with RenderSettingsPrim = %d\n"
         " - HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS = %d\n"
         " - valid = %d\n"
