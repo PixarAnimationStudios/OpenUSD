@@ -201,6 +201,7 @@ public:
     // --------------------------------------------------------------------- //
     // TEXTUREFORMAT 
     // --------------------------------------------------------------------- //
+    /// 
     /// Specifies the parameterization of the color map file.
     /// Valid values are:
     /// - automatic: Tries to determine the layout from the file itself.
@@ -259,6 +260,7 @@ public:
     // --------------------------------------------------------------------- //
     // POLEAXIS 
     // --------------------------------------------------------------------- //
+    /// 
     /// A token which indicates the starting alignment of the dome
     /// light's top pole. This alignment is for the dome itself and is *not*
     /// inherited by the namespace children of the dome.

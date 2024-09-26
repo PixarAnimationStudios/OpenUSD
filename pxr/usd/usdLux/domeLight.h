@@ -189,6 +189,7 @@ public:
     // --------------------------------------------------------------------- //
     // TEXTUREFORMAT 
     // --------------------------------------------------------------------- //
+    /// 
     /// Specifies the parameterization of the color map file.
     /// Valid values are:
     /// - automatic: Tries to determine the layout from the file itself.

@@ -199,6 +199,7 @@ public:
     // --------------------------------------------------------------------- //
     // SOURCETYPE 
     // --------------------------------------------------------------------- //
+    /// 
     /// Indicates the type of the source.
     /// 
     /// - "raw": The name should be passed directly to the
