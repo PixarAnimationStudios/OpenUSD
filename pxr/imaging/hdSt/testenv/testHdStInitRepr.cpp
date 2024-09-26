@@ -33,7 +33,7 @@ protected:
     void ParseArgs(int argc, char *argv[]) override;
 
 private:
-    HdSt_TestDriver     *_driver;
+    HdSt_TestDriverUniquePtr _driver;
     HdUnitTestDelegate *_delegate;
     HdRenderIndex       *_renderIndex;
     std::string          _outputFilePrefix;
@@ -63,7 +63,7 @@ My_TestGLDrawing::InitTest()
 {
     std::cout << "My_TestGLDrawing::InitTest()\n";
 
-    _driver = new HdSt_TestDriver(HdReprTokens->hull);
+    _driver = std::make_unique<HdSt_TestDriver>(HdReprTokens->hull);
     _delegate = &_driver->GetDelegate();
 
     _renderIndex = &_delegate->GetRenderIndex();

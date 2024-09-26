@@ -106,7 +106,7 @@ protected:
 private:
     bool next();
 
-    HdSt_TestDriver* _driver;
+    HdSt_TestDriverUniquePtr _driver;
 
     TfToken _reprName;
     int _refineLevel;
@@ -122,7 +122,7 @@ My_TestGLDrawing::InitTest()
 {
     std::cout << "My_TestGLDrawing::InitTest()\n";
 
-    _driver = new HdSt_TestDriver(_reprName);
+    _driver = std::make_unique<HdSt_TestDriver>(_reprName);
     HdUnitTestDelegate &delegate = _driver->GetDelegate();
     delegate.SetRefineLevel(_refineLevel);
 
@@ -187,7 +187,7 @@ My_TestGLDrawing::next()
     g_time += 1.0f;
 
     while (_nextCommand < _commands.size()) {
-        if (_commands[_nextCommand++]->Run(_driver)) return true;
+        if (_commands[_nextCommand++]->Run(_driver.get())) return true;
     }
     return false;
 }

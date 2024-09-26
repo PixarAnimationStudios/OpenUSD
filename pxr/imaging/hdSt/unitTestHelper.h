@@ -555,6 +555,8 @@ private:
     void _CreateRenderPassState();
 };
 
+using HdSt_TestDriverUniquePtr = std::unique_ptr<HdSt_TestDriver>;
+
 // --------------------------------------------------------------------------
 
 /// \class HdSt_TestLightingShader

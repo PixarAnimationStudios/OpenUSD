@@ -2825,14 +2825,12 @@ pxr_register_test(testHdStFaceCulling_FrontUnlessDoubleSided
 pxr_register_test(testHdStFrustumCullingCPU
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStFrustumCulling --offscreen"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStFaceCulling
     ENV
         HD_ENABLE_GPU_FRUSTUM_CULLING=0
 )
 pxr_register_test(testHdStFrustumCullingGPU
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStFrustumCulling --offscreen"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStFrustumCulling
     ENV
         HD_ENABLE_GPU_FRUSTUM_CULLING=1
         HD_ENABLE_GPU_COUNT_VISIBLE_INSTANCES=1
