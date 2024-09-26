@@ -296,3 +296,22 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+/*static*/
+UsdUIAccessibilityAPI UsdUIAccessibilityAPI::CreateDefaultAPI(const UsdPrim& prim) {
+    return UsdUIAccessibilityAPI(prim, UsdUITokens->default_);
+}
+
+/*static*/
+UsdUIAccessibilityAPI UsdUIAccessibilityAPI::CreateDefaultAPI(const UsdSchemaBase& schemaObj) {
+    return UsdUIAccessibilityAPI(schemaObj, UsdUITokens->default_);
+}
+
+/*static*/
+UsdUIAccessibilityAPI UsdUIAccessibilityAPI::ApplyDefaultAPI(const UsdPrim& prim) {
+    return UsdUIAccessibilityAPI::Apply(prim, UsdUITokens->default_);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

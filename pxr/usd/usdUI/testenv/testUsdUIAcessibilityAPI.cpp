@@ -24,7 +24,7 @@ main(int argc, char* argv[])
   VtValue value;
 
   // Test Default
-  auto defaultAPI = UsdUIAccessibilityAPI::Apply(prim);
+  auto defaultAPI = UsdUIAccessibilityAPI::ApplyDefaultAPI(prim);
   auto namedAPI = UsdUIAccessibilityAPI::Apply(prim, TfToken("foo"));
 
   // Make sure we create it with the right name
