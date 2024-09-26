@@ -155,17 +155,36 @@ UsdUILocalizationAPI::_GetTfType() const
     return _GetStaticTfType();
 }
 
+/// Returns the property name prefixed with the correct namespace prefix, which
+/// is composed of the the API's propertyNamespacePrefix metadata and the
+/// instance name of the API.
+static inline
+TfToken
+_GetNamespacedPropertyName(const TfToken instanceName, const TfToken propName)
+{
+    return UsdSchemaRegistry::MakeMultipleApplyNameInstance(propName, instanceName);
+}
+
 UsdAttribute
 UsdUILocalizationAPI::GetLanguageAttr() const
 {
-    return GetPrim().GetAttribute(UsdUITokens->languageAttribute);
+    return GetPrim().GetAttribute(
+        _GetNamespacedPropertyName(
+            UsdUiTokens->default_, // Always return the one from the default instance name
+            UsdUITokens->localization_MultipleApplyTemplate_Language));
 }
 
 UsdAttribute
 UsdUILocalizationAPI::CreateLanguageAttr(VtValue const &defaultValue, bool writeSparsely) const
 {
+    if (GetName() != UsdUiTokens->default_) {
+        TF_CODING_ERROR("The language attr may only be created with the default API instance name.");
+        return {};
+    }
     return UsdSchemaBase::_CreateAttr(
-                       UsdUITokens->languageAttribute,
+                       _GetNamespacedPropertyName(
+                            GetName(),
+                           UsdUITokens->localization_MultipleApplyTemplate_Language),
                        SdfValueTypeNames->Token,
                        /* custom = */ false,
                        SdfVariabilityUniform,
