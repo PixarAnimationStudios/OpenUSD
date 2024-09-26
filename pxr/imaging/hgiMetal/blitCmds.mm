@@ -34,7 +34,9 @@ HgiMetalBlitCmds::~HgiMetalBlitCmds()
     TF_VERIFY(_blitEncoder == nil, "Encoder created, but never commited.");
     
     if (_label) {
+#if !__has_feature(objc_arc)
         [_label release];
+#endif // !__has_feature(objc_arc)
         _label = nil;
     }
 }
@@ -52,7 +54,9 @@ HgiMetalBlitCmds::_CreateEncoder()
 
         if (_label) {
             [_blitEncoder pushDebugGroup:_label];
+#if !__has_feature(objc_arc)
             [_label release];
+#endif // !__has_feature(objc_arc)
             _label = nil;
         }
         if (!_secondaryCommandBuffer) {
@@ -168,7 +172,9 @@ HgiMetalBlitCmds::CopyTextureGpuToCpu(
         {
             const char* src = (const char*) [cpuBuffer contents];
             memcpy(dst, src, byteSize);
+#if !__has_feature(objc_arc)
             [cpuBuffer release];
+#endif // !__has_feature(objc_arc)
         }];
 }
 
@@ -268,7 +274,9 @@ HgiMetalBlitCmds::CopyTextureCpuToGpu(
                              levelCount:1];
     [blitCommandEncoder endEncoding];
     [commandBuffer commit];
+#if !__has_feature(objc_arc)
     [tempTextureId release];
+#endif // !__has_feature(objc_arc)
 }
 
 void
@@ -357,7 +365,7 @@ void HgiMetalBlitCmds::CopyBufferCpuToGpu(
         [metalBuffer->GetBufferId()
              respondsToSelector:@selector(didModifyRange:)]) {
         NSRange range = NSMakeRange(dstOffset, copyOp.byteSize);
-        id<MTLResource> resource = metalBuffer->GetBufferId();
+        id<MTLBuffer> resource = metalBuffer->GetBufferId();
         
         ARCH_PRAGMA_PUSH
         ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND

@@ -362,8 +362,10 @@ HgiInteropMetal::HgiInteropMetal(Hgi* hgi)
         [_defaultLibrary newFunctionWithName:@"copyDepth"];
     _computeColorCopyProgram =
         [_defaultLibrary newFunctionWithName:@"copyColour"];
-    
+
+#if !__has_feature(objc_arc)
     [options release];
+#endif // !__has_feature(objc_arc)
     options = nil;
 
     
@@ -398,7 +400,9 @@ HgiInteropMetal::HgiInteropMetal(Hgi* hgi)
                                       options:MTLPipelineOptionNone
                                    reflection:reflData
                                         error:&error];
+#if !__has_feature(objc_arc)
     [computePipelineStateDescriptor release];
+#endif // !__has_feature(objc_arc)
 
     if (!_computePipelineStateColor) {
         NSString *errStr = [error localizedDescription];
@@ -435,11 +439,15 @@ HgiInteropMetal::_FreeTransientTextureCacheRefs()
     }
     
     if (_mtlAliasedColorTexture) {
+#if !__has_feature(objc_arc)
         [_mtlAliasedColorTexture release];
+#endif // !__has_feature(objc_arc)
         _mtlAliasedColorTexture = nil;
     }
     if (_mtlAliasedDepthRegularFloatTexture) {
+#if !__has_feature(objc_arc)
         [_mtlAliasedDepthRegularFloatTexture release];
+#endif // !__has_feature(objc_arc)
         _mtlAliasedDepthRegularFloatTexture = nil;
     }
 
@@ -790,10 +798,10 @@ HgiInteropMetal::CompositeToInterop(
     id<MTLTexture> colorTexture = nil;
     id<MTLTexture> depthTexture = nil;
     if (color) {
-        colorTexture = id<MTLTexture>(color->GetRawResource());
+        colorTexture = ((__bridge id<MTLTexture>)reinterpret_cast<void *>(color->GetRawResource()));
     }
     if (depth) {
-        depthTexture = id<MTLTexture>(depth->GetRawResource());
+        depthTexture = ((__bridge id<MTLTexture>)reinterpret_cast<void *>(depth->GetRawResource()));
     }
 
     id<MTLCommandBuffer> commandBuffer = _hgiMetal->GetPrimaryCommandBuffer();

@@ -104,7 +104,7 @@ GarchSelectCoreProfileMacVisual()
     attribs[c++] = NSOpenGLPFADoubleBuffer;
     attribs[c++] = 0;
 
-    return [[NSOpenGLPixelFormat alloc] initWithAttributes:attribs];
+    return (__bridge void*)[[NSOpenGLPixelFormat alloc] initWithAttributes:attribs];
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

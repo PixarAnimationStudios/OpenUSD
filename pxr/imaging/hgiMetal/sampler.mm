@@ -48,19 +48,24 @@ HgiMetalSampler::HgiMetalSampler(HgiMetal *hgi, HgiSamplerDesc const& desc)
     HGIMETAL_DEBUG_LABEL(smpDesc, _descriptor.debugName.c_str());
     
     _samplerId= [hgi->GetPrimaryDevice() newSamplerStateWithDescriptor:smpDesc];
-
+#if !__has_feature(objc_arc)
     [smpDesc release];
+#endif // !__has_feature(objc_arc)
 }
 
 HgiMetalSampler::~HgiMetalSampler()
 {
     if (_label) {
+#if !__has_feature(objc_arc)
         [_label release];
+#endif // !__has_feature(objc_arc)
         _label = nil;
     }
 
     if (_samplerId != nil) {
+#if !__has_feature(objc_arc)
         [_samplerId release];
+#endif // !__has_feature(objc_arc)
         _samplerId = nil;
     }
 }

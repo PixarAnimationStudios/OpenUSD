@@ -89,7 +89,9 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
     _commandQueue = [_device newCommandQueueWithMaxCommandBufferCount:
                      commandBufferPoolSize];
     _commandBuffer = [_commandQueue commandBuffer];
+#if !__has_feature(objc_arc)
     [_commandBuffer retain];
+#endif // !__has_feature(objc_arc)
 
     _capabilities.reset(new HgiMetalCapabilities(_device));
     _indirectCommandEncoder.reset(new HgiMetalIndirectCommandEncoder(this));
@@ -99,21 +101,27 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
     argumentDescBuffer.dataType = MTLDataTypePointer;
     _argEncoderBuffer = [_device newArgumentEncoderWithArguments:
                         @[argumentDescBuffer]];
+#if !__has_feature(objc_arc)
     [argumentDescBuffer release];
+#endif // !__has_feature(objc_arc)
 
     MTLArgumentDescriptor *argumentDescSampler =
         [[MTLArgumentDescriptor alloc] init];
     argumentDescSampler.dataType = MTLDataTypeSampler;
     _argEncoderSampler = [_device newArgumentEncoderWithArguments:
                          @[argumentDescSampler]];
+#if !__has_feature(objc_arc)
     [argumentDescSampler release];
+#endif // !__has_feature(objc_arc)
 
     MTLArgumentDescriptor *argumentDescTexture =
         [[MTLArgumentDescriptor alloc] init];
     argumentDescTexture.dataType = MTLDataTypeTexture;
     _argEncoderTexture = [_device newArgumentEncoderWithArguments:
                          @[argumentDescTexture]];
+#if !__has_feature(objc_arc)
     [argumentDescTexture release];
+#endif // !__has_feature(objc_arc)
 
     HgiMetalSetupMetalDebug();
     
@@ -131,17 +139,20 @@ HgiMetal::~HgiMetal()
 {
     [_commandBuffer commit];
     [_commandBuffer waitUntilCompleted];
+#if !__has_feature(objc_arc)
     [_commandBuffer release];
     [_captureScopeFullFrame release];
     [_commandQueue release];
     [_argEncoderBuffer release];
     [_argEncoderSampler release];
     [_argEncoderTexture release];
-    
+#endif // !__has_feature(objc_arc)
     {
         std::lock_guard<std::mutex> lock(_freeArgMutex);
         while(_freeArgBuffers.size()) {
+#if !__has_feature(objc_arc)
             [_freeArgBuffers.top() release];
+#endif // !__has_feature(objc_arc)
             _freeArgBuffers.pop();
         }
     }
@@ -400,7 +411,9 @@ id<MTLCommandBuffer>
 HgiMetal::GetSecondaryCommandBuffer()
 {
     id<MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
+#if !__has_feature(objc_arc)
     [commandBuffer retain];
+#endif // !__has_feature(objc_arc)
     return commandBuffer;
 }
 
@@ -426,9 +439,13 @@ HgiMetal::CommitPrimaryCommandBuffer(
     }
 
     CommitSecondaryCommandBuffer(_commandBuffer, waitType);
+#if !__has_feature(objc_arc)
     [_commandBuffer release];
+#endif // !__has_feature(objc_arc)
     _commandBuffer = [_commandQueue commandBuffer];
+#if !__has_feature(objc_arc)
     [_commandBuffer retain];
+#endif // !__has_feature(objc_arc)
 
     _workToFlush = false;
 }
@@ -466,7 +483,9 @@ HgiMetal::CommitSecondaryCommandBuffer(
 void
 HgiMetal::ReleaseSecondaryCommandBuffer(id<MTLCommandBuffer> commandBuffer)
 {
+#if !__has_feature(objc_arc)
     [commandBuffer release];
+#endif // !__has_feature(objc_arc)
 }
 
 id<MTLArgumentEncoder>

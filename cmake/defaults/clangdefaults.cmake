@@ -10,9 +10,12 @@ include(gccclangshareddefaults)
 set(_PXR_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS}")
 
 # Prevent floating point result discrepancies on Apple platforms
-# due to multiplication+additions being converted to FMA
+# due to multiplication+additions being converted to FMA.
+#
+# And, enable ARC (Automatic Reference Counting) by default.
 if (APPLE)
     set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} -ffp-contract=off")
+    set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} -fobjc-arc")
 endif()
 
 # clang annoyingly warns about the -pthread option if it's only linking.
