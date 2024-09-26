@@ -28,7 +28,7 @@ main(int argc, char* argv[])
   auto frAPI = UsdUILocalizationAPI::Apply(prim, fr_ca);
 
   auto language = api.CreateLanguageAttr(VtValue(en_us));
-  TF_AXIOM(language.GetName() == UsdUITokens->languageAttribute);
+  TF_AXIOM(language.GetName() == TfToken("localization:default:language"));
 
 
   // Test Default localization
