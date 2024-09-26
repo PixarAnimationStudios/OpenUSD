@@ -97,8 +97,9 @@ class Launcher(object):
         register positional arguments on the ArgParser
         '''
         parser.add_argument('usdFile', action='store',
+                            nargs='?',
                             type=str,
-                            help='The file to view')
+                            help='The file to view (Optional)')
 
     def RegisterOptions(self, parser):
         '''
@@ -344,10 +345,15 @@ class Launcher(object):
         context is provided.  For usdview, configuring an asset context by
         default is reasonable, and allows clients that embed usdview to 
         achieve different behavior when needed.
+
+        If usdFile is None (Falsy value), a default context will be created.
         """
         from pxr import Ar
         
         r = Ar.GetResolver()
+
+        if not usdFile:
+            return r.CreateDefaultContext()
 
         # ConfigureResolverForAsset no longer exists under Ar 2.0; this
         # is here for backwards compatibility with Ar 1.0.

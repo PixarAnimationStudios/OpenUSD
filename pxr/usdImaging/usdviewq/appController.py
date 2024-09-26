@@ -402,7 +402,7 @@ class AppController(QtCore.QObject):
             self._ui = Ui_MainWindow()
             self._ui.setupUi(self._mainWindow)
 
-            self._mainWindow.setWindowTitle(parserData.usdFile)
+            self._mainWindow.setWindowTitle(parserData.usdFile or "Empty Stage")
             self._statusBar = QtWidgets.QStatusBar(self._mainWindow)
             self._mainWindow.setStatusBar(self._statusBar)
 
@@ -1200,22 +1200,30 @@ class AppController(QtCore.QObject):
             # second pass in order to mute additional 
             # layers populated after loading
             _MuteMatchingLayers()
-            
-    def _openStage(self, usdFilePath, sessionFilePath,
-                   populationMaskPaths, muteLayersRe):
+
+    def _getEmptyStage(self):
+
+        with self._makeTimer('create empty stage'):
+            sessionLayer = Sdf.Layer.CreateAnonymous()
+            stage = Usd.Stage.CreateInMemory('Empty Stage', sessionLayer, self._resolverContextFn(None))
+
+        if not stage:
+            sys.stderr.write('Error: Unable to create empty stage\n')
+        return stage
+
+    def _getStageForFile(self, usdFilePath, sessionFilePath,
+                         populationMaskPaths, muteLayersRe):
 
         def _GetFormattedError(reasons=None):
             err = ("Error: Unable to open stage '{0}'\n".format(usdFilePath))
             if reasons:
                 err += "\n".join(reasons) + "\n"
             return err
-
+        
         if not Ar.GetResolver().Resolve(usdFilePath):
             sys.stderr.write(_GetFormattedError(["File not found"]))
             sys.exit(1)
 
-        if self._mallocTags != 'none':
-            Tf.MallocTag.Initialize()
 
         with self._makeTimer('open stage "%s"' % usdFilePath):
             loadSet = Usd.Stage.LoadNone if (self._unloaded or muteLayersRe) \
@@ -1262,8 +1270,22 @@ class AppController(QtCore.QObject):
 
         if not stage:
             sys.stderr.write(_GetFormattedError())
+        return stage
+        
+    def _openStage(self, usdFilePath, sessionFilePath,
+                   populationMaskPaths, muteLayersRe):
+
+        if self._mallocTags != 'none':
+            Tf.MallocTag.Initialize()
+
+        if not usdFilePath:
+            stage = self._getEmptyStage()
+        
         else:
-            stage.SetEditTarget(stage.GetSessionLayer())
+            stage = self._getStageForFile(usdFilePath, sessionFilePath,
+                                          populationMaskPaths, muteLayersRe)
+
+        stage.SetEditTarget(stage.GetSessionLayer())
 
         if self._mallocTags == 'stage':
             DumpMallocTags(stage, "stage-loading")
@@ -2804,9 +2826,13 @@ class AppController(QtCore.QObject):
         
         return saveName
 
+    def _getRecommendedFilenamePrefix(self):
+        return (self._parserData.usdFile.rsplit('.', 1)[0]
+                if self._parserData.usdFile
+                else 'new_file')
+
     def _saveOverridesAs(self):
-        recommendedFilename = self._parserData.usdFile.rsplit('.', 1)[0]
-        recommendedFilename += '_overrides.usd'
+        recommendedFilename = self._getRecommendedFilenamePrefix() + '_overrides.usd'
 
         saveName = self._getSaveFileName(
             'Save Overrides As', recommendedFilename)
@@ -2830,7 +2856,7 @@ class AppController(QtCore.QObject):
             # in which case it would create an in-memory root layer, to which
             # all edits will be targeted.  In order to future proof
             # this, first fetch the root layer, and if it is anonymous, just
-            # export it to the given filename. If it isn't anonmyous (i.e., it
+            # export it to the given filename. If it isn't anonymous (i.e., it
             # is a regular usd file on disk), export the session layer and add
             # the stage root file as a sublayer.
             rootLayer = self._dataModel.stage.GetRootLayer()
@@ -2858,8 +2884,7 @@ class AppController(QtCore.QObject):
                     saveName, 'Created by UsdView')
 
     def _saveFlattenedAs(self):
-        recommendedFilename = self._parserData.usdFile.rsplit('.', 1)[0]
-        recommendedFilename += '_flattened.usd'
+        recommendedFilename = self._getRecommendedFilenamePrefix() + '_flattened.usd'
 
         saveName = self._getSaveFileName(
             'Save Flattened As', recommendedFilename)
@@ -2874,7 +2899,7 @@ class AppController(QtCore.QObject):
 
     def _saveViewerImage(self):
         recommendedFilename = "{}_{}{:04d}.png".format(
-            self._parserData.usdFile.rsplit('.', 1)[0],
+            self._getRecommendedFilenamePrefix(),
             "" if not self.getActiveCamera()
                 else self.getActiveCamera().GetName() + "_",
             int(self._dataModel.currentFrame.GetValue()))
