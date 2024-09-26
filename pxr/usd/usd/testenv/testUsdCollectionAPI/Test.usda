@@ -1,6 +1,5 @@
 #usda 1.0
 (
-    defaultPrim = "Collection"
     endFrame = 10
     startFrame = 1
 )
@@ -185,3 +184,11 @@ def "CollectionTest" (
     }
 }
 
+def "CollectionExprTest" (
+    prepend apiSchemas = ["CollectionAPI:root", "CollectionAPI:ref1", "CollectionAPI:ref2"]
+)
+{
+    pathExpression collection:root:membershipExpression = "/root %:ref1 - %:ref2"
+    pathExpression collection:ref1:membershipExpression = "/ref1 %:ref2"
+    pathExpression collection:ref2:membershipExpression = "/ref2 %:root"
+}

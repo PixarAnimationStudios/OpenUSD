@@ -14,6 +14,7 @@ import unittest
 
 stage = Usd.Stage.Open("./Test.usda")
 testPrim = stage.GetPrimAtPath("/CollectionTest")
+testExprPrim = stage.GetPrimAtPath("/CollectionExprTest")
 
 geom = stage.GetPrimAtPath("/CollectionTest/Geom")
 box = stage.GetPrimAtPath("/CollectionTest/Geom/Box")
@@ -160,6 +161,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         expandPrimsColl = Usd.CollectionAPI.Apply(testPrim, 
                 "testExpandPrimsColl")
         expandPrimsColl.CreateIncludesRel().AddTarget(geom.GetPath())
+        self.assertTrue(expandPrimsColl.IsInRelationshipsMode())
         expandPrimsCollMquery = expandPrimsColl.ComputeMembershipQuery()
         self.checkQuery(expandPrimsCollMquery, stage)
         
@@ -196,6 +198,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
                 Usd.Tokens.expandPrimsAndProperties)
         expandPrimsAndPropertiesColl.CreateIncludesRel().AddTarget(
                 shapes.GetPath())
+        self.assertTrue(expandPrimsAndPropertiesColl.IsInRelationshipsMode())
         expandPnPCollMquery = expandPrimsAndPropertiesColl.ComputeMembershipQuery()
         self.checkQuery(expandPnPCollMquery, stage)
         expandPnPCollObjects = Usd.CollectionAPI.ComputeIncludedObjects(
@@ -217,6 +220,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
             expandPrimsAndPropertiesColl.GetCollectionPath())
         combinedColl.CreateIncludesRel().AddTarget(
             explicitColl.GetCollectionPath())
+        self.assertTrue(combinedColl.IsInRelationshipsMode())
 
         combinedMquery = combinedColl.ComputeMembershipQuery()
         self.checkQuery(combinedMquery, stage)
@@ -256,6 +260,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
             "geom")
         self.assertTrue(geomCollection.IncludePath(shapes.GetPath()))
         self.assertTrue(geomCollection.ExcludePath(sphere.GetPath()))
+        self.assertTrue(geomCollection.IsInRelationshipsMode())
 
         query = geomCollection.ComputeMembershipQuery()
         self.checkQuery(query, stage)
@@ -317,6 +322,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
 
     def test_testReadCollection(self):
         leafGeom = Usd.CollectionAPI(testPrim, "leafGeom")
+        self.assertTrue(leafGeom.IsInRelationshipsMode())
         (valid, reason) = leafGeom.Validate()
         self.assertTrue(valid)
 
@@ -750,6 +756,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
     def test_MembershipExpressions(self):
         withMembershipExpr = Usd.CollectionAPI.Get(
             testPrim, 'withMembershipExpr')
+        self.assertTrue(withMembershipExpr.IsInExpressionMode())
 
         query = withMembershipExpr.ComputeMembershipQuery()
         self.assertFalse(query.UsesPathExpansionRuleMap())
@@ -806,6 +813,90 @@ class TestUsdCollectionAPI(unittest.TestCase):
             hash(Usd.CollectionAPI.Get(testPrim, 'allGeom').ComputeMembershipQuery()),
             hash(Usd.CollectionAPI.Get(testPrim, 'allGeom').ComputeMembershipQuery())
         )
+
+    def test_ExpressionCyclesBlockAndReset(self):
+        rootC = Usd.CollectionAPI.Get(testExprPrim, 'root')
+        ref1C = Usd.CollectionAPI.Get(testExprPrim, 'ref1')
+        ref2C = Usd.CollectionAPI.Get(testExprPrim, 'ref2')
+
+        self.assertTrue(rootC)
+        self.assertTrue(ref1C)
+        self.assertTrue(ref2C)
+
+        self.assertTrue(rootC.IsInExpressionMode())
+        self.assertTrue(ref1C.IsInExpressionMode())
+        self.assertTrue(ref2C.IsInExpressionMode())
+
+        # root references ref1, ref1 references ref2, and ref2 references root
+        # again, forming a cycle.  The expectation is that when a reference is
+        # encountered a second time (and a cycle detected) then the empty
+        # expression is substituted.  These calls emit expected warnings.
+        self.assertEqual(
+            rootC.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/root (/ref1 /ref2) - /ref2'))
+
+        self.assertEqual(
+            ref1C.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/ref1 (/ref2 /root)'))
+        
+        self.assertEqual(
+            ref2C.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/ref2 (/root /ref1)'))
+
+        # Check that blocking 'ref2' leaves it with no possibility of included
+        # paths, and that it breaks the cycle.
+        with Usd.EditContext(stage, stage.GetSessionLayer()):
+            self.assertTrue(ref2C.BlockCollection())
+
+        self.assertTrue(ref2C.HasNoIncludedPaths())
+
+        self.assertEqual(
+            rootC.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/root /ref1'))
+
+        self.assertEqual(
+            ref1C.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/ref1'))
+        
+        self.assertEqual(
+            ref2C.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression())
+
+        # Calling ResetCollection on the session layer should clear the block
+        # and return us to the original state.
+        with Usd.EditContext(stage, stage.GetSessionLayer()):
+            self.assertTrue(ref2C.ResetCollection())
+
+        self.assertEqual(
+            rootC.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/root (/ref1 /ref2) - /ref2'))
+
+        self.assertEqual(
+            ref1C.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/ref1 (/ref2 /root)'))
+        
+        self.assertEqual(
+            ref2C.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/ref2 (/root /ref1)'))
+
+        # Calling ResetCollection on the root layer should clear the opinion
+        # for 'membershipExpression'.
+        self.assertTrue(ref2C.ResetCollection())
+
+        self.assertTrue(ref2C.HasNoIncludedPaths())
+
+        self.assertEqual(
+            rootC.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/root /ref1'))
+
+        self.assertEqual(
+            ref1C.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/ref1'))
+        
+        self.assertEqual(
+            ref2C.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression())
+        
 
 if __name__ == "__main__":
     unittest.main()

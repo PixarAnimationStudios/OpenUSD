@@ -5882,7 +5882,12 @@ static const T &_UncheckedGet(const VtValue *val) {
 template <class T>
 void _UncheckedSwap(SdfAbstractDataValue *dv, T& val) {
     using namespace std;
-    swap(*static_cast<T*>(dv->value), val);
+    // Move the stored value aside, then swap, and move the result back by way
+    // of StoreValue() -- this lets us pick up StoreValue()'s type-mismatch and
+    // value-block detection logic.
+    T tmp = std::move(*static_cast<T*>(dv->value));
+    swap(tmp, val);
+    dv->StoreValue(std::move(tmp));
 }
 template <class T>
 void _UncheckedSwap(VtValue *value, T& val) {
@@ -6254,8 +6259,18 @@ protected:
 
         // Try to read value from scene description.
         if (_GetValue(layer, specPath, fieldName, keyPath)) {
-            // Try resolving the values in the dictionary.
-            if (_TryResolvePathExprs(_value, _object, node)) {
+            // If this is a value block, set _done to stop composing, and
+            // swap back the composed value so far.
+            if (Usd_ValueContainsBlock(_value)) {
+                if (array) {
+                    _UncheckedSwap(_value, tmpExprs);
+                }
+                else {
+                    _UncheckedSwap(_value, tmpExpr);
+                }
+                _done = true;
+            } // Otherwise try resolving the path expressions.
+            else if (_TryResolvePathExprs(_value, _object, node)) {
                 // Merge the resolved expr.
                 if (array) {
                     // If the arrays are the same size, merge index-wise.
