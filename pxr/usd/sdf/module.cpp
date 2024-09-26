@@ -14,6 +14,7 @@ TF_WRAP_MODULE
 {
     TF_WRAP( ArrayAssetPath );
     TF_WRAP( ArrayPath );
+    TF_WRAP( ArrayPathExpression );
     TF_WRAP( ArrayTimeCode );
     TF_WRAP( AssetPath );
     TF_WRAP( ChangeBlock );
