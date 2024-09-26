@@ -398,26 +398,30 @@ inline T SdfAbstractData::GetAs(
 class SdfAbstractDataValue
 {
 public:
-    virtual bool StoreValue(const VtValue& value) = 0;
-    virtual bool StoreValue(VtValue &&value) = 0;
-    
     template <class T> 
-    bool StoreValue(const T& v) 
+    bool StoreValue(T &&v) 
     {
-        if (TfSafeTypeCompare(typeid(T), valueType)) {
-            *static_cast<T*>(value) = v;
+        // this can be std::remove_cvref_t in c++20.
+        using Type = std::remove_cv_t<std::remove_reference_t<T>>;
+
+        if constexpr (std::is_same_v<Type, VtValue>) {
+            return _StoreVtValue(std::forward<T>(v));
+        }
+        
+        isValueBlock = false;
+        typeMismatch = false;
+        if constexpr (std::is_same_v<Type, SdfValueBlock>) {
+            isValueBlock = true;
+            return true;
+        }
+        if (TfSafeTypeCompare(typeid(Type), valueType)) {
+            *static_cast<Type*>(value) = std::forward<T>(v);
             return true;
         }
         typeMismatch = true;
         return false;
     }
 
-    bool StoreValue(const SdfValueBlock& block)
-    {
-        isValueBlock = true;
-        return true;
-    }
-    
     void* value;
     const std::type_info& valueType;
     bool isValueBlock;
@@ -430,6 +434,10 @@ protected:
         , isValueBlock(false)
         , typeMismatch(false)
     { }
+
+private:
+    virtual bool _StoreVtValue(const VtValue& value) = 0;
+    virtual bool _StoreVtValue(VtValue &&value) = 0;
 };
 
 /// \class SdfAbstractDataTypedValue
@@ -453,17 +461,28 @@ public:
         : SdfAbstractDataValue(value, typeid(T))
     { }
 
-    virtual bool StoreValue(const VtValue& v) override
-    {
-        if (ARCH_LIKELY(v.IsHolding<T>())) {
-            *static_cast<T*>(value) = v.UncheckedGet<T>();
-            if (std::is_same<T, SdfValueBlock>::value) {
+private:
+    T const &_Get(const VtValue &v) {
+        return v.UncheckedGet<T>();
+    }
+
+    T _Get(VtValue &&v) {
+        return v.UncheckedRemove<T>();
+    }
+
+    template <class Value>
+    bool _StoreVtValueImpl(Value &&v) {
+        typeMismatch = false;
+        isValueBlock = false;
+        if (ARCH_LIKELY(std::forward<Value>(v).template IsHolding<T>())) {
+            *static_cast<T*>(value) = _Get(std::forward<Value>(v));
+            if (std::is_same_v<T, SdfValueBlock>) {
                 isValueBlock = true;
             }
             return true;
         }
         
-        if (v.IsHolding<SdfValueBlock>()) {
+        if (std::forward<Value>(v).template IsHolding<SdfValueBlock>()) {
             isValueBlock = true;
             return true;
         }
@@ -472,25 +491,15 @@ public:
 
         return false;
     }
+    
+    virtual bool
+    _StoreVtValue(const VtValue& v) override {
+        return _StoreVtValueImpl(v);
+    }
 
-    virtual bool StoreValue(VtValue &&v) override
-    {
-        if (ARCH_LIKELY(v.IsHolding<T>())) {
-            *static_cast<T*>(value) = v.UncheckedRemove<T>();
-            if (std::is_same<T, SdfValueBlock>::value) {
-                isValueBlock = true;
-            }
-            return true;
-        }
-        
-        if (v.IsHolding<SdfValueBlock>()) {
-            isValueBlock = true;
-            return true;
-        }
-
-        typeMismatch = true;
-
-        return false;
+    virtual bool
+    _StoreVtValue(VtValue &&v) override {
+        return _StoreVtValueImpl(v);
     }
 };
 

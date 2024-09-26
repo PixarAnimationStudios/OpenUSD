@@ -711,6 +711,67 @@ _TestSdfMapEditorProxyOperators()
     TF_AXIOM(testMap >= invalidProxyA);
 }
 
+static void 
+_TestSdfAbstractDataValue()
+{
+    int i = 123;
+
+    SdfAbstractDataTypedValue<int> a(&i);
+
+    TF_AXIOM(a.valueType == typeid(int));
+    TF_AXIOM(!a.isValueBlock);
+    TF_AXIOM(!a.typeMismatch);
+
+    // Store a different value of the correct type.
+    a.StoreValue(234);
+    TF_AXIOM(i == 234);
+    TF_AXIOM(!a.isValueBlock);
+    TF_AXIOM(!a.typeMismatch);
+
+    // Store via VtValue.
+    a.StoreValue(VtValue { 345 });
+    TF_AXIOM(i == 345);
+    TF_AXIOM(!a.isValueBlock);
+    TF_AXIOM(!a.typeMismatch);
+
+    // Store an incorrect type.
+    a.StoreValue(1.234);
+    TF_AXIOM(i == 345);
+    TF_AXIOM(!a.isValueBlock);
+    TF_AXIOM(a.typeMismatch);
+
+    // Store the correct type again, this should clear the `typeMismatch` flag.
+    a.StoreValue(456);
+    TF_AXIOM(i == 456);
+    TF_AXIOM(!a.isValueBlock);
+    TF_AXIOM(!a.typeMismatch);
+
+    // Store an incorrect type via VtValue.
+    a.StoreValue(VtValue { 1.234 });
+    TF_AXIOM(i == 456);
+    TF_AXIOM(!a.isValueBlock);
+    TF_AXIOM(a.typeMismatch);
+    
+    // Store the correct type via VtValue.
+    a.StoreValue(VtValue { 567 });
+    TF_AXIOM(i == 567);
+    TF_AXIOM(!a.isValueBlock);
+    TF_AXIOM(!a.typeMismatch);
+
+    // Store a value block.
+    a.StoreValue(SdfValueBlock {});
+    TF_AXIOM(!a.typeMismatch);
+    TF_AXIOM(a.isValueBlock);
+
+    // Store a non-block, then store a block via VtValue.
+    a.StoreValue(678);
+    TF_AXIOM(i == 678);
+    TF_AXIOM(!a.isValueBlock);
+    a.StoreValue(VtValue { SdfValueBlock {} });
+    TF_AXIOM(!a.typeMismatch);
+    TF_AXIOM(a.isValueBlock);
+}
+
 int
 main(int argc, char **argv)
 {
@@ -725,6 +786,7 @@ main(int argc, char **argv)
     _TestSdfFpsAndTcps();
     _TestSdfSchemaPathValidation();
     _TestSdfMapEditorProxyOperators();
+    _TestSdfAbstractDataValue();
 
     return 0;
 }
