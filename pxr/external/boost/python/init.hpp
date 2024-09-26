@@ -58,7 +58,7 @@ namespace detail
     template <int keywords, int init_args>
     struct more_keywords_than_init_arguments
     {
-        typedef char too_many_keywords[init_args - keywords >= 0 ? 1 : -1] BOOST_ATTRIBUTE_UNUSED;
+        [[maybe_unused]] typedef char too_many_keywords[init_args - keywords >= 0 ? 1 : -1];
     };
   }
 
@@ -212,18 +212,18 @@ class init : public init_base<init<T...> >
     init(char const* doc_, detail::keywords<N> const& kw)
         : base(doc_, kw.range())
     {
-        typedef typename detail::error::more_keywords_than_init_arguments<
+        [[maybe_unused]] typedef typename detail::error::more_keywords_than_init_arguments<
             N, n_arguments::value + 1
-            >::too_many_keywords assertion BOOST_ATTRIBUTE_UNUSED;
+            >::too_many_keywords assertion;
     }
 
     template <std::size_t N>
     init(detail::keywords<N> const& kw, char const* doc_ = 0)
         : base(doc_, kw.range())
     {
-        typedef typename detail::error::more_keywords_than_init_arguments<
+        [[maybe_unused]] typedef typename detail::error::more_keywords_than_init_arguments<
             N, n_arguments::value + 1
-            >::too_many_keywords assertion BOOST_ATTRIBUTE_UNUSED;
+            >::too_many_keywords assertion;
     }
 
     template <class CallPoliciesT>

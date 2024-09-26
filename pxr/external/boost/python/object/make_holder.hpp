@@ -46,7 +46,7 @@ struct make_holder_impl<std::index_sequence<N...>>
     {
         static void execute(
 #if !defined( PXR_BOOST_PYTHON_NO_PY_SIGNATURES) && defined( PXR_BOOST_PYTHON_PY_SIGNATURES_PROPER_INIT_SELF_TYPE)
-            PXR_BOOST_NAMESPACE::python::detail::python_class<BOOST_DEDUCED_TYPENAME Holder::value_type> *p
+            PXR_BOOST_NAMESPACE::python::detail::python_class<typename Holder::value_type> *p
 #else
             PyObject *p
 #endif

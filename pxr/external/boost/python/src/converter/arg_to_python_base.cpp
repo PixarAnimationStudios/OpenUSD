@@ -20,11 +20,7 @@ namespace detail
 {
   arg_to_python_base::arg_to_python_base(
       void const volatile* source, registration const& converters)
-# if !defined(BOOST_MSVC) || BOOST_MSVC <= 1300 || _MSC_FULL_VER > 13102179
       : handle<>
-# else
-      : m_ptr
-# endif
          (converters.to_python(source))
   {
   }

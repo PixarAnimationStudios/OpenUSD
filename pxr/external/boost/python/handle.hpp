@@ -163,14 +163,14 @@ template<typename T>
 class is_handle
 {
  public:
-    BOOST_STATIC_CONSTANT(bool, value = false); 
+    static constexpr bool value = false; 
 };
 
 template<typename T>
 class is_handle<handle<T> >
 {
  public:
-    BOOST_STATIC_CONSTANT(bool, value = true);
+    static constexpr bool value = true;
 };
 
 //

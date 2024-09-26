@@ -91,7 +91,7 @@ struct object_manager_get_pytype<true>
       // This information helps make_getter() decide whether to try to
       // return an internal reference or not. I don't like it much,
       // but it will have to serve for now.
-      BOOST_STATIC_CONSTANT(bool, uses_registry = false);
+      static constexpr bool uses_registry = false;
   };
 
   
@@ -108,7 +108,7 @@ struct object_manager_get_pytype<true>
       // This information helps make_getter() decide whether to try to
       // return an internal reference or not. I don't like it much,
       // but it will have to serve for now.
-      BOOST_STATIC_CONSTANT(bool, uses_registry = true);
+      static constexpr bool uses_registry = true;
   };
 
   template <class T>
@@ -123,7 +123,7 @@ struct object_manager_get_pytype<true>
       // This information helps make_getter() decide whether to try to
       // return an internal reference or not. I don't like it much,
       // but it will have to serve for now.
-      BOOST_STATIC_CONSTANT(bool, uses_registry = false);
+      static constexpr bool uses_registry = false;
   private:
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
     template <class U>

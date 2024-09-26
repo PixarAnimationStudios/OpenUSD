@@ -17,7 +17,6 @@
 #include <boost/python/detail/value_is_xxx.hpp>
 #else
 
-# include <boost/config.hpp>
 # include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 
 # include "pxr/external/boost/python/detail/type_traits.hpp"
@@ -25,17 +24,17 @@
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
-#  define PXR_BOOST_PYTHON_VALUE_IS_XXX_DEF(name, qualified_name, nargs)    \
+#  define PXR_BOOST_PYTHON_VALUE_IS_XXX_DEF(name, qualified_name, nargs) \
 template <class X_>                                                     \
 struct value_is_##name                                                  \
 {                                                                       \
-    PXR_BOOST_PYTHON_IS_XXX_DEF(name,qualified_name,nargs)                  \
-    BOOST_STATIC_CONSTANT(bool, value = is_##name<                      \
+    PXR_BOOST_PYTHON_IS_XXX_DEF(name,qualified_name,nargs)              \
+    static constexpr bool value = is_##name<                            \
                                typename remove_cv<                      \
                                   typename remove_reference<X_>::type   \
                                >::type                                  \
-                           >::value);                                   \
-    typedef mpl2::bool_<value> type;                                     \
+                           >::value;                                    \
+    typedef mpl2::bool_<value> type;                                    \
                                                                         \
 };                                                              
 

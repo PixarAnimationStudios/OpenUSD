@@ -46,7 +46,7 @@ namespace detail
     template<class T>
     struct test_get_pytype_base  
     {
-        BOOST_STATIC_CONSTANT(bool, value= (sizeof(detail::tester<T>(0)) == sizeof(yes_type)));
+        static constexpr bool value= (sizeof(detail::tester<T>(0) == sizeof(yes_type)));
     };
 
     template<class T>

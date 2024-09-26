@@ -168,8 +168,8 @@ unwind_type(boost::type<U>*, Generator*)
 unwind_type(boost::type<U>*p =0, Generator* =0)
 #endif
 {
-    BOOST_STATIC_CONSTANT(int, indirection
-        = (detail::is_pointer<U>::value ? pointer_ : 0)
+    static constexpr int indirection
+        = (detail::is_pointer<U>::value ? pointer_ : 0
                              + (indirect_traits::is_reference_to_pointer<U>::value
                              ? reference_to_pointer_
                              : detail::is_lvalue_reference<U>::value

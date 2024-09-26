@@ -119,7 +119,7 @@ namespace detail
         {
             // https://svn.boost.org/trac/boost/ticket/5803
             //typedef typename assertion<detail::mpl2::not_<detail::is_same<Default,Fn> > >::failed test0;
-            typedef typename assertion<detail::is_member_function_pointer<Fn> >::failed test2 BOOST_ATTRIBUTE_UNUSED;
+            [[maybe_unused]] typedef typename assertion<detail::is_member_function_pointer<Fn> >::failed test2;
             not_a_derived_class_member<Default>(Fn());
         }
     };
@@ -160,8 +160,8 @@ class class_ : public objects::class_base
             mpl::for_each(detail::write_type_id(&p), (bases*)0, (detail::add_pointer<mpl::_>*)0);
         }
 
-        BOOST_STATIC_CONSTANT(
-            std::size_t, size = mpl::size<bases>::value + 1);
+        static constexpr 
+            std::size_t size = mpl::size<bases>::value + 1;
         type_info ids[size];
     };
     friend struct id_vector;

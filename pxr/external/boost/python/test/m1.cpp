@@ -295,11 +295,7 @@ PXR_BOOST_PYTHON_MODULE(m1)
     lvalue_from_pytype<int_from_noddy,&NoddyType>();
 
     lvalue_from_pytype<
-#if !defined(BOOST_MSVC) || BOOST_MSVC > 1300 // doesn't support non-type member pointer parameters
         extract_member<SimpleObject, simple, &SimpleObject::x>
-#else 
-        extract_simple_object
-#endif 
         , &SimpleType
         >();
 

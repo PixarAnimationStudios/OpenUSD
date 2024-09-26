@@ -26,7 +26,7 @@
 
 # include <boost/config.hpp>
 
-# if defined(BOOST_MSVC)
+# if defined(_MSC_VER)
 
 #  pragma warning (disable : 4786) // disable truncated debug symbols
 #  pragma warning (disable : 4251) // disable exported dll function
@@ -108,10 +108,6 @@
 
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 #define PXR_BOOST_PYTHON_SUPPORTS_PY_SIGNATURES // enables smooth transition
-#endif
-
-#if !defined(BOOST_ATTRIBUTE_UNUSED) && defined(__GNUC__) && (__GNUC__ >= 4)
-#  define BOOST_ATTRIBUTE_UNUSED __attribute__((unused))
 #endif
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON

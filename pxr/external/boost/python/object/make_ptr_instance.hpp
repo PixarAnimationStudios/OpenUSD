@@ -58,7 +58,7 @@ struct make_ptr_instance
             return 0; // means "return None".
 
         PyTypeObject* derived = get_derived_class_object(
-            BOOST_DEDUCED_TYPENAME PXR_BOOST_NAMESPACE::python::detail::is_polymorphic<U>::type(), p);
+            typename PXR_BOOST_NAMESPACE::python::detail::is_polymorphic<U>::type(), p);
         
         if (derived)
             return derived;

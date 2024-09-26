@@ -233,12 +233,12 @@ namespace api
   PyObject* object_base_initializer(T const& x)
   {
       typedef typename is_derived<
-          BOOST_DEDUCED_TYPENAME objects::unforward_cref<T>::type
+          typename objects::unforward_cref<T>::type
         , object
       >::type is_obj;
 
       return object_initializer<
-          BOOST_DEDUCED_TYPENAME unwrap_reference<T>::type
+          typename unwrap_reference<T>::type
       >::get(
             x
           , is_obj()
@@ -465,7 +465,7 @@ namespace converter
   template <>
   struct object_manager_traits<object>
   {
-      BOOST_STATIC_CONSTANT(bool, is_specialized = true);
+      static constexpr bool is_specialized = true;
       static bool check(PyObject*) { return true; }
       
       static python::detail::new_non_null_reference adopt(PyObject* x)

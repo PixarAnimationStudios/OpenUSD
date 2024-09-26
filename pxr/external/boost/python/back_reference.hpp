@@ -45,14 +45,14 @@ template<typename T>
 class is_back_reference
 {
  public:
-    BOOST_STATIC_CONSTANT(bool, value = false); 
+    static constexpr bool value = false; 
 };
 
 template<typename T>
 class is_back_reference<back_reference<T> >
 {
  public:
-    BOOST_STATIC_CONSTANT(bool, value = true);
+    static constexpr bool value = true;
 };
 
 

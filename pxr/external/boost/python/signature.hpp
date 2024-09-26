@@ -139,7 +139,7 @@ get_signature(                                                     \
 {                                                                  \
     return boost::mpl::vector<                                     \
         RT                                                         \
-      , BOOST_DEDUCED_TYPENAME most_derived<Target, ClassT>::type& \
+      , typename most_derived<Target, ClassT>::type&               \
       , T...                                                       \
     >();                                                           \
 }

@@ -76,15 +76,15 @@ struct signature_arity<std::index_sequence<N...>>
                 
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
                 {
-                  type_id<BOOST_DEDUCED_TYPENAME mpl::at_c<Sig,N>::type>().name()
-                  , &converter::expected_pytype_for_arg<BOOST_DEDUCED_TYPENAME mpl::at_c<Sig,N>::type>::get_pytype
-                  , indirect_traits::is_reference_to_non_const<BOOST_DEDUCED_TYPENAME mpl::at_c<Sig,N>::type>::value
+                  type_id<typename mpl::at_c<Sig,N>::type>().name()
+                  , &converter::expected_pytype_for_arg<typename mpl::at_c<Sig,N>::type>::get_pytype
+                  , indirect_traits::is_reference_to_non_const<typename mpl::at_c<Sig,N>::type>::value
                 }...,
 #else
                 {
-                  type_id<BOOST_DEDUCED_TYPENAME mpl::at_c<Sig,N>::type>().name()
+                  type_id<typename mpl::at_c<Sig,N>::type>().name()
                   , 0
-                  , indirect_traits::is_reference_to_non_const<BOOST_DEDUCED_TYPENAME mpl::at_c<Sig,N>::type>::value
+                  , indirect_traits::is_reference_to_non_const<typename mpl::at_c<Sig,N>::type>::value
                 },
 #endif
                 {0,0,0}

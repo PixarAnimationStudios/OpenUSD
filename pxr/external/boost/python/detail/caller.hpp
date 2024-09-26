@@ -154,7 +154,7 @@ struct converter_target_type <void_result_to_python >
 // which left the ret uninitialized and caused segfaults in Python interpreter.
 template<class Policies, class Sig> const signature_element* get_ret()
 {
-    typedef BOOST_DEDUCED_TYPENAME Policies::template extract_return_type<Sig>::type rtype;
+    typedef typename Policies::template extract_return_type<Sig>::type rtype;
     typedef typename select_result_converter<Policies, rtype>::type result_converter;
 
     static const signature_element ret = {

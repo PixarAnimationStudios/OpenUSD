@@ -21,7 +21,6 @@
 #else
 
 #include "pxr/external/boost/python/detail/preprocessor.hpp"
-#include <boost/config.hpp>
 #include <boost/mpl/at.hpp>
 #include <boost/mpl/size.hpp>
 #include <cstddef>
@@ -209,18 +208,18 @@ struct fstubs_name                                                      \
         : ::PXR_BOOST_NAMESPACE::python::detail::overloads_common<fstubs_name>(                           \
             doc, keywords.range())                                                          \
     {                                                                                       \
-        typedef typename ::PXR_BOOST_NAMESPACE::python::detail::                                          \
+        [[maybe_unused]] typedef typename ::PXR_BOOST_NAMESPACE::python::detail::           \
             error::more_keywords_than_function_arguments<                                   \
-                N,n_args>::too_many_keywords assertion BOOST_ATTRIBUTE_UNUSED;              \
+                N,n_args>::too_many_keywords assertion;                                     \
     }                                                                                       \
     template <std::size_t N>                                                                \
     fstubs_name(::PXR_BOOST_NAMESPACE::python::detail::keywords<N> const& keywords, char const* doc = 0)  \
         : ::PXR_BOOST_NAMESPACE::python::detail::overloads_common<fstubs_name>(                           \
             doc, keywords.range())                                                          \
     {                                                                                       \
-        typedef typename ::PXR_BOOST_NAMESPACE::python::detail::                                          \
+        [[maybe_unused]] typedef typename ::PXR_BOOST_NAMESPACE::python::detail::           \
             error::more_keywords_than_function_arguments<                                   \
-                N,n_args>::too_many_keywords assertion BOOST_ATTRIBUTE_UNUSED;              \
+                N,n_args>::too_many_keywords assertion;                                     \
     }
 
 #  define PXR_BOOST_PYTHON_GEN_FUNCTION_STUB(fname, fstubs_name, n_args, n_dflts)   \

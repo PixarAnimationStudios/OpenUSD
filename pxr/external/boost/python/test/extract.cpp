@@ -51,19 +51,7 @@ std::string extract_string(object x)
 
 std::string const& extract_string_cref(object x)
 {
-#if defined(BOOST_MSVC) && BOOST_MSVC <= 1300
-# pragma warning(push)
-# pragma warning(disable:4172) // msvc lies about returning a reference to temporary
-#elif defined(_MSC_VER) && defined(__ICL) && __ICL <= 900
-# pragma warning(push)
-# pragma warning(disable:473) // intel/win32 does too
-#endif 
-    
     return extract<std::string const&>(x);
-    
-#if defined(BOOST_MSVC) && BOOST_MSVC <= 1300 || defined(_MSC_VER) && defined(__ICL) && __ICL <= 800
-# pragma warning(pop)
-#endif 
 }
 
 X extract_X(object x)

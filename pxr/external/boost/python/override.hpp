@@ -50,7 +50,7 @@ namespace detail
           return converter(m_obj.release());
       }
 
-#  if defined(BOOST_MSVC)
+#  if defined(_MSC_VER)
       // No operator T&
       // This workaround was noted as required for VC 8 (_MSC_VER == 1400).
       // It is still required as of Visual Studio 2019 (_MSC_VER == 1929).

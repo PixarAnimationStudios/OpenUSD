@@ -117,9 +117,9 @@ namespace detail {
       Class_&,
       ...)
     {
-      typedef typename
+      [[maybe_unused]] typedef typename
         error_messages::missing_pickle_suite_function_or_incorrect_signature<
-          Class_>::error_type error_type BOOST_ATTRIBUTE_UNUSED;
+          Class_>::error_type error_type;
     }
   };
 

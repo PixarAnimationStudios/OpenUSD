@@ -72,12 +72,6 @@ PXR_BOOST_PYTHON_MODULE(args_ext)
 
     def("raw", raw_function(raw_func));
     
-#if defined(BOOST_MSVC) && BOOST_MSVC <= 1200
-    // MSVC6 gives a fatal error LNK1179: invalid or corrupt file:
-    // duplicate comdat error if we try to re-use the exact type of f
-    // here, so substitute long for int.
-    tuple (*f)(long,double,char const*) = 0;
-#endif 
     def("f1", f, f_overloads("f1's docstring", args("x", "y", "z")));
     def("f2", f, f_overloads(args("x", "y", "z")));
     def("f3", f, f_overloads(args("x", "y", "z"), "f3's docstring"));

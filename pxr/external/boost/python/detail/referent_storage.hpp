@@ -41,8 +41,8 @@ struct aligned_storage
   template <class T>
   struct referent_size<T&>
   {
-      BOOST_STATIC_CONSTANT(
-          std::size_t, value = sizeof(T));
+      static constexpr 
+          std::size_t value = sizeof(T);
   };
 
 // A metafunction returning a POD type which can store U, where T ==

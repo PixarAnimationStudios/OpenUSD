@@ -20,7 +20,6 @@
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/handle.hpp"
-# include <boost/config.hpp>
 # include <cstddef>
 # include <utility>
 
@@ -45,7 +44,7 @@ namespace detail
   template <>
   struct keywords<0>
   {
-      BOOST_STATIC_CONSTANT(std::size_t, size = 0);
+      static constexpr std::size_t size = 0;
       static keyword_range range() { return keyword_range(); }
   };
 

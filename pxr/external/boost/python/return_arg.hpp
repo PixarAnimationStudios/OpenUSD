@@ -74,7 +74,7 @@ template <
 struct return_arg : Base
 {
  private:
-    BOOST_STATIC_CONSTANT(bool, legal = arg_pos > 0);
+    static constexpr bool legal = arg_pos > 0;
 
  public:
     typedef typename detail::mpl2::if_c<

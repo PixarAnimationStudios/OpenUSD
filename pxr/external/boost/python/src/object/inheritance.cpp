@@ -145,7 +145,7 @@ namespace
   // std::deque.
   class all_pairs_distance_map
   {
-      BOOST_STATIC_CONSTANT(std::size_t, initial_bucket_count = 16);
+      static constexpr std::size_t initial_bucket_count = 16;
 
       struct node
           : path_distance
@@ -575,8 +575,8 @@ namespace
       key_type key;
       std::ptrdiff_t offset;
 
-      BOOST_STATIC_CONSTANT(
-          std::ptrdiff_t, not_found = std::numeric_limits<std::ptrdiff_t>::min());
+      static constexpr 
+          std::ptrdiff_t not_found = std::numeric_limits<std::ptrdiff_t>::min();
       
       bool operator<(cache_element const& rhs) const
       {

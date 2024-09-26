@@ -496,7 +496,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
                 DerivedPolicies::get_item(
                     container.get(), DerivedPolicies::
                         convert_index(container.get(), i))
-              , is_pointer<BOOST_DEDUCED_TYPENAME Container::value_type>()
+              , is_pointer<typename Container::value_type>()
             );
         }
 

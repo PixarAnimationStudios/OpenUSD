@@ -42,8 +42,8 @@ struct reference_existing_object
     template <class T>
     struct apply
     {
-        BOOST_STATIC_CONSTANT(
-            bool, ok = detail::is_pointer<T>::value || detail::is_reference<T>::value);
+        static constexpr 
+            bool ok = detail::is_pointer<T>::value || detail::is_reference<T>::value;
         
         typedef typename python::detail::mpl2::if_c<
             ok

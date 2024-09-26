@@ -156,7 +156,7 @@ namespace detail
                 , binary_op<id>
                 , binary_op_l<
                       id
-                    , BOOST_DEDUCED_TYPENAME unwrap_other<R>::type
+                    , typename unwrap_other<R>::type
                   >
               >
             , detail::mpl2::if_<
@@ -164,7 +164,7 @@ namespace detail
                 , unary_op<id>
                 , binary_op_r<
                       id
-                    , BOOST_DEDUCED_TYPENAME unwrap_other<L>::type
+                    , typename unwrap_other<L>::type
                   >
               >
           >::type generator;
@@ -172,7 +172,7 @@ namespace detail
           cl.def(
               generator::name()
             , &generator::template apply<
-                 BOOST_DEDUCED_TYPENAME ClassT::wrapped_type
+                 typename ClassT::wrapped_type
               >::execute
           );
       }

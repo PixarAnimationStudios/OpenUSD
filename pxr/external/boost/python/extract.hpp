@@ -103,14 +103,14 @@ namespace converter
   template <class T>
   struct select_extract
   {
-      BOOST_STATIC_CONSTANT(
-          bool, obj_mgr = is_object_manager<T>::value);
+      static constexpr 
+          bool obj_mgr = is_object_manager<T>::value;
 
-      BOOST_STATIC_CONSTANT(
-          bool, ptr = python::detail::is_pointer<T>::value);
+      static constexpr 
+          bool ptr = python::detail::is_pointer<T>::value;
     
-      BOOST_STATIC_CONSTANT(
-          bool, ref = python::detail::is_reference<T>::value);
+      static constexpr 
+          bool ref = python::detail::is_reference<T>::value;
 
       typedef typename python::detail::mpl2::if_c<
           obj_mgr

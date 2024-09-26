@@ -41,7 +41,7 @@ struct return_internal_reference
     : with_custodian_and_ward_postcall<0, owner_arg, BasePolicy_>
 {
  private:
-    BOOST_STATIC_CONSTANT(bool, legal = owner_arg > 0);
+    static constexpr bool legal = owner_arg > 0;
  public:
     typedef typename detail::mpl2::if_c<
         legal

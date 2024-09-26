@@ -94,7 +94,7 @@ struct handle_object_manager_traits
   typedef pyobject_traits<typename T::element_type> base;
   
  public:
-  BOOST_STATIC_CONSTANT(bool, is_specialized = true);
+  static constexpr bool is_specialized = true;
 
   // Initialize with a null_ok pointer for efficiency, bypassing the
   // null check since the source is always non-null.
@@ -107,9 +107,9 @@ struct handle_object_manager_traits
 template <class T>
 struct default_object_manager_traits
 {
-    BOOST_STATIC_CONSTANT(
-        bool, is_specialized = python::detail::is_borrowed_ptr<T>::value
-        );
+    static constexpr 
+        bool is_specialized = python::detail::is_borrowed_ptr<T>::value
+        ;
 };
 
 template <class T>

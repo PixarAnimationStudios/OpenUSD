@@ -20,7 +20,6 @@
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/args_fwd.hpp"
-# include <boost/config.hpp>
 # include "pxr/external/boost/python/detail/preprocessor.hpp"
 # include "pxr/external/boost/python/detail/type_list.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
@@ -42,7 +41,7 @@ namespace detail
   template <std::size_t nkeywords>
   struct keywords_base
   {
-      BOOST_STATIC_CONSTANT(std::size_t, size = nkeywords);
+      static constexpr std::size_t size = nkeywords;
       
       keyword_range range() const
       {
@@ -117,22 +116,22 @@ namespace detail
   template<typename T>
   struct is_keywords
   {
-      BOOST_STATIC_CONSTANT(bool, value = false); 
+      static constexpr bool value = false; 
   };
 
   template<std::size_t nkeywords>
   struct is_keywords<keywords<nkeywords> >
   {
-      BOOST_STATIC_CONSTANT(bool, value = true);
+      static constexpr bool value = true;
   };
   template <class T>
   struct is_reference_to_keywords
   {
-      BOOST_STATIC_CONSTANT(bool, is_ref = detail::is_reference<T>::value);
+      static constexpr bool is_ref = detail::is_reference<T>::value;
       typedef typename detail::remove_reference<T>::type deref;
       typedef typename detail::remove_cv<deref>::type key_t;
-      BOOST_STATIC_CONSTANT(bool, is_key = is_keywords<key_t>::value);
-      BOOST_STATIC_CONSTANT(bool, value = (is_ref & is_key));
+      static constexpr bool is_key = is_keywords<key_t>::value;
+      static constexpr bool value = (is_ref & is_key);
       
       typedef detail::mpl2::bool_<value> type;
   };

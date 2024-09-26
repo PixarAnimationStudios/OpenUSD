@@ -182,9 +182,9 @@ namespace detail
   {
       enum { arity = mpl::size<Sig>::value - 1 };
       
-      typedef typename detail::error::more_keywords_than_function_arguments<
+      [[maybe_unused]] typedef typename detail::error::more_keywords_than_function_arguments<
           NumKeywords::value, arity
-          >::too_many_keywords assertion BOOST_ATTRIBUTE_UNUSED;
+          >::too_many_keywords assertion;
     
       typedef typename outer_constructor_signature<Sig>::type outer_signature;
 

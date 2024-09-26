@@ -100,7 +100,7 @@ namespace detail
             , options.policies()
           );
 
-          typedef BOOST_DEDUCED_TYPENAME C_::metadata::held_type held_type;
+          typedef typename C_::metadata::held_type held_type;
           
           // Add the default implementation which raises the exception
           c.def(
