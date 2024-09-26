@@ -1191,14 +1191,7 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
     // Query for a material network to match the requested render contexts
     const TfTokenVector renderContexts =
         GetRenderIndex().GetRenderDelegate()->GetMaterialRenderContexts();
-    HdMaterialNetworkSchema netSchema(nullptr);
-    for (TfToken const& networkSelector : renderContexts) {
-        netSchema = matSchema.GetMaterialNetwork(networkSelector);
-        if (netSchema) {
-            // Found a matching network
-            break;
-        }
-    }
+    HdMaterialNetworkSchema netSchema = matSchema.GetMaterialNetwork(renderContexts);
     if (!netSchema.IsDefined()) {
         return VtValue();
     }
