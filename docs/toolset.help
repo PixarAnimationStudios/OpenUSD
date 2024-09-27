@@ -619,8 +619,9 @@ Options:
 ==== sdffilter end ====
 
 ==== usdmeasureperformance start ====
-usage: usdmeasureperformance [-h] [-c [CUSTOM_METRICS ...]] [-o OUTPUT]
-                             [-i ITERATIONS] [-a {min,mean}]
+usage: usdmeasureperformance [-h] [-c [CUSTOM_METRICS ...]] -o OUTPUT
+                             [-i ITERATIONS]
+                             [-a {min,mean,max} [{min,mean,max} ...]]
                              asset
 
 Measure and export USD functional performance
@@ -636,21 +637,25 @@ optional arguments:
                         should be a whitespace-separated list of
                         <script>:'<metric name>,<metric name>' e.g.
                         stageTraversalMetric.py:'traverse stage'. Note the
-                        path is relative to the directory from which this
-                        script is invoked.
+                        <script> path is relative to the directory from which
+                        usdmeasureperformance.py is invoked.
   -o OUTPUT, --output OUTPUT
-                        Output file path for metrics data. If not specified,
-                        timing test output is echoed directly to stdout
-                        without any parsing. If specified, must be .yaml
+                        Required output file path for metrics data. Must be
+                        .yaml
   -i ITERATIONS, --iterations ITERATIONS
                         Number of iterations to run. Performance metrics are
                         reported as an average across all iterations. Requires
-                        -o to be set.
-  -a {min,mean}, --aggregation {min,mean}
+                        -o to be set. By default, 3 iterations are set.
+  -a {min,mean,max} [{min,mean,max} ...], --aggregation {min,mean,max} [{min,mean,max} ...]
                         When multiple iterations are set, report an aggregated
                         statistic instead of every value. Requires -o to be
-                        set. The output yaml format will be a key value
-                        dictionary with <metric_name>_<aggregation> to
-                        aggregated time value.
+                        set. When one aggregation is requested, the output
+                        yaml format will be a key value dictionary with
+                        <metric_name>_<aggregation> to aggregated time value.
+                        If multiple aggregations are requested, the output
+                        yaml format will be<metric_name>: {<agg1>: <value1>,
+                        <agg2>:...}.When no aggregation is set, the output
+                        format will be <metric_name>: [<val1>, <val2>, ...] or
+                        one measured value for each iteration.
 
 ==== usdmeasureperformance end ====

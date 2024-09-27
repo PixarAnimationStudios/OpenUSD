@@ -113,11 +113,12 @@ def measureTestusdviewPerf(assetPath, testusdviewMetrics):
     return metrics
 
 
-def export(metricsList, outputPath, aggregation):
+def export(metricsList, outputPath, aggregations):
     """
-    Write `metrics` to the given `outputPath`. If aggregation is None,
-    the reported yaml has form { name : list of times }. Otherwise,
-    the reported yaml has form { name : aggregated time }
+    Write `metrics` to the given `outputPath`. If zero aggregations,
+    the reported yaml has form { name : list of times }. If one aggregation,
+    the reported yaml has form { name_<agg> : aggregated time }. If multiple,
+    the reported yaml has form { name : { agg1 : time, agg2 : time, ... }}
     """
     # Transpose list of metrics to dict of (metric name, list of values)
     metricsDict = {}
@@ -128,19 +129,36 @@ def export(metricsList, outputPath, aggregation):
 
             metricsDict[name].append(time)
 
-    if aggregation:
+    if len(aggregations) == 0:
+        resultDict = metricsDict
+    if len(aggregations) == 1:
         resultDict = {}
+        agg = aggregations[0]
         for name, times in metricsDict.items():
-            aggName = f"{name}_{aggregation}"
-            if aggregation == "min":
+            aggName = f"{name}_{agg}"
+            if agg == "min":
                 resultDict[aggName] = min(times)
-            elif aggregation == "mean":
+            elif agg == "mean":
                 resultDict[aggName] = statistics.mean(times)
+            elif agg == "max":
+                resultDict[aggName] = max(times)
             else:
-                raise ValueError(f"Internal error -- aggregation {aggregation}"
+                raise ValueError(f"Internal error -- aggregation {agg}"
                                  " not implemented")
     else:
-        resultDict = metricsDict
+        resultDict = {}
+        for name, times in metricsDict.items():
+            resultDict[name] = {}
+            for agg in aggregations:
+                if agg == "min":
+                    resultDict[name][agg] = min(times)
+                elif agg == "mean":
+                    resultDict[name][agg] = statistics.mean(times)
+                elif agg == "max":
+                    resultDict[name][agg] = max(times)
+                else:
+                    raise ValueError("Internal error -- aggregation "
+                                     f"{agg} not implemented")
 
     if outputPath.endswith(".yaml"):
         with open(outputPath, "w") as f:
@@ -237,13 +255,20 @@ def parseArgs():
                              "iterations. Requires -o to be set. "
                              "By default, 3 iterations are set.")
     parser.add_argument("-a", "--aggregation", type=str,
-                        choices=["min", "mean"],
+                        choices=["min", "mean", "max"],
+                        nargs="+",
                         help="When multiple iterations are set, report an "
                              "aggregated statistic instead of every value. "
-                             "Requires -o to be set. The output yaml format "
+                             "Requires -o to be set. When one aggregation is "
+                             "requested, the output yaml format "
                              "will be a key value dictionary with "
                              "<metric_name>_<aggregation> to aggregated "
-                             "time value.")
+                             "time value. If multiple aggregations are "
+                             "requested, the output yaml format will be"
+                             "<metric_name>: {<agg1>: <value1>, <agg2>:...}."
+                             "When no aggregation is set, the output format "
+                             "will be <metric_name>: [<val1>, <val2>, ...] or "
+                             "one measured value for each iteration.")
 
     args = parser.parse_args()
 
