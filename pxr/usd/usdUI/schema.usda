@@ -322,6 +322,9 @@ class "LocalizationAPI" (
     customData = {
         token apiSchemaType = "multipleApply"
         token propertyNamespacePrefix = "localization"
+        string extraIncludes = """
+#include "pxr/usd/usdGeom/primvar.h"
+        """
         dictionary schemaTokens = {
             dictionary lang = {
                 string value = "lang"
