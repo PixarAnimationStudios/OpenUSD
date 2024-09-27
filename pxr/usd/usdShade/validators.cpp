@@ -18,7 +18,6 @@
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/usdShade/validatorTokens.h"
@@ -186,6 +185,119 @@ _MaterialBindingRelationships(const UsdPrim& usdPrim)
     }
 
     return errors;
+}
+
+void
+_MaterialBindingCheckCollection(
+    const UsdPrim& prim,
+    const UsdRelationship& rel,
+    UsdValidationErrorVector& outErrors)
+{
+    SdfPathVector targets;
+    rel.GetTargets(&targets);
+
+    if (targets.size() == 1) {
+        if (UsdShadeMaterialBindingAPI::CollectionBinding
+                ::IsCollectionBindingRel(rel)) {
+            outErrors.emplace_back(
+                UsdShadeValidationErrorNameTokens->invalidMaterialCollection,
+                UsdValidationErrorType::Error,
+                UsdValidationErrorSites{
+                        UsdValidationErrorSite(prim.GetStage(),
+                                               rel.GetPath())
+                },
+                TfStringPrintf("Collection-based material binding on <%s> "
+                               "has 1 target <%s>, needs 2: a collection path "
+                               "and a UsdShadeMaterial path.",
+                               prim.GetPath().GetText(),
+                               targets[0].GetText()));
+        } else {
+            UsdShadeMaterialBindingAPI::DirectBinding directBinding =
+                UsdShadeMaterialBindingAPI::DirectBinding(rel);
+            if (!directBinding.GetMaterial()) {
+                outErrors.emplace_back(
+                    UsdShadeValidationErrorNameTokens->invalidResourcePath,
+                    UsdValidationErrorType::Error,
+                    UsdValidationErrorSites{
+                            UsdValidationErrorSite(prim.GetStage(),
+                                                   rel.GetPath())
+                    },
+                    TfStringPrintf("Direct material binding <%s> targets "
+                                   "an invalid material <%s>.",
+                                   rel.GetPath().GetText(),
+                                   directBinding.GetMaterialPath().GetText()));
+            }
+        }
+    } else if (targets.size() == 2) {
+        UsdShadeMaterialBindingAPI::CollectionBinding collBinding =
+            UsdShadeMaterialBindingAPI::CollectionBinding(rel);
+        if (!collBinding.GetMaterial()) {
+            outErrors.emplace_back(
+                UsdShadeValidationErrorNameTokens->invalidResourcePath,
+                UsdValidationErrorType::Error,
+                UsdValidationErrorSites{
+                        UsdValidationErrorSite(prim.GetStage(),
+                                               rel.GetPath())
+                },
+                TfStringPrintf("Collection-based material binding "
+                               "<%s> targets an invalid material <%s>.",
+                               rel.GetPath().GetText(),
+                               collBinding.GetMaterialPath().GetText()));
+        }
+        if (!collBinding.GetCollection()) {
+            outErrors.emplace_back(
+                UsdShadeValidationErrorNameTokens->invalidResourcePath,
+                UsdValidationErrorType::Error,
+                UsdValidationErrorSites{
+                        UsdValidationErrorSite(prim.GetStage(),
+                                               rel.GetPath())
+                },
+                TfStringPrintf("Collection-based material binding "
+                               "<%s> targets an invalid collection <%s>.",
+                               rel.GetPath().GetText(),
+                               collBinding.GetCollectionPath().GetText()));
+        }
+    } else {
+        outErrors.emplace_back(
+            UsdShadeValidationErrorNameTokens->invalidMaterialCollection,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites{
+                    UsdValidationErrorSite(prim.GetStage(),
+                                           rel.GetPath())
+            },
+            TfStringPrintf("Invalid number of targets on "
+                            "material binding <%s>",
+                            rel.GetPath().GetText()));
+    }
+}
+
+static
+UsdValidationErrorVector
+_MaterialBindingCollectionValidator(const UsdPrim& usdPrim)
+{
+    if (!usdPrim || !usdPrim.HasAPI<UsdShadeMaterialBindingAPI>()) {
+        return {};
+    }
+
+    const std::vector<UsdProperty> matBindingProperties =
+        usdPrim.GetProperties(
+            /* predicate = */ [](const TfToken& name) {
+                return UsdShadeMaterialBindingAPI::CanContainPropertyName(
+                    name);
+            }
+        );
+
+    UsdValidationErrorVector outErrors;
+
+    for (const UsdProperty& matBindingProperty : matBindingProperties) {
+        if (const UsdRelationship& matBindingRel =
+                matBindingProperty.As<UsdRelationship>()) {
+            _MaterialBindingCheckCollection(
+                usdPrim, matBindingRel, outErrors);
+        }
+    }
+
+    return outErrors;
 }
 
 static
@@ -489,6 +601,10 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     registry.RegisterPluginValidator(
         UsdShadeValidatorNameTokens->materialBindingRelationships,
         _MaterialBindingRelationships);
+
+    registry.RegisterPluginValidator(
+        UsdShadeValidatorNameTokens->materialBindingCollectionValidator,
+        _MaterialBindingCollectionValidator);
 
     registry.RegisterPluginValidator(
         UsdShadeValidatorNameTokens->shaderSdrCompliance, 

@@ -141,6 +141,12 @@
                     "MaterialBindingApiAppliedValidator": {
                         "doc": "Verify a prim has the MaterialBindingAPI applied if it has a material binding relationship."
                     }, 
+                    "MaterialBindingCollectionValidator": {
+                        "doc": "Verify that a collection defining a material binding is well-formed", 
+                        "schemaTypes": [
+                            "MaterialBindingAPI"
+                        ]
+                    }, 
                     "MaterialBindingRelationships": {
                         "doc": "All properties named 'material:binding' or in that namespace should be relationships."
                     }, 
