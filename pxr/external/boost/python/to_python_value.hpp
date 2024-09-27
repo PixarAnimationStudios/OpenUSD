@@ -118,7 +118,7 @@ struct object_manager_get_pytype<true>
     
       PyObject* operator()(argument_type) const;
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
-      PyTypeObject const* get_pytype() const {return get_pytype((boost::type<argument_type>*)0);}
+      PyTypeObject const* get_pytype() const {return get_pytype((type<argument_type>*)0);}
 #endif 
       // This information helps make_getter() decide whether to try to
       // return an internal reference or not. I don't like it much,
@@ -127,13 +127,13 @@ struct object_manager_get_pytype<true>
   private:
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
     template <class U>
-    PyTypeObject const* get_pytype(boost::type<boost::shared_ptr<U> &> *) const {return converter::registered<U>::converters.to_python_target_type();}
+    PyTypeObject const* get_pytype(type<boost::shared_ptr<U> &> *) const {return converter::registered<U>::converters.to_python_target_type();}
     template <class U>
-    PyTypeObject const* get_pytype(boost::type<const boost::shared_ptr<U> &> *) const {return converter::registered<U>::converters.to_python_target_type();}
+    PyTypeObject const* get_pytype(type<const boost::shared_ptr<U> &> *) const {return converter::registered<U>::converters.to_python_target_type();}
     template <class U>
-    PyTypeObject const* get_pytype(boost::type<std::shared_ptr<U> &> *) const {return converter::registered<U>::converters.to_python_target_type();}
+    PyTypeObject const* get_pytype(type<std::shared_ptr<U> &> *) const {return converter::registered<U>::converters.to_python_target_type();}
     template <class U>
-    PyTypeObject const* get_pytype(boost::type<const std::shared_ptr<U> &> *) const {return converter::registered<U>::converters.to_python_target_type();}
+    PyTypeObject const* get_pytype(type<const std::shared_ptr<U> &> *) const {return converter::registered<U>::converters.to_python_target_type();}
 #endif
   };
 }

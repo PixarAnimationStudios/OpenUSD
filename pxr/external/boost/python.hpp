@@ -18,6 +18,8 @@
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python.hpp>
+
+#include "pxr/external/boost/python/type.hpp"
 #else
 
 # include "pxr/external/boost/python/args.hpp"
@@ -81,6 +83,7 @@
 # include "pxr/external/boost/python/to_python_indirect.hpp"
 # include "pxr/external/boost/python/to_python_value.hpp"
 # include "pxr/external/boost/python/tuple.hpp"
+# include "pxr/external/boost/python/type.hpp"
 # include "pxr/external/boost/python/type_id.hpp"
 # include "pxr/external/boost/python/with_custodian_and_ward.hpp"
 

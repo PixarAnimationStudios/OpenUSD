@@ -119,7 +119,7 @@ object range(Accessor1 start, Accessor2 finish, NextPolicies* = 0)
 // Create an iterator-building function which uses the given accessors
 // and next() policies, operating on the given Target type
 template <class NextPolicies, class Target, class Accessor1, class Accessor2>
-object range(Accessor1 start, Accessor2 finish, NextPolicies* = 0, boost::type<Target>* = 0)
+object range(Accessor1 start, Accessor2 finish, NextPolicies* = 0, type<Target>* = 0)
 {
     // typedef typename add_reference<Target>::type target;
     return detail::make_iterator(start, finish, NextPolicies(), (Target&(*)())0);

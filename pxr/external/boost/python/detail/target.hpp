@@ -20,7 +20,7 @@
 
 #  include "pxr/external/boost/python/detail/preprocessor.hpp"
 
-#  include <boost/type.hpp>
+#  include "pxr/external/boost/python/type.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 

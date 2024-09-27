@@ -21,7 +21,7 @@
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/type.hpp>
+# include "pxr/external/boost/python/type.hpp"
 
 # include "pxr/external/boost/python/call.hpp"
 # include "pxr/external/boost/python/handle_fwd.hpp"

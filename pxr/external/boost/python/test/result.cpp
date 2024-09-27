@@ -8,11 +8,11 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 #include "pxr/external/boost/python/detail/result.hpp"
-#include <boost/type.hpp>
+#include "pxr/external/boost/python/type.hpp"
 #include <functional>
 
 using PXR_BOOST_NAMESPACE::python::detail::result;
-using boost::type;
+using PXR_BOOST_NAMESPACE::python::type;
 
 void expect_int(type<int>*) {}
 void expect_string(type<char*>*) {}

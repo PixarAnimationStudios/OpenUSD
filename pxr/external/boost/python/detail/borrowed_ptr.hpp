@@ -17,7 +17,7 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-# include <boost/type.hpp>
+# include "pxr/external/boost/python/type.hpp"
 # include "pxr/external/boost/python/detail/mpl2/if.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include "pxr/external/boost/python/tag.hpp"

@@ -54,18 +54,18 @@ struct unwind_type_id_helper{
 };
 
 template <class T>
-inline python::type_info unwind_type_id_(boost::type<T>* = 0, python::detail::mpl2::false_ * =0)
+inline python::type_info unwind_type_id_(type<T>* = 0, python::detail::mpl2::false_ * =0)
 {
     return PXR_BOOST_NAMESPACE::python::detail::unwind_type<unwind_type_id_helper, T> ();
 }
 
-inline python::type_info unwind_type_id_(boost::type<void>* = 0, python::detail::mpl2::true_* =0)
+inline python::type_info unwind_type_id_(type<void>* = 0, python::detail::mpl2::true_* =0)
 {
     return type_id<void>();
 }
 
 template <class T>
-inline python::type_info unwind_type_id(boost::type<T>* p= 0)
+inline python::type_info unwind_type_id(type<T>* p= 0)
 {
     return unwind_type_id_(p, (python::detail::mpl2::bool_<PXR_BOOST_NAMESPACE::python::detail::is_void<T>::value >*)0 );
 }
@@ -78,7 +78,7 @@ struct expected_pytype_for_arg
     static PyTypeObject const *get_pytype()
     {
         const converter::registration *r=converter::registry::query(
-            detail::unwind_type_id_((boost::type<T>*)0, (python::detail::mpl2::bool_<PXR_BOOST_NAMESPACE::python::detail::is_void<T>::value >*)0 )
+            detail::unwind_type_id_((type<T>*)0, (python::detail::mpl2::bool_<PXR_BOOST_NAMESPACE::python::detail::is_void<T>::value >*)0 )
             );
         return r ? r->expected_from_python_type(): 0;
     }
@@ -91,7 +91,7 @@ struct registered_pytype
     static PyTypeObject const *get_pytype()
     {
         const converter::registration *r=converter::registry::query(
-            detail::unwind_type_id_((boost::type<T>*) 0, (python::detail::mpl2::bool_<PXR_BOOST_NAMESPACE::python::detail::is_void<T>::value >*)0 )
+            detail::unwind_type_id_((type<T>*) 0, (python::detail::mpl2::bool_<PXR_BOOST_NAMESPACE::python::detail::is_void<T>::value >*)0 )
             );
         return r ? r->m_class_object: 0;
     }
@@ -125,7 +125,7 @@ struct to_python_target_type
     static PyTypeObject const *get_pytype()
     {
         const converter::registration *r=converter::registry::query(
-            detail::unwind_type_id_((boost::type<T>*)0, (python::detail::mpl2::bool_<PXR_BOOST_NAMESPACE::python::detail::is_void<T>::value >*)0 )
+            detail::unwind_type_id_((type<T>*)0, (python::detail::mpl2::bool_<PXR_BOOST_NAMESPACE::python::detail::is_void<T>::value >*)0 )
             );
         return r ? r->to_python_target_type(): 0;
     }

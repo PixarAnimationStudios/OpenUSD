@@ -18,7 +18,7 @@
 #else
 
 # include <cstddef>
-# include <boost/type.hpp>
+# include "pxr/external/boost/python/type.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 

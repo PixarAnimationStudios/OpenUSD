@@ -23,7 +23,7 @@
 # include "pxr/external/boost/python/extract.hpp"
 # include "pxr/external/boost/python/handle.hpp"
 
-#  include <boost/type.hpp>
+#  include "pxr/external/boost/python/type.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 

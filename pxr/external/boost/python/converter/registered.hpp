@@ -23,7 +23,7 @@
 #include "pxr/external/boost/python/converter/registry.hpp"
 #include "pxr/external/boost/python/converter/registrations.hpp"
 #include "pxr/external/boost/python/detail/type_traits.hpp"
-#include <boost/type.hpp>
+#include "pxr/external/boost/python/type.hpp"
 #include <memory>
 #if defined(PXR_BOOST_PYTHON_TRACE_REGISTRY) \
  || defined(PXR_BOOST_PYTHON_CONVERTER_REGISTRY_APPLE_MACH_WORKAROUND)

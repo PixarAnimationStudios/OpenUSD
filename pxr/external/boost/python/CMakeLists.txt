@@ -318,6 +318,7 @@ pxr_library(python
         to_python_indirect.hpp
         to_python_value.hpp
         tuple.hpp
+        type.hpp
         type_id.hpp
         with_custodian_and_ward.hpp
         wrapper.hpp

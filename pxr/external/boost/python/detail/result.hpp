@@ -18,7 +18,7 @@
 #include <boost/python/detail/result.hpp>
 #else
 
-#  include <boost/type.hpp>
+#  include "pxr/external/boost/python/type.hpp"
 
 #  include "pxr/external/boost/python/detail/preprocessor.hpp"
 
@@ -34,14 +34,14 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 // to get this to work portably.
 
 template <class R, class... A>
-boost::type<R>* result(R (*)(A...), int = 0)
+type<R>* result(R (*)(A...), int = 0)
 {
     return 0;
 }
 
 #define PXR_BOOST_PYTHON_RESULT_MEMBER_FN(Q, ...)       \
 template <class R, class T, class... A>                 \
-boost::type<R>* result(R (T::*)(A...) Q, int = 0)       \
+type<R>* result(R (T::*)(A...) Q, int = 0)              \
 {                                                       \
     return 0;                                           \
 }
@@ -51,10 +51,10 @@ PXR_BOOST_PYTHON_APPLY_QUALIFIERS(PXR_BOOST_PYTHON_RESULT_MEMBER_FN)
 #undef PXR_BOOST_PYTHON_RESULT_MEMBER_FN
 
 template <class R, class T>
-boost::type<R>* result(R (T::*), int = 0) { return 0; }
+type<R>* result(R (T::*), int = 0) { return 0; }
 
 template <class X>
-boost::type<typename X::result_type>*
+type<typename X::result_type>*
 result(X const&, short = 0) { return 0; }
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail

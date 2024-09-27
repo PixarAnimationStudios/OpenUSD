@@ -19,7 +19,7 @@
 #else
 
 # include <boost/get_pointer.hpp>
-#  include <boost/type.hpp>
+#  include "pxr/external/boost/python/type.hpp"
 
 #  include "pxr/external/boost/python/instance_holder.hpp"
 #  include "pxr/external/boost/python/object/inheritance_query.hpp"

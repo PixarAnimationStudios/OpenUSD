@@ -44,7 +44,7 @@ struct decorated_type_info : totally_ordered<decorated_type_info>
 };
 
 template <class T>
-inline decorated_type_info decorated_type_id(boost::type<T>* = 0)
+inline decorated_type_info decorated_type_id(type<T>* = 0)
 {
     return decorated_type_info(
         type_id<T>()
