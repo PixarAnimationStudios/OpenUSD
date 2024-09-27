@@ -678,6 +678,37 @@ _GetColorSpace(
     }
 }
 
+// Returns true is the given mtlxSdrNode requires primvar support for texture 
+// coordinates
+static bool
+_NodeHasTextureCoordPrimvar(
+    mx::DocumentPtr const &mxDoc,
+    const SdrShaderNodeConstPtr mtlxSdrNode)
+{
+    // Custom nodes may have a <texcoord> or <geompropvalue> node as
+    // a part of the defining nodegraph
+    const mx::NodeDefPtr mxNodeDef =
+        mxDoc->getNodeDef(mtlxSdrNode->GetIdentifier().GetString());
+    mx::InterfaceElementPtr impl = mxNodeDef->getImplementation();
+    if (impl && impl->isA<mx::NodeGraph>()) {
+        const mx::NodeGraphPtr nodegraph = impl->asA<mx::NodeGraph>();
+        // Return True if the defining nodegraph uses a texcoord node
+        if (!nodegraph->getNodes(_tokens->texcoord).empty()) {
+            return true;
+        } 
+        // Or a geompropvalue node of type vector2, which we assume to be 
+        // for texture coordinates. 
+        auto geompropvalueNodes = nodegraph->getNodes(_tokens->geompropvalue);
+        for (const mx::NodePtr& mxGeomPropNode : geompropvalueNodes) {
+            if (mxGeomPropNode->getType() == mx::Type::VECTOR2->getName()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
 static void 
 _UpdateTextureNodes(
     HdMaterialNetworkInterface *netInterface,
@@ -693,8 +724,21 @@ _UpdateTextureNodes(
             continue;
         }
         
+        // Get the filename parameter name, 
+        // MaterialX stdlib nodes use 'file' however, this could be different
+        // for custom nodes that use textures.
+        TfToken fileParamName = _tokens->file;
+        const mx::NodeDefPtr nodeDef = mxDoc->getNodeDef(nodeType);
+        if (nodeDef) {
+            for (auto const& mxInput : nodeDef->getActiveInputs()) {
+                if (mxInput->getType() == _tokens->filename) {
+                    fileParamName = TfToken(mxInput->getName());
+                }
+            }
+
+        }
         HdMaterialNetworkInterface::NodeParamData fileParamData =
-            netInterface->GetNodeParameterData(textureNodeName, _tokens->file);
+            netInterface->GetNodeParameterData(textureNodeName, fileParamName);
         const VtValue vFile = fileParamData.value;
         if (vFile.IsEmpty()) {
             TF_WARN("File path missing for texture node '%s'.",
@@ -706,10 +750,8 @@ _UpdateTextureNodes(
             std::string path = vFile.Get<SdfAssetPath>().GetResolvedPath();
             std::string ext = ArGetResolver().GetExtension(path);
 
-
             mx::NodeGraphPtr mxNodeGraph;
             mx::NodePtr mxTextureNode;
-
             _FindGraphAndNodeByName(mxDoc,
                                     texturePath.GetParentPath().GetName(),
                                     texturePath.GetName(),
@@ -744,7 +786,7 @@ _UpdateTextureNodes(
                          mxInputValue.c_str());
 
                 // Update the MaterialX Texture Node with the new mxInputValue
-                mxTextureNode->setInputValue(_tokens->file.GetText(), // name
+                mxTextureNode->setInputValue(fileParamName.GetText(), // name
                                              mxInputValue,            // value
                                              _tokens->filename.GetText());//type
             }
@@ -765,43 +807,54 @@ _UpdateTextureNodes(
             mx::InputPtr texcoordInput =
                 mxTextureNode->getInput(_tokens->texcoord);
             if(!texcoordInput) {
-                texcoordInput =
-                    mxTextureNode->addInput(_tokens->texcoord,
-                                            _tokens->vector2);
-                const std::string stNodeName =
-                    textureNodeName.GetString() + "__texcoord";
 
                 // Get the sdr node for the mxTexture node
                 SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
                 const SdrShaderNodeConstPtr sdrTextureNode =
                     sdrRegistry.GetShaderNodeByIdentifierAndType(
                         nodeType, _tokens->mtlx);
-                // Get the primvarname from the sdrTextureNode metadata
-                auto metadata = sdrTextureNode->GetMetadata();
-                auto primvarName = metadata[SdrNodeMetadata->Primvars];
 
-                mx::NodePtr geompropNode =
-                    mxNodeGraph->addNode(_tokens->geompropvalue,
-                                         stNodeName,
-                                         _tokens->vector2);
-                geompropNode->setInputValue(_tokens->geomprop,
-                                            primvarName, _tokens->string_type);
-                texcoordInput->setConnectedNode(geompropNode);
-                geompropNode->
-                    setNodeDefString(_tokens->ND_geompropvalue_vector2);
+                // If the node does not already contain a texcoord primvar node
+                // add one and connect it to the mxTextureNode
+                // XXX If a custom node uses a texture but does not explicitly
+                // use a texcoords or geomprop node for the texture coordinates
+                // this will force a connection onto the custom node and the 
+                // material will likely not render.
+                if (!_NodeHasTextureCoordPrimvar(mxDoc, sdrTextureNode)) {
+                    // Get the primvarname from the sdrTextureNode metadata
+                    auto metadata = sdrTextureNode->GetMetadata();
+                    auto primvarName = metadata[SdrNodeMetadata->Primvars];
+
+                    // Create a geompropvalue node for the texture coordinates
+                    const std::string stNodeName =
+                        textureNodeName.GetString() + "__texcoord";
+                    mx::NodePtr geompropNode =
+                        mxNodeGraph->addNode(_tokens->geompropvalue,
+                                            stNodeName,
+                                            _tokens->vector2);
+                    geompropNode->setInputValue(_tokens->geomprop,
+                                                primvarName,
+                                                _tokens->string_type);
+                    geompropNode->setNodeDefString(
+                        _tokens->ND_geompropvalue_vector2);
+                    
+                    // Add the texcoord input and connect to the new node
+                    texcoordInput =
+                        mxTextureNode->addInput(_tokens->texcoord,
+                                                _tokens->vector2);
+                    texcoordInput->setConnectedNode(geompropNode);
+                }
             }
-            if(needInvertT) {
-                texcoordInput =
-                    mxTextureNode->getInput(_tokens->texcoord);
-                if(texcoordInput) {
+            if (needInvertT) {
+                texcoordInput = mxTextureNode->getInput(_tokens->texcoord);
+                if (texcoordInput) {
                     const std::string remapNodeName =
                         textureNodeName.GetString() + "__remap";
                     mx::NodePtr remapNode =
                         mxNodeGraph->addNode(_tokens->remap,
                                              remapNodeName,
                                              _tokens->vector2);
-                    remapNode->
-                        setNodeDefString(_tokens->ND_remap_vector2);
+                    remapNode->setNodeDefString(_tokens->ND_remap_vector2);
                     mx::InputPtr inInput =
                         remapNode->addInput(_tokens->in,
                                             _tokens->vector2);
@@ -813,8 +866,7 @@ _UpdateTextureNodes(
                     remapNode->setInputValue(_tokens->inlow,
                                              inlow,
                                              _tokens->float2);
-                    mx::NodePtr primvarNode =
-                        texcoordInput->getConnectedNode();
+                    mx::NodePtr primvarNode = texcoordInput->getConnectedNode();
                     inInput->setConnectedNode(primvarNode);
                     texcoordInput->setConnectedNode(remapNode);
                 }
