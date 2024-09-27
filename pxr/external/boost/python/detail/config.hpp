@@ -24,8 +24,6 @@
 #include <boost/python/detail/config.hpp>
 #else
 
-# include <boost/config.hpp>
-
 # if defined(_MSC_VER)
 
 #  pragma warning (disable : 4786) // disable truncated debug symbols
@@ -53,16 +51,26 @@
 #endif
 
 #if defined(PXR_BOOST_PYTHON_DYNAMIC_LIB)
-#  if defined(BOOST_SYMBOL_EXPORT)
-#     if defined(PXR_BOOST_PYTHON_SOURCE)
-#        define PXR_BOOST_PYTHON_DECL           BOOST_SYMBOL_EXPORT
-#        define PXR_BOOST_PYTHON_DECL_FORWARD   BOOST_SYMBOL_FORWARD_EXPORT
-#        define PXR_BOOST_PYTHON_DECL_EXCEPTION BOOST_EXCEPTION_EXPORT
-#        define PXR_BOOST_PYTHON_BUILD_DLL
+#  if defined (_WIN32) || defined(_WIN64)
+#     if defined(__GNUC__) || defined(__clang__)
+#        define PXR_BOOST_PYTHON_SYMBOL_EXPORT __attribute__((dllexport))
+#        define PXR_BOOST_PYTHON_SYMBOL_IMPORT __attribute__((dllimport))
 #     else
-#        define PXR_BOOST_PYTHON_DECL           BOOST_SYMBOL_IMPORT
-#        define PXR_BOOST_PYTHON_DECL_FORWARD   BOOST_SYMBOL_FORWARD_IMPORT
-#        define PXR_BOOST_PYTHON_DECL_EXCEPTION BOOST_EXCEPTION_IMPORT
+#        define PXR_BOOST_PYTHON_SYMBOL_EXPORT __declspec(dllexport)
+#        define PXR_BOOST_PYTHON_SYMBOL_IMPORT __declspec(dllimport)
+#     endif
+#  else
+#     if defined(__GNUC__) || defined(__clang__)
+#        define PXR_BOOST_PYTHON_SYMBOL_EXPORT __attribute__((visibility("default")))
+#        define PXR_BOOST_PYTHON_SYMBOL_IMPORT
+#     endif
+#  endif
+#
+#  if defined(PXR_BOOST_PYTHON_SYMBOL_EXPORT)
+#     if defined(PXR_BOOST_PYTHON_SOURCE)
+#        define PXR_BOOST_PYTHON_DECL PXR_BOOST_PYTHON_SYMBOL_EXPORT
+#     else
+#        define PXR_BOOST_PYTHON_DECL PXR_BOOST_PYTHON_SYMBOL_IMPORT
 #     endif
 #  endif
 #endif
@@ -71,40 +79,7 @@
 #  define PXR_BOOST_PYTHON_DECL
 #endif
 
-#ifndef PXR_BOOST_PYTHON_DECL_FORWARD
-#  define PXR_BOOST_PYTHON_DECL_FORWARD
-#endif
-
-#ifndef PXR_BOOST_PYTHON_DECL_EXCEPTION
-#  define PXR_BOOST_PYTHON_DECL_EXCEPTION
-#endif
-
 # define PXR_BOOST_PYTHON_OFFSETOF offsetof
-
-//  enable automatic library variant selection  ------------------------------// 
-
-#if !defined(PXR_BOOST_PYTHON_SOURCE) && !defined(BOOST_ALL_NO_LIB) && !defined(PXR_BOOST_PYTHON_NO_LIB)
-//
-// Set the name of our library, this will get undef'ed by auto_link.hpp
-// once it's done with it:
-//
-#define _PXR_BOOST_PYTHON_CONCAT(N, M, m) N ## M ## m
-#define PXR_BOOST_PYTHON_CONCAT(N, M, m) _PXR_BOOST_PYTHON_CONCAT(N, M, m)
-#define BOOST_LIB_NAME PXR_BOOST_PYTHON_CONCAT(boost_python, PY_MAJOR_VERSION, PY_MINOR_VERSION)
-//
-// If we're importing code from a dll, then tell auto_link.hpp about it:
-//
-#ifdef PXR_BOOST_PYTHON_DYNAMIC_LIB
-#  define BOOST_DYN_LINK
-#endif
-//
-// And include the header that does the work:
-//
-#include <boost/config/auto_link.hpp>
-#endif  // auto-linking disabled
-
-#undef PXR_BOOST_PYTHON_CONCAT
-#undef _PXR_BOOST_PYTHON_CONCAT
 
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 #define PXR_BOOST_PYTHON_SUPPORTS_PY_SIGNATURES // enables smooth transition

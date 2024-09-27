@@ -41,7 +41,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
  *        Right now all that exists is what was needed to move raw data between C++ and Python.
  */
  
-class BOOST_NUMPY_DECL ndarray : public object
+class PXR_BOOST_NUMPY_DECL ndarray : public object
 {
 
   /**
@@ -154,27 +154,27 @@ public:
 /**
  *  @brief Construct a new array with the given shape and data type, with data initialized to zero.
  */
-BOOST_NUMPY_DECL ndarray zeros(python::tuple const & shape, dtype const & dt);
-BOOST_NUMPY_DECL ndarray zeros(int nd, Py_intptr_t const * shape, dtype const & dt);
+PXR_BOOST_NUMPY_DECL ndarray zeros(python::tuple const & shape, dtype const & dt);
+PXR_BOOST_NUMPY_DECL ndarray zeros(int nd, Py_intptr_t const * shape, dtype const & dt);
 
 /**
  *  @brief Construct a new array with the given shape and data type, with data left uninitialized.
  */
-BOOST_NUMPY_DECL ndarray empty(python::tuple const & shape, dtype const & dt);
-BOOST_NUMPY_DECL ndarray empty(int nd, Py_intptr_t const * shape, dtype const & dt);
+PXR_BOOST_NUMPY_DECL ndarray empty(python::tuple const & shape, dtype const & dt);
+PXR_BOOST_NUMPY_DECL ndarray empty(int nd, Py_intptr_t const * shape, dtype const & dt);
 
 /**
  *  @brief Construct a new array from an arbitrary Python sequence.
  *
  *  @todo This does't seem to handle ndarray subtypes the same way that "numpy.array" does in Python.
  */
-BOOST_NUMPY_DECL ndarray array(object const & obj);
-BOOST_NUMPY_DECL ndarray array(object const & obj, dtype const & dt);
+PXR_BOOST_NUMPY_DECL ndarray array(object const & obj);
+PXR_BOOST_NUMPY_DECL ndarray array(object const & obj, dtype const & dt);
 
 namespace detail 
 {
 
-BOOST_NUMPY_DECL ndarray from_data_impl(void * data,
+PXR_BOOST_NUMPY_DECL ndarray from_data_impl(void * data,
 					dtype const & dt,
 					std::vector<Py_intptr_t> const & shape,
 					std::vector<Py_intptr_t> const & strides,
@@ -195,7 +195,7 @@ ndarray from_data_impl(void * data,
   return from_data_impl(data, dt, shape_, strides_, owner, writeable);    
 }
 
-BOOST_NUMPY_DECL ndarray from_data_impl(void * data,
+PXR_BOOST_NUMPY_DECL ndarray from_data_impl(void * data,
 					dtype const & dt,
 					object const & shape,
 					object const & strides,
@@ -262,13 +262,13 @@ inline ndarray from_data(void const * data,
  *  @param[in] nd_max  Maximum number of dimensions.
  *  @param[in] flags   Bitwise OR of flags specifying additional requirements.
  */
-BOOST_NUMPY_DECL ndarray from_object(object const & obj,
+PXR_BOOST_NUMPY_DECL ndarray from_object(object const & obj,
 				     dtype const & dt,
 				     int nd_min,
 				     int nd_max,
 				     ndarray::bitflag flags=ndarray::NONE);
 
-BOOST_NUMPY_DECL inline ndarray from_object(object const & obj,
+PXR_BOOST_NUMPY_DECL inline ndarray from_object(object const & obj,
 					    dtype const & dt,
 					    int nd,
 					    ndarray::bitflag flags=ndarray::NONE)
@@ -276,38 +276,38 @@ BOOST_NUMPY_DECL inline ndarray from_object(object const & obj,
   return from_object(obj, dt, nd, nd, flags);
 }
 
-BOOST_NUMPY_DECL inline ndarray from_object(object const & obj,
+PXR_BOOST_NUMPY_DECL inline ndarray from_object(object const & obj,
 					    dtype const & dt,
 					    ndarray::bitflag flags=ndarray::NONE)
 {
   return from_object(obj, dt, 0, 0, flags);
 }
 
-BOOST_NUMPY_DECL ndarray from_object(object const & obj,
+PXR_BOOST_NUMPY_DECL ndarray from_object(object const & obj,
 				     int nd_min,
 				     int nd_max,
 				     ndarray::bitflag flags=ndarray::NONE);
 
-BOOST_NUMPY_DECL inline ndarray from_object(object const & obj,
+PXR_BOOST_NUMPY_DECL inline ndarray from_object(object const & obj,
 					    int nd,
 					    ndarray::bitflag flags=ndarray::NONE)
 {
   return from_object(obj, nd, nd, flags);
 }
 
-BOOST_NUMPY_DECL inline ndarray from_object(object const & obj,
+PXR_BOOST_NUMPY_DECL inline ndarray from_object(object const & obj,
 					    ndarray::bitflag flags=ndarray::NONE)
 {
   return from_object(obj, 0, 0, flags);
 }
 
-BOOST_NUMPY_DECL inline ndarray::bitflag operator|(ndarray::bitflag a,
+PXR_BOOST_NUMPY_DECL inline ndarray::bitflag operator|(ndarray::bitflag a,
 						   ndarray::bitflag b)
 {
   return ndarray::bitflag(int(a) | int(b));
 }
 
-BOOST_NUMPY_DECL inline ndarray::bitflag operator&(ndarray::bitflag a,
+PXR_BOOST_NUMPY_DECL inline ndarray::bitflag operator&(ndarray::bitflag a,
 						   ndarray::bitflag b)
 {
   return ndarray::bitflag(int(a) & int(b));

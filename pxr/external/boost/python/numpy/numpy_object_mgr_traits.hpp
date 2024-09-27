@@ -28,7 +28,7 @@
 
 #define NUMPY_OBJECT_MANAGER_TRAITS(manager)                            \
 template <>								\
-struct BOOST_NUMPY_DECL object_manager_traits<manager>			\
+struct PXR_BOOST_NUMPY_DECL object_manager_traits<manager>		\
 {									\
   static constexpr bool is_specialized = true;			        \
   static inline python::detail::new_reference adopt(PyObject* x)	\

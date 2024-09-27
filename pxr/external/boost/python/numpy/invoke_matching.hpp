@@ -32,7 +32,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
 namespace detail 
 {
 
-struct BOOST_NUMPY_DECL add_pointer_meta
+struct PXR_BOOST_NUMPY_DECL add_pointer_meta
 {
   template <typename T>
   struct apply 
@@ -42,8 +42,8 @@ struct BOOST_NUMPY_DECL add_pointer_meta
 
 };
 
-struct BOOST_NUMPY_DECL dtype_template_match_found {};
-struct BOOST_NUMPY_DECL nd_template_match_found {};
+struct PXR_BOOST_NUMPY_DECL dtype_template_match_found {};
+struct PXR_BOOST_NUMPY_DECL nd_template_match_found {};
 
 template <typename Function>
 struct dtype_template_invoker 

@@ -47,7 +47,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
  *        It's more dangerous than most object managers, however - maybe it actually belongs in
  *        a detail namespace?
  */
-class BOOST_NUMPY_DECL multi_iter : public object
+class PXR_BOOST_NUMPY_DECL multi_iter : public object
 {
 public:
 
@@ -74,13 +74,13 @@ public:
 };
 
 /// @brief Construct a multi_iter over a single sequence or scalar object.
-BOOST_NUMPY_DECL multi_iter make_multi_iter(object const & a1);
+PXR_BOOST_NUMPY_DECL multi_iter make_multi_iter(object const & a1);
 
 /// @brief Construct a multi_iter by broadcasting two objects.
-BOOST_NUMPY_DECL multi_iter make_multi_iter(object const & a1, object const & a2);
+PXR_BOOST_NUMPY_DECL multi_iter make_multi_iter(object const & a1, object const & a2);
 
 /// @brief Construct a multi_iter by broadcasting three objects.
-BOOST_NUMPY_DECL multi_iter make_multi_iter(object const & a1, object const & a2, object const & a3);
+PXR_BOOST_NUMPY_DECL multi_iter make_multi_iter(object const & a1, object const & a2, object const & a3);
 
 /**
  *  @brief Helps wrap a C++ functor taking a single scalar argument as a broadcasting ufunc-like
