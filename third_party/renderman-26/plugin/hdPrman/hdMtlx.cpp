@@ -4,9 +4,14 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#include "pxr/imaging/hdMtlx/hdMtlx.h"
+//#include "pxr/imaging/hdMtlx/hdMtlx.h"
+#include "hdPrman/hdMtlx.h" // copied from pxr/imaging/hdMtlx, this has fixes
 #include "pxr/imaging/hd/material.h"
+#if PXR_VERSION >= 2205
 #include "pxr/imaging/hd/materialNetwork2Interface.h"
+#else
+#include "hdPrman/hdMaterialNetwork2Interface.h"
+#endif
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/matrix3d.h"
@@ -59,7 +64,7 @@ _ComputeSearchPaths()
 }
 
 const mx::FileSearchPath&
-HdMtlxSearchPaths()
+HdMtlxPrmanSearchPaths()
 {
     static const mx::FileSearchPath searchPaths = _ComputeSearchPaths();
     return searchPaths;
@@ -70,12 +75,12 @@ _ComputeStdLibraries()
 {
     mx::FilePathVec libraryFolders;
     mx::DocumentPtr stdLibraries = mx::createDocument();
-    mx::loadLibraries(libraryFolders, HdMtlxSearchPaths(), stdLibraries);
+    mx::loadLibraries(libraryFolders, HdMtlxPrmanSearchPaths(), stdLibraries);
     return stdLibraries;
 }
 
 const mx::DocumentPtr&
-HdMtlxStdLibraries()
+HdMtlxPrmanStdLibraries()
 {
     static const mx::DocumentPtr stdLibraries = _ComputeStdLibraries();
     return stdLibraries;
@@ -125,23 +130,19 @@ _AddNodeToNodeGraph(
 }
 
 std::string
-HdMtlxCreateNameFromPath(SdfPath const& path)
+HdMtlxPrmanCreateNameFromPath(SdfPath const& path)
 {
-#ifdef PXR_DCC_LOCATION_ENV_VAR
     std::string pathnm = path.GetText();
     if(pathnm.size() > 3 &&
        pathnm[0] == '/' && pathnm[1] == '_' && pathnm[2] == '_') {
         pathnm[0] = 's'; // triple leading underscores aren't allowed in osl
     }
     return TfStringReplace( pathnm, "/", "_");
-#else
-    return path.GetName();
-#endif
 }
 
 // Convert the HdParameterValue to a string MaterialX can understand
 std::string 
-HdMtlxConvertToString(VtValue const& hdParameterValue)
+HdMtlxPrmanConvertToString(VtValue const& hdParameterValue)
 {
     std::ostringstream valStream;
     if (hdParameterValue.IsHolding<bool>()) {
@@ -252,7 +253,7 @@ _AddMaterialXNode(
     const SdfPath hdNodePath(hdNodeName.GetString());
     const std::string mxNodeCategory = _GetMxNodeString(mxNodeDef);
     const std::string &mxNodeType = mxNodeDef->getType();
-    const std::string &mxNodeName = HdMtlxCreateNameFromPath(hdNodePath);
+    const std::string &mxNodeName = HdMtlxPrmanCreateNameFromPath(hdNodePath);
 
     // Add the mxNode to the mxNodeGraph
     mx::NodePtr mxNode =
@@ -271,30 +272,57 @@ _AddMaterialXNode(
 
     // For each of the HdNode parameters add the corresponding parameter/input 
     // to the mxNode
+#if PXR_VERSION <= 2311
+    mx::StringMap inputColorspaces;
+#endif
     TfTokenVector hdNodeParamNames =
         netInterface->GetAuthoredNodeParameterNames(hdNodeName);
     for (TfToken const &paramName : hdNodeParamNames) {
         // Get the MaterialX Parameter info
         const std::string &mxInputName = paramName.GetString();
+#if PXR_VERSION >= 2402
         const HdMaterialNetworkInterface::NodeParamData paramData = 
             netInterface->GetNodeParameterData(hdNodeName, paramName);
-        const std::string mxInputValue = HdMtlxConvertToString(paramData.value);
+        const std::string mxInputValue = HdMtlxPrmanConvertToString(paramData.value);
+#else
+        std::string mxInputValue = HdMtlxPrmanConvertToString(
+            netInterface->GetNodeParameterValue(hdNodeName, paramName));
+#endif
 
         // Skip Colorspace parameter, this is already captured in the paramData.
         // Note: Colorspace inputNames are of the form 'colorSpace:inputName'
         const std::pair<std::string, bool> result = 
             SdfPath::StripPrefixNamespace(mxInputName, SdfFieldKeys->ColorSpace);
         if (result.second) {
+#if PXR_VERSION <= 2311
+            inputColorspaces[result.first] = mxInputValue;
+#endif
             continue;
         }
 
         // Set the input value, and colorspace  on the mxNode
         mx::InputPtr mxInput = mxNode->setInputValue(
             mxInputName, mxInputValue, _GetInputType(mxNodeDef, mxInputName));
+#if PXR_VERSION >= 2402
         if (!paramData.colorSpace.IsEmpty()) {
             mxInput->setColorSpace(paramData.colorSpace);
         }
+#endif
     }
+
+#if PXR_VERSION <= 2311
+    // Apply Colorspaces to inputs. 
+    for (auto inputColorspacePair : inputColorspaces) {
+        mx::InputPtr mxInput = mxNode->getInput(inputColorspacePair.first);
+        if (mxInput) {
+            mxInput->setColorSpace(inputColorspacePair.second);
+        } else {
+            TF_WARN("Input '%s' on '%s' node not found, unable to set '%s'"
+                    "colorspace.", inputColorspacePair.first.c_str(), 
+                    hdNodeName.GetText(), inputColorspacePair.second.c_str());
+        }
+    }
+#endif
 
     // MaterialX nodes that use textures can have more than one filename input
     if (mxHdData) {
@@ -455,7 +483,7 @@ _GatherUpstreamNodes(
 
 // Create a MaterialX Document from the given HdMaterialNetwork2
 mx::DocumentPtr 
-HdMtlxCreateMtlxDocumentFromHdNetwork(
+HdMtlxPrmanCreateMtlxDocumentFromHdNetwork(
     HdMaterialNetwork2 const& hdNetwork,
     HdMaterialNode2 const& hdMaterialXNode,
     SdfPath const& hdMaterialXNodePath,
@@ -470,7 +498,7 @@ HdMtlxCreateMtlxDocumentFromHdNetwork(
 
     TfToken terminalNodeName = hdMaterialXNodePath.GetAsToken();
     
-    return HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
+    return HdMtlxPrmanCreateMtlxDocumentFromHdMaterialNetworkInterface(
         &netInterface,
         terminalNodeName,
         netInterface.GetNodeInputConnectionNames(terminalNodeName),
@@ -496,28 +524,56 @@ _AddParameterInputsToTerminalNode(
         return;
     }
 
+#if PXR_VERSION <= 2311
+    mx::StringMap inputColorspaces;
+#endif
     for (TfToken const &paramName : paramNames) {
         // Get the MaterialX Parameter info
         const std::string &mxInputName = paramName.GetString();
+#if PXR_VERSION >= 2402
         const HdMaterialNetworkInterface::NodeParamData paramData = 
             netInterface->GetNodeParameterData(terminalNodeName, paramName);
-        const std::string mxInputValue = HdMtlxConvertToString(paramData.value);
+        const std::string mxInputValue = HdMtlxPrmanConvertToString(paramData.value);
+#else
+        std::string mxInputValue = HdMtlxPrmanConvertToString(
+            netInterface->GetNodeParameterValue(terminalNodeName, paramName));
+#endif
 
         // Skip Colorspace parameter, this is already captured in the paramData.
         // Note: Colorspace inputNames are of the form 'colorSpace:inputName'
         const std::pair<std::string, bool> result = 
             SdfPath::StripPrefixNamespace(mxInputName, SdfFieldKeys->ColorSpace);
         if (result.second) {
+#if PXR_VERSION <= 2311
+            inputColorspaces[result.first] = mxInputValue;
+#endif
             continue;
         }
 
         // Set the Input value on the mxShaderNode
         mx::InputPtr mxInput = mxShaderNode->setInputValue(
             mxInputName, mxInputValue, _GetInputType(mxNodeDef, mxInputName));
+#if PXR_VERSION > 2311
         if (!paramData.colorSpace.IsEmpty()) {
             mxInput->setColorSpace(paramData.colorSpace);
         }
+#endif
     }
+
+#if PXR_VERSION <= 2311
+    // Apply Colorspaces to inputs. 
+    for (auto inputColorspacePair : inputColorspaces) {
+        mx::InputPtr mxInput = mxShaderNode->getInput(inputColorspacePair.first);
+        if (mxInput) {
+            mxInput->setColorSpace(inputColorspacePair.second);
+        } else {
+            TF_WARN("Input '%s' on '%s' terminal node not found, unable to "
+                    "set '%s' colorspace.", inputColorspacePair.first.c_str(), 
+                    terminalNodeName.GetText(), 
+                    inputColorspacePair.second.c_str());
+        }
+    }
+#endif
 }
 
 // Updates mxDoc from traversing the node graph leading into the terminal node.
@@ -566,7 +622,7 @@ _CreateMtlxNodeGraphFromTerminalNodeConnections(
 }
 
 MaterialX::DocumentPtr
-HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
+HdMtlxPrmanCreateMtlxDocumentFromHdMaterialNetworkInterface(
     HdMaterialNetworkInterface *netInterface,
     TfToken const& terminalNodeName,
     TfTokenVector const& terminalNodeConnectionNames,

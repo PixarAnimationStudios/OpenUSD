@@ -45,6 +45,9 @@ public:
             static_cast<HdPrman_RenderParam*>(renderParam);
         const SdfPath& id = BASE::GetId();
         riley::Riley *riley = param->AcquireRiley();
+        if (!riley) {
+            return;
+        }
 
         // Release retained conversions of coordSys bindings.
         param->ReleaseCoordSysBindings(id);
@@ -218,6 +221,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
         HdChangeTracker::DirtyPoints |
         HdChangeTracker::DirtyNormals |
         HdChangeTracker::DirtyWidths |
+        HdChangeTracker::DirtyVolumeField |
         HdChangeTracker::DirtyTopology |
         HdChangeTracker::DirtyPrimvar;
 
@@ -248,6 +252,10 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
         HdGeomSubsets geomSubsets;
         RtPrimVarList primvars = _ConvertGeometry(param, sceneDelegate, id,
                          &primType, &geomSubsets);
+
+        // identifier:object is useful for cryptomatte
+        primvars.SetString(RixStr.k_identifier_object,
+                           RtUString(id.GetName().c_str()));
 
         // Transfer material opinions of primvars.
         HdPrman_TransferMaterialPrimvarOpinions(sceneDelegate, hdMaterialId, 
@@ -354,6 +362,11 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
 
     // Add "identifier:id" with the prim id.
     attrs.SetInteger(RixStr.k_identifier_id, primId);
+
+    // user:__materialid is useful for cryptomatte
+    if(!hdMaterialId.IsEmpty()) {
+        attrs.SetString(RtUString("user:__materialid"), RtUString(hdMaterialId.GetText()));
+    }
 
     if (!isHdInstance) {
         // Simple case: Singleton instance.

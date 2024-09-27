@@ -20,6 +20,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdPrman_RenderParam;
 class HdPrman_CameraContext;
 class HdPrman_RenderSettings;
+class HdPrmanRenderDelegate;
 
 class HdPrman_RenderPass final : public HdRenderPass
 {
@@ -47,6 +48,7 @@ private:
     
     bool _UpdateCameraFramingAndWindowPolicy(
         const HdRenderPassStateSharedPtr &renderPassState,
+        HdPrmanRenderDelegate * const renderDelegate,
         HdPrman_CameraContext *cameraContext);
 
     void _UpdateActiveRenderTagsIfChanged(
@@ -61,6 +63,7 @@ private:
     int _lastRprimRenderTagVersion;
 
     std::chrono::steady_clock::time_point _frameStart;
+    std::string _projection;
     float _quickIntegrateTime;
 };
 

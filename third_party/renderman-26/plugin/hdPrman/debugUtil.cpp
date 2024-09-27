@@ -628,5 +628,22 @@ SdfPathVecToString(const std::vector<SdfPath>& vec)
     return out;
 }
 
+std::string
+RileyOutputTypeToString(const riley::RenderOutputType type)
+{
+    switch (type) {
+    case riley::RenderOutputType::k_Float:
+        return std::string("Float");
+    case riley::RenderOutputType::k_Integer:
+        return std::string("Integer");
+    case riley::RenderOutputType::k_Color:
+        return std::string("Color");
+    case riley::RenderOutputType::k_Vector:
+        return std::string("Vector");
+    default:
+        return std::string("Unknown");
+    }
+}
+
 }
 PXR_NAMESPACE_CLOSE_SCOPE

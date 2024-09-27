@@ -72,6 +72,7 @@ RtUString
 ResolveAssetToRtUString(
     SdfAssetPath const &asset,
     bool flipTexture = true,
+    bool writeAsset = false,
     char const *debugNodeType = nullptr);
 
 /// Some quantites previously given as options now need to be provided

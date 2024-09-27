@@ -8,6 +8,7 @@
 #define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_GPRIMBASE_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/rprim.h"
 
 #include <Riley.h>
 #include <RileyIds.h>
@@ -32,4 +33,4 @@ protected:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_GPRIM_H
+#endif // EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_GPRIMBASE_H

@@ -11,6 +11,7 @@
 
 #include "pxr/base/gf/matrix4d.h"
 
+#include "Riley.h"
 #include "RiTypesHelper.h"
 
 #include <string>
@@ -57,6 +58,9 @@ RileyIdVecToString(const std::vector<T>& vec)
 
 std::string
 SdfPathVecToString(const std::vector<SdfPath>& vec);
+
+std::string
+RileyOutputTypeToString(const riley::RenderOutputType type);
 
 }
 

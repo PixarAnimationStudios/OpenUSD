@@ -14,20 +14,38 @@
 #include <set>
 #include <unordered_map>
 
+#if PXR_VERSION >= 2205
+#include "pxr/imaging/hd/materialNetwork2Interface.h"
+#else
+#include "hdPrman/hdMaterialNetwork2Interface.h"
+#endif
+
+#if PXR_VERSION >= 2205
 #include <MaterialXCore/Library.h>
 
 MATERIALX_NAMESPACE_BEGIN
     class FileSearchPath;
     using DocumentPtr = std::shared_ptr<class Document>;
 MATERIALX_NAMESPACE_END
+#else
+namespace MaterialX {
+    class FileSearchPath;
+    using DocumentPtr = std::shared_ptr<class Document>;
+    using StringMap = std::unordered_map<std::string, std::string>;
+}
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+#define HdMtlxCreateNameFromPath  HdMtlxPrmanCreateNameFromPath
+#define HdMtlxStdLibraries HdMtlxPrmanStdLibraries
+#define HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface HdMtlxPrmanCreateMtlxDocumentFromHdMaterialNetworkInterface
+#define HdMtlxSearchPaths HdMtlxPrmanSearchPaths
 
 class SdfPath;
 class VtValue;
 struct HdMaterialNetwork2;
 struct HdMaterialNode2;
-class HdMaterialNetworkInterface;
 
 /// Return the MaterialX search paths. In order, this includes:
 /// - Paths set in the environment variable 'PXR_MTLX_PLUGIN_SEARCH_PATHS'
@@ -35,18 +53,18 @@ class HdMaterialNetworkInterface;
 /// - Path to the MaterialX standard library discovered at build time.
 HDMTLX_API
 const MaterialX::FileSearchPath&
-HdMtlxSearchPaths();
+HdMtlxPrmanSearchPaths();
 
 /// Return a MaterialX document with the stdlibraries loaded using the above 
 /// search paths.
 HDMTLX_API
 const MaterialX::DocumentPtr&
-HdMtlxStdLibraries();
+HdMtlxPrmanStdLibraries();
 
 /// Converts the HdParameterValue to a string MaterialX can understand
 HDMTLX_API
 std::string
-HdMtlxConvertToString(VtValue const& hdParameterValue);
+HdMtlxPrmanConvertToString(VtValue const& hdParameterValue);
 
 // Storing MaterialX-Hydra texture and primvar information
 struct HdMtlxTexturePrimvarData {
@@ -59,14 +77,14 @@ struct HdMtlxTexturePrimvarData {
 
 HDMTLX_API
 std::string
-HdMtlxCreateNameFromPath(SdfPath const& path);
+HdMtlxPrmanCreateNameFromPath(SdfPath const& path);
 
 /// Creates and returns a MaterialX Document from the given HdMaterialNetwork2 
 /// Collecting the hdTextureNodes and hdPrimvarNodes as the network is 
 /// traversed as well as the Texture name mapping between MaterialX and Hydra.
 HDMTLX_API
 MaterialX::DocumentPtr
-HdMtlxCreateMtlxDocumentFromHdNetwork(
+HdMtlxPrmanCreateMtlxDocumentFromHdNetwork(
     HdMaterialNetwork2 const& hdNetwork,
     HdMaterialNode2 const& hdMaterialXNode,
     SdfPath const& hdMaterialXNodePath,
@@ -77,8 +95,8 @@ HdMtlxCreateMtlxDocumentFromHdNetwork(
 /// Implementation that uses the material network interface.
 HDMTLX_API
 MaterialX::DocumentPtr
-HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
-    HdMaterialNetworkInterface *netInterface,
+HdMtlxPrmanCreateMtlxDocumentFromHdMaterialNetworkInterface(
+    HdMaterialNetworkInterface *interface,
     TfToken const& terminalNodeName,
     TfTokenVector const& terminalNodeConnectionNames,
     MaterialX::DocumentPtr const& libraries,
