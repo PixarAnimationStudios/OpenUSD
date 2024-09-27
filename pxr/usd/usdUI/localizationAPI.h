@@ -16,6 +16,9 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdUI/tokens.h"
 
+#include "pxr/usd/usdGeom/primvar.h"
+        
+
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
