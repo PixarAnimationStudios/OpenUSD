@@ -99,6 +99,7 @@ pxr_library(usd
         crateDataTypes.h
         crateValueInliners.h
         listEditImpl.h
+        shared.h
         wrapUtils.h
         testenv/TestUsdResolverChangedResolver.h
 

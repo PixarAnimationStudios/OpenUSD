@@ -26,6 +26,7 @@ pxr_library(js
         rapidjson/filewritestream.h
         rapidjson/fwd.h
         rapidjson/internal/biginteger.h
+        rapidjson/internal/clzll.h
         rapidjson/internal/diyfp.h
         rapidjson/internal/dtoa.h
         rapidjson/internal/ieee754.h
