@@ -567,7 +567,7 @@ _ResolveCompleteMembershipExpressionImpl(
         visited.emplace(originalColl.GetPrim(), originalColl.GetName());
     }
     
-    UsdPrim thisPrim = thisColl.GetPrim();
+    const UsdPrim thisPrim = thisColl.GetPrim();
     
     SdfPathExpression thisExpr;
     if (!thisPrim || !thisColl.GetMembershipExpressionAttr().Get(&thisExpr)) {
@@ -575,7 +575,8 @@ _ResolveCompleteMembershipExpressionImpl(
     }
 
     // Resolve any references.
-    auto resolveRefs = [&](SdfPathExpression::ExpressionReference const &ref) {
+    const auto resolveRefs =
+        [&](SdfPathExpression::ExpressionReference const &ref) {
         // We support references like %<path>:<name> and %:<name>.  In both
         // cases they identify a collection API, the latter is just shorthand
         // for the named collection on this collection prim.
@@ -593,8 +594,8 @@ _ResolveCompleteMembershipExpressionImpl(
             return SdfPathExpression::Nothing();
         }
         
-        TfToken refCollectionName { ref.name };
-        UsdPrim refCollectionPrim = ref.path.IsEmpty()
+        const TfToken refCollectionName { ref.name };
+        const UsdPrim refCollectionPrim = ref.path.IsEmpty()
             ? thisColl.GetPrim()
             : thisPrim.GetStage()->GetPrimAtPath(ref.path);
         
@@ -616,8 +617,8 @@ _ResolveCompleteMembershipExpressionImpl(
         // Check to see if we've visited this collection previously while
         // resolving references.  If we have, skip it, and substitute Nothing()
         // here.
-        const auto [visitedIter, visitedInserted] =
-            visited.emplace(refCollectionPrim, refCollectionName);
+        const bool visitedInserted =
+            visited.emplace(refCollectionPrim, refCollectionName).second;
         if (!visitedInserted) {
             SdfPathExpression originalExpr;
             originalColl.GetMembershipExpressionAttr().Get(&originalExpr);
@@ -644,8 +645,15 @@ _ResolveCompleteMembershipExpressionImpl(
             originalColl, refCollection, visited, foundCircularDependency);
 
         // Allow returning to this referenced collection down a different
-        // branch.
-        visited.erase(visitedIter);
+        // branch.  Note that we cannot use a returned iterator from the
+        // visited.emplace() call above since the recursive call to
+        // _ResolveCompleteMembershipExpressionImpl() can insert new elements
+        // causing a rehash, invalidating the iterator.
+        const auto visitedIter =
+            visited.find({ refCollectionPrim, refCollectionName });
+        if (TF_VERIFY(visitedIter != visited.end())) {
+            visited.erase(visitedIter);
+        }
 
         return ret;
     };
