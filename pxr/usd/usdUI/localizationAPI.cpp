@@ -245,6 +245,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/usd/usdGeom/primvar.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /*static*/
