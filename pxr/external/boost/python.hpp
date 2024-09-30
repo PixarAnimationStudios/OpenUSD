@@ -20,6 +20,7 @@
 #include <boost/python.hpp>
 
 #include "pxr/external/boost/python/noncopyable.hpp"
+#include "pxr/external/boost/python/ref.hpp"
 #include "pxr/external/boost/python/type.hpp"
 #include "pxr/external/boost/python/type_list.hpp"
 #else
@@ -70,6 +71,7 @@
 # include "pxr/external/boost/python/pure_virtual.hpp"
 # include "pxr/external/boost/python/ptr.hpp"
 # include "pxr/external/boost/python/raw_function.hpp"
+# include "pxr/external/boost/python/ref.hpp"
 # include "pxr/external/boost/python/reference_existing_object.hpp"
 # include "pxr/external/boost/python/register_ptr_to_python.hpp"
 # include "pxr/external/boost/python/return_arg.hpp"

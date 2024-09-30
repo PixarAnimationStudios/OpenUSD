@@ -49,7 +49,7 @@ int main()
         );
 
     ASSERT_SAME(
-        select_arg_to_python<reference_wrapper<int> >::type, reference_arg_to_python<int>
+        select_arg_to_python<std::reference_wrapper<int> >::type, reference_arg_to_python<int>
         );
     
     ASSERT_SAME(

@@ -300,6 +300,7 @@ pxr_library(python
         ptr.hpp
         pure_virtual.hpp
         raw_function.hpp
+        ref.hpp
         refcount.hpp
         reference_existing_object.hpp
         register_ptr_to_python.hpp

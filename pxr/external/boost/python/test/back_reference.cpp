@@ -19,7 +19,6 @@
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/has_back_reference.hpp"
 #include "pxr/external/boost/python/back_reference.hpp"
-#include <boost/ref.hpp>
 #include <memory>
 #include <cassert>
 #include "pxr/external/boost/python/copy_const_reference.hpp"

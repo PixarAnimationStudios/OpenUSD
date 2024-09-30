@@ -17,6 +17,7 @@
 #include <boost/python/object/make_instance.hpp>
 #else
 
+# include "pxr/external/boost/python/ref.hpp"
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/object/instance.hpp"
 # include "pxr/external/boost/python/converter/registered.hpp"
@@ -81,7 +82,7 @@ struct make_instance
         return converter::registered<T>::converters.get_class_object();
     }
     
-    static inline Holder* construct(void* storage, PyObject* instance, ::boost::reference_wrapper<T const> x)
+    static inline Holder* construct(void* storage, PyObject* instance, std::reference_wrapper<T const> x)
     {
         size_t allocated = objects::additional_instance_size<Holder>::value;
         void* aligned_storage = std::align(PXR_BOOST_NAMESPACE::python::detail::alignment_of<Holder>::value,

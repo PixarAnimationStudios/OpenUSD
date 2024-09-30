@@ -26,6 +26,7 @@
 #include "pxr/external/boost/python/numpy/dtype.hpp"
 #include "pxr/external/boost/python/numpy/ndarray.hpp"
 #include "pxr/external/boost/python/type_list.hpp"
+#include <functional>
 #include <type_traits>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
@@ -70,7 +71,7 @@ private:
 };
 
 template <typename Function>
-struct dtype_template_invoker< boost::reference_wrapper<Function> > 
+struct dtype_template_invoker< std::reference_wrapper<Function> > 
 {
     
   template <typename T>
@@ -112,7 +113,7 @@ private:
 };
 
 template <typename Function>
-struct nd_template_invoker< boost::reference_wrapper<Function> > 
+struct nd_template_invoker< std::reference_wrapper<Function> > 
 {    
   template <int N>
   void operator()(std::integral_constant<int,N> *) const 
@@ -180,7 +181,7 @@ private:
 };
 
 template <typename DimSequence, typename Function>
-struct array_template_invoker_wrapper_1< DimSequence, boost::reference_wrapper<Function> >
+struct array_template_invoker_wrapper_1< DimSequence, std::reference_wrapper<Function> >
   : public array_template_invoker_wrapper_1< DimSequence, Function >
 {
   array_template_invoker_wrapper_1(int nd, Function & func)

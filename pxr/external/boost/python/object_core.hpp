@@ -26,6 +26,7 @@
 # include "pxr/external/boost/python/call.hpp"
 # include "pxr/external/boost/python/handle_fwd.hpp"
 # include "pxr/external/boost/python/errors.hpp"
+# include "pxr/external/boost/python/ref.hpp"
 # include "pxr/external/boost/python/refcount.hpp"
 # include "pxr/external/boost/python/detail/preprocessor.hpp"
 # include "pxr/external/boost/python/tag.hpp"

@@ -18,6 +18,7 @@
 #else
 
 # include "pxr/external/boost/python/ptr.hpp"
+# include "pxr/external/boost/python/ref.hpp"
 # include "pxr/external/boost/python/tag.hpp"
 # include "pxr/external/boost/python/to_python_indirect.hpp"
 
@@ -109,7 +110,7 @@ namespace detail
   template <class T>
   struct select_arg_to_python
   {
-      typedef typename unwrap_reference<T>::type unwrapped_referent;
+      typedef typename python::unwrap_reference<T>::type unwrapped_referent;
       typedef typename unwrap_pointer<T>::type unwrapped_ptr;
 
       typedef typename python::detail::mpl2::if_<
@@ -143,7 +144,7 @@ namespace detail
                             , pointer_shallow_arg_to_python<unwrapped_ptr>
 
                             , typename python::detail::mpl2::if_<
-                                  is_reference_wrapper<T>
+                                  python::is_reference_wrapper<T>
                                 , reference_arg_to_python<unwrapped_referent>
                                 , value_arg_to_python<T>
                               >::type

@@ -11,13 +11,13 @@
 #include "pxr/external/boost/python/module.hpp"
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/class.hpp"
-#include <boost/ref.hpp>
 #include "pxr/external/boost/python/ptr.hpp"
 #include "pxr/external/boost/python/return_value_policy.hpp"
 #include "pxr/external/boost/python/reference_existing_object.hpp"
 #include "pxr/external/boost/python/call.hpp"
 #include "pxr/external/boost/python/object.hpp"
 #include <cassert>
+#include <functional>
 
 using namespace PXR_BOOST_NAMESPACE::python;
 static_assert(converter::is_object_manager<handle<> >::value);
@@ -56,7 +56,7 @@ X apply_X_X(PyObject* f, X x)
 
 void apply_void_X_ref(PyObject* f, X& x)
 {
-    call<void>(f, boost::ref(x));
+    call<void>(f, std::ref(x));
 }
 
 X& apply_X_ref_handle(PyObject* f, handle<> obj)
@@ -71,7 +71,7 @@ X* apply_X_ptr_handle_cref(PyObject* f, handle<> const& obj)
 
 void apply_void_X_cref(PyObject* f, X const& x)
 {
-    call<void>(f, boost::cref(x));
+    call<void>(f, std::cref(x));
 }
 
 void apply_void_X_ptr(PyObject* f, X* x)

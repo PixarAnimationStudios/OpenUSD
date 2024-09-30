@@ -12,7 +12,6 @@
 #include "pxr/external/boost/python/module.hpp"
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/call_method.hpp"
-#include <boost/ref.hpp>
 #include <cassert>
 
 using namespace PXR_BOOST_NAMESPACE::python;

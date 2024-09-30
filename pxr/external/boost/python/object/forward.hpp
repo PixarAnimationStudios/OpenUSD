@@ -17,12 +17,14 @@
 #include <boost/python/object/forward.hpp>
 #else
 
+# include "pxr/external/boost/python/ref.hpp"
 # include "pxr/external/boost/python/detail/mpl2/if.hpp"
-# include <boost/ref.hpp>
 # include "pxr/external/boost/python/detail/value_arg.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include "pxr/external/boost/python/detail/copy_ctor_mutates_rhs.hpp"
 # include "pxr/external/boost/python/detail/mpl2/or.hpp"
+
+# include <functional>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
@@ -57,7 +59,7 @@ struct forward
 template<typename T>
 struct unforward
 {
-    typedef typename unwrap_reference<T>::type& type;
+    typedef typename python::unwrap_reference<T>::type& type;
 };
 
 template<typename T>
@@ -69,7 +71,7 @@ struct unforward<reference_to_value<T> >
 template <typename T>
 struct unforward_cref
   : python::detail::value_arg<
-        typename unwrap_reference<T>::type
+        typename python::unwrap_reference<T>::type
     >
 {
 };
@@ -89,8 +91,8 @@ do_unforward(reference_to_value<T> const& x, int)
 }
 
 template <class T>
-typename reference_wrapper<T>::type&
-do_unforward(reference_wrapper<T> const& x, int)
+typename std::reference_wrapper<T>::type&
+do_unforward(std::reference_wrapper<T> const& x, int)
 {
     return x.get();
 }
