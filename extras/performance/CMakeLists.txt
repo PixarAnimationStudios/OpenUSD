@@ -1,11 +1,11 @@
 set(PXR_PREFIX performance)
-set(PXR_PACKAGE usdviewq)
+set(PXR_PACKAGE extras_performance)
 
 pxr_python_bin(usdmeasureperformance)
 
-pxr_library(usdperformance
+pxr_library(Performance
     PYMODULE_FILES
         __init__.py
         parseTimingOutput.py
-        explicitMetrics/stageTraversalMetric.py
+        ExplicitMetrics/stageTraversalMetric.py
 )

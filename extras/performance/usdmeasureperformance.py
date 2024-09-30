@@ -22,9 +22,9 @@ import subprocess
 import sys
 import yaml
 
-from pxr.performance import parseTimingOutput
+from pxr.Performance import parseTimingOutput
 
-from pxr.performance.parseTimingOutput import (
+from pxr.Performance.parseTimingOutput import (
     METRICS,
     nameToMetricIdentifier,
     parseTiming,
@@ -32,7 +32,7 @@ from pxr.performance.parseTimingOutput import (
 
 SCRIPT_DIR = os.path.join(
     os.path.dirname(os.path.abspath(parseTimingOutput.__file__)),
-    "explicitMetrics")
+    "ExplicitMetrics")
 
 EXPLICIT_METRICS = {
     os.path.join(SCRIPT_DIR, "stageTraversalMetric.py"): ["(traverse stage)"]
@@ -283,7 +283,7 @@ def parseArgs():
     if args.aggregation and args.output is None:
         raise ValueError("Invalid arguments: -o was not set while "
                          "an aggregation was set")
-    
+
     if args.aggregation and args.iterations == 1:
         print(f"WARNING: aggregation {args.aggregation} is set but "
               "iterations is 1")
