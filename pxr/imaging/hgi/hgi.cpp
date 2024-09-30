@@ -103,15 +103,12 @@ _MakeNewPlatformDefaultHgi()
         return nullptr;
     }
 
-    std::cout << "HGI FACTORY : " << factory << std::endl;
     Hgi* instance = factory->New();
-    std::cout << "HGI INSTANCE : " << instance << std::endl;
     if (!instance) {
         TF_CODING_ERROR("[PluginLoad] Cannot construct instance of type '%s'\n",
                 plugType.GetTypeName().c_str());
         return nullptr;
     }
-
     return instance;
 }
 
