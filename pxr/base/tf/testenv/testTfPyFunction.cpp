@@ -10,8 +10,6 @@
 #include "pxr/base/tf/pyInterpreter.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/function.hpp>
-
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/dict.hpp"
 #include "pxr/external/boost/python/extract.hpp"
@@ -37,10 +35,6 @@ AssertCallResult(object callable, T const &expected)
     extract<std::function<T()>> stdFunc(callable);
     TF_AXIOM(stdFunc.check());
     TF_AXIOM(stdFunc()() == expected);
-
-    extract<boost::function<T()>> boostFunc(callable);
-    TF_AXIOM(boostFunc.check());
-    TF_AXIOM(boostFunc()() == expected);
 }
 
 static void
@@ -51,10 +45,6 @@ AssertCallVoid(object callable)
     extract<std::function<void()>> stdFunc(callable);
     TF_AXIOM(stdFunc.check());
     stdFunc()();
-
-    extract<boost::function<void()>> boostFunc(callable);
-    TF_AXIOM(boostFunc.check());
-    boostFunc()();
 }
 
 static object
