@@ -91,7 +91,11 @@ class ConstantsGroup(object):
 
     def __new__(cls, *args, **kwargs):
         raise TypeError("ConstantsGroup objects cannot be created.")
+<<<<<<< HEAD
 '''
 
 exec(defineConstantsGroup)
 >>>>>>> a4d84c836 (Hydra Metal not working)
+=======
+
+>>>>>>> 726c2db628f0a3a8bb3305a11acdd09a998cf184

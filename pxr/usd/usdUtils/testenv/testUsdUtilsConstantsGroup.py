@@ -5,7 +5,11 @@
 # https://openusd.org/license.
 #
 
+<<<<<<< HEAD
 # pylint: disable=dict-keys-not-iterating
+=======
+import unittest
+>>>>>>> 726c2db628f0a3a8bb3305a11acdd09a998cf184
 
 '''
 Module that provides the StageView class.
@@ -2389,7 +2393,13 @@ class StageView(QGLWidget):
         if not self._allowAsync:
             return False
 
+<<<<<<< HEAD
         if not self._renderer:
             return False
+=======
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
+>>>>>>> 726c2db628f0a3a8bb3305a11acdd09a998cf184
 
         return self._renderer.PollForAsynchronousUpdates()
