@@ -8,7 +8,7 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include "pxr/external/boost/python.hpp"
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 using namespace PXR_BOOST_NAMESPACE;
 using namespace python;
@@ -18,14 +18,14 @@ struct A
     virtual int f() { return 0; }
 };
 
-shared_ptr<A> New() { return shared_ptr<A>( new A() ); }
+std::shared_ptr<A> New() { return std::shared_ptr<A>( new A() ); }
 
-int Call( const shared_ptr<A> & a )
+int Call( const std::shared_ptr<A> & a )
 {
     return a->f();
 }
 
-int Fail( shared_ptr<A> & a )
+int Fail( std::shared_ptr<A> & a )
 {
     return a->f();
 }
@@ -53,7 +53,7 @@ PXR_BOOST_PYTHON_MODULE(register_ptr)
     class_<A, A_Wrapper>("A")
         .def("f", &A::f, &A_Wrapper::default_f)
     ;
-    register_ptr_to_python< shared_ptr<A> >();
+    register_ptr_to_python< std::shared_ptr<A> >();
     def("New", &New);
     def("Call", &Call);
     def("Fail", &Fail);

@@ -20,14 +20,19 @@
 #else
 
 #include "pxr/external/boost/python/detail/is_xxx.hpp"
+#ifdef PXR_BOOST_PYTHON_HAS_BOOST_SHARED_PTR
 #include <boost/shared_ptr.hpp>
+#endif
+#include <memory>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
-PXR_BOOST_PYTHON_IS_XXX_DEF(shared_ptr, shared_ptr, 1)
+PXR_BOOST_PYTHON_IS_XXX_DEF(shared_ptr, std::shared_ptr, 1)
 
+#ifdef PXR_BOOST_PYTHON_HAS_BOOST_SHARED_PTR
 template <typename T>
-struct is_shared_ptr<std::shared_ptr<T> > : std::true_type {};
+struct is_shared_ptr<boost::shared_ptr<T> > : std::true_type {};
+#endif
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 

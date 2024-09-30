@@ -515,7 +515,10 @@ boost_python_test("injected")
 boost_python_test("properties")
 boost_python_test("return_arg")
 boost_python_test("staticmethod")
-boost_python_test("boost_shared_ptr")
+
+# boost::shared_ptr is unsupported in OpenUSD so we disable this test.
+# boost_python_test("boost_shared_ptr")
+
 boost_python_test("shared_ptr")
 boost_python_test("enable_shared_from_this")
 boost_python_test("andreas_beyer")

@@ -99,7 +99,9 @@ template <class T, class Bases>
 inline void register_shared_ptr_from_python_and_casts(T*, Bases)
 {
   // Constructor performs registration
+#ifdef PXR_BOOST_PYTHON_HAS_BOOST_SHARED_PTR
   python::detail::force_instantiate(converter::shared_ptr_from_python<T, boost::shared_ptr>());
+#endif
   python::detail::force_instantiate(converter::shared_ptr_from_python<T, std::shared_ptr>());
 
   //

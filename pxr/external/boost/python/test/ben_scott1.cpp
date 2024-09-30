@@ -8,11 +8,11 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 #include "pxr/external/boost/python.hpp"
 #include <iostream>
+#include <memory>
 using namespace PXR_BOOST_NAMESPACE::python;
-using namespace boost;
 
 struct Product {};
-typedef shared_ptr<Product> ProductPtr;
+typedef std::shared_ptr<Product> ProductPtr;
 
 
 struct Creator

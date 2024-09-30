@@ -18,7 +18,6 @@
 #else
 
 # include "pxr/external/boost/python/type_id.hpp"
-# include <boost/shared_ptr.hpp>
 # include "pxr/external/boost/python/detail/mpl2/if.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 

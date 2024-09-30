@@ -21,25 +21,26 @@
 
 #include "pxr/external/boost/python/refcount.hpp"
 #include "pxr/external/boost/python/converter/shared_ptr_deleter.hpp"
+#ifdef PXR_BOOST_PYTHON_HAS_BOOST_SHARED_PTR
 #include <boost/shared_ptr.hpp>
 #include <boost/get_pointer.hpp>
-
-namespace PXR_BOOST_NAMESPACE {
-    using boost::get_pointer; // Enable ADL for boost types
-}
+#endif
+#include <memory>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
+#ifdef PXR_BOOST_PYTHON_HAS_BOOST_SHARED_PTR
 template <class T>
-PyObject* shared_ptr_to_python(shared_ptr<T> const& x)
+PyObject* shared_ptr_to_python(boost::shared_ptr<T> const& x)
 {
     if (!x)
         return python::detail::none();
     else if (shared_ptr_deleter* d = boost::get_deleter<shared_ptr_deleter>(x))
         return incref( get_pointer( d->owner ) );
     else
-        return converter::registered<shared_ptr<T> const&>::converters.to_python(&x);
+        return converter::registered<boost::shared_ptr<T> const&>::converters.to_python(&x);
 }
+#endif
 
 template <class T>
 PyObject* shared_ptr_to_python(std::shared_ptr<T> const& x)

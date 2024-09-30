@@ -13,19 +13,17 @@
 #include "pxr/external/boost/python/call_method.hpp"
 #include "pxr/external/boost/python/extract.hpp"
 #include "pxr/external/boost/python/def.hpp"
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/shared_ptr.hpp>
 #include "test_class.hpp"
 
 #include <memory>
 
 using namespace PXR_BOOST_NAMESPACE::python;
-using boost::shared_ptr;
+using std::shared_ptr;
 
 class Test;
 typedef shared_ptr<Test> TestPtr;
 
-class Test : public boost::enable_shared_from_this<Test> {
+class Test : public std::enable_shared_from_this<Test> {
 public:
     static TestPtr construct() {
         return TestPtr(new Test);
