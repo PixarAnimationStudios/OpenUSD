@@ -25,21 +25,23 @@
 
 #include "pxr/external/boost/python/numpy/dtype.hpp"
 #include "pxr/external/boost/python/numpy/ndarray.hpp"
-#include <boost/mpl/integral_c.hpp>
+#include "pxr/external/boost/python/type_list.hpp"
 #include <type_traits>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
 namespace detail 
 {
 
-struct PXR_BOOST_NUMPY_DECL add_pointer_meta
+template <typename T, T... I, typename Function>
+void for_each(std::integer_sequence<T, I...>, Function const& f)
 {
-  template <typename T>
-  struct apply 
-  {
-    typedef typename std::add_pointer<T>::type type;
-  };
+    (f((std::integral_constant<T, I>*)nullptr), ...);
+};
 
+template <typename ...T, typename Function>
+void for_each(python::type_list<T...>, Function const& f)
+{
+    (f((T*)nullptr), ...);
 };
 
 struct PXR_BOOST_NUMPY_DECL dtype_template_match_found {};
@@ -93,7 +95,7 @@ template <typename Function>
 struct nd_template_invoker 
 {    
   template <int N>
-  void operator()(boost::mpl::integral_c<int,N> *) const 
+  void operator()(std::integral_constant<int,N> *) const 
   {
     if (m_nd == N) 
     {
@@ -113,7 +115,7 @@ template <typename Function>
 struct nd_template_invoker< boost::reference_wrapper<Function> > 
 {    
   template <int N>
-  void operator()(boost::mpl::integral_c<int,N> *) const 
+  void operator()(std::integral_constant<int,N> *) const 
   {
     if (m_nd == N) 
     {
@@ -135,7 +137,7 @@ template <typename Sequence, typename Function>
 void invoke_matching_nd(int nd, Function f) 
 {
   detail::nd_template_invoker<Function> invoker(nd, f);
-  try { boost::mpl::for_each< Sequence, detail::add_pointer_meta >(invoker);}
+  try { for_each(Sequence(), invoker); }
   catch (detail::nd_template_match_found &) { return;}
   PyErr_SetString(PyExc_TypeError, "number of dimensions not found in template list.");
   python::throw_error_already_set();
@@ -145,7 +147,7 @@ template <typename Sequence, typename Function>
 void invoke_matching_dtype(dtype const & dtype_, Function f) 
 {
   detail::dtype_template_invoker<Function> invoker(dtype_, f);
-  try { boost::mpl::for_each< Sequence, detail::add_pointer_meta >(invoker);}
+  try { for_each(Sequence(), invoker); }
   catch (detail::dtype_template_match_found &) { return;}
   PyErr_SetString(PyExc_TypeError, "dtype not found in template list.");
   python::throw_error_already_set();

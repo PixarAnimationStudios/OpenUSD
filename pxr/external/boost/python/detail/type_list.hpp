@@ -17,7 +17,6 @@
 #include <boost/python/detail/type_list.hpp>
 #else
 
-# include <boost/mpl/vector.hpp>
 #  include "pxr/external/boost/python/detail/type_list_impl.hpp"
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON

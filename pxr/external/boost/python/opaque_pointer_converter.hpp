@@ -31,7 +31,7 @@
 # include "pxr/external/boost/python/errors.hpp"
 
 # include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
-# include <boost/mpl/identity.hpp>
+# include "pxr/external/boost/python/detail/mpl2/identity.hpp"
 
 // opaque --
 //

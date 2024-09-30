@@ -21,8 +21,8 @@
 #else
 
 #include "pxr/external/boost/python/detail/preprocessor.hpp"
-#include <boost/mpl/at.hpp>
-#include <boost/mpl/size.hpp>
+#include "pxr/external/boost/python/detail/mpl2/at.hpp"
+#include "pxr/external/boost/python/detail/mpl2/size.hpp"
 #include <cstddef>
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
@@ -128,13 +128,13 @@ struct fstubs_name                                                      \
         struct get_args<std::index_sequence<I0, I...>>                  \
         {                                                               \
             using type = std::tuple<                                    \
-                typename ::boost::mpl::at_c<SigT, I>::type...           \
+                typename ::PXR_BOOST_NAMESPACE::python::detail::mpl2::at_c<SigT, I>::type...           \
             >;                                                          \
         };                                                              \
                                                                         \
-        using RetT = typename ::boost::mpl::at_c<SigT, 0>::type;        \
+        using RetT = typename ::PXR_BOOST_NAMESPACE::python::detail::mpl2::at_c<SigT, 0>::type;        \
         using ArgT = typename get_args<                                 \
-            std::make_index_sequence<::boost::mpl::size<SigT>::value>   \
+            std::make_index_sequence<PXR_BOOST_NAMESPACE::python::detail::mpl2::size<SigT>::value>   \
         >::type;                                                        \
                                                                         \
         template <class Idxs> struct func_with_arity;                   \
@@ -173,14 +173,14 @@ struct fstubs_name                                                      \
         struct get_args<std::index_sequence<I0, I1, I...>>              \
         {                                                               \
             using type = std::tuple<                                    \
-                typename ::boost::mpl::at_c<SigT, I>::type...           \
+                typename ::PXR_BOOST_NAMESPACE::python::detail::mpl2::at_c<SigT, I>::type...           \
             >;                                                          \
         };                                                              \
                                                                         \
-        using RetT = typename ::boost::mpl::at_c<SigT, 0>::type;        \
-        using ClassT = typename ::boost::mpl::at_c<SigT, 1>::type;      \
+        using RetT = typename ::PXR_BOOST_NAMESPACE::python::detail::mpl2::at_c<SigT, 0>::type;        \
+        using ClassT = typename ::PXR_BOOST_NAMESPACE::python::detail::mpl2::at_c<SigT, 1>::type;      \
         using ArgT = typename get_args<                                 \
-            std::make_index_sequence<::boost::mpl::size<SigT>::value>   \
+            std::make_index_sequence<PXR_BOOST_NAMESPACE::python::detail::mpl2::size<SigT>::value>   \
         >::type;                                                        \
                                                                         \
         template <class Idxs> struct func_with_arity;                   \

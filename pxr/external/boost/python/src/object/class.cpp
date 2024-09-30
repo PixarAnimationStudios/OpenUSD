@@ -9,7 +9,6 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #include "pxr/external/boost/python/detail/prefix.hpp"
-#include <boost/mpl/lambda.hpp> // #including this first is an intel6 workaround
 
 #include "pxr/external/boost/python/object/class.hpp"
 #include "pxr/external/boost/python/object/instance.hpp"

@@ -19,8 +19,8 @@
 
 # include "pxr/external/boost/python/def_visitor.hpp"
 # include "pxr/external/boost/python/default_call_policies.hpp"
-# include <boost/mpl/push_front.hpp>
-# include <boost/mpl/pop_front.hpp>
+# include "pxr/external/boost/python/detail/mpl2/push_front.hpp"
+# include "pxr/external/boost/python/detail/mpl2/pop_front.hpp"
 
 # include "pxr/external/boost/python/detail/nullary_function_adaptor.hpp"
 
@@ -41,10 +41,10 @@ namespace detail
   struct replace_front2
   {
       // Metafunction forwarding seemed to confound vc6 
-      typedef typename mpl::push_front<
-          typename mpl::push_front<
-              typename mpl::pop_front<
-                  typename mpl::pop_front<
+      typedef typename detail::mpl2::push_front<
+          typename detail::mpl2::push_front<
+              typename detail::mpl2::pop_front<
+                  typename detail::mpl2::pop_front<
                       S
                   >::type
               >::type

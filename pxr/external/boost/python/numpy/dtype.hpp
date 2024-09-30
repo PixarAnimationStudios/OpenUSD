@@ -27,7 +27,6 @@
 #include "pxr/external/boost/python.hpp"
 #include "pxr/external/boost/python/numpy/config.hpp"
 #include "pxr/external/boost/python/numpy/numpy_object_mgr_traits.hpp"
-#include <boost/mpl/for_each.hpp>
 #include "pxr/external/boost/python/detail/type_traits.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {

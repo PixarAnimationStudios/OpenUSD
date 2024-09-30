@@ -24,7 +24,7 @@
 # include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
 # include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
 # include "pxr/external/boost/python/detail/mpl2/if.hpp"
-# include <boost/mpl/identity.hpp>
+# include "pxr/external/boost/python/detail/mpl2/identity.hpp"
 # include "pxr/external/boost/python/detail/mpl2/and.hpp"
 # include "pxr/external/boost/python/detail/mpl2/or.hpp"
 # include "pxr/external/boost/python/detail/mpl2/not.hpp"
@@ -160,7 +160,7 @@ struct back_reference_arg_from_python
 template <class C, class T, class F>
 struct if_2
 {
-    typedef typename python::detail::mpl2::eval_if<C, mpl::identity<T>, F>::type type;
+    typedef typename python::detail::mpl2::eval_if<C, python::detail::mpl2::identity<T>, F>::type type;
 };
 
 // This metafunction selects the appropriate arg_from_python converter

@@ -31,10 +31,10 @@
 # include "pxr/external/boost/python/detail/caller.hpp"
 # include "pxr/external/boost/python/detail/none.hpp"
 
-# include <boost/mpl/size.hpp>
-# include <boost/mpl/int.hpp>
-# include <boost/mpl/push_front.hpp>
-# include <boost/mpl/pop_front.hpp>
+# include "pxr/external/boost/python/detail/mpl2/size.hpp"
+# include "pxr/external/boost/python/detail/mpl2/int.hpp"
+# include "pxr/external/boost/python/detail/mpl2/push_front.hpp"
+# include "pxr/external/boost/python/detail/mpl2/pop_front.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
@@ -97,9 +97,9 @@ namespace detail
   };
 
   template <int N, class BaseArgs, class Offset>
-  inline PyObject* get(mpl::int_<N>, offset_args<BaseArgs,Offset> const& args_)
+  inline PyObject* get(detail::mpl2::int_<N>, offset_args<BaseArgs,Offset> const& args_)
   {
-      return get(mpl::int_<(N+Offset::value)>(), args_.base);
+      return get(detail::mpl2::int_<(N+Offset::value)>(), args_.base);
   }
   
   template <class BaseArgs, class Offset>
@@ -123,15 +123,15 @@ namespace detail
         , "MAKE_CONSTRUCTOR_SUPPLIES_ITS_OWN_RESULT_CONVERTER_THAT_WOULD_OVERRIDE_YOURS"
       );
       typedef constructor_result_converter result_converter;
-      typedef offset_args<typename BasePolicy_::argument_package, mpl::int_<1> > argument_package;
+      typedef offset_args<typename BasePolicy_::argument_package, detail::mpl2::int_<1> > argument_package;
   };
 
   template <class InnerSignature>
   struct outer_constructor_signature
   {
-      typedef typename mpl::pop_front<InnerSignature>::type inner_args;
-      typedef typename mpl::push_front<inner_args,object>::type outer_args;
-      typedef typename mpl::push_front<outer_args,void>::type type;
+      typedef typename detail::mpl2::pop_front<InnerSignature>::type inner_args;
+      typedef typename detail::mpl2::push_front<inner_args,object>::type outer_args;
+      typedef typename detail::mpl2::push_front<outer_args,void>::type type;
   };
 
   // ETI workaround
@@ -170,7 +170,7 @@ namespace detail
   // As above, except that it accepts argument keywords. NumKeywords
   // is used only for a compile-time assertion to make sure the user
   // doesn't pass more keywords than the function can accept. To
-  // disable all checking, pass mpl::int_<0> for NumKeywords.
+  // disable all checking, pass detail::mpl2::int_<0> for NumKeywords.
   template <class F, class CallPolicies, class Sig, class NumKeywords>
   object make_constructor_aux(
       F f
@@ -180,7 +180,7 @@ namespace detail
       , NumKeywords                     // An MPL integral type wrapper: the size of kw
       )
   {
-      enum { arity = mpl::size<Sig>::value - 1 };
+      enum { arity = detail::mpl2::size<Sig>::value - 1 };
       
       [[maybe_unused]] typedef typename detail::error::more_keywords_than_function_arguments<
           NumKeywords::value, arity
@@ -215,7 +215,7 @@ namespace detail
         , policies
         , detail::get_signature(f)
         , kw.range()
-        , mpl::int_<Keywords::size>()
+        , detail::mpl2::int_<Keywords::size>()
       );
   }
 
@@ -280,7 +280,7 @@ object make_constructor(
         , policies
         , sig
         , kw.range()
-        , mpl::int_<Keywords::size>()
+        , detail::mpl2::int_<Keywords::size>()
       );
 }
 // }

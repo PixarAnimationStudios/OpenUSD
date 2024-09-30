@@ -25,8 +25,8 @@
 
 # include "pxr/external/boost/python/object/function_object.hpp"
 
-# include <boost/mpl/size.hpp>
-# include <boost/mpl/int.hpp>
+# include "pxr/external/boost/python/detail/mpl2/size.hpp"
+# include "pxr/external/boost/python/detail/mpl2/int.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
@@ -53,7 +53,7 @@ namespace detail
   // As above, except that it accepts argument keywords. NumKeywords
   // is used only for a compile-time assertion to make sure the user
   // doesn't pass more keywords than the function can accept. To
-  // disable all checking, pass mpl::int_<0> for NumKeywords.
+  // disable all checking, pass detail::mpl2::int_<0> for NumKeywords.
   template <class F, class CallPolicies, class Sig, class NumKeywords>
   object make_function_aux(
       F f
@@ -63,7 +63,7 @@ namespace detail
       , NumKeywords                     // An MPL integral type wrapper: the size of kw
       )
   {
-      enum { arity = mpl::size<Sig>::value - 1 };
+      enum { arity = detail::mpl2::size<Sig>::value - 1 };
       
       [[maybe_unused]] typedef typename detail::error::more_keywords_than_function_arguments<
           NumKeywords::value, arity
@@ -87,7 +87,7 @@ namespace detail
         , policies
         , detail::get_signature(f)
         , kw.range()
-        , mpl::int_<Keywords::size>()
+        , detail::mpl2::int_<Keywords::size>()
       );
   }
 
@@ -154,7 +154,7 @@ object make_function(
         , policies
         , sig
         , kw.range()
-        , mpl::int_<Keywords::size>()
+        , detail::mpl2::int_<Keywords::size>()
       );
 }
 // }

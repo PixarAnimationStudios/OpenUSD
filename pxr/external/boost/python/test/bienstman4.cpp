@@ -12,7 +12,6 @@
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/implicit.hpp"
-#include <boost/mpl/list.hpp>
 
 struct Type1 {};
 
@@ -23,7 +22,6 @@ struct Expression {void add(Term const&) {} };
 PXR_BOOST_PYTHON_MODULE(bienstman4_ext)
 {
   using namespace PXR_BOOST_NAMESPACE::python;
-  using boost::mpl::list;
 
   implicitly_convertible<Type1,Term>();
 

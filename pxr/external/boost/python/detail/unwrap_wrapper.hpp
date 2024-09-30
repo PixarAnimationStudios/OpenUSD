@@ -19,7 +19,7 @@
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/detail/is_wrapper.hpp"
 # include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
-# include <boost/mpl/identity.hpp>
+# include "pxr/external/boost/python/detail/mpl2/identity.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
@@ -31,7 +31,7 @@ struct unwrap_wrapper_helper
 
 template <class T>
 struct unwrap_wrapper_
-  : mpl2::eval_if<is_wrapper<T>,unwrap_wrapper_helper<T>,mpl::identity<T> >
+  : mpl2::eval_if<is_wrapper<T>,unwrap_wrapper_helper<T>,detail::mpl2::identity<T> >
 {};
 
 template <class T>

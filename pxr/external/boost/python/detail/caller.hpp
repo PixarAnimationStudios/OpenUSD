@@ -31,11 +31,12 @@
 #  include "pxr/external/boost/python/converter/context_result_converter.hpp"
 #  include "pxr/external/boost/python/converter/builtin_converters.hpp"
 
+#  include "pxr/external/boost/python/detail/mpl2/front.hpp"
 #  include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
-#  include <boost/mpl/identity.hpp>
-#  include <boost/mpl/size.hpp>
-#  include <boost/mpl/at.hpp>
-#  include <boost/mpl/int.hpp>
+#  include "pxr/external/boost/python/detail/mpl2/identity.hpp"
+#  include "pxr/external/boost/python/detail/mpl2/size.hpp"
+#  include "pxr/external/boost/python/detail/mpl2/at.hpp"
+#  include "pxr/external/boost/python/detail/mpl2/int.hpp"
 
 #  include <type_traits>
 
@@ -83,7 +84,7 @@ private:
 };
 
 template <int N>
-inline PyObject* get(mpl::int_<N>, PyObject* const& args_)
+inline PyObject* get(detail::mpl2::int_<N>, PyObject* const& args_)
 {
     return PyTuple_GET_ITEM(args_,N);
 }
@@ -105,7 +106,7 @@ template <class Policies, class Result>
 struct select_result_converter
   : mpl2::eval_if<
         is_same<Result,void>
-      , mpl::identity<void_result_to_python>
+      , detail::mpl2::identity<void_result_to_python>
       , typename Policies::result_converter::template apply<Result>
     >
 {
@@ -180,7 +181,7 @@ struct caller;
 template <class F, class CallPolicies, class Sig>
 struct caller_base_select
 {
-    enum { arity = mpl::size<Sig>::value - 1 };
+    enum { arity = detail::mpl2::size<Sig>::value - 1 };
     typedef typename caller_arity<
         std::make_index_sequence<arity>>::template impl<F,CallPolicies,Sig> type;
 };
@@ -230,8 +231,7 @@ struct caller_arity<std::index_sequence<N...>>
                                                          // trailing
                                                          // keyword dict
         {
-            typedef typename mpl::begin<Sig>::type first;
-            typedef typename first::type result_t;
+            typedef typename detail::mpl2::front<Sig>::type result_t;
             typedef typename select_result_converter<Policies, result_t>::type result_converter;
             typedef typename Policies::argument_package argument_package;
             
@@ -243,9 +243,9 @@ struct caller_arity<std::index_sequence<N...>>
             // that type sequence begins with an additional entry representing
             // the function's return type.
             using arg_from_python_tuple = std::tuple<
-                arg_from_python<typename mpl::at_c<Sig, N+1>::type>...
+                arg_from_python<typename detail::mpl2::at_c<Sig, N+1>::type>...
             >;
-            arg_from_python_tuple t{ get(mpl::int_<N>(), inner_args)... };
+            arg_from_python_tuple t{ get(detail::mpl2::int_<N>(), inner_args)... };
 
             if ( (... || !std::get<N>(t).convertible()) ) {
                 return 0;

@@ -23,7 +23,7 @@
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include "pxr/external/boost/python/detail/value_arg.hpp"
 # include "pxr/external/boost/python/detail/mpl2/or.hpp"
-# include <boost/mpl/front.hpp>
+# include "pxr/external/boost/python/detail/mpl2/front.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
@@ -62,7 +62,7 @@ struct default_call_policies
     typedef PyObject* argument_package;
 
     template <class Sig> 
-    struct extract_return_type : mpl::front<Sig>
+    struct extract_return_type : detail::mpl2::front<Sig>
     {
     };
 

@@ -35,13 +35,12 @@
 #include "pxr/external/boost/python/bases.hpp"
 #include "pxr/external/boost/python/type_list.hpp"
 
+#include "pxr/external/boost/python/detail/mpl2/at.hpp"
 #include "pxr/external/boost/python/detail/mpl2/if.hpp"
 #include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
 #include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 #include "pxr/external/boost/python/detail/mpl2/or.hpp"
-#include <boost/mpl/identity.hpp>
-#include <boost/mpl/for_each.hpp>
-#include <boost/mpl/placeholders.hpp>
+#include "pxr/external/boost/python/detail/mpl2/identity.hpp"
 
 #include <boost/noncopyable.hpp>
 
@@ -86,6 +85,15 @@ struct register_base_of
 // Preamble of register_class.  Also used for callback classes, which
 // need some registration of their own.
 //
+template <class T, class Bases, size_t ...I>
+inline void register_bases(std::index_sequence<I...>)
+{
+    ((register_base_of<T>()(
+          typename python::detail::add_pointer<
+              typename python::detail::mpl2::at_c<Bases, I>::type
+           >::type(nullptr))
+     ), ...);
+}
 
 template <class T, class Bases>
 inline void register_shared_ptr_from_python_and_casts(T*, Bases)
@@ -99,7 +107,8 @@ inline void register_shared_ptr_from_python_and_casts(T*, Bases)
   // interface to mpl::for_each to avoid an MSVC 6 bug.
   //
   register_dynamic_id<T>();
-  mpl::for_each(register_base_of<T>(), (Bases*)0, (PXR_BOOST_NAMESPACE::python::detail::add_pointer<mpl::_>*)0);
+  register_bases<T, Bases>(
+      std::make_index_sequence<python::detail::mpl2::size<Bases>::value>());
 }
 
 //
@@ -178,7 +187,7 @@ struct class_metadata
     // pointer, we're talking about the pointee.
     typedef typename python::detail::mpl2::eval_if<
         use_value_holder
-      , mpl::identity<held_type>
+      , python::detail::mpl2::identity<held_type>
       , pointee<held_type>
     >::type wrapped;
 

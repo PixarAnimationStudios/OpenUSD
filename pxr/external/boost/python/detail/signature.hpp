@@ -24,8 +24,8 @@
 #  include "pxr/external/boost/python/detail/indirect_traits.hpp"
 #  include "pxr/external/boost/python/converter/pytype_function.hpp"
 
-#  include <boost/mpl/at.hpp>
-#  include <boost/mpl/size.hpp>
+#  include "pxr/external/boost/python/detail/mpl2/at.hpp"
+#  include "pxr/external/boost/python/detail/mpl2/size.hpp"
 
 #  include <utility>
 
@@ -53,7 +53,7 @@ template <class Idxs> struct signature_arity;
 template <class Sig>
 struct signature_base_select
 {
-    enum { arity = mpl::size<Sig>::value - 1 };
+    enum { arity = detail::mpl2::size<Sig>::value - 1 };
     typedef typename signature_arity<
         std::make_index_sequence<arity+1>>::template impl<Sig> type;
 };
@@ -76,15 +76,15 @@ struct signature_arity<std::index_sequence<N...>>
                 
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
                 {
-                  type_id<typename mpl::at_c<Sig,N>::type>().name()
-                  , &converter::expected_pytype_for_arg<typename mpl::at_c<Sig,N>::type>::get_pytype
-                  , indirect_traits::is_reference_to_non_const<typename mpl::at_c<Sig,N>::type>::value
+                  type_id<typename detail::mpl2::at_c<Sig,N>::type>().name()
+                  , &converter::expected_pytype_for_arg<typename detail::mpl2::at_c<Sig,N>::type>::get_pytype
+                  , indirect_traits::is_reference_to_non_const<typename detail::mpl2::at_c<Sig,N>::type>::value
                 }...,
 #else
                 {
-                  type_id<typename mpl::at_c<Sig,N>::type>().name()
+                  type_id<typename detail::mpl2::at_c<Sig,N>::type>().name()
                   , 0
-                  , indirect_traits::is_reference_to_non_const<typename mpl::at_c<Sig,N>::type>::value
+                  , indirect_traits::is_reference_to_non_const<typename detail::mpl2::at_c<Sig,N>::type>::value
                 },
 #endif
                 {0,0,0}

@@ -22,8 +22,8 @@
 
 #include "pxr/external/boost/python/detail/defaults_gen.hpp"
 #include "pxr/external/boost/python/detail/type_traits.hpp"
-#include <boost/mpl/front.hpp>
-#include <boost/mpl/size.hpp>
+#include "pxr/external/boost/python/detail/mpl2/front.hpp"
+#include "pxr/external/boost/python/detail/mpl2/size.hpp"
 #include "pxr/external/boost/python/class_fwd.hpp"
 #include "pxr/external/boost/python/scope.hpp"
 #include "pxr/external/boost/python/detail/scope.hpp"
@@ -111,7 +111,7 @@ namespace detail
   //      template <typename OverloadsT, typename NameSpaceT>
   //      inline void
   //      define_stub_function(
-  //          char const* name, OverloadsT s, NameSpaceT& name_space, mpl::int_<N>)
+  //          char const* name, OverloadsT s, NameSpaceT& name_space, detail::mpl2::int_<N>)
   //      {
   //          name_space.def(name, &OverloadsT::func_N);
   //      }
@@ -256,7 +256,7 @@ namespace detail
       NameSpaceT& name_space,
       SigT const&)
   {
-      typedef typename mpl::front<SigT>::type return_type;
+      typedef typename detail::mpl2::front<SigT>::type return_type;
       typedef typename OverloadsT::void_return_type void_return_type;
       typedef typename OverloadsT::non_void_return_type non_void_return_type;
 
@@ -267,7 +267,7 @@ namespace detail
       >::type stubs_type;
 
       static_assert(
-          (stubs_type::max_args) <= mpl::size<SigT>::value);
+          (stubs_type::max_args) <= detail::mpl2::size<SigT>::value);
 
       typedef typename stubs_type::template gen<SigT> gen_type;
       define_with_defaults_helper<stubs_type::n_funcs-1>::def(

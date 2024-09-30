@@ -186,11 +186,18 @@ pxr_library(python
         detail/map_entry.hpp
         detail/mpl_lambda.hpp
         detail/mpl2/and.hpp
+        detail/mpl2/at.hpp
         detail/mpl2/bool.hpp
         detail/mpl2/eval_if.hpp
+        detail/mpl2/front.hpp
+        detail/mpl2/identity.hpp
         detail/mpl2/if.hpp
+        detail/mpl2/int.hpp
         detail/mpl2/not.hpp
+        detail/mpl2/pop_front.hpp
+        detail/mpl2/push_front.hpp
         detail/mpl2/or.hpp
+        detail/mpl2/size.hpp
         detail/msvc_typeinfo.hpp
         detail/none.hpp
         detail/not_specified.hpp

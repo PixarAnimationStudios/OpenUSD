@@ -27,16 +27,12 @@
 #include "pxr/external/boost/python/detail/make_keyword_range_fn.hpp"
 #include "pxr/external/boost/python/def_visitor.hpp"
 
+#include "pxr/external/boost/python/detail/mpl2/at.hpp"
 #include "pxr/external/boost/python/detail/mpl2/if.hpp"
+#include "pxr/external/boost/python/detail/mpl2/int.hpp"
 #include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
-#include <boost/mpl/size.hpp>
-#include <boost/mpl/iterator_range.hpp>
-#include <boost/mpl/empty.hpp>
-#include <boost/mpl/begin_end.hpp>
+#include "pxr/external/boost/python/detail/mpl2/size.hpp"
 #include "pxr/external/boost/python/detail/mpl2/bool.hpp"
-#include <boost/mpl/prior.hpp>
-#include <boost/mpl/joint_view.hpp>
-#include <boost/mpl/back.hpp>
 
 #include "pxr/external/boost/python/detail/type_traits.hpp"
 
@@ -182,18 +178,66 @@ class init_with_call_policies
 
 //
 // drop1<S> is the initial length(S) elements of S
+// empty<S> is whether S has no elements
+// back<S> is the last element of S
+// joint_view<S1, S2> is a type_list with all elements in S1 and S2.
 //
 namespace detail
 {
   template <class S>
+  struct drop1_base;
+
+  template <>
+  struct drop1_base<detail::type_list<>>
+  {
+      using type = detail::type_list<>;
+  };
+
+  template <class S>
+  struct drop1_base
+  {
+      template <class Idxs>
+      struct impl;
+
+      template <size_t ...I>
+      struct impl<std::index_sequence<I...>>
+      {
+          using type = detail::type_list<
+              typename detail::mpl2::at_c<S, I>::type...
+          >;
+      };
+
+      using type = typename impl<
+          std::make_index_sequence<detail::mpl2::size<S>::value - 1>
+      >::type;
+  };
+
+  template <class S>
   struct drop1
-    : mpl::iterator_range<
-          typename mpl::begin<S>::type
-        , typename mpl::prior<
-              typename mpl::end<S>::type
-          >::type
-      >
+      : drop1_base<S>::type
   {};
+
+  template <class S>
+  struct empty
+      : std::bool_constant<detail::mpl2::size<S>::value == 0>
+  {};
+
+  template <class S>
+  struct back
+      : detail::mpl2::at_c<S, detail::mpl2::size<S>::value - 1>
+  {};
+
+  template <class T, class U>
+  struct joint_view
+      : joint_view<typename T::type, typename U::type>
+  {
+  };
+
+  template <class... T, class... U>
+  struct joint_view<detail::type_list<T...>, detail::type_list<U...>>
+      : detail::type_list<T..., U...>
+  {
+  };  
 }
 
 template <class... T>
@@ -238,24 +282,24 @@ class init : public init_base<init<T...> >
 
     typedef detail::is_optional<
         typename detail::mpl2::eval_if<
-            mpl::empty<signature_>
+            detail::empty<signature_>
           , detail::mpl2::false_
-          , mpl::back<signature_>
+          , detail::back<signature_>
         >::type
     > back_is_optional;
     
     typedef typename detail::mpl2::eval_if<
         back_is_optional
-      , mpl::back<signature_>
+      , detail::back<signature_>
       , detail::type_list<>
     >::type optional_args;
 
     typedef typename detail::mpl2::eval_if<
         back_is_optional
       , detail::mpl2::if_<
-            mpl::empty<optional_args>
+            detail::empty<optional_args>
           , detail::drop1<signature_>
-          , mpl::joint_view<
+          , detail::joint_view<
                 detail::drop1<signature_>
               , optional_args
             >
@@ -266,8 +310,8 @@ class init : public init_base<init<T...> >
     // TODO: static assert to make sure there are no other optional elements
 
     // Count the number of default args
-    typedef mpl::size<optional_args> n_defaults;
-    typedef mpl::size<signature> n_arguments;
+    typedef detail::mpl2::size<optional_args> n_defaults;
+    typedef detail::mpl2::size<signature> n_arguments;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -336,7 +380,7 @@ namespace detail
           if (keywords.second > keywords.first)
               --keywords.second;
 
-          typedef typename mpl::prior<NArgs>::type next_nargs;
+          typedef typename detail::mpl2::int_<NArgs::value - 1> next_nargs;
           define_class_init_helper<NDefaults-1>::apply(
               cl, policies, Signature(), next_nargs(), doc, keywords);
       }

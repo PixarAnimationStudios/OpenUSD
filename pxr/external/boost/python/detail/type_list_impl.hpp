@@ -23,7 +23,6 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 template <class... T>
 struct type_list
-    : mpl::vector<T...>
 {
     using type = type_list<T...>;
 };

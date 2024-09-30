@@ -29,7 +29,7 @@
 #  include "pxr/external/boost/python/object/forward.hpp"
 #  include "pxr/external/boost/python/detail/preprocessor.hpp"
 
-#  include <boost/mpl/at.hpp>
+#  include "pxr/external/boost/python/detail/mpl2/at.hpp"
 
 #  include <cstddef>
 
@@ -50,7 +50,7 @@ struct make_holder_impl<std::index_sequence<N...>>
 #else
             PyObject *p
 #endif
-            , typename mpl::at_c<ArgList, N>::type... a)
+            , typename python::detail::mpl2::at_c<ArgList, N>::type... a)
         {
             typedef instance<Holder> instance_t;
 
