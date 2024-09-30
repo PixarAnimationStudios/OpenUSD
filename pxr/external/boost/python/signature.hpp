@@ -26,9 +26,7 @@
 
 #  include "pxr/external/boost/python/detail/preprocessor.hpp"
 #  include "pxr/external/boost/python/detail/type_traits.hpp"
-#  include "pxr/external/boost/python/detail/type_list.hpp"
-
-#include <boost/mpl/vector.hpp>
+#  include "pxr/external/boost/python/type_list.hpp"
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
@@ -107,18 +105,18 @@ struct most_derived
 // 'default' calling convention
 
 template <class RT, class... T>
-inline boost::mpl::vector<RT, T...>
+inline python::type_list<RT, T...>
 get_signature(RT(*)(T...), void* = 0)
 {
-    return boost::mpl::vector<RT, T...>();
+    return python::type_list<RT, T...>();
 }
 
 #define PXR_BOOST_PYTHON_GET_SIGNATURE_MEMBERS(Q, ...)             \
 template <class RT, class ClassT, class... T>                      \
-inline boost::mpl::vector<RT, ClassT&, T...>                       \
+inline python::type_list<RT, ClassT&, T...>                        \
 get_signature(RT(ClassT::*)(T...) Q)                               \
 {                                                                  \
-    return boost::mpl::vector<RT, ClassT&, T...>();                \
+    return python::type_list<RT, ClassT&, T...>();                 \
 }                                                                  \
                                                                    \
 template <                                                         \
@@ -127,7 +125,7 @@ template <                                                         \
   , class ClassT                                                   \
   , class... T                                                     \
 >                                                                  \
-inline boost::mpl::vector<                                         \
+inline python::type_list<                                          \
     RT                                                             \
   , typename most_derived<Target, ClassT>::type&                   \
   , T...                                                           \
@@ -137,7 +135,7 @@ get_signature(                                                     \
   , Target*                                                        \
 )                                                                  \
 {                                                                  \
-    return boost::mpl::vector<                                     \
+    return python::type_list<                                      \
         RT                                                         \
       , typename most_derived<Target, ClassT>::type&               \
       , T...                                                       \

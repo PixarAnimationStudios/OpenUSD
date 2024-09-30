@@ -247,7 +247,7 @@ class init : public init_base<init<T...> >
     typedef typename detail::mpl2::eval_if<
         back_is_optional
       , mpl::back<signature_>
-      , mpl::vector0<>
+      , detail::type_list<>
     >::type optional_args;
 
     typedef typename detail::mpl2::eval_if<

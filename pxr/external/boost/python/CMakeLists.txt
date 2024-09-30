@@ -320,6 +320,7 @@ pxr_library(python
         tuple.hpp
         type.hpp
         type_id.hpp
+        type_list.hpp
         with_custodian_and_ward.hpp
         wrapper.hpp
 

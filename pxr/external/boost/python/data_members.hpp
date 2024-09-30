@@ -25,6 +25,7 @@
 # include "pxr/external/boost/python/return_by_value.hpp"
 # include "pxr/external/boost/python/return_internal_reference.hpp"
 # include "pxr/external/boost/python/make_function.hpp"
+# include "pxr/external/boost/python/type_list.hpp"
 
 # include "pxr/external/boost/python/converter/builtin_converters.hpp"
 
@@ -35,7 +36,6 @@
 
 # include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
 # include "pxr/external/boost/python/detail/mpl2/if.hpp"
-# include <boost/mpl/vector/vector10.hpp>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
@@ -160,7 +160,7 @@ namespace detail
   inline object make_getter(D* d, Policies const& policies, detail::false_, int)
   {
       return python::make_function(
-          detail::datum<D>(d), policies, mpl::vector1<D&>()
+          detail::datum<D>(d), policies, python::type_list<D&>()
       );
   }
   
@@ -180,7 +180,7 @@ namespace detail
       return python::make_function(
           detail::member<D,Class>(pm)
         , policies
-        , mpl::vector2<D&,Class&>()
+        , python::type_list<D&,Class&>()
       );
   }
       
@@ -213,7 +213,7 @@ namespace detail
   inline object make_setter(D* p, Policies const& policies, detail::false_, int)
   {
       return python::make_function(
-          detail::datum<D>(p), policies, mpl::vector2<void,D const&>()
+          detail::datum<D>(p), policies, python::type_list<void,D const&>()
       );
   }
 
@@ -224,7 +224,7 @@ namespace detail
       return python::make_function(
           detail::member<D,C>(pm)
         , policies
-        , mpl::vector3<void, C&, D const&>()
+        , python::type_list<void, C&, D const&>()
       );
   }
 

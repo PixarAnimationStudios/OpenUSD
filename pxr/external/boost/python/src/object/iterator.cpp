@@ -10,7 +10,7 @@
 
 #include "pxr/external/boost/python/object/iterator_core.hpp"
 #include "pxr/external/boost/python/object/function_object.hpp"
-#include <boost/mpl/vector/vector10.hpp>
+#include "pxr/external/boost/python/type_list.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
@@ -28,7 +28,7 @@ PXR_BOOST_PYTHON_DECL object const& identity_function()
 {
     static object result(
         function_object(
-            py_function(&identity, mpl::vector2<PyObject*,PyObject*>())
+            py_function(&identity, python::type_list<PyObject*,PyObject*>())
         )
     );
     return result;

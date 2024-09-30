@@ -30,12 +30,12 @@
 # include "pxr/external/boost/python/object/class_detail.hpp"
 # include "pxr/external/boost/python/object/function_object.hpp"
 
-# include <boost/mpl/vector/vector10.hpp>
 # include "pxr/external/boost/python/detail/mpl2/if.hpp"
 
 # include "pxr/external/boost/python/detail/raw_pyobject.hpp"
 
 # include "pxr/external/boost/python/type.hpp"
+# include "pxr/external/boost/python/type_list.hpp"
 
 # include <iterator>
 #include <type_traits>
@@ -114,7 +114,7 @@ namespace detail
             , make_function(
                 next_fn()
               , policies
-              , mpl::vector2<result_type,range_&>()
+              , type_list<result_type,range_&>()
             ));
   }
 
@@ -167,7 +167,7 @@ namespace detail
       return make_function(
           py_iter_<Target,Iterator,Accessor1,Accessor2,NextPolicies>(get_start, get_finish)
         , default_call_policies()
-        , mpl::vector2<iterator_range<NextPolicies,Iterator>, back_reference<Target&> >()
+        , type_list<iterator_range<NextPolicies,Iterator>, back_reference<Target&> >()
       );
   }
 

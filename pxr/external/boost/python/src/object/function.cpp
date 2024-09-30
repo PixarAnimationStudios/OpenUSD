@@ -21,10 +21,10 @@
 #include "pxr/external/boost/python/tuple.hpp"
 #include "pxr/external/boost/python/list.hpp"
 #include "pxr/external/boost/python/ssize_t.hpp"
+#include "pxr/external/boost/python/type_list.hpp"
 
 #include "pxr/external/boost/python/detail/signature.hpp"
 #include "pxr/external/boost/python/detail/none.hpp"
-#include <boost/mpl/vector/vector10.hpp>
 
 #include <algorithm>
 #include <cstring>
@@ -409,7 +409,7 @@ namespace
       
       static object keeper(
           function_object(
-              py_function(&not_implemented, mpl::vector1<void>(), 2)
+              py_function(&not_implemented, type_list<void>(), 2)
             , python::detail::keyword_range())
           );
       return handle<function>(borrowed(downcast<function>(keeper.ptr())));

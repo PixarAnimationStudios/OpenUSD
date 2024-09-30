@@ -33,6 +33,7 @@
 
 #include "pxr/external/boost/python/has_back_reference.hpp"
 #include "pxr/external/boost/python/bases.hpp"
+#include "pxr/external/boost/python/type_list.hpp"
 
 #include "pxr/external/boost/python/detail/mpl2/if.hpp"
 #include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
@@ -41,7 +42,6 @@
 #include <boost/mpl/identity.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/placeholders.hpp>
-#include <boost/mpl/single_view.hpp>
 
 #include <boost/noncopyable.hpp>
 
@@ -290,7 +290,7 @@ struct class_metadata
     inline static void maybe_register_callback_class(T2*, python::detail::mpl2::true_)
     {
 	objects::register_shared_ptr_from_python_and_casts(
-            (wrapped*)0, mpl::single_view<T2>());
+            (wrapped*)0, python::type_list<T2>());
         // explicit qualification of type_id makes msvc6 happy
         objects::copy_class_object(python::type_id<T2>(), python::type_id<wrapped>());
     }
