@@ -73,29 +73,5 @@ class ConstantsGroup(object, metaclass=_MetaConstantsGroup):
     """The base constant group class, intended to be inherited by actual groups
     of constants.
     """
-<<<<<<< HEAD
     def __new__(cls, *args, **kwargs):
         raise TypeError("ConstantsGroup objects cannot be created.")
-=======
-
-    def __new__(cls, *args, **kwargs):
-        raise TypeError("ConstantsGroup objects cannot be created.")
-'''
-else:
-    defineConstantsGroup = '''
-class ConstantsGroup(object):
-    """The base constant group class, intended to be inherited by actual groups
-    of constants.
-    """
-    __metaclass__ = _MetaConstantsGroup
-
-    def __new__(cls, *args, **kwargs):
-        raise TypeError("ConstantsGroup objects cannot be created.")
-<<<<<<< HEAD
-'''
-
-exec(defineConstantsGroup)
->>>>>>> a4d84c836 (Hydra Metal not working)
-=======
-
->>>>>>> 726c2db628f0a3a8bb3305a11acdd09a998cf184
