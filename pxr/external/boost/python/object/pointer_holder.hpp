@@ -18,7 +18,6 @@
 #include <boost/python/object/pointer_holder.hpp>
 #else
 
-# include <boost/get_pointer.hpp>
 #  include "pxr/external/boost/python/type.hpp"
 
 #  include "pxr/external/boost/python/instance_holder.hpp"
@@ -31,11 +30,8 @@
 #  include "pxr/external/boost/python/detail/wrapper_base.hpp"
 #  include "pxr/external/boost/python/detail/force_instantiate.hpp"
 #  include "pxr/external/boost/python/detail/preprocessor.hpp"
-# include "pxr/external/boost/python/detail/type_traits.hpp"
-
-namespace PXR_BOOST_NAMESPACE {
-    using boost::get_pointer; // Enable ADL for boost types
-}
+#  include "pxr/external/boost/python/detail/type_traits.hpp"
+#  include "pxr/external/boost/python/detail/get_pointer.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
@@ -59,6 +55,7 @@ struct pointer_holder : instance_holder
     pointer_holder(PyObject* self, A... a)
         : m_p(new Value(objects::do_unforward(a,0)...))
     {
+        using python::detail::get_pointer;
         python::detail::initialize_wrapper(self, get_pointer(this->m_p));
     }
 
@@ -124,6 +121,7 @@ template <class Pointer, class Value>
 void* pointer_holder<Pointer, Value>::holds(type_info dst_t, bool null_ptr_only)
 {
     typedef typename PXR_BOOST_NAMESPACE::python::detail::remove_const< Value >::type non_const_value;
+    using python::detail::get_pointer;
 
     if (dst_t == python::type_id<Pointer>()
         && !(null_ptr_only && get_pointer(this->m_p))
@@ -148,6 +146,8 @@ void* pointer_holder<Pointer, Value>::holds(type_info dst_t, bool null_ptr_only)
 template <class Pointer, class Value>
 void* pointer_holder_back_reference<Pointer, Value>::holds(type_info dst_t, bool null_ptr_only)
 {
+    using python::detail::get_pointer;
+
     if (dst_t == python::type_id<Pointer>()
         && !(null_ptr_only && get_pointer(this->m_p))
     )

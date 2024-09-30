@@ -19,7 +19,6 @@
 #else
 
 # include "pxr/external/boost/python/extract.hpp"
-# include <boost/get_pointer.hpp>
 # include "pxr/external/boost/python/detail/integer_cast.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include <vector>
@@ -395,14 +394,14 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
         element_type& operator*() const
         {
             if (is_detached())
-                return *get_pointer(ptr);
+                return *ptr;
             return Policies::get_item(get_container(), index);
         }
         
         element_type* get() const
         {
             if (is_detached())
-                return get_pointer(ptr);
+                return ptr.get();
             return &Policies::get_item(get_container(), index);
         }
         
@@ -421,7 +420,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
         bool
         is_detached() const
         {
-            return get_pointer(ptr) != 0;
+            return ptr.get() != 0;
         }
 
         Container& 
@@ -757,7 +756,6 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
     // Don't hide these other get_pointer overloads
     using PXR_BOOST_NAMESPACE::python::get_pointer;
-    using boost::get_pointer;
 }} // namespace python::detail
 
 } // namespace PXR_BOOST_NAMESPACE

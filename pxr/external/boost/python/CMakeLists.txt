@@ -174,6 +174,7 @@ pxr_library(python
         detail/enable_if.hpp
         detail/exception_handler.hpp
         detail/force_instantiate.hpp
+        detail/get_pointer.hpp
         detail/if_else.hpp
         detail/indirect_traits.hpp
         detail/integer_cast.hpp

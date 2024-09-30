@@ -20,12 +20,8 @@
 # include "pxr/external/boost/python/object/make_instance.hpp"
 # include "pxr/external/boost/python/converter/registry.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
-# include <boost/get_pointer.hpp>
+# include "pxr/external/boost/python/detail/get_pointer.hpp"
 # include <typeinfo>
-
-namespace PXR_BOOST_NAMESPACE {
-    using boost::get_pointer; // Enable ADL for boost types
-}
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
@@ -42,6 +38,7 @@ struct make_ptr_instance
     template <class Ptr>
     static inline PyTypeObject* get_class_object(Ptr const& x)
     {
+        using python::detail::get_pointer;
         return get_class_object_impl(get_pointer(x));
     }
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES

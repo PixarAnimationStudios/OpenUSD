@@ -26,8 +26,7 @@
 # include "pxr/external/boost/python/refcount.hpp"
 # include "pxr/external/boost/python/tag.hpp"
 # include "pxr/external/boost/python/detail/raw_pyobject.hpp"
-
-#include <boost/get_pointer.hpp>
+# include "pxr/external/boost/python/detail/get_pointer.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
@@ -152,7 +151,7 @@ template<class T> inline T * get_pointer(python::handle<T> const & p)
 }
 
 // We don't want get_pointer above to hide the others
-using boost::get_pointer;
+using detail::get_pointer;
 
 typedef handle<PyTypeObject> type_handle;
 

@@ -23,7 +23,6 @@
 #include "pxr/external/boost/python/converter/shared_ptr_deleter.hpp"
 #ifdef PXR_BOOST_PYTHON_HAS_BOOST_SHARED_PTR
 #include <boost/shared_ptr.hpp>
-#include <boost/get_pointer.hpp>
 #endif
 #include <memory>
 
@@ -36,7 +35,7 @@ PyObject* shared_ptr_to_python(boost::shared_ptr<T> const& x)
     if (!x)
         return python::detail::none();
     else if (shared_ptr_deleter* d = boost::get_deleter<shared_ptr_deleter>(x))
-        return incref( get_pointer( d->owner ) );
+        return incref(d->owner.get());
     else
         return converter::registered<boost::shared_ptr<T> const&>::converters.to_python(&x);
 }
@@ -48,7 +47,7 @@ PyObject* shared_ptr_to_python(std::shared_ptr<T> const& x)
   if (!x)
     return python::detail::none();
   else if (shared_ptr_deleter* d = std::get_deleter<shared_ptr_deleter>(x))
-    return incref(get_pointer(d->owner));
+    return incref(d->owner.get());
   else
     return converter::registered<std::shared_ptr<T> const&>::converters.to_python(&x);
 }
