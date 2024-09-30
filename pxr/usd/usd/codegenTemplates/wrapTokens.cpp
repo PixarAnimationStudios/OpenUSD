@@ -17,7 +17,7 @@
 
 void wrap{{ tokensPrefix }}Tokens()
 {
-    pxr_boost::python::class_<{{ tokensPrefix }}TokensType, boost::noncopyable>
+    pxr_boost::python::class_<{{ tokensPrefix }}TokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
 {% for token in tokens %}
     _ADD_TOKEN(cls, {{ token.id }});

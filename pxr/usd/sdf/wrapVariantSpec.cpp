@@ -37,7 +37,7 @@ void wrapVariantSpec()
 
     typedef SdfVariantSpec This;
 
-    class_<This, SdfHandle<This>, bases<SdfSpec>, boost::noncopyable>
+    class_<This, SdfHandle<This>, bases<SdfSpec>, noncopyable>
         ("VariantSpec", no_init)
         .def(SdfPySpec())
         .def(SdfMakePySpecConstructor(&This::New))

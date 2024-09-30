@@ -27,9 +27,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// containing just the tokens in \p seq in the static tokens named by \p key.
 ///
 /// \hideinitializer
-#define TF_PY_WRAP_PUBLIC_TOKENS(name, key, seq)                            \
-    pxr_boost::python::class_<_TF_TOKENS_STRUCT_NAME(key), boost::noncopyable>( \
-            name, pxr_boost::python::no_init)                                   \
+#define TF_PY_WRAP_PUBLIC_TOKENS(name, key, seq)                        \
+    pxr_boost::python::class_<                                          \
+        _TF_TOKENS_STRUCT_NAME(key), pxr_boost::python::noncopyable>(   \
+            name, pxr_boost::python::no_init)                           \
         _TF_PY_TOKENS_WRAP_SEQ(key, seq)
 
 /// Macro to wrap static tokens defined with \c TF_DEFINE_PUBLIC_TOKENS to

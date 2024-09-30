@@ -205,7 +205,7 @@ void wrapPrimSpec()
     to_python_converter<SdfVariantSetSpecHandleMap,
                         TfPySequenceToPython<SdfVariantSetSpecHandleMap> >();
 
-    class_<This, SdfHandle<This>, bases<SdfSpec>, boost::noncopyable>
+    class_<This, SdfHandle<This>, bases<SdfSpec>, noncopyable>
         ("PrimSpec", no_init)
         .def(SdfPySpec())
 

@@ -95,7 +95,7 @@ void wrapReporter()
     using ThisPtr = TraceReporterPtr;
 
     scope reporter_class = 
-        class_<This, ThisPtr, boost::noncopyable>("Reporter", no_init)
+        class_<This, ThisPtr, noncopyable>("Reporter", no_init)
         .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(_Constructor1))
 

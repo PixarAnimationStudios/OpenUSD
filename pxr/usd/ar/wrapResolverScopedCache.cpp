@@ -19,12 +19,14 @@ using namespace pxr_boost::python;
 namespace {
 
 class _PyResolverScopedCache
-    : public boost::noncopyable
 {
 public:
     _PyResolverScopedCache()
     {
     }
+
+    _PyResolverScopedCache(const _PyResolverScopedCache&) = delete;
+    _PyResolverScopedCache& operator=(const _PyResolverScopedCache&) = delete;
 
     void Enter()
     {
@@ -52,7 +54,7 @@ wrapResolverScopedCache()
 {
     typedef _PyResolverScopedCache This;
 
-    class_<This, boost::noncopyable>
+    class_<This, noncopyable>
         ("ResolverScopedCache")
         .def("__enter__", &This::Enter)
         .def("__exit__", &This::Exit)

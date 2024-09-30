@@ -15,7 +15,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdVolTokens()
 {
-    pxr_boost::python::class_<UsdVolTokensType, boost::noncopyable>
+    pxr_boost::python::class_<UsdVolTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, bool_);
     _ADD_TOKEN(cls, Color);

@@ -86,7 +86,7 @@ void wrapUsdValidator()
              });
 
     TfPyRegisterStlSequencesFromPython<UsdValidationError>();
-    class_<UsdValidator, boost::noncopyable>("Validator", no_init)
+    class_<UsdValidator, noncopyable>("Validator", no_init)
         .def("GetMetadata", 
              +[](const UsdValidator &validator) {
                 return validator.GetMetadata();
@@ -119,7 +119,7 @@ void wrapUsdValidator()
              })
         .def("__repr__", &_Repr);
 
-    class_<UsdValidatorSuite, boost::noncopyable>("ValidatorSuite", no_init)
+    class_<UsdValidatorSuite, noncopyable>("ValidatorSuite", no_init)
         .def("GetMetadata", 
              +[](const UsdValidatorSuite &validatorSuite) {
                 return validatorSuite.GetMetadata();

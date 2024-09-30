@@ -125,7 +125,7 @@ static void wrapTestCppBase()
     typedef Tf_TestCppBase This;
     typedef PolymorphicTestCppBase PolymorphicThis;
 
-    class_<PolymorphicThis, TfWeakPtr<PolymorphicThis>, boost::noncopyable>
+    class_<PolymorphicThis, TfWeakPtr<PolymorphicThis>, noncopyable>
         ("TestCppBase", no_init)
         .def( TfPyWeakPtr() )
         .def( TfMakePyConstructor(&PolymorphicThis::New))

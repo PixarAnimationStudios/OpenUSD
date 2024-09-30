@@ -15,7 +15,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdHydraTokens()
 {
-    pxr_boost::python::class_<UsdHydraTokensType, boost::noncopyable>
+    pxr_boost::python::class_<UsdHydraTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, black);
     _ADD_TOKEN(cls, clamp);

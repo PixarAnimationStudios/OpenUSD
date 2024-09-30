@@ -39,7 +39,7 @@ void wrapUsdSchemaRegistry()
     using This = UsdSchemaRegistry;
     using ThisPtr = TfWeakPtr<UsdSchemaRegistry>;
 
-    scope s = class_<This, ThisPtr, boost::noncopyable>("SchemaRegistry", no_init)
+    scope s = class_<This, ThisPtr, noncopyable>("SchemaRegistry", no_init)
         .def(TfPySingleton())
         .def("ParseSchemaFamilyAndVersionFromIdentifier",
              &This::ParseSchemaFamilyAndVersionFromIdentifier,

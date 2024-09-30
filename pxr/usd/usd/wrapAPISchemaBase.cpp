@@ -38,7 +38,7 @@ void wrapUsdAPISchemaBase()
 {
     typedef UsdAPISchemaBase This;
 
-    class_< This , bases<UsdSchemaBase>, boost::noncopyable> cls ("APISchemaBase", "", no_init);
+    class_< This , bases<UsdSchemaBase>, noncopyable> cls ("APISchemaBase", "", no_init);
 
     cls
         .def(TfTypePythonClass())

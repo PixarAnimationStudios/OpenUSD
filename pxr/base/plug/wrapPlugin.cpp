@@ -14,7 +14,6 @@
 #include "pxr/base/tf/iterator.h"
 
 #include "pxr/external/boost/python.hpp"
-#include <boost/noncopyable.hpp>
 #include <string>
 
 using std::string;
@@ -58,7 +57,7 @@ void wrapPlugin()
     typedef PlugPlugin This;
     typedef PlugPluginPtr ThisPtr;
 
-    class_<This, ThisPtr, boost::noncopyable> ( "Plugin", no_init )
+    class_<This, ThisPtr, noncopyable> ( "Plugin", no_init )
         .def(TfPyWeakPtr())
         .def("Load", &This::Load)
 

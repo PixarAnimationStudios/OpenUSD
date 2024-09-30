@@ -190,7 +190,7 @@ void wrapUsdStage()
 {
     typedef TfWeakPtr<UsdStage> StagePtr;
 
-    class_<UsdStage, StagePtr, boost::noncopyable>
+    class_<UsdStage, StagePtr, noncopyable>
         cls("Stage", no_init)
         ;
 

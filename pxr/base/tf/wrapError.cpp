@@ -200,7 +200,7 @@ void wrapError() {
         .def("__repr__", TfError__repr__)
         ;
 
-    class_<TfErrorMark, boost::noncopyable>("Mark")
+    class_<TfErrorMark, noncopyable>("Mark")
         .def("SetMark", &TfErrorMark::SetMark)
         .def("IsClean", &TfErrorMark::IsClean)
         .def("Clear", &TfErrorMark::Clear)

@@ -99,7 +99,7 @@ object _DummyInit(tuple const & /* args */, dict const & /* kw */)
 
 void wrapUsdValidationRegistry()
 {
-    class_<UsdValidationRegistry, boost::noncopyable>("ValidationRegistry",
+    class_<UsdValidationRegistry, noncopyable>("ValidationRegistry",
                                                       no_init)
         .def("__new__", &_GetRegistrySingleton,
              return_value_policy<reference_existing_object>())

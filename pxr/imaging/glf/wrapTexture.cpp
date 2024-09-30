@@ -22,7 +22,7 @@ void wrapTexture()
     typedef GlfTexture This;
     typedef GlfTexturePtr ThisPtr;
 
-    class_<This, ThisPtr, boost::noncopyable>(
+    class_<This, ThisPtr, noncopyable>(
         "Texture", no_init)
         .def("GetTextureMemoryAllocated", &This::GetTextureMemoryAllocated)
         .staticmethod("GetTextureMemoryAllocated")

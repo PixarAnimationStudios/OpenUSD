@@ -87,7 +87,7 @@ _Get(const UsdAttributeQuery& self, UsdTimeCode time)
 
 void wrapUsdAttributeQuery()
 {
-    class_<UsdAttributeQuery, boost::noncopyable>
+    class_<UsdAttributeQuery, noncopyable>
         ("AttributeQuery", no_init)
         .def(init<const UsdAttribute&>(
                 (arg("attribute"))))

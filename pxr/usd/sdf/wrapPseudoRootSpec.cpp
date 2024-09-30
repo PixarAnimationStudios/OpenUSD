@@ -22,7 +22,7 @@ wrapPseudoRootSpec()
     typedef SdfPseudoRootSpec This;
 
     class_<This, SdfHandle<This>, 
-           bases<SdfPrimSpec>, boost::noncopyable>
+           bases<SdfPrimSpec>, noncopyable>
         ("PseudoRootSpec", no_init)
         .def(SdfPySpec())
         ;

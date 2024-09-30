@@ -62,7 +62,7 @@ struct Tf_TestPyOptionalStd { };
 
 void wrapTf_TestTfPyOptional()
 {
-    class_<Tf_TestPyOptionalStd, boost::noncopyable>("Tf_TestPyOptionalStd")
+    class_<Tf_TestPyOptionalStd, noncopyable>("Tf_TestPyOptionalStd")
         .def("TakesOptional", _TakesOptional<std::optional>,
             ( arg("optString") = std::optional<string>(),
               arg("optStrvec") = std::optional<vector<string> >() ))

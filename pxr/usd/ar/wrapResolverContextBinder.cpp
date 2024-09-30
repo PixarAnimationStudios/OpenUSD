@@ -19,13 +19,17 @@ using namespace pxr_boost::python;
 namespace {
 
 class _PyResolverContextBinder
-    : public boost::noncopyable
 {
 public:
     _PyResolverContextBinder(const ArResolverContext& context)
         : _context(context)
     {
     }
+
+    _PyResolverContextBinder(const _PyResolverContextBinder&) = delete;
+    
+    _PyResolverContextBinder& 
+    operator=(const _PyResolverContextBinder&) = delete;
 
     void Enter()
     {
@@ -54,7 +58,7 @@ wrapResolverContextBinder()
 {
     typedef _PyResolverContextBinder This;
 
-    class_<This, boost::noncopyable>
+    class_<This, noncopyable>
         ("ResolverContextBinder", init<const ArResolverContext&>())
         .def("__enter__", &This::Enter)
         .def("__exit__", &This::Exit)

@@ -40,7 +40,7 @@ void wrapDrawTarget()
     typedef GlfDrawTarget This;
     typedef GlfDrawTargetPtr ThisPtr;
     
-    class_<This, ThisPtr, boost::noncopyable>("DrawTarget", no_init)
+    class_<This, ThisPtr, noncopyable>("DrawTarget", no_init)
         .def(TfPyRefAndWeakPtr())
         .def("__init__",TfMakePyConstructor(&_NewDrawTarget))
         .def("__init__",TfMakePyConstructor(&_NewDrawTarget2))

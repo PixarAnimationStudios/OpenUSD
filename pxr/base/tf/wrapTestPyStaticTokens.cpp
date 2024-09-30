@@ -34,7 +34,7 @@ wrapTf_TestPyStaticTokens()
     TF_PY_WRAP_PUBLIC_TOKENS("_testStaticTokens",
                              tfTestStaticTokens, TF_TEST_TOKENS);
 
-    pxr_boost::python::class_<_DummyScope, boost::noncopyable>
+    pxr_boost::python::class_<_DummyScope, pxr_boost::python::noncopyable>
         cls("_TestStaticTokens", pxr_boost::python::no_init);
     pxr_boost::python::scope testScope = cls;
 

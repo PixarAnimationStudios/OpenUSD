@@ -48,7 +48,7 @@ _GetLayerOffsets(const PcpLayerStack &layerStack)
 
 void wrapLayerStack()
 {
-    class_<PcpLayerStack, PcpLayerStackPtr, boost::noncopyable>
+    class_<PcpLayerStack, PcpLayerStackPtr, noncopyable>
         ("LayerStack", no_init)
         .def(TfPyRefAndWeakPtr())
         .add_property("identifier", 

@@ -15,7 +15,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdPhysicsTokens()
 {
-    pxr_boost::python::class_<UsdPhysicsTokensType, boost::noncopyable>
+    pxr_boost::python::class_<UsdPhysicsTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, acceleration);
     _ADD_TOKEN(cls, angular);

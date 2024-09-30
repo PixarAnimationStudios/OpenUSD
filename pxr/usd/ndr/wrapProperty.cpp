@@ -24,7 +24,7 @@ void wrapProperty()
 
     return_value_policy<copy_const_reference> copyRefPolicy;
 
-    class_<This, ThisPtr, boost::noncopyable>("Property", no_init)
+    class_<This, ThisPtr, noncopyable>("Property", no_init)
         .def("__repr__", &This::GetInfoString)
         .def("GetName", &This::GetName, copyRefPolicy)
         .def("GetType", &This::GetType, copyRefPolicy)

@@ -213,7 +213,7 @@ _Reload( PcpCache & cache )
 void 
 wrapCache()
 {
-    class_<PcpCache, boost::noncopyable> 
+    class_<PcpCache, noncopyable> 
         ("Cache", 
          init<const PcpLayerStackIdentifier&,
               const std::string&, 
