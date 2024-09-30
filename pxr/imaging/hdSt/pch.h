@@ -108,14 +108,14 @@
 #include <MaterialXRender/LightHandler.h>
 #include <MaterialXRender/Util.h>
 #endif // PXR_MATERIALX_SUPPORT_ENABLED
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
+#if defined(PXR_PYTHON_SUPPORT_ENABLED) && !defined(PXR_USE_INTERNAL_BOOST_PYTHON)
 #include <boost/python/object_fwd.hpp>
 #include <boost/python/object_operators.hpp>
 #if defined(__APPLE__) // Fix breakage caused by Python's pyport.h.
 #undef tolower
 #undef toupper
 #endif
-#endif // PXR_PYTHON_SUPPORT_ENABLED
+#endif // PXR_PYTHON_SUPPORT_ENABLED && !PXR_USE_INTERNAL_BOOST_PYTHON
 #include <opensubdiv/far/patchTable.h>
 #include <opensubdiv/far/patchTableFactory.h>
 #include <opensubdiv/far/stencilTable.h>
