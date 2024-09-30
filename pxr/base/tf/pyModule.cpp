@@ -33,6 +33,7 @@
 #include "pxr/external/boost/python/dict.hpp"
 #include "pxr/external/boost/python/raw_function.hpp"
 #include "pxr/external/boost/python/scope.hpp"
+#include "pxr/external/boost/python/type_list.hpp"
 
 #include <string>
 
@@ -211,7 +212,7 @@ public:
                 pxr_boost::python::objects::py_function(
                     _InvokeWithErrorHandling(
                         fn, *fullNamePrefix + "." + name, *fullNamePrefix),
-                    boost::mpl::vector1<PyObject *>(),
+                    pxr_boost::python::type_list<PyObject *>(),
                     /*min_args =*/ 0,
                     /*max_args =*/ ~0
                     )

@@ -8,8 +8,7 @@
 #define PXR_BASE_TF_PY_SIGNATURE_EXT_H
 
 #include "pxr/external/boost/python/common.hpp"
-
-#include <boost/mpl/vector.hpp>
+#include "pxr/external/boost/python/type_list.hpp"
 
 // This file extends pxr_boost::python::detail::get_signature to support member
 // function pointers that have lvalue ref-qualifiers.  For example:
@@ -33,11 +32,11 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
 template <class Ret, class TheCls, class ... Args>
 auto get_signature(Ret (TheCls::*)(Args...) &, void* =nullptr) {
-    return boost::mpl::vector<Ret, TheCls &, Args...>();
+    return python::type_list<Ret, TheCls &, Args...>();
 }
 template <class Ret, class TheCls, class ... Args>
 auto get_signature(Ret (TheCls::*)(Args...) const &, void* =nullptr) {
-    return boost::mpl::vector<Ret, TheCls &, Args...>();
+    return python::type_list<Ret, TheCls &, Args...>();
 }
 
 }}}
