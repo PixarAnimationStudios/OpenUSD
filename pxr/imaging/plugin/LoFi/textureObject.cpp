@@ -5,9 +5,8 @@
 //
 
 #include "pxr/imaging/plugin/LoFi/textureObject.h"
-
-#include "pxr/imaging/plugin/LoFi/glfTextureCpuData.h"
 #include "pxr/imaging/plugin/LoFi/assetUvTextureCpuData.h"
+#include "pxr/imaging/plugin/LoFi/fieldTextureCpuData.h"
 #include "pxr/imaging/plugin/LoFi/ptexTextureObject.h"
 #include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
 #include "pxr/imaging/plugin/LoFi/textureCpuData.h"
@@ -18,14 +17,10 @@
 #include "pxr/imaging/plugin/LoFi/tokens.h"
 #include "pxr/imaging/plugin/LoFi/udimTextureObject.h"
 
-#include "pxr/imaging/glf/fieldTextureData.h"
-#ifdef PXR_OPENVDB_SUPPORT_ENABLED
-#include "pxr/imaging/glf/vdbTextureData.h"
-#endif
-#include "pxr/imaging/glf/field3DTextureDataBase.h"
-
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/blitCmds.h"
+
+#include "pxr/imaging/hio/fieldTextureData.h"
 
 #include "pxr/usd/ar/resolver.h"
 
@@ -429,7 +424,7 @@ _ComputeSamplingTransform(const GfBBox3d &bbox)
 }
 
 static
-GlfFieldTextureDataRefPtr
+HioFieldTextureDataSharedPtr
 _ComputeFieldTexData(
     const LoFiTextureIdentifier &textureId,
     const size_t targetMemory)
@@ -438,7 +433,6 @@ _ComputeFieldTexData(
     const LoFiSubtextureIdentifier * const subId =
         textureId.GetSubtextureIdentifier();
 
-#ifdef PXR_OPENVDB_SUPPORT_ENABLED
     if (const LoFiOpenVDBAssetSubtextureIdentifier * const vdbSubId =
             dynamic_cast<const LoFiOpenVDBAssetSubtextureIdentifier*>(subId)) {
         if (vdbSubId->GetFieldIndex() != 0) {
@@ -448,29 +442,27 @@ _ComputeFieldTexData(
                     vdbSubId->GetFieldName().GetText(),
                     vdbSubId->GetFieldIndex());
         }
-        return GlfVdbTextureData::New(
-            filePath, vdbSubId->GetFieldName(), targetMemory);
+        return HioFieldTextureData::New(
+                filePath,
+                vdbSubId->GetFieldName(),
+                0,
+                std::string(),
+                targetMemory);
     }
-#endif
 
     if (const LoFiField3DAssetSubtextureIdentifier * const f3dSubId =
             dynamic_cast<const LoFiField3DAssetSubtextureIdentifier*>(subId)) {
-        GlfField3DTextureDataBaseRefPtr const texData =
-            GlfField3DTextureDataBase::New(
+        return HioFieldTextureData::New(
                 filePath,
                 f3dSubId->GetFieldName(),
                 f3dSubId->GetFieldIndex(),
                 f3dSubId->GetFieldPurpose(),
                 targetMemory);
-        if (!texData) {
-            TF_WARN("Could not find plugin to load Field3D file.");
-        }
-        return texData;
     }
 
     TF_CODING_ERROR("Unsupported field subtexture identifier");
 
-    return TfNullPtr;
+    return nullptr;
 }
 
 
@@ -494,7 +486,7 @@ LoFiFieldTextureObject::_Load()
 {
     TRACE_FUNCTION();
 
-    GlfFieldTextureDataRefPtr const texData = _ComputeFieldTexData(
+    HioFieldTextureDataSharedPtr const texData = _ComputeFieldTexData(
         GetTextureIdentifier(),
         GetTargetMemory());
 
@@ -502,11 +494,9 @@ LoFiFieldTextureObject::_Load()
         return;
     }
 
-    texData->Read(
-        /* degradeLevel = */ 0,
-        /* generateMipmap = */ false);
+    texData->Read();
 
-    _cpuData = std::make_unique<LoFiGlfTextureCpuData>(
+    _cpuData = std::make_unique<LoFiFieldTextureCpuData>(
         texData,
         _GetDebugName(GetTextureIdentifier()));
 

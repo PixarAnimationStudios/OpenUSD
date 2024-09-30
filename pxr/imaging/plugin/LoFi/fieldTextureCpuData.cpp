@@ -1,13 +1,13 @@
 //
-// Copyright 2020 benmalartre
+// Copyright 2021 benmalartre
 //
 // Unlicensed
 //
-#include "pxr/imaging/plugin/LoFi/glfTextureCpuData.h"
+#include "pxr/imaging/plugin/LoFi/fieldTextureCpuData.h"
 
 #include "pxr/imaging/plugin/LoFi/textureUtils.h"
 
-#include "pxr/imaging/glf/baseTextureData.h"
+#include "pxr/imaging/hio/fieldTextureData.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -15,22 +15,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-HgiTextureType
-_GetTextureType(const int numDimensions)
-{
-    switch(numDimensions) {
-    case 2:
-        return HgiTextureType2D;
-    case 3:
-        return HgiTextureType3D;
-    default:
-        TF_CODING_ERROR("Unsupported number of dimensions");
-        return HgiTextureType2D;
-    }
-}
-
 bool
-_IsValid(GlfBaseTextureDataConstRefPtr const &textureData)
+_IsValid(HioFieldTextureDataSharedPtr const &textureData)
 {
     return
         textureData->ResizedWidth() > 0 &&
@@ -41,10 +27,9 @@ _IsValid(GlfBaseTextureDataConstRefPtr const &textureData)
 
 } // anonymous namespace
 
-LoFiGlfTextureCpuData::LoFiGlfTextureCpuData(
-    GlfBaseTextureDataConstRefPtr const &textureData,
+LoFiFieldTextureCpuData::LoFiFieldTextureCpuData(
+    HioFieldTextureDataSharedPtr const &textureData,
     const std::string &debugName,
-    const bool useOrGenerateMipmaps,
     const bool premultiplyAlpha)
   : _generateMipmaps(false)
 {
@@ -66,8 +51,7 @@ LoFiGlfTextureCpuData::LoFiGlfTextureCpuData(
     // by now and left _textureDesc.initalData null indicating to
     // our clients that the texture is invalid.
 
-    // Is this 2D or 3D texture?
-    _textureDesc.type = _GetTextureType(textureData->NumDimensions());
+    _textureDesc.type = HgiTextureType3D;
 
     // Determine the format (e.g., float/byte, RED/RGBA) and give
     // function to convert data if necessary.
@@ -78,12 +62,13 @@ LoFiGlfTextureCpuData::LoFiGlfTextureCpuData(
 
     const HioFormat hioFormat = textureData->GetFormat();
 
-    LoFiTextureUtils::ConversionFunction conversionFunction = nullptr;
     _textureDesc.format = LoFiTextureUtils::GetHgiFormat(
         hioFormat,
-        premultiplyAlpha,
-        /* avoidThreeComponentFormats = */ false,
-        &conversionFunction);
+        premultiplyAlpha);
+    const LoFiTextureUtils::ConversionFunction conversionFunction =
+        LoFiTextureUtils::GetHioToHgiConversion(
+            hioFormat,
+            premultiplyAlpha);
 
     // Handle grayscale textures by expanding value to green and blue.
     if (HgiGetComponentCount(_textureDesc.format) == 1) {
@@ -107,26 +92,10 @@ LoFiGlfTextureCpuData::LoFiGlfTextureCpuData(
 
     // How many mipmaps to use from the file.
     unsigned int numGivenMipmaps = 1;
-
-    if (useOrGenerateMipmaps) {
-        numGivenMipmaps = textureData->GetNumMipLevels();
-        if (numGivenMipmaps > 1) {
-            // Use mipmaps from file.
-            if (numGivenMipmaps > mipInfos.size()) {
-                TF_CODING_ERROR("Too many mip maps in texture data.");
-                numGivenMipmaps = mipInfos.size();
-            }
-            _textureDesc.mipLevels = numGivenMipmaps;
-        } else {
-            // No mipmaps in file, generate mipmaps on GPU.
-            _generateMipmaps = true;
-            _textureDesc.mipLevels = mipInfos.size();
-        }
-    }
     const HgiMipInfo &mipInfo = mipInfos[numGivenMipmaps - 1];
 
     // Size of initial data.
-    _textureDesc.pixelsByteSize = mipInfo.byteOffset + mipInfo.byteSize;
+    _textureDesc.pixelsByteSize = mipInfo.byteOffset + mipInfo.byteSizePerLayer;
 
     if (conversionFunction) {
         const size_t numPixels = 
@@ -151,23 +120,23 @@ LoFiGlfTextureCpuData::LoFiGlfTextureCpuData(
     }
 }
 
-LoFiGlfTextureCpuData::~LoFiGlfTextureCpuData() = default;
+LoFiFieldTextureCpuData::~LoFiFieldTextureCpuData() = default;
 
 const
 HgiTextureDesc &
-LoFiGlfTextureCpuData::GetTextureDesc() const
+LoFiFieldTextureCpuData::GetTextureDesc() const
 {
     return _textureDesc;
 }
 
 bool
-LoFiGlfTextureCpuData::GetGenerateMipmaps() const
+LoFiFieldTextureCpuData::GetGenerateMipmaps() const
 {
     return _generateMipmaps;
 }
 
 bool
-LoFiGlfTextureCpuData::IsValid() const
+LoFiFieldTextureCpuData::IsValid() const
 {
     return _textureDesc.initialData;
 }

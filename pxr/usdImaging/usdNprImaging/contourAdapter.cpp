@@ -346,7 +346,7 @@ void
 UsdImagingContourAdapter::_ComputeOutputGeometry(const UsdNprStrokeGraphList& strokeGraphs,
   UsdImagingPrimvarDescCache* primvarDescCache, SdfPath const& cachePath) const
 {
-  
+  std::cout << "NPR COMPOUTE OUTPUT GEOMETRY" << std::endl;
   size_t numPoints = 0;
   size_t numCounts = 0;
   size_t numIndices = 0;
@@ -409,6 +409,7 @@ UsdImagingContourAdapter::GetTopology(UsdPrim const& prim,
                                    SdfPath const& cachePath,
                                    UsdTimeCode time) const
 {
+  std::cout << "GET TOPOLOGY : " << _topology.GetNumPoints() << std::endl;
   return VtValue(_topology);
 }
 
@@ -417,7 +418,8 @@ VtValue
 UsdImagingContourAdapter::Get(UsdPrim const& prim,
                            SdfPath const& cachePath,
                            TfToken const &key,
-                           UsdTimeCode time) const
+                           UsdTimeCode time,
+                           VtIntArray *outIndices) const
 {
   TRACE_FUNCTION();
   HF_MALLOC_TAG_FUNCTION();
@@ -426,7 +428,7 @@ UsdImagingContourAdapter::Get(UsdPrim const& prim,
     return VtValue(_points);
   }
 
-  return BaseAdapter::Get(prim, cachePath, key, time);
+  return BaseAdapter::Get(prim, cachePath, key, time, outIndices);
 }
 
 

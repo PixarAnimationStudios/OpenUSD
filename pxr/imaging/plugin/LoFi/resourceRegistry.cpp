@@ -219,11 +219,6 @@ LoFiResourceRegistry::_GarbageCollect()
   _textureResourceHandleRegistry.GarbageCollect();
 }
 
-void
-LoFiResourceRegistry::_GarbageCollectBprims()
-{
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

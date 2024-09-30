@@ -148,13 +148,6 @@ _GetSmallestImageLargerThan(
     return images.front();
 }
 
-static
-size_t
-_ComputeSize(const GfVec3i &dimensions)
-{
-    return dimensions[0] * dimensions[1] * dimensions[2];
-}
-
 void
 LoFiUdimTextureObject::_Load()
 {
@@ -176,14 +169,12 @@ LoFiUdimTextureObject::_Load()
         return;
     }
 
-    // Determine Hio and corresponding Hgi format from first tile.
+     // Determine Hio and corresponding Hgi format from first tile.
     const HioFormat hioFormat = firstImageMips[0]->GetFormat();
-    LoFiTextureUtils::ConversionFunction conversionFunction = nullptr;
+    const bool premultiplyAlpha = _GetPremultiplyAlpha(subId);
     _hgiFormat = LoFiTextureUtils::GetHgiFormat(
         hioFormat,
-        _GetPremultiplyAlpha(subId),
-        /* avoidThreeComponentFormats = */ true,
-        &conversionFunction);
+        premultiplyAlpha);
 
     if (_hgiFormat == HgiFormatInvalid || HgiIsCompressed(_hgiFormat)) {
         TF_WARN("Unsupported texture format for UDIM");
@@ -205,9 +196,11 @@ LoFiUdimTextureObject::_Load()
         HgiGetMipInfos(_hgiFormat, _dimensions, _tileCount);
     _mipCount = mipInfos.size();
 
+    const HgiMipInfo &lastMipInfo = mipInfos.back();
+
     // Allocate memory for the mipData, ready for upload to GPU
     _textureData.resize(
-        mipInfos.back().byteOffset + _tileCount * mipInfos.back().byteSize);
+        lastMipInfo.byteOffset + _tileCount * lastMipInfo.byteSizePerLayer);
 
     WorkParallelForN(tiles.size(), [&](size_t begin, size_t end) {
         for (size_t tileId = begin; tileId < end; ++tileId) {
@@ -220,27 +213,15 @@ LoFiUdimTextureObject::_Load()
                 continue;
             }
             for (const HgiMipInfo &mipInfo : mipInfos) {
-                HioImage::StorageSpec spec;
-                spec.width = mipInfo.dimensions[0];
-                spec.height = mipInfo.dimensions[1];
-                spec.format = hioFormat;
-                spec.flipped = true;
-                spec.data =
-                    _textureData.data()
-                    + mipInfo.byteOffset
-                    + tileId * mipInfo.byteSize;
                 HioImageSharedPtr const &image =
                     _GetSmallestImageLargerThan(images, mipInfo.dimensions);
-                image->Read(spec);
-
-                // XXX: Unfortunately, pre-multiplication is occurring after
-                // mip generation. However, it is still worth it to pre-multiply
-                // textures before texture filtering.
-                if (conversionFunction) {
-                    conversionFunction(spec.data,
-                                       _ComputeSize(mipInfo.dimensions),
-                                       spec.data);
-                }
+                LoFiTextureUtils::ReadAndConvertImage(
+                    image,
+                    /* flipped = */ true,
+                    premultiplyAlpha,
+                    mipInfo,
+                    tileId,
+                    _textureData.data());
             }
         }
     }, 1);

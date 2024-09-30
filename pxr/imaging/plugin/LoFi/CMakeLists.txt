@@ -17,12 +17,12 @@ pxr_plugin(LoFi
         hf
         hd
         hdx
+        hio
+        hgi
         ${TBB_tbb_LIBRARY}
-        ${EMBREE_LIBRARY}
 
     INCLUDE_DIRS
         ${TBB_INCLUDE_DIRS}
-        ${EMBREE_INCLUDE_DIR}
 
     PUBLIC_CLASSES
         debugCodes
@@ -42,23 +42,22 @@ pxr_plugin(LoFi
         resourceRegistry
         samplerObject 
         samplerObjectRegistry
-        texture
         textureBinder
         textureCpuData
-        glfTextureCpuData
         assetUvTextureCpuData
         textureUtils
         textureHandle
         textureHandleRegistry 
         textureIdentifier 
         subtextureIdentifier
-        textureObject
         textureObjectRegistry
         ptexTextureObject
         udimTextureObject
         dynamicUvTextureObject
         field 
         fieldSubtextureIdentifier
+        fieldTextureCpuData
+        textureObject
         utils
         mesh
         points

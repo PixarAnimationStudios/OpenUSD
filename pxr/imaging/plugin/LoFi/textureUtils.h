@@ -43,9 +43,17 @@ public:
     static
     HgiFormat GetHgiFormat(
         HioFormat hioFormat,
-        bool premultiplyAlpha,
-        bool avoidThreeComponentFormats,
-        ConversionFunction * conversionFunction);
+        bool premultiplyAlpha);
+
+    /// Returns the conversion function to return a HioFormat
+    /// to the corresponding HgiFormat given by GetHgiFormat.
+    ///
+    /// Returns nullptr if no conversion necessary.
+    LOFI_API
+    static
+    ConversionFunction GetHioToHgiConversion(
+        HioFormat hioFormat,
+        bool premultiplyAlpha);
 
     /// Get all mip levels from a file.
     LOFI_API
@@ -68,6 +76,24 @@ public:
         size_t tileCount,
         size_t targetMemory,
         size_t * mipIndex = nullptr);
+    
+    // Read given HioImage and convert it to corresponding Hgi format.
+    // Returns false if reading the HioImage failed.
+    //
+    // bufferStart is assumed to point at the beginning of a mip chain
+    // with mipInfo describing what mip level of the mip chain to be
+    // filled. layer gives the layer number if the mip chain is for an
+    // array texture.
+    LOFI_API
+    static
+    bool
+    ReadAndConvertImage(
+        HioImageSharedPtr const &image,
+        bool flipped,
+        bool premultiplyAlpha,
+        const HgiMipInfo &mipInfo,
+        size_t layer,
+        void * bufferStart);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
