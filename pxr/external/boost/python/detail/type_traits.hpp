@@ -72,6 +72,30 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
         std::is_base_of_v<Base, Derived> && !std::is_same_v<Base, Derived>
     >;
 
+    // param_type<T> is a condensed form of boost::call_traits<T>::param_type
+    // which per the boost docs is 'the "best" way to pass a parameter of
+    // type T to a function.'
+    template <typename T>
+    struct param_type
+    {
+        using is_small_type = std::bool_constant<
+            (std::is_arithmetic_v<T> || std::is_enum_v<T>)
+             && sizeof(T) <= sizeof(void*)
+        >;
+
+        using type = typename std::conditional<
+            std::is_pointer_v<T> || is_small_type::value
+          , const T
+          , const T&
+        >::type;
+    };
+
+    template <typename T>
+    struct param_type<T&>
+    {
+        using type = T&;
+    };
+
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 

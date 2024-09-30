@@ -20,7 +20,6 @@
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/detail/msvc_typeinfo.hpp"
-# include <boost/operators.hpp>
 # include <typeinfo>
 # include <cstring>
 # include <ostream>
@@ -56,12 +55,17 @@ bool cxxabi_cxa_demangle_is_broken();
 // type ids which represent the same information as std::type_info
 // (i.e. the top-level reference and cv-qualifiers are stripped), but
 // which works across shared libraries.
-struct type_info : private totally_ordered<type_info>
+struct type_info
 {
     inline type_info(std::type_info const& = typeid(void));
     
     inline bool operator<(type_info const& rhs) const;
     inline bool operator==(type_info const& rhs) const;
+
+    inline bool operator>(type_info const& rhs) const;
+    inline bool operator<=(type_info const& rhs) const;
+    inline bool operator>=(type_info const& rhs) const;
+    inline bool operator!=(type_info const& rhs) const;
 
     char const* name() const;
     friend PXR_BOOST_PYTHON_DECL std::ostream& operator<<(
@@ -143,6 +147,26 @@ inline bool type_info::operator==(type_info const& rhs) const
 #  else
     return *m_base_type == *rhs.m_base_type;
 #  endif 
+}
+
+inline bool type_info::operator>(type_info const& rhs) const
+{
+    return rhs < *this;
+}
+
+inline bool type_info::operator<=(type_info const& rhs) const
+{
+    return !(rhs < *this);
+}
+
+inline bool type_info::operator>=(type_info const& rhs) const
+{
+    return !(*this < rhs);
+}
+
+inline bool type_info::operator!=(type_info const& rhs) const
+{
+    return !(*this == rhs);
 }
 
 #  ifdef PXR_BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE

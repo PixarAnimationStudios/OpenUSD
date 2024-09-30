@@ -31,7 +31,7 @@
 # include "pxr/external/boost/python/detail/copy_ctor_mutates_rhs.hpp"
 # include "pxr/external/boost/python/detail/void_ptr.hpp"
 # include "pxr/external/boost/python/detail/void_return.hpp"
-# include <boost/call_traits.hpp>
+# include "pxr/external/boost/python/detail/type_traits.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
@@ -76,7 +76,7 @@ namespace converter
       typedef typename python::detail::mpl2::if_<
           python::detail::copy_ctor_mutates_rhs<T>
         , T&
-        , typename call_traits<T>::param_type
+        , typename python::detail::param_type<T>::type
       >::type result_type;
 
       extract_rvalue(PyObject*);

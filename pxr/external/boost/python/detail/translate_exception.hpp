@@ -20,8 +20,6 @@
 # include "pxr/external/boost/python/detail/exception_handler.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-# include <boost/call_traits.hpp>
-
 #include <functional>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
@@ -40,7 +38,7 @@ struct translate_exception
     inline bool operator()(
         exception_handler const& handler
       , std::function<void()> const& f
-      , typename call_traits<Translate>::param_type translate) const
+      , typename param_type<Translate>::type translate) const
     {
         try
         {

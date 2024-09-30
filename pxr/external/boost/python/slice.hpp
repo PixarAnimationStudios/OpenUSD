@@ -19,7 +19,6 @@
 //  LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include "pxr/external/boost/python/detail/prefix.hpp"
-#include <boost/config.hpp>
 #include "pxr/external/boost/python/object.hpp"
 #include "pxr/external/boost/python/extract.hpp"
 #include "pxr/external/boost/python/converter/pytype_object_mgr_traits.hpp"
@@ -169,8 +168,7 @@ class slice : public detail::slice_base
                     throw std::invalid_argument( "Zero-length slice");
             if (i >= 0) {
                 ret.start = begin;
-                BOOST_USING_STD_MIN();
-                std::advance( ret.start, min BOOST_PREVENT_MACRO_SUBSTITUTION(i, max_dist-1));
+                std::advance( ret.start, (std::min)(i, max_dist-1));
             }
             else {
                 if (i < -max_dist && ret.step < 0)

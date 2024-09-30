@@ -23,7 +23,6 @@
 //  Copyright (C) 1999, 2000 Jaakko Jarvi (jaakko.jarvi@cs.utu.fi)
 //  Copyright (C) 2001 Peter Dimov
 
-# include <boost/config.hpp>
 # include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
