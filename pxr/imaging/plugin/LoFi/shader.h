@@ -44,6 +44,8 @@ private:
   GLuint              _id;
   size_t              _hash;
 };
+
+typedef std::shared_ptr<LoFiGLSLShader> LoFiGLSLShaderSharedPtr;
     
 class LoFiGLSLProgram
 {
@@ -99,5 +101,7 @@ private:
   std::string             _name; 
   size_t                  _hash;
 };
+
+typedef std::shared_ptr<LoFiGLSLProgram> LoFiGLSLProgramSharedPtr;
 
 PXR_NAMESPACE_CLOSE_SCOPE

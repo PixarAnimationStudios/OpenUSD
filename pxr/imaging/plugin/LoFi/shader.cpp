@@ -16,8 +16,9 @@ void LoFiGLSLShader::OutputInfoLog()
 {
   char buffer[512];
   glGetShaderInfoLog(_id, 512, NULL, &buffer[0]);
+ 
   std::cerr << "[LoFi][Compile GLSL shader] Info log : " << 
-    (std::string)buffer << std::endl;
+  (std::string)buffer << std::endl;
 }
 
 void LoFiGLSLShader::Load(const char* filename, GLenum type)
@@ -66,7 +67,7 @@ void LoFiGLSLShader::Compile()
   
   GLint status;
   glGetShaderiv(_id,GL_COMPILE_STATUS,&status);
-  if(status != GL_TRUE)
+  if(TfDebug::IsEnabled(LOFI_SHADER) && status != GL_TRUE)
   {
     std::cerr << "[LoFi][Compile Shader] Fail compiling code: \n" << 
       _code << std::endl;

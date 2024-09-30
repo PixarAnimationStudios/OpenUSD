@@ -29,7 +29,7 @@ LoFiVertexBuffer::LoFiVertexBuffer(LoFiVertexBufferChannel channel,
     case CHANNEL_COLOR:
       _elementSize = sizeof(GfVec3f);
       break;
-    case CHANNEL_UVS:
+    case CHANNEL_UV:
       _elementSize = sizeof(GfVec2f);
       break;
     default:

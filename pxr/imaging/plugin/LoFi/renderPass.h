@@ -9,6 +9,7 @@
 #include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/drawTarget.h"
+#include "pxr/imaging/plugin/LoFi/codeGen.h"
 #include "pxr/imaging/plugin/LoFi/resourceRegistry.h"
 #include "pxr/imaging/plugin/LoFi/shader.h"
 
@@ -39,8 +40,8 @@ static const char *FRAGMENT_SHADER_120[1] = {
   "varying vec3 vertex_color;                               \n"
   "void main()                                              \n"
   "{                                                        \n"
-  " vec3 color = vertex_normal * vertex_color;              \n"
-  "	gl_FragColor = vec4(vertex_color,1.0);                  \n"
+  " vec3 color = vertex_normal * 0.5 + vertex_color * 0.5;  \n"
+  "	gl_FragColor = vec4(color,1.0);                         \n"
   "}"
 };
 
@@ -70,7 +71,7 @@ static const char *FRAGMENT_SHADER_330[1] = {
   "out vec4 outColor;                                       \n"
   "void main()                                              \n"
   "{                                                        \n"
-  "	outColor = vec4(vertex_color,1.0);                      \n"
+  "	outColor = vec4(vertex_normal,1.0);                     \n"
   "}"
 };
 

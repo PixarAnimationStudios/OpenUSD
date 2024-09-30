@@ -8,6 +8,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/arch/hash.h"
+#include "pxr/imaging/glf/glew.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec2d.h"
@@ -21,12 +22,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 enum LoFiVertexBufferChannel : short {
   CHANNEL_POSITION,
   CHANNEL_NORMAL,
+  CHANNEL_TANGENT,
   CHANNEL_COLOR,
-  CHANNEL_UVS
+  CHANNEL_UV,
+  CHANNEL_WIDTH,
+  CHANNEL_ID,
+  CHANNEL_SCALE,
+  CHANNEL_SHAPE_POSITION,
+  CHANNEL_SHAPE_NORMAL,
+  CHANNEL_SHAPE_UV,
+  CHANNEL_SHAPE_COLOR
 };
 
 enum LoFiVertexBufferState : short {

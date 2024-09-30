@@ -15,6 +15,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 LoFiDrawItem::LoFiDrawItem(HdRprimSharedData const *sharedData)
     : HdDrawItem(sharedData)
+    , _program(NULL)
 {
     HF_MALLOC_TAG_FUNCTION();
 }

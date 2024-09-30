@@ -2394,3 +2394,4 @@ class StageView(QGLWidget):
             return False
 
         return self._renderer.PollForAsynchronousUpdates()
+
