@@ -1,7 +1,6 @@
 .p4*
 .DS_Store
 .AppleDouble
-
 .vs*
 .github*
 /build
