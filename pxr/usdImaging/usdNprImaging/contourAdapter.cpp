@@ -168,7 +168,6 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
                                         UsdImagingInstancerContext const* 
                                         instancerContext) const
 {
-  std::cout << "CONTOUR UPDATE FOR TIME!!!" << std::endl;
   if (requestedBits & HdChangeTracker::DirtyTopology) {
     UsdNprContour contour(prim);
     std::vector<UsdPrim> contourSurfaces = contour.GetContourSurfaces();
@@ -215,7 +214,6 @@ UsdImagingContourAdapter::UpdateForTime(UsdPrim const& prim,
         if(varyingBits & UsdHalfEdgeMeshVaryingBits::VARYING_TRANSFORM)
           halfEdgeMesh->SetMatrix(
             xformCache.GetLocalToWorldTransform(contourSurface));
-        else std::cout << contourSurface.GetPath() << "NOT TRANSFORM VARYING" << std::endl;
 
         _ContourAdapterComputeDatas* threadData = &datas[index];
         threadData->prim = &contourSurface;
