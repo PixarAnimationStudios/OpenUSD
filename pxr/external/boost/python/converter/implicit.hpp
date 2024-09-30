@@ -43,8 +43,8 @@ struct implicit
         void* storage = ((rvalue_from_python_storage<Target>*)data)->storage.bytes;
 
         arg_from_python<Source> get_source(obj);
-        bool convertible = get_source.convertible();
-        BOOST_VERIFY(convertible);
+        [[maybe_unused]] bool convertible = get_source.convertible();
+        assert(convertible);
         
         new (storage) Target(get_source());
         
