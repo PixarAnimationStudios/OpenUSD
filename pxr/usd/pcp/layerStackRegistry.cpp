@@ -58,6 +58,7 @@ public:
     LayerStackToLayers layerStackToLayers;
     MutedLayerIdentifierToLayerStacks mutedLayerIdentifierToLayerStacks;
     LayerStackToMutedLayerIdentifiers layerStackToMutedLayerIdentifiers;
+    LayerToLayerStacks layerToLayerStackOverrides;
 
     const PcpLayerStackPtrVector empty;
     const PcpLayerStackIdentifier rootLayerStackId;
@@ -200,8 +201,30 @@ const PcpLayerStackPtrVector&
 Pcp_LayerStackRegistry::FindAllUsingLayer(const SdfLayerHandle& layer) const
 {
     tbb::queuing_rw_mutex::scoped_lock lock(_data->mutex, /*write=*/false);
+
+    auto layerStackOverrides = _data->layerToLayerStackOverrides.find(layer);
+    if (layerStackOverrides != _data->layerToLayerStackOverrides.end()) {
+        return layerStackOverrides->second;
+    }
+
     auto i = _data->layerToLayerStacks.find(layer);
     return i != _data->layerToLayerStacks.end() ? i->second : _data->empty;
+}
+
+void
+Pcp_LayerStackRegistry::SetLayerStackVectorOverride(
+    const SdfLayerHandle& layer, 
+    const PcpLayerStackPtrVector& layerStacks)
+{
+    tbb::queuing_rw_mutex::scoped_lock lock(_data->mutex, /*write=*/true);
+    _data->layerToLayerStackOverrides[layer] = layerStacks;
+}
+
+void 
+Pcp_LayerStackRegistry::ClearLayerStackVectorOverrides()
+{
+    tbb::queuing_rw_mutex::scoped_lock lock(_data->mutex, /*write=*/true);
+    _data->layerToLayerStackOverrides.clear();
 }
 
 std::vector<PcpLayerStackPtr>
@@ -280,6 +303,23 @@ Pcp_LayerStackRegistry::_SetLayers(const PcpLayerStack* layerStack)
     if (newLayers.empty()) {
         // Don't leave empty entries hanging around.
         _data->layerStackToLayers.erase(layerStackPtr);
+        
+        // If this empty entry is currently a part of an override list,
+        // It should be removed from it as well.
+        for (auto it = _data->layerToLayerStackOverrides.begin(); 
+                  it !=  _data->layerToLayerStackOverrides.end();) 
+        {
+            Pcp_LayerStackRegistryData::LayerStacks& overrides = it->second;
+            auto result = std::find(
+                overrides.begin(), overrides.end(), layerStackPtr);
+            
+            if (result != overrides.end()) {
+                overrides.erase(result);
+            }
+
+            it = overrides.empty() ? 
+                _data->layerToLayerStackOverrides.erase(it) : std::next(it); 
+        }
     } else {
         layers.assign(newLayers.begin(), newLayers.end());
     }

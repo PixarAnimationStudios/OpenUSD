@@ -270,8 +270,10 @@ public:
 private:
     friend class PcpPrimIterator;
     friend struct Pcp_PrimIndexer;
-    friend void Pcp_RescanForSpecs(PcpPrimIndex*, bool usd,
-                                   bool updateHasSpecs);
+    friend void Pcp_RescanForSpecs(
+                    PcpPrimIndex*, bool usd,
+                    bool updateHasSpecs,
+                    const std::vector<SdfLayerHandle>& layersToIgnore);
 
     // The node graph representing the compositional structure of this prim.
     PcpPrimIndex_GraphRefPtr _graph;
@@ -429,10 +431,6 @@ PcpComputePrimIndex(
 PCP_API
 bool
 PcpIsNewDefaultStandinBehaviorEnabled();
-
-// Sets the prim stack in \p index.
-void
-Pcp_RescanForSpecs(PcpPrimIndex* index, bool usd);
 
 // Returns true if \p index should be recomputed due to changes to
 // any computed asset paths that were used to find or open layers

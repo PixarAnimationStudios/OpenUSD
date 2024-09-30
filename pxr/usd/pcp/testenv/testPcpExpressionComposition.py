@@ -208,7 +208,7 @@ class TestPcpExpressionComposition(unittest.TestCase):
         # Since B.sdf is not empty, this should incur a significant resync.
         with Pcp._TestChangeProcessor(pcpCache) as changes:
             rootLayer.subLayerPaths.append('`"./B.sdf"`')
-            self.assertEqual(changes.GetSignificantChanges(), ['/'])
+            self.assertEqual(changes.GetSignificantChanges(), ['/Test'])
             self.assertEqual(changes.GetSpecChanges(), [])
 
         pi, err = pcpCache.ComputePrimIndex('/Test')
@@ -232,7 +232,7 @@ class TestPcpExpressionComposition(unittest.TestCase):
         # Remove the sublayer we just added to reverse the changes.
         with Pcp._TestChangeProcessor(pcpCache) as changes:
             del rootLayer.subLayerPaths[-1]
-            self.assertEqual(changes.GetSignificantChanges(), ['/'])
+            self.assertEqual(changes.GetSignificantChanges(), ['/Test'])
             self.assertEqual(changes.GetSpecChanges(), [])
 
         pi, err = pcpCache.ComputePrimIndex('/Test')
@@ -319,7 +319,7 @@ class TestPcpExpressionComposition(unittest.TestCase):
                 rootLayer.expressionVariables = {'X':'B'}
                 rootLayer.subLayerPaths.append('`"./${X}.sdf"`')
 
-            self.assertEqual(changes.GetSignificantChanges(), ['/'])
+            self.assertEqual(changes.GetSignificantChanges(), ['/BaseRef'])
             self.assertEqual(changes.GetSpecChanges(), [])
 
         pi, err = pcpCache.ComputePrimIndex('/BaseRef')
@@ -1017,7 +1017,7 @@ class TestPcpExpressionComposition(unittest.TestCase):
                 rootLayer.expressionVariables = {'A':'C'}
                 rootLayer.subLayerPaths.append('sig_changes/sub.sdf')
 
-            self.assertEqual(changes.GetSignificantChanges(), ['/'])
+            self.assertEqual(changes.GetSignificantChanges(), ['/Dummy'])
 
         self.AssertVariables(
             pcpCache, '/Root1',

@@ -4721,6 +4721,17 @@ _EnforcePermissions(
 void
 Pcp_RescanForSpecs(PcpPrimIndex *index, bool usd, bool updateHasSpecs)
 {
+    const std::vector<SdfLayerHandle> layersToIgnore;
+    Pcp_RescanForSpecs(index, usd, updateHasSpecs, layersToIgnore);
+}
+
+void
+Pcp_RescanForSpecs(
+    PcpPrimIndex *index,
+    bool usd,
+    bool updateHasSpecs,
+    const std::vector<SdfLayerHandle>& layersToIgnore)
+{
     TfAutoMallocTag2 tag("Pcp", "Pcp_RescanForSpecs");
 
     if (usd) {
@@ -4728,7 +4739,9 @@ Pcp_RescanForSpecs(PcpPrimIndex *index, bool usd, bool updateHasSpecs)
         // We do need to update the HasSpecs flag on nodes, however.
         if (updateHasSpecs) {
             TF_FOR_ALL(nodeIt, index->GetNodeRange()) {
-                nodeIt->SetHasSpecs(PcpComposeSiteHasPrimSpecs(*nodeIt));
+                auto node = *nodeIt;
+                nodeIt->SetHasSpecs(PcpComposeSiteHasPrimSpecs(
+                    node.GetLayerStack(), node.GetPath(), layersToIgnore));
             }
         }
     } else {

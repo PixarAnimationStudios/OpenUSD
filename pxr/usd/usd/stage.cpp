@@ -4059,10 +4059,14 @@ UsdStage::MuteAndUnmuteLayers(const std::vector<std::string> &muteLayers,
     TRACE_FUNCTION();
     TfAutoMallocTag tag("Usd", _GetMallocTagId());
 
-    PcpChanges changes;
+    _PendingChanges localPendingChanges;
+    if (!_pendingChanges) {
+        _pendingChanges = &localPendingChanges;
+    }
+
     std::vector<std::string> newMutedLayers, newUnMutedLayers;
-    _cache->RequestLayerMuting(muteLayers, unmuteLayers, &changes, 
-            &newMutedLayers, &newUnMutedLayers);
+    _cache->RequestLayerMuting(muteLayers, unmuteLayers,
+            &_pendingChanges->pcpChanges, &newMutedLayers, &newUnMutedLayers);
 
     UsdStageWeakPtr self(this);
 
@@ -4073,21 +4077,15 @@ UsdStage::MuteAndUnmuteLayers(const std::vector<std::string> &muteLayers,
             .Send(self);
     }
 
-    if (changes.IsEmpty()) {
+    if (_pendingChanges->pcpChanges.IsEmpty()) {
+        _pendingChanges = nullptr;
         return;
     }
 
-    using _PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
-    _PathsToChangesMap resyncChanges;
-    _Recompose(changes, &resyncChanges);
-
-    {
-        TRACE_FUNCTION_SCOPE("sending UsdNotice::ObjectsChanged");
-        UsdNotice::ObjectsChanged(self, &resyncChanges).Send(self);
-    }
-    {
-        TRACE_FUNCTION_SCOPE("sending UsdNotice::StageContentsChanged");
-        UsdNotice::StageContentsChanged(self).Send(self);
+    const auto& cacheChanges = _pendingChanges->pcpChanges.GetCacheChanges();
+    const auto result = cacheChanges.find(_cache.get());
+    if (result != cacheChanges.end()) {
+        _ProcessChangeLists(result->second.layerChangeListVec);
     }
 }
 
@@ -4371,13 +4369,26 @@ UsdStage::_HandleLayersDidChange(
     TF_DEBUG(USD_CHANGES).Msg(
         "\nHandleLayersDidChange received (%s)\n", UsdDescribe(this).c_str());
 
-    // If a function up the call stack has set up _PendingChanges, merge in
-    // all of the information from layer changes so it can be processed later.
-    // Otherwise, fill in our own _PendingChanges and process it at the end
-    // of this function.
     _PendingChanges localPendingChanges;
     if (!_pendingChanges) {
         _pendingChanges = &localPendingChanges;
+    }
+
+    // Push changes through Pcp to determine further invalidation based on 
+    // composition metadata (reference, inherits, variant selections, etc).
+    _pendingChanges->pcpChanges.DidChange(_cache.get(), n.GetChangeListVec());
+
+    _ProcessChangeLists(n.GetChangeListVec());
+}
+
+void UsdStage::_ProcessChangeLists(
+    const SdfLayerChangeListVec & changeListVec)
+{
+    // Callers of this function are expected to have  set up _PendingChanges.
+    // We will merge in all of the information from layer changes so it can 
+    // be processed later.
+    if (!TF_VERIFY(_pendingChanges)) {
+        return;
     }
 
     // Keep track of paths to USD objects that need to be recomposed or
@@ -4413,7 +4424,7 @@ UsdStage::_HandleLayersDidChange(
 
     // Add dependent paths for any PrimSpecs whose fields have changed that may
     // affect cached prim information.
-    for(const auto& layerAndChangelist : n.GetChangeListVec()) {
+    for(const auto& layerAndChangelist : changeListVec) {
         // If this layer does not pertain to us, skip.
         const SdfLayerHandle &layer = layerAndChangelist.first;
         if (_cache->FindAllLayerStacksUsingLayer(layer).empty()) {
@@ -4519,19 +4530,13 @@ UsdStage::_HandleLayersDidChange(
             // changes.
             if (!willRecompose) {
                 _AddAffectedStagePaths(layer, sdfPath, 
-                                  *_cache, &otherInfoChanges, &entry);
+                        *_cache, &otherInfoChanges, &entry);
             }
         }
     }
 
-    // Now we have collected the affected paths in UsdStage namespace in
-    // recomposeChanges, otherResyncChanges, otherInfoChanges and
-    // changedActivePaths.  Push changes through Pcp to determine further
-    // invalidation based on composition metadata (reference, inherits, variant
-    // selections, etc).
-    PcpChanges& changes = _pendingChanges->pcpChanges;
     const PcpCache *cache = _cache.get();
-    changes.DidChange(cache, n.GetChangeListVec());
+    PcpChanges& changes = _pendingChanges->pcpChanges;
 
     // Pcp does not consider activation changes to be significant since
     // it doesn't look at activation during composition. However, UsdStage
@@ -4629,6 +4634,23 @@ UsdStage::_ProcessPendingChanges()
     remapChangesToPrototypes(&assetPathResyncChanges);
     remapChangesToPrototypes(&otherResyncChanges);
     remapChangesToPrototypes(&otherInfoChanges);
+
+    // XXX: Check Pcp Changes to see if a sublayer was added / removed or a
+    // layer was muted / unmuted
+    // If so, we will trigger a resync on `/`. This preserves existing 
+    // notification behavior and insulates third party clients from the finer
+    // grained changes that Pcp is now generating. This will be removed in a 
+    // future change.
+
+    const PcpCacheChanges* cacheChanges = 
+        TfMapLookupPtr(changes.GetCacheChanges(), _cache.get());
+
+    if (cacheChanges && 
+        (cacheChanges->didAddOrRemoveNonEmptySublayer ||
+        cacheChanges->didMuteOrUnmuteNonEmptyLayer))
+    {
+        recomposeChanges[SdfPath::AbsoluteRootPath()];
+    }
 
     // Before processing any prim type info changes, remove any that would
     // already have been covered by the recomposed prims.
