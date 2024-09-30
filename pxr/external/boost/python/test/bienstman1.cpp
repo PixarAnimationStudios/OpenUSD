@@ -35,7 +35,7 @@ PXR_BOOST_PYTHON_MODULE(bienstman1_ext)
 
   class_<A>("A");
 
-  class_<V, boost::noncopyable>("V", no_init)
+  class_<V, noncopyable>("V", no_init)
       .def("inside", &V::inside, 
            return_value_policy<reference_existing_object>())
       .def("outside", outside, 

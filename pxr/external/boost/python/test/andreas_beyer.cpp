@@ -53,7 +53,7 @@ A::A_ptr get_b_a(shared_ptr<B> b)
 }
 
 PXR_BOOST_PYTHON_MODULE(andreas_beyer_ext) {
-  python::class_<A, noncopyable> ("A")
+  python::class_<A, python::noncopyable> ("A")
     .def("self", &A::self)
     .def_readwrite("val", &A::val)
   ;

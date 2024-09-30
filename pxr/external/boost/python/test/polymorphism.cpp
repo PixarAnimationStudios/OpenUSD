@@ -131,17 +131,17 @@ A* pass_a(A* x) { return x; }
 
 PXR_BOOST_PYTHON_MODULE_INIT(polymorphism_ext)
 {
-    class_<A,boost::noncopyable,ACallback>("A")
+    class_<A,noncopyable,ACallback>("A")
         .def("f", &A::f, &ACallback::default_f)
         ;
     
     def("getBCppObj", getBCppObj, return_value_policy<reference_existing_object>());
 
-    class_<C,bases<A>,boost::noncopyable>("C")
+    class_<C,bases<A>,noncopyable>("C")
         .def("f", &C::f)
         ;
     
-    class_<D,bases<A>,DCallback,boost::noncopyable>("D")
+    class_<D,bases<A>,DCallback,noncopyable>("D")
         .def("f", &D::f, &DCallback::default_f)
         .def("g", &D::g)
         ;
@@ -154,7 +154,7 @@ PXR_BOOST_PYTHON_MODULE_INIT(polymorphism_ext)
 
     def("call_f", call_f);
 
-    class_<P,boost::noncopyable,PCallback>("P")
+    class_<P,noncopyable,PCallback>("P")
         .def("f", pure_virtual(&P::f))
         ;
 

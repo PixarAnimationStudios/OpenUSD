@@ -18,20 +18,21 @@
 #else
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
-
-# include <boost/noncopyable.hpp>
 # include "pxr/external/boost/python/type_id.hpp"
 # include <cstddef>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 // Base class for all holders
-struct PXR_BOOST_PYTHON_DECL instance_holder : private noncopyable
+struct PXR_BOOST_PYTHON_DECL instance_holder
 {
  public:
     instance_holder();
     virtual ~instance_holder();
     
+    instance_holder(instance_holder const&) = delete;
+    instance_holder& operator=(instance_holder const&) = delete;
+
     // return the next holder in a chain
     instance_holder* next() const;
 

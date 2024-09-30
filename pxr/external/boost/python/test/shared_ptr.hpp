@@ -174,7 +174,7 @@ struct Test {
 
 PXR_BOOST_PYTHON_MODULE(MODULE)
 {
-  class_<A, shared_ptr<A_Wrapper>, boost::noncopyable>("A")
+  class_<A, shared_ptr<A_Wrapper>, noncopyable>("A")
       .def("call_f", &A::call_f)
       .staticmethod("call_f")
       ;
@@ -191,7 +191,7 @@ PXR_BOOST_PYTHON_MODULE(MODULE)
     def("factory", factory);
     
     functions<X>::expose(
-        class_<X, boost::noncopyable>("X", init<int>())
+        class_<X, noncopyable>("X", init<int>())
              .def("value", &X::value)
         );
 
@@ -200,7 +200,7 @@ PXR_BOOST_PYTHON_MODULE(MODULE)
             .def("value", &Y::value)
         );
     
-    class_<YY, bases<Y>, boost::noncopyable>("YY", init<int>())
+    class_<YY, bases<Y>, noncopyable>("YY", init<int>())
         ;
 
     class_<YYY, shared_ptr<YYY>, bases<Y> >("YYY", init<int>())

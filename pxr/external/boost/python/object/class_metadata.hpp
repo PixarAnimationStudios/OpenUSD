@@ -42,7 +42,7 @@
 #include "pxr/external/boost/python/detail/mpl2/or.hpp"
 #include "pxr/external/boost/python/detail/mpl2/identity.hpp"
 
-#include <boost/noncopyable.hpp>
+#include "pxr/external/boost/python/noncopyable.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
@@ -119,7 +119,7 @@ struct select_held_type
   : python::detail::mpl2::if_<
         python::detail::mpl2::or_<
             python::detail::specifies_bases<T>
-          , PXR_BOOST_NAMESPACE::python::detail::is_same<T,noncopyable>
+          , PXR_BOOST_NAMESPACE::python::detail::is_same<T,python::noncopyable>
         >
       , Prev
       , T
@@ -166,9 +166,9 @@ struct class_metadata
     >::type bases;
 
     typedef python::detail::mpl2::or_<
-        PXR_BOOST_NAMESPACE::python::detail::is_same<X1,noncopyable>
-      , PXR_BOOST_NAMESPACE::python::detail::is_same<X2,noncopyable>
-      , PXR_BOOST_NAMESPACE::python::detail::is_same<X3,noncopyable>
+        PXR_BOOST_NAMESPACE::python::detail::is_same<X1,python::noncopyable>
+      , PXR_BOOST_NAMESPACE::python::detail::is_same<X2,python::noncopyable>
+      , PXR_BOOST_NAMESPACE::python::detail::is_same<X3,python::noncopyable>
     > is_noncopyable;
     
     //

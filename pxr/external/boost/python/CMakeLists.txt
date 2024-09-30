@@ -253,6 +253,7 @@ pxr_library(python
         manage_new_object.hpp
         module.hpp
         module_init.hpp
+        noncopyable.hpp
         object/add_to_namespace.hpp
         object/class.hpp
         object/class_detail.hpp

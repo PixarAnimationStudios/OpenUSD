@@ -348,7 +348,7 @@ bool check_inplace(object l, object o)
 
 PXR_BOOST_PYTHON_MODULE(object_ext)
 {
-    class_<NotCopyable, boost::noncopyable>("NotCopyable", no_init);
+    class_<NotCopyable, noncopyable>("NotCopyable", no_init);
 
     def("ref_to_noncopyable", ref_to_noncopyable);
     def("call_object_3", call_object_3);

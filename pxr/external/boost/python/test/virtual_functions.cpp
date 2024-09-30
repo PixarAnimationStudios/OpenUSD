@@ -110,7 +110,7 @@ PXR_BOOST_PYTHON_MODULE(virtual_functions_ext)
         .def("f", &concrete_callback::f_impl)
         ;
         
-    class_<abstract, boost::noncopyable, abstract_callback
+    class_<abstract, noncopyable, abstract_callback
         >("abstract", init<int>())
             
         .def("value", &abstract::value)

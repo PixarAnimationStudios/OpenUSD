@@ -18,11 +18,18 @@
 namespace python = PXR_BOOST_NAMESPACE::python;
 
 // An abstract base class
-class Base : public boost::noncopyable
+class Base
 {
 public:
   virtual ~Base() {};
+
+  Base(Base const&) = delete;
+  Base& operator=(Base const&) = delete;
+
   virtual std::string hello() = 0;
+
+protected:
+  Base() {};
 };
 
 // C++ derived class
@@ -45,7 +52,7 @@ struct BaseWrap : Base, python::wrapper<Base>
 // Pack the Base class wrapper into a module
 PXR_BOOST_PYTHON_MODULE(embedded_hello)
 {
-  python::class_<BaseWrap, boost::noncopyable> base("Base");
+  python::class_<BaseWrap, python::noncopyable> base("Base");
 }
 
 

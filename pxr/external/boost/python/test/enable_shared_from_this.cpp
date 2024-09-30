@@ -41,7 +41,7 @@ public:
 
 PXR_BOOST_PYTHON_MODULE(enable_shared_from_this_ext)
 {
-    class_<Test, TestPtr, boost::noncopyable>("Test")
+    class_<Test, TestPtr, noncopyable>("Test")
         .def("construct", &Test::construct).staticmethod("construct")
         .def("act", &Test::act)
         .def("take", &Test::take)

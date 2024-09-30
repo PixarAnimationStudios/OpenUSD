@@ -14,12 +14,13 @@
 #include "pxr/external/boost/python/common.hpp"
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
+#include "pxr/external/boost/python/noncopyable.hpp"
 #include <boost/python/class.hpp>
 #else
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/noncopyable.hpp>
+# include "pxr/external/boost/python/noncopyable.hpp"
 
 # include "pxr/external/boost/python/class_fwd.hpp"
 # include "pxr/external/boost/python/object/class.hpp"

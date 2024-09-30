@@ -71,7 +71,7 @@ namespace converter
   };
   
   template <class T>
-  struct extract_rvalue : private noncopyable
+  struct extract_rvalue
   {
       typedef typename python::detail::mpl2::if_<
           python::detail::copy_ctor_mutates_rhs<T>
@@ -80,6 +80,9 @@ namespace converter
       >::type result_type;
 
       extract_rvalue(PyObject*);
+
+      extract_rvalue(extract_rvalue const&) = delete;
+      extract_rvalue& operator=(extract_rvalue const&) = delete;
 
       bool check() const;
       result_type operator()() const;

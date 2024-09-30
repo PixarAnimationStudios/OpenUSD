@@ -19,6 +19,7 @@
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python.hpp>
 
+#include "pxr/external/boost/python/noncopyable.hpp"
 #include "pxr/external/boost/python/type.hpp"
 #include "pxr/external/boost/python/type_list.hpp"
 #else
@@ -57,6 +58,7 @@
 # include "pxr/external/boost/python/make_function.hpp"
 # include "pxr/external/boost/python/manage_new_object.hpp"
 # include "pxr/external/boost/python/module.hpp"
+# include "pxr/external/boost/python/noncopyable.hpp"
 # include "pxr/external/boost/python/object.hpp"
 # include "pxr/external/boost/python/object_protocol.hpp"
 # include "pxr/external/boost/python/object_protocol_core.hpp"
