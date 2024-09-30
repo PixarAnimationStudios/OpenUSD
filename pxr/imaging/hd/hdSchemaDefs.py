@@ -711,7 +711,7 @@
         SCHEMA_TOKEN = 'instancedBy',
         ADD_DEFAULT_LOCATOR = True,
         MEMBERS = [
-            ('paths', T_PATHARRAY, {}),
+            ('paths', T_PATHARRAY, dict(ADD_LOCATOR = True)),
             ('prototypeRoots', T_PATHARRAY, {}),
         ],
     ),
