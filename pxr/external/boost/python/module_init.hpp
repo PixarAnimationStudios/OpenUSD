@@ -83,7 +83,7 @@ PXR_BOOST_PYTHON_DECL PyObject* init_module(char const* name, void(*)());
 
 #  define PXR_BOOST_PYTHON_MODULE_INIT(name)                       \
   void PXR_BOOST_PYTHON_PP_CAT(init_module_,name)();                      \
-extern "C" BOOST_SYMBOL_EXPORT _PXR_BOOST_PYTHON_MODULE_INIT(name)
+extern "C" PXR_BOOST_PYTHON_SYMBOL_EXPORT _PXR_BOOST_PYTHON_MODULE_INIT(name)
 
 # endif
 

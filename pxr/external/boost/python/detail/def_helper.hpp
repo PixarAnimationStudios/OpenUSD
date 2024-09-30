@@ -51,7 +51,8 @@ namespace detail
       static constexpr size_t compute_index()
       {
           size_t idx = 0;
-          ((match_t<T>::value ? true : (++idx, false)) || ...);
+          [[maybe_unused]] const bool found_match =
+              ((match_t<T>::value ? true : (++idx, false)) || ...);
           return idx;
       }
 

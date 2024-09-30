@@ -85,7 +85,7 @@ struct signature_arity<std::index_sequence<N...>>
                   type_id<typename detail::mpl2::at_c<Sig,N>::type>().name()
                   , 0
                   , indirect_traits::is_reference_to_non_const<typename detail::mpl2::at_c<Sig,N>::type>::value
-                },
+                }...,
 #endif
                 {0,0,0}
             };
