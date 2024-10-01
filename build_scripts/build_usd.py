@@ -744,9 +744,9 @@ def InstallBoost_Helper(context, force, buildArgs):
     #   compatibility issues on Big Sur and Monterey.
     pyInfo = GetPythonInfo(context)
     pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
-    if MacOS() or (context.buildPython and pyVer >= (3,11)):
+    if MacOS() or (context.buildBoostPython and pyVer >= (3,11)):
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip"
-    elif context.buildPython and pyVer >= (3, 10):
+    elif context.buildBoostPython and pyVer >= (3, 10):
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
     elif IsVisualStudio2022OrGreater():
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
@@ -829,7 +829,7 @@ def InstallBoost_Helper(context, force, buildArgs):
             '--with-regex'
         ]
 
-        if context.buildPython:
+        if context.buildBoostPython:
             b2_settings.append("--with-python")
             pythonInfo = GetPythonInfo(context)
             # This is the only platform-independent way to configure these
@@ -1622,6 +1622,11 @@ def InstallUSD(context, force, buildArgs):
             else:
                 extraArgs.append('-DPXR_USE_DEBUG_PYTHON=OFF')
 
+            if context.buildBoostPython:
+                extraArgs.append('-DPXR_USE_BOOST_PYTHON=ON')
+            else:
+                extraArgs.append('-DPXR_USE_BOOST_PYTHON=OFF')
+
             # CMake has trouble finding the executable, library, and include
             # directories when there are multiple versions of Python installed.
             # This can lead to crashes due to USD being linked against one
@@ -2005,6 +2010,10 @@ subgroup.add_argument("--prefer-speed-over-safety", dest="safety_first",
                       "Disable performance-impacting safety checks against "
                       "malformed input files")
 
+group.add_argument("--boost-python", dest="build_boost_python",
+                   action="store_true", default=False,
+                   help="Build Python bindings with boost::python (deprecated)")
+
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--debug-python", dest="debug_python", 
                       action="store_true", help=
@@ -2244,6 +2253,7 @@ class InstallContext:
         # Optional components
         self.buildTests = args.build_tests and not embedded
         self.buildPython = args.build_python and not embedded
+        self.buildBoostPython = self.buildPython and args.build_boost_python
         self.buildExamples = args.build_examples and not embedded
         self.buildTutorials = args.build_tutorials and not embedded
         self.buildTools = args.build_tools and not embedded
@@ -2337,7 +2347,7 @@ if context.buildOneTBB:
 
 requiredDependencies = [ZLIB, TBB]
 
-if context.buildPython:
+if context.buildBoostPython:
     requiredDependencies += [BOOST]
 
 if context.buildAlembic:
