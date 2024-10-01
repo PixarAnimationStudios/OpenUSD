@@ -13,15 +13,6 @@ if (PXR_USE_INTERNAL_BOOST_PYTHON)
         Python3::Python
     )
 
-    # Ideally we'd use the modern Boost::boost or Boost::headers
-    # targets in the LIBRARIES list above. However, Boost::boost
-    # doesn't publish INTERFACE_INCLUDE_DIRECTORIES, which breaks
-    # _pxr_target_link_libraries in monolithic builds, and
-    # Boost::headers is only available in CMake 3.15+.
-    set(include_dirs
-        ${Boost_INCLUDE_DIRS}
-    )
-
     set(cppfiles
         src/converter/arg_to_python_base.cpp
         src/converter/builtin_converters.cpp

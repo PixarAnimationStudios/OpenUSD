@@ -20,13 +20,9 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
 set(PXR_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 
-if(PXR_ENABLE_PYTHON_SUPPORT OR PXR_ENABLE_OPENVDB_SUPPORT)
+if((PXR_ENABLE_PYTHON_SUPPORT AND PXR_USE_BOOST_PYTHON) OR PXR_ENABLE_OPENVDB_SUPPORT)
     # Find Boost package before getting any boost specific components as we need to
     # disable boost-provided cmake config, based on the boost version found.
-    #
-    # XXX:
-    # Boost is currently required even when PXR_USE_BOOST_PYTHON is OFF, since
-    # pxr_boost::python still relies on header-only boost libraries.
     find_package(Boost REQUIRED)
 
     # Boost provided cmake files (introduced in boost version 1.70) result in 
