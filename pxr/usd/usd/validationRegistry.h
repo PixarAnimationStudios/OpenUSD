@@ -104,7 +104,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///             }
 ///             return errors;
 ///         };
-///     registry.RegisterValidator(validatorName, stageTaskFn);
+///     registry.RegisterPluginValidator(validatorName, stageTaskFn);
 /// }
 /// ```
 ///

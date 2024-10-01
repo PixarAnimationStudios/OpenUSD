@@ -190,6 +190,10 @@ private:
     // the contained validators in a suite, which provides schemaTypes metadata
     // are compliant.
     friend class UsdValidationRegistry;
+    // In order to distribute validators into different sets based on the type 
+    // of validation to be performed, ValidationContext needs to access
+    // _GetValidateLayerTask, _GetValidateStageTask and _GetValidatePrimTask.
+    friend class UsdValidationContext;
 
     UsdValidatorMetadata _metadata;
     std::variant<UsdValidateLayerTaskFn, 

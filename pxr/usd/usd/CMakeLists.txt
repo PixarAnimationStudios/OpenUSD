@@ -64,6 +64,7 @@ pxr_library(usd
         timeCode
         validator
         validatorTokens
+        validationContext
         validationError
         validationRegistry
         usdFileFormat
@@ -485,6 +486,14 @@ pxr_build_test(testUsdValidator
         testenv/testUsdValidator.cpp
 )
 
+pxr_build_test(testUsdValidationContext
+    LIBRARIES
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdValidationContext.cpp
+)
+
 pxr_build_test(testUsdValidationRegistry
     LIBRARIES
         tf
@@ -771,6 +780,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdValidationContext
+    DEST testUsdValidationContext
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdValidationRegistry
     DEST testUsdValidationRegistry
 )
@@ -1032,6 +1046,11 @@ pxr_register_test(testUsdMetadataCpp
 
 pxr_register_test(testUsdValidator
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValidator"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdValidationContext
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdValidationContext"
     EXPECTED_RETURN_CODE 0
 )
 
