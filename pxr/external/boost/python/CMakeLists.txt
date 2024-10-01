@@ -346,6 +346,12 @@ pxr_library(python
     DISABLE_PRECOMPILED_HEADERS
 )
 
+# Disable insertion of C++ signatures in docstrings. We generate this
+# information separately via our Python doc build process.
+target_compile_definitions(python
+    PUBLIC PXR_BOOST_PYTHON_NO_PY_SIGNATURES
+)
+
 if (PXR_USE_INTERNAL_BOOST_PYTHON)
     # Add PXR_BOOST_PYTHON_SOURCE when building this library to ensure symbols
     # decorated with PXR_BOOST_PYTHON_DECL are exported.
