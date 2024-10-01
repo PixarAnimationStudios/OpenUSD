@@ -41,7 +41,6 @@ int main()
     using namespace PXR_BOOST_NAMESPACE::python::converter::detail;
     using namespace PXR_BOOST_NAMESPACE::python::converter;
     using namespace PXR_BOOST_NAMESPACE::python;
-    using namespace boost;
 
 
     ASSERT_SAME(
