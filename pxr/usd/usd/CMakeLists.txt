@@ -158,6 +158,8 @@ pxr_library(usd
 
     RESOURCE_FILES
         codegenTemplates/api.h
+        codegenTemplates/generatedSchema.classes.txt
+        codegenTemplates/generatedSchema.module.h
         codegenTemplates/plugInfo.json:no_subst
         codegenTemplates/schemaClass.cpp
         codegenTemplates/schemaClass.h
