@@ -131,7 +131,7 @@ def export(metricsList, outputPath, aggregations):
 
     if len(aggregations) == 0:
         resultDict = metricsDict
-    if len(aggregations) == 1:
+    elif len(aggregations) == 1:
         resultDict = {}
         agg = aggregations[0]
         for name, times in metricsDict.items():
@@ -257,6 +257,7 @@ def parseArgs():
     parser.add_argument("-a", "--aggregation", type=str,
                         choices=["min", "mean", "max"],
                         nargs="+",
+                        default=[],
                         help="When multiple iterations are set, report an "
                              "aggregated statistic instead of every value. "
                              "Requires -o to be set. When one aggregation is "
