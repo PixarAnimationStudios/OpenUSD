@@ -4,8 +4,11 @@ def "MaterialX"
 {
     def "Materials"
     {
-        def Material "USD_Gold"
+        def Material "USD_Gold" (
+            prepend apiSchemas = ["MaterialXConfigAPI"]
+        )
         {
+            string config:mtlx:version = "1.38"
             float inputs:clearcoat
             float inputs:clearcoatRoughness
             color3f inputs:diffuseColor = (0.944, 0.776, 0.373)
