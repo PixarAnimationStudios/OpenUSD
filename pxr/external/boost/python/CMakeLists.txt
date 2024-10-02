@@ -385,6 +385,12 @@ if (NOT PXR_BUILD_TESTS)
     return()
 endif()
 
+# XXX:
+# Disable tests in static builds due to symbol export issues.
+if(WIN32 AND NOT TARGET shared_libs)
+    return()
+endif()
+
 ####
 # Helper functions for unit tests
 ####
