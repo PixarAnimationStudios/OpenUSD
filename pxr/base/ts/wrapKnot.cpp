@@ -45,16 +45,12 @@ namespace
             const object &value,
             const object &preValue,
             const object &preTanSlope,
-            const object &preTanMayaHeight,
-            const object &postTanSlope,
-            const object &postTanMayaHeight)
+            const object &postTanSlope)
         {
             SET(knot, SetValue, T, value);
             SET(knot, SetPreValue, T, preValue);
             SET(knot, SetPreTanSlope, T, preTanSlope);
-            SET(knot, SetMayaPreTanHeight, T, preTanMayaHeight);
             SET(knot, SetPostTanSlope, T, postTanSlope);
-            SET(knot, SetMayaPostTanHeight, T, postTanMayaHeight);
         }
     };
 }
@@ -68,13 +64,9 @@ static TsKnot* _WrapInit(
     const object &preValue,
     const object &customData,
     const object &preTanWidth,
-    const object &preTanMayaWidth,
     const object &preTanSlope,
-    const object &preTanMayaHeight,
     const object &postTanWidth,
-    const object &postTanMayaWidth,
-    const object &postTanSlope,
-    const object &postTanMayaHeight)
+    const object &postTanSlope)
 {
     const TfType valueType = Ts_GetTypeFromTypeName(typeName);
     if (!valueType)
@@ -92,16 +84,12 @@ static TsKnot* _WrapInit(
     SET(knot, SetNextInterpolation, TsInterpMode, nextInterp);
     SET(knot, SetCustomData, VtDictionary, customData);
     SET(knot, SetPreTanWidth, TsTime, preTanWidth);
-    SET(knot, SetMayaPreTanWidth, TsTime, preTanMayaWidth);
     SET(knot, SetPostTanWidth, TsTime, postTanWidth);
-    SET(knot, SetMayaPostTanWidth, TsTime, postTanMayaWidth);
 
     // Set T-typed parameters.
     TsDispatchToValueTypeTemplate<_Initter>(
-        valueType, knot,
-        value, preValue,
-        preTanSlope, preTanMayaHeight,
-        postTanSlope, postTanMayaHeight);
+        valueType, knot, value, preValue,
+        preTanSlope, postTanSlope);
 
     return knot;
 }
@@ -170,13 +158,9 @@ void wrapKnot()
                  arg("preValue") = object(),
                  arg("customData") = object(),
                  arg("preTanWidth") = object(),
-                 arg("preTanMayaWidth") = object(),
                  arg("preTanSlope") = object(),
-                 arg("preTanMayaHeight") = object(),
                  arg("postTanWidth") = object(),
-                 arg("postTanMayaWidth") = object(),
-                 arg("postTanSlope") = object(),
-                 arg("postTanMayaHeight") = object())))
+                 arg("postTanSlope") = object())))
 
         .def(init<const TsKnot &>())
 
@@ -201,25 +185,15 @@ void wrapKnot()
         .def("SetCurveType", &This::SetCurveType)
         .def("GetCurveType", &This::GetCurveType)
 
-        .def("IsPreTanMayaForm", &This::IsPreTanMayaForm)
         .def("SetPreTanWidth", &This::SetPreTanWidth)
         .def("GetPreTanWidth", &This::GetPreTanWidth)
-        .def("SetMayaPreTanWidth", &This::SetMayaPreTanWidth)
-        .def("GetMayaPreTanWidth", &This::GetMayaPreTanWidth)
         .def("SetPreTanSlope", WRAP_SETTER(PreTanSlope))
         .def("GetPreTanSlope", WRAP_GETTER(PreTanSlope))
-        .def("SetMayaPreTanHeight", WRAP_SETTER(MayaPreTanHeight))
-        .def("GetMayaPreTanHeight", WRAP_GETTER(MayaPreTanHeight))
 
-        .def("IsPostTanMayaForm", &This::IsPostTanMayaForm)
         .def("SetPostTanWidth", &This::SetPostTanWidth)
         .def("GetPostTanWidth", &This::GetPostTanWidth)
-        .def("SetMayaPostTanWidth", &This::SetMayaPostTanWidth)
-        .def("GetMayaPostTanWidth", &This::GetMayaPostTanWidth)
         .def("SetPostTanSlope", WRAP_SETTER(PostTanSlope))
         .def("GetPostTanSlope", WRAP_GETTER(PostTanSlope))
-        .def("SetMayaPostTanHeight", WRAP_SETTER(MayaPostTanHeight))
-        .def("GetMayaPostTanHeight", WRAP_GETTER(MayaPostTanHeight))
 
         .def("SetCustomData", &This::SetCustomData)
         .def("GetCustomData", &This::GetCustomData)

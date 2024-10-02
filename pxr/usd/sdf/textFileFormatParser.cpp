@@ -496,59 +496,32 @@ _BundleSplineValue(
     return result;
 }
 
-static bool
+static void
 _SetSplineTanWithWidth(
     Sdf_TextParserContext& context,
-    const std::string &encoding,
     const double width,
-    const VtValue &slopeOrHeight)
+    const VtValue &slope)
 {
-    if (encoding == "ws") {
-        if (context.splineTanIsPre) {
-            context.splineKnot.SetPreTanWidth(width);
-            context.splineKnot.SetPreTanSlope(slopeOrHeight);
-        } else {
-            context.splineKnot.SetPostTanWidth(width);
-            context.splineKnot.SetPostTanSlope(slopeOrHeight);
-        }
-        return true;
-    } 
-    if (encoding == "wh") {
-        if (context.splineTanIsPre) {
-            context.splineKnot.SetMayaPreTanWidth(width);
-            context.splineKnot.SetMayaPreTanHeight(slopeOrHeight);
-        } else {
-            context.splineKnot.SetMayaPostTanWidth(width);
-            context.splineKnot.SetMayaPostTanHeight(slopeOrHeight);
-        }
-        return true;
-    } 
-    return false;
-}
+    if (context.splineTanIsPre) {
+        context.splineKnot.SetPreTanWidth(width);
+        context.splineKnot.SetPreTanSlope(slope);
+    } else {
+        context.splineKnot.SetPostTanWidth(width);
+        context.splineKnot.SetPostTanSlope(slope);
+    }
+} 
 
-static bool
+static void
 _SetSplineTanWithoutWidth(
     Sdf_TextParserContext& context,
-    const std::string &encoding,
-    const VtValue &slopeOrHeight)
+    const VtValue &slope)
 {
-    if (encoding == "s") {
-        if (context.splineTanIsPre) {
-            context.splineKnot.SetPreTanSlope(slopeOrHeight);
-        } else {
-            context.splineKnot.SetPostTanSlope(slopeOrHeight);
-        }
-        return true;
-    } else if (encoding == "h") {
-        if (context.splineTanIsPre) {
-            context.splineKnot.SetMayaPreTanHeight(slopeOrHeight);
-        } else {
-            context.splineKnot.SetMayaPostTanHeight(slopeOrHeight);
-        }
-        return true;
-    } 
-    return false;
-}
+    if (context.splineTanIsPre) {
+        context.splineKnot.SetPreTanSlope(slope);
+    } else {
+        context.splineKnot.SetPostTanSlope(slope);
+    }
+} 
 
 template <class Input>
 std::pair<bool, Sdf_ParserHelpers::Value>
@@ -721,9 +694,6 @@ struct TextParserAction<Identifier>
             // between the identifier and . if we reduced on the full
             // PrimTypeName rule
             context.primTypeName += in.string();
-        } else if (parsingContext==
-                Sdf_TextParserCurrentParsingContext::SplineTangent) {
-            context.splineTangentIdentifier = in.string();
         }
     }
 };
@@ -2554,17 +2524,9 @@ struct TextParserAction<SplineTangentWithoutWidthValue>
     static void apply(const Input& in, Sdf_TextParserContext& context)
     {
         // Set the parsed tangent value
-        if (!_SetSplineTanWithoutWidth(context, context.splineTangentIdentifier, 
-                _BundleSplineValue(context, context.splineTangentValue))) {
-            const std::string errorMessage = "Unrecognized spline tangent "
-                "encoding " + context.splineTangentIdentifier;
-            Sdf_TextFileFormatParser_Err(
-                context,
-                in.input(),
-                in.position(),
-                errorMessage);
-            throw PEGTL_NS::parse_error(errorMessage, in);
-        }
+        _SetSplineTanWithoutWidth(
+            context,
+            _BundleSplineValue(context, context.splineTangentValue));
     }
 };
 
@@ -2574,19 +2536,11 @@ struct TextParserAction<SplineTangentWithWidthValue>
     template <class Input>
     static void apply(const Input& in, Sdf_TextParserContext& context)
     {
-        if (!_SetSplineTanWithWidth(context, context.splineTangentIdentifier, 
-                context.splineTangentWidthValue.Get<double>(), 
-                _BundleSplineValue(
-                    context, context.splineTangentValue)) ) {
-            const std::string errorMessage = "Unrecognized spline "
-                "tangent encoding " + context.splineTangentIdentifier;
-            Sdf_TextFileFormatParser_Err(
-                context,
-                in.input(),
-                in.position(),
-                errorMessage);
-            throw PEGTL_NS::parse_error(errorMessage, in);
-        }
+        // Set the parsed tangent width and value
+        _SetSplineTanWithWidth(
+            context,
+            context.splineTangentWidthValue.Get<double>(), 
+            _BundleSplineValue(context, context.splineTangentValue));
     }
 };
 

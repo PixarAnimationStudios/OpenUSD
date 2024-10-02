@@ -307,50 +307,6 @@ _EvalHermite(
 ////////////////////////////////////////////////////////////////////////////////
 // EVAL HELPERS
 
-// Find the slope at a knot, facing into a curved segment.
-//
-// Accounts for Maya vs. standard tangent forms, and forced tangent widths for
-// Hermite curves.
-//
-static double
-_GetCurveKnotSlope(
-    const Ts_TypedKnotData<double> &knotData,
-    const TsTime adjacentTime,
-    const TsCurveType curveType,
-    const Ts_EvalLocation location)
-{
-    if (location == Ts_EvalPre)
-    {
-        if (!knotData.preTanMayaForm)
-        {
-            return knotData.preTanSlope;
-        }
-        else if (curveType == TsCurveTypeHermite)
-        {
-            return -knotData.preTanMayaHeight / (knotData.time - adjacentTime);
-        }
-        else
-        {
-            return -knotData.preTanMayaHeight / knotData.preTanWidth;
-        }
-    }
-    else
-    {
-        if (!knotData.postTanMayaForm)
-        {
-            return knotData.postTanSlope;
-        }
-        else if (curveType == TsCurveTypeHermite)
-        {
-            return knotData.postTanMayaHeight / (adjacentTime - knotData.time);
-        }
-        else
-        {
-            return knotData.postTanMayaHeight / knotData.postTanWidth;
-        }
-    }
-}
-
 // Find the slope from one knot to another in a linear segment.  Such slopes are
 // implicit: based on times and values, not tangents.
 //
@@ -424,8 +380,7 @@ _GetExtrapolationSlope(
 
         // Otherwise the first segment is curved.  The slope is continued from
         // the inward-facing side of the first knot.
-        return _GetCurveKnotSlope(
-            endKnotData, adjacentData.time, curveType, Ts_EvalPost);
+        return endKnotData.postTanSlope;
     }
     else
     {
@@ -444,8 +399,7 @@ _GetExtrapolationSlope(
 
         // Otherwise the last segment is curved.  The slope is continued from
         // the inward-facing side of the last knot.
-        return _GetCurveKnotSlope(
-            endKnotData, adjacentData.time, curveType, Ts_EvalPre);
+        return endKnotData.preTanSlope;
     }
 }
 
@@ -1248,8 +1202,7 @@ _EvalMain(
                 }
 
                 // Not a special case.  Return what's stored in the knot.
-                return _GetCurveKnotSlope(
-                    knotData, prevData.time, data->curveType, Ts_EvalPre);
+                return knotData.preTanSlope;
             }
             else
             {
@@ -1275,8 +1228,7 @@ _EvalMain(
                 }
 
                 // Not a special case.  Return what's stored in the knot.
-                return _GetCurveKnotSlope(
-                    knotData, nextData.time, data->curveType, Ts_EvalPost);
+                return knotData.postTanSlope;
             }
         }
     }

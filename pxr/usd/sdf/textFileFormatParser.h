@@ -766,17 +766,17 @@ struct SplineTangentWithoutWidthValue : PEGTL_NS::seq<
     PEGTL_NS::pad<SplineTangentValue, InlinePadding>,
     PEGTL_NS::not_at<ListSeparator>> {};
 
-// SplineTangent = Identifier (TokenSeparator)? ( (TokenSeparator)? 
-// SplineTangentWithoutWidthValue (TokenSeparator)? ) /
-// Identifier (TokenSeparator)? ( (TokenSeparator)? 
-// SplineTangentWithWidthValue (TokenSeparator)? )
+// SplineTangent = ( (TokenSeparator)?
+//                   SplineTangentWithoutWidthValue
+//                   (TokenSeparator)? ) /
+//                 ( (TokenSeparator)? 
+//                   SplineTangentWithWidthValue
+//                   (TokenSeparator)? )
 struct SplineTangent : PEGTL_NS::sor<
-    PEGTL_NS::seq<Identifier, 
-                  PEGTL_NS::pad<LeftParen, InlinePadding>,
+    PEGTL_NS::seq<PEGTL_NS::pad<LeftParen, InlinePadding>,
                   PEGTL_NS::pad<SplineTangentWithoutWidthValue, InlinePadding>,
                   RightParen>,
-    PEGTL_NS::seq<Identifier, 
-                  PEGTL_NS::pad<LeftParen, InlinePadding>,
+    PEGTL_NS::seq<PEGTL_NS::pad<LeftParen, InlinePadding>,
                   PEGTL_NS::pad<SplineTangentWithWidthValue, InlinePadding>,
                   RightParen>> {};
 

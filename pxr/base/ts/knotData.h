@@ -79,32 +79,22 @@ public:
 
     TsTime GetPreTanWidth() const
     {
-        return (preTanMayaForm ? preTanWidth / 3.0 : preTanWidth);
-    }
-
-    TsTime GetMayaPreTanWidth() const
-    {
-        return (preTanMayaForm ? preTanWidth : preTanWidth * 3.0);
+        return preTanWidth;
     }
 
     TsTime GetPostTanWidth() const
     {
-        return (postTanMayaForm ? postTanWidth / 3.0 : postTanWidth);
-    }
-
-    TsTime GetMayaPostTanWidth() const
-    {
-        return (postTanMayaForm ? postTanWidth : postTanWidth * 3.0);
+        return postTanWidth;
     }
 
     void SetPreTanWidth(const TsTime width)
     {
-        preTanWidth = (preTanMayaForm ? width * 3.0 : width);
+        preTanWidth = width;
     }
 
     void SetPostTanWidth(const TsTime width)
     {
-        postTanWidth = (postTanMayaForm ? width * 3.0 : width);
+        postTanWidth = width;
     }
 
 public:
@@ -112,13 +102,11 @@ public:
     TsTime time;
 
     // Time width of the pre-tangent.  Always non-negative.  Ignored for Hermite
-    // knots.  If pre-tangent is in standard form, this is the actual width; if
-    // in Maya form, this is the width multiplied by 3.
+    // knots.
     TsTime preTanWidth;
 
     // Time width of the post-tangent.  Always non-negative.  Ignored for
-    // Hermite knots.  If post-tangent is in standard form, this is the actual
-    // width; if in Maya form, this is the width multiplied by 3.
+    // Hermite knots.
     TsTime postTanWidth;
 
     // BITFIELDS - note: for enum-typed bitfields, we declare one bit more than
@@ -139,23 +127,12 @@ public:
 
     // Whether this knot is dual-valued (value discontinuity at the knot).
     bool dualValued : 1;
-
-    // Whether pre-tangent is in Maya form; if false, it is in standard form.
-    bool preTanMayaForm : 1;
-
-    // Whether post-tangent is in Maya form; if false, it is in standard form.
-    bool postTanMayaForm : 1;
 };
 
 
 // Data for one knot in a spline.
 //
-// Tangents have two forms:
-//
-// - Standard tangents are expressed as width and slope.
-//
-// - Maya tangents are expressed as width and height.  All values are stored
-//   multiplied by 3.  Heights are negated for pre-tangents.
+// Tangents are expressed as width and slope.
 //
 template <typename T>
 struct Ts_TypedKnotData :
@@ -171,10 +148,8 @@ public:
     T GetPreValue() const;
     T GetPreTanSlope() const;
     T GetPreTanHeight() const;
-    T GetMayaPreTanHeight() const;
     T GetPostTanSlope() const;
     T GetPostTanHeight() const;
-    T GetMayaPostTanHeight() const;
 
 public:
     // Value at this knot.
@@ -183,25 +158,13 @@ public:
     // If dual-valued, the pre-value at this knot.
     T preValue;
 
-    // When pre-tangent is in standard form, preTanSlope stores the slope of the
-    // pre-tangent, rise over run, value height divided by time width.  When
-    // pre-tangent is in Maya form, preTanMayaHeight stores the height of the
-    // pre-tangent, multplied by 3 and negated.
-    union
-    {
-        T preTanSlope;
-        T preTanMayaHeight;
-    };
+    // preTanSlope stores the slope of the pre-tangent, rise over run, value
+    // height divided by time width.
+    T preTanSlope;
 
-    // When post-tangent is in standard form, postTanSlope stores the slope of
-    // the post-tangent, rise over run, value height divided by time width.
-    // When post-tangent is in Maya form, postTanMayaHeight stores the height of
-    // the post-tangent, multplied by 3.
-    union
-    {
-        T postTanSlope;
-        T postTanMayaHeight;
-    };
+    // postTanSlope stores the slope of the post-tangent, rise over run, value
+    // height divided by time width.
+    T postTanSlope;
 };
 
 // For double-typed values, on x86-64, this struct should fit in a cache line.
@@ -236,12 +199,8 @@ public:
 
     virtual void SetPreTanSlope(VtValue slope) = 0;
     virtual void GetPreTanSlope(VtValue *slopeOut) const = 0;
-    virtual void SetMayaPreTanHeight(VtValue height) = 0;
-    virtual void GetMayaPreTanHeight(VtValue *heightOut) const = 0;
     virtual void SetPostTanSlope(VtValue slope) = 0;
     virtual void GetPostTanSlope(VtValue *slopeOut) const = 0;
-    virtual void SetMayaPostTanHeight(VtValue height) = 0;
-    virtual void GetMayaPostTanHeight(VtValue *heightOut) const = 0;
 };
 
 
@@ -267,12 +226,8 @@ public:
 
     void SetPreTanSlope(VtValue slope) override;
     void GetPreTanSlope(VtValue *slopeOut) const override;
-    void SetMayaPreTanHeight(VtValue height) override;
-    void GetMayaPreTanHeight(VtValue *heightOut) const override;
     void SetPostTanSlope(VtValue slope) override;
     void GetPostTanSlope(VtValue *slopeOut) const override;
-    void SetMayaPostTanHeight(VtValue height) override;
-    void GetMayaPostTanHeight(VtValue *heightOut) const override;
 
 private:
     Ts_TypedKnotData<T> *_data;
@@ -308,8 +263,6 @@ bool Ts_TypedKnotData<T>::operator==(
     COMP(dualValued);
     COMP(nextInterp);
     COMP(curveType);
-    COMP(preTanMayaForm);
-    COMP(postTanMayaForm);
 
     COMP(value);
     COMP(preValue);
@@ -330,87 +283,25 @@ T Ts_TypedKnotData<T>::GetPreValue() const
 template <typename T>
 T Ts_TypedKnotData<T>::GetPreTanSlope() const
 {
-    if (!preTanMayaForm)
-    {
-        return preTanSlope;
-    }
-    else if (preTanWidth == 0)
-    {
-        return 0;
-    }
-    else
-    {
-        return -preTanMayaHeight / preTanWidth;
-    }
+    return preTanSlope;
 }
 
 template <typename T>
 T Ts_TypedKnotData<T>::GetPreTanHeight() const
 {
-    if (preTanMayaForm)
-    {
-        return -preTanMayaHeight / 3.0;
-    }
-    else
-    {
-        return -preTanWidth * preTanSlope;
-    }
-}
-
-template <typename T>
-T Ts_TypedKnotData<T>::GetMayaPreTanHeight() const
-{
-    if (preTanMayaForm)
-    {
-        return preTanMayaHeight;
-    }
-    else
-    {
-        return preTanWidth * preTanSlope * 3.0;
-    }
+    return -preTanWidth * preTanSlope;
 }
 
 template <typename T>
 T Ts_TypedKnotData<T>::GetPostTanSlope() const
 {
-    if (!postTanMayaForm)
-    {
-        return postTanSlope;
-    }
-    else if (postTanWidth == 0)
-    {
-        return 0;
-    }
-    else
-    {
-        return postTanMayaHeight / postTanWidth;
-    }
+    return postTanSlope;
 }
 
 template <typename T>
 T Ts_TypedKnotData<T>::GetPostTanHeight() const
 {
-    if (postTanMayaForm)
-    {
-        return postTanMayaHeight / 3.0;
-    }
-    else
-    {
-        return postTanWidth * postTanSlope;
-    }
-}
-
-template <typename T>
-T Ts_TypedKnotData<T>::GetMayaPostTanHeight() const
-{
-    if (postTanMayaForm)
-    {
-        return postTanMayaHeight;
-    }
-    else
-    {
-        return postTanWidth * postTanSlope * 3.0;
-    }
+    return postTanWidth * postTanSlope;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -494,20 +385,6 @@ void Ts_TypedKnotDataProxy<T>::GetPreTanSlope(
 }
 
 template <typename T>
-void Ts_TypedKnotDataProxy<T>::SetMayaPreTanHeight(
-    const VtValue height)
-{
-    _data->preTanMayaHeight = height.UncheckedGet<T>();
-}
-
-template <typename T>
-void Ts_TypedKnotDataProxy<T>::GetMayaPreTanHeight(
-    VtValue* const heightOut) const
-{
-    *heightOut = VtValue(_data->GetMayaPreTanHeight());
-}
-
-template <typename T>
 void Ts_TypedKnotDataProxy<T>::SetPostTanSlope(
     const VtValue slope)
 {
@@ -519,20 +396,6 @@ void Ts_TypedKnotDataProxy<T>::GetPostTanSlope(
     VtValue* const slopeOut) const
 {
     *slopeOut = VtValue(_data->GetPostTanSlope());
-}
-
-template <typename T>
-void Ts_TypedKnotDataProxy<T>::SetMayaPostTanHeight(
-    const VtValue height)
-{
-    _data->postTanMayaHeight = height.UncheckedGet<T>();
-}
-
-template <typename T>
-void Ts_TypedKnotDataProxy<T>::GetMayaPostTanHeight(
-    VtValue* const heightOut) const
-{
-    *heightOut = VtValue(_data->GetMayaPostTanHeight());
 }
 
 

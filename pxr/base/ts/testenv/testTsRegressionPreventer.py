@@ -22,7 +22,6 @@ class TestTsRegressionPreventer(unittest.TestCase):
     def _DoTest(
             self, caseName, museumId, knotTime,
             knotDelta = 0, preDelta = 0, postDelta = 0,
-            mayaTangentForm = False,
             isRegressive = False, isInitiallyRegressive = False):
         """
         Modify a knot with a RegressionPreventer, verify the outcome, and, if
@@ -32,7 +31,7 @@ class TestTsRegressionPreventer(unittest.TestCase):
         origData = Museum.GetData(museumId)
         with Ts.AntiRegressionAuthoringSelector(Ts.AntiRegressionNone):
             origSpline = Evaluator().SplineDataToSpline(
-                origData, mayaTangentForm)
+                origData)
 
         # Copy the knot we're modifying.
         knot = origSpline.GetKnot(knotTime)
@@ -41,16 +40,10 @@ class TestTsRegressionPreventer(unittest.TestCase):
         knot.SetTime(knot.GetTime() + knotDelta)
 
         # Modify pre-tan width.
-        if knot.IsPreTanMayaForm():
-            knot.SetMayaPreTanWidth(knot.GetMayaPreTanWidth() + preDelta * 3)
-        else:
-            knot.SetPreTanWidth(knot.GetPreTanWidth() + preDelta)
+        knot.SetPreTanWidth(knot.GetPreTanWidth() + preDelta)
 
         # Modify post-tan width.
-        if knot.IsPostTanMayaForm():
-            knot.SetMayaPostTanWidth(knot.GetMayaPostTanWidth() + postDelta * 3)
-        else:
-            knot.SetPostTanWidth(knot.GetPostTanWidth() + postDelta)
+        knot.SetPostTanWidth(knot.GetPostTanWidth() + postDelta)
 
         # Copy the starting spline, and set the modified knot without
         # anti-regression.
@@ -224,16 +217,6 @@ class TestTsRegressionPreventer(unittest.TestCase):
         self._DoTest(
             "PreRegressive", Museum.NearCenterVertical,
             knotTime = 0, postDelta = 0.5,
-            isRegressive = True)
-
-    def test_PreRegressiveMayaTans(self):
-        """
-        Lengthen the start tangent to cause regression.  Use Maya tangent form.
-        """
-        self._DoTest(
-            "PreRegressiveMayaTans", Museum.NearCenterVertical,
-            knotTime = 0, postDelta = 0.5,
-            mayaTangentForm = True,
             isRegressive = True)
 
     def test_PostRegressive(self):

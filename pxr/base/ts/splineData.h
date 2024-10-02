@@ -403,14 +403,8 @@ static void _ApplyOffsetAndScaleToKnot(
     knotData->postTanWidth *= absScale;
 
     // Process slopes (inverse relative).
-    if (!knotData->preTanMayaForm)
-    {
-        knotData->preTanSlope /= scale;
-    }
-    if (!knotData->postTanMayaForm)
-    {
-        knotData->postTanSlope /= scale;
-    }
+    knotData->preTanSlope /= scale;
+    knotData->postTanSlope /= scale;
 
     // Swap pre- and post-data if time-reversing.
     if (reversing)
@@ -418,10 +412,6 @@ static void _ApplyOffsetAndScaleToKnot(
         std::swap(knotData->preTanWidth, knotData->postTanWidth);
         std::swap(knotData->preValue, knotData->value);
         std::swap(knotData->preTanSlope, knotData->postTanSlope);
-
-        bool temp = knotData->preTanMayaForm;
-        knotData->preTanMayaForm = knotData->postTanMayaForm;
-        knotData->postTanMayaForm = temp;
     }
 }
 
