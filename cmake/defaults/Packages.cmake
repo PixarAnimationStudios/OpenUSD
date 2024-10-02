@@ -201,7 +201,7 @@ if (PXR_BUILD_IMAGING)
         add_definitions(-DPXR_OCIO_PLUGIN_ENABLED)
     endif()
     # --OpenGL
-    if (PXR_ENABLE_GL_SUPPORT)
+    if (PXR_ENABLE_GL_SUPPORT AND NOT PXR_APPLE_EMBEDDED)
         # Prefer legacy GL library over GLVND libraries if both
         # are installed.
         if (POLICY CMP0072)
@@ -250,7 +250,7 @@ if (PXR_BUILD_IMAGING)
         endif()
     endif()
     # --Opensubdiv
-    set(OPENSUBDIV_USE_GPU ${PXR_ENABLE_GL_SUPPORT})
+    set(OPENSUBDIV_USE_GPU ${PXR_BUILD_GPU_SUPPORT})
     find_package(OpenSubdiv 3 REQUIRED)
     # --Ptex
     if (PXR_ENABLE_PTEX_SUPPORT)

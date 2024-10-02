@@ -11,6 +11,8 @@
 #include "pxr/imaging/hgi/resourceBindings.h"
 #include "pxr/imaging/hgiMetal/api.h"
 
+#include <Metal/Metal.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// Fixed indexes within the argument buffer for resource types.
