@@ -2324,7 +2324,7 @@ pxr_register_test(testHdStBufferArray
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBufferArray"
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT testHdStBufferArray-Run1-stdout.txt
-    POST_COMMAND "diff -I drawingShader -I computeShader -I gpuMemoryUsed -I meshTopology -I basisCurvesTopology testHdStBufferArray-Run1-stdout.txt ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStBufferArray/baseline/testHdStBufferArray-Run1-stdout.txt"
+    POST_COMMAND "diff -I drawingShader -I computeShader -I gpuMemoryUsed -I meshTopology -I basisCurvesTopology -I uboSize -I ssboSize testHdStBufferArray-Run1-stdout.txt ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStBufferArray/baseline/testHdStBufferArray-Run1-stdout.txt"
     TESTENV testHdStBufferArray
     ENV
         TF_DEBUG=HD_SAFE_MODE
@@ -2335,7 +2335,7 @@ pxr_register_test(testHdStBufferArrayInstancingDisabled
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBufferArray"
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT testHdStBufferArrayInstancingDisabled-Run1-stdout.txt
-    POST_COMMAND "diff -I drawingShader -I computeShader -I gpuMemoryUsed -I meshTopology -I basisCurvesTopology testHdStBufferArrayInstancingDisabled-Run1-stdout.txt ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStBufferArrayInstancingDisabled/baseline/testHdStBufferArrayInstancingDisabled-Run1-stdout.txt"
+    POST_COMMAND "diff -I drawingShader -I computeShader -I gpuMemoryUsed -I meshTopology -I basisCurvesTopology -I uboSize -I ssboSize testHdStBufferArrayInstancingDisabled-Run1-stdout.txt ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStBufferArrayInstancingDisabled/baseline/testHdStBufferArrayInstancingDisabled-Run1-stdout.txt"
     TESTENV testHdStBufferArrayInstancingDisabled
     ENV
         HDST_ENABLE_RESOURCE_INSTANCING=0
@@ -2374,269 +2374,146 @@ pxr_register_test(testHdStClipPlanes2
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
-pxr_register_test(testHdStCodeGen_GL_Mesh_Indirect
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_mesh_indirect.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_indirect.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_GL/baseline/codegen_mesh_indirect.out"
-    TESTENV testHdStCodeGen_GL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGIGL_ENABLE_BINDLESS_BUFFER=1
-        HGIGL_ENABLE_BINDLESS_TEXTURE=1
-        HGIGL_GLSL_VERSION=450
-        HGI_ENABLE_VULKAN=0
-)
-pxr_register_test(testHdStCodeGen_GL_Mesh_Bindless_Indirect
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --bindless | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_mesh_bindless_indirect.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_bindless_indirect.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_GL/baseline/codegen_mesh_bindless_indirect.out"
-    TESTENV testHdStCodeGen_GL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGIGL_ENABLE_BINDLESS_BUFFER=1
-        HGIGL_ENABLE_BINDLESS_TEXTURE=1
-        HGIGL_GLSL_VERSION=450
-        HGI_ENABLE_VULKAN=0
-)
-pxr_register_test(testHdStCodeGen_GL_Mesh_Bindless_Indirect_SmoothNormals
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --bindless --smoothNormals | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_mesh_bindless_indirect_smoothNormals.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_bindless_indirect_smoothNormals.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_GL/baseline/codegen_mesh_bindless_indirect_smoothNormals.out"
-    TESTENV testHdStCodeGen_GL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGIGL_ENABLE_BINDLESS_BUFFER=1
-        HGIGL_ENABLE_BINDLESS_TEXTURE=1
-        HGIGL_GLSL_VERSION=450
-        HGI_ENABLE_VULKAN=0
-)
-pxr_register_test(testHdStCodeGen_GL_Mesh_Bindless_Indirect_DoubleSided
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --bindless --doubleSided | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_mesh_bindless_indirect_doubleSided.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_bindless_indirect_doubleSided.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_GL/baseline/codegen_mesh_bindless_indirect_doubleSided.out"
-    TESTENV testHdStCodeGen_GL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGIGL_ENABLE_BINDLESS_BUFFER=1
-        HGIGL_ENABLE_BINDLESS_TEXTURE=1
-        HGIGL_GLSL_VERSION=450
-        HGI_ENABLE_VULKAN=0
-)
-pxr_register_test(testHdStCodeGen_GL_Mesh_Bindless_Indirect_FaceVarying
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --bindless --faceVarying | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_mesh_bindless_indirect_faceVarying.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_bindless_indirect_faceVarying.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_GL/baseline/codegen_mesh_bindless_indirect_faceVarying.out"
-    TESTENV testHdStCodeGen_GL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGIGL_ENABLE_BINDLESS_BUFFER=1
-        HGIGL_ENABLE_BINDLESS_TEXTURE=1
-        HGIGL_GLSL_VERSION=450
-        HGI_ENABLE_VULKAN=0
-)
-pxr_register_test(testHdStCodeGen_GL_Mesh_Indirect_Instance
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --instance | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_mesh_indirect_instance.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_indirect_instance.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_GL/baseline/codegen_mesh_indirect_instance.out"
-    TESTENV testHdStCodeGen_GL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGIGL_ENABLE_BINDLESS_BUFFER=1
-        HGIGL_ENABLE_BINDLESS_TEXTURE=1
-        HGIGL_GLSL_VERSION=450
-        HGI_ENABLE_VULKAN=0
-)
-pxr_register_test(testHdStCodeGen_GL_Mesh_Bindless_Indirect_Instance
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --bindless --instance | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_mesh_bindless_indirect_instance.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_bindless_indirect_instance.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_GL/baseline/codegen_mesh_bindless_indirect_instance.out"
-    TESTENV testHdStCodeGen_GL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGIGL_ENABLE_BINDLESS_BUFFER=1
-        HGIGL_ENABLE_BINDLESS_TEXTURE=1
-        HGIGL_GLSL_VERSION=450
-        HGI_ENABLE_VULKAN=0
-)
-pxr_register_test(testHdStCodeGen_GL_Mesh_EdgeOnly
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --edgeOnly | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_mesh_edgeonly.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_edgeonly.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_GL/baseline/codegen_mesh_edgeonly.out"
-    TESTENV testHdStCodeGen_GL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGIGL_ENABLE_BINDLESS_BUFFER=1
-        HGIGL_ENABLE_BINDLESS_TEXTURE=1
-        HGIGL_GLSL_VERSION=450
-        HGI_ENABLE_VULKAN=0
-)
-pxr_register_test(testHdStCodeGen_GL_Mesh_EdgeOnly_BlendWireframe
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --edgeOnly --blendWireframe | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_mesh_edgeonly_blendwireframe.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_edgeonly_blendwireframe.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_GL/baseline/codegen_mesh_edgeonly_blendwireframe.out"
-    TESTENV testHdStCodeGen_GL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGIGL_ENABLE_BINDLESS_BUFFER=1
-        HGIGL_ENABLE_BINDLESS_TEXTURE=1
-        HGIGL_GLSL_VERSION=450
-        HGI_ENABLE_VULKAN=0
-)
-pxr_register_test(testHdStCodeGen_GL_Curves_Bindless
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --curves --bindless | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_curves_bindless.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_curves_bindless.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_GL/baseline/codegen_curves_bindless.out"
-    TESTENV testHdStCodeGen_GL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGIGL_ENABLE_BINDLESS_BUFFER=1
-        HGIGL_ENABLE_BINDLESS_TEXTURE=1
-        HGIGL_GLSL_VERSION=450
-        HGI_ENABLE_VULKAN=0
-)
-pxr_register_test(testHdStCodeGen_GL_Curves_Indirect
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --curves | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_curves_indirect.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_curves_indirect.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_GL/baseline/codegen_curves_indirect.out"
-    TESTENV testHdStCodeGen_GL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGIGL_ENABLE_BINDLESS_BUFFER=1
-        HGIGL_ENABLE_BINDLESS_TEXTURE=1
-        HGIGL_GLSL_VERSION=450
-        HGI_ENABLE_VULKAN=0
-)
-pxr_register_test(testHdStCodeGen_GL_Points_Bindless
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --points --bindless | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_points_bindless.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_points_bindless.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_GL/baseline/codegen_points_bindless.out"
-    TESTENV testHdStCodeGen_GL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGIGL_ENABLE_BINDLESS_BUFFER=1
-        HGIGL_ENABLE_BINDLESS_TEXTURE=1
-        HGIGL_GLSL_VERSION=450
-        HGI_ENABLE_VULKAN=0
-)
-pxr_register_test(testHdStCodeGen_GL_Points_Indirect
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --points | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_points_indirect.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_points_indirect.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_GL/baseline/codegen_points_indirect.out"
-    TESTENV testHdStCodeGen_GL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGIGL_ENABLE_BINDLESS_BUFFER=1
-        HGIGL_ENABLE_BINDLESS_TEXTURE=1
-        HGIGL_GLSL_VERSION=450
-        HGI_ENABLE_VULKAN=0
-)
 
-# Skip Vulkan codegen tests if not supported by build.
-if (${PXR_ENABLE_VULKAN_SUPPORT})
-pxr_register_test(testHdStCodeGen_Vulkan_Mesh_Indirect
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_mesh_indirect.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_indirect.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_Vulkan/baseline/codegen_mesh_indirect.out"
-    TESTENV testHdStCodeGen_Vulkan
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGI_ENABLE_VULKAN=1
-)
-pxr_register_test(testHdStCodeGen_Vulkan_Mesh_Indirect_SmoothNormals
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --smoothNormals | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_mesh_indirect_smoothNormals.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_indirect_smoothNormals.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_Vulkan/baseline/codegen_mesh_indirect_smoothNormals.out"
-    TESTENV testHdStCodeGen_Vulkan
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGI_ENABLE_VULKAN=1
-)
-pxr_register_test(testHdStCodeGen_Vulkan_Mesh_Indirect_DoubleSided
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --doubleSided | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_mesh_indirect_doubleSided.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_indirect_doubleSided.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_Vulkan/baseline/codegen_mesh_indirect_doubleSided.out"
-    TESTENV testHdStCodeGen_Vulkan
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGI_ENABLE_VULKAN=1
-)
-pxr_register_test(testHdStCodeGen_Vulkan_Mesh_Indirect_FaceVarying
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --faceVarying | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_mesh_indirect_faceVarying.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_indirect_faceVarying.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_Vulkan/baseline/codegen_mesh_indirect_faceVarying.out"
-    TESTENV testHdStCodeGen_Vulkan
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGI_ENABLE_VULKAN=1
-)
-pxr_register_test(testHdStCodeGen_Vulkan_Mesh_Indirect_Instance
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --instance | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_mesh_indirect_instance.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_indirect_instance.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_Vulkan/baseline/codegen_mesh_indirect_instance.out"
-    TESTENV testHdStCodeGen_Vulkan
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGI_ENABLE_VULKAN=1
-)
-pxr_register_test(testHdStCodeGen_Vulkan_Mesh_EdgeOnly
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --edgeOnly | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_mesh_edgeonly.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_edgeonly.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_Vulkan/baseline/codegen_mesh_edgeonly.out"
-    TESTENV testHdStCodeGen_Vulkan
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGI_ENABLE_VULKAN=1
-)
-pxr_register_test(testHdStCodeGen_Vulkan_Mesh_EdgeOnly_BlendWireframe
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --edgeOnly --blendWireframe | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_mesh_edgeonly_blendwireframe.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_edgeonly_blendwireframe.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_Vulkan/baseline/codegen_mesh_edgeonly_blendwireframe.out"
-    TESTENV testHdStCodeGen_Vulkan
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGI_ENABLE_VULKAN=1
-)
-pxr_register_test(testHdStCodeGen_Vulkan_Curves_Indirect
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --curves | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_curves_indirect.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_curves_indirect.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_Vulkan/baseline/codegen_curves_indirect.out"
-    TESTENV testHdStCodeGen_Vulkan
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGI_ENABLE_VULKAN=1
-)
-pxr_register_test(testHdStCodeGen_Vulkan_Points_Indirect
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --points | grep -v '// line'"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT codegen_points_indirect.out
-    POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_points_indirect.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen_Vulkan/baseline/codegen_points_indirect.out"
-    TESTENV testHdStCodeGen_Vulkan
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HGI_ENABLE_VULKAN=1
-)
-endif() # PXR_ENABLE_VULKAN_SUPPORT
+function(register_codegen_tests suffix hgi_env)
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Indirect
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh | grep -v '// line'"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_indirect.out
+        POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_indirect.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen${suffix}/baseline/codegen_mesh_indirect.out"
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Bindless_Indirect
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --bindless | grep -v '// line'"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_bindless_indirect.out
+        POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_bindless_indirect.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen${suffix}/baseline/codegen_mesh_bindless_indirect.out"
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Bindless_Indirect_SmoothNormals
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --bindless --smoothNormals | grep -v '// line'"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_bindless_indirect_smoothNormals.out
+        POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_bindless_indirect_smoothNormals.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen${suffix}/baseline/codegen_mesh_bindless_indirect_smoothNormals.out"
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Bindless_Indirect_DoubleSided
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --bindless --doubleSided | grep -v '// line'"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_bindless_indirect_doubleSided.out
+        POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_bindless_indirect_doubleSided.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen${suffix}/baseline/codegen_mesh_bindless_indirect_doubleSided.out"
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Bindless_Indirect_FaceVarying
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --bindless --faceVarying | grep -v '// line'"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_bindless_indirect_faceVarying.out
+        POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_bindless_indirect_faceVarying.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen${suffix}/baseline/codegen_mesh_bindless_indirect_faceVarying.out"
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Indirect_Instance
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --instance | grep -v '// line'"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_indirect_instance.out
+        POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_indirect_instance.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen${suffix}/baseline/codegen_mesh_indirect_instance.out"
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_Bindless_Indirect_Instance
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --bindless --instance | grep -v '// line'"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_bindless_indirect_instance.out
+        POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_bindless_indirect_instance.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen${suffix}/baseline/codegen_mesh_bindless_indirect_instance.out"
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_EdgeOnly
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --edgeOnly | grep -v '// line'"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_edgeonly.out
+        POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_edgeonly.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen${suffix}/baseline/codegen_mesh_edgeonly.out"
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Mesh_EdgeOnly_BlendWireframe
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --mesh --edgeOnly --blendWireframe | grep -v '// line'"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_mesh_edgeonly_blendwireframe.out
+        POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_mesh_edgeonly_blendwireframe.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen${suffix}/baseline/codegen_mesh_edgeonly_blendwireframe.out"
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Curves_Bindless
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --curves --bindless | grep -v '// line'"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_curves_bindless.out
+        POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_curves_bindless.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen${suffix}/baseline/codegen_curves_bindless.out"
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Curves_Indirect
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --curves | grep -v '// line'"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_curves_indirect.out
+        POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_curves_indirect.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen${suffix}/baseline/codegen_curves_indirect.out"
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Points_Bindless
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --points --bindless | grep -v '// line'"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_points_bindless.out
+        POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_points_bindless.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen${suffix}/baseline/codegen_points_bindless.out"
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+    pxr_register_test(testHdStCodeGen${suffix}_Points_Indirect
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCodeGen --points | grep -v '// line'"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT codegen_points_indirect.out
+        POST_COMMAND "diff -I '\".*\.glslfx\"' codegen_points_indirect.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStCodeGen${suffix}/baseline/codegen_points_indirect.out"
+        TESTENV testHdStCodeGen${suffix}
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            ${hgi_env}
+    )
+endfunction()
+# OpenGL codegen tests require X11 to create a context
+if(PXR_ENABLE_GL_SUPPORT AND X11_FOUND)
+    register_codegen_tests(_GL "HGI_ENABLE_VULKAN=0;HGIGL_ENABLE_BINDLESS_BUFFER=1;HGIGL_ENABLE_BINDLESS_TEXTURE=1;HGIGL_GLSL_VERSION=450")
+endif()
+if(PXR_ENABLE_VULKAN_SUPPORT)
+    register_codegen_tests(_Vulkan "HGI_ENABLE_VULKAN=1;")
+endif()
 
 pxr_register_test(testHdStCurveDrawing_lv0_refined
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCurveDrawing --offscreen --repr refined --refineLevel 0 --write testHdStCurveDrawing_lv0_refined.png"
@@ -2737,6 +2614,7 @@ pxr_register_test(testHdStDrawBatching
     TESTENV testHdStDrawBatching
     ENV
         TF_DEBUG=HD_SAFE_MODE
+        HGI_ENABLE_VULKAN=0
         HD_ENABLE_DOUBLE_MATRIX=1
         HD_ENABLE_GPU_COUNT_VISIBLE_INSTANCES=1
         HD_ENABLE_PACKED_NORMALS=0
@@ -2857,6 +2735,7 @@ pxr_register_test(testHdStGL
     EXPECTED_RETURN_CODE 0
     ENV
         TF_DEBUG=HD_SAFE_MODE
+        HGI_ENABLE_VULKAN=0
 )
 pxr_register_test(testHdStGLSL_instanceTransform0
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx instanceTransform0"
@@ -2864,6 +2743,7 @@ pxr_register_test(testHdStGLSL_instanceTransform0
     TESTENV testHdStGLSL
     ENV
         TF_DEBUG=HD_SAFE_MODE
+        HGI_ENABLE_VULKAN=0
 )
 pxr_register_test(testHdStGLSL_instanceTransform1
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx instanceTransform1"
@@ -2871,6 +2751,7 @@ pxr_register_test(testHdStGLSL_instanceTransform1
     TESTENV testHdStGLSL
     ENV
         TF_DEBUG=HD_SAFE_MODE
+        HGI_ENABLE_VULKAN=0
 )
 pxr_register_test(testHdStGLSL_instanceTransform2
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx instanceTransform2"
@@ -2878,6 +2759,7 @@ pxr_register_test(testHdStGLSL_instanceTransform2
     TESTENV testHdStGLSL
     ENV
         TF_DEBUG=HD_SAFE_MODE
+        HGI_ENABLE_VULKAN=0
 )
 pxr_register_test(testHdStGLSL_instanceTransform3
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx instanceTransform3"
@@ -2885,6 +2767,7 @@ pxr_register_test(testHdStGLSL_instanceTransform3
     TESTENV testHdStGLSL
     ENV
         TF_DEBUG=HD_SAFE_MODE
+        HGI_ENABLE_VULKAN=0
 )
 pxr_register_test(testHdStGLSL_determinant
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx determinant"
@@ -2892,12 +2775,13 @@ pxr_register_test(testHdStGLSL_determinant
     TESTENV testHdStGLSL
     ENV
         TF_DEBUG=HD_SAFE_MODE
+        HGI_ENABLE_VULKAN=0
 )
 pxr_register_test(testHdStHWFaceCulling
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStHWFaceCulling"
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT testHdStHWFaceCulling-Run1-stdout.txt
-    POST_COMMAND "diff -I computeShader -I drawingShader -I gpuMemoryUsed testHdStHWFaceCulling-Run1-stdout.txt ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStHWFaceCulling/baseline/testHdStHWFaceCulling-Run1-stdout.txt"
+    POST_COMMAND "diff -I computeShader -I drawingShader -I gpuMemoryUsed -I uboSize -I ssboSize testHdStHWFaceCulling-Run1-stdout.txt ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStHWFaceCulling/baseline/testHdStHWFaceCulling-Run1-stdout.txt"
     TESTENV testHdStHWFaceCulling
 )
 pxr_register_test(testHdStIndirectDrawBatchCodeGen
@@ -3157,7 +3041,7 @@ pxr_register_test(testHdStPrimvars
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStPrimvars"
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT testHdStPrimvars-Run1-stdout.txt
-    POST_COMMAND "diff -I computeShader -I drawingShader -I gpuMemoryUsed testHdStPrimvars-Run1-stdout.txt ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStPrimvars/baseline/testHdStPrimvars-Run1-stdout.txt"
+    POST_COMMAND "diff -I computeShader -I drawingShader -I gpuMemoryUsed -I uboSize -I ssboSize testHdStPrimvars-Run1-stdout.txt ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStPrimvars/baseline/testHdStPrimvars-Run1-stdout.txt"
     TESTENV testHdStPrimvars
     ENV
         HDST_ENABLE_MATERIAL_PRIMVAR_FILTERING=0

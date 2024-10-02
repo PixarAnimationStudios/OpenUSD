@@ -136,7 +136,7 @@ class HdSt_MyTestDriver : public HdSt_TestDriverBase<HdUnitTestDelegate>
 public:
     HdSt_MyTestDriver();
 
-    void Draw(std::vector<size_t> viewerIds);
+    void Draw(const std::vector<size_t> &viewerIds);
 
     const HdStRenderPassStateSharedPtr &GetRenderPassState() const {
         return _renderPassStates[0];
@@ -211,7 +211,7 @@ HdSt_MyTestDriver::HdSt_MyTestDriver()
 }
 
 void
-HdSt_MyTestDriver::Draw(std::vector<size_t> viewerIds)
+HdSt_MyTestDriver::Draw(const std::vector<size_t> &viewerIds)
 {
     for (size_t const &vidx : viewerIds) {
         if (vidx < _viewers.size()) {
@@ -498,4 +498,3 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 }
-

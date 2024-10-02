@@ -9,6 +9,8 @@
 #include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 #include "pxr/imaging/hdSt/unitTestHelper.h"
 
+#include "pxr/imaging/hgi/capabilities.h"
+
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/rotation.h"
 #include "pxr/base/gf/vec3d.h"
@@ -118,10 +120,12 @@ My_TestGLDrawing::AddLargeCurve(HdUnitTestDelegate *delegate)
 {
     HdInterpolation colorInterp, widthInterp, opacityInterp;
     colorInterp = widthInterp = opacityInterp = HdInterpolationConstant;
-    
-    const size_t vboSizeLimit = 1 << 30; // see HD_MAX_VBO_SIZE
-    const size_t maxPointsInVBO = vboSizeLimit / sizeof(GfVec3f);
-    const size_t numControlVertsPerCurve = 1 << 2;
+
+    static constexpr size_t vboMaxSize = 1 << 30; // default for HD_MAX_VBO_SIZE
+    const size_t storageMaxSize = _driver->GetHgi()->GetCapabilities()->
+        GetMaxShaderStorageBlockSize();
+    const size_t maxPointsInVBO = std::min(storageMaxSize, vboMaxSize) / sizeof(GfVec3f);
+    static constexpr size_t numControlVertsPerCurve = 1 << 2;
     const size_t numCurves = maxPointsInVBO / numControlVertsPerCurve + 1;
     
     std::vector<int> curveVertexCounts(numCurves, numControlVertsPerCurve);
@@ -217,4 +221,3 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 }
-

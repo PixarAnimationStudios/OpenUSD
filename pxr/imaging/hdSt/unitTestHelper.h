@@ -551,6 +551,11 @@ public:
     HDST_API
     const HdRenderPassSharedPtr &GetRenderPass();
 
+    HDST_API
+    Hgi* GetHgi() {
+        return _GetHgi();
+    }
+
 private:
     void _CreateRenderPassState();
 };

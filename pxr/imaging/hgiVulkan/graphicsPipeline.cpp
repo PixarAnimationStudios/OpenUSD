@@ -702,7 +702,7 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
     if (hasDepth && _descriptor.resolveAttachments) {
         depthResolve.pDepthStencilResolveAttachment = &vkDepthResolveReference;
         depthResolve.depthResolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
-        depthResolve.stencilResolveMode = VK_RESOLVE_MODE_NONE;
+        depthResolve.stencilResolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
         subpassDesc.pNext = &depthResolve;
     }
 
