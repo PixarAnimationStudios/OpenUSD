@@ -19,20 +19,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 static
 bool
 _CheckInstanceValidationLayerSupport(const char * layerName)
-{  
-    uint32_t layerCount;  
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);  
+{
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
     std::vector<VkLayerProperties> availableLayers(layerCount);
-  
+
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-    for (const auto& layerProperties : availableLayers) {  
-        if (strcmp(layerName, layerProperties.layerName) == 0) {  
+    for (const auto& layerProperties : availableLayers) {
+        if (strcmp(layerName, layerProperties.layerName) == 0) {
             return true;
-        }  
-    }  
+        }
+    }
 
-    return false;  
+    return false;
 }
 
 static
@@ -133,12 +133,7 @@ HgiVulkanInstance::HgiVulkanInstance()
         }
     #endif
 
-    TF_VERIFY(
-        vkCreateInstance(
-            &createInfo,
-            HgiVulkanAllocator(),
-            &_vkInstance) == VK_SUCCESS
-    );
+    TF_VERIFY_VK_RESULT(vkCreateInstance(&createInfo, HgiVulkanAllocator(), &_vkInstance));
 
     HgiVulkanCreateDebug(this);
 }

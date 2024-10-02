@@ -102,12 +102,12 @@ _CreateDescriptorSetLayout(
     std::string const& debugName)
 {
     VkDescriptorSetLayout layout = nullptr;
-    TF_VERIFY(
+    TF_VERIFY_VK_RESULT(
         vkCreateDescriptorSetLayout(
             device->GetVulkanDevice(),
             &createInfo,
             HgiVulkanAllocator(),
-            &layout) == VK_SUCCESS
+            &layout)
     );
 
     // Debug label

@@ -330,12 +330,12 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     pipeLayCreateInfo.setLayoutCount= (uint32_t) _vkDescriptorSetLayouts.size();
     pipeLayCreateInfo.pSetLayouts = _vkDescriptorSetLayouts.data();
 
-    TF_VERIFY(
+    TF_VERIFY_VK_RESULT(
         vkCreatePipelineLayout(
             _device->GetVulkanDevice(),
             &pipeLayCreateInfo,
             HgiVulkanAllocator(),
-            &_vkPipelineLayout) == VK_SUCCESS
+            &_vkPipelineLayout)
     );
 
     // Debug label
@@ -362,14 +362,14 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     //
     HgiVulkanPipelineCache* pCache = device->GetPipelineCache();
 
-    TF_VERIFY(
+    TF_VERIFY_VK_RESULT(
         vkCreateGraphicsPipelines(
             _device->GetVulkanDevice(),
             pCache->GetVulkanPipelineCache(),
             1,
             &pipeCreateInfo,
             HgiVulkanAllocator(),
-            &_vkPipeline) == VK_SUCCESS
+            &_vkPipeline)
     );
 
     // Debug label
@@ -503,12 +503,12 @@ HgiVulkanGraphicsPipeline::AcquireVulkanFramebuffer(
     fbCreateInfo.height = framebuffer.dimensions[1];
     fbCreateInfo.layers = 1;
 
-    TF_VERIFY(
+    TF_VERIFY_VK_RESULT(
         vkCreateFramebuffer(
             _device->GetVulkanDevice(),
             &fbCreateInfo,
             HgiVulkanAllocator(),
-            &framebuffer.vkFramebuffer) == VK_SUCCESS
+            &framebuffer.vkFramebuffer)
     );
 
     // Debug label
@@ -766,12 +766,12 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
     vkCreateRenderPass2KHR = (PFN_vkCreateRenderPass2KHR) vkGetDeviceProcAddr(
         _device->GetVulkanDevice(), "vkCreateRenderPass2KHR");
 
-    TF_VERIFY(
+    TF_VERIFY_VK_RESULT(
         vkCreateRenderPass2KHR(
             _device->GetVulkanDevice(),
             &renderPassInfo,
             HgiVulkanAllocator(),
-            &_vkRenderPass) == VK_SUCCESS
+            &_vkRenderPass)
     );
 
     // Debug label

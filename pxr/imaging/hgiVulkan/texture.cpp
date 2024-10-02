@@ -107,14 +107,14 @@ HgiVulkanTexture::HgiVulkanTexture(
     // Equivalent to: vkCreateImage, vkAllocateMemory, vkBindImageMemory
     VmaAllocationCreateInfo allocInfo = {};
     allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-    TF_VERIFY(
+    TF_VERIFY_VK_RESULT(
         vmaCreateImage(
             device->GetVulkanMemoryAllocator(),
             &imageCreateInfo,
             &allocInfo,
             &_vkImage,
             &_vmaImageAllocation,
-            nullptr) == VK_SUCCESS
+            nullptr)
     );
 
     TF_VERIFY(_vkImage, "Failed to create image");
@@ -164,12 +164,12 @@ HgiVulkanTexture::HgiVulkanTexture(
     view.subresourceRange.levelCount = desc.mipLevels;
     view.image = _vkImage;
 
-    TF_VERIFY(
+    TF_VERIFY_VK_RESULT(
         vkCreateImageView(
             device->GetVulkanDevice(),
             &view,
             HgiVulkanAllocator(),
-            &_vkImageView) == VK_SUCCESS
+            &_vkImageView)
     );
 
     // Debug label
@@ -286,12 +286,12 @@ HgiVulkanTexture::HgiVulkanTexture(
     view.subresourceRange.levelCount = desc.mipLevels;
     view.image = srcTexture->GetImage();
 
-    TF_VERIFY(
+    TF_VERIFY_VK_RESULT(
         vkCreateImageView(
             device->GetVulkanDevice(),
             &view,
             HgiVulkanAllocator(),
-            &_vkImageView) == VK_SUCCESS
+            &_vkImageView)
     );
 
     // Debug label
@@ -358,11 +358,11 @@ HgiVulkanTexture::GetCPUStagingAddress()
     }
 
     if (!_cpuStagingAddress) {
-        TF_VERIFY(
+        TF_VERIFY_VK_RESULT(
             vmaMapMemory(
                 _device->GetVulkanMemoryAllocator(), 
                 _stagingBuffer->GetVulkanMemoryAllocation(), 
-                &_cpuStagingAddress) == VK_SUCCESS
+                &_cpuStagingAddress)
         );
     }
 

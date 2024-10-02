@@ -36,12 +36,7 @@ HgiVulkanCommandBuffer::HgiVulkanCommandBuffer(
     allocInfo.commandPool = pool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 
-    TF_VERIFY(
-        vkAllocateCommandBuffers(
-            vkDevice,
-            &allocInfo,
-            &_vkCommandBuffer) == VK_SUCCESS
-    );
+    TF_VERIFY_VK_RESULT(vkAllocateCommandBuffers(vkDevice, &allocInfo, &_vkCommandBuffer));
 
     // Assign a debug label to command buffer
     uint64_t cmdBufHandle = (uint64_t)_vkCommandBuffer;
@@ -58,23 +53,13 @@ HgiVulkanCommandBuffer::HgiVulkanCommandBuffer(
     VkFenceCreateInfo fenceInfo = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
     fenceInfo.flags = 0; // Unsignaled starting state
 
-    TF_VERIFY(
-        vkCreateFence(
-            vkDevice,
-            &fenceInfo,
-            HgiVulkanAllocator(),
-            &_vkFence) == VK_SUCCESS
-    );
+    TF_VERIFY_VK_RESULT(vkCreateFence(vkDevice, &fenceInfo, HgiVulkanAllocator(), &_vkFence));
 
     // Create semaphore for GPU-GPU synchronization
     VkSemaphoreCreateInfo semaCreateInfo =
         {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
-    TF_VERIFY(
-        vkCreateSemaphore(
-            vkDevice,
-            &semaCreateInfo,
-            HgiVulkanAllocator(),
-            &_vkSemaphore) == VK_SUCCESS
+    TF_VERIFY_VK_RESULT(
+        vkCreateSemaphore(vkDevice, &semaCreateInfo, HgiVulkanAllocator(), &_vkSemaphore)
     );
 
     // Assign a debug label to fence.
@@ -105,9 +90,7 @@ HgiVulkanCommandBuffer::BeginCommandBuffer(uint8_t inflightId)
         {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     beginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-    TF_VERIFY(
-        vkBeginCommandBuffer(_vkCommandBuffer, &beginInfo) == VK_SUCCESS
-    );
+    TF_VERIFY_VK_RESULT(vkBeginCommandBuffer(_vkCommandBuffer, &beginInfo));
 
     _inflightId = inflightId;
     _isInFlight = true;
@@ -133,9 +116,7 @@ HgiVulkanCommandBuffer::EndCommandBuffer()
     TF_VERIFY(_isInFlight);
     TF_VERIFY(!_isSubmitted);
 
-    TF_VERIFY(
-        vkEndCommandBuffer(_vkCommandBuffer) == VK_SUCCESS
-    );
+    TF_VERIFY_VK_RESULT(vkEndCommandBuffer(_vkCommandBuffer));
 
     _isSubmitted = true;
 }
@@ -163,8 +144,7 @@ HgiVulkanCommandBuffer::UpdateInFlightStatus(HgiSubmitWaitType wait)
         }
 
         static const uint64_t timeOut = 100000000000;
-        TF_VERIFY(vkWaitForFences(
-            vkDevice, 1, &_vkFence, VK_TRUE, timeOut) == VK_SUCCESS);
+        TF_VERIFY_VK_RESULT(vkWaitForFences(vkDevice, 1, &_vkFence, VK_TRUE, timeOut));
     }
 
     _isInFlight = false;
@@ -191,9 +171,7 @@ HgiVulkanCommandBuffer::ResetIfConsumedByGPU(HgiSubmitWaitType wait)
     VkDevice vkDevice = _device->GetVulkanDevice();
 
     // GPU is done with command buffer, reset fence and command buffer.
-    TF_VERIFY(
-        vkResetFences(vkDevice, 1, &_vkFence)  == VK_SUCCESS
-    );
+    TF_VERIFY_VK_RESULT(vkResetFences(vkDevice, 1, &_vkFence));
 
     // It might be more efficient to reset the cmd pool instead of individual
     // command buffers. But we may not have a clear 'StartFrame' / 'EndFrame'
@@ -202,9 +180,7 @@ HgiVulkanCommandBuffer::ResetIfConsumedByGPU(HgiSubmitWaitType wait)
     // been consumed by the GPU.
 
     VkCommandBufferResetFlags flags = _GetCommandBufferResetFlags();
-    TF_VERIFY(
-        vkResetCommandBuffer(_vkCommandBuffer, flags) == VK_SUCCESS
-    );
+    TF_VERIFY_VK_RESULT(vkResetCommandBuffer(_vkCommandBuffer, flags));
 
     // Command buffer may now be reused for new recordings / resource creation.
     _isSubmitted = false;

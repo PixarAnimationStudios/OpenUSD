@@ -57,12 +57,12 @@ HgiVulkanShaderFunction::HgiVulkanShaderFunction(
         shaderCreateInfo.codeSize = _spirvByteSize;
         shaderCreateInfo.pCode = (uint32_t*) spirv.data();
 
-        TF_VERIFY(
+        TF_VERIFY_VK_RESULT(
             vkCreateShaderModule(
                 device->GetVulkanDevice(),
                 &shaderCreateInfo,
                 HgiVulkanAllocator(),
-                &_vkShaderModule) == VK_SUCCESS
+                &_vkShaderModule)
         );
 
         // Debug label

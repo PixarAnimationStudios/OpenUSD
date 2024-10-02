@@ -10,6 +10,7 @@
 #include "pxr/imaging/hgiVulkan/conversions.h"
 #include "pxr/imaging/hgiVulkan/device.h"
 #include "pxr/imaging/hgiVulkan/sampler.h"
+#include "pxr/imaging/hgiVulkan/diagnostic.h"
 
 #include <float.h>
 
@@ -58,12 +59,12 @@ HgiVulkanSampler::HgiVulkanSampler(
                 static_cast<float>(TfGetEnvSetting(HGI_MAX_ANISOTROPY))}) : 1.0f;
     }
 
-    TF_VERIFY(
+    TF_VERIFY_VK_RESULT(
         vkCreateSampler(
             device->GetVulkanDevice(),
             &sampler,
             HgiVulkanAllocator(),
-            &_vkSampler) == VK_SUCCESS
+            &_vkSampler)
     );
 }
 
