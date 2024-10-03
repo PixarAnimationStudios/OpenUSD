@@ -1053,6 +1053,9 @@ def InstallTBB_MacOS(context, force, buildArgs):
             if MacOSTargetEmbedded(context):
                 env["SDKROOT"] = apple_utils.GetSDKRoot(context)
                 buildArgs.append(f' compiler=clang arch=arm64 extra_inc=big_iron.inc target={context.buildTarget.lower()}')
+            if context.buildAppleFramework and context.buildMonolithic:
+                # Force build of static libs as well
+                buildArgs.append(f" extra_inc=big_iron.inc ")
             makeTBBCmd = 'make -j{procs} arch={arch} {buildArgs}'.format(
                 arch=arch, procs=context.numJobs,
                 buildArgs=" ".join(buildArgs))
@@ -1958,6 +1961,7 @@ if MacOS():
                        default=codesignDefault, action="store_true",
                        help=("Enable code signing for macOS builds "
                              "(defaults to enabled on Apple Silicon)"))
+    group.add_argument("--codesign-id", dest="macos_codesign_id", type=str)
 
 if Linux():
     group.add_argument("--use-cxx11-abi", type=int, choices=[0, 1],
@@ -2270,16 +2274,15 @@ class InstallContext:
         self.forceBuild = [dep.lower() for dep in args.force_build]
 
         # Some components are disabled for embedded build targets
-        embedded = MacOSTargetEmbedded(self)
-        optional_components = not (embedded or (MacOS() and self.buildAppleFramework))
+        embedded = (MacOS() and (MacOSTargetEmbedded(self) or self.buildAppleFramework))
 
         # Optional components
-        self.buildTests = args.build_tests and optional_components
-        self.buildPython = args.build_python and optional_components
+        self.buildTests = args.build_tests and not embedded
+        self.buildPython = args.build_python and not embedded
         self.buildBoostPython = self.buildPython and args.build_boost_python
-        self.buildExamples = args.build_examples and optional_components
-        self.buildTutorials = args.build_tutorials and optional_components
-        self.buildTools = args.build_tools and optional_components
+        self.buildExamples = args.build_examples and not embedded
+        self.buildTutorials = args.build_tutorials and not embedded
+        self.buildTools = args.build_tools and not embedded
 
         # - Documentation
         self.buildDocs = args.build_docs or args.build_python_docs
@@ -2292,7 +2295,7 @@ class InstallContext:
         self.enablePtex = self.buildImaging and args.enable_ptex
         self.enableOpenVDB = (self.buildImaging
                               and args.enable_openvdb
-                              and optional_components)
+                              and not embedded)
 
         # - USD Imaging
         self.buildUsdImaging = (args.build_imaging == USD_IMAGING)
@@ -2309,8 +2312,8 @@ class InstallContext:
                                if args.prman_location else None)                               
         self.buildOIIO = ((args.build_oiio or (self.buildUsdImaging
                                                and self.buildTests))
-                          and optional_components)
-        self.buildOCIO = args.build_ocio and optional_components
+                          and not embedded)
+        self.buildOCIO = args.build_ocio and not embedded
 
         # - Alembic Plugin
         self.buildAlembic = args.build_alembic
@@ -2615,6 +2618,7 @@ if context.useCXX11ABI is not None:
 summaryMsg += """\
     Variant                     {buildVariant}
     Target                      {buildTarget}
+    Framework Build             {buildAppleFramework}
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
       OpenVDB support:          {enableOpenVDB}
@@ -2699,7 +2703,8 @@ summaryMsg = summaryMsg.format(
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
     buildMayapyTests=("On" if context.buildMayapyTests else "Off"),
     buildAnimXTests=("On" if context.buildAnimXTests else "Off"),
-    enableHDF5=("On" if context.enableHDF5 else "Off"))
+    enableHDF5=("On" if context.enableHDF5 else "Off"),
+    buildAppleFramework=("On" if MacOS() and context.buildAppleFramework else "Off"))
 
 Print(summaryMsg)
 
@@ -2761,8 +2766,9 @@ if Windows():
     ])
 
 if MacOS():
-    if context.macOSCodesign:
-        apple_utils.Codesign(context.usdInstDir, verbosity > 1)
+    # We don't need to codesign when building a framework because it's handled during framework creation
+    if context.macOSCodesign and not context.buildAppleFramework:
+        apple_utils.Codesign(context, verbosity > 1)
 
 additionalInstructions = any([context.buildPython, context.buildTools, context.buildPrman])
 if additionalInstructions:
@@ -2785,3 +2791,9 @@ if context.buildPython or context.buildTools:
 if context.buildPrman:
     Print("See documentation at http://openusd.org/docs/RenderMan-USD-Imaging-Plugin.html "
           "for setting up the RenderMan plugin.\n")
+
+if context.buildAppleFramework:
+    Print("""
+        Add the following framework to your Xcode Project:
+        OpenUSD.framework
+    """)
