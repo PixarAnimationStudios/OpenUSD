@@ -39,6 +39,7 @@
    Proposals <wp>
    FAQ <usdfaq>
    Performance Considerations <maxperf>
+   Performance Metrics <ref_performance_metrics>
    Third Party Plugins <plugins>
 
 .. toctree::
