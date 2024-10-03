@@ -136,9 +136,15 @@ public:
     // --------------------------------------------------------------------- //
     // ANGLE 
     // --------------------------------------------------------------------- //
-    /// Angular size of the light in degrees.
+    /// Angular diameter of the light in degrees.
     /// As an example, the Sun is approximately 0.53 degrees as seen from Earth.
     /// Higher values broaden the light and therefore soften shadow edges.
+    /// 
+    /// This value is assumed to be in the range `0 <= angle < 360`, and will
+    /// be clipped to this range. Note that this implies that we can have a
+    /// distant light emitting from more than a hemispherical area of light
+    /// if angle > 180. While this is valid, it is possible that for large
+    /// angles a DomeLight may provide better performance.
     /// 
     ///
     /// | ||
