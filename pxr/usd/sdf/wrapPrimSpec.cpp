@@ -478,6 +478,14 @@ void wrapPrimSpec()
             &This::HasPayloads,
             "Returns true if this prim has payloads set.")
 
+        .add_property("hasInheritPaths",
+            &This::HasInheritPaths,
+            "Returns true if this prim has inherits set.")
+
+        .add_property("hasSpecializes",
+            &This::HasSpecializes,
+            "Returns true if this prim has specializes set.")
+
         .add_property("relocates",
             &This::GetRelocates,
             &_SetRelocates,
