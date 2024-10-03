@@ -6068,24 +6068,30 @@ _TryResolvePathExprs(Storage storage, UsdObject const &obj,
 {
     // Resolve.
     if (_IsHolding<SdfPathExpression>(storage)) {
-        SdfPathExpression expr;
-        _UncheckedSwap(storage, expr);
-        expr = _MapPathExpressionToPrim(
-            expr, node.GetMapToRoot().Evaluate(),
-            Usd_StageImplAccess::GetPrimProtoToInstancePathMap(obj.GetPrim()));
-        _UncheckedSwap(storage, expr);
+        if (node) {
+            SdfPathExpression expr;
+            _UncheckedSwap(storage, expr);
+            expr = _MapPathExpressionToPrim(
+                expr, node.GetMapToRoot().Evaluate(),
+                Usd_StageImplAccess::GetPrimProtoToInstancePathMap(
+                    obj.GetPrim()));
+            _UncheckedSwap(storage, expr);
+        }
         return true;
     }
     else if (_IsHolding<VtArray<SdfPathExpression>>(storage)) {
-        VtArray<SdfPathExpression> exprs;
-        _UncheckedSwap(storage, exprs);
-        auto protoToInstMap =
-            Usd_StageImplAccess::GetPrimProtoToInstancePathMap(obj.GetPrim());
-        PcpMapFunction const &mapFn = node.GetMapToRoot().Evaluate();
-        for (SdfPathExpression &expr: exprs) {
-            expr = _MapPathExpressionToPrim(expr, mapFn, protoToInstMap);
+        if (node) {
+            VtArray<SdfPathExpression> exprs;
+            _UncheckedSwap(storage, exprs);
+            auto protoToInstMap =
+                Usd_StageImplAccess::GetPrimProtoToInstancePathMap(
+                    obj.GetPrim());
+            PcpMapFunction const &mapFn = node.GetMapToRoot().Evaluate();
+            for (SdfPathExpression &expr: exprs) {
+                expr = _MapPathExpressionToPrim(expr, mapFn, protoToInstMap);
+            }
+            _UncheckedSwap(storage, exprs);
         }
-        _UncheckedSwap(storage, exprs);
         return true;
     }
     return false;
@@ -6172,6 +6178,7 @@ protected:
                       bool forFlattening = false)
         : _value(s)
         , _object(object)
+        , _foundAComposingValue(false)
         , _done(false)
         , _forFlattening(forFlattening) 
         {}
@@ -6224,10 +6231,13 @@ protected:
                     _object, _value, { &stage, layer, specPath, node },
                     context, &layerOffsetAccess, _forFlattening)) {
                 // Merge the resolved dictionary.
-                VtDictionaryOverRecursive(
-                    &tmpDict, _UncheckedGet<VtDictionary>(_value));
-                _UncheckedSwap(_value, tmpDict);
-            } 
+                if (_foundAComposingValue) {
+                    VtDictionaryOverRecursive(
+                        &tmpDict, _UncheckedGet<VtDictionary>(_value));
+                    _UncheckedSwap(_value, tmpDict);
+                }
+            }
+            _foundAComposingValue = true;
             return true;
         }
         return false;
@@ -6249,22 +6259,21 @@ protected:
         if (_GetFallbackValue(primDef, propName, fieldName, keyPath)) {
             // Always done after reading the fallback value.
             _done = true;
-            if (_IsHolding<VtDictionary>(_value)) {
+            if (_IsHolding<VtDictionary>(_value) && _foundAComposingValue) {
                 // Merge dictionaries: _value is weaker, tmpDict stronger.
                 VtDictionaryOverRecursive(&tmpDict, 
                                           _UncheckedGet<VtDictionary>(_value));
                 _UncheckedSwap(_value, tmpDict);
             }
+            _foundAComposingValue = true;
         }
     }
 
-    // Consumes an authored pathExpression value and merges it into the current
-    // strongest pathExpression value.
-    bool _ConsumeAndMergeAuthoredPathExpressions(const PcpNodeRef &node,
-                                                 const SdfLayerRefPtr &layer,
-                                                 const SdfPath &specPath,
-                                                 const TfToken &fieldName,
-                                                 const TfToken &keyPath) {
+    // Consumes an authored or fallback pathExpression value and merges it into
+    // the current strongest pathExpression value.
+    template <class GetValueFn>
+    bool _ConsumeAndMergePathExpressionsImpl(GetValueFn &&getValue,
+                                             PcpNodeRef node) {
         SdfPathExpression tmpExpr;
         VtArray<SdfPathExpression> tmpExprs;
         bool array = false;
@@ -6280,7 +6289,7 @@ protected:
         }
 
         // Try to read value from scene description.
-        if (_GetValue(layer, specPath, fieldName, keyPath)) {
+        if (std::forward<GetValueFn>(getValue)()) {
             // If this is a value block, set _done to stop composing, and
             // swap back the composed value so far.
             if (Usd_ValueContainsBlock(_value)) {
@@ -6296,7 +6305,7 @@ protected:
                 // Merge the resolved expr.
                 if (array) {
                     // If the arrays are the same size, merge index-wise.
-                    // Otherwise just take the strongest?
+                    // Otherwise take the strongest.
                     VtArray<SdfPathExpression> weaker =
                         _UncheckedGet<VtArray<SdfPathExpression>>(_value);
                     if (weaker.size() == tmpExprs.size()) {
@@ -6311,14 +6320,31 @@ protected:
                     _UncheckedSwap(_value, tmpExprs);
                 }
                 else {
-                    tmpExpr = std::move(tmpExpr)
-                        .ComposeOver(_UncheckedGet<SdfPathExpression>(_value));
-                    _UncheckedSwap(_value, tmpExpr);
+                    if (_foundAComposingValue) {
+                        tmpExpr = std::move(tmpExpr).ComposeOver(
+                            _UncheckedGet<SdfPathExpression>(_value));
+                        _UncheckedSwap(_value, tmpExpr);
+                    }
                 }
             }
+            _foundAComposingValue = true;
             return true;
         }
         return false;
+    }
+
+    // Consumes an authored pathExpression value and merges it into the current
+    // strongest pathExpression value.
+    bool _ConsumeAndMergeAuthoredPathExpressions(const PcpNodeRef &node,
+                                                 const SdfLayerRefPtr &layer,
+                                                 const SdfPath &specPath,
+                                                 const TfToken &fieldName,
+                                                 const TfToken &keyPath) {
+
+        return _ConsumeAndMergePathExpressionsImpl(
+            [&]() {
+                return _GetValue(layer, specPath, fieldName, keyPath);
+            }, node);
     }
 
     // Consumes the fallback pathExpression value and merges it into the current
@@ -6327,54 +6353,17 @@ protected:
         const UsdPrimDefinition &primDef,
         const TfToken &propName,
         const TfToken &fieldName,
-        const TfToken &keyPath) 
-    {
-        SdfPathExpression tmpExpr;
-        VtArray<SdfPathExpression> tmpExprs;
-        bool array = false;
-        
-        // Copy to the side since we'll have to merge if the next opinion is
-        // also an expression.
-        if (_IsHolding<SdfPathExpression>(_value)) {
-            tmpExpr = _UncheckedGet<SdfPathExpression>(_value);
-        }
-        else {
-            array = true;
-            tmpExprs = _UncheckedGet<VtArray<SdfPathExpression>>(_value);
-        }
+        const TfToken &keyPath) {
 
-        // Try to read value from scene description.
-        if (_GetFallbackValue(primDef, propName, fieldName, keyPath)) {
-            // Always done after reading fallback value.
-            _done = true;
-            // No need to resolve a fallback value...
-            // Merge the resolved expr.
-            if (array) {
-                // If the arrays are the same size, merge index-wise.
-                // Otherwise just take the strongest?
-                VtArray<SdfPathExpression> weaker =
-                    _UncheckedGet<VtArray<SdfPathExpression>>(_value);
-                if (weaker.size() == tmpExprs.size()) {
-                    std::transform(
-                        tmpExprs.begin(), tmpExprs.end(), weaker.begin(),
-                        tmpExprs.begin(),
-                        [](SdfPathExpression const &stronger,
-                           SdfPathExpression const &weaker) {
-                            return stronger.ComposeOver(weaker);
-                        });
-                }
-                _UncheckedSwap(_value, tmpExprs);
-            }
-            else {
-                tmpExpr = std::move(tmpExpr)
-                    .ComposeOver(_UncheckedGet<SdfPathExpression>(_value));
-                _UncheckedSwap(_value, tmpExpr);
-            }
-        }
+        _ConsumeAndMergePathExpressionsImpl(
+            [&]() {
+                return _GetFallbackValue(primDef, propName, fieldName, keyPath);
+            }, /*node=*/{});
     }
 
     Storage _value;
     UsdObject _object;
+    bool _foundAComposingValue;
     bool _done;
     bool _forFlattening;
 };
@@ -6416,7 +6405,10 @@ struct UntypedValueComposer : public ValueComposerBase<VtValue *>
                 // We're done if we got value and it's not a dictionary or path
                 // expressions. For those types we'll continue to merge in
                 // weaker opinions.
-                if (!_IsHoldingDictionary() && !_IsHoldingPathExpressions()) {
+                if (_IsHoldingDictionary() || _IsHoldingPathExpressions()) {
+                    this->_foundAComposingValue = true;
+                }
+                else {
                     this->_done = true;
                 }
                 _ResolveValue(stage, node, layer, specPath);

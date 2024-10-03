@@ -368,7 +368,6 @@ SdfPathExpression
 SdfPathExpression::ComposeOver(SdfPathExpression const &weaker) &&
 {
     if (IsEmpty()) {
-        *this = weaker;
         return std::move(*this);
     }
     auto resolve = [&weaker](ExpressionReference const &ref) {
