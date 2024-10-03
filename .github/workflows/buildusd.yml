@@ -13,7 +13,7 @@ env:
   PYTHON_VERSION_MAC: "3.11"
 
 jobs:
-  GetUser:
+  GetUser(dev):
     runs-on: ubuntu-20.04
     timeout-minutes: 5
     outputs:
