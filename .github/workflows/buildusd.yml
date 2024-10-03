@@ -25,12 +25,12 @@ jobs:
           require: 'write'
           username: ${{ github.event.comment.user.login }}
   Linux:
-    needs: [GetUser]
-    if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/AzurePipelines run') && needs.GetUser.outputs.require-result == 'true' ) || github.event_name == 'push' }}
+    needs: [GetUser_dev]
+    if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/AzurePipelines run') && needs.GetUser_dev.outputs.require-result == 'true' ) || github.event_name == 'push' }}
     runs-on: ubuntu-20.04
     timeout-minutes: 120
     steps:
-      - run: echo ${{ needs.GetUser.outputs.require-result }}
+      - run: echo ${{ needs.GetUser_dev.outputs.require-result }}
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Restore cached artifacts
