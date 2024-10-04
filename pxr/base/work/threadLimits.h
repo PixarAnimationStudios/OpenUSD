@@ -30,6 +30,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 WORK_API unsigned WorkGetConcurrencyLimit();
 
+/// Return the value set via the PXR_WORK_THREAD_LIMIT env setting.
+///
+/// The returned value is always >= 0, and it is normalized according to the
+/// rules in WorkSetConcurrencyLimitArgument.
+///
+WORK_API unsigned WorkGetConcurrencyLimitEnvSetting();
+
 /// Return true if WorkGetPhysicalConcurrencyLimit() returns a number greater
 /// than 1 and PXR_WORK_THREAD_LIMIT was not set in an attempt to limit the
 /// process to a single thread, false otherwise.
