@@ -85,8 +85,8 @@ Work_NormalizeThreadCount(const int n)
 
 // Returns the normalized thread limit value from the environment setting. Note
 // that 0 means "no change", i.e. the environment setting does not apply.
-static unsigned
-Work_GetConcurrencyLimitSetting()
+unsigned
+WorkGetConcurrencyLimitEnvSetting()
 {
     return Work_NormalizeThreadCount(TfGetEnvSetting(PXR_WORK_THREAD_LIMIT));
 }
@@ -106,7 +106,7 @@ Work_InitializeThreading()
 {
     // Get the thread limit from the environment setting. Note that this value
     // can be 0, i.e. the environment setting does not apply.
-    const unsigned settingVal = Work_GetConcurrencyLimitSetting();
+    const unsigned settingVal = WorkGetConcurrencyLimitEnvSetting();
 
     // Threading is initialized with maximum physical concurrency.
     const unsigned physicalLimit = WorkGetPhysicalConcurrencyLimit();
@@ -147,7 +147,7 @@ WorkSetConcurrencyLimit(unsigned n)
     if (n) {
         // Get the thread limit from the environment setting. Note this value
         // may be 0 (default).
-        const unsigned settingVal = Work_GetConcurrencyLimitSetting();
+        const unsigned settingVal = WorkGetConcurrencyLimitEnvSetting();
 
         // Override n with the environment setting. This will make sure that the
         // setting always wins over the specified value n, but only if the
