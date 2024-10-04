@@ -805,7 +805,7 @@ HioOIIO_Image::Write(StorageSpec const & storage,
     TypeDesc format = _GetOIIOBaseType(storage.format);
     ImageSpec spec(storage.width, storage.height, nchannels, format);
 
-    for (const std::pair<std::string, VtValue>& m : metadata) {
+    for (const auto& m : metadata) {
         _SetAttribute(&spec, m.first, m.second);
     }
 
