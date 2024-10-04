@@ -132,6 +132,10 @@ HdStResourceRegistry::~HdStResourceRegistry()
     // they cleanup all GPU resources. Since that mechanism isn't in place
     // yet, we call GarbageCollect to emulate this behavior.
     GarbageCollect();
+    // Recycle count were set to 1 in order for graphics pipelines in use to not
+    // be immediately evicted. As such, we run garbage collection twice on
+    // shutdown in order to clear the cache.
+    GarbageCollect();
 }
 
 void HdStResourceRegistry::InvalidateShaderRegistry()
