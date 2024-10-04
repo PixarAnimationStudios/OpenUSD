@@ -299,11 +299,11 @@ PcpNodeRef::GetDepthBelowIntroduction() const
         - GetNamespaceDepth();
 }
 
-SdfPath
-PcpNodeRef::GetPathAtIntroduction() const
+static SdfPath 
+_GetPathAtIntroDepth(const SdfPath &path, int depthBelowIntro)
 {
-    SdfPath pathAtIntroduction = GetPath();
-    for (int depth = GetDepthBelowIntroduction(); depth; --depth) {
+    SdfPath pathAtIntroduction = path;
+    for ( ; depthBelowIntro; --depthBelowIntro) {
         while (pathAtIntroduction.IsPrimVariantSelectionPath()) {
             // Skip over variant selections, since they do not
             // constitute levels of namespace depth. We do not simply
@@ -319,28 +319,28 @@ PcpNodeRef::GetPathAtIntroduction() const
 }
 
 SdfPath
+PcpNodeRef::GetPathAtIntroduction() const
+{
+    return _GetPathAtIntroDepth(GetPath(), GetDepthBelowIntroduction());
+}
+
+SdfPath
 PcpNodeRef::GetIntroPath() const
 {
     // Start with the parent node's current path.
     const PcpNodeRef parent = GetParentNode();
     if (!parent)
         return SdfPath::AbsoluteRootPath();
-    SdfPath introPath = parent.GetPath();
 
-    // Walk back up to the depth where this child was introduced.
-    for (int depth = GetDepthBelowIntroduction(); depth; --depth) {
-        while (introPath.IsPrimVariantSelectionPath()) {
-            // Skip over variant selections, since they do not
-            // constitute levels of namespace depth. We do not simply
-            // strip all variant selections here, because we want to
-            // retain variant selections ancestral to the path where
-            // this node was introduced.
-            introPath = introPath.GetParentPath();
-        }
-        introPath = introPath.GetParentPath();
-    }
+    return _GetPathAtIntroDepth(parent.GetPath(), GetDepthBelowIntroduction());
+}
 
-    return introPath;
+PCP_API 
+SdfPath
+PcpNodeRef::GetPathAtOriginRootIntroduction() const
+{
+    return _GetPathAtIntroDepth(GetPath(), 
+        GetOriginRootNode().GetDepthBelowIntroduction());
 }
 
 PcpNodeRef::child_const_range
@@ -349,6 +349,15 @@ PcpNodeRef::GetChildrenRange() const
     PcpNodeRef node(_graph, _nodeIdx);
     return child_const_range(child_const_iterator(node, /* end = */ false),
                              child_const_iterator(node, /* end = */ true));
+}
+
+PcpNodeRef::child_const_reverse_range
+PcpNodeRef::GetChildrenReverseRange() const
+{
+    PcpNodeRef node(_graph, _nodeIdx);
+    return child_const_reverse_range(
+        child_const_reverse_iterator(node, /* end = */ false),
+        child_const_reverse_iterator(node, /* end = */ true));
 }
 
 PcpNodeRef
@@ -456,5 +465,14 @@ _GetNonVariantPathElementCount(const SdfPath &path)
 
     return count;
 }
+
+std::ostream &
+operator<<(std::ostream &out, const PcpNodeRef &node) 
+{
+    out << "(" << node._GetNodeIndex() << ") " << 
+        TfEnum::GetDisplayName(node.GetArcType()) << " " << node.GetSite();
+    return out;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -34,8 +34,16 @@ PcpNodeIntroducesDependency(const PcpNodeRef &node)
 {
     if (node.IsInert()) {
         switch(node.GetArcType()) {
-        case PcpArcTypeInherit:
         case PcpArcTypeSpecialize:
+            // Every specializes node that is not introduced under the root
+            // node will be inert and have a copy propagated to the root
+            // node, so specializes nodes that aren't under the root
+            // do not represent dependencies.
+            if (node.GetParentNode() != node.GetRootNode()) {
+                return false;
+            }
+            // Fall through
+        case PcpArcTypeInherit:
             // Special case: inert, propagated class-based arcs do not
             // represent dependencies.
             if (node.GetOriginNode() != node.GetParentNode()) {

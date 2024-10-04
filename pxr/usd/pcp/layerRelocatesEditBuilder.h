@@ -193,6 +193,17 @@ private:
     size_t _editForNewRelocatesIndex = ~0;
 };
 
+// Modifies the given relocates in place by moving paths at or under 
+// oldPath to be at or under newPath.
+// 
+// The old path may not be empty but the new path can be. Any relocates
+// that become invalid or no-ops are removed from the resulting modified
+// relocates. Returns true if any modifications were made to the relocates,
+// false otherwise.
+bool 
+Pcp_ModifyRelocates(
+    SdfRelocates *relocates, const SdfPath &oldPath, const SdfPath &newPath);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_PCP_LAYER_RELOCATES_EDIT_BUILDER_H

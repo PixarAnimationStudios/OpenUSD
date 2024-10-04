@@ -290,35 +290,49 @@ PcpLayerRelocatesEditBuilder::_UpdateExistingRelocates(
     // have their source or target paths ancestrally relocated by the new 
     // relocate.
     for (auto &[layer, relocates] : _layerRelocatesEdits ) {
-        
-        for (auto &[existingSource, existingTarget] : relocates) {
-            // If the existing relocate source would be ancestrally relocated by
-            // the new relocate, apply the relocate to it.
-            if (existingSource.HasPrefix(source)) {
-                existingSource = 
-                    existingSource.ReplacePrefix(source, target);
-                _layersWithRelocatesChanges.insert(layer);
-            }
-            // If the existing target source would be ancestrally relocated by
-            // the new relocate, apply the relocate to it.
-            if (existingTarget.HasPrefix(source)) {
-                existingTarget = 
-                    existingTarget.ReplacePrefix(source, target);
-                _layersWithRelocatesChanges.insert(layer);
-            }
+        if (Pcp_ModifyRelocates(&relocates, source, target)) {
+            _layersWithRelocatesChanges.insert(layer);
         }
-
-        // Applying the new relocate to the existing relocates can cause any 
-        // number of them to map a source path to itself, making them redundant
-        // no-ops. These cases are effectively a relocate delete so we remove
-        // these relocates from the layer's relocates list.
-        relocates.erase(
-            std::remove_if(relocates.begin(), relocates.end(),
-                [](const auto &relocate) { 
-                    return relocate.first == relocate.second;
-                }),
-            relocates.end());
     }
+}
+
+bool
+Pcp_ModifyRelocates(SdfRelocates *relocates,
+    const SdfPath &oldPath, const SdfPath &newPath)
+{
+    bool modified = false;
+
+    for (auto &[existingSource, existingTarget] : *relocates) {
+        // If the existing relocate source would be ancestrally relocated by
+        // the new relocate, apply the relocate to it.
+        if (existingSource.HasPrefix(oldPath)) {
+            existingSource = 
+                existingSource.ReplacePrefix(oldPath, newPath);
+            modified = true;
+        }
+        // If the existing target source would be ancestrally relocated by
+        // the new relocate, apply the relocate to it.
+        if (existingTarget.HasPrefix(oldPath)) {
+            existingTarget = 
+                existingTarget.ReplacePrefix(oldPath, newPath);
+            modified = true;
+        }
+    }
+
+    // Applying the new relocate to the existing relocates can cause any 
+    // number of them to map a source path to itself, making them redundant
+    // no-ops. These cases are effectively a relocate delete so we remove
+    // these relocates from the layer's relocates list.
+    if (modified) {
+        relocates->erase(
+            std::remove_if(relocates->begin(), relocates->end(),
+                [](const auto &relocate) { 
+                    return relocate.first.IsEmpty() || 
+                        relocate.first == relocate.second;
+                }),
+            relocates->end());
+    }
+    return modified;
 }
 
 bool

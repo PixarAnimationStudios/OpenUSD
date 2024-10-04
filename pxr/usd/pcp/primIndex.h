@@ -241,6 +241,14 @@ public:
     void ComputePrimChildNames(TfTokenVector *nameOrder,
                                PcpTokenSet *prohibitedNameSet) const;
 
+    /// Compute the prim child names for this prim when composed from only the
+    /// subtree starting at \p subtreeRootNode.
+    PCP_API
+    void ComputePrimChildNamesInSubtree(
+        const PcpNodeRef &subtreeRootNode,
+        TfTokenVector *nameOrder,
+        PcpTokenSet *prohibitedNameSet) const;
+
     /// Compute the prim property names for the given path. \p errors will
     /// contain any errors encountered while performing this operation.  The
     /// \p nameOrder vector must not contain any duplicate entries.
