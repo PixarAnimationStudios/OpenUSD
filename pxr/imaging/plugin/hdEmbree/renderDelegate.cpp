@@ -8,6 +8,7 @@
 
 #include "pxr/imaging/plugin/hdEmbree/config.h"
 #include "pxr/imaging/plugin/hdEmbree/instancer.h"
+#include "pxr/imaging/plugin/hdEmbree/light.h"
 #include "pxr/imaging/plugin/hdEmbree/renderParam.h"
 #include "pxr/imaging/plugin/hdEmbree/renderPass.h"
 
@@ -35,6 +36,10 @@ const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
     HdPrimTypeTokens->camera,
     HdPrimTypeTokens->extComputation,
+    HdPrimTypeTokens->cylinderLight,
+    HdPrimTypeTokens->diskLight,
+    HdPrimTypeTokens->rectLight,
+    HdPrimTypeTokens->sphereLight,
 };
 
 const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_BPRIM_TYPES =
@@ -147,7 +152,7 @@ HdEmbreeRenderDelegate::_Initialize()
     // Store top-level embree objects inside a render param that can be
     // passed to prims during Sync(). Also pass a handle to the render thread.
     _renderParam = std::make_shared<HdEmbreeRenderParam>(
-        _rtcDevice, _rtcScene, &_renderThread, &_sceneVersion);
+        _rtcDevice, _rtcScene, &_renderThread, &_renderer, &_sceneVersion);
 
     // Pass the scene handle to the renderer.
     _renderer.SetScene(_rtcScene);
@@ -230,7 +235,7 @@ HdAovDescriptor
 HdEmbreeRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
 {
     if (name == HdAovTokens->color) {
-        return HdAovDescriptor(HdFormatUNorm8Vec4, true,
+        return HdAovDescriptor(HdFormatFloat32Vec4, true,
                                VtValue(GfVec4f(0.0f)));
     } else if (name == HdAovTokens->normal || name == HdAovTokens->Neye) {
         return HdAovDescriptor(HdFormatFloat32Vec3, false,
@@ -331,6 +336,12 @@ HdEmbreeRenderDelegate::CreateSprim(TfToken const& typeId,
         return new HdCamera(sprimId);
     } else if (typeId == HdPrimTypeTokens->extComputation) {
         return new HdExtComputation(sprimId);
+    } else if (typeId == HdPrimTypeTokens->light ||
+               typeId == HdPrimTypeTokens->diskLight ||
+               typeId == HdPrimTypeTokens->rectLight ||
+               typeId == HdPrimTypeTokens->sphereLight ||
+               typeId == HdPrimTypeTokens->cylinderLight) {
+        return new HdEmbree_Light(sprimId, typeId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -347,6 +358,12 @@ HdEmbreeRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
         return new HdCamera(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->extComputation) {
         return new HdExtComputation(SdfPath::EmptyPath());
+    } else if (typeId == HdPrimTypeTokens->light ||
+               typeId == HdPrimTypeTokens->diskLight ||
+               typeId == HdPrimTypeTokens->rectLight ||
+               typeId == HdPrimTypeTokens->sphereLight ||
+               typeId == HdPrimTypeTokens->cylinderLight) {
+        return new HdEmbree_Light(SdfPath::EmptyPath(), typeId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
