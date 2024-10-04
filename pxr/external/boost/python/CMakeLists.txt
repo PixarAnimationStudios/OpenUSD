@@ -9,10 +9,16 @@ set(cppfiles "")
 # to specify the source files as well as our dependency on Python.
 # Otherwise, this library is just a pass-through for boost::python.
 if (PXR_USE_INTERNAL_BOOST_PYTHON)
+    # Use PYTHON_LIBRARIES instead of the Python3::Python target
+    # directly when specifying library dependencies to ensure
+    # PXR_PY_UNDEFINED_DYNAMIC_LOOKUP is respected.
     set(libs
         ${PYTHON_LIBRARIES}
     )
 
+    # Specify PYTHON_INCLUDE_DIRS explicitly to ensure this library
+    # picks up Python headers when PXR_PY_UNDEFINED_DYNAMIC_LOOKUP
+    # is set.
     set(include_dirs
         ${PYTHON_INCLUDE_DIRS}
     )
