@@ -4626,7 +4626,7 @@ static int stbi__check_png_header(stbi__context *s)
    return 1;
 }
 
-typedef struct
+typedef struct stbi__png_type
 {
    stbi__context *s;
    stbi_uc *idata, *expanded, *out;
