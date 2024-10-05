@@ -87,67 +87,67 @@ class MarshalCallback
 public:    
 
     SdfPathVector                   scenePrimPaths;
-    std::vector<SceneDesc>          sceneDescs;
+    std::vector<UsdPhysicsSceneDesc>          sceneDescs;
 
     SdfPathVector                   rigidBodyPrimPaths;
-    std::vector<RigidBodyDesc>      rigidBodyDescs;
+    std::vector<UsdPhysicsRigidBodyDesc>      rigidBodyDescs;
 
     SdfPathVector                   sphereShapePrimPaths;
-    std::vector<SphereShapeDesc>    sphereShapeDescs;
+    std::vector<UsdPhysicsSphereShapeDesc>    sphereShapeDescs;
 
     SdfPathVector                   cubeShapePrimPaths;
-    std::vector<CubeShapeDesc>    cubeShapeDescs;
+    std::vector<UsdPhysicsCubeShapeDesc>    cubeShapeDescs;
 
     SdfPathVector                   capsuleShapePrimPaths;
-    std::vector<CapsuleShapeDesc>    capsuleShapeDescs;
+    std::vector<UsdPhysicsCapsuleShapeDesc>    capsuleShapeDescs;
 
     SdfPathVector                   cylinderShapePrimPaths;
-    std::vector<CylinderShapeDesc>    cylinderShapeDescs;
+    std::vector<UsdPhysicsCylinderShapeDesc>    cylinderShapeDescs;
 
     SdfPathVector            coneShapePrimPaths;
-    std::vector<ConeShapeDesc>    coneShapeDescs;
+    std::vector<UsdPhysicsConeShapeDesc>    coneShapeDescs;
 
     SdfPathVector            meshShapePrimPaths;
-    std::vector<MeshShapeDesc>    meshShapeDescs;
+    std::vector<UsdPhysicsMeshShapeDesc>    meshShapeDescs;
 
     SdfPathVector            planeShapePrimPaths;
-    std::vector<PlaneShapeDesc>    planeShapeDescs;
+    std::vector<UsdPhysicsPlaneShapeDesc>    planeShapeDescs;
 
     SdfPathVector            customShapePrimPaths;
-    std::vector<CustomShapeDesc>    customShapeDescs;
+    std::vector<UsdPhysicsCustomShapeDesc>    customShapeDescs;
 
     SdfPathVector            spherePointShapePrimPaths;
-    std::vector<SpherePointsShapeDesc>    spherePointsShapeDescs;
+    std::vector<UsdPhysicsSpherePointsShapeDesc>    spherePointsShapeDescs;
 
     SdfPathVector            fixedJointPrimPaths;
-    std::vector<FixedJointDesc>    fixedJointDescs;
+    std::vector<UsdPhysicsFixedJointDesc>    fixedJointDescs;
 
     SdfPathVector            revoluteJointPrimPaths;
-    std::vector<RevoluteJointDesc>    revoluteJointDescs;
+    std::vector<UsdPhysicsRevoluteJointDesc>    revoluteJointDescs;
 
     SdfPathVector            prismaticJointPrimPaths;
-    std::vector<PrismaticJointDesc>    prismaticJointDescs;
+    std::vector<UsdPhysicsPrismaticJointDesc>    prismaticJointDescs;
 
     SdfPathVector            sphericalJointPrimPaths;
-    std::vector<SphericalJointDesc>    sphericalJointDescs;
+    std::vector<UsdPhysicsSphericalJointDesc>    sphericalJointDescs;
 
     SdfPathVector            distanceJointPrimPaths;
-    std::vector<DistanceJointDesc>    distanceJointDescs;
+    std::vector<UsdPhysicsDistanceJointDesc>    distanceJointDescs;
 
     SdfPathVector            d6JointPrimPaths;
-    std::vector<D6JointDesc>    d6JointDescs;
+    std::vector<UsdPhysicsD6JointDesc>    d6JointDescs;
 
     SdfPathVector            customJointPrimPaths;
-    std::vector<CustomJointDesc>    customJointDescs;
+    std::vector<UsdPhysicsCustomJointDesc>    customJointDescs;
 
     SdfPathVector            rigidBodyMaterialPrimPaths;
-    std::vector<RigidBodyMaterialDesc>    rigidBodyMaterialDescs;
+    std::vector<UsdPhysicsRigidBodyMaterialDesc>    rigidBodyMaterialDescs;
 
     SdfPathVector            articulationPrimPaths;
-    std::vector<ArticulationDesc>    articulationDescs;
+    std::vector<UsdPhysicsArticulationDesc>    articulationDescs;
 
     SdfPathVector            collisionGroupPrimPaths;
-    std::vector<CollisionGroupDesc>    collisionGroupDescs;
+    std::vector<UsdPhysicsCollisionGroupDesc>    collisionGroupDescs;
 
     void clear()
     {
@@ -218,7 +218,7 @@ public:
 } gMarshalCallback;
 
 template <typename DescType>
-void copyDescs(size_t numDesc, const SdfPath* primsSource, SdfPathVector& primsDest, const PhysicsObjectDesc* objectDescsSource, std::vector<DescType>& objectDescsDest)
+void copyDescs(size_t numDesc, const SdfPath* primsSource, SdfPathVector& primsDest, const UsdPhysicsObjectDesc* objectDescsSource, std::vector<DescType>& objectDescsDest)
 {
     primsDest.resize(numDesc);
     objectDescsDest.resize(numDesc);
@@ -235,114 +235,114 @@ void copyDescs(size_t numDesc, const SdfPath* primsSource, SdfPathVector& primsD
     }
 }
 
-void ReportPhysicsObjectsFn(PhysicsObjectType::Enum type, size_t numDesc, const SdfPath* primPaths,
-    const PhysicsObjectDesc* objectDescs, void* userData)
+void ReportPhysicsObjectsFn(UsdPhysicsObjectType::Enum type, size_t numDesc, const SdfPath* primPaths,
+    const UsdPhysicsObjectDesc* objectDescs, void* userData)
 {
     MarshalCallback* cb = (MarshalCallback*)userData;
         
     switch (type)
     {
-        case PhysicsObjectType::eScene:
+        case UsdPhysicsObjectType::eScene:
         {       
             copyDescs(numDesc, primPaths, cb->scenePrimPaths, objectDescs, cb->sceneDescs);
         }        
         break;
-        case PhysicsObjectType::eRigidBody:
+        case UsdPhysicsObjectType::eRigidBody:
         {       
             copyDescs(numDesc, primPaths, cb->rigidBodyPrimPaths, objectDescs, cb->rigidBodyDescs);
         }        
         break;        
-        case PhysicsObjectType::eSphereShape:
+        case UsdPhysicsObjectType::eSphereShape:
         {       
             copyDescs(numDesc, primPaths, cb->sphereShapePrimPaths, objectDescs, cb->sphereShapeDescs);
         }  
         break;      
-        case PhysicsObjectType::eCubeShape:
+        case UsdPhysicsObjectType::eCubeShape:
         {       
             copyDescs(numDesc, primPaths, cb->cubeShapePrimPaths, objectDescs, cb->cubeShapeDescs);
         }        
         break;        
-        case PhysicsObjectType::eCapsuleShape:
+        case UsdPhysicsObjectType::eCapsuleShape:
         {       
             copyDescs(numDesc, primPaths, cb->capsuleShapePrimPaths, objectDescs, cb->capsuleShapeDescs);
         }        
         break;        
-        case PhysicsObjectType::eCylinderShape:
+        case UsdPhysicsObjectType::eCylinderShape:
         {       
             copyDescs(numDesc, primPaths, cb->cylinderShapePrimPaths, objectDescs, cb->cylinderShapeDescs);
         }        
         break;        
-        case PhysicsObjectType::eConeShape:
+        case UsdPhysicsObjectType::eConeShape:
         {       
             copyDescs(numDesc, primPaths, cb->coneShapePrimPaths, objectDescs, cb->coneShapeDescs);
         }        
         break;        
-        case PhysicsObjectType::eMeshShape:
+        case UsdPhysicsObjectType::eMeshShape:
         {       
             copyDescs(numDesc, primPaths, cb->meshShapePrimPaths, objectDescs, cb->meshShapeDescs);
         }        
         break;        
-        case PhysicsObjectType::ePlaneShape:
+        case UsdPhysicsObjectType::ePlaneShape:
         {       
             copyDescs(numDesc, primPaths, cb->planeShapePrimPaths, objectDescs, cb->planeShapeDescs);
         }        
         break;        
-        case PhysicsObjectType::eCustomShape:
+        case UsdPhysicsObjectType::eCustomShape:
         {       
             copyDescs(numDesc, primPaths, cb->customShapePrimPaths, objectDescs, cb->customShapeDescs);
         }        
         break;        
-        case PhysicsObjectType::eSpherePointsShape:
+        case UsdPhysicsObjectType::eSpherePointsShape:
         {       
             copyDescs(numDesc, primPaths, cb->spherePointShapePrimPaths, objectDescs, cb->spherePointsShapeDescs);
         }        
         break;        
-        case PhysicsObjectType::eFixedJoint:
+        case UsdPhysicsObjectType::eFixedJoint:
         {       
             copyDescs(numDesc, primPaths, cb->fixedJointPrimPaths, objectDescs, cb->fixedJointDescs);
         }        
         break;
-        case PhysicsObjectType::eRevoluteJoint:
+        case UsdPhysicsObjectType::eRevoluteJoint:
         {       
             copyDescs(numDesc, primPaths, cb->revoluteJointPrimPaths, objectDescs, cb->revoluteJointDescs);
         }     
         break;   
-        case PhysicsObjectType::ePrismaticJoint:
+        case UsdPhysicsObjectType::ePrismaticJoint:
         {       
             copyDescs(numDesc, primPaths, cb->prismaticJointPrimPaths, objectDescs, cb->prismaticJointDescs);
         }     
         break;   
-        case PhysicsObjectType::eSphericalJoint:
+        case UsdPhysicsObjectType::eSphericalJoint:
         {       
             copyDescs(numDesc, primPaths, cb->sphericalJointPrimPaths, objectDescs, cb->sphericalJointDescs);
         }     
         break;   
-        case PhysicsObjectType::eDistanceJoint:
+        case UsdPhysicsObjectType::eDistanceJoint:
         {       
             copyDescs(numDesc, primPaths, cb->distanceJointPrimPaths, objectDescs, cb->distanceJointDescs);
         }     
         break;   
-        case PhysicsObjectType::eD6Joint:
+        case UsdPhysicsObjectType::eD6Joint:
         {       
             copyDescs(numDesc, primPaths, cb->d6JointPrimPaths, objectDescs, cb->d6JointDescs);
         }     
         break;   
-        case PhysicsObjectType::eCustomJoint:
+        case UsdPhysicsObjectType::eCustomJoint:
         {       
             copyDescs(numDesc, primPaths, cb->customJointPrimPaths, objectDescs, cb->customJointDescs);
         }     
         break;   
-        case PhysicsObjectType::eRigidBodyMaterial:
+        case UsdPhysicsObjectType::eRigidBodyMaterial:
         {       
             copyDescs(numDesc, primPaths, cb->rigidBodyMaterialPrimPaths, objectDescs, cb->rigidBodyMaterialDescs);
         }     
         break;   
-        case PhysicsObjectType::eArticulation:
+        case UsdPhysicsObjectType::eArticulation:
         {       
             copyDescs(numDesc, primPaths, cb->articulationPrimPaths, objectDescs, cb->articulationDescs);
         }     
         break;   
-        case PhysicsObjectType::eCollisionGroup:
+        case UsdPhysicsObjectType::eCollisionGroup:
         {       
             copyDescs(numDesc, primPaths, cb->collisionGroupPrimPaths, objectDescs, cb->collisionGroupDescs);
         }     
@@ -409,87 +409,87 @@ pxr_boost::python::dict _LoadUsdPhysicsFromRange(UsdStageWeakPtr stage, ParsePri
     {
         if (!gMarshalCallback.sceneDescs.empty())
         {
-            retDict[PhysicsObjectType::eScene] = pxr_boost::python::make_tuple(gMarshalCallback.scenePrimPaths, gMarshalCallback.sceneDescs);
+            retDict[UsdPhysicsObjectType::eScene] = pxr_boost::python::make_tuple(gMarshalCallback.scenePrimPaths, gMarshalCallback.sceneDescs);
         }
         if (!gMarshalCallback.rigidBodyDescs.empty())
         {
-            retDict[PhysicsObjectType::eRigidBody] = pxr_boost::python::make_tuple(gMarshalCallback.rigidBodyPrimPaths, gMarshalCallback.rigidBodyDescs);
+            retDict[UsdPhysicsObjectType::eRigidBody] = pxr_boost::python::make_tuple(gMarshalCallback.rigidBodyPrimPaths, gMarshalCallback.rigidBodyDescs);
         }
         if (!gMarshalCallback.sphereShapeDescs.empty())
         {
-            retDict[PhysicsObjectType::eSphereShape] = pxr_boost::python::make_tuple(gMarshalCallback.sphereShapePrimPaths, gMarshalCallback.sphereShapeDescs);
+            retDict[UsdPhysicsObjectType::eSphereShape] = pxr_boost::python::make_tuple(gMarshalCallback.sphereShapePrimPaths, gMarshalCallback.sphereShapeDescs);
         }
         if (!gMarshalCallback.cubeShapeDescs.empty())
         {
-            retDict[PhysicsObjectType::eCubeShape] = pxr_boost::python::make_tuple(gMarshalCallback.cubeShapePrimPaths, gMarshalCallback.cubeShapeDescs);
+            retDict[UsdPhysicsObjectType::eCubeShape] = pxr_boost::python::make_tuple(gMarshalCallback.cubeShapePrimPaths, gMarshalCallback.cubeShapeDescs);
         }
         if (!gMarshalCallback.capsuleShapeDescs.empty())
         {
-            retDict[PhysicsObjectType::eCapsuleShape] = pxr_boost::python::make_tuple(gMarshalCallback.capsuleShapePrimPaths, gMarshalCallback.capsuleShapeDescs);
+            retDict[UsdPhysicsObjectType::eCapsuleShape] = pxr_boost::python::make_tuple(gMarshalCallback.capsuleShapePrimPaths, gMarshalCallback.capsuleShapeDescs);
         }
         if (!gMarshalCallback.cylinderShapeDescs.empty())
         {
-            retDict[PhysicsObjectType::eCylinderShape] = pxr_boost::python::make_tuple(gMarshalCallback.cylinderShapePrimPaths, gMarshalCallback.cylinderShapeDescs);
+            retDict[UsdPhysicsObjectType::eCylinderShape] = pxr_boost::python::make_tuple(gMarshalCallback.cylinderShapePrimPaths, gMarshalCallback.cylinderShapeDescs);
         }
         if (!gMarshalCallback.coneShapeDescs.empty())
         {
-            retDict[PhysicsObjectType::eConeShape] = pxr_boost::python::make_tuple(gMarshalCallback.coneShapePrimPaths, gMarshalCallback.coneShapeDescs);
+            retDict[UsdPhysicsObjectType::eConeShape] = pxr_boost::python::make_tuple(gMarshalCallback.coneShapePrimPaths, gMarshalCallback.coneShapeDescs);
         }
         if (!gMarshalCallback.meshShapeDescs.empty())
         {
-            retDict[PhysicsObjectType::eMeshShape] = pxr_boost::python::make_tuple(gMarshalCallback.meshShapePrimPaths, gMarshalCallback.meshShapeDescs);
+            retDict[UsdPhysicsObjectType::eMeshShape] = pxr_boost::python::make_tuple(gMarshalCallback.meshShapePrimPaths, gMarshalCallback.meshShapeDescs);
         }
         if (!gMarshalCallback.planeShapeDescs.empty())
         {
-            retDict[PhysicsObjectType::ePlaneShape] = pxr_boost::python::make_tuple(gMarshalCallback.planeShapePrimPaths, gMarshalCallback.planeShapeDescs);
+            retDict[UsdPhysicsObjectType::ePlaneShape] = pxr_boost::python::make_tuple(gMarshalCallback.planeShapePrimPaths, gMarshalCallback.planeShapeDescs);
         }
         if (!gMarshalCallback.customShapeDescs.empty())
         {
-            retDict[PhysicsObjectType::eCustomShape] = pxr_boost::python::make_tuple(gMarshalCallback.customShapePrimPaths, gMarshalCallback.customShapeDescs);
+            retDict[UsdPhysicsObjectType::eCustomShape] = pxr_boost::python::make_tuple(gMarshalCallback.customShapePrimPaths, gMarshalCallback.customShapeDescs);
         }
         if (!gMarshalCallback.spherePointsShapeDescs.empty())
         {
-            retDict[PhysicsObjectType::eSpherePointsShape] = pxr_boost::python::make_tuple(gMarshalCallback.spherePointShapePrimPaths, gMarshalCallback.spherePointsShapeDescs);
+            retDict[UsdPhysicsObjectType::eSpherePointsShape] = pxr_boost::python::make_tuple(gMarshalCallback.spherePointShapePrimPaths, gMarshalCallback.spherePointsShapeDescs);
         }
         if (!gMarshalCallback.fixedJointDescs.empty())
         {
-            retDict[PhysicsObjectType::eFixedJoint] = pxr_boost::python::make_tuple(gMarshalCallback.fixedJointPrimPaths, gMarshalCallback.fixedJointDescs);
+            retDict[UsdPhysicsObjectType::eFixedJoint] = pxr_boost::python::make_tuple(gMarshalCallback.fixedJointPrimPaths, gMarshalCallback.fixedJointDescs);
         }
         if (!gMarshalCallback.revoluteJointDescs.empty())
         {
-            retDict[PhysicsObjectType::eRevoluteJoint] = pxr_boost::python::make_tuple(gMarshalCallback.revoluteJointPrimPaths, gMarshalCallback.revoluteJointDescs);
+            retDict[UsdPhysicsObjectType::eRevoluteJoint] = pxr_boost::python::make_tuple(gMarshalCallback.revoluteJointPrimPaths, gMarshalCallback.revoluteJointDescs);
         }
         if (!gMarshalCallback.prismaticJointDescs.empty())
         {
-            retDict[PhysicsObjectType::ePrismaticJoint] = pxr_boost::python::make_tuple(gMarshalCallback.prismaticJointPrimPaths, gMarshalCallback.prismaticJointDescs);
+            retDict[UsdPhysicsObjectType::ePrismaticJoint] = pxr_boost::python::make_tuple(gMarshalCallback.prismaticJointPrimPaths, gMarshalCallback.prismaticJointDescs);
         }
         if (!gMarshalCallback.sphericalJointDescs.empty())
         {
-            retDict[PhysicsObjectType::eSphericalJoint] = pxr_boost::python::make_tuple(gMarshalCallback.sphericalJointPrimPaths, gMarshalCallback.sphericalJointDescs);
+            retDict[UsdPhysicsObjectType::eSphericalJoint] = pxr_boost::python::make_tuple(gMarshalCallback.sphericalJointPrimPaths, gMarshalCallback.sphericalJointDescs);
         }
         if (!gMarshalCallback.distanceJointDescs.empty())
         {
-            retDict[PhysicsObjectType::eDistanceJoint] = pxr_boost::python::make_tuple(gMarshalCallback.distanceJointPrimPaths, gMarshalCallback.distanceJointDescs);
+            retDict[UsdPhysicsObjectType::eDistanceJoint] = pxr_boost::python::make_tuple(gMarshalCallback.distanceJointPrimPaths, gMarshalCallback.distanceJointDescs);
         }
         if (!gMarshalCallback.d6JointDescs.empty())
         {
-            retDict[PhysicsObjectType::eD6Joint] = pxr_boost::python::make_tuple(gMarshalCallback.d6JointPrimPaths, gMarshalCallback.d6JointDescs);
+            retDict[UsdPhysicsObjectType::eD6Joint] = pxr_boost::python::make_tuple(gMarshalCallback.d6JointPrimPaths, gMarshalCallback.d6JointDescs);
         }
         if (!gMarshalCallback.customJointDescs.empty())
         {
-            retDict[PhysicsObjectType::eCustomJoint] = pxr_boost::python::make_tuple(gMarshalCallback.customJointPrimPaths, gMarshalCallback.customJointDescs);
+            retDict[UsdPhysicsObjectType::eCustomJoint] = pxr_boost::python::make_tuple(gMarshalCallback.customJointPrimPaths, gMarshalCallback.customJointDescs);
         }
         if (!gMarshalCallback.rigidBodyMaterialDescs.empty())
         {
-            retDict[PhysicsObjectType::eRigidBodyMaterial] = pxr_boost::python::make_tuple(gMarshalCallback.rigidBodyMaterialPrimPaths, gMarshalCallback.rigidBodyMaterialDescs);
+            retDict[UsdPhysicsObjectType::eRigidBodyMaterial] = pxr_boost::python::make_tuple(gMarshalCallback.rigidBodyMaterialPrimPaths, gMarshalCallback.rigidBodyMaterialDescs);
         }
         if (!gMarshalCallback.articulationDescs.empty())
         {
-            retDict[PhysicsObjectType::eArticulation] = pxr_boost::python::make_tuple(gMarshalCallback.articulationPrimPaths, gMarshalCallback.articulationDescs);
+            retDict[UsdPhysicsObjectType::eArticulation] = pxr_boost::python::make_tuple(gMarshalCallback.articulationPrimPaths, gMarshalCallback.articulationDescs);
         }
         if (!gMarshalCallback.collisionGroupDescs.empty())
         {
-            retDict[PhysicsObjectType::eCollisionGroup] = pxr_boost::python::make_tuple(gMarshalCallback.collisionGroupPrimPaths, gMarshalCallback.collisionGroupDescs);
+            retDict[UsdPhysicsObjectType::eCollisionGroup] = pxr_boost::python::make_tuple(gMarshalCallback.collisionGroupPrimPaths, gMarshalCallback.collisionGroupDescs);
         }
     }    
     return retDict;
@@ -506,7 +506,7 @@ _CustomUsdPhysicsTokens_Repr(const CustomUsdPhysicsTokens& self)
 }
 
 static std::string
-_PhysicsObjectDesc_Repr(const PhysicsObjectDesc& self)
+_PhysicsObjectDesc_Repr(const UsdPhysicsObjectDesc& self)
 {
     return TfStringPrintf("%sPhysicsObjectDesc(type=%s, primPath=%s, isValid=%s)",
         TF_PY_REPR_PREFIX,
@@ -516,7 +516,7 @@ _PhysicsObjectDesc_Repr(const PhysicsObjectDesc& self)
 }
 
 static std::string
-_SceneDesc_Repr(const SceneDesc& self)
+_SceneDesc_Repr(const UsdPhysicsSceneDesc& self)
 {
     return TfStringPrintf("%sSceneDesc(gravityDirection=%s, gravityMagnitude=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -526,7 +526,7 @@ _SceneDesc_Repr(const SceneDesc& self)
 }
 
 static std::string
-_CollisionGroupDesc_Repr(const CollisionGroupDesc& self)
+_CollisionGroupDesc_Repr(const UsdPhysicsCollisionGroupDesc& self)
 {
     return TfStringPrintf("%sCollisionGroupDesc(invertFilteredGroups=%s, mergeGroupName=%s, mergedGroups=%s, filteredGroups=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -538,7 +538,7 @@ _CollisionGroupDesc_Repr(const CollisionGroupDesc& self)
 }
 
 static std::string
-_RigidBodyMaterialDesc_Repr(const RigidBodyMaterialDesc& self)
+_RigidBodyMaterialDesc_Repr(const UsdPhysicsRigidBodyMaterialDesc& self)
 {
     return TfStringPrintf("%sRigidBodyMaterialDesc(staticFriction=%s, dynamicFriction=%s, restitution=%s, density=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -550,7 +550,7 @@ _RigidBodyMaterialDesc_Repr(const RigidBodyMaterialDesc& self)
 }
 
 static std::string
-_ShapeDesc_Repr(const ShapeDesc& self)
+_ShapeDesc_Repr(const UsdPhysicsShapeDesc& self)
 {
     return TfStringPrintf("%sShapeDesc(rigidBody=%s, localPos=%s, localRot=%s, localScale=%s, materials=%s, simulationOwners=%s, filteredCollisions=%s, collisionGroups=%s, collisionEnabled=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -567,7 +567,7 @@ _ShapeDesc_Repr(const ShapeDesc& self)
 }
 
 static std::string
-_SphereShapeDesc_Repr(const SphereShapeDesc& self)
+_SphereShapeDesc_Repr(const UsdPhysicsSphereShapeDesc& self)
 {
     return TfStringPrintf("%sSphereShapeDesc(radius=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -576,7 +576,7 @@ _SphereShapeDesc_Repr(const SphereShapeDesc& self)
 }
 
 static std::string
-_CapsuleShapeDesc_Repr(const CapsuleShapeDesc& self)
+_CapsuleShapeDesc_Repr(const UsdPhysicsCapsuleShapeDesc& self)
 {
     return TfStringPrintf("%sCapsuleShapeDesc(radius=%s, halfHeight=%s, axis=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -587,7 +587,7 @@ _CapsuleShapeDesc_Repr(const CapsuleShapeDesc& self)
 }
 
 static std::string
-_CylinderShapeDesc_Repr(const CylinderShapeDesc& self)
+_CylinderShapeDesc_Repr(const UsdPhysicsCylinderShapeDesc& self)
 {
     return TfStringPrintf("%sCylinderShapeDesc(radius=%s, halfHeight=%s, axis=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -598,7 +598,7 @@ _CylinderShapeDesc_Repr(const CylinderShapeDesc& self)
 }
 
 static std::string
-_ConeShapeDesc_Repr(const ConeShapeDesc& self)
+_ConeShapeDesc_Repr(const UsdPhysicsConeShapeDesc& self)
 {
     return TfStringPrintf("%sConeShapeDesc(radius=%s, halfHeight=%s, axis=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -609,7 +609,7 @@ _ConeShapeDesc_Repr(const ConeShapeDesc& self)
 }
 
 static std::string
-_PlaneShapeDesc_Repr(const PlaneShapeDesc& self)
+_PlaneShapeDesc_Repr(const UsdPhysicsPlaneShapeDesc& self)
 {
     return TfStringPrintf("%sPlaneShapeDesc(axis=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -618,7 +618,7 @@ _PlaneShapeDesc_Repr(const PlaneShapeDesc& self)
 }
 
 static std::string
-_CustomShapeDesc_Repr(const CustomShapeDesc& self)
+_CustomShapeDesc_Repr(const UsdPhysicsCustomShapeDesc& self)
 {
     return TfStringPrintf("%sCustomShapeDesc(customGeometryToken=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -627,7 +627,7 @@ _CustomShapeDesc_Repr(const CustomShapeDesc& self)
 }
 
 static std::string
-_CubeShapeDesc_Repr(const CubeShapeDesc& self)
+_CubeShapeDesc_Repr(const UsdPhysicsCubeShapeDesc& self)
 {
     return TfStringPrintf("%sCubeShapeDesc(halfExtents=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -636,7 +636,7 @@ _CubeShapeDesc_Repr(const CubeShapeDesc& self)
 }
 
 static std::string
-_MeshShapeDesc_Repr(const MeshShapeDesc& self)
+_MeshShapeDesc_Repr(const UsdPhysicsMeshShapeDesc& self)
 {
     return TfStringPrintf("%sMeshShapeDesc(approximation=%s, meshScale=%s, doubleSided=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -647,7 +647,7 @@ _MeshShapeDesc_Repr(const MeshShapeDesc& self)
 }
 
 static std::string
-_SpherePoint_Repr(const SpherePoint& self)
+_SpherePoint_Repr(const UsdPhysicsSpherePoint& self)
 {
     return TfStringPrintf("%sSpherePoint(center=%s, radius=%s)",
         TF_PY_REPR_PREFIX,
@@ -656,7 +656,7 @@ _SpherePoint_Repr(const SpherePoint& self)
 }
 
 static std::string
-_SpherePointsShapeDesc_Repr(const SpherePointsShapeDesc& self)
+_SpherePointsShapeDesc_Repr(const UsdPhysicsSpherePointsShapeDesc& self)
 {
     return TfStringPrintf("%sSpherePointsShapeDesc(spherePoints=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -665,7 +665,7 @@ _SpherePointsShapeDesc_Repr(const SpherePointsShapeDesc& self)
 }
 
 static std::string
-_RigidBodyDesc_Repr(const RigidBodyDesc& self)
+_RigidBodyDesc_Repr(const UsdPhysicsRigidBodyDesc& self)
 {
     return TfStringPrintf("%sRigidBodyDesc(collisions=%s, filteredCollisions=%s, simulationOwners=%s, position=%s, rotation=%s, scale=%s, rigidBodyEnabled=%s, kinematicBody=%s, startsAsleep=%s, linearVelocity=%s, angularVelocity=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -684,7 +684,7 @@ _RigidBodyDesc_Repr(const RigidBodyDesc& self)
 }
 
 static std::string
-_JointLimit_Repr(const JointLimit& self)
+_JointLimit_Repr(const UsdPhysicsJointLimit& self)
 {
     return TfStringPrintf("%sJointLimit(enabled=%s, lower=%s, upper=%s)",
         TF_PY_REPR_PREFIX,
@@ -694,7 +694,7 @@ _JointLimit_Repr(const JointLimit& self)
 }
 
 static std::string
-_JointDrive_Repr(const JointDrive& self)
+_JointDrive_Repr(const UsdPhysicsJointDrive& self)
 {
     return TfStringPrintf("%sJointDrive(enabled=%s, targetPosition=%s, targetVelocity=%s, forceLimit=%s, stiffness=%s, damping=%s, acceleration=%s)",
         TF_PY_REPR_PREFIX,
@@ -708,7 +708,7 @@ _JointDrive_Repr(const JointDrive& self)
 }
 
 static std::string
-_ArticulationDesc_Repr(const ArticulationDesc& self)
+_ArticulationDesc_Repr(const UsdPhysicsArticulationDesc& self)
 {
     return TfStringPrintf("%sArticulationDesc(rootPrims=%s, filteredCollisions=%s, articulatedJoints=%s, articulatedBodies=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -720,7 +720,7 @@ _ArticulationDesc_Repr(const ArticulationDesc& self)
 }
 
 static std::string
-_JointDesc_Repr(const JointDesc& self)
+_JointDesc_Repr(const UsdPhysicsJointDesc& self)
 {
     return TfStringPrintf("%sJointDesc(rel0=%s, rel1=%s, body0=%s, body1=%s, localPose0Position=%s, localPose0Orientation=%s, localPose1Position=%s, localPose1Orientation=%s, jointEnabled=%s, breakForce=%s, breakTorque=%s, excludeFromArticulation=%s, collisionEnabled=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -741,7 +741,7 @@ _JointDesc_Repr(const JointDesc& self)
 }
 
 static std::string
-_JointLimitDOFPair_Repr(const std::pair<PhysicsJointDOF::Enum, JointLimit>& self)
+_JointLimitDOFPair_Repr(const std::pair<UsdPhysicsJointDOF::Enum, UsdPhysicsJointLimit>& self)
 {
     return TfStringPrintf("%sJointLimitDOFPair(first=%s, second=%s)",
         TF_PY_REPR_PREFIX,
@@ -750,7 +750,7 @@ _JointLimitDOFPair_Repr(const std::pair<PhysicsJointDOF::Enum, JointLimit>& self
 }
 
 static std::string
-_JointDriveDOFPair_Repr(const std::pair<PhysicsJointDOF::Enum, JointDrive>& self)
+_JointDriveDOFPair_Repr(const std::pair<UsdPhysicsJointDOF::Enum, UsdPhysicsJointDrive>& self)
 {
     return TfStringPrintf("%sJointDriveDOFPair(first=%s, second=%s)",
         TF_PY_REPR_PREFIX,
@@ -759,7 +759,7 @@ _JointDriveDOFPair_Repr(const std::pair<PhysicsJointDOF::Enum, JointDrive>& self
 }
 
 static std::string
-_D6JointDesc_Repr(const D6JointDesc& self)
+_D6JointDesc_Repr(const UsdPhysicsD6JointDesc& self)
 {
     return TfStringPrintf("%sD6JointDesc(jointLimits=%s, jointDrives=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -769,7 +769,7 @@ _D6JointDesc_Repr(const D6JointDesc& self)
 }
 
 static std::string
-_PrismaticJointDesc_Repr(const PrismaticJointDesc& self)
+_PrismaticJointDesc_Repr(const UsdPhysicsPrismaticJointDesc& self)
 {
     return TfStringPrintf("%sPrismaticJointDesc(axis=%s, limit=%s, drive=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -780,7 +780,7 @@ _PrismaticJointDesc_Repr(const PrismaticJointDesc& self)
 }
 
 static std::string
-_SphericalJointDesc_Repr(const SphericalJointDesc& self)
+_SphericalJointDesc_Repr(const UsdPhysicsSphericalJointDesc& self)
 {
     return TfStringPrintf("%sSphericalJointDesc(axis=%s, limit=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -790,7 +790,7 @@ _SphericalJointDesc_Repr(const SphericalJointDesc& self)
 }
 
 static std::string
-_RevoluteJointDesc_Repr(const RevoluteJointDesc& self)
+_RevoluteJointDesc_Repr(const UsdPhysicsRevoluteJointDesc& self)
 {
     return TfStringPrintf("%sRevoluteJointDesc(axis=%s, limit=%s, drive=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -801,7 +801,7 @@ _RevoluteJointDesc_Repr(const RevoluteJointDesc& self)
 }
 
 static std::string
-_DistanceJointDesc_Repr(const DistanceJointDesc& self)
+_DistanceJointDesc_Repr(const UsdPhysicsDistanceJointDesc& self)
 {
     return TfStringPrintf("%sDistanceJointDesc(minEnabled=%s, limit=%s, maxEnabled=%s), parent %s",
         TF_PY_REPR_PREFIX,
@@ -813,45 +813,45 @@ _DistanceJointDesc_Repr(const DistanceJointDesc& self)
 
 void wrapParseUtils()
 {
-    pxr_boost::python::enum_<PhysicsObjectType::Enum>("PhysicsObjectType")
-    .value("Undefined", PhysicsObjectType::eUndefined)
-    .value("Scene", PhysicsObjectType::eScene)
-    .value("RigidBody", PhysicsObjectType::eRigidBody)
-    .value("SphereShape", PhysicsObjectType::eSphereShape)
-    .value("CubeShape", PhysicsObjectType::eCubeShape)
-    .value("CapsuleShape", PhysicsObjectType::eCapsuleShape)
-    .value("CylinderShape", PhysicsObjectType::eCylinderShape)
-    .value("ConeShape", PhysicsObjectType::eConeShape)
-    .value("MeshShape", PhysicsObjectType::eMeshShape)
-    .value("PlaneShape", PhysicsObjectType::ePlaneShape)
-    .value("CustomShape", PhysicsObjectType::eCustomShape)
-    .value("SpherePointsShape", PhysicsObjectType::eSpherePointsShape)
-    .value("FixedJoint", PhysicsObjectType::eFixedJoint)
-    .value("RevoluteJoint", PhysicsObjectType::eRevoluteJoint)
-    .value("PrismaticJoint", PhysicsObjectType::ePrismaticJoint)
-    .value("SphericalJoint", PhysicsObjectType::eSphericalJoint)
-    .value("DistanceJoint", PhysicsObjectType::eDistanceJoint)
-    .value("D6Joint", PhysicsObjectType::eD6Joint)
-    .value("CustomJoint", PhysicsObjectType::eCustomJoint)
-    .value("RigidBodyMaterial", PhysicsObjectType::eRigidBodyMaterial)
-    .value("Articulation", PhysicsObjectType::eArticulation)
-    .value("CollisionGroup", PhysicsObjectType::eCollisionGroup)
+    pxr_boost::python::enum_<UsdPhysicsObjectType::Enum>("ObjectType")
+    .value("Undefined", UsdPhysicsObjectType::eUndefined)
+    .value("Scene", UsdPhysicsObjectType::eScene)
+    .value("RigidBody", UsdPhysicsObjectType::eRigidBody)
+    .value("SphereShape", UsdPhysicsObjectType::eSphereShape)
+    .value("CubeShape", UsdPhysicsObjectType::eCubeShape)
+    .value("CapsuleShape", UsdPhysicsObjectType::eCapsuleShape)
+    .value("CylinderShape", UsdPhysicsObjectType::eCylinderShape)
+    .value("ConeShape", UsdPhysicsObjectType::eConeShape)
+    .value("MeshShape", UsdPhysicsObjectType::eMeshShape)
+    .value("PlaneShape", UsdPhysicsObjectType::ePlaneShape)
+    .value("CustomShape", UsdPhysicsObjectType::eCustomShape)
+    .value("SpherePointsShape", UsdPhysicsObjectType::eSpherePointsShape)
+    .value("FixedJoint", UsdPhysicsObjectType::eFixedJoint)
+    .value("RevoluteJoint", UsdPhysicsObjectType::eRevoluteJoint)
+    .value("PrismaticJoint", UsdPhysicsObjectType::ePrismaticJoint)
+    .value("SphericalJoint", UsdPhysicsObjectType::eSphericalJoint)
+    .value("DistanceJoint", UsdPhysicsObjectType::eDistanceJoint)
+    .value("D6Joint", UsdPhysicsObjectType::eD6Joint)
+    .value("CustomJoint", UsdPhysicsObjectType::eCustomJoint)
+    .value("RigidBodyMaterial", UsdPhysicsObjectType::eRigidBodyMaterial)
+    .value("Articulation", UsdPhysicsObjectType::eArticulation)
+    .value("CollisionGroup", UsdPhysicsObjectType::eCollisionGroup)
     ;
 
-    pxr_boost::python::enum_<PhysicsAxis::Enum>("PhysicsAxis")
-    .value("X", PhysicsAxis::eX)
-    .value("Y", PhysicsAxis::eY)
-    .value("Z", PhysicsAxis::eZ)
+    pxr_boost::python::enum_<UsdPhysicsAxis::Enum>("Axis")
+    .value("X", UsdPhysicsAxis::eX)
+    .value("Y", UsdPhysicsAxis::eY)
+    .value("Z", UsdPhysicsAxis::eZ)
     ;
 
-    pxr_boost::python::enum_<PhysicsJointDOF::Enum>("PhysicsJointDOF")
-    .value("Distance", PhysicsJointDOF::eDistance)
-    .value("TransX", PhysicsJointDOF::eTransX)
-    .value("TransY", PhysicsJointDOF::eTransY)
-    .value("TransZ", PhysicsJointDOF::eTransZ)
-    .value("RotX", PhysicsJointDOF::eRotX)
-    .value("RotY", PhysicsJointDOF::eRotY)
-    .value("RotZ", PhysicsJointDOF::eRotZ)
+    pxr_boost::python::enum_<UsdPhysicsJointDOF::Enum>("JointDOF")
+    .value("Distance", UsdPhysicsJointDOF::eDistance)
+    .value("TransX", UsdPhysicsJointDOF::eTransX)
+    .value("TransY", UsdPhysicsJointDOF::eTransY)
+    .value("TransZ", UsdPhysicsJointDOF::eTransZ)
+    .value("RotX", UsdPhysicsJointDOF::eRotX)
+    .value("RotY", UsdPhysicsJointDOF::eRotY)
+    .value("RotZ", UsdPhysicsJointDOF::eRotZ)
     ;
     
     pxr_boost::python::class_<_CustomUsdPhysicsTokens>
@@ -862,303 +862,303 @@ void wrapParseUtils()
         .def_readwrite("instancerTokens", &_CustomUsdPhysicsTokens::instancerTokens)
         .def("__repr__", _CustomUsdPhysicsTokens_Repr);
 
-    pxr_boost::python::class_<PhysicsObjectDesc>
-        podcls("PhysicsObjectDesc", pxr_boost::python::no_init);
+    pxr_boost::python::class_<UsdPhysicsObjectDesc>
+        podcls("ObjectDesc", pxr_boost::python::no_init);
     podcls
-        .def_readonly("type", &PhysicsObjectDesc::type)
-        .def_readonly("primPath", &PhysicsObjectDesc::primPath)
-        .def_readonly("isValid", &PhysicsObjectDesc::isValid)
+        .def_readonly("type", &UsdPhysicsObjectDesc::type)
+        .def_readonly("primPath", &UsdPhysicsObjectDesc::primPath)
+        .def_readonly("isValid", &UsdPhysicsObjectDesc::isValid)
         .def("__repr__", _PhysicsObjectDesc_Repr);
 
-    pxr_boost::python::class_<SceneDesc, bases<PhysicsObjectDesc>>
+    pxr_boost::python::class_<UsdPhysicsSceneDesc, bases<UsdPhysicsObjectDesc>>
         sdcls("SceneDesc", pxr_boost::python::no_init);
     sdcls
-        .def_readonly("gravityDirection", &SceneDesc::gravityDirection)        
-        .def_readonly("gravityMagnitude", &SceneDesc::gravityMagnitude)
+        .def_readonly("gravityDirection", &UsdPhysicsSceneDesc::gravityDirection)        
+        .def_readonly("gravityMagnitude", &UsdPhysicsSceneDesc::gravityMagnitude)
         .def("__repr__", _SceneDesc_Repr);
 
-    pxr_boost::python::class_<CollisionGroupDesc, bases<PhysicsObjectDesc>>
+    pxr_boost::python::class_<UsdPhysicsCollisionGroupDesc, bases<UsdPhysicsObjectDesc>>
         cgcls("CollisionGroupDesc", pxr_boost::python::no_init);
     cgcls
-        .def_readonly("invertFilteredGroups", &CollisionGroupDesc::invertFilteredGroups)
-        .add_property("mergedGroups", make_function(&CollisionGroupDesc::getMergedGroups,
+        .def_readonly("invertFilteredGroups", &UsdPhysicsCollisionGroupDesc::invertFilteredGroups)
+        .add_property("mergedGroups", make_function(&UsdPhysicsCollisionGroupDesc::getMergedGroups,
             return_value_policy<TfPySequenceToList>()))
-        .add_property("filteredGroups", make_function(&CollisionGroupDesc::getFilteredGroups,
+        .add_property("filteredGroups", make_function(&UsdPhysicsCollisionGroupDesc::getFilteredGroups,
             return_value_policy<TfPySequenceToList>()))
-        .def_readonly("mergeGroupName", &CollisionGroupDesc::mergeGroupName)
+        .def_readonly("mergeGroupName", &UsdPhysicsCollisionGroupDesc::mergeGroupName)
         .def("__repr__", _CollisionGroupDesc_Repr);
 
-    pxr_boost::python::class_<RigidBodyMaterialDesc, bases<PhysicsObjectDesc>>
+    pxr_boost::python::class_<UsdPhysicsRigidBodyMaterialDesc, bases<UsdPhysicsObjectDesc>>
         rbmcls("RigidBodyMaterialDesc", pxr_boost::python::no_init);
     rbmcls
-        .def_readonly("staticFriction", &RigidBodyMaterialDesc::staticFriction)
-        .def_readonly("dynamicFriction", &RigidBodyMaterialDesc::dynamicFriction)
-        .def_readonly("restitution", &RigidBodyMaterialDesc::restitution)
-        .def_readonly("density", &RigidBodyMaterialDesc::density)
+        .def_readonly("staticFriction", &UsdPhysicsRigidBodyMaterialDesc::staticFriction)
+        .def_readonly("dynamicFriction", &UsdPhysicsRigidBodyMaterialDesc::dynamicFriction)
+        .def_readonly("restitution", &UsdPhysicsRigidBodyMaterialDesc::restitution)
+        .def_readonly("density", &UsdPhysicsRigidBodyMaterialDesc::density)
         .def("__repr__", _RigidBodyMaterialDesc_Repr);
 
-    pxr_boost::python::class_<ShapeDesc, bases<PhysicsObjectDesc>>
+    pxr_boost::python::class_<UsdPhysicsShapeDesc, bases<UsdPhysicsObjectDesc>>
         shdcls("ShapeDesc", pxr_boost::python::no_init);
     shdcls
-        .def_readonly("rigidBody", &ShapeDesc::rigidBody)
-        .def_readonly("localPos", &ShapeDesc::localPos)
-        .def_readonly("localRot", &ShapeDesc::localRot)
-        .def_readonly("localScale", &ShapeDesc::localScale)
-        .add_property("materials", make_function(&ShapeDesc::getMaterials,
+        .def_readonly("rigidBody", &UsdPhysicsShapeDesc::rigidBody)
+        .def_readonly("localPos", &UsdPhysicsShapeDesc::localPos)
+        .def_readonly("localRot", &UsdPhysicsShapeDesc::localRot)
+        .def_readonly("localScale", &UsdPhysicsShapeDesc::localScale)
+        .add_property("materials", make_function(&UsdPhysicsShapeDesc::getMaterials,
             return_value_policy<TfPySequenceToList>()))
-        .add_property("simulationOwners", make_function(&ShapeDesc::getSimulationOwners,
+        .add_property("simulationOwners", make_function(&UsdPhysicsShapeDesc::getSimulationOwners,
             return_value_policy<TfPySequenceToList>()))
-        .add_property("filteredCollisions", make_function(&ShapeDesc::getFilteredCollisions,
+        .add_property("filteredCollisions", make_function(&UsdPhysicsShapeDesc::getFilteredCollisions,
             return_value_policy<TfPySequenceToList>()))
-        .add_property("collisionGroups", make_function(&ShapeDesc::getCollisionGroups,
+        .add_property("collisionGroups", make_function(&UsdPhysicsShapeDesc::getCollisionGroups,
             return_value_policy<TfPySequenceToList>()))
-        .def_readonly("collisionEnabled", &ShapeDesc::collisionEnabled)
+        .def_readonly("collisionEnabled", &UsdPhysicsShapeDesc::collisionEnabled)
         .def("__repr__", _ShapeDesc_Repr);
 
-    pxr_boost::python::class_<SphereShapeDesc, bases<ShapeDesc>>
+    pxr_boost::python::class_<UsdPhysicsSphereShapeDesc, bases<UsdPhysicsShapeDesc>>
         ssdcls("SphereShapeDesc", pxr_boost::python::no_init);
     ssdcls
-        .def_readonly("radius", &SphereShapeDesc::radius)
+        .def_readonly("radius", &UsdPhysicsSphereShapeDesc::radius)
         .def("__repr__", _SphereShapeDesc_Repr);
 
-    pxr_boost::python::class_<CapsuleShapeDesc, bases<ShapeDesc>>
+    pxr_boost::python::class_<UsdPhysicsCapsuleShapeDesc, bases<UsdPhysicsShapeDesc>>
         csdcls("CapsuleShapeDesc", pxr_boost::python::no_init);
     csdcls
-        .def_readonly("radius", &CapsuleShapeDesc::radius)
-        .def_readonly("halfHeight", &CapsuleShapeDesc::halfHeight)
-        .def_readonly("axis", &CapsuleShapeDesc::axis)
+        .def_readonly("radius", &UsdPhysicsCapsuleShapeDesc::radius)
+        .def_readonly("halfHeight", &UsdPhysicsCapsuleShapeDesc::halfHeight)
+        .def_readonly("axis", &UsdPhysicsCapsuleShapeDesc::axis)
         .def("__repr__", _CapsuleShapeDesc_Repr);
 
-    pxr_boost::python::class_<CylinderShapeDesc, bases<ShapeDesc>>
+    pxr_boost::python::class_<UsdPhysicsCylinderShapeDesc, bases<UsdPhysicsShapeDesc>>
         cysdcls("CylinderShapeDesc", pxr_boost::python::no_init);
     cysdcls
-        .def_readonly("radius", &CylinderShapeDesc::radius)
-        .def_readonly("halfHeight", &CylinderShapeDesc::halfHeight)
-        .def_readonly("axis", &CylinderShapeDesc::axis)
+        .def_readonly("radius", &UsdPhysicsCylinderShapeDesc::radius)
+        .def_readonly("halfHeight", &UsdPhysicsCylinderShapeDesc::halfHeight)
+        .def_readonly("axis", &UsdPhysicsCylinderShapeDesc::axis)
         .def("__repr__", _CylinderShapeDesc_Repr);
 
-    pxr_boost::python::class_<ConeShapeDesc, bases<ShapeDesc>>
+    pxr_boost::python::class_<UsdPhysicsConeShapeDesc, bases<UsdPhysicsShapeDesc>>
         cosdcls("ConeShapeDesc", pxr_boost::python::no_init);
     cosdcls
-        .def_readonly("radius", &ConeShapeDesc::radius)
-        .def_readonly("halfHeight", &ConeShapeDesc::halfHeight)
-        .def_readonly("axis", &ConeShapeDesc::axis)
+        .def_readonly("radius", &UsdPhysicsConeShapeDesc::radius)
+        .def_readonly("halfHeight", &UsdPhysicsConeShapeDesc::halfHeight)
+        .def_readonly("axis", &UsdPhysicsConeShapeDesc::axis)
         .def("__repr__", _ConeShapeDesc_Repr);
 
-    pxr_boost::python::class_<PlaneShapeDesc, bases<ShapeDesc>>
+    pxr_boost::python::class_<UsdPhysicsPlaneShapeDesc, bases<UsdPhysicsShapeDesc>>
         pscls("PlaneShapeDesc", pxr_boost::python::no_init);
     pscls
-        .def_readonly("axis", &PlaneShapeDesc::axis)
+        .def_readonly("axis", &UsdPhysicsPlaneShapeDesc::axis)
         .def("__repr__", _PlaneShapeDesc_Repr);
 
-    pxr_boost::python::class_<CustomShapeDesc, bases<ShapeDesc>>
+    pxr_boost::python::class_<UsdPhysicsCustomShapeDesc, bases<UsdPhysicsShapeDesc>>
         cuscls("CustomShapeDesc", pxr_boost::python::no_init);
     cuscls
-        .def_readonly("customGeometryToken", &CustomShapeDesc::customGeometryToken)
+        .def_readonly("customGeometryToken", &UsdPhysicsCustomShapeDesc::customGeometryToken)
         .def("__repr__", _CustomShapeDesc_Repr);
 
-    pxr_boost::python::class_<CubeShapeDesc, bases<ShapeDesc>>
+    pxr_boost::python::class_<UsdPhysicsCubeShapeDesc, bases<UsdPhysicsShapeDesc>>
         cubescls("CubeShapeDesc", pxr_boost::python::no_init);
     cubescls
-        .def_readonly("halfExtents", &CubeShapeDesc::halfExtents)
+        .def_readonly("halfExtents", &UsdPhysicsCubeShapeDesc::halfExtents)
         .def("__repr__", _CubeShapeDesc_Repr);
 
-    pxr_boost::python::class_<MeshShapeDesc, bases<ShapeDesc>>
+    pxr_boost::python::class_<UsdPhysicsMeshShapeDesc, bases<UsdPhysicsShapeDesc>>
         mscls("MeshShapeDesc", pxr_boost::python::no_init);
     mscls
-        .add_property("approximation", &MeshShapeDesc::GetApproximation)
-        .def_readonly("meshScale", &MeshShapeDesc::meshScale)
-        .def_readonly("doubleSided", &MeshShapeDesc::doubleSided)
+        .add_property("approximation", &UsdPhysicsMeshShapeDesc::GetApproximation)
+        .def_readonly("meshScale", &UsdPhysicsMeshShapeDesc::meshScale)
+        .def_readonly("doubleSided", &UsdPhysicsMeshShapeDesc::doubleSided)
         .def("__repr__", _MeshShapeDesc_Repr);
 
-    pxr_boost::python::class_<SpherePoint>
+    pxr_boost::python::class_<UsdPhysicsSpherePoint>
         sppb("SpherePoint", pxr_boost::python::no_init);
     sppb
-        .def_readonly("center", &SpherePoint::center)
-        .def_readonly("radius", &SpherePoint::radius)
+        .def_readonly("center", &UsdPhysicsSpherePoint::center)
+        .def_readonly("radius", &UsdPhysicsSpherePoint::radius)
         .def("__repr__", _SpherePoint_Repr);
 
-    pxr_boost::python::class_<SpherePointsShapeDesc, bases<ShapeDesc>>
+    pxr_boost::python::class_<UsdPhysicsSpherePointsShapeDesc, bases<UsdPhysicsShapeDesc>>
         spmscls("SpherePointsShapeDesc", pxr_boost::python::no_init);
     spmscls
-        .add_property("spherePoints", &SpherePointsShapeDesc::spherePoints)
+        .add_property("spherePoints", &UsdPhysicsSpherePointsShapeDesc::spherePoints)
         .def("__repr__", _SpherePointsShapeDesc_Repr);
 
-    pxr_boost::python::class_<RigidBodyDesc, bases<PhysicsObjectDesc>>
+    pxr_boost::python::class_<UsdPhysicsRigidBodyDesc, bases<UsdPhysicsObjectDesc>>
         rbcls("RigidBodyDesc", pxr_boost::python::no_init);
     rbcls
-        .add_property("collisions", make_function(&RigidBodyDesc::getCollisions,
+        .add_property("collisions", make_function(&UsdPhysicsRigidBodyDesc::getCollisions,
             return_value_policy<TfPySequenceToList>()))
-        .add_property("filteredCollisions", make_function(&RigidBodyDesc::getFilteredCollisions,
+        .add_property("filteredCollisions", make_function(&UsdPhysicsRigidBodyDesc::getFilteredCollisions,
             return_value_policy<TfPySequenceToList>()))
-        .add_property("simulationOwners", make_function(&RigidBodyDesc::getSimulationOwners,
+        .add_property("simulationOwners", make_function(&UsdPhysicsRigidBodyDesc::getSimulationOwners,
             return_value_policy<TfPySequenceToList>()))
-        .def_readonly("position", &RigidBodyDesc::position)
-        .def_readonly("rotation", &RigidBodyDesc::rotation)
-        .def_readonly("scale", &RigidBodyDesc::scale)
-        .def_readonly("rigidBodyEnabled", &RigidBodyDesc::rigidBodyEnabled)
-        .def_readonly("kinematicBody", &RigidBodyDesc::kinematicBody)
-        .def_readonly("startsAsleep", &RigidBodyDesc::startsAsleep)
-        .def_readonly("linearVelocity", &RigidBodyDesc::linearVelocity)
-        .def_readonly("angularVelocity", &RigidBodyDesc::angularVelocity)
+        .def_readonly("position", &UsdPhysicsRigidBodyDesc::position)
+        .def_readonly("rotation", &UsdPhysicsRigidBodyDesc::rotation)
+        .def_readonly("scale", &UsdPhysicsRigidBodyDesc::scale)
+        .def_readonly("rigidBodyEnabled", &UsdPhysicsRigidBodyDesc::rigidBodyEnabled)
+        .def_readonly("kinematicBody", &UsdPhysicsRigidBodyDesc::kinematicBody)
+        .def_readonly("startsAsleep", &UsdPhysicsRigidBodyDesc::startsAsleep)
+        .def_readonly("linearVelocity", &UsdPhysicsRigidBodyDesc::linearVelocity)
+        .def_readonly("angularVelocity", &UsdPhysicsRigidBodyDesc::angularVelocity)
         .def("__repr__", _RigidBodyDesc_Repr);
 
-    pxr_boost::python::class_<JointLimit>
+    pxr_boost::python::class_<UsdPhysicsJointLimit>
         jlcls("JointLimit", pxr_boost::python::no_init);
     jlcls
-        .def_readonly("enabled", &JointLimit::enabled)
-        .def_readonly("lower", &JointLimit::lower)
-        .def_readonly("upper", &JointLimit::upper)
+        .def_readonly("enabled", &UsdPhysicsJointLimit::enabled)
+        .def_readonly("lower", &UsdPhysicsJointLimit::lower)
+        .def_readonly("upper", &UsdPhysicsJointLimit::upper)
         .def("__repr__", _JointLimit_Repr);
 
-    pxr_boost::python::class_<JointDrive>
+    pxr_boost::python::class_<UsdPhysicsJointDrive>
         jdcls("JointDrive", pxr_boost::python::no_init);
     jdcls
-        .def_readonly("enabled", &JointDrive::enabled)
-        .def_readonly("targetPosition", &JointDrive::targetPosition)
-        .def_readonly("targetVelocity", &JointDrive::targetVelocity)
-        .def_readonly("forceLimit", &JointDrive::forceLimit)
-        .def_readonly("stiffness", &JointDrive::stiffness)
-        .def_readonly("damping", &JointDrive::damping)
-        .def_readonly("acceleration", &JointDrive::acceleration)
+        .def_readonly("enabled", &UsdPhysicsJointDrive::enabled)
+        .def_readonly("targetPosition", &UsdPhysicsJointDrive::targetPosition)
+        .def_readonly("targetVelocity", &UsdPhysicsJointDrive::targetVelocity)
+        .def_readonly("forceLimit", &UsdPhysicsJointDrive::forceLimit)
+        .def_readonly("stiffness", &UsdPhysicsJointDrive::stiffness)
+        .def_readonly("damping", &UsdPhysicsJointDrive::damping)
+        .def_readonly("acceleration", &UsdPhysicsJointDrive::acceleration)
         .def("__repr__", _JointDrive_Repr);
 
-    pxr_boost::python::class_<ArticulationDesc, bases<PhysicsObjectDesc>>
+    pxr_boost::python::class_<UsdPhysicsArticulationDesc, bases<UsdPhysicsObjectDesc>>
         adcls("ArticulationDesc", pxr_boost::python::no_init);
     adcls
-        .add_property("rootPrims", make_function(&ArticulationDesc::GetRootPrims,
+        .add_property("rootPrims", make_function(&UsdPhysicsArticulationDesc::GetRootPrims,
             return_value_policy<TfPySequenceToList>()))
-        .add_property("filteredCollisions", make_function(&ArticulationDesc::GetFilteredCollisions,
+        .add_property("filteredCollisions", make_function(&UsdPhysicsArticulationDesc::GetFilteredCollisions,
             return_value_policy<TfPySequenceToList>()))
-        .add_property("articulatedJoints", make_function(&ArticulationDesc::GetArticulatedJoints,
+        .add_property("articulatedJoints", make_function(&UsdPhysicsArticulationDesc::GetArticulatedJoints,
             return_value_policy<TfPySequenceToList>()))
-        .add_property("articulatedBodies", make_function(&ArticulationDesc::GetArticulatedBodies,
+        .add_property("articulatedBodies", make_function(&UsdPhysicsArticulationDesc::GetArticulatedBodies,
             return_value_policy<TfPySequenceToList>()))
         .def("__repr__", _ArticulationDesc_Repr);
 
-    pxr_boost::python::class_<JointDesc, bases<PhysicsObjectDesc>>
+    pxr_boost::python::class_<UsdPhysicsJointDesc, bases<UsdPhysicsObjectDesc>>
         jdscls("JointDesc", pxr_boost::python::no_init);
     jdscls
-        .def_readonly("rel0", &JointDesc::rel0)
-        .def_readonly("rel1", &JointDesc::rel1)
-        .def_readonly("body0", &JointDesc::body0)
-        .def_readonly("body1", &JointDesc::body1)
-        .def_readonly("localPose0Position", &JointDesc::localPose0Position)
-        .def_readonly("localPose0Orientation", &JointDesc::localPose0Orientation)
-        .def_readonly("localPose1Position", &JointDesc::localPose1Position)
-        .def_readonly("localPose1Orientation", &JointDesc::localPose1Orientation)
-        .def_readonly("jointEnabled", &JointDesc::jointEnabled)
-        .def_readonly("breakForce", &JointDesc::breakForce)
-        .def_readonly("breakTorque", &JointDesc::breakTorque)
-        .def_readonly("excludeFromArticulation", &JointDesc::excludeFromArticulation)
-        .def_readonly("collisionEnabled", &JointDesc::collisionEnabled)
+        .def_readonly("rel0", &UsdPhysicsJointDesc::rel0)
+        .def_readonly("rel1", &UsdPhysicsJointDesc::rel1)
+        .def_readonly("body0", &UsdPhysicsJointDesc::body0)
+        .def_readonly("body1", &UsdPhysicsJointDesc::body1)
+        .def_readonly("localPose0Position", &UsdPhysicsJointDesc::localPose0Position)
+        .def_readonly("localPose0Orientation", &UsdPhysicsJointDesc::localPose0Orientation)
+        .def_readonly("localPose1Position", &UsdPhysicsJointDesc::localPose1Position)
+        .def_readonly("localPose1Orientation", &UsdPhysicsJointDesc::localPose1Orientation)
+        .def_readonly("jointEnabled", &UsdPhysicsJointDesc::jointEnabled)
+        .def_readonly("breakForce", &UsdPhysicsJointDesc::breakForce)
+        .def_readonly("breakTorque", &UsdPhysicsJointDesc::breakTorque)
+        .def_readonly("excludeFromArticulation", &UsdPhysicsJointDesc::excludeFromArticulation)
+        .def_readonly("collisionEnabled", &UsdPhysicsJointDesc::collisionEnabled)
         .def("__repr__", _JointDesc_Repr);
 
-    pxr_boost::python::class_<CustomJointDesc, bases<JointDesc>>
+    pxr_boost::python::class_<UsdPhysicsCustomJointDesc, bases<UsdPhysicsJointDesc>>
         cjdscls("CustomJointDesc", pxr_boost::python::no_init);
 
-    pxr_boost::python::class_<FixedJointDesc, bases<JointDesc>>
+    pxr_boost::python::class_<UsdPhysicsFixedJointDesc, bases<UsdPhysicsJointDesc>>
         fjdscls("FixedJointDesc", pxr_boost::python::no_init);
 
-    class_<std::pair<PhysicsJointDOF::Enum, JointLimit> >("JointLimitDOFPair")
-        .def_readwrite("first", &std::pair<PhysicsJointDOF::Enum, JointLimit>::first)
-        .def_readwrite("second", &std::pair<PhysicsJointDOF::Enum, JointLimit>::second)
+    class_<std::pair<UsdPhysicsJointDOF::Enum, UsdPhysicsJointLimit> >("JointLimitDOFPair")
+        .def_readwrite("first", &std::pair<UsdPhysicsJointDOF::Enum, UsdPhysicsJointLimit>::first)
+        .def_readwrite("second", &std::pair<UsdPhysicsJointDOF::Enum, UsdPhysicsJointLimit>::second)
         .def("__repr__", _JointLimitDOFPair_Repr);
 
-    class_<std::pair<PhysicsJointDOF::Enum, JointDrive> >("JointDriveDOFPair")
-        .def_readwrite("first", &std::pair<PhysicsJointDOF::Enum, JointDrive>::first)
-        .def_readwrite("second", &std::pair<PhysicsJointDOF::Enum, JointDrive>::second)
+    class_<std::pair<UsdPhysicsJointDOF::Enum, UsdPhysicsJointDrive> >("JointDriveDOFPair")
+        .def_readwrite("first", &std::pair<UsdPhysicsJointDOF::Enum, UsdPhysicsJointDrive>::first)
+        .def_readwrite("second", &std::pair<UsdPhysicsJointDOF::Enum, UsdPhysicsJointDrive>::second)
         .def("__repr__", _JointDriveDOFPair_Repr);
 
-    pxr_boost::python::class_<D6JointDesc, bases<JointDesc>>
+    pxr_boost::python::class_<UsdPhysicsD6JointDesc, bases<UsdPhysicsJointDesc>>
         d6jdscls("D6JointDesc", pxr_boost::python::no_init);
     d6jdscls
-        .def_readonly("jointLimits", &D6JointDesc::jointLimits)
-        .def_readonly("jointDrives", &D6JointDesc::jointDrives)
+        .def_readonly("jointLimits", &UsdPhysicsD6JointDesc::jointLimits)
+        .def_readonly("jointDrives", &UsdPhysicsD6JointDesc::jointDrives)
         .def("__repr__", _D6JointDesc_Repr);
 
-    pxr_boost::python::class_<PrismaticJointDesc, bases<JointDesc>>
+    pxr_boost::python::class_<UsdPhysicsPrismaticJointDesc, bases<UsdPhysicsJointDesc>>
         pjdscls("PrismaticJointDesc", pxr_boost::python::no_init);
     pjdscls
-        .def_readonly("axis", &PrismaticJointDesc::axis)
-        .def_readonly("limit", &PrismaticJointDesc::limit)
-        .def_readonly("drive", &PrismaticJointDesc::drive)
+        .def_readonly("axis", &UsdPhysicsPrismaticJointDesc::axis)
+        .def_readonly("limit", &UsdPhysicsPrismaticJointDesc::limit)
+        .def_readonly("drive", &UsdPhysicsPrismaticJointDesc::drive)
         .def("__repr__", _PrismaticJointDesc_Repr);
 
-    pxr_boost::python::class_<SphericalJointDesc, bases<JointDesc>>
+    pxr_boost::python::class_<UsdPhysicsSphericalJointDesc, bases<UsdPhysicsJointDesc>>
         sjdscls("SphericalJointDesc", pxr_boost::python::no_init);
     sjdscls
-        .def_readonly("axis", &SphericalJointDesc::axis)
-        .def_readonly("limit", &SphericalJointDesc::limit)
+        .def_readonly("axis", &UsdPhysicsSphericalJointDesc::axis)
+        .def_readonly("limit", &UsdPhysicsSphericalJointDesc::limit)
         .def("__repr__", _SphericalJointDesc_Repr);
 
-    pxr_boost::python::class_<RevoluteJointDesc, bases<JointDesc>>
+    pxr_boost::python::class_<UsdPhysicsRevoluteJointDesc, bases<UsdPhysicsJointDesc>>
         rjdscls("RevoluteJointDesc", pxr_boost::python::no_init);
     rjdscls
-        .def_readonly("axis", &RevoluteJointDesc::axis)
-        .def_readonly("limit", &RevoluteJointDesc::limit)
-        .def_readonly("drive", &RevoluteJointDesc::drive)
+        .def_readonly("axis", &UsdPhysicsRevoluteJointDesc::axis)
+        .def_readonly("limit", &UsdPhysicsRevoluteJointDesc::limit)
+        .def_readonly("drive", &UsdPhysicsRevoluteJointDesc::drive)
         .def("__repr__", _RevoluteJointDesc_Repr);
 
-    pxr_boost::python::class_<DistanceJointDesc, bases<JointDesc>>
+    pxr_boost::python::class_<UsdPhysicsDistanceJointDesc, bases<UsdPhysicsJointDesc>>
         djdscls("DistanceJointDesc", pxr_boost::python::no_init);
     djdscls
-        .def_readonly("minEnabled", &DistanceJointDesc::minEnabled)
-        .def_readonly("limit", &DistanceJointDesc::limit)
-        .def_readonly("maxEnabled", &DistanceJointDesc::maxEnabled)
+        .def_readonly("minEnabled", &UsdPhysicsDistanceJointDesc::minEnabled)
+        .def_readonly("limit", &UsdPhysicsDistanceJointDesc::limit)
+        .def_readonly("maxEnabled", &UsdPhysicsDistanceJointDesc::maxEnabled)
         .def("__repr__", _DistanceJointDesc_Repr);
 
     registerVectorConverter<UsdCollectionMembershipQuery>("PhysicsCollectionMembershipQueryVector");
 
-    registerVectorConverter<std::pair<PhysicsJointDOF::Enum, JointLimit>>("PhysicsJointLimitDOFVector");
+    registerVectorConverter<std::pair<UsdPhysicsJointDOF::Enum, UsdPhysicsJointLimit>>("PhysicsJointLimitDOFVector");
 
-    registerVectorConverter<std::pair<PhysicsJointDOF::Enum, JointDrive>>("PhysicsJointDriveDOFVector");
+    registerVectorConverter<std::pair<UsdPhysicsJointDOF::Enum, UsdPhysicsJointDrive>>("PhysicsJointDriveDOFVector");
 
-    registerVectorConverter<SpherePoint>("PhysicsSpherePointVector");
+    registerVectorConverter<UsdPhysicsSpherePoint>("PhysicsSpherePointVector");
 
-    registerVectorConverter<SceneDesc>("SceneDescVector");
+    registerVectorConverter<UsdPhysicsSceneDesc>("SceneDescVector");
 
-    registerVectorConverter<RigidBodyDesc>("RigidBodyDescVector");
+    registerVectorConverter<UsdPhysicsRigidBodyDesc>("RigidBodyDescVector");
 
-    registerVectorConverter<SphereShapeDesc>("SphereShapeDescVector");
+    registerVectorConverter<UsdPhysicsSphereShapeDesc>("SphereShapeDescVector");
 
-    registerVectorConverter<CapsuleShapeDesc>("CapsuleShapeDescVector");
+    registerVectorConverter<UsdPhysicsCapsuleShapeDesc>("CapsuleShapeDescVector");
 
-    registerVectorConverter<CylinderShapeDesc>("CylinderShapeDescVector");
+    registerVectorConverter<UsdPhysicsCylinderShapeDesc>("CylinderShapeDescVector");
 
-    registerVectorConverter<ConeShapeDesc>("ConeShapeDescVector");
+    registerVectorConverter<UsdPhysicsConeShapeDesc>("ConeShapeDescVector");
 
-    registerVectorConverter<CubeShapeDesc>("CubeShapeDescVector");
+    registerVectorConverter<UsdPhysicsCubeShapeDesc>("CubeShapeDescVector");
 
-    registerVectorConverter<MeshShapeDesc>("MeshShapeDescVector");
+    registerVectorConverter<UsdPhysicsMeshShapeDesc>("MeshShapeDescVector");
 
-    registerVectorConverter<PlaneShapeDesc>("PlaneShapeDescVector");
+    registerVectorConverter<UsdPhysicsPlaneShapeDesc>("PlaneShapeDescVector");
 
-    registerVectorConverter<CustomShapeDesc>("CustomShapeDescVector");
+    registerVectorConverter<UsdPhysicsCustomShapeDesc>("CustomShapeDescVector");
 
-    registerVectorConverter<SpherePointsShapeDesc>("SpherePointsShapeDescVector");
+    registerVectorConverter<UsdPhysicsSpherePointsShapeDesc>("SpherePointsShapeDescVector");
 
-    registerVectorConverter<JointDesc>("JointDescVector");
+    registerVectorConverter<UsdPhysicsJointDesc>("JointDescVector");
 
-    registerVectorConverter<FixedJointDesc>("FixedJointDescVector");
+    registerVectorConverter<UsdPhysicsFixedJointDesc>("FixedJointDescVector");
 
-    registerVectorConverter<DistanceJointDesc>("DistanceJointDescVector");
+    registerVectorConverter<UsdPhysicsDistanceJointDesc>("DistanceJointDescVector");
 
-    registerVectorConverter<RevoluteJointDesc>("RevoluteJointDescVector");
+    registerVectorConverter<UsdPhysicsRevoluteJointDesc>("RevoluteJointDescVector");
 
-    registerVectorConverter<PrismaticJointDesc>("PrismaticJointDescVector");
+    registerVectorConverter<UsdPhysicsPrismaticJointDesc>("PrismaticJointDescVector");
 
-    registerVectorConverter<SphericalJointDesc>("SphericalJointDescVector");
+    registerVectorConverter<UsdPhysicsSphericalJointDesc>("SphericalJointDescVector");
 
-    registerVectorConverter<D6JointDesc>("D6JointDescVector");
+    registerVectorConverter<UsdPhysicsD6JointDesc>("D6JointDescVector");
 
-    registerVectorConverter<CustomJointDesc>("CustomJointDescVector");
+    registerVectorConverter<UsdPhysicsCustomJointDesc>("CustomJointDescVector");
 
-    registerVectorConverter<RigidBodyMaterialDesc>("RigidBodyMaterialDescVector");
+    registerVectorConverter<UsdPhysicsRigidBodyMaterialDesc>("RigidBodyMaterialDescVector");
 
-    registerVectorConverter<ArticulationDesc>("ArticulationDescVector");
+    registerVectorConverter<UsdPhysicsArticulationDesc>("ArticulationDescVector");
 
-    registerVectorConverter<CollisionGroupDesc>("CollisionGroupDescVector");
+    registerVectorConverter<UsdPhysicsCollisionGroupDesc>("CollisionGroupDescVector");
 
     pxr_boost::python::class_<ParsePrimIteratorBaseWrap, noncopyable>
         vparseitclsvv("ParsePrimIteratorBaseWrap", no_init);

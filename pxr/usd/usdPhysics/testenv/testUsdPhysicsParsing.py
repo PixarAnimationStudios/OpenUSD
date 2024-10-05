@@ -43,7 +43,7 @@ class TestUsdPhysicsParsing(unittest.TestCase):
         scene_found = False
         
         for key, value in ret_dict.items():
-            if key == UsdPhysics.PhysicsObjectType.Scene:                
+            if key == UsdPhysics.ObjectType.Scene:                
                 scene_found = True
                 paths, scene_descs = value
                 for path, scene_desc in zip(paths, scene_descs):
@@ -125,9 +125,9 @@ class TestUsdPhysicsParsing(unittest.TestCase):
 
             for key, value in ret_dict.items():
                 prim_paths, descs = value
-                if key == UsdPhysics.PhysicsObjectType.Scene:
+                if key == UsdPhysics.ObjectType.Scene:
                     scene_found = True
-                elif key == UsdPhysics.PhysicsObjectType.SphereShape:
+                elif key == UsdPhysics.ObjectType.SphereShape:
                     for prim_path, desc in zip(prim_paths, descs):
                         # common shape
                         compare_shape_params(desc)
@@ -136,7 +136,7 @@ class TestUsdPhysicsParsing(unittest.TestCase):
                         self.assertEqual(desc.radius, params["radius"] * scale[0])
 
                         num_shape_found = num_shape_found + 1
-                elif key == UsdPhysics.PhysicsObjectType.CapsuleShape:
+                elif key == UsdPhysics.ObjectType.CapsuleShape:
                     for prim_path, desc in zip(prim_paths, descs):
                         # common shape
                         compare_shape_params(desc)
@@ -144,10 +144,10 @@ class TestUsdPhysicsParsing(unittest.TestCase):
                         # capsule shape
                         self.assertEqual(desc.radius, params["radius"] * scale[0])
                         self.assertEqual(desc.halfHeight, params["height"] * 0.5 * scale[0])
-                        self.assertEqual(desc.axis, UsdPhysics.PhysicsAxis.Y)
+                        self.assertEqual(desc.axis, UsdPhysics.Axis.Y)
 
                         num_shape_found = num_shape_found + 1
-                elif key == UsdPhysics.PhysicsObjectType.ConeShape:
+                elif key == UsdPhysics.ObjectType.ConeShape:
                     for prim_path, desc in zip(prim_paths, descs):
                         # common shape
                         compare_shape_params(desc)
@@ -155,10 +155,10 @@ class TestUsdPhysicsParsing(unittest.TestCase):
                         # cone shape
                         self.assertEqual(desc.radius, params["radius"] * scale[0])
                         self.assertEqual(desc.halfHeight, params["height"] * 0.5 * scale[0])
-                        self.assertEqual(desc.axis, UsdPhysics.PhysicsAxis.Z)
+                        self.assertEqual(desc.axis, UsdPhysics.Axis.Z)
 
                         num_shape_found = num_shape_found + 1
-                elif key == UsdPhysics.PhysicsObjectType.CylinderShape:
+                elif key == UsdPhysics.ObjectType.CylinderShape:
                     for prim_path, desc in zip(prim_paths, descs):
                         # common shape
                         compare_shape_params(desc)
@@ -166,19 +166,19 @@ class TestUsdPhysicsParsing(unittest.TestCase):
                         # cylinder shape
                         self.assertEqual(desc.radius, params["radius"] * scale[0])
                         self.assertEqual(desc.halfHeight, params["height"] * 0.5 * scale[0])
-                        self.assertEqual(desc.axis, UsdPhysics.PhysicsAxis.Y)
+                        self.assertEqual(desc.axis, UsdPhysics.Axis.Y)
 
                         num_shape_found = num_shape_found + 1
-                elif key == UsdPhysics.PhysicsObjectType.PlaneShape:
+                elif key == UsdPhysics.ObjectType.PlaneShape:
                     for prim_path, desc in zip(prim_paths, descs):
                         # common shape
                         compare_shape_params(desc)
 
                         # plane shape
-                        self.assertEqual(desc.axis, UsdPhysics.PhysicsAxis.Z)
+                        self.assertEqual(desc.axis, UsdPhysics.Axis.Z)
 
                         num_shape_found = num_shape_found + 1
-                elif key == UsdPhysics.PhysicsObjectType.MeshShape:
+                elif key == UsdPhysics.ObjectType.MeshShape:
                     for prim_path, desc in zip(prim_paths, descs):
                         # common shape
                         compare_shape_params(desc)
@@ -189,7 +189,7 @@ class TestUsdPhysicsParsing(unittest.TestCase):
                         self.assertTrue(Gf.IsClose(scale, desc.meshScale, toleranceEpsilon))
 
                         num_shape_found = num_shape_found + 1
-                elif key == UsdPhysics.PhysicsObjectType.SpherePointsShape:
+                elif key == UsdPhysics.ObjectType.SpherePointsShape:
                     for prim_path, desc in zip(prim_paths, descs):
                         # common shape
                         compare_shape_params(desc)
@@ -235,10 +235,10 @@ class TestUsdPhysicsParsing(unittest.TestCase):
         
         for key, value in ret_dict.items():
             prim_paths, descs = value
-            if key == UsdPhysics.PhysicsObjectType.Scene:
+            if key == UsdPhysics.ObjectType.Scene:
                 for prim_path, desc in zip(prim_paths, descs):
                     scene_found = True
-            elif key == UsdPhysics.PhysicsObjectType.RigidBody:
+            elif key == UsdPhysics.ObjectType.RigidBody:
                 for prim_path, desc in zip(prim_paths, descs):
                     rigidbody_found = True
                     self.assertTrue(prim_path == rigidbody.GetPrim().GetPrimPath())
@@ -291,10 +291,10 @@ class TestUsdPhysicsParsing(unittest.TestCase):
         
         for key, value in ret_dict.items():
             prim_paths, descs = value
-            if key == UsdPhysics.PhysicsObjectType.Scene:
+            if key == UsdPhysics.ObjectType.Scene:
                 for prim_path, desc in zip(prim_paths, descs):
                     scene_found = True
-            elif key == UsdPhysics.PhysicsObjectType.RigidBody:
+            elif key == UsdPhysics.ObjectType.RigidBody:
                 for prim_path, desc in zip(prim_paths, descs):
                     rigidbody_found = True
                     self.assertTrue(prim_path == rigidbody.GetPrim().GetPrimPath())
@@ -307,7 +307,7 @@ class TestUsdPhysicsParsing(unittest.TestCase):
                     eulerAngles = r.Decompose(Gf.Vec3d.XAxis(), Gf.Vec3d.YAxis(), Gf.Vec3d.ZAxis())
                     self.assertTrue(Gf.IsClose(Gf.Vec3f(eulerAngles), rb_rotate_xyz, toleranceEpsilon))
                     self.assertTrue(Gf.IsClose(rb_scale, desc.scale, toleranceEpsilon))
-            elif key == UsdPhysics.PhysicsObjectType.CubeShape:
+            elif key == UsdPhysics.ObjectType.CubeShape:
                 for prim_path, desc in zip(prim_paths, descs):
                     cube_found = True
                     self.assertTrue(prim_path == cube.GetPrim().GetPrimPath())
@@ -355,16 +355,16 @@ class TestUsdPhysicsParsing(unittest.TestCase):
         
         for key, value in ret_dict.items():
             prim_paths, descs = value
-            if key == UsdPhysics.PhysicsObjectType.Scene:
+            if key == UsdPhysics.ObjectType.Scene:
                 for prim_path, desc in zip(prim_paths, descs):
                     scene_found = True
-            elif key == UsdPhysics.PhysicsObjectType.RigidBody:
+            elif key == UsdPhysics.ObjectType.RigidBody:
                 for prim_path, desc in zip(prim_paths, descs):
                     rigidbody_count = rigidbody_count + 1
                     if prim_path == rigidbody_1.GetPrim().GetPrimPath():
                         self.assertTrue(len(desc.filteredCollisions) == 1)
                         self.assertTrue(desc.filteredCollisions[0] == rigidbody_0.GetPrim().GetPrimPath())
-            elif key == UsdPhysics.PhysicsObjectType.CubeShape:
+            elif key == UsdPhysics.ObjectType.CubeShape:
                 for prim_path, desc in zip(prim_paths, descs):
                     cube_count = cube_count + 1
                     if prim_path == cube_1.GetPrim().GetPrimPath():
@@ -400,15 +400,15 @@ class TestUsdPhysicsParsing(unittest.TestCase):
         
         for key, value in ret_dict.items():
             prim_paths, descs = value
-            if key == UsdPhysics.PhysicsObjectType.Scene:
+            if key == UsdPhysics.ObjectType.Scene:
                 for prim_path, desc in zip(prim_paths, descs):
                     scene_found = True
-            elif key == UsdPhysics.PhysicsObjectType.CubeShape:
+            elif key == UsdPhysics.ObjectType.CubeShape:
                 for prim_path, desc in zip(prim_paths, descs):
                     cube_found = True
                     self.assertTrue(len(desc.materials) == 1)
                     desc.materials[0] = materialPrim.GetPrim().GetPrimPath()
-            elif key == UsdPhysics.PhysicsObjectType.RigidBodyMaterial:
+            elif key == UsdPhysics.ObjectType.RigidBodyMaterial:
                 for prim_path, desc in zip(prim_paths, descs):
                     material_found = True
                     self.assertTrue(prim_path == materialPrim.GetPrim().GetPrimPath())
@@ -486,17 +486,17 @@ class TestUsdPhysicsParsing(unittest.TestCase):
         
         for key, value in ret_dict.items():
             prim_paths, descs = value
-            if key == UsdPhysics.PhysicsObjectType.Scene:
+            if key == UsdPhysics.ObjectType.Scene:
                 for prim_path, desc in zip(prim_paths, descs):
                     scene_found = True
-            elif key == UsdPhysics.PhysicsObjectType.MeshShape:
+            elif key == UsdPhysics.ObjectType.MeshShape:
                 for prim_path, desc in zip(prim_paths, descs):
                     mesh_found = True
                     self.assertTrue(len(desc.materials) == 3)   # three materials, the last material is the one applied eventually to the collision itself                                        
                     self.assertTrue(desc.materials[0] == materialPrim0.GetPrim().GetPrimPath())
                     self.assertTrue(desc.materials[1] == materialPrim1.GetPrim().GetPrimPath())
                     self.assertTrue(desc.materials[2] == Sdf.Path())
-            elif key == UsdPhysics.PhysicsObjectType.RigidBodyMaterial:
+            elif key == UsdPhysics.ObjectType.RigidBodyMaterial:
                 for prim_path, desc in zip(prim_paths, descs):
                     num_materials = num_materials + 1
 
@@ -620,21 +620,21 @@ class TestUsdPhysicsParsing(unittest.TestCase):
 
             for key, value in ret_dict.items():
                 prim_paths, descs = value
-                if key == UsdPhysics.PhysicsObjectType.Scene:
+                if key == UsdPhysics.ObjectType.Scene:
                     scene_found = True
-                elif key == UsdPhysics.PhysicsObjectType.FixedJoint:
+                elif key == UsdPhysics.ObjectType.FixedJoint:
                     for prim_path, desc in zip(prim_paths, descs):
                         # common joint
                         compare_joint_params(desc)
 
                         num_joints_found = num_joints_found + 1
-                elif key == UsdPhysics.PhysicsObjectType.RevoluteJoint:
+                elif key == UsdPhysics.ObjectType.RevoluteJoint:
                     for prim_path, desc in zip(prim_paths, descs):
                         # common joint
                         compare_joint_params(desc)
 
                         # revolute joint part
-                        self.assertTrue(desc.axis == UsdPhysics.PhysicsAxis.Y)
+                        self.assertTrue(desc.axis == UsdPhysics.Axis.Y)
 
                         # limit
                         if (params["limit"]):
@@ -655,13 +655,13 @@ class TestUsdPhysicsParsing(unittest.TestCase):
                             self.assertTrue(desc.drive.enabled is False)
 
                         num_joints_found = num_joints_found + 1
-                elif key == UsdPhysics.PhysicsObjectType.PrismaticJoint:
+                elif key == UsdPhysics.ObjectType.PrismaticJoint:
                     for prim_path, desc in zip(prim_paths, descs):
                         # common joint
                         compare_joint_params(desc)
 
                         # prismatic joint part
-                        self.assertTrue(desc.axis == UsdPhysics.PhysicsAxis.Z)
+                        self.assertTrue(desc.axis == UsdPhysics.Axis.Z)
 
                         # limit
                         if (params["limit"]):                        
@@ -682,7 +682,7 @@ class TestUsdPhysicsParsing(unittest.TestCase):
                             self.assertTrue(desc.drive.enabled is False)
 
                         num_joints_found = num_joints_found + 1
-                elif key == UsdPhysics.PhysicsObjectType.D6Joint:
+                elif key == UsdPhysics.ObjectType.D6Joint:
                     for prim_path, desc in zip(prim_paths, descs):
                         # common joint
                         compare_joint_params(desc)
@@ -693,7 +693,7 @@ class TestUsdPhysicsParsing(unittest.TestCase):
 
                         # drive for rotX
                         xDrivePair = desc.jointDrives[0]
-                        self.assertTrue(xDrivePair.first == UsdPhysics.PhysicsJointDOF.RotX)
+                        self.assertTrue(xDrivePair.first == UsdPhysics.JointDOF.RotX)
                         xDrive = xDrivePair.second
                         self.assertTrue(xDrive.enabled is True)
                         self.assertEqual(xDrive.targetPosition, 10)
@@ -705,37 +705,37 @@ class TestUsdPhysicsParsing(unittest.TestCase):
                         for d6_limit in desc.jointLimits:
                             limit_dof = d6_limit.first
                             limit = d6_limit.second
-                            if limit_dof == UsdPhysics.PhysicsJointDOF.TransX:
+                            if limit_dof == UsdPhysics.JointDOF.TransX:
                                 self.assertTrue(limit.enabled is True)
                                 self.assertEqual(limit.lower, -10)
                                 self.assertEqual(limit.upper, 10)
-                            elif limit_dof == UsdPhysics.PhysicsJointDOF.TransY:
+                            elif limit_dof == UsdPhysics.JointDOF.TransY:
                                 self.assertTrue(limit.enabled is True)
                                 self.assertEqual(limit.lower, -20)
                                 self.assertEqual(limit.upper, 20)
-                            elif limit_dof == UsdPhysics.PhysicsJointDOF.RotX:
+                            elif limit_dof == UsdPhysics.JointDOF.RotX:
                                 self.assertTrue(limit.enabled is True)
                                 self.assertEqual(limit.lower, -30)
                                 self.assertEqual(limit.upper, 30)
-                            elif limit_dof == UsdPhysics.PhysicsJointDOF.RotY:
+                            elif limit_dof == UsdPhysics.JointDOF.RotY:
                                 self.assertTrue(limit.enabled is True)
                                 self.assertEqual(limit.lower, 30)       # lower higher then upper means DOF is locked
                                 self.assertEqual(limit.upper, -30)
 
                         num_joints_found = num_joints_found + 1
-                elif key == UsdPhysics.PhysicsObjectType.SphericalJoint:
+                elif key == UsdPhysics.ObjectType.SphericalJoint:
                     for prim_path, desc in zip(prim_paths, descs):
                         # common joint
                         compare_joint_params(desc)
 
                         # spherical joint part
-                        self.assertTrue(desc.axis == UsdPhysics.PhysicsAxis.Z)
+                        self.assertTrue(desc.axis == UsdPhysics.Axis.Z)
                         self.assertTrue(desc.limit.enabled is True)
                         self.assertEqual(desc.limit.lower, 20)  # lower maps to cone0 angle
                         self.assertEqual(desc.limit.upper, 30)  # upper maps to cone1 angle
 
                         num_joints_found = num_joints_found + 1
-                elif key == UsdPhysics.PhysicsObjectType.DistanceJoint:
+                elif key == UsdPhysics.ObjectType.DistanceJoint:
                     for prim_path, desc in zip(prim_paths, descs):
                         # common joint
                         compare_joint_params(desc)
@@ -805,9 +805,9 @@ class TestUsdPhysicsParsing(unittest.TestCase):
 
             for key, value in ret_dict.items():
                 prim_paths, descs = value
-                if key == UsdPhysics.PhysicsObjectType.Scene:
+                if key == UsdPhysics.ObjectType.Scene:
                     scene_found = True
-                elif key == UsdPhysics.PhysicsObjectType.Articulation:
+                elif key == UsdPhysics.ObjectType.Articulation:
                     for prim_path, desc in zip(prim_paths, descs):
                         articulation_found = True
 
@@ -857,9 +857,9 @@ class TestUsdPhysicsParsing(unittest.TestCase):
 
         for key, value in ret_dict.items():
             prim_paths, descs = value
-            if key == UsdPhysics.PhysicsObjectType.Scene:
+            if key == UsdPhysics.ObjectType.Scene:
                 scene_found = True
-            elif key == UsdPhysics.PhysicsObjectType.CollisionGroup:
+            elif key == UsdPhysics.ObjectType.CollisionGroup:
                 for prim_path, desc in zip(prim_paths, descs):
                     if desc.mergeGroupName == "three":
                         self.assertTrue(prim_path == collision_groups[3].GetPrim().GetPrimPath())
@@ -909,12 +909,12 @@ class TestUsdPhysicsParsing(unittest.TestCase):
 
         for key, value in ret_dict.items():
             prim_paths, descs = value
-            if key == UsdPhysics.PhysicsObjectType.Scene:
+            if key == UsdPhysics.ObjectType.Scene:
                 scene_found = True
-            elif key == UsdPhysics.PhysicsObjectType.CollisionGroup:
+            elif key == UsdPhysics.ObjectType.CollisionGroup:
                 for prim_path, desc in zip(prim_paths, descs):
                     num_reported_collision_groups = num_reported_collision_groups + 1
-            elif key == UsdPhysics.PhysicsObjectType.CubeShape:
+            elif key == UsdPhysics.ObjectType.CubeShape:
                 for prim_path, desc in zip(prim_paths, descs):
                     self.assertTrue(len(desc.collisionGroups) == 2)
                     self.assertTrue(desc.collisionGroups[0] == collision_group_0.GetPrim().GetPrimPath())
@@ -951,9 +951,9 @@ class TestUsdPhysicsParsing(unittest.TestCase):
 
         for key, value in ret_dict.items():
             prim_paths, descs = value
-            if key == UsdPhysics.PhysicsObjectType.Scene:
+            if key == UsdPhysics.ObjectType.Scene:
                 scene_found = True
-            elif key == UsdPhysics.PhysicsObjectType.CustomShape:
+            elif key == UsdPhysics.ObjectType.CustomShape:
                 for prim_path, desc in zip(prim_paths, descs):
                     custom_geometry_found = True
 
@@ -981,9 +981,9 @@ class TestUsdPhysicsParsing(unittest.TestCase):
 
             for key, value in ret_dict.items():
                 prim_paths, descs = value
-                if key == UsdPhysics.PhysicsObjectType.Scene:
+                if key == UsdPhysics.ObjectType.Scene:
                     scene_found = True
-                elif key == UsdPhysics.PhysicsObjectType.RigidBody:
+                elif key == UsdPhysics.ObjectType.RigidBody:
                     for prim_path, desc in zip(prim_paths, descs):
                         rigid_body_found = True
 
@@ -1033,12 +1033,12 @@ class TestUsdPhysicsParsing(unittest.TestCase):
 
             for key, value in ret_dict.items():
                 prim_paths, descs = value
-                if key == UsdPhysics.PhysicsObjectType.Scene:
+                if key == UsdPhysics.ObjectType.Scene:
                     scene_found = True
-                elif key == UsdPhysics.PhysicsObjectType.RigidBody:
+                elif key == UsdPhysics.ObjectType.RigidBody:
                     for prim_path, desc in zip(prim_paths, descs):
                         rigid_body_found = True
-                elif key == UsdPhysics.PhysicsObjectType.CubeShape:
+                elif key == UsdPhysics.ObjectType.CubeShape:
                     for prim_path, desc in zip(prim_paths, descs):
                         collision_found = True
 
@@ -1115,12 +1115,12 @@ class TestUsdPhysicsParsing(unittest.TestCase):
 
             for key, value in ret_dict.items():
                 prim_paths, descs = value
-                if key == UsdPhysics.PhysicsObjectType.Scene:
+                if key == UsdPhysics.ObjectType.Scene:
                     scene_found = True
-                elif key == UsdPhysics.PhysicsObjectType.RigidBody:
+                elif key == UsdPhysics.ObjectType.RigidBody:
                     for prim_path, desc in zip(prim_paths, descs):
                         rigid_body_found = True
-                elif key == UsdPhysics.PhysicsObjectType.FixedJoint:
+                elif key == UsdPhysics.ObjectType.FixedJoint:
                     for prim_path, desc in zip(prim_paths, descs):
                         joint_found = True
 
@@ -1226,15 +1226,15 @@ class TestUsdPhysicsParsing(unittest.TestCase):
 
             for key, value in ret_dict.items():
                 prim_paths, descs = value
-                if key == UsdPhysics.PhysicsObjectType.Scene:
+                if key == UsdPhysics.ObjectType.Scene:
                     scene_found = True
-                elif key == UsdPhysics.PhysicsObjectType.RigidBody:
+                elif key == UsdPhysics.ObjectType.RigidBody:
                     for prim_path, desc in zip(prim_paths, descs):
                         rigid_body_found = True
-                elif key == UsdPhysics.PhysicsObjectType.RevoluteJoint:
+                elif key == UsdPhysics.ObjectType.RevoluteJoint:
                     for prim_path, desc in zip(prim_paths, descs):
                         joint_found = True
-                elif key == UsdPhysics.PhysicsObjectType.Articulation:
+                elif key == UsdPhysics.ObjectType.Articulation:
                     for prim_path, desc in zip(prim_paths, descs):
                         articulation_found = True
 

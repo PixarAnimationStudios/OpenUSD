@@ -51,8 +51,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \param[in] objectDescs  Corresponding array of object descriptors of the reported type
 /// \param[in] userData User data provided to the parsing function
 using UsdPhysicsReportFn =
-    std::function<void(PhysicsObjectType::Enum type, size_t numDesc, const SdfPath* primPaths,
-        const PhysicsObjectDesc* objectDescs, void* userData)>;
+    std::function<void(UsdPhysicsObjectType::Enum type, size_t numDesc, const SdfPath* primPaths,
+        const UsdPhysicsObjectDesc* objectDescs, void* userData)>;
 
 /// \struct CustomUsdPhysicsTokens
 ///
