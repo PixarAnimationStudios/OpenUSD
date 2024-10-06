@@ -1845,8 +1845,8 @@ errors may occur.
 
 - Embedded Build Targets
 When cross compiling for an embedded target operating system, e.g. iOS, the
-following components are disabled: python, tools, imaging, tests, examples,
-tutorials.
+following components are disabled: python, tools, tests, examples, tutorials,
+opencolorio, openimageio, openvdb.
 
 - Python Versions and DCC Plugins:
 Some DCCs may ship with and run using their own version of Python. In that case,
@@ -2032,6 +2032,10 @@ subgroup.add_argument("--prefer-speed-over-safety", dest="safety_first",
                       action="store_false", help=
                       "Disable performance-impacting safety checks against "
                       "malformed input files")
+
+group.add_argument("--boost-python", dest="build_boost_python",
+                   action="store_true", default=False,
+                   help="Build Python bindings with boost::python (deprecated)")
 
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--debug-python", dest="debug_python", 
