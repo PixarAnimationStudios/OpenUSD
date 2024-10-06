@@ -40,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // -------------------------------------------------------------------------- //
 
 /// Sentinel value for flt max compare
-const float physicsSentinelLimit = 0.5e38f;
+const float usdPhysicsSentinelLimit = 0.5e38f;
 
 /// \struct UsdPhysicsObjectType
 ///

@@ -1042,8 +1042,8 @@ bool ParseLimit(const UsdPhysicsLimitAPI& limit, UsdPhysicsJointLimit* jointLimi
     {
         limit.GetLowAttr().Get(&jointLimit->lower);
         limit.GetHighAttr().Get(&jointLimit->upper);
-        if ((isfinite(jointLimit->lower) && jointLimit->lower > -physicsSentinelLimit) ||
-            (isfinite(jointLimit->upper) && jointLimit->upper < physicsSentinelLimit))
+        if ((isfinite(jointLimit->lower) && jointLimit->lower > -usdPhysicsSentinelLimit) ||
+            (isfinite(jointLimit->upper) && jointLimit->upper < usdPhysicsSentinelLimit))
                 jointLimit->enabled = true;
     }
     else
@@ -1184,8 +1184,8 @@ bool ParsePrismaticJointDesc(const UsdPhysicsPrismaticJoint& prismaticJoint, Usd
         prismaticJointDesc->limit.enabled = false;
         prismaticJoint.GetLowerLimitAttr().Get(&prismaticJointDesc->limit.lower);
         prismaticJoint.GetUpperLimitAttr().Get(&prismaticJointDesc->limit.upper);
-        if ((isfinite(prismaticJointDesc->limit.lower) && (prismaticJointDesc->limit.lower > -physicsSentinelLimit)) || 
-            (isfinite(prismaticJointDesc->limit.upper) && (prismaticJointDesc->limit.upper < physicsSentinelLimit)))
+        if ((isfinite(prismaticJointDesc->limit.lower) && (prismaticJointDesc->limit.lower > -usdPhysicsSentinelLimit)) || 
+            (isfinite(prismaticJointDesc->limit.upper) && (prismaticJointDesc->limit.upper < usdPhysicsSentinelLimit)))
         {
             prismaticJointDesc->limit.enabled = true;
         }
@@ -1243,7 +1243,7 @@ bool ParseRevoluteJointDesc(const UsdPhysicsRevoluteJoint& revoluteJoint, UsdPhy
         revoluteJoint.GetLowerLimitAttr().Get(&revoluteJointDesc->limit.lower);
         revoluteJoint.GetUpperLimitAttr().Get(&revoluteJointDesc->limit.upper);
         if (isfinite(revoluteJointDesc->limit.lower) && isfinite(revoluteJointDesc->limit.upper)
-            && revoluteJointDesc->limit.lower > -physicsSentinelLimit && revoluteJointDesc->limit.upper < physicsSentinelLimit)
+            && revoluteJointDesc->limit.lower > -usdPhysicsSentinelLimit && revoluteJointDesc->limit.upper < usdPhysicsSentinelLimit)
         {
             revoluteJointDesc->limit.enabled = true;
         }
