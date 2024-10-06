@@ -2623,6 +2623,11 @@ UsdMtlxRead(
     // Translate all materials.
     ReadMaterials(mtlxDoc, context);
 
+    // Set the default prim.
+    if (auto internalPrim = stage->GetPrimAtPath(internalPath)) {
+        stage->SetDefaultPrim(internalPrim);
+    }
+
     // If there are no looks then we're done.
     if (mtlxDoc->getLooks().empty()) {
         return;
