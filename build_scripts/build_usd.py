@@ -1559,17 +1559,22 @@ MATERIALX = Dependency("MaterialX", InstallMaterialX, "include/MaterialXCore/Lib
 
 ############################################################
 # Embree
-# For MacOS we use version 3.13.3 to include a fix from Intel
-# to build on Apple Silicon.
-if MacOS():
-    EMBREE_URL = "https://github.com/embree/embree/archive/v3.13.3.zip"
-else:
-    EMBREE_URL = "https://github.com/embree/embree/archive/v3.2.2.zip"
+
+EMBREE_DEFAULT_MAJOR_VERSION = 3
 
 def InstallEmbree(context, force, buildArgs):
+    if context.embreeMajorVersion >= 4:
+        EMBREE_URL = "https://github.com/RenderKit/embree/archive/refs/tags/v4.3.3.zip"
+    elif MacOS():
+        # For MacOS we use version 3.13.3 to include a fix from Intel
+        # to build on Apple Silicon.
+        EMBREE_URL = "https://github.com/RenderKit/embree/archive/refs/tags/v3.13.3.zip"
+    else:
+        EMBREE_URL = "https://github.com/RenderKit/embree/archive/refs/tags/v3.2.2.zip"
+
     with CurrentWorkingDirectory(DownloadURL(EMBREE_URL, context, force)):
         extraArgs = [
-            '-DTBB_ROOT={instDir}'.format(instDir=context.instDir),
+            '-DTBB_ROOT="{instDir}"'.format(instDir=context.instDir),
             '-DEMBREE_TUTORIALS=OFF',
             '-DEMBREE_ISPC_SUPPORT=OFF'
         ]
@@ -1583,7 +1588,9 @@ def InstallEmbree(context, force, buildArgs):
 
         RunCMake(context, force, extraArgs)
 
-EMBREE = Dependency("Embree", InstallEmbree, "include/embree3/rtcore.h")
+EMBREE = Dependency("Embree", InstallEmbree,
+                    "include/embree3/rtcore.h",
+                    "include/embree4/rtcore.h")
 
 ############################################################
 # AnimX
@@ -2079,6 +2086,12 @@ subgroup.add_argument("--embree", dest="build_embree", action="store_true",
                       help="Build Embree sample imaging plugin")
 subgroup.add_argument("--no-embree", dest="build_embree", action="store_false",
                       help="Do not build Embree sample imaging plugin (default)")
+group.add_argument("--embree-major-version",
+                   default=EMBREE_DEFAULT_MAJOR_VERSION, type=int,
+                   choices=[3, 4],
+                   help=(
+                       "The major version of Embree to build "
+                       "(default: {})").format(EMBREE_DEFAULT_MAJOR_VERSION))
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--prman", dest="build_prman", action="store_true",
                       default=False,
@@ -2294,6 +2307,7 @@ class InstallContext:
 
         # - Imaging plugins
         self.buildEmbree = self.buildImaging and args.build_embree
+        self.embreeMajorVersion = args.embree_major_version
         self.buildPrman = self.buildImaging and args.build_prman
         self.prmanLocation = (os.path.abspath(args.prman_location)
                                if args.prman_location else None)                               
@@ -2414,9 +2428,10 @@ if context.buildDraco and context.buildMonolithic and Windows():
     PrintError("Draco plugin can not be enabled for monolithic build on Windows")
     sys.exit(1)
 
-# The versions of Embree we currently support do not support oneTBB.
-if context.buildOneTBB and context.buildEmbree:
-    PrintError("Embree support cannot be enabled when building against oneTBB")
+# When building with both oneTBB and Embree, a 4.x version of Embree must be
+# used.
+if context.buildOneTBB and (context.buildEmbree and context.embreeMajorVersion < 4):
+    PrintError("Embree 4.x or later must be selected when building against oneTBB")
     sys.exit(1)
 
 # Error out if user explicitly enabled components which aren't
@@ -2610,6 +2625,8 @@ summaryMsg += """\
       OpenVDB support:          {enableOpenVDB}
       OpenImageIO support:      {buildOIIO} 
       OpenColorIO support:      {buildOCIO} 
+      Embree support:           {buildEmbree}
+        Embree major version:   {embreeMajorVersion}
       PRMan support:            {buildPrman}
     UsdImaging                  {buildUsdImaging}
       usdview:                  {buildUsdview}
@@ -2673,6 +2690,9 @@ summaryMsg = summaryMsg.format(
     enableOpenVDB=("On" if context.enableOpenVDB else "Off"),
     buildOIIO=("On" if context.buildOIIO else "Off"),
     buildOCIO=("On" if context.buildOCIO else "Off"),
+    buildEmbree=("On" if context.buildEmbree else "Off"),
+    embreeMajorVersion=(context.embreeMajorVersion if context.buildEmbree
+                        else "N/A"),
     buildPrman=("On" if context.buildPrman else "Off"),
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
     buildUsdview=("On" if context.buildUsdview else "Off"),

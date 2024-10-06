@@ -667,9 +667,13 @@ HdEmbreeRenderer::_TraceRay(unsigned int x, unsigned int y,
     rayHit.ray.flags = 0;
     _PopulateRayHit(&rayHit, origin, dir, 0.0f);
     {
+#if defined(EMBREE_MAJOR_VERSION) && EMBREE_MAJOR_VERSION >= 4
+      rtcIntersect1(_scene, &rayHit);
+#else
       RTCIntersectContext context;
       rtcInitIntersectContext(&context);
       rtcIntersect1(_scene, &context, &rayHit);
+#endif // defined(EMBREE_MAJOR_VERSION) && EMBREE_MAJOR_VERSION >= 4
       //
       // there is something odd about how this is used in Embree. Is it reversed
       // here and then when it it used in
@@ -1005,9 +1009,13 @@ HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
         shadow.flags = 0;
         _PopulateRay(&shadow, position, shadowDir, 0.001f);
         {
+#if defined(EMBREE_MAJOR_VERSION) && EMBREE_MAJOR_VERSION >= 4
+          rtcOccluded1(_scene, &shadow);
+#else
           RTCIntersectContext context;
           rtcInitIntersectContext(&context);
           rtcOccluded1(_scene,&context,&shadow);
+#endif // defined(EMBREE_MAJOR_VERSION) && EMBREE_MAJOR_VERSION >= 4
         }
 
         // Record this AO ray's contribution to the occlusion factor: a

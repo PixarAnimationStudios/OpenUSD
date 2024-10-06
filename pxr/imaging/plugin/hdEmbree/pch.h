@@ -83,9 +83,15 @@
 #undef toupper
 #endif
 #endif // PXR_PYTHON_SUPPORT_ENABLED && !PXR_USE_INTERNAL_BOOST_PYTHON
+#if defined(EMBREE_MAJOR_VERSION) && EMBREE_MAJOR_VERSION >= 4
+#include <embree4/rtcore.h>
+#include <embree4/rtcore_geometry.h>
+#include <embree4/rtcore_ray.h>
+#else
 #include <embree3/rtcore.h>
 #include <embree3/rtcore_geometry.h>
 #include <embree3/rtcore_ray.h>
+#endif // defined(EMBREE_MAJOR_VERSION) && EMBREE_MAJOR_VERSION >= 4
 #include <tbb/blocked_range.h>
 #include <tbb/cache_aligned_allocator.h>
 #include <tbb/concurrent_hash_map.h>
