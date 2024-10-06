@@ -1472,7 +1472,10 @@ function(_pxr_library NAME)
     endif()
 
     if(isObject)
-        # Nothing
+        install(
+            TARGETS ${NAME}
+            EXPORT pxrTargets
+        )
     else()
         # Do not include plugins libs in externally linkable targets
         if(isPlugin)

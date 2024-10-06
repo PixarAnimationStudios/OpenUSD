@@ -1141,16 +1141,16 @@ function(pxr_toplevel_epilogue)
         # usd_m target.
         target_compile_definitions(usd_ms
             PUBLIC
-                $<BUILD_INTERFACE:$<TARGET_PROPERTY:usd_m,INTERFACE_COMPILE_DEFINITIONS>>
+                $<TARGET_PROPERTY:usd_m,INTERFACE_COMPILE_DEFINITIONS>
         )
         target_include_directories(usd_ms
             PUBLIC
-                $<BUILD_INTERFACE:$<TARGET_PROPERTY:usd_m,INTERFACE_INCLUDE_DIRECTORIES>>
+                $<TARGET_PROPERTY:usd_m,INTERFACE_INCLUDE_DIRECTORIES>
         )
         target_include_directories(usd_ms
             SYSTEM
             PUBLIC
-                $<BUILD_INTERFACE:$<TARGET_PROPERTY:usd_m,INTERFACE_SYSTEM_INCLUDE_DIRECTORIES>>
+                $<TARGET_PROPERTY:usd_m,INTERFACE_SYSTEM_INCLUDE_DIRECTORIES>
         )
         foreach(lib ${PXR_OBJECT_LIBS})
             get_property(libs TARGET ${lib} PROPERTY INTERFACE_LINK_LIBRARIES)
@@ -1217,6 +1217,11 @@ function(pxr_monolithic_epilogue)
             POSITION_INDEPENDENT_CODE ON
             PREFIX "${libPrefix}"
             IMPORT_PREFIX "${libPrefix}"
+    )
+
+    install(
+        TARGETS usd_m
+        EXPORT pxrTargets
     )
 
     # Adding $<TARGET_OBJECTS:foo> will not bring along compile
