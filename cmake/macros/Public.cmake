@@ -1114,21 +1114,20 @@ function(pxr_toplevel_epilogue)
         # that we carefully avoid adding the usd_m target itself by using
         # TARGET_FILE.  Linking the usd_m target would link usd_m and
         # everything it links to.
-        
-        if(MSVC)
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
             target_link_libraries(usd_ms
                 PRIVATE
-                    -WHOLEARCHIVE:$<BUILD_INTERFACE:$<TARGET_FILE:usd_m>>
+                    -Wl,-force_load $<BUILD_INTERFACE:$<TARGET_FILE:usd_m>>
             )
-        elseif(CMAKE_COMPILER_IS_GNUCXX)
+        elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
             target_link_libraries(usd_ms
                 PRIVATE
                     -Wl,--whole-archive $<BUILD_INTERFACE:$<TARGET_FILE:usd_m>> -Wl,--no-whole-archive
             )
-        elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+        elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
             target_link_libraries(usd_ms
                 PRIVATE
-                    -Wl,-force_load $<BUILD_INTERFACE:$<TARGET_FILE:usd_m>>
+                    -WHOLEARCHIVE:$<BUILD_INTERFACE:$<TARGET_FILE:usd_m>>
             )
         endif()
 

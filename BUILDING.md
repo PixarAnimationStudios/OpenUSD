@@ -660,12 +660,12 @@ archive.  That's platform dependent and you'll want code something like
 this:
 
 ```cmake
-if(MSVC)
-    target_link_libraries(mylib -WHOLEARCHIVE:$<TARGET_FILE:usd_m> usd_m)
-elseif(CMAKE_COMPILER_IS_GNUCXX)
-    target_link_libraries(mylib -Wl,--whole-archive usd_m -Wl,--no-whole-archive)
-elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     target_link_libraries(mylib -Wl,-force_load usd_m)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_libraries(mylib -Wl,--whole-archive usd_m -Wl,--no-whole-archive)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    target_link_libraries(mylib -WHOLEARCHIVE:$<TARGET_FILE:usd_m> usd_m)
 endif()
 ```
 
