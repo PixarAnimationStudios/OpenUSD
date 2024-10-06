@@ -352,10 +352,18 @@ HgiVulkanTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
     if (_writable) {
         // Write a function that lets you write to the texture with 
         // HgiSet_texName(uv, data).
+        const std::string arrayIndex = (_arraySize > 0) ? "[index]" : "";
+
         ss << "void HgiSet_";
         WriteIdentifier(ss);
         ss << "(" << intCoordType << " uv, vec4 data) {\n";
-        ss << "    ";
+        
+		if (sizeDim>=2) {
+            ss << sizeType << " texSize = imageSize("; WriteIdentifier(ss);
+            ss << ");\n";
+            ss << "uv.y = texSize.y - 1 - uv.y;\n";            
+        }
+
         ss << "imageStore(";
         WriteIdentifier(ss);
         ss << ", uv, data);\n";
@@ -380,7 +388,11 @@ HgiVulkanTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
         ss << " HgiGet_";
         WriteIdentifier(ss);
         ss << "(" << arrayInput << floatCoordType << " uv) {\n";
-        ss << "    ";
+        
+		if(sizeDim>=2) {
+            ss << "uv.y = 1.0 - uv.y;\n";
+        }
+
         _WriteSampledDataType(ss);
         ss << " result = texture(";
         WriteIdentifier(ss);
@@ -403,7 +415,13 @@ HgiVulkanTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
         ss << " HgiTextureLod_";
         WriteIdentifier(ss);
         ss << "(" << arrayInput << floatCoordType << " coord, float lod) {\n";
-        ss << "    ";
+        
+		if(sizeDim >= 2) {
+            ss << sizeType << " texSize = textureSize("; WriteIdentifier(ss);
+            ss << arrayIndex << ", 0);\n";
+            ss << " coord.y = float(texSize.y-1) - coord.y;\n";
+        }
+
         ss << "return textureLod(";
         WriteIdentifier(ss);
         ss << arrayIndex << ", coord, lod);\n";
@@ -415,7 +433,13 @@ HgiVulkanTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
             ss << " HgiTexelFetch_";
             WriteIdentifier(ss);
             ss << "(" << arrayInput << intCoordType << " coord) {\n";
-            ss << "    ";
+            
+			if(sizeDim >= 2) {
+                ss << sizeType << " texSize = textureSize("; WriteIdentifier(ss);
+                ss << arrayIndex << ", 0);\n";
+                ss << "coord.y = texSize.y - 1 - coord.y;\n";
+            }
+
             _WriteSampledDataType(ss);
             ss << " result = texelFetch(";
             WriteIdentifier(ss);
