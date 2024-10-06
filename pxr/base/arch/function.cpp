@@ -204,7 +204,7 @@ _FilterTemplateList(const string& prettyFunction,
 {
     std::map<string, string> result;
 
-    string::size_type pos = prettyFunction.find("<");
+    string::size_type pos = prettyFunction.find('<');
     while (pos != string::npos) {
         const auto identifier = _GetNextIdentifier(prettyFunction, pos);
         if (!identifier.empty()) {

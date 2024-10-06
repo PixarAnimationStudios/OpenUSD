@@ -51,7 +51,7 @@ Arch_ObtainCacheLineSize()
     size_t total = bufferSize / sizeof(INFO);
 
     // Allocate the array of processor INFOs.
-    std::unique_ptr<INFO[]> buffer(new INFO[total]);
+    std::unique_ptr<INFO[]> buffer = std::make_unique<INFO[]>(total);
 
     size_t lineSize = 0;
     if (::GetLogicalProcessorInformation(&buffer[0], &bufferSize))

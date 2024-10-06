@@ -42,7 +42,7 @@ ArchGetEnv(const std::string &name)
 #if defined(ARCH_OS_WINDOWS)
     const DWORD size = GetEnvironmentVariable(name.c_str(), nullptr, 0);
     if (size != 0) {
-        std::unique_ptr<char[]> buffer(new char[size]);
+        std::unique_ptr<char[]> buffer = std::make_unique<char[]>(size);
         GetEnvironmentVariable(name.c_str(), buffer.get(), size);
         return std::string(buffer.get());
     }
@@ -65,8 +65,11 @@ ArchSetEnv(const std::string &name, const std::string &value, bool overwrite)
 #if defined(ARCH_OS_WINDOWS)
     if (!overwrite) {
         const DWORD size = GetEnvironmentVariable(name.c_str(), nullptr, 0);
-        if (size == 0 || size != ERROR_ENVVAR_NOT_FOUND) {
-            // Already exists or error.
+        // If the function fails, the return value is zero. If the specified
+        // environment variable was not found in the environment block,
+        // GetLastError returns ERROR_ENVVAR_NOT_FOUND.
+        if (size != 0 || GetLastError() != ERROR_ENVVAR_NOT_FOUND) {
+            // Already has variable or error is not "variable not found".
             return true;
         }
     }

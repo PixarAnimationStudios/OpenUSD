@@ -159,8 +159,7 @@ private:
 
 Arch_ProgInfo::~Arch_ProgInfo() 
 {
-    if (_progInfoForErrors)
-        free(_progInfoForErrors);
+    free(_progInfoForErrors);
 }
 
 void
@@ -184,8 +183,7 @@ Arch_ProgInfo::SetProgramInfoForErrors(
         ss << iter->first << ": " << iter->second << '\n';
     }
 
-    if (_progInfoForErrors)
-        free(_progInfoForErrors);
+    free(_progInfoForErrors);
 
     _progInfoForErrors = strdup(ss.str().c_str());
 }
@@ -827,10 +825,8 @@ ArchSetExtraLogInfoForErrors(const std::string &key,
 void
 ArchSetProgramNameForErrors( const char *progName )
 {
-     
-    if (_progNameForErrors)
-        free(_progNameForErrors);
-    
+    free(_progNameForErrors);
+
     if (progName)
         _progNameForErrors = strdup(getBase(progName).c_str());
     else
@@ -1514,8 +1510,8 @@ Arch_GetStackTrace(const vector<uintptr_t> &frames,
         if (skipUnknownFrames && symbolic == "<unknown>") {
             continue;
         }
-        rv.push_back(ArchStringPrintf(" #%-3i 0x%016lx in %s",
-                                      n++, frames[i], symbolic.c_str()));
+        rv.emplace_back(ArchStringPrintf(" #%-3i 0x%016lx in %s",
+                                         n++, frames[i], symbolic.c_str()));
     }
 
     return rv;

@@ -210,10 +210,7 @@ private:
 struct ArchIntervalTimer
 {
     explicit ArchIntervalTimer(bool start=true)
-        : _started(start) {
-        if (_started) {
-            _startTicks = ArchGetStartTickTime();
-        }
+        : _started(start), _startTicks(start ? ArchGetStartTickTime() : 0) {
     }
 
     void Start() {
