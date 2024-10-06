@@ -46,13 +46,14 @@
 #include "pxr/external/boost/python/object.hpp"
 #include "pxr/external/boost/python/str.hpp"
 
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
 template <typename T>
 void registerVectorConverter(const char* name)
 {
-    pxr_boost::python::class_<std::vector<T>>(name).def(vector_indexing_suite<std::vector<T>>());
+    pxr_boost::python::class_<std::vector<T>>(name).def(pxr_boost::python::vector_indexing_suite<std::vector<T>>());
 }
-
-PXR_NAMESPACE_USING_DIRECTIVE
 
 using namespace pxr_boost::python;
 
