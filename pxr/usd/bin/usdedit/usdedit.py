@@ -8,7 +8,7 @@
 
 from __future__ import print_function
 
-import os, sys
+import os, subprocess, sys
 from pxr.UsdUtils.toolPaths import FindUsdBinary
 
 # lookup usdcat and a suitable text editor. if none are available, 
@@ -50,10 +50,9 @@ def _generateTemporaryFile(usdcatCmd, usdFileName, readOnly, prefix):
     (usdaFile, usdaFileName) = tempfile.mkstemp(
         prefix=fullPrefix, suffix='.usda', dir=os.getcwd())
 
-    # No need for an open file descriptor, as it locks the file in Windows.
+    subprocess.run([usdcatCmd, usdFileName], stdout=usdaFile)
+
     os.close(usdaFile)
- 
-    os.system(usdcatCmd + ' ' + usdFileName + '> ' + usdaFileName)
 
     if readOnly:
         os.chmod(usdaFileName, 0o444)
@@ -70,7 +69,7 @@ def _generateTemporaryFile(usdcatCmd, usdFileName, readOnly, prefix):
 def _editTemporaryFile(editorCmd, usdaFileName):
     # check the timestamp before updating a file's mtime
     initialTimeStamp = os.path.getmtime(usdaFileName)
-    os.system(editorCmd + ' ' + usdaFileName)
+    subprocess.run([editorCmd, usdaFileName])
     newTimeStamp = os.path.getmtime(usdaFileName)
     
     # indicate whether the file was changed
