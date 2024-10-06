@@ -104,6 +104,8 @@ TraceEventContainer::_Node *
 TraceEventContainer::_Node::New(size_t capacity)
 {
     void *p = malloc(sizeof(_Node)+sizeof(TraceEvent)*capacity);
+    if (!p) return nullptr;
+
     TraceEvent *eventEnd = reinterpret_cast<TraceEvent*>(
         reinterpret_cast<char *>(p) + sizeof(_Node));
     return new (p) _Node(eventEnd, capacity);

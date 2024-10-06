@@ -173,7 +173,7 @@ TraceReporter::_PrintTimes(ostream &s)
     SortedTimes sortedTimes;
     for (const TraceAggregateTree::EventTimes::value_type& it
             : _aggregateTree->GetEventTimes() ) {
-        sortedTimes.insert(SortedTimes::value_type(it.second, it.first));
+        sortedTimes.emplace(it.second, it.first);
     }
     for (const SortedTimes::value_type& it : sortedTimes) {
         s << TfStringPrintf("%9.3f ms ",

@@ -205,7 +205,7 @@ TraceAggregateNode::MarkRecursiveChildren()
     std::vector<_StackNode>  stack;
 
     // Push root node on the stack
-    stack.push_back(_StackNode(TraceAggregateNodePtr(this), -1));
+    stack.emplace_back(TraceAggregateNodePtr(this), -1);
 
     while (stack.size())
     {
@@ -273,7 +273,7 @@ TraceAggregateNode::MarkRecursiveChildren()
                 // has already been processed, decrement it from our remaining
                 // children count.
                 if (!curNode->_children[i]->_isRecursionProcessed)
-                    stack.push_back(_StackNode(curNode->_children[i], parent));
+                    stack.emplace_back(curNode->_children[i], parent);
                 else
                     stack[parent].remainingChildren -= 1;
             }

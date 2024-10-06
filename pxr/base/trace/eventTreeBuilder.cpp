@@ -213,7 +213,7 @@ void
 Trace_EventTreeBuilder::_OnMarker(
     const TraceThreadId& threadId, const TfToken& key, const TraceEvent& e)
 {
-    _markersMap[key].push_back(std::make_pair(e.GetTimeStamp(), threadId));
+    _markersMap[key].emplace_back(e.GetTimeStamp(), threadId);
 }
 
 void

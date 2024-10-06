@@ -36,9 +36,8 @@ void TraceCollection::_IterateEvents(Visitor& visitor,
             // are likely to be many duplicate keys.
             KeyTokenCache::const_iterator it = cache.find(e.GetKey());
             if (it == cache.end()) {
-                it = cache.insert(
-                    std::make_pair(e.GetKey(),
-                        TfToken(e.GetKey()._ptr->GetString()))).first;
+                it = cache.emplace(e.GetKey(),
+                    TfToken(e.GetKey()._ptr->GetString())).first;
             }
             visitor.OnEvent(threadIndex, it->second, e);
         }

@@ -27,7 +27,7 @@ TraceCategory::GetInstance() {
 void 
 TraceCategory::RegisterCategory(TraceCategoryId id, const std::string& name)
 {
-    _idToNames.insert(std::make_pair(id, name));
+    _idToNames.emplace(id, name);
 }
 
 std::vector<std::string>

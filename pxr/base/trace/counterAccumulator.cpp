@@ -61,16 +61,16 @@ TraceCounterAccumulator::OnEvent(
     switch (e.GetType()) {
         case TraceEvent::EventType::CounterDelta:
         {
-            _counterDeltas[key].insert(
-                std::make_pair(e.GetTimeStamp(),
-                    _CounterValue{e.GetCounterValue(), true}));
+            _counterDeltas[key].emplace(
+                e.GetTimeStamp(),
+                    _CounterValue{e.GetCounterValue(), true});
             break;
         }
         case TraceEvent::EventType::CounterValue:
         {
-            _counterDeltas[key].insert(
-                std::make_pair(e.GetTimeStamp(),
-                    _CounterValue{e.GetCounterValue(), false}));
+            _counterDeltas[key].emplace(
+                e.GetTimeStamp(),
+                    _CounterValue{e.GetCounterValue(), false});
             break;
         }
         default:
