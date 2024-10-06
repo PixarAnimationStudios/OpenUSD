@@ -315,7 +315,7 @@ TfGetBaseName(const string& fileName)
     // fileName was already basename, in which case we want to return the
     // string back.
     if (result == wfileName.c_str()) {
-        const bool hasDriveLetter = fileName.find(":") != string::npos;
+        const bool hasDriveLetter = fileName.find(':') != string::npos;
         const bool hasPathSeparator  = i != string::npos;
         if (hasDriveLetter || hasPathSeparator) {
             return std::string();

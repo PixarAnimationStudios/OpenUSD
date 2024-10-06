@@ -233,7 +233,7 @@ Tf_MallocTagStringMatchTable::Match(const char* s) const
 struct Tf_MallocCallSite
 {
     Tf_MallocCallSite(const string& name)
-        : _name(std::make_unique<char []>(strlen(name.c_str()) + 1))
+        : _name(std::make_unique<char []>(name.length() + 1))
         , _totalBytes(0)
         , _flags(
             (Tf_MatchesMallocTagDebugName(name) ? _DebugFlag : 0) |

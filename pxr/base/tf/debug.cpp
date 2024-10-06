@@ -427,12 +427,12 @@ TfDebug::_ScopedOutput(bool start, const char* str)
     FILE *outputFile = _GetOutputFile().load();
     
     if (start) {
-        fprintf(outputFile, "%*s%s --{\n", 2 * stackDepth, "", str);
+        fprintf(outputFile, "%*s%s --{\n", 2 * static_cast<int>(stackDepth), "", str);
         ++stackDepth;
     }
     else {
         --stackDepth;
-        fprintf(outputFile, "%*s}-- %s\n", 2 * stackDepth, "", str);
+        fprintf(outputFile, "%*s}-- %s\n", 2 * static_cast<int>(stackDepth), "", str);
     }
 }
 
