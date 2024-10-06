@@ -23,6 +23,7 @@
 #include <cerrno>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <fcntl.h>
 #include <sys/types.h>
@@ -31,27 +32,238 @@
 #include <functional>
 #include <io.h>
 #include <process.h>
+#include <sys/utime.h>
 #include <Windows.h>
 #include <WinIoCtl.h>
 #else
 #include <alloca.h>
 #include <sys/mman.h>
 #include <sys/file.h>
+#include <sys/time.h>
 #include <unistd.h>
+#include <utime.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 using std::pair;
 using std::string;
+using std::basic_string;
 using std::set;
+
+namespace { // Helpers for ArchNormPath.
+
+enum TokenType { Dot, DotDot, Elem };
+
+template<typename C>
+using Token = pair<typename basic_string<C>::const_iterator, typename basic_string<C>::const_iterator>;
+template<typename C>
+using RToken = pair<typename basic_string<C>::reverse_iterator, typename basic_string<C>::reverse_iterator>;
+
+template <class Iter>
+inline pair<Iter, Iter>
+_NextToken(Iter i, Iter end)
+{
+    pair<Iter, Iter> t;
+    for (t.first = i;
+         t.first != end && *t.first == '/'; ++t.first) {}
+    for (t.second = t.first;
+         t.second != end && *t.second != '/'; ++t.second) {}
+    return t;
+}
+
+template <class Iter>
+inline TokenType
+_GetTokenType(pair<Iter, Iter> t) {
+    size_t len = distance(t.first, t.second);
+    if (len == 1 && t.first[0] == '.')
+        return Dot;
+    if (len == 2 && t.first[0] == '.' && t.first[1] == '.')
+        return DotDot;
+    return Elem;
+}
+
+template<typename C>
+basic_string<C>
+_NormPath(basic_string<C> const &inPath)
+{
+    // We take one pass through the string, transforming it into a normalized
+    // path in-place.  This works since the normalized path never grows, except
+    // in the trivial case of '' -> '.'.  In all other cases, every
+    // transformation we make either shrinks the string or maintains its size.
+    //
+    // We track a current 'write' iterator, indicating the end of the normalized
+    // path we've built so far and a current token 't', the next slash-delimited
+    // path element we will process.  For example, let's walk through the steps
+    // we take to normalize the input '/foo/../bar' to produce '/bar'.  To
+    // start, the state looks like the following, with the write iterator past
+    // any leading slashes, and 't' at the first path token.
+    //
+    // /foo/../bar
+    //  w            <------ 'write' iterator
+    //  [  ]         <------ next token 't'
+    //
+    // We look at the token 't' to determine its type: one of DotDot, Dot, or
+    // Elem.  In this case, it's a regular path Elem 'foo' so we simply copy it
+    // to the 'write' iterator and advance 't' to the next token.  Then the
+    // state looks like:
+    //
+    // /foo/../bar
+    //      w
+    //      [ ]
+    //
+    // Now 't' is a DotDot token '..', so we remove the last path element in the
+    // normalized result by scanning backwards from 'w' resetting 'w' to that
+    // location to effectively remove the element, then advance 't' to the next
+    // token.  Now the state looks like:
+    //
+    // /foo/../bar
+    //  w      [  ]
+    //
+    // The final token is the regular path Elem 'bar' so we copy it and trim the
+    // string to produce the final result '/bar'.
+    //
+
+    // This code is fairly optimized for libstdc++'s copy-on-write string.  It
+    // takes a copy of 'inPath' to start (refcount bump) but it avoids doing any
+    // mutating operation on 'path' until it actually has to.  Doing a mutating
+    // operation (even grabbing a non-const iterator) will pay for the malloc
+    // and deep copy so we want to avoid that in the common case where the input
+    // path is already normalized.
+
+    basic_string<C> path(inPath);
+
+    // Find the first path token.
+    Token<C> t = _NextToken(inPath.begin(), inPath.end());
+
+    // Allow zero, one, or two leading slashes, per POSIX.  Three or more get
+    // collapsed to one.
+    const size_t numLeadingSlashes = distance(inPath.begin(), t.first);
+    size_t writeIdx = numLeadingSlashes >= 3 ? 1 : numLeadingSlashes;
+
+    // Save a reverse iterator at where we start the output, we'll use this when
+    // scanning backward to handle DotDot tokens.
+    size_t firstWriteIdx = writeIdx;
+
+    // Now walk through the string, copying tokens, looking for slashes and dots
+    // to handle.
+    for (; t.first != inPath.end(); t = _NextToken(t.second, inPath.end())) {
+        switch (_GetTokenType(t)) {
+        case Elem:
+            // Copy the elem.  We avoid mutating 'path' if we've made no changes
+            // to the output yet, which is true if the write head is in the same
+            // place in the output as it is in the input.
+            if (inPath.begin() + writeIdx == t.first) {
+                writeIdx += distance(t.first, t.second);
+                t.first = t.second;
+                if (writeIdx != path.size())
+                    ++writeIdx;
+            } else {
+                while (t.first != t.second)
+                    path[writeIdx++] = *t.first++;
+                if (writeIdx != path.size())
+                    path[writeIdx++] = '/';
+            }
+            break;
+        case Dot:
+            // Do nothing, Dots are simply ignored.
+            break;
+        case DotDot: {
+            // Here we are very likely to be modifying the string, so we use
+            // non-const iterators and mutate.
+            typename basic_string<C>::reverse_iterator
+                rstart(path.begin() + firstWriteIdx),
+                rwrite(path.begin() + writeIdx);
+            // Find the last token of the output by finding the next token in
+            // reverse.
+            RToken<C> backToken = _NextToken(rwrite, rstart);
+            // If there are no more Elems to consume with DotDots and this is a
+            // relative path, or this token is already a DotDot, then copy it to
+            // the output.
+            if ((rstart == path.rend() && backToken.first == rstart) ||
+                _GetTokenType(backToken) == DotDot) {
+                path[writeIdx++] = '.';
+                path[writeIdx++] = '.';
+                if (writeIdx != path.size())
+                    path[writeIdx++] = '/';
+            } else if (backToken.first != rstart) {
+                // Otherwise, consume the last elem by moving writeIdx back to
+                // before the elem.
+                writeIdx = distance(path.begin(), backToken.second.base());
+            }
+        }
+            break;
+        };
+    }
+
+    // Remove a trailing slash if we wrote one.  We're careful to use const
+    // iterators here to avoid incurring a string copy if it's not necessary (in
+    // the case of libstdc++'s copy-on-write basic_string)
+    if (writeIdx > firstWriteIdx && path.cbegin()[writeIdx-1] == '/')
+        --writeIdx;
+
+    // Trim the string to length if necessary.
+    if (writeIdx != path.size())
+        path.erase(writeIdx);
+
+    // If the resulting path is empty, return "."
+    if (path.empty())
+        path.assign(1, '.');
+
+    return path;
+}
+} // anon
 
 #if defined (ARCH_OS_WINDOWS)
 namespace {
+
+const std::string LONG_PATH_PREFIX = "\\\\?\\";
+const std::wstring LONG_PATH_PREFIX_W = L"\\\\?\\";
+const std::string UNC_LONG_PATH_PREFIX = LONG_PATH_PREFIX + "UNC\\";
+const std::wstring UNC_LONG_PATH_PREFIX_W = LONG_PATH_PREFIX_W + L"UNC\\";
+
 static inline HANDLE _FileToWinHANDLE(FILE *file)
 {
     return reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(file)));
 }
+
+/// Expects an UTF-16 path and prepends the Windows long path prefix if necessary.
+/// see https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry
+std::wstring _ArchHandleLongWindowsPaths(const std::wstring& path)
+{
+    // Subtracting 12 (8.3) so this function also works for CreateDirectoryW:
+    // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createdirectoryw
+    // ARCH_PATH_MAX counts the null terminator as well
+    if (path.size() >= ARCH_PATH_MAX - 12 - 1) {
+        // the \\?\ prefix requires removal of any dotdot and dot, need to normalize
+        std::wstring longPath = _NormPath(path);
+
+        // the \\?\ prefix requires strict backslash separators:
+        // see https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation
+        std::replace(std::begin(longPath), std::end(longPath), L'/', L'\\');
+
+        // prevent duplicate prefixing
+        if (longPath.find(LONG_PATH_PREFIX_W) != 0) {
+            // if it still starts with two backslashes, it is a network path
+            if (longPath[0] == L'\\' && longPath[1] == L'\\') {
+                return UNC_LONG_PATH_PREFIX_W + longPath.substr(2);
+            } else {
+                return LONG_PATH_PREFIX_W + longPath;
+            }
+        }
+    }
+
+    return path;
+}
+
+/// convenience wrapper for the above
+/// Expects a non-null UTF-8 string pointer.
+std::wstring _ArchHandleLongWindowsPaths(const char* path) {
+    if (path == nullptr)
+        return {};
+    return _ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(path));
+}
+
 }
 #endif // ARCH_OS_WINDOWS
 
@@ -94,9 +306,11 @@ FILE* ArchOpenFile(char const* fileName, char const* mode)
         return nullptr;
     }
 
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(fileName);
+
     // Call CreateFileW.
     HANDLE hfile = CreateFileW(
-        ArchWindowsUtf8ToUtf16(fileName).c_str(),
+        apiPath.c_str(),
         desiredAccess,
         shareMode,
         /* securityAttributes=*/nullptr,
@@ -132,10 +346,64 @@ FILE* ArchOpenFile(char const* fileName, char const* mode)
 #endif
 }
 
+bool ArchTouchFile(const std::string& fileName, bool create) {
+#if defined(ARCH_OS_WINDOWS)
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(fileName.c_str());
+#endif
+
+    if (create) {
+#if !defined(ARCH_OS_WINDOWS)
+        // Attempt to create the file so it is readable and writable by user,
+        // group and other.
+        int fd = open(fileName.c_str(),
+            O_WRONLY | O_CREAT | O_NONBLOCK | O_NOCTTY,
+            S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+        if (fd == -1)
+            return false;
+        close(fd);
+#else
+        HANDLE fileHandle =
+                ::CreateFileW(apiPath.c_str(),
+                              GENERIC_WRITE,          // open for write
+                              0,                      // not for sharing
+                              NULL,                   // default security
+                              OPEN_ALWAYS,            // opens existing
+                              FILE_ATTRIBUTE_NORMAL,  //normal file
+                              NULL);                  // no template
+
+        if (fileHandle == INVALID_HANDLE_VALUE) {
+            return false;
+        }
+
+        // Close the file
+        ::CloseHandle(fileHandle);
+#endif
+    }
+
+    // Passing NULL to the 'times' argument sets both the atime and mtime to
+    // the current time, with millisecond precision.
+#if defined(ARCH_OS_WINDOWS)
+    return _wutime(apiPath.c_str(), /* times */ NULL) == 0;
+#else
+    return utimes(fileName.c_str(), /* times */ NULL) == 0;
+#endif
+
+}
+
+int ArchUnlinkFile(const char* path) {
+#if defined(ARCH_OS_WINDOWS)
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(path);
+    return _wunlink(apiPath.c_str());
+#else
+    return unlink(path);
+#endif
+}
+
 #if defined(ARCH_OS_WINDOWS)
 int ArchRmDir(const char* path)
 {
-    return RemoveDirectoryW(ArchWindowsUtf8ToUtf16(path).c_str()) ? 0 : -1;
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(path);
+    return RemoveDirectoryW(apiPath.c_str()) ? 0 : -1;
 }
 #endif
 
@@ -165,7 +433,8 @@ ArchGetModificationTime(const char* pathname, double* time)
 {
     ArchStatType st;
 #if defined(ARCH_OS_WINDOWS)
-    if (_wstat64(ArchWindowsUtf8ToUtf16(pathname).c_str(), &st) == 0)
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(pathname);
+    if (_wstat64(apiPath.c_str(), &st) == 0)
 #else
     if (stat(pathname, &st) == 0)
 #endif
@@ -190,166 +459,6 @@ ArchGetModificationTime(const ArchStatType& st)
 #error Unknown system architecture
 #endif
 }
-
-namespace { // Helpers for ArchNormPath.
-
-enum TokenType { Dot, DotDot, Elem };
-
-typedef pair<string::const_iterator, string::const_iterator> Token;
-typedef pair<string::reverse_iterator, string::reverse_iterator> RToken;
-
-template <class Iter>
-inline pair<Iter, Iter>
-_NextToken(Iter i, Iter end)
-{
-    pair<Iter, Iter> t;
-    for (t.first = i;
-         t.first != end && *t.first == '/'; ++t.first) {}
-    for (t.second = t.first;
-         t.second != end && *t.second != '/'; ++t.second) {}
-    return t;
-}
-
-template <class Iter>
-inline TokenType
-_GetTokenType(pair<Iter, Iter> t) {
-    size_t len = distance(t.first, t.second);
-    if (len == 1 && t.first[0] == '.')
-        return Dot;
-    if (len == 2 && t.first[0] == '.' && t.first[1] == '.')
-        return DotDot;
-    return Elem;
-}
-
-string
-_NormPath(string const &inPath)
-{
-    // We take one pass through the string, transforming it into a normalized
-    // path in-place.  This works since the normalized path never grows, except
-    // in the trivial case of '' -> '.'.  In all other cases, every
-    // transformation we make either shrinks the string or maintains its size.
-    //
-    // We track a current 'write' iterator, indicating the end of the normalized
-    // path we've built so far and a current token 't', the next slash-delimited
-    // path element we will process.  For example, let's walk through the steps
-    // we take to normalize the input '/foo/../bar' to produce '/bar'.  To
-    // start, the state looks like the following, with the write iterator past
-    // any leading slashes, and 't' at the first path token.
-    //
-    // /foo/../bar
-    //  w            <------ 'write' iterator
-    //  [  ]         <------ next token 't'
-    //
-    // We look at the token 't' to determine its type: one of DotDot, Dot, or
-    // Elem.  In this case, it's a regular path Elem 'foo' so we simply copy it
-    // to the 'write' iterator and advance 't' to the next token.  Then the
-    // state looks like:
-    //
-    // /foo/../bar
-    //      w
-    //      [ ]
-    //
-    // Now 't' is a DotDot token '..', so we remove the last path element in the
-    // normalized result by scanning backwards from 'w' resetting 'w' to that
-    // location to effectively remove the element, then advance 't' to the next
-    // token.  Now the state looks like:
-    //
-    // /foo/../bar
-    //  w      [  ]
-    // 
-    // The final token is the regular path Elem 'bar' so we copy it and trim the
-    // string to produce the final result '/bar'.
-    //
-
-    // This code is fairly optimized for libstdc++'s copy-on-write string.  It
-    // takes a copy of 'inPath' to start (refcount bump) but it avoids doing any
-    // mutating operation on 'path' until it actually has to.  Doing a mutating
-    // operation (even grabbing a non-const iterator) will pay for the malloc
-    // and deep copy so we want to avoid that in the common case where the input
-    // path is already normalized.
-
-    string path(inPath);
-
-    // Find the first path token.
-    Token t = _NextToken(inPath.begin(), inPath.end());
-
-    // Allow zero, one, or two leading slashes, per POSIX.  Three or more get
-    // collapsed to one.
-    const size_t numLeadingSlashes = distance(inPath.begin(), t.first);
-    size_t writeIdx = numLeadingSlashes >= 3 ? 1 : numLeadingSlashes;
-
-    // Save a reverse iterator at where we start the output, we'll use this when
-    // scanning backward to handle DotDot tokens.
-    size_t firstWriteIdx = writeIdx;
-    
-    // Now walk through the string, copying tokens, looking for slashes and dots
-    // to handle.
-    for (; t.first != inPath.end(); t = _NextToken(t.second, inPath.end())) {
-        switch (_GetTokenType(t)) {
-        case Elem:
-            // Copy the elem.  We avoid mutating 'path' if we've made no changes
-            // to the output yet, which is true if the write head is in the same
-            // place in the output as it is in the input.
-            if (inPath.begin() + writeIdx == t.first) {
-                writeIdx += distance(t.first, t.second);
-                t.first = t.second;
-                if (writeIdx != path.size())
-                    ++writeIdx;
-            } else {
-                while (t.first != t.second)
-                    path[writeIdx++] = *t.first++;
-                if (writeIdx != path.size())
-                    path[writeIdx++] = '/';
-            }
-            break;
-        case Dot:
-            // Do nothing, Dots are simply ignored.
-            break;
-        case DotDot: {
-            // Here we are very likely to be modifying the string, so we use
-            // non-const iterators and mutate.
-            string::reverse_iterator
-                rstart(path.begin() + firstWriteIdx),
-                rwrite(path.begin() + writeIdx);
-            // Find the last token of the output by finding the next token in
-            // reverse.
-            RToken backToken = _NextToken(rwrite, rstart);
-            // If there are no more Elems to consume with DotDots and this is a
-            // relative path, or this token is already a DotDot, then copy it to
-            // the output.
-            if ((rstart == path.rend() && backToken.first == rstart) ||
-                _GetTokenType(backToken) == DotDot) {
-                path[writeIdx++] = '.';
-                path[writeIdx++] = '.';
-                if (writeIdx != path.size())
-                    path[writeIdx++] = '/';
-            } else if (backToken.first != rstart) {
-                // Otherwise, consume the last elem by moving writeIdx back to
-                // before the elem.
-                writeIdx = distance(path.begin(), backToken.second.base());
-            }
-        }
-            break;
-        };
-    }
-    
-    // Remove a trailing slash if we wrote one.  We're careful to use const
-    // iterators here to avoid incurring a string copy if it's not necessary (in
-    // the case of libstdc++'s copy-on-write basic_string)
-    if (writeIdx > firstWriteIdx && path.cbegin()[writeIdx-1] == '/')
-        --writeIdx;
-
-    // Trim the string to length if necessary.
-    if (writeIdx != path.size())
-        path.erase(writeIdx);
-    
-    // If the resulting path is empty, return "."
-    if (path.empty())
-        path.assign(".");
-    
-    return path;
-}
-} // anon
 
 #if defined(ARCH_OS_WINDOWS)
 string
@@ -388,12 +497,20 @@ ArchAbsPath(const string& path)
     }
 
 #if defined(ARCH_OS_WINDOWS)
-    // @TODO support 32,767 long paths on windows by prepending "\\?\" to the
     // path
-    wchar_t buffer[ARCH_PATH_MAX];
-    if (GetFullPathNameW(ArchWindowsUtf8ToUtf16(path).c_str(),
-                         ARCH_PATH_MAX, buffer, nullptr)) {
-        return ArchWindowsUtf16ToUtf8(buffer);
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(path.c_str());
+    std::vector<wchar_t> buffer(ARCH_PATH_MAX, 0);
+    auto requiredBufferSize = GetFullPathNameW(apiPath.c_str(), buffer.size(), buffer.data(), nullptr);
+    if (requiredBufferSize > buffer.size()) {
+        buffer.resize(requiredBufferSize, 0);
+        requiredBufferSize = GetFullPathNameW(apiPath.c_str(), buffer.size(), buffer.data(), nullptr);
+    }
+    if (requiredBufferSize > 0) {
+        std::string result = ArchWindowsUtf16ToUtf8(buffer.data());
+        if (result.find(LONG_PATH_PREFIX) == 0)
+            return result.substr(LONG_PATH_PREFIX.size());
+        else
+            return result; // implicit conversion through std::wstring
     }
     else {
         return path;
@@ -418,7 +535,8 @@ ArchGetStatMode(const char *pathname, int *mode)
 {
     ArchStatType st;
 #if defined(ARCH_OS_WINDOWS)
-    if (__stat64(pathname, &st) == 0) {
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(pathname);
+    if (_wstat64(apiPath.c_str(), &st) == 0) {
 #else
     if (stat(pathname, &st) == 0) {
 #endif
@@ -496,10 +614,11 @@ ArchGetFileLength(const char* fileName)
 #elif defined (ARCH_OS_WINDOWS)
     // Open a handle with 0 as the desired access and full sharing.
     // This opens the file even if exclusively locked.
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(fileName);
     HANDLE handle =
-        CreateFileW(ArchWindowsUtf8ToUtf16(fileName).c_str(), 0,
+        CreateFileW(apiPath.c_str(), 0,
                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                   nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+                    nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
     if (handle) {
         const auto result = _GetFileLength(handle);
         CloseHandle(handle);
@@ -626,21 +745,27 @@ MakeUnique(
 
 #endif
 
+namespace {
+
+constexpr const char* TMPDIR_FMT = "%s" ARCH_PATH_SEP "%s.XXXXXX";
+
+} // namespace
+
 int
 ArchMakeTmpFile(const std::string& tmpdir,
                 const std::string& prefix, std::string* pathname)
 {
     // Format the template.
-    std::string sTemplate =
-        ArchStringPrintf("%s/%s.XXXXXX", tmpdir.c_str(), prefix.c_str());
+    std::string sTemplate = ArchStringPrintf(TMPDIR_FMT, tmpdir.c_str(), prefix.c_str());
 
 #if defined(ARCH_OS_WINDOWS)
     int fd = -1;
     auto cTemplate =
         MakeUnique(sTemplate, [&fd](const char* name){
-                    _wsopen_s(&fd, ArchWindowsUtf8ToUtf16(name).c_str(),
-                              _O_CREAT | _O_EXCL | _O_RDWR | _O_BINARY,
-                              _SH_DENYNO, _S_IREAD | _S_IWRITE);
+            const std::wstring apiPath = _ArchHandleLongWindowsPaths(name);
+            _wsopen_s(&fd, apiPath.c_str(),
+          _O_CREAT | _O_EXCL | _O_RDWR | _O_BINARY,
+          _SH_DENYNO, _S_IREAD | _S_IWRITE);
             return fd != -1;
         });
 #else
@@ -676,13 +801,13 @@ ArchMakeTmpSubdir(const std::string& tmpdir,
 
     // Format the template.
     std::string sTemplate =
-        ArchStringPrintf("%s/%s.XXXXXX", tmpdir.c_str(), prefix.c_str());
+        ArchStringPrintf(TMPDIR_FMT, tmpdir.c_str(), prefix.c_str());
 
 #if defined(ARCH_OS_WINDOWS)
     retstr =
         MakeUnique(sTemplate, [](const char* name){
-            return CreateDirectoryW(
-                ArchWindowsUtf8ToUtf16(name).c_str(), NULL) != FALSE;
+            const std::wstring apiPath = _ArchHandleLongWindowsPaths(name);
+            return (CreateDirectoryW(apiPath.c_str(), NULL) != 0);
         });
 #else
     // Copy template to a writable buffer.
@@ -710,11 +835,15 @@ void
 Arch_InitTmpDir()
 {
 #if defined(ARCH_OS_WINDOWS)
-    wchar_t tmpPath[MAX_PATH];
+    std::vector<wchar_t> tmpPath(ARCH_PATH_MAX, 0);
 
     // On Windows, let GetTempPath use the standard env vars, not our own.
-    int sizeOfPath = GetTempPathW(MAX_PATH - 1, tmpPath);
-    if (sizeOfPath > MAX_PATH || sizeOfPath == 0) {
+    int sizeOfPath = GetTempPathW(tmpPath.size() - 1, tmpPath.data());
+    if (sizeOfPath > tmpPath.size()) {
+        tmpPath.resize(sizeOfPath, 0);
+        sizeOfPath = GetTempPathW(tmpPath.size() - 1, tmpPath.data());
+    }
+    if (sizeOfPath > tmpPath.size() || sizeOfPath == 0) {
         ARCH_ERROR("Call to GetTempPath failed.");
         _TmpDir = ".";
         return;
@@ -722,7 +851,7 @@ Arch_InitTmpDir()
 
     // Strip the trailing slash
     tmpPath[sizeOfPath-1] = 0;
-    _TmpDir = _strdup(ArchWindowsUtf16ToUtf8(tmpPath).c_str());
+    _TmpDir = _strdup(ArchWindowsUtf16ToUtf8(tmpPath.data()).c_str());
 #else
     const std::string tmpdir = ArchGetEnv("TMPDIR");
     if (!tmpdir.empty()) {
@@ -1085,9 +1214,9 @@ static int Arch_FileAccessError()
 int ArchFileAccess(const char* path, int mode)
 {
     // Simple existence check is handled specially.
-    std::wstring wpath{ ArchWindowsUtf8ToUtf16(path) };
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(path);
     if (mode == F_OK) {
-        return (GetFileAttributesW(wpath.c_str()) != INVALID_FILE_ATTRIBUTES)
+        return (GetFileAttributesW(apiPath.c_str()) != INVALID_FILE_ATTRIBUTES)
                 ? 0 : Arch_FileAccessError();
     }
 
@@ -1097,7 +1226,7 @@ int ArchFileAccess(const char* path, int mode)
 
     // Get the SECURITY_DESCRIPTOR size.
     DWORD length = 0;
-    if (!GetFileSecurityW(wpath.c_str(), securityInfo, NULL, 0, &length)) {
+    if (!GetFileSecurityW(apiPath.c_str(), securityInfo, NULL, 0, &length)) {
         if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
             return Arch_FileAccessError();
         }
@@ -1107,7 +1236,7 @@ int ArchFileAccess(const char* path, int mode)
     std::unique_ptr<unsigned char[]> buffer(new unsigned char[length]);
     PSECURITY_DESCRIPTOR security = (PSECURITY_DESCRIPTOR)buffer.get();
     if (!GetFileSecurityW(
-            wpath.c_str(), securityInfo, security, length, &length)) {
+            apiPath.c_str(), securityInfo, security, length, &length)) {
         return Arch_FileAccessError();
     }
 
@@ -1199,9 +1328,10 @@ typedef struct _REPARSE_DATA_BUFFER {
 
 std::string ArchReadLink(const char* path)
 {
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(path);
     HANDLE handle = ::CreateFileW(
-        ArchWindowsUtf8ToUtf16(path).c_str(), GENERIC_READ, FILE_SHARE_READ,
-        NULL, OPEN_EXISTING,
+            apiPath.c_str(), GENERIC_READ, FILE_SHARE_READ,
+            NULL, OPEN_EXISTING,
         FILE_FLAG_OPEN_REPARSE_POINT |
         FILE_FLAG_BACKUP_SEMANTICS, NULL);
 
