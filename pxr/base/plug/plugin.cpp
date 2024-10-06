@@ -236,8 +236,12 @@ PlugPlugin::_Load()
         else {
             string dsoError;
             {
-                TRACE_FUNCTION_SCOPE("dlopen");
+                TRACE_FUNCTION_SCOPE("dlopen");   
+#if defined(ARCH_OS_WINDOWS)
+                _handle = TfDlopen(ArchWindowsPreferredPath(_path).c_str(), ARCH_LIBRARY_ALTERED_SEARCH_PATH, &dsoError);
+#else
                 _handle = TfDlopen(_path.c_str(), ARCH_LIBRARY_NOW, &dsoError);
+#endif
             }
             if (!_handle ) {
                 TF_CODING_ERROR("Failed to load plugin '%s': %s in '%s'",  
