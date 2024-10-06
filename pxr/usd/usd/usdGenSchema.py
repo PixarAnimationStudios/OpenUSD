@@ -1701,7 +1701,7 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
             #   'specifier' - This is a required field and will always exist.
             # Any other metadata is an error.
             allowedAPIMetadata = [
-                'specifier', 'customData', 'documentation']
+                'specifier', 'customData', 'documentation', 'propertyOrder']
             # Single apply API schemas are also allowed to specify 'apiSchemas'
             # metadata to include other API schemas.
             if apiSchemaType == SINGLE_APPLY or apiSchemaType == MULTIPLE_APPLY:

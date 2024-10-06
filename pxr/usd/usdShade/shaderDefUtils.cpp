@@ -380,6 +380,19 @@ UsdShadeShaderDefUtils::GetShaderProperties(
             metadata.erase(implementationName);
         }
 
+        // Translate DisplayGroup/DisplayName to Page/Label.
+        const std::string displayGroup = shaderInput.GetAttr().GetDisplayGroup();
+        if( !displayGroup.empty() )
+        {
+            metadata[SdrPropertyMetadata->Page] = displayGroup;
+        }
+
+        const std::string displayName = shaderInput.GetAttr().GetDisplayName();
+        if( !displayName.empty() )
+        {
+            metadata[SdrPropertyMetadata->Label] = displayName;
+        }
+
         result.emplace_back(
             _CreateSdrShaderProperty(
                 /* shaderProperty */ shaderInput,

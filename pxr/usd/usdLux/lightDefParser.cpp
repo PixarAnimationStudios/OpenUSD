@@ -119,6 +119,15 @@ _CopyPropertiesFromSchema(
             return false;
         }
     }
+
+    // Append the schema's property order to the destination.
+    std::vector<TfToken> propertyOrder = destPrimSpec->GetPropertyOrder();
+    for( const auto &name : schemaSpec->GetPropertyOrder() )
+    {
+        propertyOrder.push_back( name );
+    }
+    destPrimSpec->SetPropertyOrder( propertyOrder );
+
     return true;
 }
 
