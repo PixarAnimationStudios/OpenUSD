@@ -1304,6 +1304,13 @@ def InstallOpenVDB(context, force, buildArgs):
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
 
+        # Patch files to support relwithdebinfo and minsizerel build
+        PatchFile('cmake/FindTBB.cmake',
+                  [('        IMPORTED_LOCATION_RELEASE "${Tbb_${COMPONENT}_LIBRARY_RELEASE}")',
+                    '        IMPORTED_LOCATION_RELEASE "${Tbb_${COMPONENT}_LIBRARY_RELEASE}"\n' +
+                    '        MAP_IMPORTED_CONFIG_MINSIZEREL Release\n' +
+                    '        MAP_IMPORTED_CONFIG_RELWITHDEBINFO Release)')])
+
         RunCMake(context, force, extraArgs)
 
 OPENVDB = Dependency("OpenVDB", InstallOpenVDB, "include/openvdb/openvdb.h")
