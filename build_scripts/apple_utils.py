@@ -4,7 +4,6 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 #
-import shutil
 # Utilities for managing Apple OS build concerns.
 #
 # NOTE: This file and its contents may change significantly as we continue
@@ -19,6 +18,8 @@ import re
 import platform
 import shlex
 import subprocess
+import tempfile
+import shutil
 from typing import Optional, List
 
 TARGET_NATIVE = "native"
@@ -339,22 +340,33 @@ def GetTBBPatches(context):
 
 
 def BuildXCFramework(root, targets, args):
-    if TARGET_UNIVERSAL in targets or (TARGET_ARM64 in targets and TARGET_X86 in targets):
-        raise RuntimeError("Only one macOS architecture is currently supported for building an XCFramework")
+    if TARGET_UNIVERSAL in targets:
+        targets.extend([TARGET_ARM64, TARGET_X86])
+        targets.remove(TARGET_UNIVERSAL)
+    if TARGET_NATIVE in targets:
+        targets.remove(TARGET_NATIVE)
+        targets.append(GetHostArch())
+
+    targets = set(targets)
     print(f"Building {len(targets)} targets...")
     shared_sources = os.path.join(root, "shared_sources")
     os.makedirs(shared_sources, exist_ok=True)
 
-    build_command = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_usd.py")
-    framework_list = []
-    for target in targets:
+    do_lipo = TARGET_ARM64 in targets and TARGET_X86 in targets
 
+    build_command = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_usd.py")
+    frameworks = []
+    to_lipo = []
+    for target in targets:
         print(f"Building {target}...")
         install_dir = os.path.join(root, target)
         target_src_dir = os.path.join(install_dir, "src")
         os.makedirs(target_src_dir, exist_ok=True)
         framework = os.path.join(install_dir, "frameworks/OpenUSD.framework")
-        framework_list.append(framework)
+        if do_lipo and target in (TARGET_X86, TARGET_ARM64):
+            to_lipo.append(framework)
+        else:
+            frameworks.append(framework)
 
         # Copy the shared sources over to save time
         for src in os.listdir(shared_sources):
@@ -380,15 +392,37 @@ def BuildXCFramework(root, targets, args):
 
         assert os.path.exists(framework)
 
-    print("Creating XCFramework")
+    codesign_id = GetCodeSignID()
+    if do_lipo:
+        print("Combining Mac framework architectures")
+        assert(len(to_lipo)==2)
 
+        fat_dir = os.path.join(root, "fat")
+        if os.path.exists(fat_dir):
+            shutil.rmtree(fat_dir)
+
+        fat_framework = os.path.join(fat_dir, "OpenUSD.framework")
+        subprocess.check_call(["ditto", to_lipo[0], fat_framework]) # Ditto copies more metadata than shutil does
+
+        dylib_a = os.path.join(to_lipo[0], "Versions/A/OpenUSD")
+        dylib_b = os.path.join(to_lipo[1], "Versions/A/OpenUSD")
+        dylib_dest = os.path.join(fat_framework, "Versions/A/OpenUSD")
+        subprocess.check_call(["lipo", dylib_a, dylib_b, "-create", "-output", dylib_dest])
+
+        print("Codesigning combined framework")
+        subprocess.check_call(["codesign", "--force", "--sign", codesign_id, "--generate-entitlement-der",
+                               "--identifier", "org.openusd.OpenUSD", fat_framework])
+
+        frameworks.append(fat_framework)
+
+    print("Creating XCFramework")
     xcframework_dir = os.path.join(root, "xcframework")
     if os.path.exists(xcframework_dir):
         shutil.rmtree(xcframework_dir)
     os.makedirs(xcframework_dir, exist_ok=True)
     xcframework_path = os.path.join(xcframework_dir, "OpenUSD.xcframework")
     command = ["xcodebuild","-create-xcframework", "-output", xcframework_path]
-    for framework in framework_list:
+    for framework in frameworks:
         command.extend(["-framework", framework])
 
     try:
@@ -396,7 +430,7 @@ def BuildXCFramework(root, targets, args):
     except:
         raise RuntimeError(f"Failed to create XCFramework using {' '.join(command)}")
 
-    subprocess.check_call(["codesign", "--timestamp", "-s", GetCodeSignID(), xcframework_path])
+    subprocess.check_call(["codesign", "--timestamp", "-s", codesign_id, xcframework_path])
 
 
     print("""Success! Add the OpenUSD.xcframework to your Xcode Project.""")
@@ -410,11 +444,9 @@ def main():
                                         description="Build multiple framework targets together as a single xcframework")
     xcframework.add_argument("install_dir",  type=str,
                              help="Directory where the XCFramework will be installed")
-    build_targets = GetBuildTargets()
-    build_targets.remove(TARGET_UNIVERSAL)
     xcframework.add_argument("--build-targets", nargs="+", help="The list of targets to build.",
-                             choices=build_targets,
-                             default=[TARGET_NATIVE,
+                             choices=GetBuildTargets(),
+                             default=[TARGET_X86, TARGET_ARM64,
                                       TARGET_IOS, TARGET_IOS_SIMULATOR,
                                       TARGET_VISIONOS, TARGET_VISIONOS_SIMULATOR])
 
