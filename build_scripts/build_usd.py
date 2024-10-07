@@ -1609,6 +1609,23 @@ def InstallAnimX(context, force, buildArgs):
 
 ANIMX = Dependency("AnimX", InstallAnimX, "include/animx.h")
 
+############################################################
+# GLFW
+
+GLFW_URL = "https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip"
+
+def InstallGLFW(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(GLFW_URL, context, force)):
+        cmakeOptions = ['-DGLFW_LIBRARY_TYPE=STATIC',
+                        '-DGLFW_BUILD_EXAMPLES=OFF',
+                        '-DGLFW_BUILD_TESTS=OFF',
+                        '-DGLFW_BUILD_WAYLAND=OFF',
+                        '-DGLFW_BUILD_DOCS=OFF'
+                        ]
+        cmakeOptions += buildArgs
+        RunCMake(context, force, cmakeOptions)
+
+GLFW = Dependency("GLFW", InstallGLFW, "include/GLFW/glfw3.h")
 
 ############################################################
 # USD
@@ -2400,6 +2417,9 @@ if context.buildUsdview:
 
 if context.buildAnimXTests:
     requiredDependencies += [ANIMX]
+
+if context.buildUsdImaging and not MacOS():
+    requiredDependencies += [GLFW]
 
 # Assume zlib already exists on Linux platforms and don't build
 # our own. This avoids potential issues where a host application
