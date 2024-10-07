@@ -339,6 +339,8 @@ def GetTBBPatches(context):
 
 
 def BuildXCFramework(root, targets, args):
+    if TARGET_UNIVERSAL in targets or (TARGET_ARM64 in targets and TARGET_X86 in targets):
+        raise RuntimeError("Only one macOS architecture is currently supported for building an XCFramework")
     print(f"Building {len(targets)} targets...")
     shared_sources = os.path.join(root, "shared_sources")
     os.makedirs(shared_sources, exist_ok=True)
@@ -408,8 +410,11 @@ def main():
                                         description="Build multiple framework targets together as a single xcframework")
     xcframework.add_argument("install_dir",  type=str,
                              help="Directory where the XCFramework will be installed")
+    build_targets = GetBuildTargets()
+    build_targets.remove(TARGET_UNIVERSAL)
     xcframework.add_argument("--build-targets", nargs="+", help="The list of targets to build.",
-                             default=[TARGET_UNIVERSAL,
+                             choices=build_targets,
+                             default=[TARGET_NATIVE,
                                       TARGET_IOS, TARGET_IOS_SIMULATOR,
                                       TARGET_VISIONOS, TARGET_VISIONOS_SIMULATOR])
 

@@ -2366,7 +2366,7 @@ if extraPythonPaths:
 if context.buildOneTBB:
     TBB = ONETBB
 
-requiredDependencies = [TBB]
+requiredDependencies = [ZLIB, TBB]
 
 if context.buildBoostPython:
     requiredDependencies += [BOOST]
