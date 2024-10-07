@@ -384,6 +384,10 @@ private:
             float *sampleTimes,
             VtValue *sampleValues);
 
+    /// Returns the sample time offset that should be reported for computation
+    /// inputs which are not time-varying.
+    double _GetDefaultSampleTime(UsdTimeCode time);
+
 
     // ---------------------------------------------------------------------- //
     /// Populated skeleton state
