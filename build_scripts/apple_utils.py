@@ -344,11 +344,16 @@ def BuildXCFramework(root, targets, args):
     os.makedirs(shared_sources, exist_ok=True)
 
     build_command = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_usd.py")
+    framework_list = []
     for target in targets:
+
         print(f"Building {target}...")
         install_dir = os.path.join(root, target)
         target_src_dir = os.path.join(install_dir, "src")
         os.makedirs(target_src_dir, exist_ok=True)
+        framework = os.path.join(install_dir, "frameworks/OpenUSD.framework")
+        framework_list.append(framework)
+        continue
 
         # Copy the shared sources over to save time
         for src in os.listdir(shared_sources):
@@ -372,6 +377,25 @@ def BuildXCFramework(root, targets, args):
                 shutil.copy2(target_src_path, shared_src_path)
 
 
+        assert os.path.exists(framework)
+
+    print("Creating XCFramework")
+
+    xcframework_dir = os.path.join(root, "xcframework")
+    if os.path.exists(xcframework_dir):
+        shutil.rmtree(xcframework_dir)
+    os.makedirs(xcframework_dir, exist_ok=True)
+    command = ["xcodebuild","-create-xcframework", "-output", os.path.join(xcframework_dir, "OpenUSD.xcframework")]
+    for framework in framework_list:
+        command.extend(["-framework", framework])
+
+    try:
+        subprocess.check_call(command)
+    except:
+        raise RuntimeError(f"Failed to create XCFramework using {' '.join(command)}")
+
+    print("""Success! Add the OpenUSD.xcframework to your Xcode Project.""")
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="A set of command line utilities for building on Apple Platforms")
@@ -382,7 +406,7 @@ def main():
     xcframework.add_argument("install_dir",  type=str,
                              help="Directory where the XCFramework will be installed")
     xcframework.add_argument("--build-targets", nargs="+", help="The list of targets to build.",
-                             default=[TARGET_UNIVERSAL, TARGET_IOS, TARGET_IOS_SIMULATOR,
+                             default=[TARGET_ARM64, TARGET_IOS, TARGET_IOS_SIMULATOR,
                                       TARGET_VISIONOS, TARGET_VISIONOS_SIMULATOR])
 
     args, unknown = parser.parse_known_args()

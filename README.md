@@ -193,6 +193,12 @@ by setting `SYSTEM_HEADER_SEARCH_PATHS` in your Xcode target to the Headers dire
 For example, if your Framework folder is in your project, under a folder with the same name as your target, you would
 set it as `$(SRCROOT)/$(TARGET_NAME)/OpenUSD.framework/Headers`. 
 
+OpenUSD also supports building a combined XCFramework as well of multiple targets.
+This command takes an optional list of targets to build, but will otherwise build all supported platforms.
+
+```
+> python OpenUSD/build_scripts/apple_utils.py xcframework /path/to/my_usd_install_dir
+```
 
 ##### Windows:
 
