@@ -293,6 +293,15 @@ Test_TfHash()
     TF_AXIOM(h(std::optional<std::string>("xyz")) ==
              h(std::optional<std::string>("xyz")));
 
+    // Validate transparent hashing of std::optional
+    TF_AXIOM(h(std::optional<std::string>("xyz")) ==
+             h(std::string("xyz")));
+
+    // Validate support for empty optional
+    printf("hash(optional): %zu\n", h(std::make_optional<std::string>()));
+    TF_AXIOM(h(std::make_optional<std::string>()) ==
+             h(std::make_optional<std::string>()));
+
     // Validate support for std::variant
     printf("hash(variant): %zu\n",
            h(std::variant<std::string, int, double>("abc")));
