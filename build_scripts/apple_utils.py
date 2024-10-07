@@ -359,7 +359,7 @@ def BuildXCFramework(root, targets, args):
     to_lipo = []
     for target in targets:
         print(f"Building {target}...")
-        install_dir = os.path.join(root, target)
+        install_dir = os.path.join(root, "builds", target)
         target_src_dir = os.path.join(install_dir, "src")
         os.makedirs(target_src_dir, exist_ok=True)
         framework = os.path.join(install_dir, "frameworks/OpenUSD.framework")
@@ -397,7 +397,7 @@ def BuildXCFramework(root, targets, args):
         print("Combining Mac framework architectures")
         assert(len(to_lipo)==2)
 
-        fat_dir = os.path.join(root, "fat")
+        fat_dir = os.path.join(root, "builds/fat")
         if os.path.exists(fat_dir):
             shutil.rmtree(fat_dir)
 
