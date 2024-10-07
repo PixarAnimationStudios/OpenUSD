@@ -22,6 +22,7 @@
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/js/utils.h"
 #include "pxr/base/js/value.h"
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/pathUtils.h"
@@ -321,7 +322,11 @@ _GetAvailablePrimaryResolvers(
             break;
         }
     }
-    TF_VERIFY(availablePrimaryResolvers.back().type == defaultResolverType);
+    if (availablePrimaryResolvers.size() > 0) {
+        TF_VERIFY(availablePrimaryResolvers.back().type == defaultResolverType);
+    } else {
+        TF_CODING_ERROR("No primary resolvers could be found.");
+    }
 
     return availablePrimaryResolvers;
 }
@@ -1269,10 +1274,16 @@ private:
         if (uriResolver) {
             return *uriResolver;
         }
+
+        if (!_resolver)
+        {
+            TF_WARN("Resolver is uninitialized.");
+        }
         
         if (info) {
             *info = &_resolver->info;
         }
+
         return *(_resolver->Get());
     }
 
