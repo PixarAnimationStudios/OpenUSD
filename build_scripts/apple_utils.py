@@ -339,10 +339,6 @@ def GetTBBPatches(context):
 
 
 def BuildXCFramework(root, targets, args):
-    if TARGET_UNIVERSAL in targets:
-        targets.remove(TARGET_UNIVERSAL)
-        targets.extend(TARGET_ARM64, TARGET_X86) # Static builds of TBB can't be built as universal
-
     print(f"Building {len(targets)} targets...")
     shared_sources = os.path.join(root, "shared_sources")
     os.makedirs(shared_sources, exist_ok=True)
@@ -413,7 +409,7 @@ def main():
     xcframework.add_argument("install_dir",  type=str,
                              help="Directory where the XCFramework will be installed")
     xcframework.add_argument("--build-targets", nargs="+", help="The list of targets to build.",
-                             default=[TARGET_ARM64, TARGET_X86,
+                             default=[TARGET_UNIVERSAL,
                                       TARGET_IOS, TARGET_IOS_SIMULATOR,
                                       TARGET_VISIONOS, TARGET_VISIONOS_SIMULATOR])
 
