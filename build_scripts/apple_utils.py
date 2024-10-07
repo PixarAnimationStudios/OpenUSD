@@ -4,7 +4,7 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 #
-
+import shutil
 # Utilities for managing Apple OS build concerns.
 #
 # NOTE: This file and its contents may change significantly as we continue
@@ -238,8 +238,7 @@ def CodesignFiles(files):
     codeSignID = GetCodeSignID()
 
     for f in files:
-        subprocess.call(['codesign', '-f', '-s', '{codesignid}'
-                              .format(codesignid=codeSignID), f],
+        subprocess.call(['codesign', '-f', '-s', str(codeSignID), f],
                         stdout=devout, stderr=devout)
 
 def Codesign(install_path, verbose_output=False):
@@ -259,35 +258,24 @@ def CreateUniversalBinaries(context, libNames, x86Dir, armDir):
     lipoCommands = []
     xcodeRoot = subprocess.check_output(
         ["xcode-select", "--print-path"]).decode('utf-8').strip()
-    lipoBinary = \
-        "{XCODE_ROOT}/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo".format(
-                XCODE_ROOT=xcodeRoot)
+    lipoBinary = f"{xcodeRoot}/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo"
     for libName in libNames:
         outputName = os.path.join(context.instDir, "lib", libName)
-        if not os.path.islink("{x86Dir}/{libName}".format(
-                                x86Dir=x86Dir, libName=libName)):
+        if not os.path.islink(f"{x86Dir}/{libName}"):
             if os.path.exists(outputName):
                 os.remove(outputName)
-            lipoCmd = "{lipo} -create {x86Dir}/{libName} {armDir}/{libName} " \
-                      "-output {outputName}".format(
-                                lipo=lipoBinary,
-                                x86Dir=x86Dir, armDir=armDir,
-                                libName=libName, outputName=outputName)
+            lipoCmd = f"{lipoBinary} -create {x86Dir}/{libName} {armDir}/{libName} -output {outputName}"
             lipoCommands.append(lipoCmd)
             p = subprocess.Popen(shlex.split(lipoCmd))
             p.wait()
     for libName in libNames:
-        if os.path.islink("{x86Dir}/{libName}".format(
-                                x86Dir=x86Dir, libName=libName)):
+        if os.path.islink(f"{x86Dir}/{libName}"):
             outputName = os.path.join(context.instDir, "lib", libName)
             if os.path.exists(outputName):
                 os.unlink(outputName)
-            targetName = os.readlink("{x86Dir}/{libName}".format(
-                                x86Dir=x86Dir, libName=libName))
+            targetName = os.readlink(f"{x86Dir}/{libName}")
             targetName = os.path.basename(targetName)
-            os.symlink("{instDir}/lib/{libName}".format(
-                                instDir=context.instDir, libName=targetName),
-                       outputName)
+            os.symlink(f"{context.instDir}/lib/{targetName}", outputName)
     return lipoCommands
 
 def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
@@ -312,10 +300,59 @@ def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
 
     return args
 
-def BuildMultipleTargets(args, context_class):
-    if not args.no_build_apple_framework:
-        embedded_targets = any(t for t in args.build_target if t in EMBEDDED_PLATFORMS)
-        args.build_apple_framework = embedded_targets
+def BuildXCFramework(root, targets, args):
+    print(f"Building {len(targets)} targets...")
+    shared_sources = os.path.join(root, "shared_sources")
+    os.makedirs(shared_sources, exist_ok=True)
 
-    root = args.install_dir
-    raise RuntimeError("Testing")
+    build_command = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_usd.py")
+    for target in targets:
+        print(f"Building {target}...")
+        install_dir = os.path.join(root, target)
+        target_src_dir = os.path.join(install_dir, "src")
+        os.makedirs(target_src_dir, exist_ok=True)
+
+        # Copy the shared sources over to save time
+        for src in os.listdir(shared_sources):
+            shared_src = os.path.join(shared_sources, src)
+            target_src = os.path.join(target_src_dir, src)
+            shutil.copy2(shared_src, target_src)
+
+        target_args = [sys.executable, build_command, install_dir, "--build-target", target, "--build-apple-framework"]
+        target_args.extend(args)
+        try:
+            subprocess.check_call(target_args)
+        except:
+            raise RuntimeError(f"Failed to build {target} using {' '.join(target_args)}")
+
+        # Copy the unshared sources back as needed
+        # We copy the zips in case there are any patches involved
+        for src in os.listdir(target_src_dir):
+            target_src_path = os.path.join(target_src_dir, src)
+            shared_src_path = os.path.join(shared_sources, src)
+            if not os.path.exists(shared_src_path) and os.path.isfile(target_src_path):
+                shutil.copy2(target_src_path, shared_src_path)
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="A set of command line utilities for building on Apple Platforms")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    xcframework = subparsers.add_parser("xcframework",
+                                        description="Build multiple framework targets together as a single xcframework")
+    xcframework.add_argument("install_dir",  type=str,
+                             help="Directory where the XCFramework will be installed")
+    xcframework.add_argument("--build-targets", nargs="+", help="The list of targets to build.",
+                             default=[TARGET_UNIVERSAL, TARGET_IOS, TARGET_IOS_SIMULATOR,
+                                      TARGET_VISIONOS, TARGET_VISIONOS_SIMULATOR])
+
+    args, unknown = parser.parse_known_args()
+    command = args.command
+    if command == "xcframework":
+        BuildXCFramework(args.install_dir, args.build_targets, unknown)
+    else:
+        raise RuntimeError(f"Unknown command: {command}")
+
+if __name__ == '__main__':
+    main()
