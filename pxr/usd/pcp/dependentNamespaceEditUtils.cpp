@@ -235,8 +235,10 @@ public:
     void AddProcessEditsAtNodeTask(
         const PcpNodeRef &node,
         const SdfPath &oldPath, 
-        const SdfPath &newPath) {
-        _InsertNodeTask({node, oldPath, newPath});
+        const SdfPath &newPath,
+        bool willBeRelocated) {
+        _InsertNodeTask({node, oldPath, newPath, 
+            /* isImpliedClassTask = */ false, willBeRelocated});
     }
 
     // Processes all tasks producing all dependent edits for the prim index
@@ -252,6 +254,7 @@ private:
         SdfPath oldPath;
         SdfPath newPath;
         bool isImpliedClassTask = false;
+        bool willBeRelocated = false;
     };
 
     friend std::ostream &
@@ -261,6 +264,9 @@ private:
             "> to <" << nodeTask.newPath << ">";
         if (nodeTask.isImpliedClassTask) {
             out << " (isImpliedClassTask)";
+        }
+        if (nodeTask.willBeRelocated) {
+            out << " (willBeRelocated)";
         }
         return out;
     }
@@ -658,7 +664,14 @@ _PrimIndexDependentNodeEditProcessor::_AddSpecMoveEdits(
     // move the specs at this node and log a warning as we only want to move
     // these specs if it constitutes moving the entire composed prim stack at
     // this node.
-    if (_HasUneditedUpstreamSpecConflicts(node, oldSpecPath)) {
+    //
+    // We ignore this check if the node has new relocates that will be applied
+    // to it by the initial edit. Relocates are used specifically for "moving"
+    // specs from weaker nodes without editing their specs so we actually expect
+    // unedited spec conflicts in this case and have used relocates to handle
+    // them.
+    if (!nodeTask.willBeRelocated &&
+             _HasUneditedUpstreamSpecConflicts(node, oldSpecPath)) {
         return;
     }
 
@@ -1552,6 +1565,8 @@ PcpGatherDependentNamespaceEdits(
     const SdfPath &oldPrimPath,
     const SdfPath &newPrimPath,
     const SdfLayerHandleVector &affectedLayers,
+    const PcpLayerStackRefPtr &affectedRelocatesLayerStack,
+    const SdfLayerHandle &addRelocatesToLayerStackEditLayer,
     const std::vector<const PcpCache *> &dependentCaches)
 {
     TRACE_FUNCTION();
@@ -1562,6 +1577,75 @@ PcpGatherDependentNamespaceEdits(
     // Scratch space for spec move edits.
     _LayerSpecMovesScratch layerSpecMovesScratch;
 
+    // We don't author new relocates for the dependent prim indexes outside of 
+    // the explicit new relocates that we will determine for the 
+    // affectedRelocatesLayerStack if it is provided. Because of this, at each 
+    // dependent node we look for conflicting specs in its subtree that will not
+    // be edited (and otherwise would require something like relocates) in order
+    // to log a warning that the composed prim stack won't be fully  maintained
+    // by the edit. However, we won't have conflicting specs in nodes that are
+    // affected by the relocates edits above even if its subtree has unedited
+    // conflicting specs as the new relocates will effectively move those specs
+    // for us. All of this is to say that we need to pass the fact that the
+    // layer will have a relocates edit to the layer's dependent nodes so that
+    // they know to skip the conflicting subtree specs check.
+    //
+    // XXX: Note that this is actually a little simplified as what we really 
+    // need to know at each node is whether its layer stack's compose relocates
+    // will, after the above relocates are applied, effectively relocate the
+    // subtree specs that would've otherwise had to be moved. But that is much
+    // more complex and this simpler method gets the job done for the vast
+    // majority of cases.
+    //
+    // Create a new list of each of the input affected layers paired with 
+    // whether it has a relocates edit (which we initialize to false for all to
+    // start.)
+    std::vector<std::pair<SdfLayerHandle, bool>> 
+        affectedLayersAndHasRelocatesEdits;
+    affectedLayersAndHasRelocatesEdits.reserve(affectedLayers.size());
+    for (const auto &layer : affectedLayers) {
+        affectedLayersAndHasRelocatesEdits.push_back({layer, false});
+    }
+
+    // If we were passed a layer stack to add relocates to, we'll use the 
+    // relocates edit builder to process those now.
+    if (affectedRelocatesLayerStack) {
+        PcpLayerRelocatesEditBuilder builder(
+            affectedRelocatesLayerStack, addRelocatesToLayerStackEditLayer);
+        std::string error;
+        if (!builder.Relocate(oldPrimPath, newPrimPath, &error)) {
+            TF_CODING_ERROR("Cannot get relocates edits because: %s", 
+                error.c_str());                       
+        }
+        // For each initial relocates edit, we do three things:
+        // 1. Make sure the layer is put in the list of affected layers if it
+        //    isn't already. Adding a relocate is the same as moving a spec as
+        //    far as needing to update dependent prim indexes is concerned.
+        // 2. Marking the affected layer as having a relocates edit for when we
+        //    add the initial dependent node tasks.
+        // 3. Move the edit into relocates edit results that is returned at the
+        //    end.
+        for (auto &relocatesEdit : builder.GetEdits()) {
+            // Scoping for safety/clarity as the const reference of layer to
+            // relocatesEdit.first would become invalid after the relocatesEdit 
+            // is inserted by rvalue reference.
+            {
+                const SdfLayerHandle &layer = relocatesEdit.first;
+                auto foundIt = std::find_if(
+                    affectedLayersAndHasRelocatesEdits.begin(), 
+                    affectedLayersAndHasRelocatesEdits.end(),
+                    [&](const auto &entry) {
+                        return layer == entry.first;});
+                if (foundIt == affectedLayersAndHasRelocatesEdits.end()) {
+                    affectedLayersAndHasRelocatesEdits.push_back({layer, true});
+                } else {
+                    foundIt->second = true; 
+                }
+            }
+            edits.dependentRelocatesEdits.insert(std::move(relocatesEdit));
+        }
+    }
+
     for (const PcpCache *cache : dependentCaches) {
         _PRINT_DEBUG_SCOPE(
             "Computing dependent namespace edits for PcpCache %s", 
@@ -1571,7 +1655,10 @@ PcpGatherDependentNamespaceEdits(
         // that depend on the old prim site in this layer and determine what
         // additional edits are necesssary to propagate edits to composition
         // dependencies as best as possible.
-        for (const auto &layer : affectedLayers) {
+        for (const auto &entry : affectedLayersAndHasRelocatesEdits) {
+
+            const SdfLayerHandle &layer = entry.first;
+            const bool hasRelocatesEdits = entry.second;
 
             // Find all prim indexes which depend on the old prim path in this
             // layer. We recurse on site because moving or deleting a prim spec
@@ -1637,8 +1724,14 @@ PcpGatherDependentNamespaceEdits(
                 Pcp_ForEachDependentNode(
                     dep.sitePath, layer, dep.indexPath, *cache,
                     [&](const SdfPath &depIndexPath, const PcpNodeRef &node) {
+                        // If the dependent layer is was affected by the 
+                        // initial relocates edit, indicate in the node task 
+                        // that the node task has a relocates edit. 
+                        // XXX: This is the part that is a little oversimplified
+                        // as was mentioned earlier in this function.
                         dependentNodeProcessor.AddProcessEditsAtNodeTask(
-                            node, oldPrimPath, newPrimPath);
+                            node, oldPrimPath, newPrimPath, 
+                            /*willBeRelocated = */ hasRelocatesEdits);
                     });
                 dependentNodeProcessor.ProcessTasks();               
             }

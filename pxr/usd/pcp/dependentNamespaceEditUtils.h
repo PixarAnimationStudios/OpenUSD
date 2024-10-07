@@ -83,12 +83,20 @@ public:
 /// that would be affected by these edits and computes a full set of edits that
 /// would be required to maintain these dependent prim indexes' composed prim
 /// stacks, possibly moving the prim index to a new prim path if necessary.
+/// If \p addRelocatesToLayerStack is provided, this will also add a new 
+/// relocates edit to the necessary layers in the layer stack that moves
+/// oldPrimPath to newPrimPath. The layer \p addRelocatesToLayerStackEditLayer
+/// provided is only relevant when the relocates layer stack is also provided as
+/// it determines which specific layer in the layer stack will have a new
+/// relocates entry added to it (see PcpLayerRelocatesEditBuilder).
 PCP_API
 PcpDependentNamespaceEdits
 PcpGatherDependentNamespaceEdits(
     const SdfPath &oldPrimPath,
     const SdfPath &newPrimPath,
     const SdfLayerHandleVector &affectedLayers,
+    const PcpLayerStackRefPtr &addRelocatesToLayerStack,
+    const SdfLayerHandle &addRelocatesToLayerStackEditLayer,
     const std::vector<const PcpCache *> &dependentCaches);
 
 /// Gathers the list of layers that need to be edited to perform the spec move

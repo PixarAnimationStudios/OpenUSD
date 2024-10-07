@@ -57,6 +57,10 @@ void wrapUsdNamespaceEditor()
         .def(init<const UsdStagePtr &>())
         .def(init<const UsdStagePtr &, const This::EditOptions &>())
 
+        .def("AddDependentStage", &This::AddDependentStage)
+        .def("RemoveDependentStage", &This::RemoveDependentStage)
+        .def("SetDependentStages", &This::SetDependentStages)
+
         .def("DeletePrimAtPath", &This::DeletePrimAtPath)
         .def("MovePrimAtPath", &This::MovePrimAtPath)
 

@@ -13,9 +13,8 @@
 #include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/pcp/layerRelocatesEditBuilder.h"
+#include "pxr/usd/pcp/dependentNamespaceEditUtils.h"
 #include "pxr/usd/sdf/namespaceEdit.h"
-
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -51,6 +50,41 @@ public:
     UsdNamespaceEditor(
         const UsdStageRefPtr &stage, 
         const EditOptions &editOptions);
+
+    /// \name Dependent Stages
+    ///
+    /// Dependent stages are additional stages that may have composition 
+    /// dependencies on the layer edits made for the editor's primary stage.
+    /// By adding dependent stages, the editor can make additional edits so that
+    /// affected composition arcs and specs that depend on affected composition
+    /// in composed prims on these stages are updated to compose with the moved
+    /// prim specs or, in the case of deletions, removed when the specs they 
+    /// depend on are removed.
+    ///
+    /// Dependencies in the dependent stages are based only what is currently
+    /// loaded for those stages. In other words, the editor cannot find and
+    /// edit dependencies from unloaded payloads, inactive prim children, 
+    /// prims that are load mask filtered, unselected variants, etc. The primary
+    /// stage of this editor is always a dependent stage, meaning that edits 
+    /// will always be made to maintain affected composition dependencies in the
+    /// primary stage.
+    ///
+    /// @{
+
+    /// Adds the given \p stage as a dependent stage of this namespace editor.
+    USD_API
+    void AddDependentStage(const UsdStageRefPtr &stage);
+
+    /// Removes the given \p stage as a dependent stage of this namespace editor.
+    USD_API
+    void RemoveDependentStage(const UsdStageRefPtr &stage);
+
+    /// Sets the list of dependent stages for this namespace editor to 
+    /// \p stages.
+    USD_API
+    void SetDependentStages(const UsdStageRefPtrVector &stages);
+
+    /// @}
 
     /// Adds an edit operation to delete the composed prim at the given \p path 
     /// from this namespace editor's stage.
@@ -243,17 +277,15 @@ private:
         // edit of the composed stage object from being completed successfully.
         std::vector<std::string> errors;
 
-        // The Sdf batch namespace edit that needs to be applied to each layer
-        // with specs.
-        SdfBatchNamespaceEdit edits;
-        
+        // The edit description of the primary edit.
+        _EditDescription editDescription;
+
         // The list of layers that have specs that need to have the Sdf 
         // namespace edit applied.
         SdfLayerHandleVector layersToEdit;
 
-        // The list of relocates edits that need to be made to layers in order
-        // to relocate a prim.
-        PcpLayerRelocatesEditBuilder::LayerRelocatesEdits relocatesEdits;
+        // Whether performing the edit will author new relocates.
+        bool willAuthorRelocates = false;
 
         // Layer edits that need to be performed to update connection and 
         // relationship targets of other properties in order to keep them 
@@ -274,19 +306,15 @@ private:
         };
         std::vector<TargetPathListOpEdit> targetPathListOpEdits;
 
+        // Full set of namespace edits that need to be performed for all the
+        // dependent stages of this editor as a result of dependencies on the
+        // initial spec move edits.
+        PcpDependentNamespaceEdits dependentStageNamespaceEdits;
+
         // List of errors encountered that would prevent connection and 
         // relationship target edits from being performed in response to the
         // namespace edits.
         std::vector<std::string> targetPathListOpErrors;
-
-        // Reparent edits may require overs to be created for the new parent if
-        // a layer doesn't have any specs for the parent yet. This specifies the
-        // path of the parent specs to create if need.
-        SdfPath createParentSpecIfNeededPath;
-
-        // Some edits want to remove inert ancestor overs after a prim is
-        // removed from its parent spec in a layer.
-        bool removeInertAncestorOvers = false;
 
         // Applies this processed edit, performing the individual edits 
         // necessary to each layer that needs to be updated.
@@ -321,6 +349,10 @@ private:
     class _EditProcessor;
 
     UsdStageRefPtr _stage;
+    // Dependent stage order should be arbitrary but we want don't want 
+    // duplicates which can cause unnecessary work.
+    using _StageSet = std::unordered_set<UsdStageRefPtr, TfHash>;
+    _StageSet _dependentStages;
     EditOptions _editOptions;
     _EditDescription _editDescription;
     mutable std::optional<_ProcessedEdit> _processedEdit;   
