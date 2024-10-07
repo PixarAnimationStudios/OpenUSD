@@ -1002,6 +1002,7 @@ def InstallTBB_Windows(context, force, buildArgs):
 
 def InstallTBB_MacOS(context, force, buildArgs):
     tbb_url = TBB_URL if apple_utils.IsTargetArm(context) else TBB_INTEL_URL
+    target_name = apple_utils.GetTargetPlatform(context)
     with CurrentWorkingDirectory(DownloadURL(tbb_url, context, force)):
         # Ensure that the tbb build system picks the proper architecture.
         PatchFile("build/macos.clang.inc",
@@ -1011,7 +1012,7 @@ def InstallTBB_MacOS(context, force, buildArgs):
                   "ifeq ($(arch),$(filter $(arch),armv7 armv7s {0}))"
                         .format(apple_utils.GetTargetArmArch()))])
 
-        if context.buildTarget == apple_utils.TARGET_VISIONOS:
+        if target_name == apple_utils.TARGET_VISIONOS:
             # Create visionOS config from iOS config
             shutil.copy(
                 src="build/ios.macos.inc",
@@ -1052,7 +1053,7 @@ def InstallTBB_MacOS(context, force, buildArgs):
             env = os.environ.copy()
             if MacOSTargetEmbedded(context):
                 env["SDKROOT"] = apple_utils.GetSDKRoot(context)
-                buildArgs.append(f' compiler=clang arch=arm64 extra_inc=big_iron.inc target={context.buildTarget.lower()}')
+                buildArgs.append(f' compiler=clang arch=arm64 extra_inc=big_iron.inc target={target_name.lower()}')
             if context.buildAppleFramework and context.buildMonolithic:
                 # Force build of static libs as well
                 buildArgs.append(f" extra_inc=big_iron.inc ")
@@ -1918,8 +1919,6 @@ if MacOS():
                        help=("Build target for macOS cross compilation. "
                              "(default: {})".format(
                                 apple_utils.GetBuildTargetDefault())))
-    group.add_argument("--build-simulator", action="store_true",
-                       help="Build using the simulator SDK for embedded targets.")
     subgroup = group.add_mutually_exclusive_group()
     subgroup.add_argument("--build-apple-framework", dest="build_apple_framework", action="store_true",
                           help="Build USD as an Apple Framework (Default if using build)")
@@ -2253,7 +2252,6 @@ class InstallContext:
         if MacOS():
             self.buildTarget = args.build_target
             apple_utils.SetTarget(self, self.buildTarget)
-            self.buildSimulator = args.build_simulator
 
             self.macOSCodesign = False
             if args.macos_codesign:
@@ -2519,7 +2517,8 @@ if which("cmake"):
         cmake_required_version = (3, 19)
 
         # visionOS support was added in CMake 3.28
-        if context.buildTarget == apple_utils.TARGET_VISIONOS:
+        target_platform = apple_utils.GetTargetPlatform(context)
+        if target_platform == apple_utils.TARGET_VISIONOS:
             cmake_required_version = (3, 28)
     else:
         # Linux, and vfx platform CY2020, are verified to work correctly with 3.14

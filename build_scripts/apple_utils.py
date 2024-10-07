@@ -27,8 +27,11 @@ TARGET_ARM64 = "arm64"
 TARGET_UNIVERSAL = "universal"
 TARGET_IOS = "iOS"
 TARGET_VISIONOS = "visionOS"
+TARGET_IOS_SIMULATOR = "iOSSimulator"
+TARGET_VISIONOS_SIMULATOR = "visionOSSimulator"
 
-EMBEDDED_PLATFORMS = [TARGET_IOS, TARGET_VISIONOS]
+EMBEDDED_PLATFORMS = [TARGET_IOS, TARGET_IOS_SIMULATOR,
+                      TARGET_VISIONOS, TARGET_VISIONOS_SIMULATOR]
 
 def GetBuildTargets():
     return [TARGET_NATIVE,
@@ -36,7 +39,9 @@ def GetBuildTargets():
             TARGET_ARM64,
             TARGET_UNIVERSAL,
             TARGET_IOS,
-            TARGET_VISIONOS]
+            TARGET_IOS_SIMULATOR,
+            TARGET_VISIONOS,
+            TARGET_VISIONOS_SIMULATOR]
 
 def GetBuildTargetDefault():
     return TARGET_NATIVE
@@ -126,11 +131,12 @@ def GetSDKName(context) -> str:
     sdk = "macosx"
     if context.buildTarget == TARGET_IOS:
         sdk = "iPhoneOS"
+    elif context.buildTarget == TARGET_IOS_SIMULATOR:
+        sdk = "iPhoneSimulator"
     elif context.buildTarget == TARGET_VISIONOS:
         sdk = "xrOS"
-
-    if TargetEmbeddedOS(context) and context.buildSimulator:
-        sdk = sdk[:-2] + "Simulator"
+    elif context.buildTarget == TARGET_VISIONOS_SIMULATOR:
+        sdk = "xrSimulator"
 
     return sdk
 
@@ -149,8 +155,9 @@ def SetTarget(context, targetName):
     context.targetX86 = (targetName == TARGET_X86)
     context.targetARM64 = (targetName == GetTargetArmArch())
     context.targetUniversal = (targetName == TARGET_UNIVERSAL)
-    context.targetIOS = (targetName == TARGET_IOS)
-    context.targetVisionOS = (targetName == TARGET_VISIONOS)
+    context.targetIOS = (targetName in (TARGET_IOS, TARGET_IOS_SIMULATOR))
+    context.targetVisionOS = (targetName in (TARGET_VISIONOS, TARGET_VISIONOS_SIMULATOR))
+    context.targetSimulator = (targetName in (TARGET_IOS_SIMULATOR, TARGET_VISIONOS_SIMULATOR))
     if context.targetUniversal and not SupportsMacOSUniversalBinaries():
         context.targetUniversal = False
         raise ValueError(
@@ -162,6 +169,9 @@ def GetTargetName(context):
             GetTargetArmArch() if context.targetARM64 else
             TARGET_UNIVERSAL if context.targetUniversal else
             context.buildTarget)
+
+def GetTargetPlatform(context):
+    return GetTargetName(context).replace("Simulator", "")
 
 devout = open(os.devnull, 'w')
 
@@ -283,7 +293,7 @@ def CreateUniversalBinaries(context, libNames, x86Dir, armDir):
 def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
     system_name = None
     if TargetEmbeddedOS(context):
-        system_name = context.buildTarget
+        system_name = GetTargetPlatform(context)
 
     if system_name:
         args.append(f"-DCMAKE_SYSTEM_NAME={system_name}")
@@ -301,3 +311,11 @@ def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
         args.append(f"-DCMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM={GetDevelopmentTeamID()}")
 
     return args
+
+def BuildMultipleTargets(args, context_class):
+    if not args.no_build_apple_framework:
+        embedded_targets = any(t for t in args.build_target if t in EMBEDDED_PLATFORMS)
+        args.build_apple_framework = embedded_targets
+
+    root = args.install_dir
+    raise RuntimeError("Testing")
