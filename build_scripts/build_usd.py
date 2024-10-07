@@ -1002,7 +1002,6 @@ def InstallTBB_Windows(context, force, buildArgs):
 
 def InstallTBB_MacOS(context, force, buildArgs):
     tbb_url = TBB_URL if apple_utils.IsTargetArm(context) else TBB_INTEL_URL
-    target_name = apple_utils.GetTargetPlatform(context)
     with CurrentWorkingDirectory(DownloadURL(tbb_url, context, force)):
         # Ensure that the tbb build system picks the proper architecture.
         PatchFile("build/macos.clang.inc",
@@ -1012,30 +1011,21 @@ def InstallTBB_MacOS(context, force, buildArgs):
                   "ifeq ($(arch),$(filter $(arch),armv7 armv7s {0}))"
                         .format(apple_utils.GetTargetArmArch()))])
 
-        if target_name == apple_utils.TARGET_VISIONOS:
-            # Create visionOS config from iOS config
+        if MacOSTargetEmbedded(context) and context.buildTarget != apple_utils.TARGET_IOS:
+            target_config_patches, clang_config_patches  = apple_utils.GetTBBPatches(context)
+            # Create config from iOS config
             shutil.copy(
                 src="build/ios.macos.inc",
-                dst="build/visionos.macos.inc")
+                dst=f"build/{context.buildTarget.lower()}.macos.inc")
 
-            PatchFile("build/visionos.macos.inc",
-                      [("ios","visionos"),
-                       ("iOS", "visionOS"),
-                       ("iPhone", "XR"),
-                       ("IPHONEOS","XROS"),
-                       ("?= 8.0", "?= 1.0")])
+            PatchFile(f"build/{context.buildTarget.lower()}.macos.inc", target_config_patches)
 
             # iOS clang just reuses the macOS one,
             # so it's easier to copy it directly.
             shutil.copy(src="build/macos.clang.inc",
-                        dst="build/visionos.clang.inc")
+                        dst=f"build/{context.buildTarget.lower()}.clang.inc")
 
-            PatchFile("build/visionos.clang.inc",
-                      [("ios","visionos"),
-                       ("-miphoneos-version-min=", "-target arm64-apple-xros"),
-                       ("iOS", "visionOS"),
-                       ("iPhone", "XR"),
-                       ("IPHONEOS","XROS")])
+            PatchFile(f"build/{context.buildTarget.lower()}.clang.inc",clang_config_patches)
 
         (primaryArch, secondaryArch) = apple_utils.GetTargetArchPair(context)
 
@@ -1053,7 +1043,7 @@ def InstallTBB_MacOS(context, force, buildArgs):
             env = os.environ.copy()
             if MacOSTargetEmbedded(context):
                 env["SDKROOT"] = apple_utils.GetSDKRoot(context)
-                buildArgs.append(f' compiler=clang arch=arm64 extra_inc=big_iron.inc target={target_name.lower()}')
+                buildArgs.append(f' compiler=clang arch=arm64 extra_inc=big_iron.inc target={context.buildTarget.lower()}')
             if context.buildAppleFramework and context.buildMonolithic:
                 # Force build of static libs as well
                 buildArgs.append(f" extra_inc=big_iron.inc ")
@@ -2376,7 +2366,7 @@ if extraPythonPaths:
 if context.buildOneTBB:
     TBB = ONETBB
 
-requiredDependencies = [ZLIB, TBB]
+requiredDependencies = [TBB]
 
 if context.buildBoostPython:
     requiredDependencies += [BOOST]

@@ -300,6 +300,44 @@ def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
 
     return args
 
+def GetTBBPatches(context):
+    if context.buildTarget not in EMBEDDED_PLATFORMS or context.buildTarget == TARGET_IOS:
+        # TBB already handles these so we don't patch them out
+        return [], []
+
+    sdk_name = GetSDKName(context)
+
+    # Standard Target based names
+    target_config_patches = [("ios", context.buildTarget.lower()),
+                             ("iOS", context.buildTarget),
+                             ("IPHONEOS", sdk_name.upper())]
+
+    clang_config_patches = [("ios",context.buildTarget.lower()),
+                            ("iOS", context.buildTarget),
+                            ("IPHONEOS",sdk_name.upper())]
+
+    # SDK Name's root and minimum visionOS version change
+    if context.buildTarget in (TARGET_VISIONOS, TARGET_VISIONOS_SIMULATOR):
+        target_config_patches.extend([("iPhone", "XR"),
+                                      ("?= 8.0", "?= 1.0")])
+
+        clang_config_patches.append(("iPhone", "XR"),)
+
+    if context.buildTarget == TARGET_VISIONOS:
+        clang_config_patches.append(("-miphoneos-version-min=", "-target arm64-apple-xros"))
+    else:
+        sdk_root = GetSDKRoot(context)
+        version=os.path.basename(sdk_root).split("Simulator")[-1].replace(".sdk","")
+
+        if context.buildTarget == TARGET_VISIONOS_SIMULATOR:
+            clang_config_patches.append(("-miphoneos-version-min=", f"-target arm64-apple-xros{version}-simulator"))
+        elif context.buildTarget == TARGET_IOS_SIMULATOR:
+            clang_config_patches.append(("-miphoneos-version-min=", f"-target arm64-apple-ios{version}-simulator"))
+
+    return target_config_patches, clang_config_patches
+
+
+
 def BuildXCFramework(root, targets, args):
     print(f"Building {len(targets)} targets...")
     shared_sources = os.path.join(root, "shared_sources")
