@@ -353,7 +353,6 @@ def BuildXCFramework(root, targets, args):
         os.makedirs(target_src_dir, exist_ok=True)
         framework = os.path.join(install_dir, "frameworks/OpenUSD.framework")
         framework_list.append(framework)
-        continue
 
         # Copy the shared sources over to save time
         for src in os.listdir(shared_sources):
@@ -385,7 +384,8 @@ def BuildXCFramework(root, targets, args):
     if os.path.exists(xcframework_dir):
         shutil.rmtree(xcframework_dir)
     os.makedirs(xcframework_dir, exist_ok=True)
-    command = ["xcodebuild","-create-xcframework", "-output", os.path.join(xcframework_dir, "OpenUSD.xcframework")]
+    xcframework_path = os.path.join(xcframework_dir, "OpenUSD.xcframework")
+    command = ["xcodebuild","-create-xcframework", "-output", xcframework_path]
     for framework in framework_list:
         command.extend(["-framework", framework])
 
@@ -393,6 +393,9 @@ def BuildXCFramework(root, targets, args):
         subprocess.check_call(command)
     except:
         raise RuntimeError(f"Failed to create XCFramework using {' '.join(command)}")
+
+    subprocess.check_call(["codesign", "--timestamp", "-s", GetCodeSignID(), xcframework_path])
+
 
     print("""Success! Add the OpenUSD.xcframework to your Xcode Project.""")
 
