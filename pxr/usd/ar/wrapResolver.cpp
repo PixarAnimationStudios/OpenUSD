@@ -94,6 +94,8 @@ wrapResolver()
              (args("assetPath"), args("resolvedPath")))
         .def("GetModificationTimestamp", &This::GetModificationTimestamp,
              (args("assetPath"), args("resolvedPath")))
+        .def("OpenAsset", &This::OpenAsset,
+             (args("resolvedPath")))
         .def("GetExtension", &This::GetExtension,
              args("assetPath"))
 

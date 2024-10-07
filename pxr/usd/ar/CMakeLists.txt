@@ -55,6 +55,7 @@ pxr_library(ar
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapAsset.cpp
         wrapAssetInfo.cpp
         wrapDefaultResolverContext.cpp
         wrapDefaultResolver.cpp
@@ -81,6 +82,7 @@ pxr_test_scripts(
     testenv/testArAssetInfo.py
     testenv/testArAdvancedAPI.py
     testenv/testArDefaultResolver.py
+    testenv/testArOpenAsset.py
     testenv/testArPackageUtils.py
     testenv/testArResolvedPath.py
     testenv/testArResolverContext.py
@@ -271,6 +273,11 @@ pxr_register_test(testArDefaultResolver
 
 pxr_register_test(testArDefaultResolver_CPP
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArDefaultResolver_CPP"
+)
+
+pxr_register_test(testArOpenAsset
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArOpenAsset"
 )
 
 pxr_register_test(testArPackageUtils
