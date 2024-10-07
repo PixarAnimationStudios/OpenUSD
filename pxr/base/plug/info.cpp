@@ -287,6 +287,16 @@ _TranslateWildcardToRegex(const std::string& wildcard)
         case '.':
         case '[':
         case ']':
+        case '+':
+        case '?':
+        case '^':
+        case '$':
+        case '(':
+        case ')':
+        case '{':
+        case '}':
+        case '|':
+        case '\\':
             // Escaped literal.
             result.push_back('\\');
             result.push_back(c);
@@ -391,22 +401,21 @@ _ReadPlugInfoWithWildcards(_ReadContext* context, const std::string& pathname)
         return;
     }
 
-    // Converts backslashes to forward slashes for Windows.
-    std::string normalized = TfStringReplace(pathname, "\\", "/");
+    // Normalizes the path, replacing \ with / and removing . and ..
+    // ** won't be touched by this operation.
+    std::string normalized = TfNormPath(pathname);
 
     // Find longest non-wildcarded prefix directory.
-    std::string::size_type j = normalized.rfind('/', i);
-    std::string dirname = TfNormPath(normalized.substr(0, j));
-    std::string pattern = normalized.substr(j + 1);
+    std::string::size_type j = normalized.rfind('/', normalized.find("**"));
+    std::string dirname = normalized.substr(0, j);
 
     // Convert to regex.
-    pattern = _TranslateWildcardToRegex(pattern);
+    std::string pattern = _TranslateWildcardToRegex(normalized);
 
-    // Append implied filename and build full regex string.
-    pattern = TfStringPrintf("%s/%s%s",
-                             dirname.c_str(), pattern.c_str(),
-                             !pattern.empty() && *pattern.rbegin() == '/'
-                             ? _Tokens->PlugInfoName.GetText() : "");
+    // Append implied filename if need be.
+    if (!pattern.empty() && *pattern.rbegin() == '/') {
+        pattern.append(_Tokens->PlugInfoName.GetText());
+    }
 
     std::shared_ptr<std::regex> re;
     try {
