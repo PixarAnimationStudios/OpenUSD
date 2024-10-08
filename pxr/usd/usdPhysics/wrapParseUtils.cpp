@@ -499,7 +499,7 @@ static std::string
 _CustomUsdPhysicsTokens_Repr(const CustomUsdPhysicsTokens& self)
 {
     return TfStringPrintf("%sCustomUsdPhysicsTokens(jointTokens=%s, shapeTokens=%s, instancerTokens=%s)",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.jointTokens).c_str(),
         TfPyRepr(self.shapeTokens).c_str(),
         TfPyRepr(self.instancerTokens).c_str());
@@ -509,7 +509,7 @@ static std::string
 _PhysicsObjectDesc_Repr(const UsdPhysicsObjectDesc& self)
 {
     return TfStringPrintf("%sPhysicsObjectDesc(type=%s, primPath=%s, isValid=%s)",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.type).c_str(),
         TfPyRepr(self.primPath).c_str(),
         TfPyRepr(self.isValid).c_str());
@@ -519,7 +519,7 @@ static std::string
 _SceneDesc_Repr(const UsdPhysicsSceneDesc& self)
 {
     return TfStringPrintf("%sSceneDesc(gravityDirection=%s, gravityMagnitude=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.gravityDirection).c_str(),
         TfPyRepr(self.gravityMagnitude).c_str(),
         _PhysicsObjectDesc_Repr(self).c_str());
@@ -529,7 +529,7 @@ static std::string
 _CollisionGroupDesc_Repr(const UsdPhysicsCollisionGroupDesc& self)
 {
     return TfStringPrintf("%sCollisionGroupDesc(invertFilteredGroups=%s, mergeGroupName=%s, mergedGroups=%s, filteredGroups=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.invertFilteredGroups).c_str(),
         TfPyRepr(self.mergeGroupName).c_str(),
         TfPyRepr(self.mergedGroups).c_str(),
@@ -541,7 +541,7 @@ static std::string
 _RigidBodyMaterialDesc_Repr(const UsdPhysicsRigidBodyMaterialDesc& self)
 {
     return TfStringPrintf("%sRigidBodyMaterialDesc(staticFriction=%s, dynamicFriction=%s, restitution=%s, density=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.staticFriction).c_str(),
         TfPyRepr(self.dynamicFriction).c_str(),
         TfPyRepr(self.restitution).c_str(),
@@ -553,7 +553,7 @@ static std::string
 _ShapeDesc_Repr(const UsdPhysicsShapeDesc& self)
 {
     return TfStringPrintf("%sShapeDesc(rigidBody=%s, localPos=%s, localRot=%s, localScale=%s, materials=%s, simulationOwners=%s, filteredCollisions=%s, collisionGroups=%s, collisionEnabled=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.rigidBody).c_str(),
         TfPyRepr(self.localPos).c_str(),
         TfPyRepr(self.localRot).c_str(),
@@ -570,7 +570,7 @@ static std::string
 _SphereShapeDesc_Repr(const UsdPhysicsSphereShapeDesc& self)
 {
     return TfStringPrintf("%sSphereShapeDesc(radius=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.radius).c_str(),
         _ShapeDesc_Repr(self).c_str());
 }
@@ -579,7 +579,7 @@ static std::string
 _CapsuleShapeDesc_Repr(const UsdPhysicsCapsuleShapeDesc& self)
 {
     return TfStringPrintf("%sCapsuleShapeDesc(radius=%s, halfHeight=%s, axis=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.radius).c_str(),
         TfPyRepr(self.halfHeight).c_str(),
         TfPyRepr(self.axis).c_str(),
@@ -590,7 +590,7 @@ static std::string
 _CylinderShapeDesc_Repr(const UsdPhysicsCylinderShapeDesc& self)
 {
     return TfStringPrintf("%sCylinderShapeDesc(radius=%s, halfHeight=%s, axis=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.radius).c_str(),
         TfPyRepr(self.halfHeight).c_str(),
         TfPyRepr(self.axis).c_str(),
@@ -601,7 +601,7 @@ static std::string
 _ConeShapeDesc_Repr(const UsdPhysicsConeShapeDesc& self)
 {
     return TfStringPrintf("%sConeShapeDesc(radius=%s, halfHeight=%s, axis=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.radius).c_str(),
         TfPyRepr(self.halfHeight).c_str(),
         TfPyRepr(self.axis).c_str(),
@@ -612,7 +612,7 @@ static std::string
 _PlaneShapeDesc_Repr(const UsdPhysicsPlaneShapeDesc& self)
 {
     return TfStringPrintf("%sPlaneShapeDesc(axis=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.axis).c_str(),
         _ShapeDesc_Repr(self).c_str());
 }
@@ -621,7 +621,7 @@ static std::string
 _CustomShapeDesc_Repr(const UsdPhysicsCustomShapeDesc& self)
 {
     return TfStringPrintf("%sCustomShapeDesc(customGeometryToken=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.customGeometryToken).c_str(),
         _ShapeDesc_Repr(self).c_str());
 }
@@ -630,7 +630,7 @@ static std::string
 _CubeShapeDesc_Repr(const UsdPhysicsCubeShapeDesc& self)
 {
     return TfStringPrintf("%sCubeShapeDesc(halfExtents=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.halfExtents).c_str(),
         _ShapeDesc_Repr(self).c_str());
 }
@@ -639,7 +639,7 @@ static std::string
 _MeshShapeDesc_Repr(const UsdPhysicsMeshShapeDesc& self)
 {
     return TfStringPrintf("%sMeshShapeDesc(approximation=%s, meshScale=%s, doubleSided=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.approximation).c_str(),
         TfPyRepr(self.meshScale).c_str(),
         TfPyRepr(self.doubleSided).c_str(),
@@ -650,7 +650,7 @@ static std::string
 _SpherePoint_Repr(const UsdPhysicsSpherePoint& self)
 {
     return TfStringPrintf("%sSpherePoint(center=%s, radius=%s)",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.center).c_str(),
         TfPyRepr(self.radius).c_str());
 }
@@ -659,7 +659,7 @@ static std::string
 _SpherePointsShapeDesc_Repr(const UsdPhysicsSpherePointsShapeDesc& self)
 {
     return TfStringPrintf("%sSpherePointsShapeDesc(spherePoints=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.spherePoints).c_str(),
         _ShapeDesc_Repr(self).c_str());
 }
@@ -668,7 +668,7 @@ static std::string
 _RigidBodyDesc_Repr(const UsdPhysicsRigidBodyDesc& self)
 {
     return TfStringPrintf("%sRigidBodyDesc(collisions=%s, filteredCollisions=%s, simulationOwners=%s, position=%s, rotation=%s, scale=%s, rigidBodyEnabled=%s, kinematicBody=%s, startsAsleep=%s, linearVelocity=%s, angularVelocity=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.collisions).c_str(),
         TfPyRepr(self.filteredCollisions).c_str(),
         TfPyRepr(self.simulationOwners).c_str(),
@@ -687,7 +687,7 @@ static std::string
 _JointLimit_Repr(const UsdPhysicsJointLimit& self)
 {
     return TfStringPrintf("%sJointLimit(enabled=%s, lower=%s, upper=%s)",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.enabled).c_str(),
         TfPyRepr(self.lower).c_str(),
         TfPyRepr(self.upper).c_str());
@@ -697,7 +697,7 @@ static std::string
 _JointDrive_Repr(const UsdPhysicsJointDrive& self)
 {
     return TfStringPrintf("%sJointDrive(enabled=%s, targetPosition=%s, targetVelocity=%s, forceLimit=%s, stiffness=%s, damping=%s, acceleration=%s)",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.enabled).c_str(),
         TfPyRepr(self.targetPosition).c_str(),
         TfPyRepr(self.targetVelocity).c_str(),
@@ -711,7 +711,7 @@ static std::string
 _ArticulationDesc_Repr(const UsdPhysicsArticulationDesc& self)
 {
     return TfStringPrintf("%sArticulationDesc(rootPrims=%s, filteredCollisions=%s, articulatedJoints=%s, articulatedBodies=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.rootPrims).c_str(),
         TfPyRepr(self.filteredCollisions).c_str(),
         TfPyRepr(self.articulatedJoints).c_str(),
@@ -723,7 +723,7 @@ static std::string
 _JointDesc_Repr(const UsdPhysicsJointDesc& self)
 {
     return TfStringPrintf("%sJointDesc(rel0=%s, rel1=%s, body0=%s, body1=%s, localPose0Position=%s, localPose0Orientation=%s, localPose1Position=%s, localPose1Orientation=%s, jointEnabled=%s, breakForce=%s, breakTorque=%s, excludeFromArticulation=%s, collisionEnabled=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.rel0).c_str(),
         TfPyRepr(self.rel1).c_str(),
         TfPyRepr(self.body0).c_str(),
@@ -744,7 +744,7 @@ static std::string
 _JointLimitDOFPair_Repr(const std::pair<UsdPhysicsJointDOF::Enum, UsdPhysicsJointLimit>& self)
 {
     return TfStringPrintf("%sJointLimitDOFPair(first=%s, second=%s)",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.first).c_str(),
         TfPyRepr(self.second).c_str());
 }
@@ -753,7 +753,7 @@ static std::string
 _JointDriveDOFPair_Repr(const std::pair<UsdPhysicsJointDOF::Enum, UsdPhysicsJointDrive>& self)
 {
     return TfStringPrintf("%sJointDriveDOFPair(first=%s, second=%s)",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.first).c_str(),
         TfPyRepr(self.second).c_str());
 }
@@ -762,7 +762,7 @@ static std::string
 _D6JointDesc_Repr(const UsdPhysicsD6JointDesc& self)
 {
     return TfStringPrintf("%sD6JointDesc(jointLimits=%s, jointDrives=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.jointLimits).c_str(),
         TfPyRepr(self.jointDrives).c_str(),
         _JointDesc_Repr(self).c_str());
@@ -772,7 +772,7 @@ static std::string
 _PrismaticJointDesc_Repr(const UsdPhysicsPrismaticJointDesc& self)
 {
     return TfStringPrintf("%sPrismaticJointDesc(axis=%s, limit=%s, drive=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.axis).c_str(),
         TfPyRepr(self.limit).c_str(),
         TfPyRepr(self.drive).c_str(),
@@ -783,7 +783,7 @@ static std::string
 _SphericalJointDesc_Repr(const UsdPhysicsSphericalJointDesc& self)
 {
     return TfStringPrintf("%sSphericalJointDesc(axis=%s, limit=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.axis).c_str(),
         TfPyRepr(self.limit).c_str(),
         _JointDesc_Repr(self).c_str());
@@ -793,7 +793,7 @@ static std::string
 _RevoluteJointDesc_Repr(const UsdPhysicsRevoluteJointDesc& self)
 {
     return TfStringPrintf("%sRevoluteJointDesc(axis=%s, limit=%s, drive=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.axis).c_str(),
         TfPyRepr(self.limit).c_str(),
         TfPyRepr(self.drive).c_str(),
@@ -804,7 +804,7 @@ static std::string
 _DistanceJointDesc_Repr(const UsdPhysicsDistanceJointDesc& self)
 {
     return TfStringPrintf("%sDistanceJointDesc(minEnabled=%s, limit=%s, maxEnabled=%s), parent %s",
-        TF_PY_REPR_PREFIX,
+        TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.minEnabled).c_str(),
         TfPyRepr(self.limit).c_str(),
         TfPyRepr(self.maxEnabled).c_str(),
