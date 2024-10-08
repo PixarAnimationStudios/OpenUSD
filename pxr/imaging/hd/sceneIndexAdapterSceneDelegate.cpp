@@ -477,11 +477,11 @@ _IsVisible(const HdContainerDataSourceHandle& primSource)
 }
 
 static SdfPath
-_GetBoundMaterialPath(const HdContainerDataSourceHandle& ds)
+_GetBoundMaterialPath(const HdContainerDataSourceHandle& ds, const TfToken& purpose)
 {
     if (const auto bindingsSchema = HdMaterialBindingsSchema::GetFromParent(ds)) {
         if (const HdMaterialBindingSchema bindingSchema =
-            bindingsSchema.GetMaterialBinding()) {
+            bindingsSchema.GetMaterialBinding(purpose)) {
             if (const HdPathDataSourceHandle ds = bindingSchema.GetPath()) {
                 return ds->GetTypedValue(0.0f);
             }
@@ -514,7 +514,8 @@ static void
 _GatherGeomSubsets(
     const SdfPath& parentPath,
     const HdSceneIndexBaseRefPtr& sceneIndex,
-    HdTopology* topology)
+    HdTopology* topology,
+    const TfToken& materialBindingPurpose)
 {
     TF_VERIFY(topology);
     HdGeomSubsets subsets;
@@ -563,7 +564,7 @@ _GatherGeomSubsets(
             }
             continue;
         }
-        const SdfPath materialId = _GetBoundMaterialPath(child.dataSource);
+        const SdfPath materialId = _GetBoundMaterialPath(child.dataSource, materialBindingPurpose);
         if (materialId.IsEmpty()) {
             continue;
         }
@@ -631,8 +632,9 @@ HdSceneIndexAdapterSceneDelegate::GetMeshTopology(SdfPath const &id)
         faceVertexCountsDataSource->GetTypedValue(0.0f),
         faceVertexIndicesDataSource->GetTypedValue(0.0f),
         holeIndices);
-    
-    _GatherGeomSubsets(id, _inputSceneIndex, &meshTopology);
+
+    TfToken materialBindingPurpose = GetRenderIndex().GetRenderDelegate()->GetMaterialBindingPurpose();
+    _GatherGeomSubsets(id, _inputSceneIndex, &meshTopology, materialBindingPurpose);
 
     return meshTopology;
 }
@@ -916,8 +918,9 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialId(SdfPath const & id)
     HdMaterialBindingsSchema materialBindings =
         HdMaterialBindingsSchema::GetFromParent(
             prim.dataSource);
+    TfToken purpose = GetRenderIndex().GetRenderDelegate()->GetMaterialBindingPurpose();
     HdMaterialBindingSchema materialBinding =
-        materialBindings.GetMaterialBinding();
+        materialBindings.GetMaterialBinding(purpose);
     if (HdPathDataSourceHandle const ds = materialBinding.GetPath()) {
         return ds->GetTypedValue(0.0f);
     }
