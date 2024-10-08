@@ -843,7 +843,8 @@ HdSceneIndexAdapterSceneDelegate::GetBasisCurvesTopology(SdfPath const &id)
         curveVertexCountsDataSource->GetTypedValue(0.0f),
         curveIndices);
 
-    _GatherGeomSubsets(id, _inputSceneIndex, &result);
+    TfToken materialBindingPurpose = GetRenderIndex().GetRenderDelegate()->GetMaterialBindingPurpose();
+    _GatherGeomSubsets(id, _inputSceneIndex, &result, materialBindingPurpose);
 
     return result;
 }
