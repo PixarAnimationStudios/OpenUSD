@@ -196,7 +196,11 @@ _ComputeStdlibSearchPaths()
         binaryPath = TfGetPathName(binaryPath);
     }
     stdlibSearchPaths =
+    #if defined(ARCH_OS_IPHONE)
         _MergeSearchPaths(stdlibSearchPaths, { TfStringCatPaths(binaryPath, "../Resources/materialx") });
+    #else
+        _MergeSearchPaths(stdlibSearchPaths, { TfStringCatPaths(binaryPath, "../Assets/materialx") });
+    #endif
 #endif
 
     return stdlibSearchPaths;

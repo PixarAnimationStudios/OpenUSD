@@ -1423,12 +1423,6 @@ function(pxr_create_apple_framework)
         set(EMBEDDED_BUILD "false")
     endif()
 
-    if (PXR_BUILD_MONOLITHIC)
-        set(MONOLITHIC_BUILD "true")
-    else()
-        set(MONOLITHIC_BUILD "false")
-    endif()
-
     _get_library_prefix(LIB_PREFIX)
     if(TARGET usd_ms)
         set(FRAMEWORK_ROOT_LIBRARY_NAME "${LIB_PREFIX}usd_ms.dylib")

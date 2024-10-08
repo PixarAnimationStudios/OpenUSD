@@ -179,7 +179,7 @@ Builds for Apple platforms may optionally build as a framework using the `--buil
 **NOTE:** This feature is experimental and may change how it functions in future USD builds.
 
 - Framework builds are enabled by default for iOS and visionOS build targets. It can optionally be enabled for macOS.
-- Framework builds enable monolithic builds by default. This may be overridden but is not currently a tested scenario.
+- Framework builds require monolithic builds. 
 - Building a universal macOS framework is currently not supported. Please generate the arches separately and `lipo` 
   them together after.
 

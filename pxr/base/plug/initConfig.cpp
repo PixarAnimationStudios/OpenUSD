@@ -94,7 +94,11 @@ ARCH_CONSTRUCTOR(Plug_InitConfig, 2, void)
     _AppendPathList(&result, pluginBuildLocation, binaryPath);
 
 #ifdef PXR_BUILD_APPLE_FRAMEWORK
+#if defined(ARCH_OS_IPHONE)
+    _AppendPathList(&result, "Assets/usd", binaryPath);
+#else
     _AppendPathList(&result, "Resources/usd", binaryPath);
+#endif
 #endif
 
 #ifdef PXR_INSTALL_LOCATION
