@@ -303,7 +303,7 @@ static void streamValue(std::ostringstream &stream, T const &value) {
     }
 }
 
-static unsigned int
+static inline unsigned int
 Vt_ComputeEffectiveRankAndLastDimSize(
     Vt_ShapeData const *sd, size_t *lastDimSize)
 {

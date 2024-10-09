@@ -210,7 +210,7 @@ HdSt_TestDriverBase<SceneDelegate>::_Init(HdReprSelector const &reprSelector)
     tracker.AddCollection(_collection.GetName());
 }
 
-static
+static inline
 HdCamera::Projection
 _ToHd(const GfCamera::Projection projection)
 {
