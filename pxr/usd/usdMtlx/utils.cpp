@@ -197,9 +197,9 @@ _ComputeStdlibSearchPaths()
     }
     stdlibSearchPaths =
     #if defined(ARCH_OS_IPHONE)
-        _MergeSearchPaths(stdlibSearchPaths, { TfStringCatPaths(binaryPath, "../Resources/materialx") });
-    #else
         _MergeSearchPaths(stdlibSearchPaths, { TfStringCatPaths(binaryPath, "../Assets/materialx") });
+    #else
+        _MergeSearchPaths(stdlibSearchPaths, { TfStringCatPaths(binaryPath, "../Resources/materialx") });
     #endif
 #endif
 
