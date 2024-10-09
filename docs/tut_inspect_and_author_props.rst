@@ -79,7 +79,7 @@ Tutorial
    .. code-block:: pycon
 
       >>> radiusAttr = sphere.GetAttribute('radius')
-       >>> radiusAttr.Set(2)
+      >>> radiusAttr.Set(2)
       True
       >>> extentAttr.Set(extentAttr.Get() * 2)
       True
