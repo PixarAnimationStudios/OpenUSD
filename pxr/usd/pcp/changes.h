@@ -150,6 +150,13 @@ private:
     // not its contents.  Because this causes no externally-observable
     // changes in state, clients do not need to be aware of these changes.
     SdfPathSet _didChangeSpecsInternal;
+
+    // This set serves a similar purpose to _didChangeSpecsInternal above,
+    // however, during processing descendants of the specs in this set will also
+    // be marked as changed. A performance gain is accomplished by placing the
+    // ancestor specs in this set and marking children iteratively when applying
+    // changes to the cache.
+    SdfPathSet _didChangeSpecsAndChildrenInternal;
 };
 
 /// Structure used to temporarily retain layers and layerStacks within
@@ -436,17 +443,24 @@ private:
     void _DidChangeSpecStackInternal(
         const PcpCache* cache, const SdfPath& path);
 
-    // During change processing for added/removed or muted/unmuted layers,
-    // layer stacks and dependant paths need to be marked as having changed
-    // so that relevant data can be recalculated when the cache is applied.
-    // The \p markRefsOrPayloadSitesAsChanged parameter controls if, when
-    // traversing dependencies, if one is introduced via a reference or
-    // payload then that site will be marked as having changed significantly.
-    // This is set when processing changes for muted and unmuted layers.
+    void _DidChangeSpecStackAndChildrenInternal(
+        const PcpCache* cache, const SdfPath& path);
+
+    // This method is used when processing layer operations.  It ensures that
+    // affected layer stacks and their dependent spec stacks are marked as
+    // changed.
     void _ProcessLayerStackAndDependencyChanges(
         const PcpCache* cache,
-        const PcpLayerStackPtrVector& layerStacks,
-        bool markRefsOrPayloadSitesAsChanged);
+        const PcpLayerStackPtrVector& layerStacks);
+
+    // When muting or unmuting a layer that is being referenced or payloaded,
+    // we need to ensure that all the relevant sites are recomposed.  This
+    // function searches site dependencies of the provided layer stacks and
+    // marks those that are introduced via reference or payload arcs as
+    // significantly changed.
+    void _MarkReferencingSitesAsSignificantlyChanged(
+        const PcpCache* cache,
+        const PcpLayerStackPtrVector& layerStacks);
 
 private:
     LayerStackChanges _layerStackChanges;

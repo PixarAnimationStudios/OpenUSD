@@ -1073,6 +1073,13 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
             updateSpecStacks(*i);
         }
 
+        TF_FOR_ALL(i, changes._didChangeSpecsAndChildrenInternal) {
+            auto range = _primIndexCache.FindSubtreeRange(*i);
+            for (auto i = range.first; i != range.second; ++i) {
+                updateSpecStacks(i->first);
+            }
+        }
+
         // Fix the keys for any prim or property under any of the renamed
         // paths.
         // XXX: It'd be nice if this was a usd by just adjusting

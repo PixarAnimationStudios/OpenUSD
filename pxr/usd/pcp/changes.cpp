@@ -1446,12 +1446,14 @@ void PcpChanges::DidMuteAndUnmuteLayers(
     }
 }
 
-void PcpChanges::_ProcessLayerStackAndDependencyChanges(
+void 
+PcpChanges::_MarkReferencingSitesAsSignificantlyChanged(
     const PcpCache* cache,
-    const PcpLayerStackPtrVector& layerStacks,
-    bool markRefsOrPayloadSitesAsChanged)
+    const PcpLayerStackPtrVector& layerStacks)
 {
     TRACE_FUNCTION();
+
+    const PcpCacheChanges& cacheChanges = _GetCacheChanges(cache);
 
     const auto refOrPayloadChangeFunc = 
         [this, cache](const SdfPath &depIndexPath, 
@@ -1465,6 +1467,35 @@ void PcpChanges::_ProcessLayerStackAndDependencyChanges(
             }
         };
 
+    for (const PcpLayerStackPtr& layerStack : layerStacks) {
+        PcpDependencyVector deps = cache->FindSiteDependencies(
+            layerStack,
+            SdfPath::AbsoluteRootPath(), 
+            PcpDependencyTypeAnyIncludingVirtual,
+            /* recurseOnSite */ true,
+            /* recurseOnIndex */ false,
+            /* filter */ true);
+
+        for(const PcpDependency &dep: deps) {
+            // This ensures that all sites which reference this layer are
+            // also marked as having changed significantly.
+            if (PcpComposeSiteHasPrimSpecs(
+                layerStack, dep.sitePath, cacheChanges.layersToMute))
+            {
+                Pcp_ForEachDependentNode(dep.sitePath, layerStack,
+                                        dep.indexPath,
+                                        *cache, refOrPayloadChangeFunc);
+            }
+        }
+    }
+}
+
+void 
+PcpChanges::_ProcessLayerStackAndDependencyChanges(
+    const PcpCache* cache,
+    const PcpLayerStackPtrVector& layerStacks)
+{
+    TRACE_FUNCTION();
 
     for (const PcpLayerStackPtr& layerStack : layerStacks) {
         _DidChangeLayerStack(cache,
@@ -1477,28 +1508,18 @@ void PcpChanges::_ProcessLayerStackAndDependencyChanges(
             layerStack,
             SdfPath::AbsoluteRootPath(), 
             PcpDependencyTypeAnyIncludingVirtual,
-            /* recurseOnSite */ true,
-            /* recurseOnIndex */ true,
+            /* recurseOnSite */ false,
+            /* recurseOnIndex */ false,
             /* filter */ true);
 
         for(const PcpDependency &dep: deps) {
-            // This ensures that all sites which reference this layer are
-            // also marked as having changed significantly.
-            if (markRefsOrPayloadSitesAsChanged && 
-                PcpComposeSiteHasPrimSpecs(layerStack, dep.sitePath))
-            {
-                Pcp_ForEachDependentNode(dep.sitePath, layerStack,
-                                        dep.indexPath,
-                                        *cache, refOrPayloadChangeFunc);
-            }
-
             // We also need to mark dependencies spec stacks as changed due to
             // the fact that the addition or removal of layers will result in
             // the need of prim stack indicies to be updated.
             // Note that property indexes don't have to be updated because they
             // hold on to spec objects directly instead of being index-based.
             if (dep.indexPath.IsAbsoluteRootOrPrimPath()) {
-                _DidChangeSpecStackInternal(cache, dep.indexPath);
+                _DidChangeSpecStackAndChildrenInternal(cache, dep.indexPath);
             }
         }
     }
@@ -1549,8 +1570,8 @@ PcpChanges::_DidMuteLayer(
             std::move(changes.front()));
         _lifeboat.Retain(mutedLayer);
 
-        _ProcessLayerStackAndDependencyChanges(cache, layerStacks, 
-            /*markRefsOrPayloadSitesAsChanged*/ true);
+        _ProcessLayerStackAndDependencyChanges(cache, layerStacks);
+        _MarkReferencingSitesAsSignificantlyChanged(cache, layerStacks);
     }
 
     cacheChanges.didMuteOrUnmuteNonEmptyLayer |= 
@@ -1612,8 +1633,8 @@ PcpChanges::_DidUnmuteLayer(
             std::move(changes.front()));
         _lifeboat.Retain(unmutedLayer);
 
-        _ProcessLayerStackAndDependencyChanges(cache, layerStacks, 
-            /*markRefsOrPayloadSitesAsChanged*/ true);
+        _ProcessLayerStackAndDependencyChanges(cache, layerStacks);
+        _MarkReferencingSitesAsSignificantlyChanged(cache, layerStacks);
     }
 
     cacheChanges.didMuteOrUnmuteNonEmptyLayer |= 
@@ -2218,8 +2239,7 @@ PcpChanges::_DidAddOrRemoveSublayer(
                     empty, /*compareFieldValues*/ false)));
             }
 
-            _ProcessLayerStackAndDependencyChanges(cache, layerStacks, 
-                /*markRefsOrPayloadSitesAsChanged*/ false);
+            _ProcessLayerStackAndDependencyChanges(cache, layerStacks);
 
             DidChange(cache, changes);
 
@@ -2833,6 +2853,13 @@ PcpChanges::_DidChangeSpecStackInternal(
     const PcpCache* cache, const SdfPath& path)
 {
     _GetCacheChanges(cache)._didChangeSpecsInternal.insert(path);
+}
+
+void 
+PcpChanges::_DidChangeSpecStackAndChildrenInternal(
+    const PcpCache* cache, const SdfPath& path)
+{
+    _GetCacheChanges(cache)._didChangeSpecsAndChildrenInternal.insert(path);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
