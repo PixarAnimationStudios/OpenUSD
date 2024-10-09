@@ -17,6 +17,7 @@ set(DIRS
     usdRi
     usdSemantics
     usdSkel
+    usdText
     usdUI
     usdUtils
     usdPhysics
