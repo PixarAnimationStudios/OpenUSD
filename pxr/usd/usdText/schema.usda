@@ -1,0 +1,269 @@
+#usda 1.0
+(
+    "This file describes the USD Text schemata for code generation."
+    subLayers = [
+        @usd/schema.usda@,
+        @usdGeom/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "usdText"
+        string libraryPath      = "pxr/usd/usdText"
+        dictionary libraryTokens = {
+        }
+    }
+)
+{
+}
+
+class "TextLayoutAPI" (
+    inherits = </APISchemaBase>
+    doc = """UsdTextTextLayoutAPI is an API schema that provides an interface for setting the layout of a text 
+    primitive."""
+    customData = {
+        string extraIncludes ="""
+#include <utility>
+        """
+        token apiSchemaType = "singleApply"
+    }
+) {
+    uniform token layout:baselineDirection = "upToImpl" (
+        allowedTokens = ["upToImpl", "leftToRight", "rightToLeft", "topToBottom", "bottomToTop"]
+        doc = """The direction of the baseline."""
+    )
+
+    uniform token layout:linesStackDirection = "upToImpl" (
+        allowedTokens = ["upToImpl", "leftToRight", "rightToLeft", "topToBottom", "bottomToTop"]
+        doc = """The direction of the line stacking.
+        If layout:baselineDirection is 'leftToRight' or 'rightToLeft', the layout:linesStackDirection can not be
+        'leftToRight' or 'rightToLeft'. If layout:baselineDirection is 'topToBottom' or 'bottomToTop', the 
+        layout:linesStackDirection can not be 'topToBottom' or 'bottomToTop'."""
+    )
+}
+
+class ColumnStyle "ColumnStyle" (
+    inherits = </Typed>
+    prepend apiSchemas = ["TextLayoutAPI"]
+    doc = """Class for style of a column."""
+    customData = {
+        string extraIncludes ="""
+#include <utility>
+        """
+    }
+) {
+    uniform float columnWidth = 0.0 (
+        doc = """The width of the column."""
+    )
+    uniform float columnHeight = 0.0 (
+        doc = """The height of the column."""
+    )
+    uniform float2 columnOffset = (0.0, 0.0) (
+        doc = """The 2D offset from the position of the text primitive to the top-left corner of this column."""
+    )
+    uniform float4 margins = (0.0, 0.0, 0.0, 0.0) (
+        doc = """The margins at the four direction. The order is left margin, right margin, top margin and 
+        bottom margin."""
+    )
+    uniform token columnAlignment = "top" (
+        allowedTokens = ["top", "center", "bottom"]
+        doc = """The position of the whole text primitive in the block. 
+        A text primitive is commonly horizontally expanded. It will fill the horizontal space of the block 
+        except the left margin and the right margin. So there is no horizontal alignment for a column. If the 
+        height of the primitive is smaller than the height of the column, the column alignment will decide
+        the position of the text primitive is at the top, at the center or at the bottom of the column.
+        """
+    )
+    uniform token layout:baselineDirection = "upToImpl" (
+        customData = {
+            bool apiSchemaOverride = true
+        }
+    )
+    uniform token layout:linesStackDirection = "upToImpl" (
+        customData = {
+            bool apiSchemaOverride = true
+        }
+    )
+}
+
+class "ColumnStyleAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """"UsdTextColumnStyleAPI is an API schema that provides an interface for binding column style to a text 
+    primitive.""" 
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdText/columnStyle.h"
+#include <tbb/concurrent_unordered_map.h>
+        """
+        token apiSchemaType = "singleApply"
+        dictionary schemaTokens = {
+            dictionary columnStyleBinding = {
+                string value = "columnStyle:binding"
+                string doc = """
+                The relationship name to denote a binding to a UsdTextColumnStyle.
+                """
+            }
+        }
+    }
+) {
+}
+
+class ParagraphStyle "ParagraphStyle" (
+    inherits = </Typed>
+    doc = """Class for style of a paragraph."""
+    customData = {
+        string extraIncludes ="""
+#include <utility>
+        """
+    }
+) {
+    uniform float firstLineIndent = 0.0 (
+        doc = """The left indent in the first line.
+        A text primitive is commonly horizontally expanded. By default, it will fill the horizontal space of a block.
+        If the line is the first line of a paragraph, there will be a space before the left start of the line. The space
+        is the first line indent. Even if the direction of the text is from right to left, the firstLineIndent is added
+        to the left of the line.
+        If the block has margins, the firstLineIndent will be on the right of the left margin."""
+    )
+    uniform float leftIndent = 0.0 (
+        doc = """The left indent in a normal line.
+        A text primitive is commonly horizontally expanded. By default, it will fill the horizontal space of a block.
+        If the line is not the first line of a paragraph, we can define there is space before the left start of the line.
+        And the space is the left indent. Even if the direction of the text is from right to left, the leftIndent is
+        added to the left of the line.
+        If the block has margins, the leftIndent will be on the right of the left margin."""
+    )
+    uniform float rightIndent = 0.0 (
+        doc = """The right indent in each line.
+        A text primitive is commonly horizontally expanded. By default, it will fill the horizontal space of a block.
+        But we can define there is space after the right end of the line. And the space is the right indent. Even if 
+        the direction of the text is from right to left, the rightIndent is added to the right of the line.
+        If the block has margins, the rightIndent will be on the left of the left margin."""
+    )
+    uniform float paragraphSpace = 0.0 (
+        doc = """The space after the paragraph."""
+    )
+    uniform token paragraphAlignment = "left" (
+        allowedTokens = ["left", "right", "center", "justify", "distributed"]
+        doc = """The text alignment in the paragraph.
+        A text primitive is commonly horizontally expanded. By default, it will fill the horizontal space of a block.
+        If the width of a text line is smaller than the horizontal space, this alignment will decide how the characters
+        are positioned. You can see the examples below:
+        
+        Alignment   |                                    text                                         |
+        ----------- | ------------------------------------------------------------------------------- |
+        left        | The quick brown fox jumps over the lazy dog.                                    |
+        right       |                                    The quick brown fox jumps over the lazy dog. |
+        center      |                  The quick brown fox jumps over the lazy dog.                   |
+        justify     | The     quick      brown     fox     jumps     over      the     lazy      dog. |
+        distributed | T h e  q u i c k  b r o w n  f o x  j u m p s  o v e r  t h e  l a z y  d o g . |
+        """
+    )
+    uniform float[] tabStopPositions (
+        doc = """The positions for each tabstop."""
+    )
+    uniform token[] tabStopTypes (
+        allowedTokens = ["leftTab", "rightTab", "centerTab", "decimalTab"]
+        doc = """The tabstop types.  You can see the examples below:
+        
+        tabStop type | position ->    ^            ^           |
+        ------------ | --------------------------------------- |
+        leftTab      |            apple        34.52           |
+        rightTab     |                apple        34.52       |
+        centerTab    |              apple        34.52         |
+        decimalTab   |            apple          34.52         |
+        """
+    )
+    uniform float lineSpace = 0.0 (
+        doc = """The space between lines."""
+    )
+    uniform token lineSpaceType = "atLeast" (
+        allowedTokens = ["exactly", "atLeast", "multiple"]
+        doc = """The type of the lineSpace value."""
+    )
+}
+
+class "ParagraphStyleAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """UsdTextParagraphStyleAPI is an API schema that provides an interface for binding paragraph style to
+    a text primitive.""" 
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdText/paragraphStyle.h"
+#include <tbb/concurrent_unordered_map.h>
+        """
+        token apiSchemaType = "singleApply"
+        dictionary schemaTokens = {
+            dictionary paragraphStyleBinding = {
+                string value = "paragraphStyle:binding"
+                string doc = """
+                The relationship name to denote a binding to a UsdTextParagraphStyle.
+                """
+            }
+        }
+    }
+) {
+}
+
+class MarkupText "MarkupText" (
+    doc = """This primitive represents a text object which can have one line or multiple lines, and it can 
+    have varied styles."""
+    
+    inherits = </Gprim>
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+        string extraIncludes ="""
+#include <utility>
+        """
+    }
+) {
+    # markupString
+    uniform string markup (
+        doc = """The markup string data. It can contain markups. The markup language is specified
+        in the markupLanguage attribute."""
+    )
+
+    # markupString
+    uniform string markup:plain = "" (
+        doc = """The string data for the primitive when the implementation can not support the 
+        markupLanguage."""
+    )
+
+    # markupLanguage
+    uniform token markupLanguage = "plain" (
+        allowedTokens = ["plain", "mtext"]
+        doc = """The markup language."""
+    )
+
+    uniform color3f primvars:backgroundColor (
+        customData = {
+            string apiName = "backgroundColor"
+        }
+        doc = """Background color for the text."""
+    )
+    uniform float primvars:backgroundOpacity = 0.0 (
+        customData = {
+            string apiName = "backgroundOpacity"
+        }
+        doc = """Background opacity for the text."""
+    )
+    uniform token textMetricsUnit = "worldUnit" (
+        customData = {
+            string apiName = "textMetricsUnit"
+        }
+        allowedTokens = ["worldUnit", "publishingPoint", "pixel"]
+        doc = """The unit for the text related metrics, such as the unit of charHeight.
+        If the value is 'pixel', the unit of text metrics will be the same as a pixel in the framebuffer. 
+        If the value is 'publishingPoint', the unit will be the same as desktop publishing point, or 1/72
+        of an inch on a screen's physical display. If textMetricsUnit is 'worldUnit'", the unit will be 
+        the same as the unit of the world space. 
+        If the text primitive has billboard, the textMetricsUnit can only be 'pixel' or 'publishingPoint'.
+        Otherwise, the textMetricsUnit can only be 'worldUnit'.
+        """
+    )
+}
