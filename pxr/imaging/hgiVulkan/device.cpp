@@ -69,7 +69,8 @@ _SupportsPresentation(
                 vkGetInstanceProcAddr(
                     vkInstance,
                     "vkGetPhysicalDeviceXlibPresentationSupportKHR");
-        return vkGetPhysicalDeviceXlibPresentationSupportKHR(
+        return vkGetPhysicalDeviceXlibPresentationSupportKHR &&
+               vkGetPhysicalDeviceXlibPresentationSupportKHR(
                     physicalDevice, familyIndex, dsp, visualID);
     #elif defined(VK_USE_PLATFORM_METAL_EXT)
         // Presentation currently always supported on Metal / MoltenVk
