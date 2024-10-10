@@ -1,0 +1,40 @@
+bring_up_the_ui:
+  max: N/A
+  mean: N/A
+  min: N/A
+close_stage:
+  max: N/A
+  mean: N/A
+  min: N/A
+configure_and_load_plugins:
+  max: N/A
+  mean: N/A
+  min: N/A
+create_first_image:
+  max: N/A
+  mean: N/A
+  min: N/A
+open_and_close_usdview:
+  max: N/A
+  mean: N/A
+  min: N/A
+open_stage:
+  max: N/A
+  mean: N/A
+  min: N/A
+reset_prim_browser:
+  max: N/A
+  mean: N/A
+  min: N/A
+shut_down_hydra:
+  max: N/A
+  mean: N/A
+  min: N/A
+tear_down_the_ui:
+  max: N/A
+  mean: N/A
+  min: N/A
+traverse_stage:
+  max: N/A
+  mean: N/A
+  min: N/A

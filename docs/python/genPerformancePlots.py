@@ -41,6 +41,8 @@ def collectData(dataDir: str):
         with open(os.path.join(dataDir, yamlname)) as f:
             metrics = yaml.safe_load(f)
             time = metrics[METRIC_ID]["min"]
+            if type(time) is not float:
+                continue
 
         if asset not in data[platform]:
             data[platform][asset] = []
@@ -51,6 +53,12 @@ def collectData(dataDir: str):
 
 
 def exportCharts(data, outputDir: str):
+    markers = {
+        "alab": "d",
+        "kitchenset": "s",
+        "moorelane": "^",
+        "shaderball": "o"
+    }
     for platform, platformData in data.items():
         fig, _ = plt.subplots()
         plt.close(fig)
@@ -61,7 +69,7 @@ def exportCharts(data, outputDir: str):
         for asset, assetData in platformData.items():
             releases = [d[0] for d in assetData]
             times = [d[1] for d in assetData]
-            plt.plot(releases, times, label=asset, marker='o')
+            plt.plot(releases, times, label=asset, marker=markers[asset])
 
         plt.title(f"{platform} time to open and close usdview",
                   fontweight="bold")
