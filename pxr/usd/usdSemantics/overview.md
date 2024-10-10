@@ -1,3 +1,4 @@
+# UsdSemantics : Semantic Labeling for Model Hierarchy {#usd_semantics_overview}
 \if ( PIXAR_MFB_BUILD )
 \mainpage UsdSemantics : Semantic Labeling for Model Hierarchy
 \endif
@@ -110,7 +111,7 @@ of a car prim" could be modeled by filtering the scene graph by prims
 with direct label `wheel` and whose parent has an inherited label `car`.
 
 ## Relationship to Other Domains
-### `UsdGeom`
+### UsdGeom
 The most common application of semantic labels will be to `Gprim`s and their
 ancestral `Scope`s and `Xform`s.
 
@@ -120,7 +121,7 @@ labels as well. For example `/Human/Face` `Mesh` prim may have a
 `/Human/Face/LeftEar` and `/Human/Face/RightEar` `GeomSubset`s with `["ear"]`
 labels applied.
 
-### `UsdShade`
+### UsdShade
 `Material`s may be semantically labeled as well. For example, a `RustyMetal`
 Material could be semantically labeled with both `metal` and `corroded` labels.
 As `usdSemantics` is a domain separate from `UsdGeom` and `UsdShade`, there are
@@ -167,7 +168,7 @@ purposes, there's no specification for if or how labels should feed into render
 products, as shader nodes and node graphs (unlike `UsdGeomSubset`) generally
 don't yield discrete segmentations.
 
-### `UsdRender` (To be proposed and implemented)
+### UsdRender (To be proposed and implemented)
 A common application of semantics is for downstream labeling and segmentation
 of renderer output. Semantics may make their way into outputs as
 either additional metadata or as matte channels.
