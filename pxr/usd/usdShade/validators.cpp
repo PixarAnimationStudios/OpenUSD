@@ -22,13 +22,11 @@
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/usdShade/validatorTokens.h"
-#include "pxr/usd/usdShade/materialBindingAPI.h"
+#include "pxr/usd/ar/resolver.h"
 
 #include <algorithm>
 #include <unordered_map>
 #include <vector>
-
-#include "../ar/resolver.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
     static
