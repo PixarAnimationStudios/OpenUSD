@@ -28,6 +28,7 @@
 #include <type_traits>
 #include <vector>
 #include <memory>
+#include <charconv>
 
 #include "pxrDoubleConversion/double-conversion.h"
 #include "pxrDoubleConversion/utils.h"
@@ -910,6 +911,72 @@ std::string
 TfStringify(std::string const& s)
 {
     return s;
+}
+
+template <typename T>
+std::string
+_TfStringifyIntegralImpl(const T value)
+{
+    // plus one because for signed values, digits10 will give one less
+    // than what is actually needed in cases where the amount of characters
+    // could represent an overflow
+    constexpr size_t maxSize = std::numeric_limits<T>::digits10 + 1 +
+        (std::numeric_limits<T>::is_signed ? 1 : 0);
+
+    std::string result(maxSize, '\0');
+    auto [ptr, ec] = std::to_chars(result.data(), result.data() + maxSize, value);
+    TF_DEV_AXIOM(ec == std::errc());
+    result.resize(std::distance(result.data(), ptr));
+
+    return result;
+}
+
+std::string
+TfStringify(short val)
+{
+    return _TfStringifyIntegralImpl<short>(val);
+}
+
+std::string
+TfStringify(unsigned short val)
+{
+    return _TfStringifyIntegralImpl<unsigned short>(val);
+}
+
+std::string
+TfStringify(int val)
+{
+    return _TfStringifyIntegralImpl<int>(val);
+}
+
+std::string
+TfStringify(unsigned int val)
+{
+    return _TfStringifyIntegralImpl<unsigned int>(val);
+}
+
+std::string
+TfStringify(long val)
+{
+    return _TfStringifyIntegralImpl<long>(val);
+}
+
+std::string
+TfStringify(unsigned long val)
+{
+    return _TfStringifyIntegralImpl<unsigned long>(val);
+}
+
+std::string
+TfStringify(long long val)
+{
+    return _TfStringifyIntegralImpl<long long>(val);
+}
+
+std::string
+TfStringify(unsigned long long val)
+{
+    return _TfStringifyIntegralImpl<unsigned long long>(val);
 }
 
 static

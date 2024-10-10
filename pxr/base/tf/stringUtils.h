@@ -572,6 +572,22 @@ TF_API std::string TfStringify(std::string const&);
 TF_API std::string TfStringify(float);
 /// \overload
 TF_API std::string TfStringify(double);
+/// \overload
+TF_API std::string TfStringify(short);
+/// \overload
+TF_API std::string TfStringify(unsigned short);
+/// \overload
+TF_API std::string TfStringify(int);
+/// \overload
+TF_API std::string TfStringify(unsigned int);
+/// \overload
+TF_API std::string TfStringify(long);
+/// \overload
+TF_API std::string TfStringify(unsigned long);
+/// \overload
+TF_API std::string TfStringify(long long);
+/// \overload
+TF_API std::string TfStringify(unsigned long long);
 
 /// Writes the string representation of \c d to \c buffer of length \c len. 
 /// If \c emitTrailingZero is true, the string representation will end with .0 
