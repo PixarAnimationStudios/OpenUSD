@@ -32,7 +32,7 @@ PXR_BOOST_PYTHON_DECL handle<> function_handle_impl(py_function const& f);
 template <class F, class Signature>
 inline handle<> function_handle(F const& f, Signature)
 {
-    enum { n_arguments = mpl::size<Signature>::value - 1 };
+    enum { n_arguments = python::detail::mpl2::size<Signature>::value - 1 };
 
     return objects::function_handle_impl(
         python::detail::caller<

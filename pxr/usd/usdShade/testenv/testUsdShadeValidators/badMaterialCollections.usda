@@ -1,0 +1,32 @@
+#usda 1.0
+
+def Material "Material"
+{
+}
+
+def "SingleTargetMaterialCollection" (
+    append apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding:collection = </Material>
+}
+
+def "IncompleteMaterialCollection" (
+    append apiSchemas = ["CollectionAPI:col2"]
+)
+{
+    rel collection:col2:includes = [
+        </IncompleteMaterialCollection/Bind1>,
+    ]
+
+    def "Bind1" (
+        append apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding:collection = [
+            </IncompleteMaterialCollection.collection:col1>,
+            </Material>,
+        ]
+    }
+}
+

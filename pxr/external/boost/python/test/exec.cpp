@@ -10,18 +10,26 @@
 
 #include "pxr/external/boost/python.hpp"
 
-#include <boost/detail/lightweight_test.hpp>
+#include <cassert>
+#include <functional>
 #include <iostream>
 
 
 namespace python = PXR_BOOST_NAMESPACE::python;
 
 // An abstract base class
-class Base : public boost::noncopyable
+class Base
 {
 public:
   virtual ~Base() {};
+
+  Base(Base const&) = delete;
+  Base& operator=(Base const&) = delete;
+
   virtual std::string hello() = 0;
+
+protected:
+  Base() {};
 };
 
 // C++ derived class
@@ -37,28 +45,22 @@ struct BaseWrap : Base, python::wrapper<Base>
 {
   virtual std::string hello() 
   {
-#if BOOST_WORKAROUND(BOOST_MSVC, <= 1300)
-    // workaround for VC++ 6.x or 7.0, see
-    // http://boost.org/libs/python/doc/tutorial/doc/html/python/exposing.html#python.class_virtual_functions
-    return python::call<std::string>(this->get_override("hello").ptr());
-#else
     return this->get_override("hello")();
-#endif
   }
 };
 
 // Pack the Base class wrapper into a module
 PXR_BOOST_PYTHON_MODULE(embedded_hello)
 {
-  python::class_<BaseWrap, boost::noncopyable> base("Base");
+  python::class_<BaseWrap, python::noncopyable> base("Base");
 }
 
 
 void eval_test()
 {
   python::object result = python::eval("'abcdefg'.upper()");
-  std::string value = python::extract<std::string>(result) BOOST_EXTRACT_WORKAROUND;
-  BOOST_TEST(value == "ABCDEFG");
+  std::string value = python::extract<std::string>(result);
+  assert(value == "ABCDEFG");
 }
 
 void exec_test()
@@ -81,15 +83,15 @@ void exec_test()
 
   // Creating and using instances of the C++ class is as easy as always.
   CppDerived cpp;
-  BOOST_TEST(cpp.hello() == "Hello from C++!");
+  assert(cpp.hello() == "Hello from C++!");
 
   // But now creating and using instances of the Python class is almost
   // as easy!
   python::object py_base = PythonDerived();
-  Base& py = python::extract<Base&>(py_base) BOOST_EXTRACT_WORKAROUND;
+  Base& py = python::extract<Base&>(py_base);
 
   // Make sure the right 'hello' method is called.
-  BOOST_TEST(py.hello() == "Hello from Python!");
+  assert(py.hello() == "Hello from Python!");
 }
 
 void exec_file_test(std::string const &script)
@@ -99,7 +101,7 @@ void exec_file_test(std::string const &script)
   python::object result = python::exec_file(script.c_str(), global, global);
 
   // Extract an object the script stored in the global dictionary.
-  BOOST_TEST(python::extract<int>(global["number"]) ==  42);
+  assert(python::extract<int>(global["number"]) ==  42);
 }
 
 void exec_test_error()
@@ -129,8 +131,8 @@ void check_pyerr(bool pyerr_expected=false)
   if (PyErr_Occurred())
   {
     if (!pyerr_expected) {
-      BOOST_ERROR("Python Error detected");
       PyErr_Print();
+      assert(!"Python Error detected");
     }
     else {
       PyErr_Clear();
@@ -138,14 +140,14 @@ void check_pyerr(bool pyerr_expected=false)
   }
   else
   {
-    BOOST_ERROR("A C++ exception was thrown  for which "
-                "there was no exception handler registered.");
+    assert(!"A C++ exception was thrown  for which "
+            "there was no exception handler registered.");
   }
 }
 
 int main(int argc, char **argv)
 {
-  BOOST_TEST(argc == 2 || argc == 3);
+  assert(argc == 2 || argc == 3);
   std::string script = argv[1];
 
   // Register the module with the interpreter
@@ -157,8 +159,8 @@ int main(int argc, char **argv)
 #endif 
                              ) == -1)
   {
-    BOOST_ERROR("Failed to add embedded_hello to the interpreter's "
-                 "builtin modules");
+    assert(!"Failed to add embedded_hello to the interpreter's "
+            "builtin modules");
   }
 
   // Initialize the interpreter
@@ -170,7 +172,7 @@ int main(int argc, char **argv)
   else if(python::handle_exception(exec_test)) {
     check_pyerr();
   }
-  else if (python::handle_exception(boost::bind(exec_file_test, script))) {
+  else if (python::handle_exception(std::bind(exec_file_test, script))) {
     check_pyerr();
   }
   
@@ -180,7 +182,7 @@ int main(int argc, char **argv)
   }
   else
   {
-    BOOST_ERROR("Python exception expected, but not seen.");
+    assert(!"Python exception expected, but not seen.");
   }
 
   if (argc > 2) {
@@ -192,7 +194,7 @@ int main(int argc, char **argv)
 
   // Boost.Python doesn't support Py_Finalize yet.
   // Py_Finalize();
-  return boost::report_errors();
+  return 0;
 }
 
 // Including this file makes sure

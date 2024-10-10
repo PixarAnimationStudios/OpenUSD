@@ -18,6 +18,7 @@ TF_WRAP_MODULE
     TF_WRAP(Raii);
     TF_WRAP(RegressionPreventer);
     TF_WRAP(Spline);
+    TF_WRAP(TangentConversions);
 
 #ifdef TS_BUILD_TEST_FRAMEWORK
     TF_WRAP(TsTest_Museum);

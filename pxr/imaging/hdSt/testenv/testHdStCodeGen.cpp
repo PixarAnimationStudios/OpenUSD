@@ -377,7 +377,8 @@ int main(int argc, char *argv[])
                 instance,
                 /* enableScalarOverride */ true,
                 /* isWidget */ false,
-                /* forceOpaqueEdges */ true),
+                /* forceOpaqueEdges */ true,
+                /* surfaceEdgeIds */ true),
                 bindless, instance, smoothNormals);
         success &= TestShader(
             HdSt_MeshShaderKey(
@@ -400,7 +401,8 @@ int main(int argc, char *argv[])
                 instance,
                 /* enableScalarOverride */ true,
                 /* isWidget */ false,
-                /* forceOpaqueEdges */ true),
+                /* forceOpaqueEdges */ true,
+                /* surfaceEdgeIds */ true),
                 bindless, instance, smoothNormals);
     }
 

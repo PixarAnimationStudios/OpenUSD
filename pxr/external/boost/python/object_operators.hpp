@@ -21,10 +21,9 @@
 
 # include "pxr/external/boost/python/object_core.hpp"
 # include "pxr/external/boost/python/call.hpp"
-# include <boost/iterator/detail/enable_if.hpp>
-# include <boost/mpl/bool.hpp>
+# include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 
-# include <boost/iterator/detail/config_def.hpp>
+# include <type_traits>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace api {
 
@@ -46,18 +45,14 @@ struct is_object_operators
            < 4
         )
     };
-    typedef mpl::bool_<value> type;
+    typedef python::detail::mpl2::bool_<value> type;
 };
 
-# if !defined(BOOST_NO_SFINAE) && !defined(BOOST_NO_IS_CONVERTIBLE)
 template <class L, class R, class T>
 struct enable_binary
-  : boost::iterators::enable_if<is_object_operators<L,R>, T>
+  : std::enable_if<is_object_operators<L,R>::value, T>
 {};
 #  define PXR_BOOST_PYTHON_BINARY_RETURN(T) typename enable_binary<L,R,T>::type
-# else
-#  define PXR_BOOST_PYTHON_BINARY_RETURN(T) T
-# endif
 
 template <class U>
 object object_operators<U>::operator()() const
@@ -66,6 +61,15 @@ object object_operators<U>::operator()() const
     return call<object>(f.ptr());
 }
 
+template <class U>
+template <class A0, class... A>
+typename detail::dependent<object, A0>::type
+object_operators<U>::operator()(A0 const& a0, A const&... a) const
+{
+    typedef typename detail::dependent<object, A0>::type obj;
+    U const& self = *static_cast<U const*>(this);
+    return call<obj>(get_managed_object(self, tag), a0, a...);
+}
 
 template <class U>
 inline
@@ -142,8 +146,6 @@ PXR_BOOST_PYTHON_INPLACE_OPERATOR(|=)
 # undef PXR_BOOST_PYTHON_INPLACE_OPERATOR
 
 }}} // namespace PXR_BOOST_NAMESPACE::python
-
-#include <boost/iterator/detail/config_undef.hpp>
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_OPERATORS_HPP

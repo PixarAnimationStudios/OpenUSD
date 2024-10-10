@@ -21,13 +21,8 @@
 
 #include "pxr/external/boost/python/object.hpp"
 #include "pxr/external/boost/python/converter/pytype_object_mgr_traits.hpp"
-#include <boost/preprocessor/enum_params.hpp>
-#include <boost/preprocessor/repetition/enum_binary_params.hpp>
 
-// XXX: Workaround for distcc issues with BOOST_PP_ITERATE
-# define PXR_BOOST_PYTHON_SYNOPSIS
-# include "pxr/external/boost/python/detail/make_tuple.hpp"
-# undef PXR_BOOST_PYTHON_SYNOPSIS
+#include <utility>
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
@@ -78,8 +73,23 @@ namespace converter
 // for completeness
 inline tuple make_tuple() { return tuple(); }
 
-# define BOOST_PP_ITERATION_PARAMS_1 (3, (1, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/detail/make_tuple.hpp"))
-# include BOOST_PP_ITERATE()
+template <class... A>
+tuple
+make_tuple(A const&... a)
+{
+    size_t i = 0;
+    tuple result((detail::new_reference)::PyTuple_New(sizeof...(A)));
+
+    ([&](auto const& obj) {
+        PyTuple_SET_ITEM(
+            result.ptr()
+          , i++
+          , python::incref(python::object(obj).ptr())
+        );
+    }(a), ...);
+
+    return result;
+}  
 
 }}  // namespace PXR_BOOST_NAMESPACE::python
 

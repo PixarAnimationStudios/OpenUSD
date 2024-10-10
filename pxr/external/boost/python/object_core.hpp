@@ -21,11 +21,12 @@
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
-# include <boost/type.hpp>
+# include "pxr/external/boost/python/type.hpp"
 
 # include "pxr/external/boost/python/call.hpp"
 # include "pxr/external/boost/python/handle_fwd.hpp"
 # include "pxr/external/boost/python/errors.hpp"
+# include "pxr/external/boost/python/ref.hpp"
 # include "pxr/external/boost/python/refcount.hpp"
 # include "pxr/external/boost/python/detail/preprocessor.hpp"
 # include "pxr/external/boost/python/tag.hpp"
@@ -37,18 +38,10 @@
 # include "pxr/external/boost/python/object/forward.hpp"
 # include "pxr/external/boost/python/object/add_to_namespace.hpp"
 
-# include <boost/preprocessor/iterate.hpp>
-# include <boost/preprocessor/debug/line.hpp>
-
 # include "pxr/external/boost/python/detail/is_xxx.hpp"
 # include "pxr/external/boost/python/detail/string_literal.hpp"
 # include "pxr/external/boost/python/detail/def_helper_fwd.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
-
-// XXX: Workaround for distcc issues with BOOST_PP_ITERATE
-# define PXR_BOOST_PYTHON_SYNOPSIS
-# include "pxr/external/boost/python/object_call.hpp"
-# undef PXR_BOOST_PYTHON_SYNOPSIS
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
@@ -112,8 +105,9 @@ namespace api
       //
       object operator()() const;
 
-# define BOOST_PP_ITERATION_PARAMS_1 (3, (1, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/object_call.hpp"))
-# include BOOST_PP_ITERATE()
+      template <class A0, class... A>
+      typename detail::dependent<object, A0>::type
+      operator()(A0 const& a0, A const&... a) const;
     
       detail::args_proxy operator* () const; 
       object operator()(detail::args_proxy const &args) const; 
@@ -178,7 +172,7 @@ namespace api
       {
           // It's too late to specify anything other than docstrings if
           // the callable object is already wrapped.
-          BOOST_STATIC_ASSERT(
+          static_assert(
               (detail::is_same<char const*,DocStringT>::value
                || detail::is_string_literal<DocStringT const>::value));
         
@@ -240,12 +234,12 @@ namespace api
   PyObject* object_base_initializer(T const& x)
   {
       typedef typename is_derived<
-          BOOST_DEDUCED_TYPENAME objects::unforward_cref<T>::type
+          typename objects::unforward_cref<T>::type
         , object
       >::type is_obj;
 
       return object_initializer<
-          BOOST_DEDUCED_TYPENAME unwrap_reference<T>::type
+          typename unwrap_reference<T>::type
       >::get(
             x
           , is_obj()
@@ -472,7 +466,7 @@ namespace converter
   template <>
   struct object_manager_traits<object>
   {
-      BOOST_STATIC_CONSTANT(bool, is_specialized = true);
+      static constexpr bool is_specialized = true;
       static bool check(PyObject*) { return true; }
       
       static python::detail::new_non_null_reference adopt(PyObject* x)

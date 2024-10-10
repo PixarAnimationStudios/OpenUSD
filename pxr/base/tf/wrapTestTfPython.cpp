@@ -673,7 +673,7 @@ void wrapTf_TestTfPython()
         return_value_policy<TfPyRefPtrFactory<> >());
     
     class_<polymorphic_Tf_TestBase<>,
-        TfWeakPtr<polymorphic_Tf_TestBase<> >, boost::noncopyable>
+        TfWeakPtr<polymorphic_Tf_TestBase<> >, noncopyable>
         ("_TestBase", no_init)
         .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(__Ref_init__<polymorphic_Tf_TestBase<> >))
@@ -687,7 +687,7 @@ void wrapTf_TestTfPython()
  
     class_<polymorphic_Tf_TestDerived<>,
         TfWeakPtr<polymorphic_Tf_TestDerived<> >,
-        bases<Tf_TestBase>, boost::noncopyable>
+        bases<Tf_TestBase>, noncopyable>
         ("_TestDerived", no_init)
         .def(TfPyRefAndWeakPtr())
         .def("__init__",

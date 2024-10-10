@@ -7,6 +7,7 @@
 #define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PASS_SCENE_INDEX_H
 
 #include "pxr/pxr.h"
+#if PXR_VERSION >= 2405
 #include "pxr/imaging/hd/collectionExpressionEvaluator.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include <optional>
@@ -91,3 +92,4 @@ private:
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
+#endif // PXR_VERSION >= 2405

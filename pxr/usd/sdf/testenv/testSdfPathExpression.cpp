@@ -221,6 +221,7 @@ TestBasics()
         TF_AXIOM(!composed.ContainsExpressionReferences());
         TF_AXIOM(!composed.ContainsWeakerExpressionReference());
         TF_AXIOM(composed.IsComplete());
+        TF_AXIOM(composed == SdfPathExpression { "/a /b /c" });
         
         auto eval = MatchEval { composed };
 
@@ -228,6 +229,12 @@ TestBasics()
         TF_AXIOM(eval.Match(SdfPath("/b")));
         TF_AXIOM(eval.Match(SdfPath("/c")));
         TF_AXIOM(!eval.Match(SdfPath("/d")));
+
+        // Nothing over something should be Nothing.
+        const auto nothing = SdfPathExpression::Nothing();
+        TF_AXIOM(nothing.ComposeOver(a) == nothing);
+        TF_AXIOM(nothing.ComposeOver(b) == nothing);
+        TF_AXIOM(nothing.ComposeOver(c) == nothing);
     }
 
     {

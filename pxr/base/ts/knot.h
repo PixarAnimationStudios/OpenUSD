@@ -173,39 +173,21 @@ public:
     /// @}
     /// \name Pre-tangent
     ///
-    /// Tangents (both pre and post) have two forms:
-    ///
-    /// - Standard tangents are expressed as width and slope.
-    ///
-    /// - Maya tangents are expressed as width and height.  All values are
-    ///   stored multiplied by 3.  Heights are negated for pre-tangents.
-    ///
-    /// Tangents may be written and read in either form; the stored values will
-    /// be converted as needed.  But values will only round-trip identically
-    /// (with no floating-point rounding error) when written and read in the
-    /// same form (e.g. Maya in, Maya out).
-    ///
-    /// Writing a given tangent's width in one form, and its slope or height in
-    /// the other form, will result in undefined behavior.
+    /// Tangents are expressed as width and slope.
     ///
     /// It is an error to read or write widths for Hermite knots.
     ///
+    /// \note Note that Maya uses tangents in a different format.
+    /// \ref TsConvertFromStandardTangent is a utility function that can
+    /// convert a standard width and slope to values expected by Maya.
+    ///
     /// @{
-
-    TS_API
-    bool IsPreTanMayaForm() const;
 
     TS_API
     bool SetPreTanWidth(TsTime width);
 
     TS_API
     TsTime GetPreTanWidth() const;
-
-    TS_API
-    bool SetMayaPreTanWidth(TsTime width);
-
-    TS_API
-    TsTime GetMayaPreTanWidth() const;
 
     TS_API
     bool SetPreTanSlope(VtValue slope);
@@ -219,36 +201,15 @@ public:
     template <typename T>
     bool GetPreTanSlope(T *slopeOut) const;
 
-    TS_API
-    bool SetMayaPreTanHeight(VtValue height);
-
-    template <typename T>
-    bool SetMayaPreTanHeight(T height);
-
-    TS_API
-    bool GetMayaPreTanHeight(VtValue *heightOut) const;
-
-    template <typename T>
-    bool GetMayaPreTanHeight(T *heightOut) const;
-
     /// @}
     /// \name Post-tangent
     /// @{
-
-    TS_API
-    bool IsPostTanMayaForm() const;
 
     TS_API
     bool SetPostTanWidth(TsTime width);
 
     TS_API
     TsTime GetPostTanWidth() const;
-
-    TS_API
-    bool SetMayaPostTanWidth(TsTime width);
-
-    TS_API
-    TsTime GetMayaPostTanWidth() const;
 
     TS_API
     bool SetPostTanSlope(VtValue slope);
@@ -261,18 +222,6 @@ public:
 
     template <typename T>
     bool GetPostTanSlope(T *slopeOut) const;
-
-    TS_API
-    bool SetMayaPostTanHeight(VtValue height);
-
-    template <typename T>
-    bool SetMayaPostTanHeight(T height);
-
-    TS_API
-    bool GetMayaPostTanHeight(VtValue *heightOut) const;
-
-    template <typename T>
-    bool GetMayaPostTanHeight(T *heightOut) const;
 
     /// @}
     /// \name Custom data
@@ -445,7 +394,7 @@ bool TsKnot::_CheckInParam(const T value) const
 
         if (!Ts_IsFinite(value))
         {
-            TF_CODING_ERROR("Cannot set undefined value");
+            TF_CODING_ERROR("Set values must be finite.");
             return false;
         }
 
@@ -574,7 +523,6 @@ bool TsKnot::SetPreTanSlope(const T slope)
         return false;
     }
 
-    _data->preTanMayaForm = false;
     _TypedData<T>()->preTanSlope = slope;
     return true;
 }
@@ -591,31 +539,6 @@ bool TsKnot::GetPreTanSlope(T* const slopeOut) const
     return true;
 }
 
-template <typename T>
-bool TsKnot::SetMayaPreTanHeight(const T height)
-{
-    if (!_CheckInParam(height))
-    {
-        return false;
-    }
-
-    _data->preTanMayaForm = true;
-    _TypedData<T>()->preTanMayaHeight = height;
-    return true;
-}
-
-template <typename T>
-bool TsKnot::GetMayaPreTanHeight(T* const heightOut) const
-{
-    if (!_CheckOutParam(heightOut))
-    {
-        return false;
-    }
-
-    *heightOut = _ConstTypedData<T>()->GetMayaPreTanHeight();
-    return true;
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // Post-Tangent
 
@@ -627,7 +550,6 @@ bool TsKnot::SetPostTanSlope(const T slope)
         return false;
     }
 
-    _data->postTanMayaForm = false;
     _TypedData<T>()->postTanSlope = slope;
     return true;
 }
@@ -641,31 +563,6 @@ bool TsKnot::GetPostTanSlope(T* const slopeOut) const
     }
 
     *slopeOut = _ConstTypedData<T>()->GetPostTanSlope();
-    return true;
-}
-
-template <typename T>
-bool TsKnot::SetMayaPostTanHeight(const T height)
-{
-    if (!_CheckInParam(height))
-    {
-        return false;
-    }
-
-    _data->postTanMayaForm = true;
-    _TypedData<T>()->postTanMayaHeight = height;
-    return true;
-}
-
-template <typename T>
-bool TsKnot::GetMayaPostTanHeight(T* const heightOut) const
-{
-    if (!_CheckOutParam(heightOut))
-    {
-        return false;
-    }
-
-    *heightOut = _ConstTypedData<T>()->GetMayaPostTanHeight();
     return true;
 }
 

@@ -9,17 +9,18 @@ set(cppfiles "")
 # to specify the source files as well as our dependency on Python.
 # Otherwise, this library is just a pass-through for boost::python.
 if (PXR_USE_INTERNAL_BOOST_PYTHON)
+    # Use PYTHON_LIBRARIES instead of the Python3::Python target
+    # directly when specifying library dependencies to ensure
+    # PXR_PY_UNDEFINED_DYNAMIC_LOOKUP is respected.
     set(libs
-        Python3::Python
+        ${PYTHON_LIBRARIES}
     )
 
-    # Ideally we'd use the modern Boost::boost or Boost::headers
-    # targets in the LIBRARIES list above. However, Boost::boost
-    # doesn't publish INTERFACE_INCLUDE_DIRECTORIES, which breaks
-    # _pxr_target_link_libraries in monolithic builds, and
-    # Boost::headers is only available in CMake 3.15+.
+    # Specify PYTHON_INCLUDE_DIRS explicitly to ensure this library
+    # picks up Python headers when PXR_PY_UNDEFINED_DYNAMIC_LOOKUP
+    # is set.
     set(include_dirs
-        ${Boost_INCLUDE_DIRS}
+        ${PYTHON_INCLUDE_DIRS}
     )
 
     set(cppfiles
@@ -62,6 +63,27 @@ if (PXR_USE_INTERNAL_BOOST_PYTHON)
         # src/numpy/scalars.cpp
         # src/numpy/ufunc.cpp
     )
+
+    # By default CMake defines NDEBUG in CMAKE_CXX_FLAGS_<config> for
+    # non-debug build configurations, which applies to all targets
+    # created in this directory. This disables assert calls in unit
+    # tests, rendering them useless in those configurations.
+    #
+    # To avoid this, we remove NDEBUG from CMAKE_CXX_FLAGS_<config>
+    # and reapply it only to the main library itself below.
+    if (MSVC)
+        set(ndebug_flag "/DNDEBUG")
+    else()
+        set(ndebug_flag "-DNDEBUG")
+    endif()
+
+    foreach(config RELEASE RELWITHDEBINFO MINSIZEREL)
+        string(REPLACE
+            ${ndebug_flag} ""
+            CMAKE_CXX_FLAGS_${config} ${CMAKE_CXX_FLAGS_${config}}
+        )
+    endforeach()
+
 else()
     set(libs
         ${Boost_PYTHON_LIBRARY}
@@ -153,17 +175,31 @@ pxr_library(python
         detail/enable_if.hpp
         detail/exception_handler.hpp
         detail/force_instantiate.hpp
+        detail/get_pointer.hpp
         detail/if_else.hpp
         detail/indirect_traits.hpp
+        detail/integer_cast.hpp
         detail/invoke.hpp
         detail/is_auto_ptr.hpp
         detail/is_shared_ptr.hpp
         detail/is_wrapper.hpp
         detail/is_xxx.hpp
         detail/make_keyword_range_fn.hpp
-        detail/make_tuple.hpp
         detail/map_entry.hpp
         detail/mpl_lambda.hpp
+        detail/mpl2/and.hpp
+        detail/mpl2/at.hpp
+        detail/mpl2/bool.hpp
+        detail/mpl2/eval_if.hpp
+        detail/mpl2/front.hpp
+        detail/mpl2/identity.hpp
+        detail/mpl2/if.hpp
+        detail/mpl2/int.hpp
+        detail/mpl2/not.hpp
+        detail/mpl2/pop_front.hpp
+        detail/mpl2/push_front.hpp
+        detail/mpl2/or.hpp
+        detail/mpl2/size.hpp
         detail/msvc_typeinfo.hpp
         detail/none.hpp
         detail/not_specified.hpp
@@ -219,6 +255,7 @@ pxr_library(python
         manage_new_object.hpp
         module.hpp
         module_init.hpp
+        noncopyable.hpp
         object/add_to_namespace.hpp
         object/class.hpp
         object/class_detail.hpp
@@ -248,7 +285,6 @@ pxr_library(python
         object/value_holder_fwd.hpp
         object.hpp
         object_attributes.hpp
-        object_call.hpp
         object_core.hpp
         object_fwd.hpp
         object_items.hpp
@@ -266,6 +302,7 @@ pxr_library(python
         ptr.hpp
         pure_virtual.hpp
         raw_function.hpp
+        ref.hpp
         refcount.hpp
         reference_existing_object.hpp
         register_ptr_to_python.hpp
@@ -292,7 +329,9 @@ pxr_library(python
         to_python_indirect.hpp
         to_python_value.hpp
         tuple.hpp
+        type.hpp
         type_id.hpp
+        type_list.hpp
         with_custodian_and_ward.hpp
         wrapper.hpp
 
@@ -317,11 +356,22 @@ pxr_library(python
     DISABLE_PRECOMPILED_HEADERS
 )
 
+# Disable insertion of C++ signatures in docstrings. We generate this
+# information separately via our Python doc build process.
+target_compile_definitions(python
+    PUBLIC PXR_BOOST_PYTHON_NO_PY_SIGNATURES
+)
+
 if (PXR_USE_INTERNAL_BOOST_PYTHON)
     # Add PXR_BOOST_PYTHON_SOURCE when building this library to ensure symbols
     # decorated with PXR_BOOST_PYTHON_DECL are exported.
     target_compile_definitions(python
         PRIVATE PXR_BOOST_PYTHON_SOURCE
+    )
+
+    # See comment about NDEBUG above.
+    target_compile_definitions(python
+        PRIVATE $<$<NOT:$<CONFIG:Debug>>:NDEBUG>
     )
 else()
     # Ensure symbol in build-workaround.cpp is exported on Windows,
@@ -342,6 +392,12 @@ endif()
 # Since we're not going through the normal pxr_build_test macros
 # we need to elide tests here if requested.
 if (NOT PXR_BUILD_TESTS)
+    return()
+endif()
+
+# XXX:
+# Disable tests in static builds due to symbol export issues.
+if(WIN32 AND NOT TARGET shared_libs)
     return()
 endif()
 
@@ -474,7 +530,10 @@ boost_python_test("injected")
 boost_python_test("properties")
 boost_python_test("return_arg")
 boost_python_test("staticmethod")
-boost_python_test("boost_shared_ptr")
+
+# boost::shared_ptr is unsupported in OpenUSD so we disable this test.
+# boost_python_test("boost_shared_ptr")
+
 boost_python_test("shared_ptr")
 boost_python_test("enable_shared_from_this")
 boost_python_test("andreas_beyer")

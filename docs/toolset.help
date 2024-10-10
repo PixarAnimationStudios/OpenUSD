@@ -88,32 +88,20 @@ optional arguments:
 ==== usddiff end ====
 
 ==== usdview start ====
-usage: usdview [-h] [--renderer {GL}]
-                                                [--select PRIMPATH]
-                                                [--camera CAMERA]
-                                                [--mask PRIMPATH[,PRIMPATH...]]
-                                                [--clearsettings]
-                                                [--config {}]
-                                                [--defaultsettings]
-                                                [--norender] [--noplugins]
-                                                [--unloaded] [--bboxStandin]
-                                                [--timing] [--allow-async]
-                                                [--traceToFile TRACETOFILE]
-                                                [--traceFormat {chrome,trace}]
-                                                [--tracePython]
-                                                [--memstats {none,stage,stageAndImaging}]
-                                                [--numThreads NUMTHREADS]
-                                                [--ff FIRSTFRAME]
-                                                [--lf LASTFRAME]
-                                                [--cf CURRENTFRAME]
-                                                [--complexity {low,medium,high,veryhigh}]
-                                                [--quitAfterStartup]
-                                                [--sessionLayer SESSIONLAYER]
-                                                [--mute MUTELAYERSRE]
-                                                [--detachLayers]
-                                                [--detachLayersInclude PATTERN[,PATTERN...]]
-                                                [--detachLayersExclude PATTERN[,PATTERN,...]]
-                                                usdFile
+usage: usdview
+       [-h] [--renderer {GL,Prman,Embree,Tiny}] [--select PRIMPATH]
+       [--camera CAMERA] [--mask PRIMPATH[,PRIMPATH...]] [--clearsettings]
+       [--config {foo}] [--defaultsettings] [--norender] [--noplugins]
+       [--unloaded] [--bboxStandin] [--timing] [--allow-async]
+       [--traceToFile TRACETOFILE] [--traceFormat {chrome,trace}]
+       [--tracePython] [--memstats {none,stage,stageAndImaging}]
+       [--numThreads NUMTHREADS] [--ff FIRSTFRAME] [--lf LASTFRAME]
+       [--cf CURRENTFRAME] [--complexity {low,medium,high,veryhigh}]
+       [--quitAfterStartup] [--sessionLayer SESSIONLAYER]
+       [--mute MUTELAYERSRE] [--detachLayers]
+       [--detachLayersInclude PATTERN[,PATTERN...]]
+       [--detachLayersExclude PATTERN[,PATTERN,...]]
+       usdFile
 
 View a usd file
 
@@ -122,7 +110,7 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  --renderer {GL}, -r {GL}
+  --renderer {GL,Prman,Embree,Tiny}, -r {GL,Prman,Embree,Tiny}
                         Which render backend to use (named as it appears in
                         the menu).
   --select PRIMPATH     A prim path to initially select and frame
@@ -139,7 +127,7 @@ optional arguments:
                         either use commas with no spaces or quote the argument
                         and separate paths by commas and/or spaces.
   --clearsettings       Restores usdview settings to default
-  --config {}           Load usdview with the state settings found in the
+  --config {foo}        Load usdview with the state settings found in the
                         specified config. If not provided will use the
                         previously saved application state and automatically
                         persist state on close
@@ -215,7 +203,7 @@ usage: usdrecord [-h] [--mask PRIMPATH[,PRIMPATH...]]
                  [--defaultTime | --frames FRAMESPEC[,FRAMESPEC...]]
                  [--complexity {low,medium,high,veryhigh}]
                  [--colorCorrectionMode {disabled,sRGB,openColorIO}]
-                 [--renderer {GL}] [--imageWidth IMAGEWIDTH]
+                 [--renderer {GL,Prman,Embree,Tiny}] [--imageWidth IMAGEWIDTH]
                  [--enableDomeLightVisibility]
                  [--renderPassPrimPath RPPRIMPATH]
                  [--renderSettingsPrimPath RSPRIMPATH]
@@ -283,7 +271,7 @@ optional arguments:
                         level of refinement to use (default=low)
   --colorCorrectionMode {disabled,sRGB,openColorIO}, -color {disabled,sRGB,openColorIO}
                         the color correction mode to use (default=sRGB)
-  --renderer {GL}, -r {GL}
+  --renderer {GL,Prman,Embree,Tiny}, -r {GL,Prman,Embree,Tiny}
                         Hydra renderer plugin to use when generating images
   --imageWidth IMAGEWIDTH, -w IMAGEWIDTH
                         Width of the output image. The height will be computed
@@ -487,8 +475,8 @@ optional arguments:
 ==== usdfixbrokenpixarschemas end ====
 
 ==== usdstitch start ====
-usage: usdstitch [-h] [-o OUT]
-                                                  usdFiles [usdFiles ...]
+usage: usdstitch
+       [-h] [-o OUT] usdFiles [usdFiles ...]
 
 Stitch multiple usd file(s) together into one. Opinion strength is determined
 by the order in which the file is given, with the first file getting the
@@ -629,3 +617,45 @@ Options:
   --noValues                  Do not report field values.
 
 ==== sdffilter end ====
+
+==== usdmeasureperformance start ====
+usage: usdmeasureperformance [-h] [-c [CUSTOM_METRICS ...]] -o OUTPUT
+                             [-i ITERATIONS]
+                             [-a {min,mean,max} [{min,mean,max} ...]]
+                             asset
+
+Measure and export USD functional performance
+
+positional arguments:
+  asset                 Asset file path.
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c [CUSTOM_METRICS ...], --custom-metrics [CUSTOM_METRICS ...]
+                        Additional custom metrics to run `testusdview` timing
+                        on. If not set, a default set of metrics is run. This
+                        should be a whitespace-separated list of
+                        <script>:'<metric name>,<metric name>' e.g.
+                        stageTraversalMetric.py:'traverse stage'. Note the
+                        <script> path is relative to the directory from which
+                        usdmeasureperformance.py is invoked.
+  -o OUTPUT, --output OUTPUT
+                        Required output file path for metrics data. Must be
+                        .yaml
+  -i ITERATIONS, --iterations ITERATIONS
+                        Number of iterations to run. Performance metrics are
+                        reported as an average across all iterations. Requires
+                        -o to be set. By default, 3 iterations are set.
+  -a {min,mean,max} [{min,mean,max} ...], --aggregation {min,mean,max} [{min,mean,max} ...]
+                        When multiple iterations are set, report an aggregated
+                        statistic instead of every value. Requires -o to be
+                        set. When one aggregation is requested, the output
+                        yaml format will be a key value dictionary with
+                        <metric_name>_<aggregation> to aggregated time value.
+                        If multiple aggregations are requested, the output
+                        yaml format will be<metric_name>: {<agg1>: <value1>,
+                        <agg2>:...}.When no aggregation is set, the output
+                        format will be <metric_name>: [<val1>, <val2>, ...] or
+                        one measured value for each iteration.
+
+==== usdmeasureperformance end ====

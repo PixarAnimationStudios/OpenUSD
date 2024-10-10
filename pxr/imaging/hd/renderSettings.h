@@ -156,6 +156,16 @@ public:
     HD_API
     const VtValue& GetShutterInterval() const;
 
+    /// Returns whether the render products were invalidated since the last
+    /// time this function was called.
+    ///
+    /// \note Due to the lack of fine-grained invalidation in the dirty bits
+    ///       above, *any* change to to the targeted product(s) and their
+    ///       associated render var(s) would mark the products are dirty.
+    ///
+    HD_API
+    bool GetAndResetHasDirtyProducts();
+
     // ------------------------------------------------------------------------
     // Satisfying HdBprim
     // ------------------------------------------------------------------------
@@ -191,6 +201,7 @@ private:
     HdRenderSettings &operator =(const HdRenderSettings &) = delete;
 
     bool _active;
+    bool _dirtyProducts;
     NamespacedSettings _namespacedSettings;
     RenderProducts _products;
     VtArray<TfToken> _includedPurposes;

@@ -19,31 +19,17 @@
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/converter/arg_from_python.hpp"
-# if BOOST_WORKAROUND(BOOST_MSVC, BOOST_TESTED_AT(1400)) \
-    || BOOST_WORKAROUND(BOOST_INTEL_WIN, BOOST_TESTED_AT(800))
-# include "pxr/external/boost/python/detail/type_traits.hpp"
-#endif
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 template <class T>
 struct arg_from_python
     : converter::select_arg_from_python<
-# if BOOST_WORKAROUND(BOOST_MSVC, BOOST_TESTED_AT(1400)) \
-    || BOOST_WORKAROUND(BOOST_INTEL_WIN, BOOST_TESTED_AT(800))
-          typename detail::remove_cv<T>::type
-# else
           T
-# endif 
       >::type
 {
     typedef typename converter::select_arg_from_python<
-# if BOOST_WORKAROUND(BOOST_MSVC, BOOST_TESTED_AT(1400)) \
-    || BOOST_WORKAROUND(BOOST_INTEL_WIN, BOOST_TESTED_AT(800))
-          typename detail::remove_cv<T>::type
-# else
           T
-# endif 
         >::type base;
     
     arg_from_python(PyObject*);

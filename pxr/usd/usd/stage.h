@@ -1901,8 +1901,13 @@ private:
     // Returns the path of the Usd prim using the prim index at the given path.
     SdfPath _GetPrimPathUsingPrimIndexAtPath(const SdfPath& primIndexPath) const;
 
-    // Update stage contents in response to changes in scene description.
+    // Responds to LayersDidChangeSentPerLayer event and update stage contents 
+    // in response to changes in scene description.
     void _HandleLayersDidChange(const SdfNotice::LayersDidChangeSentPerLayer &);
+
+    // Pushes changes through PCP to determine invalidation based on 
+    // composition metadata.
+    void _ProcessChangeLists(const SdfLayerChangeListVec &);
 
     // Update stage contents in response to changes to the asset resolver.
     void _HandleResolverDidChange(const ArNotice::ResolverChanged &);

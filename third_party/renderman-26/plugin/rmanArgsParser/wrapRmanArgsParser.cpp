@@ -35,7 +35,7 @@ void wrapRmanArgsParser()
 
     return_value_policy<copy_const_reference> copyRefPolicy;
 
-    class_<This, boost::noncopyable>("RmanArgsParser")
+    class_<This, noncopyable>("RmanArgsParser")
         .def("Parse", &_Parse, return_value_policy<manage_new_object>())
         .def("GetDiscoveryTypes", &This::GetDiscoveryTypes, copyRefPolicy)
         .def("GetSourceType", &This::GetSourceType, copyRefPolicy)

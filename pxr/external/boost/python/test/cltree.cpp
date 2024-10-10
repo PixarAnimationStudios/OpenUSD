@@ -10,7 +10,6 @@
 #include "pxr/external/boost/python/module.hpp"
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/class.hpp"
-#include <boost/utility.hpp>
 
 /*  Non-modifiable definitions */
 
@@ -53,7 +52,7 @@ public:
   }
 
   // This constructor is introduced only because cannot use
-  // boost::noncopyable, see below.
+  // noncopyable, see below.
   variable_wrapper(PyObject* /*self*/,variable v): variable(v) {} 
 
 };
@@ -64,11 +63,11 @@ PXR_BOOST_PYTHON_MODULE(cltree)
         .def("__repr__",&basic::repr)
         ;
 
-    PXR_BOOST_NAMESPACE::python::class_<constant, PXR_BOOST_NAMESPACE::python::bases<basic>, boost::noncopyable>("constant")
+    PXR_BOOST_NAMESPACE::python::class_<constant, PXR_BOOST_NAMESPACE::python::bases<basic>, PXR_BOOST_NAMESPACE::python::noncopyable>("constant")
         ;
 
 
-    PXR_BOOST_NAMESPACE::python::class_<symbol, symbol_wrapper, boost::noncopyable>("symbol")
+    PXR_BOOST_NAMESPACE::python::class_<symbol, symbol_wrapper, PXR_BOOST_NAMESPACE::python::noncopyable>("symbol")
         ;
 
     PXR_BOOST_NAMESPACE::python::class_<variable, PXR_BOOST_NAMESPACE::python::bases<basic>, variable_wrapper>("variable")

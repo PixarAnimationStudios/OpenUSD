@@ -1511,6 +1511,9 @@ def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env,
             # Write out alias/primdefs for all schemas
             clsDict['alias'] = {'UsdSchemaBase': cls.usdPrimTypeName}
 
+            # Write out schema identifier
+            clsDict['schemaIdentifier'] = cls.usdPrimTypeName
+
             types[cls.cppClassName] = clsDict
         # write plugInfo file back out.
         content = ((
@@ -1785,6 +1788,81 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     _WriteFile(os.path.join(codeGenPath, 'generatedSchema.usda'), layerSource,
                validate)
 
+def processChildren(parent, parentToChildren, ret):
+    # Add parent to list.
+    ret.append(parent)
+
+    # Add children and grandchildren.
+    for child in parentToChildren.get(parent.baseFileName, []):
+        processChildren(child, parentToChildren, ret)
+
+def getTopoSortedSchemas(classes):
+    classNames = [x.baseFileName for x in classes]
+    parentToChildren = dict()
+
+    # Identify schemas with no parents in the current file and
+    # map parent schema classes to a list of their children.
+    roots = []
+    for cls in classes:
+        if cls.parentBaseFileName not in classNames: 
+            roots.append(cls)
+        else:
+            children = parentToChildren.get(cls.parentBaseFileName, [])
+            children.append(cls)
+            parentToChildren[cls.parentBaseFileName] = children
+
+    # Add dependent schemas recursively.
+    ret = []
+    for root in roots:
+        processChildren(root, parentToChildren, ret)
+
+    return ret
+
+def GenerateBuildHelpers(templatePath, codeGenPath, tokenData, classList, 
+                         libName, validate, env):
+    Print('Generating Build Helper Files:')
+
+    #
+    # Load Templates
+    #
+    Print('Loading Templates from {0}'.format(templatePath))
+    try:
+        moduleTemplate = env.get_template('generatedSchema.module.h')
+        classesTemplate = env.get_template('generatedSchema.classes.txt')
+    except TemplateNotFound as tnf:
+        raise RuntimeError("Template not found: {0}".format(str(tnf)))
+    except TemplateSyntaxError as tse:
+        raise RuntimeError("Syntax error in template {0} at line {1}: {2}"
+                           .format(tse.filename, tse.lineno, tse))
+
+    classes = getTopoSortedSchemas(classList)
+
+    # Write out public classes, resource files, and python module files
+    baseFileNames = [classObj.baseFileName for classObj in classes]
+    wrapFileNames = [classObj.GetWrapFile() for classObj in classes]
+    if tokenData:
+        baseFileNames.append("tokens")
+        wrapFileNames.append("wrapTokens.cpp")
+    wrapFileNames.append("module.cpp")
+    
+    classesFilePath = os.path.join(codeGenPath, 'generatedSchema.classes.txt')
+    if not os.path.exists(classesFilePath):
+        open(classesFilePath, 'w+')
+    _WriteFile(classesFilePath, classesTemplate.render(
+               publicClasses=sorted(baseFileNames), 
+               pythonModules=sorted(wrapFileNames), 
+               libName=libName), validate)
+
+    # Write out generated module.cpp contents
+    cppClassNames = [classObj.cppClassName for classObj in classes]
+    cppClassNames.append(_ProperCase(libName + "Tokens"))
+
+    modulesFilePath = os.path.join(codeGenPath, 'generatedSchema.module.h')
+    if not os.path.exists(modulesFilePath):
+        open(modulesFilePath, 'w+')
+    _WriteFile(modulesFilePath, 
+               moduleTemplate.render(pythonModules=cppClassNames), validate)
+
 def InitializeResolver():
     """Initialize the resolver so that search paths pointing to schema.usda
     files are resolved to the directories where those files are installed"""
@@ -1954,6 +2032,10 @@ if __name__ == '__main__':
                          args.validate,
                          namespaceOpen, namespaceClose, namespaceUsing,
                          useExportAPI, j2_env, args.headerTerminatorString)
+            # Generate Build Helper Files
+            GenerateBuildHelpers(templatePath, codeGenPath, tokenData, classes, 
+                                 libName, args.validate, j2_env)
+
         # We always generate plugInfo and generateSchema.
         GeneratePlugInfo(templatePath, codeGenPath, classes, args.validate,
                          j2_env, skipCodeGen)

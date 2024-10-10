@@ -57,7 +57,7 @@ void wrapShaderProperty()
                         SdrShaderPropertyConstPtrToPythonConverter>();
 
     class_<This, ThisPtr, bases<NdrProperty>,
-           boost::noncopyable>("ShaderProperty", no_init)
+           noncopyable>("ShaderProperty", no_init)
         .def("GetDefaultValueAsSdfType", &This::GetDefaultValueAsSdfType,
                 copyRefPolicy)
         .def("GetLabel", &This::GetLabel, copyRefPolicy)

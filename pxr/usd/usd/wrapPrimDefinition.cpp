@@ -118,7 +118,7 @@ __getattribute__Impl(object selfObj, const char *name, const object &getattribut
 void wrapUsdPrimDefinition()
 {
     typedef UsdPrimDefinition This;
-    scope s = class_<This, boost::noncopyable>("PrimDefinition", no_init)
+    scope s = class_<This, noncopyable>("PrimDefinition", no_init)
         .def("GetPropertyNames", &This::GetPropertyNames,
              return_value_policy<TfPySequenceToList>())
         .def("GetAppliedAPISchemas", &This::GetAppliedAPISchemas,

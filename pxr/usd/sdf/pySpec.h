@@ -36,7 +36,7 @@
 /// wrapping specs easy.  Spec wrapping should now look like:
 ///
 /// \code
-///   class_<MyClass, SdfHandle<MyClass>, bases<SdfSpec>, boost::noncopyable>
+///   class_<MyClass, SdfHandle<MyClass>, bases<SdfSpec>, noncopyable>
 ///       ("MyClass", no_init)
 ///       .def(SdfPySpec())  // or SdfPyAbstractSpec()
 ///       .def(SdfMakePySpecConstructor(&MyClass::New))

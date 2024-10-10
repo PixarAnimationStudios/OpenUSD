@@ -279,6 +279,9 @@ WRAP_CUSTOM {
 
         .def("HasNoIncludedPaths", &This::HasNoIncludedPaths)
 
+        .def("IsInRelationshipsMode", &This::IsInRelationshipsMode)
+        .def("IsInExpressionMode", &This::IsInExpressionMode)
+
         .def("IncludePath", &This::IncludePath, arg("pathToInclude"))
         .def("ExcludePath", &This::ExcludePath, arg("pathToExclude"))
 

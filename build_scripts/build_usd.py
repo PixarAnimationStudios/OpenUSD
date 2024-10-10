@@ -744,9 +744,9 @@ def InstallBoost_Helper(context, force, buildArgs):
     #   compatibility issues on Big Sur and Monterey.
     pyInfo = GetPythonInfo(context)
     pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
-    if MacOS() or (context.buildPython and pyVer >= (3,11)):
+    if MacOS() or (context.buildBoostPython and pyVer >= (3,11)):
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip"
-    elif context.buildPython and pyVer >= (3, 10):
+    elif context.buildBoostPython and pyVer >= (3, 10):
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
     elif IsVisualStudio2022OrGreater():
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
@@ -829,7 +829,7 @@ def InstallBoost_Helper(context, force, buildArgs):
             '--with-regex'
         ]
 
-        if context.buildPython:
+        if context.buildBoostPython:
             b2_settings.append("--with-python")
             pythonInfo = GetPythonInfo(context)
             # This is the only platform-independent way to configure these
@@ -1534,10 +1534,23 @@ def InstallMaterialX(context, force, buildArgs):
         ]
 
         if MacOSTargetEmbedded(context):
+            # The materialXShaderGen in hdSt assumes the GLSL shadergen is
+            # available but MaterialX intertwines GLSL shadergen support with
+            # also requiring rendering support.
             cmakeOptions.extend([
                 '-DMATERIALX_BUILD_GEN_MSL=ON',
-                '-DMATERIALX_BUILD_GEN_GLSL=OFF',
+                '-DMATERIALX_BUILD_GEN_GLSL=ON',
                 '-DMATERIALX_BUILD_IOS=ON'])
+            PatchFile("CMakeLists.txt",
+                      [('    set(MATERIALX_BUILD_GEN_GLSL OFF)',
+                        '    set(MATERIALX_BUILD_GEN_GLSL ON)'),
+                       ('    if (MATERIALX_BUILD_GEN_GLSL)\n' +
+                        '        add_subdirectory(source/MaterialXRenderGlsl)\n' +
+                        '    endif()',
+                        '    if (MATERIALX_BUILD_GEN_GLSL AND NOT MATERIALX_BUILD_IOS)\n' +
+                        '        add_subdirectory(source/MaterialXRenderGlsl)\n' +
+                        '    endif()')
+                       ], multiLineMatches=True)
 
         cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
@@ -1621,6 +1634,11 @@ def InstallUSD(context, force, buildArgs):
                 extraArgs.append('-DPXR_USE_DEBUG_PYTHON=ON')
             else:
                 extraArgs.append('-DPXR_USE_DEBUG_PYTHON=OFF')
+
+            if context.buildBoostPython:
+                extraArgs.append('-DPXR_USE_BOOST_PYTHON=ON')
+            else:
+                extraArgs.append('-DPXR_USE_BOOST_PYTHON=OFF')
 
             # CMake has trouble finding the executable, library, and include
             # directories when there are multiple versions of Python installed.
@@ -1825,8 +1843,8 @@ errors may occur.
 
 - Embedded Build Targets
 When cross compiling for an embedded target operating system, e.g. iOS, the
-following components are disabled: python, tools, imaging, tests, examples,
-tutorials.
+following components are disabled: python, tools, tests, examples, tutorials,
+opencolorio, openimageio, openvdb.
 
 - Python Versions and DCC Plugins:
 Some DCCs may ship with and run using their own version of Python. In that case,
@@ -2004,6 +2022,10 @@ subgroup.add_argument("--prefer-speed-over-safety", dest="safety_first",
                       action="store_false", help=
                       "Disable performance-impacting safety checks against "
                       "malformed input files")
+
+group.add_argument("--boost-python", dest="build_boost_python",
+                   action="store_true", default=False,
+                   help="Build Python bindings with boost::python (deprecated)")
 
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--debug-python", dest="debug_python", 
@@ -2244,6 +2266,7 @@ class InstallContext:
         # Optional components
         self.buildTests = args.build_tests and not embedded
         self.buildPython = args.build_python and not embedded
+        self.buildBoostPython = self.buildPython and args.build_boost_python
         self.buildExamples = args.build_examples and not embedded
         self.buildTutorials = args.build_tutorials and not embedded
         self.buildTools = args.build_tools and not embedded
@@ -2255,9 +2278,11 @@ class InstallContext:
 
         # - Imaging
         self.buildImaging = (args.build_imaging == IMAGING or
-                             args.build_imaging == USD_IMAGING) and not embedded
+                             args.build_imaging == USD_IMAGING)
         self.enablePtex = self.buildImaging and args.enable_ptex
-        self.enableOpenVDB = self.buildImaging and args.enable_openvdb
+        self.enableOpenVDB = (self.buildImaging
+                              and args.enable_openvdb
+                              and not embedded)
 
         # - USD Imaging
         self.buildUsdImaging = (args.build_imaging == USD_IMAGING)
@@ -2272,9 +2297,10 @@ class InstallContext:
         self.buildPrman = self.buildImaging and args.build_prman
         self.prmanLocation = (os.path.abspath(args.prman_location)
                                if args.prman_location else None)                               
-        self.buildOIIO = args.build_oiio or (self.buildUsdImaging
-                                             and self.buildTests)
-        self.buildOCIO = args.build_ocio
+        self.buildOIIO = ((args.build_oiio or (self.buildUsdImaging
+                                               and self.buildTests))
+                          and not embedded)
+        self.buildOCIO = args.build_ocio and not embedded
 
         # - Alembic Plugin
         self.buildAlembic = args.build_alembic
@@ -2337,7 +2363,7 @@ if context.buildOneTBB:
 
 requiredDependencies = [ZLIB, TBB]
 
-if context.buildPython:
+if context.buildBoostPython:
     requiredDependencies += [BOOST]
 
 if context.buildAlembic:
@@ -2411,8 +2437,14 @@ if MacOSTargetEmbedded(context):
     if "--tools" in sys.argv:
         PrintError("Cannot build tools for embedded build targets")
         sys.exit(1)
-    if "--imaging" in sys.argv:
-        PrintError("Cannot build imaging for embedded build targets")
+    if "--openimageio" in sys.argv:
+        PrintError("Cannot build openimageio for embedded build targets")
+        sys.exit(1)
+    if "--opencolorio" in sys.argv:
+        PrintError("Cannot build opencolorio for embedded build targets")
+        sys.exit(1)
+    if "--openvdb" in sys.argv:
+        PrintError("Cannot build openvdb for embedded build targets")
         sys.exit(1)
 
 # Error out if user explicitly specified building usdview without required

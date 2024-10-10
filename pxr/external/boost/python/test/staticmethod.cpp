@@ -12,10 +12,7 @@
 #include "pxr/external/boost/python/module.hpp"
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/call_method.hpp"
-#include <boost/ref.hpp>
-#include <boost/utility.hpp>
-#define BOOST_ENABLE_ASSERT_HANDLER
-#include <boost/assert.hpp>
+#include <cassert>
 
 using namespace PXR_BOOST_NAMESPACE::python;
 
@@ -23,10 +20,10 @@ struct X
 {
     explicit X(int x) : x(x), magic(7654321) { ++counter; }
     X(X const& rhs) : x(rhs.x), magic(7654321) { ++counter; }
-    virtual ~X() { BOOST_ASSERT(magic == 7654321); magic = 6666666; x = 9999; --counter; }
+    virtual ~X() { assert(magic == 7654321); magic = 6666666; x = 9999; --counter; }
 
-    void set(int _x) { BOOST_ASSERT(magic == 7654321); this->x = _x; }
-    int value() const { BOOST_ASSERT(magic == 7654321); return x; }
+    void set(int _x) { assert(magic == 7654321); this->x = _x; }
+    int value() const { assert(magic == 7654321); return x; }
     static int count() { return counter; }
  private:
     void operator=(X const&);

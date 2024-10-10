@@ -20,11 +20,11 @@ def "MaterialX"
             color3f inputs:otherColor3
             color3f inputs:specColor
             float inputs:specRoughness
-            token outputs:mtlx:surface.connect = </MaterialX/Materials/Msimple/shader1.outputs:surface>
-            token outputs:mtlx:volume.connect = </MaterialX/Materials/Msimple/shader2.outputs:volume>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/Msimple/sr_mp1.outputs:surface>
+            token outputs:mtlx:volume.connect = </MaterialX/Materials/Msimple/sr_mp2.outputs:volume>
 
-            def Shader "shader1" (
-                prepend references = </MaterialX/Shaders/shader1>
+            def Shader "sr_mp1" (
+                prepend references = </MaterialX/Shaders/sr_mp1>
             )
             {
                 color3f inputs:diffColor.connect = </MaterialX/Materials/Msimple.inputs:diffColor>
@@ -35,8 +35,8 @@ def "MaterialX"
                 float inputs:specRoughness.connect = </MaterialX/Materials/Msimple.inputs:specRoughness>
             }
 
-            def Shader "shader2" (
-                prepend references = </MaterialX/Shaders/shader2>
+            def Shader "sr_mp2" (
+                prepend references = </MaterialX/Shaders/sr_mp2>
             )
             {
                 color3f inputs:diffColor.connect = </MaterialX/Materials/Msimple.inputs:diffColor>
@@ -85,10 +85,10 @@ def "MaterialX"
             color3f inputs:otherColor3
             color3f inputs:specColor
             float inputs:specRoughness
-            token outputs:mtlx:surface.connect = </MaterialX/Materials/Msimple2/shader1.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/Msimple2/sr_mp3.outputs:surface>
 
-            def Shader "shader1" (
-                prepend references = </MaterialX/Shaders/shader1>
+            def Shader "sr_mp3" (
+                prepend references = </MaterialX/Shaders/sr_mp3>
             )
             {
                 color3f inputs:diffColor.connect = </MaterialX/Materials/Msimple2.inputs:diffColor>
@@ -116,10 +116,10 @@ def "MaterialX"
             float inputs:gain = 500 (
                 doc = "This is a bound param"
             )
-            token outputs:light.connect = </MaterialX/Materials/mheadlight/nd_headlight1.outputs:light>
+            token outputs:light.connect = </MaterialX/Materials/mheadlight/lgtsr1.outputs:light>
 
-            def Shader "nd_headlight1" (
-                prepend references = </MaterialX/Shaders/nd_headlight1>
+            def Shader "lgtsr1" (
+                prepend references = </MaterialX/Shaders/lgtsr1>
             )
             {
                 token inputs:custom (
@@ -144,11 +144,11 @@ def "MaterialX"
                 14: 480,
                 15: 500,
             }
-            token outputs:light.connect = </MaterialX/Materials/mheadlight1/nd_headlight0.outputs:light>
+            token outputs:light.connect = </MaterialX/Materials/mheadlight1/lgtsr2.outputs:light>
             string primvars:mumble = "shout"
 
-            def Shader "nd_headlight0" (
-                prepend references = </MaterialX/Shaders/nd_headlight0>
+            def Shader "lgtsr2" (
+                prepend references = </MaterialX/Shaders/lgtsr2>
             )
             {
                 token inputs:custom (
@@ -166,10 +166,10 @@ def "MaterialX"
             )
             asset inputs:emissionmap
             float inputs:gain
-            token outputs:light.connect = </MaterialX/Materials/mheadlight2/nd_headlight1.outputs:light>
+            token outputs:light.connect = </MaterialX/Materials/mheadlight2/lgtsr3.outputs:light>
 
-            def Shader "nd_headlight1" (
-                prepend references = </MaterialX/Shaders/nd_headlight1>
+            def Shader "lgtsr3" (
+                prepend references = </MaterialX/Shaders/lgtsr3>
             )
             {
                 token inputs:custom (
@@ -183,10 +183,10 @@ def "MaterialX"
 
         def Material "m_vn"
         {
-            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn/nd_vn_2.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn/sr_vn.outputs:surface>
 
-            def Shader "nd_vn_2" (
-                prepend references = </MaterialX/Shaders/nd_vn_2>
+            def Shader "sr_vn" (
+                prepend references = </MaterialX/Shaders/sr_vn>
             )
             {
             }
@@ -194,10 +194,10 @@ def "MaterialX"
 
         def Material "m_vn_1_0"
         {
-            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_1_0/nd_vn_1_0.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_1_0/sr_vn2.outputs:surface>
 
-            def Shader "nd_vn_1_0" (
-                prepend references = </MaterialX/Shaders/nd_vn_1_0>
+            def Shader "sr_vn2" (
+                prepend references = </MaterialX/Shaders/sr_vn2>
             )
             {
             }
@@ -205,10 +205,10 @@ def "MaterialX"
 
         def Material "m_vn_nd_1_0"
         {
-            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_nd_1_0/nd_vn_1_0.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_nd_1_0/sr_vn3.outputs:surface>
 
-            def Shader "nd_vn_1_0" (
-                prepend references = </MaterialX/Shaders/nd_vn_1_0>
+            def Shader "sr_vn3" (
+                prepend references = </MaterialX/Shaders/sr_vn3>
             )
             {
             }
@@ -216,10 +216,10 @@ def "MaterialX"
 
         def Material "m_vn_2_0"
         {
-            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_2_0/nd_vn_2.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_2_0/sr_vn4.outputs:surface>
 
-            def Shader "nd_vn_2" (
-                prepend references = </MaterialX/Shaders/nd_vn_2>
+            def Shader "sr_vn4" (
+                prepend references = </MaterialX/Shaders/sr_vn4>
             )
             {
             }
@@ -227,10 +227,10 @@ def "MaterialX"
 
         def Material "m_vn_2_1"
         {
-            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_2_1/nd_vn_2_1.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_2_1/sr_vn5.outputs:surface>
 
-            def Shader "nd_vn_2_1" (
-                prepend references = </MaterialX/Shaders/nd_vn_2_1>
+            def Shader "sr_vn5" (
+                prepend references = </MaterialX/Shaders/sr_vn5>
             )
             {
             }
@@ -238,10 +238,10 @@ def "MaterialX"
 
         def Material "m_vn_nd_2x"
         {
-            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_nd_2x/nd_vn_2.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_nd_2x/sr_vn6.outputs:surface>
 
-            def Shader "nd_vn_2" (
-                prepend references = </MaterialX/Shaders/nd_vn_2>
+            def Shader "sr_vn6" (
+                prepend references = </MaterialX/Shaders/sr_vn6>
             )
             {
             }
@@ -250,45 +250,75 @@ def "MaterialX"
 
     def "Shaders"
     {
-        def Shader "shader1"
+        def Shader "sr_mp1"
         {
             uniform token info:id = "shader1"
             token outputs:surface
         }
 
-        def Shader "shader2"
+        def Shader "sr_mp2"
         {
             uniform token info:id = "shader2"
             token outputs:volume
         }
 
-        def Shader "nd_headlight1"
+        def Shader "sr_mp3"
+        {
+            uniform token info:id = "shader1"
+            token outputs:surface
+        }
+
+        def Shader "lgtsr1"
         {
             uniform token info:id = "nd_headlight1"
             token outputs:light
         }
 
-        def Shader "nd_headlight0"
+        def Shader "lgtsr2"
         {
             uniform token info:id = "nd_headlight0"
             token outputs:light
         }
 
-        def Shader "nd_vn_2"
+        def Shader "lgtsr3"
+        {
+            uniform token info:id = "nd_headlight1"
+            token outputs:light
+        }
+
+        def Shader "sr_vn"
         {
             uniform token info:id = "nd_vn_2"
             token outputs:surface
         }
 
-        def Shader "nd_vn_1_0"
+        def Shader "sr_vn2"
         {
             uniform token info:id = "nd_vn_1_0"
             token outputs:surface
         }
 
-        def Shader "nd_vn_2_1"
+        def Shader "sr_vn3"
+        {
+            uniform token info:id = "nd_vn_1_0"
+            token outputs:surface
+        }
+
+        def Shader "sr_vn4"
+        {
+            uniform token info:id = "nd_vn_2"
+            token outputs:surface
+        }
+
+        def Shader "sr_vn5"
         {
             uniform token info:id = "nd_vn_2_1"
+            token outputs:surface
+        }
+
+        def Shader "sr_vn6"
+        {
+            uniform token info:id = "nd_vn_2"
             token outputs:surface
         }
     }

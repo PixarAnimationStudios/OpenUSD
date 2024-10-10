@@ -8,6 +8,7 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
+#define PXR_BOOST_PYTHON_HAS_BOOST_SHARED_PTR
 
 #include "pxr/external/boost/python/module.hpp"
 #include "pxr/external/boost/python/class.hpp"

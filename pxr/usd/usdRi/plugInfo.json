@@ -14,6 +14,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "RiMaterialAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiRenderPassAPI": {
@@ -30,6 +31,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "RiRenderPassAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiSplineAPI": {
@@ -40,6 +42,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "RiSplineAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiStatementsAPI": {
@@ -50,6 +53,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "StatementsAPI", 
                         "schemaKind": "singleApplyAPI"
                     }
                 }

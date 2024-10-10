@@ -10,8 +10,6 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 //
 ///////////////////////////////////////////////////////////////////////////////
-#if !defined(BOOST_PP_IS_ITERATING)
-
 #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_DEF_HPP
 #define PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_DEF_HPP
 
@@ -24,13 +22,10 @@
 
 #include "pxr/external/boost/python/detail/defaults_gen.hpp"
 #include "pxr/external/boost/python/detail/type_traits.hpp"
-#include <boost/mpl/front.hpp>
-#include <boost/mpl/size.hpp>
-#include <boost/static_assert.hpp>
-#include <boost/preprocessor/iterate.hpp>
+#include "pxr/external/boost/python/detail/mpl2/front.hpp"
+#include "pxr/external/boost/python/detail/mpl2/size.hpp"
 #include "pxr/external/boost/python/class_fwd.hpp"
 #include "pxr/external/boost/python/scope.hpp"
-#include <boost/preprocessor/debug/line.hpp>
 #include "pxr/external/boost/python/detail/scope.hpp"
 #include "pxr/external/boost/python/detail/make_keyword_range_fn.hpp"
 #include "pxr/external/boost/python/object/add_to_namespace.hpp"
@@ -116,7 +111,7 @@ namespace detail
   //      template <typename OverloadsT, typename NameSpaceT>
   //      inline void
   //      define_stub_function(
-  //          char const* name, OverloadsT s, NameSpaceT& name_space, mpl::int_<N>)
+  //          char const* name, OverloadsT s, NameSpaceT& name_space, detail::mpl2::int_<N>)
   //      {
   //          name_space.def(name, &OverloadsT::func_N);
   //      }
@@ -134,12 +129,29 @@ namespace detail
   //
   // @group define_stub_function<N> {
   template <int N>
-  struct define_stub_function {};
+  struct define_stub_function {
 
-#define BOOST_PP_ITERATION_PARAMS_1                                             \
-    (3, (0, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/detail/defaults_def.hpp"))
+      template <class StubsT, class CallPolicies, class NameSpaceT>
+      static void define(
+          char const* name
+          , StubsT const&
+          , keyword_range const& kw
+          , CallPolicies const& policies
+          , NameSpaceT& name_space
+          , char const* doc)
+      {
+          using FuncT = typename StubsT::template func<N>;
 
-#include BOOST_PP_ITERATE()
+          detail::name_space_def(
+              name_space
+              , name
+              , &FuncT::theFn
+              , kw
+              , policies
+              , doc
+              , &name_space);
+      }
+  };
   
   // }
   
@@ -244,18 +256,18 @@ namespace detail
       NameSpaceT& name_space,
       SigT const&)
   {
-      typedef typename mpl::front<SigT>::type return_type;
+      typedef typename detail::mpl2::front<SigT>::type return_type;
       typedef typename OverloadsT::void_return_type void_return_type;
       typedef typename OverloadsT::non_void_return_type non_void_return_type;
 
-      typedef typename mpl::if_c<
+      typedef typename mpl2::if_c<
           is_same<void, return_type>::value
           , void_return_type
           , non_void_return_type
       >::type stubs_type;
 
-      BOOST_STATIC_ASSERT(
-          (stubs_type::max_args) <= mpl::size<SigT>::value);
+      static_assert(
+          (stubs_type::max_args) <= detail::mpl2::size<SigT>::value);
 
       typedef typename stubs_type::template gen<SigT> gen_type;
       define_with_defaults_helper<stubs_type::n_funcs-1>::def(
@@ -273,31 +285,3 @@ namespace detail
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_DEF_HPP
-
-#else // defined(BOOST_PP_IS_ITERATING)
-// PP vertical iteration code
-
-
-template <>
-struct define_stub_function<BOOST_PP_ITERATION()> {
-    template <class StubsT, class CallPolicies, class NameSpaceT>
-    static void define(
-        char const* name
-        , StubsT const&
-        , keyword_range const& kw
-        , CallPolicies const& policies
-        , NameSpaceT& name_space
-        , char const* doc)
-    {
-        detail::name_space_def(
-            name_space
-            , name
-            , &StubsT::BOOST_PP_CAT(func_, BOOST_PP_ITERATION())
-            , kw
-            , policies
-            , doc
-            , &name_space);
-    }
-};
-
-#endif // !defined(BOOST_PP_IS_ITERATING)

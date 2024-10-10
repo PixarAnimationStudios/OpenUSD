@@ -11,7 +11,8 @@ class "RenderSettingsBase" (
 {
     uniform token aspectRatioConformPolicy = "expandAperture" (
         allowedTokens = ["expandAperture", "cropAperture", "adjustApertureWidth", "adjustApertureHeight", "adjustPixelAspectRatio"]
-        doc = '''Indicates the policy to use to resolve an aspect
+        doc = '''
+        Indicates the policy to use to resolve an aspect
         ratio mismatch between the camera aperture and image settings.
 
         This policy allows a standard render setting to do something
@@ -107,7 +108,8 @@ class RenderSettings "RenderSettings" (
 {
     uniform token aspectRatioConformPolicy = "expandAperture" (
         allowedTokens = ["expandAperture", "cropAperture", "adjustApertureWidth", "adjustApertureHeight", "adjustPixelAspectRatio"]
-        doc = '''Indicates the policy to use to resolve an aspect
+        doc = '''
+        Indicates the policy to use to resolve an aspect
         ratio mismatch between the camera aperture and image settings.
 
         This policy allows a standard render setting to do something
@@ -243,7 +245,8 @@ class RenderVar "RenderVar" (
     )
     uniform token sourceType = "raw" (
         allowedTokens = ["raw", "primvar", "lpe", "intrinsic"]
-        doc = '''Indicates the type of the source.
+        doc = '''
+        Indicates the type of the source.
 
         - "raw": The name should be passed directly to the
           renderer.  This is the default behavior.
@@ -281,7 +284,8 @@ class RenderProduct "RenderProduct" (
 {
     uniform token aspectRatioConformPolicy = "expandAperture" (
         allowedTokens = ["expandAperture", "cropAperture", "adjustApertureWidth", "adjustApertureHeight", "adjustPixelAspectRatio"]
-        doc = '''Indicates the policy to use to resolve an aspect
+        doc = '''
+        Indicates the policy to use to resolve an aspect
         ratio mismatch between the camera aperture and image settings.
 
         This policy allows a standard render setting to do something
@@ -376,7 +380,8 @@ class RenderProduct "RenderProduct" (
     )
     uniform token productType = "raster" (
         allowedTokens = ["raster", "deepRaster"]
-        doc = """The type of output to produce; allowed values are ones most 
+        doc = """
+        The type of output to produce. Allowed values are ones most 
         renderers should be able to support.
         Renderers that support custom output types are encouraged to supply an 
         applied API schema that will add an `token myRenderContext:productType`

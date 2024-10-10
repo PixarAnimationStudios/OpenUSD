@@ -86,6 +86,10 @@ private:
 PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS(bar_set, Bar::set, 0,3)
 
 using namespace PXR_BOOST_NAMESPACE::python;
+
+static tuple f1(int a0, int a1) { return make_tuple(a0, a1); }
+static tuple f2(int a0, int a1, int a2) { return make_tuple(a0, a1, a2); }
+
 PXR_BOOST_PYTHON_MODULE(keywords)
 {
     // Explicitly enable Python signatures in docstrings in case boost::python
@@ -93,10 +97,6 @@ PXR_BOOST_PYTHON_MODULE(keywords)
     // signatures by default.
     docstring_options doc_options;
     doc_options.enable_py_signatures();
-
-#if BOOST_WORKAROUND(__GNUC__, == 2)
-    using PXR_BOOST_NAMESPACE::python::arg;
-#endif 
     
     class_<Foo>(
         "Foo"
@@ -128,6 +128,8 @@ PXR_BOOST_PYTHON_MODULE(keywords)
       .def("n", &Bar::getn)
       ;
 
+   def("func", f1, (arg("a1")=2));
+   def("func", f2, (arg("a2")=2));
 }
 
 

@@ -64,7 +64,7 @@ void wrapFilesystemDiscoveryContext()
     typedef _Context This;
     typedef TfWeakPtr<_Context> ThisPtr;
 
-    class_<This, ThisPtr, bases<NdrDiscoveryPluginContext>, boost::noncopyable>(
+    class_<This, ThisPtr, bases<NdrDiscoveryPluginContext>, noncopyable>(
         "Context", no_init)
         .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(This::New))
@@ -84,7 +84,7 @@ void wrapFilesystemDiscovery()
     TfPyFunctionFromPython<bool(NdrNodeDiscoveryResult&)>();
 
     scope s =
-    class_<This, ThisPtr, bases<NdrDiscoveryPlugin>, boost::noncopyable>(
+    class_<This, ThisPtr, bases<NdrDiscoveryPlugin>, noncopyable>(
         "_FilesystemDiscoveryPlugin", no_init)
         .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(New))

@@ -19,12 +19,12 @@
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
+# include "pxr/external/boost/python/type_list.hpp"
 # include "pxr/external/boost/python/tuple.hpp"
 # include "pxr/external/boost/python/dict.hpp"
 # include "pxr/external/boost/python/object/py_function.hpp"
-# include <boost/mpl/vector/vector10.hpp>
 
-# include <boost/limits.hpp>
+# include <limits>
 # include <cstddef>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
@@ -61,7 +61,7 @@ object raw_function(F f, std::size_t min_args = 0)
     return detail::make_raw_function(
         objects::py_function(
             detail::raw_dispatcher<F>(f)
-          , mpl::vector1<PyObject*>()
+          , type_list<PyObject*>()
           , min_args
           , (std::numeric_limits<unsigned>::max)()
         )

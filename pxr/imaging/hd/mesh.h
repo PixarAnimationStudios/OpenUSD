@@ -42,6 +42,7 @@ struct HdMeshReprDesc
                    bool flatShadingEnabled = false,
                    bool blendWireframeColor = true,
                    bool forceOpaqueEdges = true,
+                   bool surfaceEdgeIds = false,
                    bool doubleSided = false,
                    float lineWidth = 0,
                    bool useCustomDisplacement = true,
@@ -52,6 +53,7 @@ struct HdMeshReprDesc
         , flatShadingEnabled(flatShadingEnabled)
         , blendWireframeColor(blendWireframeColor)
         , forceOpaqueEdges(forceOpaqueEdges)
+        , surfaceEdgeIds(surfaceEdgeIds)
         , doubleSided(doubleSided)
         , lineWidth(lineWidth)
         , useCustomDisplacement(useCustomDisplacement)
@@ -77,6 +79,10 @@ struct HdMeshReprDesc
     /// to be fully opaque, ignoring any applicable opacity inputs.
     /// Does not apply to patch edges.
     bool            forceOpaqueEdges;
+    /// Generate edge ids for surface and hull geom styles that do not
+    /// otherwise render edges, e.g. to support picking and highlighting
+    /// of edges with these mesh geom styles.
+    bool            surfaceEdgeIds;
     /// Should this mesh be treated as double-sided? The resolved value is
     /// (prim.doubleSided || repr.doubleSided).
     bool            doubleSided;

@@ -20,13 +20,8 @@
 # include "pxr/external/boost/python/object/make_instance.hpp"
 # include "pxr/external/boost/python/converter/registry.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
-# include <boost/get_pointer.hpp>
-# include <boost/detail/workaround.hpp>
+# include "pxr/external/boost/python/detail/get_pointer.hpp"
 # include <typeinfo>
-
-namespace PXR_BOOST_NAMESPACE {
-    using boost::get_pointer; // Enable ADL for boost types
-}
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
@@ -37,16 +32,13 @@ struct make_ptr_instance
     template <class Arg>
     static inline Holder* construct(void* storage, PyObject*, Arg& x)
     {
-#if defined(BOOST_NO_CXX11_SMART_PTR)
-      return new (storage) Holder(x);
-#else
       return new (storage) Holder(std::move(x));
-#endif
     }
     
     template <class Ptr>
     static inline PyTypeObject* get_class_object(Ptr const& x)
     {
+        using python::detail::get_pointer;
         return get_class_object_impl(get_pointer(x));
     }
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
@@ -63,7 +55,7 @@ struct make_ptr_instance
             return 0; // means "return None".
 
         PyTypeObject* derived = get_derived_class_object(
-            BOOST_DEDUCED_TYPENAME PXR_BOOST_NAMESPACE::python::detail::is_polymorphic<U>::type(), p);
+            typename PXR_BOOST_NAMESPACE::python::detail::is_polymorphic<U>::type(), p);
         
         if (derived)
             return derived;

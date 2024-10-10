@@ -104,14 +104,14 @@ PXR_BOOST_PYTHON_MODULE(builtin_converters_ext)
     def("rewrap_value_complex_double", by_value<std::complex<double> >::rewrap);
     def("rewrap_value_complex_long_double", by_value<std::complex<long double> >::rewrap);
     def("rewrap_value_wstring",
-# if defined(BOOST_NO_STD_WSTRING) || !defined(Py_USING_UNICODE)
+# if !defined(Py_USING_UNICODE)
         identity_
 # else 
         by_value<std::wstring>::rewrap
 # endif 
     );
     def("rewrap_value_string",
-# if defined(BOOST_NO_STD_WSTRING) || !defined(Py_USING_UNICODE)
+# if !defined(Py_USING_UNICODE)
         identity_
 # else 
         by_value<std::wstring>::rewrap

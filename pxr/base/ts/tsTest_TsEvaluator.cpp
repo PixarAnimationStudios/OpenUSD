@@ -62,8 +62,7 @@ static TsExtrapolation _MakeExtrap(
 }
 
 TsSpline TsTest_TsEvaluator::SplineDataToSpline(
-    const SData &data,
-    const bool mayaTangentForm) const
+    const SData &data) const
 {
     const SData::Features features = data.GetRequiredFeatures();
     if ((features & SData::FeatureHermiteSegments)
@@ -90,22 +89,10 @@ TsSpline TsTest_TsEvaluator::SplineDataToSpline(
         knot.SetTime(dataKnot.time);
         knot.SetValue(dataKnot.value);
 
-        if (mayaTangentForm)
-        {
-            knot.SetMayaPreTanWidth(dataKnot.preLen * 3);
-            knot.SetMayaPreTanHeight(
-                dataKnot.preSlope * dataKnot.preLen * -3);
-            knot.SetMayaPostTanWidth(dataKnot.postLen * 3);
-            knot.SetMayaPostTanHeight(
-                dataKnot.postSlope * dataKnot.postLen * 3);
-        }
-        else
-        {
-            knot.SetPreTanWidth(dataKnot.preLen);
-            knot.SetPreTanSlope(dataKnot.preSlope);
-            knot.SetPostTanWidth(dataKnot.postLen);
-            knot.SetPostTanSlope(dataKnot.postSlope);
-        }
+        knot.SetPreTanWidth(dataKnot.preLen);
+        knot.SetPreTanSlope(dataKnot.preSlope);
+        knot.SetPostTanWidth(dataKnot.postLen);
+        knot.SetPostTanSlope(dataKnot.postSlope);
 
         switch (dataKnot.nextSegInterpMethod)
         {

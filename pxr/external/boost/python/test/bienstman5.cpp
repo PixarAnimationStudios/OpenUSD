@@ -11,7 +11,6 @@
 #include "pxr/external/boost/python/module.hpp"
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/class.hpp"
-#include <boost/mpl/list.hpp>
 
 #include <complex>
 

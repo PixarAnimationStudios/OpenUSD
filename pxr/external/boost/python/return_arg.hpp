@@ -26,10 +26,9 @@
 
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-# include <boost/mpl/int.hpp>
-# include <boost/mpl/at.hpp>
+# include "pxr/external/boost/python/detail/mpl2/int.hpp"
+# include "pxr/external/boost/python/detail/mpl2/at.hpp"
 
-# include <boost/static_assert.hpp>
 # include "pxr/external/boost/python/refcount.hpp"
 
 # include <cstddef>
@@ -75,10 +74,10 @@ template <
 struct return_arg : Base
 {
  private:
-    BOOST_STATIC_CONSTANT(bool, legal = arg_pos > 0);
+    static constexpr bool legal = arg_pos > 0;
 
  public:
-    typedef typename mpl::if_c<
+    typedef typename detail::mpl2::if_c<
         legal
         , detail::return_none
         , detail::return_arg_pos_argument_must_be_positive<arg_pos>
@@ -93,17 +92,17 @@ struct return_arg : Base
     {
         // In case of arg_pos == 0 we could simply return Base::postcall,
         // but this is redundant
-        BOOST_STATIC_ASSERT(arg_pos > 0);
+        static_assert(arg_pos > 0);
 
         result = Base::postcall(args,result);
         if (!result)
             return 0;
         Py_DECREF(result);
-        return incref( detail::get(mpl::int_<arg_pos-1>(),args) );
+        return incref( detail::get(detail::mpl2::int_<arg_pos-1>(),args) );
     }
 
     template <class Sig> 
-    struct extract_return_type : mpl::at_c<Sig, arg_pos>
+    struct extract_return_type : detail::mpl2::at_c<Sig, arg_pos>
     {
     };
 

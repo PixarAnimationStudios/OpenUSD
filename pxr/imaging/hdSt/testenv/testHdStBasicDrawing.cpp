@@ -40,7 +40,7 @@ protected:
     void ParseArgs(int argc, char *argv[]) override;
 
 private:
-    HdSt_TestDriver* _driver;
+    HdSt_TestDriverUniquePtr _driver;
     HdSt_TestLightingShaderSharedPtr _lightingShader;
     std::vector<GfVec4d> _clipPlanes;
 
@@ -58,7 +58,7 @@ My_TestGLDrawing::InitTest()
 {
     std::cout << "My_TestGLDrawing::InitTest() " << _reprName << "\n";
 
-    _driver = new HdSt_TestDriver(_reprName);
+    _driver = std::make_unique<HdSt_TestDriver>(_reprName);
     HdUnitTestDelegate &delegate = _driver->GetDelegate();
     delegate.SetRefineLevel(_refineLevel);
 

@@ -14,6 +14,7 @@
                         "bases": [
                             "UsdVolFieldAsset"
                         ], 
+                        "schemaIdentifier": "Field3DAsset", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdVolFieldAsset": {
@@ -24,6 +25,7 @@
                         "bases": [
                             "UsdVolFieldBase"
                         ], 
+                        "schemaIdentifier": "FieldAsset", 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdVolFieldBase": {
@@ -34,6 +36,7 @@
                         "bases": [
                             "UsdGeomXformable"
                         ], 
+                        "schemaIdentifier": "FieldBase", 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdVolOpenVDBAsset": {
@@ -44,6 +47,7 @@
                         "bases": [
                             "UsdVolFieldAsset"
                         ], 
+                        "schemaIdentifier": "OpenVDBAsset", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdVolVolume": {
@@ -54,6 +58,7 @@
                         "bases": [
                             "UsdGeomGprim"
                         ], 
+                        "schemaIdentifier": "Volume", 
                         "schemaKind": "concreteTyped"
                     }
                 }

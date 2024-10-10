@@ -10,6 +10,8 @@
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/arch/library.h"
 #include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/matrix3d.h"
@@ -22,24 +24,21 @@
 
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/materialNetwork2Interface.h"
+#ifdef PXR_DCC_LOCATION_ENV_VAR
+#include "hdPrman/hdMtlx.h" // copied from pxr/imaging/hdMtlx, this has fixes
+#else
 #include "pxr/imaging/hdMtlx/hdMtlx.h"
+#endif
 
 #include <MaterialXCore/Node.h>
 #include <MaterialXCore/Document.h>
+#include <MaterialXFormat/Environ.h>
 #include <MaterialXFormat/Util.h>
 #include <MaterialXFormat/XmlIo.h>
 #include <MaterialXGenShader/Shader.h>
 #include <MaterialXGenShader/Util.h>
 #include <MaterialXGenOsl/OslShaderGenerator.h>
 #include <MaterialXRender/Util.h>
-
-#ifdef PXR_OSL_SUPPORT_ENABLED
-#include <OSL/oslcomp.h>
-#include <OSL/oslversion.h>
-#include <fstream>
-#endif
-
-#include <mutex>
 
 namespace mx = MaterialX;
 
@@ -53,6 +52,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (ND_standard_surface_surfaceshader)
     (ND_UsdPreviewSurface_surfaceshader)
     (ND_displacement_float)
+    (ND_displacement_vector3)
     (ND_image_vector2)
     (ND_image_vector3)
     (ND_image_vector4)
@@ -68,16 +68,29 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Texture Coordinate Tokens
     (ND_geompropvalue_vector2)
-    (ND_remap_vector2)
+    (ND_separate2_vector2)
+    (ND_floor_float)
+    (ND_multiply_float)
+    (ND_add_float)
+    (ND_subtract_float)
+    (ND_combine2_vector2)
+    (separate2)
+    (floor)
+    (multiply)
+    (add)
+    (subtract)
+    (combine2)
     (texcoord)
     (geomprop)
     (geompropvalue)
     (in)
-    (inhigh)
-    (inlow)
-    (remap)
+    (in1)
+    (in2)
+    (out)
+    (outx)
+    (outy)
+    (st)
     (vector2)
-    (float2)
     ((string_type, "string"))
 
     // Hydra SourceTypes
@@ -100,6 +113,18 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((cs_auto, "auto"))
     ((cs_srgb, "sRGB"))
     ((mtlx_srgb, "srgb_texture"))
+
+    // For supporting Usd texturing nodes
+    (ND_UsdUVTexture)
+    (ND_dot_vector2)
+    (ND_UsdPrimvarReader_vector2)
+    (UsdPrimvarReader_float2)
+    (UsdUVTexture)
+    (UsdVerticalFlip)
+
+    // Additional terminal tokens needed for LookDevX materials
+    ((mtlx_surface, "mtlx:surface"))
+    ((mtlx_displacement, "mtlx:displacement"))
 );
 
 static bool
@@ -156,9 +181,6 @@ _GenMaterialXShaderCode(
 {
     // Initialize the Context for shaderGen
     mx::GenContext mxContext = mx::OslShaderGenerator::create();
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && MATERIALX_BUILD_VERSION == 3
-    mxContext.registerSourceCodeSearchPath(searchPath);
-#else
     // Starting from MaterialX 1.38.4 at PR 877, we must remove the "libraries" part:
     mx::FileSearchPath libSearchPaths;
     for (const mx::FilePath &path : searchPath) {
@@ -170,7 +192,6 @@ _GenMaterialXShaderCode(
         }
     }
     mxContext.registerSourceCodeSearchPath(libSearchPaths);
-#endif
     mxContext.getOptions().fileTextureVerticalFlip = false;
 
     // Get the Node from the Nodegraph/mxDoc 
@@ -227,8 +248,9 @@ _GetAdapterNodeType(TfToken const &hdNodeType)
     } 
     else if (hdNodeType == _tokens->ND_UsdPreviewSurface_surfaceshader) {
         return _tokens->USD_Adapter;
-    } 
-    else if (hdNodeType == _tokens->ND_displacement_float) {
+    }
+    else if (hdNodeType == _tokens->ND_displacement_float ||
+             hdNodeType == _tokens->ND_displacement_vector3) {
         return _tokens->Displacement_Adapter;
     }
     else {
@@ -241,7 +263,8 @@ _GetAdapterNodeType(TfToken const &hdNodeType)
 static TfToken
 _GetTerminalShaderType(TfToken const &hdNodeType)
 {
-    return (hdNodeType == _tokens->ND_displacement_float) ?
+    return (hdNodeType == _tokens->ND_displacement_float ||
+            hdNodeType == _tokens->ND_displacement_vector3) ?
             _tokens->PxrDisplace : _tokens->PxrSurface;    
 }
 
@@ -249,7 +272,8 @@ _GetTerminalShaderType(TfToken const &hdNodeType)
 static TfToken
 _GetTerminalConnectionName(TfToken const &hdNodeType)
 {
-    return (hdNodeType == _tokens->ND_displacement_float) ?
+    return (hdNodeType == _tokens->ND_displacement_float ||
+            hdNodeType == _tokens->ND_displacement_vector3) ?
             HdMaterialTerminalTokens->displacement :
             HdMaterialTerminalTokens->surface;
 }
@@ -322,8 +346,6 @@ _CompileOslSource(
     std::string const &oslSource,
     mx::FileSearchPath const &searchPaths)
 {
-#ifdef PXR_OSL_SUPPORT_ENABLED
-
     TF_DEBUG(HDPRMAN_DUMP_MATERIALX_OSL_SHADER)
         .Msg("--------- MaterialX Generated Shader '%s' ----------\n%s"
              "---------------------------\n\n", name.c_str(), oslSource.c_str());
@@ -352,38 +374,66 @@ _CompileOslSource(
 #else
     // MaterialX 1.38.4 removed its copy of stdosl.h and other OSL headers
     // and requires it to be included from the OSL installation itself.
-    oslArgs.push_back(std::string("-I") + OSL_SHADER_INSTALL_DIR);
+    oslArgs.push_back(std::string("-I") + TfGetenv("RMANTREE") + "lib/osl");
 #endif
 
-    // Compile oslSource
-    std::string oslCompiledSource;
-    OSL::OSLCompiler oslCompiler;
-    oslCompiler.compile_buffer(oslSource, oslCompiledSource, oslArgs);
-    if (oslCompiledSource.empty()) {
-        TF_WARN("Unable to compile MaterialX Osl shader for the '%s' "
-                "MaterialX node\n", name.substr(0, name.size()-6).c_str());
-        return mx::EMPTY_STRING;
-    }
-
     // Save compiled shader
-    std::string compiledFilePath = ArchMakeTmpFileName("MX." + name, ".oso");
-    FILE *compiledShader;
-    compiledShader = fopen((compiledFilePath).c_str(), "w+");
-    if (!compiledShader) {
-        TF_WARN("Unable to save compiled MaterialX Osl shader at '%s'\n",
-                compiledFilePath.c_str());
+    std::string sourceFilePath = ArchMakeTmpFileName("MX." + name, ".osl");
+    FILE *sourceFile;
+    sourceFile = fopen((sourceFilePath).c_str(), "w+");
+    if (!sourceFile) {
+        TF_WARN("Unable to save MaterialX OSL shader at '%s'\n",
+                sourceFilePath.c_str());
         return mx::EMPTY_STRING;
     }
     else {
-        fputs(oslCompiledSource.c_str(), compiledShader);
-        fclose(compiledShader);
-        return compiledFilePath;
+        fputs(oslSource.c_str(), sourceFile);
+        fclose(sourceFile);
     }
+
+    // Generate compiled shader
+    const std::string compiledFilePath = ArchMakeTmpFileName("MX." + name, ".oso");
+    std::string oslcLaunch = TfGetenv("RMANTREE");
+    oslcLaunch += "/bin/oslc ";
+    for (const auto& arg : oslArgs) {
+        oslcLaunch += " " + arg;
+    }
+    oslcLaunch += " -q ";
+    oslcLaunch += " -o " + compiledFilePath;
+    oslcLaunch += " " + sourceFilePath;
+#ifdef ARCH_OS_WINDOWS
+    PROCESS_INFORMATION pi;
+    memset(&pi, 0, sizeof(pi));
+    STARTUPINFO si;
+    memset(&si, 0, sizeof(si));
+    bool success = CreateProcess(NULL,
+                                 (LPSTR)TEXT(oslcLaunch.c_str()),
+                                 NULL,
+                                 NULL,
+                                 FALSE,
+                                 CREATE_NO_WINDOW,
+                                 NULL,
+                                 NULL,
+                                 &si,
+                                 &pi);
+    if(success) {
+        WaitForSingleObject(pi.hProcess, INFINITE);
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+    }
+    const int oslcResult = success ? 0 : HRESULT_FROM_WIN32(GetLastError());
+
 #else
-    TF_WARN("Unable to compile MaterialX generated Osl shader, enable OSL "
-            "support for full MaterialX support in HdPrman.\n");
-    return mx::EMPTY_STRING;
+    const int oslcResult = std::system(oslcLaunch.c_str());
 #endif
+    // Check compiler was successful
+    if (oslcResult != 0) {
+        TF_WARN("Unable to compile MaterialX OSL shader at '%s'\n",
+                compiledFilePath.c_str());
+        return mx::EMPTY_STRING;
+    }
+
+    return compiledFilePath;
 }
 
 static void
@@ -479,7 +529,8 @@ _UpdateNetwork(
 
             // Generate the oslSource code for the connected upstream node
             SdfPath const nodePath = SdfPath(upstreamNodeName);
-            std::string const &mxNodeName = nodePath.GetName();
+            std::string const &mxNodeName =
+                    HdMtlxCreateNameFromPath(nodePath);
             std::string const &mxNodeGraphName =
                 nodePath.GetParentPath().GetName();
             std::string shaderName = mxNodeName + "Shader";
@@ -505,6 +556,10 @@ _UpdateNetwork(
                                 NdrTokenMap(),  // metadata
                                 _tokens->mtlx,  // subId
                                 _tokens->OSL);  // sourceType
+
+            if(!sdrNode) {
+                continue;
+            }
 
             // Update node type to that of the Sdr node.
             netInterface->SetNodeType(
@@ -660,8 +715,12 @@ _GetWrapModes(
 static TfToken
 _GetColorSpace(
     HdMaterialNetworkInterface *netInterface,
+#if PXR_VERSION >= 2402
     TfToken const &hdTextureNodeName,
     HdMaterialNetworkInterface::NodeParamData paramData)
+#else
+    TfToken const &hdTextureNodeName)
+#endif
 {
     const TfToken nodeType = netInterface->GetNodeType(hdTextureNodeName);
     if (nodeType == _tokens->ND_image_vector2 ||
@@ -670,13 +729,77 @@ _GetColorSpace(
         // For images not used as color use "raw" (eg. normal maps)
         return _tokens->cs_raw;
     } else {
+#if PXR_VERSION >= 2402
         if (paramData.colorSpace == _tokens->mtlx_srgb) {
             return _tokens->cs_srgb;
         } else {
             return _tokens->cs_auto;
         }
+#else
+        return _tokens->cs_auto;
+#endif
     }
 }
+
+// Returns true is the given mtlxSdrNode requires primvar support for texture 
+// coordinates
+static bool
+_NodeHasTextureCoordPrimvar(
+    mx::DocumentPtr const &mxDoc,
+    const SdrShaderNodeConstPtr mtlxSdrNode)
+{
+    // Custom nodes may have a <texcoord> or <geompropvalue> node as
+    // a part of the defining nodegraph
+    const mx::NodeDefPtr mxNodeDef =
+        mxDoc->getNodeDef(mtlxSdrNode->GetIdentifier().GetString());
+    mx::InterfaceElementPtr impl = mxNodeDef->getImplementation();
+    if (impl && impl->isA<mx::NodeGraph>()) {
+        const mx::NodeGraphPtr nodegraph = impl->asA<mx::NodeGraph>();
+        // Return True if the defining nodegraph uses a texcoord node
+        if (!nodegraph->getNodes(_tokens->texcoord).empty()) {
+            return true;
+        } 
+        // Or a geompropvalue node of type vector2, which we assume to be 
+        // for texture coordinates. 
+        auto geompropvalueNodes = nodegraph->getNodes(_tokens->geompropvalue);
+        for (const mx::NodePtr& mxGeomPropNode : geompropvalueNodes) {
+            if (mxGeomPropNode->getType() == mx::Type::VECTOR2->getName()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
+// Look for UsdUvTexture, UsdPrimvarReader_float2, etc
+// and replace with the corresponding mtlx definition type,
+// available in Solaris with "ND_" prefix.
+// The network has already gone through MatfiltUsdPreviewSurface, which
+// may have inserted UsdVerticalFlip.
+// Convert nonstandard UsdVerticalFlip to a pass through ND_dot_vector2,
+// and the mtlx nodes for flipping will be inserted by _UpdateTextureNodes.
+#ifdef PXR_DCC_LOCATION_ENV_VAR
+static void
+_FixNodeNames(
+    HdMaterialNetworkInterface *netInterface)
+{
+    const TfTokenVector nodeNames = netInterface->GetNodeNames();
+    for (TfToken const &nodeName : nodeNames) {
+        TfToken nodeType = netInterface->GetNodeType(nodeName);
+        if(TfStringStartsWith(nodeType.GetText(), "Usd")) {
+            if(nodeType == _tokens->UsdPrimvarReader_float2) {
+                nodeType = _tokens->ND_UsdPrimvarReader_vector2;
+            } else if(nodeType == _tokens->UsdVerticalFlip) {
+                nodeType = _tokens->ND_dot_vector2; // pass through node
+            } else {
+                nodeType = TfToken("ND_"+nodeType.GetString());
+            }
+            netInterface->SetNodeType(nodeName, nodeType);
+        }
+    }
+}
+#endif
 
 static void 
 _UpdateTextureNodes(
@@ -686,33 +809,66 @@ _UpdateTextureNodes(
 {
     for (SdfPath const &texturePath : hdTextureNodePaths) {
         TfToken const &textureNodeName = texturePath.GetToken();
+        std::string mxTextureNodeName =
+                HdMtlxCreateNameFromPath(texturePath);
         const TfToken nodeType = netInterface->GetNodeType(textureNodeName);
         if (nodeType.IsEmpty()) {
             TF_WARN("Connot find texture node '%s' in material network.",
                     textureNodeName.GetText());
             continue;
         }
-        
+        // Get the filename parameter name, 
+        // MaterialX stdlib nodes use 'file' however, this could be different
+        // for custom nodes that use textures.
+        TfToken fileParamName = _tokens->file;
+        const mx::NodeDefPtr nodeDef = mxDoc->getNodeDef(nodeType);
+        if (nodeDef) {
+            for (auto const& mxInput : nodeDef->getActiveInputs()) {
+                if (mxInput->getType() == _tokens->filename) {
+                    fileParamName = TfToken(mxInput->getName());
+                }
+            }
+
+        }
+#if PXR_VERSION >= 2402
         HdMaterialNetworkInterface::NodeParamData fileParamData =
-            netInterface->GetNodeParameterData(textureNodeName, _tokens->file);
+            netInterface->GetNodeParameterData(textureNodeName, fileParamName);
         const VtValue vFile = fileParamData.value;
+#else
+        VtValue vFile =
+            netInterface->GetNodeParameterValue(textureNodeName, fileParamName);
+#endif
         if (vFile.IsEmpty()) {
             TF_WARN("File path missing for texture node '%s'.",
                     textureNodeName.GetText());
             continue;
         }
 
-        if (vFile.IsHolding<SdfAssetPath>()) {
-            std::string path = vFile.Get<SdfAssetPath>().GetResolvedPath();
-            std::string ext = ArGetResolver().GetExtension(path);
+        std::string path;
 
+        // Typically expect SdfAssetPath, but UsdUVTexture nodes may
+        // have changed value to string due to MatfiltConvertPreviewMaterial
+        // inserting rtxplugin call.
+        if (vFile.IsHolding<SdfAssetPath>()) {
+            path = vFile.Get<SdfAssetPath>().GetResolvedPath();
+            if(path.empty()) {
+                path = vFile.Get<SdfAssetPath>().GetAssetPath();
+            }
+        } else if(vFile.IsHolding<std::string>()) {
+            path = vFile.Get<std::string>();
+        }
+        // Convert to posix path beause windows backslashes will get lost
+        // before reaching the rtx plugin
+        path = mx::FilePath(path).asString(mx::FilePath::FormatPosix);
+
+        if(!path.empty()) {
+            const std::string ext = ArGetResolver().GetExtension(path);
 
             mx::NodeGraphPtr mxNodeGraph;
             mx::NodePtr mxTextureNode;
-
             _FindGraphAndNodeByName(mxDoc,
                                     texturePath.GetParentPath().GetName(),
-                                    texturePath.GetName(),
+                                    mxTextureNodeName,
                                     &mxNodeGraph,
                                     &mxTextureNode);
 
@@ -723,7 +879,12 @@ _UpdateTextureNodes(
             // Update texture nodes that use non-native texture formats
             // to read them via a Renderman texture plugin.
             bool needInvertT = false;
-            if (!ext.empty() && ext != "tex") {
+            if(TfStringStartsWith(path, "rtxplugin:")) {
+                mxTextureNode->setInputValue(_tokens->file.GetText(), // name
+                                             path,                    // value
+                                             _tokens->filename.GetText());//type
+            }
+            else if (!ext.empty() && ext != "tex") {
 
                 // Update the input value to use the Renderman texture plugin
                 const std::string pluginName = 
@@ -732,8 +893,13 @@ _UpdateTextureNodes(
                 TfToken uWrap, vWrap;
                 _GetWrapModes(netInterface, textureNodeName, &uWrap, &vWrap);
 
+#if PXR_VERSION >= 2402
                 TfToken colorSpace = 
                     _GetColorSpace(netInterface, textureNodeName, fileParamData);
+#else
+                TfToken colorSpace = 
+                    _GetColorSpace(netInterface, textureNodeName);
+#endif
 
                 std::string const &mxInputValue = TfStringPrintf(
                     "rtxplugin:%s?filename=%s&wrapS=%s&wrapT=%s&sourceColorSpace=%s",
@@ -744,7 +910,7 @@ _UpdateTextureNodes(
                          mxInputValue.c_str());
 
                 // Update the MaterialX Texture Node with the new mxInputValue
-                mxTextureNode->setInputValue(_tokens->file.GetText(), // name
+                mxTextureNode->setInputValue(fileParamName.GetText(), // name
                                              mxInputValue,            // value
                                              _tokens->filename.GetText());//type
             }
@@ -752,71 +918,174 @@ _UpdateTextureNodes(
                 needInvertT = true;
                 // For tex files, update value with resolved path, because prman
                 // may not be able to find a usd relative path.
-                mxTextureNode->setInputValue(_tokens->file.GetText(), // name
-                                             path,                    // value
-                                             _tokens->filename.GetText());//type
+                mxTextureNode->
+                    setInputValue(_tokens->file.GetText(), // name
+                                  path,                    // value
+                                  _tokens->filename.GetText());//type
                 TF_DEBUG(HDPRMAN_IMAGE_ASSET_RESOLVE)
                     .Msg("Resolved MaterialX asset path: %s\n",
                          path.c_str());
             }
 
+            // UsdUvTexture nodes and MtlxImage nodes have different
+            // names for their texture coordinate connection.
+            const TfToken texCoordToken =
+                (nodeType == _tokens->ND_UsdUVTexture) ?
+                _tokens->st : _tokens->texcoord;
+
             // If texcoord param isn't connected, make a default connection
             // to a mtlx geompropvalue node.
             mx::InputPtr texcoordInput =
-                mxTextureNode->getInput(_tokens->texcoord);
+                mxTextureNode->getInput(texCoordToken);
             if(!texcoordInput) {
-                texcoordInput =
-                    mxTextureNode->addInput(_tokens->texcoord,
-                                            _tokens->vector2);
-                const std::string stNodeName =
-                    textureNodeName.GetString() + "__texcoord";
 
                 // Get the sdr node for the mxTexture node
                 SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
                 const SdrShaderNodeConstPtr sdrTextureNode =
                     sdrRegistry.GetShaderNodeByIdentifierAndType(
                         nodeType, _tokens->mtlx);
-                // Get the primvarname from the sdrTextureNode metadata
-                auto metadata = sdrTextureNode->GetMetadata();
-                auto primvarName = metadata[SdrNodeMetadata->Primvars];
 
-                mx::NodePtr geompropNode =
-                    mxNodeGraph->addNode(_tokens->geompropvalue,
-                                         stNodeName,
-                                         _tokens->vector2);
-                geompropNode->setInputValue(_tokens->geomprop,
-                                            primvarName, _tokens->string_type);
-                texcoordInput->setConnectedNode(geompropNode);
-                geompropNode->
-                    setNodeDefString(_tokens->ND_geompropvalue_vector2);
+                // If the node does not already contain a texcoord primvar node
+                // add one and connect it to the mxTextureNode
+                // XXX If a custom node uses a texture but does not explicitly
+                // use a texcoords or geomprop node for the texture coordinates
+                // this will force a connection onto the custom node and the 
+                // material will likely not render.
+                if (!_NodeHasTextureCoordPrimvar(mxDoc, sdrTextureNode)) {
+                    // Get the primvarname from the sdrTextureNode metadata
+                    auto metadata = sdrTextureNode->GetMetadata();
+                    auto primvarName = metadata[SdrNodeMetadata->Primvars];
+
+                    // Create a geompropvalue node for the texture coordinates
+                    const std::string stNodeName =
+                        textureNodeName.GetString() + "__texcoord";
+                    mx::NodePtr geompropNode =
+                        mxNodeGraph->addNode(_tokens->geompropvalue,
+                                            stNodeName,
+                                            _tokens->vector2);
+                    geompropNode->setInputValue(_tokens->geomprop,
+                                                primvarName,
+                                                _tokens->string_type);
+                    geompropNode->setNodeDefString(
+                        _tokens->ND_geompropvalue_vector2);
+                    
+                    // Add the texcoord input and connect to the new node
+                    texcoordInput =
+                        mxTextureNode->addInput(_tokens->texcoord,
+                                                _tokens->vector2);
+                    texcoordInput->setConnectedNode(geompropNode);
+                }
             }
             if(needInvertT) {
-                texcoordInput =
-                    mxTextureNode->getInput(_tokens->texcoord);
+                // This inserts standard mtlx nodes to carry out the math
+                // for udim aware invert of t; only want to flip
+                // the fractional portion of the t value, like this:
+                // 2*floor(t) + 1.0 - t
+                texcoordInput = mxTextureNode->getInput(texCoordToken);
                 if(texcoordInput) {
-                    const std::string remapNodeName =
-                        textureNodeName.GetString() + "__remap";
-                    mx::NodePtr remapNode =
-                        mxNodeGraph->addNode(_tokens->remap,
-                                             remapNodeName,
+                    mx::NodePtr primvarNode = texcoordInput->getConnectedNode();
+                    const std::string separateNodeName =
+                        mxTextureNodeName + "__separate";
+                    const std::string floorNodeName =
+                        mxTextureNodeName + "__floor";
+                    const std::string multiplyNodeName =
+                        mxTextureNodeName + "__multiply";
+                    const std::string addNodeName =
+                        mxTextureNodeName + "__add";
+                    const std::string subtractNodeName =
+                        mxTextureNodeName + "__subtract";
+                    const std::string combineNodeName =
+                        mxTextureNodeName + "__combine";
+
+                    mx::NodePtr separateNode =
+                        mxNodeGraph->addNode(_tokens->separate2,
+                                             separateNodeName,
                                              _tokens->vector2);
-                    remapNode->
-                        setNodeDefString(_tokens->ND_remap_vector2);
-                    mx::InputPtr inInput =
-                        remapNode->addInput(_tokens->in,
-                                            _tokens->vector2);
-                    const mx::FloatVec inhigh = {1,0};
-                    const mx::FloatVec inlow = {0,1};
-                    remapNode->setInputValue(_tokens->inhigh,
-                                             inhigh,
-                                             _tokens->float2);
-                    remapNode->setInputValue(_tokens->inlow,
-                                             inlow,
-                                             _tokens->float2);
-                    mx::NodePtr primvarNode =
-                        texcoordInput->getConnectedNode();
-                    inInput->setConnectedNode(primvarNode);
-                    texcoordInput->setConnectedNode(remapNode);
+                    separateNode->
+                        setNodeDefString(_tokens->ND_separate2_vector2);
+
+                    mx::NodePtr floorNode =
+                        mxNodeGraph->addNode(_tokens->floor,
+                                             floorNodeName);
+                    floorNode->
+                        setNodeDefString(_tokens->ND_floor_float);
+
+                    mx::NodePtr multiplyNode =
+                        mxNodeGraph->addNode(_tokens->multiply,
+                                             multiplyNodeName);
+                    multiplyNode->
+                        setNodeDefString(_tokens->ND_multiply_float);
+
+                    mx::NodePtr addNode =
+                        mxNodeGraph->addNode(_tokens->add,
+                                             addNodeName);
+                    addNode->
+                        setNodeDefString(_tokens->ND_add_float);
+
+                    mx::NodePtr subtractNode =
+                        mxNodeGraph->addNode(_tokens->subtract,
+                                             subtractNodeName);
+                    subtractNode->
+                        setNodeDefString(_tokens->ND_subtract_float);
+
+                    mx::NodePtr combineNode =
+                        mxNodeGraph->addNode(_tokens->combine2,
+                                             combineNodeName);
+                    combineNode->
+                        setNodeDefString(_tokens->ND_combine2_vector2);
+
+                    mx::InputPtr separateNode_inInput =
+                            separateNode->addInput(_tokens->in,
+                                                   _tokens->vector2);
+                    mx::OutputPtr separateNode_outxOutput =
+                        separateNode->addOutput(_tokens->outx);
+                    mx::OutputPtr separateNode_outyOutput =
+                        separateNode->addOutput(_tokens->outy);
+                    separateNode_inInput->setConnectedNode(primvarNode);
+
+                    mx::InputPtr floorNode_inInput =
+                        floorNode->addInput(_tokens->in);
+                    mx::OutputPtr floorNode_outOutput =
+                        floorNode->addOutput(_tokens->out);
+                    floorNode_inInput->setConnectedNode(separateNode);
+                    floorNode_inInput->
+                        setConnectedOutput(separateNode_outyOutput);
+
+                    mx::InputPtr multiplyNode_in1Input =
+                        multiplyNode->addInput(_tokens->in1);
+                    mx::OutputPtr multiplyNode_outOutput =
+                        multiplyNode->addOutput(_tokens->out);
+                    multiplyNode_in1Input->setConnectedNode(floorNode);
+                    multiplyNode->setInputValue(_tokens->in2, 2);
+
+                    mx::InputPtr addNode_in1Input =
+                        addNode->addInput(_tokens->in1);
+                    mx::OutputPtr addNode_outOutput =
+                        addNode->addOutput(_tokens->out);
+                    addNode_in1Input->setConnectedNode(multiplyNode);
+                    addNode->setInputValue(_tokens->in2, 1);
+
+                    mx::InputPtr subtractNode_in1Input =
+                        subtractNode->addInput(_tokens->in1);
+                    mx::InputPtr subtractNode_in2Input =
+                        subtractNode->addInput(_tokens->in2);
+                    mx::OutputPtr subtractNode_outOutput =
+                        subtractNode->addOutput(_tokens->out);
+                    subtractNode_in1Input->setConnectedNode(addNode);
+                    subtractNode_in2Input->setConnectedNode(separateNode);
+                    subtractNode_in2Input->
+                        setConnectedOutput(separateNode_outyOutput);
+
+                    mx::InputPtr combineNode_in1Input =
+                        combineNode->addInput(_tokens->in1);
+                    mx::InputPtr combineNode_in2Input =
+                        combineNode->addInput(_tokens->in2);
+                    mx::OutputPtr combineNode_outOutput =
+                        combineNode->addOutput(_tokens->out,
+                                               _tokens->vector2);
+                    combineNode_in1Input->setConnectedNode(separateNode);
+                    combineNode_in2Input->setConnectedNode(subtractNode);
+                    texcoordInput->setConnectedNode(combineNode);
                 }
             }
         }
@@ -833,7 +1102,7 @@ _UpdatePrimvarNodes(
 {
     for (SdfPath const &nodePath : hdPrimvarNodePaths) {
         TfToken const &nodeName = nodePath.GetToken();
-        std::string mxNodeName = nodePath.GetName();
+        std::string mxNodeName = HdMtlxCreateNameFromPath(nodePath);
         const TfToken nodeType = netInterface->GetNodeType(nodeName);
         if (nodeType.IsEmpty()) {
             TF_WARN("Can't find node '%s' in material network.",
@@ -890,7 +1159,9 @@ MatfiltMaterialX(
 
     static const std::vector<TfToken> supportedTerminalTokens = {
         HdMaterialTerminalTokens->surface,
-        HdMaterialTerminalTokens->displacement
+        _tokens->mtlx_surface,
+        HdMaterialTerminalTokens->displacement,
+        _tokens->mtlx_displacement
     };
 
     std::set<TfToken> nodesToKeep;   // nodes directly connected to the terminal
@@ -901,8 +1172,8 @@ MatfiltMaterialX(
         // Check presence of terminal
         const HdMaterialNetworkInterface::InputConnectionResult res =
             netInterface->GetTerminalConnection(terminalName);
-        if (!res.first) { // terminal absent
-            return;
+        if (!res.first) { // terminal absent, skip
+            continue;
         }
         const TfToken &terminalNodeName = res.second.upstreamNodeName;
         const TfToken terminalNodeType =
@@ -934,6 +1205,12 @@ MatfiltMaterialX(
             // mxShaderGen)
             mx::DocumentPtr stdLibraries = HdMtlxStdLibraries();
             mx::FileSearchPath searchPath = HdMtlxSearchPaths();
+
+#ifdef PXR_DCC_LOCATION_ENV_VAR
+            // Preprocess node network, converting UsdUvTexture, and
+            // related nodes to their mtlx definition nodes.
+            _FixNodeNames(netInterface);
+#endif
 
             // Create the MaterialX Document from the material network
             HdMtlxTexturePrimvarData hdMtlxData;

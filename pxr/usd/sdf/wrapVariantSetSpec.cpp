@@ -46,7 +46,7 @@ void wrapVariantSetSpec()
                         TfPySequenceToPython<SdfVariantSetSpecHandleVector> >();
 
     class_<This, SdfHandle<This>, 
-           bases<SdfSpec>, boost::noncopyable>
+           bases<SdfSpec>, noncopyable>
         ("VariantSetSpec", no_init)
         .def(SdfPySpec())
         .def(SdfMakePySpecConstructor(&_NewUnderPrim))

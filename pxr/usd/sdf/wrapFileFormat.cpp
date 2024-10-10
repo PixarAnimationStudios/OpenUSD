@@ -60,7 +60,7 @@ void wrapFileFormat()
     typedef SdfFileFormatPtr ThisPtr;
 
     scope s = 
-        class_<This, ThisPtr, boost::noncopyable>("FileFormat", no_init)
+        class_<This, ThisPtr, noncopyable>("FileFormat", no_init)
 
         .def(TfPyRefAndWeakPtr())
 

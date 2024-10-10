@@ -34,7 +34,7 @@ void wrapUsdShadeShaderDefParser()
 
     return_value_policy<copy_const_reference> copyRefPolicy;
 
-    class_<This, boost::noncopyable>("ShaderDefParserPlugin")
+    class_<This, noncopyable>("ShaderDefParserPlugin")
         .def("Parse", &_Parse, return_value_policy<manage_new_object>())
         .def("GetDiscoveryTypes", &This::GetDiscoveryTypes, copyRefPolicy)
         .def("GetSourceType", &This::GetSourceType, copyRefPolicy)

@@ -24,8 +24,8 @@
 # include "pxr/external/boost/python/suite/indexing/detail/indexing_suite_detail.hpp"
 # include "pxr/external/boost/python/return_internal_reference.hpp"
 # include "pxr/external/boost/python/iterator.hpp"
-# include <boost/mpl/or.hpp>
-# include <boost/mpl/not.hpp>
+# include "pxr/external/boost/python/detail/mpl2/or.hpp"
+# include "pxr/external/boost/python/detail/mpl2/not.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
@@ -130,10 +130,10 @@ namespace PXR_BOOST_NAMESPACE { namespace python {
     {
     private:
 
-        typedef mpl::or_<
-            mpl::bool_<NoProxy>
-          , mpl::not_<is_class<Data> >
-          , typename mpl::or_<
+        typedef detail::mpl2::or_<
+            detail::mpl2::bool_<NoProxy>
+          , detail::mpl2::not_<std::is_class<Data> >
+          , typename detail::mpl2::or_<
                 detail::is_same<Data, std::string>
               , detail::is_same<Data, std::complex<float> >
               , detail::is_same<Data, std::complex<double> >
@@ -145,13 +145,13 @@ namespace PXR_BOOST_NAMESPACE { namespace python {
 
         typedef return_internal_reference<> return_policy;
 
-        typedef typename mpl::if_<
+        typedef typename detail::mpl2::if_<
             no_proxy
           , iterator<Container>
           , iterator<Container, return_policy> >::type
         def_iterator;
 
-        typedef typename mpl::if_<
+        typedef typename detail::mpl2::if_<
             no_proxy
           , detail::no_proxy_helper<
                 Container
@@ -165,8 +165,8 @@ namespace PXR_BOOST_NAMESPACE { namespace python {
               , Index> >::type
         proxy_handler;
 
-        typedef typename mpl::if_<
-            mpl::bool_<NoSlice>
+        typedef typename detail::mpl2::if_<
+            detail::mpl2::bool_<NoSlice>
           , detail::no_slice_helper<
                 Container
               , DerivedPolicies
@@ -271,7 +271,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python {
             }
 
             Index index = DerivedPolicies::convert_index(container, i);
-            proxy_handler::base_erase_index(container, index, mpl::bool_<NoSlice>());
+            proxy_handler::base_erase_index(container, index, detail::mpl2::bool_<NoSlice>());
             DerivedPolicies::delete_item(container, index);
         }
 

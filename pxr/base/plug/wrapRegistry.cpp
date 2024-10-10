@@ -14,7 +14,6 @@
 #include "pxr/base/tf/pySingleton.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/noncopyable.hpp>
 #include "pxr/external/boost/python.hpp"
 
 #include <algorithm>
@@ -74,7 +73,11 @@ _GetAllDerivedTypes(TfType const &type)
 typedef bool PluginPredicateSig(PlugPluginPtr);
 typedef std::function<PluginPredicateSig> PluginPredicateFn;
 
-struct SharedState : boost::noncopyable {
+struct SharedState {
+
+    SharedState() = default;
+    SharedState(SharedState const&) = delete;
+    SharedState& operator=(SharedState const&) = delete;
 
     void ThreadTask() {
         while (true) {
@@ -183,7 +186,7 @@ void wrapRegistry()
 
     typedef PlugRegistry This;
 
-    class_<This, TfWeakPtr<This>, boost::noncopyable>
+    class_<This, TfWeakPtr<This>, noncopyable>
         ("Registry", no_init)
         .def(TfPySingleton())
         .def("RegisterPlugins", &_RegisterPlugins,

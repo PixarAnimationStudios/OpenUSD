@@ -27,9 +27,10 @@ static RixDspy* s_dspy = nullptr;
 
 ////////////////////////////////////////////////////////////////////////
 // PRMan Display Driver API entrypoints
-//////////////////////////////////otify//////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
 
-static PtDspyError HydraDspyImageOpen(
+extern "C" DISPLAYEXPORT
+PtDspyError DspyImageOpen(
     PtDspyImageHandle* handle_p,
     const char* drivername,
     const char* filename,
@@ -62,6 +63,7 @@ static PtDspyError HydraDspyImageOpen(
         return PkDspyErrorBadParams;
     }
     std::lock_guard<std::mutex> lock(buf->mutex);
+
     int count = 2;
     int origin[2];
     int originalSize[2];
@@ -80,7 +82,8 @@ static PtDspyError HydraDspyImageOpen(
     return PkDspyErrorNone;
 }
 
-static PtDspyError HydraDspyImageActiveRegion(
+extern "C" DISPLAYEXPORT
+PtDspyError DspyImageActiveRegion(
     PtDspyImageHandle handle,
     int xmin,
     int xmax_plus_one,
@@ -105,7 +108,8 @@ static float _ConvertAovDepth(const GfMatrix4d &m, const float depth) {
     }
 }
 
-static PtDspyError HydraDspyImageData(
+extern "C" DISPLAYEXPORT
+PtDspyError DspyImageData(
     PtDspyImageHandle handle,
     int xmin,
     int xmax_plusone,
@@ -125,8 +129,12 @@ static PtDspyError HydraDspyImageData(
     }
 
     if (buf->pendingClear) {
-        buf->pendingClear = false;
-        buf->Clear();
+        // Lock threads while we clear the buffer.
+        std::lock_guard<std::mutex> lock(buf->mutex);
+        if (buf->pendingClear) {
+            buf->Clear();
+            buf->pendingClear = false;
+        }
     }
 
     int xmin_plusorigin = xmin + buf->cropOrigin[0];
@@ -207,8 +215,7 @@ static PtDspyError HydraDspyImageData(
                     float* aovData = reinterpret_cast<float*>(
                         &aovBuffer.pixels[offset * cc]);
                     for (int x = xmin_plusorigin; x < xmax_plusorigin; x++) {
-                        *aovData = _ConvertAovDepth(
-                            buf->proj, *data_f32);
+                        *aovData = _ConvertAovDepth(buf->proj, *data_f32);
                         aovData += cc;
                         data_f32 += nComponents;
                     }
@@ -274,14 +281,16 @@ static PtDspyError HydraDspyImageData(
     return PkDspyErrorNone;
 }
 
-static PtDspyError HydraDspyImageClose (
+extern "C" DISPLAYEXPORT
+PtDspyError DspyImageClose (
      PtDspyImageHandle handle)
 {
     TF_UNUSED(handle);
     return PkDspyErrorNone;
 }
 
-static PtDspyError HydraDspyImageQuery (
+extern "C" DISPLAYEXPORT
+PtDspyError DspyImageQuery (
     PtDspyImageHandle handle,
     PtDspyQueryType querytype,
     int datalen,
@@ -490,11 +499,11 @@ HdPrmanFramebuffer::Register(RixContext* ctx)
     assert(s_dspy);
     PtDspyDriverFunctionTable dt;
     dt.Version = k_PtDriverCurrentVersion;
-    dt.pOpen = HydraDspyImageOpen;
-    dt.pWrite = HydraDspyImageData;
-    dt.pClose = HydraDspyImageClose;
-    dt.pQuery = HydraDspyImageQuery;
-    dt.pActiveRegion = HydraDspyImageActiveRegion;
+    dt.pOpen = DspyImageOpen;
+    dt.pWrite = DspyImageData;
+    dt.pClose = DspyImageClose;
+    dt.pQuery = DspyImageQuery;
+    dt.pActiveRegion = DspyImageActiveRegion;
     dt.pMetadata = nullptr;
     if (s_dspy->RegisterDriverTable("hydra", &dt))
     {
@@ -978,4 +987,3 @@ void DestroyDisplay(const display::Display* p)
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

@@ -104,7 +104,7 @@ HdsiUtilsRemovePrunedChildren(
     children->erase(
         std::remove_if(
             children->begin(), children->end(),
-            [&eval, &parentPath](const SdfPath &childPath) {
+            [&eval](const SdfPath &childPath) {
                 return eval.Match(childPath);
             }),
         children->end());

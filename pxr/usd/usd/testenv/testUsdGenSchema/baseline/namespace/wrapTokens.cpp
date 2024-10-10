@@ -15,7 +15,7 @@ using namespace foo;
 
 void wrapUsdContrivedTokens()
 {
-    pxr_boost::python::class_<UsdContrivedTokensType, boost::noncopyable>
+    pxr_boost::python::class_<UsdContrivedTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, libraryToken1);
     _ADD_TOKEN(cls, libraryToken2);

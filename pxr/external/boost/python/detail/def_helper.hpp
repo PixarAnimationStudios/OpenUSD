@@ -20,14 +20,14 @@
 # include "pxr/external/boost/python/args.hpp"
 # include "pxr/external/boost/python/detail/indirect_traits.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
-# include <boost/mpl/not.hpp>
-# include <boost/mpl/and.hpp>
-# include <boost/mpl/or.hpp>
-# include <boost/mpl/lambda.hpp>
-# include <boost/mpl/apply.hpp>
-# include <boost/tuple/tuple.hpp>
+# include "pxr/external/boost/python/detail/mpl2/not.hpp"
+# include "pxr/external/boost/python/detail/mpl2/and.hpp"
+# include "pxr/external/boost/python/detail/mpl2/or.hpp"
 # include "pxr/external/boost/python/detail/not_specified.hpp"
 # include "pxr/external/boost/python/detail/def_helper_fwd.hpp"
+
+# include <tuple>
+# include <utility>
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
@@ -39,111 +39,85 @@ namespace detail
   // element of a Tuple whose type E satisfies the given Predicate
   // applied to add_reference<E>. The Predicate must be an MPL
   // metafunction class.
-  template <class Tuple, class Predicate>
+  template <class Tuple, template <typename> class Predicate>
   struct tuple_extract;
 
-  // Implementation class for when the tuple's head type does not
-  // satisfy the Predicate
-  template <bool matched>
-  struct tuple_extract_impl
+  template <class... T, template <typename> class Predicate>
+  struct tuple_extract<std::tuple<T...>, Predicate>
   {
-      template <class Tuple, class Predicate>
-      struct apply
+      template <class U>
+      using match_t = Predicate<typename add_lvalue_reference<U>::type>;
+
+      static constexpr size_t compute_index()
       {
-          typedef typename Tuple::head_type result_type;
-          
-          static typename Tuple::head_type extract(Tuple const& x)
-          {
-              return x.get_head();
-          }
-      };
-  };
+          size_t idx = 0;
+          [[maybe_unused]] const bool found_match =
+              ((match_t<T>::value ? true : (++idx, false)) || ...);
+          return idx;
+      }
 
-  // Implementation specialization for when the tuple's head type
-  // satisfies the predicate
-  template <>
-  struct tuple_extract_impl<false>
-  {
-      template <class Tuple, class Predicate>
-      struct apply
+      static constexpr size_t match_index = compute_index();
+      static_assert(match_index < sizeof...(T), "No matches for predicate");
+
+      using tuple_type = std::tuple<T...>;
+      using result_type = 
+          typename std::tuple_element<match_index, tuple_type>::type;
+
+      static result_type extract(tuple_type const& x)
       {
-          // recursive application of tuple_extract on the tail of the tuple
-          typedef tuple_extract<typename Tuple::tail_type, Predicate> next;
-          typedef typename next::result_type result_type;
-          
-          static result_type extract(Tuple const& x)
-          {
-              return next::extract(x.get_tail());
-          }
-      };
+          return std::get<match_index>(x);
+      }
   };
-
-  // A metafunction which selects a version of tuple_extract_impl to
-  // use for the implementation of tuple_extract
-  template <class Tuple, class Predicate>
-  struct tuple_extract_base_select
-  {
-      typedef typename Tuple::head_type head_type;
-      typedef typename mpl::apply1<Predicate,
-              typename add_lvalue_reference<head_type>::type>::type match_t;
-      BOOST_STATIC_CONSTANT(bool, match = match_t::value);
-      typedef typename tuple_extract_impl<match>::template apply<Tuple,Predicate> type;
-  };
-  
-  template <class Tuple, class Predicate>
-  struct tuple_extract
-      : tuple_extract_base_select<
-         Tuple
-         , typename mpl::lambda<Predicate>::type
-      >::type
-  {
-  };
-
 
   //
   // Specialized extractors for the docstring, keywords, CallPolicies,
   // and default implementation of virtual functions
   //
 
+  template <class T>
+  struct doc_extract_pred
+      : mpl2::not_<
+          mpl2::or_<
+              indirect_traits::is_reference_to_class<T>
+            , indirect_traits::is_reference_to_member_function_pointer<T>
+          >
+      >
+  {
+  };
+
   template <class Tuple>
   struct doc_extract
-      : tuple_extract<
-        Tuple
-        , mpl::not_<
-           mpl::or_<
-               indirect_traits::is_reference_to_class<mpl::_1>
-             , indirect_traits::is_reference_to_member_function_pointer<mpl::_1 >
-           >
-        >
-     >
+      : tuple_extract<Tuple, doc_extract_pred>
   {
   };
   
   template <class Tuple>
   struct keyword_extract
-      : tuple_extract<Tuple, is_reference_to_keywords<mpl::_1 > >
+      : tuple_extract<Tuple, is_reference_to_keywords>
+  {
+  };
+
+  template <class T>
+  struct policy_extract_pred
+      : mpl2::and_<
+          mpl2::not_<std::is_same<not_specified const&, T> >
+        , indirect_traits::is_reference_to_class<T>
+        , mpl2::not_<is_reference_to_keywords<T> >
+      >
   {
   };
 
   template <class Tuple>
   struct policy_extract
-      : tuple_extract<
-          Tuple
-          , mpl::and_<
-             mpl::not_<is_same<not_specified const&,mpl::_1> >
-              , indirect_traits::is_reference_to_class<mpl::_1 >
-              , mpl::not_<is_reference_to_keywords<mpl::_1 > >
-          >
-        >
+      : tuple_extract<Tuple, policy_extract_pred>
   {
   };
 
   template <class Tuple>
   struct default_implementation_extract
       : tuple_extract<
-          Tuple
-          , indirect_traits::is_reference_to_member_function_pointer<mpl::_1 >
-          >
+          Tuple, indirect_traits::is_reference_to_member_function_pointer
+      >
   {
   };
 
@@ -160,7 +134,7 @@ namespace detail
       // A tuple type which begins with references to the supplied
       // arguments and ends with actual representatives of the default
       // types.
-      typedef boost::tuples::tuple<
+      typedef std::tuple<
           T1 const&
           , T2 const&
           , T3 const&
@@ -174,10 +148,10 @@ namespace detail
 
       // Constructors; these initialize an member of the tuple type
       // shown above.
-      def_helper(T1 const& a1) : m_all(a1,m_nil,m_nil,m_nil) {}
-      def_helper(T1 const& a1, T2 const& a2) : m_all(a1,a2,m_nil,m_nil) {}
-      def_helper(T1 const& a1, T2 const& a2, T3 const& a3) : m_all(a1,a2,a3,m_nil) {}
-      def_helper(T1 const& a1, T2 const& a2, T3 const& a3, T4 const& a4) : m_all(a1,a2,a3,a4) {}
+      def_helper(T1 const& a1) : m_all(a1,m_nil,m_nil,m_nil,{},{},{},{}) {}
+      def_helper(T1 const& a1, T2 const& a2) : m_all(a1,a2,m_nil,m_nil,{},{},{},{}) {}
+      def_helper(T1 const& a1, T2 const& a2, T3 const& a3) : m_all(a1,a2,a3,m_nil,{},{},{},{}) {}
+      def_helper(T1 const& a1, T2 const& a2, T3 const& a3, T4 const& a4) : m_all(a1,a2,a3,a4,{},{},{},{}) {}
 
    private: // types
       typedef typename default_implementation_extract<all_t>::result_type default_implementation_t;
@@ -186,9 +160,9 @@ namespace detail
 
       // Users must not supply a default implementation for non-class
       // methods.
-      BOOST_STATIC_CONSTANT(
-          bool, has_default_implementation = (
-              !is_same<default_implementation_t, void(not_specified::*)()>::value));
+      static constexpr 
+          bool has_default_implementation = (
+              !is_same<default_implementation_t, void(not_specified::*)()>::value);
       
    public: // Extractor functions which pull the appropriate value out
            // of the tuple

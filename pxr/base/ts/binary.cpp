@@ -95,13 +95,9 @@ namespace
                 // Bit 0: whether dual-valued.
                 // Bits 1-2: next segment interpolation mode.
                 // Bit 3: curve type.
-                // Bit 4: whether pre-tangent is in Maya form.
-                // Bit 5: whether post-tangent is in Maya form.
                 uint8_t flagByte = knot.dualValued;
                 flagByte |= static_cast<uint8_t>(knot.nextInterp) << 1;
                 flagByte |= static_cast<uint8_t>(knot.curveType) << 3;
-                flagByte |= knot.preTanMayaForm << 4;
-                flagByte |= knot.postTanMayaForm << 5;
                 _WriteBytes<uint8_t>(buf, flagByte);
 
                 // Knot time and value.
@@ -121,8 +117,7 @@ namespace
                     _WriteBytes<double>(buf, knot.postTanWidth);
                 }
 
-                // Tangent slopes or heights.
-                // Interpretation will be governed by the Maya-form flags.
+                // Tangent slopes.
                 _WriteBytes<T>(buf, knot.preTanSlope);
                 _WriteBytes<T>(buf, knot.postTanSlope);
             }
@@ -273,8 +268,6 @@ namespace
                     static_cast<TsInterpMode>((flagByte & 0x06) >> 1);
                 knot.curveType =
                     static_cast<TsCurveType>((flagByte & 0x08) >> 3);
-                knot.preTanMayaForm = flagByte & 0x10;
-                knot.postTanMayaForm = flagByte & 0x20;
 
                 // Knot time and value.
                 READ(&knot.time);
@@ -293,8 +286,7 @@ namespace
                     READ(&knot.postTanWidth);
                 }
 
-                // Tangent slopes or heights.
-                // Interpretation will be governed by the Maya-form flags.
+                // Tangent slopes
                 READ(&knot.preTanSlope);
                 READ(&knot.postTanSlope);
 

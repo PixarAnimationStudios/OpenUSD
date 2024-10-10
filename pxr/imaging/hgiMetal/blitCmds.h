@@ -11,6 +11,8 @@
 #include "pxr/imaging/hgiMetal/api.h"
 #include "pxr/imaging/hgi/blitCmds.h"
 
+#include <Metal/Metal.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HgiMetal;

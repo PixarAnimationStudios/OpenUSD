@@ -15,7 +15,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdSkelTokens()
 {
-    pxr_boost::python::class_<UsdSkelTokensType, boost::noncopyable>
+    pxr_boost::python::class_<UsdSkelTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, bindTransforms);
     _ADD_TOKEN(cls, blendShapes);

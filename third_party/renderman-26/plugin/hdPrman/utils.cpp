@@ -236,9 +236,11 @@ struct _VtValueToRtParamList
     bool operator()(const SdfAssetPath &assetPath) {
         // Since we can't know how the texture will be consumed,
         // go with the default of flipping textures
+        // and that it doesn't want to be written to disk.
         const bool flipTexture = true;
+        const bool writeAsset = false;
         RtUString v = HdPrman_Utils::ResolveAssetToRtUString(
-            assetPath, flipTexture, _tokens->primvar.GetText());
+            assetPath, flipTexture, writeAsset, _tokens->primvar.GetText());
         return params->SetString(name, v);
     }
     
@@ -270,12 +272,14 @@ struct _VtValueToRtParamList
         // Convert to RtUString.
         // Since we can't know how the texture will be consumed,
         // go with the default of flipping textures
+        // and that it doesn't want to be written to disk.
         const bool flipTexture = true;
+        const bool writeAsset = false;
         std::vector<RtUString> us;
         us.reserve(v.size());
         for (SdfAssetPath const& asset: v) {
-            us.push_back(HdPrman_Utils::ResolveAssetToRtUString(asset, flipTexture,
-                                                   _tokens->primvar.GetText()));
+            us.push_back(HdPrman_Utils::ResolveAssetToRtUString(
+                asset, flipTexture, writeAsset, _tokens->primvar.GetText()));
         }
         return (*this)(us);
     }
@@ -346,7 +350,7 @@ struct _VtValueToRtPrimVar : _VtValueToRtParamList
         }
     }
     bool operator()(const VtArray<long> &vl) {
-        // Convert double->int
+        // Convert long->int
         VtArray<int> v;
         v.resize(vl.size());
         for (size_t i=0,n=vl.size(); i<n; ++i) {
@@ -457,13 +461,15 @@ struct _VtValueToRtPrimVar : _VtValueToRtParamList
     bool operator()(const VtArray<SdfAssetPath> &v) {
         // Convert to RtUString.
         // Since we can't know how the texture will be consumed,
-        // go with the default of flipping textures
+        // go with the default of flipping textures 
+        // and that it doesn't want to be written to disk.
         const bool flipTexture = true;
+        const bool writeAsset = false;
         std::vector<RtUString> us;
         us.reserve(v.size());
         for (SdfAssetPath const& asset: v) {
-            us.push_back(HdPrman_Utils::ResolveAssetToRtUString(asset, flipTexture,
-                                                   _tokens->primvar.GetText()));
+            us.push_back(HdPrman_Utils::ResolveAssetToRtUString(
+                asset, flipTexture, writeAsset, _tokens->primvar.GetText()));
         }
         return (*this)(us);
     }
@@ -668,6 +674,7 @@ RtUString
 ResolveAssetToRtUString(
     SdfAssetPath const &asset,
     bool flipTexture,
+    bool writeAsset,
     char const *debugNodeType /* = nullptr*/)
 {
 
@@ -681,13 +688,15 @@ ResolveAssetToRtUString(
 
     // Use the RtxHioImage plugin for resolved paths that are not
     // native RenderMan formats, but which Hio can read.
+    // We don't want to do this for assets will be written out
+    // instead of read (for example the PxrBakeTexture node).
     // Note: we cannot read tex files from USDZ until we add support
     // to RtxHioImage (or another Rtx plugin) for this.
     // FUTURE NOTE: When we want to support primvar substitutions with
     // the use of non-tex textures, the following clause can no longer
     // be an "else if" (because such paths won't ArResolve), and we may 
     // not be able to even do an extension check...
-    else if (!_IsNativeRenderManFormat(v) &&
+    else if (!writeAsset && !_IsNativeRenderManFormat(v) &&
              imageRegistry.IsSupportedImageFile(v)) {
         v = "rtxplugin:RtxHioImage" ARCH_LIBRARY_SUFFIX
             "?filename=" + v + (flipTexture ? "" : "&flipped=false");

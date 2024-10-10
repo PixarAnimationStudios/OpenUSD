@@ -191,18 +191,29 @@ Pcp_TraverseInstanceableWeakToStrongHelper(
 template <class Visitor>
 inline void 
 Pcp_TraverseInstanceableWeakToStrong(
-    const PcpPrimIndex& primIndex, 
+    const PcpNodeRef &subtreeRootNode,
     Visitor* visitor)
 {
-    const PcpNodeRef& rootNode = primIndex.GetRootNode();
-    TF_REVERSE_FOR_ALL(childIt, Pcp_GetChildrenRange(rootNode)) {
-        const PcpNodeRef& childNode = *childIt;
-        Pcp_TraverseInstanceableWeakToStrongHelper(
-            childNode, visitor, /* hasAnyDirectArcsInNodeChain = */ false);
-    }
+    if (subtreeRootNode.IsRootNode()) {
+        TF_REVERSE_FOR_ALL(childIt, Pcp_GetChildrenRange(subtreeRootNode)) {
+            const PcpNodeRef& childNode = *childIt;
+            Pcp_TraverseInstanceableWeakToStrongHelper(
+                childNode, visitor, /* hasAnyDirectArcsInNodeChain = */ false);
+        }
 
-    visitor->Visit(rootNode, /* nodeIsInstanceable = */ false);
+        visitor->Visit(subtreeRootNode, /* nodeIsInstanceable = */ false);
+    } else {
+        // Because we're starting below the root node, we need to find out if
+        // there are any direct arcs between the subtree parent and the true
+        // root node so that we can correctly determine in there are any direct
+        // nodes in whole node chain for each subtree node.
+        const bool hasAnyDirectArcsInNodeChain = 
+            Pcp_ChildNodeIsDirectOrInDirectArcSubtree(subtreeRootNode);
+        Pcp_TraverseInstanceableWeakToStrongHelper(
+            subtreeRootNode, visitor, hasAnyDirectArcsInNodeChain);
+    }
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

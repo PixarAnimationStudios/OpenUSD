@@ -9,7 +9,6 @@
 #include "pxr/usd/usd/zipFile.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/noncopyable.hpp>
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/manage_new_object.hpp"
@@ -114,7 +113,7 @@ wrapUsdZipFile()
             ;
     }
 
-    class_<UsdZipFileWriter, boost::noncopyable>
+    class_<UsdZipFileWriter, noncopyable>
         ("ZipFileWriter", no_init)
         .def("CreateNew", &_CreateNew, arg("filePath"),
             return_value_policy<manage_new_object>())

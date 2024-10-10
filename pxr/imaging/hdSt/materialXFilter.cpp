@@ -495,10 +495,9 @@ _UpdatePrimvarNodes(
             (*mxHdPrimvarDefaultValueMap)[primvarName] = defaultPrimvarValue;
         }
 
-        // Texcoord nodes will have an index parameter set
-        primvarNameIt = hdPrimvarNode.parameters.find(_tokens->index);
-        if (primvarNameIt != hdPrimvarNode.parameters.end()) {
-            // Get the sdr node for the texcoord node
+        else {
+            // Other primvar nodes will be either a texcoord node or a  
+            // custom node that uses a texcoord node. 
             SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
             const SdrShaderNodeConstPtr sdrTexCoordNode = 
                 sdrRegistry.GetShaderNodeByIdentifierAndType(
@@ -511,12 +510,7 @@ _UpdatePrimvarNodes(
                 texCoordName = metadata[SdrNodeMetadata->Primvars];
             }
 
-            // Figure out the mx typename
-            mx::NodeDefPtr mxNodeDef = mxDoc->getNodeDef(
-                    hdPrimvarNode.nodeTypeId.GetString());
-            if (mxNodeDef) {
-                (*mxHdPrimvarMap)[texCoordName] = mxNodeDef->getType();
-            }
+            (*mxHdPrimvarMap)[texCoordName] = mx::Type::VECTOR2->getName();
         }
     }
 }
@@ -692,7 +686,7 @@ _AddStrippedSurfaceNode(
                 _AddStrippedSurfaceNode(mxDocument, hdConnectedPath.GetName(),
                                         hdConnectedNode, hdNetwork);
             mx::InputPtr mxInput =
-                mxNode->addInput(mxInput->getName(), mxInput->getType());
+                mxNode->addInput(mxInputDef->getName(), mxInputDef->getType());
             mxInput->setConnectedNode(mxConnectedNode);
         }
         // Add the connection as an input with each component set to 0.5

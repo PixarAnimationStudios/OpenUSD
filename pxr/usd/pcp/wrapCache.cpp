@@ -62,12 +62,12 @@ _ComputePrimIndex( PcpCache& cache, const SdfPath & path )
     // Wrap the prim index to python as an internal reference on cache.
     // The return_internal_reference<> says that the result is owned
     // by the first argument, the PcpCache, and shouldn't be destroyed
-    // by Python.  The boost::ref() around the arguments ensure that
+    // by Python.  The ref() around the arguments ensure that
     // boost python will not make temporary copies of them.
     object pyWrapPrimIndex =
         make_function(_WrapPrimIndex, return_internal_reference<>());
-    object pyPrimIndex(pyWrapPrimIndex(boost::ref(cache),
-                                       boost::ref(primIndex)));
+    object pyPrimIndex(pyWrapPrimIndex(ref(cache),
+                                       ref(primIndex)));
 
     // Return the prim index and errors to python.
     return pxr_boost::python::make_tuple(pyPrimIndex, errors);
@@ -80,12 +80,12 @@ _FindPrimIndex( PcpCache& cache, const SdfPath & path )
         // Wrap the prim index to python as an internal reference on cache.
         // The return_internal_reference<> says that the result is owned
         // by the first argument, the PcpCache, and shouldn't be destroyed
-        // by Python.  The boost::ref() around the arguments ensure that
+        // by Python.  The ref() around the arguments ensure that
         // boost python will not make temporary copies of them.
         object pyWrapPrimIndex =
             make_function(_WrapPrimIndex, return_internal_reference<>());
-        object pyPrimIndex(pyWrapPrimIndex(boost::ref(cache),
-                                           boost::ref(*primIndex)));
+        object pyPrimIndex(pyWrapPrimIndex(ref(cache),
+                                           ref(*primIndex)));
         return pyPrimIndex;
     }
     return pxr_boost::python::object();
@@ -115,12 +115,12 @@ _FindPropertyIndex( PcpCache& cache, const SdfPath & path )
         // Wrap the index to python as an internal reference on cache.
         // The return_internal_reference<> says that the result is owned
         // by the first argument, the PcpCache, and shouldn't be destroyed
-        // by Python.  The boost::ref() around the arguments ensure that
+        // by Python.  The ref() around the arguments ensure that
         // boost python will not make temporary copies of them.
         object pyWrapPropertyIndex =
             make_function(_WrapPropertyIndex, return_internal_reference<>());
-        object pyPropertyIndex(pyWrapPropertyIndex(boost::ref(cache),
-                                           boost::ref(*propIndex)));
+        object pyPropertyIndex(pyWrapPropertyIndex(ref(cache),
+                                           ref(*propIndex)));
         return pyPropertyIndex;
     }
     return pxr_boost::python::object();
@@ -213,7 +213,7 @@ _Reload( PcpCache & cache )
 void 
 wrapCache()
 {
-    class_<PcpCache, boost::noncopyable> 
+    class_<PcpCache, noncopyable> 
         ("Cache", 
          init<const PcpLayerStackIdentifier&,
               const std::string&, 

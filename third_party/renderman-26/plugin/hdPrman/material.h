@@ -48,6 +48,10 @@ public:
     /// Return the static list of tokens supported.
     static TfTokenVector const& GetShaderSourceTypes();
 
+    /// Consult the HD_PRMAN_TEX_EXTS env var to determine which textures
+    /// should be passed through without processing by the Rtx plug-in
+    static bool IsTexExt(const std::string& ext);
+
     /// Return the material network after filtering.
     HdMaterialNetwork2 const& GetMaterialNetwork() const;
 

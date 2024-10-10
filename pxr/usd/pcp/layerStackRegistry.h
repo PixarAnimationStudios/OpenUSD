@@ -91,6 +91,17 @@ public:
     void 
     ForEachLayerStack(const TfFunctionRef<void(const PcpLayerStackPtr&)>& fn);
 
+    /// Sets a list of layer stacks that will override the results returned by
+    /// the \ref FindAllUsingLayer function.  This is currently used when
+    /// operating on layers that are being unmuted or sublayers that are being
+    /// added.  In these cases, we know what stacks will be affected by these
+    /// operations and want to operate on them before Pcp changes are applied.
+    void SetLayerStackVectorOverride(const SdfLayerHandle& layer, 
+                                     const PcpLayerStackPtrVector& layerStacks);
+
+    /// Clears all overrides set with \ref SetLayerStackVectorOverride
+    void ClearLayerStackVectorOverrides();
+
 private:
     /// Private constructor -- see New().
     Pcp_LayerStackRegistry(const PcpLayerStackIdentifier& rootLayerStackId,

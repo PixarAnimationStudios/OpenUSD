@@ -74,7 +74,7 @@ GeomUtilSphereMeshGenerator::_GeneratePointsImpl(
         return;
     }
 
-    // Construct a circular arc/ring of the specified radius in the XY plane.
+    // Construct a circular arc of unit radius in the XY plane.
     const std::vector<std::array<ScalarType, 2>> ringXY =
         _GenerateUnitArcXY<ScalarType>(numRadial, sweepDegrees);
 
@@ -106,6 +106,59 @@ template GEOMUTIL_API void GeomUtilSphereMeshGenerator::_GeneratePointsImpl(
 
 template GEOMUTIL_API void GeomUtilSphereMeshGenerator::_GeneratePointsImpl(
     const size_t, const size_t, const double, const double,
+    const GeomUtilSphereMeshGenerator::_PointWriter<GfVec3d>&);
+
+
+// static
+template<typename PointType>
+void
+GeomUtilSphereMeshGenerator::_GenerateNormalsImpl(
+    const size_t numRadial,
+    const size_t numAxial,
+    const typename PointType::ScalarType sweepDegrees,
+    const _PointWriter<PointType>& ptWriter)
+{
+    // The normals are the same as the points when the radius is 1,
+    // just need to write out the points using WriteDir.
+
+    using ScalarType = typename PointType::ScalarType;
+
+    if ((numRadial < minNumRadial) || (numAxial < minNumAxial)) {
+        return;
+    }
+
+    // Construct a circular arc of unit radius in the XY plane.
+    const std::vector<std::array<ScalarType, 2>> ringXY =
+        _GenerateUnitArcXY<ScalarType>(numRadial, sweepDegrees);
+
+    // Bottom point:
+    ptWriter.WriteDir(PointType(0.0, 0.0, -1));
+
+    // Latitude rings:
+    for (size_t axIdx = 1; axIdx < numAxial; ++axIdx) {
+        // Latitude range: (-0.5pi, 0.5pi)
+        const ScalarType latAngle =
+            ((ScalarType(axIdx) / ScalarType(numAxial)) - 0.5) * M_PI;
+
+        const ScalarType radScale = cos(latAngle);
+        const ScalarType latitude = sin(latAngle);
+
+        ptWriter.WriteArcDir(radScale, ringXY, latitude);
+    }
+
+    // Top point:
+    ptWriter.WriteDir(PointType(0.0, 0.0, 1));
+}
+
+// Force-instantiate _GenerateNormalsImpl for the supported point types.
+// Only these instantiations will ever be needed due to the SFINAE machinery on
+// the calling method template (the public GeneratePoints, in the header).
+template GEOMUTIL_API void GeomUtilSphereMeshGenerator::_GenerateNormalsImpl(
+    const size_t, const size_t, const float,
+    const GeomUtilSphereMeshGenerator::_PointWriter<GfVec3f>&);
+
+template GEOMUTIL_API void GeomUtilSphereMeshGenerator::_GenerateNormalsImpl(
+    const size_t, const size_t, const double,
     const GeomUtilSphereMeshGenerator::_PointWriter<GfVec3d>&);
 
 

@@ -7,7 +7,6 @@
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
-#include <boost/static_assert.hpp>
 #include "pxr/external/boost/python/detail/if_else.hpp"
 #include "pxr/external/boost/python/detail/type_traits.hpp"
 
@@ -40,10 +39,10 @@ struct choose
 
 int main()
 {
-    BOOST_STATIC_ASSERT((PXR_BOOST_NAMESPACE::python::detail::is_same<choose<1>::type,c1>::value));
-    BOOST_STATIC_ASSERT((PXR_BOOST_NAMESPACE::python::detail::is_same<choose<2>::type,c2>::value));
-    BOOST_STATIC_ASSERT((PXR_BOOST_NAMESPACE::python::detail::is_same<choose<3>::type,c3>::value));
-    BOOST_STATIC_ASSERT((PXR_BOOST_NAMESPACE::python::detail::is_same<choose<4>::type,c4>::value));
-    BOOST_STATIC_ASSERT((PXR_BOOST_NAMESPACE::python::detail::is_same<choose<5>::type,void*>::value));
+    static_assert((PXR_BOOST_NAMESPACE::python::detail::is_same<choose<1>::type,c1>::value));
+    static_assert((PXR_BOOST_NAMESPACE::python::detail::is_same<choose<2>::type,c2>::value));
+    static_assert((PXR_BOOST_NAMESPACE::python::detail::is_same<choose<3>::type,c3>::value));
+    static_assert((PXR_BOOST_NAMESPACE::python::detail::is_same<choose<4>::type,c4>::value));
+    static_assert((PXR_BOOST_NAMESPACE::python::detail::is_same<choose<5>::type,void*>::value));
     return 0;
 }

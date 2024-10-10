@@ -5,6 +5,7 @@
 // https://openusd.org/license.
 //
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
+#include "hdPrman/material.h"
 #include "hdPrman/debugCodes.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/arch/library.h"
@@ -23,10 +24,17 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Usd preview shading node types
     (UsdPreviewSurface)
     (UsdUVTexture)
-    (UsdTransform2d)
+    (UsdVerticalFlip)
     (UsdPrimvarReader_float)
     (UsdPrimvarReader_float2)
     (UsdPrimvarReader_float3)
+    (UsdPrimvarReader_float4)
+    (UsdPrimvarReader_normal)
+    (UsdPrimvarReader_point)
+    (UsdPrimvarReader_vector)
+    (UsdPrimvarReader_int)
+    (UsdPrimvarReader_string)
+    (UsdPrimvarReader_matrix)
 
     // UsdPreviewSurface tokens
     (displacement)
@@ -85,12 +93,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     (sourceColorSpace)
     (sRGB)
     (raw)
-    ((colorSpaceAuto, "auto")) 
+    ((colorSpaceAuto, "auto"))
 
-    // UsdTransform2d parameters
+    // UsdPrimvarReader parameters
+    (varname)
+
+    // UsdVerticalFlip parameters
     (in)
-    (scale)
-    (translation)
     (result)
 
     // Dummy node used to express material primvar opinions
@@ -342,9 +351,16 @@ _ProcessUVTextureNode(
         std::string path = vtFile.IsHolding<SdfAssetPath>()
             ? vtFile.Get<SdfAssetPath>().GetResolvedPath()
             : vtFile.Get<std::string>();
+        if(path.empty() && vtFile.IsHolding<SdfAssetPath>()) {
+            // Coming from Katana this may fail to resolve
+            // even though the file exists, so fall back
+            // to using whatever path was passed to us.
+            path = vtFile.Get<SdfAssetPath>().GetAssetPath();
+        }
         std::string ext = ArGetResolver().GetExtension(path);
 
-        if (!ext.empty() && ext != "tex" && ext != "dds" && !_RtxPath(path)) {
+        if (!ext.empty() && !HdPrmanMaterial::IsTexExt(ext) &&
+            !_RtxPath(path)) {
             std::string pluginName = 
                 std::string("RtxHioImage") + ARCH_LIBRARY_SUFFIX;
             // Check for wrap mode. In Renderman, the
@@ -385,7 +401,7 @@ _ProcessUVTextureNode(
             netInterface->SetNodeParameterValue(
                 nodeName, _tokens->file, VtValue(path));
 
-        } else if (ext == "tex") {
+        } else if (HdPrmanMaterial::IsTexExt(ext)) {
             // USD Preview Materials use a texture coordinate
             // convention where (0,0) is in the bottom-left;
             // RenderMan's texture system uses a convention
@@ -398,31 +414,45 @@ _ProcessUVTextureNode(
     } // handle 'file' parameter
 
     HdMaterialNetworkInterface::InputConnectionVector cvSt;
+
+    _GetInputConnection(netInterface, nodeName, _tokens->st, &cvSt);
+    if (cvSt.empty()) {
+        // If no node is wired in to the UsdUVTexture st param,
+        // insert a PrimvarReader node to read "st", for a reasonable result.
+        TfToken primvarReaderNodeName =
+            _GetSiblingNodeName(nodeName.GetString(), "_PrimvarReader");
+
+        // Add new node.
+        netInterface->SetNodeType(
+            primvarReaderNodeName, _tokens->UsdPrimvarReader_float2);
+
+        netInterface->SetNodeParameterValue(
+            primvarReaderNodeName, _tokens->varname, VtValue("st"));
+
+        // Wire it into UsdUvTexture.
+        netInterface->SetNodeInputConnection(nodeName, _tokens->st,
+            {{ primvarReaderNodeName, _tokens->result }});
+    }
+
     if (needInvertT &&
         _GetInputConnection(netInterface, nodeName, _tokens->st, &cvSt)) {
 
-        // Invert the T axis by splicing in a UsdTransform2d node.
-        TfToken transform2dNodeName =
+        // Invert the T axis by splicing in a UsdVerticalFlip node.
+        TfToken verticalFlipNodeName =
             _GetSiblingNodeName(nodeName.GetString(), "_InvertT");
         
         // Add new node.
         netInterface->SetNodeType(
-            transform2dNodeName, _tokens->UsdTransform2d);
-
-        // parameters:
-        netInterface->SetNodeParameterValue(transform2dNodeName,
-            _tokens->scale, VtValue(GfVec2f(1.0f, -1.0f)));
-        netInterface->SetNodeParameterValue(transform2dNodeName,
-            _tokens->translation, VtValue(GfVec2f(0.0f, 1.0f)));
+            verticalFlipNodeName, _tokens->UsdVerticalFlip);
 
         // connections:
         netInterface->SetNodeInputConnection(
-            transform2dNodeName, _tokens->in, cvSt);
+            verticalFlipNodeName, _tokens->in, cvSt);
         
         // Splice it into UsdUvTexture, replacing the existing
         // connection.
         netInterface->SetNodeInputConnection(nodeName, _tokens->st,
-            {{ transform2dNodeName, _tokens->result }});
+            {{ verticalFlipNodeName, _tokens->result }});
     }
 }
 
@@ -447,7 +477,7 @@ MatfiltConvertPreviewMaterial(
 
     for (TfToken const &nodeName : nodeNames) {
         const TfToken nodeType = netInterface->GetNodeType(nodeName);
-    
+
         if (nodeType == _tokens->UsdPreviewSurface) {
             if (foundPreviewSurface) {
                 outputErrorMessages->push_back(TfStringPrintf(
@@ -461,6 +491,16 @@ MatfiltConvertPreviewMaterial(
 
         } else if (nodeType == _tokens->UsdUVTexture) {
             _ProcessUVTextureNode(netInterface, nodeName, outputErrorMessages);
+
+        } else if (nodeType == _tokens->UsdPrimvarReader_normal
+                || nodeType == _tokens->UsdPrimvarReader_point
+                || nodeType == _tokens->UsdPrimvarReader_vector) {
+            netInterface->SetNodeType(
+                nodeName, _tokens->UsdPrimvarReader_float3);
+        
+        } else if (nodeType == _tokens->UsdPrimvarReader_matrix) {
+            outputErrorMessages->push_back(
+                "RenderMan does not support matrix type UsdPrimvarReader nodes");
         }
     }
 }

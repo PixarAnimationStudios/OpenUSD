@@ -18,7 +18,6 @@
 #else
 
 #include "pxr/external/boost/python/detail/is_auto_ptr.hpp"
-#include <boost/mpl/bool.hpp>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 

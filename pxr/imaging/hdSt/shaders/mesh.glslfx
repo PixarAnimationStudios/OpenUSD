@@ -200,13 +200,13 @@ void main(void)
     vec4 basis = vec4((1.0-coord.x) * (1.0-coord.y), coord.x * (1.0-coord.y),
                       (1.0-coord.x) * coord.y, coord.x * coord.y);
 
-    outData.Peye = InterpolatePrimvar(point0, point1, point2, point3, basis);
-    outData.Neye = InterpolatePrimvar(Neye0, Neye1, Neye2, Neye3, basis);
+    outData.Peye = InterpolatePrimvar(point0, point1, point3, point2, basis);
+    outData.Neye = InterpolatePrimvar(Neye0, Neye1, Neye3, Neye2, basis);
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    ProcessPrimvarsOut(basis, 0, 1, 2, 3);
+    ProcessPrimvarsOut(basis, 0, 1, 3, 2);
 }
 
 --- --------------------------------------------------------------------------
@@ -224,11 +224,13 @@ void main(void)
 
 vec4 GetPatchCoord(int index)
 {
-    vec2 uv[4];
+    vec2 uv[6];
     uv[0] = vec2(0, 0);
     uv[1] = vec2(1, 0);
     uv[2] = vec2(1, 1);
-    uv[3] = vec2(0, 1);
+    uv[3] = vec2(1, 1);
+    uv[4] = vec2(0, 1);
+    uv[5] = vec2(0, 0);
 
     ivec3 patchParam = GetPatchParam();
     return InterpolatePatchCoord(uv[index], patchParam);
@@ -255,40 +257,40 @@ void main(void)
     vec4 point0 = GetWorldToViewMatrix() * transform * vec4(points[0],1.0);
     vec4 point1 = GetWorldToViewMatrix() * transform * vec4(points[1],1.0);
     vec4 point2 = GetWorldToViewMatrix() * transform * vec4(points[2],1.0);
-    vec4 point3 = GetWorldToViewMatrix() * transform * vec4(points[4],1.0);
+    vec4 point4 = GetWorldToViewMatrix() * transform * vec4(points[4],1.0);
 
     //Get the indata Neye if provided.
     bool isFlipped = IsFlipped();
     vec3 Neye0 = GetNormal(vec3(0),0);
     vec3 Neye1 = GetNormal(vec3(0),1);
     vec3 Neye2 = GetNormal(vec3(0),2);
-    vec3 Neye3 = GetNormal(vec3(0),4);
+    vec3 Neye4 = GetNormal(vec3(0),4);
 
     Neye0 = GetQuadGeometryNormal(Neye0,
-                point0, point1, point2, point3, isFlipped);
+                point0, point1, point2, point4, isFlipped);
     Neye1 = GetQuadGeometryNormal(Neye1,
-                point0, point1, point2, point3, isFlipped);
+                point0, point1, point2, point4, isFlipped);
     Neye2 = GetQuadGeometryNormal(Neye2,
-                point0, point1, point2, point3, isFlipped);
-    Neye3 = GetQuadGeometryNormal(Neye3,
-                point0, point1, point2, point3, isFlipped);
+                point0, point1, point2, point4, isFlipped);
+    Neye4 = GetQuadGeometryNormal(Neye4,
+                point0, point1, point2, point4, isFlipped);
 
     point0 = DisplacementTerminal(0, point0, Neye0, GetPatchCoord(0));
     point1 = DisplacementTerminal(1, point1, Neye1, GetPatchCoord(1));
     point2 = DisplacementTerminal(2, point2, Neye2, GetPatchCoord(2));
-    point3 = DisplacementTerminal(3, point3, Neye3, GetPatchCoord(3));
+    point4 = DisplacementTerminal(4, point4, Neye4, GetPatchCoord(4));
 
     vec2 coord = gl_TessCoord.xy;
     vec4 basis = vec4((1.0-coord.x) * (1.0-coord.y), coord.x * (1.0-coord.y),
                       (1.0-coord.x) * coord.y, coord.x * coord.y);
 
-    outData.Peye = InterpolatePrimvar(point0, point1, point3, point2, basis);
-    outData.Neye = InterpolatePrimvar(Neye0, Neye1, Neye3, Neye2, basis);
+    outData.Peye = InterpolatePrimvar(point0, point1, point4, point2, basis);
+    outData.Neye = InterpolatePrimvar(Neye0, Neye1, Neye4, Neye2, basis);
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ApplyClipPlanes(outData.Peye);
 
-    ProcessPrimvarsOut(basis, 0, 1, 2, 4);
+    ProcessPrimvarsOut(basis, 0, 1, 4, 2);
 }
 
 --- --------------------------------------------------------------------------
@@ -968,8 +970,6 @@ void emit(int index, vec4 Peye, vec3 Neye)
     EmitVertex();
 }
 
-FORWARD_DECL(vec4 ComputeSelectionOffset()); // selection.glslfx
-
 void main(void)
 {
     gl_PrimitiveID = gl_PrimitiveIDIn;
@@ -995,13 +995,6 @@ void main(void)
         1, inData[1].Peye, Neye1, GetPatchCoord(1));
     vec4 Peye2 = DisplacementTerminal(
         2, inData[2].Peye, Neye2, GetPatchCoord(2));
-
-    // For wireframe, add a polygon offset to selected faces to ensure they
-    // rasterize over unselected faces.
-    vec4 selOffset = ComputeSelectionOffset();
-    Peye0 += selOffset;
-    Peye1 += selOffset;
-    Peye2 += selOffset;
 
     // triangle 0: vertices (0,1,2)
     emit(0, Peye0, Neye0);
@@ -1097,8 +1090,6 @@ void emit(int index, vec4 Peye, vec3 Neye)
     EmitVertex();
 }
 
-FORWARD_DECL(vec4 ComputeSelectionOffset()); // selection.glslfx
-
 void main(void)
 {
     gl_PrimitiveID = gl_PrimitiveIDIn;
@@ -1121,13 +1112,6 @@ void main(void)
         1, inData[1].Peye, Neye1, GetPatchCoord(1));
     vec4 Peye2 = DisplacementTerminal(
         2, inData[2].Peye, Neye2, GetPatchCoord(2));
-
-    // For wireframe, add a polygon offset to selected faces to ensure they
-    // rasterize over unselected faces.
-    vec4 selOffset = ComputeSelectionOffset();
-    Peye0 += selOffset;
-    Peye1 += selOffset;
-    Peye2 += selOffset;
 
     // triangle 0: vertices (0,1,2)
     emit(0, Peye0, Neye0);
@@ -1182,8 +1166,6 @@ void emit(int index, vec4 Peye, vec3 Neye)
     EmitVertex();
 }
 
-FORWARD_DECL(vec4 ComputeSelectionOffset()); // selection.glslfx
-
 void main(void)
 {
     gl_PrimitiveID = gl_PrimitiveIDIn;
@@ -1206,13 +1188,6 @@ void main(void)
         1, inData[1].Peye, Neye1, GetPatchCoord(1));
     vec4 Peye2 = DisplacementTerminal(
         2, inData[2].Peye, Neye2, GetPatchCoord(2));
-
-    // For wireframe, add a polygon offset to selected faces to ensure they
-    // rasterize over unselected faces.
-    vec4 selOffset = ComputeSelectionOffset();
-    Peye0 += selOffset;
-    Peye1 += selOffset;
-    Peye2 += selOffset;
 
     // triangle 0: vertices (0,1,2)
     emit(0, Peye0, Neye0);
@@ -1269,8 +1244,6 @@ void emit(int index, vec4 Peye, vec3 Neye)
     EmitVertex();
 }
 
-FORWARD_DECL(vec4 ComputeSelectionOffset()); // selection.glslfx
-
 void main(void)
 {
     gl_PrimitiveID = gl_PrimitiveIDIn;
@@ -1315,14 +1288,6 @@ void main(void)
     // which matters when we use smooth/limit normals.
     // In the case of flat normals, we use the vertex positions, so it doesn't
     // matter.
-
-    // For wireframe, add a polygon offset to selected faces to ensure they
-    // rasterize over unselected faces.
-    vec4 selOffset = ComputeSelectionOffset();
-    Peye0 += selOffset;
-    Peye1 += selOffset;
-    Peye2 += selOffset;
-    Peye3 += selOffset;
 
     // triangle 0: vertices (0,1,2)
     emit(0, Peye0, Neye0);

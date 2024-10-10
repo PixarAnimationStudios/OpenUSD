@@ -23,7 +23,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python {
 
 // Note: the static data members are defined in object/function.cpp
 
-class PXR_BOOST_PYTHON_DECL docstring_options : boost::noncopyable
+class PXR_BOOST_PYTHON_DECL docstring_options
 {
   public:
       docstring_options(bool show_all=true)
@@ -62,6 +62,9 @@ class PXR_BOOST_PYTHON_DECL docstring_options : boost::noncopyable
           show_cpp_signatures_ = previous_show_cpp_signatures_;
           show_py_signatures_ = previous_show_py_signatures_;
       }
+
+      docstring_options(docstring_options const&) = delete;
+      docstring_options& operator=(docstring_options const&) = delete;
 
       void
       disable_user_defined() { show_user_defined_ = false; }

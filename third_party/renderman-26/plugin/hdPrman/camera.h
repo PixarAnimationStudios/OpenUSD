@@ -124,6 +124,13 @@ public:
         return _shutterCurve;
     }
 
+    /// Sets the camera and projection shader parameters as expected by Riley
+    /// from the USD physical camera params.
+    HDPRMAN_API
+    void SetRileyCameraParams(RtParamList& camParams,
+                              RtParamList& camParamsOverride,
+                              RtParamList& projParams) const;
+
     float GetApertureAngle() const {
         return _apertureAngle;
     }
@@ -140,7 +147,16 @@ public:
         return _apertureRoundness;
     }
 
+    float GetDofMult() const {
+        return _dofMult;
+    }
+
 private:
+
+    void setFov(RtParamList& projParams) const;
+
+    void setScreenWindow(RtParamList& camParams, bool isPerspective) const;
+
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> _sampleXforms;
 
 #if HD_API_VERSION < 52
@@ -168,6 +184,9 @@ private:
     float _apertureDensity;
     int _apertureNSides;
     float _apertureRoundness;
+    float _dofMult;
+
+    VtDictionary _params;
 };
 
 

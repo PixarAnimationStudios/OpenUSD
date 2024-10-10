@@ -31,11 +31,10 @@
 # include "pxr/external/boost/python/detail/caller.hpp"
 # include "pxr/external/boost/python/detail/none.hpp"
 
-# include <boost/mpl/size.hpp>
-# include <boost/mpl/int.hpp>
-# include <boost/mpl/push_front.hpp>
-# include <boost/mpl/pop_front.hpp>
-# include <boost/mpl/assert.hpp>
+# include "pxr/external/boost/python/detail/mpl2/size.hpp"
+# include "pxr/external/boost/python/detail/mpl2/int.hpp"
+# include "pxr/external/boost/python/detail/mpl2/push_front.hpp"
+# include "pxr/external/boost/python/detail/mpl2/pop_front.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
@@ -98,9 +97,9 @@ namespace detail
   };
 
   template <int N, class BaseArgs, class Offset>
-  inline PyObject* get(mpl::int_<N>, offset_args<BaseArgs,Offset> const& args_)
+  inline PyObject* get(detail::mpl2::int_<N>, offset_args<BaseArgs,Offset> const& args_)
   {
-      return get(mpl::int_<(N+Offset::value)>(), args_.base);
+      return get(detail::mpl2::int_<(N+Offset::value)>(), args_.base);
   }
   
   template <class BaseArgs, class Offset>
@@ -116,24 +115,23 @@ namespace detail
       
       // If the BasePolicy_ supplied a result converter it would be
       // ignored; issue an error if it's not the default.
-      BOOST_MPL_ASSERT_MSG(
+      static_assert(
          (is_same<
               typename BasePolicy_::result_converter
             , default_result_converter
           >::value)
-        , MAKE_CONSTRUCTOR_SUPPLIES_ITS_OWN_RESULT_CONVERTER_THAT_WOULD_OVERRIDE_YOURS
-        , (typename BasePolicy_::result_converter)
+        , "MAKE_CONSTRUCTOR_SUPPLIES_ITS_OWN_RESULT_CONVERTER_THAT_WOULD_OVERRIDE_YOURS"
       );
       typedef constructor_result_converter result_converter;
-      typedef offset_args<typename BasePolicy_::argument_package, mpl::int_<1> > argument_package;
+      typedef offset_args<typename BasePolicy_::argument_package, detail::mpl2::int_<1> > argument_package;
   };
 
   template <class InnerSignature>
   struct outer_constructor_signature
   {
-      typedef typename mpl::pop_front<InnerSignature>::type inner_args;
-      typedef typename mpl::push_front<inner_args,object>::type outer_args;
-      typedef typename mpl::push_front<outer_args,void>::type type;
+      typedef typename detail::mpl2::pop_front<InnerSignature>::type inner_args;
+      typedef typename detail::mpl2::push_front<inner_args,object>::type outer_args;
+      typedef typename detail::mpl2::push_front<outer_args,void>::type type;
   };
 
   // ETI workaround
@@ -172,7 +170,7 @@ namespace detail
   // As above, except that it accepts argument keywords. NumKeywords
   // is used only for a compile-time assertion to make sure the user
   // doesn't pass more keywords than the function can accept. To
-  // disable all checking, pass mpl::int_<0> for NumKeywords.
+  // disable all checking, pass detail::mpl2::int_<0> for NumKeywords.
   template <class F, class CallPolicies, class Sig, class NumKeywords>
   object make_constructor_aux(
       F f
@@ -182,11 +180,11 @@ namespace detail
       , NumKeywords                     // An MPL integral type wrapper: the size of kw
       )
   {
-      enum { arity = mpl::size<Sig>::value - 1 };
+      enum { arity = detail::mpl2::size<Sig>::value - 1 };
       
-      typedef typename detail::error::more_keywords_than_function_arguments<
+      [[maybe_unused]] typedef typename detail::error::more_keywords_than_function_arguments<
           NumKeywords::value, arity
-          >::too_many_keywords assertion BOOST_ATTRIBUTE_UNUSED;
+          >::too_many_keywords assertion;
     
       typedef typename outer_constructor_signature<Sig>::type outer_signature;
 
@@ -210,19 +208,19 @@ namespace detail
   //   @group Helpers for make_constructor when called with 3 arguments. {
   //
   template <class F, class CallPolicies, class Keywords>
-  object make_constructor_dispatch(F f, CallPolicies const& policies, Keywords const& kw, mpl::true_)
+  object make_constructor_dispatch(F f, CallPolicies const& policies, Keywords const& kw, detail::mpl2::true_)
   {
       return detail::make_constructor_aux(
           f
         , policies
         , detail::get_signature(f)
         , kw.range()
-        , mpl::int_<Keywords::size>()
+        , detail::mpl2::int_<Keywords::size>()
       );
   }
 
   template <class F, class CallPolicies, class Signature>
-  object make_constructor_dispatch(F f, CallPolicies const& policies, Signature const& sig, mpl::false_)
+  object make_constructor_dispatch(F f, CallPolicies const& policies, Signature const& sig, detail::mpl2::false_)
   {
       return detail::make_constructor_aux(
           f
@@ -282,7 +280,7 @@ object make_constructor(
         , policies
         , sig
         , kw.range()
-        , mpl::int_<Keywords::size>()
+        , detail::mpl2::int_<Keywords::size>()
       );
 }
 // }

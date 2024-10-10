@@ -812,31 +812,38 @@ bool IsSubprimSelected(int id, int min, int max, int headerStart,
 // Keep the result struct definition outside guards.
 struct SubprimSelectionResult {
     bool elementSelected;
+    bool elementEdgeSelected;
     bool edgeSelected;
     bool pointSelected;
     int  pointColorId;
 };
 
 SubprimSelectionResult InitSubprimSelectionResult(
-    bool _elementSelected,
-    bool _edgeSelected,
-    bool _pointSelected,
-    int _pointColorId)
+    bool elementSelected,
+    bool elementEdgeSelected,
+    bool edgeSelected,
+    bool pointSelected,
+    int pointColorId)
 {
     SubprimSelectionResult res;
 
-    res.elementSelected = _elementSelected;
-    res.edgeSelected = _edgeSelected;
-    res.pointSelected = _pointSelected;
-    res.pointColorId = _pointColorId;
+    res.elementSelected = elementSelected;
+    res.elementEdgeSelected = elementEdgeSelected;
+    res.edgeSelected = edgeSelected;
+    res.pointSelected = pointSelected;
+    res.pointColorId = pointColorId;
 
     return res;
 }
 
 bool IsAnySubprimSelected(SubprimSelectionResult s)
 {
-    return (s.elementSelected || s.edgeSelected || s.pointSelected);
+    return (s.elementSelected ||
+            s.elementEdgeSelected ||
+            s.edgeSelected ||
+            s.pointSelected);
 }
+
 bool HasCustomizedPointColor(SubprimSelectionResult s)
 {
     // Use -1 to encode selected points that don't have a custom point color.
@@ -845,15 +852,17 @@ bool HasCustomizedPointColor(SubprimSelectionResult s)
 
 #if defined(HD_HAS_hdxSelectionBuffer)
 // Note: These should match the SubprimType enum in hdx/SelectionTracker.cpp
-#define SUBPRIM_TYPE_ELEMENT 0
-#define SUBPRIM_TYPE_EDGE    1
-#define SUBPRIM_TYPE_POINT   2
-#define SUBPRIM_TYPE_INSTANCE 3
+#define SUBPRIM_TYPE_ELEMENT      0
+#define SUBPRIM_TYPE_ELEMENT_EDGE 1
+#define SUBPRIM_TYPE_EDGE         2
+#define SUBPRIM_TYPE_POINT        3
+#define SUBPRIM_TYPE_INSTANCE     4
 
 SubprimSelectionResult GetSubprimSel(int offset,
                                      int elementId, int edgeId, int pointId)
 {
-    SubprimSelectionResult s = InitSubprimSelectionResult(false, false, false, 0);
+    SubprimSelectionResult s =
+        InitSubprimSelectionResult(false, false, false, false, 0);
 
     int nextSubprimOffset = 0;
     SubprimHeader header = DecodeSubprimHeader(offset);
@@ -870,6 +879,17 @@ SubprimSelectionResult GetSubprimSel(int offset,
         }
     }
 
+    if (header.type == SUBPRIM_TYPE_ELEMENT_EDGE) {
+        s.elementEdgeSelected =
+            IsSubprimSelected(edgeId, header.min, header.max,
+                              offset, /*out*/nextSubprimOffset);
+
+        if (nextSubprimOffset != 0) {
+            // fragment has additional subprim(s) selected. update header.
+            header = DecodeSubprimHeader(nextSubprimOffset);
+            offset = nextSubprimOffset;
+        }
+    }
     if (header.type == SUBPRIM_TYPE_EDGE) {
         s.edgeSelected =
             IsSubprimSelected(edgeId, header.min, header.max,
@@ -924,18 +944,22 @@ struct SelectionResult {
 };
 
 SelectionResult InitSelectionResult(
-    bool _primOrInstanceSel,
-    bool _elementSelected,
-    bool _edgeSelected,
-    bool _pointSelected,
-    int _pointColorId)
+    bool primOrInstanceSel,
+    bool elementSelected,
+    bool elementEdgeSelected,
+    bool edgeSelected,
+    bool pointSelected,
+    int pointColorId)
 {
     SelectionResult res;
 
-    res.primOrInstanceSel = _primOrInstanceSel;
+    res.primOrInstanceSel = primOrInstanceSel;
     res.subprimSel = InitSubprimSelectionResult(
-                        _elementSelected, _edgeSelected,
-                        _pointSelected, _pointColorId);
+                        elementSelected,
+                        elementEdgeSelected,
+                        edgeSelected,
+                        pointSelected,
+                        pointColorId);
 
     return res;
 }
@@ -946,16 +970,17 @@ SelectionResult InitSelectionResult(
 SelectionResult GetSelectionResult(int mode,
                                    int elementId, int edgeId, int pointId)
 {
-    SelectionResult res = InitSelectionResult(false, false, false, false, 0);
+    SelectionResult res =
+        InitSelectionResult(false, false, false, false, false, 0);
 
 #if defined(HD_HAS_hdxSelectionBuffer)
     // The hdxSelectionBuffer layout is:
     // [#modes] [per-mode offset] [data mode0] ... [data modeM]
     // [---------header---------]
     // Each mode's data is laid out as:
-    // [ prims | points | edges | elements | instance level-N | ... | level 0 ]
-    //          <-------- subprims ------->  <----------- instances --------->
-    //          <---------------------- per prim ---------------------------->
+    // [ prims | points | edges | elementEdges | elements | instances ]
+    //          <----------- subprims ------------------->
+    //          <------------------ per prim ------------------------>
     // See hdx/SelectionTracker.cpp for details on the encoding scheme.
     int modeOffset = GetIndexOffsetForHighlightMode(mode);
     if (!HighlightModeHasSelection(modeOffset)) {
@@ -1004,11 +1029,14 @@ SelectionResult GetSelectionResult(int mode,
 SelectionResult
 _CombineWithOr(SelectionResult a, SelectionResult b)
 {
-    SelectionResult res = InitSelectionResult(false, false, false, false, 0);
+    SelectionResult res =
+        InitSelectionResult(false, false, false, false, false, 0);
 
     res.primOrInstanceSel = a.primOrInstanceSel || b.primOrInstanceSel;
     res.subprimSel.elementSelected = a.subprimSel.elementSelected ||
                                    b.subprimSel.elementSelected;
+    res.subprimSel.elementEdgeSelected = a.subprimSel.elementEdgeSelected ||
+                                       b.subprimSel.elementEdgeSelected;
     res.subprimSel.edgeSelected = a.subprimSel.edgeSelected ||
                                 b.subprimSel.edgeSelected;
     res.subprimSel.pointSelected = a.subprimSel.pointSelected ||
@@ -1021,7 +1049,8 @@ _CombineWithOr(SelectionResult a, SelectionResult b)
 // mode.
 SelectionResult GetNetSelectionResult(int elementId, int edgeId, int pointId)
 {
-    SelectionResult netResult = InitSelectionResult(false, false, false, false, 0);
+    SelectionResult netResult =
+        InitSelectionResult(false, false, false, false, false, 0);
 
 #if defined(HD_HAS_hdxSelectionBuffer)
     const int numSelectionModes = GetNumSelectionHighlightModes();
@@ -1317,6 +1346,9 @@ int GetPrimitiveEdgeId() {
 }
 float GetSelectedEdgeOpacity() {
   return 0.0;
+}
+bool SelectWireframeFaceEdges() {
+  return false;
 }
 vec3 HdGet_points(int localIndex) { return vec3(inPrimvars.points);}
 vec3 HdGet_points() { return HdGet_points(0); }

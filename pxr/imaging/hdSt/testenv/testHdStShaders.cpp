@@ -54,7 +54,7 @@ private:
     void toggleUseSceneMaterials();
     void rebindMaterial(SdfPath const &rprimId, SdfPath const &materialId);
 
-    HdSt_TestDriver* _driver;
+    HdSt_TestDriverUniquePtr _driver;
 
     std::vector<HdStLightingShaderSharedPtr> _lightingShaders;
 
@@ -71,7 +71,7 @@ private:
 void
 My_TestGLDrawing::InitTest()
 {
-    _driver = new HdSt_TestDriver(_reprName);
+    _driver = std::make_unique<HdSt_TestDriver>(_reprName);
     HdUnitTestDelegate &delegate = _driver->GetDelegate();
     delegate.SetRefineLevel(_refineLevel);
 

@@ -47,9 +47,9 @@ namespace detail
       char const* name, F const& fn, Helper const& helper)
   {
       // Must not try to use default implementations except with method definitions.
-      typedef typename error::multiple_functions_passed_to_def<
+      [[maybe_unused]] typedef typename error::multiple_functions_passed_to_def<
           Helper::has_default_implementation
-          >::type assertion BOOST_ATTRIBUTE_UNUSED;
+          >::type assertion;
       
       detail::scope_setattr_doc(
           name, PXR_BOOST_NAMESPACE::python::make_function(

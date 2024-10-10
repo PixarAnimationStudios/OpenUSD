@@ -157,6 +157,7 @@ public:
     // --------------------------------------------------------------------- //
     // LIGHTLISTCACHEBEHAVIOR 
     // --------------------------------------------------------------------- //
+    /// 
     /// Controls how the lightList should be interpreted.
     /// Valid values are:
     /// - consumeAndHalt: The lightList should be consulted,

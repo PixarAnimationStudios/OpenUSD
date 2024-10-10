@@ -6,6 +6,8 @@
 //
 #include "hdPrman/integrator.h"
 
+#if PXR_VERSION >= 2308
+
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/renderParam.h"
 
@@ -66,3 +68,5 @@ HdDirtyBits HdPrman_Integrator::GetInitialDirtyBitsMask() const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2308

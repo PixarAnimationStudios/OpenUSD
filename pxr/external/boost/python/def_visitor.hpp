@@ -18,7 +18,6 @@
 #else
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
-# include <boost/detail/workaround.hpp>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
@@ -27,14 +26,7 @@ template <class T, class X1, class X2, class X3> class class_;
 
 class def_visitor_access
 {
-# if defined(BOOST_NO_MEMBER_TEMPLATE_FRIENDS)                  \
-    || BOOST_WORKAROUND(BOOST_BORLANDC, BOOST_TESTED_AT(0x551))
-    // Tasteless as this may seem, making all members public allows member templates
-    // to work in the absence of member template friends.
- public:
-# else      
     template <class Derived> friend class def_visitor;
-# endif
     
     // unnamed visit, c.f. init<...>, container suites
     template <class V, class classT>
@@ -63,14 +55,7 @@ class def_visitor
 {
     friend class def_visitor_access;
     
-# if defined(BOOST_NO_MEMBER_TEMPLATE_FRIENDS)                  \
-    || BOOST_WORKAROUND(BOOST_BORLANDC, BOOST_TESTED_AT(0x551))
-    // Tasteless as this may seem, making all members public allows member templates
-    // to work in the absence of member template friends.
- public:
-# else      
     template <class T, class X1, class X2, class X3> friend class class_;
-# endif
     
     // unnamed visit, c.f. init<...>, container suites
     template <class classT>

@@ -19,8 +19,8 @@
 
 # include "pxr/external/boost/python/def_visitor.hpp"
 # include "pxr/external/boost/python/default_call_policies.hpp"
-# include <boost/mpl/push_front.hpp>
-# include <boost/mpl/pop_front.hpp>
+# include "pxr/external/boost/python/detail/mpl2/push_front.hpp"
+# include "pxr/external/boost/python/detail/mpl2/pop_front.hpp"
 
 # include "pxr/external/boost/python/detail/nullary_function_adaptor.hpp"
 
@@ -41,10 +41,10 @@ namespace detail
   struct replace_front2
   {
       // Metafunction forwarding seemed to confound vc6 
-      typedef typename mpl::push_front<
-          typename mpl::push_front<
-              typename mpl::pop_front<
-                  typename mpl::pop_front<
+      typedef typename detail::mpl2::push_front<
+          typename detail::mpl2::push_front<
+              typename detail::mpl2::pop_front<
+                  typename detail::mpl2::pop_front<
                       S
                   >::type
               >::type
@@ -89,7 +89,7 @@ namespace detail
       void visit(C_& c, char const* name, Options& options) const
       {
           // This should probably be a nicer error message
-          BOOST_STATIC_ASSERT(!Options::has_default_implementation);
+          static_assert(!Options::has_default_implementation);
 
           // Add the virtual function dispatcher
           c.def(
@@ -100,7 +100,7 @@ namespace detail
             , options.policies()
           );
 
-          typedef BOOST_DEDUCED_TYPENAME C_::metadata::held_type held_type;
+          typedef typename C_::metadata::held_type held_type;
           
           // Add the default implementation which raises the exception
           c.def(

@@ -57,7 +57,7 @@ wrapRefPtrTracker()
      typedef TfRefPtrTracker This;
      typedef TfWeakPtr<TfRefPtrTracker> ThisPtr;
      
-     class_<This, ThisPtr, boost::noncopyable>("RefPtrTracker", no_init)
+     class_<This, ThisPtr, noncopyable>("RefPtrTracker", no_init)
         .def(TfPySingleton())
 
         .def("GetAllWatchedCountsReport", _ReportAllWatchedCounts)

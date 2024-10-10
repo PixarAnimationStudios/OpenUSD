@@ -7,8 +7,7 @@
 // Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 #include "pxr/external/boost/python/module.hpp"
-#define BOOST_ENABLE_ASSERT_HANDLER
-#include <boost/assert.hpp>
+#include <cassert>
 
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/class.hpp"
@@ -78,7 +77,7 @@ void test_templates(object print)
     print(tmp.get(2,"default"));
     print(tmp.setdefault(3,"default"));
 
-    BOOST_ASSERT(!tmp.has_key(key));
+    assert(!tmp.has_key(key));
 }
 
 PXR_BOOST_PYTHON_MODULE(dict_ext)

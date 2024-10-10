@@ -39,6 +39,7 @@
    Proposals <wp>
    FAQ <usdfaq>
    Performance Considerations <maxperf>
+   Performance Metrics <ref_performance_metrics>
    Third Party Plugins <plugins>
 
 .. toctree::
@@ -50,7 +51,6 @@
    Contributing <contributing_to_usd>
    Contributors <contributors>
    Release Schedule <release_schedule>
-   License <license>
 
 .. toctree::
    :hidden:

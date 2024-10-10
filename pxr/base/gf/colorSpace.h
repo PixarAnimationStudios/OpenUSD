@@ -22,54 +22,55 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \enum GfColorSpace
 /// \ingroup group_gf_Color
 ///
-/// Color spaces natively supported by Gf.
+/// Color spaces natively supported by Gf to define scene referred color values.
 /// The token names correspond to the canonical names defined
 /// by the OpenColorIO Nanocolor project
 ///
-/// In general, the names have the form <curve>_<name> where <curve>
-/// is the transfer curve, and <name> is a common name for the color space.
-/// If the <curve> portion is ommitted, then it is the same as the <name>.
+/// The names have the form <Curve><Name> where <Curve> is the transfer curve, 
+/// and <Name> is the common name for the color space.
 ///
-/// Identity, Raw:    No transformation occurs with these.
-/// ACEScg:           The Academy Color Encoding System, a color space designed
-///                     for cinematic content creation and exchange, with AP1 primaries.
-///                     ACEScg also specifies a display transform.
-/// AP0:              The ACES AP0 primaries and white point.
-/// AP1:              The ACES AP1 primaries and white point.
-/// Rec709:           Primaries and whitepoint and EOTF per the Rec. 709 specification.
-/// AdobeRGB:         A color space developed by Adobe Systems. It has a wider gamut
-///                     than sRGB and is suitable for photography and printing
-/// DisplayP3:        DisplayP3 gamut, and linear gamma. Commonly used by wide
-///                     gamut HDR monitors.
-/// SRGB:             sRGB primaries and whitepoint and EOTF transform function.
-/// Texture:          A synonym for identity.
-/// sRGB:             A synonym for sRGB_Texture.
-/// Rec2020:          Rec2020 primaries, white point, and EOTF.
-/// CIEXYZ:           The CIE 1931 XYZ color space, a standard color space used
-///                     in color science.
+/// The curves include:
 ///
-/// Colorspaces outside of the set may be defined through explicit construction.
+/// Linear:     Linear transfer function.
+/// G18:        Gamma 1.8 transfer function.
+/// G22:        Gamma 2.2 transfer function.
+/// SRGB:       sRGB transfer function, comprised of a linear and gamma segment.
 ///
-#define GF_COLORSPACE_NAME_TOKENS  \
-    ((Identity, "identity"))                 \
-    ((Raw, "raw"))                           \
-    ((ACEScg, "acescg"))                     \
-    ((AdobeRGB, "adobergb"))                 \
-    ((LinearAdobeRGB, "lin_adobergb"))       \
-    ((CIEXYZ, "CIEXYZ"))                     \
-    ((LinearAP0, "lin_ap0"))                 \
-    ((LinearAP1, "lin_ap1"))                 \
-    ((G18AP1, "g18_ap1"))                    \
-    ((G22AP1, "g22_ap1"))                    \
-    ((LinearRec2020, "lin_rec2020"))         \
-    ((LinearRec709, "lin_rec709"))           \
-    ((G18Rec709, "g18_rec709"))              \
-    ((G22Rec709, "g22_rec709"))              \
-    ((LinearDisplayP3, "lin_displayp3"))     \
-    ((LinearSRGB, "lin_srgb"))               \
-    ((SRGBTexture, "srgb_texture"))          \
-    ((SRGB, "sRGB"))                         \
-    ((SRGBDisplayP3, "srgb_displayp3"))      \
+/// The named color spaces refer to a set of primaries and a white point.
+///
+/// AP0:        The ACES2065-1 AP0 primaries and corresponding D60 white point.
+/// AP1:        The ACEScg AP1 primaries and corresponding D60 white point.
+/// Rec2020:    Rec2020 primaries and corresponding D65 white point.
+/// Rec709:     Rec7709 primaries and corresponding D65 white point.
+/// AdobeRGB:   A color space developed by Adobe Systems. It's primaries define
+///             a wider gamut than sRGB. It has a D65 white point.
+/// DisplayP3:  P3 primaries, a D65 whitepoint. Commonly used 
+///             by wide gamut HDR monitors.
+/// CIEXYZ:     The CIE 1931 XYZ color space.
+/// Data, Raw,
+/// Unknown:    No transformation occurs with these.
+///
+/// User defined color spaces outside of this set may be defined through
+/// explicit construction.
+///
+#define GF_COLORSPACE_NAME_TOKENS                \
+    ((CIEXYZ, "lin_ciexyzd65_scene"))            \
+    ((Data, "data"))                             \
+    ((Raw, "raw"))                               \
+    ((Unknown, "unknown"))                       \
+    ((LinearAdobeRGB, "lin_adobergb_scene"))     \
+    ((LinearAP0, "lin_ap0_scene"))               \
+    ((LinearAP1, "lin_ap1_scene"))               \
+    ((LinearDisplayP3, "lin_displayp3_scene"))   \
+    ((LinearRec2020, "lin_rec2020_scene"))       \
+    ((LinearRec709, "lin_rec709_scene"))         \
+    ((G18Rec709, "g18_rec709_scene"))            \
+    ((G22AdobeRGB, "g22_adobergb_scene"))        \
+    ((G22AP1, "g22_ap1_scene"))                  \
+    ((G22Rec709, "g22_rec709_scene"))            \
+    ((SRGBP3D65, "srgb_p3d65_scene"))            \
+    ((SRGBRec709, "srgb_rec709_scene"))          \
+    ((SRGBAP1, "srgb_ap1_scene"))
 
 TF_DECLARE_PUBLIC_TOKENS(GfColorSpaceNames, GF_API, 
                          GF_COLORSPACE_NAME_TOKENS);
@@ -100,6 +101,11 @@ public:
     GF_API 
     explicit GfColorSpace(const TfToken& name);
 
+    /// Check if a color space name is valid for constructing
+    /// a GfColorSpace by name.
+    GF_API
+    static bool IsValid(const TfToken& name);
+
     /// Construct a custom color space from raw values.
     ///
     /// \param name The name token of the color space.
@@ -109,9 +115,7 @@ public:
     /// \param whitePoint The white point chromaticity coordinates.
     /// \param gamma The gamma value of the log section.
     /// \param linearBias The linear bias of the log section.
-    /// \param K0 The linear break point.
-    /// \param phi The slope of the linear section.
-    GF_API 
+    GF_API
     explicit GfColorSpace(const TfToken& name,
                           const GfVec2f &redChroma,
                           const GfVec2f &greenChroma,
@@ -126,8 +130,6 @@ public:
     /// \param rgbToXYZ The RGB to XYZ conversion matrix.
     /// \param gamma The gamma value of the log section.
     /// \param linearBias The linear bias of the log section.
-    /// \param K0 The linear break point.
-    /// \param phi The slope of the linear section.
     GF_API 
     explicit GfColorSpace(const TfToken& name,
                           const GfMatrix3f &rgbToXYZ,

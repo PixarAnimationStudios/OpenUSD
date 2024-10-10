@@ -50,6 +50,8 @@ public:
     typedef PcpNodeRef_ChildrenReverseIterator child_const_reverse_iterator;
     typedef std::pair<child_const_iterator,
                       child_const_iterator> child_const_range;
+    typedef std::pair<child_const_reverse_iterator,
+                      child_const_reverse_iterator> child_const_reverse_range;
 
     PcpNodeRef() : _graph(0), _nodeIdx(PCP_INVALID_INDEX) {}
 
@@ -133,6 +135,11 @@ public:
     PCP_API
     child_const_range GetChildrenRange() const;
 
+    /// Returns an iterator range over the children nodes in weakest to
+    /// strongest order.
+    PCP_API
+    child_const_reverse_range GetChildrenReverseRange() const;
+
     /// Inserts a new child node for \p site, connected to this node via
     /// \p arc.
     PCP_API
@@ -200,6 +207,20 @@ public:
     /// See also GetDepthBelowIntroduction().
     PCP_API
     SdfPath GetIntroPath() const;
+
+    /// Returns the node's path at the same level of namespace as its origin
+    /// root node was when it was added as a child. 
+    ///
+    /// For most nodes, this will return the same result as 
+    /// GetPathAtIntroduction(). But for implied class nodes, 
+    /// GetPathAtIntroduction() returns the path at which the implied node was
+    /// added to the tree which could be at deeper level of namespace than its
+    /// origin was introduced if the origin node was already ancestral when it
+    /// was implied. In some cases, what you really need is the path that the
+    /// original authored class arc maps to at this node's implied site and this
+    /// function returns that.
+    PCP_API 
+    SdfPath GetPathAtOriginRootIntroduction() const;
 
     /// @} 
 
@@ -306,6 +327,9 @@ public:
     {
         return Pcp_CompressedSdSite(_nodeIdx, layerIndex);
     }
+
+    PCP_API
+    friend std::ostream & operator<<(std::ostream &out, const PcpNodeRef &node);
 
 private:
     friend class PcpPrimIndex_Graph;
@@ -547,6 +571,22 @@ begin(const PcpNodeRef::child_const_range& r)
 inline
 PcpNodeRef_ChildrenIterator
 end(const PcpNodeRef::child_const_range& r)
+{
+    return r.second;
+}
+
+/// Support for range-based for loops for PcpNodeRef children ranges.
+inline
+PcpNodeRef_ChildrenReverseIterator
+begin(const PcpNodeRef::child_const_reverse_range& r)
+{
+    return r.first;
+}
+
+/// Support for range-based for loops for PcpNodeRef children ranges.
+inline
+PcpNodeRef_ChildrenReverseIterator
+end(const PcpNodeRef::child_const_reverse_range& r)
 {
     return r.second;
 }

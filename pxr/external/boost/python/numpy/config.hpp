@@ -24,8 +24,6 @@
 #include <boost/python/numpy/config.hpp>
 #else
 
-# include <boost/config.hpp>
-
 /*****************************************************************************
  *
  *  Set up dll import/export options:
@@ -33,64 +31,40 @@
  ****************************************************************************/
 
 // backwards compatibility:
-#ifdef BOOST_NUMPY_STATIC_LIB
-#  define BOOST_NUMPY_STATIC_LINK
-# elif !defined(BOOST_NUMPY_DYNAMIC_LIB)
-#  define BOOST_NUMPY_DYNAMIC_LIB
+#ifdef PXR_BOOST_NUMPY_STATIC_LIB
+#  define PXR_BOOST_NUMPY_STATIC_LINK
+# elif !defined(PXR_BOOST_NUMPY_DYNAMIC_LIB)
+#  define PXR_BOOST_NUMPY_DYNAMIC_LIB
 #endif
 
-#if defined(BOOST_NUMPY_DYNAMIC_LIB)
-#  if defined(BOOST_SYMBOL_EXPORT)
-#     if defined(BOOST_NUMPY_SOURCE)
-#        define BOOST_NUMPY_DECL           BOOST_SYMBOL_EXPORT
-#        define BOOST_NUMPY_DECL_FORWARD   BOOST_SYMBOL_FORWARD_EXPORT
-#        define BOOST_NUMPY_DECL_EXCEPTION BOOST_EXCEPTION_EXPORT
-#        define BOOST_NUMPY_BUILD_DLL
+#if defined(PXR_BOOST_NUMPY_DYNAMIC_LIB)
+#  if defined (_WIN32) || defined(_WIN64)
+#     if defined(__GNUC__) || defined(__clang__)
+#        define PXR_BOOST_NUMPY_SYMBOL_EXPORT __attribute__((dllexport))
+#        define PXR_BOOST_NUMPY_SYMBOL_IMPORT __attribute__((dllimport))
 #     else
-#        define BOOST_NUMPY_DECL           BOOST_SYMBOL_IMPORT
-#        define BOOST_NUMPY_DECL_FORWARD   BOOST_SYMBOL_FORWARD_IMPORT
-#        define BOOST_NUMPY_DECL_EXCEPTION BOOST_EXCEPTION_IMPORT
+#        define PXR_BOOST_NUMPY_SYMBOL_EXPORT __declspec(dllexport)
+#        define PXR_BOOST_NUMPY_SYMBOL_IMPORT __declspec(dllimport)
+#     endif
+#  else
+#     if defined(__GNUC__) || defined(__clang__)
+#        define PXR_BOOST_NUMPY_SYMBOL_EXPORT __attribute__((visibility("default")))
+#        define PXR_BOOST_NUMPY_SYMBOL_IMPORT
 #     endif
 #  endif
-
+#
+#  if defined(PXR_BOOST_NUMPY_SYMBOL_EXPORT)
+#     if defined(PXR_BOOST_NUMPY_SOURCE)
+#        define PXR_BOOST_NUMPY_DECL PXR_BOOST_NUMPY_SYMBOL_EXPORT
+#     else
+#        define PXR_BOOST_NUMPY_DECL PXR_BOOST_NUMPY_SYMBOL_IMPORT
+#     endif
+#  endif
 #endif
 
-#ifndef BOOST_NUMPY_DECL
-#  define BOOST_NUMPY_DECL
+#ifndef PXR_BOOST_NUMPY_DECL
+#  define PXR_BOOST_NUMPY_DECL
 #endif
-
-#ifndef BOOST_NUMPY_DECL_FORWARD
-#  define BOOST_NUMPY_DECL_FORWARD
-#endif
-
-#ifndef BOOST_NUMPY_DECL_EXCEPTION
-#  define BOOST_NUMPY_DECL_EXCEPTION
-#endif
-
-//  enable automatic library variant selection  ------------------------------// 
-
-#if !defined(BOOST_NUMPY_SOURCE) && !defined(BOOST_ALL_NO_LIB) && !defined(BOOST_NUMPY_NO_LIB)
-//
-// Set the name of our library, this will get undef'ed by auto_link.hpp
-// once it's done with it:
-//
-#define _PXR_BOOST_PYTHON_CONCAT(N, M, m) N ## M ## m
-#define PXR_BOOST_PYTHON_CONCAT(N, M, m) _PXR_BOOST_PYTHON_CONCAT(N, M, m)
-#define BOOST_LIB_NAME PXR_BOOST_PYTHON_CONCAT(boost_numpy, PY_MAJOR_VERSION, PY_MINOR_VERSION)
-//
-// If we're importing code from a dll, then tell auto_link.hpp about it:
-//
-#ifdef BOOST_NUMPY_DYNAMIC_LIB
-#  define BOOST_DYN_LINK
-#endif
-//
-// And include the header that does the work:
-//
-#include <boost/config/auto_link.hpp>
-#endif  // auto-linking disabled
-
-#undef PXR_BOOST_PYTHON_CONCAT
-#undef _PXR_BOOST_PYTHON_CONCAT
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 

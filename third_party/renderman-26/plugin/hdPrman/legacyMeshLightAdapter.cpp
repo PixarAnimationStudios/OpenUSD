@@ -45,8 +45,11 @@ HdPrman_LegacyMeshLightAdapter::TrackVariability(
     UsdLuxLightAPI light(prim);
     if (TF_VERIFY(light)) {
         UsdImaging_CollectionCache& collectionCache = _GetCollectionCache();
+#if PXR_VERSION >= 2405 || !defined(ARCH_OS_WINDOWS)
+        // Note, these symbols weren't available on windows until 2405
         collectionCache.UpdateCollection(light.GetLightLinkCollectionAPI());
         collectionCache.UpdateCollection(light.GetShadowLinkCollectionAPI());
+#endif
         // TODO: When collections change we need to invalidate affected
         // prims with the DirtyCollections flag.
     }
@@ -72,7 +75,6 @@ VtValue
 HdPrman_LegacyMeshLightAdapter::GetMaterialResource(
     UsdPrim const& prim, SdfPath const& cachePath, UsdTimeCode time) const
 {
-    // std::cout << "HdPrman_LegacyMeshLightAdapter::GetMaterialResource" << std::endl;
     if (!_GetSceneLightsEnabled()) {
         return VtValue();
     }

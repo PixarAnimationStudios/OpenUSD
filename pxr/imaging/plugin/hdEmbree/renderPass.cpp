@@ -113,6 +113,10 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             renderDelegate->GetRenderSetting<bool>(
                 HdEmbreeRenderSettingsTokens->enableSceneColors, true));
 
+        _renderer->SetRandomNumberSeed(
+            renderDelegate->GetRenderSetting<unsigned int>(
+                HdEmbreeRenderSettingsTokens->randomNumberSeed, (unsigned int)-1));
+
         needStartRender = true;
     }
 

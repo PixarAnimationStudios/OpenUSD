@@ -610,23 +610,16 @@ namespace
                 // Pre-tangent, if any.
                 if (interp == TsInterpCurve) {
                     const bool isBez = (curveType == TsCurveTypeBezier);
-                    const bool isMaya = (knot.IsPreTanMayaForm());
 
-                    T width = 0, heightOrSlope = 0;
-                    if (isMaya) {
-                        knot.GetMayaPreTanHeight(&heightOrSlope);
-                        if (isBez) {
-                            width = knot.GetMayaPreTanWidth();
-                        }
-                    } else {
-                        knot.GetPreTanSlope(&heightOrSlope);
-                        if (isBez) {
-                            width = knot.GetPreTanWidth();
-                        }
+                    TsTime width = 0;
+                    T slope = 0;
+                    knot.GetPreTanSlope(&slope);
+                    if (isBez) {
+                        width = knot.GetPreTanWidth();
                     }
 
                     _WriteTangent(
-                        out, "pre", isBez, isMaya, width, heightOrSlope);
+                        out, "pre", isBez, width, slope);
                 }
 
                 // Pre-segment finished.  Switch to post-segment.
@@ -635,23 +628,16 @@ namespace
                 // Post-tangent, if any.
                 if (interp == TsInterpCurve) {
                     const bool isBez = (curveType == TsCurveTypeBezier);
-                    const bool isMaya = (knot.IsPostTanMayaForm());
 
-                    T width = 0, heightOrSlope = 0;
-                    if (isMaya) {
-                        knot.GetMayaPostTanHeight(&heightOrSlope);
-                        if (isBez) {
-                            width = knot.GetMayaPostTanWidth();
-                        }
-                    } else {
-                        knot.GetPostTanSlope(&heightOrSlope);
-                        if (isBez) {
-                            width = knot.GetPostTanWidth();
-                        }
+                    TsTime width = 0;
+                    T slope = 0;
+                    knot.GetPostTanSlope(&slope);
+                    if (isBez) {
+                        width = knot.GetPostTanWidth();
                     }
 
                     _WriteTangent(
-                        out, "post curve", isBez, isMaya, width, heightOrSlope);
+                        out, "post curve", isBez, width, slope);
                 }
 
                 // If no post-tangent, write next segment interp method.
@@ -677,38 +663,22 @@ namespace
             Sdf_TextOutput &out,
             const char* const label,
             const bool isBez,
-            const bool isMaya,
-            const T width,
-            const T heightOrSlope)
+            const TsTime width,
+            const T slope)
         {
             if (isBez) {
-                if (isMaya) {
-                    // Bezier, Maya form: width and height.
-                    Sdf_FileIOUtility::Write(
-                        out, 0, "; %s wh(%s, %s)",
-                        label,
-                        TfStringify(width).c_str(),
-                        TfStringify(heightOrSlope).c_str());
-                } else {
-                    // Bezier, standard form: width and slope.
-                    Sdf_FileIOUtility::Write(
-                        out, 0, "; %s ws(%s, %s)",
-                        label,
-                        TfStringify(width).c_str(),
-                        TfStringify(heightOrSlope).c_str());
-                }
+                // Bezier, standard form: width and slope.
+                Sdf_FileIOUtility::Write(
+                    out, 0, "; %s (%s, %s)",
+                    label,
+                    TfStringify(width).c_str(),
+                    TfStringify(slope).c_str());
             } else {
-                if (isMaya) {
-                    // Hermite, Maya form: height.
-                    Sdf_FileIOUtility::Write(out, 0, "; %s h(%s)",
-                        label,
-                        TfStringify(heightOrSlope).c_str());
-                } else {
-                    // Hermite, standard form: slope.
-                    Sdf_FileIOUtility::Write(out, 0, "; %s s(%s)",
-                        label,
-                        TfStringify(heightOrSlope).c_str());
-                }
+                // Hermite, standard form: slope.
+                Sdf_FileIOUtility::Write(
+                    out, 0, "; %s (%s)",
+                    label,
+                    TfStringify(slope).c_str());
             }
         }
     };
@@ -726,8 +696,8 @@ Sdf_FileIOUtility::WriteSpline(
     //       post: sloped(0.57),
     //       loop: (15, 25, 0, 2, 11.7),
     //       7: 5.5 & 7.21; post held,
-    //       15: 8.18; post curve ws(2.49, 1.17); { string comment = "climb!" },
-    //       20: 14.72; pre ws(3.77, -1.4); post curve ws(1.1, -1.4),
+    //       15: 8.18; post curve (2.49, 1.17); { string comment = "climb!" },
+    //       20: 14.72; pre (3.77, -1.4); post curve (1.1, -1.4),
     //   }
 
     const TsKnotMap knotMap = spline.GetKnots();

@@ -23,8 +23,8 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 template <bool is_const_, bool is_volatile_>
 struct cv_tag
 {
-    BOOST_STATIC_CONSTANT(bool, is_const = is_const_);
-    BOOST_STATIC_CONSTANT(bool, is_volatile = is_volatile_);
+    static constexpr bool is_const = is_const_;
+    static constexpr bool is_volatile = is_volatile_;
 };
 
 typedef cv_tag<false,false> cv_unqualified;
@@ -35,8 +35,8 @@ typedef cv_tag<true,true> const_volatile_;
 template <class T>
 struct cv_category
 {
-//    BOOST_STATIC_CONSTANT(bool, c = is_const<T>::value);
-//    BOOST_STATIC_CONSTANT(bool, v = is_volatile<T>::value);
+//    static constexpr bool c = is_const<T>::value;
+//    static constexpr bool v = is_volatile<T>::value;
     typedef cv_tag<
         is_const<T>::value
       , is_volatile<T>::value

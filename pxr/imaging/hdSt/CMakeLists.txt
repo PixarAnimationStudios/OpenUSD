@@ -1,8 +1,8 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hdSt)
 
-# XXX We tmp check for PXR_ENABLE_GL_SUPPORT since Storm currently still only
-# runs on OpenGL. Once Storm uses only Hgi, remove GL_SUPPORT check.
+# XXX We check for PXR_ENABLE_GL_SUPPORT since Storm currently still uses
+# GL via GarchGLApi. Once Storm uses only Hgi, remove GL_SUPPORT check.
 if (NOT ${PXR_BUILD_GPU_SUPPORT} OR NOT ${PXR_ENABLE_GL_SUPPORT})
     message(STATUS
         "Skipping ${PXR_PACKAGE} because PXR_BUILD_GPU_SUPPORT is OFF")
@@ -2825,14 +2825,12 @@ pxr_register_test(testHdStFaceCulling_FrontUnlessDoubleSided
 pxr_register_test(testHdStFrustumCullingCPU
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStFrustumCulling --offscreen"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStFaceCulling
     ENV
         HD_ENABLE_GPU_FRUSTUM_CULLING=0
 )
 pxr_register_test(testHdStFrustumCullingGPU
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStFrustumCulling --offscreen"
     EXPECTED_RETURN_CODE 0
-    TESTENV testHdStFrustumCulling
     ENV
         HD_ENABLE_GPU_FRUSTUM_CULLING=1
         HD_ENABLE_GPU_COUNT_VISIBLE_INSTANCES=1

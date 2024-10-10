@@ -72,7 +72,7 @@ GeomUtilConeMeshGenerator::_GeneratePointsImpl(
         return;
     }
 
-    // Construct a circular arc/ring of the specified radius in the XY plane.
+    // Construct a circular arc of unit radius in the XY plane.
     const std::vector<std::array<ScalarType, 2>> ringXY =
         _GenerateUnitArcXY<ScalarType>(numRadial, sweepDegrees);
 
@@ -106,6 +106,71 @@ template GEOMUTIL_API void GeomUtilConeMeshGenerator::_GeneratePointsImpl(
     const GeomUtilConeMeshGenerator::_PointWriter<GfVec3f>&);
 
 template GEOMUTIL_API void GeomUtilConeMeshGenerator::_GeneratePointsImpl(
+    const size_t, const double, const double, const double,
+    const GeomUtilConeMeshGenerator::_PointWriter<GfVec3d>&);
+
+
+// static
+template<typename PointType>
+void
+GeomUtilConeMeshGenerator::_GenerateNormalsImpl(
+    const size_t numRadial,
+    const typename PointType::ScalarType radius,
+    const typename PointType::ScalarType height,
+    const typename PointType::ScalarType sweepDegrees,
+    const _PointWriter<PointType>& ptWriter)
+{
+    using ScalarType = typename PointType::ScalarType;
+
+    if (numRadial < minNumRadial) {
+        return;
+    }
+
+    // Construct a circular arc of unit radius in the XY plane.
+    const std::vector<std::array<ScalarType, 2>> ringXY =
+        _GenerateUnitArcXY<ScalarType>(numRadial, sweepDegrees);
+
+    // Determine the radius scalar and latitude for the normals
+    // that are perpendicular to the sides of the cone.
+    ScalarType radScale, latitude;
+    if (height != 0) {
+        // Calculate the following directly, without using trig functions:
+        // radScale = cos(atan(slope)) =   1.0 / sqrt(1.0 + slope^2)
+        // latitude = sin(atan(slope)) = slope / sqrt(1.0 + slope^2)
+        const ScalarType slope = radius / height;
+        radScale = 1.0 / GfSqrt(1.0 + GfSqr(slope));
+        latitude = slope * radScale;
+    }
+    else {
+        // Degenerate cone, just use something sensible.
+        radScale = 0.0;
+        latitude = 1.0;
+    }
+
+    constexpr PointType baseNormal(0.0, 0.0, -1.0);
+
+    // Bottom point:
+    ptWriter.WriteDir(baseNormal);
+
+    // First bottom ring which is part of the base, so use the base normal.
+    for (size_t i = 0; i < ringXY.size(); ++i) {
+        ptWriter.WriteDir(baseNormal);
+    }
+
+    // Second bottom ring and top "ring" are the normals at the sides
+    // of the cone and are the same normals.
+    ptWriter.WriteArcDir(radScale, ringXY, latitude);
+    ptWriter.WriteArcDir(radScale, ringXY, latitude);
+}
+
+// Force-instantiate _GenerateNormalsImpl for the supported point types.
+// Only these instantiations will ever be needed due to the SFINAE machinery on
+// the calling method template (the public GeneratePoints, in the header).
+template GEOMUTIL_API void GeomUtilConeMeshGenerator::_GenerateNormalsImpl(
+    const size_t, const float, const float, const float,
+    const GeomUtilConeMeshGenerator::_PointWriter<GfVec3f>&);
+
+template GEOMUTIL_API void GeomUtilConeMeshGenerator::_GenerateNormalsImpl(
     const size_t, const double, const double, const double,
     const GeomUtilConeMeshGenerator::_PointWriter<GfVec3d>&);
 

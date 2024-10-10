@@ -155,6 +155,10 @@ private:
         HdStResourceRegistrySharedPtr const & resourceRegistry,
         size_t * result);
 
+    void _DestroyBuffer(const HdStBufferResourceSharedPtr & bufferResource);
+
+    HdStResourceRegistrySharedPtr _resourceRegistry;
+
     HdStDispatchBufferSharedPtr _dispatchBuffer;
     HdStDispatchBufferSharedPtr _dispatchBufferCullInput;
 

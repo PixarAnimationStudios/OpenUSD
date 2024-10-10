@@ -11,6 +11,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(UsdProcTokens);
-    TF_WRAP(UsdProcGenerativeProcedural);
+    // Generated Schema classes.  Do not remove or edit the following line.
+    #include "generatedSchema.module.h"
 }

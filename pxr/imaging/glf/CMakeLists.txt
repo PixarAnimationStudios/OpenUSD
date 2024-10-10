@@ -24,8 +24,6 @@ pxr_library(glf
         tf
         trace
         sdf
-        OpenGL::GL
-        ${X11_LIBRARIES}
 
     PUBLIC_CLASSES
         bindingMap

@@ -23,6 +23,7 @@ pxr_library(pcp
         changes
         composeSite
         dependency
+        dependentNamespaceEditUtils
         dynamicFileFormatContext
         dynamicFileFormatDependencyData
         dynamicFileFormatInterface

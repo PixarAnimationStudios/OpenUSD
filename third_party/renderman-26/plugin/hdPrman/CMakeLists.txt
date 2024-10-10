@@ -94,6 +94,7 @@ pxr_plugin(${PXR_PACKAGE}
         coordSysPrimSceneIndexPlugin
         cylinder
         debugCodes
+        dependencySceneIndexPlugin
         dependencyForwardingSceneIndexPlugin
         displayFilter
         gprim
@@ -154,6 +155,7 @@ pxr_plugin(${PXR_PACKAGE}
         matfiltSceneIndexPlugins
         motionBlurSceneIndexPlugin
         pinnedCurveExpandingSceneIndexPlugin
+        projectionParams
         renderBuffer
         renderParam
         renderPass
@@ -162,6 +164,7 @@ pxr_plugin(${PXR_PACKAGE}
         renderSettingsFilteringSceneIndexPlugin
         renderViewContext
         resourceRegistry
+        retesselationSceneIndexPlugin
         rileyCameraPrim
         rileyCoordinateSystemPrim
         rileyClippingPlanePrim

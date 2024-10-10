@@ -217,6 +217,7 @@ public:
     // --------------------------------------------------------------------- //
     // MATERIALSYNCMODE 
     // --------------------------------------------------------------------- //
+    /// 
     /// For a LightAPI applied to geometry that has a bound Material, 
     /// which is entirely or partly emissive, this specifies the relationship 
     /// of the Material response to the lighting response.

@@ -29,13 +29,12 @@ const A* outside(const V& v) {return &v.a;}
 PXR_BOOST_PYTHON_MODULE(bienstman1_ext)
 {
   using namespace PXR_BOOST_NAMESPACE::python;
-  using boost::shared_ptr;
   using PXR_BOOST_NAMESPACE::python::return_value_policy;
   using PXR_BOOST_NAMESPACE::python::reference_existing_object;
 
   class_<A>("A");
 
-  class_<V, boost::noncopyable>("V", no_init)
+  class_<V, noncopyable>("V", no_init)
       .def("inside", &V::inside, 
            return_value_policy<reference_existing_object>())
       .def("outside", outside, 

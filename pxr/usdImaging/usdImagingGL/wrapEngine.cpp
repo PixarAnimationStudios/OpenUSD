@@ -20,7 +20,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 
 using namespace std;
-using namespace boost;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -91,7 +90,7 @@ void wrapEngine()
     { 
         using Parameters = UsdImagingGLEngine::Parameters;
 
-        scope engineScope = class_<UsdImagingGLEngine, boost::noncopyable>(
+        scope engineScope = class_<UsdImagingGLEngine, noncopyable>(
                 "Engine", "UsdImaging Renderer class")
             .def( init<>() )
             .def( init<const SdfPath &, const SdfPathVector&,

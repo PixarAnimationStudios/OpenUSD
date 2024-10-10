@@ -25,6 +25,7 @@
 # include "pxr/external/boost/python/return_by_value.hpp"
 # include "pxr/external/boost/python/return_internal_reference.hpp"
 # include "pxr/external/boost/python/make_function.hpp"
+# include "pxr/external/boost/python/type_list.hpp"
 
 # include "pxr/external/boost/python/converter/builtin_converters.hpp"
 
@@ -33,11 +34,8 @@
 # include "pxr/external/boost/python/detail/value_arg.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-# include <boost/mpl/eval_if.hpp>
-# include <boost/mpl/if.hpp>
-# include <boost/mpl/vector/vector10.hpp>
-
-# include <boost/detail/workaround.hpp>
+# include "pxr/external/boost/python/detail/mpl2/eval_if.hpp"
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
@@ -106,8 +104,8 @@ namespace detail
   // 
   template <class T>
   struct default_getter_by_ref
-      : mpl::and_<
-          mpl::bool_<
+      : detail::mpl2::and_<
+          detail::mpl2::bool_<
               to_python_value<
                   typename value_arg<T>::type
               >::uses_registry
@@ -129,7 +127,7 @@ namespace detail
   // and get the right result.
   template <class T>
   struct default_member_getter_policy
-    : mpl::if_<
+    : detail::mpl2::if_<
           default_getter_by_ref<T>
         , return_internal_reference<>
         , return_value_policy<return_by_value>
@@ -140,7 +138,7 @@ namespace detail
   // non-member data.
   template <class T>
   struct default_datum_getter_policy
-    : mpl::if_<
+    : detail::mpl2::if_<
           default_getter_by_ref<T>
         , return_value_policy<reference_existing_object>
         , return_value_policy<return_by_value>
@@ -157,18 +155,12 @@ namespace detail
   // which don't support partial ordering at all and should always be
   // passed 0L.
 
-
-#if BOOST_WORKAROUND(__EDG_VERSION__, <= 238)
-  template <class D, class P>
-  inline object make_getter(D& d, P& p, detail::false_, ...);
-#endif
-
   // Handle non-member pointers with policies
   template <class D, class Policies>
   inline object make_getter(D* d, Policies const& policies, detail::false_, int)
   {
       return python::make_function(
-          detail::datum<D>(d), policies, mpl::vector1<D&>()
+          detail::datum<D>(d), policies, python::type_list<D&>()
       );
   }
   
@@ -184,15 +176,11 @@ namespace detail
   template <class C, class D, class Policies>
   inline object make_getter(D C::*pm, Policies const& policies, detail::true_, int)
   {
-#if BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3003))
-      typedef typename detail::remove_cv<C>::type Class;
-#else
       typedef C Class;
-#endif 
       return python::make_function(
           detail::member<D,Class>(pm)
         , policies
-        , mpl::vector2<D&,Class&>()
+        , python::type_list<D&,Class&>()
       );
   }
       
@@ -225,7 +213,7 @@ namespace detail
   inline object make_setter(D* p, Policies const& policies, detail::false_, int)
   {
       return python::make_function(
-          detail::datum<D>(p), policies, mpl::vector2<void,D const&>()
+          detail::datum<D>(p), policies, python::type_list<void,D const&>()
       );
   }
 
@@ -236,7 +224,7 @@ namespace detail
       return python::make_function(
           detail::member<D,C>(pm)
         , policies
-        , mpl::vector3<void, C&, D const&>()
+        , python::type_list<void, C&, D const&>()
       );
   }
 
@@ -275,7 +263,6 @@ inline object make_getter(D& x)
     return detail::make_getter(x, policy, detail::is_member_pointer<D>(), 0L);
 }
 
-#  if !BOOST_WORKAROUND(__EDG_VERSION__, <= 238)
 template <class D>
 inline object make_getter(D const& d)
 {
@@ -283,7 +270,6 @@ inline object make_getter(D const& d)
         = detail::not_specified(); // Suppress a SunPro warning
     return detail::make_getter(d, policy, detail::is_member_pointer<D>(), 0L);
 }
-#  endif
 
 //
 // make_setter function family -- build a callable object which
@@ -310,13 +296,11 @@ inline object make_setter(D& x)
     return detail::make_setter(x, default_call_policies(), detail::is_member_pointer<D>(), 0);
 }
 
-# if !BOOST_WORKAROUND(__EDG_VERSION__, <= 238)
 template <class D>
 inline object make_setter(D const& x)
 {
     return detail::make_setter(x, default_call_policies(), detail::is_member_pointer<D>(), 0);
 }
-# endif
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 

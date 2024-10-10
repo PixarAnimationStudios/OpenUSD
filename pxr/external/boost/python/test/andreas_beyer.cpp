@@ -7,17 +7,15 @@
 // Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 #include "pxr/external/boost/python.hpp"
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 using namespace PXR_BOOST_NAMESPACE;
-using namespace boost;
 
-class A : public enable_shared_from_this<A> {
+class A : public std::enable_shared_from_this<A> {
  public:
    A() : val(0) {};
    int val;
-   typedef shared_ptr<A> A_ptr;
+   typedef std::shared_ptr<A> A_ptr;
    A_ptr self() {
       A_ptr self;
       self = shared_from_this();
@@ -41,19 +39,19 @@ class B {
 };
 
 template <class T>
-void hold_python(shared_ptr<T>& x)
+void hold_python(std::shared_ptr<T>& x)
 {
-      x = python::extract<shared_ptr<T> >( python::object(x) );
+      x = python::extract<std::shared_ptr<T> >( python::object(x) );
 }
 
-A::A_ptr get_b_a(shared_ptr<B> b)
+A::A_ptr get_b_a(std::shared_ptr<B> b)
 {
     hold_python(b->a);
     return b->get();
 }
 
 PXR_BOOST_PYTHON_MODULE(andreas_beyer_ext) {
-  python::class_<A, noncopyable> ("A")
+  python::class_<A, python::noncopyable> ("A")
     .def("self", &A::self)
     .def_readwrite("val", &A::val)
   ;

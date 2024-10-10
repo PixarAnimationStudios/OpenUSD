@@ -537,11 +537,6 @@ public:
         const UsdPrim &prim, 
         const TfToken &collectionName);
 
-    USD_API
-    static SdfPathExpression
-    ResolveCompleteMembershipExpression(SdfPathExpression pathExpr,
-                                        UsdPrim const &prim);
-
     /// Obtain a complete SdfPathExpression from this collection's
     /// membershipExpression.  First, UsdAttribute::Get() the value of
     /// GetMembershipExpressionAttr(), then resolve any contained references.
@@ -566,15 +561,40 @@ public:
     USD_API
     void ComputeMembershipQuery(UsdCollectionMembershipQuery *query) const;
 
-    /// Returns true if the collection has nothing included in it.
-    /// This requires both that the includes relationship have no
-    /// target paths, and that the includeRoot attribute be false.
-    /// Note that there may be cases where the collection has no objects 
-    /// included in it even when HasNoIncludedPaths() returns false.
-    /// For example, if the included objects are unloaded or if the
-    /// included objects are also excluded.
+    /// Return true if the collection cannot possibly include anything.
+    ///
+    /// For collections in relationships-mode, this is the case if the includes
+    /// relationship has no target paths, and the includeRoot attribute is
+    /// false.
+    ///
+    /// For collections in expression-mode, this is the case if the
+    /// membershipExpression attribute has either no opinion or if it is
+    /// SdfPathExpression::Nothing().
+    ///
+    /// Note that there may be cases where the collection includes no objects
+    /// despite HasNoIncludedPaths() returning false.  For example, if the
+    /// included objects are unloaded, or if the included objects are also
+    /// excluded, or if an authored non-empty membershipExpression happens not
+    /// to match any objects on the stage.
     USD_API
     bool HasNoIncludedPaths() const;
+
+    /// Return true if this collection is *relationships-mode*.  That is, if it
+    /// uses the `includes` and `excludes` relationships to determine membership
+    /// and not the `membershipExpression` attribute.  This is the case when
+    /// either or both of its `includes` and `excludes` relationships have valid
+    /// targets, or the `includeRoot` attribute is set `true`.  This is
+    /// equivalent to `!IsInExpressionMode()`.
+    USD_API
+    bool IsInRelationshipsMode() const;
+
+    /// Return true if this collection is *expression-mode*.  That is, if it
+    /// uses the `membershipExpression` attribute to determine membership and
+    /// not the `includes` and `excludes` relationships.  Equivalent to
+    /// `!IsInRelationshipsMode()`.
+    bool IsInExpressionMode() const {
+        return !IsInRelationshipsMode();
+    }
 
     /// Returns all the usd objects that satisfy the predicate, \p pred in the
     /// collection represented by the UsdCollectionMembershipQuery object, \p
@@ -683,6 +703,12 @@ private:
         UsdCollectionMembershipQuery *query,
         const SdfPathSet &chainedCollectionPaths,
         bool *foundCircularDependency=nullptr) const;
+
+    // The same as ResolveCompleteMembershipExpression(), but set
+    // `foundCircularDependency` to true if a circular dependency is encountered
+    // during resolution.
+    SdfPathExpression
+    _ResolveCompleteMembershipExpression(bool *foundCircularDependency) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

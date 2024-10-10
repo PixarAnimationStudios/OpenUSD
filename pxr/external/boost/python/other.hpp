@@ -19,8 +19,6 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-# include <boost/config.hpp>
-
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
 template<class T> struct other
@@ -34,14 +32,14 @@ namespace detail
   class is_other
   {
    public:
-      BOOST_STATIC_CONSTANT(bool, value = false); 
+      static constexpr bool value = false; 
   };
 
   template<typename T>
   class is_other<other<T> >
   {
    public:
-      BOOST_STATIC_CONSTANT(bool, value = true);
+      static constexpr bool value = true;
   };
 
   template<typename T>

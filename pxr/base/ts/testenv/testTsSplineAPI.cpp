@@ -37,10 +37,8 @@ void TestKnotIO()
     VERIFY_GET(knot, GetValue, T, 0);
     TF_AXIOM(!knot.IsDualValued());
     VERIFY_GET(knot, GetPreValue, T, 0);
-    TF_AXIOM(!knot.IsPreTanMayaForm());
     TF_AXIOM(knot.GetPreTanWidth() == 0);
     VERIFY_GET(knot, GetPreTanSlope, T, 0);
-    TF_AXIOM(!knot.IsPostTanMayaForm());
     TF_AXIOM(knot.GetPostTanWidth() == 0);
     VERIFY_GET(knot, GetPostTanSlope, T, 0);
     TF_AXIOM(knot.GetCustomData().empty());
@@ -59,10 +57,6 @@ void TestKnotIO()
     TF_AXIOM(knot.GetPreTanWidth() == 0.5);
     TF_AXIOM(knot.SetPreTanSlope(T(2.3)));
     VERIFY_GET(knot, GetPreTanSlope, T, 2.3);
-    TF_AXIOM(knot.SetMayaPostTanWidth(T(3)));
-    TF_AXIOM(knot.GetPostTanWidth() == 1);
-    TF_AXIOM(knot.SetMayaPostTanHeight(T(-3)));
-    VERIFY_GET(knot, GetMayaPostTanHeight, T, -3);
     TF_AXIOM(knot.SetCustomDataByKey("blah", VtValue(7)));
     TF_AXIOM(knot.GetCustomData()["blah"] == VtValue(7));
 

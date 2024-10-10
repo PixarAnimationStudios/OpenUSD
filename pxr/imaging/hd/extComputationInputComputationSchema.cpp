@@ -32,13 +32,6 @@ TF_DEFINE_PUBLIC_TOKENS(HdExtComputationInputComputationSchemaTokens,
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
 
-HdTokenDataSourceHandle
-HdExtComputationInputComputationSchema::GetName() const
-{
-    return _GetTypedDataSource<HdTokenDataSource>(
-        HdExtComputationInputComputationSchemaTokens->name);
-}
-
 HdPathDataSourceHandle
 HdExtComputationInputComputationSchema::GetSourceComputation() const
 {
@@ -56,20 +49,14 @@ HdExtComputationInputComputationSchema::GetSourceComputationOutputName() const
 /*static*/
 HdContainerDataSourceHandle
 HdExtComputationInputComputationSchema::BuildRetained(
-        const HdTokenDataSourceHandle &name,
         const HdPathDataSourceHandle &sourceComputation,
         const HdTokenDataSourceHandle &sourceComputationOutputName
 )
 {
-    TfToken _names[3];
-    HdDataSourceBaseHandle _values[3];
+    TfToken _names[2];
+    HdDataSourceBaseHandle _values[2];
 
     size_t _count = 0;
-
-    if (name) {
-        _names[_count] = HdExtComputationInputComputationSchemaTokens->name;
-        _values[_count++] = name;
-    }
 
     if (sourceComputation) {
         _names[_count] = HdExtComputationInputComputationSchemaTokens->sourceComputation;
@@ -81,14 +68,6 @@ HdExtComputationInputComputationSchema::BuildRetained(
         _values[_count++] = sourceComputationOutputName;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
-}
-
-HdExtComputationInputComputationSchema::Builder &
-HdExtComputationInputComputationSchema::Builder::SetName(
-    const HdTokenDataSourceHandle &name)
-{
-    _name = name;
-    return *this;
 }
 
 HdExtComputationInputComputationSchema::Builder &
@@ -111,7 +90,6 @@ HdContainerDataSourceHandle
 HdExtComputationInputComputationSchema::Builder::Build()
 {
     return HdExtComputationInputComputationSchema::BuildRetained(
-        _name,
         _sourceComputation,
         _sourceComputationOutputName
     );

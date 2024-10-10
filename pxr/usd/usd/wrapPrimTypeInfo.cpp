@@ -18,7 +18,7 @@ using namespace pxr_boost::python;
 void wrapUsdPrimTypeInfo()
 {
     typedef UsdPrimTypeInfo This;
-    class_<This, boost::noncopyable>("PrimTypeInfo", no_init)
+    class_<This, noncopyable>("PrimTypeInfo", no_init)
         .def("GetTypeName", &This::GetTypeName,
              return_value_policy<return_by_value>())
         .def("GetAppliedAPISchemas", &This::GetAppliedAPISchemas,

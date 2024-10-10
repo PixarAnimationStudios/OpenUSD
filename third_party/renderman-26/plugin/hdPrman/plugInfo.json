@@ -33,6 +33,12 @@
                         "priority": 0,
                         "displayName": "Prman Implicit Surfaces"
                     },
+                    "HdPrman_DependencySceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman Dependency Scene Index"
+                    },
                     "HdPrman_DependencyForwardingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": "Prman",

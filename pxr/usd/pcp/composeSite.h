@@ -205,7 +205,13 @@ PcpComposeSiteRelocates(PcpNodeRef const &node, SdfRelocatesMap *result)
 PCP_API
 bool
 PcpComposeSiteHasPrimSpecs(PcpLayerStackRefPtr const &layerStack,
+                           SdfPath const &path,
+                           const std::vector<SdfLayerHandle>& layersToIgnore);
+
+bool
+PcpComposeSiteHasPrimSpecs(PcpLayerStackRefPtr const &layerStack,
                            SdfPath const &path);
+
 inline bool
 PcpComposeSiteHasPrimSpecs(PcpNodeRef const &node)
 {

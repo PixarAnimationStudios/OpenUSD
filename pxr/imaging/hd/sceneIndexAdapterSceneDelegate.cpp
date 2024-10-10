@@ -16,6 +16,7 @@
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/dirtyBitsTranslator.h"
 #include "pxr/imaging/hd/enums.h"
+#include "pxr/imaging/hd/extComputationCpuCallback.h"
 #include "pxr/imaging/hd/field.h"
 #include "pxr/imaging/hd/geomSubset.h"
 #include "pxr/imaging/hd/light.h"
@@ -1796,7 +1797,8 @@ HdSceneIndexAdapterSceneDelegate::_ComputeExtCmpPrimvarDescriptors(
     if (HdExtComputationPrimvarsSchema primvars =
         HdExtComputationPrimvarsSchema::GetFromParent(primDataSource)) {
         for (const TfToken &name : primvars.GetExtComputationPrimvarNames()) {
-            HdExtComputationPrimvarSchema primvar = primvars.GetPrimvar(name);
+            HdExtComputationPrimvarSchema primvar =
+                primvars.GetExtComputationPrimvar(name);
             if (!primvar) {
                 continue;
             }
@@ -2490,16 +2492,12 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationSceneInputNames(
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSceneIndexPrim prim = _GetInputPrim(computationId);
-    if (HdExtComputationSchema extComputation =
-            HdExtComputationSchema::GetFromParent(prim.dataSource)) {
-        if (HdContainerDataSourceHandle inputDs =
-                extComputation.GetInputValues()) {
-            return inputDs->GetNames();
-        }
-    }
-
-    return TfTokenVector();
+    const HdSceneIndexPrim prim = _GetInputPrim(computationId);
+    const HdExtComputationSchema extComputation =
+        HdExtComputationSchema::GetFromParent(prim.dataSource);
+    const HdSampledDataSourceContainerSchema inputValues =
+        extComputation.GetInputValues();
+    return inputValues.GetNames();
 }
 
 VtValue
@@ -2509,32 +2507,38 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationInput(
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSceneIndexPrim prim = _GetInputPrim(computationId);
-    if (HdExtComputationSchema extComputation =
-            HdExtComputationSchema::GetFromParent(prim.dataSource)) {
-
-        if (input == HdTokens->dispatchCount) {
-            if (HdSizetDataSourceHandle dispatchDs =
-                    extComputation.GetDispatchCount()) {
-                return dispatchDs->GetValue(0);
-            }
-        } else if (input == HdTokens->elementCount) {
-            if (HdSizetDataSourceHandle elementDs =
-                    extComputation.GetElementCount()) {
-                return elementDs->GetValue(0);
-            }
-        } else {
-            if (HdContainerDataSourceHandle inputDs =
-                    extComputation.GetInputValues()) {
-                if (HdSampledDataSourceHandle valueDs =
-                        HdSampledDataSource::Cast(inputDs->Get(input))) {
-                    return valueDs->GetValue(0);
-                }
-            }
-        }
+    const HdSceneIndexPrim prim = _GetInputPrim(computationId);
+    const HdExtComputationSchema extComputation =
+        HdExtComputationSchema::GetFromParent(prim.dataSource);
+    if (!extComputation) {
+        return {};
     }
 
-    return VtValue();
+    if (input == HdTokens->dispatchCount) {
+        HdSizetDataSourceHandle const dispatchDs =
+            extComputation.GetDispatchCount();
+        if (!dispatchDs) {
+            return {};
+        }
+        return dispatchDs->GetValue(0);
+    }
+
+    if (input == HdTokens->elementCount) {
+        HdSizetDataSourceHandle const elementDs =
+            extComputation.GetElementCount();
+        if (!elementDs) {
+            return {};
+        }
+        return elementDs->GetValue(0);
+    }
+
+    const HdSampledDataSourceContainerSchema inputValues =
+        extComputation.GetInputValues();
+    HdSampledDataSourceHandle const valueDs = inputValues.Get(input);
+    if (!valueDs) {
+        return {};
+    }
+    return valueDs->GetValue(0);
 }
 
 size_t
@@ -2560,18 +2564,16 @@ HdSceneIndexAdapterSceneDelegate::SampleExtComputationInput(
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSceneIndexPrim prim = _GetInputPrim(computationId);
-    HdExtComputationSchema extComputation =
+    const HdSceneIndexPrim prim = _GetInputPrim(computationId);
+    const HdExtComputationSchema extComputation =
         HdExtComputationSchema::GetFromParent(prim.dataSource);
     if (!extComputation) {
         return 0;
     }
-    HdContainerDataSourceHandle inputDs = extComputation.GetInputValues();
-    if (!inputDs) {
-        return 0;
-    }
-    HdSampledDataSourceHandle valueDs =
-        HdSampledDataSource::Cast(inputDs->Get(input));
+
+    const HdSampledDataSourceContainerSchema inputValues =
+        extComputation.GetInputValues();
+    HdSampledDataSourceHandle const valueDs = inputValues.Get(input);
     if (!valueDs) {
         return 0;
     }
@@ -2617,36 +2619,30 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationInputDescriptors(
 
     HdExtComputationInputDescriptorVector result;
 
-    HdSceneIndexPrim prim = _GetInputPrim(computationId);
-    if (HdExtComputationSchema extComputation =
-            HdExtComputationSchema::GetFromParent(prim.dataSource)) {
-        if (HdVectorDataSourceHandle vecDs =
-                extComputation.GetInputComputations()) {
-            size_t count = vecDs->GetNumElements();
-            result.reserve(count);
-            for (size_t i = 0; i < count; ++i) {
-                HdExtComputationInputComputationSchema input(
-                    HdContainerDataSource::Cast(vecDs->GetElement(i)));
-                if (!input) {
-                    continue;
-                }
-
-                HdExtComputationInputDescriptor desc;
-                if (HdTokenDataSourceHandle nameDs = input.GetName()) {
-                    desc.name = nameDs->GetTypedValue(0);
-                }
-                if (HdPathDataSourceHandle srcDs =
-                        input.GetSourceComputation()) {
-                    desc.sourceComputationId = srcDs->GetTypedValue(0);
-                }
-                if (HdTokenDataSourceHandle srcNameDs =
-                        input.GetSourceComputationOutputName()) {
-                    desc.sourceComputationOutputName =
-                        srcNameDs->GetTypedValue(0);
-                }
-                result.push_back(desc);
-            }
+    const HdSceneIndexPrim prim = _GetInputPrim(computationId);
+    const HdExtComputationSchema extComputation =
+        HdExtComputationSchema::GetFromParent(prim.dataSource);
+    const HdExtComputationInputComputationContainerSchema inputComputations =
+        extComputation.GetInputComputations();
+    const TfTokenVector names = inputComputations.GetNames();
+    result.reserve(names.size());
+    for (const TfToken &name : names) {
+        const HdExtComputationInputComputationSchema input =
+            inputComputations.Get(name);
+        if (!input) {
+            continue;
         }
+        HdExtComputationInputDescriptor desc;
+        desc.name = name;
+        if (HdPathDataSourceHandle const srcDs =
+                input.GetSourceComputation()) {
+            desc.sourceComputationId = srcDs->GetTypedValue(0);
+        }
+        if (HdTokenDataSourceHandle const srcNameDs =
+                input.GetSourceComputationOutputName()) {
+            desc.sourceComputationOutputName = srcNameDs->GetTypedValue(0);
+        }
+        result.push_back(desc);
     }
 
     return result;
@@ -2661,30 +2657,25 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationOutputDescriptors(
 
     HdExtComputationOutputDescriptorVector result;
 
-    HdSceneIndexPrim prim = _GetInputPrim(computationId);
-    if (HdExtComputationSchema extComputation =
-            HdExtComputationSchema::GetFromParent(prim.dataSource)) {
-        if (HdVectorDataSourceHandle vecDs = extComputation.GetOutputs()) {
-            size_t count = vecDs->GetNumElements();
-            result.reserve(count);
-            for (size_t i = 0; i < count; ++i) {
-                HdExtComputationOutputSchema output(
-                    HdContainerDataSource::Cast(vecDs->GetElement(i)));
-                if (!output) {
-                    continue;
-                }
-
-                HdExtComputationOutputDescriptor desc;
-                if (HdTokenDataSourceHandle nameDs = output.GetName()) {
-                    desc.name = nameDs->GetTypedValue(0);
-                }
-                if (HdTupleTypeDataSourceHandle typeDs =
-                        output.GetValueType()) {
-                    desc.valueType = typeDs->GetTypedValue(0);
-                }
-                result.push_back(desc);
-            }
+    const HdSceneIndexPrim prim = _GetInputPrim(computationId);
+    const HdExtComputationSchema extComputation =
+        HdExtComputationSchema::GetFromParent(prim.dataSource);
+    const HdExtComputationOutputContainerSchema outputs =
+        extComputation.GetOutputs();
+    const TfTokenVector names = outputs.GetNames();
+    result.reserve(names.size());
+    for (const TfToken &name : names) {
+        const HdExtComputationOutputSchema output = outputs.Get(name);
+        if (!output) {
+            continue;
         }
+
+        HdExtComputationOutputDescriptor desc;
+        desc.name = name;
+        if (HdTupleTypeDataSourceHandle const typeDs = output.GetValueType()) {
+            desc.valueType = typeDs->GetTypedValue(0);
+        }
+        result.push_back(desc);
     }
 
     return result;
@@ -2710,21 +2701,25 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationKernel(
 
 void
 HdSceneIndexAdapterSceneDelegate::InvokeExtComputation(
-        SdfPath const &computationId, HdExtComputationContext *context)
+        SdfPath const &computationId, HdExtComputationContext * const context)
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSceneIndexPrim prim = _GetInputPrim(computationId);
-    if (HdExtComputationSchema extComputation =
-            HdExtComputationSchema::GetFromParent(prim.dataSource)) {
-        HdExtComputationCallbackDataSourceHandle ds =
-            HdExtComputationCallbackDataSource::Cast(
-                extComputation.GetCpuCallback());
-        if (ds) {
-            ds->Invoke(context);
-        }
+    const HdSceneIndexPrim prim = _GetInputPrim(computationId);
+    const HdExtComputationSchema extComputation =
+        HdExtComputationSchema::GetFromParent(prim.dataSource);
+    HdExtComputationCpuCallbackDataSourceHandle const ds =
+        extComputation.GetCpuCallback();
+    if (!ds) {
+        return;
     }
+    HdExtComputationCpuCallbackSharedPtr const callback =
+        ds->GetTypedValue(0.0f);
+    if (!callback) {
+        return;
+    }
+    callback->Compute(context);
 }
 
 void 

@@ -24,6 +24,7 @@
 #include "pxr/external/boost/python/errors.hpp"
 #include "pxr/external/boost/python/manage_new_object.hpp"
 #include "pxr/external/boost/python/converter/pytype_function.hpp"
+#include <memory>
 #include <string.h>
 #include "simple_type.hpp"
 #include "complicated.hpp"
@@ -270,9 +271,9 @@ B take_b(B& b) { return b; }
 C take_c(C* c) { return *c; }
 D take_d(D* const& d) { return *d; }
 
-D take_d_shared_ptr(boost::shared_ptr<D> d) { return *d; }
+D take_d_shared_ptr(std::shared_ptr<D> d) { return *d; }
 
-boost::shared_ptr<A> d_factory() { return boost::shared_ptr<B>(new D); }
+std::shared_ptr<A> d_factory() { return std::shared_ptr<B>(new D); }
 
 struct Unregistered {};
 Unregistered make_unregistered(int) { return Unregistered(); }
@@ -282,7 +283,7 @@ Unregistered* make_unregistered2(int) { return new Unregistered; }
 PXR_BOOST_PYTHON_MODULE(m1)
 {
     using namespace PXR_BOOST_NAMESPACE::python;
-    using boost::shared_ptr;
+    using std::shared_ptr;
 
     // Explicitly enable Python signatures in docstrings in case boost::python
     // was built with PXR_BOOST_PYTHON_NO_PY_SIGNATURES, which disables those
@@ -295,11 +296,7 @@ PXR_BOOST_PYTHON_MODULE(m1)
     lvalue_from_pytype<int_from_noddy,&NoddyType>();
 
     lvalue_from_pytype<
-#if !defined(BOOST_MSVC) || BOOST_MSVC > 1300 // doesn't support non-type member pointer parameters
         extract_member<SimpleObject, simple, &SimpleObject::x>
-#else 
-        extract_simple_object
-#endif 
         , &SimpleType
         >();
 

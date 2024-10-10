@@ -21,12 +21,10 @@
 #include "pxr/external/boost/python/tuple.hpp"
 #include "pxr/external/boost/python/list.hpp"
 #include "pxr/external/boost/python/ssize_t.hpp"
+#include "pxr/external/boost/python/type_list.hpp"
 
 #include "pxr/external/boost/python/detail/signature.hpp"
 #include "pxr/external/boost/python/detail/none.hpp"
-#include <boost/mpl/vector/vector10.hpp>
-
-#include <boost/bind/bind.hpp>
 
 #include <algorithm>
 #include <cstring>
@@ -60,11 +58,7 @@ extern PyTypeObject function_type;
 
 function::function(
     py_function const& implementation
-#if BOOST_WORKAROUND(__EDG_VERSION__, == 245)
-    , python::detail::keyword const*       names_and_defaults
-#else
     , python::detail::keyword const* const names_and_defaults
-#endif
     , unsigned num_keywords
     )
     : m_fn(implementation)
@@ -181,6 +175,16 @@ PyObject* function::call(PyObject* args, PyObject* keywords) const
                         {
                             // Get the keyword[, value pair] corresponding
                             PyObject* kv = PyTuple_GET_ITEM(f->m_arg_names.ptr(), arg_pos);
+
+                            // If kv is None, this overload does not accept a
+                            // keyword argument in this position, meaning that
+                            // the caller did not supply enough positional
+                            // arguments.  Reject the overload.
+                            if (kv == Py_None) {
+                                PyErr_Clear();
+                                inner_args = handle<>();
+                                break;
+                            }
 
                             // If there were any keyword arguments,
                             // look up the one we need for this
@@ -377,7 +381,7 @@ namespace
   {
       bool operator()(char const* x, char const* y) const
       {
-          return BOOST_CSTD_::strcmp(x,y) < 0;
+          return std::strcmp(x,y) < 0;
       }
   };
   
@@ -405,7 +409,7 @@ namespace
       
       static object keeper(
           function_object(
-              py_function(&not_implemented, mpl::vector1<void>(), 2)
+              py_function(&not_implemented, type_list<void>(), 2)
             , python::detail::keyword_range())
           );
       return handle<function>(borrowed(downcast<function>(keeper.ptr())));

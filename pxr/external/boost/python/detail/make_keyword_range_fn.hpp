@@ -22,7 +22,7 @@
 
 # include "pxr/external/boost/python/object/make_holder.hpp"
 
-# include <boost/mpl/size.hpp>
+# include "pxr/external/boost/python/detail/mpl2/size.hpp"
 
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
@@ -41,7 +41,7 @@ object make_keyword_range_function(
   , keyword_range const& kw)
 {
     return detail::make_function_aux(
-        f, policies, detail::get_signature(f), kw, mpl::int_<0>());
+        f, policies, detail::get_signature(f), kw, detail::mpl2::int_<0>());
 }
 
 template <class F, class Policies, class Signature>
@@ -52,7 +52,7 @@ object make_keyword_range_function(
   , Signature const& sig)
 {
     return detail::make_function_aux(
-        f, policies, sig, kw, mpl::int_<0>());
+        f, policies, sig, kw, detail::mpl2::int_<0>());
 }
 // }
 
@@ -70,7 +70,7 @@ object make_keyword_range_constructor(
     , ArgList* = 0, Arity* = 0)
 {
 #if !defined( PXR_BOOST_PYTHON_NO_PY_SIGNATURES) && defined( PXR_BOOST_PYTHON_PY_SIGNATURES_PROPER_INIT_SELF_TYPE)
-    python_class<BOOST_DEDUCED_TYPENAME Holder::value_type>::register_();
+    python_class<typename Holder::value_type>::register_();
 #endif
     return detail::make_keyword_range_function(
         objects::make_holder<Arity::value>

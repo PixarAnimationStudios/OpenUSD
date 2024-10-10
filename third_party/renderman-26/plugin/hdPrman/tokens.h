@@ -55,7 +55,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanRileyAdditionalRoleTokens, HDPRMAN_API,
 
 #define HD_PRMAN_PLUGIN_TOKENS \
     ((motionBlur,       "HdPrman_MotionBlurSceneIndexPlugin")) \
-    ((extComp,          "HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin"))
+    ((extComp,          "HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin")) \
+    ((retesselation,    "HdPrman_RetesselationSceneIndexPlugin"))
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanPluginTokens, HD_PRMAN_PLUGIN_TOKENS);
 

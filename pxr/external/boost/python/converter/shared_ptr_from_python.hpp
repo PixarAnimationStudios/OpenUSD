@@ -27,7 +27,9 @@
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 # include "pxr/external/boost/python/converter/pytype_function.hpp"
 #endif
+#ifdef PXR_BOOST_PYTHON_HAS_BOOST_SHARED_PTR
 #include <boost/shared_ptr.hpp>
+#endif
 #include <memory>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 

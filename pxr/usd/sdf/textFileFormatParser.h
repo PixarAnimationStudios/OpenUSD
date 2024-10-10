@@ -60,6 +60,8 @@ struct RightBrace : PEGTL_NS::one<'}'> {};
 struct LeftAngleBracket : PEGTL_NS::one<'<'> {};
 struct RightAngleBracket : PEGTL_NS::one<'>'> {};
 struct At : PEGTL_NS::one<'@'> {};
+// // asset references
+struct AtAtAt : PEGTL_NS::three<'@'> {};
 struct Colon : PEGTL_NS::one<':'> {};
 struct Equals : PEGTL_NS::one<'='> {};
 struct Sign : PEGTL_NS::one<'+', '-'> {};
@@ -70,26 +72,10 @@ struct Ampersand : PEGTL_NS::one<'&'> {};
 
 // character classes
 struct Digit : PEGTL_NS::digit {};
-struct HexDigit : PEGTL_NS::xdigit {};
-struct OctDigit : PEGTL_NS::range<0, 7> {};
 struct Eol : PEGTL_NS::one<'\r', '\n'> {};
 struct Eolf : PEGTL_NS::eolf {};
 struct Utf8 : PEGTL_NS::utf8::any {};
 struct Utf8NoEolf : PEGTL_NS::minus<Utf8, Eol> {};
-
-// Escape character sets as defined by `TfEscapeStringReplaceChar` plus quotes
-struct EscapeSingleCharacter :
-    PEGTL_NS::seq<
-        PEGTL_NS::one<'\\', 'a', 'b', 'f', 'n', 'r', 't', 'v', '\'', '"'>> {};
-struct EscapeHex :
-    PEGTL_NS::seq<PEGTL_NS::one<'x'>,
-                  PEGTL_NS::rep_opt<2, HexDigit>> {};
-struct EscapeOct :
-    PEGTL_NS::seq<OctDigit,
-                  PEGTL_NS::rep_opt<2, OctDigit>> {};
-struct Escaped :
-    PEGTL_NS::seq<PEGTL_NS::one<'\\'>,
-                  PEGTL_NS::sor<EscapeSingleCharacter, EscapeHex, EscapeOct>> {};
 
 // keyword
 struct KeywordAdd : PXR_PEGTL_KEYWORD("add") {};
@@ -215,29 +201,19 @@ struct MathKeywordNan : PXR_PEGTL_KEYWORD("nan") {};
 // Comment = PythonStyleComment /
 //           CppStyleSingleLineComment /
 //           CppStyleMultiLineComment
-struct CppStyleMultilineOpen :
-    PEGTL_NS::seq<PEGTL_NS::one<'/'>, PEGTL_NS::one<'*'>> {};
-struct CppStyleMultilineClose :
-    PEGTL_NS::seq<PEGTL_NS::one<'*'>, PEGTL_NS::one<'/'>> {};
+struct CppStyleMultilineOpen : PEGTL_NS::string<'/', '*'> {};
+struct CppStyleMultilineClose : PEGTL_NS::string<'*', '/'> {};
 struct SingleLineContents : PEGTL_NS::star<PEGTL_NS::not_at<Eolf>, Utf8> {};
-struct PythonStyleComment :PEGTL_NS::disable<
+struct PythonStyleComment : PEGTL_NS::disable<
     PEGTL_NS::one<'#'>, SingleLineContents> {};
 struct CppStyleSingleLineComment : PEGTL_NS::disable<
     PEGTL_NS::two<'/'>, SingleLineContents> {};
 struct CppStyleMultiLineComment : PEGTL_NS::disable<
     CppStyleMultilineOpen,
     PEGTL_NS::until<CppStyleMultilineClose, Utf8>>{};
-// Use to avoid '/' backtracking
-struct CppStyleComment :
-    PEGTL_NS::seq<
-        PEGTL_NS::one<'/'>,
-        PEGTL_NS::sor<
-            PEGTL_NS::disable<PEGTL_NS::one<'*'>,
-                              PEGTL_NS::until<CppStyleMultilineClose, Utf8>>,
-            PEGTL_NS::disable<PEGTL_NS::one<'/'>, SingleLineContents>
-        >
-    > {};
-struct Comment : PEGTL_NS::sor<PythonStyleComment, CppStyleComment> {};
+struct Comment : PEGTL_NS::sor<PythonStyleComment,
+                               CppStyleSingleLineComment,
+                               CppStyleMultiLineComment> {};
     
 // whitespace rules
 // TokenSeparator represents whitespace between tokens,
@@ -305,7 +281,7 @@ struct ExponentPart : PEGTL_NS::opt_must<
     PEGTL_NS::plus<Digit>> {};
 struct NumberStandard : PEGTL_NS::seq<
     PEGTL_NS::plus<Digit>,
-    PEGTL_NS::opt_must<Sdf_PathParser::Dot, PEGTL_NS::star<Digit>>,
+    PEGTL_NS::opt<Sdf_PathParser::Dot, PEGTL_NS::star<Digit>>,
     ExponentPart> {};
 struct NumberLeadingDot : PEGTL_NS::seq<
     PEGTL_NS::if_must<Sdf_PathParser::Dot, PEGTL_NS::plus<Digit>>,
@@ -331,36 +307,40 @@ struct Number : PEGTL_NS::sor<
 //	 """ DoubleQuoteMultiLineStringChar* """ /
 //   ' SingleQuoteSingleLineStringChar* ' /
 //	''' SingleQuoteMultiLineStringChar* '
-struct MultilineContents : PEGTL_NS::sor<Escaped, Utf8> {};
-struct ThreeSingleQuotes :
-    PEGTL_NS::seq<SingleQuote, SingleQuote, SingleQuote> {};
-struct ThreeDoubleQuotes :
-    PEGTL_NS::seq<DoubleQuote, DoubleQuote, DoubleQuote> {};
-struct MultilineSingleQuoteString : PEGTL_NS::if_must<
-    ThreeSingleQuotes,
-    PEGTL_NS::until<ThreeSingleQuotes, MultilineContents>> {};
-struct MultilineDoubleQuoteString : PEGTL_NS::if_must<
-    ThreeDoubleQuotes,
-    PEGTL_NS::until<ThreeDoubleQuotes, MultilineContents>> {};
-struct SinglelineContents : PEGTL_NS::sor<Escaped, Utf8NoEolf> {};
-struct SinglelineSingleQuoteString : PEGTL_NS::if_must<
-    SingleQuote,
-    PEGTL_NS::until<SingleQuote, SinglelineContents>> {};
-struct SinglelineDoubleQuoteString : PEGTL_NS::if_must<
-    DoubleQuote,
-    PEGTL_NS::until<DoubleQuote, SinglelineContents>> {};
-struct SingleQuoteString : PEGTL_NS::sor<
+template <char QuoteCharacter>
+struct MultilineString : PEGTL_NS::if_must<
+    PEGTL_NS::three<QuoteCharacter>,
+    PEGTL_NS::until<
+        PEGTL_NS::three<QuoteCharacter>,
+        PEGTL_NS::sor<
+            PEGTL_NS::two<'\\'>,
+            PEGTL_NS::string<'\\', QuoteCharacter>,
+            Utf8>
+        >
+> {};
+template <char QuoteCharacter>
+struct SinglelineString : PEGTL_NS::if_must<
+    PEGTL_NS::one<QuoteCharacter>,
+    PEGTL_NS::until<
+        PEGTL_NS::one<QuoteCharacter>,
+        PEGTL_NS::sor<
+            PEGTL_NS::two<'\\'>,
+            PEGTL_NS::string<'\\', QuoteCharacter>,
+            Utf8NoEolf>
+        >
+> {};
+
+struct SinglelineSingleQuoteString : SinglelineString<'\''> {};
+struct SinglelineDoubleQuoteString : SinglelineString<'\"'> {};
+struct MultilineSingleQuoteString : MultilineString<'\''> {};
+struct MultilineDoubleQuoteString : MultilineString<'\"'> {};
+
+struct String : PEGTL_NS::sor<
     MultilineSingleQuoteString,
-    SinglelineSingleQuoteString> {};
-struct DoubleQuoteString : PEGTL_NS::sor<
+    SinglelineSingleQuoteString,
     MultilineDoubleQuoteString,
     SinglelineDoubleQuoteString> {};
-struct String : PEGTL_NS::sor<
-    SingleQuoteString,
-    DoubleQuoteString> {};
 
-// // asset references
-struct AtAtAt : PEGTL_NS::seq<At, At, At> {};
 struct EscapeAtAtAt :
     PEGTL_NS::seq<PEGTL_NS::one<'\\'>, AtAtAt> {};
 
@@ -786,17 +766,17 @@ struct SplineTangentWithoutWidthValue : PEGTL_NS::seq<
     PEGTL_NS::pad<SplineTangentValue, InlinePadding>,
     PEGTL_NS::not_at<ListSeparator>> {};
 
-// SplineTangent = Identifier (TokenSeparator)? ( (TokenSeparator)? 
-// SplineTangentWithoutWidthValue (TokenSeparator)? ) /
-// Identifier (TokenSeparator)? ( (TokenSeparator)? 
-// SplineTangentWithWidthValue (TokenSeparator)? )
+// SplineTangent = ( (TokenSeparator)?
+//                   SplineTangentWithoutWidthValue
+//                   (TokenSeparator)? ) /
+//                 ( (TokenSeparator)? 
+//                   SplineTangentWithWidthValue
+//                   (TokenSeparator)? )
 struct SplineTangent : PEGTL_NS::sor<
-    PEGTL_NS::seq<Identifier, 
-                  PEGTL_NS::pad<LeftParen, InlinePadding>,
+    PEGTL_NS::seq<PEGTL_NS::pad<LeftParen, InlinePadding>,
                   PEGTL_NS::pad<SplineTangentWithoutWidthValue, InlinePadding>,
                   RightParen>,
-    PEGTL_NS::seq<Identifier, 
-                  PEGTL_NS::pad<LeftParen, InlinePadding>,
+    PEGTL_NS::seq<PEGTL_NS::pad<LeftParen, InlinePadding>,
                   PEGTL_NS::pad<SplineTangentWithWidthValue, InlinePadding>,
                   RightParen>> {};
 

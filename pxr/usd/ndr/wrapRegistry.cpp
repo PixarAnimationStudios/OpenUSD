@@ -92,7 +92,7 @@ void wrapRegistry()
     // We need this for NodeList to convert elements.
     to_python_converter<NdrNodeConstPtr, ConstNodePtrToPython>();
 
-    class_<This, ThisPtr, boost::noncopyable>("Registry", no_init)
+    class_<This, ThisPtr, noncopyable>("Registry", no_init)
         .def("SetExtraDiscoveryPlugins", &_SetExtraDiscoveryPlugins)
         .def("SetExtraParserPlugins", &This::SetExtraParserPlugins)
         .def("GetSearchURIs", &This::GetSearchURIs)

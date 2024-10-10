@@ -989,7 +989,9 @@ HdMeshUtil::ComputeQuadrangulatedFaceVaryingPrimvar(
 }
 
 void
-HdMeshUtil::EnumerateEdges(std::vector<GfVec2i> * edgeVerticesOut) const
+HdMeshUtil::EnumerateEdges(
+    std::vector<GfVec2i> * edgeVerticesOut,
+    std::vector<int> * firstEdgeIndexForFacesOut) const
 {
     HD_TRACE_FUNCTION();
 
@@ -1006,6 +1008,10 @@ HdMeshUtil::EnumerateEdges(std::vector<GfVec2i> * edgeVerticesOut) const
     int const * vertsPtr = _topology->GetFaceVertexIndices().cdata();
     int const numFaces = _topology->GetFaceVertexCounts().size();
 
+    if (firstEdgeIndexForFacesOut) {
+        firstEdgeIndexForFacesOut->resize(numFaces);
+    }
+
     int numEdges = 0;
     for (int i=0; i<numFaces; ++i) {
         int nv = numVertsPtr[i];
@@ -1017,6 +1023,9 @@ HdMeshUtil::EnumerateEdges(std::vector<GfVec2i> * edgeVerticesOut) const
 
     for (int i=0, v=0, ev=0; i<numFaces; ++i) {
         int nv = numVertsPtr[i];
+        if (firstEdgeIndexForFacesOut) {
+            (*firstEdgeIndexForFacesOut)[i] = ev;
+        }
         if (flip) {
             for (int j=nv; j>0; --j) {
                 int v0 = vertsPtr[v+j%nv];
@@ -1041,9 +1050,11 @@ HdMeshUtil::EnumerateEdges(std::vector<GfVec2i> * edgeVerticesOut) const
 }
 
 HdMeshEdgeIndexTable::HdMeshEdgeIndexTable(HdMeshTopology const * topology)
+    : _topology(topology)
 {
-    HdMeshUtil meshUtil(topology, SdfPath());
-    meshUtil.EnumerateEdges(&_edgeVertices);
+    HdMeshUtil meshUtil(_topology, SdfPath());
+
+    meshUtil.EnumerateEdges(&_edgeVertices, &_firstEdgeIndexForFaces);
 
     _edgesByIndex.resize(_edgeVertices.size());
     for (size_t i=0; i<_edgeVertices.size(); ++i) {
@@ -1110,6 +1121,44 @@ HdMeshEdgeIndexTable::GetEdgeIndices(GfVec2i const & edgeVertices,
     }
 
     return !edgeIndicesOut->empty();
+}
+
+VtIntArray
+HdMeshEdgeIndexTable::CollectFaceEdgeIndices(
+    VtIntArray const &faceIndices) const
+{
+    size_t const numMeshFaces = _topology->GetFaceVertexCounts().size();
+
+    if (!TF_VERIFY(numMeshFaces == _firstEdgeIndexForFaces.size())) {
+        return VtIntArray();
+    }
+
+    std::vector<int> result;
+
+    for (int const face : faceIndices) {
+
+        // Skip invalid face indices.
+        if ((face < 0) || (static_cast<size_t>(face) >= numMeshFaces)) {
+            continue;
+        }
+
+        int const firstEdgeIndex = _firstEdgeIndexForFaces[face];
+        int const numEdges = _topology->GetFaceVertexCounts()[face];
+
+        for (int e=0; e<numEdges; ++e) {
+
+            // Edges are identified by their vertex indices.
+            GfVec2i const &edgeVertices = _edgeVertices[firstEdgeIndex+e];
+
+            std::vector<int> edgeIndices;
+            GetEdgeIndices(edgeVertices, &edgeIndices);
+
+            result.insert(result.end(),
+                          edgeIndices.begin(), edgeIndices.end());
+        }
+    }
+
+    return VtIntArray(result.begin(), result.end());
 }
 
 

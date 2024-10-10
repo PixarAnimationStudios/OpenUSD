@@ -21,8 +21,7 @@
 # include "pxr/external/boost/python/detail/referent_storage.hpp"
 # include "pxr/external/boost/python/detail/destroy.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
-# include <boost/align/align.hpp>
-# include <boost/static_assert.hpp>
+# include <memory>
 # include <cstddef>
 
 // Data management for potential rvalue conversions from Python to C++
@@ -108,7 +107,7 @@ struct rvalue_from_python_data : rvalue_from_python_storage<T>
         && (!defined(__DECCXX_VER) || __DECCXX_VER > 60590014) \
         && !defined(PXR_BOOST_PYTHON_SYNOPSIS) /* Synopsis' OpenCXX has trouble parsing this */
     // This must always be a POD struct with m_data its first member.
-    BOOST_STATIC_ASSERT(PXR_BOOST_PYTHON_OFFSETOF(rvalue_from_python_storage<T>,stage1) == 0);
+    static_assert(PXR_BOOST_PYTHON_OFFSETOF(rvalue_from_python_storage<T>,stage1) == 0);
 # endif
     
     // The usual constructor 
@@ -149,7 +148,7 @@ inline rvalue_from_python_data<T>::~rvalue_from_python_data()
         size_t allocated = sizeof(this->storage);
         void *ptr = this->storage.bytes;
         void *aligned_storage =
-            ::boost::alignment::align(PXR_BOOST_NAMESPACE::python::detail::alignment_of<T>::value, 0, ptr, allocated);
+            std::align(PXR_BOOST_NAMESPACE::python::detail::alignment_of<T>::value, 0, ptr, allocated);
         python::detail::destroy_referent<ref_type>(aligned_storage);
     }
 }

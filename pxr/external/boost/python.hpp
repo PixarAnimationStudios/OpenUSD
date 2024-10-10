@@ -18,6 +18,11 @@
 
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python.hpp>
+
+#include "pxr/external/boost/python/noncopyable.hpp"
+#include "pxr/external/boost/python/ref.hpp"
+#include "pxr/external/boost/python/type.hpp"
+#include "pxr/external/boost/python/type_list.hpp"
 #else
 
 # include "pxr/external/boost/python/args.hpp"
@@ -54,6 +59,7 @@
 # include "pxr/external/boost/python/make_function.hpp"
 # include "pxr/external/boost/python/manage_new_object.hpp"
 # include "pxr/external/boost/python/module.hpp"
+# include "pxr/external/boost/python/noncopyable.hpp"
 # include "pxr/external/boost/python/object.hpp"
 # include "pxr/external/boost/python/object_protocol.hpp"
 # include "pxr/external/boost/python/object_protocol_core.hpp"
@@ -65,6 +71,7 @@
 # include "pxr/external/boost/python/pure_virtual.hpp"
 # include "pxr/external/boost/python/ptr.hpp"
 # include "pxr/external/boost/python/raw_function.hpp"
+# include "pxr/external/boost/python/ref.hpp"
 # include "pxr/external/boost/python/reference_existing_object.hpp"
 # include "pxr/external/boost/python/register_ptr_to_python.hpp"
 # include "pxr/external/boost/python/return_arg.hpp"
@@ -81,7 +88,9 @@
 # include "pxr/external/boost/python/to_python_indirect.hpp"
 # include "pxr/external/boost/python/to_python_value.hpp"
 # include "pxr/external/boost/python/tuple.hpp"
+# include "pxr/external/boost/python/type.hpp"
 # include "pxr/external/boost/python/type_id.hpp"
+# include "pxr/external/boost/python/type_list.hpp"
 # include "pxr/external/boost/python/with_custodian_and_ward.hpp"
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON

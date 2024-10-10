@@ -18,69 +18,10 @@
 #include <boost/python/detail/type_traits.hpp>
 #else
 
-
-#include <boost/config.hpp>
-#ifdef BOOST_NO_CXX11_HDR_TYPE_TRAITS
-# include <boost/type_traits/transform_traits.hpp>
-# include <boost/type_traits/same_traits.hpp>
-# include <boost/type_traits/cv_traits.hpp>
-# include <boost/type_traits/is_polymorphic.hpp>
-# include <boost/type_traits/composite_traits.hpp>
-# include <boost/type_traits/conversion_traits.hpp>
-# include <boost/type_traits/add_pointer.hpp>
-# include <boost/type_traits/remove_pointer.hpp>
-# include <boost/type_traits/is_void.hpp>
-# include <boost/type_traits/object_traits.hpp>
-# include <boost/type_traits/add_lvalue_reference.hpp>
-# include <boost/type_traits/function_traits.hpp>
-# include <boost/type_traits/is_scalar.hpp>
-# include <boost/type_traits/alignment_traits.hpp>
-# include <boost/mpl/bool.hpp>
-#else
 # include <type_traits>
-#endif
-
-# include <boost/type_traits/is_base_and_derived.hpp>
-# include <boost/type_traits/alignment_traits.hpp>
-# include <boost/type_traits/has_trivial_copy.hpp>
-
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
-#ifdef BOOST_NO_CXX11_HDR_TYPE_TRAITS
-    using boost::alignment_of;
-    using boost::add_const;
-    using boost::add_cv;
-    using boost::add_lvalue_reference;
-    using boost::add_pointer;
-
-    using boost::is_array;
-    using boost::is_class;
-    using boost::is_const;
-    using boost::is_convertible;
-    using boost::is_enum;
-    using boost::is_function;
-    using boost::is_integral;
-    using boost::is_lvalue_reference;
-    using boost::is_member_function_pointer;
-    using boost::is_member_pointer;
-    using boost::is_pointer;
-    using boost::is_polymorphic;
-    using boost::is_reference;
-    using boost::is_same;
-    using boost::is_scalar;
-    using boost::is_union;
-    using boost::is_void;
-    using boost::is_volatile;
-
-    using boost::remove_reference;
-    using boost::remove_pointer;
-    using boost::remove_cv;
-    using boost::remove_const;
-
-    using boost::mpl::true_;
-    using boost::mpl::false_;
-#else
     using std::alignment_of;
     using std::add_const;
     using std::add_cv;
@@ -113,10 +54,48 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
 
     typedef std::integral_constant<bool, true> true_;
     typedef std::integral_constant<bool, false> false_;
-#endif
-    using boost::is_base_and_derived;
-    using boost::type_with_alignment;
-    using boost::has_trivial_copy;
+
+    // This was previously boost::is_base_and_derived, which was once
+    // user-facing but now appears to be an undocumented implementation
+    // detail in boost/type_traits.
+    //
+    // The boost trait is *not* equivalent to std::is_base_of. Most
+    // critically, boost::is_base_and_derived<T, T>::value is false,
+    // while std::is_base_of<T, T>::value is true. We accommodate that
+    // difference below.
+    //
+    // boost::is_base_and_derived also handles inaccessible
+    // or ambiguous base classes, whereas std::is_base_of does not.
+    // This does not appear to be relevant for this library.
+    template <class Base, class Derived>
+    using is_base_and_derived = std::bool_constant<
+        std::is_base_of_v<Base, Derived> && !std::is_same_v<Base, Derived>
+    >;
+
+    // param_type<T> is a condensed form of boost::call_traits<T>::param_type
+    // which per the boost docs is 'the "best" way to pass a parameter of
+    // type T to a function.'
+    template <typename T>
+    struct param_type
+    {
+        using is_small_type = std::bool_constant<
+            (std::is_arithmetic_v<T> || std::is_enum_v<T>)
+             && sizeof(T) <= sizeof(void*)
+        >;
+
+        using type = typename std::conditional<
+            std::is_pointer_v<T> || is_small_type::value
+          , const T
+          , const T&
+        >::type;
+    };
+
+    template <typename T>
+    struct param_type<T&>
+    {
+        using type = T&;
+    };
+
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 

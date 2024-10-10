@@ -18,9 +18,7 @@ Ts_KnotData::Ts_KnotData()
       postTanWidth(0.0),
       nextInterp(TsInterpHeld),
       curveType(TsCurveTypeBezier),
-      dualValued(false),
-      preTanMayaForm(false),
-      postTanMayaForm(false)
+      dualValued(false)
 {
 }
 
@@ -62,9 +60,7 @@ bool Ts_KnotData::operator==(const Ts_KnotData &other) const
         && postTanWidth == other.postTanWidth
         && dualValued == other.dualValued
         && nextInterp == other.nextInterp
-        && curveType == other.curveType
-        && preTanMayaForm == other.preTanMayaForm
-        && postTanMayaForm == other.postTanMayaForm;
+        && curveType == other.curveType;
 }
 
 // static

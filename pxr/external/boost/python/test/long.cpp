@@ -12,8 +12,7 @@
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/long.hpp"
 #include "pxr/external/boost/python/class.hpp"
-#define BOOST_ENABLE_ASSERT_HANDLER
-#include <boost/assert.hpp>
+#include <cassert>
 
 using namespace PXR_BOOST_NAMESPACE::python;
 
@@ -36,7 +35,7 @@ char const* is_long1(long_& x)
 {
     long_ y = x;
     x += 50;
-    BOOST_ASSERT(x == y + 50);
+    assert(x == y + 50);
     return "yes";
 }
 

@@ -66,7 +66,7 @@ void wrapRaii()
 {
     // Context-manager class that temporarily sets the current anti-regression
     // authoring mode for the calling thread.  Use in a 'with' statement.
-    class_<_PyAntiRegressionSelector, boost::noncopyable>(
+    class_<_PyAntiRegressionSelector, noncopyable>(
         "AntiRegressionAuthoringSelector", no_init)
         .def(init<TsAntiRegressionMode>())
         .def("__enter__", &_PyAntiRegressionSelector::Enter, return_self<>())
@@ -75,7 +75,7 @@ void wrapRaii()
 
     // Context-manager class that temporarily prevents automatic behaviors when
     // editing splines.  Use in a 'with' statement.
-    class_<_PyBehaviorBlock, boost::noncopyable>(
+    class_<_PyBehaviorBlock, noncopyable>(
         "EditBehaviorBlock")
         // Default init not suppressed, so automatically created.
         .def("__enter__", &_PyBehaviorBlock::Enter, return_self<>())

@@ -12,7 +12,6 @@
 #include "pxr/external/boost/python/class.hpp"
 #include "test_class.hpp"
 #include <memory>
-#include <boost/shared_ptr.hpp>
 #include "pxr/external/boost/python/make_constructor.hpp"
 #include "pxr/external/boost/python/args.hpp"
 
@@ -24,9 +23,9 @@ X* empty() { return new X(1000); }
 
 std::shared_ptr<X> sum(int a, int b) { return std::shared_ptr<X>(new X(a+b)); }
 
-boost::shared_ptr<X> product(int a, int b, int c)
+std::shared_ptr<X> product(int a, int b, int c)
 {
-    return boost::shared_ptr<X>(new X(a*b*c));
+    return std::shared_ptr<X>(new X(a*b*c));
 }
 
 PXR_BOOST_PYTHON_MODULE(injected_ext)

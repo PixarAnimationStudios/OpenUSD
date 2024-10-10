@@ -12,7 +12,6 @@
 #include "pxr/imaging/hd/sceneIndexObserver.h"
 
 #include <QObject>
-#include <boost/noncopyable.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -21,13 +20,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// As the observed Hydra scene changes, it notifies this object which forwards
 /// those changes as Qt signals, or queues them for later processing.
 class HduiSceneObserver :
-    public QObject, public HdSceneIndexObserver, boost::noncopyable
+    public QObject, public HdSceneIndexObserver
 {
     Q_OBJECT;
 
 public:
     HduiSceneObserver();
     ~HduiSceneObserver() override;
+
+    HduiSceneObserver(const HduiSceneObserver&) = delete;
+    HduiSceneObserver& operator=(const HduiSceneObserver&) = delete;
 
     /// Start reporting change notifications for the Hydra scene produced by
     /// \p sceneIndex. The previous observed scene, if any, is unsubscribed.

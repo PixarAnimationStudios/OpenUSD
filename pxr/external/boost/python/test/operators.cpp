@@ -15,7 +15,6 @@
 #include "pxr/external/boost/python/module.hpp"
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/operators.hpp"
-#include <boost/operators.hpp>
 //#include "pxr/external/boost/python/str.hpp"
 // Just use math.h here; trying to use std::pow() causes too much
 // trouble for non-conforming compilers and libraries.
@@ -78,10 +77,29 @@ std::ostream& operator<<(std::ostream& s, X const& x)
 }
 
 struct number
-  : boost::integer_arithmetic<number>
 {
     explicit number(long x_) : x(x_) {}
     operator long() const { return x; }
+
+    template <class T>
+    number operator+(T const& rhs)
+    { return number(x + rhs); }
+
+    template <class T>
+    number operator-(T const& rhs)
+    { return number(x - rhs); }
+
+    template <class T>
+    number operator*(T const& rhs)
+    { return number(x * rhs); }
+
+    template <class T>
+    number operator/(T const& rhs)
+    { return number(x / rhs); }
+
+    template <class T>
+    number operator%(T const& rhs)
+    { return number(x % rhs); }
 
     template <class T>
     number& operator+=(T const& rhs)

@@ -14,6 +14,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "Base", 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdContrivedSingleApplyAPI": {
@@ -24,6 +25,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "SingleApplyAPI", 
                         "schemaKind": "singleApplyAPI"
                     }
                 }

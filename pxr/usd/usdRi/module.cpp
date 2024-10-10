@@ -11,16 +11,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    // Base classes must precede derived classes.  Indentation indicates class
-    // hierarchy.
-    TF_WRAP(UsdRiMaterialAPI);
-    TF_WRAP(UsdRiSplineAPI);
-
-    TF_WRAP(UsdRiStatementsAPI);
-
-    TF_WRAP(UsdRiTokens);
-
+    // Base classes must precede derived classes.
     TF_WRAP(UsdRiRmanUtilities);
 
-    TF_WRAP(UsdRiRenderPassAPI);
+    // Generated Schema classes.  Do not remove or edit the following line.
+    #include "generatedSchema.module.h"
 }

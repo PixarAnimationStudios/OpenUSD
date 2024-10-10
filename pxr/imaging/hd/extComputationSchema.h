@@ -21,6 +21,7 @@
 /// \file
 
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/schemaTypeDefs.h"
 
 #include "pxr/imaging/hd/schema.h"
 
@@ -30,6 +31,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 // --(BEGIN CUSTOM CODE: Declares)--
+
+using HdExtComputationCpuCallbackSharedPtr =
+    std::shared_ptr<class HdExtComputationCpuCallback>;
+using HdExtComputationCpuCallbackDataSource =
+    HdTypedSampledDataSource<HdExtComputationCpuCallbackSharedPtr>;
+using HdExtComputationCpuCallbackDataSourceHandle =
+    HdExtComputationCpuCallbackDataSource::Handle;
+
 // --(END CUSTOM CODE: Declares)--
 
 #define HD_EXT_COMPUTATION_SCHEMA_TOKENS \
@@ -75,19 +84,19 @@ public:
     /// @{
 
     HD_API
-    HdContainerDataSourceHandle GetInputValues() const;
+    HdSampledDataSourceContainerSchema GetInputValues() const;
 
     HD_API
-    HdVectorDataSourceHandle GetInputComputations() const;
+    HdExtComputationInputComputationContainerSchema GetInputComputations() const;
 
     HD_API
-    HdVectorDataSourceHandle GetOutputs() const;
+    HdExtComputationOutputContainerSchema GetOutputs() const;
 
     HD_API
     HdStringDataSourceHandle GetGlslKernel() const;
 
     HD_API
-    HdDataSourceBaseHandle GetCpuCallback() const;
+    HdExtComputationCpuCallbackDataSourceHandle GetCpuCallback() const;
 
     HD_API
     HdSizetDataSourceHandle GetDispatchCount() const;
@@ -164,10 +173,10 @@ public:
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdContainerDataSourceHandle &inputValues,
-        const HdVectorDataSourceHandle &inputComputations,
-        const HdVectorDataSourceHandle &outputs,
+        const HdContainerDataSourceHandle &inputComputations,
+        const HdContainerDataSourceHandle &outputs,
         const HdStringDataSourceHandle &glslKernel,
-        const HdDataSourceBaseHandle &cpuCallback,
+        const HdExtComputationCpuCallbackDataSourceHandle &cpuCallback,
         const HdSizetDataSourceHandle &dispatchCount,
         const HdSizetDataSourceHandle &elementCount
     );
@@ -186,16 +195,16 @@ public:
             const HdContainerDataSourceHandle &inputValues);
         HD_API
         Builder &SetInputComputations(
-            const HdVectorDataSourceHandle &inputComputations);
+            const HdContainerDataSourceHandle &inputComputations);
         HD_API
         Builder &SetOutputs(
-            const HdVectorDataSourceHandle &outputs);
+            const HdContainerDataSourceHandle &outputs);
         HD_API
         Builder &SetGlslKernel(
             const HdStringDataSourceHandle &glslKernel);
         HD_API
         Builder &SetCpuCallback(
-            const HdDataSourceBaseHandle &cpuCallback);
+            const HdExtComputationCpuCallbackDataSourceHandle &cpuCallback);
         HD_API
         Builder &SetDispatchCount(
             const HdSizetDataSourceHandle &dispatchCount);
@@ -209,10 +218,10 @@ public:
 
     private:
         HdContainerDataSourceHandle _inputValues;
-        HdVectorDataSourceHandle _inputComputations;
-        HdVectorDataSourceHandle _outputs;
+        HdContainerDataSourceHandle _inputComputations;
+        HdContainerDataSourceHandle _outputs;
         HdStringDataSourceHandle _glslKernel;
-        HdDataSourceBaseHandle _cpuCallback;
+        HdExtComputationCpuCallbackDataSourceHandle _cpuCallback;
         HdSizetDataSourceHandle _dispatchCount;
         HdSizetDataSourceHandle _elementCount;
 

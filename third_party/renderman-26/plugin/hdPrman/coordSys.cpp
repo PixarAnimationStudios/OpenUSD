@@ -40,6 +40,9 @@ void
 HdPrmanCoordSys::_ResetCoordSys(HdPrman_RenderParam *param)
 {
     riley::Riley *riley = param->AcquireRiley();
+    if(!riley) {
+        return;
+    }
     if (_coordSysId != riley::CoordinateSystemId::InvalidId()) {
         riley->DeleteCoordinateSystem(_coordSysId);
         _coordSysId = riley::CoordinateSystemId::InvalidId();
@@ -60,8 +63,13 @@ HdPrmanCoordSys::Sync(HdSceneDelegate *sceneDelegate,
     const HdDirtyBits bits = *dirtyBits;
 
     riley::Riley *riley = param->AcquireRiley();
+    if(!riley) {
+        return;
+    }
 
+#if PXR_VERSION >= 2308
     HdCoordSys::Sync(sceneDelegate, renderParam, dirtyBits);
+#endif
 
     if (bits & AllDirty) {
         // Sample transform
@@ -88,10 +96,11 @@ HdPrmanCoordSys::Sync(HdSceneDelegate *sceneDelegate,
         if (_coordSysId != riley::CoordinateSystemId::InvalidId()) {
             riley->ModifyCoordinateSystem(_coordSysId, &xform, &attrs);
         } else {
-          _coordSysId = riley->CreateCoordinateSystem(
-              riley::UserId(
-                  stats::AddDataLocation(id.GetText()).GetValue()),
-              xform, attrs);
+            _coordSysId =
+                riley->CreateCoordinateSystem(
+                    riley::UserId(
+                        stats::AddDataLocation(id.GetText()).GetValue()),
+                    xform, attrs);
         }
     }
 

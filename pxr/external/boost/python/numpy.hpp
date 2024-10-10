@@ -39,7 +39,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
  *            and "import_ufunc()", and then calls
  *            dtype::register_scalar_converters().
  */
-BOOST_NUMPY_DECL void initialize(bool register_scalar_converters=true);
+PXR_BOOST_NUMPY_DECL void initialize(bool register_scalar_converters=true);
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::numpy
 

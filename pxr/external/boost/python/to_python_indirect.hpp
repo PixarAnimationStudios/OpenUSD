@@ -32,11 +32,7 @@
 
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-# if defined(__ICL) && __ICL < 600 
-#  include <boost/shared_ptr.hpp>
-# else 
-#  include <memory>
-# endif
+# include <memory>
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 

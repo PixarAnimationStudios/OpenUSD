@@ -9,6 +9,8 @@
 #include "pxr/imaging/hdx/debugCodes.h"
 #include "pxr/imaging/hdx/selectionSceneIndexObserver.h"
 
+#include "pxr/imaging/hd/mesh.h"
+#include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/base/trace/trace.h"
@@ -408,6 +410,37 @@ bool _FillPointSelOffsets(int type,
     return hasSelectedPoints;
 }
 
+// Returns the element edges (mesh edge indices) for all
+// mesh edges incident on selected elements (mesh faces).
+static
+std::vector<VtIntArray>
+_GetElementEdges(
+    HdRenderIndex const * const index,
+    SdfPath const & objPath,
+    std::vector<VtIntArray> elementIndices)
+{
+    if (elementIndices.empty()) {
+        return elementIndices;
+    }
+
+    std::vector<VtIntArray> result;
+
+    HdMesh const *mesh = dynamic_cast<HdMesh const *>(index->GetRprim(objPath));
+    if (mesh && mesh->GetTopology()) {
+
+        HdMeshEdgeIndexTable const edgeIndexTable(mesh->GetTopology().get());
+
+        for (VtIntArray const &elements : elementIndices) {
+            if (!elements.empty()) {
+                result.push_back(
+                    edgeIndexTable.CollectFaceEdgeIndices(elements));
+            }
+        }
+    }
+
+    return result;
+}
+
 namespace {
 
 constexpr int INVALID = -1;
@@ -498,9 +531,9 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelectionSharedPtr const &selection,
     //
     // All data is aggregated into a single  buffer with the following layout:
     //
-    // [ prims | points | edges | elements | instances ]
-    //          <-------- subprims ------->
-    //          <------------- per prim --------------->
+    // [ prims | points | edges | elementEdges | elements | instances ]
+    //          <----------- subprims ------------------->
+    //          <------------------ per prim ------------------------>
     //  
     //  Each section above is prefixed with [start,end) ranges and the values of
     //  each range follow the three cases outlined.
@@ -514,10 +547,11 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelectionSharedPtr const &selection,
     bool const SELECT_NONE = 0;
 
     enum SubPrimType {
-        ELEMENT  = 0,
-        EDGE     = 1,
-        POINT    = 2,
-        INSTANCE = 3
+        ELEMENT       = 0,
+        ELEMENT_EDGE  = 1,
+        EDGE          = 2,
+        POINT         = 3,
+        INSTANCE      = 4
     };
 
     _DebugPrintArray("ids", ids);
@@ -571,6 +605,20 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelectionSharedPtr const &selection,
                                 netSubprimOffset, output)) {
             netSubprimOffset = curOffset + modeOffset;
             _DebugPrintArray("edges", *output);
+        }
+
+        // ------------------------------------------------------------------ //
+        // Subprimitives: Edges incident on elements (mesh faces).
+        // ------------------------------------------------------------------ //
+        curOffset = output->size();
+        if (_FillSubprimSelOffsets(ELEMENT_EDGE,
+                                   _GetElementEdges(
+                                        index, objPath,
+                                        primSelState->elementIndices),
+                                   netSubprimOffset,
+                                   output)) {
+            netSubprimOffset = curOffset + modeOffset;
+            _DebugPrintArray("elementEdges", *output);
         }
 
         // ------------------------------------------------------------------ //

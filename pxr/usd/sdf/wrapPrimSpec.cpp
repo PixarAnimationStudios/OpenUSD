@@ -205,7 +205,7 @@ void wrapPrimSpec()
     to_python_converter<SdfVariantSetSpecHandleMap,
                         TfPySequenceToPython<SdfVariantSetSpecHandleMap> >();
 
-    class_<This, SdfHandle<This>, bases<SdfSpec>, boost::noncopyable>
+    class_<This, SdfHandle<This>, bases<SdfSpec>, noncopyable>
         ("PrimSpec", no_init)
         .def(SdfPySpec())
 
@@ -477,6 +477,14 @@ void wrapPrimSpec()
         .add_property("hasPayloads",
             &This::HasPayloads,
             "Returns true if this prim has payloads set.")
+
+        .add_property("hasInheritPaths",
+            &This::HasInheritPaths,
+            "Returns true if this prim has inherits set.")
+
+        .add_property("hasSpecializes",
+            &This::HasSpecializes,
+            "Returns true if this prim has specializes set.")
 
         .add_property("relocates",
             &This::GetRelocates,

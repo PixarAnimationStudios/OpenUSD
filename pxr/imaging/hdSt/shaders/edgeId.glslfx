@@ -11,6 +11,24 @@
 --- #import $TOOLS/hdSt/shaders/edgeId.glslfx
 
 --- --------------------------------------------------------------------------
+-- glsl EdgeId.Fragment.None
+
+int GetPrimitiveEdgeId()
+{
+    return -1;
+}
+
+float GetSelectedEdgeOpacity()
+{
+    return 0;
+}
+
+bool SelectWireframeFaceEdges()
+{
+    return false;
+}
+
+--- --------------------------------------------------------------------------
 -- glsl EdgeId.Fragment.Common
 
 // Determines whether a fragment is on or close to an unhidden triangle edge.
@@ -34,6 +52,11 @@ vec3 ComputeBaseFaceEdgeDistanceTriangle()
     return GetEdgeDistanceTriangle();
 }
 
+bool SelectWireframeFaceEdges()
+{
+    return false;
+}
+
 --- --------------------------------------------------------------------------
 -- glsl EdgeId.Fragment.TriangleLines
 
@@ -43,6 +66,15 @@ vec3 ComputeBaseFaceEdgeDistanceTriangle()
     vec3 param = GetEdgeParamTriangle();
     bvec3 nearEdge = lessThan(param, vec3(edgePickParametricRadius));
     return vec3(edgePickRadius) * vec3(not(nearEdge));
+}
+
+bool SelectWireframeFaceEdges()
+{
+    // Make sure that edges of selected faces are highlighted correctly for
+    // wireframe lines, i.e. if an edge of an adjacent non-selected face
+    // draws over an edge of a selected face that the edge is drawn using
+    // the correct selection color.
+    return true;
 }
 
 --- --------------------------------------------------------------------------
@@ -113,6 +145,11 @@ vec4 ComputeBaseFaceEdgeDistanceQuad()
     return GetEdgeDistanceQuad();
 }
 
+bool SelectWireframeFaceEdges()
+{
+    return false;
+}
+
 --- --------------------------------------------------------------------------
 -- glsl EdgeId.Fragment.QuadLines
 
@@ -122,6 +159,15 @@ vec4 ComputeBaseFaceEdgeDistanceQuad()
     vec4 param = GetEdgeParamQuad();
     bvec4 nearEdge = lessThan(param, vec4(edgePickParametricRadius));
     return vec4(edgePickRadius) * vec4(not(nearEdge));
+}
+
+bool SelectWireframeFaceEdges()
+{
+    // Make sure that edges of selected faces are highlighted correctly for
+    // wireframe lines, i.e. if an edge of an adjacent non-selected face
+    // draws over an edge of a selected face that the edge is drawn using
+    // the correct selection color.
+    return true;
 }
 
 --- --------------------------------------------------------------------------

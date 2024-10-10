@@ -120,6 +120,16 @@ HdInstancedBySchema::GetDefaultLocator()
 {
     static const HdDataSourceLocator locator(GetSchemaToken());
     return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdInstancedBySchema::GetPathsLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdInstancedBySchemaTokens->paths);
+    return locator;
 } 
 
 PXR_NAMESPACE_CLOSE_SCOPE

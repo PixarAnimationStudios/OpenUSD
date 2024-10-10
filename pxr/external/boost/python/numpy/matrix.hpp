@@ -41,7 +41,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
  *            bad things happen when Python shuts down.  I think this solution is safe, but I'd
  *            love to get that confirmed.
  */
-class BOOST_NUMPY_DECL matrix : public ndarray 
+class PXR_BOOST_NUMPY_DECL matrix : public ndarray 
 {
   static object construct(object_cref obj, dtype const & dt, bool copy);
   static object construct(object_cref obj, bool copy);

@@ -82,7 +82,7 @@ void wrapPropertySpec()
         TfPyContainerConversions::variable_capacity_policy >();
 
     class_<This, SdfHandle<This>, 
-           bases<SdfSpec>, boost::noncopyable>
+           bases<SdfSpec>, noncopyable>
         ("PropertySpec", no_init)
         .def(SdfPyAbstractSpec())
 

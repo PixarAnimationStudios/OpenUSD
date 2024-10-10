@@ -9,9 +9,8 @@ class TestSchemaConcrete "TestSchemaConcrete" (
 {
     float inputs:exposure = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Basic"
-        displayName = "Exposure"
-        doc = """
+        customData = {
+            string userDoc = """
               exposure:  Specify the intensity of the light source as a power of 2 (in stops).
               Increasing the exposure by 1 will double the energy emitted by the light source.
               A value of 0 produces an intensity of 1, -1 produces .5. You may wonder why you
@@ -20,25 +19,43 @@ class TestSchemaConcrete "TestSchemaConcrete" (
               number for equivalent Intensity. This is also comfortable to artists familiar with
               photographic measurements.
                 """
+            string userDocBrief = """
+              exposure:  Specify the intensity of the light source as a power of 2 (in stops)."""
+        }
+        displayGroup = "Basic"
+        displayName = "Exposure"
     )
     float inputs:intensity = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Basic"
-        displayName = "Intensity"
-        doc = """
+        customData = {
+            string userDoc = """
               intensity: Scales the contribution of this light linearly.
                 """
+            string userDocBrief = """
+              intensity: Scales the contribution of this light linearly.
+                """
+        }
+        displayGroup = "Basic"
+        displayName = "Intensity"
     )
     vector3f inputs:sunDirection = (0, 1, 0) (
         connectability = "interfaceOnly"
-        displayGroup = "Basic"
-        displayName = "Direction"
-        doc = """
+        customData = {
+            string userDoc = """
               sunDirection: The *apparent* direction towards the center of
               the sun.  The zenith is at +Y (for noon light) and the
               horizon is in the XZ plane (for sunrise/set).  Note that the
               Y component must non-negative.  Ignored if a month is given.
                 """
+            string userDocBrief = """
+              sunDirection: The *apparent* direction towards the center of
+              the sun.  The zenith is at +Y (for noon light) and the
+              horizon is in the XZ plane (for sunrise/set).  Note that the
+              Y component must non-negative.  Ignored if a month is given.
+                """
+        }
+        displayGroup = "Basic"
+        displayName = "Direction"
     )
     float propNS:testShaderPropWithNS = 0
 }

@@ -13,14 +13,18 @@
 #include "hdPrman/renderBuffer.h"
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/renderParam.h"
+#if PXR_VERSION >= 2308
 #include "hdPrman/renderSettings.h"
+#endif
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/utils.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hd/rprim.h"
+#if PXR_VERSION >= 2308
 #include "pxr/imaging/hd/utils.h"
+#endif
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/token.h"
@@ -45,6 +49,7 @@ HdPrman_RenderPass::HdPrman_RenderPass(
 , _lastRenderedVersion(0)
 , _lastTaskRenderTagsVersion(0)
 , _lastRprimRenderTagVersion(0)
+, _projection(HdPrmanProjectionTokens->PxrPerspective)
 , _quickIntegrateTime(0.2f)
 {
     TF_VERIFY(_renderParam);
@@ -158,10 +163,11 @@ GfVec2i
 _ResolveResolution(
     const HdRenderPassAovBindingVector &aovBindings,
     const HdRenderIndex * const renderIndex,
-    const HdPrman_CameraContext &cameraContext)
+    const HdPrman_CameraContext &cameraContext,
+    bool hasLegacyProducts)
 {
     GfVec2i resolution(0);
-    if (!aovBindings.empty()) {
+    if (!aovBindings.empty() && !hasLegacyProducts) {
         _GetRenderBufferSize(aovBindings, renderIndex, &resolution);
     } else if (cameraContext.GetFraming().IsValid()) {
         // This path is exercised when using the legacy render spec with the
@@ -217,12 +223,121 @@ _HasLegacyRenderSpec(
             renderDelegate->GetRenderSetting<VtDictionary>(
                 HdPrmanRenderSettingsTokens->experimentalRenderSpec, {});
 
-        TF_DEBUG(HDPRMAN_RENDER_PASS).Msg("Has legacy render spec = %d\n",
-            !legacyRenderSpec->empty());
         return !legacyRenderSpec->empty();
     }
 
     return false;
+}
+
+template <typename T>
+T
+GetProductSetting(
+    const HdRenderSettingsMap& settingsMap, const TfToken& key, const T& def)
+{
+    auto val = settingsMap.find(key);
+    if (val != settingsMap.end() && val->second.IsHolding<T>()) {
+        return val->second.UncheckedGet<T>();
+    }
+    return def;
+}
+
+// Take into account the render settings resolution, dataWindowNDC,
+// pixelAspectRatio and aspectRatioConformPolicy for the camera framing.
+void
+_ComputeCameraFramingFromSettings(
+    HdRenderPassStateSharedPtr const& renderPassState,
+    HdPrmanRenderDelegate* const renderDelegate,
+    const _LegacyRenderProducts& renderProducts,
+    const GfVec2i renderBufferSize)
+{
+    // Get the resolution
+    GfVec2i resolution = renderDelegate->GetRenderSetting<GfVec2i>(
+        HdPrmanRenderSettingsTokens->resolution, renderBufferSize);
+
+    // Get the data window NDC
+    static const GfVec4f dataWindowDefault(0.0, 0.0, 1.0, 1.0);
+    GfVec4f dataWindow = renderDelegate->GetRenderSetting<GfVec4f>(
+        HdPrmanRenderSettingsTokens->dataWindowNDC, dataWindowDefault);
+
+    // Get the pixel aspect ratio
+    static const float pixelAspectRatioDefault(1.0);
+    float pixelAspectRatio = renderDelegate->GetRenderSetting<float>(
+        HdPrmanRenderSettingsTokens->pixelAspectRatio, pixelAspectRatioDefault);
+
+    // Get the aspect ratio conform policy
+    std::string aspectRatioConformPolicy
+        = renderDelegate->GetRenderSetting<std::string>(
+            HdPrmanRenderSettingsTokens->aspectRatioConformPolicy,
+            HdAspectRatioConformPolicyTokens->expandAperture);
+
+    // Render Product Settings > Render Settings
+    for (const HdRenderSettingsMap& renderProduct : renderProducts) {
+        resolution = GetProductSetting<GfVec2i>(
+            renderProduct, HdPrmanRenderSettingsTokens->resolution, resolution);
+        dataWindow = GetProductSetting<GfVec4f>(
+            renderProduct, HdPrmanRenderSettingsTokens->dataWindowNDC,
+            dataWindow);
+        pixelAspectRatio = GetProductSetting<float>(
+            renderProduct, HdPrmanRenderSettingsTokens->pixelAspectRatio,
+            pixelAspectRatio);
+        aspectRatioConformPolicy = GetProductSetting<std::string>(
+            renderProduct,
+            HdPrmanRenderSettingsTokens->aspectRatioConformPolicy,
+            aspectRatioConformPolicy);
+    }
+
+    // Create the camera framing
+    CameraUtilFraming framing;
+    framing.displayWindow
+        = GfRange2f(GfVec2f(0, 0), GfVec2f(resolution[0], resolution[1]));
+    // dataWindowNDC y-up but dataWindow y-down :(
+    framing.dataWindow = GfRect2i(
+        GfVec2i(
+            ceilf(resolution[0] * dataWindow[0]),
+            resolution[1] - ceilf(resolution[1] * dataWindow[3])),
+        GfVec2i(
+            ceilf(resolution[0] * dataWindow[2]) - 1,
+            resolution[1] - ceilf(resolution[1] * dataWindow[1]) - 1));
+    framing.pixelAspectRatio = pixelAspectRatio;
+
+    // Data windows are supposed to be relative to the render buffer. Offset the
+    // data window to start at zero. This assumes the data window equals the
+    // renderbuffer, which can be incorrect but is okay for our needs.
+    framing.displayWindow = GfRange2f(
+        framing.displayWindow.GetMin() - framing.dataWindow.GetMin(),
+        framing.displayWindow.GetMax() - framing.dataWindow.GetMin());
+    framing.dataWindow.Translate(-framing.dataWindow.GetMin());
+
+    // Map aspectRatioConformPolicy setting to CameraUtilConformWindowPolicy
+    CameraUtilConformWindowPolicy conformPolicy = CameraUtilDontConform;
+    if (aspectRatioConformPolicy
+        == HdAspectRatioConformPolicyTokens->expandAperture) {
+        conformPolicy = CameraUtilFit;
+    } else if (aspectRatioConformPolicy
+        == HdAspectRatioConformPolicyTokens->cropAperture) {
+        conformPolicy = CameraUtilCrop;
+    } else if (aspectRatioConformPolicy
+        == HdAspectRatioConformPolicyTokens->adjustApertureWidth) {
+        conformPolicy = CameraUtilMatchVertically;
+    } else if (aspectRatioConformPolicy
+        == HdAspectRatioConformPolicyTokens->adjustApertureHeight) {
+        conformPolicy = CameraUtilMatchHorizontally;
+    } else if (aspectRatioConformPolicy
+        == HdAspectRatioConformPolicyTokens->adjustPixelAspectRatio) {
+        conformPolicy = CameraUtilDontConform;
+    }
+
+    // Update the render pass state
+#if PXR_VERSION > 2311
+    renderPassState->SetCamera(renderPassState->GetCamera());
+    renderPassState->SetFraming(framing);
+    renderPassState->SetOverrideWindowPolicy(
+        std::optional<CameraUtilConformWindowPolicy>(conformPolicy));
+#else
+    renderPassState->SetCameraAndFraming(
+        renderPassState->GetCamera(), framing,
+        std::pair<bool, CameraUtilConformWindowPolicy>(true, conformPolicy));
+#endif
 }
 
 } // end anonymous namespace
@@ -244,35 +359,53 @@ HdPrman_RenderPass::_UpdateCameraPath(
 bool
 HdPrman_RenderPass::_UpdateCameraFramingAndWindowPolicy(
     const HdRenderPassStateSharedPtr &renderPassState,
+    HdPrmanRenderDelegate * const renderDelegate,
     HdPrman_CameraContext *cameraContext)
 {
-    cameraContext->SetWindowPolicy(renderPassState->GetWindowPolicy());
-
     const GfRect2i prevDataWindow = cameraContext->GetFraming().dataWindow;
 
     if (renderPassState->GetFraming().IsValid()) {
         // For new clients setting the camera framing.
         cameraContext->SetFraming(renderPassState->GetFraming());
+        cameraContext->SetWindowPolicy(renderPassState->GetWindowPolicy());
     } else {
-        // For old clients using the viewport. This relies on AOV bindings.
-        if (renderPassState->GetAovBindings().empty()) {
-            TF_CODING_ERROR("Failed to resolve framing.\n");
-            return false;
+        // Note, commenting this out; it leads to prman crashing in Houdini 19.5
+        // // For old clients using the viewport. This relies on AOV bindings.
+        // if (renderPassState->GetAovBindings().empty()) {
+        //     TF_CODING_ERROR("Failed to resolve framing.\n");
+        //     return false;
+        // }
+        const _LegacyRenderProducts& renderProducts =
+            renderDelegate->GetRenderSetting<_LegacyRenderProducts>(
+                HdPrmanRenderSettingsTokens->delegateRenderProducts, {});
+        HdRenderPassAovBindingVector const &aovBindings =
+            renderPassState->GetAovBindings();
+        GfVec2i resolution;
+        // Size of AOV buffers
+        if (!_GetRenderBufferSize(aovBindings, GetRenderIndex(), &resolution)) {
+            // For clients not using AOVs, take size of viewport.
+            const GfVec4f vp = renderPassState->GetViewport();
+            resolution[0] = vp[2];
+            resolution[1] = vp[3];
         }
 
-        GfVec2i resolution;
-        _GetRenderBufferSize(renderPassState->GetAovBindings(),
-                             GetRenderIndex(), 
-                             &resolution);
-
-        const GfVec4f &vp = renderPassState->GetViewport();
-        cameraContext->SetFraming(
-            CameraUtilFraming(
-                GfRect2i(
-                    // Note that the OpenGL-style viewport is y-Up
-                    // but the camera framing is y-Down, so converting here.
-                    GfVec2i(vp[0], resolution[1] - (vp[1] + vp[3])),
-                    vp[2], vp[3])));
+        if (renderProducts.empty()) {
+            const GfVec4f &vp = renderPassState->GetViewport();
+            cameraContext->SetFraming(
+                CameraUtilFraming(
+                    GfRect2i(
+                        // Note that the OpenGL-style viewport is y-Up
+                        // but the camera framing is y-Down, so converting here.
+                        GfVec2i(vp[0], resolution[1] - (vp[1] + vp[3])),
+                        vp[2], vp[3])));
+        } else {
+            // If no camera framing was provided,
+            // try to get the framing from the render settings.
+            _ComputeCameraFramingFromSettings(
+                renderPassState, renderDelegate, renderProducts, resolution);
+            cameraContext->SetFraming(renderPassState->GetFraming());
+        }
+        cameraContext->SetWindowPolicy(renderPassState->GetWindowPolicy());
     }
 
     return cameraContext->GetFraming().dataWindow != prevDataWindow;
@@ -347,6 +480,7 @@ HdPrman_RenderPass::_Execute(
 
     const bool isInteractive = renderDelegate->IsInteractive();
 
+#if PXR_VERSION >= 2308
     HdPrman_RenderSettings * const rsPrim =
         _GetDrivingRenderSettingsPrim();
     const bool driveWithRenderSettingsPrim =
@@ -379,6 +513,7 @@ HdPrman_RenderPass::_Execute(
                 " prim %s. Falling back to legacy (task driven) path.\n",
                 rsPrim->GetId().GetText());
     }
+#endif
 
     //
     // ------------------------------------------------------------------------
@@ -387,20 +522,40 @@ HdPrman_RenderPass::_Execute(
     //
 
     HdPrman_CameraContext &cameraContext = _renderParam->GetCameraContext();
+    const bool framingValid = renderPassState->GetFraming().IsValid();
     _UpdateCameraPath(renderPassState, &cameraContext);
     const bool dataWindowChanged = _UpdateCameraFramingAndWindowPolicy(
-        renderPassState, &cameraContext);
+        renderPassState, renderDelegate, &cameraContext);
     const bool camChanged = cameraContext.IsInvalid();
     cameraContext.MarkValid();
-    
+
     // Data flow for resolution is a bit convoluted.
-    const GfVec2i resolution = _ResolveResolution(
-        aovBindings, GetRenderIndex(), cameraContext);
+    const GfVec2i resolution =
+        _renderParam->IsXpu() ? // Remove once XPU handles under/overscan.
+        cameraContext.GetResolutionFromDataWindow() :
+        _ResolveResolution(
+            aovBindings, GetRenderIndex(), cameraContext, hasLegacyProducts);
 
     const bool resolutionChanged = _renderParam->GetResolution() != resolution;
     if (resolutionChanged) {
         _renderParam->SetResolution(resolution);
     }
+
+#ifdef DO_FALLBACK_LIGHTS
+    // Enable/disable the fallback light when the scene provides no lights.
+    _renderParam->SetFallbackLightsEnabled(
+        !_renderParam->HasSceneLights());
+#else
+    _renderParam->SetFallbackLightsEnabled(false);
+#endif
+
+    int frame =
+        renderDelegate->GetRenderSetting<int>(
+            HdPrmanRenderSettingsTokens->houdiniFrame, 1);
+    const bool frameChanged = _renderParam->frame != frame;
+    _renderParam->frame = frame;
+
+
     //
     // ------------------------------------------------------------------------
     // Create/update the Riley RenderView.
@@ -412,11 +567,14 @@ HdPrman_RenderPass::_Execute(
     //
     if (hasLegacyProducts) {
         // Use RenderProducts from the RenderSettingsMap (Solaris)
-        int frame =
-            renderDelegate->GetRenderSetting<int>(
-                HdPrmanRenderSettingsTokens->houdiniFrame, 1);
+        if (frameChanged) {
+            riley::Riley * const riley = _renderParam->AcquireRiley();
+            if(!riley) {
+                return;
+            }
+            _renderParam->GetRenderViewContext().DeleteRenderView(riley);
+        }
         _renderParam->CreateRenderViewFromLegacyProducts(legacyProducts, frame);
-
     } else if (!passHasAovBindings) {
         // Note: This handles the case that we are rendering with the 
         // render spec through the HdPrman test harness.
@@ -444,8 +602,12 @@ HdPrman_RenderPass::_Execute(
         // Use AOV-bindings to create render view with displays that
         // have drivers writing into the intermediate framebuffer blitted
         // to the AOVs.
+#if PXR_VERSION >= 2308
         _renderParam->CreateFramebufferAndRenderViewFromAovs(aovBindings,
                                                              rsPrim);
+#else
+        _renderParam->CreateFramebufferAndRenderViewFromAovs(aovBindings);
+#endif
     }
 
     HdPrman_RenderViewContext &rvCtx = _renderParam->GetRenderViewContext();
@@ -454,7 +616,7 @@ HdPrman_RenderPass::_Execute(
         return;
     }
 
-    if (resolutionChanged) {
+    if (resolutionChanged || camChanged) {
         rvCtx.SetResolution(resolution, _renderParam->AcquireRiley());
     }
     //
@@ -502,7 +664,7 @@ HdPrman_RenderPass::_Execute(
         }
 
         // and (3).
-        if (aovBindings.empty()) {
+        if (aovBindings.empty() || hasLegacyProducts) {
             cameraContext.UpdateRileyCameraAndClipPlanes(
                 riley,
                 GetRenderIndex());
@@ -514,6 +676,52 @@ HdPrman_RenderPass::_Execute(
                 GetRenderIndex(),
                 resolution);
         }
+    }
+
+    // Update options from the legacy settings map.
+    if (legacySettingsChanged) {
+        _renderParam->UpdateLegacyOptions();
+
+        // Set Projection Settings
+        _projection = renderDelegate->GetRenderSetting<std::string>(
+            HdPrmanRenderSettingsTokens->projectionName,
+            _projection);
+
+        RtParamList projectionParams;
+        _renderParam->SetProjectionParamsFromRenderSettings(
+            (HdPrmanRenderDelegate*)renderDelegate,
+            _projection,
+             projectionParams);
+
+        cameraContext.SetProjectionOverride(RtUString(_projection.c_str()),
+                                            projectionParams);
+
+        // Set Resolution, Crop Window, Pixel Aspect Ratio,
+        // and update camera settings.
+        // For valid framing this was handled above.
+        if(!framingValid) {
+            riley::Riley * const riley = _renderParam->AcquireRiley();
+            if (_renderParam->IsXpu()) {
+                // This can be removed once XPU handles under/overscan correctly.
+                cameraContext.SetRileyOptionsInteractive(
+                    &(_renderParam->GetLegacyOptions()), _renderParam->GetResolution());
+                cameraContext.UpdateRileyCameraAndClipPlanesInteractive(
+                    riley, GetRenderIndex(), _renderParam->GetResolution());
+            }
+            else {
+                cameraContext.SetRileyOptions(&(_renderParam->GetLegacyOptions()));
+                cameraContext.UpdateRileyCameraAndClipPlanes(
+                    riley, GetRenderIndex());
+            }
+        }
+
+        cameraContext.SetDisableDepthOfField(
+            renderDelegate->GetRenderSetting<bool>(
+                HdPrmanRenderSettingsTokens->disableDepthOfField, false));
+
+        // Set Display and Sample Filters
+        _renderParam->SetFiltersFromRenderSettings(
+            (HdPrmanRenderDelegate*)renderDelegate);
     }
 
     // Commit updated scene options.
@@ -585,8 +793,14 @@ HdPrman_RenderPass::_RestartRenderIfNecessary(
             _renderParam->SetActiveIntegratorId(integratorId);
         }
 
-        _renderParam->StartRender();
-        _frameStart = std::chrono::steady_clock::now();
+        if(_renderParam->GetRenderViewContext().GetRenderViewId() !=
+           riley::RenderViewId::InvalidId()) {
+            _renderParam->StartRender();
+            _frameStart = std::chrono::steady_clock::now();
+        } else {
+            _renderParam->FatalError("No display found. Try raster output type.");
+            return;
+        }
     } else {
         // If we are using the quick integrator...
         if (_renderParam->GetActiveIntegratorId() !=
@@ -658,6 +872,7 @@ HdPrman_RenderPass::_UpdateActiveRenderTagsIfChanged(
     }
 }
 
+#if PXR_VERSION >= 2308
 HdPrman_RenderSettings*
 HdPrman_RenderPass::_GetDrivingRenderSettingsPrim() const
 {
@@ -665,6 +880,7 @@ HdPrman_RenderPass::_GetDrivingRenderSettingsPrim() const
         GetRenderIndex()->GetBprim(HdPrimTypeTokens->renderSettings,
         _renderParam->GetDrivingRenderSettingsPrimPath()));
 }
+#endif
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

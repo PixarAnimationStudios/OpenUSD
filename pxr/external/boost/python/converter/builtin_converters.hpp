@@ -20,10 +20,9 @@
 # include "pxr/external/boost/python/detail/none.hpp"
 # include "pxr/external/boost/python/handle.hpp"
 # include "pxr/external/boost/python/ssize_t.hpp"
-# include <boost/implicit_cast.hpp>
 # include <string>
 # include <complex>
-# include <boost/limits.hpp>
+# include <limits>
 
 // Since all we can use to decide how to convert an object to_python
 // is its C++ type, there can be only one such converter for each
@@ -54,7 +53,7 @@ namespace detail
       // This information helps make_getter() decide whether to try to
       // return an internal reference or not. I don't like it much,
       // but it will have to serve for now.
-      BOOST_STATIC_CONSTANT(bool, uses_registry = false);
+      static constexpr bool uses_registry = false;
   };
 }
 
@@ -167,15 +166,15 @@ PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(unsigned PXR_BOOST_PYTHON_LONG_LONG, ::PyLon
 #if PY_VERSION_HEX >= 0x03000000
 PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(char, converter::do_return_to_python(x), &PyUnicode_Type)
 PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(char const*, converter::do_return_to_python(x), &PyUnicode_Type)
-PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::string, ::PyUnicode_FromStringAndSize(x.data(),implicit_cast<ssize_t>(x.size())), &PyUnicode_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::string, ::PyUnicode_FromStringAndSize(x.data(),x.size()), &PyUnicode_Type)
 #else
 PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(char, converter::do_return_to_python(x), &PyString_Type)
 PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(char const*, converter::do_return_to_python(x), &PyString_Type)
-PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::string, ::PyString_FromStringAndSize(x.data(),implicit_cast<ssize_t>(x.size())), &PyString_Type)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::string, ::PyString_FromStringAndSize(x.data(),x.size()), &PyString_Type)
 #endif
 
-#if defined(Py_USING_UNICODE) && !defined(BOOST_NO_STD_WSTRING)
-PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::wstring, ::PyUnicode_FromWideChar(x.data(),implicit_cast<ssize_t>(x.size())), &PyUnicode_Type)
+#if defined(Py_USING_UNICODE)
+PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(std::wstring, ::PyUnicode_FromWideChar(x.data(),x.size()), &PyUnicode_Type)
 # endif 
 PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(float, ::PyFloat_FromDouble(x), &PyFloat_Type)
 PXR_BOOST_PYTHON_TO_PYTHON_BY_VALUE(double, ::PyFloat_FromDouble(x), &PyFloat_Type)

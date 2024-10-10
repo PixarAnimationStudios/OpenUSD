@@ -94,4 +94,23 @@ template GEOMUTIL_API void GeomUtilDiskMeshGenerator::_GeneratePointsImpl(
     const GeomUtilDiskMeshGenerator::_PointWriter<GfVec3d>&);
 
 
+// static
+template<typename PointType>
+void
+GeomUtilDiskMeshGenerator::_GenerateNormalsImpl(
+    const _PointWriter<PointType>& ptWriter)
+{
+    ptWriter.WriteDir(PointType(0.0, 0.0, 1.0));
+}
+
+// Force-instantiate _GenerateNormalsImpl for the supported point types.
+// Only these instantiations will ever be needed due to the SFINAE machinery on
+// the calling method template (the public GeneratePoints, in the header).
+template GEOMUTIL_API void GeomUtilDiskMeshGenerator::_GenerateNormalsImpl(
+    const GeomUtilDiskMeshGenerator::_PointWriter<GfVec3f>&);
+
+template GEOMUTIL_API void GeomUtilDiskMeshGenerator::_GenerateNormalsImpl(
+    const GeomUtilDiskMeshGenerator::_PointWriter<GfVec3d>&);
+
+
 PXR_NAMESPACE_CLOSE_SCOPE

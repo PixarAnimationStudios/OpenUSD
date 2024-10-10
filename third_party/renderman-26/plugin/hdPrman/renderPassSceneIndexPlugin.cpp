@@ -6,6 +6,10 @@
 
 #include "hdPrman/renderPassSceneIndexPlugin.h"
 
+#if PXR_VERSION >= 2405
+
+#include "hdPrman/tokens.h"
+
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -18,8 +22,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sceneIndexPluginName, "HdPrman_RenderPassSceneIndexPlugin"))
 );
 
-static const char * const _pluginDisplayName = "Prman";
-
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdSceneIndexPluginRegistry
@@ -31,12 +33,14 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
     // We need an "insertion point" that's *after* general material resolve.
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 115;
 
-    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        _pluginDisplayName,
-        _tokens->sceneIndexPluginName,
-        nullptr, // No input args.
-        insertionPhase,
-        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    for( auto const& pluginDisplayName : HdPrman_GetPluginDisplayNames()) {
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            pluginDisplayName,
+            _tokens->sceneIndexPluginName,
+            nullptr, // No input args.
+            insertionPhase,
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    }
 }
 
 HdPrman_RenderPassSceneIndexPlugin::
@@ -51,3 +55,5 @@ HdPrman_RenderPassSceneIndexPlugin::_AppendSceneIndex(
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2405

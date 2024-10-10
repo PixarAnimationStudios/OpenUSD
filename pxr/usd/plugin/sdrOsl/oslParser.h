@@ -115,7 +115,7 @@ private:
     // Gets a vector of properties that are present on the specified OSL
     // query object
     NdrPropertyUniquePtrVec _getNodeProperties(const OSL::OSLQuery &query,
-        const NdrNodeDiscoveryResult& discoveryResult) const;
+        const NdrNodeDiscoveryResult& discoveryResult, const std::string& fallbackprefix) const;
 
     // Gets all metadata for the node that's present on the specified OSL
     // query object

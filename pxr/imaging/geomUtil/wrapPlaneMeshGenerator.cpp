@@ -34,6 +34,22 @@ _WrapGeneratePoints(
     return points;
 }
 
+static VtVec3fArray
+_WrapGenerateNormals()
+{
+    const size_t numNormals =
+        GeomUtilPlaneMeshGenerator::ComputeNumNormals();
+    if (numNormals == 0) {
+        return VtVec3fArray();
+    }
+
+    VtVec3fArray normals(numNormals);
+    GeomUtilPlaneMeshGenerator::GenerateNormals(
+        normals.begin());
+
+    return normals;
+}
+
 void wrapPlaneMeshGenerator()
 {
     using This = GeomUtilPlaneMeshGenerator;
@@ -45,10 +61,19 @@ void wrapPlaneMeshGenerator()
         .def("ComputeNumPoints", &This::ComputeNumPoints)
         .staticmethod("ComputeNumPoints")
 
+        .def("ComputeNumNormals", &This::ComputeNumNormals)
+        .staticmethod("ComputeNumNormals")
+
+        .def("GetNormalsInterpolation", &This::GetNormalsInterpolation)
+        .staticmethod("GetNormalsInterpolation")
+
         .def("GenerateTopology", &This::GenerateTopology)
         .staticmethod("GenerateTopology")
 
         .def("GeneratePoints", &_WrapGeneratePoints)
         .staticmethod("GeneratePoints")
+
+        .def("GenerateNormals", &_WrapGenerateNormals)
+        .staticmethod("GenerateNormals")
     ;
 }

@@ -14,7 +14,7 @@ class TestUsdSplines(unittest.TestCase):
     def _GetTestSpline(self, attrType = Sdf.ValueTypeNames.Double):
         """
         Return a spline for cases where we don't particularly care about the
-        contents.  This one exercises both standard and Maya tangent forms.
+        contents.
         """
         typeName = str(attrType)
         spline = Ts.Spline(typeName)
@@ -23,15 +23,15 @@ class TestUsdSplines(unittest.TestCase):
             time = 1,
             value = 8,
             nextInterp = Ts.InterpCurve,
-            postTanMayaWidth = 4,
-            postTanMayaHeight = 0.5))
+            postTanWidth = 1.3,
+            postTanSlope = 0.125))
         spline.SetKnot(Ts.Knot(
             typeName = typeName,
             time = 6,
             value = 20,
             nextInterp = Ts.InterpCurve,
-            preTanMayaWidth = 2,
-            preTanMayaHeight = 0.4,
+            preTanWidth = 1.3,
+            preTanSlope = -0.2,
             postTanWidth = 2,
             postTanSlope = 0.3))
         return spline
@@ -95,40 +95,39 @@ class TestUsdSplines(unittest.TestCase):
         Test serialization with some programmatically built splines.  Exercise
         features not available via Museum cases.
         """
-        # Bezier, Maya tangent form.
-        # Custom data dictionary.
+        # Bezier, custom data dictionary.
         spline = Ts.Spline()
         spline.SetKnot(Ts.Knot(
             time = -14.7,
             value = 11.30752,
             nextInterp = Ts.InterpCurve,
-            postTanMayaWidth = 5.4,
-            postTanMayaHeight = 7.7,
+            postTanWidth = 1.8,
+            postTanSlope = 1.4,
             customData = { "a": "yes", "b": 4, "c": { "d": "ugh" } } ))
         spline.SetKnot(Ts.Knot(
             time = -1.2,
             value = 22.994037,
             nextInterp = Ts.InterpCurve,
-            preTanMayaWidth = 4.7,
-            preTanMayaHeight = -3.3,
-            postTanMayaWidth = 7,
-            postTanMayaHeight = 40))
+            preTanWidth = 1.6,
+            preTanSlope = 0.7,
+            postTanWidth = 2.3,
+            postTanSlope = 5.7))
         self._DoSerializationTest("Complex.1", spline)
 
-        # Bezier, mixed standard and Maya tangent forms.
+        # Bezier
         spline = Ts.Spline()
         spline.SetKnot(Ts.Knot(
             time = 1,
             value = 8,
             nextInterp = Ts.InterpCurve,
-            postTanMayaWidth = 4,
-            postTanMayaHeight = 0.5))
+            postTanWidth = 1.3,
+            postTanSlope = 0.125))
         spline.SetKnot(Ts.Knot(
             time = 6,
             value = 20,
             nextInterp = Ts.InterpCurve,
-            preTanMayaWidth = 2,
-            preTanMayaHeight = 0.4,
+            preTanWidth = 0.6,
+            preTanSlope = -0.2,
             postTanWidth = 2,
             postTanSlope = 0.3))
         spline.SetKnot(Ts.Knot(
@@ -137,11 +136,11 @@ class TestUsdSplines(unittest.TestCase):
             nextInterp = Ts.InterpCurve,
             preTanWidth = 1,
             preTanSlope = 0,
-            postTanMayaWidth = 22,
-            postTanMayaHeight = 0))
+            postTanWidth = 7.3,
+            postTanSlope = 0))
         self._DoSerializationTest("Complex.2", spline)
 
-        # Hermite, mixed standard and Maya tangent forms.
+        # Hermite
         spline = Ts.Spline()
         spline.SetCurveType(Ts.CurveTypeHermite)
         spline.SetKnot(Ts.Knot(
@@ -155,7 +154,7 @@ class TestUsdSplines(unittest.TestCase):
             time = 6,
             value = 20,
             nextInterp = Ts.InterpCurve,
-            preTanMayaHeight = 2,
+            preTanSlope = -.7,
             postTanSlope = 1))
         self._DoSerializationTest("Complex.3", spline)
 

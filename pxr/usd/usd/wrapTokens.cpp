@@ -15,7 +15,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdTokens()
 {
-    pxr_boost::python::class_<UsdTokensType, boost::noncopyable>
+    pxr_boost::python::class_<UsdTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, apiSchemas);
     _ADD_TOKEN(cls, clips);

@@ -18,7 +18,7 @@
 #else
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
-# include <boost/mpl/bool.hpp>
+# include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
@@ -26,7 +26,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python {
 // contains a back-reference to its owning PyObject*
 template <class T>
 struct has_back_reference
-  : mpl::false_
+  : detail::mpl2::false_
 {
 };
 

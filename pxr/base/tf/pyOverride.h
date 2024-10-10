@@ -13,6 +13,7 @@
 #include "pxr/base/tf/pyObjWrapper.h"
 
 #include "pxr/external/boost/python/override.hpp"
+#include "pxr/external/boost/python/type.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -62,7 +63,7 @@ public:
     }
 
     template <class T>
-    T as(boost::type<T>* = 0)
+    T as(pxr_boost::python::type<T>* = 0)
     {
         TfPyLock lock;
         pxr_boost::python::converter::return_from_python<T> converter;
@@ -70,7 +71,7 @@ public:
     }
 
     template <class T>
-    T unchecked(boost::type<T>* = 0)
+    T unchecked(pxr_boost::python::type<T>* = 0)
     {
         TfPyLock lock;
         return pxr_boost::python::extract<T>(m_obj)();

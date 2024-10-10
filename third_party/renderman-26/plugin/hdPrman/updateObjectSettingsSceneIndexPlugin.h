@@ -8,6 +8,8 @@
 #define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_UPDATE_OBJECT_SETTINGS_SCENE_INDEX_PLUGIN_H
 
 #include "pxr/pxr.h"
+#if PXR_VERSION >= 2308
+
 #include "pxr/imaging/hd/sceneIndexPlugin.h"
 #include "hdPrman/api.h"
 
@@ -29,5 +31,7 @@ protected:
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2308
 
 #endif // EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_UPDATE_OBJECT_SETTINGS_SCENE_INDEX_PLUGIN_H

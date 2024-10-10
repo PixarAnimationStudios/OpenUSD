@@ -14,6 +14,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "Backdrop", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdUINodeGraphNodeAPI": {
@@ -24,6 +25,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "NodeGraphNodeAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdUISceneGraphPrimAPI": {
@@ -34,6 +36,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "SceneGraphPrimAPI", 
                         "schemaKind": "singleApplyAPI"
                     }
                 }

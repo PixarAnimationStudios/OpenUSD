@@ -17,8 +17,6 @@
 #include <boost/python/detail/void_return.hpp>
 #else
 
-# include <boost/config.hpp>
-
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 struct void_return
@@ -33,21 +31,6 @@ struct returnable
 {
     typedef T type;
 };
-
-# ifdef BOOST_NO_VOID_RETURNS
-template <>
-struct returnable<void>
-{
-    typedef void_return type;
-};
-
-#  ifndef BOOST_NO_CV_VOID_SPECIALIZATIONS
-template <> struct returnable<const void> : returnable<void> {};
-template <> struct returnable<volatile void> : returnable<void> {};
-template <> struct returnable<const volatile void> : returnable<void> {};
-#  endif
-
-# endif // BOOST_NO_VOID_RETURNS
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 

@@ -89,6 +89,22 @@
 'set2( (Bar)arg1 [, (int)arg2 [, (float)arg3 [, (str)arg4]]]) -> None :'
 >>> f.set2.__doc__.splitlines()[2]
 "    set2's docstring"
+
+# Test overloads with different arity and keyword args.
+
+# Calls f1 since f2 must be called with at least two args.
+>>> func(0)
+(0, 2)
+
+# Even though we supply the exact number of args to match f1, this calls
+# f2 because the number of args also matches that function, and overloads
+# are resolved in reverse registration order.
+>>> func(0, 1)
+(0, 1, 2)
+
+# This calls f1 because the keyword arg matches.
+>>> func(0, a1=2)
+(0, 2)
 '''
 
 

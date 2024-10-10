@@ -18,10 +18,6 @@
 #else
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
-# include <boost/preprocessor/iteration/local.hpp>
-# include <boost/preprocessor/facilities/intercept.hpp>
-# include <boost/preprocessor/repetition/enum_params.hpp>
-# include <boost/preprocessor/repetition/enum_binary_params.hpp>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
@@ -35,19 +31,8 @@ struct nullary_function_adaptor
       : m_fn(fn)
     {}
 
-    void operator()() const { m_fn(); }
-
-# define BOOST_PP_LOCAL_MACRO(i)                                            \
-    template <BOOST_PP_ENUM_PARAMS_Z(1, i, class A)>                        \
-    void operator()(                                                        \
-        BOOST_PP_ENUM_BINARY_PARAMS_Z(1, i, A, const& BOOST_PP_INTERCEPT)   \
-    ) const                                                                 \
-    {                                                                       \
-        m_fn();                                                             \
-    }
-
-# define BOOST_PP_LOCAL_LIMITS (1, PXR_BOOST_PYTHON_MAX_ARITY)
-# include BOOST_PP_LOCAL_ITERATE()
+    template <class... A>
+    void operator()(A const&...) const { m_fn(); }
     
  private:
     NullaryFunction m_fn;

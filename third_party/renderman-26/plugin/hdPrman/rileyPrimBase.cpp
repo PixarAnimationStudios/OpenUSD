@@ -45,7 +45,9 @@ HdPrman_RileyPrimBase::_SetRileyOptions(const RtParamList &params)
     // Initialize legacy options from the render settings map.
     _renderParam->UpdateLegacyOptions();
 
-    _renderParam->SetRileyOptions();
+    if (TfGetEnvSetting(HD_PRMAN_EXPERIMENTAL_RILEY_SCENE_INDEX_OBSERVER)) {
+        _renderParam->SetRileyOptions();
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

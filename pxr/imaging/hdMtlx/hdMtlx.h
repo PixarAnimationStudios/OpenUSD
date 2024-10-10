@@ -57,6 +57,10 @@ struct HdMtlxTexturePrimvarData {
     std::set<SdfPath> hdPrimvarNodes; // Paths to HdPrimvar nodes
 };
 
+HDMTLX_API
+std::string
+HdMtlxCreateNameFromPath(SdfPath const& path);
+
 /// Creates and returns a MaterialX Document from the given HdMaterialNetwork2 
 /// Collecting the hdTextureNodes and hdPrimvarNodes as the network is 
 /// traversed as well as the Texture name mapping between MaterialX and Hydra.

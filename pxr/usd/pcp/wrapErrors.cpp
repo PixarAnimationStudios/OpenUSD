@@ -42,19 +42,19 @@ wrapErrors()
     //       without holding the GIL.  That's impractical so we just
     //       ensure that we don't create error objects in Python.
 
-    class_<PcpErrorBase, boost::noncopyable, PcpErrorBasePtr>
+    class_<PcpErrorBase, noncopyable, PcpErrorBasePtr>
         ("ErrorBase", "", no_init)
         .add_property("errorType", _GetErrorType)
         .add_property("rootSite", _GetRootSite)
         .def("__str__", &PcpErrorBase::ToString)
         ;
 
-    class_<PcpErrorTargetPathBase, boost::noncopyable,
+    class_<PcpErrorTargetPathBase, noncopyable,
         bases<PcpErrorBase>, PcpErrorTargetPathBasePtr >
         ("ErrorTargetPathBase", "", no_init)
         ;
 
-    class_<PcpErrorRelocationBase, boost::noncopyable,
+    class_<PcpErrorRelocationBase, noncopyable,
         bases<PcpErrorBase>, PcpErrorRelocationBasePtr >
         ("ErrorRelocationBase", "", no_init)
         ;
@@ -98,7 +98,7 @@ wrapErrors()
         ("ErrorInvalidPrimPath", "", no_init)
         ;
 
-    class_<PcpErrorInvalidAssetPathBase, boost::noncopyable, 
+    class_<PcpErrorInvalidAssetPathBase, noncopyable, 
         bases<PcpErrorBase>, PcpErrorInvalidAssetPathBasePtr>
         ("ErrorInvalidAssetPathBase", "", no_init)
         ;
