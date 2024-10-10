@@ -103,6 +103,13 @@ The following graphs show the time (in seconds) to open and close
 :program:`usdview` for each asset. Graphs are provided for Linux, macOS, and
 Windows platforms (as described in :ref:`perf_environments`).
 
+.. note::
+
+    For the 24.11 release, there are known issues with obtaining metrics for
+    the Moore Lane asset on Windows, and the create_first_image metric on 
+    macOS. We are actively investigating these issues and will update 
+    published metrics when these issues are resolved.
+
 .. image:: performance/linux.svg
     :width: 500
 
