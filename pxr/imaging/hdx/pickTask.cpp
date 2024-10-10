@@ -718,6 +718,40 @@ HdxPickTask::Execute(HdTaskContext* ctx)
 
     GfVec2i dimensions = _contextParams.resolution;
     GfVec4i viewport(0, 0, dimensions[0], dimensions[1]);
+    
+    auto useSearchRect = [&](const GfVec4i& sRect, const GfVec4i& vRect )->bool {
+        
+        // invalid search size or not initialized
+        if(sRect[2] < 0 || sRect[3] < 0)
+            return false;
+
+        // sRect x cordinate extremes  contained in vRect
+        if(sRect[0] < vRect[0] || sRect[0] > vRect[0] + vRect[2])
+            return false;
+
+        if((sRect[0] + sRect[2]) < vRect[0] || (sRect[0] + sRect[2]) > (vRect[0] + vRect[2]))
+            return false;
+
+        // sRect y coordinate extremes  contained in vRect
+        if(sRect[1] < vRect[1] || sRect[1] > vRect[1] + vRect[3])
+            return false;
+
+        if((sRect[1]+sRect[3]) < sRect[1] || (sRect[1]+sRect[3]) > (vRect[1] + vRect[3]))
+            return false;
+
+        return true;
+    };
+
+    if( _contextParams.searchRect[2] > 0 && _contextParams.searchRect[3] > 0 ) {
+        if( useSearchRect( _contextParams.searchRect, viewport ) )
+            viewport = _contextParams.searchRect;
+        else {
+            TF_WARN("Specified Search Rect [%d, %d, %d %d]  not inside viewport [%d, %d, %d %d] ",
+                    _contextParams.searchRect[0], _contextParams.searchRect[1],
+                    _contextParams.searchRect[2], _contextParams.searchRect[3],
+                    viewport[0], viewport[1], viewport[2], viewport[3] );
+        }
+    }
 
     // Are we using stencil conditioning?
     bool needStencilConditioning =
@@ -939,7 +973,6 @@ HdxPickResult::HdxPickResult(
     _subRect[1] = std::max(0, _subRect[1]);
     _subRect[2] = std::min(_bufferSize[0]-_subRect[0], _subRect[2]);
     _subRect[3] = std::min(_bufferSize[1]-_subRect[1], _subRect[3]);
-
     _eyeToWorld = viewMatrix.GetInverse();
     _ndcToWorld = (viewMatrix * projectionMatrix).GetInverse();
 }
