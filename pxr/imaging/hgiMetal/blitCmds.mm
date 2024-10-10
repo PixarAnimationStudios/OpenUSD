@@ -203,7 +203,7 @@ HgiMetalBlitCmds::CopyTextureCpuToGpu(
     
     mtlDesc.mipmapLevelCount = dstTexDesc.mipLevels;
     mtlDesc.arrayLength = dstTexDesc.layerCount;
-    mtlDesc.resourceOptions = MTLResourceStorageModeManaged;
+    mtlDesc.resourceOptions = _hgi->GetCapabilities()->defaultStorageMode;
     mtlDesc.sampleCount = 1;
     if (dstTexDesc.type == HgiTextureType3D) {
         mtlDesc.depth = depth;
@@ -353,6 +353,7 @@ void HgiMetalBlitCmds::CopyBufferCpuToGpu(
         memcpy(dst + dstOffset, src, copyOp.byteSize);
     }
 
+#if defined(ARCH_OS_OSX)
     if (!sharedBuffer &&
         [metalBuffer->GetBufferId()
              respondsToSelector:@selector(didModifyRange:)]) {
@@ -364,6 +365,7 @@ void HgiMetalBlitCmds::CopyBufferCpuToGpu(
         [resource didModifyRange:range];
         ARCH_PRAGMA_POP
     }
+#endif // defined(ARCH_OS_OSX)
 }
 
 void
@@ -380,11 +382,12 @@ HgiMetalBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
         copyOp.gpuSourceBuffer.Get());
 
     _CreateEncoder();
-
+#if defined(ARCH_OS_OSX)
     if ([metalBuffer->GetBufferId() storageMode] == MTLStorageModeManaged) {
         [_blitEncoder performSelector:@selector(synchronizeResource:)
                            withObject:metalBuffer->GetBufferId()];
     }
+#endif
 
     // Offset into the dst buffer
     char* dst = ((char*) copyOp.cpuDestinationBuffer) +
@@ -440,6 +443,12 @@ _HgiTextureCanBeFiltered(HgiTextureDesc const &descriptor)
         componentFormat == HgiFormatInt32) {
         return false;
     }
+
+#if defined(ARCH_OS_IPHONE)
+    if (componentFormat == HgiFormatFloat32Vec4) {
+        return false;
+    }
+#endif
 
     GfVec3i const dims = descriptor.dimensions;
     switch (descriptor.type) {

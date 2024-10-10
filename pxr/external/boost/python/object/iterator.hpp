@@ -30,14 +30,15 @@
 # include "pxr/external/boost/python/object/class_detail.hpp"
 # include "pxr/external/boost/python/object/function_object.hpp"
 
-# include <boost/mpl/vector/vector10.hpp>
-# include <boost/mpl/if.hpp>
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 
 # include "pxr/external/boost/python/detail/raw_pyobject.hpp"
 
-# include <boost/type.hpp>
+# include "pxr/external/boost/python/type.hpp"
+# include "pxr/external/boost/python/type_list.hpp"
 
 # include <iterator>
+#include <type_traits>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
 
@@ -58,8 +59,8 @@ struct iterator_range
 
     struct next
     {
-        typedef typename mpl::if_<
-            is_reference<
+        typedef typename python::detail::mpl2::if_<
+            std::is_reference<
                 typename traits_t::reference
             >
           , typename traits_t::reference
@@ -73,11 +74,6 @@ struct iterator_range
                 stop_iteration_error();
             return *self.m_start++;
         }
-
-# if BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3003))
-        // CWPro8 has a codegen problem when this is an empty class
-        int garbage;
-# endif 
     };
     
     typedef next next_fn;
@@ -118,7 +114,7 @@ namespace detail
             , make_function(
                 next_fn()
               , policies
-              , mpl::vector2<result_type,range_&>()
+              , type_list<result_type,range_&>()
             ));
   }
 
@@ -164,14 +160,14 @@ namespace detail
     , Accessor2 const& get_finish
     , NextPolicies const& /*next_policies*/
     , Iterator const& (*)()
-    , boost::type<Target>*
+    , type<Target>*
     , int
   )
   {
       return make_function(
           py_iter_<Target,Iterator,Accessor1,Accessor2,NextPolicies>(get_start, get_finish)
         , default_call_policies()
-        , mpl::vector2<iterator_range<NextPolicies,Iterator>, back_reference<Target&> >()
+        , type_list<iterator_range<NextPolicies,Iterator>, back_reference<Target&> >()
       );
   }
 
@@ -181,7 +177,7 @@ namespace detail
     , Accessor2 const& get_finish
     , NextPolicies const& next_policies
     , Iterator& (*)()
-    , boost::type<Target>*
+    , type<Target>*
     , ...)
   {
       return make_iterator_function(
@@ -189,7 +185,7 @@ namespace detail
         , get_finish
         , next_policies
         , (Iterator const&(*)())0
-        , (boost::type<Target>*)0
+        , (type<Target>*)0
         , 0
       );
   }
@@ -207,10 +203,10 @@ inline object make_iterator_function(
     Accessor1 const& get_start
   , Accessor2 const& get_finish
   , NextPolicies const& next_policies
-  , boost::type<Target>* = 0
+  , type<Target>* = 0
 )
 {
-    typedef typename Accessor1::result_type iterator;
+    typedef std::invoke_result_t<Accessor1, Target&> iterator;
     typedef typename PXR_BOOST_NAMESPACE::python::detail::add_const<iterator>::type iterator_const;
     typedef typename PXR_BOOST_NAMESPACE::python::detail::add_lvalue_reference<iterator_const>::type iterator_cref;
       
@@ -219,7 +215,7 @@ inline object make_iterator_function(
       , get_finish
       , next_policies
       , (iterator_cref(*)())0
-      , (boost::type<Target>*)0
+      , (type<Target>*)0
       , 0
     );
 }

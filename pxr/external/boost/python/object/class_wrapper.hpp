@@ -18,10 +18,10 @@
 #else
 
 # include "pxr/external/boost/python/to_python_converter.hpp"
+# include "pxr/external/boost/python/ref.hpp"
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 # include "pxr/external/boost/python/converter/pytype_function.hpp"
 #endif
-# include <boost/ref.hpp>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
@@ -32,13 +32,22 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
 // the second one is used to handle smart pointers.
 //
 
+// Wrapper that returns a const std::reference_wrapper to match the behavior
+// of boost::ref. This causes MakeInstance::execute to treat its argument as
+// a const-ref instead of a non-const ref.
+template <class T>
+const std::reference_wrapper<T> make_ref(T& x)
+{
+    return std::ref(x);
+}
+
 template <class Src, class MakeInstance>
 struct class_cref_wrapper
     : to_python_converter<Src,class_cref_wrapper<Src,MakeInstance> ,true>
 {
     static PyObject* convert(Src const& x)
     {
-        return MakeInstance::execute(boost::ref(x));
+        return MakeInstance::execute(make_ref(x));
     }
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
     static PyTypeObject const *get_pytype() { return converter::registered_pytype_direct<Src>::get_pytype(); }

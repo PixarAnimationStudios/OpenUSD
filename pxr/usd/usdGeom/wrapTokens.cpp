@@ -15,7 +15,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdGeomTokens()
 {
-    pxr_boost::python::class_<UsdGeomTokensType, boost::noncopyable>
+    pxr_boost::python::class_<UsdGeomTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, accelerations);
     _ADD_TOKEN(cls, all);

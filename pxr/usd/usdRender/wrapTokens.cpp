@@ -15,7 +15,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdRenderTokens()
 {
-    pxr_boost::python::class_<UsdRenderTokensType, boost::noncopyable>
+    pxr_boost::python::class_<UsdRenderTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, adjustApertureHeight);
     _ADD_TOKEN(cls, adjustApertureWidth);

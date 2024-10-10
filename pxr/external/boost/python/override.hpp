@@ -1,5 +1,3 @@
-#if !defined(BOOST_PP_IS_ITERATING)
-
 //
 // Copyright 2024 Pixar
 // Licensed under the terms set forth in the LICENSE.txt file available at
@@ -25,13 +23,7 @@
 # include "pxr/external/boost/python/extract.hpp"
 # include "pxr/external/boost/python/handle.hpp"
 
-#  include <boost/preprocessor/iterate.hpp>
-#  include <boost/preprocessor/repeat.hpp>
-#  include <boost/preprocessor/debug/line.hpp>
-#  include <boost/preprocessor/repetition/enum_params.hpp>
-#  include <boost/preprocessor/repetition/enum_binary_params.hpp>
-
-#  include <boost/type.hpp>
+#  include "pxr/external/boost/python/type.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
@@ -58,17 +50,11 @@ namespace detail
           return converter(m_obj.release());
       }
 
-#  if BOOST_WORKAROUND(_MSC_FULL_VER, BOOST_TESTED_AT(140050215))
-      template <class T>
-      operator T*()
-      {
-          converter::return_from_python<T*> converter;
-          return converter(m_obj.release());
-      }
-#  endif 
-      
-#  if BOOST_WORKAROUND(BOOST_MSVC, BOOST_TESTED_AT(1400)) || BOOST_WORKAROUND(BOOST_INTEL_WIN, >= 900)
+#  if defined(_MSC_VER)
       // No operator T&
+      // This workaround was noted as required for VC 8 (_MSC_VER == 1400).
+      // It is still required as of Visual Studio 2019 (_MSC_VER == 1929).
+      // Without it, the unit test "exec" fails.
 #  else
       
       template <class T>
@@ -105,53 +91,22 @@ class override : public object
     {}
     
  public:
+    template <class... A>
     detail::method_result
-    operator()() const
+    operator()(A const&... a) const
     {
         detail::method_result x(
-            PyObject_CallFunction(
+            PyObject_CallFunctionObjArgs(
                 this->ptr()
-              , const_cast<char*>("()")
+                , converter::arg_to_python<A>(a).get()...
+                , NULL
             ));
         return x;
     }
 
-# define PXR_BOOST_PYTHON_fast_arg_to_python_get(z, n, _)   \
-    , converter::arg_to_python<A##n>(a##n).get()
-
-# define BOOST_PP_ITERATION_PARAMS_1 (3, (1, PXR_BOOST_PYTHON_MAX_ARITY, "pxr/external/boost/python/override.hpp"))
-# include BOOST_PP_ITERATE()
-
-# undef PXR_BOOST_PYTHON_fast_arg_to_python_get
 };
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OVERRIDE_HPP
-
-#else
-# if !(BOOST_WORKAROUND(__MWERKS__, > 0x3100)                      \
-        && BOOST_WORKAROUND(__MWERKS__, BOOST_TESTED_AT(0x3201)))
-#  line BOOST_PP_LINE(__LINE__, override.hpp)
-# endif 
-
-# define N BOOST_PP_ITERATION()
-
-template <
-    BOOST_PP_ENUM_PARAMS_Z(1, N, class A)
-    >
-detail::method_result
-operator()( BOOST_PP_ENUM_BINARY_PARAMS_Z(1, N, A, const& a) ) const
-{
-    detail::method_result x(
-        PyObject_CallFunction(
-            this->ptr()
-          , const_cast<char*>("(" BOOST_PP_REPEAT_1ST(N, PXR_BOOST_PYTHON_FIXED, "O") ")")
-            BOOST_PP_REPEAT_1ST(N, PXR_BOOST_PYTHON_fast_arg_to_python_get, nil)
-        ));
-    return x;
-}
-
-# undef N
-#endif 

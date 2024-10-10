@@ -2,38 +2,22 @@ set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdUI)
 
 pxr_library(usdUI
+    INCLUDE_SCHEMA_FILES
+
     LIBRARIES
         tf
         vt
         sdf
         usd
 
-    PUBLIC_CLASSES
-        backdrop
-        nodeGraphNodeAPI
-        sceneGraphPrimAPI
-        tokens
-
     PUBLIC_HEADERS
         api.h
 
     PYTHON_CPPFILES
         moduleDeps.cpp
-
-    PYMODULE_CPPFILES
-        module.cpp
-        wrapBackdrop.cpp
-        wrapNodeGraphNodeAPI.cpp
-        wrapSceneGraphPrimAPI.cpp
-        wrapTokens.cpp
     
     PYMODULE_FILES
         __init__.py
-
-    RESOURCE_FILES
-        plugInfo.json
-        generatedSchema.usda
-        schema.usda:usdUI/schema.usda
 
     DOXYGEN_FILES
         overview.dox

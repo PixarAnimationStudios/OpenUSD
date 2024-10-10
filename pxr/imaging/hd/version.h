@@ -95,8 +95,10 @@
 //           index.
 // 72 -> 73: Adds HdExtComputationUtils::SampleComputedPrimvarValues with
 //           startTime and endTime
+// 73 -> 74: Extended HdMeshReprDesc to support optional generation of
+//           surface edge ids.
 
-#define HD_API_VERSION 73
+#define HD_API_VERSION 74
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

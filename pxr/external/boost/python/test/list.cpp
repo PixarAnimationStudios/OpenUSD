@@ -15,9 +15,8 @@
 #include "pxr/external/boost/python/tuple.hpp"
 #include "pxr/external/boost/python/dict.hpp"
 #include "pxr/external/boost/python/make_function.hpp"
-#include <boost/lexical_cast.hpp>
-#define BOOST_ENABLE_ASSERT_HANDLER
-#include <boost/assert.hpp>
+#include <string>
+#include <cassert>
 #include "test_class.hpp"
 
 using namespace PXR_BOOST_NAMESPACE::python;
@@ -39,7 +38,7 @@ object listify_string(char const* s)
 
 std::string x_rep(test_class<> const& x)
 {
-    return "X("  + boost::lexical_cast<std::string>(x.value()) + ")";
+    return "X("  + std::to_string(x.value()) + ")";
 }
 
 object apply_object_list(object f, list x)
@@ -132,10 +131,10 @@ void exercise(list x, object y, object print)
     w.append(5);
     w.append(6);
     w += "hi";
-    BOOST_ASSERT(w[0] == 5);
-    BOOST_ASSERT(w[1] == 6);
-    BOOST_ASSERT(w[2] == 'h');
-    BOOST_ASSERT(w[3] == 'i');
+    assert(w[0] == 5);
+    assert(w[1] == 6);
+    assert(w[2] == 'h');
+    assert(w[3] == 'i');
 }
 
 PXR_BOOST_PYTHON_MODULE(list_ext)

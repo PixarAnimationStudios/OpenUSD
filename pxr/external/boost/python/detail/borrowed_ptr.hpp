@@ -17,9 +17,8 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-# include <boost/config.hpp>
-# include <boost/type.hpp>
-# include <boost/mpl/if.hpp>
+# include "pxr/external/boost/python/type.hpp"
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include "pxr/external/boost/python/tag.hpp"
 
@@ -33,43 +32,43 @@ template<class T> class borrowed
 template<typename T>
 struct is_borrowed_ptr
 {
-    BOOST_STATIC_CONSTANT(bool, value = false); 
+    static constexpr bool value = false; 
 };
 
 #  if !defined(__MWERKS__) || __MWERKS__ > 0x3000
 template<typename T>
 struct is_borrowed_ptr<borrowed<T>*>
 {
-    BOOST_STATIC_CONSTANT(bool, value = true);
+    static constexpr bool value = true;
 };
 
 template<typename T>
 struct is_borrowed_ptr<borrowed<T> const*>
 {
-    BOOST_STATIC_CONSTANT(bool, value = true);
+    static constexpr bool value = true;
 };
 
 template<typename T>
 struct is_borrowed_ptr<borrowed<T> volatile*>
 {
-    BOOST_STATIC_CONSTANT(bool, value = true);
+    static constexpr bool value = true;
 };
 
 template<typename T>
 struct is_borrowed_ptr<borrowed<T> const volatile*>
 {
-    BOOST_STATIC_CONSTANT(bool, value = true);
+    static constexpr bool value = true;
 };
 #  else
 template<typename T>
 struct is_borrowed
 {
-    BOOST_STATIC_CONSTANT(bool, value = false);
+    static constexpr bool value = false;
 };
 template<typename T>
 struct is_borrowed<borrowed<T> >
 {
-    BOOST_STATIC_CONSTANT(bool, value = true);
+    static constexpr bool value = true;
 };
 template<typename T>
 struct is_borrowed_ptr<T*>

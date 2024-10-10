@@ -92,13 +92,13 @@ HdPrmanLight::Finalize(HdRenderParam *renderParam)
         instancer->Depopulate(renderParam, GetId());
     }
 #endif
-    if (_instanceId != riley::LightInstanceId::InvalidId()) {
+    if (riley && _instanceId != riley::LightInstanceId::InvalidId()) {
         TRACE_SCOPE("riley::DeleteLightInstance");
         riley->DeleteLightInstance(riley::GeometryPrototypeId::InvalidId(),
             _instanceId);
         _instanceId = riley::LightInstanceId::InvalidId();
     }
-    if (_shaderId != riley::LightShaderId::InvalidId()) {
+    if (riley && _shaderId != riley::LightShaderId::InvalidId()) {
         TRACE_SCOPE("riley::DeleteLightShader");
         riley->DeleteLightShader(_shaderId);
         _shaderId = riley::LightShaderId::InvalidId();
@@ -587,6 +587,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         // DirtyParams will always dirty the instance
         if (*dirtyBits & DirtyParams) {
             dirtyLightInstance = true;
+            dirtyLightShader = true;
         }
     }
 

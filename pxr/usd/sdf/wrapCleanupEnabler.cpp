@@ -62,7 +62,7 @@ void wrapCleanupEnabler()
 {
     typedef Sdf_PyCleanupEnabler This;
 
-    class_<This,boost::noncopyable>("CleanupEnabler",
+    class_<This,noncopyable>("CleanupEnabler",
         init<>())
 
         // Callbacks for the python 'with' statement

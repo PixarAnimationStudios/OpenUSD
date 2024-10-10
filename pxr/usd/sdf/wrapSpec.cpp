@@ -101,7 +101,7 @@ void wrapSpec()
 {
     typedef SdfSpec This;
 
-    class_<This, SdfHandle<This>, boost::noncopyable>("Spec", no_init)
+    class_<This, SdfHandle<This>, noncopyable>("Spec", no_init)
         .def(SdfPyAbstractSpec())
 
         .add_property("layer", &This::GetLayer,

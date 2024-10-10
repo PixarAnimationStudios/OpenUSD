@@ -15,7 +15,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdProcTokens()
 {
-    pxr_boost::python::class_<UsdProcTokensType, boost::noncopyable>
+    pxr_boost::python::class_<UsdProcTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, proceduralSystem);
     _ADD_TOKEN(cls, GenerativeProcedural);

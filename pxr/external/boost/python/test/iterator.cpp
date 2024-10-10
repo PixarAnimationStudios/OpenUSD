@@ -123,13 +123,7 @@ PXR_BOOST_PYTHON_MODULE(iterator_ext)
         .add_property(
             "twosies"
             , range<return_value_policy<copy_non_const_reference>, two_lists>(
-                // And we can use adaptable function objects when
-                // partial specialization is available.
-# ifndef BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION
                 two_lists::two_start()
-# else
-                &two_lists::two_begin
-# endif 
                 , &two_lists::two_end))
         ;
 

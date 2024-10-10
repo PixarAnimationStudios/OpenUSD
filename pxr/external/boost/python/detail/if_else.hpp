@@ -16,7 +16,6 @@
 #ifndef PXR_USE_INTERNAL_BOOST_PYTHON
 #include <boost/python/detail/if_else.hpp>
 #else
-# include <boost/config.hpp>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 

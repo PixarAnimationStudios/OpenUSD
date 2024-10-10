@@ -6,6 +6,8 @@
 //
 #include "hdPrman/cylinder.h"
 
+#if PXR_VERSION >= 2208
+
 #include "hdPrman/renderParam.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
@@ -78,3 +80,5 @@ HdPrman_Cylinder::_ConvertGeometry(HdPrman_RenderParam *renderParam,
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2208

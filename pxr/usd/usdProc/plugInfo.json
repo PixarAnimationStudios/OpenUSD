@@ -14,6 +14,7 @@
                         "bases": [
                             "UsdGeomBoundable"
                         ], 
+                        "schemaIdentifier": "GenerativeProcedural", 
                         "schemaKind": "concreteTyped"
                     }
                 }

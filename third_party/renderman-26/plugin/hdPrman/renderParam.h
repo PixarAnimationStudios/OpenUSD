@@ -15,8 +15,13 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/renderDelegate.h"
+#if PXR_VERSION >= 2308
 #include "pxr/imaging/hd/renderSettings.h"
+#endif
 #include "pxr/imaging/hd/material.h"
+#if PXR_VERSION >= 2302
+#include "pxr/imaging/hd/retainedSceneIndex.h"
+#endif
 
 #include "Riley.h"
 #include "RixEventCallbacks.h"
@@ -35,7 +40,9 @@ class HdPrmanFramebuffer;
 class HdPrmanCamera;
 class HdPrmanInstancer;
 class HdPrmanRenderDelegate;
+#if PXR_VERSION >= 2308
 class HdPrman_RenderSettings;
+#endif
 class SdfAssetPath;
 
 // Compile-time limit on max time samples.
@@ -43,7 +50,12 @@ class SdfAssetPath;
 // calls by using fixed-size stack arrays with configured capacity.
 // The capacity is indicated to the scene delegate when requesting
 // time samples.
+
+#if _PRMANAPI_VERSION_MAJOR_ >= 26
+constexpr int HDPRMAN_MAX_TIME_SAMPLES = 16;
+#else
 constexpr int HDPRMAN_MAX_TIME_SAMPLES = 4;
+#endif
 
 #define HDPRMAN_SHUTTEROPEN_DEFAULT 0.f
 #ifdef PIXAR_ANIM
@@ -57,11 +69,11 @@ class HdPrman_RenderParam : public HdRenderParam
 {
 public:
     HDPRMAN_API
-    HdPrman_RenderParam(
-        HdPrmanRenderDelegate *renderDelegate,
-        const std::string &rileyVariant, 
-        const std::string &xpuDevices,
-        const std::vector<std::string>& extraArgs);
+    HdPrman_RenderParam(HdPrmanRenderDelegate *renderDelegate,
+                        const std::string &rileyVariant,
+                        const int& xpuCpuConfig,
+                        const std::vector<int>& xpuGpuConfig,
+                        const std::vector<std::string>& extraArgs);
 
     HDPRMAN_API
     ~HdPrman_RenderParam() override;
@@ -138,6 +150,13 @@ public:
         const std::string& integratorName,
         RtParamList& params);
 
+    // Set projection params from the HdRenderSettingsMap
+    HDPRMAN_API
+    void SetProjectionParamsFromRenderSettings(
+                        HdPrmanRenderDelegate *renderDelegate,
+                        std::string& projectionName,
+                        RtParamList& params);
+
     // Set integrator params from the camera.
     // This invokes any callbacks registered with
     // RegisterIntegratorCallbackForCamera().
@@ -167,8 +186,18 @@ public:
     RegisterIntegratorCallbackForCamera(
         IntegratorCameraCallback const& callback);
 
+    HDPRMAN_API
+    void SetFiltersFromRenderSettings(
+                        HdPrmanRenderDelegate *renderDelegate);
+
     // Get RIX vs XPU
     bool IsXpu() const { return _xpu; }
+
+    void UpdateRenderStats(VtDictionary& stats);
+
+    HDPRMAN_API
+    static void ProgressCallback(RixEventCallbacks::Event,
+                                 RtConstPointer data, RtPointer);
 
     // Request edit access to the Riley scene and return it.
     HDPRMAN_API
@@ -220,6 +249,9 @@ public:
 
     RtParamList &GetIntegratorParams() { return _integratorParams; }
 
+    // Indicate whether fallback lights should be enabled.
+    void SetFallbackLightsEnabled(bool);
+
     bool HasSceneLights() const { return _sceneLightCount > 0; }
     void IncreaseSceneLightCount() { ++_sceneLightCount; }
     void DecreaseSceneLightCount() { --_sceneLightCount; }
@@ -229,6 +261,7 @@ public:
     RtParamList &GetLegacyOptions() { return _legacyOptions; }
 
     HdPrman_CameraContext &GetCameraContext() { return _cameraContext; }
+    const HdPrman_CameraContext &GetCameraContext() const { return _cameraContext; }
 
     HdPrman_RenderViewContext &GetRenderViewContext() {
         return _renderViewContext;
@@ -236,13 +269,17 @@ public:
 
     void CreateRenderViewFromRenderSpec(const VtDictionary &renderSpec);
 
+#if PXR_VERSION >= 2308
     void CreateRenderViewFromRenderSettingsProducts(
         HdRenderSettings::RenderProducts const &products,
         HdPrman_RenderViewContext *renderViewContext);
+#endif
 
     // Starts the render thread (if needed), and tells the render thread to
     // call into riley and start a render.
     void StartRender();
+
+    void End();
 
     // Requests riley stop rendering; if blocking is true, waits until riley
     // has exited and the render thread is idle before returning.  Note that
@@ -269,8 +306,12 @@ public:
     // with HdPrmanFramebuffer to transfer the result between the
     // render thread and the hydra render buffers.
     void CreateFramebufferAndRenderViewFromAovs(
+#if PXR_VERSION >= 2308
         const HdRenderPassAovBindingVector& aovBindings,
-        const HdPrman_RenderSettings* renderSettings);
+        HdPrman_RenderSettings* renderSettings);
+#else
+        const HdRenderPassAovBindingVector& aovBindings);
+#endif
 
     // Deletes HdPrmanFramebuffer (created with
     // CreateRenderViewFromAovs). Can be called if there is no frame
@@ -293,6 +334,8 @@ public:
     // resolution edits, so we need to keep track of these too.
     void SetActiveIntegratorId(riley::IntegratorId integratorId);
 
+    int frame;
+
     void UpdateQuickIntegrator(const HdRenderIndex * renderIndex);
 
     riley::IntegratorId GetQuickIntegratorId() const {
@@ -305,6 +348,7 @@ public:
     void SetRileyShutterIntervalFromCameraContextCameraPath(
         const HdRenderIndex * renderIndex);
 
+#if PXR_VERSION >= 2308
     // Path to the Integrator from the Render Settings Prim
     void SetRenderSettingsIntegratorPath(HdSceneDelegate *sceneDelegate,
         SdfPath const &renderSettingsIntegratorPath);
@@ -316,6 +360,7 @@ public:
     HdMaterialNode2 GetRenderSettingsIntegratorNode() {
         return _renderSettingsIntegratorNode;
     };
+#endif
 
     // Path to the connected Sample Filter from the Render Settings Prim
     void SetConnectedSampleFilterPaths(HdSceneDelegate *sceneDelegate,
@@ -347,6 +392,8 @@ public:
     void CreateDisplayFilterNetwork(HdSceneDelegate *sceneDelegate);
     riley::DisplayFilterList GetDisplayFilterList();
 
+    void FatalError(const char* msg);
+
     // Instancer by id
     HdPrmanInstancer* GetInstancer(const SdfPath& id);
 
@@ -372,9 +419,10 @@ public:
 
 private:
     void _CreateStatsSession();
-    void _CreateRiley(const std::string &rileyVariant, 
-        const std::string &xpuVariant,
-        const std::vector<std::string>& extraArgs);
+    void _CreateRiley(const std::string &rileyVariant,
+                      const int& xpuCpuConfig,
+                      const std::vector<int>& xpuGpuConfig,
+                      const std::vector<std::string>& extraArgs);
 
     // Creation of riley prims that are either not backed by the scene 
     // (e.g., fallback materials) OR those that are
@@ -383,6 +431,7 @@ private:
     void _CreateInternalPrims();
     void _DeleteInternalPrims();
     void _CreateFallbackMaterials();
+    void _CreateFallbackLight();
     void _CreateIntegrator(HdRenderDelegate * renderDelegate);
     void _CreateQuickIntegrator(HdRenderDelegate * renderDelegate);
     
@@ -393,6 +442,9 @@ private:
     void _PRManSystemBegin(const std::vector<std::string>& extraArgs);
     // Initialize internals of PRMan renderer
     int _PRManRenderBegin(const std::vector<std::string>& extraArgs);
+
+    bool _UpdatePixelFilter();
+    bool _UpdateQNSettings();
 
     // Updates clear colors of AOV descriptors of framebuffer.
     // If this is not possible because the set of AOVs changed,
@@ -426,6 +478,8 @@ private:
         RtParamList& params);
 
 private:
+    void _AddCryptomatteFixes(const RtUString& riName, VtValue& val);
+
     // Top-level entrypoint to PRMan.
     // Singleton used to access RixInterfaces.
     RixContext *_rix;
@@ -442,11 +496,17 @@ private:
     // Roz stats session
     stats::Session *_statsSession;
     int _progressPercent;
+    int _progressMode;
 
     // Riley instance.
     riley::Riley *_riley;
     // Mutex around riley->Stop(), so as to be well-behaved callers.
     std::mutex _stopMutex;
+
+#if PXR_VERSION >= 2302
+    // Stats scene index currently used for querying live stats server ID
+    HdRetainedSceneIndexRefPtr _statsSceneIndex;
+#endif
 
     std::unique_ptr<class HdRenderThread> _renderThread;
     std::unique_ptr<HdPrmanFramebuffer> _framebuffer;
@@ -494,6 +554,14 @@ private:
     _GeomToHdCoordSysMap _geomToHdCoordSysMap;
     _HdToRileyCoordSysMap _hdToRileyCoordSysMap;
     std::mutex _coordSysMutex;
+
+    // The fallback light.  HdPrman_RenderPass calls
+    // SetFallbackLightsEnabled() to maintain visibility
+    // of the fallback light XOR other lights in the scene.
+    riley::LightInstanceId _fallbackLight;
+    riley::LightShaderId _fallbackLightShader;
+    RtParamList _fallbackLightAttrs;
+    bool _fallbackLightEnabled;
 
     HdPrman_CameraContext _cameraContext;
     HdPrman_RenderViewContext _renderViewContext;
@@ -547,21 +615,43 @@ private:
 
     // RIX or XPU
     bool _xpu;
-    std::vector<int> _xpuGpuConfig;
 
+    HdRenderPassAovBindingVector _lastBindings;
 
-    std::vector<std::string> _outputNames;
+    // Solaris Legacy Sample & Display Filter Support
+    std::unordered_map<RtUString, riley::ShadingNode> _displayFilters;
+    std::unordered_map<RtUString, riley::ShadingNode> _sampleFilters;
+    bool _displayFiltersDirty;
+    bool _sampleFiltersDirty;
+    riley::SampleFilterId _sampleFilterId;
+    riley::DisplayFilterId _displayFilterId;    
+
+    RtUString _pixelFilter;
+    GfVec2f _pixelFilterWidth;
 
     HdPrmanRenderDelegate* _renderDelegate;
+
+    // Husk command line arguments
+    std::vector<std::string> _outputNames;
+    int _huskFrameStart;
+    int _huskFrameIncrement;
+    std::string _huskTileSuffix;
+    bool _usingHusk;
+
+    // QuicklyNoiseless settings
+    bool _useQN;
+    bool _qnCheapPass;
+    int _qnMinSamples;
+    int _qnInterval;
 };
 
 /// Convert Hydra points to Riley point primvar.
 ///
 void
 HdPrman_ConvertPointsPrimvar(
-    HdSceneDelegate *sceneDelegate,
-    SdfPath const &id,
-    GfVec2f const &shutterInterval,
+    HdSceneDelegate* sceneDelegate,
+    const SdfPath& id,
+    const GfVec2f& shutterInterval,
     RtPrimVarList& primvars,
     size_t npoints);
 
@@ -570,9 +660,9 @@ HdPrman_ConvertPointsPrimvar(
 /// 
 size_t
 HdPrman_ConvertPointsPrimvarForPoints(
-    HdSceneDelegate *sceneDelegate,
-    SdfPath const &id,
-    GfVec2f const &shutterInterval,
+    HdSceneDelegate* sceneDelegate,
+    const SdfPath& id,
+    const GfVec2f& shutterInterval,
     RtPrimVarList& primvars);
 
 /// Convert any Hydra primvars that should be Riley primvars.

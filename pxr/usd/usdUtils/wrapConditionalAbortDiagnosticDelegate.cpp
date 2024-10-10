@@ -38,6 +38,6 @@ void wrapConditionalAbortDiagnosticDelegate()
                 args("codePathFilters"));
 
     using This = UsdUtilsConditionalAbortDiagnosticDelegate;
-    class_<This, boost::noncopyable>("ConditionalAbortDiagnosticDelegate",
+    class_<This, noncopyable>("ConditionalAbortDiagnosticDelegate",
             init<ErrorFilters, ErrorFilters>());
 }

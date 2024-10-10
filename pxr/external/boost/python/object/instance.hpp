@@ -37,14 +37,9 @@ struct instance
     PyObject* weakrefs; 
     instance_holder* objects;
 
-    typedef typename PXR_BOOST_NAMESPACE::python::detail::type_with_alignment<
-        PXR_BOOST_NAMESPACE::python::detail::alignment_of<Data>::value
-    >::type align_t;
-
-    union
+    struct
     {
-        align_t align;
-        char bytes[sizeof(Data)];
+        alignas(Data) char bytes[sizeof(Data)];
     } storage;
 };
 
@@ -53,10 +48,10 @@ struct additional_instance_size
 {
     typedef instance<Data> instance_data;
     typedef instance<char> instance_char;
-    BOOST_STATIC_CONSTANT(std::size_t,
+    static constexpr std::size_t
                           value = sizeof(instance_data) -
                              PXR_BOOST_PYTHON_OFFSETOF(instance_char,storage) +
-                             PXR_BOOST_NAMESPACE::python::detail::alignment_of<Data>::value);
+                             PXR_BOOST_NAMESPACE::python::detail::alignment_of<Data>::value;
 };
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::object

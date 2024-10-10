@@ -9,20 +9,19 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #include "pxr/external/boost/python/detail/wrap_python.hpp"
 #include "pxr/external/boost/python/borrowed.hpp"
-#include <boost/static_assert.hpp>
 
 using namespace PXR_BOOST_NAMESPACE::python;
 
 template <class T>
 void assert_borrowed_ptr(T const&)
 {
-    BOOST_STATIC_ASSERT(PXR_BOOST_NAMESPACE::python::detail::is_borrowed_ptr<T>::value);
+    static_assert(PXR_BOOST_NAMESPACE::python::detail::is_borrowed_ptr<T>::value);
 }
     
 template <class T>
 void assert_not_borrowed_ptr(T const&)
 {
-    BOOST_STATIC_ASSERT(!PXR_BOOST_NAMESPACE::python::detail::is_borrowed_ptr<T>::value);
+    static_assert(!PXR_BOOST_NAMESPACE::python::detail::is_borrowed_ptr<T>::value);
 }
     
 int main()

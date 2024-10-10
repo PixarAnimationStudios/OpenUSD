@@ -60,15 +60,15 @@ Usdz Specification
 A usdz package is an uncompressed zip archive that is allowed to contain the
 following file types:
 
- +-------------+--------------------------------+
- | Kind        | Allowed File Types             |
- +=============+================================+
- | USD         | **usda**, **usdc**, **usd**    |
- +-------------+--------------------------------+
- | Image       | **png**, **jpeg**, **exr**     |
- +-------------+--------------------------------+
- | Audio       | **M4A**, **MP3**, **WAV**      |
- +-------------+--------------------------------+
+ +-------------+----------------------------------------+
+ | Kind        | Allowed File Types                     |
+ +=============+========================================+
+ | USD         | **usda**, **usdc**, **usd**            |
+ +-------------+----------------------------------------+
+ | Image       | **png**, **jpeg**, **exr**, **avif**   |
+ +-------------+----------------------------------------+
+ | Audio       | **M4A**, **MP3**, **WAV**              |
+ +-------------+----------------------------------------+
 
 The rest of the section goes into more detail about the specification.
 
@@ -211,8 +211,8 @@ currently. Allowable file types are currently:
       OS updates)  
 
     * **png**, **jpeg** (any of the multiple common extensions for 
-      jpeg), and **OpenEXR** files for images/textures. See 
-      :ref:`Working With Image File Formats<image_file_formats>` for more 
+      jpeg), **OpenEXR** and **AV1 Image (AVIF)** files for images/textures. 
+      See :ref:`Working With Image File Formats<image_file_formats>` for more 
       details on supported image file formats.
 
     * **M4A, MP3, WAV** files for embedded audio (given in order of preferred 

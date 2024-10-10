@@ -108,7 +108,7 @@ private:
     void AddPrim(size_t col, size_t row);
     void UpdateCollection();
 
-    HdSt_TestDriver *_driver;
+    HdSt_TestDriverUniquePtr _driver;
     HdUnitTestDelegate *_sceneDelegates[NUM_NESTED_DELEAGATES];
     HdRprimCollection     _collection;
     HdRenderPassSharedPtr _renderPass;
@@ -149,7 +149,7 @@ My_TestGLDrawing::InitTest()
 {
     std::cout << "My_TestGLDrawing::InitTest()\n";
 
-    _driver = new HdSt_TestDriver(HdReprSelector(HdReprTokens->hull));
+    _driver = std::make_unique<HdSt_TestDriver>(HdReprSelector(HdReprTokens->hull));
 
     // Create delegates
     _sceneDelegates[0] = &_driver->GetDelegate();

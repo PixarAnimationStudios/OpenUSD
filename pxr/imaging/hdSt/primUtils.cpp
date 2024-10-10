@@ -838,10 +838,11 @@ HdStPopulateConstantPrimvars(
         for (const HdPrimvarDescriptor& pv: constantPrimvars) {
             if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv.name)) {
                 VtValue value = delegate->Get(id, pv.name);
-
-                // XXX Storm doesn't support string primvars yet
+                // XXX Storm doesn't support string or token primvars yet
                 if (value.IsHolding<std::string>() ||
-                    value.IsHolding<VtStringArray>()) {
+                    value.IsHolding<VtStringArray>() ||
+                    value.IsHolding<TfToken>() ||
+                    value.IsHolding<VtTokenArray>()) {
                     continue;
                 }
 
@@ -858,8 +859,15 @@ HdStPopulateConstantPrimvars(
                         std::make_shared<HdVtBufferSource>(pv.name, value,
                             value.IsArrayValued() ? value.GetArraySize() : 1);
 
-                    TF_VERIFY(source->GetTupleType().type != HdTypeInvalid);
-                    TF_VERIFY(source->GetTupleType().count > 0);
+                    // Skip buffer source if tuple type is invalid.
+                    if (!TF_VERIFY(
+                            source->GetTupleType().type != HdTypeInvalid)) {
+                        continue;
+                    }
+                    if (!TF_VERIFY(source->GetTupleType().count > 0)) {
+                        continue;
+                    }
+                 
                     sources.push_back(source);
                 }
             }

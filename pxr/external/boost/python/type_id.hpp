@@ -20,12 +20,9 @@
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/detail/msvc_typeinfo.hpp"
-# include <boost/operators.hpp>
 # include <typeinfo>
 # include <cstring>
 # include <ostream>
-# include <boost/static_assert.hpp>
-# include <boost/detail/workaround.hpp>
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
 #  ifndef PXR_BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
@@ -58,12 +55,17 @@ bool cxxabi_cxa_demangle_is_broken();
 // type ids which represent the same information as std::type_info
 // (i.e. the top-level reference and cv-qualifiers are stripped), but
 // which works across shared libraries.
-struct type_info : private totally_ordered<type_info>
+struct type_info
 {
     inline type_info(std::type_info const& = typeid(void));
     
     inline bool operator<(type_info const& rhs) const;
     inline bool operator==(type_info const& rhs) const;
+
+    inline bool operator>(type_info const& rhs) const;
+    inline bool operator<=(type_info const& rhs) const;
+    inline bool operator>=(type_info const& rhs) const;
+    inline bool operator!=(type_info const& rhs) const;
 
     char const* name() const;
     friend PXR_BOOST_PYTHON_DECL std::ostream& operator<<(
@@ -87,12 +89,7 @@ template <class T>
 inline type_info type_id()
 {
     return type_info(
-#  if !defined(_MSC_VER)                                       \
-      || !BOOST_WORKAROUND(BOOST_INTEL_CXX_VERSION, <= 700)
         typeid(T)
-#  else // strip the decoration which Intel mistakenly leaves in
-        python::detail::msvc_typeid((boost::type<T>*)0)
-#  endif 
         );
 }
 
@@ -152,6 +149,26 @@ inline bool type_info::operator==(type_info const& rhs) const
 #  endif 
 }
 
+inline bool type_info::operator>(type_info const& rhs) const
+{
+    return rhs < *this;
+}
+
+inline bool type_info::operator<=(type_info const& rhs) const
+{
+    return !(rhs < *this);
+}
+
+inline bool type_info::operator>=(type_info const& rhs) const
+{
+    return !(*this < rhs);
+}
+
+inline bool type_info::operator!=(type_info const& rhs) const
+{
+    return !(*this == rhs);
+}
+
 #  ifdef PXR_BOOST_PYTHON_HAVE_GCC_CP_DEMANGLE
 namespace detail
 {
@@ -183,13 +200,11 @@ inline type_info type_id<void>()
 {
     return type_info (typeid (void *));
 }
-#   ifndef BOOST_NO_CV_VOID_SPECIALIZATIONS
 template<>
 inline type_info type_id<const volatile void>()
 {
     return type_info (typeid (void *));
 }
-#  endif
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 

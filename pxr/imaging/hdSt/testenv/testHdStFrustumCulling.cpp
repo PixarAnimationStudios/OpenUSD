@@ -37,7 +37,7 @@ private:
     void ParseArgs(int argc, char *argv[]) override;
     int DrawScene();
 
-    HdSt_TestDriver* _driver;
+    HdSt_TestDriverUniquePtr _driver;
     bool _instance;
     bool _tinyPrim;
 };
@@ -55,7 +55,7 @@ _GetTranslate(float tx, float ty, float tz)
 void
 My_TestGLDrawing::InitTest()
 {
-    _driver = new HdSt_TestDriver();
+    _driver = std::make_unique<HdSt_TestDriver>();
     HdUnitTestDelegate &delegate = _driver->GetDelegate();
 
     if (_instance) {

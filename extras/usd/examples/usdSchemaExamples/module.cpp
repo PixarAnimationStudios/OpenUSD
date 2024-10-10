@@ -12,8 +12,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(UsdSchemaExamplesSimple);
-    TF_WRAP(UsdSchemaExamplesComplex);
-    TF_WRAP(UsdSchemaExamplesParamsAPI);
-    TF_WRAP(UsdSchemaExamplesTokens);
+    // Generated Schema classes.  Do not remove or edit the following line.
+    #include "generatedSchema.module.h"
 }

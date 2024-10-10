@@ -122,7 +122,7 @@ bool TsKnot::SetTime(const TsTime time)
 {
     if (!Ts_IsFinite(time))
     {
-        TF_CODING_ERROR("Cannot set undefined time");
+        TF_CODING_ERROR("Knot time must be finite.");
         return false;
     }
 
@@ -242,11 +242,6 @@ TsCurveType TsKnot::GetCurveType() const
 ////////////////////////////////////////////////////////////////////////////////
 // Pre-Tangent
 
-bool TsKnot::IsPreTanMayaForm() const
-{
-    return _data->preTanMayaForm;
-}
-
 bool TsKnot::SetPreTanWidth(const TsTime width)
 {
     if (!_CheckSetWidth(width))
@@ -254,7 +249,6 @@ bool TsKnot::SetPreTanWidth(const TsTime width)
         return false;
     }
 
-    _data->preTanMayaForm = false;
     _data->preTanWidth = width;
     return true;
 }
@@ -269,28 +263,6 @@ TsTime TsKnot::GetPreTanWidth() const
     return _data->GetPreTanWidth();
 }
 
-bool TsKnot::SetMayaPreTanWidth(const TsTime width)
-{
-    if (!_CheckSetWidth(width))
-    {
-        return false;
-    }
-
-    _data->preTanMayaForm = true;
-    _data->preTanWidth = width;
-    return true;
-}
-
-TsTime TsKnot::GetMayaPreTanWidth() const
-{
-    if (!_CheckGetWidth())
-    {
-        return false;
-    }
-
-    return _data->GetMayaPreTanWidth();
-}
-
 bool TsKnot::SetPreTanSlope(const VtValue slope)
 {
     if (!_CheckInParamVt(slope))
@@ -298,7 +270,6 @@ bool TsKnot::SetPreTanSlope(const VtValue slope)
         return false;
     }
 
-    _data->preTanMayaForm = false;
     _proxy->SetPreTanSlope(slope);
     return true;
 }
@@ -314,36 +285,8 @@ bool TsKnot::GetPreTanSlope(VtValue* const slopeOut) const
     return true;
 }
 
-bool TsKnot::SetMayaPreTanHeight(const VtValue height)
-{
-    if (!_CheckInParamVt(height))
-    {
-        return false;
-    }
-
-    _data->preTanMayaForm = true;
-    _proxy->SetMayaPreTanHeight(height);
-    return true;
-}
-
-bool TsKnot::GetMayaPreTanHeight(VtValue* const heightOut) const
-{
-    if (!_CheckOutParamVt(heightOut))
-    {
-        return false;
-    }
-
-    _proxy->GetMayaPreTanHeight(heightOut);
-    return true;
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // Post-Tangent
-
-bool TsKnot::IsPostTanMayaForm() const
-{
-    return _data->postTanMayaForm;
-}
 
 bool TsKnot::SetPostTanWidth(const TsTime width)
 {
@@ -352,7 +295,6 @@ bool TsKnot::SetPostTanWidth(const TsTime width)
         return false;
     }
 
-    _data->postTanMayaForm = false;
     _data->postTanWidth = width;
     return true;
 }
@@ -367,28 +309,6 @@ TsTime TsKnot::GetPostTanWidth() const
     return _data->GetPostTanWidth();
 }
 
-bool TsKnot::SetMayaPostTanWidth(const TsTime width)
-{
-    if (!_CheckSetWidth(width))
-    {
-        return false;
-    }
-
-    _data->postTanMayaForm = true;
-    _data->postTanWidth = width;
-    return true;
-}
-
-TsTime TsKnot::GetMayaPostTanWidth() const
-{
-    if (!_CheckGetWidth())
-    {
-        return false;
-    }
-
-    return _data->GetMayaPostTanWidth();
-}
-
 bool TsKnot::SetPostTanSlope(const VtValue slope)
 {
     if (!_CheckInParamVt(slope))
@@ -396,7 +316,6 @@ bool TsKnot::SetPostTanSlope(const VtValue slope)
         return false;
     }
 
-    _data->postTanMayaForm = false;
     _proxy->SetPostTanSlope(slope);
     return true;
 }
@@ -409,29 +328,6 @@ bool TsKnot::GetPostTanSlope(VtValue* const slopeOut) const
     }
 
     _proxy->GetPostTanSlope(slopeOut);
-    return true;
-}
-
-bool TsKnot::SetMayaPostTanHeight(const VtValue height)
-{
-    if (!_CheckInParamVt(height))
-    {
-        return false;
-    }
-
-    _data->postTanMayaForm = true;
-    _proxy->SetMayaPostTanHeight(height);
-    return true;
-}
-
-bool TsKnot::GetMayaPostTanHeight(VtValue* const heightOut) const
-{
-    if (!_CheckOutParamVt(heightOut))
-    {
-        return false;
-    }
-
-    _proxy->GetMayaPostTanHeight(heightOut);
     return true;
 }
 
@@ -493,7 +389,7 @@ bool TsKnot::_CheckSetWidth(const TsTime width) const
 
     if (!Ts_IsFinite(width))
     {
-        TF_CODING_ERROR("Cannot set undefined value");
+        TF_CODING_ERROR("Tangent width values must be finite");
         return false;
     }
 
@@ -569,51 +465,22 @@ std::ostream& operator<<(std::ostream& out, const TsKnot &knot)
         out << "  preValue " << GET_VT_VALUE(GetPreValue) << std::endl;
     }
 
-    if (knot.IsPreTanMayaForm())
+    if (knot.GetCurveType() == TsCurveTypeBezier)
     {
-        if (knot.GetCurveType() == TsCurveTypeBezier)
-        {
-            out << "  pre-tan maya width "
-                << TfStringify(knot.GetMayaPreTanWidth()) << std::endl;
-        }
-
-        out << "  pre-tan maya height "
-            << GET_VT_VALUE(GetMayaPreTanHeight) << std::endl;
-    }
-    else
-    {
-        if (knot.GetCurveType() == TsCurveTypeBezier)
-        {
-            out << "  pre-tan width "
-                << TfStringify(knot.GetPreTanWidth()) << std::endl;
-        }
-
-        out << "  pre-tan slope "
-            << GET_VT_VALUE(GetPreTanSlope) << std::endl;
+        out << "  pre-tan width "
+            << TfStringify(knot.GetPreTanWidth()) << std::endl;
     }
 
-    if (knot.IsPostTanMayaForm())
+    out << "  pre-tan slope "
+        << GET_VT_VALUE(GetPreTanSlope) << std::endl;
+    if (knot.GetCurveType() == TsCurveTypeBezier)
     {
-        if (knot.GetCurveType() == TsCurveTypeBezier)
-        {
-            out << "  post-tan maya width "
-                << TfStringify(knot.GetMayaPostTanWidth()) << std::endl;
-        }
-
-        out << "  post-tan maya height "
-            << GET_VT_VALUE(GetMayaPostTanHeight) << std::endl;
+        out << "  post-tan width "
+            << TfStringify(knot.GetPostTanWidth()) << std::endl;
     }
-    else
-    {
-        if (knot.GetCurveType() == TsCurveTypeBezier)
-        {
-            out << "  post-tan width "
-                << TfStringify(knot.GetPostTanWidth()) << std::endl;
-        }
 
-        out << "  post-tan slope "
-            << GET_VT_VALUE(GetPostTanSlope) << std::endl;
-    }
+    out << "  post-tan slope "
+        << GET_VT_VALUE(GetPostTanSlope) << std::endl;
 
     const VtDictionary customData = knot.GetCustomData();
     if (!customData.empty())

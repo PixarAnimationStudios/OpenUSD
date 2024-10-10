@@ -11,6 +11,7 @@
 #include "pxr/external/boost/python/handle.hpp"
 #include "pxr/external/boost/python/object.hpp"
 #include <iostream>
+#include <type_traits>
 
 // gcc 2.95.x and MIPSpro 7.3.1.3 linker seem to demand this definition
 #if ((defined(__GNUC__) && __GNUC__ < 3)) \
@@ -30,7 +31,7 @@ int result;
 template <class T, class U>
 void assert_same(U* = 0, T* = 0)
 {
-    BOOST_STATIC_ASSERT((boost::is_same<T,U>::value));
+    static_assert((std::is_same<T,U>::value));
     
 }
 
@@ -40,7 +41,6 @@ int main()
     using namespace PXR_BOOST_NAMESPACE::python::converter::detail;
     using namespace PXR_BOOST_NAMESPACE::python::converter;
     using namespace PXR_BOOST_NAMESPACE::python;
-    using namespace boost;
 
 
     ASSERT_SAME(
@@ -48,7 +48,7 @@ int main()
         );
 
     ASSERT_SAME(
-        select_arg_to_python<reference_wrapper<int> >::type, reference_arg_to_python<int>
+        select_arg_to_python<std::reference_wrapper<int> >::type, reference_arg_to_python<int>
         );
     
     ASSERT_SAME(

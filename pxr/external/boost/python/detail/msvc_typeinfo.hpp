@@ -18,7 +18,7 @@
 #else
 
 #include <typeinfo>
-#include <boost/type.hpp>
+#include "pxr/external/boost/python/type.hpp"
 
 //
 // Fix for icc's broken typeid() implementation which doesn't strip
@@ -69,15 +69,15 @@ template< typename T > T&(* is_ref_tester1(type<T>) )(type<T>) { return 0; }
 inline char BOOST_PYTT_DECL is_ref_tester1(...) { return 0; }
 
 template <class T>
-inline typeinfo msvc_typeid(boost::type<T>*)
+inline typeinfo msvc_typeid(type<T>*)
 {
     return detail::typeid_ref(
-        (boost::type<T>*)0, detail::is_ref_tester1(type<T>())
+        (type<T>*)0, detail::is_ref_tester1(type<T>())
         );
 }
 
 template <>
-inline typeinfo msvc_typeid<void>(boost::type<void>*)
+inline typeinfo msvc_typeid<void>(type<void>*)
 {
     return typeid(void);
 }
@@ -85,8 +85,8 @@ inline typeinfo msvc_typeid<void>(boost::type<void>*)
 #  ifndef NDEBUG
 inline typeinfo assert_array_typeid_compiles()
 {
-    return msvc_typeid((boost::type<char const[3]>*)0)
-        , msvc_typeid((boost::type<char[3]>*)0);
+    return msvc_typeid((type<char const[3]>*)0)
+        , msvc_typeid((type<char[3]>*)0);
 }
 #  endif
 

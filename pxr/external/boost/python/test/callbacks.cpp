@@ -11,17 +11,16 @@
 #include "pxr/external/boost/python/module.hpp"
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/class.hpp"
-#include <boost/ref.hpp>
 #include "pxr/external/boost/python/ptr.hpp"
 #include "pxr/external/boost/python/return_value_policy.hpp"
 #include "pxr/external/boost/python/reference_existing_object.hpp"
 #include "pxr/external/boost/python/call.hpp"
 #include "pxr/external/boost/python/object.hpp"
-#define BOOST_ENABLE_ASSERT_HANDLER
-#include <boost/assert.hpp>
+#include <cassert>
+#include <functional>
 
 using namespace PXR_BOOST_NAMESPACE::python;
-BOOST_STATIC_ASSERT(converter::is_object_manager<handle<> >::value);
+static_assert(converter::is_object_manager<handle<> >::value);
 
 int apply_int_int(PyObject* f, int x)
 {
@@ -37,10 +36,10 @@ struct X
 {
     explicit X(int x) : x(x), magic(7654321) { ++counter; }
     X(X const& rhs) : x(rhs.x), magic(7654321) { ++counter; }
-    ~X() { BOOST_ASSERT(magic == 7654321); magic = 6666666; x = 9999; --counter; }
+    ~X() { assert(magic == 7654321); magic = 6666666; x = 9999; --counter; }
 
-    void set(int _x) { BOOST_ASSERT(magic == 7654321); this->x = _x; }
-    int value() const { BOOST_ASSERT(magic == 7654321); return x; }
+    void set(int _x) { assert(magic == 7654321); this->x = _x; }
+    int value() const { assert(magic == 7654321); return x; }
     static int count() { return counter; }
  private:
     void operator=(X const&);
@@ -57,7 +56,7 @@ X apply_X_X(PyObject* f, X x)
 
 void apply_void_X_ref(PyObject* f, X& x)
 {
-    call<void>(f, boost::ref(x));
+    call<void>(f, std::ref(x));
 }
 
 X& apply_X_ref_handle(PyObject* f, handle<> obj)
@@ -72,7 +71,7 @@ X* apply_X_ptr_handle_cref(PyObject* f, handle<> const& obj)
 
 void apply_void_X_cref(PyObject* f, X const& x)
 {
-    call<void>(f, boost::cref(x));
+    call<void>(f, std::cref(x));
 }
 
 void apply_void_X_ptr(PyObject* f, X* x)

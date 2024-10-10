@@ -9,7 +9,6 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 #include "pxr/external/boost/python/converter/object_manager.hpp"
 #include "pxr/external/boost/python/borrowed.hpp"
-#include <boost/static_assert.hpp>
 #include "pxr/external/boost/python/handle.hpp"
 
 using namespace PXR_BOOST_NAMESPACE::python;
@@ -19,19 +18,19 @@ struct X {};
 
 int main()
 {
-    BOOST_STATIC_ASSERT(is_object_manager<handle<> >::value);
-    BOOST_STATIC_ASSERT(!is_object_manager<int>::value);
-    BOOST_STATIC_ASSERT(!is_object_manager<X>::value);
+    static_assert(is_object_manager<handle<> >::value);
+    static_assert(!is_object_manager<int>::value);
+    static_assert(!is_object_manager<X>::value);
     
-    BOOST_STATIC_ASSERT(is_reference_to_object_manager<handle<>&>::value);
-    BOOST_STATIC_ASSERT(is_reference_to_object_manager<handle<> const&>::value);
-    BOOST_STATIC_ASSERT(is_reference_to_object_manager<handle<> volatile&>::value);
-    BOOST_STATIC_ASSERT(is_reference_to_object_manager<handle<> const volatile&>::value);
+    static_assert(is_reference_to_object_manager<handle<>&>::value);
+    static_assert(is_reference_to_object_manager<handle<> const&>::value);
+    static_assert(is_reference_to_object_manager<handle<> volatile&>::value);
+    static_assert(is_reference_to_object_manager<handle<> const volatile&>::value);
 
-    BOOST_STATIC_ASSERT(!is_reference_to_object_manager<handle<> >::value);
-    BOOST_STATIC_ASSERT(!is_reference_to_object_manager<X>::value);
-    BOOST_STATIC_ASSERT(!is_reference_to_object_manager<X&>::value);
-    BOOST_STATIC_ASSERT(!is_reference_to_object_manager<X const&>::value);
+    static_assert(!is_reference_to_object_manager<handle<> >::value);
+    static_assert(!is_reference_to_object_manager<X>::value);
+    static_assert(!is_reference_to_object_manager<X&>::value);
+    static_assert(!is_reference_to_object_manager<X const&>::value);
     
     return 0;
 }

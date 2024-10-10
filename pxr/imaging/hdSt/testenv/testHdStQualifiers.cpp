@@ -99,7 +99,7 @@ protected:
 
 private:
     bool _testResult;
-    HdSt_TestDriver* _driver;
+    HdSt_TestDriverUniquePtr _driver;
     std::string _outputFilePath;
     std::vector<MemberWithQualifiers> _testMembers;
 };
@@ -107,7 +107,7 @@ private:
 void
 My_TestGLDrawing::InitTest()
 {
-    _driver = new HdSt_TestDriver();
+    _driver = std::make_unique<HdSt_TestDriver>();
     GfVec3f center(0);
 
     // center camera

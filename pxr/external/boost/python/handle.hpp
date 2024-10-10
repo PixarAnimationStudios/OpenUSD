@@ -26,6 +26,7 @@
 # include "pxr/external/boost/python/refcount.hpp"
 # include "pxr/external/boost/python/tag.hpp"
 # include "pxr/external/boost/python/detail/raw_pyobject.hpp"
+# include "pxr/external/boost/python/detail/get_pointer.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
@@ -144,23 +145,13 @@ class handle
     T* m_p;
 };
 
-#ifdef BOOST_NO_ARGUMENT_DEPENDENT_LOOKUP
-} // namespace python
-#endif
-
 template<class T> inline T * get_pointer(python::handle<T> const & p)
 {
     return p.get();
 }
 
-#ifdef BOOST_NO_ARGUMENT_DEPENDENT_LOOKUP
-namespace python {
-#else
-
 // We don't want get_pointer above to hide the others
-using boost::get_pointer;
-
-#endif
+using detail::get_pointer;
 
 typedef handle<PyTypeObject> type_handle;
 
@@ -171,14 +162,14 @@ template<typename T>
 class is_handle
 {
  public:
-    BOOST_STATIC_CONSTANT(bool, value = false); 
+    static constexpr bool value = false; 
 };
 
 template<typename T>
 class is_handle<handle<T> >
 {
  public:
-    BOOST_STATIC_CONSTANT(bool, value = true);
+    static constexpr bool value = true;
 };
 
 //

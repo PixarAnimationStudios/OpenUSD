@@ -96,7 +96,8 @@ class "LightAPI" (
         allowedTokens = ["materialGlowTintsLight", "independent", "noMaterialResponse"]
         displayGroup = "Geometry"
         displayName = "Material Sync Mode"
-        doc = """For a LightAPI applied to geometry that has a bound Material, 
+        doc = """
+        For a LightAPI applied to geometry that has a bound Material, 
         which is entirely or partly emissive, this specifies the relationship 
         of the Material response to the lighting response.
         Valid values are:
@@ -312,7 +313,8 @@ class "LightListAPI" (
     )
     token lightList:cacheBehavior (
         allowedTokens = ["consumeAndHalt", "consumeAndContinue", "ignore"]
-        doc = """Controls how the lightList should be interpreted.
+        doc = """
+        Controls how the lightList should be interpreted.
         Valid values are:
         - consumeAndHalt: The lightList should be consulted,
           and if it exists, treated as a final authoritative statement
@@ -340,7 +342,8 @@ class "ListAPI" (
     )
     token lightList:cacheBehavior (
         allowedTokens = ["consumeAndHalt", "consumeAndContinue", "ignore"]
-        doc = """Controls how the lightList should be interpreted.
+        doc = """
+        Controls how the lightList should be interpreted.
         Valid values are:
         - consumeAndHalt: The lightList should be consulted,
           and if it exists, treated as a final authoritative statement
@@ -1252,7 +1255,8 @@ class DomeLight "DomeLight" (
         allowedTokens = ["automatic", "latlong", "mirroredBall", "angular", "cubeMapVerticalCross"]
         displayGroup = "Basic"
         displayName = "Color Map Format"
-        doc = """Specifies the parameterization of the color map file.
+        doc = """
+        Specifies the parameterization of the color map file.
         Valid values are:
         - automatic: Tries to determine the layout from the file itself.
           For example, Renderman texture files embed an explicit
@@ -1385,7 +1389,8 @@ class DomeLight_1 "DomeLight_1" (
         allowedTokens = ["automatic", "latlong", "mirroredBall", "angular", "cubeMapVerticalCross"]
         displayGroup = "Basic"
         displayName = "Color Map Format"
-        doc = """Specifies the parameterization of the color map file.
+        doc = """
+        Specifies the parameterization of the color map file.
         Valid values are:
         - automatic: Tries to determine the layout from the file itself.
           For example, Renderman texture files embed an explicit
@@ -1405,7 +1410,8 @@ class DomeLight_1 "DomeLight_1" (
         allowedTokens = ["scene", "Y", "Z"]
         displayGroup = "Advanced"
         displayName = "Pole Axis"
-        doc = """A token which indicates the starting alignment of the dome
+        doc = """
+        A token which indicates the starting alignment of the dome
         light's top pole. This alignment is for the dome itself and is *not*
         inherited by the namespace children of the dome.
         Valid values are:

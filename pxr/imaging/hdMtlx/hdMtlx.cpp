@@ -26,6 +26,7 @@
 
 #include <MaterialXCore/Document.h>
 #include <MaterialXCore/Node.h>
+#include <MaterialXFormat/Environ.h>
 #include <MaterialXFormat/Util.h>
 #include <MaterialXFormat/XmlIo.h>
 
@@ -35,7 +36,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (index)
+    (texcoord)
+    (geompropvalue)
+    (filename)
 );
 
 static mx::FileSearchPath
@@ -46,6 +49,12 @@ _ComputeSearchPaths()
     for (auto path : searchPathStrings) {
         searchPaths.append(mx::FilePath(path));
     }
+#ifdef PXR_DCC_LOCATION_ENV_VAR
+    const std::string dccLocationEnvVar(PXR_DCC_LOCATION_ENV_VAR);
+    const std::string dccLocation = mx::getEnviron(dccLocationEnvVar);
+    searchPaths.append(mx::FilePath(dccLocation + PXR_MATERIALX_STDLIB_DIR));
+    searchPaths.append(mx::FilePath(dccLocation + PXR_MATERIALX_BASE_DIR));
+#endif
     return searchPaths;
 }
 
@@ -113,6 +122,21 @@ _AddNodeToNodeGraph(
     }
     // Otherwise get the existing node from the mxNodeGraph
     return mxNodeGraph->getNode(mxNodeName);
+}
+
+std::string
+HdMtlxCreateNameFromPath(SdfPath const& path)
+{
+#ifdef PXR_DCC_LOCATION_ENV_VAR
+    std::string pathnm = path.GetText();
+    if(pathnm.size() > 3 &&
+       pathnm[0] == '/' && pathnm[1] == '_' && pathnm[2] == '_') {
+        pathnm[0] = 's'; // triple leading underscores aren't allowed in osl
+    }
+    return TfStringReplace( pathnm, "/", "_");
+#else
+    return path.GetName();
+#endif
 }
 
 // Convert the HdParameterValue to a string MaterialX can understand
@@ -184,12 +208,12 @@ HdMtlxConvertToString(VtValue const& hdParameterValue)
 }
 
 static bool
-_ContainsTexcoordNode(mx::NodeDefPtr const& mxNodeDef)
+_UsesTexcoordNode(mx::NodeDefPtr const& mxNodeDef)
 {
     mx::InterfaceElementPtr impl = mxNodeDef->getImplementation();
     if (impl && impl->isA<mx::NodeGraph>()) {
         mx::NodeGraphPtr nodegraph = impl->asA<mx::NodeGraph>();
-        if (nodegraph->getNodes("texcoord").size() != 0) {
+        if (!nodegraph->getNodes(_tokens->texcoord).empty()) {
             return true;
         }
     }
@@ -228,7 +252,7 @@ _AddMaterialXNode(
     const SdfPath hdNodePath(hdNodeName.GetString());
     const std::string mxNodeCategory = _GetMxNodeString(mxNodeDef);
     const std::string &mxNodeType = mxNodeDef->getType();
-    const std::string &mxNodeName = hdNodePath.GetName();
+    const std::string &mxNodeName = HdMtlxCreateNameFromPath(hdNodePath);
 
     // Add the mxNode to the mxNodeGraph
     mx::NodePtr mxNode =
@@ -275,7 +299,7 @@ _AddMaterialXNode(
     // MaterialX nodes that use textures can have more than one filename input
     if (mxHdData) {
         for (mx::InputPtr const& mxInput : mxNodeDef->getActiveInputs()) {
-            if (mxInput->getType() == "filename") {
+            if (mxInput->getType() == _tokens->filename) {
                 // Save the corresponding Mx and Hydra names for ShaderGen
                 mxHdData->mxHdTextureMap[mxNodeName].insert(mxInput->getName());
                 // Save the path to adjust parameters after for ShaderGen
@@ -285,7 +309,7 @@ _AddMaterialXNode(
     }
 
     // MaterialX primvar node
-    if (mxNodeCategory == "geompropvalue") {
+    if (mxNodeCategory == _tokens->geompropvalue) {
         if (mxHdData) {
             // Save the path to have the primvarName declared in ShaderGen
             mxHdData->hdPrimvarNodes.insert(hdNodePath);
@@ -294,14 +318,8 @@ _AddMaterialXNode(
 
     // Stdlib MaterialX texture coordinate node or a custom node that 
     // uses a texture coordinate node
-    if (mxNodeCategory == "texcoord" || _ContainsTexcoordNode(mxNodeDef)) {
+    if (mxNodeCategory == _tokens->texcoord || _UsesTexcoordNode(mxNodeDef)) {
         if (mxHdData) {
-            // Make sure it has the index parameter set.
-            if (std::find(hdNodeParamNames.begin(), hdNodeParamNames.end(), 
-                _tokens->index) == hdNodeParamNames.end()) {
-                netInterface->SetNodeParameterValue(
-                    hdNodeName, _tokens->index, VtValue(0));
-            }
             // Save the path to have the textureCoord name declared in ShaderGen
             mxHdData->hdPrimvarNodes.insert(hdNodePath);
         }

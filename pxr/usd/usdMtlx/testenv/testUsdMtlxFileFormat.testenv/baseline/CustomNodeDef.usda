@@ -100,10 +100,10 @@ def "MaterialX"
             float inputs:roughness = 0.25
             color3f inputs:specularColor
             int inputs:useSpecularWorkflow = 1
-            token outputs:mtlx:surface.connect = </MaterialX/Materials/surface_material_node/ND_UsdPreviewSurface_surfaceshader.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/surface_material_node/surface_shader_node.outputs:surface>
 
-            def Shader "ND_UsdPreviewSurface_surfaceshader" (
-                prepend references = </MaterialX/Shaders/ND_UsdPreviewSurface_surfaceshader>
+            def Shader "surface_shader_node" (
+                prepend references = </MaterialX/Shaders/surface_shader_node>
             )
             {
                 float inputs:clearcoat.connect = </MaterialX/Materials/surface_material_node.inputs:clearcoat>
@@ -132,7 +132,7 @@ def "MaterialX"
 
     def "Shaders"
     {
-        def Shader "ND_UsdPreviewSurface_surfaceshader"
+        def Shader "surface_shader_node"
         {
             uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
             token outputs:surface

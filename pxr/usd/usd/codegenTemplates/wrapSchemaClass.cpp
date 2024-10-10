@@ -120,7 +120,7 @@ void wrap{{ cls.cppClassName }}()
 
 {% endif %}
 {% if cls.isAPISchemaBase %}
-    class_< This , bases<{{ cls.parentCppClassName }}>, boost::noncopyable> cls ("APISchemaBase", "", no_init);
+    class_< This , bases<{{ cls.parentCppClassName }}>, noncopyable> cls ("APISchemaBase", "", no_init);
 {% else %}
     class_<This, bases<{{ cls.parentCppClassName }}> >
         cls("{{ cls.className }}");

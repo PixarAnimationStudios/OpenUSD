@@ -88,12 +88,21 @@ public:
         riley::Riley * riley,
         const HdRenderIndex * renderIndex,
         const GfVec2i &renderBufferSize);
+
+    // A projection that will override the value from the camera setting if
+    // it is different from the default perspective.
+    void SetProjectionOverride(const RtUString& projection,
+                               const RtParamList& projectionParams);
     
     /// Mark that riley camera and options are up to date.
     void MarkValid();
 
-    /// Get resolution for offline rendering.
+    /// Get resolution from the display window.
     GfVec2i GetResolutionFromDisplayWindow() const;
+
+    // Get resolution from the data window
+    // This can be removed once XPU handles under/overscan correctly.
+    GfVec2i GetResolutionFromDataWindow() const;
 
     /// When depth of field is disabled the fstop is set to infinity.
     void SetDisableDepthOfField(bool disableDepthOfField);
@@ -148,6 +157,9 @@ private:
     // This needs to be unique across all cameras.
     RtUString _cameraName;
     
+    RtUString _projectionNameOverride;
+    RtParamList _projectionParamsOverride;
+
     std::atomic_bool _invalid;
 };
 

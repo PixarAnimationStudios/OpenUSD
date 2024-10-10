@@ -79,8 +79,8 @@ namespace PXR_BOOST_NAMESPACE { namespace python {
         }
         
         static 
-        typename mpl::if_<
-            is_class<data_type>
+        typename detail::mpl2::if_<
+            std::is_class<data_type>
           , data_type&
           , data_type
         >::type

@@ -33,7 +33,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 // --(END CUSTOM CODE: Declares)--
 
 #define HD_EXT_COMPUTATION_OUTPUT_SCHEMA_TOKENS \
-    (name) \
     (valueType) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdExtComputationOutputSchemaTokens, HD_API,
@@ -60,9 +59,6 @@ public:
     /// @{
 
     HD_API
-    HdTokenDataSourceHandle GetName() const;
-
-    HD_API
     HdTupleTypeDataSourceHandle GetValueType() const; 
 
     /// @} 
@@ -80,7 +76,6 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdTokenDataSourceHandle &name,
         const HdTupleTypeDataSourceHandle &valueType
     );
 
@@ -94,9 +89,6 @@ public:
     {
     public:
         HD_API
-        Builder &SetName(
-            const HdTokenDataSourceHandle &name);
-        HD_API
         Builder &SetValueType(
             const HdTupleTypeDataSourceHandle &valueType);
 
@@ -105,7 +97,6 @@ public:
         HdContainerDataSourceHandle Build();
 
     private:
-        HdTokenDataSourceHandle _name;
         HdTupleTypeDataSourceHandle _valueType;
 
     };

@@ -25,7 +25,7 @@ PXR_BOOST_PYTHON_MODULE(bienstman3_ext)
 {
   using namespace PXR_BOOST_NAMESPACE::python;
 
-  class_<V, boost::noncopyable>("V", no_init);
+  class_<V, noncopyable>("V", no_init);
   class_<B>("B", init<const V&>());
 
 }

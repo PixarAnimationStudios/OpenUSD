@@ -17,7 +17,6 @@
 #include <boost/python/object/function_object.hpp>
 #else
 # include "pxr/external/boost/python/detail/prefix.hpp"
-# include <boost/function/function2.hpp>
 # include "pxr/external/boost/python/object_core.hpp"
 # include "pxr/external/boost/python/args_fwd.hpp"
 # include "pxr/external/boost/python/object/py_function.hpp"

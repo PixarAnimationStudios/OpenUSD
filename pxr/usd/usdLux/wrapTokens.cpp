@@ -15,7 +15,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdLuxTokens()
 {
-    pxr_boost::python::class_<UsdLuxTokensType, boost::noncopyable>
+    pxr_boost::python::class_<UsdLuxTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, angular);
     _ADD_TOKEN(cls, automatic);

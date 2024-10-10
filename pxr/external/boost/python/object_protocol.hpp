@@ -22,59 +22,49 @@
 # include "pxr/external/boost/python/object_protocol_core.hpp"
 # include "pxr/external/boost/python/object_core.hpp"
 
-# include <boost/detail/workaround.hpp>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace api {
 
-# if BOOST_WORKAROUND(__SUNPRO_CC, BOOST_TESTED_AT(0x590))
-// attempt to use SFINAE to prevent functions accepting T const& from
-// coming up as ambiguous with the one taking a char const* when a
-// string literal is passed
-#  define PXR_BOOST_PYTHON_NO_ARRAY_ARG(T)             , T (*)() = 0
-# else 
-#  define PXR_BOOST_PYTHON_NO_ARRAY_ARG(T) 
-# endif
-
 template <class Target, class Key>
-object getattr(Target const& target, Key const& key PXR_BOOST_PYTHON_NO_ARRAY_ARG(Key))
+object getattr(Target const& target, Key const& key)
 {
     return getattr(object(target), object(key));
 }
 
 template <class Target, class Key, class Default>
-object getattr(Target const& target, Key const& key, Default const& default_ PXR_BOOST_PYTHON_NO_ARRAY_ARG(Key))
+object getattr(Target const& target, Key const& key, Default const& default_)
 {
     return getattr(object(target), object(key), object(default_));
 }
 
 
 template <class Key, class Value>
-void setattr(object const& target, Key const& key, Value const& value PXR_BOOST_PYTHON_NO_ARRAY_ARG(Key))
+void setattr(object const& target, Key const& key, Value const& value)
 {
     setattr(target, object(key), object(value));
 }
 
 template <class Key>
-void delattr(object const& target, Key const& key PXR_BOOST_PYTHON_NO_ARRAY_ARG(Key))
+void delattr(object const& target, Key const& key)
 {
     delattr(target, object(key));
 }
 
 template <class Target, class Key>
-object getitem(Target const& target, Key const& key PXR_BOOST_PYTHON_NO_ARRAY_ARG(Key))
+object getitem(Target const& target, Key const& key)
 {
     return getitem(object(target), object(key));
 }
 
 
 template <class Key, class Value>
-void setitem(object const& target, Key const& key, Value const& value PXR_BOOST_PYTHON_NO_ARRAY_ARG(Key))
+void setitem(object const& target, Key const& key, Value const& value)
 {
     setitem(target, object(key), object(value));
 }
 
 template <class Key>
-void delitem(object const& target, Key const& key PXR_BOOST_PYTHON_NO_ARRAY_ARG(Key))
+void delitem(object const& target, Key const& key)
 {
     delitem(target, object(key));
 }

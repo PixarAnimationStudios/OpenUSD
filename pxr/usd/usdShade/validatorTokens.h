@@ -20,6 +20,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((encapsulationValidator, "usdShade:EncapsulationRulesValidator")) \
     ((materialBindingApiAppliedValidator, "usdShade:MaterialBindingApiAppliedValidator")) \
     ((materialBindingRelationships, "usdShade:MaterialBindingRelationships")) \
+    ((materialBindingCollectionValidator, "usdShade:MaterialBindingCollectionValidator")) \
     ((shaderSdrCompliance, "usdShade:ShaderSdrCompliance"))                   \
     ((subsetMaterialBindFamilyName, "usdShade:SubsetMaterialBindFamilyName")) \
     ((subsetsMaterialBindFamily, "usdShade:SubsetsMaterialBindFamily"))
@@ -32,6 +33,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((invalidConnectableHierarchy, "InvalidConnectableHierarchy"))      \
     ((missingMaterialBindingAPI,  "MissingMaterialBindingAPI"))         \
     ((materialBindingPropNotARel, "MaterialBindingPropNotARel"))        \
+    ((invalidMaterialCollection,  "InvalidMaterialCollection"))         \
+    ((invalidResourcePath, "InvalidResourcePath"))                      \
     ((invalidImplSource, "InvalidImplementationSrc"))                   \
     ((missingSourceType, "MissingSourceType"))                          \
     ((missingShaderIdInRegistry, "MissingShaderIdInRegistry"))          \

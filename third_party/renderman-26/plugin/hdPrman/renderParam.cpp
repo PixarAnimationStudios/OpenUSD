@@ -16,8 +16,11 @@
 #include "hdPrman/material.h"
 #include "hdPrman/motionBlurSceneIndexPlugin.h"
 #include "hdPrman/prmanArchDefs.h" // required for stats/Session.h
+#include "hdPrman/projectionParams.h"
 #include "hdPrman/renderDelegate.h"
+#if PXR_VERSION >= 2308
 #include "hdPrman/renderSettings.h"
+#endif
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/tokens.h"
 #include "hdPrman/utils.h"
@@ -37,13 +40,20 @@
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/pathUtils.h"  // Extract extension from tf token
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/stringUtils.h"
 
+#if PXR_VERSION >= 2302
+#include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/containerDataSourceEditor.h"
+#endif
+
 #include <Riley.h>
 #include <RiTypesHelper.h>
 #include <RixRiCtl.h>
+#include <RixShadingUtils.h>
 #include <stats/Session.h>
 
 #include <string>
@@ -72,11 +82,15 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((riDisplayDriverNamespace,     "ri:displayDriver:"))
     
     ((renderTagPrefix, "rendertag_"))
+    (renderCameraPath)
+    ((displayfilterPrefix,  "ri:displayfilter"))
+    ((samplefilterPrefix,   "ri:samplefilter"))
 );
 
 TF_DEFINE_PRIVATE_TOKENS(
     _riOptionsTokens,
     ((riRiFormatResolution,         "ri:Ri:FormatResolution"))
+    ((riRiShutter,                  "ri:Ri:Shutter"))
     ((riHiderMinSamples,            "ri:hider:minsammples"))
     ((riHiderMaxSamples,            "ri:hider:maxsamples"))
     ((riRiPixelVariance,            "ri:Ri:PixelVariance"))
@@ -95,6 +109,8 @@ TF_DEFINE_ENV_SETTING(HD_PRMAN_DISABLE_HIDER_JITTER, false,
                       "Disable hider jitter");
 TF_DEFINE_ENV_SETTING(HD_PRMAN_DEFER_SET_OPTIONS, true,
                       "Defer first SetOptions call to render settings prim sync.");
+TF_DEFINE_ENV_SETTING(RMAN_XPU_GPUCONFIG, "0",
+                      "A comma separated list of integers for which GPU devices to use.");
 
 // We now have two env setting related to driving hdPrman rendering using the
 // render settings prim. HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS ignores the
@@ -122,35 +138,50 @@ TF_MAKE_STATIC_DATA(std::vector<HdPrman_RenderParam::IntegratorCameraCallback>,
 }
 
 HdPrman_RenderParam::HdPrman_RenderParam(
-        HdPrmanRenderDelegate* renderDelegate,
-        const std::string &rileyVariant,
-        const std::string &xpuVariant,
-        const std::vector<std::string>& extraArgs) :
+    HdPrmanRenderDelegate* renderDelegate,
+    const std::string &rileyVariant,
+    const int& xpuCpuConfig,
+    const std::vector<int>& xpuGpuConfig,
+    const std::vector<std::string>& extraArgs) :
+    frame(0),
     _rix(nullptr),
     _ri(nullptr),
     _mgr(nullptr),
     _statsSession(nullptr),
     _progressPercent(0),
+    _progressMode(0),
     _riley(nullptr),
+#if PXR_VERSION >= 2302
+    _statsSceneIndex(nullptr),
+#endif
     _sceneLightCount(0),
+    _fallbackLightEnabled(false),
     _shutterInterval(HDPRMAN_SHUTTEROPEN_DEFAULT, HDPRMAN_SHUTTERCLOSE_DEFAULT),
     _initRileyOptions(false),
     _sampleFiltersId(riley::SampleFilterId::InvalidId()),
     _displayFiltersId(riley::DisplayFilterId::InvalidId()),
     _lastLegacySettingsVersion(0),
     _resolution(0),
-    _renderDelegate(renderDelegate)
+    _displayFiltersDirty(false),
+    _sampleFiltersDirty(false),
+    _sampleFilterId(riley::SampleFilterId::InvalidId()),
+    _displayFilterId(riley::DisplayFilterId::InvalidId()),
+    _renderDelegate(renderDelegate),
+    _huskFrameStart(1),
+    _huskFrameIncrement(1),
+    _usingHusk(false),
+    _useQN(false),
+    _qnCheapPass(false),
+    _qnMinSamples(2),
+    _qnInterval(4)
 {
 #if _PRMANAPI_VERSION_MAJOR_ < 26
     // Create the stats session
     _CreateStatsSession();
 #endif
 
-    // Setup to use the default GPU
-    _xpuGpuConfig.push_back(0);
-
     TfRegistryManager::GetInstance().SubscribeTo<HdPrman_RenderParam>();
-    _CreateRiley(rileyVariant, xpuVariant, extraArgs);
+    _CreateRiley(rileyVariant, xpuCpuConfig, xpuGpuConfig, extraArgs);
     
     // Register RenderMan display driver
     HdPrmanFramebuffer::Register(_rix);
@@ -221,14 +252,14 @@ HdPrman_RenderParam::IsLightFilterUsed(TfToken const& name)
 
 static size_t
 _ConvertPointsPrimvar(
-    HdSceneDelegate *sceneDelegate,
-    SdfPath const &id,
-    GfVec2f const &shutterInterval,
+    HdSceneDelegate* sceneDelegate,
+    const SdfPath& id,
+    const GfVec2f& shutterInterval,
     RtPrimVarList& primvars,
-    const size_t * npointsHint)
+    const size_t* npointsHint)
 {
     HdExtComputationPrimvarDescriptorVector compPrimvar;
-#if PXR_VERSION < 2402
+#if PXR_VERSION <= 2311
     for (auto const& pv : sceneDelegate->GetExtComputationPrimvarDescriptors(
         id, HdInterpolationVertex)) {
         if (pv.name == HdTokens->points) {
@@ -280,21 +311,35 @@ _ConvertPointsPrimvar(
             npoints   /* faceVarying */);
     }
 
-    primvars.SetTimes(points.count, &points.times[0]);
-    for (size_t i=0; i < points.count; ++i) {
-        if (points.values[i].size() == npoints) {
-            primvars.SetPointDetail(
-                RixStr.k_P, 
-                (RtPoint3*) points.values[i].cdata(),
-                RtDetailType::k_vertex, 
-                i);
-        } else {
-            TF_WARN("<%s> primvar 'points' size (%zu) did not match "
-                    "expected (%zu)",
-                    id.GetText(), 
-                    points.values[i].size(),
-                    npoints);
+    // Ignore any incorrectly sized points
+    std::vector<float> shutterTimes;
+    std::vector<size_t> pointsIndex;
+    for (size_t i = 0; i < points.count; ++i) {
+        if (points.values[i].empty()) {
+            TF_WARN("<%s> primvar 'points' was empty", id.GetText());
+            continue;
         }
+        if (points.values[i].size() != npoints) {
+            TF_WARN(
+                "<%s> primvar 'points' size (%zu) did not match "
+                "expected (%zu)",
+                id.GetText(), points.values[i].size(), npoints);
+            if(points.values[i].size() < npoints) {
+                // Only skip if there aren't enough points available,
+                // otherwise only warn.
+                continue;
+            }
+        }
+        shutterTimes.push_back(points.times[i]);
+        pointsIndex.push_back(i);
+    }
+
+    // Set points primvars
+    primvars.SetTimes(shutterTimes.size(), shutterTimes.data());
+    for (size_t i = 0; i < pointsIndex.size(); ++i) {
+        primvars.SetPointDetail(
+            RixStr.k_P, (RtPoint3*)points.values[pointsIndex[i]].cdata(),
+            RtDetailType::k_vertex, i);
     }
 
     return npoints;
@@ -302,9 +347,9 @@ _ConvertPointsPrimvar(
 
 void
 HdPrman_ConvertPointsPrimvar(
-    HdSceneDelegate *sceneDelegate,
-    SdfPath const &id,
-    GfVec2f const &shutterInterval,
+    HdSceneDelegate* sceneDelegate,
+    const SdfPath& id,
+    const GfVec2f& shutterInterval,
     RtPrimVarList& primvars,
     const size_t npoints)
 
@@ -315,9 +360,9 @@ HdPrman_ConvertPointsPrimvar(
 
 size_t
 HdPrman_ConvertPointsPrimvarForPoints(
-    HdSceneDelegate *sceneDelegate,
-    SdfPath const &id,
-    GfVec2f const &shutterInterval,
+    HdSceneDelegate* sceneDelegate,
+    const SdfPath&id,
+    const GfVec2f& shutterInterval,
     RtPrimVarList& primvars)
 {
     return _ConvertPointsPrimvar(
@@ -397,6 +442,7 @@ _IsPrototypeAttribute(TfToken const& primvarName)
     //
     // This list was created based on this doc page:
     //   https://rmanwiki.pixar.com/display/REN23/Primitive+Variables
+    // TODO: Should these be generated automatically from PRManPrimVars.args?
     typedef std::unordered_set<TfToken, TfToken::HashFunctor> TfTokenSet;
     static const TfTokenSet prototypeAttributes = {
         // Common
@@ -429,8 +475,13 @@ _IsPrototypeAttribute(TfToken const& primvarName)
         TfToken("ri:attributes:dice:minlength"),
         TfToken("ri:attributes:dice:minlengthspace"),
         TfToken("ri:attributes:Ri:Bound"),
-        TfToken("ri:attributes:volume:dsominmax"),
         TfToken("ri:attributes:volume:aggregate"),
+        TfToken("ri:attributes:volume:aggregaterespectvisibility"),
+        TfToken("ri:attributes:volume:dsominmax"),
+        TfToken("ri:attributes:volume:dsovelocity"),
+        TfToken("ri:attributes:volume:fps"),
+        TfToken("ri:attributes:volume:shutteroffset"),
+        TfToken("ri:attributes:volume:velocityshuttercorrection"),
         // SubdivisionMesh
         TfToken("ri:attributes:dice:pretessellate"),
         TfToken("ri:attributes:dice:watertight"),
@@ -439,6 +490,9 @@ _IsPrototypeAttribute(TfToken const& primvarName)
         TfToken("ri:attributes:stitchbound:sphere"),
         // NuPatch
         TfToken("ri:attributes:trimcurve:sense"),
+        // Curves
+        TfToken("ri:attributes:curve:opacitysamples"),
+        TfToken("ri:attributes:curve:widthaffectscurvature"),
         // PolygonMesh
         TfToken("ri:attributes:polygon:concave"),
         TfToken("ri:attributes:polygon:smoothdisplacement"),
@@ -815,6 +869,17 @@ HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
         // Note that lights and light filters also have a grouping membership,
         // but that comes from the light (linking) params.
         VtArray<TfToken> categories = sceneDelegate->GetCategories(id);
+
+        if(id.IsPrimPropertyPath() && categories.size() == 0)
+        {
+            // Id of point instanced object comes in looking like a property,
+            // eg. /instances.proto0_mesh_0_id0
+            // The light linking may be at the parent level, so look there
+            // for categories.
+            SdfPath pid = id.GetParentPath();
+            categories = sceneDelegate->GetCategories(pid);
+        }
+
         ConvertCategoriesToAttributes(id, categories, attrs);
 
         // Hydra cullStyle & doubleSided -> Riley k_Ri_Sides
@@ -968,7 +1033,11 @@ HdPrman_ResolveMaterial(HdSceneDelegate *sceneDelegate,
                 dynamic_cast<HdPrmanMaterial*>(sprim)) {
                 // Resolving the material indicates that it is
                 // actually in use, so we sync to Riley.
+#if PXR_VERSION >= 2311
+                // Houdini 20 (with 2308) crashes sometimes with deferred sync
+                // so always sync in HdPrmanMaterial::Sync like we used to.
                 material->SyncToRiley(sceneDelegate, riley);
+#endif
                 if (material->IsValid()) {
                     *materialId = material->GetMaterialId();
                     *dispId = material->GetDisplacementId();
@@ -1074,6 +1143,11 @@ HdPrman_RenderParam::UpdateLegacyOptions()
             if (TfStringStartsWith(token.GetText(), "ri:integrator")) {
                 continue;
             }
+            if (token == _riOptionsTokens->riRiShutter) {
+                // Shutter comes from the camera,
+                // ignore if specified in render settings
+                continue;
+            }
 
             // Strip "ri:" namespace from USD.
             RtUString riName;
@@ -1158,10 +1232,112 @@ HdPrman_RenderParam::SetIntegratorParamsFromRenderSettingsMap(
         if (TfStringStartsWith(entry.first.GetText(), prefix.GetText())) {
             // Strip namespace prefix from USD.
             RtUString riName(entry.first.GetText() + prefix.size());
+            TfToken role;
+            HdPrman_ProjectionParams::GetIntegratorParamRole(entry.first, role);
             HdPrman_Utils::SetParamFromVtValue(riName, entry.second,
-                TfToken(), &params);
+                role, &params);
         }
-    }        
+    }
+}
+
+void
+HdPrman_RenderParam::SetProjectionParamsFromRenderSettings(
+    HdPrmanRenderDelegate *renderDelegate,
+    std::string& projectionName,
+    RtParamList& params)
+{
+    HdRenderSettingsMap renderSettings = renderDelegate->GetRenderSettingsMap();
+
+    TfToken preFix(std::string("ri:projection:") + projectionName);
+    for (auto const& entry : renderSettings) {
+        TfToken token = entry.first;
+        VtValue val = entry.second;
+
+        bool hasRiPrefix = TfStringStartsWith(token.GetText(),
+                                              preFix.GetText());
+        if (hasRiPrefix) {
+            // Strip namespace from USD.
+            RtUString riName;
+            riName = RtUString(token.GetText()+preFix.size()+1);
+            TfToken role;
+            HdPrman_ProjectionParams::GetProjectionParamRole(token, role);
+            HdPrman_Utils::SetParamFromVtValue(riName, val, role, &params);
+        }
+    }
+}
+
+static std::string
+_ExpandVarsInString(
+    const std::string& input,
+    const std::string& source,
+    const int numberF,
+    const int numberN)
+{
+    std::string output = input;
+    static const char* formatStrings[]
+        = { "%01d", "%02d", "%03d", "%04d", "%05d", "%d" };
+    const bool hasAngleVars = (output.find('<') != std::string::npos);
+    const bool hasDollarVars = (output.find('$') != std::string::npos);
+    if (hasAngleVars || hasDollarVars) {
+
+        // Expand number
+        static const char* angleVarStringsF[]
+            = { "<F1>", "<F2>", "<F3>", "<F4>", "<F5>", "<F>" };
+        static const char* angleVarStringsN[]
+            = { "<N1>", "<N2>", "<N3>", "<N4>", "<N5>", "<N>" };
+        static const char* dollarVarStringsF[]
+            = { "$F1", "$F2", "$F3", "$F4", "$F5", "$F" };
+        static const char* dollarVarStringsN[]
+            = { "$N1", "$N2", "$N3", "$N4", "$N5", "$N" };
+        static const char* dollarBraceVarStringsF[]
+            = { "${F1}", "${F2}", "${F3}", "${F4}", "${F5}", "${F}" };
+        static const char* dollarBraceVarStringsN[]
+            = { "${N1}", "${N2}", "${N3}", "${N4}", "${N5}", "${N}" };
+        for (size_t i = 0; i < TfArraySize(formatStrings); ++i) {
+            const std::string strF = TfStringPrintf(formatStrings[i], numberF);
+            const std::string strN = TfStringPrintf(formatStrings[i], numberN);
+            if (hasAngleVars) {
+                output = TfStringReplace(output, angleVarStringsF[i], strF);
+                output = TfStringReplace(output, angleVarStringsN[i], strN);
+            }
+            if (hasDollarVars) {
+                output = TfStringReplace(output, dollarVarStringsF[i], strF);
+                output = TfStringReplace(output, dollarVarStringsN[i], strN);
+                output
+                    = TfStringReplace(output, dollarBraceVarStringsF[i], strF);
+                output
+                    = TfStringReplace(output, dollarBraceVarStringsN[i], strN);
+            }
+        }
+
+        // Expand source string
+        if (hasAngleVars) {
+            output = TfStringReplace(output, "<OS>", source);
+        }
+        if (hasDollarVars) {
+            output = TfStringReplace(output, "$OS", source);
+            output = TfStringReplace(output, "${OS}", source);
+        }
+    }
+
+    // Support printf style formating in file name, like %04d
+    if (output.find('%') != std::string::npos) {
+        output = TfStringPrintf(output.c_str(), numberF);
+    }
+
+    return output;
+}
+
+static std::string
+_AddFileSuffix(const std::string& filename, const std::string& suffix)
+{
+    std::string extension = TfGetExtension(filename);
+    if (!extension.empty()) {
+        extension = "." + extension;
+    }
+    const std::string base
+        = filename.substr(0, filename.length() - extension.length());
+    return base + suffix + extension;
 }
 
 void
@@ -1170,8 +1346,12 @@ HdPrman_RenderParam::SetBatchCommandLineArgs(
     RtParamList * options)
 {
     if (!cmdLine.IsHolding<VtArray<std::string>>()) {
+        _usingHusk = false;
         return;
     }
+    _usingHusk = true;
+    int huskTileIndex = 0;
+    _huskTileSuffix = "";
     bool doSnapshot = false;
     const VtArray<std::string>& v =
         cmdLine.UncheckedGet<VtArray<std::string>>();
@@ -1195,7 +1375,8 @@ HdPrman_RenderParam::SetBatchCommandLineArgs(
             // it seems like it would make sense for command line to win,
             // users should simply not set the checkpoint render settings
             // if they want to use --snapshot.
-            if (checkpointinterval.Empty()) {
+            // Also disable if argument is -1.
+            if (checkpointinterval.Empty() && *i != "-1" && *i != "0") {
                 doSnapshot = true;
                 const std::vector<std::string> toks =
                     TfStringTokenize(*i, ",");
@@ -1209,7 +1390,7 @@ HdPrman_RenderParam::SetBatchCommandLineArgs(
                                        us.data(), us.size());
             }
         }
-        else if (*i == "--threads") {
+        else if (*i == "--threads" || *i == "-j") {
             ++i;
             if(i == end) {
                 TF_WARN("No value found for --threads argument\n");
@@ -1231,12 +1412,20 @@ HdPrman_RenderParam::SetBatchCommandLineArgs(
                 TF_WARN("No value found for --timelimit argument\n");
                 break;
             }
-            RtUString exitat;
-            options->GetString(RixStr.k_checkpoint_exitat, exitat);
+            RtUString checkpointexitat;
+            options->GetString(RixStr.k_checkpoint_exitat, checkpointexitat);
             // Checkpoint exitat from render settings wins
-            if (exitat.Empty()) {
-                options->SetString(RixStr.k_checkpoint_exitat,
-                                  RtUString(i->c_str()));
+            if (checkpointexitat.Empty()) {
+                try {
+                    const int n = stoi(*i);
+                    if (n > 0) {
+                        options->SetString(RixStr.k_checkpoint_exitat,
+                                    RtUString(i->c_str()));
+                    }
+                }
+                catch (const std::invalid_argument &e) {
+                    TF_WARN("Invalid argument to --timelimit\n");
+                }
             }
         } else if (*i == "--output" || *i == "-o") {
             ++i;
@@ -1247,14 +1436,340 @@ HdPrman_RenderParam::SetBatchCommandLineArgs(
             // Husk accepts comma separated list for multiple outputs
             _outputNames = TfStringTokenize(i->c_str(), ",");
         }
+        else if (*i == "--frame" || *i == "-f") {
+            ++i;
+            if (i == end) {
+                TF_WARN("No value found for --frame argument\n");
+                break;
+            }
+            try {
+                _huskFrameStart = stoi(*i);
+            } catch (const std::invalid_argument& e) {
+                TF_WARN("Invalid argument to --frame\n");
+            } catch (const std::out_of_range& e) {
+                TF_WARN("Invalid argument to --frame\n");
+            }
+        }
+        else if (*i == "--frame-inc" || *i == "-i") {
+            ++i;
+            if (i == end) {
+                TF_WARN("No value found for --frame-inc argument\n");
+                break;
+            }
+            try {
+                _huskFrameIncrement = stoi(*i);
+            } catch (const std::invalid_argument& e) {
+                TF_WARN("Invalid argument to --frame-inc\n");
+            } catch (const std::out_of_range& e) {
+                TF_WARN("Invalid argument to --frame-inc\n");
+            }
+        }
+        else if (*i == "--tile-index") {
+            ++i;
+            if (i == end) {
+                TF_WARN("No value found for --tile-index argument\n");
+                break;
+            }
+            try {
+                huskTileIndex = stoi(*i);
+            } catch (const std::invalid_argument& e) {
+                TF_WARN("Invalid argument to --tile-index\n");
+            } catch (const std::out_of_range& e) {
+                TF_WARN("Invalid argument to --tile-index\n");
+            }
+        }
+        else if (*i == "--tile-suffix") {
+            ++i;
+            if (i == end) {
+                TF_WARN("No value found for --tile-suffix argument\n");
+                break;
+            }
+            _huskTileSuffix = i->c_str();
+        }
+    }
+
+    // If we are rendering a tile expand the tile suffix.
+    if (!_huskTileSuffix.empty()) {
+        _huskTileSuffix = _ExpandVarsInString(
+            _huskTileSuffix, "", huskTileIndex, huskTileIndex + 1);
+
+        // Also rename stats files so they don't overwrite each other.
+        RtUString legacyStatsFilename;
+        if (options->GetString(
+                RixStr.k_statistics_filename, legacyStatsFilename)) {
+            const std::string newLegacyStatsFilename = _AddFileSuffix(
+                std::string(legacyStatsFilename.CStr()), _huskTileSuffix);
+            options->SetString(
+                RixStr.k_statistics_filename,
+                RtUString(newLegacyStatsFilename.c_str()));
+        }
+        RtUString legacyStatsXMLFilename;
+        if (options->GetString(
+                RixStr.k_statistics_xmlfilename, legacyStatsXMLFilename)) {
+            const std::string newLegacyStatsXMLFilename = _AddFileSuffix(
+                std::string(legacyStatsXMLFilename.CStr()), _huskTileSuffix);
+            options->SetString(
+                RixStr.k_statistics_xmlfilename,
+                RtUString(newLegacyStatsXMLFilename.c_str()));
+        }
+        RtUString legacyStatsShaderProfile;
+        if (options->GetString(
+                RixStr.k_statistics_shaderprofile, legacyStatsShaderProfile)) {
+            const std::string newLegacyStatsShaderProfile = _AddFileSuffix(
+                std::string(legacyStatsShaderProfile.CStr()), _huskTileSuffix);
+            options->SetString(
+                RixStr.k_statistics_shaderprofile,
+                RtUString(newLegacyStatsShaderProfile.c_str()));
+        }
+
+        // Roz stats: JSON Report listener output filename
+        // This takes care of incorporating the tile suffix into the name
+        RtUString statsJsonFilename;
+        static const RtUString us_statistics_jsonFilename("statistics:jsonFilename");
+        if (options->GetString(
+                us_statistics_jsonFilename, statsJsonFilename)) {
+            const std::string newStatsJsonFilename = _AddFileSuffix(
+                std::string(statsJsonFilename.CStr()), _huskTileSuffix);
+            options->SetString(
+                us_statistics_jsonFilename,
+                RtUString(newStatsJsonFilename.c_str()));
+        }
+
+        // Roz stats: JSON Report listener metric matching regexp
+        // This takes care of incorporating the tile suffix into the name
+        RtUString statsJsonMetricsRegexp;
+        static const RtUString us_statistics_jsonMetricsRegexp("statistics:jsonMetricsRegexp");
+        if (options->GetString(
+                us_statistics_jsonMetricsRegexp, statsJsonMetricsRegexp)) {
+            const std::string newStatsJsonMetricsRegexp = _AddFileSuffix(
+                std::string(statsJsonMetricsRegexp.CStr()), _huskTileSuffix);
+            options->SetString(
+                us_statistics_jsonMetricsRegexp,
+                RtUString(newStatsJsonMetricsRegexp.c_str()));
+        }
     }
 
     // Force incremental to be enabled when checkpointing
     RtUString checkpointinterval;
     options->GetString(RixStr.k_checkpoint_interval,
                       checkpointinterval);
-    if(!checkpointinterval.Empty() || doSnapshot) {
+    RtUString checkpointexitat;
+    options->GetString(RixStr.k_checkpoint_exitat, checkpointexitat);
+    if(!checkpointinterval.Empty() || !checkpointexitat.Empty() || doSnapshot) {
         options->SetInteger(RixStr.k_hider_incremental, 1);
+    }
+}
+
+static void
+insertCombinerFilter(std::vector<riley::ShadingNode> &nodes)
+{
+    static const RtUString us_PxrSampleFilterCombiner("PxrSampleFilterCombiner");
+    static const RtUString us_PxrDisplayFilterCombiner("PxrDisplayFilterCombiner");
+    static const RtUString us_filter("filter");
+
+    if(nodes.size() <= 1)
+        return;
+
+    bool isSample = (nodes[0].type == riley::ShadingNode::Type::k_SampleFilter);
+
+    // Insert a combiner node that references the list of filters
+    std::vector<RtUString> refVals;
+    for(auto it = nodes.begin();
+        it != nodes.end(); ++it)
+    {
+        refVals.push_back(it->handle);
+    }
+
+    riley::ShadingNode combiner;
+    combiner.handle = isSample ?
+            us_PxrSampleFilterCombiner :
+            us_PxrDisplayFilterCombiner;
+    combiner.type = isSample ?
+        riley::ShadingNode::Type::k_SampleFilter :
+        riley::ShadingNode::Type::k_DisplayFilter;
+    combiner.name = combiner.handle;
+    if(isSample)
+        combiner.params.SetSampleFilterReferenceArray(us_filter,
+                                                      refVals.data(),
+                                                      refVals.size());
+    else
+        combiner.params.SetDisplayFilterReferenceArray(us_filter,
+                                                       refVals.data(),
+                                                       refVals.size());
+
+    nodes.push_back(combiner);
+}
+
+void
+HdPrman_RenderParam::_AddCryptomatteFixes(const RtUString& riName, VtValue& val)
+{
+    if (riName == RtUString("attribute")) {
+        if (!val.IsEmpty()) {
+            // translate primvars: to user:
+            // for people who don't realize they need to
+            // refer to rman attributes with user:
+            std::string v = val.UncheckedGet<std::string>();
+            v = TfStringReplace(v, "primvars:", "user:");
+            val = VtValue(v);
+        }
+    }
+    else if (riName == RtUString("filename") && !_huskTileSuffix.empty()) {
+        if (!val.IsEmpty()) {
+            // add the husk tile suffix (if one exists) so that cryptomattes
+            // files do not overwrite each other
+            std::string v = val.UncheckedGet<std::string>();
+            v = _AddFileSuffix(v, _huskTileSuffix);
+            val = VtValue(v);
+        }
+    }
+}
+
+void
+HdPrman_RenderParam::SetFiltersFromRenderSettings(
+    HdPrmanRenderDelegate *renderDelegate)
+{
+    HdRenderSettingsMap renderSettings = renderDelegate->GetRenderSettingsMap();
+
+    std::vector<TfToken> prefixes;
+    prefixes.push_back(_tokens->displayfilterPrefix);
+    prefixes.push_back(_tokens->samplefilterPrefix);
+
+    // Stop render and crease sceneVersion to trigger restart.
+    riley::Riley * riley = AcquireRiley();
+    if(!riley) {
+        return;
+    }
+
+    for(auto const& prefix : prefixes)
+    {
+
+        // Create shading nodes for each sample filter
+        // They're numbered starting with 1
+        std::vector<riley::ShadingNode> nodes;
+        int nodeIdx = 0;
+        bool isSample = (prefix == _tokens->samplefilterPrefix);
+        while(true)
+        {
+            std::string defaultFilterName("None");
+            std::string nmStr = prefix.GetText();
+            nmStr += std::to_string(nodeIdx);
+            nmStr += ":name";
+            std::string filterName =
+                    renderDelegate->GetRenderSetting<std::string>(
+                        TfToken(nmStr.c_str()),
+                        defaultFilterName);
+            if(!filterName.empty() && filterName != "None")
+            {
+                riley::ShadingNode sn;
+                sn.name = RtUString(filterName.c_str());
+                std::string handle = filterName += std::to_string(nodeIdx);
+                sn.handle = RtUString(handle.c_str());
+                sn.type = isSample ?
+                    riley::ShadingNode::Type::k_SampleFilter :
+                    riley::ShadingNode::Type::k_DisplayFilter;
+                nodes.push_back(sn);
+            }
+            else
+            {
+                break;
+            }
+            nodeIdx++;
+        }
+
+        // Append filters collected from shading nodes,
+        // which is not currently the primary workflow,
+        // but they may be present
+        if(isSample)
+        {
+            for(auto it = _sampleFilters.begin();
+                it != _sampleFilters.end(); ++it)
+            {
+                nodes.push_back(it->second);
+            }
+        }
+        else
+        {
+            for(auto it = _displayFilters.begin();
+                it != _displayFilters.end(); ++it)
+            {
+                nodes.push_back(it->second);
+            }
+        }
+        _sampleFiltersDirty = false;
+        _displayFiltersDirty = false;
+
+        if(!nodes.empty())
+        {
+            for (auto const& entry : renderSettings) {
+                TfToken token = entry.first;
+                VtValue val = entry.second;
+                bool hasRiPrefix = TfStringStartsWith(token.GetText(),
+                                                      prefix.GetText());
+                if (hasRiPrefix) {
+                    std::vector<std::string> toks = TfStringSplit(token, ":");
+                    unsigned long idx = 0;
+                    // strip off the index
+                    // eg. ri:samplefilter0:PxrBackgroundSampleFilter:name
+                    // eg. ri:displayfilter0:PxrBackgroundSampleFilter:name
+                    RtUString riName;;
+                    if(toks.size() == 4)
+                    {
+                        int offset = isSample ? 12 : 13;
+                        std::string idxStr(toks[1].begin()+offset, toks[1].end());
+                        if(!idxStr.empty())
+                            idx = std::stoi(idxStr);
+                    }
+                    if(toks.size() != 4 ||
+                       idx >= nodes.size())
+                        continue;
+                    std::vector<std::string> toks2;
+                    toks2.push_back(toks[2]);
+                    toks2.push_back(toks[3]);
+                    riName = RtUString(toks2[1].c_str());
+                    token = TfToken(TfStringJoin(toks2, ":"));
+
+                    // Some specific fixes for cryptomatte sample filter
+                    if (isSample && toks[2] == "PxrCryptomatte") {
+                        _AddCryptomatteFixes(riName, val);
+                    }
+
+                    TfToken role;
+                    HdPrman_ProjectionParams::GetFilterParamRole(token, role);
+
+                    HdPrman_Utils::SetParamFromVtValue(riName, val,
+                                   role, &nodes[idx].params);
+                }
+            }
+
+            insertCombinerFilter(nodes);
+        }
+
+        riley::ShadingNetwork const filterNetwork =
+            { static_cast<uint32_t>(nodes.size()), nodes.data() };
+
+         if(isSample) {
+             if (_sampleFilterId != riley::SampleFilterId::InvalidId()) {
+                 riley->DeleteSampleFilter(_sampleFilterId);
+                 _sampleFilterId = riley::SampleFilterId::InvalidId();
+             }
+
+           _sampleFilterId = riley->CreateSampleFilter(
+                riley::UserId(stats::AddDataLocation("/sampleFilters").
+                              GetValue()),
+                filterNetwork,
+                RtParamList());
+        } else {
+            if (_displayFilterId != riley::DisplayFilterId::InvalidId()) {
+                riley->DeleteDisplayFilter(_displayFilterId);
+                _displayFilterId = riley::DisplayFilterId::InvalidId();
+             }
+
+            _displayFilterId = riley->CreateDisplayFilter(
+                riley::UserId(stats::AddDataLocation("/displayFilters").
+                              GetValue()),
+                filterNetwork,
+                RtParamList());
+        }
     }
 }
 
@@ -1280,11 +1795,9 @@ HdPrman_RenderParam::RegisterIntegratorCallbackForCamera(
 void
 HdPrman_RenderParam::_CreateStatsSession(void)
 {
-    // Set log level for diagnostics relating to initialization.
-    // If we succeed in loading a config file then the log level specified
-    // in the config file will take precedence.
-    stats::Logger::LogLevel statsDebugLevel =
-        stats::GlobalLogger()->DefaultLogLevel();
+    // Set log level for diagnostics relating to initialization. If we succeed in loading a
+    // config file then the log level specified in the config file will take precedence.
+    stats::Logger::LogLevel statsDebugLevel = stats::GlobalLogger()->DefaultLogLevel();
     stats::SetGlobalLogLevel(statsDebugLevel);
     stats::SetGlobalLogLevel(stats::Logger::k_debug);
 
@@ -1320,12 +1833,53 @@ HdPrman_RenderParam::_CreateStatsSession(void)
         sessionConfig.LoadConfigFile(configSearchPathStr, configFilename);
     }
 
+#if _PRMANAPI_VERSION_MAJOR_ > 25
+    // Build unique server ID for live stats
+    // TODO - report this to statsmgr_houdini via scene index
+#ifdef WIN32
+    auto pid =  _getpid();
+#else
+    auto pid =  getpid();
+#endif
+    const std::string serverId = "hdprman_statsserver_" + std::to_string(pid);
+
+    // Update session config so this render's stats server is correctly registered
+    sessionConfig.SetServerId(serverId);
+#endif
+
     // Instantiate a stats Session from config object.
     _statsSession = &stats::AddSession(sessionConfig);
 
     // Validate and inform
     _statsSession->LogInfo("HDPRMan", "Created Roz stats session '" +
                                       _statsSession->GetName() + "'.");
+
+#if _PRMANAPI_VERSION_MAJOR_ > 25
+#if PXR_VERSION >= 2302
+    // Session is created, now we want to propagate information about the
+    // session into a hydra scene index where it can be extracted by
+    // other modules interacting with the stats (e.g. live stats UI)
+
+    // This name must match the string in client UI panels
+    const std::string rmanStatsSceneIndexName = "RenderMan Stats";
+
+    // Get pointer to a new scene index (ref-counted)
+    _statsSceneIndex = HdRetainedSceneIndex::New();
+    HdSceneIndexNameRegistry::GetInstance().RegisterNamedSceneIndex(
+        rmanStatsSceneIndexName, _statsSceneIndex);
+
+    // Editor for entering data into the scene index
+    HdContainerDataSourceEditor editor;
+
+    // Add serverID to the stats hydra scene index, to be picked up by UI code
+    editor.Set(HdDataSourceLocator(TfToken("liveStatsServerId")),
+        HdRetainedTypedSampledDataSource<std::string>::New(serverId));
+
+    // Finalize addition of scene index information
+    _statsSceneIndex->AddPrims({{SdfPath("/globals"), TfToken("globals"), 
+        editor.Finish()}});
+#endif
+#endif
 }
 
 void HdPrman_RenderParam::_PRManSystemBegin(
@@ -1389,8 +1943,9 @@ int HdPrman_RenderParam::_PRManRenderBegin(
 
 void
 HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
-    const std::string &xpuDevices,
-    const std::vector<std::string>& extraArgs)
+                                  const int& xpuCpuConfig,
+                                  const std::vector<int>& xpuGpuConfig,
+                                  const std::vector<std::string>& extraArgs)
 {
     _rix = RixGetContext();
     if (!_rix) {
@@ -1402,6 +1957,15 @@ HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
         TF_RUNTIME_ERROR("Could not initialize Ri API.");
         return;
     }
+
+    // mode is 1 for -Progress and 2 for -progress
+    _progressMode =
+        std::find(extraArgs.begin(),
+                  extraArgs.end(),
+                  "-Progress") != extraArgs.end() ? 1 :
+        (std::find(extraArgs.begin(),
+                   extraArgs.end(),
+                   "-progress") != extraArgs.end() ? 2 : 0);
 
 #if _PRMANAPI_VERSION_MAJOR_ >= 26
     // Initialize internals of PRMan system
@@ -1440,29 +2004,47 @@ HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
               "Renderman API tokens do not match expected values.  "
               "There may be a compile/link version mismatch.");
 
-    // Acquire Riley instance.
-    _mgr = (RixRileyManager*)_rix->GetRixInterface(k_RixRileyManager);
-
     _xpu = (!rileyVariant.empty() ||
             (rileyVariant.find("xpu") != std::string::npos));
 
-    // Decide whether to use the CPU, GPU, or both
-    RtParamList paramList;
-    if (_xpu && !xpuDevices.empty()) {
-        static const RtUString cpuConfig("xpu:cpuconfig");
-        static const RtUString gpuConfig("xpu:gpuconfig");
-
-        const bool useCpu = xpuDevices.find("cpu") != std::string::npos;
-        paramList.SetInteger(cpuConfig, useCpu ? 1 : 0);
-
-        const bool useGpu = xpuDevices.find("gpu") != std::string::npos;
-        if (useGpu) {
-            paramList.SetIntegerArray(gpuConfig, 
-                                _xpuGpuConfig.data(), _xpuGpuConfig.size());
+    // Acquire Riley instance.
+    _mgr = (RixRileyManager*)_rix->GetRixInterface(k_RixRileyManager);
+    RtParamList renderConfigParams;
+    if(IsXpu())
+    {
+        // Allow xpuGpuConfig to be overridden with RMAN_XPU_GPUCONFIG env var
+        std::vector<int> xpuGpuConfigOverride;
+        if(!xpuGpuConfig.empty()) {
+            const std::string envXpuConfig =
+                TfGetenv("RMAN_XPU_GPUCONFIG", "");
+            if(!envXpuConfig.empty()) {
+                std::vector<std::string> toks = TfStringSplit(envXpuConfig, ",");
+                for(auto tok=toks.begin(); tok != toks.end(); ++tok) {
+                    if(!tok->empty()) {
+                        xpuGpuConfigOverride.push_back(atoi(tok->c_str()));
+                    }
+                }
+            }
         }
+
+        static const RtUString us_cpuConfig("xpu:cpuconfig");
+        static const RtUString us_gpuConfig("xpu:gpuconfig");
+        renderConfigParams.SetInteger(us_cpuConfig, xpuCpuConfig);
+        renderConfigParams.SetIntegerArray(us_gpuConfig,
+                                            xpuGpuConfigOverride.empty() ?
+                                                xpuGpuConfig.data() :
+                                                xpuGpuConfigOverride.data(),
+                                            xpuGpuConfigOverride.empty() ?
+                                                xpuGpuConfig.size() :
+                                                xpuGpuConfigOverride.size());
     }
 
-    _riley = _mgr->CreateRiley(RtUString(rileyVariant.c_str()), paramList);
+    static const RtUString us_statsSessionName("statsSessionName");
+    renderConfigParams.SetString(us_statsSessionName,
+                                 RtUString(_statsSession->GetName().c_str()));
+
+    _riley = _mgr->CreateRiley(RtUString(rileyVariant.c_str()),
+                               renderConfigParams);
 
     if(!_riley) {
         TF_RUNTIME_ERROR("Could not initialize riley API.");
@@ -1470,27 +2052,106 @@ HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
     }
 }
 
-
-static
-riley::RenderOutputType
-_ToRenderOutputType(const TfToken &t)
+struct RenderOutputDataTypeDesc 
 {
-    if (t == TfToken("color3f")) {
+    riley::RenderOutputType rileyType;
+    RtUString fileDataType;
+};
+
+static const std::unordered_map<std::string, RenderOutputDataTypeDesc> _RenderOutputDataTypeMap
+{
+    // Integer
+    { "i8", { riley::RenderOutputType::k_Integer, US_NULL } },
+    { "int8", { riley::RenderOutputType::k_Integer, US_NULL } },
+    { "int", { riley::RenderOutputType::k_Integer, US_NULL } },
+    { "int2", { riley::RenderOutputType::k_Vector, US_NULL } },
+    { "int3", { riley::RenderOutputType::k_Vector, US_NULL } },
+    { "int4", { riley::RenderOutputType::k_Vector, US_NULL } },
+    { "int64", { riley::RenderOutputType::k_Integer, US_NULL } },
+
+    // Unsigned Integer
+    { "u8", { riley::RenderOutputType::k_Integer, RtUString("uint") } },
+    { "uint8", { riley::RenderOutputType::k_Integer, RtUString("uint") } },
+    { "uint", { riley::RenderOutputType::k_Integer, RtUString("uint") } },
+    { "uint2", { riley::RenderOutputType::k_Vector, RtUString("uint") } },
+    { "uint3", { riley::RenderOutputType::k_Vector, RtUString("uint") } },
+    { "uint4", { riley::RenderOutputType::k_Vector, RtUString("uint") } },
+    { "uint64", { riley::RenderOutputType::k_Integer, RtUString("uint") } },
+
+    // Floating Point
+    { "half", { riley::RenderOutputType::k_Float, RtUString("half") } },
+    { "float16", { riley::RenderOutputType::k_Float, RtUString("half") } },
+    { "float", { riley::RenderOutputType::k_Float, RtUString("float") } },
+    { "double", { riley::RenderOutputType::k_Float, RtUString("float") } },
+
+    // Vectors
+    { "half2", { riley::RenderOutputType::k_Vector, RtUString("half") } },
+    { "half3", { riley::RenderOutputType::k_Vector, RtUString("half") } },
+    { "half4", { riley::RenderOutputType::k_Vector, RtUString("half") } },
+    { "float2", { riley::RenderOutputType::k_Vector, RtUString("float") } },
+    { "float3", { riley::RenderOutputType::k_Vector, RtUString("float") } },
+    { "float4", { riley::RenderOutputType::k_Vector, RtUString("float") } },
+    { "double2", { riley::RenderOutputType::k_Vector, RtUString("float") } },
+    { "double3", { riley::RenderOutputType::k_Vector, RtUString("float") } },
+    { "double4", { riley::RenderOutputType::k_Vector, RtUString("float") } },
+    { "point3h", { riley::RenderOutputType::k_Vector, RtUString("half") } },
+    { "point3f", { riley::RenderOutputType::k_Vector, RtUString("float") } },
+    { "point3d", { riley::RenderOutputType::k_Vector, RtUString("float") } },
+    { "vector3h", { riley::RenderOutputType::k_Vector, RtUString("half") } },
+    { "vector3f", { riley::RenderOutputType::k_Vector, RtUString("float") } },
+    { "vector3d", { riley::RenderOutputType::k_Vector, RtUString("float") } },
+    { "normal3h", { riley::RenderOutputType::k_Vector, RtUString("half") } },
+    { "normal3f", { riley::RenderOutputType::k_Vector, RtUString("float") } },
+    { "normal3d", { riley::RenderOutputType::k_Vector, RtUString("float") } },
+    { "texCoord2f", { riley::RenderOutputType::k_Vector, RtUString("float") } },
+    { "texCoord2d", { riley::RenderOutputType::k_Vector, RtUString("float") } },
+    { "texCoord2h", { riley::RenderOutputType::k_Vector, RtUString("half") } },
+    { "texCoord3f", { riley::RenderOutputType::k_Vector, RtUString("float") } },
+    { "texCoord3d", { riley::RenderOutputType::k_Vector, RtUString("float") } },
+    { "texCoord3h", { riley::RenderOutputType::k_Vector, RtUString("half") } },
+
+    // Colors
+    { "color2h", { riley::RenderOutputType::k_Color, RtUString("half") } },
+    { "color2f", { riley::RenderOutputType::k_Color, RtUString("half") } },
+    { "color2d", { riley::RenderOutputType::k_Color, RtUString("half") } },
+    { "color3h", { riley::RenderOutputType::k_Color, RtUString("half") } },
+    { "color3f", { riley::RenderOutputType::k_Color, RtUString("float") } },
+    { "color3d", { riley::RenderOutputType::k_Color, RtUString("float") } },
+    { "color4h", { riley::RenderOutputType::k_Color, RtUString("half") } },
+    { "color4f", { riley::RenderOutputType::k_Color, RtUString("float") } },
+    { "color4d", { riley::RenderOutputType::k_Color, RtUString("float") } },
+    { "color2i8", { riley::RenderOutputType::k_Color, US_NULL } },
+    { "color3i8", { riley::RenderOutputType::k_Color, US_NULL } },
+    { "color4i8", { riley::RenderOutputType::k_Color, US_NULL } },
+    { "color2u8", { riley::RenderOutputType::k_Color, RtUString("uint") } },
+    { "color3u8", { riley::RenderOutputType::k_Color, RtUString("uint") } },
+    { "color4u8", { riley::RenderOutputType::k_Color, RtUString("uint") } },
+};
+
+static riley::RenderOutputType
+_ToRenderOutputType(const TfToken& t)
+{
+    auto type = _RenderOutputDataTypeMap.find(t);
+    if (type == _RenderOutputDataTypeMap.end()) {
+        TF_RUNTIME_ERROR(
+            "Unimplemented renderVar dataType '%s'; "
+            "skipping",
+            t.GetText());
         return riley::RenderOutputType::k_Color;
-    } else if (t == TfToken("float3") ||
-               t == TfToken("normal3f") ||
-               t == TfToken("point3f") ||
-               t == TfToken("vector3f")) {
-        return riley::RenderOutputType::k_Vector;
-    } else if (t == TfToken("float")) {
-        return riley::RenderOutputType::k_Float;
-    } else if (t == TfToken("int")) {
-        return riley::RenderOutputType::k_Integer;
-    } else {
-        TF_RUNTIME_ERROR("Unimplemented renderVar dataType '%s'; "
-                         "skipping", t.GetText());
-        return riley::RenderOutputType::k_Integer;
     }
+
+    return type->second.rileyType;
+}
+
+static RtUString
+_ToFileDataType(const std::string& format)
+{
+    auto type = _RenderOutputDataTypeMap.find(format);
+    if (type == _RenderOutputDataTypeMap.end()) {
+        return US_NULL;
+    }
+
+    return type->second.fileDataType;
 }
 
 // Helper to convert a dictionary of Hydra settings to Riley params,
@@ -1731,9 +2392,11 @@ static RtUString
 _AddRenderOutput(RtUString aovName, 
     const TfToken &dataType, HdFormat aovFormat, 
     RtUString sourceName, const RtParamList &params,
+    const RtUString& filter, const GfVec2f& filterWidth,
     std::vector<HdPrman_RenderViewDesc::RenderOutputDesc> *renderOutputDescs,
     std::vector<size_t> *renderOutputIndices);
 
+#if PXR_VERSION >= 2308
 static
 HdPrman_RenderViewDesc
 _ComputeRenderViewDesc(
@@ -1753,6 +2416,11 @@ _ComputeRenderViewDesc(
     } else {
         renderViewDesc.resolution = {1024, 768};
     }
+
+    // TODO: Get filter and filterWidth from renderSettings prim
+    // See comments in _UpdatePixelFilter method
+    static const RtUString defaultPixelFilter = RixStr.k_box;
+    static const GfVec2f defaultPixelFilterWidth(1.f, 1.f);
 
     /* RenderProduct */
     int renderVarIndex = 0;
@@ -1809,6 +2477,7 @@ _ComputeRenderViewDesc(
                              sourceName, 
                              _ToRtParamList(renderVar.namespacedSettings,
                                             _tokens->riDisplayChannelNamespace),
+                             defaultPixelFilter, defaultPixelFilterWidth,
                              &renderViewDesc.renderOutputDescs,
                              &renderOutputIndices);
         }
@@ -1817,6 +2486,7 @@ _ComputeRenderViewDesc(
 
     return renderViewDesc;
 }
+#endif
 
 void
 HdPrman_RenderParam::CreateRenderViewFromRenderSpec(
@@ -1836,6 +2506,7 @@ HdPrman_RenderParam::CreateRenderViewFromRenderSpec(
     GetRenderViewContext().CreateRenderView(renderViewDesc, AcquireRiley());
 }
 
+#if PXR_VERSION >= 2308
 /// XXX This should eventually replace the above use of the RenderSpec
 void 
 HdPrman_RenderParam::CreateRenderViewFromRenderSettingsProducts(
@@ -1854,6 +2525,14 @@ HdPrman_RenderParam::CreateRenderViewFromRenderSettingsProducts(
 
     renderViewContext->CreateRenderView(renderViewDesc, AcquireRiley());
 
+}
+#endif
+
+void
+HdPrman_RenderParam::FatalError(const char* msg)
+{
+    _DestroyRiley();
+    throw std::runtime_error(msg);
 }
 
 void
@@ -1915,6 +2594,16 @@ HdPrman_RenderParam::_DestroyRiley()
 }
 
 void
+HdPrman_RenderParam::UpdateRenderStats(VtDictionary &stats)
+{
+    // The GetRenderStats method owned by the hdPrman renderDelegate
+    // is a callback that returns stats to hydra.  This method adds to
+    // the dictionary the progress value that comes from
+    // the rix progress callback.
+    stats[_tokens->percentDone.GetString()] = _progressPercent;
+}
+
+void
 HdPrman_RenderParam::_DestroyStatsSession(void)
 {
     if (_statsSession)
@@ -1953,7 +2642,8 @@ HdPrman_RenderParam::_CreateFallbackMaterials()
             &materialNodes
         );
         _fallbackMaterialId = _riley->CreateMaterial(
-            riley::UserId(stats::AddDataLocation(materialNodes[0].name.CStr()).GetValue()),
+            riley::UserId(stats::AddDataLocation("/_FallbackMaterial").
+                          GetValue()),
             {static_cast<uint32_t>(materialNodes.size()), materialNodes.data()},
             RtParamList());
     }
@@ -1970,7 +2660,8 @@ HdPrman_RenderParam::_CreateFallbackMaterials()
                 us_simpleVolume,
                 _ComputeVolumeNodeParams()}};
         _fallbackVolumeMaterialId = _riley->CreateMaterial(
-            riley::UserId(stats::AddDataLocation(materialNodes[0].name.CStr()).GetValue()),
+            riley::UserId(stats::AddDataLocation("/_FallbackVolumeMaterial").
+                              GetValue()),
             {static_cast<uint32_t>(materialNodes.size()), materialNodes.data()},
             RtParamList());
     }
@@ -1991,9 +2682,27 @@ HdPrman_RenderParam::SetResolution(GfVec2i const & resolution)
 void
 HdPrman_RenderParam::InvalidateTexture(const std::string &path)
 {
-    AcquireRiley();
+    // Stop render and increase sceneVersion to trigger restart.
+    riley::Riley *riley = AcquireRiley();
+    if(!riley) {
+        return;
+    }
+    riley->InvalidateTexture(RtUString(path.c_str()));
+}
 
-    _ri->InvalidateTexture(RtUString(path.c_str()));
+static
+std::string
+_GetIntegratorName(HdRenderDelegate * const renderDelegate)
+{
+    const std::string &integratorNameFromRS =
+        renderDelegate->GetRenderSetting<std::string>(
+            HdPrmanRenderSettingsTokens->integratorName,
+            HdPrmanIntegratorTokens->PxrPathTracer.GetString());
+
+    // Avoid potentially empty integrator
+    return integratorNameFromRS.empty() ?
+            HdPrmanIntegratorTokens->PxrPathTracer.GetString() :
+            integratorNameFromRS;
 }
 
 riley::ShadingNode
@@ -2001,6 +2710,7 @@ HdPrman_RenderParam::_ComputeIntegratorNode(
     HdRenderDelegate * const renderDelegate,
     const HdPrmanCamera * const cam)
 {
+#if PXR_VERSION >= 2308
     // Use the integrator node from a terminal connection on the 
     // renderSettingsPrim if we can
     if (!GetRenderSettingsIntegratorPath().IsEmpty()) {
@@ -2033,19 +2743,20 @@ HdPrman_RenderParam::_ComputeIntegratorNode(
         }
         
         // TODO: Adjust when PxrPathTracer adds support for excludeSubset
-        if (integratorNodeType == HdPrmanIntegratorTokens->PbsPathTracer) {
+        if (integratorNodeType == HdPrmanIntegratorTokens->PbsPathTracer ||
+            integratorNodeType == HdPrmanIntegratorTokens->PxrUnified) {
             _SetExcludeSubset(_lastExcludedRenderTags,
                 rileyIntegratorNode.params);
         }
         return rileyIntegratorNode;
     }
+#endif
 
-    const std::string &integratorName =
-        renderDelegate->GetRenderSetting<std::string>(
-            HdPrmanRenderSettingsTokens->integratorName,
-            HdPrmanIntegratorTokens->PxrPathTracer.GetString());
+    const std::string &integratorName(_GetIntegratorName(renderDelegate));
 
     const RtUString rtIntegratorName(integratorName.c_str());
+
+    _integratorParams.Clear();
 
     // If the settings map / env var say to use PbsPathTracer,
     // we'll turn on volume aggregate rendering.
@@ -2068,7 +2779,8 @@ HdPrman_RenderParam::_ComputeIntegratorNode(
     }
     
     // TODO: Adjust when PxrPathTracer adds support for excludeSubset
-    if (integratorName == HdPrmanIntegratorTokens->PbsPathTracer.GetString()) {
+    if (integratorName == HdPrmanIntegratorTokens->PbsPathTracer.GetString() ||
+        integratorName == HdPrmanIntegratorTokens->PxrUnified.GetString()) {
         _SetExcludeSubset(_lastExcludedRenderTags,
             _integratorParams);
     }
@@ -2197,6 +2909,7 @@ HdPrman_RenderParam::_RenderThreadCallback()
 {
     static RtUString const US_RENDERMODE = RtUString("renderMode");
     static RtUString const US_INTERACTIVE = RtUString("interactive");
+    static RtUString const US_PROGRESSMODE = RtUString("progressMode");
 
     // Note: this is currently hard-coded because hdprman currently 
     // creates only one single camera (via the camera context).
@@ -2210,6 +2923,7 @@ HdPrman_RenderParam::_RenderThreadCallback()
     renderOptions.SetString(
         RixStr.k_dice_referencecamera, 
         defaultReferenceCamera);
+    renderOptions.SetInteger(US_PROGRESSMODE, _progressMode);
 
     HdPrman_RenderViewContext &ctx = GetRenderViewContext();
     const riley::RenderViewId renderViewIds[] = { ctx.GetRenderViewId() };
@@ -2250,8 +2964,10 @@ HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
     
     // Force initialization of Riley scene options.
     // (see related comments in SetRileyOptions)
+#if PXR_VERSION >= 2311 // avoid deferring for now because can cause crash
     if (!HdRenderIndex::IsSceneIndexEmulationEnabled() ||
         !TfGetEnvSetting(HD_PRMAN_DEFER_SET_OPTIONS))
+#endif
     {
         SetRileyOptions();
     }
@@ -2273,6 +2989,26 @@ HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
             HdPrmanExperimentalRenderSpecTokens->camera,
             VtDefault = SdfPath());
         GetCameraContext().SetCameraPath(cameraPath);
+
+        if(cameraPath.IsEmpty())
+        {
+            // When running in husk, the above query fails and
+            // we expect to find renderCameraPath.
+            const HdRenderSettingsMap renderSettings =
+                renderDelegate->GetRenderSettingsMap();
+            auto it = renderSettings.find(_tokens->renderCameraPath);
+            if(it != renderSettings.end()) {
+                std::string renderCameraPath =
+                    it->second.UncheckedGet<std::string>();
+                GetCameraContext().SetCameraPath(SdfPath(renderCameraPath));
+            }
+        }
+    }
+
+    // If the error handler gets a severe termination, including having no valid
+    // license, terminate the render.
+    if (_xcpt.handleExit) {
+        End();
     }
 }
 
@@ -2283,6 +3019,9 @@ HdPrman_RenderParam::_CreateInternalPrims()
     GetCameraContext().CreateRileyCamera(
         AcquireRiley(), HdPrman_CameraContext::GetDefaultReferenceCameraName());
 
+#ifdef DO_FALLBACK_LIGHTS
+    _CreateFallbackLight();
+#endif
     _CreateFallbackMaterials();
 
     _CreateIntegrator(_renderDelegate);
@@ -2338,6 +3077,9 @@ void
 HdPrman_RenderParam::_DeleteInternalPrims()
 {
     riley::Riley * const riley = AcquireRiley();
+    if(!riley) {
+        return;
+    }
 
     // Renderview has a handle to the camera, so delete it first.
     GetRenderViewContext().DeleteRenderView(riley);
@@ -2421,14 +3163,16 @@ HdPrman_RenderParam::SetRileyOptions()
         RtParamList composedParams = HdPrman_Utils::Compose(
             _envOptions,
             _rileySceneIndexObserverOptions,
+#if PXR_VERSION >= 2311 // causes issues for houdini 20, eg. bad shutter interval
             _renderSettingsPrimOptions, 
+#endif
             GetLegacyOptions(),
             _fallbackOptions);
 
         RtParamList prunedOptions = HdPrman_Utils::PruneDeprecatedOptions(
                     composedParams);
 
-        if (_renderDelegate->IsInteractive()) {
+        if (_renderDelegate->IsInteractive() && !_usingHusk) {
             prunedOptions = HdPrman_Utils::PruneBatchOnlyOptions(prunedOptions);
         }
 
@@ -2439,7 +3183,7 @@ HdPrman_RenderParam::SetRileyOptions()
             "SetOptions called on the composed param list:\n  %s\n",
             HdPrmanDebugUtil::RtParamListToString(
                 prunedOptions, /*indent = */2).c_str());
-        
+
         // If we've updated the riley shutter interval in SetOptions above,
         // make sure to update the cached value.
         _UpdateShutterInterval(prunedOptions);
@@ -2490,6 +3234,14 @@ HdPrman_RenderParam::StartRender()
     }
 
     _renderThread->StartRender();
+}
+
+void 
+HdPrman_RenderParam::End()
+{
+    DeleteRenderThread();
+    _framebuffer.reset();
+    _DestroyRiley();
 }
 
 void
@@ -2558,44 +3310,62 @@ HdPrman_RenderParam::DeleteRenderThread()
 }
 
 bool
-HdPrman_RenderParam::_UpdateFramebufferClearValues(
-    const HdRenderPassAovBindingVector& aovBindings)
+HdPrman_RenderParam::_UpdatePixelFilter()
 {
-    if(_framebuffer->aovBuffers.size() != aovBindings.size()) {
-        // Number of AOVs changed, can't update framebuffer clear values.
-        return false;
+    // Currently we still use the legacy Riley API where each AOV sets it's own
+    // filter and filter width. This is impossible now that we only support
+    // importance sampling and all AOVs must have the same value. Until the
+    // Riley API is modified to set filter and filter width as an option, we
+    // need to get the render setting ourselves and set it for each AOV.
+
+    // WARNING: Defaults are hardcoded. 
+    // Make sure they match the values in PRManOptions.args.
+#if _PRMANAPI_VERSION_MAJOR_ >= 26
+    static const std::string defaultPixelFilter("gaussian");
+    static const GfVec2f defaultPixelFilterWidth(2.f, 2.f);
+#else
+    static const std::string defaultPixelFilter("box");
+    static const GfVec2f defaultPixelFilterWidth(1.f, 1.f);
+#endif
+
+    const RtUString pixelFilter(
+        _renderDelegate
+            ->GetRenderSetting<std::string>(
+                HdPrmanRenderSettingsTokens->pixelFilter, defaultPixelFilter)
+            .c_str());
+    const GfVec2f pixelFilterWidth = _renderDelegate->GetRenderSetting<GfVec2f>(
+        HdPrmanRenderSettingsTokens->pixelFilterWidth, defaultPixelFilterWidth);
+
+    if (pixelFilter != _pixelFilter || pixelFilterWidth != _pixelFilterWidth) {
+        _pixelFilter = pixelFilter;
+        _pixelFilterWidth = pixelFilterWidth;
+        return true;
     }
 
-    for(size_t aov = 0; aov < aovBindings.size(); ++aov) {
-        const HdRenderPassAovBinding &aovBinding =
-            aovBindings[aov];
-        HdPrmanFramebuffer::AovDesc &aovDesc =
-            _framebuffer->aovBuffers[aov].desc;
-        if (aovBinding.aovName != aovDesc.name) {
-            // Different AOV, can't update framebuffer clear value.
-            return false;
-        }
-        
-        if(aovBinding.aovName == HdAovTokens->color ||
-           aovBinding.aovName == HdAovTokens->depth) {
-            if (aovDesc.clearValue != aovBinding.clearValue) {
-                // Request a framebuffer clear if the clear value in the aov
-                // has changed from the framebuffer clear value.
-                // We do this before StartRender() to avoid race conditions
-                // where some buckets may get discarded or cleared with
-                // the wrong value.
-                
-                // Stops render and increases sceneVersion to trigger restart.
-                AcquireRiley();
-                
-                _framebuffer->pendingClear = true;
-                aovDesc.clearValue = aovBinding.clearValue;
-            }
-        }
-    }
+    return false;
+}
 
-    return true;
-} 
+bool
+HdPrman_RenderParam::_UpdateQNSettings()
+{ 
+    // look for QN settings
+    const HdRenderSettingsMap renderSettingsMap =
+        _renderDelegate->GetRenderSettingsMap();
+    const bool useQN = _renderDelegate->GetRenderSetting<bool>(TfToken("rmanEnableQNDenoise"), false);        
+    const bool qnCheapPass = _renderDelegate->GetRenderSetting<bool>(TfToken("rmanQNCheapPass"), false);        
+    const int qnMinSamples = _renderDelegate->GetRenderSetting<int>(TfToken("rmanQNMinSamples"), 2);        
+    const int qnInterval = _renderDelegate->GetRenderSetting<int>(TfToken("rmanQNInterval"), 4);        
+    if (useQN != _useQN || qnCheapPass != _qnCheapPass ||
+        qnMinSamples != _qnMinSamples || qnInterval != _qnInterval)
+    {
+        _useQN = useQN;
+        _qnCheapPass = qnCheapPass;
+        _qnMinSamples = qnMinSamples;
+        _qnInterval = qnInterval;
+        return true;
+    }
+    return false;
+}
 
 static riley::RenderOutputType
 _ToRenderOutputTypeFromHdFormat(const HdFormat aovFormat) 
@@ -2609,7 +3379,7 @@ _ToRenderOutputTypeFromHdFormat(const HdFormat aovFormat)
     } else if(aovFormat == HdFormatInt32) {
         return riley::RenderOutputType::k_Integer;
     } else {
-        return riley::RenderOutputType::k_Float;
+        return riley::RenderOutputType::k_Color;
     }
 }
 
@@ -2635,8 +3405,8 @@ _AdjustColorFormat(HdFormat* aovFormat)
 //  - SourceName: Add 'lpe:' prefix as needed 
 static void
 _UpdateRmanAovAndSourceName(
-    bool isXPU, bool isLPE,
     const TfToken &hdAovName,
+    const std::string& sourceType,
     RtUString *rmanAovName,
     RtUString *rmanSourceName)
 {
@@ -2648,13 +3418,20 @@ _UpdateRmanAovAndSourceName(
         *rmanAovName = RtUString(hdAovName.GetText());
     }
 
-    // If the sourceType hints that the source is an lpe, make sure
-    // it starts with "lpe:" as required by prman.
-    if (isLPE) {
+    // If the sourceType hints that the source is an lpe or primvar, make sure
+    // it starts with "lpe:" or "primvars:" as required by prman.
+    if(sourceType == "lpe")
+    {
         std::string sn = rmanSourceName->CStr();
-        sn = (sn.find(RixStr.k_lpe.CStr()) == std::string::npos)
-            ? "lpe:" + std::string(rmanSourceName->CStr())
-            : rmanSourceName->CStr();
+        if(sn.rfind("lpe:", 0) == std::string::npos)
+            sn = "lpe:" + sn;
+        *rmanSourceName = RtUString(sn.c_str());
+    }
+    else if(sourceType == "primvar")
+    {
+        std::string sn = rmanSourceName->CStr();
+        if(sn.rfind("primvars:", 0) == std::string::npos)
+            sn = "primvars:" + sn;
         *rmanSourceName = RtUString(sn.c_str());
     }
 
@@ -2684,11 +3461,6 @@ _UpdateRmanAovAndSourceName(
     if (rmanSourceName->Empty()) {
         *rmanSourceName = *rmanAovName;
     }
-
-    // XPU is picky about AOV names, it wants only standard names
-    if (isXPU) {
-        *rmanAovName = *rmanSourceName;
-    }
 }
 
 // Return a RtParamList of the driver settings in the given aovSettings
@@ -2696,12 +3468,11 @@ _UpdateRmanAovAndSourceName(
 static RtParamList
 _GetOutputParamsAndUpdateRmanNames(
     const HdAovSettingsMap &aovSettings,
-    bool isXPU,
     RtUString *rmanAovName,
     RtUString *rmanSourceName)
 {
     RtParamList params;
-    bool isLPE = false;
+    std::string sourceType;
     TfToken hdAovName(rmanAovName->CStr());
     for (auto const& aovSetting : aovSettings) {
         const TfToken & settingName = aovSetting.first;
@@ -2718,15 +3489,16 @@ _GetOutputParamsAndUpdateRmanNames(
 
         // Determine if the output is of type LPE or not
         else if (settingName == _tokens->sourceType) {
-            const std::string sourceType =
+            sourceType =
                 settingVal.GetWithDefault<TfToken>().GetString();
-            isLPE = (sourceType == RixStr.k_lpe.CStr());
         }
 
         // Gather all properties with the 'driver:parameters:aov' prefix 
         // into the RtParamList, updating the hdAovName if needed. 
         else if (TfStringStartsWith(
-                 settingName.GetText(), "driver:parameters:aov:")) {
+                 settingName.GetText(), "driver:parameters:aov:") ||
+                 TfStringStartsWith(
+                 settingName.GetText(), "ri:driver:parameters:aov:")) {
             RtUString name(TfStringGetSuffix(settingName, ':').c_str());
             if (name == RixStr.k_name) {
                 hdAovName = settingVal.IsHolding<std::string>() ?
@@ -2740,7 +3512,7 @@ _GetOutputParamsAndUpdateRmanNames(
     }
 
     _UpdateRmanAovAndSourceName(
-        isXPU, isLPE, hdAovName, rmanAovName, rmanSourceName);
+        hdAovName, sourceType, rmanAovName, rmanSourceName);
 
     return params;
 }
@@ -2781,6 +3553,30 @@ HdPrman_RenderParam::_CreateRileyDisplay(
     {
         HdPrman_RenderViewDesc::DisplayDesc displayDesc;
         displayDesc.name = productName;
+        if ((productName == RixStr.k_framebuffer) && !isXpu && _useQN)
+        {
+            // interactive denoiser is turned on
+            std::string hdPrmanPath;
+            if (PlugPluginPtr const plugin =
+                PlugRegistry::GetInstance().GetPluginWithName("hdPrman")) {
+                const std::string path = TfGetPathName(plugin->GetPath());
+                if (!path.empty()) {
+                    hdPrmanPath = 
+                        TfStringCatPaths(path, "hdPrman" ARCH_LIBRARY_SUFFIX);
+                }
+                driver = RtUString("quicklyNoiseless");
+                displayParams.SetString(RtUString("dspyDSOPath"), RtUString(hdPrmanPath.c_str()));
+                displayParams.SetInteger(RtUString("cheaPass"), (int) _qnCheapPass); 
+                displayParams.SetInteger(RtUString("minSamples"), _qnMinSamples);
+                displayParams.SetInteger(RtUString("interval"), _qnInterval);
+                displayParams.SetInteger(RtUString("normalAsColor"), 1);
+                displayParams.SetInteger(RtUString("immediateClose"), 1);
+            }
+            else
+            {
+                TF_WARN("Failed to load display plugin\n");
+            }
+        }
         displayDesc.driver = driver;
         displayDesc.params = displayParams;
         displayDesc.renderOutputIndices = renderOutputIndices;
@@ -2789,66 +3585,6 @@ HdPrman_RenderParam::_CreateRileyDisplay(
     }
 }
 
-static
-std::string
-_ExpandVarsInProductName(const std::string & productName,
-                         const std::string & sourcePrimName, int frame)
-{
-    std::string expandedName = productName;
-    static const char* formatStrings[] = {
-        "%01d", "%02d", "%03d", "%04d", "%05d", "%d" };
-    const bool hasAngleVars = (expandedName.find('<') != std::string::npos);
-    const bool hasDollarVars = (expandedName.find('$') != std::string::npos);
-    if(hasAngleVars || hasDollarVars) {
-        static const char* frameAngleVarStrings[] = {
-            "<F1>", "<F2>", "<F3>", "<F4>", "<F5>", "<F>" };
-        static const char* frameDollarVarStrings[] = {
-            "$F1", "$F2", "$F3", "$F4", "$F5", "$F" };
-        static const char* frameDollarBraceVarStrings[] = {
-            "${F1}", "${F2}", "${F3}", "${F4}", "${F5}", "${F}" };
-
-        std::string frame_str;
-        for( size_t i=0; i < TfArraySize(formatStrings); ++i) {
-            frame_str = TfStringPrintf(formatStrings[i], frame);
-            if(hasAngleVars) {
-                expandedName =
-                    TfStringReplace(expandedName,
-                                    frameAngleVarStrings[i],
-                                    frame_str);
-            }
-            if(hasDollarVars) {
-                expandedName =
-                    TfStringReplace(expandedName,
-                                    frameDollarVarStrings[i],
-                                    frame_str);
-                expandedName =
-                    TfStringReplace(expandedName,
-                                    frameDollarBraceVarStrings[i],
-                                    frame_str);
-            }
-        }
-        if(hasAngleVars) {
-            expandedName =
-                TfStringReplace(expandedName, "<OS>",
-                                sourcePrimName);
-        }
-        if(hasDollarVars) {
-            expandedName =
-                TfStringReplace(expandedName, "$OS",
-                                sourcePrimName);
-            expandedName =
-                TfStringReplace(expandedName, "${OS}",
-                                sourcePrimName);
-        }
-    }
-    // Support printf style formating in file name, like %04d
-    if(expandedName.find('%') != std::string::npos) {
-        expandedName = TfStringPrintf( expandedName.c_str(), frame);
-    }
-    return expandedName;
-}
-
-static
 RtUString
 _AddRenderOutput(
     RtUString aovName,
@@ -2856,6 +3592,8 @@ _AddRenderOutput(
     HdFormat aovFormat,
     RtUString sourceName,
     const RtParamList& params,
+    const RtUString& filter,
+    const GfVec2f& filterWidth,
     std::vector<HdPrman_RenderViewDesc::RenderOutputDesc> * renderOutputDescs,
     std::vector<size_t> * renderOutputIndices)
 {
@@ -2872,18 +3610,15 @@ _AddRenderOutput(
         rType = riley::RenderOutputType::k_Color;
     }
 
-    // Get the rule, filter, and filterSize from the given RtParamList
+    // Get the rule from the given RtParamList
     RtUString rule = RixStr.k_filter;
-    params.GetString(RixStr.k_rule, rule);
-
-    RtUString filter = RixStr.k_box;
-    params.GetString(RixStr.k_filter, filter);
-
-    float filterSize[2] = {1.0f, 1.0f};
-    if(float const* filterwidth =
-       params.GetFloatArray(RixStr.k_filterwidth, 2)) {
-        filterSize[0] = filterwidth[0];
-        filterSize[1] = filterwidth[1];
+    if (!params.GetString(RixStr.k_rule, rule)) {
+        params.GetString(RixStr.k_filter, rule);
+    }
+    if (rule != RixStr.k_min && rule != RixStr.k_max
+        && rule != RixStr.k_zmin && rule != RixStr.k_zmax
+        && rule != RixStr.k_sum && rule != RixStr.k_average) {
+        rule = RixStr.k_filter;
     }
 
     // Adjust the rule/filter/filterSize as needed
@@ -2892,29 +3627,15 @@ _AddRenderOutput(
     // "cpuTime" and "sampleCount" should use rule "sum"
     if (aovName == k_cpuTime || aovName == k_sampleCount) {
         rule = RixStr.k_sum;
-        filter = RixStr.k_box;
-        filterSize[0] = 1;
-        filterSize[1] = 1;
     // "id", "id2", "z" and "depth" should use rule "zmin"
     } else if (aovName == RixStr.k_id || aovName == RixStr.k_id2 ||
               aovName == RixStr.k_z || aovName == k_depth ||
               rType == riley::RenderOutputType::k_Integer) {
         rule = RixStr.k_zmin;
-        filter = RixStr.k_box;
-        filterSize[0] = 1;
-        filterSize[1] = 1;
     // If statistics are set, use that as the rule
     } else if (params.GetString(RixStr.k_statistics, value) &&
               !value.Empty() && value != k_none) {
         rule = value;
-    // Certain filter types need to be converted to rules
-    } else if (filter == RixStr.k_min  || filter == RixStr.k_max  ||
-               filter == RixStr.k_zmin || filter == RixStr.k_zmax ||
-               filter == RixStr.k_sum  || filter == RixStr.k_average) {
-        rule = filter;
-        filter = RixStr.k_box;
-        filterSize[0] = 1;
-        filterSize[1] = 1;
     }
 
     // Get the relativePixelVariance and remap from the given RtParamList
@@ -2930,6 +3651,18 @@ _AddRenderOutput(
         extraParams.SetFloatArray(RixStr.k_remap, remap, 3);
     }
 
+    // Should correspond to driver:parameters:aov:format parameter
+    RtUString format = US_NULL;
+    params.GetString(RtUString("format"), format);
+    const RtUString fileDataType
+        = (format) ? _ToFileDataType(format.CStr()) : US_NULL;
+    if (fileDataType) {
+        // Can't seem to use RixStr.k_filedatatype until ritokens.db has been
+        // incremented
+        static const RtUString k_filedatatype("filedatatype");
+        extraParams.SetString(k_filedatatype, fileDataType);
+    }
+
     // Create the RenderOutputDesc for this AOV
     {
         HdPrman_RenderViewDesc::RenderOutputDesc renderOutputDesc;
@@ -2938,7 +3671,7 @@ _AddRenderOutput(
         renderOutputDesc.sourceName = sourceName;
         renderOutputDesc.rule = rule;
         renderOutputDesc.filter = filter;
-        renderOutputDesc.filterWidth.Set( filterSize[0], filterSize[1] );
+        renderOutputDesc.filterWidth = filterWidth;
         renderOutputDesc.relativePixelVariance = relativePixelVariance;
         renderOutputDesc.params = extraParams;
 
@@ -2960,77 +3693,16 @@ _AddRenderOutput(
         renderOutputDesc.name = RixStr.k_a;
         renderOutputDesc.type = riley::RenderOutputType::k_Float;
         renderOutputDesc.sourceName = RixStr.k_a;
-        renderOutputDesc.rule = RixStr.k_filter;
-        renderOutputDesc.filter = RixStr.k_box;
+        renderOutputDesc.rule = rule;
+        renderOutputDesc.filter = filter;
+        renderOutputDesc.filterWidth = filterWidth;
+        renderOutputDesc.relativePixelVariance = relativePixelVariance;
+        renderOutputDesc.params = extraParams;
 
         renderOutputDescs->push_back(std::move(renderOutputDesc));
         renderOutputIndices->push_back(renderOutputDescs->size()-1);
     }
     return rule;
-}
-
-static
-void
-_ComputeRenderOutputAndAovDescs(
-    const HdRenderPassAovBindingVector& aovBindings,
-    bool isXpu,
-    std::vector<HdPrman_RenderViewDesc::RenderOutputDesc> * renderOutputDescs,
-    std::vector<size_t> * renderOutputIndices,
-    HdPrmanFramebuffer::AovDescVector * aovDescs)
-{
-    std::unordered_map<TfToken, RtUString, TfToken::HashFunctor> sourceNames;
-
-    for (const HdRenderPassAovBinding &aovBinding : aovBindings) {
-
-        // RmanAovName
-        RtUString rmanAovName(aovBinding.aovName.GetText());
-
-        // AovFormat
-        HdFormat aovFormat = aovBinding.renderBuffer->GetFormat();
-        _AdjustColorFormat(&aovFormat);
-
-        // Rman Aov and Source Names, and RenderOutputParams
-        RtUString rmanSourceName;
-        RtParamList renderOutputParams =
-            _GetOutputParamsAndUpdateRmanNames(
-                aovBinding.aovSettings,
-                isXpu,
-                &rmanAovName,
-                &rmanSourceName);
-        if (!rmanSourceName.Empty()) {
-            // This is a workaround for an issue where we get an
-            // unexpected duplicate in the aovBindings sometimes,
-            // where the second entry lacks a sourceName.
-            // Can't just skip it because the caller expects
-            // a result in the buffer.
-            sourceNames[aovBinding.aovName] = rmanSourceName;
-        } else {
-            auto it = sourceNames.find(aovBinding.aovName);
-            if (it != sourceNames.end()) {
-                rmanSourceName = it->second;
-            }
-        }
-
-        // Create a RenderOutputDesc from the aovBinding
-        RtUString rule = _AddRenderOutput(rmanAovName,
-                                          TfToken(),
-                                          aovFormat,
-                                          rmanSourceName,
-                                          renderOutputParams, 
-                                          renderOutputDescs,
-                                          renderOutputIndices);
-
-        // Create a AovDesc from the aovBinding
-        {
-            HdPrmanFramebuffer::AovDesc aovDesc;
-            aovDesc.name = aovBinding.aovName;
-            aovDesc.format = aovFormat;
-            aovDesc.clearValue = aovBinding.clearValue;
-            aovDesc.rule = HdPrmanFramebuffer::ToAccumulationRule(rule);
-            
-            aovDescs->push_back(std::move(aovDesc));
-        }
-    }
 }
 
 template <typename T>
@@ -3052,16 +3724,35 @@ _GetAsRtUString(const HdAovSettingsMap & m, const TfToken & key)
 
 void
 HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
+#if PXR_VERSION >= 2308
     const HdRenderPassAovBindingVector& aovBindings,
-    const HdPrman_RenderSettings* renderSettings)
+    HdPrman_RenderSettings* renderSettings)
+#else
+    const HdRenderPassAovBindingVector& aovBindings)
+#endif
 {
     if (!_framebuffer) {
         _framebuffer = std::make_unique<HdPrmanFramebuffer>();
     }
 
-    if(_UpdateFramebufferClearValues(aovBindings)) {
-        // AOVs are the same and updating the clear values succeeded,
-        // nothing more to do.
+    static bool useRenderSettingsProductsForInteractiveRenderView =
+        TfGetEnvSetting(HD_PRMAN_INTERACTIVE_RENDER_WITH_RENDER_SETTINGS);
+
+    const bool dirtyProductsOnRenderSettingsPrim =
+#if PXR_VERSION >= 2411
+           useRenderSettingsProductsForInteractiveRenderView
+        && renderSettings
+        && renderSettings->GetAndResetHasDirtyProducts();
+#else
+    false;
+#endif
+
+    // Update the Pixel Filter and Pixel Filter Width
+    const bool pixelFilterChanged = _UpdatePixelFilter();
+    const bool qnChanged = _UpdateQNSettings();
+
+    // Early exit if the render output is unchanged
+    if (!dirtyProductsOnRenderSettingsPrim && _lastBindings == aovBindings && !pixelFilterChanged && !qnChanged) {
         return;
     }
 
@@ -3073,37 +3764,89 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
 
     std::lock_guard<std::mutex> lock(_framebuffer->mutex);
 
+    _framebuffer->pendingClear = true;
+
+    _lastBindings = aovBindings;
+
     // Displays & Display Channels
     HdPrman_RenderViewDesc renderViewDesc;
-    std::vector<size_t> renderOutputIndices;
-    HdPrmanFramebuffer::AovDescVector aovDescs;
 
-    _ComputeRenderOutputAndAovDescs(
-        aovBindings,
-        IsXpu(),
-        &renderViewDesc.renderOutputDescs,
-        &renderOutputIndices,
-        &aovDescs);
+    // Process AOV bindings.
+    {
+        std::vector<size_t> renderOutputIndices;
+        HdPrmanFramebuffer::AovDescVector aovDescs;
 
-    _framebuffer->CreateAovBuffers(aovDescs);
+        std::unordered_map<TfToken, RtUString, TfToken::HashFunctor> sourceNames;
+        for (const HdRenderPassAovBinding &aovBinding : aovBindings) {
+            TfToken dataType;
+            std::string sourceType;
+            RtUString rmanAovName(aovBinding.aovName.GetText());
+            RtUString rmanSourceName;
+            HdFormat aovFormat = aovBinding.renderBuffer->GetFormat();
+            _AdjustColorFormat(&aovFormat);
 
-    RtParamList displayParams;
-    static const RtUString us_hydra("hydra");
-    _CreateRileyDisplay(RixStr.k_framebuffer,
-                        us_hydra,
-                        renderViewDesc,
-                        renderOutputIndices,
-                        displayParams,
-                        IsXpu());
+            RtParamList renderOutputParams =
+                _GetOutputParamsAndUpdateRmanNames(aovBinding.aovSettings,
+                                 &rmanAovName,
+                                 &rmanSourceName);
 
-    renderViewDesc.cameraId = GetCameraContext().GetCameraId();
-    renderViewDesc.integratorId = GetActiveIntegratorId();
-    renderViewDesc.sampleFilterList = GetSampleFilterList();
-    renderViewDesc.displayFilterList = GetDisplayFilterList();
-    renderViewDesc.resolution = GetResolution();
+            if(!rmanSourceName.Empty()) {
+                // This is a workaround for an issue where we get an
+                // unexpected duplicate in the aovBindings sometimes,
+                // where the second entry lacks a sourceName.
+                // Can't just skip it because the caller expects
+                // a result in the buffer.
+                sourceNames[aovBinding.aovName] = rmanSourceName;
+            } else {
+                auto it = sourceNames.find(aovBinding.aovName);
+                if(it != sourceNames.end())
+                {
+                    rmanSourceName = it->second;
+                }
+            }
 
-    if (TfGetEnvSetting(HD_PRMAN_INTERACTIVE_RENDER_WITH_RENDER_SETTINGS) &&
-            renderSettings) {
+            RtUString rule = _AddRenderOutput(rmanAovName,
+                                              dataType,
+                                              aovFormat,
+                                              rmanSourceName,
+                                              renderOutputParams,
+                                              _pixelFilter,
+                                              _pixelFilterWidth,
+                                              &renderViewDesc.renderOutputDescs,
+                                              &renderOutputIndices);
+
+            {
+                HdPrmanFramebuffer::AovDesc aovDesc;
+                aovDesc.name = aovBinding.aovName;
+                aovDesc.format = aovFormat;
+                aovDesc.clearValue = aovBinding.clearValue;
+                aovDesc.rule = HdPrmanFramebuffer::ToAccumulationRule(rule);
+
+                aovDescs.push_back(std::move(aovDesc));
+            }
+        }
+
+        _framebuffer->CreateAovBuffers(aovDescs);
+
+        RtParamList displayParams;
+        static const RtUString us_hydra("hydra");
+        _CreateRileyDisplay(RixStr.k_framebuffer,
+                            us_hydra,
+                            renderViewDesc,
+                            renderOutputIndices,
+                            displayParams,
+                            IsXpu());
+
+        renderViewDesc.cameraId = GetCameraContext().GetCameraId();
+        renderViewDesc.integratorId = GetActiveIntegratorId();
+        renderViewDesc.sampleFilterList = GetSampleFilterList();
+        renderViewDesc.displayFilterList = GetDisplayFilterList();
+        renderViewDesc.resolution = GetResolution();
+    }
+
+#if PXR_VERSION >=2308
+    if (useRenderSettingsProductsForInteractiveRenderView && renderSettings) {
+
         // Get the descriptors for the render settings products.
         // N.B. this overrides the camera opinion on the product.  That
         // isn't the intent in case it becomes a problem.
@@ -3136,9 +3879,13 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
             std::make_move_iterator(rsrvd.displayDescs.begin()),
             std::make_move_iterator(rsrvd.displayDescs.end()));
     }
+#endif
 
     TF_DEBUG(HDPRMAN_RENDER_PASS)
-        .Msg("Create Riley RenderView from AOV bindings.\n");
+        .Msg("Create Riley RenderView from AOV bindings: #renderOutputs = %zu"
+             " ,#displays = %zu.\n", renderViewDesc.renderOutputDescs.size(),
+             renderViewDesc.displayDescs.size());
+
     GetRenderViewContext().CreateRenderView(renderViewDesc, riley);
 }
 
@@ -3155,6 +3902,9 @@ HdPrman_RenderParam::CreateRenderViewFromLegacyProducts(
             riley::RenderViewId::InvalidId()) {
         return;
     }
+
+    // Update the Pixel Filter and Pixel Filter Width
+    _UpdatePixelFilter();
 
     // Currently XPU only supports having one Riley Target and View.
     // Here we loop over the Render Products (a USD concept which corresponds
@@ -3236,41 +3986,69 @@ HdPrman_RenderParam::CreateRenderViewFromLegacyProducts(
                 const SdfPath sourcePrim = settingVal.UncheckedGet<SdfPath>();
                 sourcePrimName = sourcePrim.GetName().c_str();
             } else if (TfStringStartsWith(settingName.GetText(),
-                                          "driver:parameters:")) {
+                                          "driver:parameters:") ||
+                       TfStringStartsWith(settingName.GetText(),
+                                          "ri:driver:parameters:")) {
                 driverParameters.push_back(settingName);
             }
         }
 
-        // If an outputName has been specified on command line,
-        // override the product's name.
-        // But if there are multiple products, and only one outputName
-        // has been specified, only use it for products beyond the first
-        // if it contains variables, so we don't just overwrite the first image.
+        // If an --output or -o has been specified on command line, override the
+        // product's name and expand variables:
+        // <OS> : source prim (render  product node name) 
+        // <F>, <F1>, <F2>, <F3>, <F4>, <F5> : frame number with padding 
+        // <N> : the ordinial frame number
+        // Vars can also use dollar style (braces optional) eg. $F4
+        // ${F4} $OS or printf style formatting: %04d
         std::string outputName;
+        const int ordinalFrame = std::max(
+            1, ((frame - _huskFrameStart) / _huskFrameIncrement) + 1);
         if (idx < _outputNames.size()) {
-            outputName = _outputNames[idx];
-        } else if (!_outputNames.empty() &&
-                    _outputNames[0].find('<') != std::string::npos) {
-            outputName = _outputNames[0];
+            outputName = _ExpandVarsInString(
+                _outputNames[idx], sourcePrimName, frame, ordinalFrame);
         }
-
-        // Expand a few possible variables.
-        // <OS> : source prim (render product node name)
-        // <F>, <F1>, <F2>, <F3>, <F4>, <F5> : frame number, with padding
-        // vars can also be dollar style, braces optional, eg. $F4 ${F4} $OS
-        // or printf style formatting: %04d
+        // If there are less outputNames than products, use the first
+        // outputName only if it contains variables (so we don't overwrite the
+        // first image).
+        else if (!_outputNames.empty()) {
+            outputName = _ExpandVarsInString(
+                _outputNames[0], sourcePrimName, frame, ordinalFrame);
+            if (_outputNames[0] == outputName) {
+                outputName = "";
+            }
+        }
         if (!outputName.empty()) {
-            productName = TfToken(
-                _ExpandVarsInProductName(outputName, sourcePrimName, frame));
+            // If we have a tile suffix make sure we add it to our outputName
+            if (!_huskTileSuffix.empty()) {
+                outputName = _AddFileSuffix(outputName, _huskTileSuffix);
+            }
+            productName = TfToken(outputName);
         }
 
         // Build Display Settings ParamList using the driverParameters gathered 
         // above from the Render Product Settings
         RtParamList displayParams;
         for (const TfToken& paramName : driverParameters) {
+            std::string suffix = TfStringGetSuffix(paramName, ':');
+
+            // Support solaris stlye exr settings
+            if (TfStringStartsWith(paramName, "driver:parameters:OpenEXR:")) {
+                if (suffix == "dwa_compression") {
+                    suffix = "compressionlevel";
+                }
+                else if (suffix != "compression") {
+                    suffix = "exrheader_" + suffix;
+                }
+            }
+            else if (
+                suffix == "artist" || suffix == "comment"
+                || suffix == "hostname") {
+                suffix = "exrheader_" + suffix;
+            }
+
             auto val = renderProduct.find(paramName);
             if (val != renderProduct.end()) {
-                const RtUString name(TfStringGetSuffix(paramName, ':').c_str());
+                const RtUString name(suffix.c_str());
                 HdPrman_Utils::SetParamFromVtValue(name, val->second,
                     TfToken(), &displayParams);
             }
@@ -3306,7 +4084,6 @@ HdPrman_RenderParam::CreateRenderViewFromLegacyProducts(
             RtParamList renderOutputParams =
                 _GetOutputParamsAndUpdateRmanNames(
                     aovSettings,
-                    IsXpu(),
                     &rmanAovName,
                     &rmanSourceName);
 
@@ -3316,6 +4093,8 @@ HdPrman_RenderParam::CreateRenderViewFromLegacyProducts(
                              aovFormat,
                              rmanSourceName,
                              renderOutputParams,
+                             _pixelFilter,
+                             _pixelFilterWidth,
                              &renderViewDesc.renderOutputDescs,
                              &renderOutputIndices);
 
@@ -3333,6 +4112,8 @@ HdPrman_RenderParam::CreateRenderViewFromLegacyProducts(
     renderViewDesc.cameraId = GetCameraContext().GetCameraId();
     renderViewDesc.integratorId = GetActiveIntegratorId();
     renderViewDesc.resolution = GetResolution();
+    renderViewDesc.sampleFilterList = GetSampleFilterList();
+    renderViewDesc.displayFilterList = GetDisplayFilterList();
 
     TF_DEBUG(HDPRMAN_RENDER_PASS)
         .Msg("Create Riley RenderView from the legacy products.\n");
@@ -3366,24 +4147,19 @@ HdPrman_RenderParam::AcquireRiley()
     return _riley;
 }
 
-static const float*
-_GetShutterParam(const RtParamList &params)
+static
+std::string
+_GetQuickIntegratorName(HdRenderDelegate * const renderDelegate)
 {
-    return params.GetFloatArray(RixStr.k_Ri_Shutter, 2);
-}
+    const std::string &integratorNameFromRS =
+        renderDelegate->GetRenderSetting<std::string>(
+            HdPrmanRenderSettingsTokens->interactiveIntegrator,
+            HdPrmanIntegratorTokens->PxrDirectLighting.GetString());
 
-void
-HdPrman_RenderParam::_UpdateShutterInterval(const RtParamList &composedParams)
-{
-    if (const float *val = _GetShutterParam(composedParams)) {
-        _shutterInterval = GfVec2f(val[0], val[1]);
-    }
-
-    // When there's only one sample available the motion blur plug-in 
-    // doesn't have access to the correct shutter interval, so this is 
-    // a workaround to provide it.
-    HdPrman_MotionBlurSceneIndexPlugin::SetShutterInterval(
-        _shutterInterval[0], _shutterInterval[1]);
+    // Avoid potentially empty integrator
+    return integratorNameFromRS.empty() ?
+            HdPrmanIntegratorTokens->PxrDirectLighting.GetString() :
+            integratorNameFromRS;
 }
 
 riley::ShadingNode
@@ -3391,10 +4167,7 @@ HdPrman_RenderParam::_ComputeQuickIntegratorNode(
     HdRenderDelegate * const renderDelegate,
     const HdPrmanCamera * const cam)
 {
-    const std::string &integratorName =
-        renderDelegate->GetRenderSetting<std::string>(
-            HdPrmanRenderSettingsTokens->interactiveIntegrator,
-            HdPrmanIntegratorTokens->PxrDirectLighting.GetString());
+    const std::string &integratorName(_GetQuickIntegratorName(renderDelegate));
 
     const RtUString rtIntegratorName(integratorName.c_str());
 
@@ -3432,13 +4205,14 @@ HdPrman_RenderParam::_CreateQuickIntegrator(
     static const HdPrmanCamera * const camera = nullptr;
 
     if (_enableQuickIntegrate) {
-        riley::ShadingNode integratorNode(
-          _ComputeQuickIntegratorNode(renderDelegate, camera));
+        const std::string &integratorName(
+            _GetQuickIntegratorName(renderDelegate));
+
         _quickIntegratorId = _riley->CreateIntegrator(
             riley::UserId(
-                stats::AddDataLocation(integratorNode.name.CStr()).GetValue()),
-            integratorNode);
-    
+                stats::AddDataLocation(integratorName.c_str()).GetValue()),
+            _ComputeQuickIntegratorNode(renderDelegate, camera));
+
         TF_VERIFY(_quickIntegratorId != riley::IntegratorId::InvalidId());
     }
 }
@@ -3521,7 +4295,7 @@ HdPrman_RenderParam::SetRileyShutterIntervalFromCameraContextCameraPath(
 
     } else {
         // Try to get shutter interval from camera.
-        // Note that shutter open and close times are frame relative and refer 
+        // Note that shutter open and close times are frame relative and refer
         // to the times the shutter begins to open and fully closes
         // respectively.
         if (const HdCamera * const camera =
@@ -3550,6 +4324,7 @@ HdPrman_RenderParam::SetRileyShutterIntervalFromCameraContextCameraPath(
     SetRileyOptions();
 }
 
+#if PXR_VERSION >= 2308
 void
 HdPrman_RenderParam::SetRenderSettingsIntegratorPath(
     HdSceneDelegate *sceneDelegate,
@@ -3582,6 +4357,7 @@ HdPrman_RenderParam::SetRenderSettingsIntegratorNode(
         UpdateIntegrator(renderIndex);
     }
 }
+#endif
 
 void
 HdPrman_RenderParam::SetConnectedSampleFilterPaths(
@@ -3805,6 +4581,105 @@ HdPrman_RenderParam::GetDisplayFilterList()
         : riley::DisplayFilterList({ 1, &_displayFiltersId });
 }
 
+void
+HdPrman_RenderParam::_CreateFallbackLight()
+{
+    static const RtUString us_PxrDomeLight("PxrDomeLight");
+    static const RtUString us_lightA("lightA");    
+    static const RtUString us_traceLightPaths("traceLightPaths");
+    static const RtUString us_lightGroup("lightGroup");
+    static const RtUString us_A("A");
+
+    RtParamList nodeParams;
+    nodeParams.SetFloat(RixStr.k_intensity, 1.0f);
+    nodeParams.SetInteger(us_traceLightPaths, 1);
+    nodeParams.SetString(us_lightGroup, us_A);
+
+    // Light shader
+    const riley::ShadingNode lightNode {
+        riley::ShadingNode::Type::k_Light, // type
+            us_PxrDomeLight, // name
+            us_lightA, // handle
+            nodeParams
+            };
+    _fallbackLightShader = _riley->CreateLightShader(
+        riley::UserId::DefaultId(), {1, &lightNode}, {0, nullptr});
+    
+    riley::CoordinateSystemList const k_NoCoordsys = { 0, nullptr };
+    
+    // Constant identity transform
+    const float zerotime[1] = { 0.0f };
+    const RtMatrix4x4 matrix[1] = { RixConstants::k_IdentityMatrix };
+    const riley::Transform xform = { 1, matrix, zerotime };
+
+    // Light instance
+    const SdfPath fallbackLightId("/_FallbackLight");
+
+    // Initialize default categories.
+    ConvertCategoriesToAttributes(
+        fallbackLightId,
+        VtArray<TfToken>(),
+        _fallbackLightAttrs);
+
+    static const RtUString us_default("default");
+
+    _fallbackLightAttrs.SetString(
+        RixStr.k_grouping_membership,
+        us_default);
+    _fallbackLightAttrs.SetString(
+        RixStr.k_identifier_name,
+        RtUString(fallbackLightId.GetText()));
+    _fallbackLightAttrs.SetInteger(
+        RixStr.k_visibility_camera,
+        0);
+    _fallbackLightAttrs.SetInteger(
+        RixStr.k_visibility_indirect,
+        1);
+    _fallbackLightAttrs.SetInteger(
+        RixStr.k_visibility_transmission,
+        1);
+    _fallbackLightAttrs.SetInteger(
+        RixStr.k_lighting_mute,
+        !_fallbackLightEnabled);
+
+    _fallbackLight = _riley->CreateLightInstance(
+        riley::UserId(
+            stats::AddDataLocation(fallbackLightId.GetText()).GetValue()),
+        riley::GeometryPrototypeId::InvalidId(), // no group
+        riley::GeometryPrototypeId::InvalidId(), // no geo
+        riley::MaterialId::InvalidId(), // no material
+        _fallbackLightShader,
+        k_NoCoordsys,
+        xform,
+        _fallbackLightAttrs);
+}
+
+void
+HdPrman_RenderParam::SetFallbackLightsEnabled(bool enabled)
+{
+    if (_fallbackLightEnabled == enabled) {
+        return;
+    }
+    _fallbackLightEnabled = enabled;
+
+    // Stop render and crease sceneVersion to trigger restart.
+    riley::Riley * riley = AcquireRiley();
+    if(!riley) {
+        return;
+    }
+
+    _fallbackLightAttrs.SetInteger(RixStr.k_lighting_mute, !enabled);
+
+    riley->ModifyLightInstance(
+          riley::GeometryPrototypeId::InvalidId(), // no group
+          _fallbackLight,
+          nullptr, // no material change
+          nullptr, // no shader change
+          nullptr, // no coordsys change
+          nullptr, // no xform change
+          &_fallbackLightAttrs);
+}
+
 HdPrmanInstancer*
 HdPrman_RenderParam::GetInstancer(const SdfPath& id)
 {
@@ -3819,6 +4694,26 @@ bool
 HdPrman_RenderParam::IsInteractive() const
 {
     return _renderDelegate->IsInteractive();
+}
+
+static const float*
+_GetShutterParam(const RtParamList &params)
+{
+    return params.GetFloatArray(RixStr.k_Ri_Shutter, 2);
+}
+
+void
+HdPrman_RenderParam::_UpdateShutterInterval(const RtParamList& composedParams)
+{
+    if (const float* val = _GetShutterParam(composedParams)) {
+        _shutterInterval = GfVec2f(val[0], val[1]);
+    }
+
+    // When there's only one sample available the motion blur plug-in
+    // doesn't have access to the correct shutter interval, so this is
+    // a workaround to provide it.
+    HdPrman_MotionBlurSceneIndexPlugin::SetShutterInterval(
+        _shutterInterval[0], _shutterInterval[1]);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

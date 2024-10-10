@@ -17,9 +17,6 @@
 #include "pxr/external/boost/python/return_value_policy.hpp"
 #include "pxr/external/boost/python/implicit.hpp"
 #include <string>
-#include <boost/lexical_cast.hpp>
-#define BOOST_ENABLE_ASSERT_HANDLER
-#include <boost/assert.hpp>
 #include "test_class.hpp"
 
 using namespace PXR_BOOST_NAMESPACE::python;
@@ -54,19 +51,7 @@ std::string extract_string(object x)
 
 std::string const& extract_string_cref(object x)
 {
-#if defined(BOOST_MSVC) && BOOST_MSVC <= 1300
-# pragma warning(push)
-# pragma warning(disable:4172) // msvc lies about returning a reference to temporary
-#elif defined(_MSC_VER) && defined(__ICL) && __ICL <= 900
-# pragma warning(push)
-# pragma warning(disable:473) // intel/win32 does too
-#endif 
-    
     return extract<std::string const&>(x);
-    
-#if defined(BOOST_MSVC) && BOOST_MSVC <= 1300 || defined(_MSC_VER) && defined(__ICL) && __ICL <= 800
-# pragma warning(pop)
-#endif 
 }
 
 X extract_X(object x)
@@ -99,7 +84,7 @@ bool check_X_ref(object x) { return extract<X&>(x).check(); }
 
 std::string x_rep(X const& x)
 {
-    return "X("  + boost::lexical_cast<std::string>(x.value()) + ")";
+    return "X("  + std::to_string(x.value()) + ")";
 }
 
 PXR_BOOST_PYTHON_MODULE(extract_ext)

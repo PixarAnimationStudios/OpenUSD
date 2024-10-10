@@ -21,7 +21,7 @@ static void wrapDiscoveryPluginContext()
     typedef NdrDiscoveryPluginContext This;
     typedef TfWeakPtr<NdrDiscoveryPluginContext> ThisPtr;
 
-    class_<This, ThisPtr, boost::noncopyable>("DiscoveryPluginContext", no_init)
+    class_<This, ThisPtr, noncopyable>("DiscoveryPluginContext", no_init)
         .def(TfPyWeakPtr())
         .def("GetSourceType", pure_virtual(&This::GetSourceType))
         ;
@@ -34,7 +34,7 @@ void wrapDiscoveryPlugin()
 
     return_value_policy<copy_const_reference> copyRefPolicy;
 
-    class_<This, ThisPtr, boost::noncopyable>("DiscoveryPlugin", no_init)
+    class_<This, ThisPtr, noncopyable>("DiscoveryPlugin", no_init)
         .def(TfPyWeakPtr())
         .def("DiscoverNodes", pure_virtual(&This::DiscoverNodes))
         .def("GetSearchURIs", pure_virtual(&This::GetSearchURIs), copyRefPolicy)

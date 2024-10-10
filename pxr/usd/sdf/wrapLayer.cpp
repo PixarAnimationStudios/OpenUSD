@@ -491,7 +491,7 @@ void wrapLayer()
 
     scope s = class_<This,
                      ThisHandle,
-                     boost::noncopyable>("Layer", no_init)
+                     noncopyable>("Layer", no_init)
 
         .def(TfPyRefAndWeakPtr())
 

@@ -151,7 +151,8 @@ public:
     // --------------------------------------------------------------------- //
     // PRODUCTTYPE 
     // --------------------------------------------------------------------- //
-    /// The type of output to produce; allowed values are ones most 
+    /// 
+    /// The type of output to produce. Allowed values are ones most 
     /// renderers should be able to support.
     /// Renderers that support custom output types are encouraged to supply an 
     /// applied API schema that will add an `token myRenderContext:productType`

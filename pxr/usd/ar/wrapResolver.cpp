@@ -18,7 +18,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/refPtr.h"
 
-#include <boost/noncopyable.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -52,7 +51,7 @@ wrapResolver()
 
     typedef ArResolver This;
 
-    class_<This, boost::noncopyable>
+    class_<This, noncopyable>
         ("Resolver", no_init)
 
         .def("CreateDefaultContext", &This::CreateDefaultContext)

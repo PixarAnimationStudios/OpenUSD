@@ -39,7 +39,8 @@ progAndArgList = [("usdedit", "-h"),
 ("usdstitchclips", "-h"),
 ("usddumpcrate", "-h"),
 ("sdfdump", "-h"),
-("sdffilter", "-h")
+("sdffilter", "-h"),
+("usdmeasureperformance", "-h")
 ]
 
 #------------------------------------------------------------------------------#

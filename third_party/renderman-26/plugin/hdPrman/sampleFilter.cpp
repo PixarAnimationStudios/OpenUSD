@@ -6,6 +6,8 @@
 //
 #include "hdPrman/sampleFilter.h"
 
+#if PXR_VERSION >= 2308
+
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/utils.h"
@@ -58,7 +60,7 @@ HdPrman_SampleFilter::_CreateRmanSampleFilter(
                 sampleFilterNode.nodeTypeId.GetText(), filterPrimPath.GetText());
         return;
     }
-    std::string shaderPath = sdrEntry->GetResolvedImplementationURI();
+    std::string shaderPath = sdrEntry->GetImplementationName();
     if (shaderPath.empty()) {
         TF_WARN("Shader '%s' did not provide a valid implementation path.",
                 sdrEntry->GetName().c_str());
@@ -133,3 +135,5 @@ HdDirtyBits HdPrman_SampleFilter::GetInitialDirtyBitsMask() const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2308

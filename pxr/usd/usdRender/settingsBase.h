@@ -165,6 +165,7 @@ public:
     // --------------------------------------------------------------------- //
     // ASPECTRATIOCONFORMPOLICY 
     // --------------------------------------------------------------------- //
+    /// 
     /// Indicates the policy to use to resolve an aspect
     /// ratio mismatch between the camera aperture and image settings.
     /// 

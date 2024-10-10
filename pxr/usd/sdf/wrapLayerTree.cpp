@@ -53,7 +53,7 @@ void wrapLayerTree()
         TfPyContainerConversions::
             variable_capacity_all_items_convertible_policy >();
 
-    class_<SdfLayerTree, TfWeakPtr<SdfLayerTree>, boost::noncopyable>
+    class_<SdfLayerTree, TfWeakPtr<SdfLayerTree>, noncopyable>
         ("LayerTree", "", no_init)
         .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(&_NewEmpty))

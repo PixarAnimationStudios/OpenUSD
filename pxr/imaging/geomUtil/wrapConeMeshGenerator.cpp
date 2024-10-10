@@ -35,6 +35,25 @@ _WrapGeneratePoints(
     return points;
 }
 
+static VtVec3fArray
+_WrapGenerateNormals(
+    const size_t numRadial,
+    const float radius,
+    const float height)
+{
+    const size_t numNormals =
+        GeomUtilConeMeshGenerator::ComputeNumNormals(numRadial);
+    if (numNormals == 0) {
+        return VtVec3fArray();
+    }
+
+    VtVec3fArray normals(numNormals);
+    GeomUtilConeMeshGenerator::GenerateNormals(
+        normals.begin(), numRadial, radius, height);
+
+    return normals;
+}
+
 void wrapConeMeshGenerator()
 {
     using This = GeomUtilConeMeshGenerator;
@@ -50,10 +69,19 @@ void wrapConeMeshGenerator()
         .def("ComputeNumPoints", &This::ComputeNumPoints)
         .staticmethod("ComputeNumPoints")
 
+        .def("ComputeNumNormals", &This::ComputeNumNormals)
+        .staticmethod("ComputeNumNormals")
+
+        .def("GetNormalsInterpolation", &This::GetNormalsInterpolation)
+        .staticmethod("GetNormalsInterpolation")
+
         .def("GenerateTopology", &This::GenerateTopology)
         .staticmethod("GenerateTopology")
 
         .def("GeneratePoints", &_WrapGeneratePoints)
         .staticmethod("GeneratePoints")
+
+        .def("GenerateNormals", &_WrapGenerateNormals)
+        .staticmethod("GenerateNormals")
     ;
 }

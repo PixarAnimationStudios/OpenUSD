@@ -23,6 +23,7 @@ public:
     HDPRMAN_API virtual void HandleXcpt(int code, int severity,
                                         const char* msg);
     HDPRMAN_API virtual void HandleExitRequest(int code);
+    bool handleExit = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

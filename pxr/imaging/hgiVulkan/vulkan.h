@@ -20,7 +20,7 @@
     #error Unsupported Platform
 #endif
 
-#include "pxr/imaging/hgiVulkan/volk.h"
+#include <vulkan/vulkan.h>
 
 #include "pxr/imaging/hgiVulkan/vk_mem_alloc.h"
 

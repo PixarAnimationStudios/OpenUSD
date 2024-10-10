@@ -5317,6 +5317,10 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                 << "float GetSelectedEdgeOpacity() {\n"
                 << "  return 0.0;\n"
                 << "}\n";
+            accessors
+                << "bool SelectWireframeFaceEdges() {\n"
+                << "  return false;\n"
+                << "}\n";
             break;
     }
 

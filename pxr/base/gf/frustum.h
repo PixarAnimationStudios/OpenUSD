@@ -379,7 +379,7 @@ class GfFrustum {
     /// \note The default value for \c isFovVertical is false so calling \c
     /// GetFOV without an argument will return the horizontal field of view
     /// which is compatible with menv2x's old GfFrustum::GetFOV routine.
-    GF_API double       GetFOV(bool isFovVertical = false);
+    GF_API double       GetFOV(bool isFovVertical = false) const;
 
     /// Sets up the frustum in a manner similar to \c glOrtho().
     ///

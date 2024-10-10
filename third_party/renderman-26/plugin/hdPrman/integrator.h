@@ -8,6 +8,8 @@
 #define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_INTEGRATOR_H
 
 #include "pxr/pxr.h"
+#if PXR_VERSION >= 2308
+
 #include "pxr/imaging/hd/sprim.h"
 
 #include "Riley.h"
@@ -33,5 +35,7 @@ public:
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2308
 
 #endif // EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_INTEGRATOR_H

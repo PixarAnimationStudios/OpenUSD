@@ -20,13 +20,6 @@
 
 #define PXR_BOOST_PYTHON_NAMESPACE PXR_BOOST_NAMESPACE::python
 
-// Allow lookups in the boost namespace to accommodate code that
-// relied on this library being in the boost namespace as well.
-namespace boost { }
-namespace PXR_BOOST_NAMESPACE {
-    using namespace boost;
-}
-
 #else
 
 // Set up a namespace alias so that code that uses pxr_boost::python

@@ -26,6 +26,8 @@
 
 #include "pxr/base/tf/envSetting.h"
 
+#include "hdPrman/tokens.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -40,7 +42,6 @@ TF_DEFINE_ENV_SETTING(HDPRMAN_ENABLE_LIGHT_LINKING_SCENE_INDEX, true,
 // Plugin registration
 ////////////////////////////////////////////////////////////////////////////////
 
-static const char * const _rendererDisplayName = "Prman";
 class HdPrman_LightLinkingSceneIndexPlugin;
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -57,15 +58,16 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
         //     HdGpSceneIndexPlugin::GetInsertionPhase() currently returns 2.
         //
         const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 4;
-
-        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-            _rendererDisplayName,
-            _tokens->sceneIndexPluginName,
-            // XXX Update inputArgs to provide the list of geometry types
-            //     supported by hdPrman.
-            nullptr, 
-            insertionPhase,
-            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+        for( auto const& rendererDisplayName : HdPrman_GetPluginDisplayNames()) {
+            HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+                rendererDisplayName,
+                _tokens->sceneIndexPluginName,
+                // XXX Update inputArgs to provide the list of geometry types
+                //     supported by hdPrman.
+                nullptr, 
+                insertionPhase,
+                HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+        }
     }
 }
 

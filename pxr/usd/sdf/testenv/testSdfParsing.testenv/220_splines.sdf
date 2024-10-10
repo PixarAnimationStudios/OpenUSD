@@ -29,33 +29,27 @@ def Xform "Prim2"
         post: sloped(0.57),
         loop: (15, 25, 0, 2, 11.7),
         7: 5.5 & 7.21; post held,
-        15: 8.18; post curve ws(2.49, 1.17); { string comment = "climb!" },
-        20: 14.72; pre ws(3.77, -1.4); post curve ws(1.1, -1.4),
+        15: 8.18; post curve (2.49, 1.17); { string comment = "climb!" },
+        20: 14.72; pre (3.77, -1.4); post curve (1.1, -1.4),
     }
 }
 
 def Xform "Prim3"
 {
-    double mayaAttr.spline = {
+    double meztli.spline = {
         bezier,
-        -14.7: 11.30752; post curve wh(1.4, 7.7),
-        -1.2: 22.994037; pre wh(0.9, -4.01); post curve wh(7, 40),
-    }
-    float mixedStandardAndMaya.spline = {
-        bezier,
-        1: 8; post curve wh(4, 0.5),
-        6: 20; pre wh(2, 0.4); post curve ws(2, 0.3),
-        40: -44; pre ws(1, 0); post curve wh(22, -0),
+        -14.7: 11.30752; post curve (1.4, 7.7),
+        -1.2: 22.994037; pre (0.9, -4.01); post curve (7, 40),
     }
     float quetzalcoatl.spline = {
         hermite,
-        1: 8; post curve s(4),
-        6: 20; pre s(2); post curve s(2),
+        1: 8; post curve (4),
+        6: 20; pre (2); post curve (2),
     }
     float tlaxcoco.spline = {
         hermite,
-        1: 8; post curve h(4),
-        6: 20; pre h(2); post curve h(2),
+        1: 8; post curve (4),
+        6: 20; pre (2); post curve (2),
     }
 }
 

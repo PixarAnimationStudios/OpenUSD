@@ -160,7 +160,7 @@ GfFrustum::GetPerspective(bool isFovVertical,
 }
 
 double
-GfFrustum::GetFOV(bool isFovVertical /* = false */)
+GfFrustum::GetFOV(bool isFovVertical /* = false */) const
 {
     double result = 0.0;
 

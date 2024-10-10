@@ -25,8 +25,8 @@ over "GLOBAL" (
 {
 }
 
-class "NonAppliedAPI" (
-    inherits = </APISchemaBase>
+class "DerivedNonAppliedAPI" (
+    inherits = </NonAppliedAPI>
     customData = {
         token apiSchemaType = "nonApplied"
     }
@@ -34,8 +34,8 @@ class "NonAppliedAPI" (
 {
 }
 
-class "DerivedNonAppliedAPI" (
-    inherits = </NonAppliedAPI>
+class "NonAppliedAPI" (
+    inherits = </APISchemaBase>
     customData = {
         token apiSchemaType = "nonApplied"
     }

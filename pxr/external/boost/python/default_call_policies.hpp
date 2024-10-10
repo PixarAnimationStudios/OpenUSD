@@ -18,12 +18,12 @@
 #else
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
-# include <boost/mpl/if.hpp>
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 # include "pxr/external/boost/python/to_python_value.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 # include "pxr/external/boost/python/detail/value_arg.hpp"
-# include <boost/mpl/or.hpp>
-# include <boost/mpl/front.hpp>
+# include "pxr/external/boost/python/detail/mpl2/or.hpp"
+# include "pxr/external/boost/python/detail/mpl2/front.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
@@ -62,7 +62,7 @@ struct default_call_policies
     typedef PyObject* argument_package;
 
     template <class Sig> 
-    struct extract_return_type : mpl::front<Sig>
+    struct extract_return_type : detail::mpl2::front<Sig>
     {
     };
 
@@ -73,8 +73,8 @@ struct default_result_converter
     template <class R>
     struct apply
     {
-        typedef typename mpl::if_<
-            mpl::or_<detail::is_pointer<R>, detail::is_reference<R> >
+        typedef typename detail::mpl2::if_<
+            detail::mpl2::or_<detail::is_pointer<R>, detail::is_reference<R> >
           , detail::specify_a_return_value_policy_to_wrap_functions_returning<R>
           , PXR_BOOST_NAMESPACE::python::to_python_value<
                 typename detail::value_arg<R>::type

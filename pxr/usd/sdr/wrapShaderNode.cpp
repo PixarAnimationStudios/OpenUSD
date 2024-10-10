@@ -52,7 +52,7 @@ void wrapShaderNode()
     to_python_converter<SdrShaderNodeConstPtr,
                         SdrShaderNodeConstPtrToPythonConverter>();
 
-    class_<This, ThisPtr, bases<NdrNode>, boost::noncopyable>("ShaderNode", no_init)
+    class_<This, ThisPtr, bases<NdrNode>, noncopyable>("ShaderNode", no_init)
         .def("GetShaderInput", &This::GetShaderInput,
             return_internal_reference<>())
         .def("GetShaderOutput", &This::GetShaderOutput,

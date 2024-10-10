@@ -17,10 +17,17 @@
 #include <boost/python/detail/is_xxx.hpp>
 #else
 
-# include <boost/detail/is_xxx.hpp>
+# include <type_traits>
 
 #  define PXR_BOOST_PYTHON_IS_XXX_DEF(name, qualified_name, nargs) \
-    BOOST_DETAIL_IS_XXX_DEF(name, qualified_name, nargs)
+template <class T>                                                 \
+struct is_##name : std::false_type { };                            \
+                                                                   \
+template <class... T>                                              \
+struct is_##name<qualified_name<T...>>                             \
+    : std::bool_constant<nargs == sizeof...(T)>                    \
+{                                                                  \
+};
 
 #endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_IS_XXX_HPP

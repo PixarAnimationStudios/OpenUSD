@@ -33,7 +33,8 @@ text :filename:`.usda` outputs.
 The relevant scripts and data files reside in the USD distribution in
 :filename:`USD/extras/usd/tutorials/simpleShading`. Run
 :filename:`generate_simpleShading.py` in that directory to generate all of the
-snippets for each step shown below.
+snippets for each step shown below, or examine the pre-generated 
+`simpleShading.usda <https://github.com/PixarAnimationStudios/OpenUSD/tree/release/extras/usd/tutorials/simpleShading/simpleShading.usda>`__ file.
 
 Making a Model
 ==============

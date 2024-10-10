@@ -22,6 +22,24 @@
 #include <chrono>
 #include <thread>
 
+namespace {
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+// -------------------------------------------------------------------------
+// General Ray Utilities
+// -------------------------------------------------------------------------
+
+inline GfVec3f
+_CalculateHitPosition(RTCRayHit const& rayHit)
+{
+    return GfVec3f(rayHit.ray.org_x + rayHit.ray.tfar * rayHit.ray.dir_x,
+                   rayHit.ray.org_y + rayHit.ray.tfar * rayHit.ray.dir_y,
+                   rayHit.ray.org_z + rayHit.ray.tfar * rayHit.ray.dir_z);
+}
+
+}  // anonymous namespace
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdEmbreeRenderer::HdEmbreeRenderer()
@@ -67,6 +85,12 @@ void
 HdEmbreeRenderer::SetEnableSceneColors(bool enableSceneColors)
 {
     _enableSceneColors = enableSceneColors;
+}
+
+void
+HdEmbreeRenderer::SetRandomNumberSeed(int randomNumberSeed)
+{
+    _randomNumberSeed = randomNumberSeed;
 }
 
 void
@@ -432,8 +456,8 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
         // Always pass the renderThread to _RenderTiles to allow the first frame
         // to be interrupted.
         WorkParallelForN(numTilesX*numTilesY,
-            std::bind(&HdEmbreeRenderer::_RenderTiles, this, renderThread,
-                std::placeholders::_1, std::placeholders::_2));
+            std::bind(&HdEmbreeRenderer::_RenderTiles, this,
+                renderThread, i, std::placeholders::_1, std::placeholders::_2));
 
         // After the first pass, mark the single-sampled attachments as
         // converged and unmap them. If there are no multisampled attachments,
@@ -472,7 +496,7 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 }
 
 void
-HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
+HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread, int sampleNum,
                                size_t tileStart, size_t tileEnd)
 {
     const unsigned int minX = _dataWindow.GetMinX();
@@ -497,13 +521,19 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
 
     // Initialize the RNG for this tile (each tile creates one as
     // a lazy way to do thread-local RNGs).
-    size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
+    size_t seed;
+    if (_randomNumberSeed == -1) {
+        seed = std::chrono::system_clock::now().time_since_epoch().count();
+    } else {
+        seed = static_cast<size_t>(_randomNumberSeed);
+    }
     seed = TfHash::Combine(seed, tileStart);
+    seed = TfHash::Combine(seed, sampleNum);
     std::default_random_engine random(seed);
 
     // Create a uniform distribution for jitter calculations.
     std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
-    std::function<float()> uniform_float = std::bind(uniform_dist, random);
+    auto uniform_float = [&random, &uniform_dist]() { return uniform_dist(random); };
 
     // _RenderTiles gets a range of tiles; iterate through them.
     for (unsigned int tile = tileStart; tile < tileEnd; ++tile) {
@@ -750,9 +780,7 @@ HdEmbreeRenderer::_ComputeDepth(RTCRayHit const& rayHit,
     }
 
     if (clip) {
-        GfVec3f hitPos = GfVec3f(rayHit.ray.org_x + rayHit.ray.tfar * rayHit.ray.dir_x,
-            rayHit.ray.org_y + rayHit.ray.tfar * rayHit.ray.dir_y,
-            rayHit.ray.org_z + rayHit.ray.tfar * rayHit.ray.dir_z);
+        GfVec3f hitPos = _CalculateHitPosition(rayHit);
 
         hitPos = GfVec3f(_viewMatrix.Transform(hitPos));
         hitPos = GfVec3f(_projMatrix.Transform(hitPos));
@@ -862,9 +890,7 @@ HdEmbreeRenderer::_ComputeColor(RTCRayHit const& rayHit,
                 rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,rayHit.hit.geomID)));
 
     // Compute the worldspace location of the rayHit hit.
-    GfVec3f hitPos = GfVec3f(rayHit.ray.org_x + rayHit.ray.tfar * rayHit.ray.dir_x,
-            rayHit.ray.org_y + rayHit.ray.tfar * rayHit.ray.dir_y,
-            rayHit.ray.org_z + rayHit.ray.tfar * rayHit.ray.dir_z);
+    GfVec3f hitPos = _CalculateHitPosition(rayHit);
 
     // If a normal primvar is present (e.g. from smooth shading), use that
     // for shading; otherwise use the flat face normal.
@@ -923,7 +949,7 @@ HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
 {
     // Create a uniform random distribution for AO calculations.
     std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
-    std::function<float()> uniform_float = std::bind(uniform_dist, random);
+    auto uniform_float = [&random, &uniform_dist]() { return uniform_dist(random); };
 
     // 0 ambient occlusion samples means disable the ambient occlusion term.
     if (_ambientOcclusionSamples < 1) {

@@ -10,24 +10,21 @@
 #include "pxr/external/boost/python/pointee.hpp"
 #include "pxr/external/boost/python/detail/type_traits.hpp"
 #include <memory>
-#include <boost/shared_ptr.hpp>
-#include <boost/static_assert.hpp>
 
 struct A;
 
 int main()
 {
-    BOOST_STATIC_ASSERT(
+    static_assert(
         (PXR_BOOST_NAMESPACE::python::detail::is_same<
-             PXR_BOOST_NAMESPACE::python::pointee<boost::shared_ptr<A> >::type
+             PXR_BOOST_NAMESPACE::python::pointee<std::shared_ptr<A> >::type
              , A>::value));
 
-#ifndef BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION
-    BOOST_STATIC_ASSERT(
+    static_assert(
         (PXR_BOOST_NAMESPACE::python::detail::is_same<
                 PXR_BOOST_NAMESPACE::python::pointee<char*>::type
                 , char
          >::value));
-#endif 
+
     return 0;
 }

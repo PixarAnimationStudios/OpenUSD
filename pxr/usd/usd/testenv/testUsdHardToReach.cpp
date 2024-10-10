@@ -12,6 +12,8 @@
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/stage.h"
 
+#include "pxr/usd/sdf/pathExpression.h"
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace
@@ -231,6 +233,32 @@ TestOpaqueValueFileIO()
     _CheckNoSpecForOpaqueValues("usdc");
 }
 
+void
+TestOutParamterIgnoredForComposingValues()
+{
+    const UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    const SdfLayerHandle layer = stage->GetRootLayer();
+
+    const UsdPrim prim = stage->DefinePrim(SdfPath {"/Prim"});
+
+    // Test that a PathExpression out-paramter's value is ignored, and not
+    // composed over authored opinions.
+    const UsdAttribute pathExprAttr = prim.CreateAttribute(
+        TfToken("pathExpr"), SdfValueTypeNames->PathExpression);
+    
+    SdfPathExpression outPathExpr { "/out %_" };
+    
+    // Calling Get() with no authored value should leave the out parameter
+    // untouched.
+    TF_AXIOM(!pathExprAttr.Get(&outPathExpr));
+    TF_AXIOM(outPathExpr == SdfPathExpression { "/out %_" });
+    
+    // Calling Get() should ignore the value in the out parameter.
+    pathExprAttr.Set(SdfPathExpression {"/authored"});
+    TF_AXIOM(pathExprAttr.Get(&outPathExpr));
+    TF_AXIOM(outPathExpr == SdfPathExpression { "/authored" });
+}
+
 }
 
 int 
@@ -239,5 +267,6 @@ main(int argc, char** argv)
     TestTargetSpecs();
     TestGetTargetsAndConnections();
     TestOpaqueValueFileIO();
+    TestOutParamterIgnoredForComposingValues();
     return 0;
 }

@@ -18,9 +18,7 @@
 #else
 
 # include "pxr/external/boost/python/type_id.hpp"
-# include <boost/shared_ptr.hpp>
-# include <boost/mpl/if.hpp>
-# include <boost/detail/workaround.hpp>
+# include "pxr/external/boost/python/detail/mpl2/if.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
@@ -68,7 +66,7 @@ struct non_polymorphic_id_generator
 // Now the generalized selector
 template <class T>
 struct dynamic_id_generator
-  : mpl::if_<
+  : python::detail::mpl2::if_<
         PXR_BOOST_NAMESPACE::python::detail::is_polymorphic<T>
         , PXR_BOOST_NAMESPACE::python::objects::polymorphic_id_generator<T>
         , PXR_BOOST_NAMESPACE::python::objects::non_polymorphic_id_generator<T>
@@ -114,8 +112,8 @@ struct implicit_cast_generator
 
 template <class Source, class Target>
 struct cast_generator
-  : mpl::if_<
-        PXR_BOOST_NAMESPACE::python::detail::is_base_and_derived<Target,Source>
+  : python::detail::mpl2::if_<
+        python::detail::is_base_and_derived<Target,Source>
       , implicit_cast_generator<Source,Target>
       , dynamic_cast_generator<Source,Target>
     >
@@ -124,7 +122,7 @@ struct cast_generator
 
 template <class Source, class Target>
 inline void register_conversion(
-    bool is_downcast = ::boost::is_base_and_derived<Source,Target>::value
+    bool is_downcast = python::detail::is_base_and_derived<Source,Target>::value
     // These parameters shouldn't be used; they're an MSVC bug workaround
     , Source* = 0, Target* = 0)
 {

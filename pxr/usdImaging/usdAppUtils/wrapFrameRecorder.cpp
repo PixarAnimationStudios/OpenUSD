@@ -23,7 +23,7 @@ wrapFrameRecorder()
 {
     using This = UsdAppUtilsFrameRecorder;
 
-    scope s = class_<This, boost::noncopyable>("FrameRecorder")
+    scope s = class_<This, noncopyable>("FrameRecorder")
         .def(init<>())
         .def(init<const TfToken&, bool>(
             (arg("rendererPluginId") = TfToken(), 

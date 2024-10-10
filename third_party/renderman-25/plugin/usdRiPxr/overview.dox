@@ -1,8 +1,0 @@
-/*!
-\page usdRiPxr_page_front UsdRiPxr : USD Renderman Pxr Plugins Schemas
-(codeless)
-
-\section usdRiPxr_overview Overview
-
-UsdRiPxr provide USD codeless schemas for Renderman Pxr plugins. Most of the
-schema classes are generated using usdgenschemafromsdr.

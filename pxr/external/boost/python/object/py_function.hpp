@@ -18,8 +18,7 @@
 #else
 
 # include "pxr/external/boost/python/detail/signature.hpp"
-# include <boost/detail/workaround.hpp>
-# include <boost/mpl/size.hpp>
+# include "pxr/external/boost/python/detail/mpl2/size.hpp"
 # include <memory>
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
@@ -78,7 +77,7 @@ struct signature_py_function_impl : py_function_impl_base
     
     virtual unsigned min_arity() const
     {
-        return mpl::size<Sig>::value - 1;
+        return python::detail::mpl2::size<Sig>::value - 1;
     }
     
     virtual python::detail::py_func_sig_info signature() const
@@ -147,11 +146,7 @@ struct py_function
     {}
 
     py_function(py_function const& rhs)
-#if defined(BOOST_NO_CXX11_SMART_PTR)
-      : m_impl(rhs.m_impl)
-#else
       : m_impl(std::move(rhs.m_impl))
-#endif
     {}
 
     PyObject* operator()(PyObject* args, PyObject* kw) const

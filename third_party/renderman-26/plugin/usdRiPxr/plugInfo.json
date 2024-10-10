@@ -14,6 +14,7 @@
                         "bases": [
                             "UsdLuxNonboundableLightBase"
                         ], 
+                        "schemaIdentifier": "PxrAovLight", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrAttributesAPI": {
@@ -24,6 +25,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrAttributesAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrBackgroundDisplayFilter": {
@@ -34,6 +36,7 @@
                         "bases": [
                             "UsdRiPxrDisplayFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrBackgroundDisplayFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrBackgroundSampleFilter": {
@@ -44,6 +47,7 @@
                         "bases": [
                             "UsdRiPxrSampleFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrBackgroundSampleFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrBarnLightFilter": {
@@ -54,6 +58,7 @@
                         "bases": [
                             "UsdLuxLightFilter"
                         ], 
+                        "schemaIdentifier": "PxrBarnLightFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrCamera": {
@@ -64,6 +69,7 @@
                         "bases": [
                             "UsdRiPxrProjectionPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrCamera", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrCameraAPI": {
@@ -80,6 +86,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrCameraAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrCameraProjectionAPI": {
@@ -99,6 +106,7 @@
                         "isUsdShadeContainer": false, 
                         "providesUsdShadeConnectableAPIBehavior": true, 
                         "requiresUsdShadeEncapsulation": false, 
+                        "schemaIdentifier": "PxrCameraProjectionAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrCombinerLightFilter": {
@@ -109,6 +117,7 @@
                         "bases": [
                             "UsdLuxLightFilter"
                         ], 
+                        "schemaIdentifier": "PxrCombinerLightFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrCookieLightFilter": {
@@ -119,6 +128,7 @@
                         "bases": [
                             "UsdLuxLightFilter"
                         ], 
+                        "schemaIdentifier": "PxrCookieLightFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrCopyAOVDisplayFilter": {
@@ -129,6 +139,7 @@
                         "bases": [
                             "UsdRiPxrDisplayFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrCopyAOVDisplayFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrCopyAOVSampleFilter": {
@@ -139,6 +150,7 @@
                         "bases": [
                             "UsdRiPxrSampleFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrCopyAOVSampleFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrCryptomatte": {
@@ -149,6 +161,7 @@
                         "bases": [
                             "UsdRiPxrSampleFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrCryptomatte", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrCylinderCamera": {
@@ -159,6 +172,7 @@
                         "bases": [
                             "UsdRiPxrProjectionPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrCylinderCamera", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrCylinderLightAPI": {
@@ -172,6 +186,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrCylinderLightAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrDebugShadingContext": {
@@ -182,6 +197,7 @@
                         "bases": [
                             "UsdRiPxrIntegratorPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrDebugShadingContext", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrDefault": {
@@ -192,6 +208,7 @@
                         "bases": [
                             "UsdRiPxrIntegratorPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrDefault", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrDirectLighting": {
@@ -202,6 +219,7 @@
                         "bases": [
                             "UsdRiPxrIntegratorPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrDirectLighting", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrDiskLightAPI": {
@@ -215,6 +233,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrDiskLightAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrDisplayChannelAPI": {
@@ -231,6 +250,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrDisplayChannelAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrDisplayFilterCombiner": {
@@ -241,6 +261,7 @@
                         "bases": [
                             "UsdRiPxrDisplayFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrDisplayFilterCombiner", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrDisplayFilterPluginBase": {
@@ -252,6 +273,7 @@
                             "UsdGeomImageable"
                         ], 
                         "providesUsdShadeConnectableAPIBehavior": true, 
+                        "schemaIdentifier": "PxrDisplayFilterPluginBase", 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdRiPxrDistantLightAPI": {
@@ -265,6 +287,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrDistantLightAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrDomeLightAPI": {
@@ -279,6 +302,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrDomeLightAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrDspyDeepExrAPI": {
@@ -292,6 +316,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrDspyDeepExrAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrDspyItAPI": {
@@ -305,6 +330,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrDspyItAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrDspyNullAPI": {
@@ -318,6 +344,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrDspyNullAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrDspyOpenExrAPI": {
@@ -331,6 +358,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrDspyOpenExrAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrDspyPngAPI": {
@@ -344,6 +372,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrDspyPngAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrDspyPointCloudAPI": {
@@ -357,6 +386,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrDspyPointCloudAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrDspyTargaAPI": {
@@ -370,6 +400,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrDspyTargaAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrDspyTextureAPI": {
@@ -383,6 +414,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrDspyTextureAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrDspyTiffAPI": {
@@ -396,6 +428,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrDspyTiffAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrEdgeDetect": {
@@ -406,6 +439,7 @@
                         "bases": [
                             "UsdRiPxrDisplayFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrEdgeDetect", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrEnvDayLight": {
@@ -416,6 +450,7 @@
                         "bases": [
                             "UsdLuxNonboundableLightBase"
                         ], 
+                        "schemaIdentifier": "PxrEnvDayLight", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrFilmicTonemapperDisplayFilter": {
@@ -426,6 +461,7 @@
                         "bases": [
                             "UsdRiPxrDisplayFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrFilmicTonemapperDisplayFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrFilmicTonemapperSampleFilter": {
@@ -436,6 +472,7 @@
                         "bases": [
                             "UsdRiPxrSampleFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrFilmicTonemapperSampleFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrGradeDisplayFilter": {
@@ -446,6 +483,7 @@
                         "bases": [
                             "UsdRiPxrDisplayFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrGradeDisplayFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrGradeSampleFilter": {
@@ -456,6 +494,7 @@
                         "bases": [
                             "UsdRiPxrSampleFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrGradeSampleFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrHalfBufferErrorFilter": {
@@ -466,6 +505,7 @@
                         "bases": [
                             "UsdRiPxrDisplayFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrHalfBufferErrorFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrImageDisplayFilter": {
@@ -476,6 +516,7 @@
                         "bases": [
                             "UsdRiPxrDisplayFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrImageDisplayFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrImagePlaneFilter": {
@@ -486,6 +527,7 @@
                         "bases": [
                             "UsdRiPxrSampleFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrImagePlaneFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrIntMultLightFilter": {
@@ -496,6 +538,7 @@
                         "bases": [
                             "UsdLuxLightFilter"
                         ], 
+                        "schemaIdentifier": "PxrIntMultLightFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrIntegratorPluginBase": {
@@ -507,6 +550,7 @@
                             "UsdTyped"
                         ], 
                         "providesUsdShadeConnectableAPIBehavior": true, 
+                        "schemaIdentifier": "PxrIntegratorPluginBase", 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdRiPxrLightProbe": {
@@ -517,6 +561,7 @@
                         "bases": [
                             "UsdRiPxrProjectionPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrLightProbe", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrLightSaturation": {
@@ -527,6 +572,7 @@
                         "bases": [
                             "UsdRiPxrDisplayFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrLightSaturation", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrMeshLightAPI": {
@@ -541,6 +587,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrMeshLightAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrOcclusion": {
@@ -551,6 +598,7 @@
                         "bases": [
                             "UsdRiPxrIntegratorPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrOcclusion", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrOmnidirectionalStereo": {
@@ -561,6 +609,7 @@
                         "bases": [
                             "UsdRiPxrProjectionPluginBase"
                         ], 
+                        "schemaIdentifier": "OmnidirectionalStereo", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrOptionsAPI": {
@@ -577,6 +626,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrOptionsAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrOrthographic": {
@@ -587,6 +637,7 @@
                         "bases": [
                             "UsdRiPxrProjectionPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrOrthographic", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrPanini": {
@@ -597,6 +648,7 @@
                         "bases": [
                             "UsdRiPxrProjectionPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrPanini", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrPathTracer": {
@@ -607,6 +659,7 @@
                         "bases": [
                             "UsdRiPxrIntegratorPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrPathTracer", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrPerspective": {
@@ -617,6 +670,7 @@
                         "bases": [
                             "UsdRiPxrProjectionPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrPerspective", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrPortalLightAPI": {
@@ -630,6 +684,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrPortalLightAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrPrimvarsAPI": {
@@ -640,6 +695,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrPrimvarsAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrProjectionPluginBase": {
@@ -651,6 +707,7 @@
                             "UsdTyped"
                         ], 
                         "providesUsdShadeConnectableAPIBehavior": true, 
+                        "schemaIdentifier": "PxrProjectionPluginBase", 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdRiPxrRampLightFilter": {
@@ -661,6 +718,7 @@
                         "bases": [
                             "UsdLuxLightFilter"
                         ], 
+                        "schemaIdentifier": "PxrRampLightFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrRectLightAPI": {
@@ -674,6 +732,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrRectLightAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrRenderTerminalsAPI": {
@@ -692,6 +751,7 @@
                         ], 
                         "providesUsdShadeConnectableAPIBehavior": true, 
                         "requiresUsdShadeEncapsulation": false, 
+                        "schemaIdentifier": "PxrRenderTerminalsAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrRodLightFilter": {
@@ -702,6 +762,7 @@
                         "bases": [
                             "UsdLuxLightFilter"
                         ], 
+                        "schemaIdentifier": "PxrRodLightFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrSampleFilterCombiner": {
@@ -712,6 +773,7 @@
                         "bases": [
                             "UsdRiPxrSampleFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrSampleFilterCombiner", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrSampleFilterPluginBase": {
@@ -723,6 +785,7 @@
                             "UsdGeomImageable"
                         ], 
                         "providesUsdShadeConnectableAPIBehavior": true, 
+                        "schemaIdentifier": "PxrSampleFilterPluginBase", 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdRiPxrShadowDisplayFilter": {
@@ -733,6 +796,7 @@
                         "bases": [
                             "UsdRiPxrDisplayFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrShadowDisplayFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrShadowFilter": {
@@ -743,6 +807,7 @@
                         "bases": [
                             "UsdRiPxrSampleFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrShadowFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrSphereCamera": {
@@ -753,6 +818,7 @@
                         "bases": [
                             "UsdRiPxrProjectionPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrSphereCamera", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrSphereLightAPI": {
@@ -766,6 +832,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PxrSphereLightAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdRiPxrStylizedCanvas": {
@@ -776,6 +843,7 @@
                         "bases": [
                             "UsdRiPxrDisplayFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrStylizedCanvas", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrStylizedHatching": {
@@ -786,6 +854,7 @@
                         "bases": [
                             "UsdRiPxrDisplayFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrStylizedHatching", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrStylizedLines": {
@@ -796,6 +865,7 @@
                         "bases": [
                             "UsdRiPxrDisplayFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrStylizedLines", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrStylizedToon": {
@@ -806,6 +876,7 @@
                         "bases": [
                             "UsdRiPxrDisplayFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrStylizedToon", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrUnified": {
@@ -816,6 +887,7 @@
                         "bases": [
                             "UsdRiPxrIntegratorPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrUnified", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrVCM": {
@@ -826,6 +898,7 @@
                         "bases": [
                             "UsdRiPxrIntegratorPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrVCM", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrValidateBxdf": {
@@ -836,6 +909,7 @@
                         "bases": [
                             "UsdRiPxrIntegratorPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrValidateBxdf", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrVisualizer": {
@@ -846,6 +920,7 @@
                         "bases": [
                             "UsdRiPxrIntegratorPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrVisualizer", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrWatermarkFilter": {
@@ -856,6 +931,7 @@
                         "bases": [
                             "UsdRiPxrSampleFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrWatermarkFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrWhitePointDisplayFilter": {
@@ -866,6 +942,7 @@
                         "bases": [
                             "UsdRiPxrDisplayFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrWhitePointDisplayFilter", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdRiPxrWhitePointSampleFilter": {
@@ -876,6 +953,7 @@
                         "bases": [
                             "UsdRiPxrSampleFilterPluginBase"
                         ], 
+                        "schemaIdentifier": "PxrWhitePointSampleFilter", 
                         "schemaKind": "concreteTyped"
                     }
                 }

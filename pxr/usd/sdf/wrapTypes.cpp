@@ -430,7 +430,7 @@ void wrapTypes()
 
     VtValueFromPython<SdfUnregisteredValue>();
 
-    class_<Sdf_ValueTypeNamesType, boost::noncopyable>(
+    class_<Sdf_ValueTypeNamesType, noncopyable>(
             "ValueTypeNames", no_init)
         .def( "Find", &_FindType )
         .staticmethod("Find")

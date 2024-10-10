@@ -24,7 +24,7 @@ void wrapRelationshipSpec()
     typedef SdfRelationshipSpec This;
 
     class_<This, SdfHandle<This>, 
-           bases<SdfPropertySpec>, boost::noncopyable>
+           bases<SdfPropertySpec>, noncopyable>
         ("RelationshipSpec", no_init)
         
         .def(SdfPySpec())

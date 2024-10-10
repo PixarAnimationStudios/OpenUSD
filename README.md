@@ -160,8 +160,6 @@ to use a monolithic build when embedding USD
 
 These builds do not support Python bindings or command line tools.
 
-Currently, these builds also do not support Imaging or USD Imaging.
-
 For example, the following will download, build, and install USD's dependencies,
 then build and install USD for iOS into `/path/to/my_usd_install_dir`.
 

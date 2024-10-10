@@ -21,7 +21,7 @@ void wrapRegistry()
     typedef KindRegistry This;
     typedef TfWeakPtr<KindRegistry> ThisPtr;
 
-   class_<This, ThisPtr, boost::noncopyable>("Registry", no_init)
+   class_<This, ThisPtr, noncopyable>("Registry", no_init)
         .def(TfPySingleton())
         .def("HasKind", &This::HasKind)
         .staticmethod("HasKind")

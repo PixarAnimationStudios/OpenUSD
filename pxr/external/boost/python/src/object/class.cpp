@@ -9,8 +9,6 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 #include "pxr/external/boost/python/detail/prefix.hpp"
-#include <boost/mpl/lambda.hpp> // #including this first is an intel6 workaround
-#include <boost/cstdint.hpp>
 
 #include "pxr/external/boost/python/object/class.hpp"
 #include "pxr/external/boost/python/object/instance.hpp"
@@ -22,7 +20,6 @@
 #include "pxr/external/boost/python/detail/map_entry.hpp"
 #include "pxr/external/boost/python/object.hpp"
 #include "pxr/external/boost/python/object_protocol.hpp"
-#include <boost/detail/binary_search.hpp>
 #include "pxr/external/boost/python/self.hpp"
 #include "pxr/external/boost/python/dict.hpp"
 #include "pxr/external/boost/python/str.hpp"
@@ -30,6 +27,7 @@
 #include <functional>
 #include <vector>
 #include <cstddef>
+#include <cstdint>
 #include <new>
 #include <structmember.h>
 
@@ -743,7 +741,7 @@ void* instance_holder::allocate(PyObject* self_, std::size_t holder_offset, std:
 
         size_t allocated = holder_size + alignment;
         void* storage = (char*)self + holder_offset;
-        void* aligned_storage = ::boost::alignment::align(alignment, holder_size, storage, allocated);
+        void* aligned_storage = std::align(alignment, holder_size, storage, allocated);
 
         // Record the fact that the storage is occupied, noting where it starts
         const size_t offset = reinterpret_cast<uintptr_t>(aligned_storage) - reinterpret_cast<uintptr_t>(storage) + holder_offset;
@@ -764,7 +762,7 @@ void* instance_holder::allocate(PyObject* self_, std::size_t holder_offset, std:
         const uintptr_t padding = alignment == 1 ? 0 : ( alignment - (x & (alignment - 1)) );
         const size_t aligned_offset = sizeof(alignment_marker_t) + padding;
         void* const aligned_storage = (char *)base_storage + aligned_offset;
-        BOOST_ASSERT((char *) aligned_storage + holder_size <= (char *)base_storage + base_allocation);
+        assert((char *) aligned_storage + holder_size <= (char *)base_storage + base_allocation);
         alignment_marker_t* const marker_storage = reinterpret_cast<alignment_marker_t *>((char *)aligned_storage - sizeof(alignment_marker_t));
         *marker_storage = static_cast<alignment_marker_t>(padding);
         return aligned_storage;

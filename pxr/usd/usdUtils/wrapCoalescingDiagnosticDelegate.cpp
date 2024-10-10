@@ -97,7 +97,7 @@ wrapCoalescingDiagnosticDelegate()
         .add_property("unsharedItems", &_GetUnsharedItems);
 
      using This = UsdUtilsCoalescingDiagnosticDelegate;
-     class_<This, boost::noncopyable>("CoalescingDiagnosticDelegate")
+     class_<This, noncopyable>("CoalescingDiagnosticDelegate")
         .def("DumpCoalescedDiagnosticsToStdout", 
              &_DumpCoalescedDiagnosticsToStdout)
         .def("DumpUncoalescedDiagnostics", 

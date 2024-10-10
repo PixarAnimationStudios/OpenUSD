@@ -27,8 +27,8 @@
 # include "pxr/external/boost/python/errors.hpp"
 # include "pxr/external/boost/python/handle.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
-# include <boost/mpl/and.hpp>
-# include <boost/mpl/bool.hpp>
+# include "pxr/external/boost/python/detail/mpl2/and.hpp"
+# include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
@@ -71,22 +71,22 @@ namespace detail
   template <class T>
   struct select_return_from_python
   {
-      BOOST_STATIC_CONSTANT(
-          bool, obj_mgr = is_object_manager<T>::value);
+      static constexpr 
+          bool obj_mgr = is_object_manager<T>::value;
 
-      BOOST_STATIC_CONSTANT(
-          bool, ptr = is_pointer<T>::value);
+      static constexpr 
+          bool ptr = python::detail::is_pointer<T>::value;
     
-      BOOST_STATIC_CONSTANT(
-          bool, ref = is_reference<T>::value);
+      static constexpr 
+          bool ref = python::detail::is_reference<T>::value;
 
-      typedef typename mpl::if_c<
+      typedef typename python::detail::mpl2::if_c<
           obj_mgr
           , return_object_manager_from_python<T>
-          , typename mpl::if_c<
+          , typename python::detail::mpl2::if_c<
               ptr
               , return_pointer_from_python<T>
-              , typename mpl::if_c<
+              , typename python::detail::mpl2::if_c<
                   ref
                   , return_reference_from_python<T>
                   , return_rvalue_from_python<T>
@@ -111,9 +111,6 @@ struct return_from_python<void>
     result_type operator()(PyObject* x) const
     {
         (void_result_from_python)(x);
-# ifdef BOOST_NO_VOID_RETURNS
-        return result_type();
-# endif 
     }
 };
 

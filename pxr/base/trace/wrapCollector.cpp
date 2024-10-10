@@ -115,7 +115,7 @@ void wrapCollector()
     using This = TraceCollector;
     using ThisPtr = TfWeakPtr<TraceCollector>;
 
-    class_<This, ThisPtr, boost::noncopyable>("Collector", no_init)
+    class_<This, ThisPtr, noncopyable>("Collector", no_init)
         .def(TfPySingleton())
 
         .def("BeginEvent", BeginEventHelper)

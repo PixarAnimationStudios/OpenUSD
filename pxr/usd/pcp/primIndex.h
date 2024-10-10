@@ -241,6 +241,14 @@ public:
     void ComputePrimChildNames(TfTokenVector *nameOrder,
                                PcpTokenSet *prohibitedNameSet) const;
 
+    /// Compute the prim child names for this prim when composed from only the
+    /// subtree starting at \p subtreeRootNode.
+    PCP_API
+    void ComputePrimChildNamesInSubtree(
+        const PcpNodeRef &subtreeRootNode,
+        TfTokenVector *nameOrder,
+        PcpTokenSet *prohibitedNameSet) const;
+
     /// Compute the prim property names for the given path. \p errors will
     /// contain any errors encountered while performing this operation.  The
     /// \p nameOrder vector must not contain any duplicate entries.
@@ -270,8 +278,10 @@ public:
 private:
     friend class PcpPrimIterator;
     friend struct Pcp_PrimIndexer;
-    friend void Pcp_RescanForSpecs(PcpPrimIndex*, bool usd,
-                                   bool updateHasSpecs);
+    friend void Pcp_RescanForSpecs(
+                    PcpPrimIndex*, bool usd,
+                    bool updateHasSpecs,
+                    const std::vector<SdfLayerHandle>& layersToIgnore);
 
     // The node graph representing the compositional structure of this prim.
     PcpPrimIndex_GraphRefPtr _graph;
@@ -429,10 +439,6 @@ PcpComputePrimIndex(
 PCP_API
 bool
 PcpIsNewDefaultStandinBehaviorEnabled();
-
-// Sets the prim stack in \p index.
-void
-Pcp_RescanForSpecs(PcpPrimIndex* index, bool usd);
 
 // Returns true if \p index should be recomputed due to changes to
 // any computed asset paths that were used to find or open layers

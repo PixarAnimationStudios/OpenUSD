@@ -177,6 +177,7 @@ HdStDispatchBuffer::HdStDispatchBuffer(
         HgiBufferUsageStorage | HgiBufferUsageVertex | HgiBufferUsageIndirect;
     bufDesc.byteSize = dataSize;
     bufDesc.vertexStride = stride;
+    bufDesc.debugName = "Dispatch";
     HgiBufferHandle buffer = _resourceRegistry->GetHgi()->CreateBuffer(bufDesc);
 
     // monolithic resource

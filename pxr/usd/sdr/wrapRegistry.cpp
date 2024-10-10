@@ -30,7 +30,7 @@ void wrapRegistry()
         .def(vector_indexing_suite<std::vector<SdrShaderNodeConstPtr>>())
         ;
 
-    class_<This, ThisPtr, bases<NdrRegistry>, boost::noncopyable>("Registry", no_init)
+    class_<This, ThisPtr, bases<NdrRegistry>, noncopyable>("Registry", no_init)
         .def(TfPySingleton())
         .def("GetShaderNodeByIdentifier", &This::GetShaderNodeByIdentifier,
             (args("identifier"),

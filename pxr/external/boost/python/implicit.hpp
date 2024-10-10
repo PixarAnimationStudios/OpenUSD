@@ -18,7 +18,7 @@
 #else
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
-# include <boost/type.hpp>
+# include "pxr/external/boost/python/type.hpp"
 # include "pxr/external/boost/python/converter/implicit.hpp"
 # include "pxr/external/boost/python/converter/registry.hpp"
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
@@ -29,7 +29,7 @@
 namespace PXR_BOOST_NAMESPACE { namespace python { 
 
 template <class Source, class Target>
-void implicitly_convertible(boost::type<Source>* = 0, boost::type<Target>* = 0)
+void implicitly_convertible(type<Source>* = 0, type<Target>* = 0)
 {
     typedef converter::implicit<Source,Target> functions;
     

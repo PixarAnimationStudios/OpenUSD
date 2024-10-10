@@ -54,7 +54,7 @@ void wrapTf_TestPyContainerConversions()
 {
     typedef Tf_TestPyContainerConversions This;
 
-    class_<This, boost::noncopyable>("Tf_TestPyContainerConversions")
+    class_<This, noncopyable>("Tf_TestPyContainerConversions")
         .def("GetVectorTimesTwo", &This::GetVectorTimesTwo)
         .staticmethod("GetVectorTimesTwo")
         

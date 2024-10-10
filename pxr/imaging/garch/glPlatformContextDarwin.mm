@@ -4,16 +4,16 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
+#include "pxr/imaging/garch/glPlatformContextDarwin.h"
+
+#include "pxr/base/arch/defines.h"
+
 #import <Foundation/Foundation.h>
+#if defined(ARCH_OS_OSX)
 #import <AppKit/NSOpenGL.h>
-
-#include "pxr/pxr.h"
-#include "glPlatformContextDarwin.h"
-
-#ifdef ARCH_OS_IPHONE
-typedef EAGLContext NSGLContext;
+using NSGLContext = NSOpenGLContext;
 #else
-typedef NSOpenGLContext NSGLContext;
+using NSGLContext = void;
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -22,7 +22,11 @@ class GarchNSGLContextState::Detail
 {
 public:
     Detail() {
+#if defined(ARCH_OS_OSX)
         context = [NSGLContext currentContext];
+#else
+        context = nil;
+#endif
     }
     Detail(NullState) {
         context = nil;
@@ -73,9 +77,7 @@ GarchNSGLContextState::IsValid() const
 void
 GarchNSGLContextState::MakeCurrent()
 {
-#if ARCH_OS_IPHONE
-    [EAGLContext setCurrentContext:_detail->context];
-#else
+#if defined(ARCH_OS_OSX)
     [_detail->context makeCurrentContext];
 #endif
 }
@@ -84,7 +86,9 @@ GarchNSGLContextState::MakeCurrent()
 void
 GarchNSGLContextState::DoneCurrent()
 {
+#if defined(ARCH_OS_OSX)
     [NSGLContext clearCurrentContext];
+#endif
 }
 
 GarchGLPlatformContextState
@@ -96,6 +100,7 @@ GarchGetNullGLPlatformContextState()
 void *
 GarchSelectCoreProfileMacVisual()
 {
+#if defined(ARCH_OS_OSX)
     NSOpenGLPixelFormatAttribute attribs[10];
     int c = 0;
 
@@ -105,6 +110,9 @@ GarchSelectCoreProfileMacVisual()
     attribs[c++] = 0;
 
     return [[NSOpenGLPixelFormat alloc] initWithAttributes:attribs];
+#else // ARCH_OS_MACOS
+    return nullptr;
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

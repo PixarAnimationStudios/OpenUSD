@@ -34,7 +34,7 @@ namespace PXR_BOOST_NAMESPACE { namespace python { namespace numpy {
  *
  *  @todo This could have a lot more functionality.
  */
-class BOOST_NUMPY_DECL void_ : public object
+class PXR_BOOST_NUMPY_DECL void_ : public object
 {
   static python::detail::new_reference convert(object_cref arg, bool align);
 public:

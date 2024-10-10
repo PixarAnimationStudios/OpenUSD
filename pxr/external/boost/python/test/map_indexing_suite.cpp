@@ -11,6 +11,7 @@
 #include "pxr/external/boost/python/module.hpp"
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/implicit.hpp"
+#include <memory>
 
 using namespace PXR_BOOST_NAMESPACE::python;
 
@@ -61,8 +62,8 @@ PXR_BOOST_PYTHON_MODULE(map_indexing_suite_ext)
 #endif 
 
     // Some more..
-    class_<std::map<std::string, boost::shared_ptr<X> > >("TestMap")
-        .def(map_indexing_suite<std::map<std::string, boost::shared_ptr<X> >, true>())
+    class_<std::map<std::string, std::shared_ptr<X> > >("TestMap")
+        .def(map_indexing_suite<std::map<std::string, std::shared_ptr<X> >, true>())
     ;
 
     void a_map_indexing_suite(); // moved to a_map_indexing_suite.cpp to 

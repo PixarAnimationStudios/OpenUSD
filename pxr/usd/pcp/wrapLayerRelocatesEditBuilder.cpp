@@ -52,7 +52,7 @@ void wrapLayerRelocatesEditBuilder()
         ::Wrap<Pcp_LayerRelocatesEditBuilderRelocateResult>(
             "_LayerRelocatesEditBuilderRelocateResult", "whyNot");
 
-    class_<PcpLayerRelocatesEditBuilder, boost::noncopyable>(
+    class_<PcpLayerRelocatesEditBuilder, noncopyable>(
         "LayerRelocatesEditBuilder", no_init)
         .def(init<const PcpLayerStackPtr &>())
         .def(init<const PcpLayerStackPtr &, const SdfLayerHandle &>())

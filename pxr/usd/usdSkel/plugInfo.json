@@ -25,6 +25,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "SkelAnimation", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdSkelBindingAPI": {
@@ -35,6 +36,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "SkelBindingAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdSkelBlendShape": {
@@ -45,6 +47,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "BlendShape", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdSkelRoot": {
@@ -56,6 +59,7 @@
                             "UsdGeomBoundable"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "SkelRoot", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdSkelSkeleton": {
@@ -67,6 +71,7 @@
                             "UsdGeomBoundable"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "Skeleton", 
                         "schemaKind": "concreteTyped"
                     }
                 }, 

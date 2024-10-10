@@ -18,6 +18,7 @@ USD's Sphinx build uses the following Sphinx extensions:
 * [Sphinx Panels](https://sphinx-panels.readthedocs.io/en/latest/)
 * [Doxylink](https://github.com/sphinx-contrib/doxylink)
 * [MyST](https://myst-parser.readthedocs.io/en/v0.17.1/index.html)
+* [Datatemplates](https://sphinxcontribdatatemplates.readthedocs.io/en/latest/index.html)
 
 See "Sphinx Setup" below for how to install Sphinx and the necessary extensions.
 

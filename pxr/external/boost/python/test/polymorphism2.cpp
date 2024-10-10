@@ -16,7 +16,6 @@
 #include "pxr/external/boost/python/wrapper.hpp"
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/call.hpp"
-#include <boost/utility.hpp>
 
 #include <memory>
 
@@ -33,11 +32,7 @@ struct PCallback : P, wrapper<P>
 {
     char const* f()
     {
-#if BOOST_WORKAROUND(BOOST_MSVC, <= 1300)
-        return call<char const*>(this->get_override("f").ptr());
-#else 
         return this->get_override("f")();
-#endif 
     }
 };
 
@@ -57,11 +52,7 @@ struct ACallback :  A, wrapper<A>
     char const* f()
     {
         if (override f = this->get_override("f"))
-#if BOOST_WORKAROUND(BOOST_MSVC, <= 1300)
-            return call<char const*>(f.ptr());
-#else 
             return f();
-#endif 
 
         return A::f();
     }
@@ -90,11 +81,7 @@ struct DCallback :  D,  wrapper<D>
     char const* f()
     {
         if (override f = this->get_override("f"))
-#if BOOST_WORKAROUND(BOOST_MSVC, <= 1300)
-            return call<char const*>(f.ptr());
-#else 
             return f();
-#endif 
         //else
             return D::f();
     }
@@ -132,17 +119,17 @@ A* pass_a(A* x) { return x; }
 
 PXR_BOOST_PYTHON_MODULE_INIT(polymorphism2_ext)
 {
-    class_<ACallback,boost::noncopyable>("A")
+    class_<ACallback,noncopyable>("A")
         .def("f", &A::f, &ACallback::default_f)
         ;
     
     def("getBCppObj", getBCppObj, return_value_policy<reference_existing_object>());
 
-    class_<C,bases<A>,boost::noncopyable>("C")
+    class_<C,bases<A>,noncopyable>("C")
         .def("f", &C::f)
         ;
     
-    class_<DCallback,bases<A>,boost::noncopyable>("D")
+    class_<DCallback,bases<A>,noncopyable>("D")
         .def("f", &D::f)
         .def("g", &D::g)
         ;
@@ -155,7 +142,7 @@ PXR_BOOST_PYTHON_MODULE_INIT(polymorphism2_ext)
 
     def("call_f", call_f);
 
-    class_<PCallback,boost::noncopyable>("P")
+    class_<PCallback,noncopyable>("P")
         .def("f", pure_virtual(&P::f))
         ;
 

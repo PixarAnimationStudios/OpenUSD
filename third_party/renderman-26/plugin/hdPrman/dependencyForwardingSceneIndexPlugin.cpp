@@ -6,6 +6,10 @@
 
 #include "hdPrman/dependencyForwardingSceneIndexPlugin.h"
 
+#if PXR_VERSION >= 2208
+
+#include "hdPrman/tokens.h"
+
 #include "pxr/imaging/hd/dependencyForwardingSceneIndex.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 
@@ -15,8 +19,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((sceneIndexPluginName, "HdPrman_DependencyForwardingSceneIndexPlugin"))
 );
-
-static const char * const _pluginDisplayName = "Prman";
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -28,12 +30,14 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 1000;
 
-    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        _pluginDisplayName,
-        _tokens->sceneIndexPluginName,
-        nullptr,
-        insertionPhase,
-        HdSceneIndexPluginRegistry::InsertionOrderAtEnd);
+    for( auto const& pluginDisplayName : HdPrman_GetPluginDisplayNames() ) {
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            pluginDisplayName,
+            _tokens->sceneIndexPluginName,
+            nullptr,
+            insertionPhase,
+            HdSceneIndexPluginRegistry::InsertionOrderAtEnd);
+    }
 }
 
 HdPrman_DependencyForwardingSceneIndexPlugin::
@@ -48,3 +52,5 @@ HdPrman_DependencyForwardingSceneIndexPlugin::_AppendSceneIndex(
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2208

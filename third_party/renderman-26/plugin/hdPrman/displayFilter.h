@@ -8,6 +8,8 @@
 #define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_DISPLAY_FILTER_H
 
 #include "pxr/pxr.h"
+#if PXR_VERSION >= 2308
+
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/material.h"
 
@@ -40,5 +42,7 @@ private:
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2308
 
 #endif // EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_DISPLAY_FILTER_H

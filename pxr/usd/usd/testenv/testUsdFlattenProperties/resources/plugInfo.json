@@ -20,6 +20,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "FlattenPropertyTest", 
                         "schemaKind": "concreteTyped"
                     }
                 }

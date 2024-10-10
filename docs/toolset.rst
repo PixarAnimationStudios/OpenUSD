@@ -383,3 +383,15 @@ large array data.
    :language: none
    :start-after: ==== sdffilter start ====
    :end-before: ==== sdffilter end ====
+
+*********************
+usdmeasureperformance
+*********************
+
+Helper script to measure usdview asset performance. Recommended usage is
+`usdmeasureperformance <asset.usd> -i 10 --agg min -o <metrics.yaml>`
+
+.. literalinclude:: toolset.help
+   :language: none
+   :start-after: ==== usdmeasureperformance start ====
+   :end-before: ==== usdmeasureperformance end ====

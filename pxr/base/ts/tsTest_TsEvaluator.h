@@ -54,8 +54,7 @@ public:
     // Convert SplineData to a TsSpline.
     TS_API
     TsSpline SplineDataToSpline(
-        const TsTest_SplineData &splineData,
-        bool mayaTangentForm = false) const;
+        const TsTest_SplineData &splineData) const;
 
     ////////////////////////////////////////////////////////////////////////////
     // TEST DATA TRANSFORMATION

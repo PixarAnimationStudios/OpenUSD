@@ -109,7 +109,7 @@ class TestFileFormat(unittest.TestCase):
         
         # Get the node graph and make sure there are exactly 3 inputs
         nodeGraph = UsdShade.NodeGraph.Get(stage,
-                        Sdf.Path('/MaterialX/Materials/layered/ND_layerShader'))
+                        Sdf.Path('/MaterialX/Materials/layered/layered_sr'))
         inputs = nodeGraph.GetInputs()
         self.assertEqual(len(inputs), 3)
 

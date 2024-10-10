@@ -22,7 +22,7 @@ using namespace pxr_boost::python;
 void wrapScriptModuleLoader() {
     typedef TfScriptModuleLoader This;
     class_<This, TfWeakPtr<This>,
-        boost::noncopyable>("ScriptModuleLoader", no_init)
+        noncopyable>("ScriptModuleLoader", no_init)
         .def(TfPySingleton())
         .def("GetModuleNames", &This::GetModuleNames,
              return_value_policy<TfPySequenceToList>())

@@ -301,15 +301,8 @@ PcpCache::RequestLayerMuting(const std::vector<std::string>& layersToMute,
 
     Pcp_CacheChangesHelper cacheChanges(changes);
 
-    // Register changes for all computed layer stacks that are
-    // affected by the newly muted/unmuted layers.
-    for (const auto& layerToMute : finalLayersToMute) {
-        cacheChanges->DidMuteLayer(this, layerToMute);
-    }
-
-    for (const auto& layerToUnmute : finalLayersToUnmute) {
-        cacheChanges->DidUnmuteLayer(this, layerToUnmute);
-    }
+    cacheChanges->DidMuteAndUnmuteLayers(
+        this, finalLayersToMute, finalLayersToUnmute);
 
     // The above won't handle cases where we've unmuted the root layer
     // of a reference or payload layer stack, since prim indexing will skip
@@ -1038,13 +1031,14 @@ PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
         }
 
         // Blow property stacks and update spec dependencies on prims.
-        auto updateSpecStacks = [this, &lifeboat](const SdfPath& path) {
+        auto updateSpecStacks = [this, &lifeboat, &changes](const SdfPath& path) {
             if (path.IsAbsoluteRootOrPrimPath()) {
                 // We've possibly changed the prim spec stack.  Note that
                 // we may have blown the prim index so check that it exists.
                 if (PcpPrimIndex* primIndex = _GetPrimIndex(path)) {
                     Pcp_RescanForSpecs(primIndex, IsUsd(),
-                                       /* updateHasSpecs */ true);
+                                       /* updateHasSpecs */ true, 
+                                       changes.layersToMute);
 
                     // If there are no specs left then we can discard the
                     // prim index.

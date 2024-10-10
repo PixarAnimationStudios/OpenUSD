@@ -36,7 +36,7 @@ template <PyTypeObject* pytype, class T>
 struct pytype_object_manager_traits
     : pyobject_type<T, pytype> // provides check()
 {
-    BOOST_STATIC_CONSTANT(bool, is_specialized = true);
+    static constexpr bool is_specialized = true;
     static inline python::detail::new_reference adopt(PyObject*);
 };
 

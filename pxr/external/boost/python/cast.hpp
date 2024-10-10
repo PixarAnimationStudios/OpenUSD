@@ -20,7 +20,7 @@
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
-# include <boost/type.hpp>
+# include "pxr/external/boost/python/type.hpp"
 # include "pxr/external/boost/python/base_type_traits.hpp"
 # include "pxr/external/boost/python/detail/convertible.hpp"
 
@@ -72,16 +72,16 @@ namespace detail
   }
 
   template <class Target, class Source>
-  inline Target* downcast(Source* p, no_convertible, boost::type<Target>* = 0)
+  inline Target* downcast(Source* p, no_convertible, type<Target>* = 0)
   {
       typedef typename base_type_traits<Source>::type base;
       return (Target*)detail::downcast<base>(p, convertible<Source*>::check((base*)0));
   }
 
   template <class T>
-  inline void assert_castable(boost::type<T>* = 0)
+  inline void assert_castable(type<T>* = 0)
   {
-      typedef char must_be_a_complete_type[sizeof(T)] BOOST_ATTRIBUTE_UNUSED;
+      [[maybe_unused]] typedef char must_be_a_complete_type[sizeof(T)];
   }
 
   template <class Source, class Target>

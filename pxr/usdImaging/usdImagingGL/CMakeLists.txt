@@ -4362,10 +4362,32 @@ pxr_register_test(testUsdImagingGLPrimvarRefinement_Uniform_Medium
     TESTENV testUsdImagingGLPrimvarRefinement
 )
 
-pxr_register_test(testUsdImagingGLDisplacement_Uniform_VeryHigh
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.4 -offscreen -lighting -sceneLights -shading wireOnSurface -camera /Camera -stage testUsdImagingGLDisplacement.usda -write testUsdImagingGLDisplacement_Uniform_VeryHigh.png"
+pxr_register_test(testUsdImagingGLDisplacement_uniform_veryhigh_vertex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.4 -offscreen -lighting -shading wireOnSurface -camera /Camera -stage testUsdImagingGLDisplacement_vertex.usda -write testUsdImagingGLDisplacement_uniform_veryhigh_vertex.png"
     IMAGE_DIFF_COMPARE
-        testUsdImagingGLDisplacement_Uniform_VeryHigh.png
+        testUsdImagingGLDisplacement_uniform_veryhigh_vertex.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLDisplacement
+)
+
+pxr_register_test(testUsdImagingGLDisplacement_uniform_veryhigh_varying
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.4 -offscreen -lighting -shading wireOnSurface -camera /Camera -stage testUsdImagingGLDisplacement_varying.usda -write testUsdImagingGLDisplacement_uniform_veryhigh_varying.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLDisplacement_uniform_veryhigh_varying.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLDisplacement
+)
+
+pxr_register_test(testUsdImagingGLDisplacement_uniform_veryhigh_faceVarying
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.4 -offscreen -lighting -shading wireOnSurface -camera /Camera -stage testUsdImagingGLDisplacement_faceVarying.usda -write testUsdImagingGLDisplacement_uniform_veryhigh_faceVarying.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLDisplacement_uniform_veryhigh_faceVarying.png
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
@@ -4400,10 +4422,36 @@ pxr_register_test(testUsdImagingGLPrimvarRefinement_Adaptive_Medium
         HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
 )
 
-pxr_register_test(testUsdImagingGLDisplacement_Adaptive_VeryHigh
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.4 -offscreen -lighting -sceneLights -shading wireOnSurface -camera /Camera -stage testUsdImagingGLDisplacement.usda -write testUsdImagingGLDisplacement_Adaptive_VeryHigh.png"
+pxr_register_test(testUsdImagingGLDisplacement_adaptive_veryhigh_vertex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.4 -offscreen -lighting -shading wireOnSurface -camera /Camera -stage testUsdImagingGLDisplacement_vertex.usda -write testUsdImagingGLDisplacement_adaptive_veryhigh_vertex.png"
     IMAGE_DIFF_COMPARE
-        testUsdImagingGLDisplacement_Adaptive_VeryHigh.png
+        testUsdImagingGLDisplacement_adaptive_veryhigh_vertex.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLDisplacement
+    ENV
+        HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
+)
+
+pxr_register_test(testUsdImagingGLDisplacement_adaptive_veryhigh_varying
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.4 -offscreen -lighting -shading wireOnSurface -camera /Camera -stage testUsdImagingGLDisplacement_varying.usda -write testUsdImagingGLDisplacement_adaptive_veryhigh_varying.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLDisplacement_adaptive_veryhigh_varying.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLDisplacement
+    ENV
+        HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
+)
+
+pxr_register_test(testUsdImagingGLDisplacement_adaptive_veryhigh_faceVarying
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.4 -offscreen -lighting -shading wireOnSurface -camera /Camera -stage testUsdImagingGLDisplacement_faceVarying.usda -write testUsdImagingGLDisplacement_adaptive_veryhigh_faceVarying.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLDisplacement_adaptive_veryhigh_faceVarying.png
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL

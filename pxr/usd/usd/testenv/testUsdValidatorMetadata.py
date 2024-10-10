@@ -22,8 +22,8 @@ class TestUsdValidatorMetadata(unittest.TestCase):
     ):
         self.assertEqual(metadata.name, name)
         self.assertEqual(metadata.doc, doc)
-        self.assertEqual(metadata.keywords, keywords)
-        self.assertEqual(metadata.schemaTypes, schemaTypes)
+        self.assertEqual(metadata.GetKeywords(), keywords)
+        self.assertEqual(metadata.GetSchemaTypes(), schemaTypes)
         self.assertEqual(metadata.plugin, plugin)
         self.assertEqual(metadata.isSuite, isSuite)
 
@@ -97,16 +97,6 @@ class TestUsdValidatorMetadata(unittest.TestCase):
         metadata = Usd.ValidatorMetadata()
         with self.assertRaises(Exception):
             metadata.doc = "doc"
-
-    def test_MetadataKeywordsImmutable(self):
-        metadata = Usd.ValidatorMetadata()
-        with self.assertRaises(Exception):
-            metadata.keywords = ["keywords"]
-
-    def test_MetadataSchemaTypesImmutable(self):
-        metadata = Usd.ValidatorMetadata()
-        with self.assertRaises(Exception):
-            metadata.schemaTypes = "PrimType1"
 
     def test_MetadataPluginImmutable(self):
         all_plugins = Plug.Registry().GetAllPlugins()

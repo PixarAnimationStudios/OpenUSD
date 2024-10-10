@@ -10,7 +10,6 @@
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/noncopyable.hpp>
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/return_arg.hpp"
@@ -86,7 +85,7 @@ void wrapScopeDescription()
 
     typedef Tf_PyScopeDescription This;
     
-    class_<This, boost::noncopyable>("ScopeDescription", init<string>())
+    class_<This, noncopyable>("ScopeDescription", init<string>())
         .def("__enter__", &This::__enter__, return_self<>())
         .def("__exit__", &This::__exit__)
         .def("SetDescription", &This::SetDescription)

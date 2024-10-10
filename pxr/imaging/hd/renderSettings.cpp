@@ -57,6 +57,7 @@ HdRenderSettings::HdRenderSettings(
     SdfPath const& id)
     : HdBprim(id)
     , _active(false)
+    , _dirtyProducts(false)
 {
 }
 
@@ -112,6 +113,14 @@ HdRenderSettings::GetShutterInterval() const
     return _vShutterInterval;
 }
 
+bool
+HdRenderSettings::GetAndResetHasDirtyProducts()
+{
+    bool res = _dirtyProducts;
+    _dirtyProducts = false;
+    return res;
+}
+
 void
 HdRenderSettings::Sync(
     HdSceneDelegate *sceneDelegate,
@@ -138,11 +147,14 @@ HdRenderSettings::Sync(
 
     if (*dirtyBits & HdRenderSettings::DirtyRenderProducts) {
 
+        _dirtyProducts = true;
+
         const VtValue vProducts = sceneDelegate->Get(
             GetId(), HdRenderSettingsPrimTokens->renderProducts);
         if (vProducts.IsHolding<RenderProducts>()) {
             _products = vProducts.UncheckedGet<RenderProducts>();
         }
+
     }
 
     if (*dirtyBits & HdRenderSettings::DirtyIncludedPurposes) {

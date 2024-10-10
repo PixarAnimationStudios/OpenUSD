@@ -15,7 +15,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdSchemaExamplesTokens()
 {
-    pxr_boost::python::class_<UsdSchemaExamplesTokensType, boost::noncopyable>
+    pxr_boost::python::class_<UsdSchemaExamplesTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, complexString);
     _ADD_TOKEN(cls, intAttr);

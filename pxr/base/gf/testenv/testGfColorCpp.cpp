@@ -71,14 +71,14 @@ bool PointInTriangle(const GfVec2f& p, const GfVec2f& v0, const GfVec2f& v1, con
 int
 main(int argc, char *argv[])
 {
-    GfColorSpace csSRGB(GfColorSpaceNames->SRGB);
-    GfColorSpace csLinearSRGB(GfColorSpaceNames->LinearSRGB);
+    GfColorSpace csSRGB(GfColorSpaceNames->SRGBRec709);
+    GfColorSpace csLinearSRGB(GfColorSpaceNames->LinearRec709);
     GfColorSpace csLinearRec709(GfColorSpaceNames->LinearRec709);
     GfColorSpace csG22Rec709(GfColorSpaceNames->G22Rec709);
     GfColorSpace csAp0(GfColorSpaceNames->LinearAP0);
-    GfColorSpace csSRGBP3(GfColorSpaceNames->SRGBDisplayP3);
+    GfColorSpace csSRGBP3(GfColorSpaceNames->SRGBP3D65);
     GfColorSpace csLinearRec2020(GfColorSpaceNames->LinearRec2020);
-    GfColorSpace csIdentity(GfColorSpaceNames->Identity);
+    GfColorSpace csIdentity(GfColorSpaceNames->Data);
 
     GfColor mauveLinear(GfVec3f(0.5f, 0.25f, 0.125f), csLinearRec709);
     GfColor mauveGamma(mauveLinear, csG22Rec709);
@@ -146,8 +146,8 @@ main(int argc, char *argv[])
     {
         // MauveLinear and Gamma are both have a D65 white point.
         GfColorTest col_SRGB(mauveLinear, csSRGB);
-        GfColorTest col_ap0(col_SRGB, csAp0);                      // different white point
-        GfColorTest col_SRGBP3(col_ap0, csSRGBP3);                // adapt to d65 for comparison
+        GfColorTest col_ap0(col_SRGB, csAp0);       // different white point
+        GfColorTest col_SRGBP3(col_ap0, csSRGBP3);  // adapt to d65 for comparison
         GfColorTest col_SRGB_2(col_ap0, csSRGB);
         GfColorTest col_SRGB_3(col_SRGBP3, csSRGB);
 

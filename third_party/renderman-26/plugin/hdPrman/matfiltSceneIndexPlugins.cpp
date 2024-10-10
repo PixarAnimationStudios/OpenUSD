@@ -7,6 +7,7 @@
 #include "hdPrman/matfiltSceneIndexPlugins.h"
 #include "hdPrman/material.h"
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
+#include "hdPrman/tokens.h"
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include "hdPrman/matfiltMaterialX.h"
@@ -50,7 +51,6 @@ enum _MatfiltOrder
 // Plugin registrations
 ////////////////////////////////////////////////////////////////////////////////
 
-static const char * const _rendererDisplayName = "Prman";
 // XXX: Hardcoded for now to match the legacy matfilt logic.
 static const bool _resolveVstructsWithConditionals = true;
 
@@ -68,32 +68,34 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        _rendererDisplayName,
-        _tokens->previewMatPluginName,
-        nullptr, // no argument data necessary
-        _MatfiltOrder::NodeTranslation,
-        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
-    
-    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        _rendererDisplayName,
-        _tokens->materialXPluginName,
-        nullptr, // no argument data necessary
-        _MatfiltOrder::NodeTranslation,
-        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
-    
-    HdContainerDataSourceHandle const inputArgs =
-        HdRetainedContainerDataSource::New(
-            _tokens->applyConditionals,
-            HdRetainedTypedSampledDataSource<bool>::New(
-                _resolveVstructsWithConditionals));
+    for( auto const& rendererDisplayName : HdPrman_GetPluginDisplayNames() ) {
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            rendererDisplayName,
+            _tokens->previewMatPluginName,
+            nullptr, // no argument data necessary
+            _MatfiltOrder::NodeTranslation,
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
 
-    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        _rendererDisplayName,
-        _tokens->vstructPluginName,
-        inputArgs,                        
-        _MatfiltOrder::ConnectionResolve,
-        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            rendererDisplayName,
+            _tokens->materialXPluginName,
+            nullptr, // no argument data necessary
+            _MatfiltOrder::NodeTranslation,
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+
+        HdContainerDataSourceHandle const inputArgs =
+            HdRetainedContainerDataSource::New(
+                _tokens->applyConditionals,
+                HdRetainedTypedSampledDataSource<bool>::New(
+                    _resolveVstructsWithConditionals));
+
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            rendererDisplayName,
+            _tokens->vstructPluginName,
+            inputArgs,
+            _MatfiltOrder::ConnectionResolve,
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

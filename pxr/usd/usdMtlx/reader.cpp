@@ -1511,15 +1511,7 @@ _Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
         return UsdShadeShader();
     }
 
-    // Choose the name of the shader.  In MaterialX this is just
-    // mtlxShaderNode->getName() and has no meaning other than to uniquely
-    // identify the shader.  In USD to support materialinherit we must
-    // ensure that shaders have the same name if one should compose over
-    // the other.  MaterialX composes over if a shader node refers to the
-    // same nodedef so in USD we use the nodedef's name.  This name isn't
-    // ideal since it's just an arbitrary unique name;  the nodedef's
-    // node name is more meaningful.
-    const auto name = _MakeName(mtlxNodeDef);
+    const auto name = _MakeName(mtlxShaderNode);
 
     // Create the shader if it doesn't exist and copy node def values.
     auto shaderImplPath = _shadersPath.AppendChild(name);

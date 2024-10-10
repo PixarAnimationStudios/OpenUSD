@@ -15,7 +15,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdShadeTokens()
 {
-    pxr_boost::python::class_<UsdShadeTokensType, boost::noncopyable>
+    pxr_boost::python::class_<UsdShadeTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, allPurpose);
     _ADD_TOKEN(cls, bindMaterialAs);

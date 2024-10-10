@@ -11,21 +11,18 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(UsdSkelAnimation);
     TF_WRAP(UsdSkelAnimMapper);
     TF_WRAP(UsdSkelAnimQuery);
     TF_WRAP(UsdSkelBakeSkinning);
     TF_WRAP(UsdSkelBinding);
-    TF_WRAP(UsdSkelBindingAPI);
-    TF_WRAP(UsdSkelBlendShape);
     TF_WRAP(UsdSkelBlendShapeQuery);
     TF_WRAP(UsdSkelCache);
     TF_WRAP(UsdSkelInbetweenShape);
-    TF_WRAP(UsdSkelSkeleton);
     TF_WRAP(UsdSkelSkeletonQuery);
     TF_WRAP(UsdSkelSkinningQuery);
-    TF_WRAP(UsdSkelRoot);
-    TF_WRAP(UsdSkelTokens);
     TF_WRAP(UsdSkelTopology);
     TF_WRAP(UsdSkelUtils);
+
+    // Generated Schema classes.  Do not remove or edit the following line.
+    #include "generatedSchema.module.h"
 }

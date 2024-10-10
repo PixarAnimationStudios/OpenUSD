@@ -116,7 +116,7 @@ void wrapAttributeSpec()
                                   bool) = &This::New;
                                 
     class_<This, SdfHandle<This>, 
-           bases<SdfPropertySpec>, boost::noncopyable>
+           bases<SdfPropertySpec>, noncopyable>
         ("AttributeSpec", no_init)
         
         .def(SdfPySpec())

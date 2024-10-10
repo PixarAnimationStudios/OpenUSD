@@ -15,7 +15,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapUsdMediaTokens()
 {
-    pxr_boost::python::class_<UsdMediaTokensType, boost::noncopyable>
+    pxr_boost::python::class_<UsdMediaTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, auralMode);
     _ADD_TOKEN(cls, defaultImage);

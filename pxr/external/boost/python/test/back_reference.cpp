@@ -19,14 +19,11 @@
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/has_back_reference.hpp"
 #include "pxr/external/boost/python/back_reference.hpp"
-#include <boost/ref.hpp>
-#include <boost/utility.hpp>
 #include <memory>
-#define BOOST_ENABLE_ASSERT_HANDLER
-#include <boost/assert.hpp>
+#include <cassert>
 #include "pxr/external/boost/python/copy_const_reference.hpp"
 #include "pxr/external/boost/python/return_value_policy.hpp"
-#include <boost/mpl/bool.hpp>
+#include "pxr/external/boost/python/detail/mpl2/bool.hpp"
 
 // This test shows that a class can be wrapped "as itself" but also
 // acquire a back-reference iff has_back_reference<> is appropriately
@@ -37,10 +34,10 @@ struct X
 {
     explicit X(int x) : x(x), magic(7654321) { ++counter; }
     X(X const& rhs) : x(rhs.x), magic(7654321) { ++counter; }
-    virtual ~X() { BOOST_ASSERT(magic == 7654321); magic = 6666666; x = 9999; --counter; }
+    virtual ~X() { assert(magic == 7654321); magic = 6666666; x = 9999; --counter; }
 
-    void set(int _x) { BOOST_ASSERT(magic == 7654321); this->x = _x; }
-    int value() const { BOOST_ASSERT(magic == 7654321); return x; }
+    void set(int _x) { assert(magic == 7654321); this->x = _x; }
+    int value() const { assert(magic == 7654321); return x; }
     static int count() { return counter; }
  private:
     void operator=(X const&);
@@ -77,13 +74,13 @@ namespace PXR_BOOST_NAMESPACE { namespace python
 {
   template <>
   struct has_back_reference<Y>
-      : mpl::true_
+      : detail::mpl2::true_
   {
   };
 
   template <>
   struct has_back_reference<Z>
-      : mpl::true_
+      : detail::mpl2::true_
   {
   };
 }}

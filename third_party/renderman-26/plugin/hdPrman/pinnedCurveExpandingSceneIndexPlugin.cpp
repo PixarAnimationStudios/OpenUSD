@@ -5,6 +5,7 @@
 // https://openusd.org/license.
 //
 #include "hdPrman/pinnedCurveExpandingSceneIndexPlugin.h"
+#include "hdPrman/tokens.h"
 
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hdsi/pinnedCurveExpandingSceneIndex.h"
@@ -19,8 +20,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 ////////////////////////////////////////////////////////////////////////////////
 // Plugin registrations
 ////////////////////////////////////////////////////////////////////////////////
-
-static const char * const _rendererDisplayName = "Prman";
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -39,13 +38,15 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
     const HdSceneIndexPluginRegistry::InsertionPhase
         insertionPhase = 3; // HdGpSceneIndexPlugin()::GetInsertionPhase() + 1;
 
-    // Register the plugins conditionally.
-    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        _rendererDisplayName,
-        _tokens->sceneIndexPluginName,
-        nullptr, // no argument data necessary
-        insertionPhase,
-        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    for( auto const& rendererDisplayName : HdPrman_GetPluginDisplayNames()) {
+        // Register the plugins conditionally.
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            rendererDisplayName,
+            _tokens->sceneIndexPluginName,
+            nullptr, // no argument data necessary
+            insertionPhase,
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

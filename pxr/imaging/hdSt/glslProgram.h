@@ -14,6 +14,8 @@
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/enums.h"
 
+#include <functional>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStResourceRegistry;

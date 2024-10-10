@@ -48,7 +48,8 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
                        bool hasInstancer,
                        bool enableScalarOverride,
                        bool pointsShadingEnabled,
-                       bool forceOpaqueEdges);
+                       bool forceOpaqueEdges,
+                       bool surfaceEdgeIds);
 
     // Note: it looks like gcc 4.8 has a problem issuing
     // a wrong warning as "array subscript is above array bounds"

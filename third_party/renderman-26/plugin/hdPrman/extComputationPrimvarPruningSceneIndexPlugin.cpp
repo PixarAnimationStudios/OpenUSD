@@ -6,6 +6,8 @@
 //
 #include "hdPrman/extComputationPrimvarPruningSceneIndexPlugin.h"
 
+#if PXR_VERSION >= 2402
+
 #include "hdPrman/tokens.h"
 
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
@@ -72,3 +74,5 @@ HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin::_AppendSceneIndex(
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_VERSION >= 2402

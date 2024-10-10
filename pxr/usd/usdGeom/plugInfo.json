@@ -73,6 +73,7 @@
                         "bases": [
                             "UsdGeomCurves"
                         ], 
+                        "schemaIdentifier": "BasisCurves", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomBoundable": {
@@ -83,6 +84,7 @@
                         "bases": [
                             "UsdGeomXformable"
                         ], 
+                        "schemaIdentifier": "Boundable", 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdGeomCamera": {
@@ -93,6 +95,7 @@
                         "bases": [
                             "UsdGeomXformable"
                         ], 
+                        "schemaIdentifier": "Camera", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomCapsule": {
@@ -104,6 +107,7 @@
                             "UsdGeomGprim"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "Capsule", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomCapsule_1": {
@@ -115,6 +119,7 @@
                             "UsdGeomGprim"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "Capsule_1", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomCone": {
@@ -126,6 +131,7 @@
                             "UsdGeomGprim"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "Cone", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomCube": {
@@ -137,6 +143,7 @@
                             "UsdGeomGprim"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "Cube", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomCurves": {
@@ -148,6 +155,7 @@
                             "UsdGeomPointBased"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "Curves", 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdGeomCylinder": {
@@ -159,6 +167,7 @@
                             "UsdGeomGprim"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "Cylinder", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomCylinder_1": {
@@ -170,6 +179,7 @@
                             "UsdGeomGprim"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "Cylinder_1", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomGprim": {
@@ -180,6 +190,7 @@
                         "bases": [
                             "UsdGeomBoundable"
                         ], 
+                        "schemaIdentifier": "Gprim", 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdGeomHermiteCurves": {
@@ -190,6 +201,7 @@
                         "bases": [
                             "UsdGeomCurves"
                         ], 
+                        "schemaIdentifier": "HermiteCurves", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomImageable": {
@@ -200,6 +212,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "Imageable", 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdGeomMesh": {
@@ -210,6 +223,7 @@
                         "bases": [
                             "UsdGeomPointBased"
                         ], 
+                        "schemaIdentifier": "Mesh", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomModelAPI": {
@@ -220,6 +234,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "GeomModelAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdGeomMotionAPI": {
@@ -230,6 +245,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "MotionAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdGeomNurbsCurves": {
@@ -240,6 +256,7 @@
                         "bases": [
                             "UsdGeomCurves"
                         ], 
+                        "schemaIdentifier": "NurbsCurves", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomNurbsPatch": {
@@ -250,6 +267,7 @@
                         "bases": [
                             "UsdGeomPointBased"
                         ], 
+                        "schemaIdentifier": "NurbsPatch", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomPlane": {
@@ -261,6 +279,7 @@
                             "UsdGeomGprim"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "Plane", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomPointBased": {
@@ -272,6 +291,7 @@
                             "UsdGeomGprim"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "PointBased", 
                         "schemaKind": "abstractTyped"
                     }, 
                     "UsdGeomPointInstancer": {
@@ -283,6 +303,7 @@
                             "UsdGeomBoundable"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "PointInstancer", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomPoints": {
@@ -294,6 +315,7 @@
                             "UsdGeomPointBased"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "Points", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomPrimvarsAPI": {
@@ -304,6 +326,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PrimvarsAPI", 
                         "schemaKind": "nonAppliedAPI"
                     }, 
                     "UsdGeomScope": {
@@ -314,6 +337,7 @@
                         "bases": [
                             "UsdGeomImageable"
                         ], 
+                        "schemaIdentifier": "Scope", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomSphere": {
@@ -325,6 +349,7 @@
                             "UsdGeomGprim"
                         ], 
                         "implementsComputeExtent": true, 
+                        "schemaIdentifier": "Sphere", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomSubset": {
@@ -335,6 +360,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "GeomSubset", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomTetMesh": {
@@ -345,6 +371,7 @@
                         "bases": [
                             "UsdGeomPointBased"
                         ], 
+                        "schemaIdentifier": "TetMesh", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomVisibilityAPI": {
@@ -358,6 +385,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "VisibilityAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdGeomXform": {
@@ -368,6 +396,7 @@
                         "bases": [
                             "UsdGeomXformable"
                         ], 
+                        "schemaIdentifier": "Xform", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdGeomXformCommonAPI": {
@@ -378,6 +407,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "XformCommonAPI", 
                         "schemaKind": "nonAppliedAPI"
                     }, 
                     "UsdGeomXformable": {
@@ -388,6 +418,7 @@
                         "bases": [
                             "UsdGeomImageable"
                         ], 
+                        "schemaIdentifier": "Xformable", 
                         "schemaKind": "abstractTyped"
                     }
                 }, 

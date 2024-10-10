@@ -21,8 +21,6 @@
 #include "pxr/external/boost/python/handle.hpp"
 #include "pxr/external/boost/python/object.hpp"
 
-#include <boost/function.hpp>
-
 #include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -81,7 +79,6 @@ struct TfPyFunctionFromPython<Ret (Args...)>
     };
 
     TfPyFunctionFromPython() {
-        RegisterFunctionType<boost::function<Ret (Args...)>>();
         RegisterFunctionType<std::function<Ret (Args...)>>();
     }
 

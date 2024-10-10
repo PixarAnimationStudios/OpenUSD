@@ -14,7 +14,6 @@
 
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/weakBase.h"
-#include <boost/noncopyable.hpp>
 #include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -25,13 +24,17 @@ namespace {
 
 class Pcp_PyTestChangeProcessor
     : public TfWeakBase
-    , public boost::noncopyable
 {
 public:
     Pcp_PyTestChangeProcessor(const PcpCache* cache)
         : _cache(cache)
     {
     }
+
+    Pcp_PyTestChangeProcessor(const Pcp_PyTestChangeProcessor&) = delete;
+
+    Pcp_PyTestChangeProcessor&
+    operator=(const Pcp_PyTestChangeProcessor&) = delete;
 
     void Enter()
     {
@@ -103,7 +106,7 @@ wrapTestChangeProcessor()
     typedef Pcp_PyTestChangeProcessor This;
     typedef TfWeakPtr<Pcp_PyTestChangeProcessor> ThisPtr;
 
-    class_<This, ThisPtr, boost::noncopyable>
+    class_<This, ThisPtr, noncopyable>
         ("_TestChangeProcessor", init<PcpCache*>())
         .def("__enter__", &This::Enter, return_self<>())
         .def("__exit__", &This::Exit)

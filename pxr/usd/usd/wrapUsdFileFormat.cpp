@@ -23,7 +23,7 @@ wrapUsdFileFormat()
 {
     using This = UsdUsdFileFormat;
 
-    scope s = class_<This, bases<SdfFileFormat>, boost::noncopyable>
+    scope s = class_<This, bases<SdfFileFormat>, noncopyable>
         ("UsdFileFormat", no_init)
 
         .def("GetUnderlyingFormatForLayer", 

@@ -11,8 +11,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(UsdUIBackdrop); 
-    TF_WRAP(UsdUINodeGraphNodeAPI); 
-    TF_WRAP(UsdUISceneGraphPrimAPI);
-    TF_WRAP(UsdUITokens);
+    // Generated Schema classes.  Do not remove or edit the following line.
+    #include "generatedSchema.module.h"
 }

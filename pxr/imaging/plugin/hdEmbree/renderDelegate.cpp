@@ -99,7 +99,7 @@ void
 HdEmbreeRenderDelegate::_Initialize()
 {
     // Initialize the settings and settings descriptors.
-    _settingDescriptors.resize(4);
+    _settingDescriptors.resize(5);
     _settingDescriptors[0] = { "Enable Scene Colors",
         HdEmbreeRenderSettingsTokens->enableSceneColors,
         VtValue(HdEmbreeConfig::GetInstance().useFaceColors) };
@@ -112,6 +112,9 @@ HdEmbreeRenderDelegate::_Initialize()
     _settingDescriptors[3] = { "Samples To Convergence",
         HdRenderSettingsTokens->convergedSamplesPerPixel,
         VtValue(int(HdEmbreeConfig::GetInstance().samplesToConvergence)) };
+    _settingDescriptors[4] = { "Random Number Seed",
+        HdEmbreeRenderSettingsTokens->randomNumberSeed,
+        VtValue(HdEmbreeConfig::GetInstance().randomNumberSeed) };
     _PopulateDefaultSettings(_settingDescriptors);
 
     // Initialize the embree library handle (_rtcDevice).

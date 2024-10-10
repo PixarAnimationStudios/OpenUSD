@@ -89,8 +89,9 @@ namespace PXR_BOOST_NAMESPACE { namespace python {
             elem_name += class_name_extractor();
             elem_name += "_entry";
 
-            typedef typename mpl::if_<
-                mpl::and_<is_class<data_type>, mpl::bool_<!NoProxy> >
+
+            typedef typename detail::mpl2::if_<
+                detail::mpl2::and_<std::is_class<data_type>, detail::mpl2::bool_<!NoProxy> >
               , return_internal_reference<>
               , default_call_policies
             >::type get_data_return_policy;
@@ -109,8 +110,8 @@ namespace PXR_BOOST_NAMESPACE { namespace python {
         }
 
         static
-        typename mpl::if_<
-            mpl::and_<is_class<data_type>, mpl::bool_<!NoProxy> >
+        typename detail::mpl2::if_<
+            detail::mpl2::and_<std::is_class<data_type>, detail::mpl2::bool_<!NoProxy> >
           , data_type&
           , data_type
         >::type

@@ -87,23 +87,47 @@ str_base::str_base(object_cref other)
     : object(str_base::call(other))
 {}
 
-#define PXR_BOOST_PYTHON_FORMAT_OBJECT(z, n, data) "O"
-#define PXR_BOOST_PYTHON_OBJECT_PTR(z, n, data) , x##n .ptr()
+namespace {
+    
+    template <typename... T>
+    str call_str_method(PyObject* obj, char const* name, T const&... args)
+    {
+        return str(new_reference(
+           expect_non_null(
+               PyObject_CallMethodObjArgs(
+                   obj
+                 , handle<>(PyUnicode_FromString(name)).get()
+                 , args.ptr()..., NULL))));
+    }
 
-#define PXR_BOOST_PYTHON_DEFINE_STR_METHOD(name, arity)                             \
-str str_base:: name ( BOOST_PP_ENUM_PARAMS(arity, object_cref x) ) const        \
+} // namespace <anonymous>
+
+#define PXR_BOOST_PYTHON_DEFINE_STR_METHOD_0(name)                              \
+str str_base:: name () const                                                    \
 {                                                                               \
-    return str(new_reference(                                                   \
-       expect_non_null(                                                         \
-           PyObject_CallMethod(                                                 \
-               this->ptr(), const_cast<char*>( #name ),                         \
-               const_cast<char*>(                                               \
-                 "(" BOOST_PP_REPEAT(arity, PXR_BOOST_PYTHON_FORMAT_OBJECT, _) ")") \
-               BOOST_PP_REPEAT_1(arity, PXR_BOOST_PYTHON_OBJECT_PTR, _)))));        \
+    return call_str_method(this->ptr(), #name);                                 \
 }
 
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(capitalize, 0)
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(center, 1)
+#define PXR_BOOST_PYTHON_DEFINE_STR_METHOD_1(name)                              \
+str str_base:: name (object_cref x0) const                                      \
+{                                                                               \
+    return call_str_method(this->ptr(), #name, x0);                             \
+}
+
+#define PXR_BOOST_PYTHON_DEFINE_STR_METHOD_2(name)                              \
+str str_base:: name (object_cref x0, object_cref x1) const                      \
+{                                                                               \
+    return call_str_method(this->ptr(), #name, x0, x1);                         \
+}
+
+#define PXR_BOOST_PYTHON_DEFINE_STR_METHOD_3(name)                              \
+str str_base:: name (object_cref x0, object_cref x1, object_cref x2) const      \
+{                                                                               \
+    return call_str_method(this->ptr(), #name, x0, x1, x2);                     \
+}
+
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_0(capitalize)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_1(center)
 
 long str_base::count(object_cref sub) const
 {
@@ -183,8 +207,8 @@ bool str_base::endswith(object_cref suffix, object_cref start, object_cref end) 
     return result;
 }
 
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(expandtabs, 0)
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(expandtabs, 1)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_0(expandtabs)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_1(expandtabs)
 
 long str_base::find(object_cref sub) const
 {
@@ -290,12 +314,12 @@ bool str_base::isupper() const
     return result;
 }
 
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(join, 1)
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(ljust, 1)
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(lower, 0)
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(lstrip, 0)
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(replace, 2)
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(replace, 3)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_1(join)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_1(ljust)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_0(lower)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_0(lstrip)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_2(replace)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_3(replace)
 
 long str_base::rfind(object_cref sub) const
 {
@@ -345,8 +369,8 @@ long str_base::rindex(object_cref sub, object_cref start, object_cref end) const
     return result;
 }
 
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(rjust, 1)
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(rstrip, 0)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_1(rjust)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_0(rstrip)
 
 list str_base::split() const
 {
@@ -399,12 +423,12 @@ bool str_base::startswith(object_cref prefix, object_cref start, object_cref end
 
 #undef _PXR_BOOST_PYTHON_ASLONG
 
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(strip, 0)
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(swapcase, 0)
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(title, 0)
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(translate, 1)
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(translate, 2)
-PXR_BOOST_PYTHON_DEFINE_STR_METHOD(upper, 0)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_0(strip)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_0(swapcase)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_0(title)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_1(translate)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_2(translate)
+PXR_BOOST_PYTHON_DEFINE_STR_METHOD_0(upper)
 
 static struct register_str_pytype_ptr
 {

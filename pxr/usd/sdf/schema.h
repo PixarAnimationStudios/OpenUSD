@@ -209,6 +209,14 @@ public:
     /// Returns the spec definition for the given spec type.
     /// Returns NULL if no definition exists for the given spec type.
     inline const SpecDefinition* GetSpecDefinition(SdfSpecType specType) const {
+    #ifdef PXR_PREFER_SAFETY_OVER_SPEED
+        if (ARCH_UNLIKELY(specType < SdfSpecTypeUnknown || 
+                          specType >= SdfNumSpecTypes))
+        {
+            return _IssueErrorForInvalidSpecType(specType);
+        }
+    #endif // PXR_PREFER_SAFETY_OVER_SPEED
+
         return _specDefinitions[specType].second ?
             &_specDefinitions[specType].first : nullptr;
     }
@@ -519,6 +527,9 @@ private:
     void _AddRequiredFieldName(const TfToken &name);
 
     const SpecDefinition* _CheckAndGetSpecDefinition(SdfSpecType type) const;
+
+    SDF_API
+    const SpecDefinition* _IssueErrorForInvalidSpecType(SdfSpecType specType) const;
 
     friend struct Sdf_SchemaFieldTypeRegistrar;
     FieldDefinition& _CreateField(

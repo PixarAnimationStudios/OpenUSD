@@ -24,7 +24,7 @@ advancement of USD.
 ========
 
 `3Delight <https://www.3delight.com>`_ is a path-traced renderer that supports USD and has
-a `Hydra Delegate <https://gitlab.com/3Delight/HydraNSI>`_.
+a `Hydra Delegate <https://gitlab.com/3Delight/HydraNSI>`__.
 
 --------
 
@@ -57,7 +57,7 @@ AMD ProRender
 =============
 
 `AMD ProRender <https://www.amd.com/en/technologies/radeon-prorender>`_ is a GPU and CPU path-traced renderer.
-There is an `open source Hydra delegate <https://github.com/GPUOpen-LibrariesAndSDKs/RadeonProRenderUSD>`_.
+There is an `open source Hydra delegate <https://github.com/GPUOpen-LibrariesAndSDKs/RadeonProRenderUSD>`__.
 
 --------
 
@@ -139,6 +139,17 @@ Arnold
 
 `Arnold USD Documentation <https://docs.arnoldrenderer.com/display/A5ARP/Introduction+to+Arnold+USD>`_
 
+Bifrost
+-------
+
+`Bifrost <https://www.autodesk.com/products/maya/bifrost>`__ is a visual 
+programming environment inside of Autodesk Maya for creating procedural 
+effects for film, TV, and games.
+
+Autodesk provides a 
+`library of Bifrost nodes <https://github.com/Autodesk/bifrost-usd>`__ to create 
+USD-based scene graphs in Bifrost. 
+
 Fusion 360
 ----------
 
@@ -185,7 +196,7 @@ Cycles
 
 The `Cycles Renderer <https://www.cycles-renderer.org>`_ is an open source, path-traced renderer.
 
-It has a `Hydra Delegate <https://wiki.blender.org/wiki/Building_Blender/CyclesHydra>`_ , originally developed by Tangent Animation.
+It has a `Hydra Delegate <https://wiki.blender.org/wiki/Building_Blender/CyclesHydra>`__ , originally developed by Tangent Animation.
 
 --------
 
@@ -251,14 +262,14 @@ Katana
 
 `Katana <https://www.foundry.com/products/katana>`_ is  look development and lighting package.
 
-Katana has `open source USD plugins <https://learn.foundry.com/katana/dev-guide/Plugins/KatanaUSDPlugins/index.html>`_ as
-well as a support for `Hydra render delegates <https://learn.foundry.com/katana/dev-guide/Plugins/HydraRenderDelegates/index.html>`_.
+Katana has `open source USD plugins <https://learn.foundry.com/katana/dev-guide/Plugins/KatanaUSDPlugins/index.html>`__ as
+well as a support for `Hydra render delegates <https://learn.foundry.com/katana/dev-guide/Plugins/HydraRenderDelegates/index.html>`__.
 
 Mari
 ----
 
 `Mari <https://www.foundry.com/products/mari>`_ is a 3D texture painting application.
-Mari has `open source USD plugins <https://github.com/TheFoundryVisionmongers/MariUsdPlugins>`_.
+Mari has `open source USD plugins <https://github.com/TheFoundryVisionmongers/MariUsdPlugins>`__.
 
 Modo
 ----
@@ -277,7 +288,7 @@ Nuke
 Intel OSPRay
 ============
 
-`Intel's OSPRay renderer <https://www.ospray.org/>`_ is a path-traced renderer with an `open source Hydra delegate <https://github.com/ospray/hdospray>`_.
+`Intel's OSPRay renderer <https://www.ospray.org/>`_ is a path-traced renderer with an `open source Hydra delegate <https://github.com/ospray/hdospray>`__.
 
 --------
 
