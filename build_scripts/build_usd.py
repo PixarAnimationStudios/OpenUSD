@@ -731,8 +731,8 @@ def InstallBoost_Helper(context, force, buildArgs):
     # However, there are some cases where a newer version is required.
     # - Building with Python 3.11 requires boost 1.82.0 or newer
     #   (https://github.com/boostorg/python/commit/a218ba)
-    # - Building on MacOS requires v1.82.0 or later for C++17 support starting 
-    #   with Xcode 15. We choose to use this version for all MacOS builds for 
+    # - Building on MacOS requires v1.82.0 or later for C++17 support starting
+    #   with Xcode 15. We choose to use this version for all MacOS builds for
     #   simplicity."
     # - Building with Python 3.10 requires boost 1.76.0 or newer
     #   (https://github.com/boostorg/python/commit/cbd2d9)
@@ -955,7 +955,7 @@ ONETBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.9.0.z
 
 def InstallOneTBB(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ONETBB_URL, context, force)):
-        RunCMake(context, force, 
+        RunCMake(context, force,
                  ['-DTBB_TEST=OFF',
                   '-DTBB_STRICT=OFF'] + buildArgs)
 
@@ -2361,7 +2361,10 @@ if extraPythonPaths:
 if context.buildOneTBB:
     TBB = ONETBB
 
-requiredDependencies = [ZLIB, TBB]
+requiredDependencies = [TBB]
+
+# Some platforms provide zlib out of the box, so only add it when needed
+zlib_provided = (Linux() or MacOS())
 
 if context.buildBoostPython:
     requiredDependencies += [BOOST]
@@ -2380,17 +2383,25 @@ if context.buildMaterialX:
 if context.buildImaging:
     if context.enablePtex:
         requiredDependencies += [PTEX]
+        if not zlib_provided:
+            requiredDependencies += [ZLIB]
 
     requiredDependencies += [OPENSUBDIV]
 
     if context.enableOpenVDB:
         requiredDependencies += [BLOSC, BOOST, OPENEXR, OPENVDB, TBB]
+        if not zlib_provided:
+            requiredDependencies += [ZLIB]
     
     if context.buildOIIO:
         requiredDependencies += [BOOST, JPEG, TIFF, PNG, OPENEXR, OPENIMAGEIO]
+        if not zlib_provided:
+            requiredDependencies += [ZLIB]
 
     if context.buildOCIO:
         requiredDependencies += [OPENCOLORIO]
+        if not zlib_provided:
+            requiredDependencies += [ZLIB]
 
     if context.buildEmbree:
         requiredDependencies += [TBB, EMBREE]
@@ -2400,13 +2411,6 @@ if context.buildUsdview:
 
 if context.buildAnimXTests:
     requiredDependencies += [ANIMX]
-
-# Assume zlib already exists on Linux platforms and don't build
-# our own. This avoids potential issues where a host application
-# loads an older version of zlib than the one we'd build and link
-# our libraries against.
-if Linux():
-    requiredDependencies.remove(ZLIB)
 
 # Error out if user is building monolithic library on windows with draco plugin
 # enabled. This currently results in missing symbols.
