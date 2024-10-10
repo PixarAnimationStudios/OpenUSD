@@ -44,6 +44,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((nonShaderConnection, "NonShaderConnection"))                                  \
     ((invalidNormalMapTextureFile, "InvalidNormalMapTextureFile"))                  \
     ((invalidNormalMapTextureColorSpace, "InvalidNormalMapTextureColorSpace"))      \
+    ((nonCompliantBiasAndScale, "NonCompliantBiasAndScale"))                        \
+    ((invalidShaderPrim, "InvalidShaderPrim"))                                      \
+    ((nonCompliantScale, "NonCompliantScaleValues"))                                \
+    ((nonCompliantBias, "NonCompliantBiasValues"))                                  \
 
 /// \def USD_SHADE_VALIDATOR_NAME_TOKENS
 /// Tokens representing validator names. Note that for plugin provided
