@@ -190,8 +190,10 @@ TfScriptModuleLoader::_HasTransitiveSuccessor(TfToken const &predecessor,
     // This function does a simple DFS of the dependency dag, to determine if \a
     // predecessor has \a successor somewhere in the transitive closure.
 
-    vector<TfToken> predStack(1, predecessor);
-    TfToken::HashSet seenPreds;
+    vector<TfToken> predStack = {predecessor};
+    // Ensure the initial state of predStack is considered "seen" and should
+    // not be readded to predStack.
+    TfToken::HashSet seenPreds{std::cbegin(predStack), std::cend(predStack)};
 
     while (!predStack.empty()) {
         TfToken pred = predStack.back();
@@ -206,10 +208,10 @@ TfScriptModuleLoader::_HasTransitiveSuccessor(TfToken const &predecessor,
         _TokenToInfoMap::const_iterator i = _libInfo.find(pred);
         if (i != _libInfo.end()) {
             // Walk all the successors.
-            TF_FOR_ALL(j, i->second.successors) {
+            for (const auto& maybeUnvisited: i->second.successors) {
                 // Push those that haven't yet been visited on the stack.
-                if (seenPreds.insert(pred).second)
-                    predStack.push_back(pred);
+                if (seenPreds.insert(maybeUnvisited).second)
+                    predStack.push_back(maybeUnvisited);
             }
         }
     }
