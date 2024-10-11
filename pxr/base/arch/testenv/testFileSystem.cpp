@@ -63,6 +63,28 @@ _AbsPathFilter(const std::string& path)
     return path;
 #endif
 }
+
+std::string
+_DosDevicePathFilter(const std::string& path)
+{
+#if defined(ARCH_OS_WINDOWS)
+    // Strip prefix \\?\ or \\.\ and convert backslashes to forward slashes.
+    std::string result = path;
+    if (result.length() > 4)
+    {
+        std::string prefix = result.substr(0, 4);
+        if (prefix == "\\\\?\\" || prefix == "\\\\.\\")
+        {
+            result = result.substr(4);
+        }
+    }
+
+    return ArchNormPath(result);
+#else
+    // Return path as-is.
+    return path;
+#endif
+}
 }
 
 static bool
@@ -91,6 +113,12 @@ int main()
     fputs(testContent, firstFile);
     fclose(firstFile);
     ARCH_AXIOM(ArchGetFileLength(firstName.c_str()) == strlen(testContent));
+
+    // Open a file, check that the file path from FILE* handle is matched.
+    ARCH_AXIOM((firstFile = ArchOpenFile(firstName.c_str(), "rb")) != NULL);
+    std::string filePath = ArchGetFileName(firstFile);
+    ARCH_AXIOM(_DosDevicePathFilter(filePath) == _DosDevicePathFilter(firstName));
+    fclose(firstFile);
 
     // Map the file and assert the bytes are what we expect they are.
     ARCH_AXIOM((firstFile = ArchOpenFile(firstName.c_str(), "rb")) != NULL);

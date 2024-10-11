@@ -532,24 +532,20 @@ ArchGetFileName(FILE *file)
     }
     return result;
 #elif defined (ARCH_OS_WINDOWS)
-    static constexpr DWORD bufSize =
-        sizeof(FILE_NAME_INFO) + sizeof(WCHAR) * 4096;
-    HANDLE hfile = _FileToWinHANDLE(file);
-    auto fileNameInfo = reinterpret_cast<PFILE_NAME_INFO>(malloc(bufSize));
     string result;
-    if (GetFileInformationByHandleEx(
-            hfile, FileNameInfo, static_cast<void *>(fileNameInfo), bufSize)) {
+    WCHAR filePath[MAX_PATH];
+    HANDLE hfile = _FileToWinHANDLE(file);
+    if (GetFinalPathNameByHandleW(hfile, filePath, MAX_PATH, VOLUME_NAME_DOS)) {
         size_t outSize = WideCharToMultiByte(
-            CP_UTF8, 0, fileNameInfo->FileName,
-            fileNameInfo->FileNameLength/sizeof(WCHAR),
+            CP_UTF8, 0, filePath,
+            wcslen(filePath),
             NULL, 0, NULL, NULL);
         result.resize(outSize);
         WideCharToMultiByte(
-            CP_UTF8, 0, fileNameInfo->FileName,
-            fileNameInfo->FileNameLength/sizeof(WCHAR),
+            CP_UTF8, 0, filePath,
+            -1,
             &result.front(), outSize, NULL, NULL);
     }
-    free(fileNameInfo);
     return result;                                        
 #else
 #error Unknown system architecture
