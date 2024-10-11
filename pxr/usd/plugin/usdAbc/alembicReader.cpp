@@ -7,12 +7,16 @@
 /// \file alembicReader.cpp
 
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolvedPath.h"
+#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/plugin/usdAbc/alembicReader.h"
 #include "pxr/usd/plugin/usdAbc/alembicUtil.h"
 #include "pxr/usd/usdGeom/hermiteCurves.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/sdf/schema.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/work/threadLimits.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/envSetting.h"
@@ -801,6 +805,8 @@ private:
                    const ISampleSelector& selector,
                    const UsdAbc_AlembicDataAny& value) const;
 
+    std::string _OpenAndGetMappedFilePath(const std::string& filePath);
+
     // Custom auto-lock that safely ignores a NULL pointer.
     class _Lock {
     public:
@@ -872,6 +878,28 @@ _ReaderContext::_ReaderContext() :
     // Do nothing
 }
 
+std::string
+_ReaderContext::_OpenAndGetMappedFilePath(const std::string& filePath)
+{
+    // Open asset with Ar to support URLs other than local paths.
+    std::shared_ptr<ArAsset> asset =
+        ArGetResolver().OpenAsset(ArResolvedPath(filePath));
+    if (asset)
+    {
+        FILE* fileHandle = asset->GetFileUnsafe().first;
+        if (fileHandle)
+        {
+            // If file handle is presented, use mapped file path instead of original one.
+            const std::string mappedFilePath = ArchGetFileName(fileHandle);
+
+            return mappedFilePath;
+        }
+    }
+
+    // Otherwise, fallback to original asset path.
+    return filePath;
+}
+
 bool
 _ReaderContext::Open(const std::string& filePath, std::string* errorLog,
                      const SdfFileFormat::FileFormatArguments& args)
@@ -883,11 +911,11 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog,
         auto abcLayers = args.find("abcLayers");
         if (abcLayers != args.end()) {
             for (auto&& l : TfStringSplit(abcLayers->second, ",")) {
-                layeredABC.emplace_back(std::move(l));
+                layeredABC.emplace_back(_OpenAndGetMappedFilePath(l));
             }
         }
     }
-    layeredABC.emplace_back(filePath);
+    layeredABC.emplace_back(_OpenAndGetMappedFilePath(filePath));
 
 #if PXR_HDF5_SUPPORT_ENABLED && !H5_HAVE_THREADSAFE
     // HDF5 may not be thread-safe.
