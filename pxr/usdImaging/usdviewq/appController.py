@@ -4236,21 +4236,12 @@ class AppController(QtCore.QObject):
                     "references", "specializes",
                     "payload", "subLayers"]
 
-
         for k in compKeys:
             v = obj.GetMetadata(k)
             if not v is None:
                 m[k] = v
 
-        clipMetadata = obj.GetMetadata("clips")
-        if clipMetadata is None:
-            clipMetadata = {}
-        numClipRows = 0
-        for (clip, data) in clipMetadata.items():
-            numClipRows += len(data)
-        m["clips"] = clipMetadata
-        
-        numMetadataRows = (len(m) - 1) + numClipRows
+        m["clips"] = obj.GetMetadata("clips") or {}
 
         # Variant selections that don't have a defined variant set will be 
         # displayed as well to aid debugging. Collect them separately from
@@ -4285,9 +4276,6 @@ class AppController(QtCore.QObject):
                 # Remove found variant set from setless.
                 setlessVariantSelections.pop(variantSetName, None)
 
-        tableWidget.setRowCount(numMetadataRows + len(variantSets) + 
-                                len(setlessVariantSelections) + 2)
-
         rowIndex = 0
 
         # Although most metadata should be presented alphabetically,the most 
@@ -4295,6 +4283,7 @@ class AppController(QtCore.QObject):
         # list, these consist of [object type], [path], variant sets, active, 
         # assetInfo, and kind.
         def populateMetadataTable(key, val, rowIndex):
+            tableWidget.insertRow(rowIndex)
             attrName = QtWidgets.QTableWidgetItem(str(key))
             tableWidget.setItem(rowIndex, 0, attrName)
 
@@ -4303,6 +4292,12 @@ class AppController(QtCore.QObject):
             attrVal.setToolTip(ttStr)
 
             tableWidget.setItem(rowIndex, 1, attrVal)
+
+        def populateMetadataTableVariant(key, val, rowIndex):
+            tableWidget.insertRow(rowIndex)
+            attrName = QtWidgets.QTableWidgetItem(str(key + ' variant'))
+            tableWidget.setItem(rowIndex, 0, attrName)
+            tableWidget.setCellWidget(rowIndex, 1, val)
 
         sortedKeys = sorted(m.keys())
         reorderedKeys = ["kind", "assetInfo", "active"]
@@ -4330,9 +4325,7 @@ class AppController(QtCore.QObject):
         rowIndex += 1
 
         for variantSetName, combo in variantSets.items():
-            attrName = QtWidgets.QTableWidgetItem(str(variantSetName+ ' variant'))
-            tableWidget.setItem(rowIndex, 0, attrName)
-            tableWidget.setCellWidget(rowIndex, 1, combo)
+            populateMetadataTableVariant(variantSetName, combo, rowIndex)
             combo.currentIndexChanged.connect(
                 lambda i, combo=combo:
                 combo.updateVariantSelection(i, self._makeTimer))
@@ -4341,15 +4334,12 @@ class AppController(QtCore.QObject):
         # Add all the setless variant selections directly after the variant 
         # combo boxes
         for variantSetName, variantSelection in setlessVariantSelections.items():
-            attrName = QtWidgets.QTableWidgetItem(str(variantSetName+ ' variant'))
-            tableWidget.setItem(rowIndex, 0, attrName)
-
             valStr, ttStr = self._formatMetadataValueView(variantSelection)
             # Italicized label to stand out when debugging a scene.
             label = QtWidgets.QLabel('<i>' + valStr + '</i>')
             label.setIndent(3)
             label.setToolTip(ttStr)
-            tableWidget.setCellWidget(rowIndex, 1, label)
+            populateMetadataTableVariant(variantSetName, label, rowIndex)
 
             rowIndex += 1
 
@@ -4357,8 +4347,11 @@ class AppController(QtCore.QObject):
             if key == "clips":
                 for (clip, metadataGroup) in m[key].items():
                     attrName = QtWidgets.QTableWidgetItem(str('clips:' + clip))
-                    tableWidget.setItem(rowIndex, 0, attrName)
-                    for metadata in metadataGroup.keys():
+                    for i, metadata in enumerate(metadataGroup.keys()):
+                        tableWidget.insertRow(rowIndex)
+                        if i == 0:
+                            tableWidget.setItem(rowIndex, 0, attrName)
+
                         dataPair = (metadata, metadataGroup[metadata])
                         valStr, ttStr = self._formatMetadataValueView(dataPair)
                         attrVal = QtWidgets.QTableWidgetItem(valStr)
