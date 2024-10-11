@@ -202,6 +202,8 @@ This command takes an optional list of targets to build, but will otherwise buil
 > python OpenUSD/build_scripts/apple_utils.py xcframework /path/to/my_usd_install_dir
 ```
 
+Note that currently, Simulator builds do not render with Imaging as Simulator targets have reduced Metal support.
+
 ##### Windows:
 
 Launch the "x64 Native Tools Command Prompt" for your version of Visual Studio

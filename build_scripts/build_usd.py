@@ -2785,7 +2785,7 @@ if context.buildPrman:
     Print("See documentation at http://openusd.org/docs/RenderMan-USD-Imaging-Plugin.html "
           "for setting up the RenderMan plugin.\n")
 
-if context.buildAppleFramework:
+if MacOS() and context.buildAppleFramework:
     Print("""
         Add the following framework to your Xcode Project:
         OpenUSD.framework
