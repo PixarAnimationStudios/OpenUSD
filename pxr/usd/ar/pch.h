@@ -81,6 +81,7 @@
 #include <utility>
 #include <vector>
 #if defined(PXR_PYTHON_SUPPORT_ENABLED) && !defined(PXR_USE_INTERNAL_BOOST_PYTHON)
+#include "pxr/external/boost/python/common.hpp"
 #include <boost/noncopyable.hpp>
 #include <boost/python/bases.hpp>
 #include <boost/python/class.hpp>

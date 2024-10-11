@@ -54,6 +54,7 @@
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/typedesc.h>
 #if defined(PXR_PYTHON_SUPPORT_ENABLED) && !defined(PXR_USE_INTERNAL_BOOST_PYTHON)
+#include "pxr/external/boost/python/common.hpp"
 #include <boost/python/object_fwd.hpp>
 #include <boost/python/object_operators.hpp>
 #if defined(__APPLE__) // Fix breakage caused by Python's pyport.h.

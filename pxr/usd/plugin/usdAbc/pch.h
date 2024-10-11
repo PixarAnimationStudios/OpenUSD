@@ -113,6 +113,7 @@
 #include <Alembic/AbcGeom/SchemaInfoDeclarations.h>
 #include <Alembic/AbcGeom/Visibility.h>
 #if defined(PXR_PYTHON_SUPPORT_ENABLED) && !defined(PXR_USE_INTERNAL_BOOST_PYTHON)
+#include "pxr/external/boost/python/common.hpp"
 #include <boost/python/def.hpp>
 #include <boost/python/dict.hpp>
 #include <boost/python/extract.hpp>
