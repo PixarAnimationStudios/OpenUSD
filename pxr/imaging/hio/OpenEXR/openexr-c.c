@@ -657,7 +657,8 @@ static exr_result_t _nanoexr_rgba_decoding_initialize(
     for (int c = 0; c < decoder->channel_count; ++c) {
         int channelIndex = -1;
         decoder->channels[c].decode_to_ptr = NULL;
-        if (strIsComponent(layerName, decoder->channels[c].channel_name, "red")) {
+        if (strIsComponent(layerName, decoder->channels[c].channel_name, "red")
+            || (rgba[0] == -1 && strIsComponent(layerName, decoder->channels[c].channel_name, "y"))) {
             rgba[0] = c;
             channelIndex = 0;
         }
