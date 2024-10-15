@@ -1607,7 +1607,7 @@ HdSt_CodeGen::_PlumbInterstageElements(
 
     // Interstage variables of type "int" require "flat" interpolation
     TfToken const &qualifier =
-        (dataType == _tokens->_int) ? _tokens->flat : _tokens->_default;
+        (_GetFlatType(dataType) == _tokens->_int) ? _tokens->flat : _tokens->_default;
 
     // Vertex attrib input for VS, PTCS, PTVS
     _resAttrib.emplace_back(InOut::STAGE_OUT, Kind::VALUE, dataType,
@@ -4104,21 +4104,33 @@ static void _EmitFVarAccessor(
         << " { return HdGet_" << name << "(0); }\n";
 }
 
+static void
+_GetDrawingCoordElem(std::stringstream &ss,
+                 char const *inputPrefix,
+                 char const *inArraySize = "")
+{
+    ss << "  dc.modelCoord              = " << inputPrefix << "drawingCoord0" << inArraySize << ".x;\n"
+       << "  dc.constantCoord           = " << inputPrefix << "drawingCoord0" << inArraySize << ".y;\n"
+       << "  dc.elementCoord            = " << inputPrefix << "drawingCoord0" << inArraySize << ".z;\n"
+       << "  dc.primitiveCoord          = " << inputPrefix << "drawingCoord0" << inArraySize << ".w;\n"
+       << "  dc.fvarCoord               = " << inputPrefix << "drawingCoord1" << inArraySize << ".x;\n"
+       << "  dc.shaderCoord             = " << inputPrefix << "drawingCoord1" << inArraySize << ".z;\n"
+       << "  dc.vertexCoord             = " << inputPrefix << "drawingCoord1" << inArraySize << ".w;\n"
+       << "  dc.topologyVisibilityCoord = " << inputPrefix << "drawingCoord2" << inArraySize << ".x;\n"
+       << "  dc.varyingCoord            = " << inputPrefix << "drawingCoord2" << inArraySize << ".y;\n";
+}
+
 // Helper function to generate the implementation of "GetDrawingCoord()".
 static void
 _GetDrawingCoord(std::stringstream &ss,
-                 std::vector<std::string> const &drawingCoordParams,
                  int const instanceIndexWidth,
                  char const *inputPrefix,
                  char const *inArraySize)
 {
     ss << "hd_drawingCoord GetDrawingCoord() { \n"
        << "  hd_drawingCoord dc; \n";
+    _GetDrawingCoordElem(ss, inputPrefix, inArraySize);
 
-    for (std::string const & param : drawingCoordParams) {
-        ss << "  dc." << param
-           << " = " << inputPrefix << param << inArraySize << ";\n";
-    }
     for(int i = 0; i < instanceIndexWidth; ++i) {
         ss << "  dc.instanceIndex[" << std::to_string(i) << "]"
            << " = " << inputPrefix
@@ -4137,16 +4149,21 @@ _GetDrawingCoord(std::stringstream &ss,
 // Helper function to generate drawingCoord interstage processing.
 static void
 _ProcessDrawingCoord(std::stringstream &ss,
-                     std::vector<std::string> const &drawingCoordParams,
                      int const instanceIndexWidth,
                      char const *outputPrefix,
                      char const *outArraySize)
 {
     ss << "  hd_drawingCoord dc = GetDrawingCoord();\n";
-    for (std::string const & param : drawingCoordParams) {
-        ss << "  " << outputPrefix << param << outArraySize
-           << " = " << "dc." << param << ";\n";
-    }
+    ss << "  " << outputPrefix << "drawingCoord0" << outArraySize << ".x = dc.modelCoord;\n";
+    ss << "  " << outputPrefix << "drawingCoord0" << outArraySize << ".y = dc.constantCoord;\n";
+    ss << "  " << outputPrefix << "drawingCoord0" << outArraySize << ".z = dc.elementCoord;\n";
+    ss << "  " << outputPrefix << "drawingCoord0" << outArraySize << ".w = dc.primitiveCoord;\n";
+    ss << "  " << outputPrefix << "drawingCoord1" << outArraySize << ".x = dc.fvarCoord;\n";
+    ss << "  " << outputPrefix << "drawingCoord1" << outArraySize << ".z = dc.shaderCoord;\n";
+    ss << "  " << outputPrefix << "drawingCoord1" << outArraySize << ".w = dc.vertexCoord;\n";
+    ss << "  " << outputPrefix << "drawingCoord2" << outArraySize << ".x = dc.topologyVisibilityCoord;\n";
+    ss << "  " << outputPrefix << "drawingCoord2" << outArraySize << ".y = dc.varyingCoord;\n";
+
     for(int i = 0; i < instanceIndexWidth; ++i) {
         std::string const index = std::to_string(i);
         ss << "  " << outputPrefix << "instanceIndexI" << index << outArraySize
@@ -4324,7 +4341,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         // patch instance offset exists on Apple Silicon. Use primitiveCoord
         // subtracted from the primitive ID for those cases
         if (requiresBasePrimitiveOffset) {
-            primitiveID << "int GetBasePrimitiveOffset() { return vs_dc_primitiveCoord; }\n";
+            primitiveID << "int GetBasePrimitiveOffset() { return GetDrawingCoord().primitiveCoord; }\n";
             _genPTCS    << "int GetBasePrimitiveOffset() { return drawingCoord0[0].w; }\n";
             _genPTVS    << "int GetBasePrimitiveOffset() { return drawingCoord0[0].w; }\n";
         } else {
@@ -4492,7 +4509,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                << "  return GetBaseInstanceIndexCoord() +"
                << " GetCurrentInstance() * HD_INSTANCE_INDEX_WIDTH;\n"
                << "}\n";
-        
+
         _genPTCS << "int GetBaseInstanceIndexCoord() {\n"
                << "  return drawingCoord1[0].y;\n"
                << "}\n"
@@ -4590,13 +4607,19 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     }
 
     if (!_hasCS) {
-        for (std::string const & param : drawingCoordParams) {
-            TfToken const drawingCoordParamName("dc_" + param);
-            _AddInterstageElement(&_resInterstage,
-                                  HioGlslfxResourceLayout::InOut::NONE,
-                                  /*name=*/drawingCoordParamName,
-                                  /*dataType=*/_tokens->_int);
-        }
+
+        _AddInterstageElement(&_resInterstage,
+                HioGlslfxResourceLayout::InOut::NONE,
+                /*name=*/TfToken("dc_" + _metaData.drawingCoord0Binding.name.GetString()),
+                /*dataType=*/_metaData.drawingCoord0Binding.dataType);
+        _AddInterstageElement(&_resInterstage,
+                HioGlslfxResourceLayout::InOut::NONE,
+                /*name=*/TfToken("dc_" + _metaData.drawingCoord1Binding.name.GetString()),
+                /*dataType=*/_metaData.drawingCoord1Binding.dataType);
+        _AddInterstageElement(&_resInterstage,
+                HioGlslfxResourceLayout::InOut::NONE,
+                /*name=*/TfToken("dc_" + _metaData.drawingCoord2Binding.name.GetString()),
+                /*dataType=*/_metaData.drawingCoord2Binding.dataType);
         for (int i = 0; i < instanceIndexWidth; ++i) {
             TfToken const name(TfStringPrintf("dc_instanceIndexI%d", i));
             _AddInterstageElement(&_resInterstage,
@@ -4617,41 +4640,19 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     _genPTCS << genAttr.str();
     _genPTVS << genAttr.str();
 
-    _genVS   << "hd_drawingCoord GetDrawingCoord() { hd_drawingCoord dc;\n"
-             << "  dc.modelCoord              = drawingCoord0.x;\n"
-             << "  dc.constantCoord           = drawingCoord0.y;\n"
-             << "  dc.elementCoord            = drawingCoord0.z;\n"
-             << "  dc.primitiveCoord          = drawingCoord0.w;\n"
-             << "  dc.fvarCoord               = drawingCoord1.x;\n"
-             << "  dc.shaderCoord             = drawingCoord1.z;\n"
-             << "  dc.vertexCoord             = drawingCoord1.w;\n"
-             << "  dc.topologyVisibilityCoord = drawingCoord2.x;\n"
-             << "  dc.varyingCoord            = drawingCoord2.y;\n"
-             << "  hd_instanceIndex r = GetInstanceIndex();\n";
+    _genVS   << "hd_drawingCoord GetDrawingCoord() {\n";
+    _genVS   << "  hd_drawingCoord dc;\n";
+    _GetDrawingCoordElem(_genVS, "");
+    _genVS   << "  hd_instanceIndex r = GetInstanceIndex();\n";
 
-    _genPTCS << "hd_drawingCoord GetDrawingCoord() { hd_drawingCoord dc;\n"
-             << "  dc.modelCoord              = drawingCoord0[0].x;\n"
-             << "  dc.constantCoord           = drawingCoord0[0].y;\n"
-             << "  dc.elementCoord            = drawingCoord0[0].z;\n"
-             << "  dc.primitiveCoord          = drawingCoord0[0].w;\n"
-             << "  dc.fvarCoord               = drawingCoord1[0].x;\n"
-             << "  dc.shaderCoord             = drawingCoord1[0].z;\n"
-             << "  dc.vertexCoord             = drawingCoord1[0].w;\n"
-             << "  dc.topologyVisibilityCoord = drawingCoord2[0].x;\n"
-             << "  dc.varyingCoord            = drawingCoord2[0].y;\n"
-             << "  hd_instanceIndex r = GetInstanceIndex();\n";
 
-    _genPTVS << "hd_drawingCoord GetDrawingCoord() { hd_drawingCoord dc;\n"
-             << "  dc.modelCoord              = drawingCoord0[0].x;\n"
-             << "  dc.constantCoord           = drawingCoord0[0].y;\n"
-             << "  dc.elementCoord            = drawingCoord0[0].z;\n"
-             << "  dc.primitiveCoord          = drawingCoord0[0].w;\n"
-             << "  dc.fvarCoord               = drawingCoord1[0].x;\n"
-             << "  dc.shaderCoord             = drawingCoord1[0].z;\n"
-             << "  dc.vertexCoord             = drawingCoord1[0].w;\n"
-             << "  dc.topologyVisibilityCoord = drawingCoord2[0].x;\n"
-             << "  dc.varyingCoord            = drawingCoord2[0].y;\n"
-             << "  hd_instanceIndex r = GetInstanceIndex();\n";
+    _genPTCS << "hd_drawingCoord GetDrawingCoord() { hd_drawingCoord dc;\n";
+    _GetDrawingCoordElem(_genPTCS, "", "[0]");
+    _genPTCS << "  hd_instanceIndex r = GetInstanceIndex();\n";
+
+    _genPTVS << "hd_drawingCoord GetDrawingCoord() { hd_drawingCoord dc;\n";
+    _GetDrawingCoordElem(_genPTVS, "", "[0]");
+    _genPTVS << "  hd_instanceIndex r = GetInstanceIndex();\n";
 
     _genCS   << "// Compute shaders read the drawCommands buffer directly.\n"
              << "hd_drawingCoord GetDrawingCoord() {\n"
@@ -4667,28 +4668,32 @@ HdSt_CodeGen::_GenerateDrawingCoord(
              << "  dc.varyingCoord            = GetDrawingCoordField(9);\n"
              << "  hd_instanceIndex r = GetInstanceIndex();\n";
 
+
+    auto writeIndex = [](std::stringstream &ss, std::string const &index) {
+        ss << "  dc.instanceIndex[" << index << "]"
+           << " = r.indices[" << index << "];\n";
+    };
     for(int i = 0; i < instanceIndexWidth; ++i) {
         std::string const index = std::to_string(i);
-        _genVS   << "  dc.instanceIndex[" << index << "]"
-                 << " = r.indices[" << index << "];\n";
-        _genPTCS << "  dc.instanceIndex[" << index << "]"
-                 << " = r.indices[" << index << "];\n";
-        _genPTVS << "  dc.instanceIndex[" << index << "]"
-                 << " = r.indices[" << index << "];\n";
-        _genCS   << "  dc.instanceIndex[" << index << "]"
-                 << " = r.indices[" << index << "];\n";
+        writeIndex(_genVS, index);
+        writeIndex(_genPTCS, index);
+        writeIndex(_genPTVS, index);
+        writeIndex(_genCS, index);
     }
+
+    auto writeInstanceIndex = [](std::stringstream &ss, int i,
+            std::string const &arrayAccessor) {
+        std::string const index = std::to_string(i);
+        ss << "  dc.instanceCoords[" << index << "]"
+                 << " = drawingCoordI" << index << arrayAccessor
+                 << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
+    };
+
     for(int i = 0; i < instanceIndexWidth-1; ++i) {
         std::string const index = std::to_string(i);
-        _genVS   << "  dc.instanceCoords[" << index << "]"
-                 << " = drawingCoordI" << index << ""
-                 << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
-        _genPTCS << "  dc.instanceCoords[" << index << "]"
-                 << " = drawingCoordI" << index << "[0]"
-                 << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
-        _genPTVS << "  dc.instanceCoords[" << index << "]"
-                 << " = drawingCoordI" << index << "[0]"
-                 << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
+        writeInstanceIndex(_genVS, i, "");
+        writeInstanceIndex(_genPTCS, i, "[0]");
+        writeInstanceIndex(_genPTVS, i, "[0]");
         _genCS   << "  dc.instanceCoords[" << index << "]"
                  << " = GetDrawingCoordField(10 + " << index << ")"
                  << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
@@ -4696,7 +4701,6 @@ HdSt_CodeGen::_GenerateDrawingCoord(
 
     _genVS   << "  return dc;\n"
              << "}\n";
-
     _genPTCS << "  return dc;\n"
              << "}\n";
     _genPTVS << "  return dc;\n"
@@ -4714,53 +4718,44 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     // drawingCoord is flat (no interpolation required).
 
     // VS/PTVS from attributes
-    _ProcessDrawingCoord(_procVS, drawingCoordParams, instanceIndexWidth,
+    _ProcessDrawingCoord(_procVS, instanceIndexWidth,
                          "vs_dc_", "");
-    _ProcessDrawingCoord(_procPTVSOut, drawingCoordParams, instanceIndexWidth,
+    _ProcessDrawingCoord(_procPTVSOut, instanceIndexWidth,
                          "vs_dc_", "");
 
     // TCS from VS
     if (_hasTCS) {
-        _GetDrawingCoord(_genTCS, drawingCoordParams, instanceIndexWidth,
-                "vs_dc_", "[0]");
-        _ProcessDrawingCoord(_procTCS, drawingCoordParams, instanceIndexWidth,
-                "tcs_dc_", "[gl_InvocationID]");
+        _GetDrawingCoord(_genTCS, instanceIndexWidth, "vs_dc_", "[0]");
+        _ProcessDrawingCoord(_procTCS, instanceIndexWidth,
+                             "tcs_dc_", "[gl_InvocationID]");
     }
 
     // TES from TCS
     if (_hasTES) {
-        _GetDrawingCoord(_genTES, drawingCoordParams, instanceIndexWidth,
-                "tcs_dc_", "[0]");
-        _ProcessDrawingCoord(_procTES, drawingCoordParams, instanceIndexWidth,
-                "tes_dc_", "");
+        _GetDrawingCoord(_genTES, instanceIndexWidth, "tcs_dc_", "[0]");
+        _ProcessDrawingCoord(_procTES, instanceIndexWidth, "tes_dc_", "");
     }
 
     // GS
     if (_hasGS && _hasTES) {
         // from TES
-        _GetDrawingCoord(_genGS, drawingCoordParams, instanceIndexWidth,
-                "tes_dc_", "[0]");
+        _GetDrawingCoord(_genGS, instanceIndexWidth, "tes_dc_", "[0]");
     } else if (_hasGS) {
         // from VS
-        _GetDrawingCoord(_genGS, drawingCoordParams, instanceIndexWidth,
-                "vs_dc_", "[0]");
+        _GetDrawingCoord(_genGS, instanceIndexWidth, "vs_dc_", "[0]");
     }
-    _ProcessDrawingCoord(_procGS, drawingCoordParams, instanceIndexWidth,
-                "gs_dc_", "");
+    _ProcessDrawingCoord(_procGS, instanceIndexWidth, "gs_dc_", "");
 
     // FS
     if (_hasGS) {
         // from GS
-        _GetDrawingCoord(_genFS, drawingCoordParams, instanceIndexWidth,
-                "gs_dc_", "");
+        _GetDrawingCoord(_genFS, instanceIndexWidth, "gs_dc_", "");
     } else if (_hasTES) {
         // from TES
-        _GetDrawingCoord(_genFS, drawingCoordParams, instanceIndexWidth,
-                "tes_dc_", "");
+        _GetDrawingCoord(_genFS, instanceIndexWidth, "tes_dc_", "");
     } else {
         // from VS/PTVS
-        _GetDrawingCoord(_genFS, drawingCoordParams, instanceIndexWidth,
-                "vs_dc_", "");
+        _GetDrawingCoord(_genFS, instanceIndexWidth, "vs_dc_", "");
     }
 }
 
