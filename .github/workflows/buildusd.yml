@@ -70,7 +70,7 @@ jobs:
   macOS:
     needs: [GetUser]
     if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/AzurePipelines run') && needs.GetUser.outputs.require-result == 'true' ) || github.event_name == 'push' }}
-    runs-on: macos-12
+    runs-on: macos-13
     timeout-minutes: 120
     steps:
       - run: echo ${{ needs.GetUser.outputs.require-result }}
@@ -91,7 +91,7 @@ jobs:
       - name: Install dependencies
         run: |
           export PATH=/Applications/CMake.app/Contents/bin:$PATH
-          sudo xcode-select -s /Applications/Xcode_13.3.app/Contents/Developer
+          sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer
           # Set SYSTEM_VERSION_COMPAT while installing Python packages to
           # accommodate the macOS version numbering change from 10.x to 11
           export SYSTEM_VERSION_COMPAT=1
