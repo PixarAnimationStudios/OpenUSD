@@ -132,6 +132,10 @@ HdStResourceRegistry::~HdStResourceRegistry()
     // they cleanup all GPU resources. Since that mechanism isn't in place
     // yet, we call GarbageCollect to emulate this behavior.
     GarbageCollect();
+    // Recycle count were set to 1 in order for graphics pipelines in use to not
+    // be immediately evicted. As such, we run garbage collection twice on
+    // shutdown in order to clear the cache.
+    GarbageCollect();
 }
 
 void HdStResourceRegistry::InvalidateShaderRegistry()
@@ -1108,8 +1112,13 @@ HdStResourceRegistry::_GarbageCollect()
     // Cleanup Hgi resources
     _resourceBindingsRegistry.GarbageCollect(
         std::bind(&_DestroyResourceBindings, _hgi, std::placeholders::_1));
+    
+    // Graphics pipelines are bound at draw time and will always be evicted here
+    // (for Metal, Vulkan). Using a recycle count of one prevents pipelines in
+    // use from being evicted from the registry.
     _graphicsPipelineRegistry.GarbageCollect(
-        std::bind(&_DestroyGraphicsPipeline, _hgi, std::placeholders::_1));
+        std::bind(&_DestroyGraphicsPipeline, _hgi, std::placeholders::_1), 1);
+    
     _computePipelineRegistry.GarbageCollect(
         std::bind(&_DestroyComputePipeline, _hgi, std::placeholders::_1));
 
