@@ -280,6 +280,34 @@ enum HgiAttachmentStoreOp
     HgiAttachmentStoreOpCount
 };
 
+/// \enum HgiAttachmentResolveFilter
+///
+/// Describes what will happen to the attachment pixel data after MSAA resolving.
+///
+/// <ul>
+/// <li>HgiAttachmentResolveFilterDefault:
+///   The attachment pixel value will be determined by the default mode which can vary across different APIs.</li>
+/// <li>HgiAttachmentResolveFilterSample0:
+///   The attachment pixel value will be the value of the first sample.</li>
+/// <li>HgiAttachmentResolveFilterMin:
+///   The attachment pixel value will be the minimum value of all the samples.</li>
+/// <li>HgiAttachmentResolveFilterMax:
+///   The attachment pixel value will be the maximum value of all the samples.</li>
+/// <li>HgiAttachmentResolveFilterAverage:
+///   The attachment pixel value will be the average value of all the samples..</li>
+/// </ul>
+///
+enum HgiAttachmentResolveFilter
+{
+    HgiAttachmentResolveFilterDefault = 0,
+    HgiAttachmentResolveFilterSample0,
+    HgiAttachmentResolveFilterMin,
+    HgiAttachmentResolveFilterMax,
+    HgiAttachmentResolveFilterAverage,
+    
+    HgiAttachmentResolveFilterCount
+};
+
 /// \enum HgiBufferUsageBits
 ///
 /// Describes the properties and usage of the buffer.

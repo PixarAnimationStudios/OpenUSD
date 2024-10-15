@@ -55,6 +55,19 @@ _SetVertexBindings(id<MTLRenderCommandEncoder> encoder,
     }
 }
 
+static MTLMultisampleDepthResolveFilter
+_HgiMultiSampleResolveFilterToMTLMultiSampleDepthResolveFilter(HgiAttachmentResolveFilter filter)
+{
+    if (filter == HgiAttachmentResolveFilterSample0)
+        return MTLMultisampleDepthResolveFilterSample0;
+    else if (filter == HgiAttachmentResolveFilterMin)
+        return MTLMultisampleDepthResolveFilterMin;
+    else if (filter == HgiAttachmentResolveFilterMax)
+        return MTLMultisampleDepthResolveFilterMax;
+    else
+        return MTLMultisampleDepthResolveFilterSample0;
+}
+
 HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
     HgiMetal* hgi,
     HgiGraphicsCmdsDesc const& desc)
@@ -189,6 +202,12 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
 
             metalDepthAttachment.resolveTexture =
                 resolveTexture->GetTextureId();
+            
+            if (hgiDepthAttachment.resolveFilter != HgiAttachmentResolveFilterDefault)
+            {
+                metalDepthAttachment.depthResolveFilter = 
+                    _HgiMultiSampleResolveFilterToMTLMultiSampleDepthResolveFilter(hgiDepthAttachment.resolveFilter);
+            }
             
             if (hgiDepthAttachment.storeOp == HgiAttachmentStoreOpStore) {
                 metalDepthAttachment.storeAction =
