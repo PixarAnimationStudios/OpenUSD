@@ -24,8 +24,29 @@ jobs:
         with:
           require: 'write'
           username: ${{ github.event.comment.user.login }}
+  GetGitRef:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 5
+    outputs:
+      ref: ${{ steps.setter.outputs.ref }}
+    steps:
+      - name: Get push ref
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          echo "REF=${{ github.ref }}" >> $GITHUB_ENV
+      - name: Get PR ref
+        if: ${{ github.event.issue.pull_request }}
+        run: |
+          echo "REF=refs/pull/${{ github.event.issue.number }}/merge" >> $GITHUB_ENV
+      - name: Print ENV_VAR
+        run: |
+          echo "The value of REF is $REF"
+      - name: Set ENV_VAR
+        id: setter
+        run: |
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
   Linux:
-    needs: [GetUser]
+    needs: [GetUser, GetGitRef]
     if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/AzurePipelines run') && needs.GetUser.outputs.require-result == 'true' ) || github.event_name == 'push' }}
     runs-on: ubuntu-20.04
     timeout-minutes: 120
@@ -33,6 +54,8 @@ jobs:
       - run: echo ${{ needs.GetUser.outputs.require-result }}
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{needs.GetGitRef.outputs.ref}}
       - name: Restore cached artifacts
         id: cache-usd-build-dependency
         uses: actions/cache/restore@v4
@@ -68,7 +91,7 @@ jobs:
           path: USDinst
 
   macOS:
-    needs: [GetUser]
+    needs: [GetUser, GetGitRef]
     if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/AzurePipelines run') && needs.GetUser.outputs.require-result == 'true' ) || github.event_name == 'push' }}
     runs-on: macos-13
     timeout-minutes: 120
@@ -76,6 +99,8 @@ jobs:
       - run: echo ${{ needs.GetUser.outputs.require-result }}
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{needs.GetGitRef.outputs.ref}}
       - name: Restore cached artifacts
         id: cache-usd-build-dependency
         uses: actions/cache/restore@v4
@@ -115,7 +140,7 @@ jobs:
           path: USDinst
 
   Windows:
-    needs: [GetUser]
+    needs: [GetUser, GetGitRef]
     if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/AzurePipelines run') && needs.GetUser.outputs.require-result == 'true' ) || github.event_name == 'push' }}
     runs-on: windows-2019
     timeout-minutes: 120
@@ -123,6 +148,8 @@ jobs:
       - run: echo ${{ needs.GetUser.outputs.require-result }}
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{needs.GetGitRef.outputs.ref}}
       - name: Restore cached artifacts
         id: cache-usd-build-dependency
         uses: actions/cache/restore@v4
