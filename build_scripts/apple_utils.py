@@ -296,8 +296,11 @@ def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
 
     # Signing needs to happen on all systems
     if context.macOSCodesign:
-        args.append(f"-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY={GetCodeSignID()}")
-        args.append(f"-DCMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM={GetDevelopmentTeamID()}")
+        try:
+            args.append(f"-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY={GetCodeSignID()}")
+            args.append(f"-DCMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM={GetDevelopmentTeamID()}")
+        except Exception as e:
+            raise RuntimeError(f"Failed to get Codesigning data. Make sure you're signed in to your codesigning team. {e}")
 
     return args
 
@@ -436,7 +439,10 @@ def BuildXCFramework(root, targets, args):
     print("""Success! Add the OpenUSD.xcframework to your Xcode Project.""")
 
 def main():
-    import argparse
+    
+
+if __name__ == '__main__':
+    main()import argparse
     parser = argparse.ArgumentParser(description="A set of command line utilities for building on Apple Platforms")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -456,6 +462,3 @@ def main():
         BuildXCFramework(args.install_dir, args.build_targets, unknown)
     else:
         raise RuntimeError(f"Unknown command: {command}")
-
-if __name__ == '__main__':
-    main()
