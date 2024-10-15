@@ -51,7 +51,7 @@ jobs:
   steps:
   - script: |
       call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat
-      call set PYTHONLOCATION=C:\hostedtoolcache\windows\Python\3.7.9\x64
+      call set PYTHONLOCATION=C:\hostedtoolcache\windows\Python\3.9.13\x64
       call set PYTHONBIN=%PYTHONLOCATION%\python.exe
       call set PATH=%PYTHONLOCATION%;%PYTHONLOCATION%\Scripts;%PATH%
       call set BOOST_ROOT=

@@ -45,12 +45,6 @@ stages:
   - job: Linux
     strategy:
       matrix:
-        Python36:
-          PYTHON_INTERPRETER: /opt/python/cp36-cp36m/bin/python
-          PYTHON_TAG: cp36
-        Python37:
-          PYTHON_INTERPRETER: /opt/python/cp37-cp37m/bin/python
-          PYTHON_TAG: cp37
         Python38:
           PYTHON_INTERPRETER: /opt/python/cp38-cp38/bin/python
           PYTHON_TAG: cp38
@@ -119,12 +113,6 @@ stages:
   - job: Windows
     strategy:
       matrix:
-        Python36:
-          PYTHON_VERSION_SPEC: 3.6
-          PYTHON_TAG: cp36
-        Python37:
-          PYTHON_VERSION_SPEC: 3.7
-          PYTHON_TAG: cp37
         Python38:
           PYTHON_VERSION_SPEC: 3.8
           PYTHON_TAG: cp38
@@ -179,14 +167,6 @@ stages:
   - job: Mac
     strategy:
       matrix:
-        Python36:
-          PYTHON_VERSION_SPEC: 3.6
-          PYTHON_INTERPRETER: python3.6
-          PYTHON_TAG: cp36
-        Python37:
-          PYTHON_VERSION_SPEC: 3.7
-          PYTHON_INTERPRETER: python3.7
-          PYTHON_TAG: cp37
         Python38:
           PYTHON_VERSION_SPEC: 3.8
           PYTHON_INTERPRETER: python3.8
@@ -284,14 +264,6 @@ stages:
   - job: Test_Install
     strategy:
       matrix:
-        Linux_Python36:
-          PYTHON_VERSION_SPEC: 3.6
-          IMAGE: 'Ubuntu-20.04'
-          PYTHON_INTERPRETER: python3
-        Linux_Python37:
-          PYTHON_VERSION_SPEC: 3.7
-          IMAGE: 'Ubuntu-20.04'
-          PYTHON_INTERPRETER: python3
         Linux_Python38:
           PYTHON_VERSION_SPEC: 3.8
           IMAGE: 'Ubuntu-20.04'
@@ -312,14 +284,6 @@ stages:
           PYTHON_VERSION_SPEC: 3.12
           IMAGE: 'Ubuntu-20.04'
           PYTHON_INTERPRETER: python3
-        Windows_Python36:
-          PYTHON_VERSION_SPEC: 3.6
-          IMAGE: 'windows-2019'
-          PYTHON_INTERPRETER: python
-        Windows_Python37:
-          PYTHON_VERSION_SPEC: 3.7
-          IMAGE: 'windows-2019'
-          PYTHON_INTERPRETER: python
         Windows_Python38:
           PYTHON_VERSION_SPEC: 3.8
           IMAGE: 'windows-2019'
@@ -340,14 +304,6 @@ stages:
           PYTHON_VERSION_SPEC: 3.12
           IMAGE: 'windows-2019'
           PYTHON_INTERPRETER: python
-        Mac_Python36:
-          PYTHON_VERSION_SPEC: 3.6
-          IMAGE: 'macOS-12'
-          PYTHON_INTERPRETER: python3
-        Mac_Python37:
-          PYTHON_VERSION_SPEC: 3.7
-          IMAGE: 'macOS-12'
-          PYTHON_INTERPRETER: python3
         Mac_Python38:
           PYTHON_VERSION_SPEC: 3.8
           IMAGE: 'macOS-12'
