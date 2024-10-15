@@ -22,6 +22,7 @@
 #include <cstdarg>
 #include <cstring>
 #include <list>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <string>
@@ -568,10 +569,24 @@ TfStringify(const T& v)
 TF_API std::string TfStringify(bool v);
 /// \overload
 TF_API std::string TfStringify(std::string const&);
+
+enum class TfDecimalToStringMode {
+    SHORTEST,
+    FIXED,
+    EXPONENTIAL,
+    PRECISION
+};
+
+struct TfDecimalToStringConfig {
+    TfDecimalToStringMode mode{TfDecimalToStringMode::SHORTEST};
+    std::optional<int> digits{};
+    bool allowNegativeZero{true};
+};
+
 /// \overload
-TF_API std::string TfStringify(float);
+TF_API std::string TfStringify(float, TfDecimalToStringConfig toStringConfig = {});
 /// \overload
-TF_API std::string TfStringify(double);
+TF_API std::string TfStringify(double, TfDecimalToStringConfig toStringConfig = {});
 
 /// Writes the string representation of \c d to \c buffer of length \c len. 
 /// If \c emitTrailingZero is true, the string representation will end with .0 
@@ -584,22 +599,38 @@ TF_API bool TfDoubleToString(
 
 /// \struct TfStreamFloat
 /// 
-/// A type which offers streaming for floats in a canonical
-/// format that can safely roundtrip with the minimal number of digits.
+/// A type which offers configurable streaming for floats in a canonical format.
+/// The default values of \ref TfDecimalToStringConfig allow for safe roundtripping
+/// with the minimal number of digits.
 struct TfStreamFloat {
     explicit TfStreamFloat(float f) : value(f) {}
     float value;
+
+    /// Returns a reference to the thread-local string conversion configuration.
+    TF_API
+    static TfDecimalToStringConfig& ToStringConfig();
+
+private:
+    static thread_local TfDecimalToStringConfig _toStringConfig;
 };
 
 TF_API std::ostream& operator<<(std::ostream& o, TfStreamFloat t);
 
 /// \struct TfStreamDouble
 ///
-/// A type which offers streaming for doubles in a canonical
-/// format that can safely roundtrip with the minimal number of digits.
+/// A type which offers configurable streaming for doubles in a canonical format.
+/// The default values of \ref TfDecimalToStringConfig allow for safe roundtripping
+/// with the minimal number of digits.
 struct TfStreamDouble {
     explicit TfStreamDouble(double d) : value(d) {}
     double value;
+
+    /// Returns a reference to the thread-local string conversion configuration.
+    TF_API
+    static TfDecimalToStringConfig& ToStringConfig();
+
+private:
+    static thread_local TfDecimalToStringConfig _toStringConfig;
 };
 
 TF_API std::ostream& operator<<(std::ostream& o, TfStreamDouble t);
