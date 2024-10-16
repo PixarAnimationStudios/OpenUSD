@@ -31,7 +31,7 @@ Our test machines have the following software versions installed.
 | Alembic       | 1.8.5                | 1.8.5                        | 1.8.5                          |
 | OpenEXR       | 3.1.11               | 3.1.11                       | 3.1.11                         |
 | MaterialX     | 1.38.10              | 1.38.10                      | 1.38.10                        |
-| Jinja2        | 2.0                  |                              |                                |
+| Jinja2        | >=3.0                |                              |                                |
 | Flex          | 2.5.39               |                              |                                |
 | Bison         | 2.4.1                |                              |                                |
 | Doxygen       | 1.9.6                |                              |                                |
