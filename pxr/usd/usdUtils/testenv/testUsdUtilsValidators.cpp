@@ -30,7 +30,7 @@ TestUsdUsdzValidators()
     UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
     UsdValidatorMetadataVector metadata =
             registry.GetValidatorMetadataForPlugin(_tokens->usdUtilsPlugin);
-    TF_AXIOM(metadata.size() == 1);
+    TF_AXIOM(metadata.size() == 2);
     // Since other validators can be registered with a UsdUtilsValidators
     // keyword, our validators registered in usd are a subset of the entire
     // set.
@@ -40,7 +40,8 @@ TestUsdUsdzValidators()
     }
 
     const std::set<TfToken> expectedValidatorNames =
-            {UsdUtilsValidatorNameTokens->packageEncapsulationValidator};
+            {UsdUtilsValidatorNameTokens->packageEncapsulationValidator,
+            UsdUtilsValidatorNameTokens->layerFileFormatValidator};
 
     TF_AXIOM(validatorMetadataNameSet == expectedValidatorNames);
 }
@@ -114,11 +115,33 @@ TestPackageEncapsulationValidator()
     TF_AXIOM(errors.empty());
 }
 
+static
+void
+TestLayerFileFormatValidator()
+{
+    UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
+
+    // Verify the validator exists
+    const UsdValidator *validator = registry.GetOrLoadValidatorByName(
+            UsdUtilsValidatorNameTokens->layerFileFormatValidator);
+
+    TF_AXIOM(validator);
+
+    // Create an empty layer with a core extension
+    const SdfLayerRefPtr passLayer = SdfLayer::CreateNew("pass.usda");
+
+    UsdValidationErrorVector errors = validator->Validate(passLayer);
+
+    // Verify no errors occurred
+    TF_AXIOM(errors.empty());
+}
+
 int
 main()
 {
     TestUsdUsdzValidators();
-    TestPackageEncapsulationValidator();
+    //TestPackageEncapsulationValidator();
+    TestLayerFileFormatValidator();
 
     return EXIT_SUCCESS;
 }

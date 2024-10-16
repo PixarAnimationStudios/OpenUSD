@@ -91,11 +91,46 @@ _PackageEncapsulationValidator(const UsdStagePtr& usdStage) {
     return errors;
 }
 
+static
+UsdValidationErrorVector
+_LayerFileFormatValidator(const SdfLayerHandle& layer) {
+    const TfToken formatId = layer->GetFileFormat()->GetFormatId();
+
+    const std::vector<TfToken> allowedFormatIds = {TfToken("usd"),
+        TfToken("usda"), TfToken("usdc"), TfToken("usdz")};
+
+    if (std::find(allowedFormatIds.begin(), allowedFormatIds.end(),
+        formatId) == allowedFormatIds.end())
+    {
+        return UsdValidationErrorVector{
+            UsdValidationError{
+                UsdUtilsValidationErrorNameTokens->layerIsNotACoreFileFormat,
+                UsdValidationErrorType::Warn,
+                UsdValidationErrorSites {
+                    UsdValidationErrorSite(
+                    layer, layer->GetDefaultPrimAsPath())
+                },
+                TfStringPrintf(
+                ("Layer '%s' has an unsupported formatId '%s'."),
+                layer->GetIdentifier().c_str(),
+                formatId.GetText())}
+        };
+    }
+
+    return {};
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
+
     registry.RegisterPluginValidator(
-            UsdUtilsValidatorNameTokens->packageEncapsulationValidator, _PackageEncapsulationValidator);
+            UsdUtilsValidatorNameTokens->packageEncapsulationValidator,
+            _PackageEncapsulationValidator);
+
+    registry.RegisterPluginValidator(
+            UsdUtilsValidatorNameTokens->layerFileFormatValidator,
+            _LayerFileFormatValidator);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

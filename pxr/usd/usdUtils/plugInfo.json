@@ -6,6 +6,9 @@
                     "PackageEncapsulationValidator": {
                         "doc": "If the root layer is a package, then its recommended for the composed stage to not contain references to files outside the package. The package should be self-contained, warn if not."
                     },
+                    "LayerFileFormatValidator": {
+                        "doc": "All included layers that participate in composition should have one of the core supported file formats."
+                    },
                     "keywords": [
                         "UsdUtilsValidators"
                     ]
