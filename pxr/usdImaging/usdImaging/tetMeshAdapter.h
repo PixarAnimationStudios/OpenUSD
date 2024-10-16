@@ -81,7 +81,7 @@ public:
                                   SdfPath const& cachePath,
                                   HdDirtyBits* timeVaryingBits,
                                   UsdImagingInstancerContext const* 
-                                      instancerContext = nullptr) const;
+                                      instancerContext = nullptr) const override;
 
     // ---------------------------------------------------------------------- //
     /// \name Change Processing

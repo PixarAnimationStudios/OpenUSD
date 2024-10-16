@@ -49,10 +49,10 @@ public:
     USDIMAGING_API
     virtual SdfPath Populate(UsdPrim const& prim,
                      UsdImagingIndexProxy* index,
-                     UsdImagingInstancerContext const* instancerContext = NULL);
+                     UsdImagingInstancerContext const* instancerContext = NULL) override;
 
     USDIMAGING_API
-    virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
+    virtual bool IsSupported(UsdImagingIndexProxy const* index) const override;
     
 protected:
     virtual void _RemovePrim(SdfPath const& cachePath,
