@@ -12,45 +12,72 @@ Tf -- Tools Foundation
 # and newer. These interpreters don't search for DLLs in the path anymore, you
 # have to provide a path explicitly. This re-enables path searching for USD 
 # dependency libraries
-import platform, sys
-if sys.version_info >= (3, 8) and platform.system() == "Windows":
+
+import platform
+if platform.system() == "Windows":
     import contextlib
+
+    _WINDOWS_IMPORT_WRAPPER_DEPTH = 0
 
     @contextlib.contextmanager
     def WindowsImportWrapper():
-        import os
+        import os, sys
+
+        global _WINDOWS_IMPORT_WRAPPER_DEPTH
         dirs = []
+
+        path_updated = False
         import_paths = os.getenv('PXR_USD_WINDOWS_DLL_PATH')
         if import_paths is None:
-            import_paths = os.getenv('PATH', '')
-        # the underlying windows API call, AddDllDirectory, states that:
-        #
-        # > If AddDllDirectory is used to add more than one directory to the
-        # > process DLL search path, the order in which those directories are
-        # > searched is unspecified.
-        #
-        # https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-adddlldirectory
-        #
-        # However, in practice, it seems that the most-recently-added ones
-        # take precedence - so, reverse the order of entries in PATH to give
-        # it the same precedence
-        #
-        # Note that we have a test (testTfPyDllLink) to alert us if this
-        # undefined behavior changes.
-        for path in reversed(import_paths.split(os.pathsep)):
-            # Calling add_dll_directory raises an exception if paths don't
-            # exist, or if you pass in dot
-            if os.path.exists(path) and path != '.':
-                abs_path = os.path.abspath(path)
-                dirs.append(os.add_dll_directory(abs_path))
+
+            import_paths = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+            os.environ['PXR_USD_WINDOWS_DLL_PATH'] = import_paths
+
+        # For python version <3.8 and Anaconda, os.envion['PATH'] is used to
+        # populate the DLL search paths. Because there's no bulletproof way to
+        # detect an Anaconda environment, we must always update PATH if the
+        # PXR_USD_WINDOWS_DLL_PATH is set
+        if _WINDOWS_IMPORT_WRAPPER_DEPTH == 0:  # but only do it once
+            path_updated = True
+            os.environ['PATH'] = import_paths + os.pathsep + os.getenv('PATH', '')
+
+        if sys.version_info >= (3, 8):
+            # the underlying windows API call, AddDllDirectory, states that:
+            #
+            # > If AddDllDirectory is used to add more than one directory to the
+            # > process DLL search path, the order in which those directories are
+            # > searched is unspecified.
+            #
+            # https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-adddlldirectory
+            #
+            # However, in practice, it seems that the most-recently-added ones
+            # take precedence - so, reverse the order of entries in PATH to give
+            # it the same precedence
+            #
+            # Note that we have a test (testTfPyDllLink) to alert us if this
+            # undefined behavior changes.
+            for path in reversed(import_paths.split(os.pathsep)):
+                # Calling add_dll_directory raises an exception if paths don't
+                # exist, or if you pass in dot
+                if os.path.exists(path) and path != '.':
+                    abs_path = os.path.abspath(path)
+                    dirs.append(os.add_dll_directory(abs_path))
+
         # This block guarantees we clear the dll directories if an exception
         # is raised in the with block.
+
+        _WINDOWS_IMPORT_WRAPPER_DEPTH += 1
         try:
             yield
         finally:
+            _WINDOWS_IMPORT_WRAPPER_DEPTH -= 1
             for dll_dir in dirs:
                 dll_dir.close()
-        del os
+
+            if _WINDOWS_IMPORT_WRAPPER_DEPTH == 0 and path_updated:
+                os.environ['PATH'] = os.environ['PATH'][:len(import_paths) + 1]
+
+        del os, sys
     del contextlib
 else:
     class WindowsImportWrapper(object):
@@ -58,7 +85,7 @@ else:
             pass
         def __exit__(self, exc_type, ex_val, exc_tb):
             pass
-del platform, sys
+del platform
 
 
 def PreparePythonModule(moduleName=None):

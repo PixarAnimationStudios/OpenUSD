@@ -59,28 +59,6 @@ if windows():
     for f in dll_files:
         shutil.move(f, os.path.join(BUILD_DIR, "lib/python/pxr"))
 
-    # Because there are no RPATHS, patch __init__.py
-    # See this thread and related conversations
-    # https://mail.python.org/pipermail/distutils-sig/2014-September/024962.html
-    with open(os.path.join(BUILD_DIR, 'lib/python/pxr/__init__.py'), 'a+') as init_file:
-        init_file.write('''
-
-# appended to this file for the windows PyPI package
-import os, sys
-dllPath = os.path.split(os.path.realpath(__file__))[0]
-if sys.version_info >= (3, 8, 0):
-    os.environ['PXR_USD_WINDOWS_DLL_PATH'] = dllPath
-# Note that we ALWAYS modify the PATH, even for python-3.8+. This is because:
-#    - Anaconda python interpreters are modified to use the old, pre-3.8, PATH-
-#      based method of loading dlls
-#    - extra calls to os.add_dll_directory won't hurt these anaconda
-#      interpreters
-#    - similarly, adding the extra PATH entry shouldn't hurt standard python
-#      interpreters
-#    - there's no canonical/bulletproof way to check for an anaconda interpreter
-os.environ['PATH'] = dllPath + os.pathsep + os.environ['PATH']
-''')
-
 # Get the readme text
 with open("README.md", "r") as fh:
     long_description = fh.read()
