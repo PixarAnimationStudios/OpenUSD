@@ -20,6 +20,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((encapsulationValidator, "usdShade:EncapsulationRulesValidator")) \
     ((materialBindingApiAppliedValidator, "usdShade:MaterialBindingApiAppliedValidator")) \
     ((materialBindingRelationships, "usdShade:MaterialBindingRelationships")) \
+    ((normalMapTextureValidator, "usdShade:NormalMapTextureValidator")) \
     ((materialBindingCollectionValidator, "usdShade:MaterialBindingCollectionValidator")) \
     ((shaderSdrCompliance, "usdShade:ShaderSdrCompliance"))                   \
     ((subsetMaterialBindFamilyName, "usdShade:SubsetMaterialBindFamilyName")) \
@@ -43,6 +44,13 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((mismatchPropertyType, "MismatchedPropertyType"))                  \
     ((missingFamilyNameOnGeomSubset, "MissingFamilyNameOnGeomSubset"))  \
     ((invalidFamilyType, "InvalidFamilyType"))                          \
+    ((nonShaderConnection, "NonShaderConnection"))                      \
+    ((invalidFile, "InvalidFile"))                                      \
+    ((invalidShaderPrim, "InvalidShaderPrim"))                          \
+    ((invalidSourceColorSpace, "InvalidSourceColorSpace"))              \
+    ((nonCompliantBiasAndScale, "NonCompliantBiasAndScale"))            \
+    ((nonCompliantScale, "NonCompliantScaleValues"))                    \
+    ((nonCompliantBias, "NonCompliantBiasValues"))                      \
 
 /// \def USD_SHADE_VALIDATOR_NAME_TOKENS
 /// Tokens representing validator names. Note that for plugin provided
