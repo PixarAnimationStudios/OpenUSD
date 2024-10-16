@@ -707,6 +707,8 @@ class StageView(QGLWidget):
 
     signalFrustumChanged = QtCore.Signal()
 
+    signalRendererInitialized = QtCore.Signal()
+
     @property
     def renderParams(self):
         return self._renderParams
@@ -969,6 +971,9 @@ class StageView(QGLWidget):
         # This is because ImagingGL / TaskController are spawned via prims in
         # Presto, so we default AOVs OFF until everything is AOV ready.
         self.SetRendererAov(self.rendererAovName)
+
+        # Let the controller know to set the checkbox on the renderer
+        self.signalRendererInitialized.emit()
 
     def _scaleMouseCoords(self, point):
         return point * QtWidgets.QApplication.instance().devicePixelRatio()
