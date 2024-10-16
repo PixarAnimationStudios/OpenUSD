@@ -259,12 +259,22 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 // with AoVs.  We generate "primId" and "instanceId", and depending on how
 // the client called glDrawBuffers, they will get one or both.
 
+// Note: This code originally packed the 32-bit ID into all 4 channels, which
+// will correspond to RGBA. However, using A for the top 8 bits causes problems.
+// First, somewhere downstream RGB will be premultiplied by A and information will
+// be lost. Second, when these end up in an output image, there is no way to know
+// what pixels have valid IDs, unless we pick a specifc RGBA like (0,0,0,0) to mean 
+// "no object", but I think that is a valid primId.
+//
+// So, while this means we can only handle 16 million IDs, this is the safest option
+// right now. See similar code in frameRecorder.cpp which interprets these values.
+
 vec4 IntToVec4(int id)
 {
     return vec4(((id >>  0) & 0xff) / 255.0,
                 ((id >>  8) & 0xff) / 255.0,
                 ((id >> 16) & 0xff) / 255.0,
-                ((id >> 24) & 0xff) / 255.0);
+                1.0);
 }
 
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
