@@ -373,7 +373,7 @@ exr_encoding_run (
     {
         priv_from_native32 (
             encode->sample_count_table,
-            encode->chunk.width * encode->chunk.height);
+            (uint64_t) encode->chunk.width * (uint64_t) encode->chunk.height);
     }
 
     if (rv == EXR_ERR_SUCCESS)
@@ -420,7 +420,7 @@ exr_encoding_run (
     {
         priv_to_native32 (
             encode->sample_count_table,
-            encode->chunk.width * encode->chunk.height);
+            (uint64_t) encode->chunk.width * (uint64_t) encode->chunk.height);
     }
 
     return rv;
