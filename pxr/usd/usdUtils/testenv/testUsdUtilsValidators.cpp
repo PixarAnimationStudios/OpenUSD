@@ -140,7 +140,7 @@ int
 main()
 {
     TestUsdUsdzValidators();
-    //TestPackageEncapsulationValidator();
+    TestPackageEncapsulationValidator();
     TestLayerFileFormatValidator();
 
     return EXIT_SUCCESS;
