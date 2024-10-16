@@ -9,6 +9,9 @@ from pxr import Sdf, Pcp, Tf
 import unittest
 from contextlib import contextmanager
 
+INCREMENTAL_CHANGES = Tf.GetEnvSetting(
+    'PCP_ENABLE_MINIMAL_CHANGES_FOR_LAYER_OPERATIONS')
+
 class TestPcpChanges(unittest.TestCase):
     def test_EmptySublayerChanges(self):
         subLayer1 = Sdf.Layer.CreateAnonymous()
@@ -153,8 +156,13 @@ class TestPcpChanges(unittest.TestCase):
 
             # With incremental changes these changes should only cause a resync
             # of /A and /B.
-            self.assertEqual(cp.GetSignificantChanges(), 
-                             [Sdf.Path('/A'), Sdf.Path('/B')])
+            if INCREMENTAL_CHANGES:
+                self.assertEqual(cp.GetSignificantChanges(), 
+                                 [Sdf.Path('/A'), Sdf.Path('/B')])
+            else:
+                self.assertEqual(cp.GetSignificantChanges(),
+                                 [Sdf.Path('/')])
+
             self.assertEqual(cp.GetSpecChanges(), [])
             self.assertEqual(cp.GetPrimChanges(), [])
 

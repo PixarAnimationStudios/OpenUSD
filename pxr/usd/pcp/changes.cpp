@@ -26,7 +26,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
-    PCP_ENABLE_MINIMAL_CHANGES_FOR_LAYER_OPERATIONS, true,
+    PCP_ENABLE_MINIMAL_CHANGES_FOR_LAYER_OPERATIONS, false,
     "If enabled, pcp will compute a minimal amount of targeted change entries "
     "for layer operations. This can result in a significant performance "
     "improvement when muting/unmuting layer or adding/removing sublayers.");
