@@ -420,6 +420,8 @@ UsdImagingGLEngine::RenderBatch(
 
     _SetBBoxParams(params.bboxes, params.bboxLineColor, params.bboxLineDashSize);
 
+    _taskController->SetEnableVisualization(params.enableVisualization);
+    
     // XXX App sets the clear color via 'params' instead of setting up Aovs 
     // that has clearColor in their descriptor. So for now we must pass this
     // clear color to the color AOV.
