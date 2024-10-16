@@ -289,7 +289,7 @@ _FindAttribute(ImageSpec const & spec, std::string const & metadataKey)
     bool convertMatrixTypes = false;
     std::string key = _TranslateMetadataKey(metadataKey, &convertMatrixTypes);
 
-    ImageIOParameter const * param = spec.find_attribute(key);
+    ParamValue const * param = spec.find_attribute(key);
     if (!param) {
         return VtValue();
     }
@@ -713,13 +713,21 @@ HioOIIO_Image::ReadCropped(int const cropTop,
     // If needed, convert double precision images to float
     bool res = false;
     if (imageInput->spec().format == TypeDesc::DOUBLE) {
-        res = imageInput->read_image(TypeDesc::FLOAT,
+        res = imageInput->read_image(_subimage,
+            _miplevel,
+            0,
+            -1,
+            TypeDesc::FLOAT,
             start,
             AutoStride,
             readStride,
             AutoStride);
     } else{
-        res = imageInput->read_image(imageInput->spec().format,
+        res = imageInput->read_image(_subimage,
+            _miplevel,
+            0,
+            -1,
+            imageInput->spec().format,
             start,
             AutoStride,
             readStride,
