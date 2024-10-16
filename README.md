@@ -172,6 +172,7 @@ Or for visionOS:
 ```
 > python OpenUSD/build_scripts/build_usd.py --build-target visionOS --build-monolithic /path/to/my_usd_install_dir
 ```
+See [Advanced building on Mac](BUILDING_MAC.md) for building with Xcode and debugging
 
 ##### Windows:
 
