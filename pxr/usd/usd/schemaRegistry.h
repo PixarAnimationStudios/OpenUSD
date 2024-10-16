@@ -541,6 +541,11 @@ public:
         return _fallbackPrimTypes;
     }
 
+    /// Returns true if the given layer is a schematics layer stored in the
+    /// registry, or false otherwise.
+    USD_API
+    bool IsSchematicsLayer(const SdfLayerRefPtr& layer) const;
+
 private:
     friend class TfSingleton<UsdSchemaRegistry>;
 

@@ -34,6 +34,7 @@
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/withScopedParallelism.h"
 
+#include <algorithm>
 #include <cctype>
 #include <set>
 #include <utility>
@@ -1990,6 +1991,14 @@ Usd_GetAPISchemaPluginApplyToInfoForType(
             }
         }
     }
+}
+
+bool
+UsdSchemaRegistry::IsSchematicsLayer(const SdfLayerRefPtr& layer) const
+{
+    return std::find(
+        _schematicsLayers.cbegin(), _schematicsLayers.cend(),
+        layer) != _schematicsLayers.cend();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -893,5 +893,27 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
             "foo:__INSTANCE_NAME__:bar", ""), "foo::bar")
 
+    def test_SchematicsLayers(self):
+        '''
+        Tests that schematics layers can be identified and differentiated from
+        non-schematics layers.
+        '''
+        # Instantiating the schema registry causes all schematics layers to be
+        # loaded, so make sure that has been done in case this test happens to
+        # run first.
+        schemaRegistry = Usd.SchemaRegistry()
+        self.assertGreater(len(Sdf.Layer.GetLoadedLayers()), 0)
+
+        # Create a new, non-schematics layer.
+        contentLayer = Sdf.Layer.CreateAnonymous(tag='ContentLayer')
+
+        for layer in Sdf.Layer.GetLoadedLayers():
+            isSchematicsLayer = schemaRegistry.IsSchematicsLayer(layer)
+
+            if layer == contentLayer:
+                self.assertFalse(isSchematicsLayer)
+            else:
+                self.assertTrue(isSchematicsLayer)
+
 if __name__ == "__main__":
     unittest.main()

@@ -227,6 +227,8 @@ void wrapUsdSchemaRegistry()
 
         .def("GetFallbackPrimTypes", &This::GetFallbackPrimTypes, 
              return_value_policy<return_by_value>())
+
+        .def("IsSchematicsLayer", &This::IsSchematicsLayer, arg("layer"))
         ;
 
     // Need to convert TfToken properties of SchemaInfo to string
