@@ -246,6 +246,49 @@ public:
     HDX_API
     void SetEnablePresentation(bool enabled);
 
+    /// These functions return the Id of the build-in render tasks.
+    HDX_API
+    SdfPath GetSkydomeTaskId() const { return _skydomeTaskId; }
+    HDX_API
+    SdfPath GetDefaultMaterialTaskId() const { return _defaultMaterialTaskId; }
+    HDX_API
+    SdfPath GetMaskedTaskId() const { return _maskedTaskId; }
+    HDX_API
+    SdfPath GetAdditiveTaskId() const { return _additiveTaskId; }
+    HDX_API
+    SdfPath GetDrawOrderTaskId() const { return _drawOrderTaskId; }
+    HDX_API
+    SdfPath GetTranslucentTaskId() const { return _translucentTaskId; }
+    HDX_API
+    SdfPath GetVolumeTaskId() const { return _volumeTaskId; }
+
+    /// Inserts a custom render task before the specified one. An empty nextTaskId means insert first.
+    /// Returns the (potentially adjusted) task Id.
+    template <typename T>
+    SdfPath AddCustomRenderTaskBefore(SdfPath const& taskId, SdfPath const& nextTaskId);
+
+    /// Inserts a custom render task after the specified one. An empty prevTaskId means insert last.
+    /// Returns the (potentially adjusted) task Id.
+    template <typename T>
+    SdfPath AddCustomRenderTaskAfter(SdfPath const& taskId, SdfPath const& prevTaskId);
+
+    /// Fills in and applies the task parameters for the specified render task, using the default rules
+    /// for creating task parameters for the specified material tag.
+    HDX_API
+    void ApplyDefaultRenderTaskParameters(SdfPath const& taskId, TfToken const& materialTag);
+
+    /// Fills in render task parameters using the default rules for the specified material tag.
+    HDX_API
+    void FillDefaultRenderTaskParams(HdxRenderTaskParams& renderParams, TfToken const& materialTag);
+
+    /// Retrieves a render task parameter.
+    template <typename T>
+    T GetRenderTaskParameter(SdfPath const& taskId, TfToken const& paramKey);
+
+    // Applies a render task parameter.
+    template <typename T>
+    void SetRenderTaskParameter(SdfPath const& taskId, TfToken const& paramKey, T const& paramValue);
+
 private:
     ///
     /// This class is not intended to be copied.
@@ -389,6 +432,15 @@ private:
     SdfPath _boundingBoxTaskId;
     SdfPath _presentTaskId;
 
+    // Generated render tasks.
+    SdfPath _skydomeTaskId;
+    SdfPath _defaultMaterialTaskId;
+    SdfPath _maskedTaskId;
+    SdfPath _additiveTaskId;
+    SdfPath _drawOrderTaskId;
+    SdfPath _translucentTaskId;
+    SdfPath _volumeTaskId;
+
     // Current active camera
     SdfPath _activeCameraId;
     
@@ -406,6 +458,85 @@ private:
 
     GfVec4d _viewport;
 };
+
+template <typename T>
+SdfPath HdxTaskController::AddCustomRenderTaskBefore(SdfPath const& taskId, SdfPath const& nextTaskId)
+{
+    // Add the task to the render index.
+    // NOTE: This order of tasks in the render index is not important. The task ID list (below)
+    // controls the order of task processing.
+    SdfPath finalTaskId = GetControllerId().AppendPath(taskId);
+    GetRenderIndex()->InsertTask<T>(&_delegate, finalTaskId);
+
+    // Find the position before which to insert the task, using the start of the list if the task ID
+    // is not specified.
+    SdfPathVector::iterator insertPos;
+    if (nextTaskId.IsEmpty())
+    {
+        insertPos = _renderTaskIds.begin();
+    }
+    else
+    {
+        insertPos = std::find(_renderTaskIds.begin(), _renderTaskIds.end(), nextTaskId);
+        if (insertPos == _renderTaskIds.end())
+        {
+            TF_CODING_ERROR("AddCustomRenderTaskBefore expects a valid or empty nextTaskId, received %s\n", nextTaskId.GetText());
+        }
+    }
+
+    // Insert the task before the indicated position.
+    _renderTaskIds.insert(insertPos, finalTaskId);
+
+    return finalTaskId;
+}
+
+template <typename T>
+SdfPath HdxTaskController::AddCustomRenderTaskAfter(SdfPath const& taskId, SdfPath const& prevTaskId)
+{
+    // Add the task to the render index.
+    // NOTE: This order of tasks in the render index is not important. The task ID list (below)
+    // controls the order of task processing.
+    SdfPath finalTaskId = GetControllerId().AppendPath(taskId);
+    GetRenderIndex()->InsertTask<T>(&_delegate, finalTaskId);
+
+    // Find the position after which to insert the task, using the end of the list if the task ID
+    // is not specified.
+    SdfPathVector::iterator insertPos;
+    if (prevTaskId.IsEmpty())
+    {
+        insertPos = _renderTaskIds.end();
+    }
+    else
+    {
+        insertPos = std::find(_renderTaskIds.begin(), _renderTaskIds.end(), prevTaskId);
+        if (insertPos == _renderTaskIds.end())
+        {
+            TF_CODING_ERROR("AddCustomRenderTaskAfter expects a valid or empty prevTaskId, received %s\n", prevTaskId.GetText());
+        }
+        else
+        {
+            // Advance the iterator because the insert() function (below) inserts before the
+            // position, but we want to insert after.
+            insertPos++;
+        }
+    }
+
+    _renderTaskIds.insert(insertPos, finalTaskId);
+
+    return finalTaskId;
+}
+
+template <typename T>
+T HdxTaskController::GetRenderTaskParameter(SdfPath const& taskId, TfToken const& paramKey)
+{
+    return _delegate.GetParameter<T>(taskId, paramKey);
+}
+
+template <typename T>
+void HdxTaskController::SetRenderTaskParameter(SdfPath const& taskId, TfToken const& paramKey, T const& paramValue)
+{
+    _delegate.SetParameter(taskId, paramKey, paramValue);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

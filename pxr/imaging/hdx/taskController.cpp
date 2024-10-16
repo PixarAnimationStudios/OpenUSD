@@ -249,17 +249,12 @@ HdxTaskController::_CreateRenderGraph()
 
         _CreateLightingTask();
         _CreateShadowTask();
-        _renderTaskIds.push_back(_CreateSkydomeTask());
-        _renderTaskIds.push_back(_CreateRenderTask(
-            HdStMaterialTagTokens->defaultMaterialTag));
-        _renderTaskIds.push_back(_CreateRenderTask(
-            HdStMaterialTagTokens->masked));
-        _renderTaskIds.push_back(_CreateRenderTask(
-            HdStMaterialTagTokens->additive));
-        _renderTaskIds.push_back(_CreateRenderTask(
-            HdStMaterialTagTokens->translucent));
-        _renderTaskIds.push_back(_CreateRenderTask(
-            HdStMaterialTagTokens->volume));
+        _renderTaskIds.push_back(_skydomeTaskId = _CreateSkydomeTask());
+        _renderTaskIds.push_back(_defaultMaterialTaskId = _CreateRenderTask(HdStMaterialTagTokens->defaultMaterialTag));
+        _renderTaskIds.push_back(_maskedTaskId = _CreateRenderTask(HdStMaterialTagTokens->masked));
+        _renderTaskIds.push_back(_additiveTaskId = _CreateRenderTask(HdStMaterialTagTokens->additive));
+        _renderTaskIds.push_back(_translucentTaskId = _CreateRenderTask(HdStMaterialTagTokens->translucent));
+        _renderTaskIds.push_back(_volumeTaskId = _CreateRenderTask(HdStMaterialTagTokens->volume));
 
         if (_AovsSupported()) {
             _CreateAovInputTask();
@@ -307,6 +302,38 @@ HdxTaskController::_GetRenderTaskPath(TfToken const& materialTag) const
         materialTag.GetText());
     std::replace(str.begin(), str.end(), ':', '_');
     return GetControllerId().AppendChild(TfToken(str));
+}
+
+void 
+HdxTaskController::ApplyDefaultRenderTaskParameters(SdfPath const& taskId, TfToken const& materialTag)
+{
+   HdRprimCollection collection(HdTokens->geometry,
+      HdReprSelector(HdReprTokens->smoothHull),
+      /*forcedRepr*/ false,
+      materialTag);
+   collection.SetRootPath(SdfPath::AbsoluteRootPath());
+
+   HdxRenderTaskParams renderParams;
+   FillDefaultRenderTaskParams(renderParams, materialTag);
+
+   // Create an initial set of render tags in case the user doesn't set any
+   TfTokenVector renderTags = { HdRenderTagTokens->geometry };
+
+   _delegate.SetParameter(taskId, HdTokens->params, renderParams);
+   _delegate.SetParameter(taskId, HdTokens->collection, collection);
+   _delegate.SetParameter(taskId, HdTokens->renderTags, renderTags);
+}
+
+void
+HdxTaskController::FillDefaultRenderTaskParams(HdxRenderTaskParams& renderParams, TfToken const& materialTag)
+{
+   renderParams.camera = _freeCameraSceneDelegate->GetCameraId();
+   renderParams.viewport = _viewport;
+   renderParams.framing = _framing;
+   renderParams.overrideWindowPolicy = _overrideWindowPolicy;
+
+   // Set the blend state based on material tag.
+   _SetBlendStateForMaterialTag(materialTag, &renderParams);
 }
 
 SdfPath
