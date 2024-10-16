@@ -1011,30 +1011,21 @@ def InstallTBB_MacOS(context, force, buildArgs):
                   "ifeq ($(arch),$(filter $(arch),armv7 armv7s {0}))"
                         .format(apple_utils.GetTargetArmArch()))])
 
-        if context.buildTarget == apple_utils.TARGET_VISIONOS:
-            # Create visionOS config from iOS config
+        if MacOSTargetEmbedded(context) and context.buildTarget != apple_utils.TARGET_IOS:
+            target_config_patches, clang_config_patches  = apple_utils.GetTBBPatches(context)
+            # Create config from iOS config
             shutil.copy(
                 src="build/ios.macos.inc",
-                dst="build/visionos.macos.inc")
+                dst=f"build/{context.buildTarget.lower()}.macos.inc")
 
-            PatchFile("build/visionos.macos.inc",
-                      [("ios","visionos"),
-                       ("iOS", "visionOS"),
-                       ("iPhone", "XR"),
-                       ("IPHONEOS","XROS"),
-                       ("?= 8.0", "?= 1.0")])
+            PatchFile(f"build/{context.buildTarget.lower()}.macos.inc", target_config_patches)
 
             # iOS clang just reuses the macOS one,
             # so it's easier to copy it directly.
             shutil.copy(src="build/macos.clang.inc",
-                        dst="build/visionos.clang.inc")
+                        dst=f"build/{context.buildTarget.lower()}.clang.inc")
 
-            PatchFile("build/visionos.clang.inc",
-                      [("ios","visionos"),
-                       ("-miphoneos-version-min=", "-target arm64-apple-xros"),
-                       ("iOS", "visionOS"),
-                       ("iPhone", "XR"),
-                       ("IPHONEOS","XROS")])
+            PatchFile(f"build/{context.buildTarget.lower()}.clang.inc",clang_config_patches)
 
         (primaryArch, secondaryArch) = apple_utils.GetTargetArchPair(context)
 
@@ -1053,6 +1044,9 @@ def InstallTBB_MacOS(context, force, buildArgs):
             if MacOSTargetEmbedded(context):
                 env["SDKROOT"] = apple_utils.GetSDKRoot(context)
                 buildArgs.append(f' compiler=clang arch=arm64 extra_inc=big_iron.inc target={context.buildTarget.lower()}')
+            if context.buildAppleFramework and context.buildMonolithic:
+                # Force build of static libs as well
+                buildArgs.append(f" extra_inc=big_iron.inc ")
             makeTBBCmd = 'make -j{procs} arch={arch} {buildArgs}'.format(
                 arch=arch, procs=context.numJobs,
                 buildArgs=" ".join(buildArgs))
@@ -1529,9 +1523,7 @@ MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.10.zip"
 
 def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
-        cmakeOptions = ['-DMATERIALX_BUILD_SHARED_LIBS=ON',
-                        '-DMATERIALX_BUILD_TESTS=OFF'
-        ]
+        cmakeOptions = ['-DMATERIALX_BUILD_TESTS=OFF']
 
         if MacOSTargetEmbedded(context):
             # The materialXShaderGen in hdSt assumes the GLSL shadergen is
@@ -1551,6 +1543,10 @@ def InstallMaterialX(context, force, buildArgs):
                         '        add_subdirectory(source/MaterialXRenderGlsl)\n' +
                         '    endif()')
                        ], multiLineMatches=True)
+        if MacOS() and context.buildAppleFramework and context.buildMonolithic:
+            cmakeOptions.extend(["-DMATERIALX_BUILD_SHARED_LIBS=OFF"])
+        else:
+            cmakeOptions.extend(["-DMATERIALX_BUILD_SHARED_LIBS=ON"])
 
         cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
@@ -1634,11 +1630,6 @@ def InstallUSD(context, force, buildArgs):
                 extraArgs.append('-DPXR_USE_DEBUG_PYTHON=ON')
             else:
                 extraArgs.append('-DPXR_USE_DEBUG_PYTHON=OFF')
-
-            if context.buildBoostPython:
-                extraArgs.append('-DPXR_USE_BOOST_PYTHON=ON')
-            else:
-                extraArgs.append('-DPXR_USE_BOOST_PYTHON=OFF')
 
             # CMake has trouble finding the executable, library, and include
             # directories when there are multiple versions of Python installed.
@@ -1796,6 +1787,8 @@ def InstallUSD(context, force, buildArgs):
         if Windows():
             # Increase the precompiled header buffer limit.
             extraArgs.append('-DCMAKE_CXX_FLAGS="/Zm150"')
+        if MacOS():
+            extraArgs.append(f"-DPXR_BUILD_APPLE_FRAMEWORK={'ON' if context.buildAppleFramework else 'OFF'}")
 
         # Make sure to use boost installed by the build script and not any
         # system installed boost
@@ -1916,6 +1909,12 @@ if MacOS():
                        help=("Build target for macOS cross compilation. "
                              "(default: {})".format(
                                 apple_utils.GetBuildTargetDefault())))
+    subgroup = group.add_mutually_exclusive_group()
+    subgroup.add_argument("--build-apple-framework", dest="build_apple_framework", action="store_true",
+                          help="Build USD as an Apple Framework (Default if using build)")
+    subgroup.add_argument("--no-build-apple-framework", dest="no_build_apple_framework", action="store_true",
+                          help="Do not build USD as an Apple Framework (Default if macOS)")
+
     if apple_utils.IsHostArm():
         # Intel Homebrew stores packages in /usr/local which unfortunately can
         # be where a lot of other things are too. So we only add this flag on arm macs.
@@ -1951,6 +1950,7 @@ if MacOS():
                        default=codesignDefault, action="store_true",
                        help=("Enable code signing for macOS builds "
                              "(defaults to enabled on Apple Silicon)"))
+    group.add_argument("--codesign-id", dest="macos_codesign_id", type=str)
 
 if Linux():
     group.add_argument("--use-cxx11-abi", type=int, choices=[0, 1],
@@ -1969,8 +1969,7 @@ group = parser.add_argument_group(title="USD Options")
 (SHARED_LIBS, MONOLITHIC_LIB) = (0, 1)
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--build-shared", dest="build_type",
-                      action="store_const", const=SHARED_LIBS, 
-                      default=SHARED_LIBS,
+                      action="store_const", const=SHARED_LIBS,
                       help="Build individual shared libraries (default)")
 subgroup.add_argument("--build-monolithic", dest="build_type",
                       action="store_const", const=MONOLITHIC_LIB,
@@ -2235,7 +2234,7 @@ class InstallContext:
 
         self.debugPython = args.debug_python
 
-        self.buildShared = (args.build_type == SHARED_LIBS)
+        self.buildShared = (args.build_type == SHARED_LIBS or not args.build_type)
         self.buildMonolithic = (args.build_type == MONOLITHIC_LIB)
 
         self.ignorePaths = args.ignore_paths or []
@@ -2244,11 +2243,17 @@ class InstallContext:
             self.buildTarget = args.build_target
             apple_utils.SetTarget(self, self.buildTarget)
 
-            self.macOSCodesign = \
-                (args.macos_codesign if hasattr(args, "macos_codesign")
-                 else False)
+            self.macOSCodesign = False
+            if args.macos_codesign:
+                self.macOSCodesign = args.macos_codesign_id or apple_utils.GetCodeSignID()
             if apple_utils.IsHostArm() and args.ignore_homebrew:
                 self.ignorePaths.append("/opt/homebrew")
+
+            self.buildAppleFramework = ((args.build_apple_framework or MacOSTargetEmbedded(self))
+                                        and not args.no_build_apple_framework)
+            if self.buildAppleFramework and not args.build_type:
+                    self.buildShared = False
+                    self.buildMonolithic = True
         else:
             self.buildTarget = ""
 
@@ -2261,7 +2266,7 @@ class InstallContext:
         self.forceBuild = [dep.lower() for dep in args.force_build]
 
         # Some components are disabled for embedded build targets
-        embedded = MacOSTargetEmbedded(self)
+        embedded = (MacOS() and (MacOSTargetEmbedded(self) or self.buildAppleFramework))
 
         # Optional components
         self.buildTests = args.build_tests and not embedded
@@ -2502,7 +2507,8 @@ if which("cmake"):
         cmake_required_version = (3, 19)
 
         # visionOS support was added in CMake 3.28
-        if context.buildTarget == apple_utils.TARGET_VISIONOS:
+        target_platform = apple_utils.GetTargetPlatform(context)
+        if target_platform == apple_utils.TARGET_VISIONOS:
             cmake_required_version = (3, 28)
     else:
         # Linux, and vfx platform CY2020, are verified to work correctly with 3.14
@@ -2605,6 +2611,7 @@ if context.useCXX11ABI is not None:
 summaryMsg += """\
     Variant                     {buildVariant}
     Target                      {buildTarget}
+    Framework Build             {buildAppleFramework}
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
       OpenVDB support:          {enableOpenVDB}
@@ -2689,7 +2696,8 @@ summaryMsg = summaryMsg.format(
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
     buildMayapyTests=("On" if context.buildMayapyTests else "Off"),
     buildAnimXTests=("On" if context.buildAnimXTests else "Off"),
-    enableHDF5=("On" if context.enableHDF5 else "Off"))
+    enableHDF5=("On" if context.enableHDF5 else "Off"),
+    buildAppleFramework=("On" if MacOS() and context.buildAppleFramework else "Off"))
 
 Print(summaryMsg)
 
@@ -2751,8 +2759,9 @@ if Windows():
     ])
 
 if MacOS():
-    if context.macOSCodesign:
-        apple_utils.Codesign(context.usdInstDir, verbosity > 1)
+    # We don't need to codesign when building a framework because it's handled during framework creation
+    if context.macOSCodesign and not context.buildAppleFramework:
+        apple_utils.Codesign(context, verbosity > 1)
 
 additionalInstructions = any([context.buildPython, context.buildTools, context.buildPrman])
 if additionalInstructions:
@@ -2775,3 +2784,9 @@ if context.buildPython or context.buildTools:
 if context.buildPrman:
     Print("See documentation at http://openusd.org/docs/RenderMan-USD-Imaging-Plugin.html "
           "for setting up the RenderMan plugin.\n")
+
+if MacOS() and context.buildAppleFramework:
+    Print("""
+        Add the following framework to your Xcode Project:
+        OpenUSD.framework
+    """)
