@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+  <nodegraph name="test_ng">
+    <ramplr name="layered_layer1_gradient" type="color3" />
+    <output name="o_layered_layer1_gradient" type="color3" nodename="layered_layer1_gradient" />
+  </nodegraph>
+  <ramplr name="layered_layer2_gradient" type="color3" />
+  <output name="o_layered_layer2_gradient" type="color3" nodename="layered_layer2_gradient" />
+  <ramplr name="layered_layer3_gradient" type="color3" />
+  <nodedef name="ND_layerShader" node="layerShader">
+    <input name="weight_1" type="color3" />
+    <input name="weight_2" type="color3" />
+    <input name="weight_3" type="color3" />
+    <output name="out" type="surfaceshader" />
+  </nodedef>
+  <layerShader name="layered_sr" type="surfaceshader">
+    <!-- An output coming from within an "explicit" node graph. -->
+    <input name="weight_1" type="color3" nodegraph="test_ng" output="o_layered_layer1_gradient" />
+    <!-- An output coming from an "output" outside of an explicit node graph. -->
+    <input name="weight_2" type="color3" output="o_layered_layer2_gradient" />
+    <!-- A direct connection to a node's 'out'. -->
+    <input name="weight_3" type="color3" nodename="layered_layer3_gradient" />
+  </layerShader>
+  <surfacematerial name="layered" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="layered_sr" />
+  </surfacematerial>
+</materialx>
