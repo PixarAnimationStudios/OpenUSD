@@ -551,7 +551,8 @@ function(_pxr_enable_precompiled_header TARGET_NAME)
     # Headers live in subdirectories.
     set(rel_output_header_path "${PXR_PREFIX}/${TARGET_NAME}/${output_header_name}")
     set(abs_output_header_path "${PROJECT_BINARY_DIR}/include/${rel_output_header_path}")
-    set(abs_precompiled_path ${PROJECT_BINARY_DIR}/include/${PXR_PREFIX}/${TARGET_NAME}/${CMAKE_BUILD_TYPE}/${precompiled_name})
+    set(abs_precompiled_container_path "${PROJECT_BINARY_DIR}/include/${PXR_PREFIX}/${TARGET_NAME}/${CMAKE_BUILD_TYPE}")
+    set(abs_precompiled_path "${abs_precompiled_container_path}/${precompiled_name}")
 
     # Additional compile flags to use precompiled header.  This will be
     set(compile_flags "")
@@ -583,14 +584,8 @@ function(_pxr_enable_precompiled_header TARGET_NAME)
             set(abs_output_source_path ${CMAKE_CURRENT_BINARY_DIR}/${output_header_name_we}.cpp)
             add_custom_command(
                 OUTPUT "${abs_output_source_path}"
+                COMMAND ${CMAKE_COMMAND} -E make_directory "${abs_precompiled_container_path}"
                 COMMAND ${CMAKE_COMMAND} -E touch ${abs_output_source_path}
-            )
-
-            # The trigger file gets a special compile flag (/Yc).
-            set_source_files_properties(${abs_output_source_path} PROPERTIES
-                COMPILE_FLAGS "/Yc\"${rel_output_header_path}\" /FI\"${rel_output_header_path}\" /Fp\"${abs_precompiled_path}\""
-                OBJECT_OUTPUTS "${abs_precompiled_path}"
-                OBJECT_DEPENDS "${abs_output_header_path}"
             )
 
             # Add the header file to the target.
@@ -598,6 +593,13 @@ function(_pxr_enable_precompiled_header TARGET_NAME)
 
             # Add the trigger file to the target.
             target_sources(${TARGET_NAME} PRIVATE "${abs_output_source_path}")
+
+            # The trigger file gets a special compile flag (/Yc).
+            set_source_files_properties(${abs_output_source_path} PROPERTIES
+                    COMPILE_FLAGS "/Yc\"${rel_output_header_path}\" /FI\"${rel_output_header_path}\" /Fp\"${abs_precompiled_path}\""
+                    OBJECT_OUTPUTS "${abs_precompiled_path}"
+                    OBJECT_DEPENDS "${abs_output_header_path}"
+            )
 
             # Exclude the trigger.
             list(APPEND pch_EXCLUDE ${abs_output_source_path})
