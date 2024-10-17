@@ -1304,6 +1304,22 @@ def InstallOpenVDB(context, force, buildArgs):
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
 
+        # Patch files to support debug build
+        PatchFile('cmake/FindIlmBase.cmake',
+                  [('set(_IlmBase_Version_Suffix "-${IlmBase_VERSION_MAJOR}_${IlmBase_VERSION_MINOR}")',
+                    'if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")\n' +
+                    '  set(_IlmBase_Version_Suffix "-${IlmBase_VERSION_MAJOR}_${IlmBase_VERSION_MINOR}")\n' +
+                    'else()\n' +
+                    '  set(_IlmBase_Version_Suffix "-${IlmBase_VERSION_MAJOR}_${IlmBase_VERSION_MINOR}_d")\n' +
+                    'endif()')])
+        PatchFile('cmake/FindOpenEXR.cmake',
+                  [('set(_OpenEXR_Version_Suffix "-${OpenEXR_VERSION_MAJOR}_${OpenEXR_VERSION_MINOR}")',
+                    'if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")\n' +
+                    '  set(_OpenEXR_Version_Suffix "-${OpenEXR_VERSION_MAJOR}_${OpenEXR_VERSION_MINOR}")\n' +
+                    'else()\n' +
+                    '  set(_OpenEXR_Version_Suffix "-${OpenEXR_VERSION_MAJOR}_${OpenEXR_VERSION_MINOR}_d")\n' +
+                    'endif()')])
+
         RunCMake(context, force, extraArgs)
 
 OPENVDB = Dependency("OpenVDB", InstallOpenVDB, "include/openvdb/openvdb.h")
