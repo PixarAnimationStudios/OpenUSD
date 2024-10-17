@@ -30,7 +30,7 @@ TestUsdUsdzValidators()
     UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
     UsdValidatorMetadataVector metadata =
             registry.GetValidatorMetadataForPlugin(_tokens->usdUtilsPlugin);
-    TF_AXIOM(metadata.size() == 1);
+    TF_AXIOM(metadata.size() == 2);
     // Since other validators can be registered with a UsdUtilsValidators
     // keyword, our validators registered in usd are a subset of the entire
     // set.
@@ -40,7 +40,8 @@ TestUsdUsdzValidators()
     }
 
     const std::set<TfToken> expectedValidatorNames =
-            {UsdUtilsValidatorNameTokens->packageEncapsulationValidator};
+            {UsdUtilsValidatorNameTokens->packageEncapsulationValidator,
+            UsdUtilsValidatorNameTokens->fileExtensionValidator};
 
     TF_AXIOM(validatorMetadataNameSet == expectedValidatorNames);
 }
@@ -114,11 +115,48 @@ TestPackageEncapsulationValidator()
     TF_AXIOM(errors.empty());
 }
 
+static
+void
+TestFileExtensionValidator()
+{
+    UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
+
+    // Verify the validator exists
+    const UsdValidator *validator = registry.GetOrLoadValidatorByName(
+            UsdUtilsValidatorNameTokens->fileExtensionValidator);
+
+    TF_AXIOM(validator);
+
+    const UsdStageRefPtr& stage = UsdStage::Open("failFileExtension.usdz");
+    UsdValidationErrorVector errors = validator->Validate(stage);
+
+    const TfToken expectedErrorIdentifier(
+    "usdUtils:FileExtensionValidator.UnsupportedFileExtensionInPackage");
+    // Verify error occurs.
+    TF_AXIOM(errors.size() == 1);
+    TF_AXIOM(errors[0].GetIdentifier() == expectedErrorIdentifier);
+    TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+    TF_AXIOM(errors[0].GetSites().size() == 1);
+    std::string message = errors[0].GetMessage();
+    const std::string expectedErrorMsg =
+        "File 'cube.invalid' in package 'failFileExtension.usdz' has an unknown "
+                                   "unsupported extension 'invalid'.";
+    TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
+
+    // Load a passing stage
+    const UsdStageRefPtr& passStage = UsdStage::Open("allSupportedFiles.usdz");
+
+    errors = validator->Validate(passStage);
+
+    // Verify no errors occur with all valid extensions included
+    TF_AXIOM(errors.empty());
+}
+
 int
 main()
 {
     TestUsdUsdzValidators();
     TestPackageEncapsulationValidator();
-
+    TestFileExtensionValidator();
     return EXIT_SUCCESS;
 }
