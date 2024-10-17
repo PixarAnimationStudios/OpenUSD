@@ -596,6 +596,8 @@ public:
     /// Prepare lighting resource buffers
     void Prepare();
 
+    void SetReceiveShadows(bool enabled) override;
+
 private:
     struct Light {
         GfVec3f dir;

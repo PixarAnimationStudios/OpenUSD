@@ -31,6 +31,8 @@ public:
     virtual void SetCamera(GfMatrix4d const &worldToViewMatrix,
                            GfMatrix4d const &projectionMatrix) = 0;
 
+    virtual void SetReceiveShadows(bool enabled) = 0;
+
 private:
 
     // No copying

@@ -162,6 +162,7 @@ struct HdxRenderTaskParams
         // Camera framing and viewer state
         , viewport(0.0)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)
+        , receiveShadows(true)
         {}
 
     // ---------------------------------------------------------------------- //
@@ -243,6 +244,8 @@ struct HdxRenderTaskParams
     GfVec4d viewport;
     HdCullStyle cullStyle;
     std::optional<CameraUtilConformWindowPolicy> overrideWindowPolicy;
+    // True if shadowing is enabled.
+    bool receiveShadows;
 };
 
 // VtValue requirements
