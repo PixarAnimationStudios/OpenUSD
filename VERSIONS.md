@@ -17,7 +17,6 @@ Our test machines have the following software versions installed.
 | C++ Compiler  | gcc 9.3.1            | Apple clang 13.1.6 (Xcode 13.3)<br>Apple clang 15.0.0 (Xcode 15.4) for visionOS | Visual Studio 2017 15.9     |
 | CMake         | 3.17.5               | 3.19.5                       | 3.25.3                         |
 | Python        | 3.9.16               | 3.9.13                       | 3.9.13                         |
-| Boost         | 1.76.0               | 1.78.0                       | 1.76.0                         |
 | Intel TBB     | 2020 Update 3        | 2018 Update 1, 2020 Update 3 | 2020 Update 3                  |
 | OpenSubdiv    | 3.6.0                | 3.6.0                        | 3.6.0                          |
 | OpenImageIO   | 2.3.21.0             | 2.3.21.0                     | 2.3.21.0                       |

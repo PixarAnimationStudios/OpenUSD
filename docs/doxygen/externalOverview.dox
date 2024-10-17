@@ -105,7 +105,7 @@ Following is a deeper indexing of the four packages.
 
 - \ref tf_page_front module is a catch-all for low-level,
   commonly used services developed at Pixar, including facilities for memory
-  tracking, error reporting and debugging, string utilities, boost python
+  tracking, error reporting and debugging, string utilities, Python
   wrapping aids, threading/synchronization tools, registry and singleton
   management, smart pointers, and "observer pattern" support, which we call
   "notification".
@@ -128,9 +128,8 @@ Following is a deeper indexing of the four packages.
   is able to recognize and serialize.  It provides a copy-on-write
   array-type, VtArray, which is used for all array types in Usd, and an
   efficient type-erasure wrapper class, VtValue, that also provides datatype
-  conversion facilities and support for unboxing python objects from boost
-  python.  VtValue is supported in all Usd API for getting and setting
-  values.
+  conversion facilities and support for unboxing Python objects.
+  VtValue is supported in all Usd API for getting and setting values.
 
 - \ref work_page_front module provides a thin abstraction layer on top of
   Intel's TBB (Thread Building Blocks), and is leveraged extensively in Usd

@@ -75,7 +75,6 @@ Optional:
 
 Required:
  - [Python](https://python.org)
- - [Boost](https://boost.org)
 
 **usdview**
 
