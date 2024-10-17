@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2001-2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2001-2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -11,7 +11,7 @@
 
 /* clang-format off */
 
-#include "pxr/imaging/plugin/hioAvif/aom/av1/common/odintrin.h"
+#include "pxr/imaging/plugin/hioAvif/aom/aom_dsp/odintrin.h"
 
 /*Constants for use with OD_DIVU_SMALL().
   See \cite{Rob05} for details on computing these constants.

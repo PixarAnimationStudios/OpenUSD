@@ -19,7 +19,7 @@ https://github.com/AOMediaCodec/libavif
 
 libyuv was contained within the libavif release tag.
 
-libaom is obtaned from the v3.8.3 tag release found here:
+libaom is obtaned from the v3.10.0 tag release found here:
 https://aomedia.googlesource.com/aom/
 
 Please see AVIF_AOM_LICENSE.txt to learn about the licenses used by these

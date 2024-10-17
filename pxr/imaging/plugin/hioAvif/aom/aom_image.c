@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -9,6 +9,8 @@
  * PATENTS file, you can obtain it at www.aomedia.org/license/patent.
  */
 
+#include <assert.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,7 +19,7 @@
 #include "pxr/imaging/plugin/hioAvif/aom/internal/aom_image_internal.h"
 #include "pxr/imaging/plugin/hioAvif/aom/aom_mem/aom_mem.h"
 
-static INLINE unsigned int align_image_dimension(unsigned int d,
+static inline unsigned int align_image_dimension(unsigned int d,
                                                  unsigned int subsampling,
                                                  unsigned int size_align) {
   unsigned int align;
@@ -35,8 +37,19 @@ static aom_image_t *img_alloc_helper(
   /* NOTE: In this function, bit_depth is either 8 or 16 (if
    * AOM_IMG_FMT_HIGHBITDEPTH is set), never 10 or 12.
    */
-  unsigned int h, w, s, xcs, ycs, bps, bit_depth;
-  unsigned int stride_in_bytes;
+  unsigned int xcs, ycs, bps, bit_depth;
+
+  if (img != NULL) memset(img, 0, sizeof(aom_image_t));
+
+  if (fmt == AOM_IMG_FMT_NONE) goto fail;
+
+  /* Impose maximum values on input parameters so that this function can
+   * perform arithmetic operations without worrying about overflows.
+   */
+  if (d_w > 0x08000000 || d_h > 0x08000000 || buf_align > 65536 ||
+      stride_align > 65536 || size_align > 65536 || border > 65536) {
+    goto fail;
+  }
 
   /* Treat align==0 like align==1 */
   if (!buf_align) buf_align = 1;
@@ -60,6 +73,7 @@ static aom_image_t *img_alloc_helper(
   switch (fmt) {
     case AOM_IMG_FMT_I420:
     case AOM_IMG_FMT_YV12:
+    case AOM_IMG_FMT_NV12:
     case AOM_IMG_FMT_AOMI420:
     case AOM_IMG_FMT_AOMYV12: bps = 12; break;
     case AOM_IMG_FMT_I422: bps = 16; break;
@@ -77,6 +91,7 @@ static aom_image_t *img_alloc_helper(
   switch (fmt) {
     case AOM_IMG_FMT_I420:
     case AOM_IMG_FMT_YV12:
+    case AOM_IMG_FMT_NV12:
     case AOM_IMG_FMT_AOMI420:
     case AOM_IMG_FMT_AOMYV12:
     case AOM_IMG_FMT_I422:
@@ -89,6 +104,7 @@ static aom_image_t *img_alloc_helper(
   switch (fmt) {
     case AOM_IMG_FMT_I420:
     case AOM_IMG_FMT_YV12:
+    case AOM_IMG_FMT_NV12:
     case AOM_IMG_FMT_AOMI420:
     case AOM_IMG_FMT_AOMYV12:
     case AOM_IMG_FMT_YV1216:
@@ -97,12 +113,17 @@ static aom_image_t *img_alloc_helper(
   }
 
   /* Calculate storage sizes given the chroma subsampling */
-  w = align_image_dimension(d_w, xcs, size_align);
-  h = align_image_dimension(d_h, ycs, size_align);
+  const unsigned int w = align_image_dimension(d_w, xcs, size_align);
+  assert(d_w <= w);
+  const unsigned int h = align_image_dimension(d_h, ycs, size_align);
+  assert(d_h <= h);
 
-  s = (fmt & AOM_IMG_FMT_PLANAR) ? w : bps * w / bit_depth;
-  s = (s + 2 * border + stride_align - 1) & ~(stride_align - 1);
-  stride_in_bytes = s * bit_depth / 8;
+  uint64_t s = (uint64_t)w + 2 * border;
+  s = (fmt & AOM_IMG_FMT_PLANAR) ? s : s * bps / bit_depth;
+  s = s * bit_depth / 8;
+  s = (s + stride_align - 1) & ~((uint64_t)stride_align - 1);
+  if (s > INT_MAX) goto fail;
+  const int stride_in_bytes = (int)s;
 
   /* Allocate the new image */
   if (!img) {
@@ -111,8 +132,6 @@ static aom_image_t *img_alloc_helper(
     if (!img) goto fail;
 
     img->self_allocd = 1;
-  } else {
-    memset(img, 0, sizeof(aom_image_t));
   }
 
   img->img_data = img_data;
@@ -154,9 +173,18 @@ static aom_image_t *img_alloc_helper(
   img->stride[AOM_PLANE_Y] = stride_in_bytes;
   img->stride[AOM_PLANE_U] = img->stride[AOM_PLANE_V] = stride_in_bytes >> xcs;
 
+  if (fmt == AOM_IMG_FMT_NV12) {
+    // Each row is a row of U and a row of V interleaved, so the stride is twice
+    // as long.
+    img->stride[AOM_PLANE_U] *= 2;
+    img->stride[AOM_PLANE_V] = 0;
+  }
+
   /* Default viewport to entire image. (This aom_img_set_rect call always
    * succeeds.) */
-  aom_img_set_rect(img, 0, 0, d_w, d_h, border);
+  int ret = aom_img_set_rect(img, 0, 0, d_w, d_h, border);
+  assert(ret == 0);
+  (void)ret;
   return img;
 
 fail:
@@ -200,9 +228,8 @@ aom_image_t *aom_img_alloc_with_border(aom_image_t *img, aom_img_fmt_t fmt,
 
 int aom_img_set_rect(aom_image_t *img, unsigned int x, unsigned int y,
                      unsigned int w, unsigned int h, unsigned int border) {
-  unsigned char *data;
-
-  if (x + w <= img->w && y + h <= img->h) {
+  if (x <= UINT_MAX - w && x + w <= img->w && y <= UINT_MAX - h &&
+      y + h <= img->h) {
     img->d_w = w;
     img->d_h = h;
 
@@ -216,26 +243,30 @@ int aom_img_set_rect(aom_image_t *img, unsigned int x, unsigned int y,
     } else {
       const int bytes_per_sample =
           (img->fmt & AOM_IMG_FMT_HIGHBITDEPTH) ? 2 : 1;
-      data = img->img_data;
+      unsigned char *data = img->img_data;
 
       img->planes[AOM_PLANE_Y] =
           data + x * bytes_per_sample + y * img->stride[AOM_PLANE_Y];
-      data += (img->h + 2 * border) * img->stride[AOM_PLANE_Y];
+      data += ((size_t)img->h + 2 * border) * img->stride[AOM_PLANE_Y];
 
       unsigned int uv_border_h = border >> img->y_chroma_shift;
       unsigned int uv_x = x >> img->x_chroma_shift;
       unsigned int uv_y = y >> img->y_chroma_shift;
-      if (!(img->fmt & AOM_IMG_FMT_UV_FLIP)) {
+      if (img->fmt == AOM_IMG_FMT_NV12) {
+        img->planes[AOM_PLANE_U] = data + uv_x * bytes_per_sample * 2 +
+                                   uv_y * img->stride[AOM_PLANE_U];
+        img->planes[AOM_PLANE_V] = NULL;
+      } else if (!(img->fmt & AOM_IMG_FMT_UV_FLIP)) {
         img->planes[AOM_PLANE_U] =
             data + uv_x * bytes_per_sample + uv_y * img->stride[AOM_PLANE_U];
-        data += ((img->h >> img->y_chroma_shift) + 2 * uv_border_h) *
+        data += ((size_t)(img->h >> img->y_chroma_shift) + 2 * uv_border_h) *
                 img->stride[AOM_PLANE_U];
         img->planes[AOM_PLANE_V] =
             data + uv_x * bytes_per_sample + uv_y * img->stride[AOM_PLANE_V];
       } else {
         img->planes[AOM_PLANE_V] =
             data + uv_x * bytes_per_sample + uv_y * img->stride[AOM_PLANE_V];
-        data += ((img->h >> img->y_chroma_shift) + 2 * uv_border_h) *
+        data += ((size_t)(img->h >> img->y_chroma_shift) + 2 * uv_border_h) *
                 img->stride[AOM_PLANE_V];
         img->planes[AOM_PLANE_U] =
             data + uv_x * bytes_per_sample + uv_y * img->stride[AOM_PLANE_U];
@@ -275,15 +306,15 @@ void aom_img_free(aom_image_t *img) {
 }
 
 int aom_img_plane_width(const aom_image_t *img, int plane) {
-  if (plane > 0 && img->x_chroma_shift > 0)
-    return (img->d_w + 1) >> img->x_chroma_shift;
+  if (plane > 0)
+    return (img->d_w + img->x_chroma_shift) >> img->x_chroma_shift;
   else
     return img->d_w;
 }
 
 int aom_img_plane_height(const aom_image_t *img, int plane) {
-  if (plane > 0 && img->y_chroma_shift > 0)
-    return (img->d_h + 1) >> img->y_chroma_shift;
+  if (plane > 0)
+    return (img->d_h + img->y_chroma_shift) >> img->y_chroma_shift;
   else
     return img->d_h;
 }

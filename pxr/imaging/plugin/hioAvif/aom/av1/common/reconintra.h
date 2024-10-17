@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -26,11 +26,14 @@ void av1_init_intra_predictors(void);
 void av1_predict_intra_block_facade(const AV1_COMMON *cm, MACROBLOCKD *xd,
                                     int plane, int blk_col, int blk_row,
                                     TX_SIZE tx_size);
-void av1_predict_intra_block(
-    const AV1_COMMON *cm, const MACROBLOCKD *xd, int wpx, int hpx,
-    TX_SIZE tx_size, PREDICTION_MODE mode, int angle_delta, int use_palette,
-    FILTER_INTRA_MODE filter_intra_mode, const uint8_t *ref, int ref_stride,
-    uint8_t *dst, int dst_stride, int col_off, int row_off, int plane);
+void av1_predict_intra_block(const MACROBLOCKD *xd, BLOCK_SIZE sb_size,
+                             int enable_intra_edge_filter, int wpx, int hpx,
+                             TX_SIZE tx_size, PREDICTION_MODE mode,
+                             int angle_delta, int use_palette,
+                             FILTER_INTRA_MODE filter_intra_mode,
+                             const uint8_t *ref, int ref_stride, uint8_t *dst,
+                             int dst_stride, int col_off, int row_off,
+                             int plane);
 
 // Mapping of interintra to intra mode for use in the intra component
 static const PREDICTION_MODE interintra_to_intra_mode[INTERINTRA_MODES] = {
@@ -45,27 +48,31 @@ static const INTERINTRA_MODE intra_to_interintra_mode[INTRA_MODES] = {
 
 #define FILTER_INTRA_SCALE_BITS 4
 
-static INLINE int av1_is_directional_mode(PREDICTION_MODE mode) {
+static inline int av1_is_directional_mode(PREDICTION_MODE mode) {
   return mode >= V_PRED && mode <= D67_PRED;
 }
 
-static INLINE int av1_use_angle_delta(BLOCK_SIZE bsize) {
+static inline int av1_is_diagonal_mode(PREDICTION_MODE mode) {
+  return mode >= D45_PRED && mode <= D67_PRED;
+}
+
+static inline int av1_use_angle_delta(BLOCK_SIZE bsize) {
   return bsize >= BLOCK_8X8;
 }
 
-static INLINE int av1_allow_intrabc(const AV1_COMMON *const cm) {
+static inline int av1_allow_intrabc(const AV1_COMMON *const cm) {
   return frame_is_intra_only(cm) && cm->features.allow_screen_content_tools &&
          cm->features.allow_intrabc;
 }
 
-static INLINE int av1_filter_intra_allowed_bsize(const AV1_COMMON *const cm,
+static inline int av1_filter_intra_allowed_bsize(const AV1_COMMON *const cm,
                                                  BLOCK_SIZE bs) {
-  if (!cm->seq_params.enable_filter_intra || bs == BLOCK_INVALID) return 0;
+  if (!cm->seq_params->enable_filter_intra || bs == BLOCK_INVALID) return 0;
 
   return block_size_wide[bs] <= 32 && block_size_high[bs] <= 32;
 }
 
-static INLINE int av1_filter_intra_allowed(const AV1_COMMON *const cm,
+static inline int av1_filter_intra_allowed(const AV1_COMMON *const cm,
                                            const MB_MODE_INFO *mbmi) {
   return mbmi->mode == DC_PRED &&
          mbmi->palette_mode_info.palette_size[0] == 0 &&
@@ -112,7 +119,7 @@ static const int16_t dr_intra_derivative[90] = {
 // If angle > 0 && angle < 90, dx = -((int)(256 / t));
 // If angle > 90 && angle < 180, dx = (int)(256 / t);
 // If angle > 180 && angle < 270, dx = 1;
-static INLINE int av1_get_dx(int angle) {
+static inline int av1_get_dx(int angle) {
   if (angle > 0 && angle < 90) {
     return dr_intra_derivative[angle];
   } else if (angle > 90 && angle < 180) {
@@ -127,7 +134,7 @@ static INLINE int av1_get_dx(int angle) {
 // If angle > 0 && angle < 90, dy = 1;
 // If angle > 90 && angle < 180, dy = (int)(256 * t);
 // If angle > 180 && angle < 270, dy = -((int)(256 * t));
-static INLINE int av1_get_dy(int angle) {
+static inline int av1_get_dy(int angle) {
   if (angle > 90 && angle < 180) {
     return dr_intra_derivative[angle - 90];
   } else if (angle > 180 && angle < 270) {
@@ -138,7 +145,7 @@ static INLINE int av1_get_dy(int angle) {
   }
 }
 
-static INLINE int av1_use_intra_edge_upsample(int bs0, int bs1, int delta,
+static inline int av1_use_intra_edge_upsample(int bs0, int bs1, int delta,
                                               int type) {
   const int d = abs(delta);
   const int blk_wh = bs0 + bs1;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -22,7 +22,7 @@
 // as described for AOM_BLEND_A64 in aom_dsp/blend.h. src0 or src1 can
 // be the same as dst, or dst can be different from both sources.
 
-// NOTE(david.barker): The input and output of aom_blend_a64_d16_mask_c() are
+// NOTE(rachelbarker): The input and output of aom_blend_a64_d16_mask_c() are
 // in a higher intermediate precision, and will later be rounded down to pixel
 // precision.
 // Thus, in order to avoid double-rounding, we want to use normal right shifts

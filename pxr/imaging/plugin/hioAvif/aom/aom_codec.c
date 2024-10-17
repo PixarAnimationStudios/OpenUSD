@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -13,6 +13,7 @@
  * \brief Provides the high level interface to wrap decoder algorithms.
  *
  */
+#include <assert.h>
 #include <stdarg.h>
 #include <stdlib.h>
 
@@ -52,12 +53,12 @@ const char *aom_codec_err_to_string(aom_codec_err_t err) {
   return "Unrecognized error code";
 }
 
-const char *aom_codec_error(aom_codec_ctx_t *ctx) {
+const char *aom_codec_error(const aom_codec_ctx_t *ctx) {
   return (ctx) ? aom_codec_err_to_string(ctx->err)
                : aom_codec_err_to_string(AOM_CODEC_INVALID_PARAM);
 }
 
-const char *aom_codec_error_detail(aom_codec_ctx_t *ctx) {
+const char *aom_codec_error_detail(const aom_codec_ctx_t *ctx) {
   if (ctx && ctx->err)
     return ctx->priv ? ctx->priv->err_detail : ctx->err_detail;
 
@@ -81,7 +82,7 @@ aom_codec_err_t aom_codec_destroy(aom_codec_ctx_t *ctx) {
 }
 
 aom_codec_caps_t aom_codec_get_caps(aom_codec_iface_t *iface) {
-  return (iface) ? iface->caps : 0;
+  return iface ? iface->caps : 0;
 }
 
 aom_codec_err_t aom_codec_control(aom_codec_ctx_t *ctx, int ctrl_id, ...) {
@@ -111,6 +112,7 @@ aom_codec_err_t aom_codec_control(aom_codec_ctx_t *ctx, int ctrl_id, ...) {
     }
   }
   ctx->err = AOM_CODEC_ERROR;
+  ctx->priv->err_detail = "Invalid control ID";
   return AOM_CODEC_ERROR;
 }
 
@@ -128,10 +130,9 @@ aom_codec_err_t aom_codec_set_option(aom_codec_ctx_t *ctx, const char *name,
   return ctx->err;
 }
 
-void aom_internal_error(struct aom_internal_error_info *info,
-                        aom_codec_err_t error, const char *fmt, ...) {
-  va_list ap;
-
+LIBAOM_FORMAT_PRINTF(3, 0)
+static void set_error(struct aom_internal_error_info *info,
+                      aom_codec_err_t error, const char *fmt, va_list ap) {
   info->error_code = error;
   info->has_detail = 0;
 
@@ -139,13 +140,43 @@ void aom_internal_error(struct aom_internal_error_info *info,
     size_t sz = sizeof(info->detail);
 
     info->has_detail = 1;
-    va_start(ap, fmt);
     vsnprintf(info->detail, sz - 1, fmt, ap);
-    va_end(ap);
     info->detail[sz - 1] = '\0';
   }
+}
+
+void aom_set_error(struct aom_internal_error_info *info, aom_codec_err_t error,
+                   const char *fmt, ...) {
+  va_list ap;
+
+  va_start(ap, fmt);
+  set_error(info, error, fmt, ap);
+  va_end(ap);
+
+  assert(!info->setjmp);
+}
+
+void aom_internal_error(struct aom_internal_error_info *info,
+                        aom_codec_err_t error, const char *fmt, ...) {
+  va_list ap;
+
+  va_start(ap, fmt);
+  set_error(info, error, fmt, ap);
+  va_end(ap);
 
   if (info->setjmp) longjmp(info->jmp, info->error_code);
+}
+
+void aom_internal_error_copy(struct aom_internal_error_info *info,
+                             const struct aom_internal_error_info *src) {
+  assert(info != src);
+  assert(!src->setjmp);
+
+  if (!src->has_detail) {
+    aom_internal_error(info, src->error_code, NULL);
+  } else {
+    aom_internal_error(info, src->error_code, "%s", src->detail);
+  }
 }
 
 void aom_merge_corrupted_flag(int *corrupted, int value) {

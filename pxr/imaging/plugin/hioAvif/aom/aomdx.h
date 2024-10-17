@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -209,14 +209,16 @@ enum aom_dec_control_id {
   AOMD_GET_LAST_REF_USED,
 
   /*!\brief Codec control function to get the dimensions that the current
-   * frame is decoded at, int* parameter. This may be different to the
-   * intended display size for the frame as specified in the wrapper or frame
-   * header (see AV1D_GET_DISPLAY_SIZE).
+   * frame is decoded at, int* parameter
+   *
+   * This may be different to the intended display size for the frame as
+   * specified in the wrapper or frame header (see AV1D_GET_DISPLAY_SIZE).
    */
   AV1D_GET_FRAME_SIZE,
 
   /*!\brief Codec control function to get the current frame's intended display
-   * dimensions (as specified in the wrapper or frame header), int* parameter.
+   * dimensions (as specified in the wrapper or frame header), int* parameter
+   *
    * This may be different to the decoded dimensions of this frame (see
    * AV1D_GET_FRAME_SIZE).
    */
@@ -232,12 +234,16 @@ enum aom_dec_control_id {
    */
   AV1D_GET_IMG_FORMAT,
 
-  /*!\brief Codec control function to get the size of the tile, unsigned int
-    parameter */
+  /*!\brief Codec control function to get the width and height (in pixels) of
+   * the tiles in a tile list, unsigned int* parameter
+   *
+   * Tile width is in the high 16 bits of the output value, and tile height is
+   * in the low 16 bits of the output value.
+   */
   AV1D_GET_TILE_SIZE,
 
-  /*!\brief Codec control function to get the tile count in a tile list, int*
-   * parameter
+  /*!\brief Codec control function to get the tile count in a tile list,
+   * unsigned int* parameter
    */
   AV1D_GET_TILE_COUNT,
 
@@ -278,8 +284,8 @@ enum aom_dec_control_id {
    * The caller should ensure that AOM_CODEC_OK is returned before attempting
    * to dereference the Accounting pointer.
    *
-   * \attention When compiled without --enable-accounting, this returns
-   * AOM_CODEC_INCAPABLE.
+   * \attention When configured with -DCONFIG_ACCOUNTING=0, the default, this
+   * returns AOM_CODEC_INCAPABLE.
    */
   AV1_GET_ACCOUNTING,
 
@@ -301,7 +307,8 @@ enum aom_dec_control_id {
   AV1_SET_DECODE_TILE_ROW,
   AV1_SET_DECODE_TILE_COL,
 
-  /*!\brief Codec control function to set the tile coding mode, int parameter
+  /*!\brief Codec control function to set the tile coding mode, unsigned int
+   * parameter
    *
    * - 0 = tiles are coded in normal tile mode
    * - 1 = tiles are coded in large-scale tile mode
@@ -309,7 +316,7 @@ enum aom_dec_control_id {
   AV1_SET_TILE_MODE,
 
   /*!\brief Codec control function to get the frame header information of an
-   * encoded frame, unsigned int* parameter
+   * encoded frame, aom_tile_data* parameter
    */
   AV1D_GET_FRAME_HEADER_INFO,
 
@@ -355,7 +362,7 @@ enum aom_dec_control_id {
   AV1D_SET_OPERATING_POINT,
 
   /*!\brief Codec control function to indicate whether to output one frame per
-   * temporal unit (the default), or one frame per spatial layer. int parameter
+   * temporal unit (the default), or one frame per spatial layer, int parameter
    *
    * In a scalable stream, each temporal unit corresponds to a single "frame"
    * of video, and within a temporal unit there may be multiple spatial layers
@@ -369,7 +376,7 @@ enum aom_dec_control_id {
   /*!\brief Codec control function to set an aom_inspect_cb callback that is
    * invoked each time a frame is decoded, aom_inspect_init* parameter
    *
-   * \attention When compiled without --enable-inspection, this
+   * \attention When configured with -DCONFIG_INSPECTION=0, the default, this
    * returns AOM_CODEC_INCAPABLE.
    */
   AV1_SET_INSPECTION_CALLBACK,
@@ -382,49 +389,83 @@ enum aom_dec_control_id {
    */
   AV1D_SET_SKIP_FILM_GRAIN,
 
-  /*!\brief Codec control function to check the presence of forward key frames
+  /*!\brief Codec control function to check the presence of forward key frames,
+   * int* parameter
    */
   AOMD_GET_FWD_KF_PRESENT,
 
   /*!\brief Codec control function to get the frame flags of the previous frame
-   * decoded. This will return a flag of type aom_codec_frame_flags_t.
+   * decoded, int* parameter
+   *
+   * This will return a flag of type aom_codec_frame_flags_t.
    */
   AOMD_GET_FRAME_FLAGS,
 
-  /*!\brief Codec control function to check the presence of altref frames */
+  /*!\brief Codec control function to check the presence of altref frames, int*
+   * parameter
+   */
   AOMD_GET_ALTREF_PRESENT,
 
   /*!\brief Codec control function to get tile information of the previous frame
-   * decoded. This will return a struct of type aom_tile_info.
+   * decoded, aom_tile_info* parameter
+   *
+   * This will return a struct of type aom_tile_info.
    */
   AOMD_GET_TILE_INFO,
 
-  /*!\brief Codec control function to get screen content tools information.
+  /*!\brief Codec control function to get screen content tools information,
+   * aom_screen_content_tools_info* parameter
+   *
    * It returns a struct of type aom_screen_content_tools_info, which contains
    * the header flags allow_screen_content_tools, allow_intrabc, and
    * force_integer_mv.
    */
   AOMD_GET_SCREEN_CONTENT_TOOLS_INFO,
 
-  /*!\brief Codec control function to get the still picture coding information
+  /*!\brief Codec control function to get the still picture coding information,
+   * aom_still_picture_info* parameter
    */
   AOMD_GET_STILL_PICTURE,
 
-  /*!\brief Codec control function to get superblock size.
-   * It returns an integer, indicating the superblock size
-   * read from the sequence header(0 for BLOCK_64X64 and
-   * 1 for BLOCK_128X128)
+  /*!\brief Codec control function to get superblock size,
+   * aom_superblock_size_t* parameter
+   *
+   * It returns an enum, indicating the superblock size read from the sequence
+   * header(0 for BLOCK_64X64 and 1 for BLOCK_128X128)
    */
   AOMD_GET_SB_SIZE,
 
   /*!\brief Codec control function to check if the previous frame
-   * decoded has show existing frame flag set.
+   * decoded has show existing frame flag set, int* parameter
    */
   AOMD_GET_SHOW_EXISTING_FRAME_FLAG,
 
-  /*!\brief Codec control function to get the S_FRAME coding information
+  /*!\brief Codec control function to get the S_FRAME coding information,
+   * aom_s_frame_info* parameter
    */
   AOMD_GET_S_FRAME_INFO,
+
+  /*!\brief Codec control function to get the show frame flag, int* parameter
+   */
+  AOMD_GET_SHOW_FRAME_FLAG,
+
+  /*!\brief Codec control function to get the base q index of a frame, int*
+   * parameter
+   */
+  AOMD_GET_BASE_Q_IDX,
+
+  /*!\brief Codec control function to get the order hint of a frame, unsigned
+   * int* parameter
+   */
+  AOMD_GET_ORDER_HINT,
+
+  /*!\brief Codec control function to get the info of a 4x4 block.
+   * Parameters: int mi_row, int mi_col, and MB_MODE_INFO*.
+   *
+   * \note This only returns a shallow copy, so all pointer members should not
+   * be used.
+   */
+  AV1D_GET_MI_INFO,
 };
 
 /*!\cond */
@@ -448,36 +489,8 @@ AOM_CTRL_USE_TYPE(AOMD_GET_FRAME_CORRUPTED, int *)
 AOM_CTRL_USE_TYPE(AOMD_GET_LAST_REF_USED, int *)
 #define AOM_CTRL_AOMD_GET_LAST_REF_USED
 
-AOM_CTRL_USE_TYPE(AOMD_GET_LAST_QUANTIZER, int *)
-#define AOM_CTRL_AOMD_GET_LAST_QUANTIZER
-
-AOM_CTRL_USE_TYPE(AOMD_GET_FWD_KF_PRESENT, int *)
-#define AOM_CTRL_AOMD_GET_FWD_KF_PRESENT
-
-AOM_CTRL_USE_TYPE(AOMD_GET_ALTREF_PRESENT, int *)
-#define AOM_CTRL_AOMD_GET_ALTREF_PRESENT
-
-AOM_CTRL_USE_TYPE(AOMD_GET_FRAME_FLAGS, int *)
-#define AOM_CTRL_AOMD_GET_FRAME_FLAGS
-
-AOM_CTRL_USE_TYPE(AOMD_GET_TILE_INFO, aom_tile_info *)
-#define AOM_CTRL_AOMD_GET_TILE_INFO
-
-AOM_CTRL_USE_TYPE(AOMD_GET_SCREEN_CONTENT_TOOLS_INFO,
-                  aom_screen_content_tools_info *)
-#define AOM_CTRL_AOMD_GET_SCREEN_CONTENT_TOOLS_INFO
-
-AOM_CTRL_USE_TYPE(AOMD_GET_STILL_PICTURE, aom_still_picture_info *)
-#define AOM_CTRL_AOMD_GET_STILL_PICTURE
-
-AOM_CTRL_USE_TYPE(AOMD_GET_SB_SIZE, aom_superblock_size_t *)
-#define AOMD_CTRL_AOMD_GET_SB_SIZE
-
-AOM_CTRL_USE_TYPE(AOMD_GET_SHOW_EXISTING_FRAME_FLAG, int *)
-#define AOMD_CTRL_AOMD_GET_SHOW_EXISTING_FRAME_FLAG
-
-AOM_CTRL_USE_TYPE(AOMD_GET_S_FRAME_INFO, aom_s_frame_info *)
-#define AOMD_CTRL_AOMD_GET_S_FRAME_INFO
+AOM_CTRL_USE_TYPE(AV1D_GET_FRAME_SIZE, int *)
+#define AOM_CTRL_AV1D_GET_FRAME_SIZE
 
 AOM_CTRL_USE_TYPE(AV1D_GET_DISPLAY_SIZE, int *)
 #define AOM_CTRL_AV1D_GET_DISPLAY_SIZE
@@ -494,14 +507,17 @@ AOM_CTRL_USE_TYPE(AV1D_GET_TILE_SIZE, unsigned int *)
 AOM_CTRL_USE_TYPE(AV1D_GET_TILE_COUNT, unsigned int *)
 #define AOM_CTRL_AV1D_GET_TILE_COUNT
 
-AOM_CTRL_USE_TYPE(AV1D_GET_FRAME_SIZE, int *)
-#define AOM_CTRL_AV1D_GET_FRAME_SIZE
-
 AOM_CTRL_USE_TYPE(AV1_INVERT_TILE_DECODE_ORDER, int)
 #define AOM_CTRL_AV1_INVERT_TILE_DECODE_ORDER
 
+AOM_CTRL_USE_TYPE(AV1_SET_SKIP_LOOP_FILTER, int)
+#define AOM_CTRL_AV1_SET_SKIP_LOOP_FILTER
+
 AOM_CTRL_USE_TYPE(AV1_GET_ACCOUNTING, Accounting **)
 #define AOM_CTRL_AV1_GET_ACCOUNTING
+
+AOM_CTRL_USE_TYPE(AOMD_GET_LAST_QUANTIZER, int *)
+#define AOM_CTRL_AOMD_GET_LAST_QUANTIZER
 
 AOM_CTRL_USE_TYPE(AV1_SET_DECODE_TILE_ROW, int)
 #define AOM_CTRL_AV1_SET_DECODE_TILE_ROW
@@ -527,9 +543,6 @@ AOM_CTRL_USE_TYPE(AV1D_EXT_TILE_DEBUG, unsigned int)
 AOM_CTRL_USE_TYPE(AV1D_SET_ROW_MT, unsigned int)
 #define AOM_CTRL_AV1D_SET_ROW_MT
 
-AOM_CTRL_USE_TYPE(AV1D_SET_SKIP_FILM_GRAIN, int)
-#define AOM_CTRL_AV1D_SET_SKIP_FILM_GRAIN
-
 AOM_CTRL_USE_TYPE(AV1D_SET_IS_ANNEXB, unsigned int)
 #define AOM_CTRL_AV1D_SET_IS_ANNEXB
 
@@ -541,6 +554,50 @@ AOM_CTRL_USE_TYPE(AV1D_SET_OUTPUT_ALL_LAYERS, int)
 
 AOM_CTRL_USE_TYPE(AV1_SET_INSPECTION_CALLBACK, aom_inspect_init *)
 #define AOM_CTRL_AV1_SET_INSPECTION_CALLBACK
+
+AOM_CTRL_USE_TYPE(AV1D_SET_SKIP_FILM_GRAIN, int)
+#define AOM_CTRL_AV1D_SET_SKIP_FILM_GRAIN
+
+AOM_CTRL_USE_TYPE(AOMD_GET_FWD_KF_PRESENT, int *)
+#define AOM_CTRL_AOMD_GET_FWD_KF_PRESENT
+
+AOM_CTRL_USE_TYPE(AOMD_GET_FRAME_FLAGS, int *)
+#define AOM_CTRL_AOMD_GET_FRAME_FLAGS
+
+AOM_CTRL_USE_TYPE(AOMD_GET_ALTREF_PRESENT, int *)
+#define AOM_CTRL_AOMD_GET_ALTREF_PRESENT
+
+AOM_CTRL_USE_TYPE(AOMD_GET_TILE_INFO, aom_tile_info *)
+#define AOM_CTRL_AOMD_GET_TILE_INFO
+
+AOM_CTRL_USE_TYPE(AOMD_GET_SCREEN_CONTENT_TOOLS_INFO,
+                  aom_screen_content_tools_info *)
+#define AOM_CTRL_AOMD_GET_SCREEN_CONTENT_TOOLS_INFO
+
+AOM_CTRL_USE_TYPE(AOMD_GET_STILL_PICTURE, aom_still_picture_info *)
+#define AOM_CTRL_AOMD_GET_STILL_PICTURE
+
+AOM_CTRL_USE_TYPE(AOMD_GET_SB_SIZE, aom_superblock_size_t *)
+#define AOMD_CTRL_AOMD_GET_SB_SIZE
+
+AOM_CTRL_USE_TYPE(AOMD_GET_SHOW_EXISTING_FRAME_FLAG, int *)
+#define AOMD_CTRL_AOMD_GET_SHOW_EXISTING_FRAME_FLAG
+
+AOM_CTRL_USE_TYPE(AOMD_GET_S_FRAME_INFO, aom_s_frame_info *)
+#define AOMD_CTRL_AOMD_GET_S_FRAME_INFO
+
+AOM_CTRL_USE_TYPE(AOMD_GET_SHOW_FRAME_FLAG, int *)
+#define AOM_CTRL_AOMD_GET_SHOW_FRAME_FLAG
+
+AOM_CTRL_USE_TYPE(AOMD_GET_BASE_Q_IDX, int *)
+#define AOM_CTRL_AOMD_GET_BASE_Q_IDX
+
+AOM_CTRL_USE_TYPE(AOMD_GET_ORDER_HINT, unsigned int *)
+#define AOM_CTRL_AOMD_GET_ORDER_HINT
+
+// The AOM_CTRL_USE_TYPE macro can't be used with AV1D_GET_MI_INFO because
+// AV1D_GET_MI_INFO takes more than one parameter.
+#define AOM_CTRL_AV1D_GET_MI_INFO
 /*!\endcond */
 /*! @} - end defgroup aom_decoder */
 #ifdef __cplusplus

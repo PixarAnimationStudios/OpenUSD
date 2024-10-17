@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -10,8 +10,6 @@
  */
 
 #include <math.h>
-
-#include "pxr/imaging/plugin/hioAvif/aom/aom_ports/system_state.h"
 
 #include "pxr/imaging/plugin/hioAvif/aom/av1/common/av1_common_int.h"
 #include "pxr/imaging/plugin/hioAvif/aom/av1/common/blockd.h"

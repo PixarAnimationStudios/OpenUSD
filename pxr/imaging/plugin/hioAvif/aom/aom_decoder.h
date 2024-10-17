@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -30,7 +30,7 @@
 extern "C" {
 #endif
 
-#include "pxr/imaging/plugin/hioAvif/aom/aom_codec.h"
+#include "pxr/imaging/plugin/hioAvif/aom/aom_codec.h"  // IWYU pragma: export
 #include "pxr/imaging/plugin/hioAvif/aom/aom_frame_buffer.h"
 
 /*!\brief Current ABI version number
@@ -113,7 +113,7 @@ typedef struct aom_codec_dec_cfg {
  * \param[in]    ver     ABI version number. Must be set to
  *                       AOM_DECODER_ABI_VERSION
  * \retval #AOM_CODEC_OK
- *     The decoder algorithm initialized.
+ *     The decoder algorithm has been initialized.
  * \retval #AOM_CODEC_MEM_ERROR
  *     Memory allocation failed.
  */

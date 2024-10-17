@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -16,8 +16,11 @@
 #include "pxr/imaging/plugin/hioAvif/aom/aom_ports/mem.h"
 #include "pxr/imaging/plugin/hioAvif/aom/aom_scale/yv12config.h"
 
-static void yuvconfig2image(aom_image_t *img, const YV12_BUFFER_CONFIG *yv12,
-                            void *user_priv) {
+extern aom_codec_iface_t aom_codec_av1_inspect_algo;
+
+static inline void yuvconfig2image(aom_image_t *img,
+                                   const YV12_BUFFER_CONFIG *yv12,
+                                   void *user_priv) {
   /* aom_img_wrap() doesn't allow specifying independent strides for
    * the Y, U, and V planes, nor other alignment adjustments that
    * might be representable by a YV12_BUFFER_CONFIG, so we just
@@ -80,8 +83,8 @@ static void yuvconfig2image(aom_image_t *img, const YV12_BUFFER_CONFIG *yv12,
   img->metadata = NULL;
 }
 
-static aom_codec_err_t image2yuvconfig(const aom_image_t *img,
-                                       YV12_BUFFER_CONFIG *yv12) {
+static inline aom_codec_err_t image2yuvconfig(const aom_image_t *img,
+                                              YV12_BUFFER_CONFIG *yv12) {
   yv12->y_buffer = img->planes[AOM_PLANE_Y];
   yv12->u_buffer = img->planes[AOM_PLANE_U];
   yv12->v_buffer = img->planes[AOM_PLANE_V];
@@ -93,12 +96,13 @@ static aom_codec_err_t image2yuvconfig(const aom_image_t *img,
   yv12->y_width = img->w;
   yv12->y_height = img->h;
 
-  yv12->uv_width =
-      img->x_chroma_shift == 1 ? (1 + yv12->y_width) / 2 : yv12->y_width;
+  yv12->uv_width = (yv12->y_width + img->x_chroma_shift) >> img->x_chroma_shift;
   yv12->uv_height =
-      img->y_chroma_shift == 1 ? (1 + yv12->y_height) / 2 : yv12->y_height;
-  yv12->uv_crop_width = yv12->uv_width;
-  yv12->uv_crop_height = yv12->uv_height;
+      (yv12->y_height + img->y_chroma_shift) >> img->y_chroma_shift;
+  yv12->uv_crop_width =
+      (yv12->y_crop_width + img->x_chroma_shift) >> img->x_chroma_shift;
+  yv12->uv_crop_height =
+      (yv12->y_crop_height + img->y_chroma_shift) >> img->y_chroma_shift;
 
   yv12->y_stride = img->stride[AOM_PLANE_Y];
   yv12->uv_stride = img->stride[AOM_PLANE_U];
@@ -133,7 +137,7 @@ static aom_codec_err_t image2yuvconfig(const aom_image_t *img,
   // Note(yunqing): if img is allocated the same as the frame buffer, y_stride
   // is 32-byte aligned. Also, handle the cases while allocating img without a
   // border or stride_align is less than 32.
-  int border = (yv12->y_stride - (int)((img->w + 31) & ~31)) / 2;
+  int border = (yv12->y_stride - (int)((img->w + 31) & ~31u)) / 2;
   yv12->border = (border < 0) ? 0 : border;
   yv12->subsampling_x = img->x_chroma_shift;
   yv12->subsampling_y = img->y_chroma_shift;

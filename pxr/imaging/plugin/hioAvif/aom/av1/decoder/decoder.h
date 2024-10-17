@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -112,6 +112,8 @@ typedef struct ThreadData {
   // Motion compensation buffer used to get a prediction buffer with extended
   // borders. One buffer for each of the two possible references.
   uint8_t *mc_buf[2];
+  // Mask for this block used for compound prediction.
+  uint8_t *seg_mask;
   // Allocated size of 'mc_buf'.
   int32_t mc_buf_size;
   // If true, the pointers in 'mc_buf' were converted from highbd pointers.
@@ -142,7 +144,16 @@ typedef struct AV1DecRowMTSyncData {
 #endif
   int allocated_sb_rows;
   int *cur_sb_col;
+  // Denotes the superblock interval at which conditional signalling should
+  // happen. Also denotes the minimum number of extra superblocks of the top row
+  // to be complete to start decoding the current superblock. A value of 1
+  // indicates top-right dependency.
   int sync_range;
+  // Denotes the additional number of superblocks in the previous row to be
+  // complete to start decoding the current superblock when intraBC tool is
+  // enabled. This additional top-right delay is required to satisfy the
+  // hardware constraints for intraBC tool when row multithreading is enabled.
+  int intrabc_extra_top_right_sb_delay;
   int mi_rows;
   int mi_cols;
   int mi_rows_parse_done;
@@ -227,6 +238,8 @@ typedef struct AV1Decoder {
   AV1LfSync lf_row_sync;
   AV1LrSync lr_row_sync;
   AV1LrStruct lr_ctxt;
+  AV1CdefSync cdef_sync;
+  AV1CdefWorkerData *cdef_worker;
   AVxWorker *tile_workers;
   int num_workers;
   DecWorkerData *thread_data;
@@ -330,6 +343,32 @@ typedef struct AV1Decoder {
   int is_arf_frame_present;
   int num_tile_groups;
   aom_s_frame_info sframe_info;
+
+  /*!
+   * Elements part of the sequence header, that are applicable for all the
+   * frames in the video.
+   */
+  SequenceHeader seq_params;
+
+  /*!
+   * If true, buffer removal times are present.
+   */
+  bool buffer_removal_time_present;
+
+  /*!
+   * Code and details about current error status.
+   */
+  struct aom_internal_error_info error;
+
+  /*!
+   * Number of temporal layers: may be > 1 for SVC (scalable vector coding).
+   */
+  unsigned int number_temporal_layers;
+
+  /*!
+   * Number of spatial layers: may be > 1 for SVC (scalable vector coding).
+   */
+  unsigned int number_spatial_layers;
 } AV1Decoder;
 
 // Returns 0 on success. Sets pbi->common.error.error_code to a nonzero error
@@ -362,7 +401,7 @@ void av1_dec_row_mt_dealloc(AV1DecRowMTSync *dec_row_mt_sync);
 
 void av1_dec_free_cb_buf(AV1Decoder *pbi);
 
-static INLINE void decrease_ref_count(RefCntBuffer *const buf,
+static inline void decrease_ref_count(RefCntBuffer *const buf,
                                       BufferPool *const pool) {
   if (buf != NULL) {
     --buf->ref_count;
@@ -383,7 +422,7 @@ static INLINE void decrease_ref_count(RefCntBuffer *const buf,
 }
 
 #define ACCT_STR __func__
-static INLINE int av1_read_uniform(aom_reader *r, int n) {
+static inline int av1_read_uniform(aom_reader *r, int n) {
   const int l = get_unsigned_bits(n);
   const int m = (1 << l) - n;
   const int v = aom_read_literal(r, l - 1, ACCT_STR);
