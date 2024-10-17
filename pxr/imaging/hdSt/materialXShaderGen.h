@@ -192,6 +192,14 @@ private:
                           MaterialX::ShaderStage& mxStage) const;
 };
 
+// helper functions to aid building both MaterialX 1.38.X and 1.39.X
+// once MaterialX 1.38.X is no longer required these should likely be removed.
+bool mxTypeIsNone(MaterialX::TypeDesc typeDesc);
+bool mxTypeIsSurfaceShader(MaterialX::TypeDesc typeDesc);
+bool mxTypeDescIsFilename(const MaterialX::TypeDesc typeDesc);
+MaterialX::TypeDesc getMxTypeDesc(const std::string& typeName);
+const MaterialX::TypeDesc getMxTypeDesc(const MaterialX::ShaderPort* port);
+const std::string mxGetTypeString(const MaterialX::TypeDesc mxType, MaterialX::SyntaxPtr syntax);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

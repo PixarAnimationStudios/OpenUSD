@@ -158,13 +158,12 @@ HdStMaterialXShaderGen<Base>::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
         Base::emitString(R"(    "attributes": {)" "\n", mxStage);
         std::string line = ""; unsigned int i = 0;
         for (mx::StringMap::const_reference primvarPair : _mxHdPrimvarMap) {
-            const mx::TypeDesc *mxType = mx::TypeDesc::get(primvarPair.second);
-            if (mxType == nullptr) {
+            const mx::TypeDesc mxType = getMxTypeDesc(primvarPair.second);
+            if (mxTypeIsNone(mxType)) {
                 TF_WARN("MaterialX geomprop '%s' has unknown type '%s'",
                         primvarPair.first.c_str(), primvarPair.second.c_str());
             }
-            const std::string type = mxType 
-                ? Base::_syntax->getTypeName(mxType) : "vec2";
+            const std::string type = mxGetTypeString(mxType, Base::_syntax);
 
             line += "        \"" + primvarPair.first + "\": {\n";
             line += "            \"type\": \"" + type + "\"\n";
@@ -287,12 +286,15 @@ HdStMaterialXShaderGen<Base>::_EmitMxSurfaceShader(
         if (outputConnection) {
 
             std::string finalOutput = outputConnection->getVariable();
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+            // channels feature removed in MaterialX 1.39
             const std::string& channels = outputSocket->getChannels();
             if (!channels.empty()) {
                 finalOutput = Base::_syntax->getSwizzledVariable(
                     finalOutput, outputConnection->getType(),
                     channels, outputSocket->getType());
             }
+#endif
 
             if (mxGraph.hasClassification(
                     mx::ShaderNode::Classification::SURFACE)) {
@@ -313,7 +315,7 @@ HdStMaterialXShaderGen<Base>::_EmitMxSurfaceShader(
                 }
             }
             else {
-                if (!outputSocket->getType()->isFloat4()) {
+                if (!getMxTypeDesc(outputSocket).isFloat4()) {
                     Base::toVec4(outputSocket->getType(), finalOutput);
                 }
                 emitLine(finalOutputReturn + 
@@ -325,7 +327,7 @@ HdStMaterialXShaderGen<Base>::_EmitMxSurfaceShader(
                 ? Base::_syntax->getValue(
                     outputSocket->getType(), *outputSocket->getValue()) 
                 : Base::_syntax->getDefaultValue(outputSocket->getType());
-            if (!outputSocket->getType()->isFloat4()) {
+            if (!getMxTypeDesc(outputSocket).isFloat4()) {
                 std::string finalOutput = outputSocket->getVariable() + "_tmp";
                 emitLine(Base::_syntax->getTypeName(outputSocket->getType()) 
                         + " " + finalOutput + " = " + outputValue, mxStage);
@@ -417,8 +419,8 @@ HdStMaterialXShaderGen<Base>::_EmitMxInitFunction(
         mxStage.getUniformBlock(mx::HW::PUBLIC_UNIFORMS);
     for (size_t i = 0; i < paramsBlock.size(); ++i) {
         const mx::ShaderPort* variable = paramsBlock[i];
-        const mx::TypeDesc* variableType = variable->getType();
-        if (!_IsHardcodedPublicUniform(*variableType)) {
+        const mx::TypeDesc variableType = getMxTypeDesc(variable);
+        if (!_IsHardcodedPublicUniform(variableType)) {
             emitLine(variable->getVariable() + " = HdGet_" +
                 variable->getVariable() + "()", mxStage);
         }
@@ -624,16 +626,16 @@ HdStMaterialXShaderGen<Base>::emitVariableDeclarations(
     {
         Base::emitLineBegin(stage);
         const mx::ShaderPort* variable = block[i];
-        const mx::TypeDesc* varType = variable->getType();
+        const mx::TypeDesc varType = getMxTypeDesc(variable);
 
         // If bindlessTextures are not enabled the Mx Smpler names are mapped 
         // to the Hydra equivalents in HdStMaterialXShaderGen*::_EmitMxFunctions
-        if (!_bindlessTexturesEnabled && varType == mx::Type::FILENAME) {
+        if (!_bindlessTexturesEnabled && mxTypeDescIsFilename(varType)) {
             continue;
         }
 
         // Only declare the variables that we need to initialize with Hd Data
-        if ( (isPublicUniform && !_IsHardcodedPublicUniform(*varType))
+        if ( (isPublicUniform && !_IsHardcodedPublicUniform(varType))
             || MxHdVariables.count(variable->getName()) ) {
             Base::emitVariableDeclaration(variable, mx::EMPTY_STRING,
                                     context, stage, false /* assignValue */);
@@ -1350,6 +1352,64 @@ HdStMaterialXShaderGenMsl::_EmitMxFunctions(
 
     _EmitDataStructsAndFunctionDefinitions(
         mxGraph, mxContext, mxStage, &_tokenSubstitutions);
+}
+
+
+bool mxTypeIsNone(mx::TypeDesc typeDesc)
+{
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    return typeDesc == *mx::Type::NONE;
+#else
+    return typeDesc == mx::Type::NONE;
+#endif
+}
+
+bool mxTypeIsSurfaceShader(mx::TypeDesc typeDesc)
+{
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    return typeDesc == *mx::Type::SURFACESHADER;
+#else
+    return typeDesc == mx::Type::SURFACESHADER;
+#endif
+}
+
+bool mxTypeDescIsFilename(const mx::TypeDesc typeDesc)
+{
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    return typeDesc == *mx::Type::FILENAME;
+#else
+    return typeDesc == mx::Type::FILENAME;
+#endif
+}
+
+mx::TypeDesc getMxTypeDesc(const std::string& typeName)
+{
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    const mx::TypeDesc* mxType = mx::TypeDesc::get(typeName);
+    if (mxType)
+        return *mxType;
+    return *mx::Type::NONE;
+#else
+    return mx::TypeDesc::get(typeName);
+#endif
+}
+
+const MaterialX::TypeDesc getMxTypeDesc(const mx::ShaderPort* port)
+{
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    return port->getType() ? *(port->getType()) : *mx::Type::NONE;
+#else
+    return port->getType();
+#endif
+}
+
+const std::string mxGetTypeString(const mx::TypeDesc mxType, mx::SyntaxPtr syntax)
+{
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    return (!mxTypeIsNone(mxType)) ? syntax->getTypeName(&mxType) : "vec2";
+#else
+    return (!mxTypeIsNone(mxType)) ? syntax->getTypeName(mxType) : "vec2";
+#endif
 }
 
 
