@@ -67,6 +67,7 @@ public:
     using EntryPair = std::pair<TfToken, HdDependencySchema>;
     using EntryVector = TfSmallVector<EntryPair, 8>;
 
+    HD_API
     EntryVector GetEntries();
 
 // --(END CUSTOM CODE: Schema Methods)--
