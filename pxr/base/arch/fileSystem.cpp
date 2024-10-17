@@ -391,11 +391,22 @@ ArchAbsPath(const string& path)
     // @TODO support 32,767 long paths on windows by prepending "\\?\" to the
     // path
     wchar_t buffer[ARCH_PATH_MAX];
-    if (GetFullPathNameW(ArchWindowsUtf8ToUtf16(path).c_str(),
-                         ARCH_PATH_MAX, buffer, nullptr)) {
+    const auto bufferSize = GetFullPathNameW(ArchWindowsUtf8ToUtf16(path).c_str(),
+        ARCH_PATH_MAX, buffer, nullptr);
+
+    if (bufferSize > 0 && bufferSize <= ARCH_PATH_MAX) {
         return ArchWindowsUtf16ToUtf8(buffer);
-    }
-    else {
+    } else if (bufferSize > 0) {
+        // If the provided buffer is too small, GetFullPathNameW returns the
+        // required buffer size.  We can use this to dynamically allocate a
+        // buffer of the correct size.
+        std::unique_ptr<wchar_t[]> largerBuffer(new wchar_t[bufferSize]);
+        if (GetFullPathNameW(ArchWindowsUtf8ToUtf16(path).c_str(), bufferSize, largerBuffer, nullptr)) {
+            return ArchWindowsUtf16ToUtf8(largerBuffer.get());
+        } else {
+            return path;
+        }
+    } else {
         return path;
     }
 #else
