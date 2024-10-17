@@ -94,10 +94,99 @@ private:
     }
 };
 
+// It is possible for handles to layers to exist outside of the registry.
+// This demonstrates how to construct that situation and some of the
+// implications. Layers existing outside of the registry is not ideal.
+// This test simply demonstrates and exercises the current behavior.
+void DemonstrateDanglingLayers()
+{
+    // Configure the resolver to open Buzz as ts1
+    const _TestResolverContext context1{"toy_story"};
+    _ResolverInterface->SetAssetPathsForConfig(
+        "toy_story", {
+        { "Buzz", "ts1/Buzz.usda" }
+    });
+    SdfLayerRefPtr buzz1;
+    {
+        ArResolverContextBinder binder{context1};
+        buzz1 = SdfLayer::FindOrOpen("Buzz");
+        TF_AXIOM(buzz1);
+        TF_AXIOM(TfStringEndsWith(buzz1->GetRealPath(), "ts1/Buzz.usda"));
+    }
+
+    // Configure the resolver to open Buzz as ts2
+    _ResolverInterface->SetAssetPathsForConfig(
+        "toy_story", {
+        { "Buzz", "ts2/Buzz.usda" }
+    });
+    const _TestResolverContext context2{"toy_story"};
+    ArGetResolver().RefreshContext(context2);
+    SdfLayerRefPtr buzz2;
+    {
+        ArResolverContextBinder binder{context2};
+        buzz2 = SdfLayer::FindOrOpen("Buzz");
+        TF_AXIOM(buzz2);
+        TF_AXIOM(TfStringEndsWith(buzz2->GetRealPath(), "ts2/Buzz.usda"));
+    }
+
+    // Return to the original context and update asset info
+    ArGetResolver().RefreshContext(context1);
+    {
+        ArResolverContextBinder binder{context1};
+        buzz1->UpdateAssetInfo();
+    }
+
+    // Both buzz1 and buzz2 have the same real path
+    TF_AXIOM(TfStringEndsWith(buzz1->GetRealPath(), "ts2/Buzz.usda"));
+    TF_AXIOM(TfStringEndsWith(buzz2->GetRealPath(), "ts2/Buzz.usda"));
+    TF_AXIOM(buzz1->GetRealPath() == buzz2->GetRealPath());
+    // However, they are different handles.
+    TF_AXIOM(buzz1 != buzz2);
+
+    // In both contexts, `SdfLayer::Find` returns buzz2
+    {
+        ArResolverContextBinder binder{context1};
+        TF_AXIOM(buzz1 != SdfLayer::Find("Buzz"));
+        TF_AXIOM(buzz2 == SdfLayer::Find("Buzz"));
+    }
+
+    {
+        ArResolverContextBinder binder{context2};
+        TF_AXIOM(buzz1 != SdfLayer::Find("Buzz"));
+        TF_AXIOM(buzz2 == SdfLayer::Find("Buzz"));
+    }
+
+    buzz2 = nullptr;
+
+    // buzz1 still exists but cannot be found in the registry.
+    {
+        ArResolverContextBinder binder{context1};
+        TF_AXIOM(buzz1);
+        TF_AXIOM(buzz1->GetIdentifier() == "Buzz");
+        TF_AXIOM(SdfLayer::Find("Buzz") == nullptr);
+    }
+
+    {
+        ArResolverContextBinder binder{context2};
+        TF_AXIOM(buzz1);
+        TF_AXIOM(buzz1->GetIdentifier() == "Buzz");
+        TF_AXIOM(SdfLayer::Find("Buzz") == nullptr);
+    }
+}
+
 int
 main(int argc, char** argv)
 {
     SetupPlugins();
+
+    if (argc >= 2) {
+        if (strcmp(argv[1], "--demonstrate-dangling-layers") == 0) {
+            DemonstrateDanglingLayers();
+            return 0;
+        }
+        // There should be no arguments otherwise.
+        return 1;
+    }
 
     // The "shots" in this test use asset paths with two different forms
     // to exercise UsdStage's change processing:

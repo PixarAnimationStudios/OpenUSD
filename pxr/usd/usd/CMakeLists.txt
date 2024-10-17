@@ -1069,6 +1069,10 @@ if (BUILD_SHARED_LIBS)
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdResolverChanged"
         EXPECTED_RETURN_CODE 0
     )
+    pxr_register_test(testUsdResolverChanged_danglingLayer
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdResolverChanged --demonstrate-dangling-layers"
+        EXPECTED_RETURN_CODE 0
+    )
 endif()
 
 pxr_register_test(testUsdStageNoPython
