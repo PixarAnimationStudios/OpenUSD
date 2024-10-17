@@ -343,14 +343,7 @@ def AppendCXX11ABIArg(buildFlag, context, buildArgs):
         flag=buildFlag, flags=" ".join(cxxFlags)))
 
 def FormatMultiProcs(numJobs, generator):
-    tag = "-j"
-    if generator:
-        if "Visual Studio" in generator:
-            tag = "/M:" # This will build multiple projects at once.
-        elif "Xcode" in generator:
-            tag = "-j "
-
-    return "{tag}{procs}".format(tag=tag, procs=numJobs)
+    return "-j {procs}".format(procs=numJobs)
 
 def RunCMake(context, force, extraArgs = None):
     """Invoke CMake to configure, build, and install a library whose 
@@ -453,7 +446,7 @@ def RunCMake(context, force, extraArgs = None):
                     generator=(generator or ""),
                     toolset=(toolset or ""),
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
-        Run("cmake --build . --config {config} --target install -- {multiproc}"
+        Run("cmake --build . --config {config} --target install {multiproc}"
             .format(config=config,
                     multiproc=FormatMultiProcs(context.numJobs, generator)))
 
