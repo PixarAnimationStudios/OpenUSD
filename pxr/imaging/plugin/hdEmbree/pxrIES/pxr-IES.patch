@@ -1,0 +1,123 @@
+diff --git a/pxr/imaging/plugin/hdEmbree/pxrIES/ies.cpp b/pxr/imaging/plugin/hdEmbree/pxrIES/ies.cpp
+index a6725cc04..243680d91 100644
+--- a/pxr/imaging/plugin/hdEmbree/pxrIES/ies.cpp
++++ b/pxr/imaging/plugin/hdEmbree/pxrIES/ies.cpp
+@@ -2,21 +2,22 @@
+  *
+  * SPDX-License-Identifier: Apache-2.0 */
+ 
++#include "ies.h"
+ #include <algorithm>
++#include <cstring>
+ 
+-#include "util/foreach.h"
+-#include "util/ies.h"
+-#include "util/math.h"
+-#include "util/string.h"
++#define _USE_MATH_DEFINES
++#include <cmath>
+ 
+-CCL_NAMESPACE_BEGIN
++#if !defined(M_PI)
++#define M_PI 3.14159265358979323846
++#endif
+ 
+-// NOTE: For some reason gcc-7.2 does not instantiate this version of the
+-// allocator here (used in IESTextParser). Works fine for gcc-6, gcc-7.3 and gcc-8.
+-//
+-// TODO(sergey): Get to the root of this issue, or confirm this is a compiler
+-// issue.
+-template class GuardedAllocator<char>;
++#define M_PI_F M_PI
++
++PXR_NAMESPACE_OPEN_SCOPE
++
++namespace pxr_ccl {
+ 
+ bool IESFile::load(const string &ies)
+ {
+@@ -43,11 +44,23 @@ int IESFile::packed_size()
+   return 0;
+ }
+ 
++
++static float sizet_to_float(const size_t source_size_t) noexcept
++{
++  int intermediate_int = static_cast<int>(source_size_t);
++  float dest_float;
++
++  static_assert(sizeof(intermediate_int) == sizeof(dest_float),
++    "Size of source and destination for memcpy must be identical");
++  std::memcpy(&dest_float, &intermediate_int, sizeof(float));
++  return dest_float;
++}
++
+ void IESFile::pack(float *data)
+ {
+   if (v_angles.size() && h_angles.size()) {
+-    *(data++) = __int_as_float(h_angles.size());
+-    *(data++) = __int_as_float(v_angles.size());
++    *(data++) = sizet_to_float(h_angles.size());
++    *(data++) = sizet_to_float(v_angles.size());
+ 
+     memcpy(data, &h_angles[0], h_angles.size() * sizeof(float));
+     data += h_angles.size();
+@@ -407,4 +420,7 @@ IESFile::~IESFile()
+   clear();
+ }
+ 
+-CCL_NAMESPACE_END
++} // namespace pxr_ccl
++
++PXR_NAMESPACE_CLOSE_SCOPE
++
+diff --git a/pxr/imaging/plugin/hdEmbree/pxrIES/ies.h b/pxr/imaging/plugin/hdEmbree/pxrIES/ies.h
+index 8c506befd..0bbae712f 100644
+--- a/pxr/imaging/plugin/hdEmbree/pxrIES/ies.h
++++ b/pxr/imaging/plugin/hdEmbree/pxrIES/ies.h
+@@ -2,13 +2,21 @@
+  *
+  * SPDX-License-Identifier: Apache-2.0 */
+ 
+-#ifndef __UTIL_IES_H__
+-#define __UTIL_IES_H__
++#ifndef PXR_IMAGING_PLUGIN_HD_EMBREE_PXRIES_IES_H
++#define PXR_IMAGING_PLUGIN_HD_EMBREE_PXRIES_IES_H
+ 
+-#include "util/string.h"
+-#include "util/vector.h"
+ 
+-CCL_NAMESPACE_BEGIN
++#include <string>
++#include <vector>
++
++#include "pxr/pxr.h"
++
++PXR_NAMESPACE_OPEN_SCOPE
++
++namespace pxr_ccl {
++
++using std::string;
++using std::vector;
+ 
+ class IESFile {
+  public:
+@@ -24,6 +32,7 @@ class IESFile {
+  protected:
+   bool parse(const string &ies);
+   bool process();
++
+   void process_type_a();
+   void process_type_b();
+   void process_type_c();
+@@ -41,6 +50,8 @@ class IESFile {
+   enum IESType { TYPE_A = 3, TYPE_B = 2, TYPE_C = 1 } type;
+ };
+ 
+-CCL_NAMESPACE_END
++} /* namespace pxr_ccl */
++
++PXR_NAMESPACE_CLOSE_SCOPE
+ 
+-#endif /* __UTIL_IES_H__ */
++#endif /* PXR_IMAGING_PLUGIN_HD_EMBREE_PXRIES_IES_H */
