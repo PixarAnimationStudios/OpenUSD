@@ -31,6 +31,7 @@ pxr_plugin(hdEmbree
     PUBLIC_CLASSES
         config
         instancer
+        light
         mesh
         meshSamplers
         renderBuffer
