@@ -99,6 +99,11 @@ public:
     ///                      embree state.
     virtual void Finalize(HdRenderParam *renderParam) override;
 
+    bool EmbreeMeshIsDoubleSided() const
+    {
+        return _doubleSided;
+    }
+
 protected:
     // Initialize the given representation of this Rprim.
     // This is called prior to syncing the prim, the first time the repr
