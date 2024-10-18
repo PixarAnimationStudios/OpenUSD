@@ -31,6 +31,7 @@ pxr_plugin(hdEmbree
     PUBLIC_CLASSES
         config
         instancer
+        light
         mesh
         meshSamplers
         renderBuffer
@@ -43,6 +44,15 @@ pxr_plugin(hdEmbree
     PUBLIC_HEADERS
         context.h
         renderParam.h
+
+    PRIVATE_HEADERS
+        pxrIES/ies.h
+        pxrIES/pxrIES.h
+        pxrPbrt/pbrtUtils.h
+
+    CPPFILES
+        pxrIES/ies.cpp
+        pxrIES/pxrIES.cpp
 
     PRIVATE_CLASSES
         implicitSurfaceSceneIndexPlugin
