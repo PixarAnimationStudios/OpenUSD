@@ -399,7 +399,7 @@ public:
                InitialLoadSet load=LoadAll);
     
     USD_API
-    virtual ~UsdStage();
+    virtual ~UsdStage() noexcept;
 
     /// Calls SdfLayer::Reload on all layers contributing to this stage,
     /// except session layers and sublayers of session layers.

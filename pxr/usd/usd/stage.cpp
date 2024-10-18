@@ -683,7 +683,7 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
     _cache->SetVariantFallbacks(GetGlobalVariantFallbacks());
 }
 
-UsdStage::~UsdStage()
+UsdStage::~UsdStage() noexcept
 {
     TF_DEBUG(USD_STAGE_LIFETIMES).Msg(
         "UsdStage::~UsdStage(rootLayer=@%s@, sessionLayer=@%s@)\n",
