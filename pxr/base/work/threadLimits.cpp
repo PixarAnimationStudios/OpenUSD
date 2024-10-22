@@ -71,14 +71,14 @@ WorkGetPhysicalConcurrencyLimit()
 #endif
 }
 
-// This function always returns an actual thread count >= 1.
+// This function always returns either 0 (meaning "no change") or >= 1
 static unsigned
 Work_NormalizeThreadCount(const int n)
 {
     // Zero means "no change", and n >= 1 means exactly n threads, so simply
     // pass those values through unchanged.
     // For negative integers, subtract the absolute value from the total number
-    // of available cores (denoting all but n cores). If n == number of cores,
+    // of available cores (denoting all but n cores). If |n| >= number of cores,
     // clamp to 1 to set single-threaded mode.
     return n >= 0 ? n : std::max<int>(1, n + WorkGetPhysicalConcurrencyLimit());
 }
