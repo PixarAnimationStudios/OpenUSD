@@ -240,3 +240,12 @@ if (${PXR_BUILD_PYTHON_DOCUMENTATION})
         set(PXR_BUILD_PYTHON_DOCUMENTATION "OFF" CACHE BOOL "" FORCE)
     endif()
 endif()
+
+set(PXR_IMAGING_HIO_STB_PRECEDENCE "30" CACHE STRING "Hio plugin precedence for Hio_StbImage.")
+set(PXR_IMAGING_HIO_STB_FORMATS "bmp;jpg;jpeg;png;tga;hdr" CACHE STRING "Image file formats handled by Hio_StbImage Hio plugin.")
+
+set(PXR_IMAGING_HIO_OPENEXR_PRECEDENCE "30" CACHE STRING "Hio plugin precedence for Hio_OpenEXRImage.")
+set(PXR_IMAGING_HIO_OPENEXR_FORMATS "exr" CACHE STRING "Image file formats handled by Hio_OpenEXRImage Hio plugin.")
+
+set(PXR_IMAGING_HIO_OIIO_PRECEDENCE "10" CACHE STRING "Hio plugin precedence for HioOIIO_Image.")
+set(PXR_IMAGING_HIO_OIIO_FORMATS "tif;tiff;zfile;tx" CACHE STRING "Image file formats handled by HioOIIO_Image Hio plugin.")
