@@ -17,6 +17,7 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/dictionary.h"
 
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/sdf/path.h"
@@ -122,6 +123,11 @@ using HdTupleTypeDataSourceHandle = HdTupleTypeDataSource::Handle;
 // ArResolverContext
 using HdResolverContextDataSource = HdTypedSampledDataSource<ArResolverContext>;
 using HdResolverContextDataSourceHandle = HdResolverContextDataSource::Handle;
+
+// Dictionary
+using HdDictionaryDataSource = HdTypedSampledDataSource<VtDictionary>;
+using HdDictionaryDataSourceHandle = HdDictionaryDataSource::Handle;
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

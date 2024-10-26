@@ -53,10 +53,10 @@ HdMaterialNetworkSchema::GetInterfaceMappings() const
         HdMaterialNetworkSchemaTokens->interfaceMappings));
 }
 
-HdContainerDataSourceHandle
+HdDictionaryDataSourceHandle
 HdMaterialNetworkSchema::GetConfig() const
 {
-    return _GetTypedDataSource<HdContainerDataSource>(
+    return _GetTypedDataSource<HdDictionaryDataSource>(
         HdMaterialNetworkSchemaTokens->config);
 }
 
@@ -66,7 +66,7 @@ HdMaterialNetworkSchema::BuildRetained(
         const HdContainerDataSourceHandle &nodes,
         const HdContainerDataSourceHandle &terminals,
         const HdContainerDataSourceHandle &interfaceMappings,
-        const HdContainerDataSourceHandle &config
+        const HdDictionaryDataSourceHandle &config
 )
 {
     TfToken _names[4];
@@ -122,7 +122,7 @@ HdMaterialNetworkSchema::Builder::SetInterfaceMappings(
 
 HdMaterialNetworkSchema::Builder &
 HdMaterialNetworkSchema::Builder::SetConfig(
-    const HdContainerDataSourceHandle &config)
+    const HdDictionaryDataSourceHandle &config)
 {
     _config = config;
     return *this;

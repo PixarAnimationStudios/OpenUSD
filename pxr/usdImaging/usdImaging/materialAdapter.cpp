@@ -381,12 +381,13 @@ UsdImagingMaterialAdapter::GetMaterialResource(UsdPrim const &prim,
 
     // finally collect any 'config' on the Material prim
     VtDictionary configDict;
-    for (const auto& prop : prim.GetPropertiesInNamespace("config")) {
+    const std::string configName = "config";
+    for (const auto& prop : prim.GetPropertiesInNamespace(configName)) {
       const auto attr = prop.As<UsdAttribute>();
       if (attr.IsValid()) {
         VtValue value;
         attr.Get(&value);
-        configDict.SetValueAtPath(attr.GetName().GetString().substr(5), value);
+        configDict.SetValueAtPath(attr.GetName().GetString().substr(configName.size()+1), value);
       }
     }
     networkMap.config = configDict;

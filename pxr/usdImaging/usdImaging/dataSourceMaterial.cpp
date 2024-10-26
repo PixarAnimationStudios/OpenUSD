@@ -701,7 +701,35 @@ _ComputeOutputSource(
     return UsdShadeConnectableAPI(sourceInfo.source.GetPrim());
 }
 
-static 
+HdContainerDataSourceHandle
+_CreateContainerDataSourceFromDictionary(const VtDictionary &configDict) {
+  TfTokenVector configNames;
+  std::vector<HdDataSourceBaseHandle> configValues;
+
+  configNames.reserve(configDict.size());
+  configValues.reserve(configDict.size());
+  for (const auto &configEntry : configDict) {
+    // from _dataSourceLegacyPrim.cpp - _ToContainerDS(VtDictionary)
+    configNames.push_back(TfToken(configEntry.first));
+
+    if (configEntry.second.IsHolding<VtDictionary>()) {
+      // recursively create the HdContainerDataSource for the sub-dictionary
+      configValues.push_back(_CreateContainerDataSourceFromDictionary(
+          configEntry.second.UncheckedGet<VtDictionary>()));
+    } else {
+      configValues.push_back(
+          HdRetainedSampledDataSource::New(configEntry.second));
+    }
+  }
+
+  HdContainerDataSourceHandle configDefaultContext =
+      HdRetainedContainerDataSource::New(configNames.size(), configNames.data(),
+                                         configValues.data());
+
+  return configDefaultContext;
+}
+
+static
 HdDataSourceBaseHandle
 _BuildMaterial(
     UsdShadeNodeGraph const &usdMat, 
@@ -805,25 +833,16 @@ _BuildMaterial(
     // SetValueAtPath for nested namespaces in the attribute
     // names.
     VtDictionary configDict;
+    const std::string configName = "config:";
     for (const auto& attr : usdMat.GetPrim().GetAuthoredAttributes()) {
       const std::string name = attr.GetName().GetString();
-      const std::string substr = name.substr(0, 5);
-      if (substr.compare("config:") == 0) {
+      const std::string substr = name.substr(0, configName.size());
+      if (substr.compare(configName) == 0) {
         VtValue value;
         attr.Get(&value);
-        configDict.SetValueAtPath(name.substr(5), value);
+        configDict.SetValueAtPath(name.substr(configName.size()), value);
       }
     }
-
-    configNames.reserve(configDict.size());
-    configValues.reserve(configDict.size());
-    for (const auto& configEntry : configDict)
-    {
-      // from _dataSourceLegacyPrim.cpp - _ToContainerDS(VtDictionary)
-      configNames.push_back(TfToken(configEntry.first));
-      configValues.push_back(HdRetainedSampledDataSource::New(configEntry.second));
-    }
-
 
     HdContainerDataSourceHandle nodesDs = 
         HdRetainedContainerDataSource::New(
@@ -831,12 +850,7 @@ _BuildMaterial(
             nodeNames.data(),
             nodeValues.data());
 
-    HdContainerDataSourceHandle configDefaultContext =
-        HdRetainedContainerDataSource::New(
-            configNames.size(),
-            configNames.data(),
-            configValues.data());
-
+    HdDictionaryDataSourceHandle configDefaultContext = HdRetainedTypedSampledDataSource<VtDictionary>::New(configDict);
 
     return HdMaterialNetworkSchema::Builder()
         .SetNodes(nodesDs)

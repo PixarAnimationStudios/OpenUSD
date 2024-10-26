@@ -20,30 +20,50 @@ TF_DEFINE_PRIVATE_TOKENS(
     (assetName)
     );
 
+void _GetDictionaryNames(VtDictionary dict, const std::string& prefix, TfTokenVector& names)
+{
+  for (const auto& it : dict) {
+    names.emplace_back(TfToken(prefix+it.first));
+    if (it.second.IsHolding<VtDictionary>()) {
+      _GetDictionaryNames(it.second.UncheckedGet<VtDictionary>(), prefix+it.first+":", names);
+    }
+  }
+}
+
 TfTokenVector
 HdDataSourceMaterialNetworkInterface::GetMaterialConfigKeys() const
 {
-    HdContainerDataSourceHandle const config = _networkSchema.GetConfig();
-    if (!config) {
+    auto config = _networkSchema.GetConfig();
+    VtValue configValue = config->GetValue(0);
+    if (!configValue.IsHolding<VtDictionary>()) {
       return {};
     }
-    return config->GetNames();
+
+    auto configDict = configValue.UncheckedGet<VtDictionary>();
+
+    TfTokenVector result;
+    _GetDictionaryNames(configDict, "", result);
+
+    return result;
 }
 
 VtValue
 HdDataSourceMaterialNetworkInterface::GetMaterialConfigValue(
     const TfToken& key) const
 {
-    HdContainerDataSourceHandle const config = _networkSchema.GetConfig();
-    if (!config) {
+    auto config = _networkSchema.GetConfig();
+    VtValue configValue = config->GetValue(0);
+    if (!configValue.IsHolding<VtDictionary>()) {
       return {};
     }
-    HdSampledDataSourceHandle const ds =
-        HdSampledDataSource::Cast(config->Get(key));
-    if (!ds) {
-      return {};
-    }
-    return ds->GetValue(0.0f);
+
+    auto configDict = configValue.UncheckedGet<VtDictionary>();
+
+    auto result = configDict.GetValueAtPath(key.GetString());
+    if (result)
+      return *result;
+
+    return {};
 }
 
 std::string

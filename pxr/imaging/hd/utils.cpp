@@ -276,15 +276,6 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
                 .Build());
     }
 
-    configNames.reserve(hdNetworkMap.config.size());
-    configValues.reserve(hdNetworkMap.config.size());
-    for (const auto& configEntry : hdNetworkMap.config)
-    {
-      // from _dataSourceLegacyPrim.cpp - _ToContainerDS(VtDictionary)
-        configNames.push_back(TfToken(configEntry.first));
-        configValues.push_back(HdRetainedSampledDataSource::New(configEntry.second));
-    }
-
     HdContainerDataSourceHandle nodesDefaultContext = 
         HdRetainedContainerDataSource::New(
             nodeNames.size(),
@@ -297,11 +288,8 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
             terminalsNames.data(),
             terminalsValues.data());
 
-    HdContainerDataSourceHandle configDefaultContext =
-        HdRetainedContainerDataSource::New(
-            configNames.size(),
-            configNames.data(),
-            configValues.data());
+    HdDictionaryDataSourceHandle configDefaultContext = HdRetainedTypedSampledDataSource<VtDictionary>::New(hdNetworkMap.config);
+
 
     return HdMaterialNetworkSchema::Builder()
         .SetNodes(nodesDefaultContext)

@@ -1464,8 +1464,11 @@ _Context::BeginMaterial(const mx::ConstNodePtr& mtlxMaterial)
             _materialsPath.AppendChild(_MakeName(mtlxMaterial));
         if (auto usdMaterial = UsdShadeMaterial::Define(_stage, materialPath)) {
             auto mtlxConfigAPI = UsdMtlxMaterialXConfigAPI::Apply(usdMaterial.GetPrim());
-            auto mtlxVersionValue = VtValue(mtlxMaterial->getDocument()->getVersionString());
-            mtlxConfigAPI.CreateConfigMtlxVersionAttr(mtlxVersionValue);
+            auto mtlxVersionStr = mtlxMaterial->getDocument()->getVersionString();
+            mtlxConfigAPI.CreateConfigMtlxVersionAttr(VtValue(mtlxVersionStr));
+
+            TF_DEBUG(USDMTLX_READER).Msg("Writing MaterialX config version %s\n",
+                                         mtlxVersionStr.c_str());
 
             _SetCoreUIAttributes(usdMaterial.GetPrim(), mtlxMaterial);
 

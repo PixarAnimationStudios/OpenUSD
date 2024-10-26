@@ -22,6 +22,7 @@
 
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/schemaTypeDefs.h"
+#include "pxr/imaging/hd/dataSourceTypeDefs.h"
 
 #include "pxr/imaging/hd/schema.h"
 
@@ -111,7 +112,7 @@ public:
     HdMaterialInterfaceMappingsContainerSchema GetInterfaceMappings() const;
 
     HD_API
-    HdContainerDataSourceHandle GetConfig() const; 
+    HdDictionaryDataSourceHandle GetConfig() const;
 
     /// @} 
 
@@ -131,7 +132,7 @@ public:
         const HdContainerDataSourceHandle &nodes,
         const HdContainerDataSourceHandle &terminals,
         const HdContainerDataSourceHandle &interfaceMappings,
-        const HdContainerDataSourceHandle &config
+        const HdDictionaryDataSourceHandle &config
     );
 
     /// \class HdMaterialNetworkSchema::Builder
@@ -154,7 +155,7 @@ public:
             const HdContainerDataSourceHandle &interfaceMappings);
         HD_API
         Builder &SetConfig(
-            const HdContainerDataSourceHandle &config);
+            const HdDictionaryDataSourceHandle &config);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -164,7 +165,7 @@ public:
         HdContainerDataSourceHandle _nodes;
         HdContainerDataSourceHandle _terminals;
         HdContainerDataSourceHandle _interfaceMappings;
-        HdContainerDataSourceHandle _config;
+        HdDictionaryDataSourceHandle _config;
 
     };
 
