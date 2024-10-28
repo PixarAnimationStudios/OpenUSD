@@ -1410,5 +1410,13 @@ const std::string mxGetTypeString(const mx::TypeDesc mxType, mx::SyntaxPtr synta
 #endif
 }
 
+const std::string& getVector2Name()
+{
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    return mx::Type::VECTOR2->getName();
+#else
+    return mx::Type::VECTOR2.getName();
+#endif
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

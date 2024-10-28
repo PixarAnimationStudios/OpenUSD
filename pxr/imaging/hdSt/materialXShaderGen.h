@@ -200,6 +200,7 @@ bool mxTypeDescIsFilename(const MaterialX::TypeDesc typeDesc);
 MaterialX::TypeDesc getMxTypeDesc(const std::string& typeName);
 const MaterialX::TypeDesc getMxTypeDesc(const MaterialX::ShaderPort* port);
 const std::string mxGetTypeString(const MaterialX::TypeDesc mxType, MaterialX::SyntaxPtr syntax);
+const std::string& getVector2Name();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
