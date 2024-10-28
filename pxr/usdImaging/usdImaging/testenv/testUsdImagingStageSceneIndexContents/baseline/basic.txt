@@ -149,6 +149,8 @@
 			def
 	[material]
 		[]
+			[config]
+				{}
 			[interfaceMappings]
 			[nodes]
 				[MyPrimvar]
