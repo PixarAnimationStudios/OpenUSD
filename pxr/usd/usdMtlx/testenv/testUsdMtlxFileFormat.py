@@ -136,7 +136,7 @@ class TestFileFormat(unittest.TestCase):
         output sources.
         """
         stage = UsdMtlx._TestFile("OutputSources.mtlx")
-        path = Sdf.Path('/MaterialX/Materials/layered/ND_layerShader')
+        path = Sdf.Path('/MaterialX/Materials/layered/layered_sr')
         node = UsdShade.Shader.Get(stage, path)
 
         # Make sure each input is connected as expected
