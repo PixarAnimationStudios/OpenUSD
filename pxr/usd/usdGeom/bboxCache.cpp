@@ -16,6 +16,7 @@
 #include "pxr/usd/usdGeom/xform.h"
 
 #include "pxr/usd/usd/modelAPI.h"
+#include "pxr/usd/usd/primFlags.h"
 #include "pxr/usd/usd/primRange.h"
 
 #include "pxr/base/trace/trace.h"
@@ -280,6 +281,15 @@ _GetOrCreateExtentsHintQuery(UsdGeomModelAPI& geomModel, UsdAttributeQuery* q)
     return *q;
 }
 
+
+// Default prim traversal predicate to use
+// Note we do not exclude unloaded prims - we want them because they
+// may have authored extentsHints we can use; thus we can have bboxes in
+// model-hierarchy-only.
+static const Usd_PrimFlagsPredicate _defaultPrimPredicate = (
+    UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract
+);
+
 // -------------------------------------------------------------------------- //
 // UsdGeomBBoxCache Public API
 // -------------------------------------------------------------------------- //
@@ -290,6 +300,20 @@ UsdGeomBBoxCache::UsdGeomBBoxCache(
     : _time(time)
     , _includedPurposes(includedPurposes)
     , _ctmCache(time)
+    , _primPredicate(_defaultPrimPredicate)
+    , _useExtentsHint(useExtentsHint)
+    , _ignoreVisibility(ignoreVisibility)
+{
+}
+
+UsdGeomBBoxCache::UsdGeomBBoxCache(
+    UsdTimeCode time, TfTokenVector includedPurposes,
+    const Usd_PrimFlagsPredicate &predicate,
+    bool useExtentsHint, bool ignoreVisibility)
+    : _time(time)
+    , _includedPurposes(includedPurposes)
+    , _ctmCache(time)
+    , _primPredicate(predicate)
     , _useExtentsHint(useExtentsHint)
     , _ignoreVisibility(ignoreVisibility)
 {
@@ -301,6 +325,7 @@ UsdGeomBBoxCache::UsdGeomBBoxCache(UsdGeomBBoxCache const &other)
     , _includedPurposes(other._includedPurposes)
     , _ctmCache(other._ctmCache)
     , _bboxCache(other._bboxCache)
+    , _primPredicate(other._primPredicate)
     , _useExtentsHint(other._useExtentsHint)
     , _ignoreVisibility(other._ignoreVisibility)
 {
@@ -316,6 +341,7 @@ UsdGeomBBoxCache::operator=(UsdGeomBBoxCache const &other)
     _includedPurposes = other._includedPurposes;
     _ctmCache = other._ctmCache;
     _bboxCache = other._bboxCache;
+    _primPredicate = other._primPredicate;
     _useExtentsHint = other._useExtentsHint;
     _ignoreVisibility = other._ignoreVisibility;
     return *this;
@@ -439,7 +465,7 @@ UsdGeomBBoxCache::_ComputeBoundWithOverridesHelper(
     }
 
     GfBBox3d result;
-    UsdPrimRange range(prim);
+    UsdPrimRange range(prim, _primPredicate);
     for (auto it = range.begin(); it != range.end(); ++it) {
         const UsdPrim &p = *it;
         const SdfPath &primPath = p.GetPath();
@@ -1016,14 +1042,13 @@ UsdGeomBBoxCache::_FindOrCreateEntriesForPrim(
     entry->isIncluded = _ShouldIncludePrim(primContext.prim);
 
     // Pre-populate all cache entries, note that some entries may already exist.
-    // Note also we do not exclude unloaded prims - we want them because they
-    // may have authored extentsHints we can use; thus we can have bboxes in
-    // model-hierarchy-only.
+    // Note also, with the default _primPredicate, we do not exclude unloaded
+    // prims - we want them because they may have authored extentsHints we can
+    // use; thus we can have bboxes in model-hierarchy-only.
 
     TfHashSet<_PrimContext, _PrimContextHash> seenPrototypePrimContexts;
 
-    UsdPrimRange range(primContext.prim, 
-        (UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract));
+    UsdPrimRange range(primContext.prim, _primPredicate);
     for (auto it = range.begin(); it != range.end(); ++it) {
         _PrimContext cachePrimContext(
             *it, primContext.instanceInheritablePurpose);
@@ -1312,8 +1337,7 @@ UsdGeomBBoxCache::_ResolvePrim(const _BBoxTask* task,
         const bool primIsInstance = prim.IsInstance();
         if (primIsInstance) {
             const UsdPrim prototype = prim.GetPrototype();
-            children = prototype.GetFilteredChildren(
-                UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract);
+            children = prototype.GetFilteredChildren(_primPredicate);
             // Since we're using the prototype's children, we need to make sure
             // we propagate this instance's inheritable purpose to the
             // prototype's children so they inherit the correct purpose for this
@@ -1322,8 +1346,7 @@ UsdGeomBBoxCache::_ResolvePrim(const _BBoxTask* task,
                 entry->purposeInfo.GetInheritablePurpose();
         }
         else {
-            children = prim.GetFilteredChildren(
-                UsdPrimIsActive && UsdPrimIsDefined && !UsdPrimIsAbstract);
+            children = prim.GetFilteredChildren(_primPredicate);
             // Otherwise for standard children that are not across an instance
             // boundary, pass this prim's inheritable purpose along to its
             // children.  
