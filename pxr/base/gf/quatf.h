@@ -39,7 +39,7 @@ float GfDot(const GfQuatf& q1, const GfQuatf& q2);
 /// Basic type: a quaternion, a complex number with a real coefficient and
 /// three imaginary coefficients, stored as a 3-vector.
 ///
-class GfQuatf
+class ARCH_EXPORT_TYPE GfQuatf
 {
   public:
     typedef float ScalarType;

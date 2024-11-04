@@ -39,7 +39,7 @@ UsdUseButDoNotPopulateCache(StageCache &cache) {
     return Usd_NonPopulatingStageCacheWrapper(cache);
 }
 
-enum UsdStageCacheContextBlockType
+enum ARCH_EXPORT_TYPE UsdStageCacheContextBlockType
 {
     /// Indicate that a UsdStageCacheContext should ignore all currently bound
     /// UsdStageCacheContexts, preventing reading from or writing to their

@@ -61,7 +61,7 @@ class SdfAssetPath;
 /// UsdShadeInput and UsdShadeOutput.
 /// 
 ///
-class UsdShadeConnectableAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdShadeConnectableAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

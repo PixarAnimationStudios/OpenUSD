@@ -24,7 +24,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Data Source Locators are meant to be short lists of tokens that, taken
 /// together, can represent the location of a given data source.
 ///
-class HdDataSourceLocator
+class ARCH_EXPORT_TYPE HdDataSourceLocator
 {
 public:
 

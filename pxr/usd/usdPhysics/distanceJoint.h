@@ -38,7 +38,7 @@ class SdfAssetPath;
 /// Predefined distance joint type (Distance between rigid bodies
 /// may be limited to given minimum or maximum distance.)
 ///
-class UsdPhysicsDistanceJoint : public UsdPhysicsJoint
+class ARCH_EXPORT_TYPE UsdPhysicsDistanceJoint : public UsdPhysicsJoint
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

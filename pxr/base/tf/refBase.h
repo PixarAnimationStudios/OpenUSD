@@ -53,7 +53,7 @@ template <class T> class TfWeakPtr;
 /// To disable the cost of the "unique changed" system, derive
 /// from TfSimpleRefBase instead.
 ///
-class TfRefBase {
+class ARCH_EXPORT_TYPE TfRefBase {
 public:
 
     typedef void (*UniqueChangedFuncPtr)(TfRefBase const *, bool);
@@ -136,7 +136,7 @@ private:
 /// Derive from this class if you don't plan on wrapping your
 /// reference-counted object via pxr_boost::python.
 ///
-class TfSimpleRefBase : public TfRefBase {
+class ARCH_EXPORT_TYPE TfSimpleRefBase : public TfRefBase {
 public:
     TF_API virtual ~TfSimpleRefBase();
 };

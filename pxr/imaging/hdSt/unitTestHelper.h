@@ -483,7 +483,7 @@ HdSt_TestDriverBase<SceneDelegate>::Present(
 ///
 /// A simple task to execute a render pass.
 ///
-class HdSt_DrawTask final : public HdTask
+class ARCH_EXPORT_TYPE HdSt_DrawTask final : public HdTask
 {
 public:
     HDST_API
@@ -525,7 +525,7 @@ private:
 ///
 /// A unit test driver that exercises the core engine.
 ///
-class HdSt_TestDriver final : public HdSt_TestDriverBase<HdUnitTestDelegate>
+class ARCH_EXPORT_TYPE HdSt_TestDriver final : public HdSt_TestDriverBase<HdUnitTestDelegate>
 {
 public:
     HDST_API
@@ -571,7 +571,7 @@ using HdSt_TestDriverUniquePtr = std::unique_ptr<HdSt_TestDriver>;
 using HdSt_TestLightingShaderSharedPtr =
     std::shared_ptr<class HdSt_TestLightingShader>;
 
-class HdSt_TestLightingShader : public HdStLightingShader
+class ARCH_EXPORT_TYPE HdSt_TestLightingShader : public HdStLightingShader
 {
 public:
     HDST_API
@@ -622,7 +622,7 @@ private:
 
 // --------------------------------------------------------------------------
 
-class HdSt_TextureTestDriver
+class ARCH_EXPORT_TYPE HdSt_TextureTestDriver
 {
 public:
     HDST_API

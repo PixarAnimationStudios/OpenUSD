@@ -23,7 +23,7 @@ TF_DECLARE_REF_PTRS(HdRetainedSceneIndex);
 ///
 /// Concrete scene container which can be externally populated and dirtied.
 ///
-class HdRetainedSceneIndex : public HdSceneIndexBase
+class ARCH_EXPORT_TYPE HdRetainedSceneIndex : public HdSceneIndexBase
 {
 public:
 

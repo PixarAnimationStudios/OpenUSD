@@ -18,7 +18,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Hydra Schema for a material object.
 ///
-class HdMaterial : public HdSprim
+class ARCH_EXPORT_TYPE HdMaterial : public HdSprim
 {
 public:
     // change tracking for HdMaterial prim

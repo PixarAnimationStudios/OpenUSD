@@ -31,7 +31,7 @@ using HdStResourceRegistrySharedPtr =
 /// While it currently has some ties to GL, the goal is to use Hgi to allow
 /// it to be graphics API agnostic.
 ///
-class HdStRenderDelegate final : public HdRenderDelegate
+class ARCH_EXPORT_TYPE HdStRenderDelegate final : public HdRenderDelegate
 {
 public:
     HDST_API

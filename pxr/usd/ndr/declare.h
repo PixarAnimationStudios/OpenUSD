@@ -182,7 +182,7 @@ private:
 };
 
 /// Enumeration used to select nodes by version.
-enum NdrVersionFilter {
+enum ARCH_EXPORT_TYPE NdrVersionFilter {
     NdrVersionFilterDefaultOnly,
     NdrVersionFilterAllVersions,
     NdrNumVersionFilters

@@ -24,7 +24,7 @@ class HdSt_UnitTestWindow;
 ///
 /// A helper class for unit tests which need to perform GL drawing.
 ///
-class HdSt_UnitTestGLDrawing {
+class ARCH_EXPORT_TYPE HdSt_UnitTestGLDrawing {
 public:
     HDST_API
     HdSt_UnitTestGLDrawing();

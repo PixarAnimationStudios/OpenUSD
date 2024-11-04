@@ -18,7 +18,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HDUI_API_CLASS HduiRegisteredSceneIndexChooser : public QPushButton
+class ARCH_EXPORT_TYPE HduiRegisteredSceneIndexChooser : public QPushButton
 {
     Q_OBJECT;
 public:

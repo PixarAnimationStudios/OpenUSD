@@ -20,7 +20,7 @@ class Garch_GLPlatformDebugWindow;
 ///
 /// Platform specific minimum GL widget for unit tests.
 ///
-class GarchGLDebugWindow {
+class ARCH_EXPORT_TYPE GarchGLDebugWindow {
 public:
     GARCH_API
     GarchGLDebugWindow(const char *title, int width, int height);

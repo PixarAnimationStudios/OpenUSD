@@ -43,7 +43,7 @@ struct TfSkipCallerFrames
 /// boost.python to raise a Python exeption wrapping the thrown exception
 /// object.  Similarly utilties that call Python via Tf will re-throw the
 /// embedded C++ exception if the Python exception unwinds back into C++.
-class TfBaseException : public std::exception
+class ARCH_EXPORT_TYPE TfBaseException : public std::exception
 {
 public:
     TF_API

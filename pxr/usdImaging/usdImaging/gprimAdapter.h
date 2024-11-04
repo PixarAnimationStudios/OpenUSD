@@ -28,7 +28,7 @@ class UsdGeomGprim;
 /// Gprim data support, such as visibility, doubleSided, extent, displayColor,
 /// displayOpacity, purpose, and transform.
 ///
-class UsdImagingGprimAdapter : public UsdImagingInstanceablePrimAdapter
+class ARCH_EXPORT_TYPE UsdImagingGprimAdapter : public UsdImagingInstanceablePrimAdapter
 {
 public:
     using BaseAdapter = UsdImagingInstanceablePrimAdapter;

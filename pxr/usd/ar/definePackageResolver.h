@@ -38,7 +38,7 @@ TF_REGISTRY_FUNCTION(TfType) {                  \
     Ar_DefinePackageResolver<__VA_ARGS__>();    \
 }
 
-class Ar_PackageResolverFactoryBase 
+class ARCH_EXPORT_TYPE Ar_PackageResolverFactoryBase 
     : public TfType::FactoryBase 
 {
 public:

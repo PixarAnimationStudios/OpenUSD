@@ -17,7 +17,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HDUI_API_CLASS HduiDataSourceValueTreeView : public QTreeView
+class ARCH_EXPORT_TYPE HduiDataSourceValueTreeView : public QTreeView
 {
     Q_OBJECT;
 public:

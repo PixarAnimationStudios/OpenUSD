@@ -20,7 +20,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 template <int M>
-class _TestPlugBase : public TfRefBase, public TfWeakBase {
+class ARCH_EXPORT_TYPE _TestPlugBase : public TfRefBase, public TfWeakBase {
   public:
     typedef _TestPlugBase This;
     typedef TfRefPtr<This> RefPtr;
@@ -49,13 +49,13 @@ class _TestPlugBase : public TfRefBase, public TfWeakBase {
 };
 
 template <int N>
-class _TestPlugFactoryBase : public TfType::FactoryBase {
+class ARCH_EXPORT_TYPE _TestPlugFactoryBase : public TfType::FactoryBase {
 public:
     virtual TfRefPtr<_TestPlugBase<N> > New() const = 0;
 };
 
 template <typename T>
-class _TestPlugFactory : public _TestPlugFactoryBase<T::N> {
+class ARCH_EXPORT_TYPE _TestPlugFactory : public _TestPlugFactoryBase<T::N> {
 public:
     virtual TfRefPtr<_TestPlugBase<T::N> > New() const
     {

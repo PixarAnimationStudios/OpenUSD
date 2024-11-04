@@ -58,7 +58,7 @@
 /// A class is added to the API like this:
 ///
 /// \code
-///  class FOO_API FooClass ...
+///  class ARCH_EXPORT_TYPE FooClass ...
 /// \endcode
 ///
 /// This will add every member to the API, including implicitly created
@@ -74,7 +74,7 @@
 /// Instead they are added when explicitly instantiated like so:
 ///
 /// \code
-///  template class FOO_API FooTemplateClass<FooArgType>;
+///  template class ARCH_EXPORT_TYPE FooTemplateClass<FooArgType>;
 /// \endcode
 ///
 /// It's also sometimes necessary to indicate that an instantiation exists
@@ -128,7 +128,7 @@
 /// FOO_LOCAL:
 ///
 /// \code
-///  struct FOO_API FooSemiAPI {
+///  struct ARCH_EXPORT_TYPE FooSemiAPI {
 ///      void DoSomethingPublic();
 ///      FOO_LOCAL void _DoSomethingPrivate();
 ///  };
@@ -153,20 +153,16 @@
 #   endif
 #elif defined(ARCH_COMPILER_GCC) && ARCH_COMPILER_GCC_MAJOR >= 4 || defined(ARCH_COMPILER_CLANG)
 #   define ARCH_EXPORT __attribute__((visibility("default")))
-#   define ARCH_IMPORT
+#   define ARCH_IMPORT __attribute__((visibility("default")))
 #   define ARCH_HIDDEN __attribute__((visibility("hidden")))
-#   if defined(ARCH_COMPILER_CLANG)
-#       define ARCH_EXPORT_TYPE __attribute__((type_visibility("default")))
-#   else
-#       define ARCH_EXPORT_TYPE __attribute__((visibility("default")))
-#   endif
+#   define ARCH_EXPORT_TYPE __attribute__((visibility("default")))
 #else
 #   define ARCH_EXPORT
 #   define ARCH_IMPORT
 #   define ARCH_HIDDEN
 #   define ARCH_EXPORT_TYPE
 #endif
-#define ARCH_EXPORT_TEMPLATE(type, ...)
+#define ARCH_EXPORT_TEMPLATE(type, ...) extern template type ARCH_EXPORT __VA_ARGS__
 #define ARCH_IMPORT_TEMPLATE(type, ...) extern template type ARCH_IMPORT __VA_ARGS__
 
 #endif // PXR_BASE_ARCH_EXPORT_H

@@ -41,7 +41,7 @@ class SdfAssetPath;
 /// position, a texture file's min coordinates should be at (+X, +Y) and 
 /// max coordinates at (-X, -Y).
 ///
-class UsdLuxRectLight : public UsdLuxBoundableLightBase
+class ARCH_EXPORT_TYPE UsdLuxRectLight : public UsdLuxBoundableLightBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

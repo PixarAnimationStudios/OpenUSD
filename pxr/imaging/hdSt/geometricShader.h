@@ -40,7 +40,7 @@ class HioGlslfx;
 /// stages and uses geometry opinions (such as cullstyle, double sided, etc)
 /// to generate shader code variants via mixins.
 ///
-class HdSt_GeometricShader : public HdStShaderCode {
+class ARCH_EXPORT_TYPE HdSt_GeometricShader : public HdStShaderCode {
 public:
     /// Used in HdSt_CodeGen to generate the appropriate shader source 
     enum class PrimitiveType {

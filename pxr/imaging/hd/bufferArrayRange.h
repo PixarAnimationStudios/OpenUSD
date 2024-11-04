@@ -31,7 +31,7 @@ using HdBufferSourceSharedPtr = std::shared_ptr<class HdBufferSource>;
 /// inherited of this interface so that client (drawItem) can be agnostic about
 /// the implementation detail of aggregation.
 ///
-class HdBufferArrayRange 
+class ARCH_EXPORT_TYPE HdBufferArrayRange 
 {
 public:
 

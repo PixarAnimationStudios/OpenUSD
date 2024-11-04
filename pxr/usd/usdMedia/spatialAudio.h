@@ -88,7 +88,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdMediaTokens->rightHanded
 /// as the value.
 ///
-class UsdMediaSpatialAudio : public UsdGeomXformable
+class ARCH_EXPORT_TYPE UsdMediaSpatialAudio : public UsdGeomXformable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

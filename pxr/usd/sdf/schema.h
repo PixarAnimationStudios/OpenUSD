@@ -563,7 +563,7 @@ private:
 /// Class that provides information about the various scene description 
 /// fields.
 ///
-class SdfSchema : public SdfSchemaBase {
+class ARCH_EXPORT_TYPE SdfSchema : public SdfSchemaBase {
 public:
     SDF_API
     static const SdfSchema& GetInstance()

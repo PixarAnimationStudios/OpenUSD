@@ -32,7 +32,7 @@ using HdSelectionSharedPtr = std::shared_ptr<class HdSelection>;
 /// It current supports active and rollover selection modes, and may be
 /// inherited for customization.
 ///
-class HdSelection
+class ARCH_EXPORT_TYPE HdSelection
 {
 public:
     /// Selection modes allow differentiation in selection highlight behavior.

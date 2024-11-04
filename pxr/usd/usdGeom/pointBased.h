@@ -38,7 +38,7 @@ class SdfAssetPath;
 /// Base class for all UsdGeomGprims that possess points,
 /// providing common attributes such as normals and velocities.
 ///
-class UsdGeomPointBased : public UsdGeomGprim
+class ARCH_EXPORT_TYPE UsdGeomPointBased : public UsdGeomGprim
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

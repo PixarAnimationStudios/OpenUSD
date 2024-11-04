@@ -62,7 +62,7 @@ class SdfAssetPath;
 /// must first cache the results of FindIncrementallyInheritablePrimvars() for
 /// each non-leaf prim on the stage. 
 ///
-class UsdGeomPrimvarsAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdGeomPrimvarsAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

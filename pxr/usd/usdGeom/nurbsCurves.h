@@ -57,7 +57,7 @@ class SdfAssetPath;
 /// authored one value per curve.  \em knots should be the concatentation of
 /// all batched curves.
 ///
-class UsdGeomNurbsCurves : public UsdGeomCurves
+class ARCH_EXPORT_TYPE UsdGeomNurbsCurves : public UsdGeomCurves
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

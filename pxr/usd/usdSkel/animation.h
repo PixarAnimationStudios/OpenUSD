@@ -42,7 +42,7 @@ class SdfAssetPath;
 /// documentation for more information.
 /// 
 ///
-class UsdSkelAnimation : public UsdTyped
+class ARCH_EXPORT_TYPE UsdSkelAnimation : public UsdTyped
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

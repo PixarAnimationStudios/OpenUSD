@@ -37,7 +37,7 @@ TF_DECLARE_REF_PTRS(GlfBindingMap);
 ///
 /// A shader that supports simple lighting functionality.
 ///
-class HdStSimpleLightingShader : public HdStLightingShader 
+class ARCH_EXPORT_TYPE HdStSimpleLightingShader : public HdStLightingShader 
 {
 public:
     HDST_API

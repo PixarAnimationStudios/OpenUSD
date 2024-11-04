@@ -150,7 +150,7 @@ VT_SCALAR_CLASS_VALUE_TYPES VT_BUILTIN_VALUE_TYPES
 //
 // typedef VtArray<int> VtIntArray;
 // typedef VtArray<double> VtDoubleArray;
-template<typename T> class VtArray;
+template<typename T> class ARCH_EXPORT_TYPE VtArray;
 #define VT_ARRAY_TYPEDEF(unused, elem) \
 typedef VtArray< VT_TYPE(elem) > \
 TF_PP_CAT(Vt, TF_PP_CAT(VT_TYPE_NAME(elem), Array)) ;

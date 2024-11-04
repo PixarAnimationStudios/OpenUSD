@@ -36,7 +36,7 @@ class HdRenderParam;
 /// Dependent on the state of any other prim.
 ///
 /// The most typical use of a Bprim would be a Texture.
-class HdBprim
+class ARCH_EXPORT_TYPE HdBprim
 {
 public:
     HD_API

@@ -52,7 +52,7 @@ class SdfAssetPath;
 /// \todo GetModelInstanceName()
 /// 
 ///
-class UsdModelAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdModelAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

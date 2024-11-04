@@ -54,7 +54,7 @@ class SdfAssetPath;
 /// - Catmull-Rom (UsdRiTokens->catmullRom)
 /// 
 ///
-class UsdRiSplineAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdRiSplineAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

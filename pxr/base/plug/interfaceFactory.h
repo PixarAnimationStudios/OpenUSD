@@ -15,7 +15,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 // For use by \c PLUG_REGISTER_INTERFACE_SINGLETON_TYPE.
-class Plug_InterfaceFactory {
+class ARCH_EXPORT_TYPE Plug_InterfaceFactory {
 public:
     struct Base : public TfType::FactoryBase {
     public:

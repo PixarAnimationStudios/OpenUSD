@@ -44,7 +44,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdRenderTokens->rightHanded
 /// as the value.
 ///
-class UsdRenderSettingsBase : public UsdTyped
+class ARCH_EXPORT_TYPE UsdRenderSettingsBase : public UsdTyped
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

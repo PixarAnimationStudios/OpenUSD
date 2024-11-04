@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Remove redundant rules that do not change the effective load state with
 /// UsdStageLoadRules::Minimize().
-class UsdStageLoadRules
+class ARCH_EXPORT_TYPE UsdStageLoadRules
 {
 public:
     /// \enum Rule

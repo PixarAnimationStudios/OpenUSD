@@ -32,7 +32,7 @@ class HdStTextureIdentifier;
 ///
 /// A central registry for texture GPU resources.
 ///
-class HdSt_TextureObjectRegistry final
+class ARCH_EXPORT_TYPE HdSt_TextureObjectRegistry final
 {
 public:
     HDST_API

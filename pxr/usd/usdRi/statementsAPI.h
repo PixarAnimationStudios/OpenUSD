@@ -49,7 +49,7 @@ class SdfAssetPath;
 /// namespace.
 /// 
 ///
-class UsdRiStatementsAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdRiStatementsAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

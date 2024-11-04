@@ -41,7 +41,7 @@ class SdfAssetPath;
 /// UsdTyped implements a typeName-based query for its override of
 /// UsdSchemaBase::_IsCompatible().  It provides no other behavior.
 ///
-class UsdTyped : public UsdSchemaBase
+class ARCH_EXPORT_TYPE UsdTyped : public UsdSchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

@@ -136,9 +136,7 @@ public:
     };
 
     /// Return the singleton instance.
-    TF_API static This &GetInstance() {
-        return TfSingleton<This>::GetInstance();
-    }
+    TF_API static TfDiagnosticMgr &GetInstance();
 
     /// Add the delegate \p delegate to the list of current delegates.
     ///

@@ -49,7 +49,7 @@ using UsdImagingPrimAdapterSharedPtr =
 ///
 /// Base class for all PrimAdapters.
 ///
-class UsdImagingPrimAdapter 
+class ARCH_EXPORT_TYPE UsdImagingPrimAdapter 
   : public std::enable_shared_from_this<UsdImagingPrimAdapter>
 {
 public:

@@ -46,7 +46,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdHydraTokens->rightHanded
 /// as the value.
 ///
-class UsdHydraGenerativeProceduralAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdHydraGenerativeProceduralAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

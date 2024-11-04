@@ -55,7 +55,7 @@ typedef std::vector<SdfReference> SdfReferenceVector;
 /// Custom data is for use by plugins or other non-tools supplied extensions
 /// that need to be able to store data associated with references.
 ///
-class SdfReference {
+class ARCH_EXPORT_TYPE SdfReference {
 public:
     /// Creates a reference with all its meta data.  The default reference is an
     /// internal reference to the default prim.  See SdfAssetPath for what

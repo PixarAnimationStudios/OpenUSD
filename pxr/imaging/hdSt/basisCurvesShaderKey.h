@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// example ORIENTED only makes sense with RIBBON. In the future, we hope to 
 /// eliminate NormalStyle, perhaps by merging the (RIBBON, ROUND) mode into a 
 /// more automatic HALFTUBE and by relying more on materials for HAIR.
-struct HdSt_BasisCurvesShaderKey : public HdSt_ShaderKey
+struct ARCH_EXPORT_TYPE HdSt_BasisCurvesShaderKey : public HdSt_ShaderKey
 {
     enum DrawStyle{
         POINTS,       // Draws only the control vertices.

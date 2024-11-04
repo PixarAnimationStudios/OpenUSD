@@ -42,7 +42,7 @@ class SdfAssetPath;
 /// not collide against. Note that FilteredPairsAPI filtering has precedence 
 /// over CollisionGroup filtering.
 ///
-class UsdPhysicsFilteredPairsAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdPhysicsFilteredPairsAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

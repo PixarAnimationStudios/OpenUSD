@@ -43,7 +43,7 @@ class SdfAssetPath;
 /// See the extended \ref UsdSkel_SkelRoot "Skel Root Schema" documentation for
 /// more information.
 ///
-class UsdSkelRoot : public UsdGeomBoundable
+class ARCH_EXPORT_TYPE UsdSkelRoot : public UsdGeomBoundable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

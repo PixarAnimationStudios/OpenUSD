@@ -78,7 +78,7 @@ inline bool operator!=(
 /// The fill the buffer with data you supply `initialData` in the descriptor.
 /// To update the data inside the buffer later on, use blitCmds.
 ///
-class HgiBuffer
+class ARCH_EXPORT_TYPE HgiBuffer
 {
 public:
     HGI_API

@@ -28,7 +28,7 @@ TF_DECLARE_WEAK_PTRS(HdSceneIndexObserver);
 /// Observer of scene data. From the time an observer is registered with
 /// a scene index, the scene index will send it diffs as the scene changes.
 ///
-class HdSceneIndexObserver : public TfWeakBase
+class ARCH_EXPORT_TYPE HdSceneIndexObserver : public TfWeakBase
 {
 public:
 

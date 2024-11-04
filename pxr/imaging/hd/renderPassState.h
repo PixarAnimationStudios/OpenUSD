@@ -42,7 +42,7 @@ class HdCamera;
 ///
 /// Parameters are expressed as GL states, uniforms or shaders.
 ///
-class HdRenderPassState
+class ARCH_EXPORT_TYPE HdRenderPassState
 {
 public:
     HD_API

@@ -35,7 +35,7 @@ using HgiShaderSectionAttributeVector =
 /// Can be subclassed to add more behaviour for complex cases
 /// and to hook into the visitor tree.
 ///
-class HgiShaderSection
+class ARCH_EXPORT_TYPE HgiShaderSection
 {
 public:
     HGI_API

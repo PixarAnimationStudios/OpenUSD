@@ -37,7 +37,7 @@ class SdfAssetPath;
 ///
 /// An example of a untyped IsA schema prim
 ///
-class UsdSchemaExamplesComplex : public UsdSchemaExamplesSimple
+class ARCH_EXPORT_TYPE UsdSchemaExamplesComplex : public UsdSchemaExamplesSimple
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

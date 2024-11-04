@@ -27,7 +27,7 @@ struct HgiShaderFunctionDesc;
 /// for different APIs. It's main role is to make GLSLFX a write once language,
 /// no matter the API
 ///
-class HgiShaderGenerator
+class ARCH_EXPORT_TYPE HgiShaderGenerator
 {
 public:
     HGI_API

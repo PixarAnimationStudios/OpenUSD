@@ -47,7 +47,7 @@ class SdfAssetPath;
 /// 
 /// 
 ///
-class UsdGeomMotionAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdGeomMotionAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

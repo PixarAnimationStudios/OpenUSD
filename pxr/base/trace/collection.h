@@ -63,7 +63,7 @@ public:
     ///
     /// This interface provides a way to access data a TraceCollection.
     ///
-    class Visitor {
+    class ARCH_EXPORT_TYPE Visitor {
     public:
         /// Destructor
         TRACE_API virtual ~Visitor();

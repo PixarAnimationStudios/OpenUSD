@@ -85,7 +85,7 @@ class SdfAssetPath;
 /// For further information, see \ref Usd_Page_ValueClips
 /// 
 ///
-class UsdClipsAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdClipsAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

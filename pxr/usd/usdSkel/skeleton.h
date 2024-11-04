@@ -43,7 +43,7 @@ class SdfAssetPath;
 /// more information.
 /// 
 ///
-class UsdSkelSkeleton : public UsdGeomBoundable
+class ARCH_EXPORT_TYPE UsdSkelSkeleton : public UsdGeomBoundable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

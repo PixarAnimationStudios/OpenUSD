@@ -29,7 +29,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(SdfData);
 /// An SdfData is an implementation of SdfAbstractData that simply
 /// stores specs and fields in a map keyed by path.
 ///
-class SdfData : public SdfAbstractData
+class ARCH_EXPORT_TYPE SdfData : public SdfAbstractData
 {
 public:
     SdfData() {}

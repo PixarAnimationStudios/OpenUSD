@@ -66,7 +66,7 @@ struct Sdf_ListOpTraits
 /// to be encountered, while appending items will preserve the last.
 
 template <typename T>
-class SdfListOp {
+class ARCH_EXPORT_TYPE SdfListOp {
 public:
     typedef T ItemType;
     typedef std::vector<ItemType> ItemVector;

@@ -25,7 +25,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Enum to indicate the type represented by a Pcp error.
 ///
-enum PcpErrorType {
+enum ARCH_EXPORT_TYPE PcpErrorType {
     PcpErrorType_ArcCycle,
     PcpErrorType_ArcPermissionDenied,
     PcpErrorType_ArcToProhibitedChild,
@@ -68,7 +68,7 @@ typedef std::vector<PcpErrorBasePtr> PcpErrorVector;
 ///
 /// Base class for all error types.
 ///
-class PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorBase {
 public:
     /// Destructor.
     PCP_API virtual ~PcpErrorBase();
@@ -99,7 +99,7 @@ typedef std::shared_ptr<PcpErrorArcCycle> PcpErrorArcCyclePtr;
 ///
 /// Arcs between PcpNodes that form a cycle.
 ///
-class PcpErrorArcCycle : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorArcCycle : public PcpErrorBase {
 public:
     /// Returns a new error object.
     static PcpErrorArcCyclePtr New();
@@ -127,7 +127,7 @@ typedef std::shared_ptr<PcpErrorArcPermissionDenied>
 /// Arcs that were not made between PcpNodes because of permission
 /// restrictions.
 ///
-class PcpErrorArcPermissionDenied : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorArcPermissionDenied : public PcpErrorBase {
 public:
     /// Returns a new error object.
     static PcpErrorArcPermissionDeniedPtr New();
@@ -160,7 +160,7 @@ typedef std::shared_ptr<PcpErrorArcToProhibitedChild>
 /// Arcs that were not made between PcpNodes because the target is a prohibited
 /// child prim of its parent due to relocations.
 ///
-class PcpErrorArcToProhibitedChild : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorArcToProhibitedChild : public PcpErrorBase {
 public:
     /// Returns a new error object.
     static PcpErrorArcToProhibitedChildPtr New();
@@ -194,7 +194,7 @@ typedef std::shared_ptr<PcpErrorCapacityExceeded> PcpErrorCapacityExceededPtr;
 ///
 /// Exceeded the capacity for composition arcs at a single site.
 ///
-class PcpErrorCapacityExceeded : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorCapacityExceeded : public PcpErrorBase {
 public:
     /// Returns a new error object.
     static PcpErrorCapacityExceededPtr New(PcpErrorType errorType);
@@ -210,7 +210,7 @@ private:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class PcpErrorInconsistentPropertyBase : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorInconsistentPropertyBase : public PcpErrorBase {
 public:
     /// Destructor.
     PCP_API ~PcpErrorInconsistentPropertyBase() override;
@@ -241,7 +241,7 @@ typedef std::shared_ptr<PcpErrorInconsistentPropertyType>
 ///
 /// Properties that have specs with conflicting definitions.
 ///
-class PcpErrorInconsistentPropertyType : 
+class ARCH_EXPORT_TYPE PcpErrorInconsistentPropertyType : 
     public PcpErrorInconsistentPropertyBase {
 public:
     /// Returns a new error object.
@@ -272,7 +272,7 @@ typedef std::shared_ptr<PcpErrorInconsistentAttributeType>
 ///
 /// Attributes that have specs with conflicting definitions.
 ///
-class PcpErrorInconsistentAttributeType : 
+class ARCH_EXPORT_TYPE PcpErrorInconsistentAttributeType : 
     public PcpErrorInconsistentPropertyBase {
 public:
     /// Returns a new error object.
@@ -303,7 +303,7 @@ typedef std::shared_ptr<PcpErrorInconsistentAttributeVariability>
 ///
 /// Attributes that have specs with conflicting variability.
 ///
-class PcpErrorInconsistentAttributeVariability : 
+class ARCH_EXPORT_TYPE PcpErrorInconsistentAttributeVariability : 
     public PcpErrorInconsistentPropertyBase {
 public:
     /// Returns a new error object.
@@ -334,7 +334,7 @@ typedef std::shared_ptr<PcpErrorInvalidPrimPath>
 ///
 /// Invalid prim paths used by references or payloads.
 ///
-class PcpErrorInvalidPrimPath : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorInvalidPrimPath : public PcpErrorBase {
 public:        
     /// Returns a new error object.
     static PcpErrorInvalidPrimPathPtr New();
@@ -367,7 +367,7 @@ class PcpErrorInvalidAssetPathBase;
 typedef std::shared_ptr<PcpErrorInvalidAssetPathBase>
     PcpErrorInvalidAssetPathBasePtr;
 
-class PcpErrorInvalidAssetPathBase : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorInvalidAssetPathBase : public PcpErrorBase {
 public:
     /// Destructor.
     PCP_API ~PcpErrorInvalidAssetPathBase() override;
@@ -409,7 +409,7 @@ typedef std::shared_ptr<PcpErrorInvalidAssetPath>
 ///
 /// Invalid asset paths used by references or payloads.
 ///
-class PcpErrorInvalidAssetPath : public PcpErrorInvalidAssetPathBase {
+class ARCH_EXPORT_TYPE PcpErrorInvalidAssetPath : public PcpErrorInvalidAssetPathBase {
 public:
     /// Returns a new error object.
     static PcpErrorInvalidAssetPathPtr New();
@@ -434,7 +434,7 @@ typedef std::shared_ptr<PcpErrorMutedAssetPath>
 ///
 /// Muted asset paths used by references or payloads.
 ///
-class PcpErrorMutedAssetPath : public PcpErrorInvalidAssetPathBase {
+class ARCH_EXPORT_TYPE PcpErrorMutedAssetPath : public PcpErrorInvalidAssetPathBase {
 public:
     /// Returns a new error object.
     static PcpErrorMutedAssetPathPtr New();
@@ -459,7 +459,7 @@ typedef std::shared_ptr<PcpErrorTargetPathBase>
 ///
 /// Base class for composition errors related to target or connection paths.
 ///
-class PcpErrorTargetPathBase : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorTargetPathBase : public PcpErrorBase {
 public:
     /// Destructor.
     PCP_API ~PcpErrorTargetPathBase() override;
@@ -495,7 +495,7 @@ typedef std::shared_ptr<PcpErrorInvalidInstanceTargetPath>
 /// Invalid target or connection path authored in an inherited
 /// class that points to an instance of that class.
 ///
-class PcpErrorInvalidInstanceTargetPath : public PcpErrorTargetPathBase {
+class ARCH_EXPORT_TYPE PcpErrorInvalidInstanceTargetPath : public PcpErrorTargetPathBase {
 public:
     /// Returns a new error object.
     static PcpErrorInvalidInstanceTargetPathPtr New();
@@ -521,7 +521,7 @@ typedef std::shared_ptr<PcpErrorInvalidExternalTargetPath>
 /// Invalid target or connection path in some scope that points to
 /// an object outside of that scope.
 ///
-class PcpErrorInvalidExternalTargetPath : public PcpErrorTargetPathBase {
+class ARCH_EXPORT_TYPE PcpErrorInvalidExternalTargetPath : public PcpErrorTargetPathBase {
 public:
     /// Returns a new error object.
     static PcpErrorInvalidExternalTargetPathPtr New();
@@ -549,7 +549,7 @@ typedef std::shared_ptr<PcpErrorInvalidTargetPath>
 /// 
 /// Invalid target or connection path.
 ///
-class PcpErrorInvalidTargetPath : public PcpErrorTargetPathBase {
+class ARCH_EXPORT_TYPE PcpErrorInvalidTargetPath : public PcpErrorTargetPathBase {
 public:
     /// Returns a new error object.
     static PcpErrorInvalidTargetPathPtr New();
@@ -574,7 +574,7 @@ typedef std::shared_ptr<PcpErrorInvalidSublayerOffset>
 ///
 /// Sublayers that use invalid layer offsets.
 ///
-class PcpErrorInvalidSublayerOffset : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorInvalidSublayerOffset : public PcpErrorBase {
 public:
     /// Returns a new error object.
     static PcpErrorInvalidSublayerOffsetPtr New();
@@ -603,7 +603,7 @@ typedef std::shared_ptr<PcpErrorInvalidReferenceOffset>
 ///
 /// References or payloads that use invalid layer offsets.
 ///
-class PcpErrorInvalidReferenceOffset : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorInvalidReferenceOffset : public PcpErrorBase {
 public:
     /// Returns a new error object.
     static PcpErrorInvalidReferenceOffsetPtr New();
@@ -645,7 +645,7 @@ typedef std::shared_ptr<PcpErrorInvalidSublayerOwnership>
 ///
 /// Sibling layers that have the same owner.
 ///
-class PcpErrorInvalidSublayerOwnership : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorInvalidSublayerOwnership : public PcpErrorBase {
 public:
     /// Returns a new error object.
     static PcpErrorInvalidSublayerOwnershipPtr New();
@@ -674,7 +674,7 @@ typedef std::shared_ptr<PcpErrorInvalidSublayerPath>
 ///
 /// Asset paths that could not be both resolved and loaded.
 ///
-class PcpErrorInvalidSublayerPath : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorInvalidSublayerPath : public PcpErrorBase {
 public:
     /// Returns a new error object.
     static PcpErrorInvalidSublayerPathPtr New();
@@ -703,7 +703,7 @@ typedef std::shared_ptr<PcpErrorRelocationBase>
 ///
 /// Base class for composition errors related to relocates.
 ///
-class PcpErrorRelocationBase : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorRelocationBase : public PcpErrorBase {
 public:
     /// Destructor.
     PCP_API ~PcpErrorRelocationBase() override;
@@ -723,7 +723,7 @@ typedef std::shared_ptr<PcpErrorInvalidAuthoredRelocation>
 ///
 /// Invalid authored relocation found in a relocates field.
 ///
-class PcpErrorInvalidAuthoredRelocation : public PcpErrorRelocationBase {
+class ARCH_EXPORT_TYPE PcpErrorInvalidAuthoredRelocation : public PcpErrorRelocationBase {
 public:
     /// Returns a new error object.
     static PcpErrorInvalidAuthoredRelocationPtr New();
@@ -759,7 +759,7 @@ typedef std::shared_ptr<PcpErrorInvalidConflictingRelocation>
 ///
 /// Relocation conflicts with another relocation in the layer stack.
 ///
-class PcpErrorInvalidConflictingRelocation : public PcpErrorRelocationBase {
+class ARCH_EXPORT_TYPE PcpErrorInvalidConflictingRelocation : public PcpErrorRelocationBase {
 public:
     /// Returns a new error object.
     static PcpErrorInvalidConflictingRelocationPtr New();
@@ -813,7 +813,7 @@ typedef std::shared_ptr<PcpErrorInvalidSameTargetRelocations>
 ///
 /// Multiple relocations in the layer stack have the same target.
 ///
-class PcpErrorInvalidSameTargetRelocations : public PcpErrorRelocationBase {
+class ARCH_EXPORT_TYPE PcpErrorInvalidSameTargetRelocations : public PcpErrorRelocationBase {
 public:
     /// Returns a new error object.
     static PcpErrorInvalidSameTargetRelocationsPtr New();
@@ -853,7 +853,7 @@ typedef std::shared_ptr<PcpErrorOpinionAtRelocationSource>
 ///
 /// Opinions were found at a relocation source path.
 ///
-class PcpErrorOpinionAtRelocationSource : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorOpinionAtRelocationSource : public PcpErrorBase {
 public:
     /// Returns a new error object.
     static PcpErrorOpinionAtRelocationSourcePtr New();
@@ -881,7 +881,7 @@ typedef std::shared_ptr<PcpErrorPrimPermissionDenied>
 ///
 /// Layers with illegal opinions about private prims.
 ///
-class PcpErrorPrimPermissionDenied : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorPrimPermissionDenied : public PcpErrorBase {
 public:
     /// Returns a new error object.
     static PcpErrorPrimPermissionDeniedPtr New();
@@ -911,7 +911,7 @@ typedef std::shared_ptr<PcpErrorPropertyPermissionDenied>
 ///
 /// Layers with illegal opinions about private properties.
 ///
-class PcpErrorPropertyPermissionDenied : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorPropertyPermissionDenied : public PcpErrorBase {
 public:
     /// Returns a new error object.
     static PcpErrorPropertyPermissionDeniedPtr New();
@@ -939,7 +939,7 @@ typedef std::shared_ptr<PcpErrorSublayerCycle> PcpErrorSublayerCyclePtr;
 ///
 /// Layers that recursively sublayer themselves.
 ///
-class PcpErrorSublayerCycle : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorSublayerCycle : public PcpErrorBase {
 public:
     /// Returns a new error object.
     static PcpErrorSublayerCyclePtr New();
@@ -967,7 +967,7 @@ typedef std::shared_ptr<PcpErrorTargetPermissionDenied>
 ///
 /// Paths with illegal opinions about private targets.
 ///
-class PcpErrorTargetPermissionDenied : public PcpErrorTargetPathBase {
+class ARCH_EXPORT_TYPE PcpErrorTargetPermissionDenied : public PcpErrorTargetPathBase {
 public:
     /// Returns a new error object.
     static PcpErrorTargetPermissionDeniedPtr New();
@@ -992,7 +992,7 @@ typedef std::shared_ptr<PcpErrorUnresolvedPrimPath>
 ///
 /// Asset paths that could not be both resolved and loaded.
 ///
-class PcpErrorUnresolvedPrimPath : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorUnresolvedPrimPath : public PcpErrorBase {
 public:
     /// Returns a new error object.
     static PcpErrorUnresolvedPrimPathPtr New();
@@ -1032,7 +1032,7 @@ typedef std::shared_ptr<PcpErrorVariableExpressionError>
 ///
 /// Error when evaluating a variable expression.
 ///
-class PcpErrorVariableExpressionError : public PcpErrorBase {
+class ARCH_EXPORT_TYPE PcpErrorVariableExpressionError : public PcpErrorBase {
 public:
     static PcpErrorVariableExpressionErrorPtr New();
 

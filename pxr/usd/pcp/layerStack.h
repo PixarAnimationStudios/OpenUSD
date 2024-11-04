@@ -47,7 +47,7 @@ class PcpLifeboat;
 ///
 /// PcpLayerStacks are constructed and managed by a Pcp_LayerStackRegistry.
 ///
-class PcpLayerStack : public TfRefBase, public TfWeakBase {
+class ARCH_EXPORT_TYPE PcpLayerStack : public TfRefBase, public TfWeakBase {
     PcpLayerStack(const PcpLayerStack&) = delete;
     PcpLayerStack& operator=(const PcpLayerStack&) = delete;
 

@@ -75,7 +75,7 @@ class VtValue;
 /// }
 /// \endcode
 ///
-class ArPackageResolver
+class ARCH_EXPORT_TYPE ArPackageResolver
 {
 public:
     ArPackageResolver(const ArPackageResolver&) = delete;

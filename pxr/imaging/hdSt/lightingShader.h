@@ -20,7 +20,7 @@ using HdStLightingShaderSharedPtr = std::shared_ptr<class HdStLightingShader>;
 ///
 /// A lighting shader base class.
 ///
-class HdStLightingShader : public HdStShaderCode {
+class ARCH_EXPORT_TYPE HdStLightingShader : public HdStShaderCode {
 public:
     HDST_API
     HdStLightingShader();

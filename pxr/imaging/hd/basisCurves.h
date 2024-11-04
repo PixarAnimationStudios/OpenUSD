@@ -48,7 +48,7 @@ struct HdBasisCurvesReprDesc
 
 /// Hydra Schema for a collection of curves using a particular basis.
 ///
-class HdBasisCurves : public HdRprim
+class ARCH_EXPORT_TYPE HdBasisCurves : public HdRprim
 {
 public:
     HD_API

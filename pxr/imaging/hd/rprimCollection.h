@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// HdRenderPass
 /// HdDirtyList
 ///
-class HdRprimCollection {
+class ARCH_EXPORT_TYPE HdRprimCollection {
 public:
     HD_API
     HdRprimCollection();

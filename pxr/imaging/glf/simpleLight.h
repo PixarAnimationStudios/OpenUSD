@@ -26,7 +26,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class GlfSimpleLight final {
+class ARCH_EXPORT_TYPE GlfSimpleLight final {
 public:
     GLF_API
     GlfSimpleLight(GfVec4f const & position = GfVec4f(0.0, 0.0, 0.0, 1.0));

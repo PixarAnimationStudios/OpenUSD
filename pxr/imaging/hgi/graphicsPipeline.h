@@ -439,7 +439,7 @@ bool operator!=(
 /// To the client (HdSt) pipeline resources are referred to via
 /// opaque, stateless handles (HgiPipelineHandle).
 ///
-class HgiGraphicsPipeline
+class ARCH_EXPORT_TYPE HgiGraphicsPipeline
 {
 public:
     HGI_API

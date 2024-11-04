@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// ExtComputations use a pull model, so processing is only triggered if
 /// a downstream computation or prim pulls on one the computations outputs.
 ///
-class HdExtComputation : public HdSprim
+class ARCH_EXPORT_TYPE HdExtComputation : public HdSprim
 {
 public:
     /// Construct a new ExtComputation identified by id.

@@ -23,7 +23,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// \see ArResolver::OpenAssetForWrite for how to retrieve instances of
 /// this object.
-class ArWritableAsset
+class ARCH_EXPORT_TYPE ArWritableAsset
 {
 public:
     AR_API

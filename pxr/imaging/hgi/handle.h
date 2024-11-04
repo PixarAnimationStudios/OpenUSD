@@ -29,7 +29,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// can wrap the returned handle in a shared_ptr.
 ///
 template<class T>
-class HgiHandle
+class ARCH_EXPORT_TYPE HgiHandle
 {
 public:
     HgiHandle() : _ptr(nullptr), _id(0) {}

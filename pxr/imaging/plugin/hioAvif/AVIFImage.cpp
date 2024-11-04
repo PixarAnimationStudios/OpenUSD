@@ -49,7 +49,7 @@ ARCH_PRAGMA_UNUSED_FUNCTION
 PXR_NAMESPACE_OPEN_SCOPE
 
 // It's necessary to export the class so it's typeinfo is visible for registration
-class HIOAVIF_API Hio_AVIFImage final : public HioImage
+class ARCH_EXPORT_TYPE Hio_AVIFImage final : public HioImage
 {
     std::shared_ptr<ArAsset> _asset;
     std::string              _filename;

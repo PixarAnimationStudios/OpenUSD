@@ -27,7 +27,7 @@ class UsdNotice {
 public:
 
     /// Base class for UsdStage notices.
-    class StageNotice : public TfNotice {
+    class ARCH_EXPORT_TYPE StageNotice : public TfNotice {
     public:
         USD_API
         StageNotice(const UsdStageWeakPtr &stage);
@@ -53,7 +53,7 @@ public:
     /// values for properties or metadata.  It does not \em necessarily imply
     /// invalidation of UsdPrim s.
     ///
-    class StageContentsChanged : public StageNotice {
+    class ARCH_EXPORT_TYPE StageContentsChanged : public StageNotice {
     public:
         explicit StageContentsChanged(const UsdStageWeakPtr& stage)
             : StageNotice(stage) {}
@@ -108,7 +108,7 @@ public:
     /// wish to reason about all changes as a whole should use the methods that
     /// return a PathRange, like GetResyncedPaths().
     /// 
-    class ObjectsChanged : public StageNotice {
+    class ARCH_EXPORT_TYPE ObjectsChanged : public StageNotice {
         using _PathsToChangesMap = 
             std::map<SdfPath, std::vector<const SdfChangeList::Entry*>>;
 
@@ -373,7 +373,7 @@ public:
     /// Notice sent when a stage's EditTarget has changed.  Sent in the
     /// thread that changed the target.
     ///
-    class StageEditTargetChanged : public StageNotice {
+    class ARCH_EXPORT_TYPE StageEditTargetChanged : public StageNotice {
     public:
         explicit StageEditTargetChanged(const UsdStageWeakPtr &stage)
             : StageNotice(stage) {}
@@ -394,7 +394,7 @@ public:
     /// muting/unmuting layer does not belong to the current stage, or is a 
     /// layer that does belong to the current stage but is not yet loaded 
     /// because it is behind an unloaded payload or unselected variant.
-    class LayerMutingChanged : public StageNotice {
+    class ARCH_EXPORT_TYPE LayerMutingChanged : public StageNotice {
     public:
         explicit LayerMutingChanged(const UsdStageWeakPtr &stage, 
                 const std::vector<std::string>& mutedLayers, 

@@ -131,7 +131,7 @@ class SdfAssetPath;
 /// <i>authored</i> properties.
 /// 
 ///
-class UsdShadeMaterialBindingAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdShadeMaterialBindingAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

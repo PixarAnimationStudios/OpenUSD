@@ -49,6 +49,10 @@ _MtlxTest(R&& reader, bool nodeGraphs)
         TF_RUNTIME_ERROR("MaterialX read failed: %s", x.what());
         return TfNullPtr;
     }
+    catch (std::exception& x) {
+        TF_RUNTIME_ERROR("MaterialX read failed: %s", x.what());
+        return TfNullPtr;
+    }
 }
 
 } // anonymous namespace

@@ -55,7 +55,7 @@ class SdfAssetPath;
 /// abstract type.
 /// 
 ///
-class UsdGeomCurves : public UsdGeomPointBased
+class ARCH_EXPORT_TYPE UsdGeomCurves : public UsdGeomPointBased
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

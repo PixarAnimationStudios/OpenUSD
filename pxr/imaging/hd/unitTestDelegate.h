@@ -32,7 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// A simple delegate class for unit test driver.
 ///
-class HdUnitTestDelegate : public HdSceneDelegate
+class ARCH_EXPORT_TYPE HdUnitTestDelegate : public HdSceneDelegate
 {
 public:
     HD_API

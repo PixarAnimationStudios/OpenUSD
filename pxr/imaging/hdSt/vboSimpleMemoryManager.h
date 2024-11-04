@@ -27,7 +27,7 @@ class HdStResourceRegistry;
 ///
 /// This class doesn't perform any aggregation.
 ///
-class HdStVBOSimpleMemoryManager : public HdStAggregationStrategy
+class ARCH_EXPORT_TYPE HdStVBOSimpleMemoryManager : public HdStAggregationStrategy
 {
 public:
     HdStVBOSimpleMemoryManager(HdStResourceRegistry* resourceRegistry)

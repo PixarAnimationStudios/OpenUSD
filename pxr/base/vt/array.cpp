@@ -31,7 +31,7 @@ Vt_ArrayBase::_DetachCopyHook(char const *funcName) const
 
 // Instantiate basic array templates.
 #define VT_ARRAY_EXPLICIT_INST(unused, elem) \
-    template class VT_API VtArray< VT_TYPE(elem) >;
+    template class ARCH_EXPORT_TYPE VtArray< VT_TYPE(elem) >;
 TF_PP_SEQ_FOR_EACH(VT_ARRAY_EXPLICIT_INST, ~, VT_SCALAR_VALUE_TYPES)
 
 

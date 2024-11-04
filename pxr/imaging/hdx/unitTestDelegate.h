@@ -8,6 +8,7 @@
 #define PXR_IMAGING_HDX_UNIT_TEST_DELEGATE_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/glf/simpleLight.h"
@@ -32,7 +33,7 @@ _BuildArray(T values[], int numValues)
     return result;
 }
 
-class Hdx_UnitTestDelegate : public HdSceneDelegate
+class ARCH_EXPORT_TYPE Hdx_UnitTestDelegate : public HdSceneDelegate
 {
 public:
     Hdx_UnitTestDelegate(HdRenderIndex *renderIndex, 

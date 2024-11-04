@@ -426,7 +426,7 @@ HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourcePrimOrigin);
 /// drop inherited attributes on subprims (/prim.a), letting them inherit from
 /// /prim instead.  This way we don't (e.g.) double-apply transforms.
 ///
-class UsdImagingDataSourcePrim : public HdContainerDataSource
+class ARCH_EXPORT_TYPE UsdImagingDataSourcePrim : public HdContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourcePrim);

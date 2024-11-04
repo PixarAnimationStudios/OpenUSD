@@ -93,6 +93,11 @@ TraceCollector::TraceCollector()
     }
 }
 
+TraceCollector& 
+TraceCollector::GetInstance()
+{
+    return TfSingleton<TraceCollector>::GetInstance();
+}
 
 TraceCollector::~TraceCollector()
 {

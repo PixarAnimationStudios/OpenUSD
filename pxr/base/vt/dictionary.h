@@ -40,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// For a list of functions that can manipulate VtDictionary objects, see the  
 /// \link group_vtdict_functions VtDictionary Functions \endlink group page .
 ///
-class VtDictionary {
+class ARCH_EXPORT_TYPE VtDictionary {
     typedef std::map<std::string, VtValue, std::less<>> _Map;
     std::unique_ptr<_Map> _dictMap;
 

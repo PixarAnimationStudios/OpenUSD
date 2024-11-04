@@ -143,7 +143,7 @@ struct Vt_ValueGetStored
 /// or less safety or checking than the conversion constructors of the types
 /// themselves.  This includes VtArray, even VtArray<T> for T in scalar types
 /// that are range-checked when held singly.
-class VtValue
+class ARCH_EXPORT_TYPE VtValue
 {
     static const unsigned int _LocalFlag       = 1 << 0;
     static const unsigned int _TrivialCopyFlag = 1 << 1;

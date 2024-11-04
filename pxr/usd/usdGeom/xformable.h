@@ -232,7 +232,7 @@ class SdfAssetPath;
 /// 
 /// 
 ///
-class UsdGeomXformable : public UsdGeomImageable
+class ARCH_EXPORT_TYPE UsdGeomXformable : public UsdGeomImageable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

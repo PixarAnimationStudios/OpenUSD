@@ -37,7 +37,7 @@ class SdfAssetPath;
 ///
 /// Light emitted outward from a sphere.
 ///
-class UsdLuxSphereLight : public UsdLuxBoundableLightBase
+class ARCH_EXPORT_TYPE UsdLuxSphereLight : public UsdLuxBoundableLightBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

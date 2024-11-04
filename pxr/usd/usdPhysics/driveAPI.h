@@ -50,7 +50,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdPhysicsTokens->rightHanded
 /// as the value.
 ///
-class UsdPhysicsDriveAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdPhysicsDriveAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

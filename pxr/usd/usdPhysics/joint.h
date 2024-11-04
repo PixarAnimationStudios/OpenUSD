@@ -42,7 +42,7 @@ class SdfAssetPath;
 /// Note that default behavior is to disable collision between jointed bodies.
 /// 
 ///
-class UsdPhysicsJoint : public UsdGeomImageable
+class ARCH_EXPORT_TYPE UsdPhysicsJoint : public UsdGeomImageable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

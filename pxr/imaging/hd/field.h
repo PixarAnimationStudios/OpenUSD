@@ -30,7 +30,7 @@ using HdFieldPtrConstVector = std::vector<class HdField const *>;
 /// Hydra schema for a USD field primitive. Acts like a texture, combined
 /// with other fields to make up a renderable volume.
 ///
-class HdField : public HdBprim
+class ARCH_EXPORT_TYPE HdField : public HdBprim
 {
 public:
     HD_API

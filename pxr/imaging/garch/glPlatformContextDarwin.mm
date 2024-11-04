@@ -91,7 +91,7 @@ GarchNSGLContextState::DoneCurrent()
 #endif
 }
 
-GarchGLPlatformContextState
+GARCH_API GarchGLPlatformContextState
 GarchGetNullGLPlatformContextState()
 {
     return GarchNSGLContextState(GarchNSGLContextState::NullState::nullstate);

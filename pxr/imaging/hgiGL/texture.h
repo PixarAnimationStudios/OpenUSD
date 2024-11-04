@@ -27,7 +27,7 @@ TF_DECLARE_WEAK_PTRS(HgiGLTexture);
 /// This is useful to invalidate container objects such as framebuffer objects
 /// that reference a deleted texture resource as an attachment.
 ///
-class HgiGLTexture final : public HgiTexture, public TfWeakBase
+class ARCH_EXPORT_TYPE HgiGLTexture final : public HgiTexture, public TfWeakBase
 {
 public:
     HGIGL_API

@@ -19,7 +19,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// An abstract adapter class for prims that are instanceable. Adapters for
 /// instanceable prims should derive from this class instead of
 /// UsdImaginggPrimAdapter.
-class UsdImagingInstanceablePrimAdapter : public UsdImagingPrimAdapter
+class ARCH_EXPORT_TYPE UsdImagingInstanceablePrimAdapter : public UsdImagingPrimAdapter
 {
 public:
     using BaseAdapter = UsdImagingPrimAdapter;

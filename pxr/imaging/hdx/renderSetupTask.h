@@ -117,7 +117,7 @@ private:
 ///
 /// RenderTask parameters (renderpass state).
 ///
-struct HdxRenderTaskParams
+struct ARCH_EXPORT_TYPE HdxRenderTaskParams
 {
     HdxRenderTaskParams()
         // Global Params

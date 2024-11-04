@@ -60,7 +60,7 @@ class SdfAssetPath;
 /// output on a shader inside the node-graph.
 /// 
 ///
-class UsdShadeNodeGraph : public UsdTyped
+class ARCH_EXPORT_TYPE UsdShadeNodeGraph : public UsdTyped
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

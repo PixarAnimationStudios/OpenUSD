@@ -139,6 +139,12 @@ TfDiagnosticMgr::~TfDiagnosticMgr()
 {
 }
 
+TfDiagnosticMgr&
+TfDiagnosticMgr::GetInstance() 
+{
+    return TfSingleton<TfDiagnosticMgr>::GetInstance();
+}
+
 void
 TfDiagnosticMgr::AddDelegate(Delegate* delegate)
 {

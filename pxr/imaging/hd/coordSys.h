@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// of the transform from its local space to world space.  In other
 /// words, it has the same interpretation as the transform for rprims.
 ///
-class HdCoordSys : public HdSprim
+class ARCH_EXPORT_TYPE HdCoordSys : public HdSprim
 {
 public:
     HD_API

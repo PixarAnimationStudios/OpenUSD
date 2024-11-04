@@ -23,7 +23,7 @@ class HgiGLDevice;
 ///
 /// OpenGL implementation of HgiGraphicsCmds.
 ///
-class HgiGLGraphicsCmds final : public HgiGraphicsCmds
+class ARCH_EXPORT_TYPE HgiGLGraphicsCmds final : public HgiGraphicsCmds
 {
 public:
     HGIGL_API

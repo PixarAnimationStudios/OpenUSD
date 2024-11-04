@@ -27,7 +27,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// certain behaviors (like getting the time coordinate, or whether we support
 /// time-varying tracking).
 /// 
-class UsdImagingDataSourceStageGlobals
+class ARCH_EXPORT_TYPE UsdImagingDataSourceStageGlobals
 {
 public:
     USDIMAGING_API

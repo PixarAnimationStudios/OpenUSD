@@ -151,7 +151,7 @@ public:
     friend WeakPtr TfAnyWeakPtrDynamicCast(const TfAnyWeakPtr &anyWeak, WeakPtr*);
 
     // This is using the standard type-erasure pattern.
-    struct _PointerHolderBase {
+    struct ARCH_EXPORT_TYPE _PointerHolderBase {
         TF_API virtual ~_PointerHolderBase();
         virtual void Clone(_Data *target) const = 0; 
         virtual bool IsInvalid() const = 0;
@@ -166,7 +166,7 @@ public:
         virtual bool _IsPolymorphic() const = 0;
     };
 
-    struct _EmptyHolder : _PointerHolderBase {
+    struct ARCH_EXPORT_TYPE _EmptyHolder : _PointerHolderBase {
         TF_API virtual ~_EmptyHolder();
         TF_API virtual void Clone(_Data *target) const; 
         TF_API virtual bool IsInvalid() const;

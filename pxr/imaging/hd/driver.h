@@ -20,7 +20,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// the render delegate and rendering tasks.
 /// The application manages the lifetime (destruction) of HdDriver and must 
 /// ensure it remains valid while Hydra is running.
-class HdDriver {
+class ARCH_EXPORT_TYPE HdDriver {
 public:
     TfToken name;
     VtValue driver;

@@ -41,7 +41,7 @@ class SdfAssetPath;
 /// RigidBodyAPI applied, this collider is a part of that body. If there is 
 /// no body in the parent hierarchy, this collider is considered to be static.
 ///
-class UsdPhysicsCollisionAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdPhysicsCollisionAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

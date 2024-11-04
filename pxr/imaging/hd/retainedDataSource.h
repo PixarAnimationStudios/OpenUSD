@@ -27,7 +27,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// break away from the more live data sources (e.g., those that query a
 /// backing scene).
 ///
-class HdRetainedContainerDataSource : public HdContainerDataSource
+class ARCH_EXPORT_TYPE HdRetainedContainerDataSource : public HdContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE_ABSTRACT(HdRetainedContainerDataSource);
@@ -146,7 +146,7 @@ HD_DECLARE_DATASOURCE_HANDLES(HdRetainedSampledDataSource);
 /// semantics.
 ///
 template <typename T>
-class HdRetainedTypedSampledDataSource : public HdTypedSampledDataSource<T>
+class ARCH_EXPORT_TYPE HdRetainedTypedSampledDataSource : public HdTypedSampledDataSource<T>
 {
 public:
     //abstract to implement New outside in service of specialization
@@ -201,7 +201,7 @@ HdRetainedTypedSampledDataSource<bool>::New(const bool &value);
 /// multiple samples at once.
 ///
 template <typename T>
-class HdRetainedTypedMultisampledDataSource : public HdTypedSampledDataSource<T>
+class ARCH_EXPORT_TYPE HdRetainedTypedMultisampledDataSource : public HdTypedSampledDataSource<T>
 {
 public:
     HD_DECLARE_DATASOURCE(HdRetainedTypedMultisampledDataSource<T>);
@@ -331,7 +331,7 @@ HdRetainedTypedMultisampledDataSource<T>::GetTypedValue(
 /// Internally it uses a TfSmallVector with up to 32 locally stored entries
 /// for storage.
 ///
-class HdRetainedSmallVectorDataSource : public HdVectorDataSource
+class ARCH_EXPORT_TYPE HdRetainedSmallVectorDataSource : public HdVectorDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(HdRetainedSmallVectorDataSource);

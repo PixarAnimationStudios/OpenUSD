@@ -76,7 +76,7 @@ private:
 ///         excludeFilters);
 /// \endcode
 ///
-class UsdUtilsConditionalAbortDiagnosticDelegate : 
+class ARCH_EXPORT_TYPE UsdUtilsConditionalAbortDiagnosticDelegate : 
     public TfDiagnosticMgr::Delegate 
 {
 public:

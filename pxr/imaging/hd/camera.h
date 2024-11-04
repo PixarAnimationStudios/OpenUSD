@@ -83,7 +83,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdCameraTokens, HD_API, HD_CAMERA_TOKENS);
 /// Backends that use additional camera parameters can inherit from HdCamera and
 /// pull on them.
 ///
-class HdCamera : public HdSprim
+class ARCH_EXPORT_TYPE HdCamera : public HdSprim
 {
 public:
     using ClipPlanesVector = std::vector<GfVec4d>;

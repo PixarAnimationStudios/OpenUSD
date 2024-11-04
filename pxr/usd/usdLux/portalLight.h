@@ -39,7 +39,7 @@ class SdfAssetPath;
 /// of a dome light.  Transmits light in the -Z direction.
 /// The rectangle is 1 unit in length.
 ///
-class UsdLuxPortalLight : public UsdLuxBoundableLightBase
+class ARCH_EXPORT_TYPE UsdLuxPortalLight : public UsdLuxBoundableLightBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

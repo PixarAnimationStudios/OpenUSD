@@ -44,7 +44,7 @@ TF_DECLARE_PUBLIC_TOKENS(SdfFileFormatTokens, SDF_API, SDF_FILE_FORMAT_TOKENS);
 ///
 /// Base class for file format implementations.
 ///
-class SdfFileFormat
+class ARCH_EXPORT_TYPE SdfFileFormat
     : public TfRefBase
     , public TfWeakBase
 {
@@ -522,7 +522,7 @@ private:
 };
 
 // Base file format factory.
-class Sdf_FileFormatFactoryBase : public TfType::FactoryBase {
+class ARCH_EXPORT_TYPE Sdf_FileFormatFactoryBase : public TfType::FactoryBase {
 public:
     SDF_API virtual ~Sdf_FileFormatFactoryBase();
     virtual SdfFileFormatRefPtr New() const = 0;

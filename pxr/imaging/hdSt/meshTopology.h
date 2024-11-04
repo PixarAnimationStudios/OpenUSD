@@ -50,7 +50,7 @@ using HdSt_MeshTopologySharedPtr = std::shared_ptr<class HdSt_MeshTopology>;
 ///
 /// Storm implementation for mesh topology.
 ///
-class HdSt_MeshTopology final : public HdMeshTopology {
+class ARCH_EXPORT_TYPE HdSt_MeshTopology final : public HdMeshTopology {
 public:
     /// Specifies how subdivision mesh topology is refined.
     enum RefineMode {

@@ -36,7 +36,7 @@ class SdfAssetPath;
 ///
 /// Concrete prim schema for a transform, which implements Xformable 
 ///
-class UsdGeomXform : public UsdGeomXformable
+class ARCH_EXPORT_TYPE UsdGeomXform : public UsdGeomXformable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

@@ -39,7 +39,7 @@ class SdfAssetPath;
 /// MassAPI can be applied to any object that has a PhysicsCollisionAPI or
 /// a PhysicsRigidBodyAPI.
 ///
-class UsdPhysicsMassAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdPhysicsMassAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

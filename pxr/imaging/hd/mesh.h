@@ -98,7 +98,7 @@ struct HdMeshReprDesc
 
 /// Hydra Schema for a subdivision surface or poly-mesh object.
 ///
-class HdMesh : public HdRprim
+class ARCH_EXPORT_TYPE HdMesh : public HdRprim
 {
 public:
     HD_API

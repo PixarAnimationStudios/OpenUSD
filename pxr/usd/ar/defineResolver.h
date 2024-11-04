@@ -38,7 +38,7 @@ TF_REGISTRY_FUNCTION(TfType) {        \
 }
 #endif // doxygen
 
-class Ar_ResolverFactoryBase 
+class ARCH_EXPORT_TYPE Ar_ResolverFactoryBase 
     : public TfType::FactoryBase 
 {
 public:

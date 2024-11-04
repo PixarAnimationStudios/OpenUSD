@@ -17,7 +17,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \class TfTypeWasDeclaredNotice
 ///
 /// TfNotice sent after a TfType is declared.
-class TfTypeWasDeclaredNotice : public TfNotice
+class ARCH_EXPORT_TYPE TfTypeWasDeclaredNotice : public TfNotice
 {
 public:
     TfTypeWasDeclaredNotice( TfType t );

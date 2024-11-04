@@ -22,7 +22,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// A TfNotice that is sent when the TraceCollector creates a TraceCollection.
 /// This can potentially be sent from multiple threads. Listeners must be 
 /// thread safe.
-class TraceCollectionAvailable : public TfNotice
+class ARCH_EXPORT_TYPE TraceCollectionAvailable : public TfNotice
 {
 public:
     /// Constructor.

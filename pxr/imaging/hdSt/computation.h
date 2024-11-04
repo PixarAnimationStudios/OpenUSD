@@ -32,7 +32,7 @@ using HdStComputationSharedPtrVector = std::vector<HdStComputationSharedPtr>;
 /// using buffer specs determined by GetBufferSpecs, and registered as a pair
 /// of computation and range.
 ///
-class HdStComputation
+class ARCH_EXPORT_TYPE HdStComputation
 {
 public:
     HDST_API

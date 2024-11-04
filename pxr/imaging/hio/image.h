@@ -34,7 +34,7 @@ using HioImageSharedPtr = std::shared_ptr<class HioImage>;
 ///
 /// Texture paths are UTF-8 strings, resolvable by AR. Texture system dispatch
 /// is driven by extension, with [A-Z] (and no other characters) case folded.
-class HioImage
+class ARCH_EXPORT_TYPE HioImage
 {
 public:
 
@@ -184,7 +184,7 @@ HioImage::GetMetadata(TfToken const & key, T * value) const
     return true;
 }
 
-class HIO_API HioImageFactoryBase : public TfType::FactoryBase {
+class ARCH_EXPORT_TYPE HioImageFactoryBase : public TfType::FactoryBase {
 public:
     virtual HioImageSharedPtr New() const = 0;
 };

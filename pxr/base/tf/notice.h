@@ -73,7 +73,7 @@ class Tf_NoticeRegistry;
 /// 
 /// For more on using notices in Python, see the Editor With Notices tutorial.
 /// 
-class TfNotice {
+class ARCH_EXPORT_TYPE TfNotice {
 private:
     class _DelivererBase;
     typedef TfWeakPtr<_DelivererBase> _DelivererWeakPtr;
@@ -442,7 +442,7 @@ public:
 private:
     // Abstract base class for calling listeners.
     // A typed-version derives (via templating) off this class.
-    class _DelivererBase : public TfWeakBase {
+    class ARCH_EXPORT_TYPE _DelivererBase : public TfWeakBase {
     public:
         _DelivererBase()
             : _list(0), _active(true), _markedForRemoval(false)

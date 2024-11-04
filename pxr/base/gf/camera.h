@@ -29,7 +29,7 @@ class GfFrustum;
 /// This class provides a thin wrapper on the camera data model,
 /// with a small number of computations.
 ///
-class GfCamera
+class ARCH_EXPORT_TYPE GfCamera
 {
 public:
     /// Projection type.

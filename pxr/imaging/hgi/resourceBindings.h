@@ -170,7 +170,7 @@ bool operator!=(
 /// Represents a collection of buffers, texture and vertex attributes that will
 /// be used by an cmds object (and pipeline).
 ///
-class HgiResourceBindings
+class ARCH_EXPORT_TYPE HgiResourceBindings
 {
 public:
     HGI_API

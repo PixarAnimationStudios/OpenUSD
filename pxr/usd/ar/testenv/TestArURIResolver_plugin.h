@@ -5,6 +5,7 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/api.h"
 
 #include "pxr/usd/ar/defineResolverContext.h"
 #include "pxr/base/tf/hash.h"
@@ -12,7 +13,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class _TestURIResolverContext
+class ARCH_EXPORT_TYPE _TestURIResolverContext
 {
 public:
     _TestURIResolverContext() = default;

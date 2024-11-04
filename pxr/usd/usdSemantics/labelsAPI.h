@@ -41,7 +41,7 @@ class SdfAssetPath;
 /// See `UsdSemanticsLabelsQuery` for more information about computations and
 /// inheritance of semantics.
 ///
-class UsdSemanticsLabelsAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdSemanticsLabelsAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

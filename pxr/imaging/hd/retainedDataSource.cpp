@@ -23,7 +23,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace
 {
 
-class Hd_EmptyContainerDataSource : public HdRetainedContainerDataSource
+class ARCH_EXPORT_TYPE Hd_EmptyContainerDataSource : public HdRetainedContainerDataSource
 {
 public:
     TfTokenVector GetNames() override 
@@ -41,7 +41,7 @@ public:
 
 // Linear storage/search for containers with small numbers of children.
 template <size_t T>
-class Hd_SmallRetainedContainerDataSource
+class ARCH_EXPORT_TYPE Hd_SmallRetainedContainerDataSource
     : public HdRetainedContainerDataSource
 {
 public:
@@ -104,7 +104,7 @@ private:
 
 // Fallback any-sized container.
 template <size_t T>
-class Hd_MappedRetainedContainerDataSource
+class ARCH_EXPORT_TYPE Hd_MappedRetainedContainerDataSource
     : public HdRetainedContainerDataSource
 {
 public:

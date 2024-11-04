@@ -37,6 +37,11 @@ from shutil import which
 # Helpers for printing output
 verbosity = 1
 
+# Hide symbols
+HIDDEN_SYMBOLS = ['-DCMAKE_CXX_VISIBILITY_PRESET=hidden',
+                  '-DCMAKE_C_VISIBILITY_PRESET=hidden',
+                  '-DCMAKE_VISIBILITY_INLINES_HIDDEN=ON']
+
 def Print(msg):
     if verbosity > 0:
         print(msg)
@@ -1801,6 +1806,8 @@ def InstallUSD(context, force, buildArgs):
         # system installed boost
         extraArgs.append('-DBoost_NO_BOOST_CMAKE=On')
         extraArgs.append('-DBoost_NO_SYSTEM_PATHS=True')
+
+        extraArgs += HIDDEN_SYMBOLS
         extraArgs += buildArgs
 
         RunCMake(context, force, extraArgs)

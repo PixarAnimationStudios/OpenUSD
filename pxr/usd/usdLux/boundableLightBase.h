@@ -41,7 +41,7 @@ class SdfAssetPath;
 /// functions provided by LightAPI for concrete derived light types.
 /// 
 ///
-class UsdLuxBoundableLightBase : public UsdGeomBoundable
+class ARCH_EXPORT_TYPE UsdLuxBoundableLightBase : public UsdGeomBoundable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

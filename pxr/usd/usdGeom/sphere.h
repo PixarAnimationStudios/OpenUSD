@@ -40,7 +40,7 @@ class SdfAssetPath;
 /// The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
 /// they all pack into the same volume/bounds.
 ///
-class UsdGeomSphere : public UsdGeomGprim
+class ARCH_EXPORT_TYPE UsdGeomSphere : public UsdGeomGprim
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

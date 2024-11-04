@@ -36,7 +36,7 @@ using UsdImagingAPISchemaAdapterSharedPtr =
 ///
 /// These map behavior of applied API schemas to contributions the hydra prims
 /// and data sources generated for a given USD prim.
-class UsdImagingAPISchemaAdapter 
+class ARCH_EXPORT_TYPE UsdImagingAPISchemaAdapter 
             : public std::enable_shared_from_this<UsdImagingAPISchemaAdapter>
 {
 public:

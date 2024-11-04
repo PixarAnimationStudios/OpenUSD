@@ -94,7 +94,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace pxr_half {
 
-class half
+class ARCH_EXPORT_TYPE half
 {
   public:
 

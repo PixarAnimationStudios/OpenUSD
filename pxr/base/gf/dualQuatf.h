@@ -46,7 +46,7 @@ float GfDot(const GfDualQuatf& dq1, const GfDualQuatf& dq2);
 ///    https://www.cs.utah.edu/~ladislav/kavan06dual/kavan06dual.pdf
 ///    https://faculty.sites.iastate.edu/jia/files/inline-files/dual-quaternion.pdf
 ///
-class GfDualQuatf final
+class ARCH_EXPORT_TYPE GfDualQuatf final
 {
   public:
     typedef float ScalarType;

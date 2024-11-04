@@ -31,7 +31,7 @@ TF_DECLARE_WEAK_PTRS(PcpLayerStack);
 ///
 /// For more details, see \ref Usd_ValueResolution.
 ///
-enum UsdResolveInfoSource
+enum ARCH_EXPORT_TYPE UsdResolveInfoSource
 {
     UsdResolveInfoSourceNone,            ///< No value
 

@@ -26,7 +26,7 @@ class HduiDataSourceTreeWidget;
 class HduiDataSourceValueTreeView;
 class HduiRegisteredSceneIndexChooser;
 
-class HDUI_API_CLASS HduiSceneIndexDebuggerWidget
+class ARCH_EXPORT_TYPE HduiSceneIndexDebuggerWidget
     : public QWidget, public TfWeakBase
 {
     Q_OBJECT;

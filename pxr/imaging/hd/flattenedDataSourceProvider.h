@@ -25,7 +25,7 @@ using HdFlattenedDataSourceProviderSharedPtr =
 /// flattened data source which is in the prim container data
 /// source.
 ///
-class HdFlattenedDataSourceProvider
+class ARCH_EXPORT_TYPE HdFlattenedDataSourceProvider
 {
 public:
     class Context

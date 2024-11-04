@@ -56,7 +56,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///  optional index buffer to map the generated indices to actual indices in
 ///  the vertex buffer.
 ///
-class HdBasisCurvesTopology : public HdTopology {
+class ARCH_EXPORT_TYPE HdBasisCurvesTopology : public HdTopology {
 public:
 
     HD_API

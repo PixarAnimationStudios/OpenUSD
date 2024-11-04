@@ -90,7 +90,7 @@ TF_DECLARE_PUBLIC_TOKENS(UsdGeomXformOpTypes, USDGEOM_API, USDGEOM_XFORM_OP_TYPE
 /// the order in which their corresponding elements are consumed by the 
 /// rotation, not how they are laid out.
 ///
-class UsdGeomXformOp
+class ARCH_EXPORT_TYPE UsdGeomXformOp
 {
 public:
   

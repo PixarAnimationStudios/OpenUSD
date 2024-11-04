@@ -19,7 +19,7 @@
 /// allows the client to specify a version mapping file to use for
 /// {$VERSION} substitutions during asset resolution. See overview
 /// for more details.
-class UsdResolverExampleResolverContext
+class ARCH_EXPORT_TYPE UsdResolverExampleResolverContext
 {
 public:
     /// Create a context that specifies that the version mappings in

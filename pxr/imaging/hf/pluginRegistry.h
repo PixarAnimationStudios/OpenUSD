@@ -51,7 +51,7 @@ class Hf_PluginEntry;
 ///    }
 ///}
 ///
-class HfPluginRegistry
+class ARCH_EXPORT_TYPE HfPluginRegistry
 {
 
 public:

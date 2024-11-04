@@ -69,7 +69,7 @@ class SdfAssetPath;
 /// SetRotate(), SetScale() and SetPivot() methods are provided by this API 
 /// to allow such sparse authoring.
 ///
-class UsdGeomXformCommonAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdGeomXformCommonAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

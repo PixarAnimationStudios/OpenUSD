@@ -43,7 +43,7 @@ class SdfAssetPath;
 /// PhysicsLimitAPI is applied to. Note that if the low limit is higher than 
 /// the high limit, motion along this axis is considered locked.
 ///
-class UsdPhysicsLimitAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdPhysicsLimitAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

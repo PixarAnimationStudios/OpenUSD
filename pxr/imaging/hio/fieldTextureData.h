@@ -29,7 +29,7 @@ using HioFieldTextureDataSharedPtr = std::shared_ptr<class HioFieldTextureData>;
 /// An interface class for reading volume files having a
 /// transformation.
 ///
-class HioFieldTextureData
+class ARCH_EXPORT_TYPE HioFieldTextureData
 {
 public:
     HIO_API
@@ -86,7 +86,7 @@ private:
 ///
 /// A base class to make HioFieldTextureData objects, implemented by plugins.
 ///
-class HIO_API HioFieldTextureDataFactoryBase : public TfType::FactoryBase
+class ARCH_EXPORT_TYPE HioFieldTextureDataFactoryBase : public TfType::FactoryBase
 {
 protected:
     friend class HioFieldTextureData;

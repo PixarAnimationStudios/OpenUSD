@@ -24,7 +24,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // object is destroyed when both the original whose address it was
 // initialized with, and there are no weak pointers left pointing to that
 // remnant.
-class Tf_Remnant : public TfSimpleRefBase
+class ARCH_EXPORT_TYPE Tf_Remnant : public TfSimpleRefBase
 {
 public:
 

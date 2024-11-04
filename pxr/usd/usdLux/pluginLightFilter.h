@@ -44,7 +44,7 @@ class SdfAssetPath;
 /// \see \ref usdLux_PluginSchemas
 /// 
 ///
-class UsdLuxPluginLightFilter : public UsdLuxLightFilter
+class ARCH_EXPORT_TYPE UsdLuxPluginLightFilter : public UsdLuxLightFilter
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

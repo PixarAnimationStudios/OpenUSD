@@ -24,7 +24,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// See \ref Usd_AttributeInterpolation for more details.
 ///
-enum UsdInterpolationType
+enum ARCH_EXPORT_TYPE UsdInterpolationType
 {
     UsdInterpolationTypeHeld,  ///< Held interpolation
     UsdInterpolationTypeLinear ///< Linear interpolation

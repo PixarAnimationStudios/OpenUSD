@@ -34,7 +34,7 @@ struct HdPointsReprDesc
 
 /// Hydra Schema for a point cloud.
 ///
-class HdPoints: public HdRprim
+class ARCH_EXPORT_TYPE HdPoints: public HdRprim
 {
 public:
     HD_API

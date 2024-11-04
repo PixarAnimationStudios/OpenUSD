@@ -38,7 +38,7 @@ typedef std::vector<SdfPayload> SdfPayloadVector;
 /// system behaviors will not traverse across, providing a user-visible
 /// way to manage the working set of the scene.
 ///
-class SdfPayload {
+class ARCH_EXPORT_TYPE SdfPayload {
 public:
     /// Create a payload. See SdfAssetPath for what characters are valid in \p
     /// assetPath.  If \p assetPath contains invalid characters, issue an error

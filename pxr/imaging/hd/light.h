@@ -63,7 +63,7 @@ using HdLightPtrConstVector = std::vector<class HdLight const *>;
 ///
 /// A light model, used in conjunction with HdRenderPass.
 ///
-class HdLight : public HdSprim
+class ARCH_EXPORT_TYPE HdLight : public HdSprim
 {
 public:
     HD_API

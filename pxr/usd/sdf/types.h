@@ -65,7 +65,7 @@ class SdfPath;
 
 /// An enum that specifies the type of an object. Objects
 /// are entities that have fields and are addressable by path.
-enum SdfSpecType {
+enum ARCH_EXPORT_TYPE SdfSpecType {
     // The unknown type has a value of 0 so that SdfSpecType() is unknown.
     SdfSpecTypeUnknown = 0,
 
@@ -97,7 +97,7 @@ enum SdfSpecType {
 /// <li><b>SdfNumSpecifiers.</b> The number of specifiers.
 /// </ul>
 ///
-enum SdfSpecifier {
+enum ARCH_EXPORT_TYPE SdfSpecifier {
     SdfSpecifierDef,
     SdfSpecifierOver,
     SdfSpecifierClass,
@@ -129,7 +129,7 @@ SdfIsDefiningSpecifier(SdfSpecifier spec)
 /// <li><b>SdfNumPermission.</b> Internal sentinel value.
 /// </ul>
 ///
-enum SdfPermission {
+enum ARCH_EXPORT_TYPE SdfPermission {
     SdfPermissionPublic,         
     SdfPermissionPrivate,        
 
@@ -153,7 +153,7 @@ enum SdfPermission {
 ///     <li><b>SdNumVariabilities.</b> Internal sentinel value.
 /// </ul>
 ///
-enum SdfVariability {
+enum ARCH_EXPORT_TYPE SdfVariability {
     SdfVariabilityVarying,
     SdfVariabilityUniform,
 
@@ -472,7 +472,7 @@ std::ostream &VtStreamOut(const SdfVariantSelectionMap &, std::ostream &);
 /// well as limited inspection and editing capabilities (e.g., moving
 /// this data to a different spec or field) even when the data type
 /// of the value isn't known.
-class SdfUnregisteredValue
+class ARCH_EXPORT_TYPE SdfUnregisteredValue
 {
 public:
     /// Wraps an empty VtValue
@@ -588,7 +588,7 @@ extern SDF_API TfStaticData<const Sdf_ValueTypeNamesType,
 /// layer->SetTimeSample(attribute->GetPath(), 101, VtValue(SdfValueBlock()));
 /// \endcode
 ///
-struct SdfValueBlock { 
+struct ARCH_EXPORT_TYPE SdfValueBlock {
     bool operator==(const SdfValueBlock& block) const { return true; }
     bool operator!=(const SdfValueBlock& block) const { return false; }
 

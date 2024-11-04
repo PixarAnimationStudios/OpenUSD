@@ -45,7 +45,7 @@ class SdfAssetPath;
 /// documentation for information.
 /// 
 ///
-class UsdSkelBlendShape : public UsdTyped
+class ARCH_EXPORT_TYPE UsdSkelBlendShape : public UsdTyped
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

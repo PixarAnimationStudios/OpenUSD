@@ -118,7 +118,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(HdSingleInputFilteringSceneIndexBase);
 /// An abstract base class for a filtering scene index that observes a single 
 /// input scene index.
 ///
-class HdSingleInputFilteringSceneIndexBase : public HdFilteringSceneIndexBase
+class ARCH_EXPORT_TYPE HdSingleInputFilteringSceneIndexBase : public HdFilteringSceneIndexBase
 {
 public:
     HD_API

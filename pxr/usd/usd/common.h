@@ -68,7 +68,7 @@ typedef std::map<class TfToken, VtValue,
 /// Specifies a position to add items to lists.  Used by some Add()
 /// methods in the USD API that manipulate lists, such as AddReference().
 ///
-enum UsdListPosition {
+enum ARCH_EXPORT_TYPE UsdListPosition {
     /// The position at the front of the prepend list.
     /// An item added at this position will, after composition is applied,
     /// be stronger than other items prepended in this layer, and stronger
@@ -96,7 +96,7 @@ enum UsdListPosition {
 /// Controls UsdStage::Load() and UsdPrim::Load() behavior regarding whether or
 /// not descendant prims are loaded.
 ///
-enum UsdLoadPolicy {
+enum ARCH_EXPORT_TYPE UsdLoadPolicy {
     /// Load a prim plus all its descendants.
     UsdLoadWithDescendants,
     /// Load a prim by itself with no descendants.

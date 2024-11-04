@@ -50,7 +50,7 @@ TF_DECLARE_PUBLIC_TOKENS(KindTokens, KIND_API, KIND_TOKENS);
 /// To make this robust, KindRegistry exposes no means to mutate the registry.
 /// All extensions must be accomplished via plugInfo.json files, which are
 /// consumed once during the registry initialization (See \ref kind_extensions )
-class KindRegistry : public TfWeakBase
+class ARCH_EXPORT_TYPE KindRegistry : public TfWeakBase
 {
     KindRegistry(const KindRegistry&) = delete;
     KindRegistry& operator=(const KindRegistry&) = delete;

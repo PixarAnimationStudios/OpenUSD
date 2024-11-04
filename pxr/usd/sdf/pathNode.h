@@ -38,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // '/Foo/Bar.attr' would store a prim-part handle to the '/Foo/Bar' node, and a
 // property-part handle to 'attr'.
 //
-class Sdf_PathNode {
+class ARCH_EXPORT_TYPE Sdf_PathNode {
     Sdf_PathNode(Sdf_PathNode const &) = delete;
     Sdf_PathNode &operator=(Sdf_PathNode const &) = delete;
 public:

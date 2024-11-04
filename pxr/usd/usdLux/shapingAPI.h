@@ -40,7 +40,7 @@ class SdfAssetPath;
 ///
 /// Controls for shaping a light's emission.
 ///
-class UsdLuxShapingAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdLuxShapingAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

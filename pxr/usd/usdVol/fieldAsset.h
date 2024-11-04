@@ -42,7 +42,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdVolTokens->rightHanded
 /// as the value.
 ///
-class UsdVolFieldAsset : public UsdVolFieldBase
+class ARCH_EXPORT_TYPE UsdVolFieldAsset : public UsdVolFieldBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
