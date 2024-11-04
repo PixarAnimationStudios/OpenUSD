@@ -1,9 +1,9 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdImagingGL)
 
-if (NOT ${PXR_BUILD_GPU_SUPPORT})
+if (NOT ${PXR_ENABLE_GL_SUPPORT})
     message(STATUS
-        "Skipping ${PXR_PACKAGE} because PXR_BUILD_GPU_SUPPORT is OFF")
+        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
     return()
 endif()
 
@@ -157,7 +157,7 @@ if (${PXR_HEADLESS_TEST_MODE})
     return()
 endif()
 
-if (APPLE)
+if (APPLE AND NOT PXR_ENABLE_EXPERIMENTAL_TESTS)
     message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on macOS")
     return()
 endif()
@@ -3778,49 +3778,58 @@ pxr_register_test(testUsdImagingGLUsdSkelExtCompGPU_twoBends
         USDSKELIMAGING_FORCE_CPU_COMPUTE=0
 )
 
-pxr_register_test(testUsdImagingGLPopOut
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPopOut --output test test.usda"
-    IMAGE_DIFF_COMPARE
-        test_0.png
-        test_1.png
-        test_2.png
-        test_3.png
-        test_4.png
-        test_5.png
-        test_6.png
-        test_7.png
-        test_8.png
-    FAIL .05
-    FAIL_PERCENT .03
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLPopOut
-)
+if(NOT APPLE)
+    # OpenGL specific tests
+    pxr_register_test(testUsdImagingGLPopOut
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPopOut --output test test.usda"
+        IMAGE_DIFF_COMPARE
+            test_0.png
+            test_1.png
+            test_2.png
+            test_3.png
+            test_4.png
+            test_5.png
+            test_6.png
+            test_7.png
+            test_8.png
+        FAIL .05
+        FAIL_PERCENT .03
+        PERCEPTUAL
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLPopOut
+        ENV
+            HGI_ENABLE_VULKAN=0
+    )
 
-pxr_register_test(testUsdImagingGLPopOut_instance
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPopOut --output test_instance test_instance.usda"
-    IMAGE_DIFF_COMPARE
-        test_instance_0.png
-        test_instance_1.png
-        test_instance_2.png
-        test_instance_3.png
-        test_instance_4.png
-        test_instance_5.png
-        test_instance_6.png
-        test_instance_7.png
-        test_instance_8.png
-    FAIL .05
-    FAIL_PERCENT .03
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLPopOut
-)
+    pxr_register_test(testUsdImagingGLPopOut_instance
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPopOut --output test_instance test_instance.usda"
+        IMAGE_DIFF_COMPARE
+            test_instance_0.png
+            test_instance_1.png
+            test_instance_2.png
+            test_instance_3.png
+            test_instance_4.png
+            test_instance_5.png
+            test_instance_6.png
+            test_instance_7.png
+            test_instance_8.png
+        FAIL .05
+        FAIL_PERCENT .03
+        PERCEPTUAL
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLPopOut
+        ENV
+            HGI_ENABLE_VULKAN=0
+    )
 
-pxr_register_test(testUsdImagingGLPopOut_instance_empty
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPopOut --output test_instance_empty test_instance_empty.usda"
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLPopOut
-)
+    pxr_register_test(testUsdImagingGLPopOut_instance_empty
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPopOut --output test_instance_empty test_instance_empty.usda"
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLPopOut
+        ENV
+            HGI_ENABLE_VULKAN=0
+    )
+endif()
 
 pxr_register_test(testUsdImagingGLMaterialTag
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -cullStyle back -offscreen -frameAll -stage materialTag.usda -write testUsdImagingGLMaterialTag.png"

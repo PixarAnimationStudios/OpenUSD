@@ -9,7 +9,9 @@ endif()
 
 set(optionalPublicClasses "")
 if (X11_FOUND)
-    list(APPEND optionalPublicClasses testGLContext)
+    list(APPEND optionalPublicClasses testGLXContext)
+else()
+    list(APPEND optionalPublicClasses testGLNullContext)
 endif()
 
 pxr_library(glf
@@ -37,6 +39,7 @@ pxr_library(glf
         simpleLightingContext
         simpleMaterial
         simpleShadowArray
+        testGLContext
         texture
         uniformBlock
         utils

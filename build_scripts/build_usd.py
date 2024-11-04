@@ -1410,10 +1410,6 @@ def InstallOpenSubdiv(context, force, buildArgs):
             '-DNO_TBB=ON',
         ]
 
-        # Use Metal for macOS and all Apple embedded systems.
-        if MacOS():
-            extraArgs.append('-DNO_OPENGL=ON')
-
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
 

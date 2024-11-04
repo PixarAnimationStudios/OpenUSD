@@ -3,9 +3,9 @@ set(PXR_PACKAGE hdSt)
 
 # XXX We check for PXR_ENABLE_GL_SUPPORT since Storm currently still uses
 # GL via GarchGLApi. Once Storm uses only Hgi, remove GL_SUPPORT check.
-if (NOT ${PXR_BUILD_GPU_SUPPORT} OR NOT ${PXR_ENABLE_GL_SUPPORT})
+if (NOT PXR_ENABLE_GL_SUPPORT)
     message(STATUS
-        "Skipping ${PXR_PACKAGE} because PXR_BUILD_GPU_SUPPORT is OFF")
+        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
     return()
 endif()
 
@@ -13,7 +13,7 @@ set(optionalLibs "")
 set(optionalIncludeDirs "")
 set(optionalPublicClasses "")
 set(optionalPrivateClasses "")
-if (${PXR_ENABLE_MATERIALX_SUPPORT})
+if (PXR_ENABLE_MATERIALX_SUPPORT)
     list(APPEND optionalLibs
         MaterialXGenShader
         MaterialXRender
@@ -96,7 +96,7 @@ pxr_library(hdSt
         nurbsApproximatingSceneIndexPlugin
         instancer
         interleavedMemoryManager
-        light      
+        light
         lightingShader
         material
         materialNetwork
@@ -164,7 +164,7 @@ pxr_library(hdSt
         materialPrimvarTransferSceneIndexPlugin
         materialParam
         meshShaderKey
-        meshTopology 
+        meshTopology
         nodeIdentifierResolvingSceneIndex
         nodeIdentifierResolvingSceneIndexPlugin
         pipelineDrawBatch
@@ -225,7 +225,7 @@ pxr_build_test(testHdStQualifiers
         testenv/testHdStQualifiers.cpp
 )
 
-if (X11_FOUND OR APPLE)
+if (APPLE OR CMAKE_SYSTEM_NAME STREQUAL "Linux")
 pxr_build_test(testHdStBasicDrawing
     LIBRARIES
         hdSt
@@ -235,9 +235,7 @@ pxr_build_test(testHdStBasicDrawing
     CPPFILES
         testenv/testHdStBasicDrawing.cpp
 )
-endif()
 
-if (X11_FOUND)
 pxr_build_test(testHdStBarAllocationLimit
     LIBRARIES
         hdSt
@@ -459,7 +457,7 @@ pxr_build_test(testHdStInstancingUnbalanced
     CPPFILES
         testenv/testHdStInstancingUnbalanced.cpp
 )
-if (${PXR_ENABLE_MATERIALX_SUPPORT})
+if (PXR_ENABLE_MATERIALX_SUPPORT)
 pxr_build_test(testHdStMaterialXShaderGen
     LIBRARIES
         hdSt
@@ -592,11 +590,7 @@ pxr_build_test(testHdStSubResourceRegistry
     CPPFILES
         testenv/testHdStSubResourceRegistry.cpp
 )
-endif()
 
-if (X11_FOUND)
-# Most HdSt tests require setup of a GL context and window. This is the 
-# exception.
 pxr_register_test(testHdStBufferSource
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBufferSource"
     EXPECTED_RETURN_CODE 0
@@ -606,7 +600,7 @@ pxr_register_test(testHdStBufferSource
 )
 endif()
 
-if (${PXR_HEADLESS_TEST_MODE})
+if (PXR_HEADLESS_TEST_MODE)
     message(STATUS "Skipping ${PXR_PACKAGE} tests because PXR_HEADLESS_TEST_MODE is ON")
     return()
 endif()
@@ -625,7 +619,7 @@ pxr_register_test(testHdStQualifiers
         TF_DEBUG=HD_SAFE_MODE
 )
 
-if (APPLE)
+if (APPLE AND NOT PXR_ENABLE_EXPERIMENTAL_TESTS)
     message(STATUS "Skipping rest of ${PXR_PACKAGE} tests because they are currently unsupported on macOS")
     return()
 endif()
@@ -666,14 +660,18 @@ pxr_install_test_dir(
     SRC testenv/testHdStClipPlanes
     DEST testHdStClipPlanes
 )
-pxr_install_test_dir(
-    SRC testenv/testHdStCodeGen_GL
-    DEST testHdStCodeGen_GL
-)
-pxr_install_test_dir(
-    SRC testenv/testHdStCodeGen_Vulkan
-    DEST testHdStCodeGen_Vulkan
-)
+if (PXR_ENABLE_GL_SUPPORT)
+    pxr_install_test_dir(
+        SRC testenv/testHdStCodeGen_GL
+        DEST testHdStCodeGen_GL
+    )
+endif()
+if (PXR_ENABLE_VULKAN_SUPPORT)
+    pxr_install_test_dir(
+        SRC testenv/testHdStCodeGen_Vulkan
+        DEST testHdStCodeGen_Vulkan
+    )
+endif()
 pxr_install_test_dir(
     SRC testenv/testHdStCurveDrawing
     DEST testHdStCurveDrawing
@@ -722,7 +720,7 @@ pxr_install_test_dir(
     SRC testenv/testHdStInstancingUnbalancedNoBindless
     DEST testHdStInstancingUnbalancedNoBindless
 )
-if (${PXR_ENABLE_MATERIALX_SUPPORT})
+if (PXR_ENABLE_MATERIALX_SUPPORT)
 pxr_install_test_dir(
     SRC testenv/testHdStMaterialXShaderGen
     DEST testHdStMaterialXShaderGen
@@ -2567,19 +2565,21 @@ pxr_register_test(testHdStDisplayStyle_refined
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
-pxr_register_test(testHdStDrawBatching
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStDrawBatching"
-    EXPECTED_RETURN_CODE 0
-    STDOUT_REDIRECT testHdStDrawBatching-Run1-stdout.txt
-    POST_COMMAND "diff -I computeShader -I drawingShader -I gpuMemoryUsed testHdStDrawBatching-Run1-stdout.txt ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStDrawBatching/baseline/testHdStDrawBatching-Run1-stdout.txt"
-    TESTENV testHdStDrawBatching
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-        HD_ENABLE_DOUBLE_MATRIX=1
-        HD_ENABLE_GPU_COUNT_VISIBLE_INSTANCES=1
-        HD_ENABLE_PACKED_NORMALS=0
-        HGI_ENABLE_VULKAN=0
-)
+if (PXR_ENABLE_GL_SUPPORT AND X11_FOUND)
+    pxr_register_test(testHdStDrawBatching
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStDrawBatching"
+        EXPECTED_RETURN_CODE 0
+        STDOUT_REDIRECT testHdStDrawBatching-Run1-stdout.txt
+        POST_COMMAND "diff -I computeShader -I drawingShader -I gpuMemoryUsed testHdStDrawBatching-Run1-stdout.txt ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStDrawBatching/baseline/testHdStDrawBatching-Run1-stdout.txt"
+        TESTENV testHdStDrawBatching
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            HD_ENABLE_DOUBLE_MATRIX=1
+            HD_ENABLE_GPU_COUNT_VISIBLE_INSTANCES=1
+            HD_ENABLE_PACKED_NORMALS=0
+            HGI_ENABLE_VULKAN=0
+    )
+endif()
 pxr_register_test(testHdStDrawItemIntegrity
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStDrawItemIntegrity --offscreen"
     EXPECTED_RETURN_CODE 0
@@ -2691,47 +2691,55 @@ pxr_register_test(testHdStFrustumCullingInstanceGPU
         HD_ENABLE_GPU_COUNT_VISIBLE_INSTANCES=1
         HD_ENABLE_GPU_FRUSTUM_CULLING=1
 )
-pxr_register_test(testHdStGL
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGL"
-    EXPECTED_RETURN_CODE 0
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-)
-pxr_register_test(testHdStGLSL_instanceTransform0
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx instanceTransform0"
-    EXPECTED_RETURN_CODE 0
-    TESTENV testHdStGLSL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-)
-pxr_register_test(testHdStGLSL_instanceTransform1
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx instanceTransform1"
-    EXPECTED_RETURN_CODE 0
-    TESTENV testHdStGLSL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-)
-pxr_register_test(testHdStGLSL_instanceTransform2
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx instanceTransform2"
-    EXPECTED_RETURN_CODE 0
-    TESTENV testHdStGLSL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-)
-pxr_register_test(testHdStGLSL_instanceTransform3
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx instanceTransform3"
-    EXPECTED_RETURN_CODE 0
-    TESTENV testHdStGLSL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-)
-pxr_register_test(testHdStGLSL_determinant
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx determinant"
-    EXPECTED_RETURN_CODE 0
-    TESTENV testHdStGLSL
-    ENV
-        TF_DEBUG=HD_SAFE_MODE
-)
+if (PXR_ENABLE_GL_SUPPORT AND X11_FOUND)
+    pxr_register_test(testHdStGL
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGL"
+        EXPECTED_RETURN_CODE 0
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            HGI_ENABLE_VULKAN=0
+    )
+    pxr_register_test(testHdStGLSL_instanceTransform0
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx instanceTransform0"
+        EXPECTED_RETURN_CODE 0
+        TESTENV testHdStGLSL
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            HGI_ENABLE_VULKAN=0
+    )
+    pxr_register_test(testHdStGLSL_instanceTransform1
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx instanceTransform1"
+        EXPECTED_RETURN_CODE 0
+        TESTENV testHdStGLSL
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            HGI_ENABLE_VULKAN=0
+    )
+    pxr_register_test(testHdStGLSL_instanceTransform2
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx instanceTransform2"
+        EXPECTED_RETURN_CODE 0
+        TESTENV testHdStGLSL
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            HGI_ENABLE_VULKAN=0
+    )
+    pxr_register_test(testHdStGLSL_instanceTransform3
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx instanceTransform3"
+        EXPECTED_RETURN_CODE 0
+        TESTENV testHdStGLSL
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            HGI_ENABLE_VULKAN=0
+    )
+    pxr_register_test(testHdStGLSL_determinant
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStGLSL testHarness.glslfx determinant"
+        EXPECTED_RETURN_CODE 0
+        TESTENV testHdStGLSL
+        ENV
+            TF_DEBUG=HD_SAFE_MODE
+            HGI_ENABLE_VULKAN=0
+    )
+endif()
 pxr_register_test(testHdStHWFaceCulling
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStHWFaceCulling"
     EXPECTED_RETURN_CODE 0
@@ -2739,13 +2747,15 @@ pxr_register_test(testHdStHWFaceCulling
     POST_COMMAND "diff -I computeShader -I drawingShader -I gpuMemoryUsed -I uboSize -I ssboSize testHdStHWFaceCulling-Run1-stdout.txt ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStHWFaceCulling/baseline/testHdStHWFaceCulling-Run1-stdout.txt"
     TESTENV testHdStHWFaceCulling
 )
-pxr_register_test(testHdStIndirectDrawBatchCodeGen
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStIndirectDrawBatchCodeGen"
-    EXPECTED_RETURN_CODE 0
-    ENV
-        HD_ENABLE_GPU_FRUSTUM_CULLING=false
-        HGI_ENABLE_VULKAN=0
-)
+if (PXR_ENABLE_GL_SUPPORT AND X11_FOUND)
+    pxr_register_test(testHdStIndirectDrawBatchCodeGen
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStIndirectDrawBatchCodeGen"
+        EXPECTED_RETURN_CODE 0
+        ENV
+            HD_ENABLE_GPU_FRUSTUM_CULLING=false
+            HGI_ENABLE_VULKAN=0
+    )
+endif()
 pxr_register_test(testHdStIndirectDrawBatchCulling
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStIndirectDrawBatchCulling"
     EXPECTED_RETURN_CODE 0
@@ -2877,7 +2887,7 @@ pxr_register_test(testHdStInstancingUnbalancedNoBindless
         HGIGL_ENABLE_BINDLESS_BUFFER=0
         TF_DEBUG=HD_SAFE_MODE
 )
-if (${PXR_ENABLE_MATERIALX_SUPPORT})
+if (PXR_ENABLE_MATERIALX_SUPPORT)
 pxr_register_test(testHdStMaterialXShaderGen_SSdefault
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_default.mtlx"
     STDOUT_REDIRECT shadergen_SSdefault.out

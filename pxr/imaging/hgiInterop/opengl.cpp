@@ -14,7 +14,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static const char* _vertexFullscreen =
+static const char* _vertexFullscreen120 =
     "#version 120\n"
     "attribute vec4 position;\n"
     "attribute vec2 uvIn;\n"
@@ -25,7 +25,7 @@ static const char* _vertexFullscreen =
     "    uv = uvIn;\n"
     "}\n";
 
-static const char* _fragmentNoDepthFullscreen =
+static const char* _fragmentNoDepthFullscreen120 =
     "#version 120\n"
     "varying vec2 uv;\n"
     "uniform sampler2D colorIn;\n"
@@ -34,7 +34,7 @@ static const char* _fragmentNoDepthFullscreen =
     "    gl_FragColor = texture2D(colorIn, uv);\n"
     "}\n";
 
-static const char* _fragmentDepthFullscreen =
+static const char* _fragmentDepthFullscreen120 =
     "#version 120\n"
     "varying vec2 uv;\n"
     "uniform sampler2D colorIn;\n"
@@ -95,9 +95,9 @@ HgiInteropOpenGL::HgiInteropOpenGL()
     , _prgDepth(0)
     , _vertexBuffer(0)
 {
-    _vs = _CompileShader(_vertexFullscreen, GL_VERTEX_SHADER);
-    _fsNoDepth = _CompileShader(_fragmentNoDepthFullscreen, GL_FRAGMENT_SHADER);
-    _fsDepth = _CompileShader(_fragmentDepthFullscreen, GL_FRAGMENT_SHADER);
+    _vs = _CompileShader(_vertexFullscreen120, GL_VERTEX_SHADER);
+    _fsNoDepth = _CompileShader(_fragmentNoDepthFullscreen120, GL_FRAGMENT_SHADER);
+    _fsDepth = _CompileShader(_fragmentDepthFullscreen120, GL_FRAGMENT_SHADER);
     _prgNoDepth = _LinkProgram(_vs, _fsNoDepth);
     _prgDepth = _LinkProgram(_vs, _fsDepth);
     _vertexBuffer = _CreateVertexBuffer();

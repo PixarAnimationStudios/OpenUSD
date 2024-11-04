@@ -74,10 +74,10 @@ CodeGenTest(HdSt_ShaderKey const &key, bool instance, bool smoothNormals)
     sharedData.instancerLevels = 0;
     HdStDrawItem drawItem(&sharedData);
 
-    static HgiUniquePtr hgi = Hgi::CreatePlatformDefaultHgi();
-    static HdDriver driver{HgiTokens->renderDriver, VtValue(hgi.get())};
-    static HdStRenderDelegate renderDelegate;
-    static std::unique_ptr<HdRenderIndex> index(
+    HgiUniquePtr hgi = Hgi::CreatePlatformDefaultHgi();
+    HdDriver driver{HgiTokens->renderDriver, VtValue(hgi.get())};
+    HdStRenderDelegate renderDelegate;
+    std::unique_ptr<HdRenderIndex> index(
         HdRenderIndex::New(&renderDelegate, {&driver}));
     HdStResourceRegistrySharedPtr const & registry =
         std::static_pointer_cast<HdStResourceRegistry>(

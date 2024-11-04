@@ -39,9 +39,8 @@
 
 #if defined(__APPLE__)
 #include <opensubdiv/osd/mtlPatchShaderSource.h>
-#else
-#include <opensubdiv/osd/glslPatchShaderSource.h>
 #endif
+#include <opensubdiv/osd/glslPatchShaderSource.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -1763,7 +1762,7 @@ HdSt_CodeGen::_PlumbInterstageElements()
 
 static
 std::string
-_GetOSDCommonShaderSource()
+_GetOSDCommonShaderSource(TfToken const &apiName)
 {
     // Prepare OpenSubdiv common shader source for use in the shader
     // code declarations section and define some accessor methods and
@@ -1771,52 +1770,61 @@ _GetOSDCommonShaderSource()
     std::stringstream ss;
 
 #if OPENSUBDIV_VERSION_NUMBER >= 30600
-#if defined(__APPLE__)
-    ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchDrawingShaderSource();
-#else
-    ss << "FORWARD_DECL(MAT4 GetProjectionMatrix());\n"
-          "FORWARD_DECL(float GetTessLevel());\n"
-          "mat4 OsdModelViewMatrix() { return mat4(1); }\n"
-          "mat4 OsdProjectionMatrix() { return mat4(GetProjectionMatrix()); }\n"
-          "float OsdTessLevel() { return GetTessLevel(); }\n"
-          "\n";
 
-    ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchDrawingShaderSource();
+    if (apiName == HgiTokens->Metal) {
+#if defined(__APPLE__)
+        ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchDrawingShaderSource();
+#else
+        TF_FATAL_ERROR("Cannot use Metal on a non-Apple platform");
 #endif
+    } else {
+        ss << "FORWARD_DECL(MAT4 GetProjectionMatrix());\n"
+              "FORWARD_DECL(float GetTessLevel());\n"
+              "mat4 OsdModelViewMatrix() { return mat4(1); }\n"
+              "mat4 OsdProjectionMatrix() { return mat4(GetProjectionMatrix()); }\n"
+              "float OsdTessLevel() { return GetTessLevel(); }\n"
+              "\n";
+
+        ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchDrawingShaderSource();
+    }
 
 #else // OPENSUBDIV_VERSION_NUMBER
     // Additional declarations are needed for older OpenSubdiv versions.
 
+    if (apiName == HgiTokens->Metal) {
 #if defined(__APPLE__)
-    ss << "#define CONTROL_INDICES_BUFFER_INDEX 0\n"
-       << "#define OSD_PATCHPARAM_BUFFER_INDEX 0\n"
-       << "#define OSD_PERPATCHVERTEX_BUFFER_INDEX 0\n"
-       << "#define OSD_PERPATCHTESSFACTORS_BUFFER_INDEX 0\n"
-       << "#define OSD_KERNELLIMIT_BUFFER_INDEX 0\n"
-       << "#define OSD_PATCHPARAM_BUFFER_INDEX 0\n"
-       << "#define VERTEX_BUFFER_INDEX 0\n"
+        ss << "#define CONTROL_INDICES_BUFFER_INDEX 0\n"
+           << "#define OSD_PATCHPARAM_BUFFER_INDEX 0\n"
+           << "#define OSD_PERPATCHVERTEX_BUFFER_INDEX 0\n"
+           << "#define OSD_PERPATCHTESSFACTORS_BUFFER_INDEX 0\n"
+           << "#define OSD_KERNELLIMIT_BUFFER_INDEX 0\n"
+           << "#define OSD_PATCHPARAM_BUFFER_INDEX 0\n"
+           << "#define VERTEX_BUFFER_INDEX 0\n"
 
-       // The ifdef for this in OSD is AFTER the first usage.
-       << "#define OSD_MAX_VALENCE 4\n"
+           // The ifdef for this in OSD is AFTER the first usage.
+           << "#define OSD_MAX_VALENCE 4\n"
 
-       << "\n"
-       << "struct OsdInputVertexType {\n"
-       << "    vec3 position;\n"
-       << "};\n"
-       << "\n";
+           << "\n"
+           << "struct OsdInputVertexType {\n"
+           << "    vec3 position;\n"
+           << "};\n"
+           << "\n";
 
-    ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetCommonShaderSource();
+        ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetCommonShaderSource();
 #else
-    ss << "FORWARD_DECL(MAT4 GetProjectionMatrix());\n"
-       << "FORWARD_DECL(float GetTessLevel());\n"
-       << "mat4 OsdModelViewMatrix() { return mat4(1); }\n"
-       << "mat4 OsdProjectionMatrix() { return mat4(GetProjectionMatrix()); }\n"
-       << "int OsdPrimitiveIdBase() { return 0; }\n"
-       << "float OsdTessLevel() { return GetTessLevel(); }\n"
-       << "\n";
-
-    ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
+        TF_FATAL_ERROR("Cannot use Metal on a non-Apple platform");
 #endif
+    } else {
+        ss << "FORWARD_DECL(MAT4 GetProjectionMatrix());\n"
+           << "FORWARD_DECL(float GetTessLevel());\n"
+           << "mat4 OsdModelViewMatrix() { return mat4(1); }\n"
+           << "mat4 OsdProjectionMatrix() { return mat4(GetProjectionMatrix()); }\n"
+           << "int OsdPrimitiveIdBase() { return 0; }\n"
+           << "float OsdTessLevel() { return GetTessLevel(); }\n"
+           << "\n";
+
+        ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
+    }
 #endif // OPENSUBDIV_VERSION_NUMBER
 
     return ss.str();
@@ -1824,16 +1832,21 @@ _GetOSDCommonShaderSource()
 
 static
 std::string
-_GetOSDPatchBasisShaderSource()
+_GetOSDPatchBasisShaderSource(TfToken const &apiName)
 {
     std::stringstream ss;
+    if (apiName == HgiTokens->Metal) {
 #if defined(__APPLE__)
-    ss << "#define OSD_PATCH_BASIS_METAL\n";
-    ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchBasisShaderSource();
+        ss << "#define OSD_PATCH_BASIS_METAL\n";
+        ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchBasisShaderSource();
 #else
-    ss << "#define OSD_PATCH_BASIS_GLSL\n";
-    ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchBasisShaderSource();
+        TF_FATAL_ERROR("Cannot use Metal on a non-Apple platform");
 #endif
+    } else {
+        ss << "#define OSD_PATCH_BASIS_GLSL\n";
+        ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchBasisShaderSource();
+    }
+
     return ss.str();
 }
 
@@ -2137,10 +2150,12 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     if (_geometricShader->IsPrimTypeMesh() &&
         _geometricShader->IsPrimTypePatches()) {
         if (_hasPTCS) {
-            _genPTCS << _GetOSDPatchBasisShaderSource();
+            _genPTCS << _GetOSDPatchBasisShaderSource(
+                registry->GetHgi()->GetAPIName());
         }
         if (_hasPTVS) {
-            _genPTVS << _GetOSDPatchBasisShaderSource();
+            _genPTVS << _GetOSDPatchBasisShaderSource(
+                registry->GetHgi()->GetAPIName());
         }
     }
 
@@ -2150,9 +2165,11 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         _geometricShader->GetFvarPatchType() == 
         HdSt_GeometricShader::FvarPatchType::PATCH_BOXSPLINETRIANGLE) {
         if (_hasGS) {
-            _genGS << _GetOSDPatchBasisShaderSource();
+            _genGS << _GetOSDPatchBasisShaderSource(
+                registry->GetHgi()->GetAPIName());
         } else {
-            _genFS << _GetOSDPatchBasisShaderSource();
+            _genFS << _GetOSDPatchBasisShaderSource(
+                registry->GetHgi()->GetAPIName());
         }
     }
 
@@ -2398,7 +2415,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // method of patch coord interpolation.
     if (_geometricShader->IsPrimTypeRefinedMesh()) {
         // Include OpenSubdiv shader source and use full patch interpolation.
-        _osd << _GetOSDCommonShaderSource();
+        _osd << _GetOSDCommonShaderSource(registry->GetHgi()->GetAPIName());
         _osd <<
             "vec4 InterpolatePatchCoord(vec2 uv, ivec3 patchParam)\n"
             "{\n"
@@ -6931,4 +6948,3 @@ HdSt_CodeGen::_GetFallbackScalarSwizzleString(TfToken const &returnType,
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

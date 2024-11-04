@@ -47,7 +47,7 @@ if (${PXR_HEADLESS_TEST_MODE})
     return()
 endif()
 
-if (APPLE)
+if (APPLE AND NOT PXR_ENABLE_EXPERIMENTAL_TESTS)
     message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on macOS")
     return()
 endif()

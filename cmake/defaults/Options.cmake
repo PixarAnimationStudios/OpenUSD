@@ -35,8 +35,10 @@ option(PXR_BUILD_MAYAPY_TESTS "Build mayapy spline tests" OFF)
 option(PXR_BUILD_ANIMX_TESTS "Build AnimX spline tests" OFF)
 option(PXR_ENABLE_NAMESPACES "Enable C++ namespaces." ON)
 option(PXR_PREFER_SAFETY_OVER_SPEED
-       "Enable certain checks designed to avoid crashes or out-of-bounds memory reads with malformed input files.  These checks may negatively impact performance."
-        ON)
+        "Enable certain checks designed to avoid crashes or out-of-bounds memory reads with malformed input files.\
+         These checks may negatively impact performance." ON)
+option(PXR_ENABLE_EXPERIMENTAL_TESTS "Enable experimental tests on macOS.\
+         These aren't guaranteed to pass." OFF)
 
 if(APPLE)
     # Cross Compilation detection as defined in CMake docs
@@ -68,16 +70,17 @@ if(APPLE)
     endif ()
 endif()
 
-
-# Determine GFX api
-# Metal only valid on Apple platforms
-set(pxr_enable_metal "OFF")
-if(APPLE)
-    set(pxr_enable_metal "ON")
-endif()
-option(PXR_ENABLE_METAL_SUPPORT "Enable Metal based components" "${pxr_enable_metal}")
-option(PXR_ENABLE_VULKAN_SUPPORT "Enable Vulkan based components" OFF)
+# Determine graphics API
+# In the current state of USD, OpenGL support is always required to build.
+include(CMakeDependentOption)
 option(PXR_ENABLE_GL_SUPPORT "Enable OpenGL based components" ON)
+# Metal only valid on Apple platforms
+if(APPLE)
+    cmake_dependent_option(PXR_ENABLE_METAL_SUPPORT "Enable Metal based components" ON "PXR_ENABLE_GL_SUPPORT" OFF)
+else()
+    set(PXR_ENABLE_METAL_SUPPORT OFF CACHE BOOL "Enable Metal based components" FORCE)
+endif()
+cmake_dependent_option(PXR_ENABLE_VULKAN_SUPPORT "Enable Vulkan based components" OFF "PXR_ENABLE_GL_SUPPORT" OFF)
 
 # Precompiled headers are a win on Windows, not on gcc.
 set(pxr_enable_pch "OFF")

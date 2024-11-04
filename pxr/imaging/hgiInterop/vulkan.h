@@ -50,6 +50,7 @@ private:
     uint32_t _prgNoDepth;
     uint32_t _prgDepth;
     uint32_t _vertexBuffer;
+    uint32_t _vertexArray;
 
     // XXX We tmp copy Vulkan's GPU texture to CPU and then to GL texture
     // Once we share GPU memory between Vulkan and GL we can remove this.

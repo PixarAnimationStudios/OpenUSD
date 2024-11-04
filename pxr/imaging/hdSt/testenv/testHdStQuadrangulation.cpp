@@ -78,10 +78,10 @@ _CompareQuadPoints(std::string const & name,
 {
     std::cout << "GPU quadrangulate = " << gpu << "\n";
 
-    static HgiUniquePtr _hgi = Hgi::CreatePlatformDefaultHgi();
-    static HdDriver driver{HgiTokens->renderDriver, VtValue(_hgi.get())};
-    static HdStRenderDelegate renderDelegate;
-    static std::unique_ptr<HdRenderIndex> index(
+    HgiUniquePtr _hgi = Hgi::CreatePlatformDefaultHgi();
+    HdDriver driver{HgiTokens->renderDriver, VtValue(_hgi.get())};
+    HdStRenderDelegate renderDelegate;
+    std::unique_ptr<HdRenderIndex> index(
         HdRenderIndex::New(&renderDelegate, {&driver}));
     HdStResourceRegistrySharedPtr const& registry = 
         std::static_pointer_cast<HdStResourceRegistry>(

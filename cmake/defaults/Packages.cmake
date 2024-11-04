@@ -266,6 +266,7 @@ if (PXR_BUILD_IMAGING)
     # --X11
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         find_package(X11)
+        add_definitions(-DPXR_X11_SUPPORT_ENABLED)
     endif()
     # --Embree
     if (PXR_BUILD_EMBREE_PLUGIN)

@@ -207,20 +207,22 @@ pxr_build_test(testUsdImagingExcluded
     CPPFILES
         testenv/testUsdImagingExcluded.cpp
 )
-pxr_build_test(testUsdImagingMaterialBinding
-    LIBRARIES
-        usdImaging
-        usdShade
-        usd
-        hd
-        glf
-        garch
-        tf
-        gf
-        vt
-    CPPFILES
-        testenv/testUsdImagingMaterialBinding.cpp
-)
+if(PXR_ENABLE_GL_SUPPORT)
+    pxr_build_test(testUsdImagingMaterialBinding
+        LIBRARIES
+            usdImaging
+            usdShade
+            usd
+            hd
+            glf
+            garch
+            tf
+            gf
+            vt
+        CPPFILES
+            testenv/testUsdImagingMaterialBinding.cpp
+    )
+endif()
 pxr_build_test(testUsdImagingNestedInstancingCategories
     LIBRARIES
         usdImaging
