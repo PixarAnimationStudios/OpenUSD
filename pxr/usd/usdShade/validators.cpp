@@ -590,6 +590,157 @@ _SubsetsMaterialBindFamily(const UsdPrim& usdPrim)
     return errors;
 }
 
+static
+UsdValidationErrorVector
+_ShaderValidator(const UsdPrim& usdPrim)
+{
+    if (!usdPrim.IsA<UsdShadeShader>())
+    {
+        return {};
+    }
+
+    const UsdShadeShader shaderPrim(usdPrim);
+
+    const TfToken &implementationSource =
+        shaderPrim.GetImplementationSource();
+
+    UsdValidationErrorVector errors;
+    const UsdValidationErrorSites primErrorSite = {
+        UsdValidationErrorSite(usdPrim.GetStage(),
+                               usdPrim.GetPath()) };
+    if (implementationSource != UsdShadeTokens->id)
+    {
+        errors.emplace_back(
+            UsdShadeValidationErrorNameTokens->nonIdImplementationSource,
+            UsdValidationErrorType::Error,
+            primErrorSite,
+            TfStringPrintf(
+            "Shader <%s> has non-id implementation "
+                "source '%s'.",
+                usdPrim.GetPath().GetText(),
+                implementationSource.GetText())
+        );
+    }
+    TfToken shaderId;
+    const bool gotShaderId = shaderPrim.GetShaderId(&shaderId);
+
+    const std::vector<TfToken> validShaderIds = {
+        TfToken("UsdPreviewSurface"),
+        TfToken("UsdUVTexture"),
+        TfToken("UsdTransform2d"),
+        TfToken("UsdPrimvarReader")};
+
+    auto isValidShaderId = [&]()
+    {
+        bool isKnownShaderName = std::find(validShaderIds.begin(),
+            validShaderIds.end(), shaderId) != validShaderIds.end();
+        bool isKnownShaderPrefix = TfStringStartsWith(shaderId.GetText(),
+            "UsdPrimvarReader") ||
+                TfStringStartsWith(shaderId.GetText(), "ND_");
+
+        return isKnownShaderName || isKnownShaderPrefix;
+    };
+
+    if (!gotShaderId)
+    {
+        errors.emplace_back(
+            UsdShadeValidationErrorNameTokens->invalidShaderId,
+            UsdValidationErrorType::Error,
+            primErrorSite,
+            TfStringPrintf(
+            "Shader <%s> has unsupported info:id 'None'.",
+                usdPrim.GetPath().GetText())
+        );
+    }
+    else if(!isValidShaderId())
+    {
+        errors.emplace_back(
+            UsdShadeValidationErrorNameTokens->invalidShaderId,
+            UsdValidationErrorType::Error,
+            primErrorSite,
+            TfStringPrintf(
+            "Shader <%s> has unsupported info:id '%s'.",
+                usdPrim.GetPath().GetText(),
+                shaderId.GetText())
+        );
+    }
+
+    const std::vector<UsdShadeInput> shaderInputs = shaderPrim.GetInputs();
+
+    // Check shader input connections
+    for(const UsdShadeInput &shaderInput: shaderInputs)
+    {
+        SdfPathVector sources;
+        shaderInput.GetAttr().GetConnections(&sources);
+
+        // If an input has one or more connections, ensure that the
+        // connections are valid.
+        if (sources.empty())
+        {
+            continue;
+        }
+
+        if (sources.size() > 1)
+        {
+            errors.emplace_back(
+                UsdShadeValidationErrorNameTokens->multipleConnectionSources,
+                UsdValidationErrorType::Error,
+                primErrorSite,
+                TfStringPrintf(
+                "Shader input <%s> has %lu connection "
+                        "sources, but only one is allowed.",
+                    shaderInput.GetAttr().GetPath().GetText(),
+                    sources.size())
+            );
+            continue;
+        }
+
+        UsdShadeConnectableAPI connectableAPI;
+        TfToken sourceName;
+        UsdShadeAttributeType sourceType;
+        const bool gotSource = shaderInput.GetConnectedSource(&connectableAPI,
+            &sourceName, &sourceType);
+
+        if (!gotSource)
+        {
+            errors.emplace_back(
+                UsdShadeValidationErrorNameTokens->missingConnectionSource,
+                UsdValidationErrorType::Error,
+                primErrorSite,
+                TfStringPrintf(
+                "Connection source <%s> for shader "
+                        "input <%s> is missing.",
+                    sources[0].GetText(),
+                    shaderInput.GetAttr().GetPath().GetText()
+                )
+            );
+        }
+        else
+        {
+            // The source must be a valid shader or material prim.
+            const UsdPrim &sourcePrim = connectableAPI.GetPrim();
+            if (!sourcePrim.IsA<UsdShadeShader>() &&
+                !sourcePrim.IsA<UsdShadeMaterial>())
+            {
+                errors.emplace_back(
+                    UsdShadeValidationErrorNameTokens->
+                    invalidConnectionSourcePrimType,
+                    UsdValidationErrorType::Error,
+                    primErrorSite,
+                    TfStringPrintf(
+                    "Shader input <%s> has an invalid "
+                                "connection source prim of type '%s'.",
+                        shaderInput.GetAttr().GetPath().GetText(),
+                        sourcePrim.GetTypeName().GetText()
+                    )
+                );
+            }
+        }
+    }
+
+    return errors;
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
@@ -621,6 +772,10 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     registry.RegisterPluginValidator(
             UsdShadeValidatorNameTokens->encapsulationValidator,
             _EncapsulationValidator);
+
+    registry.RegisterPluginValidator(
+            UsdShadeValidatorNameTokens->shaderValidator,
+            _ShaderValidator);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -149,7 +149,10 @@
                     }, 
                     "MaterialBindingRelationships": {
                         "doc": "All properties named 'material:binding' or in that namespace should be relationships."
-                    }, 
+                    },
+                    "ShaderValidator": {
+                        "doc": "Shader nodes must have 'id' as the implementationSource, with id values that begin with 'Usd*|ND_*'. Also, shader inputs with connections must each have a single, valid connection source."
+                    },
                     "ShaderSdrCompliance": {
                         "doc": "Shader prim's input types must be conforming to their appropriate sdf types in the respective sdr shader.", 
                         "schemaTypes": [
