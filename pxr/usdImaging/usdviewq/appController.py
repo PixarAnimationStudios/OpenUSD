@@ -21,7 +21,7 @@ from collections import deque, OrderedDict
 from functools import cmp_to_key
 
 # Usd Library Components
-from pxr import Usd, UsdGeom, UsdShade, UsdUtils, UsdImagingGL, Glf, Sdf, Tf, Ar
+from pxr import Usd, UsdGeom, UsdShade, UsdUtils, UsdImagingGL, Glf, Sdf, Tf, Ar, UsdSemantics
 from pxr import UsdAppUtils
 from pxr.UsdAppUtils.complexityArgs import RefinementComplexities
 from pxr.UsdUtils.constantsGroup import ConstantsGroup
@@ -36,7 +36,7 @@ from .layerStackContextMenu import LayerStackContextMenu
 from .attributeViewContextMenu import AttributeViewContextMenu
 from .customAttributes import (_GetCustomAttributes, CustomAttribute,
                                BoundingBoxAttribute, LocalToWorldXformAttribute,
-                               ResolvedBoundMaterial)
+                               ResolvedBoundMaterial, ResolvedLabelsAttribute)
 from .primTreeWidget import PrimTreeWidget, PrimViewColumnIndex
 from .primViewItem import PrimViewItem
 from .variantComboBox import VariantComboBox
@@ -57,7 +57,7 @@ from .common import (UIBaseColors, UIPropertyValueSourceColors, UIFonts,
                      PropTreeWidgetTypeIsRel, PrimNotFoundException,
                      GetRootLayerStackInfo, HasSessionVis, GetEnclosingModelPrim,
                      GetPrimsLoadability, ClearColors,
-                     HighlightColors, KeyboardShortcuts, PrintWarning)
+                     HighlightColors, KeyboardShortcuts, PrintWarning, TruncateMiddle)
 
 from .settings import StateSource, ConfigManager
 from .usdviewApi import UsdviewApi
@@ -5165,6 +5165,16 @@ class AppController(QtCore.QObject):
                         if currProtoPath.HasPrefix(path):
                             currProtoPath = currProtoPath.MakeRelativePath(path)
                         propertyStr += "<br> -- <em>instance of prototype &lt;%s&gt;</em>" % str(currProtoPath)
+            
+            # Semantic information
+            primResolvedLabelsProp = ResolvedLabelsAttribute(currentPrim=prim, rootDataModel=None)
+            primResolvedLabels = primResolvedLabelsProp.Get(self._dataModel.currentFrame)
+            if primResolvedLabels:
+                propertyStr += "<br> -- <em>%s</em> = %s" %\
+                    (
+                        primResolvedLabelsProp.GetName().lower(), 
+                        TruncateMiddle(str(primResolvedLabels), max_length=round(1.5*self._maxToolTipWidth()))
+                    )
 
             # Material info - this IS expected
             materialStr = "<hr><b>Material assignment:</b>"
@@ -5201,6 +5211,17 @@ class AppController(QtCore.QObject):
                         bindingRel.GetPath(), model)
                 materialStr += "<br><small><em>Material binding "\
                     "relationship: %s</em></small>" % str(bindingRelPath)
+
+                # Semantic information
+                mtlResolvedLabelsProp = ResolvedLabelsAttribute(currentPrim=material.GetPrim(), rootDataModel=None)
+                mtlResolvedLabels = mtlResolvedLabelsProp.Get(self._dataModel.currentFrame)
+                if mtlResolvedLabels:
+                    materialStr += "<br><small><em>%s: %s</em></small>" %\
+                        (
+                            mtlResolvedLabelsProp.GetName(), 
+                            TruncateMiddle(str(mtlResolvedLabels), max_length=round(1.5*self._maxToolTipWidth()))
+                        )
+
 
             if not gotValidMaterial:
                 materialStr += "<small><em>No assigned Material!</em></small>"

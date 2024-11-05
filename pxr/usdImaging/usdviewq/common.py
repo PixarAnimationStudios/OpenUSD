@@ -284,6 +284,28 @@ def GetShortStringForValue(prop, val):
 
     return result[:500]
 
+def TruncateMiddle(text, max_length=125, ellipsis='...'):
+    """Truncate a string to a maximum length, replacing the middle with an
+    ellipsis if necessary.  If the string is already shorter than the maximum
+    length, it is returned unchanged.
+    
+    Args:
+        text (str): The string to truncate.
+        max_length (int): The maximum length of the returned string.
+        ellipsis (str): The string to insert in the middle of the truncated
+            string.  Defaults to '...'.
+    Returns:
+        str: The truncated string.
+    """
+    if len(text) <= max_length:
+        return text
+    
+    # Calculate the number of characters to keep on each side
+    side_length = (max_length - len(ellipsis)) // 2
+    
+    # Truncate the string and add ellipsis
+    return text[:side_length] + ellipsis + text[-side_length:]
+
 # Return a string that reports size in metric units (units of 1000, not 1024).
 def ReportMetricSize(sizeInBytes):
     if sizeInBytes == 0:
