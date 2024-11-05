@@ -9,6 +9,12 @@
                             "UsdzValidators"
                         ]
                     },
+                    "CompressionValidator": {
+                        "doc": "Files within a usdz package should not be compressed or encrypted.",
+                        "keywords": [
+                            "UsdzValidators"
+                        ]
+                    },
                     "keywords": [
                         "UsdUtilsValidators"
                     ]

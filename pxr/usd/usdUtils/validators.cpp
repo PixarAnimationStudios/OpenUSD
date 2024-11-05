@@ -11,7 +11,7 @@
 #include "pxr/usd/usdUtils/validatorTokens.h"
 #include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/usdUtils/dependencies.h"
-#include "pxr/usd/usdUtils/userProcessingFunc.h"
+#include "pxr/usd/usd/zipFile.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -104,11 +104,54 @@ _PackageEncapsulationValidator(const UsdStagePtr& usdStage) {
     return errors;
 }
 
+static
+UsdValidationErrorVector
+_CompressionValidator(const UsdStagePtr& usdStage) {
+    const SdfLayerHandle &rootLayer = usdStage->GetRootLayer();
+    const UsdZipFile zipFile = UsdZipFile::Open(rootLayer->GetRealPath().c_str());
+
+    std::string packagePath = ArSplitPackageRelativePathOuter(rootLayer->GetIdentifier()).first;
+    if (!zipFile)
+    {
+        return {};
+    }
+
+    UsdValidationErrorVector errors;
+    for(auto it = zipFile.begin(); it != zipFile.end(); ++it)
+    {
+        const UsdZipFile::FileInfo &fileInfo = it.GetFileInfo();
+        if (fileInfo.compressionMethod != 0)
+        {
+            const std::string &fileName = *it;
+            errors.emplace_back(
+                UsdUtilsValidationErrorNameTokens->compressionDetected,
+                UsdValidationErrorType::Error,
+                UsdValidationErrorSites {
+                    UsdValidationErrorSite(
+                            rootLayer, SdfPath(fileName))
+                },
+                TfStringPrintf(
+                ("File '%s' in package '%s' has "
+                "compression. Compression method is '%u', actual size "
+                "is %lu. Uncompressed size is %lu."),
+                    fileName.c_str(), packagePath.c_str(),
+                    fileInfo.compressionMethod,
+                    fileInfo.size, fileInfo.uncompressedSize)
+            );
+        }
+    }
+
+    return errors;
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
     registry.RegisterPluginValidator(
             UsdUtilsValidatorNameTokens->packageEncapsulationValidator, _PackageEncapsulationValidator);
+
+    registry.RegisterPluginValidator(
+            UsdUtilsValidatorNameTokens->compressionValidator, _CompressionValidator);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
