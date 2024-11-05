@@ -367,7 +367,6 @@ void TestUsdGeomStageMetadata()
 static
 void TestUsdGeomYUpAxisValidator()
 {
-    // Get stageMetadataChecker
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
     const UsdValidator *validator = registry.GetOrLoadValidatorByName(
             UsdGeomValidatorNameTokens->yUpAxisValidator);
