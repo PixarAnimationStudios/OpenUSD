@@ -1,0 +1,64 @@
+#usda 1.0
+(
+    customLayerData = {
+        string colorSpace = "lin_rec709"
+    }
+)
+
+def "MaterialX"
+{
+    def "Materials"
+    {
+        def Material "USD_Car_Paint" (
+            prepend apiSchemas = ["MaterialXConfigAPI"]
+        )
+        {
+            string config:mtlx:version = "1.38"
+            float inputs:clearcoat = 1
+            float inputs:clearcoatRoughness = 0
+            color3f inputs:diffuseColor = (0.0518895, 0.29606, 0.425324)
+            float inputs:displacement
+            color3f inputs:emissiveColor
+            float inputs:ior
+            float inputs:metallic
+            float3 inputs:normal
+            float inputs:occlusion
+            float inputs:opacity
+            float inputs:opacityThreshold
+            float inputs:roughness = 0.4
+            color3f inputs:specularColor
+            int inputs:useSpecularWorkflow
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/USD_Car_Paint/ND_UsdPreviewSurface_surfaceshader.outputs:surface>
+
+            def Shader "ND_UsdPreviewSurface_surfaceshader" (
+                prepend references = </MaterialX/Shaders/ND_UsdPreviewSurface_surfaceshader>
+            )
+            {
+                float inputs:clearcoat.connect = </MaterialX/Materials/USD_Car_Paint.inputs:clearcoat>
+                float inputs:clearcoatRoughness.connect = </MaterialX/Materials/USD_Car_Paint.inputs:clearcoatRoughness>
+                color3f inputs:diffuseColor.connect = </MaterialX/Materials/USD_Car_Paint.inputs:diffuseColor>
+                float inputs:displacement.connect = </MaterialX/Materials/USD_Car_Paint.inputs:displacement>
+                color3f inputs:emissiveColor.connect = </MaterialX/Materials/USD_Car_Paint.inputs:emissiveColor>
+                float inputs:ior.connect = </MaterialX/Materials/USD_Car_Paint.inputs:ior>
+                float inputs:metallic.connect = </MaterialX/Materials/USD_Car_Paint.inputs:metallic>
+                float3 inputs:normal.connect = </MaterialX/Materials/USD_Car_Paint.inputs:normal>
+                float inputs:occlusion.connect = </MaterialX/Materials/USD_Car_Paint.inputs:occlusion>
+                float inputs:opacity.connect = </MaterialX/Materials/USD_Car_Paint.inputs:opacity>
+                float inputs:opacityThreshold.connect = </MaterialX/Materials/USD_Car_Paint.inputs:opacityThreshold>
+                float inputs:roughness.connect = </MaterialX/Materials/USD_Car_Paint.inputs:roughness>
+                color3f inputs:specularColor.connect = </MaterialX/Materials/USD_Car_Paint.inputs:specularColor>
+                int inputs:useSpecularWorkflow.connect = </MaterialX/Materials/USD_Car_Paint.inputs:useSpecularWorkflow>
+            }
+        }
+    }
+
+    def "Shaders"
+    {
+        def Shader "ND_UsdPreviewSurface_surfaceshader"
+        {
+            uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+            token outputs:surface
+        }
+    }
+}
+

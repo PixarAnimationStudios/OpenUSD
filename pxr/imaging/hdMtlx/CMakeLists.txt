@@ -42,5 +42,9 @@ pxr_install_test_dir(
 
 pxr_register_test(testHdMtlx
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdMtlx"
-        DIFF_COMPARE hdMtlx_log.txt
+        DIFF_COMPARE
+            out_StdSurface.mtlx
+            out_SwitchExample.mtlx
+            out_USD_Car_Paint.mtlx
+#            out_Atan2Example.mtlx
 )

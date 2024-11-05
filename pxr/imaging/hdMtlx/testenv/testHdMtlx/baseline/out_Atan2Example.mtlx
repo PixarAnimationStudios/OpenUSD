@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<materialx version="1.39">
+  <UsdPreviewSurface name="Surface" type="surfaceshader">
+    <input name="metallic" type="float" output="metallic_out" nodegraph="NodeGraphs" />
+    <input name="diffuseColor" type="color3" value="0.104704, 0.241883, 0.818" />
+  </UsdPreviewSurface>
+  <surfacematerial name="Atan2Example" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="Surface" />
+  </surfacematerial>
+  <nodegraph name="NodeGraphs">
+    <atan2 name="atan2" type="float" nodedef="ND_atan2_float">
+      <input name="iny" type="float" value="0.2" />
+      <input name="inx" type="float" value="0.7" />
+    </atan2>
+    <output name="metallic_out" type="float" nodename="atan2" />
+  </nodegraph>
+</materialx>

@@ -1,0 +1,133 @@
+#usda 1.0
+
+def "MaterialX"
+{
+    def "Materials"
+    {
+        def Material "SwitchExample" (
+            prepend apiSchemas = ["MaterialXConfigAPI"]
+        )
+        {
+            string config:mtlx:version = "1.38"
+            float inputs:base
+            color3f inputs:base_color
+            float inputs:coat
+            float inputs:coat_affect_color
+            float inputs:coat_affect_roughness
+            float inputs:coat_anisotropy
+            color3f inputs:coat_color
+            float inputs:coat_IOR
+            float3 inputs:coat_normal
+            float inputs:coat_rotation
+            float inputs:coat_roughness
+            float inputs:diffuse_roughness
+            float inputs:emission
+            color3f inputs:emission_color
+            float inputs:metalness
+            float3 inputs:normal
+            color3f inputs:opacity
+            float inputs:sheen
+            color3f inputs:sheen_color
+            float inputs:sheen_roughness
+            float inputs:specular
+            float inputs:specular_anisotropy
+            color3f inputs:specular_color
+            float inputs:specular_IOR
+            float inputs:specular_rotation
+            float inputs:specular_roughness
+            float inputs:subsurface
+            float inputs:subsurface_anisotropy
+            color3f inputs:subsurface_color
+            color3f inputs:subsurface_radius
+            float inputs:subsurface_scale
+            float3 inputs:tangent
+            float inputs:thin_film_IOR
+            float inputs:thin_film_thickness
+            bool inputs:thin_walled
+            float inputs:transmission
+            color3f inputs:transmission_color
+            float inputs:transmission_depth
+            float inputs:transmission_dispersion
+            float inputs:transmission_extra_roughness
+            color3f inputs:transmission_scatter
+            float inputs:transmission_scatter_anisotropy
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/SwitchExample/ND_standard_surface_surfaceshader.outputs:surface>
+
+            def Shader "ND_standard_surface_surfaceshader" (
+                prepend references = </MaterialX/Shaders/ND_standard_surface_surfaceshader>
+            )
+            {
+                float inputs:base.connect = </MaterialX/Materials/SwitchExample/NodeGraphs/switch.outputs:out>
+                color3f inputs:base_color.connect = </MaterialX/Materials/SwitchExample.inputs:base_color>
+                float inputs:coat.connect = </MaterialX/Materials/SwitchExample.inputs:coat>
+                float inputs:coat_affect_color.connect = </MaterialX/Materials/SwitchExample.inputs:coat_affect_color>
+                float inputs:coat_affect_roughness.connect = </MaterialX/Materials/SwitchExample.inputs:coat_affect_roughness>
+                float inputs:coat_anisotropy.connect = </MaterialX/Materials/SwitchExample.inputs:coat_anisotropy>
+                color3f inputs:coat_color.connect = </MaterialX/Materials/SwitchExample.inputs:coat_color>
+                float inputs:coat_IOR.connect = </MaterialX/Materials/SwitchExample.inputs:coat_IOR>
+                float3 inputs:coat_normal.connect = </MaterialX/Materials/SwitchExample.inputs:coat_normal>
+                float inputs:coat_rotation.connect = </MaterialX/Materials/SwitchExample.inputs:coat_rotation>
+                float inputs:coat_roughness.connect = </MaterialX/Materials/SwitchExample.inputs:coat_roughness>
+                float inputs:diffuse_roughness.connect = </MaterialX/Materials/SwitchExample.inputs:diffuse_roughness>
+                float inputs:emission.connect = </MaterialX/Materials/SwitchExample.inputs:emission>
+                color3f inputs:emission_color.connect = </MaterialX/Materials/SwitchExample.inputs:emission_color>
+                float inputs:metalness.connect = </MaterialX/Materials/SwitchExample.inputs:metalness>
+                float3 inputs:normal.connect = </MaterialX/Materials/SwitchExample.inputs:normal>
+                color3f inputs:opacity.connect = </MaterialX/Materials/SwitchExample.inputs:opacity>
+                float inputs:sheen.connect = </MaterialX/Materials/SwitchExample.inputs:sheen>
+                color3f inputs:sheen_color.connect = </MaterialX/Materials/SwitchExample.inputs:sheen_color>
+                float inputs:sheen_roughness.connect = </MaterialX/Materials/SwitchExample.inputs:sheen_roughness>
+                float inputs:specular.connect = </MaterialX/Materials/SwitchExample.inputs:specular>
+                float inputs:specular_anisotropy.connect = </MaterialX/Materials/SwitchExample.inputs:specular_anisotropy>
+                color3f inputs:specular_color.connect = </MaterialX/Materials/SwitchExample.inputs:specular_color>
+                float inputs:specular_IOR.connect = </MaterialX/Materials/SwitchExample.inputs:specular_IOR>
+                float inputs:specular_rotation.connect = </MaterialX/Materials/SwitchExample.inputs:specular_rotation>
+                float inputs:specular_roughness.connect = </MaterialX/Materials/SwitchExample.inputs:specular_roughness>
+                float inputs:subsurface.connect = </MaterialX/Materials/SwitchExample.inputs:subsurface>
+                float inputs:subsurface_anisotropy.connect = </MaterialX/Materials/SwitchExample.inputs:subsurface_anisotropy>
+                color3f inputs:subsurface_color.connect = </MaterialX/Materials/SwitchExample.inputs:subsurface_color>
+                color3f inputs:subsurface_radius.connect = </MaterialX/Materials/SwitchExample.inputs:subsurface_radius>
+                float inputs:subsurface_scale.connect = </MaterialX/Materials/SwitchExample.inputs:subsurface_scale>
+                float3 inputs:tangent.connect = </MaterialX/Materials/SwitchExample.inputs:tangent>
+                float inputs:thin_film_IOR.connect = </MaterialX/Materials/SwitchExample.inputs:thin_film_IOR>
+                float inputs:thin_film_thickness.connect = </MaterialX/Materials/SwitchExample.inputs:thin_film_thickness>
+                bool inputs:thin_walled.connect = </MaterialX/Materials/SwitchExample.inputs:thin_walled>
+                float inputs:transmission.connect = </MaterialX/Materials/SwitchExample.inputs:transmission>
+                color3f inputs:transmission_color.connect = </MaterialX/Materials/SwitchExample.inputs:transmission_color>
+                float inputs:transmission_depth.connect = </MaterialX/Materials/SwitchExample.inputs:transmission_depth>
+                float inputs:transmission_dispersion.connect = </MaterialX/Materials/SwitchExample.inputs:transmission_dispersion>
+                float inputs:transmission_extra_roughness.connect = </MaterialX/Materials/SwitchExample.inputs:transmission_extra_roughness>
+                color3f inputs:transmission_scatter.connect = </MaterialX/Materials/SwitchExample.inputs:transmission_scatter>
+                float inputs:transmission_scatter_anisotropy.connect = </MaterialX/Materials/SwitchExample.inputs:transmission_scatter_anisotropy>
+            }
+
+            def "NodeGraphs" (
+                prepend references = </MaterialX/NodeGraphs>
+            )
+            {
+            }
+        }
+    }
+
+    def "Shaders"
+    {
+        def Shader "ND_standard_surface_surfaceshader"
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            token outputs:surface
+        }
+    }
+
+    def "NodeGraphs"
+    {
+        def Shader "switch"
+        {
+            uniform token info:id = "ND_switch_floatI"
+            float inputs:in1 = 0.2
+            float inputs:in2 = 0.4
+            int inputs:which = 5
+            float outputs:out
+        }
+    }
+}
+
