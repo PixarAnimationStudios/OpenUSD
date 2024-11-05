@@ -443,7 +443,10 @@
                         "schemaTypes": [
                             "UsdGeomSubset"
                         ]
-                    }, 
+                    },
+                    "YUpAxisValidator": {
+                        "doc": "UsdStage metadata of upAxis must be Y."
+                    },
                     "keywords": [
                         "UsdGeomValidators"
                     ]

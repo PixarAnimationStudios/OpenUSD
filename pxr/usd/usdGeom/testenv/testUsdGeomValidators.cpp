@@ -29,6 +29,7 @@ TestUsdGeomValidators()
         UsdGeomValidatorNameTokens->subsetFamilies,
         UsdGeomValidatorNameTokens->subsetParentIsImageable,
         UsdGeomValidatorNameTokens->stageMetadataChecker,
+        UsdGeomValidatorNameTokens->yUpAxisValidator
     };
 
     const UsdValidationRegistry& registry =
@@ -41,7 +42,7 @@ TestUsdGeomValidators()
 
     UsdValidatorMetadataVector metadata =
         registry.GetValidatorMetadataForPlugin(_tokens->usdGeomPlugin);
-    TF_AXIOM(metadata.size() == 3);
+    TF_AXIOM(metadata.size() == 4);
     for (const UsdValidatorMetadata& metadata : metadata) {
         validatorMetadataNameSet.insert(metadata.name);
     }
@@ -315,7 +316,7 @@ TestUsdGeomSubsetParentIsImageable()
 }
 
 static
-void TestUsdStageMetadata()
+void TestUsdGeomStageMetadata()
 {
     // Get stageMetadataChecker
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
@@ -333,10 +334,10 @@ void TestUsdStageMetadata()
     TF_AXIOM(errors.size() == 2);
     auto rootLayerIdentifier = rootLayer->GetIdentifier().c_str();
     const std::vector<std::string> expectedErrorMessages = {
-        TfStringPrintf("Stage with root layer <%s> does not specify its linear "
-                       "scale in metersPerUnit.", rootLayerIdentifier),
-        TfStringPrintf("Stage with root layer <%s> does not specify an upAxis.", 
-                       rootLayerIdentifier)
+        TfStringPrintf("Stage with root layer <%s> does not specify its "
+                       "linear scale in metersPerUnit.", rootLayerIdentifier),
+        TfStringPrintf("Stage with root layer <%s> does not specify an "
+                       "upAxis.", rootLayerIdentifier)
     };
 
     const std::vector<TfToken> expectedErrorIdentifiers = {
@@ -363,14 +364,52 @@ void TestUsdStageMetadata()
     TF_AXIOM(errors.empty());
 }
 
+static
+void TestUsdGeomYUpAxisValidator()
+{
+    // Get stageMetadataChecker
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const UsdValidator *validator = registry.GetOrLoadValidatorByName(
+            UsdGeomValidatorNameTokens->yUpAxisValidator);
+    TF_AXIOM(validator);
+
+    // Create an empty stage with a Z up axis
+    SdfLayerRefPtr rootLayer = SdfLayer::CreateAnonymous();
+    UsdStageRefPtr usdStage = UsdStage::Open(rootLayer);
+
+    UsdGeomSetStageUpAxis(usdStage, UsdGeomTokens->z);
+
+    UsdValidationErrorVector errors = validator->Validate(usdStage);
+
+    // Verify the error is present
+    const TfToken expectedIdentifier =
+        TfToken("usdGeom:YUpAxisValidator.nonYUpAxis");
+    const std::string expectedErrorMsg =
+        "Stage specifies upAxis 'Z'. upAxis should be 'Y'.";
+    TF_AXIOM(errors.size() == 1);
+    TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+    TF_AXIOM(errors[0].GetIdentifier() == expectedIdentifier);
+    TF_AXIOM(errors[0].GetSites().size() == 1);
+    TF_AXIOM(errors[0].GetSites()[0].IsValid());
+    TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
+
+    // Change the up axis to Y
+    UsdGeomSetStageUpAxis(usdStage, UsdGeomTokens->y);
+
+    errors = validator->Validate(usdStage);
+
+    // Verify the errors are fixed
+    TF_AXIOM(errors.empty());
+}
+
 int
 main()
 {
     TestUsdGeomValidators();
     TestUsdGeomSubsetFamilies();
     TestUsdGeomSubsetParentIsImageable();
-    TestUsdStageMetadata();
+    TestUsdGeomStageMetadata();
+    TestUsdGeomYUpAxisValidator();
 
-    std::cout << "OK\n";
     return EXIT_SUCCESS;
 }
