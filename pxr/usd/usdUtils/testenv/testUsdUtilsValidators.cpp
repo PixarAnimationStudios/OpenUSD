@@ -7,9 +7,9 @@
 
 #include "pxr/usd/usd/validator.h"
 #include "pxr/usd/usd/validationError.h"
+#include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdUtils/validatorTokens.h"
 #include "pxr/usd/usd/validationRegistry.h"
-#include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/tf/pathUtils.h"
 
 #include <filesystem>
@@ -30,7 +30,7 @@ TestUsdUsdzValidators()
     UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
     UsdValidatorMetadataVector metadata =
             registry.GetValidatorMetadataForPlugin(_tokens->usdUtilsPlugin);
-    TF_AXIOM(metadata.size() == 1);
+    TF_AXIOM(metadata.size() == 2);
     // Since other validators can be registered with a UsdUtilsValidators
     // keyword, our validators registered in usd are a subset of the entire
     // set.
@@ -40,7 +40,8 @@ TestUsdUsdzValidators()
     }
 
     const std::set<TfToken> expectedValidatorNames =
-            {UsdUtilsValidatorNameTokens->packageEncapsulationValidator};
+            {UsdUtilsValidatorNameTokens->packageEncapsulationValidator,
+            UsdUtilsValidatorNameTokens->missingReferenceValidator};
 
     TF_AXIOM(validatorMetadataNameSet == expectedValidatorNames);
 }
@@ -73,12 +74,12 @@ TestPackageEncapsulationValidator()
     const std::string& rootLayerIdentifier = rootLayer->GetIdentifier();
     const std::string realUsdzPath = rootLayer->GetRealPath();
     const std::string errorLayer = TfStringCatPaths(
-        TfGetPathName(TfAbsPath(rootLayerIdentifier)), 
+        TfGetPathName(TfAbsPath(rootLayerIdentifier)),
         "excludedDirectory/layer.usda");
 
-    std::filesystem::path parentDir = 
+    std::filesystem::path parentDir =
         std::filesystem::path(realUsdzPath).parent_path();
-    const std::string errorAsset = 
+    const std::string errorAsset =
         (parentDir / "excludedDirectory" / "image.jpg").string();
 
     std::array<std::string, 2> expectedErrorMessages = {
@@ -107,8 +108,50 @@ TestPackageEncapsulationValidator()
     // Load the pre-created usdz stage with relative paths to both a reference
     // and an asset that are included in the package.
     const UsdStageRefPtr& passStage = UsdStage::Open("pass.usdz");
-    
+
     errors = validator->Validate(passStage);
+
+    // Verify the errors are gone
+    TF_AXIOM(errors.empty());
+}
+
+static
+void
+TestMissingReferenceValidator()
+{
+    UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
+
+    // Verify the validator exists
+    const UsdValidator *validator = registry.GetOrLoadValidatorByName(
+            UsdUtilsValidatorNameTokens->missingReferenceValidator);
+
+    TF_AXIOM(validator);
+
+    // Create stage with a reference that does not exist
+    const UsdStageRefPtr& stage = UsdStage::CreateInMemory();
+
+    const UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/Xform"));
+    const SdfReference badReference("doesNotExist.usd");
+    xform.GetPrim().GetReferences().AddReference(badReference);
+
+    UsdValidationErrorVector errors = validator->Validate(stage);
+
+    // Verify both the layer & asset errors are present
+    const TfToken expectedIdentifier =
+        TfToken("usdUtils:MissingReferenceValidator.UnresolvableDependency");
+    TF_AXIOM(errors.size() == 1);
+    TF_AXIOM(errors[0].GetIdentifier() == expectedIdentifier);
+    TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+    TF_AXIOM(errors[0].GetSites().size() == 1);
+    TF_AXIOM(!errors[0].GetSites()[0].GetLayer().IsInvalid());
+    const std::string expectedErrorMessage = "Found unresolvable external "
+                                             "dependency 'doesNotExist.usd'.";
+    TF_AXIOM(errors[0].GetMessage() == expectedErrorMessage);
+
+    // Remove the nonexistent reference, add an existing reference
+    xform.GetPrim().GetReferences().RemoveReference(badReference);
+    xform.GetPrim().GetReferences().AddReference("pass.usdz");
+    errors = validator->Validate(stage);
 
     // Verify the errors are gone
     TF_AXIOM(errors.empty());
@@ -119,6 +162,7 @@ main()
 {
     TestUsdUsdzValidators();
     TestPackageEncapsulationValidator();
+    TestMissingReferenceValidator();
 
     return EXIT_SUCCESS;
 }

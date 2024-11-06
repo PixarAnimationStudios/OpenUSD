@@ -104,9 +104,44 @@ _PackageEncapsulationValidator(const UsdStagePtr& usdStage) {
     return errors;
 }
 
+static
+UsdValidationErrorVector
+_MissingReferenceValidator(const UsdStagePtr& usdStage) {
+    const SdfLayerRefPtr& rootLayer = usdStage->GetRootLayer();
+
+    SdfLayerRefPtrVector layers;
+    std::vector<std::basic_string<char>> assets, unresolvedPaths;
+    const SdfAssetPath& path = SdfAssetPath(rootLayer->GetIdentifier());
+
+    UsdUtilsComputeAllDependencies(path, &layers, &assets, &unresolvedPaths,
+                                   nullptr);
+
+    UsdValidationErrorVector errors;
+    for(const std::basic_string<char>& unresolvedPath : unresolvedPaths)
+    {
+        errors.emplace_back(
+            UsdUtilsValidationErrorNameTokens->unresolvableDependency,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites {
+                UsdValidationErrorSite(
+                    rootLayer, SdfPath(unresolvedPath))
+            },
+            TfStringPrintf(
+            ("Found unresolvable external dependency "
+                "'%s'."), unresolvedPath.c_str())
+        );
+    }
+    
+    return errors;
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
+
+    registry.RegisterPluginValidator(
+        UsdUtilsValidatorNameTokens->missingReferenceValidator, _MissingReferenceValidator);
+
     registry.RegisterPluginValidator(
             UsdUtilsValidatorNameTokens->packageEncapsulationValidator, _PackageEncapsulationValidator);
 }
