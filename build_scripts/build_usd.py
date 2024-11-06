@@ -210,6 +210,7 @@ def GetPythonInfo(context):
                                      _GetPythonLibraryFilename(context))
     elif Linux():
         pythonMultiarchSubdir = sysconfig.get_config_var("multiarchsubdir")
+        searched = set()
         # Try multiple ways to get the python lib dir
         for pythonLibDir in (sysconfig.get_config_var("LIBDIR"),
                              os.path.join(pythonBaseDir, "lib")):
@@ -217,12 +218,16 @@ def GetPythonInfo(context):
                 pythonLibPath = \
                     os.path.join(pythonLibDir + pythonMultiarchSubdir,
                                  _GetPythonLibraryFilename(context))
+                searched.add(pythonLibPath)
                 if os.path.isfile(pythonLibPath):
                     break
             pythonLibPath = os.path.join(pythonLibDir,
                                          _GetPythonLibraryFilename(context))
+            searched.add(pythonLibPath)
             if os.path.isfile(pythonLibPath):
                 break
+        else:
+            raise RuntimeError(f"Could not find the Python library path at: {searched}")
     elif MacOS():
         pythonLibPath = os.path.join(pythonBaseDir, "lib",
                                      _GetPythonLibraryFilename(context))
