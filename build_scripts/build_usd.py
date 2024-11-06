@@ -234,6 +234,10 @@ def GetPythonInfo(context):
     else:
         raise RuntimeError("Platform not supported")
 
+    assert os.path.exists(pythonExecPath), f"Could not find {pythonExecPath}"
+    assert os.path.exists(pythonLibPath), f"Could not find {pythonLibPath}"
+    assert os.path.exists(pythonIncludeDir), f"Could not find {pythonIncludeDir}"
+
     return (pythonExecPath, pythonLibPath, pythonIncludeDir, pythonVersion)
 
 def GetCPUCount():
