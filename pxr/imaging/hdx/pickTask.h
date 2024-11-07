@@ -168,6 +168,15 @@ struct HdxPrimOriginInfo
     FromPickHit(HdRenderIndex * renderIndex,
                 const HdxPickHit &hit);
 
+    /// Vectorized implementation of function to query terminal scene index
+    /// of render index for information about picked prim. Amortizes the cost
+    /// of computing the array of all instace indices and locations for
+    /// instancers.
+    HDX_API
+    static std::vector<HdxPrimOriginInfo>
+    FromPickHits(HdRenderIndex * renderIndex,
+                const std::vector<HdxPickHit> &hits);
+
     /// Combines instance scene paths and prim scene path to obtain the full
     /// scene path.
     ///
