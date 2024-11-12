@@ -20,12 +20,12 @@ def _findEditorTools(usdFileName, readOnly):
         sys.exit("Error: Couldn't find 'usdcat'. Expected it to be in PATH.")
 
     # Ensure we have a suitable editor available
-    from distutils.spawn import find_executable
+    import shutil
     editorCmd = (os.getenv("USD_EDITOR") or
                  os.getenv("EDITOR") or 
-                 find_executable("emacs") or
-                 find_executable("vim") or
-                 find_executable("notepad"))
+                 shutil.which("emacs") or
+                 shutil.which("vim") or
+                 shutil.which("notepad"))
     
     if not editorCmd:
         sys.exit("Error: Couldn't find a suitable text editor to use. Expected " 

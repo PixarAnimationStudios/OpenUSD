@@ -182,6 +182,23 @@ def _SetSchemaUserDocFields(spec, doc):
     # (example: https://openusd.org/release/user_guides/schemas/index.html)
     spec.customData[UserDocConstants.USERDOC_FULL] = doc
 
+
+def StringToBool(val):
+    """Convert a string representation of truth to True or False.
+    
+    True values are 'y', 'yes', 't', 'true', 'on', and '1';
+    False values are 'n', 'no', 'f', 'false', 'off', and '0'.
+    
+    Raises ValueError if `val` is anything else.
+    """
+    val = val.lower()
+    if val in ('y', 'yes', 't', 'true', 'on', '1'):
+        return True
+    elif val in ('n', 'no', 'f', 'false', 'off', '0'):
+        return False
+    else:
+        raise ValueError(f"Invalid truth value: {val}")
+
 def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
         overrideIdentifier=""):
     """
@@ -271,7 +288,6 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
           SdfPropertySpec's CONNECTABILITY.
     """
 
-    import distutils.util
     import os
 
     # Early exit on invalid parameters
@@ -350,7 +366,7 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
     if SchemaDefiningKeys.PROVIDES_USD_SHADE_CONNECTABLE_API_BEHAVIOR in \
             sdrNodeMetadata:
         providesUsdShadeConnectableAPIBehavior = \
-            distutils.util.strtobool(sdrNodeMetadata[SchemaDefiningKeys. \
+            StringToBool(sdrNodeMetadata[SchemaDefiningKeys. \
                 PROVIDES_USD_SHADE_CONNECTABLE_API_BEHAVIOR])
 
     apiSchemasForAttrPruning = None
@@ -460,7 +476,7 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
                 # Since we want to assign the types for these to bool and
                 # because in python boolean type is a subset of int, we need to
                 # do following instead of assign the propValue directly.
-                propValue = distutils.util.strtobool(sdrNodeMetadata[propKey])
+                propValue = StringToBool(sdrNodeMetadata[propKey])
                 extraPlugInfo[propKey] = bool(propValue)
 
         primSpecCustomData['extraPlugInfo'] = extraPlugInfo
