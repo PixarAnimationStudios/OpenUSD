@@ -930,32 +930,115 @@ Tf_GetDoubleToStringConverter()
     return conv;
 }
 
-void
-Tf_ApplyDoubleToStringConverter(float val, char* buffer, int bufferSize)
+bool Tf_IsNegative(const char* const buffer) {
+    return buffer[0] == '-';
+}
+
+bool Tf_IsZero(const char* const buffer)
 {
-    const auto& conv = Tf_GetDoubleToStringConverter();
-    pxr_double_conversion::StringBuilder builder(buffer, bufferSize);
-    // This should only fail if we provide an insufficient buffer.
-    TF_VERIFY(conv.ToShortestSingle(val, &builder),
-              "double_conversion failed");
+    // As text representations of numbers can vary, we only check
+    // that the string does not contain numbers 1-9.
+    //
+    // Though a non-zero exponent on 0 is still 0, and we could thus
+    // break once when reach the exponent, we expect zeroes to also
+    // use an exponent of 0 for consistency; this is already the
+    // current behavior of the string conversion implementation.
+    for (const char* it = buffer; *it; it++) {
+        if ('1' <= *it && *it <= '9') {
+            return false;
+        }
+    }
+    return true;
+}
+
+void Tf_StripNegativeSign(char* buffer) {
+    if (!Tf_IsNegative(buffer)) {
+        return;
+    }
+    // Left-shift all characters by one position, clobbering the first one.
+    for (char* it = buffer; *it; it++) {
+        *it = *(it + 1);
+    } 
 }
 
 void
-Tf_ApplyDoubleToStringConverter(double val, char* buffer, int bufferSize)
+Tf_ApplyDoubleToStringConverter(float val, char* buffer, int bufferSize, const TfDecimalToStringConfig& toStringConfig)
 {
     const auto& conv = Tf_GetDoubleToStringConverter();
     pxr_double_conversion::StringBuilder builder(buffer, bufferSize);
-    // This should only fail if we provide an insufficient buffer.
-    TF_VERIFY(conv.ToShortest(val, &builder),
-              "double_conversion failed");
+    constexpr const char* missingDigitsErrorMessage = "Decimal to string mode requires a number of digits to use but none was specified.";
+    constexpr const char* conversionErrorMessage = "Float conversion to string failed.";
+    switch (toStringConfig.mode) {
+        case TfDecimalToStringMode::SHORTEST:
+            TF_VERIFY(conv.ToShortestSingle(val, &builder), conversionErrorMessage);
+            break;
+        case TfDecimalToStringMode::FIXED:
+            if (TF_VERIFY(toStringConfig.digits.has_value(), missingDigitsErrorMessage)) {
+                TF_VERIFY(conv.ToFixed(val, toStringConfig.digits.value(), &builder), conversionErrorMessage);
+            }
+            break;
+        case TfDecimalToStringMode::EXPONENTIAL:
+            if (TF_VERIFY(toStringConfig.digits.has_value(), missingDigitsErrorMessage)) {
+                TF_VERIFY(conv.ToExponential(val, toStringConfig.digits.value(), &builder), conversionErrorMessage);
+            }
+            break;
+        case TfDecimalToStringMode::PRECISION:
+            if (TF_VERIFY(toStringConfig.digits.has_value(), missingDigitsErrorMessage)) {
+                TF_VERIFY(conv.ToPrecision(val, toStringConfig.digits.value(), &builder), conversionErrorMessage);
+            }
+            break;
+        default:
+            TF_CODING_ERROR("Tried converting a float to a string with a non-existent mode.");
+            break;
+    }
+    builder.Finalize();
+    if (!toStringConfig.allowNegativeZero && Tf_IsNegative(buffer) && Tf_IsZero(buffer)) {
+        Tf_StripNegativeSign(buffer);
+    }
+}
+
+void
+Tf_ApplyDoubleToStringConverter(double val, char* buffer, int bufferSize, const TfDecimalToStringConfig& toStringConfig)
+{
+    const auto& conv = Tf_GetDoubleToStringConverter();
+    pxr_double_conversion::StringBuilder builder(buffer, bufferSize);
+    constexpr const char* missingDigitsErrorMessage = "Decimal to string mode requires a number of digits to use but none was specified.";
+    constexpr const char* conversionErrorMessage = "Double conversion to string failed.";
+    switch (toStringConfig.mode) {
+        case TfDecimalToStringMode::SHORTEST:
+            TF_VERIFY(conv.ToShortest(val, &builder), conversionErrorMessage);
+            break;
+        case TfDecimalToStringMode::FIXED:
+            if (TF_VERIFY(toStringConfig.digits.has_value(), missingDigitsErrorMessage)) {
+                TF_VERIFY(conv.ToFixed(val, toStringConfig.digits.value(), &builder), conversionErrorMessage);
+            }
+            break;
+        case TfDecimalToStringMode::EXPONENTIAL:
+            if (TF_VERIFY(toStringConfig.digits.has_value(), missingDigitsErrorMessage)) {
+                TF_VERIFY(conv.ToExponential(val, toStringConfig.digits.value(), &builder), conversionErrorMessage);
+            }
+            break;
+        case TfDecimalToStringMode::PRECISION:
+            if (TF_VERIFY(toStringConfig.digits.has_value(), missingDigitsErrorMessage)) {
+                TF_VERIFY(conv.ToPrecision(val, toStringConfig.digits.value(), &builder), conversionErrorMessage);
+            }
+            break;
+        default:
+            TF_CODING_ERROR("Tried converting a double to a string with a non-existent mode.");
+            break;
+    }
+    builder.Finalize();
+    if (!toStringConfig.allowNegativeZero && Tf_IsNegative(buffer) && Tf_IsZero(buffer)) {
+        Tf_StripNegativeSign(buffer);
+    }
 }
 
 std::string
-TfStringify(float val)
+TfStringify(float val, TfDecimalToStringConfig toStringConfig/* = {}*/)
 {
     constexpr int bufferSize = 128;
     char buffer[bufferSize];
-    Tf_ApplyDoubleToStringConverter(val, buffer, bufferSize);
+    Tf_ApplyDoubleToStringConverter(val, buffer, bufferSize, toStringConfig);
     return std::string(buffer);
 }
 
@@ -987,12 +1070,19 @@ TfDoubleToString(
 }
 
 std::string
-TfStringify(double val)
+TfStringify(double val, TfDecimalToStringConfig toStringConfig/* = {}*/)
 {
     constexpr int bufferSize = 128;
     char buffer[bufferSize];
-    Tf_ApplyDoubleToStringConverter(val, buffer, bufferSize);
+    Tf_ApplyDoubleToStringConverter(val, buffer, bufferSize, toStringConfig);
     return std::string(buffer);
+}
+
+thread_local TfDecimalToStringConfig TfStreamFloat::_toStringConfig{};
+
+TfDecimalToStringConfig& TfStreamFloat::ToStringConfig()
+{
+    return _toStringConfig;
 }
 
 std::ostream& 
@@ -1000,8 +1090,15 @@ operator<<(std::ostream& o, TfStreamFloat t)
 {
     constexpr int bufferSize = 128;
     char buffer[bufferSize];
-    Tf_ApplyDoubleToStringConverter(t.value, buffer, bufferSize);
+    Tf_ApplyDoubleToStringConverter(t.value, buffer, bufferSize, TfStreamFloat::ToStringConfig());
     return o << buffer;
+}
+
+thread_local TfDecimalToStringConfig TfStreamDouble::_toStringConfig{};
+
+TfDecimalToStringConfig& TfStreamDouble::ToStringConfig()
+{
+    return _toStringConfig;
 }
 
 std::ostream& 
@@ -1009,7 +1106,7 @@ operator<<(std::ostream& o, TfStreamDouble t)
 {
     constexpr int bufferSize = 128;
     char buffer[bufferSize];
-    Tf_ApplyDoubleToStringConverter(t.value, buffer, bufferSize);
+    Tf_ApplyDoubleToStringConverter(t.value, buffer, bufferSize, TfStreamDouble::ToStringConfig());
     return o << buffer;
 }
 

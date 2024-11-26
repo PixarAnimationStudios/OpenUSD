@@ -19,6 +19,22 @@
 using namespace std;
 PXR_NAMESPACE_USING_DIRECTIVE
 
+static void TestFloatStreaming(float originalValue, const char* const textRepresentation, float readValue)
+{
+    std::stringstream sstr;
+    sstr << TfStreamFloat(originalValue);
+    TF_AXIOM(sstr.str() == textRepresentation);
+    TF_AXIOM(static_cast<float>(TfStringToDouble(sstr.str())) == readValue);
+}
+
+static void TestDoubleStreaming(double originalValue, const char* const textRepresentation, double readValue)
+{
+    std::stringstream sstr;
+    sstr << TfStreamDouble(originalValue);
+    TF_AXIOM(sstr.str() == textRepresentation);
+    TF_AXIOM(TfStringToDouble(sstr.str()) == readValue);
+}
+
 static bool
 TestNumbers()
 {
@@ -67,6 +83,70 @@ TestNumbers()
 
     sstr << TfStreamFloat(0.84066f);
     TF_AXIOM(float(TfStringToDouble(sstr.str())) == 0.84066f);
+
+    TfDecimalToStringConfig shortestConfig = { TfDecimalToStringMode::SHORTEST, {}, true };
+    TfStreamDouble::ToStringConfig() = shortestConfig;
+    TfStreamFloat::ToStringConfig() = shortestConfig;
+    TestDoubleStreaming(0.1, "0.1", 0.1);
+    TestDoubleStreaming(2.7468493, "2.7468493", 2.7468493);
+    TestDoubleStreaming(-0.00008, "-0.00008", -0.00008);
+    TestDoubleStreaming(-0.0, "-0", -0.0);
+    TestFloatStreaming(0.1f, "0.1", 0.1f);
+    TestFloatStreaming(2.7468493f, "2.7468493", 2.7468493f);
+    TestFloatStreaming(-0.00008f, "-0.00008", -0.00008f);
+    TestFloatStreaming(-0.0f, "-0", -0.0f);
+    TfStreamDouble::ToStringConfig().allowNegativeZero = false;
+    TfStreamFloat::ToStringConfig().allowNegativeZero = false;
+    TestDoubleStreaming(-0.0, "0", 0.0);
+    TestFloatStreaming(-0.0f, "0", 0.0f);
+
+    TfDecimalToStringConfig fixedConfig = { TfDecimalToStringMode::FIXED, 3, true };
+    TfStreamDouble::ToStringConfig() = fixedConfig;
+    TfStreamFloat::ToStringConfig() = fixedConfig;
+    TestDoubleStreaming(0.1, "0.100", 0.1);
+    TestDoubleStreaming(2.7468493, "2.747", 2.747);
+    TestDoubleStreaming(-0.00008, "-0.000", 0.0);
+    TestDoubleStreaming(-0.0, "-0.000", -0.0);
+    TestFloatStreaming(0.1f, "0.100", 0.1f);
+    TestFloatStreaming(2.7468493f, "2.747", 2.747f);
+    TestFloatStreaming(-0.00008f, "-0.000", 0.0f);
+    TestFloatStreaming(-0.0f, "-0.000", -0.0f);
+    TfStreamDouble::ToStringConfig().allowNegativeZero = false;
+    TfStreamFloat::ToStringConfig().allowNegativeZero = false;
+    TestDoubleStreaming(-0.00008, "0.000", 0.0);
+    TestFloatStreaming(-0.00008f, "0.000", 0.0f);
+
+    TfDecimalToStringConfig exponentialConfig = { TfDecimalToStringMode::EXPONENTIAL, 5, true };
+    TfStreamDouble::ToStringConfig() = exponentialConfig;
+    TfStreamFloat::ToStringConfig() = exponentialConfig;
+    TestDoubleStreaming(0.1, "1.00000e-1", 0.1);
+    TestDoubleStreaming(2.7468493, "2.74685e0", 2.74685);
+    TestDoubleStreaming(-0.00008, "-8.00000e-5", -0.00008);
+    TestDoubleStreaming(-0.0, "-0.00000e0", -0.0);
+    TestFloatStreaming(0.1f, "1.00000e-1", 0.1f);
+    TestFloatStreaming(2.7468493f, "2.74685e0", 2.74685f);
+    TestFloatStreaming(-0.00008f, "-8.00000e-5", -0.00008f);
+    TestFloatStreaming(-0.0f, "-0.00000e0", -0.0f);
+    TfStreamDouble::ToStringConfig().allowNegativeZero = false;
+    TfStreamFloat::ToStringConfig().allowNegativeZero = false;
+    TestDoubleStreaming(-0.0, "0.00000e0", 0.0);
+    TestFloatStreaming(-0.0f, "0.00000e0", 0.0f);
+
+    TfDecimalToStringConfig precisionConfig = { TfDecimalToStringMode::PRECISION, 2, true };
+    TfStreamDouble::ToStringConfig() = precisionConfig;
+    TfStreamFloat::ToStringConfig() = precisionConfig;
+    TestDoubleStreaming(0.1, "1.0e-1", 0.1);
+    TestDoubleStreaming(2.7468493, "2.7", 2.7);
+    TestDoubleStreaming(-0.00008, "-8.0e-5", -0.00008);
+    TestDoubleStreaming(-0.0, "-0.0", -0.0);
+    TestFloatStreaming(0.1f, "1.0e-1", 0.1f);
+    TestFloatStreaming(2.7468493f, "2.7", 2.7f);
+    TestFloatStreaming(-0.00008f, "-8.0e-5", -0.00008f);
+    TestFloatStreaming(-0.0f, "-0.0", -0.0f);
+    TfStreamDouble::ToStringConfig().allowNegativeZero = false;
+    TfStreamFloat::ToStringConfig().allowNegativeZero = false;
+    TestDoubleStreaming(-0.0, "0.0", 0.0);
+    TestFloatStreaming(-0.0f, "0.0", 0.0f);
 
     constexpr int bufferSize = 25;
     char buffer[bufferSize];
