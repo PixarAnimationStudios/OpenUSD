@@ -19,3 +19,7 @@ endif()
 if(CMAKE_USE_PTHREADS_INIT)
     _disable_warning("unused-command-line-argument")
 endif()
+
+_disable_warning("unused-but-set-variable")
+
+set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} -Werror")

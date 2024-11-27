@@ -38,7 +38,6 @@ private:
 
 private:
     UsdVolVolume _usdVolume;
-    const UsdImagingDataSourceStageGlobals &_stageGlobals;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceVolumeFieldBindings);

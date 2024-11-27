@@ -8,6 +8,7 @@
 #define PXR_BASE_GF_NUMERIC_CAST_H
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/pragmas.h"
 
 #include "pxr/base/gf/traits.h"
 
@@ -25,6 +26,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// This mimics the C++20 std::cmp_less function for comparing integers of
 /// different types where negative signed integers always compare less than (and
 /// not equal to) unsigned integers.
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_UNSAFE_USE_OF_BOOL
+ARCH_PRAGMA_SIGNED_AND_UNSIGNED_COMPARE
 template <class T, class U>
 constexpr bool
 GfIntegerCompareLess(T t, U u) noexcept
@@ -41,6 +45,7 @@ GfIntegerCompareLess(T t, U u) noexcept
         return u >= 0 && t < std::make_unsigned_t<U>(u);
     }
 }
+ARCH_PRAGMA_POP
 
 enum GfNumericCastFailureType {
     GfNumericCastPosOverflow,  ///< Value too high to convert.

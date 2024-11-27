@@ -1225,7 +1225,7 @@ _GetAsCommaSeparatedString(size_t number)
 {
     string result;
 
-    string str = TfStringPrintf("%ld", number);
+    string str = TfStringPrintf("%zu", number);
     size_t n = str.size();
 
     TF_FOR_ALL(it, str) {
@@ -1355,7 +1355,7 @@ _PrintMallocCallSites(
     const size_t maxPercentageWidth = 15;
 
     string fmt = TfStringPrintf(
-        "%%-%lds %%%lds %%%lds\n",
+        "%%-%zus %%%zus %%%zus\n",
         maxNameWidth, maxBytesWidth, maxPercentageWidth);
 
     *rpt += TfStringPrintf(fmt.c_str(), "NAME", "BYTES", "%ROOT");
@@ -1436,7 +1436,7 @@ _ReportMallocNode(
     }
 
     out << TfStringPrintf(
-        "%13s B %13s B %7ld samples    ",
+        "%13s B %13s B %7zu samples    ",
         _GetAsCommaSeparatedString(node.nBytes).c_str(),
         _GetAsCommaSeparatedString(node.nBytesDirect).c_str(),
         node.nAllocations);

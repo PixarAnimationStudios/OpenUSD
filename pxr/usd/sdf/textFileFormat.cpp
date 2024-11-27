@@ -169,7 +169,7 @@ SdfTextFileFormat::_ReadFromAsset(
     const size_t toMB = 1048576;
 
     if (fileSizeWarning > 0 && asset->GetSize() > (fileSizeWarning * toMB)) {
-        TF_WARN("Performance warning: reading %lu MB text-based layer <%s>.",
+        TF_WARN("Performance warning: reading %zu MB text-based layer <%s>.",
                 asset->GetSize() / toMB,
                 resolvedPath.c_str());
     }

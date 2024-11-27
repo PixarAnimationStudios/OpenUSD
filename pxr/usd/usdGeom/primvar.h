@@ -864,7 +864,7 @@ UsdGeomPrimvar::_ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
 
     if (!invalidIndexPositions.empty() && errString) {
         *errString = TfStringPrintf(
-            "Found %ld invalid indices into authored array of size %ld with" 
+            "Found %zu invalid indices into authored array of size %zu with" 
             " element size of %i:", 
             invalidIndexPositions.size(), 
             authored.size(), elementSize);
@@ -877,7 +877,7 @@ UsdGeomPrimvar::_ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
             int authoredStartIndex = invalidIndex * elementSize;
 
             *errString += TfStringPrintf(
-            "\n\t Invalid index %i at position %ld refers to %s of the"
+            "\n\t Invalid index %i at position %zu refers to %s of the"
             " authored array, which is out of bounds", 
             invalidIndex,
             invalidIndexPositions[i],

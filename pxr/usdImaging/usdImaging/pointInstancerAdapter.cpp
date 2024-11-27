@@ -489,7 +489,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
     }
 
     TF_DEBUG(USDIMAGING_POINT_INSTANCER_PROTO_CREATED).Msg(
-        "Prototype[%d]: <%s>, primCount: %lu, instantiatedPrimCount: %lu\n",
+        "Prototype[%d]: <%s>, primCount: %zu, instantiatedPrimCount: %zu\n",
         protoIndex,
         protoRootPrim.GetPath().GetText(),
         primCount,

@@ -156,8 +156,8 @@ HdStBufferArrayRegistry::ReallocateAll(HdStAggregationStrategy *strategy)
                 if (numElements > maxTotalElements) {
                     // Issue a warning and reset number of elements in the BAR.
                     TF_WARN("Number of elements in the buffer array range "
-                            "(0x%lx) is _larger_ than the maximum number of "
-                            "elements in the buffer array (0x%lx). 0x%lx bytes "
+                            "(0x%zx) is _larger_ than the maximum number of "
+                            "elements in the buffer array (0x%zx). 0x%zx bytes "
                             "of data will be skipped.",
                             numElements, maxTotalElements,
                             numElements - maxTotalElements);
@@ -270,7 +270,6 @@ HdStBufferArrayRegistry::_InsertNewBufferArray(
 }
 
 
-HD_API
 std::ostream &
 operator <<(std::ostream &out, const HdStBufferArrayRegistry& self)
 {

@@ -260,7 +260,7 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(
 
             copyOffset += output.size();
 
-            TF_DEBUG(HDX_SELECTION_SETUP).Msg("Highlight mode %d has %lu "
+            TF_DEBUG(HDX_SELECTION_SETUP).Msg("Highlight mode %d has %zu "
                 "entries\n", mode, output.size());
         }
     }

@@ -676,7 +676,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::Resize(int numElem
 
         if (static_cast<size_t>(numElements) > numMaxElements) {
             TF_WARN("Attempting to resize the BAR with 0x%x elements when the "
-                    "max number of elements in the buffer array is 0x%lx. "
+                    "max number of elements in the buffer array is 0x%zx. "
                     "Clamping BAR size to the latter.",
                      numElements, numMaxElements);
 

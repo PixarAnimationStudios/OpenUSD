@@ -1445,7 +1445,7 @@ Arch_DefaultStackTraceCallback(uintptr_t address)
         Arch_DemangleFunctionName(&symbolName);
         const uintptr_t symbolOffset =
             (uint64_t)(address - (uintptr_t)symbolAddress);
-        return ArchStringPrintf("%s+%#0lx", symbolName.c_str(), symbolOffset);
+        return ArchStringPrintf("%s+%#0zx", symbolName.c_str(), symbolOffset);
     }
     else {
         return "<unknown>";
@@ -1514,7 +1514,7 @@ Arch_GetStackTrace(const vector<uintptr_t> &frames,
         if (skipUnknownFrames && symbolic == "<unknown>") {
             continue;
         }
-        rv.push_back(ArchStringPrintf(" #%-3i 0x%016lx in %s",
+        rv.push_back(ArchStringPrintf(" #%-3i 0x%016zx in %s",
                                       n++, frames[i], symbolic.c_str()));
     }
 

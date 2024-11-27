@@ -32,3 +32,12 @@ void wrapArrayAssetPath() {
     VtWrapArray<VtArray<SdfAssetPath> >();
     VtValueFromPythonLValue<VtArray<SdfAssetPath> >();
 }
+
+#if defined(ARCH_OS_WINDOWS)
+PXR_NAMESPACE_OPEN_SCOPE
+// On Windows, the VtArray functions are not being defined in the translation
+// unit and are left as undefined symbols during linking. Forcing the
+// instantiation here to force the symbols to be created for linking.
+template class VtArray<SdfAssetPath>;
+PXR_NAMESPACE_CLOSE_SCOPE
+#endif // defined(ARCH_OS_WINDOWS)

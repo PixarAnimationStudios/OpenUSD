@@ -55,7 +55,7 @@ protected:
 };
 
 // Private base class helper for VtArray implementation.
-class Vt_ArrayBase
+class VT_API Vt_ArrayBase
 {
 public:
     Vt_ArrayBase() : _shapeData { 0 }, _foreignSource(nullptr) {}
@@ -114,7 +114,7 @@ protected:
         return _GetControlBlock(nativeData).capacity;
     }
 
-    VT_API void _DetachCopyHook(char const *funcName) const;
+    void _DetachCopyHook(char const *funcName) const;
 
     Vt_ShapeData _shapeData;
     Vt_ArrayForeignDataSource *_foreignSource;

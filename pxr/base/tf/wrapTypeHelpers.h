@@ -24,7 +24,7 @@ namespace TfType_WrapHelpers {
 
     struct _PythonClass : def_visitor<_PythonClass>
     {
-        friend class def_visitor_access;
+        friend class pxr_boost::python::def_visitor_access;
             
     private:
         template <class CLS, class T>

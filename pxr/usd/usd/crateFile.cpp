@@ -1803,6 +1803,8 @@ _WritePossiblyCompressedArray(
         return _WriteUncompressedArray(w, array, ver);
     }
 
+    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_INT_FLOAT_CONVERSION
     // Check to see if all the floats are exactly represented as integers.
     auto isIntegral = [](T fp) {
         constexpr int32_t max = std::numeric_limits<int32_t>::max();
@@ -1810,6 +1812,7 @@ _WritePossiblyCompressedArray(
         return min <= fp && fp <= max &&
             static_cast<T>(static_cast<int32_t>(fp)) == fp;
     };    
+    ARCH_PRAGMA_POP
     if (std::all_of(array.cdata(), array.cdata() + array.size(), isIntegral)) {
         // Encode as integers.
         auto result = ValueRepForArray<T>(w.Tell());

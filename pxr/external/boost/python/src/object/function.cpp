@@ -160,7 +160,15 @@ PyObject* function::call(PyObject* args, PyObject* keywords) const
                     else
                     {
                         // build a new arg tuple, will adjust its size later
+                        // Depending on the version of PY this may be always true, disabling warning
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-constant-out-of-range-compare"
+#endif
                         assert(max_arity <= static_cast<std::size_t>(ssize_t_max));
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
                         inner_args = handle<>(
                             PyTuple_New(static_cast<ssize_t>(max_arity)));
 

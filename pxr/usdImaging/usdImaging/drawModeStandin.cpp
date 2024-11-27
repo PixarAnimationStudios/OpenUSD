@@ -1403,6 +1403,7 @@ _CardsDataCache::_CardsData::_ComputePoints(const _SchemaValues &values)
             { x, 1, 0 } };
 
         static const GfVec3f one(1.0f);
+        (void)one;
 
         // For each pair of opposite faces.
         for (size_t i = 0; i < 3; i++) {

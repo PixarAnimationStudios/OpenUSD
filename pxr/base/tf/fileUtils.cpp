@@ -365,7 +365,7 @@ TfReadDir(
     if((hFind = FindFirstFileW(szPath, &fdFile)) == INVALID_HANDLE_VALUE)
     {
         if (errMsg) {
-            *errMsg = TfStringPrintf("Path not found: %s", szPath);
+            *errMsg = TfStringPrintf("Path not found: %ls", szPath);
         }
         return false;
     }

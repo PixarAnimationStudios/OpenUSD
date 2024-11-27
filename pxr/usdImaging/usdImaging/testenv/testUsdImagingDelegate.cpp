@@ -68,10 +68,10 @@ VaryingTest()
     driver.Draw();
 
     TF_VERIFY(perfLog.GetCacheMisses(HdTokens->extent) == 2,
-                "Found %lu cache misses", 
+                "Found %zu cache misses", 
                 perfLog.GetCacheMisses(HdTokens->extent));
     TF_VERIFY(perfLog.GetCacheMisses(HdTokens->points) == 2, 
-                "Found %lu cache misses", 
+                "Found %zu cache misses", 
                 perfLog.GetCacheMisses(HdTokens->points));
     TF_VERIFY(perfLog.GetCacheMisses(HdTokens->topology) == 1);
     TF_VERIFY(perfLog.GetCacheMisses(HdTokens->transform) == 2);
@@ -97,10 +97,10 @@ VaryingTest()
     driver2.Draw();
 
     TF_VERIFY(perfLog.GetCacheMisses(HdTokens->extent) == 2,
-                "Found %lu cache misses", 
+                "Found %zu cache misses", 
                 perfLog.GetCacheMisses(HdTokens->extent));
     TF_VERIFY(perfLog.GetCacheMisses(HdTokens->points) == 2, 
-                "Found %lu cache misses", 
+                "Found %zu cache misses", 
                 perfLog.GetCacheMisses(HdTokens->points));
     TF_VERIFY(perfLog.GetCacheMisses(HdTokens->topology) == 1);
     TF_VERIFY(perfLog.GetCacheMisses(HdTokens->transform) == 2);

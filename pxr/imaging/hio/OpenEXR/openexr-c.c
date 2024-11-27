@@ -14,6 +14,14 @@
 // defined but not referenced or exported.
 ARCH_PRAGMA_UNUSED_FUNCTION
 
+#if defined(__clang__)
+#pragma clang diagnostic ignored "-Wmacro-redefined"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wmacro-redefined"
+#elif defined(_MSC_VER)
+#pragma warning(disable: 4005)
+#endif
+
 #include "OpenEXRCoreUnity.h"
 
 #include <ctype.h>

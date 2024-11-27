@@ -789,10 +789,13 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
         const bool bothAscii = l < 0x80 && r < 0x80;
         const bool differsIgnoringCase = (l & ~0x20) != (r & ~0x20);
         const bool inLetterZone = (l >= 0x40) && (r >= 0x40);
+        ARCH_PRAGMA_PUSH
+        ARCH_PRAGMA_BITWISE_INSTEAD_OF_LOGICAL
         if (bothAscii && differsIgnoringCase && inLetterZone) {
             // Add 5 mod 32 makes '_' sort before all letters.
             return ((l + 5) & 31) < ((r + 5) & 31);
         }
+        // Intentionally using bitwise operators due to performance critical code path.
         else if (IsDigit(l) | IsDigit(r)) {
             if (IsDigit(l) & IsDigit(r)) {
                 // We backtrack to find the start of each digit string, then we
@@ -856,6 +859,7 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
                 curEnd = lcur + std::min(std::distance(lcur, lend),
                                          std::distance(rcur, rend));
             }
+             // Intentionally using bitwise operators due to performance critical code path.
             else if (IsDigit(l) | IsDigit(r)) {
                 if (lcur == lstr.c_str()) {
                     return l < r;
@@ -877,6 +881,7 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
             // Both letters, differ by case, continue.
             ++lcur, ++rcur;
         }
+        ARCH_PRAGMA_POP
         // Find the next differing byte in the strings.
         std::tie(lcur, rcur) = Mismatch(lcur, curEnd, rcur);
     }

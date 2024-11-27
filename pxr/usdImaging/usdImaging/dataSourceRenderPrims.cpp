@@ -123,16 +123,14 @@ private:
     _DataSourceRenderPass(
             const SdfPath &sceneIndexPath,
             UsdRenderPass usdRenderPass,
-            const UsdImagingDataSourceStageGlobals &stageGlobals)
+            ARCH_UNUSED_ARG const UsdImagingDataSourceStageGlobals &stageGlobals)
         : _sceneIndexPath(sceneIndexPath)
         , _usdRenderPass(usdRenderPass)
-        , _stageGlobals(stageGlobals)
     {}
 
 private:
     const SdfPath _sceneIndexPath;
     UsdRenderPass _usdRenderPass;
-    const UsdImagingDataSourceStageGlobals & _stageGlobals;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(_DataSourceRenderPass);

@@ -865,7 +865,7 @@ UsdImagingGprimAdapter::GetColor(UsdPrim const& prim,
 
                     if (colorInterp == UsdGeomTokens->constant &&
                         result.size() > 1) {
-                        TF_WARN("Prim %s has %lu element(s) for %s even "
+                        TF_WARN("Prim %s has %zu element(s) for %s even "
                                 "though it is marked constant.",
                                 prim.GetPath().GetText(), result.size(),
                                 primvar.GetName().GetText());
@@ -878,7 +878,7 @@ UsdImagingGprimAdapter::GetColor(UsdPrim const& prim,
 
                 if (colorInterp == UsdGeomTokens->constant &&
                     result.size() > 1) {
-                    TF_WARN("Prim %s has %lu element(s) for %s even "
+                    TF_WARN("Prim %s has %zu element(s) for %s even "
                             "though it is marked constant.",
                             prim.GetPath().GetText(), result.size(),
                             primvar.GetName().GetText());
@@ -978,7 +978,7 @@ UsdImagingGprimAdapter::GetOpacity(UsdPrim const& prim,
 
                     if (opacityInterp == UsdGeomTokens->constant &&
                         result.size() > 1) {
-                        TF_WARN("Prim %s has %lu element(s) for %s even "
+                        TF_WARN("Prim %s has %zu element(s) for %s even "
                                 "though it is marked constant.",
                                 prim.GetPath().GetText(), result.size(),
                                 primvar.GetName().GetText());
@@ -991,7 +991,7 @@ UsdImagingGprimAdapter::GetOpacity(UsdPrim const& prim,
 
                 if (opacityInterp == UsdGeomTokens->constant &&
                     result.size() > 1) {
-                    TF_WARN("Prim %s has %lu element(s) for %s even "
+                    TF_WARN("Prim %s has %zu element(s) for %s even "
                             "though it is marked constant.",
                             prim.GetPath().GetText(), result.size(),
                             primvar.GetName().GetText());

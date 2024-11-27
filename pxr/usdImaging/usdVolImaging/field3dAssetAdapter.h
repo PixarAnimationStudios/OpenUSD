@@ -50,7 +50,7 @@ public:
             TfToken const& subprim,
             const UsdImagingDataSourceStageGlobals &stageGlobals) override;
 
-    USDIMAGING_API
+    USDVOLIMAGING_API
     HdDataSourceLocatorSet InvalidateImagingSubprim(
             UsdPrim const& prim,
             TfToken const& subprim,

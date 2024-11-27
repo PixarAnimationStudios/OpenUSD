@@ -21,6 +21,10 @@ elseif(MSVC)
     include(msvcdefaults)
 endif()
 
+if(WIN32)
+    include(windefaults)
+endif()
+
 _add_define(GL_GLEXT_PROTOTYPES)
 _add_define(GLX_GLXEXT_PROTOTYPES)
 

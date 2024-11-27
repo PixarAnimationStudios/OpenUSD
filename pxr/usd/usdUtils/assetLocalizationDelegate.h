@@ -277,7 +277,7 @@ public:
 
     virtual std::vector<std::string> ProcessPayloads(
         const SdfLayerRefPtr &layer,
-        const SdfPrimSpecHandle &primSpec);
+        const SdfPrimSpecHandle &primSpec) override;
 
     virtual std::vector<std::string> ProcessReferences(
         const SdfLayerRefPtr &layer,

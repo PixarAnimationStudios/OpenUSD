@@ -94,7 +94,6 @@ private:
 
 private:
     UsdAttributeQuery _purposeQuery;
-    const UsdImagingDataSourceStageGlobals &_stageGlobals;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourcePurpose);
@@ -272,7 +271,6 @@ private:
 
 private:
     UsdGeomXformable::XformQuery _xformQuery;
-    const UsdImagingDataSourceStageGlobals &_stageGlobals;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceXformResetXformStack);

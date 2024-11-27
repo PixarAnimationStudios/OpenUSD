@@ -5416,7 +5416,7 @@ _GenerateFlattenedPrototypePath(const std::vector<UsdPrim>& prototypes)
     size_t primPrototypeId = 1;
 
     const auto generatePathName = [&primPrototypeId]() {
-        return SdfPath(TfStringPrintf("/Flattened_Prototype_%lu", 
+        return SdfPath(TfStringPrintf("/Flattened_Prototype_%zu",
                                       primPrototypeId++));
     };
 

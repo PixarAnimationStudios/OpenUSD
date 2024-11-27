@@ -79,10 +79,13 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
 };
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_UNUSED_VARIABLE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (mtlx)
 );
+ARCH_PRAGMA_POP
 #endif
 
 using HdStResourceRegistryWeakPtr =  std::weak_ptr<HdStResourceRegistry>;

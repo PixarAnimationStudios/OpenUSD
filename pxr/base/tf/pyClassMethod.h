@@ -26,7 +26,7 @@ using namespace pxr_boost::python;
 // except it uses PyClassMethod_New() instead of PyStaticMethod_New().
 struct _TfPyClassMethod : def_visitor<_TfPyClassMethod>
 {
-    friend class def_visitor_access;
+    friend class pxr_boost::python::def_visitor_access;
 
     _TfPyClassMethod(const std::string &methodName) :
         _methodName(methodName) {}

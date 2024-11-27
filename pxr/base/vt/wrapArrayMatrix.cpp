@@ -17,3 +17,17 @@ PXR_NAMESPACE_USING_DIRECTIVE
 void wrapArrayMatrix() {
     TF_PP_SEQ_FOR_EACH(VT_WRAP_ARRAY, ~, VT_MATRIX_VALUE_TYPES);
 }
+
+#if defined(ARCH_COMPILER_CLANG) && defined(ARCH_OS_WINDOWS)
+PXR_NAMESPACE_OPEN_SCOPE
+// On Windows, the VtArray functions are not being defined in the translation
+// unit and are left as undefined symbols during linking. Forcing the
+// instantiation here to force the symbols to be created for linking.
+template class VtArray<GfMatrix4f>;
+template class VtArray<GfMatrix3f>;
+template class VtArray<GfMatrix2f>;
+template class VtArray<GfMatrix4d>;
+template class VtArray<GfMatrix3d>;
+template class VtArray<GfMatrix2d>;
+PXR_NAMESPACE_CLOSE_SCOPE
+#endif // defined(ARCH_COMPILER_CLANG) && defined(ARCH_OS_WINDOWS)

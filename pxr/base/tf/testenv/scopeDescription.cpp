@@ -85,6 +85,7 @@ TestOverhead()
     } while (sw.GetSeconds() < 0.5);
     // printf("%zd rand calls in %f seconds: %u\n",
     //        count, sw.GetSeconds(), val);
+    (void)val;
     double baseSecsPerCall = sw.GetSeconds() / double(count);
 
     count = 0;

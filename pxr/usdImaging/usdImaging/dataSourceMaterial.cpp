@@ -281,15 +281,13 @@ public:
 private:
     _UsdImagingDataSourceShadingNodeInputs(
         UsdShadeShader shaderNode,
-        const UsdImagingDataSourceStageGlobals &stageGlobals,
+        ARCH_UNUSED_ARG const UsdImagingDataSourceStageGlobals &stageGlobals,
         const SdfPath &materialPrefix)
     : _shaderNode(shaderNode)
-    , _stageGlobals(stageGlobals)
     , _materialPrefix(materialPrefix)
     {}
 
     UsdShadeShader _shaderNode;
-    const UsdImagingDataSourceStageGlobals &_stageGlobals;
     const SdfPath _materialPrefix;
 };
 

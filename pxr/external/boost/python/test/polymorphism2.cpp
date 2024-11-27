@@ -83,7 +83,7 @@ struct DCallback :  D,  wrapper<D>
         if (override f = this->get_override("f"))
             return f();
         //else
-            return D::f();
+        return D::f();
     }
 };
 

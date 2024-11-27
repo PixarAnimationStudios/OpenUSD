@@ -158,6 +158,7 @@ PXR_NAMESPACE_OPEN_SCOPE
         __attribute__((format(printf, _fmt, _firstArg)))
 #   define ARCH_SCANF_FUNCTION(_fmt, _firstArg)	\
         __attribute__((format(scanf, _fmt, _firstArg)))
+#   define ARCH_FORCEINLINE __attribute__((always_inline))
 #   define ARCH_NOINLINE __attribute__((noinline))
 #   define ARCH_ALWAYS_INLINE __attribute__((always_inline))
 #   define ARCH_UNUSED_ARG   __attribute__ ((unused))
@@ -169,6 +170,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #   define ARCH_PRINTF_FUNCTION(_fmt, _firstArg)
 #   define ARCH_SCANF_FUNCTION(_fmt, _firstArg)
+#   define ARCH_FORCEINLINE __forceinline
 #   define ARCH_NOINLINE // __declspec(noinline)
 #   define ARCH_ALWAYS_INLINE
 #   define ARCH_UNUSED_ARG

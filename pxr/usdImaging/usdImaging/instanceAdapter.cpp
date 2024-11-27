@@ -344,6 +344,8 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                 protoPath = newProtoPath;
             }
 
+            ARCH_PRAGMA_PUSH
+            ARCH_PRAGMA_POTENTIALLY_EVALUATED_EXPRESSION
             TF_DEBUG(USDIMAGING_INSTANCER).Msg(
                 "[Add Instance NI] <%s>  %s (%s), adapter = %s\n",
                 instancerPath.GetText(), protoPath.GetText(),
@@ -351,6 +353,7 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                 primAdapter ?
                     TfType::GetCanonicalTypeName(typeid(*primAdapter)).c_str() :
                     "none");
+            ARCH_PRAGMA_POP
         }
     }
 

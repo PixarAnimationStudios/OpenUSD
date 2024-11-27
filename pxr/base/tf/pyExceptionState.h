@@ -8,6 +8,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
 #include "pxr/external/boost/python/handle.hpp"
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

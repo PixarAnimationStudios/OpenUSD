@@ -8,8 +8,30 @@
 # Enable exception handling.
 set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /EHsc")
 
-# Standards compliant.
-set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:rvalueCast /Zc:strictStrings")
+# Standards conformance: This option disables permissive behaviors, and sets
+# the /Zc compiler options for strict conformance
+set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /permissive-")
+
+# Standards conformance: Enforce Standard C++ explicit type conversion rules.
+# Enabled automatically by permissive-
+# set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:rvalueCast")
+
+# Standards conformance: Disable string-literal to char* or wchar_t* conversion.
+# Enabled automatically by permissive-
+# set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:strictStrings")
+
+# Standards conformance: Standard compliant preprocessor
+set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:preprocessor")
+
+# Standards conformance: MSVC stores the C++ standard version in _MSVC_LANG and
+# __cplusplus was stuck on an early standard version. This will force
+# __cplusplus == _MSVC_LANG which conforms to the standard.
+set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:__cplusplus")
+
+# Standards conformance: This causes the class-level dllexport and dllimport
+# attributes to not apply to inline member functions, as they otherwise would.
+# Only available with Clang-CL
+# set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zc:dllexportInlines-")
 
 # Visual Studio sets the value of __cplusplus to 199711L regardless of
 # the C++ standard actually being used, unless /Zc:__cplusplus is enabled.

@@ -39,7 +39,7 @@ atomic_compare_exchange_strong (
     uint64_t volatile* object, uint64_t* expected, uint64_t desired)
 {
     uint64_t prev =
-        (uint64_t) InterlockedCompareExchange64 (object, desired, *expected);
+        (uint64_t) InterlockedCompareExchange64 ((volatile int64_t *)object, desired, *expected);
     if (prev == *expected) return 1;
     *expected = prev;
     return 0;

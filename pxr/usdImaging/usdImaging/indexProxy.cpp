@@ -40,10 +40,13 @@ UsdImagingIndexProxy::_AddHdPrimInfo(SdfPath const &cachePath,
         }
     }
 
+    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_POTENTIALLY_EVALUATED_EXPRESSION
     TF_DEBUG(USDIMAGING_CHANGES).Msg(
         "[Add HdPrim Info] <%s> adapter=%s\n",
         cachePath.GetText(),
         TfType::GetCanonicalTypeName(typeid(*(adapterToInsert.get()))).c_str());
+    ARCH_PRAGMA_POP
 
     // Currently, we don't support more than one adapter dependency per usd
     // prim, but we could relax this restriction if it's useful.

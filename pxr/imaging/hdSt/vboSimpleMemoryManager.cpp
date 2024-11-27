@@ -454,7 +454,7 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArrayRange::CopyData(
         bufferSource->GetNumElements() *
         HdDataSizeOfTupleType(bufferSource->GetTupleType());
     if (srcSize > dstSize) {
-        TF_WARN("%s: size %ld is larger than the range (%ld)",
+        TF_WARN("%s: size %zd is larger than the range (%zd)",
                 bufferSource->GetName().GetText(), srcSize, dstSize);
         srcSize = dstSize;
     }

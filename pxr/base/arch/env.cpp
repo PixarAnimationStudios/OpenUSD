@@ -19,7 +19,7 @@
 
 #if defined(ARCH_OS_DARWIN)
 #include <crt_externs.h>
-#else
+#elif !defined(ARCH_OS_WINDOWS)
 extern "C" char** environ;
 #endif
 

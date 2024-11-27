@@ -50,7 +50,7 @@ struct Instance {
                 }
             }
             msg += TfStringPrintf(
-                "\nCategories mismatch:\n  L: (%lu) [%s]\n  R: (%lu) [%s]\n",
+                "\nCategories mismatch:\n  L: (%zu) [%s]\n  R: (%zu) [%s]\n",
                 lhsCats.size(), strL.c_str(), rhsCats.size(), strR.c_str());
             result = false;
         }
@@ -103,13 +103,13 @@ TestNestedInstancingCategories()
     for (const int& instanceIndex : instanceIndices) {
         if (instanceIndex >= int(instanceCategories.size())) {
             TF_CODING_ERROR("InstanceIndex %i is out of range. "
-                "GetInstanceCategories gave only %lu category lists", 
+                "GetInstanceCategories gave only %zu category lists", 
                 instanceIndex, instanceCategories.size());
             break;
         }
         if (instanceIndex >= int(instancePaths.size())) {
             TF_CODING_ERROR("InstanceIndex %i is out of range. "
-                "GetScenePrimPaths gave only %lu paths",
+                "GetScenePrimPaths gave only %zu paths",
                 instanceIndex, instancePaths.size());
             break;
         }

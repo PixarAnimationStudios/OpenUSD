@@ -32,3 +32,23 @@ void wrapArrayVec() {
     TF_PP_SEQ_FOR_EACH(VT_WRAP_ARRAY, ~, VT_VEC_VALUE_TYPES);
     //BOOST_PP_SEQ_FOR_EACH(VT_WRAP_COMPARISON, ~, VT_VEC_VALUE_TYPES);
 }
+
+#if defined(ARCH_COMPILER_CLANG) && defined(ARCH_OS_WINDOWS)
+PXR_NAMESPACE_OPEN_SCOPE
+// On Windows, the VtArray functions are not being defined in the translation
+// unit and are left as undefined symbols during linking. Forcing the
+// instantiation here to force the symbols to be created for linking.
+template class VtArray<GfVec4i>;
+template class VtArray<GfVec3i>;
+template class VtArray<GfVec2i>;
+template class VtArray<GfVec4h>;
+template class VtArray<GfVec3h>;
+template class VtArray<GfVec2h>;
+template class VtArray<GfVec4f>;
+template class VtArray<GfVec3f>;
+template class VtArray<GfVec2f>;
+template class VtArray<GfVec4d>;
+template class VtArray<GfVec3d>;
+template class VtArray<GfVec2d>;
+PXR_NAMESPACE_CLOSE_SCOPE
+#endif // defined(ARCH_COMPILER_CLANG) && defined(ARCH_OS_WINDOWS)

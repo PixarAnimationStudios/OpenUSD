@@ -593,6 +593,7 @@ MakeUnique(
     int maxRetry = 1000)
 {
     static const bool init = (srand(GetTickCount()), true);
+    (void)init;
 
     // Copy template to a writable buffer.
     const auto length = sTemplate.size();

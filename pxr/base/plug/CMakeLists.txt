@@ -101,10 +101,17 @@ pxr_build_test_shared_lib(TestPlugDsoUnloadable
 # link flag to force these symbols to be looked up at runtime.
 if (TARGET TestPlugDsoUnloadable)
     if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-        set_target_properties(TestPlugDsoUnloadable
-            PROPERTIES
-            LINK_FLAGS "-undefined dynamic_lookup"
-        )
+        if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+            set_target_properties(TestPlugDsoUnloadable
+                PROPERTIES
+                LINK_FLAGS "-Wl,/force:unresolved -Wl,/ignore:4088 -Wl,/ignore:2019"
+            )
+        else()
+            set_target_properties(TestPlugDsoUnloadable
+                PROPERTIES
+                LINK_FLAGS "-undefined dynamic_lookup"
+            )
+        endif()
     elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
         # This forces the link to complete but the linker will still
         # report the missing symbol as an error and will also emit a

@@ -604,7 +604,7 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::Resize(int numElements)
 
         if (static_cast<size_t>(numElements) > numMaxElements) {
             TF_WARN("Attempting to resize the BAR with 0x%x elements when the "
-                    "max number of elements in the buffer array is 0x%lx. "
+                    "max number of elements in the buffer array is 0x%zx. "
                     "Clamping BAR size to the latter.",
                      numElements, numMaxElements);
 
@@ -659,7 +659,7 @@ HdStVBOMemoryManager::_StripedBufferArrayRange::CopyData(
         bufferSource->GetNumElements() *
         HdDataSizeOfTupleType(bufferSource->GetTupleType());
     if (srcSize > dstSize) {
-        TF_WARN("%s: size %ld is larger than the range (%ld)",
+        TF_WARN("%s: size %zd is larger than the range (%zd)",
                 bufferSource->GetName().GetText(), srcSize, dstSize);
         srcSize = dstSize;
     }

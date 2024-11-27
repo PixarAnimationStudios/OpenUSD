@@ -254,6 +254,7 @@ static void InstallDyldCallbacks()
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
+#elif defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
 #elif defined(ARCH_OS_WINDOWS)
 
 #include <Windows.h>

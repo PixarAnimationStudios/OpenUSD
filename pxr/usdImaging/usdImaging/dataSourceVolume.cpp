@@ -16,9 +16,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 UsdImagingDataSourceVolumeFieldBindings
 ::UsdImagingDataSourceVolumeFieldBindings(
         UsdVolVolume usdVolume,
-        const UsdImagingDataSourceStageGlobals &stageGlobals)
+        ARCH_UNUSED_ARG const UsdImagingDataSourceStageGlobals &stageGlobals)
     : _usdVolume(usdVolume)
-    , _stageGlobals(stageGlobals)
 {
 }
 

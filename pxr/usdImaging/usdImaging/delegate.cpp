@@ -981,7 +981,7 @@ UsdImagingDelegate::_GatherDependencies(
     if (it != cache.end()) {
         TF_DEBUG(USDIMAGING_CHANGES).Msg(
             "[_GatherDependencies] Found entry in flattened cache for %s with "
-            "%lu paths\n", subtree.GetText(), it->second.size());
+            "%zu paths\n", subtree.GetText(), it->second.size());
 
         *affectedCachePaths = it->second;
         return;

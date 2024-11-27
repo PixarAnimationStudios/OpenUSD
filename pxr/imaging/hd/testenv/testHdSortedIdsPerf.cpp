@@ -44,7 +44,7 @@ _GetInitPaths()
             }
         }
         // Shuffle paths randomly.
-        const size_t seed = 5109223000;
+        const std::mt19937::result_type seed = 814255704;
         std::mt19937 randomGen(seed);
         std::shuffle(paths.begin(), paths.end(), randomGen);
 
@@ -263,7 +263,7 @@ ScatteredRemoveInsertTest(Metrics &metrics, unsigned divisor,
         SdfPathVector ret;
         const SdfPathVector &initPaths = _GetInitPaths();
         // Take random indexes that cover 10% of the total.
-        std::mt19937 gen(5109223000);
+        std::mt19937 gen(814255704);
         std::uniform_int_distribution<> distrib(0, initPaths.size()-1);
         for (size_t i = 0; i != initPaths.size() / divisor; ++i) {
             ret.push_back(initPaths[distrib(gen)]);

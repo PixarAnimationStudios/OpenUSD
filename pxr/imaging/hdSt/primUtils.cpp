@@ -641,7 +641,7 @@ HdStUpdateDrawItemBAR(
         
         if (newRangeValid) {
             TfDebug::Helper().Msg(
-                "Buffer array version for the new range is %lu\n",
+                "Buffer array version for the new range is %zu\n",
                 newRange->GetVersion());
         }
 

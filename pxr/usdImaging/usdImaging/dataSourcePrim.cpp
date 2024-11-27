@@ -91,9 +91,8 @@ UsdImagingDataSourceVisibility::Get(const TfToken &name)
 
 UsdImagingDataSourcePurpose::UsdImagingDataSourcePurpose(
         const UsdAttributeQuery &purposeQuery,
-        const UsdImagingDataSourceStageGlobals &stageGlobals)
+        ARCH_UNUSED_ARG const UsdImagingDataSourceStageGlobals &stageGlobals)
     : _purposeQuery(purposeQuery)
-    , _stageGlobals(stageGlobals)
 {
 }
 
@@ -311,9 +310,8 @@ UsdImagingDataSourceExtentsHint::Get(const TfToken &name)
 
 UsdImagingDataSourceXformResetXformStack::UsdImagingDataSourceXformResetXformStack(
         const UsdGeomXformable::XformQuery &xformQuery,
-        const UsdImagingDataSourceStageGlobals &stageGlobals)
+        ARCH_UNUSED_ARG const UsdImagingDataSourceStageGlobals &stageGlobals)
     : _xformQuery(xformQuery)
-    , _stageGlobals(stageGlobals)
 {
 }
 

@@ -42,7 +42,7 @@ public:
     /// knot is the one that is being edited in an interactive case.  Batch
     /// cases can't use these modes because we are adjusting an existing spline,
     /// rather than editing a single knot.
-    enum TS_API InteractiveMode
+    enum InteractiveMode
     {
         /// Shorten the proposed tangents of the active knot so that there is no
         /// regression, leaving the neighbor tangents alone.

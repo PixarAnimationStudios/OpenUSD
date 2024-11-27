@@ -1165,10 +1165,17 @@ function(pxr_toplevel_epilogue)
                     -Wl,--whole-archive $<BUILD_INTERFACE:$<TARGET_FILE:usd_m>> -Wl,--no-whole-archive
             )
         elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-            target_link_libraries(usd_ms
-                PRIVATE
-                    -Wl,-force_load $<BUILD_INTERFACE:$<TARGET_FILE:usd_m>>
-            )
+            if (WIN32) #lld-link does not have a consistent set of arguments
+                target_link_libraries(usd_ms
+                    PRIVATE
+                        -Wl,-wholearchive $<BUILD_INTERFACE:$<TARGET_FILE:usd_m>>
+                )
+            else()
+                target_link_libraries(usd_ms
+                    PRIVATE
+                        -Wl,-force_load $<BUILD_INTERFACE:$<TARGET_FILE:usd_m>>
+                )
+            endif()
         endif()
 
         # Since we didn't add a dependency to usd_ms on usd_m above, we

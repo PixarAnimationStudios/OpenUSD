@@ -822,7 +822,7 @@ UsdGeomSubset::ValidateSubsets(
             valid = false;
             if (reason) {
                 *reason += TfStringPrintf("Number of unique indices at time %s "
-                    "does not match the element count %ld.", 
+                    "does not match the element count %zu.",
                     TfStringify(t).c_str(), elementCount);
             }
         }
@@ -833,7 +833,7 @@ UsdGeomSubset::ValidateSubsets(
             valid = false;
             if (reason) {
                 *reason += TfStringPrintf("Found one or more indices that are "
-                    "greater than the element count %ld at time %s.",
+                    "greater than the element count %zd at time %s.",
                     elementCount, TfStringify(t).c_str());
             }
         }
@@ -978,7 +978,7 @@ UsdGeomSubset::ValidateFamily(
                 valid = false;
                 if (reason) {
                     *reason += TfStringPrintf("Number of unique indices at time %s "
-                        "does not match the element count %ld.",
+                        "does not match the element count %zd.",
                         TfStringify(t).c_str(), elementCount);
                 }
             }
@@ -1049,7 +1049,7 @@ UsdGeomSubset::ValidateFamily(
                                 valid = false;
                                 if (reason) {
                                     *reason += TfStringPrintf("Found one or more indices that are "
-                                        "greater than the curve vertex count %lu at time %s.",
+                                        "greater than the curve vertex count %zu at time %s.",
                                         curveVertexCounts.size(), TfStringify(t).c_str());
                                 }
                             } else if (segment[1] >= segmentCounts[curveIndex]) {
@@ -1078,7 +1078,7 @@ UsdGeomSubset::ValidateFamily(
                     valid = false;
                     if (reason) {
                         *reason += TfStringPrintf("Number of unique indices at time %s "
-                            "does not match the element count %ld.",
+                            "does not match the element count %zd.",
                             TfStringify(t).c_str(), elementCount);
                     }
                 }
@@ -1101,7 +1101,7 @@ UsdGeomSubset::ValidateFamily(
                 valid = false;
                 if (reason) {
                     *reason += TfStringPrintf("Found one or more indices that are "
-                        "greater than the element count %ld at time %s.",
+                        "greater than the element count %zd at time %s.",
                         elementCount, TfStringify(t).c_str());
                 }
             }

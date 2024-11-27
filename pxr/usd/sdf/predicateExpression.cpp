@@ -160,6 +160,8 @@ SdfPredicateExpression::GetText() const
 
     std::vector<Op> opStack;
 
+    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_UNUSED_LAMBDA_CAPTURE
     auto printLogic = [&opName, &opStack, &result](
         std::vector<std::pair<Op, int>> const &stack) {
 
@@ -189,6 +191,7 @@ SdfPredicateExpression::GetText() const
             result += ')';
         }                
     };
+    ARCH_PRAGMA_POP
 
     auto printCall = [&result](FnCall const &call) {
         result += call.funcName;

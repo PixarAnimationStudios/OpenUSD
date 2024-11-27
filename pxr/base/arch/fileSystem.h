@@ -49,6 +49,10 @@ PXR_NAMESPACE_OPEN_SCOPE
         #include <sys/param.h>                  /* for MAXPATHLEN */
     #endif
 #else
+    // S_ISDIR may be previously defined in pyport.h
+    #if defined(S_ISDIR)
+        #undef S_ISDIR
+    #endif
     // XXX -- Should probably have ARCH_ macro for this.
     #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
 

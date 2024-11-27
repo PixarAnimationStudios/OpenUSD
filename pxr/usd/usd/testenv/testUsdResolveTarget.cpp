@@ -240,8 +240,8 @@ _MakeAndVerifyQueries(
         attr.GetPath() << " **" << std::endl;
 
     TF_VERIFY(expectedValues.size() == resolveTargets.size(), 
-        "Number or resolve targets %lu doesn't match the number of expected "
-        "values %lu.",
+        "Number or resolve targets %zu doesn't match the number of expected "
+        "values %zu.",
         resolveTargets.size(), expectedValues.size());
 
     for (size_t i = 0; i < resolveTargets.size(); ++i) {

@@ -947,7 +947,11 @@ function(_pxr_target_link_libraries NAME)
                 elseif(CMAKE_COMPILER_IS_GNUCXX)
                     list(APPEND final -Wl,--whole-archive ${lib} -Wl,--no-whole-archive)
                 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-                    list(APPEND final -Wl,-force_load ${lib})
+                    if (WIN32) #lld-link does not have a consistent set of arguments
+                        list(APPEND final -Wl,-wholearchive:$<TARGET_FILE:${lib}>)
+                    else()
+                        list(APPEND final -Wl,-force_load ${lib})
+                    endif()
                 else()
                     # Unknown platform.
                     list(APPEND final ${lib})

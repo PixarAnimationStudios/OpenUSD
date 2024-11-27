@@ -246,7 +246,7 @@ namespace api
       );
   }
   
-  class object : public object_base
+  class PXR_BOOST_PYTHON_DECL object : public object_base
   {
    public:
       // default constructor creates a None object
@@ -260,7 +260,7 @@ namespace api
       }
 
       // Throw error_already_set() if the handle is null.
-      PXR_BOOST_PYTHON_DECL explicit object(handle<> const&);
+      explicit object(handle<> const&);
    private:
       
    public: // implementation detail -- for internal use only
