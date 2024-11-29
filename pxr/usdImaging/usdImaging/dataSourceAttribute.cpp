@@ -42,6 +42,8 @@ static _FactoryMap _CreateFactoryMap()
     map[SdfValueTypeNames->BoolArray] = _FactoryImpl<VtArray<bool>>;
     map[SdfValueTypeNames->Color3fArray] = _FactoryImpl<VtArray<GfVec3f>>;
     map[SdfValueTypeNames->Color3f] = _FactoryImpl<GfVec3f>;
+    map[SdfValueTypeNames->Color4fArray] = _FactoryImpl<VtArray<GfVec4f>>;
+    map[SdfValueTypeNames->Color4f] = _FactoryImpl<GfVec4f>;
     map[SdfValueTypeNames->Double] = _FactoryImpl<double>;
     map[SdfValueTypeNames->Double2] = _FactoryImpl<GfVec2d>;
     map[SdfValueTypeNames->DoubleArray] = _FactoryImpl<VtArray<double>>;
