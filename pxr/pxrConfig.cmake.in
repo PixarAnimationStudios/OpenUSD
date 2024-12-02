@@ -49,11 +49,13 @@ endif()
 
 include(CMakeFindDependencyMacro)
 
-if(@PXR_FIND_TBB_IN_CONFIG@)
+set(PXR_FIND_TBB_IN_CONFIG "@PXR_FIND_TBB_IN_CONFIG@")
+if(PXR_FIND_TBB_IN_CONFIG)
     find_dependency(TBB @TBB_VERSION@ CONFIG)
 endif()
 
-if(@PXR_FIND_OPENSUBDIV_IN_CONFIG@)
+set(PXR_FIND_OPENSUBDIV_IN_CONFIG "@PXR_FIND_OPENSUBDIV_IN_CONFIG@")
+if(PXR_FIND_OPENSUBDIV_IN_CONFIG)
     find_dependency(OpenSubdiv @OpenSubdiv_VERSION@ CONFIG)
 endif()
 
