@@ -23,13 +23,6 @@ pxr_core_epilogue()
 
 export(PACKAGE pxr)
 
-if(TBB_DIR)
-    set(PXR_FIND_TBB_IN_CONFIG ON)
-endif()
-if(OpenSubdiv_DIR)
-    set(PXR_FIND_OPENSUBDIV_IN_CONFIG ON)
-endif()
-
 configure_file(pxrConfig.cmake.in
   "${PROJECT_BINARY_DIR}/pxrConfig.cmake" @ONLY)
 install(FILES
