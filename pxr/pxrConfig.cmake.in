@@ -47,6 +47,16 @@ if(@PXR_ENABLE_PYTHON_SUPPORT@)
     endif()
 endif()
 
+include(CMakeFindDependencyMacro)
+
+if(@PXR_FIND_TBB_IN_CONFIG@)
+    find_dependency(TBB @TBB_VERSION@ CONFIG)
+endif()
+
+if(@PXR_FIND_OPENSUBDIV_IN_CONFIG@)
+    find_dependency(OpenSubdiv @OpenSubdiv_VERSION@ CONFIG)
+endif()
+
 # If MaterialX support was enabled for this USD build, try to find the
 # associated import targets by invoking the same FindMaterialX.cmake
 # module that was used for that build. This can be overridden by

@@ -130,7 +130,14 @@ endif()
 
 
 # --TBB
-find_package(TBB REQUIRED COMPONENTS tbb)
+find_package(TBB CONFIG)
+if(TBB_DIR)
+    # Found in CONFIG mode.
+    set(TBB_tbb_LIBRARY TBB::tbb)
+else()
+    find_package(TBB REQUIRED COMPONENTS tbb)
+endif()
+
 add_definitions(${TBB_DEFINITIONS})
 
 # --math
@@ -242,7 +249,13 @@ if (PXR_BUILD_IMAGING)
     endif()
     # --Opensubdiv
     set(OPENSUBDIV_USE_GPU ${PXR_BUILD_GPU_SUPPORT})
-    find_package(OpenSubdiv 3 REQUIRED)
+    find_package(OpenSubdiv 3 CONFIG)
+    if(OpenSubdiv_DIR)
+        set(OPENSUBDIV_LIBRARIES OpenSubdiv::osdCPU OpenSubdiv::osdGPU)
+        set(OPENSUBDIV_OSDCPU_LIBRARY OpenSubdiv::osdCPU)
+    else()
+        find_package(OpenSubdiv 3 REQUIRED)
+    endif()
     # --Ptex
     if (PXR_ENABLE_PTEX_SUPPORT)
         find_package(PTex REQUIRED)
