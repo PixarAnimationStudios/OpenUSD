@@ -7,6 +7,8 @@
 
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/tf/pathUtils.h"
+#include "pxr/usd/usdGeom/sphere.h"
+#include <pxr/usd/usdLux/sphereLight.h>
 #include "pxr/usdValidation/usdUtilsValidators/validatorTokens.h"
 #include "pxr/usdValidation/usdValidation/error.h"
 #include "pxr/usdValidation/usdValidation/registry.h"
@@ -30,7 +32,7 @@ TestUsdUsdzValidators()
     UsdValidationValidatorMetadataVector metadata
         = registry.GetValidatorMetadataForPlugin(
             _tokens->usdUtilsValidatorsPlugin);
-    TF_AXIOM(metadata.size() == 1);
+    TF_AXIOM(metadata.size() == 2);
     // Since other validators can be registered with a UsdUtilsValidators
     // keyword, our validators registered in usd are a subset of the entire
     // set.
@@ -40,7 +42,8 @@ TestUsdUsdzValidators()
     }
 
     const std::set<TfToken> expectedValidatorNames
-        = { UsdUtilsValidatorNameTokens->packageEncapsulationValidator };
+        = { UsdUtilsValidatorNameTokens->packageEncapsulationValidator,
+         UsdUtilsValidatorNameTokens->primTypeValidator };
 
     TF_AXIOM(validatorMetadataNameSet == expectedValidatorNames);
 }
@@ -113,11 +116,57 @@ TestPackageEncapsulationValidator()
     TF_AXIOM(errors.empty());
 }
 
+static void
+TestPrimTypeValidator()
+{
+    UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
+
+    // Verify the validator exists
+    const UsdValidationValidator *validator = registry.GetOrLoadValidatorByName(
+            UsdUtilsValidatorNameTokens->primTypeValidator);
+
+    TF_AXIOM(validator);
+
+    const UsdStageRefPtr& stage = UsdStage::CreateInMemory();
+
+    // Create an unsupported prim
+    const UsdLuxSphereLight sphereLight = UsdLuxSphereLight::Define(stage,
+        SdfPath("/SphereLight"));
+    const UsdPrim sphereLightPrim = sphereLight.GetPrim();
+
+    UsdValidationErrorVector errors = validator->Validate(sphereLightPrim);
+
+    // Verify unsupported prim error is present
+    TfToken expectedErrorIdentifier(
+        "usdUtilsValidators:PrimTypeValidator.UnsupportedPrimType");
+    TF_AXIOM(errors.size() == 1);
+    TF_AXIOM(errors[0].GetIdentifier() == expectedErrorIdentifier);
+    TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+    TF_AXIOM(errors[0].GetSites().size() == 1);
+    TF_AXIOM(errors[0].GetSites()[0].IsValid());
+    TF_AXIOM(errors[0].GetSites()[0].IsPrim());
+    TF_AXIOM(errors[0].GetSites()[0].GetPrim().GetPath() ==
+             SdfPath("/SphereLight"));
+    std::string expectedErrorMsg = ("Prim </SphereLight> has an unsupported "
+                                    "type 'SphereLight'.");
+    TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
+
+    const UsdGeomSphere sphere = UsdGeomSphere::Define(stage,
+        SdfPath("/Sphere"));
+    const UsdPrim spherePrim = sphere.GetPrim();
+
+    errors = validator->Validate(spherePrim);
+
+    // Verify there are no errors on a supported prim type
+    TF_AXIOM(errors.empty());
+}
+
 int
 main()
 {
     TestUsdUsdzValidators();
     TestPackageEncapsulationValidator();
+    TestPrimTypeValidator();
 
     return EXIT_SUCCESS;
 }

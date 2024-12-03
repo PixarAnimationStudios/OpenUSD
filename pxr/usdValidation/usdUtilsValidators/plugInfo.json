@@ -9,6 +9,12 @@
                             "UsdzValidators"
                         ]
                     },
+                    "PrimTypeValidator": {
+                        "doc": "All core types other than UsdGeomPointInstancers, Curve types, Nurbs, and the types in UsdLux are allowed.",
+                        "keywords": [
+                            "UsdzValidators"
+                        ]
+                    },
                     "keywords": [
                         "UsdUtilsValidators"
                     ]

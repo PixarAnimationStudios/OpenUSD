@@ -97,12 +97,51 @@ _PackageEncapsulationValidator(const UsdStagePtr &usdStage)
     return errors;
 }
 
+static UsdValidationErrorVector
+_PrimTypeValidator(const UsdPrim& usdPrim) {
+
+    const std::vector<std::string> allowedPrimTypeNames = {"", "Scope",
+        "Xform", "Shader", "Material", "Mesh", "Sphere", "Cube", "Cylinder",
+        "Cone", "Capsule", "GeomSubset", "Points", "SkelRoot", "Skeleton",
+        "SkelAnimation", "BlendShape", "SpatialAudio", "PhysicsScene",
+        "Preliminary_ReferenceImage", "Preliminary_Text",
+        "Preliminary_Trigger"};
+
+    const std::string primTypeName = usdPrim.GetTypeName();
+
+    if (std::find(allowedPrimTypeNames.begin(), allowedPrimTypeNames.end(),
+        primTypeName) == allowedPrimTypeNames.end() &&
+        !(TfStringStartsWith(primTypeName, "RealityKit")))
+    {
+        return {
+            UsdValidationError{
+                UsdUtilsValidationErrorNameTokens->unsupportedPrimType,
+                UsdValidationErrorType::Error,
+                UsdValidationErrorSites {
+                    UsdValidationErrorSite(
+                        usdPrim.GetStage(), usdPrim.GetPath())
+                },
+                TfStringPrintf(
+                    ("Prim <%s> has an unsupported type '%s'."),
+                    usdPrim.GetPath().GetText(), primTypeName.c_str())
+            }
+        };
+    }
+
+    return {};
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+
     registry.RegisterPluginValidator(
         UsdUtilsValidatorNameTokens->packageEncapsulationValidator,
         _PackageEncapsulationValidator);
+
+    registry.RegisterPluginValidator(
+        UsdUtilsValidatorNameTokens->primTypeValidator,
+        _PrimTypeValidator);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -7,6 +7,7 @@ pxr_library(usdUtilsValidators
         plug
         sdf
         usd
+        usdLux
         usdUtils
         usdValidation
 

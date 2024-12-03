@@ -16,9 +16,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define USD_UTILS_VALIDATOR_NAME_TOKENS                                        \
-    ((packageEncapsulationValidator,                                           \
-      "usdUtilsValidators:PackageEncapsulationValidator"))
+#define USD_UTILS_VALIDATOR_NAME_TOKENS                                       \
+    ((packageEncapsulationValidator,                                          \
+      "usdUtilsValidators:PackageEncapsulationValidator"))                    \
+    ((primTypeValidator, "usdUtilsValidators:PrimTypeValidator"))
 
 #define USD_UTILS_VALIDATOR_KEYWORD_TOKENS                                     \
     (UsdUtilsValidators)                                                       \
@@ -27,7 +28,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define USD_UTILS_VALIDATION_ERROR_NAME_TOKENS                                 \
     ((layerNotInPackage, "LayerNotInPackage"))                                 \
     ((assetNotInPackage, "AssetNotInPackage"))                                 \
-    ((invalidLayerInPackage, "InvalidLayerInPackage"))
+    ((invalidLayerInPackage, "InvalidLayerInPackage"))                         \
+    ((unsupportedPrimType, "UnsupportedPrimType"))
 
 ///\def
 /// Tokens representing validator names. Note that for plugin provided
