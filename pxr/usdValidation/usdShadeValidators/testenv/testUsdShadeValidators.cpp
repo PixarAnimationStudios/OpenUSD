@@ -13,6 +13,7 @@
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usdGeom/cube.h"
 #include "pxr/usd/usdGeom/scope.h"
 #include "pxr/usd/usdShade/material.h"
 #include "pxr/usd/usdShade/materialBindingAPI.h"
@@ -45,6 +46,7 @@ TestUsdShadeValidators()
             UsdShadeValidatorNameTokens->materialBindingRelationships,
             UsdShadeValidatorNameTokens->materialBindingCollectionValidator,
             UsdShadeValidatorNameTokens->shaderSdrCompliance,
+            UsdShadeValidatorNameTokens->shaderValidator,
             UsdShadeValidatorNameTokens->subsetMaterialBindFamilyName,
             UsdShadeValidatorNameTokens->subsetsMaterialBindFamily };
 
@@ -59,7 +61,7 @@ TestUsdShadeValidators()
     UsdValidationValidatorMetadataVector metadata
         = registry.GetValidatorMetadataForPlugin(
             _tokens->usdShadeValidatorsPlugin);
-    TF_AXIOM(metadata.size() == 7);
+    TF_AXIOM(metadata.size() == 8);
     for (const UsdValidationValidatorMetadata &metadata : metadata) {
         validatorMetadataNameSet.insert(metadata.name);
     }
@@ -554,6 +556,173 @@ TestUsdShadeEncapsulationRulesValidator()
     }
 }
 
+void
+TestUsdShadeShaderValidator()
+{
+    UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
+    const UsdValidationValidator *validator = registry.GetOrLoadValidatorByName(
+        UsdShadeValidatorNameTokens->shaderValidator);
+    TF_AXIOM(validator);
+
+    // Create Stage with a shader that will be modified to show all errors
+    UsdStageRefPtr usdStage = UsdStage::CreateInMemory();
+
+    UsdShadeShader testShader =
+        UsdShadeShader::Define(usdStage, SdfPath("/TestShader"));
+
+    // Set Implementation Source to something other than id
+    // Do not include info:id
+    testShader.GetImplementationSourceAttr().Set(UsdShadeTokens->sourceAsset);
+
+    // Verify appropriate errors occured
+    UsdValidationErrorVector errors =
+        validator->Validate(testShader.GetPrim());
+    TF_AXIOM(errors.size() == 2u);
+
+    std::vector<TfToken> expectedErrorIdentifiers = {
+        TfToken("usdShadeValidators:ShaderValidator.NonIdImplementationSource"),
+        TfToken("usdShadeValidators:ShaderValidator.InvalidShaderId")
+    };
+    std::vector<std::string> expectedErrorMessages = {
+        "Shader </TestShader> has non-id implementation source 'sourceAsset'.",
+        "Shader </TestShader> has unsupported info:id 'None'."
+    };
+
+    for(size_t i = 0; i < errors.size(); ++i)
+    {
+        TF_AXIOM(errors[i].GetIdentifier() == expectedErrorIdentifiers[i]);
+        TF_AXIOM(errors[i].GetType() == UsdValidationErrorType::Error);
+        TF_AXIOM(errors[i].GetSites().size() == 1u);
+        TF_AXIOM(errors[i].GetSites()[0].IsValid());
+        TF_AXIOM(errors[i].GetSites()[0].IsPrim());
+        TF_AXIOM(errors[i].GetSites()[0].GetPrim().GetPath() ==
+                 SdfPath("/TestShader"));
+        TF_AXIOM(errors[i].GetMessage() == expectedErrorMessages[i]);
+    }
+
+    // Update implementation source to be id
+    testShader.GetImplementationSourceAttr().Set(UsdShadeTokens->id);
+    // Add an invalid info:id value
+    testShader.GetIdAttr().Set(TfToken("myInvalidId"));
+
+    // Verify error occurs
+    errors = validator->Validate(testShader.GetPrim());
+    TfToken expectedErrorIdentifier(
+            "usdShadeValidators:ShaderValidator.InvalidShaderId");
+    TF_AXIOM(errors.size() == 1u);
+    TF_AXIOM(errors[0].GetIdentifier() == expectedErrorIdentifier);
+    TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+    TF_AXIOM(errors[0].GetSites().size() == 1u);
+    TF_AXIOM(errors[0].GetSites()[0].IsValid());
+    TF_AXIOM(errors[0].GetSites()[0].IsPrim());
+    TF_AXIOM(errors[0].GetSites()[0].GetPrim().GetPath() ==
+             SdfPath("/TestShader"));
+    std::string expectedErrorMsg =
+        "Shader </TestShader> has unsupported info:id 'myInvalidId'.";
+    TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
+
+    // Set a valid info:id value
+    testShader.GetIdAttr().Set(TfToken("UsdPreviewSurface"));
+
+    // Add two more shaders to set up multiple connections
+    UsdShadeShader sourceShaderOne = UsdShadeShader::Define(
+        usdStage, SdfPath("/SourceShaderOne"));
+    UsdShadeShader sourceShaderTwo = UsdShadeShader::Define(
+        usdStage, SdfPath("/SourceShaderTwo"));
+    UsdShadeOutput sourceOutputOne = sourceShaderOne.CreateOutput(
+        TfToken("outValue"), SdfValueTypeNames->Float);
+    sourceOutputOne.Set(1.0f);
+    UsdShadeOutput sourceOutputTwo = sourceShaderTwo.CreateOutput(
+        TfToken("outValue"), SdfValueTypeNames->Float);
+    sourceOutputTwo.Set(2.0f);
+
+    // Create an input for connections
+    UsdShadeInput shaderInput = testShader.CreateInput(TfToken("myInput"),
+        SdfValueTypeNames->Float);
+
+    // Set multiple connections on the same input
+    shaderInput.GetAttr().SetConnections({
+        SdfPath("/SourceShaderOne.outputs:outValue"),
+        SdfPath("/SourceShaderTwo.outputs:outValue")});
+
+    // Verify the error occurs
+    errors = validator->Validate(testShader.GetPrim());
+    expectedErrorIdentifier = TfToken(
+            "usdShadeValidators:ShaderValidator.MultipleConnectionSources");
+    TF_AXIOM(errors.size() == 1u);
+    TF_AXIOM(errors[0].GetIdentifier() == expectedErrorIdentifier);
+    TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+    TF_AXIOM(errors[0].GetSites().size() == 1u);
+    TF_AXIOM(errors[0].GetSites()[0].IsValid());
+    TF_AXIOM(errors[0].GetSites()[0].IsPrim());
+    TF_AXIOM(errors[0].GetSites()[0].GetPrim().GetPath() ==
+             SdfPath("/TestShader"));
+    expectedErrorMsg =
+        "Shader input </TestShader.inputs:myInput> has 2 connection "
+                        "sources, but only one is allowed.";
+
+    TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
+
+    // Update the connections to a prim that does not exist
+    shaderInput.GetAttr().SetConnections({SdfPath("/DoesNotExist")});
+
+    // Verify the error occurs
+    errors = validator->Validate(testShader.GetPrim());
+    expectedErrorIdentifier = TfToken(
+            "usdShadeValidators:ShaderValidator.MissingConnectionSource");
+    TF_AXIOM(errors.size() == 1u);
+    TF_AXIOM(errors[0].GetIdentifier() == expectedErrorIdentifier);
+    TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+    TF_AXIOM(errors[0].GetSites().size() == 1u);
+    TF_AXIOM(errors[0].GetSites()[0].IsValid());
+    TF_AXIOM(errors[0].GetSites()[0].IsPrim());
+    TF_AXIOM(errors[0].GetSites()[0].GetPrim().GetPath() ==
+             SdfPath("/TestShader"));
+    expectedErrorMsg =
+        "Connection source </DoesNotExist> for shader "
+                        "input </TestShader.inputs:myInput> is missing.";
+    TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
+
+    // Create a cube with an output
+    UsdGeomCube cubePrim = UsdGeomCube::Define(usdStage, SdfPath("/Cube"));
+    UsdAttribute outValueAttr = cubePrim.GetPrim().CreateAttribute(
+        TfToken("outputs:outValue"), SdfValueTypeNames->Float, true);
+
+    // Set a value for the custom output attribute
+    outValueAttr.Set(2.0f);
+
+    // Update the connection to be something other than a Shader or Material
+    shaderInput.GetAttr().SetConnections({SdfPath("/Cube.outputs:outValue")});
+
+    // Verify the error occurs
+    errors = validator->Validate(testShader.GetPrim());
+
+    expectedErrorIdentifier = TfToken(
+    "usdShadeValidators:ShaderValidator.InvalidConnectionSourcePrimType");
+    TF_AXIOM(errors.size() == 1u);
+    TF_AXIOM(errors[0].GetIdentifier() == expectedErrorIdentifier);
+    TF_AXIOM(errors[0].GetType() == UsdValidationErrorType::Error);
+    TF_AXIOM(errors[0].GetSites().size() == 1u);
+    TF_AXIOM(errors[0].GetSites()[0].IsValid());
+    TF_AXIOM(errors[0].GetSites()[0].IsPrim());
+    TF_AXIOM(errors[0].GetSites()[0].GetPrim().GetPath() ==
+             SdfPath("/TestShader"));
+    expectedErrorMsg =
+        "Shader input </TestShader.inputs:myInput> has an invalid "
+                            "connection source prim of type 'Cube'.";
+    TF_AXIOM(errors[0].GetMessage() == expectedErrorMsg);
+
+    // Use a valid connection
+    shaderInput.GetAttr().SetConnections({
+        SdfPath("/SourceShaderOne.outputs:outValue")
+    });
+
+    errors = validator->Validate(testShader.GetPrim());
+
+    // Verify all errors are gone
+    TF_AXIOM(errors.empty());
+}
+
 int
 main()
 {
@@ -565,6 +734,7 @@ main()
     TestUsdShadeSubsetMaterialBindFamilyName();
     TestUsdShadeSubsetsMaterialBindFamily();
     TestUsdShadeEncapsulationRulesValidator();
+    TestUsdShadeShaderValidator();
 
     return EXIT_SUCCESS;
 };

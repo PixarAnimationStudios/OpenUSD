@@ -26,6 +26,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((materialBindingCollectionValidator,                                      \
       "usdShadeValidators:MaterialBindingCollectionValidator"))                \
     ((shaderSdrCompliance, "usdShadeValidators:ShaderSdrCompliance"))          \
+    ((shaderValidator, "usdShadeValidators:ShaderValidator"))                  \
     ((subsetMaterialBindFamilyName,                                            \
       "usdShadeValidators:SubsetMaterialBindFamilyName"))                      \
     ((subsetsMaterialBindFamily,                                               \
@@ -47,7 +48,12 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((incompatShaderPropertyWarning, "IncompatShaderPropertyWarning"))         \
     ((mismatchPropertyType, "MismatchedPropertyType"))                         \
     ((missingFamilyNameOnGeomSubset, "MissingFamilyNameOnGeomSubset"))         \
-    ((invalidFamilyType, "InvalidFamilyType"))
+    ((invalidFamilyType, "InvalidFamilyType"))                                 \
+    ((nonIdImplementationSource, "NonIdImplementationSource"))                 \
+    ((invalidShaderId, "InvalidShaderId"))                                     \
+    ((multipleConnectionSources, "MultipleConnectionSources"))                 \
+    ((missingConnectionSource, "MissingConnectionSource"))                     \
+    ((invalidConnectionSourcePrimType, "InvalidConnectionSourcePrimType"))
 
 /// \def USD_SHADE_VALIDATOR_NAME_TOKENS
 /// Tokens representing validator names. Note that for plugin provided

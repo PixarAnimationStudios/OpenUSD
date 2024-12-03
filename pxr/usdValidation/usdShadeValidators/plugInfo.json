@@ -23,7 +23,13 @@
                         "schemaTypes": [
                             "UsdShadeShader"
                         ]
-                    }, 
+                    },
+                    "ShaderValidator": {
+                        "doc": "Shader nodes must have 'id' as the implementationSource, with id values that begin with 'Usd*|ND_*'. Also, shader inputs with connections must each have a single, valid connection source.",
+                        "schemaTypes": [
+                            "UsdShadeShader"
+                        ]
+                    },
                     "SubsetMaterialBindFamilyName": {
                         "doc": "Geom subsets with authored material bindings should have the 'materialBind' family name.", 
                         "keywords": [
