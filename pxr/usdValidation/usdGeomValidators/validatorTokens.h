@@ -19,7 +19,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define USD_GEOM_VALIDATOR_NAME_TOKENS                                         \
     ((stageMetadataChecker, "usdGeomValidators:StageMetadataChecker"))         \
     ((subsetFamilies, "usdGeomValidators:SubsetFamilies"))                     \
-    ((subsetParentIsImageable, "usdGeomValidators:SubsetParentIsImageable"))
+    ((subsetParentIsImageable, "usdGeomValidators:SubsetParentIsImageable"))   \
+    ((yUpAxisValidator, "usdGeomValidators:YUpAxisValidator"))
 
 #define USD_GEOM_VALIDATOR_KEYWORD_TOKENS                                      \
     (UsdGeomSubset)                                                            \
@@ -29,7 +30,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((missingMetersPerUnitMetadata, "MissingMetersPerUnitMetadata"))           \
     ((missingUpAxisMetadata, "MissingUpAxisMetadata"))                         \
     ((invalidSubsetFamily, "InvalidSubsetFamily"))                             \
-    ((notImageableSubsetParent, "NotImageableSubsetParent"))
+    ((notImageableSubsetParent, "NotImageableSubsetParent"))                   \
+    ((nonYUpAxis, "nonYUpAxis"))
 
 /// \def USD_GEOM_VALIDATOR_NAME_TOKENS
 /// Tokens representing validator names. Note that for plugin provided

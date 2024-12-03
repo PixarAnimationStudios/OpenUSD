@@ -142,6 +142,34 @@ _SubsetParentIsImageable(const UsdPrim &usdPrim)
             usdPrim.GetPath().GetText(), parentPrim.GetPath().GetText())) };
 }
 
+static UsdValidationErrorVector
+_YUpAxisValidator(const UsdStagePtr &usdStage)
+{
+    if (usdStage->HasAuthoredMetadata(UsdGeomTokens->upAxis)) {
+        TfToken axis;
+        usdStage->GetMetadata(UsdGeomTokens->upAxis, &axis);
+
+        if (axis != UsdGeomTokens->y)
+        {
+            return {
+                UsdValidationError(
+                    UsdGeomValidationErrorNameTokens->nonYUpAxis,
+                    UsdValidationErrorType::Error,
+                    UsdValidationErrorSites{UsdValidationErrorSite(usdStage,
+                                                           SdfPath("/"))},
+                    TfStringPrintf(
+                    "Stage specifies upAxis '%s'. upAxis should"
+                                 " be 'Y'.", axis.GetText())
+                )
+            };
+        }
+    }
+
+    return {};
+}
+
+
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
@@ -156,6 +184,10 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     registry.RegisterPluginValidator(
         UsdGeomValidatorNameTokens->subsetParentIsImageable,
         _SubsetParentIsImageable);
+
+    registry.RegisterPluginValidator(
+        UsdGeomValidatorNameTokens->yUpAxisValidator,
+        _YUpAxisValidator);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
