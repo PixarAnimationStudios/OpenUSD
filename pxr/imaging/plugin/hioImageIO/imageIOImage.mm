@@ -250,7 +250,7 @@ _IsHioFormatFloat(HioFormat hioFormat) {
 
 /// Returns the number bytes per component for the corresponding HioFormat
 static size_t
-_GetComponentByteSizeFromIOFormat(HioFormat hioFormat)
+_GetComponentByteSizeFromHIOFormat(HioFormat hioFormat)
 {
     switch (hioFormat) {
         case HioFormatUNorm8:
@@ -290,6 +290,57 @@ _GetComponentByteSizeFromIOFormat(HioFormat hioFormat)
         case HioFormatFloat32:
         case HioFormatFloat32Vec2:
         case HioFormatFloat32Vec3:
+        case HioFormatFloat32Vec4:
+            return 4;
+        default:
+            TF_CODING_ERROR("Unsupported type");
+            return 4;
+    }
+}
+
+/// Returns the number channels per pixel for the corresponding HioFormat
+static size_t
+_GetNumChannelsFromHIOFormat(HioFormat hioFormat)
+{
+    switch (hioFormat) {
+        case HioFormatUNorm8:
+        case HioFormatUNorm8srgb:
+        case HioFormatSNorm8:
+        case HioFormatUInt16:
+        case HioFormatInt16:
+        case HioFormatFloat16:
+        case HioFormatUInt32:
+        case HioFormatInt32:
+        case HioFormatFloat32:
+            return 1;
+        case HioFormatUNorm8Vec2:
+        case HioFormatUNorm8Vec2srgb:
+        case HioFormatSNorm8Vec2:
+        case HioFormatUInt16Vec2:
+        case HioFormatInt16Vec2:
+        case HioFormatFloat16Vec2:
+        case HioFormatUInt32Vec2:
+        case HioFormatInt32Vec2:
+        case HioFormatFloat32Vec2:
+            return 2;
+        case HioFormatUNorm8Vec3:
+        case HioFormatUNorm8Vec3srgb:
+        case HioFormatSNorm8Vec3:
+        case HioFormatUInt16Vec3:
+        case HioFormatInt16Vec3:
+        case HioFormatFloat16Vec3:
+        case HioFormatUInt32Vec3:
+        case HioFormatInt32Vec3:
+        case HioFormatFloat32Vec3:
+            return 3;
+        case HioFormatUNorm8Vec4:
+        case HioFormatUNorm8Vec4srgb:
+        case HioFormatSNorm8Vec4:
+        case HioFormatUInt16Vec4:
+        case HioFormatInt16Vec4:
+        case HioFormatFloat16Vec4:
+        case HioFormatUInt32Vec4:
+        case HioFormatInt32Vec4:
         case HioFormatFloat32Vec4:
             return 4;
         default:
@@ -663,13 +714,12 @@ HioImageIO_Image::ReadCropped(int const cropTop,
     int bytesPerRow = (int)CGImageGetBytesPerRow(_imageRef);
     int bitsPerComponent = (int)CGImageGetBitsPerComponent(_imageRef);
 
+    CGImageRef croppedImage = NULL;
     if (cropTop || cropBottom || cropLeft || cropRight) {
-        CGImageRef _croppedImage = CGImageCreateWithImageInRect(_imageRef, CGRectMake(cropLeft, cropTop, width - cropRight, height - cropBottom));
-        if (_croppedImage == NULL) {
+        croppedImage = CGImageCreateWithImageInRect(_imageRef, CGRectMake(cropLeft, cropTop, width - cropRight, height - cropBottom));
+        if (croppedImage == NULL) {
             return false;
         }
-        CGImageRelease(_imageRef);
-        _imageRef = _croppedImage;
     }
     
     CGColorSpaceRef colorSpace;
@@ -693,7 +743,12 @@ HioImageIO_Image::ReadCropped(int const cropTop,
         bitmapInfo = CGImageGetBitmapInfo(_imageRef);
     }
     
-    CGContextRef context = CGBitmapContextCreate(storage.data, storage.width, storage.height, bitsPerComponent, bytesPerRow, colorSpace, bitmapInfo);
+    size_t storageBytesPerComponent = _GetComponentByteSizeFromHIOFormat(storage.format);
+    size_t storageNumChannels = _GetNumChannelsFromHIOFormat(storage.format);
+    size_t storageBytesPerRow = storageNumChannels * storageBytesPerComponent * storage.width;
+    CGContextRef context = CGBitmapContextCreate(storage.data, storage.width, storage.height,
+                                                 storageBytesPerComponent * 8,
+                                                 storageBytesPerRow, colorSpace, bitmapInfo);
     CGColorSpaceRelease(colorSpace);
     
     if (context == NULL) {
@@ -705,7 +760,11 @@ HioImageIO_Image::ReadCropped(int const cropTop,
         CGContextScaleCTM(context, 1, -1);
     }
     
-    CGContextDrawImage(context, CGRectMake(0, 0, storage.width, storage.height), _imageRef);
+    CGContextDrawImage(context, CGRectMake(0, 0, storage.width, storage.height), 
+                       croppedImage ? croppedImage : _imageRef);
+    if (croppedImage != NULL) {
+        CGImageRelease(croppedImage);
+    }
     CGContextRelease(context);
 
     return true;
@@ -724,7 +783,7 @@ HioImageIO_Image::Write(StorageSpec const & storage,
                      VtDictionary const & metadata)
 {
     int nchannels = HioGetComponentCount(storage.format);
-    size_t bytesPerComponent = _GetComponentByteSizeFromIOFormat(storage.format);
+    size_t bytesPerComponent = _GetComponentByteSizeFromHIOFormat(storage.format);
     size_t bytesPerRow = storage.width * nchannels * bytesPerComponent;
     size_t bitsPerComponent = bytesPerComponent * 8;
     size_t bitsPerPixel = bitsPerComponent * nchannels;
