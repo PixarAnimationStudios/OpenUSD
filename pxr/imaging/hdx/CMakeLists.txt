@@ -48,6 +48,7 @@ pxr_library(hdx
         freeCameraPrimDataSource
         fullscreenShader
         hgiConversions
+        linearExposureScaleTask
         oitBufferAccessor
         oitRenderTask
         oitResolveTask
@@ -88,6 +89,7 @@ pxr_library(hdx
         shaders/colorChannel.glslfx
         shaders/colorCorrection.glslfx
         shaders/fullscreen.glslfx
+        shaders/linearExposureScale.glslfx
         shaders/oitResolveImageShader.glslfx
         shaders/outline.glslfx
         shaders/renderPass.glslfx

@@ -1,0 +1,34 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2024 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "LinearExposureScaleFragment": {
+                "source": [ "LinearExposureScale.Fragment" ]
+            }
+        }
+    }
+}
+
+
+-- glsl LinearExposureScale.Fragment
+
+
+void main(void)
+{
+    vec2 fragCoord = uvOut * screenSize;
+    vec4 color = HgiTexelFetch_colorIn(ivec2(fragCoord));
+
+    // Only color, not alpha is exposure scaled!
+    color.rgb *= linearExposureScale;
+
+    hd_FragColor = color;
+}
