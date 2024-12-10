@@ -147,14 +147,8 @@ private:
     HdxFullscreenShader(const HdxFullscreenShader&) = delete;
     HdxFullscreenShader& operator=(const HdxFullscreenShader&) = delete;
 
-    // Utility function to create buffer resources.
-    void _CreateBufferResources();
-
     // Utility to set resource bindings.
     void _SetResourceBindings();
-
-    // Utility to create default vertex buffer descriptor.
-    void _SetVertexBufferDescriptor();
 
     // Utility to create and get the default texture sampler.
     HgiSamplerHandle _GetDefaultSampler();
@@ -182,7 +176,6 @@ private:
     TfToken _glslfxPath;
     TfToken _shaderName;
 
-    HgiBufferHandle _indexBuffer;
     HgiBufferHandle _vertexBuffer;
     HgiShaderProgramHandle _shaderProgram;
     HgiSamplerHandle _defaultSampler;

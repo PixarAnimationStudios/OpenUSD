@@ -145,9 +145,6 @@ private:
     std::string _CreateOpenColorIOShaderCode(std::string &ocioGpuShaderText,
                                              HgiShaderFunctionDesc &fragDesc);
 
-    // Utility function to create buffer resources.
-    bool _CreateBufferResources();
-
     // Utility to create resource bindings
     bool _CreateResourceBindings(HgiTextureHandle const& aovTexture);
 
@@ -178,8 +175,6 @@ private: // data
     _OCIOResources _ocioResources;
 
     HgiAttachmentDesc _attachment0;
-    HgiBufferHandle _indexBuffer;
-    HgiBufferHandle _vertexBuffer;
     HgiSamplerHandle _aovSampler;
 
     struct TextureSamplerInfo

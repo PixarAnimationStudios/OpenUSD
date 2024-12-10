@@ -79,14 +79,6 @@ HdxColorCorrectionTask::~HdxColorCorrectionTask()
     }
     _textureLUTs.clear();
 
-    if (_vertexBuffer) {
-        _GetHgi()->DestroyBuffer(&_vertexBuffer);
-    }
-
-    if (_indexBuffer) {
-        _GetHgi()->DestroyBuffer(&_indexBuffer);
-    }
-
     if (_shaderProgram) {
         _DestroyShaderProgram();
     }
@@ -770,9 +762,8 @@ HdxColorCorrectionTask::_CreateShaderResources()
     vertDesc.debugName = _tokens->colorCorrectionVertex.GetString();
     vertDesc.shaderStage = HgiShaderStageVertex;
     HgiShaderFunctionAddStageInput(
-        &vertDesc, "position", "vec4");
-    HgiShaderFunctionAddStageInput(
-        &vertDesc, "uvIn", "vec2");
+            &vertDesc, "hd_VertexID", "uint",
+            HgiShaderKeywordTokens->hdVertexID);
     HgiShaderFunctionAddStageOutput(
         &vertDesc, "gl_Position", "vec4", "position");
     HgiShaderFunctionAddStageOutput(
@@ -881,38 +872,6 @@ HdxColorCorrectionTask::_CreateShaderResources()
 }
 
 bool
-HdxColorCorrectionTask::_CreateBufferResources()
-{
-    if (_vertexBuffer) {
-        return true;
-    }
-
-    // A larger-than screen triangle made to fit the screen.
-    constexpr float vertData[][6] =
-            { { -1,  3, 0, 1,     0, 2 },
-              { -1, -1, 0, 1,     0, 0 },
-              {  3, -1, 0, 1,     2, 0 } };
-
-    HgiBufferDesc vboDesc;
-    vboDesc.debugName = "HdxColorCorrectionTask VertexBuffer";
-    vboDesc.usage = HgiBufferUsageVertex;
-    vboDesc.initialData = vertData;
-    vboDesc.byteSize = sizeof(vertData);
-    vboDesc.vertexStride = sizeof(vertData[0]);
-    _vertexBuffer = _GetHgi()->CreateBuffer(vboDesc);
-
-    static const int32_t indices[3] = {0,1,2};
-
-    HgiBufferDesc iboDesc;
-    iboDesc.debugName = "HdxColorCorrectionTask IndexBuffer";
-    iboDesc.usage = HgiBufferUsageIndex32;
-    iboDesc.initialData = indices;
-    iboDesc.byteSize = sizeof(indices);
-    _indexBuffer = _GetHgi()->CreateBuffer(iboDesc);
-    return true;
-}
-
-bool
 HdxColorCorrectionTask::_CreateResourceBindings(
     HgiTextureHandle const &aovTexture)
 {
@@ -965,29 +924,6 @@ HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
     HgiGraphicsPipelineDesc desc;
     desc.debugName = "ColorCorrection Pipeline";
     desc.shaderProgram = _shaderProgram;
-
-    // Describe the vertex buffer
-    HgiVertexAttributeDesc posAttr;
-    posAttr.format = HgiFormatFloat32Vec3;
-    posAttr.offset = 0;
-    posAttr.shaderBindLocation = 0;
-
-    HgiVertexAttributeDesc uvAttr;
-    uvAttr.format = HgiFormatFloat32Vec2;
-    uvAttr.offset = sizeof(float) * 4; // after posAttr
-    uvAttr.shaderBindLocation = 1;
-
-    size_t bindSlots = 0;
-
-    HgiVertexBufferDesc vboDesc;
-
-    vboDesc.bindingIndex = bindSlots++;
-    vboDesc.vertexStride = sizeof(float) * 6; // pos, uv
-    vboDesc.vertexAttributes.clear();
-    vboDesc.vertexAttributes.push_back(posAttr);
-    vboDesc.vertexAttributes.push_back(uvAttr);
-
-    desc.vertexBuffers.push_back(std::move(vboDesc));
 
     // Depth test and write can be off since we only colorcorrect the color aov.
     desc.depthState.depthTestEnabled = false;
@@ -1058,7 +994,6 @@ HdxColorCorrectionTask::_ApplyColorCorrection(
     gfxCmds->PushDebugGroup("ColorCorrection");
     gfxCmds->BindResources(_resourceBindings);
     gfxCmds->BindPipeline(_pipeline);
-    gfxCmds->BindVertexBuffers({{_vertexBuffer, 0, 0}});
 
     // Update viewport/screen size
     const GfVec4i vp(0, 0, dimensions[0], dimensions[1]);
@@ -1067,7 +1002,7 @@ HdxColorCorrectionTask::_ApplyColorCorrection(
     _SetConstants(gfxCmds.get());
     gfxCmds->SetViewport(vp);
 
-    gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1, 0);
+    gfxCmds->Draw(3, 0, 1, 0);
     gfxCmds->PopDebugGroup();
 
     // Done recording commands, submit work.
@@ -1153,9 +1088,6 @@ HdxColorCorrectionTask::Execute(HdTaskContext* ctx)
     // So, no layout transition there.
     aovTexture->SubmitLayoutChange(HgiTextureUsageBitsShaderRead);
 
-    if (!TF_VERIFY(_CreateBufferResources())) {
-        return;
-    }
     if (!TF_VERIFY(_CreateAovSampler())) {
         return;
     }
