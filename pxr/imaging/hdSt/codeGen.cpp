@@ -3190,6 +3190,18 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                 HgiShaderKeywordTokens->hdBaryCoordNoPersp);
         }
 
+        if (_geometricShader->GetPrimitiveType() ==
+            HdSt_GeometricShader::PrimitiveType::PRIM_POINTS &&
+                !registry->GetHgi()->GetCapabilities()->IsSet(
+                    HgiDeviceCapabilitiesBitsRoundPoints)) {
+            HgiShaderFunctionAddStageInput(&fsDesc, "gl_PointCoord", "vec2",
+                HgiShaderKeywordTokens->hdPointCoord);
+            HgiShaderFunctionAddStageInput(&fsDesc, "hd_SampleMaskIn", "uint",
+                HgiShaderKeywordTokens->hdSampleMaskIn);
+            HgiShaderFunctionAddStageOutput(&fsDesc, "hd_SampleMask", "uint",
+                HgiShaderKeywordTokens->hdSampleMask);
+        }
+
         if (!glslProgram->CompileShader(fsDesc)) {
             return nullptr;
         }

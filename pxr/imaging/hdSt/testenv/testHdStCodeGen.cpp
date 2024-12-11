@@ -387,8 +387,9 @@ int main(int argc, char *argv[])
                 /* enableScalarOverride */ true,
                 /* isWidget */ false,
                 /* forceOpaqueEdges */ true,
-                /* surfaceEdgeIds */ true),
-                instance, smoothNormals);
+                /* surfaceEdgeIds */ true,
+                /* nativeRoundPoints */ true),
+                 instance, smoothNormals);
         success &= TestShader(
             registry,
             HdSt_MeshShaderKey(
@@ -412,8 +413,9 @@ int main(int argc, char *argv[])
                 /* enableScalarOverride */ true,
                 /* isWidget */ false,
                 /* forceOpaqueEdges */ true,
-                /* surfaceEdgeIds */ true),
-                instance, smoothNormals);
+                /* surfaceEdgeIds */ true,
+                /* nativeRoundPoints */ true),
+                 instance, smoothNormals);
     }
 
     // curves
@@ -427,15 +429,16 @@ int main(int argc, char *argv[])
                             true,
                             HdBasisCurvesReprDescTokens->surfaceShader,
                             topologicalVisibility,
-                            /* isWidget */ false, false),
-                            instance, false);
+                            /* isWidget */ false,
+                            /* hasMetalTessellation */ false,
+                            /* nativeRoundPoints */ true),
+                             instance, false);
     }
 
     // points
     if (points) {
-        success &= TestShader(registry,
-                              HdSt_PointsShaderKey(),
-                              instance, false);
+        success &= TestShader(registry, HdSt_PointsShaderKey(
+            /* nativeRoundPoints */ false), instance, false);
     }
 
     if (success) {

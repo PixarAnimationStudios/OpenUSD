@@ -359,6 +359,10 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
         resourceRegistry->GetHgi()->GetCapabilities()->
             IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
 
+    bool const nativeRoundPoints =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+            IsSet(HgiDeviceCapabilitiesBitsRoundPoints);
+
     HdSt_BasisCurvesShaderKey shaderKey(curveType,
                                         curveBasis,
                                         drawStyle,
@@ -368,7 +372,8 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
                                         shadingTerminal,
                                         hasAuthoredTopologicalVisiblity,
                                         _pointsShadingEnabled,
-                                        hasMetalTessellation);
+                                        hasMetalTessellation,
+                                        nativeRoundPoints);
 
     TF_DEBUG(HD_RPRIM_UPDATED).
             Msg("HdStBasisCurves(%s) - Shader Key PrimType: %s\n ",

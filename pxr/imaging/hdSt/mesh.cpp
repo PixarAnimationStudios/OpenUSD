@@ -2617,6 +2617,10 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
         resourceRegistry->GetHgi()->GetCapabilities()->
             IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
 
+    bool const nativeRoundPoints =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+            IsSet(HgiDeviceCapabilitiesBitsRoundPoints);
+
     // create a shaderKey and set to the geometric shader.
     HdSt_MeshShaderKey shaderKey(primType,
                                  shadingTerminal,
@@ -2638,7 +2642,8 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  desc.enableScalarOverride,
                                  _pointsShadingEnabled,
                                  desc.forceOpaqueEdges,
-                                 desc.surfaceEdgeIds);
+                                 desc.surfaceEdgeIds,
+                                 nativeRoundPoints);
 
     HdSt_GeometricShaderSharedPtr geomShader =
         HdSt_GeometricShader::Create(shaderKey, resourceRegistry);
@@ -3057,4 +3062,3 @@ HdStMesh::GetInitialDirtyBitsMask() const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
