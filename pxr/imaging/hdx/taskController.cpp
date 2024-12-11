@@ -73,8 +73,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (PxrDomeLight)
 );
 
-// XXX: WBN to expose this to the application.
-static const uint32_t MSAA_SAMPLE_COUNT = 4;
+TF_DEFINE_ENV_SETTING(HDX_MSAA_SAMPLE_COUNT, 4,
+                      "MSAA sample count. Set to 1 to disable MSAA.");
 
 // Distant Light values
 static const float DISTANT_LIGHT_ANGLE = 0.53;
@@ -1055,6 +1055,8 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
         }
     }
 
+    const uint32_t msaaSampleCount =
+        std::clamp(TfGetEnvSetting(HDX_MSAA_SAMPLE_COUNT), 1, 16);
     // Add the new renderbuffers. _GetAovPath returns ids of the form
     // {controller_id}/aov_{name}.
     for (size_t i = 0; i < localOutputs.size(); ++i) {
@@ -1064,11 +1066,15 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
         HdRenderBufferDescriptor desc;
         desc.dimensions = dimensions3;
         desc.format = outputDescs[i].format;
-        desc.multiSampled = outputDescs[i].multiSampled;
+        if (msaaSampleCount > 1) {
+            desc.multiSampled = outputDescs[i].multiSampled;
+        } else {
+            desc.multiSampled = false;
+        }
         _delegate.SetParameter(aovId, _tokens->renderBufferDescriptor,desc);
         _delegate.SetParameter(aovId,
                                HdStRenderBufferTokens->stormMsaaSampleCount,
-                               MSAA_SAMPLE_COUNT);
+                               msaaSampleCount);
         GetRenderIndex()->GetChangeTracker().MarkBprimDirty(aovId,
             HdRenderBuffer::DirtyDescription);
         _aovBufferIds.push_back(aovId);
