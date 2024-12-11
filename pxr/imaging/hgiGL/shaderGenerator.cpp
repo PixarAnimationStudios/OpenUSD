@@ -253,7 +253,9 @@ HgiGLShaderGenerator::_WriteMacros(std::ostream &ss)
           "#define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, "
           "expected, desired)\n"
           "#define atomic_int int\n"
-          "#define atomic_uint uint\n";
+          "#define atomic_uint uint\n"
+          "#define hd_SampleMaskIn gl_SampleMaskIn[0]\n"
+          "#define hd_SampleMask gl_SampleMask[0]\n";
 
     // Advertise to shader code that we support double precision math
     ss << "\n"
@@ -371,6 +373,7 @@ HgiGLShaderGenerator::_WriteInOuts(
         "gl_FragColor",
         "gl_FragDepth",
         "gl_PointSize",
+        "hd_SampleMask",
     };
 
     const static std::unordered_map<std::string, std::string> takenInParams {
@@ -391,6 +394,7 @@ HgiGLShaderGenerator::_WriteInOuts(
         { HgiShaderKeywordTokens->hdViewportIndex, "gl_ViewportIndex"},
         { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"},
         { HgiShaderKeywordTokens->hdBaryCoordNoPersp, "gl_BaryCoordNoPerspNV"},
+        { HgiShaderKeywordTokens->hdSampleMaskIn, "hd_SampleMaskIn"}
     };
 
     const bool in_qualifier = qualifier == "in";
