@@ -64,6 +64,7 @@ endfunction()
 function(pxr_python_bin BIN_NAME)
     set(oneValueArgs
         PYTHON_FILE
+        MAN_PAGE
     )
     set(multiValueArgs
         DEPENDENCIES
@@ -148,10 +149,19 @@ function(pxr_python_bin BIN_NAME)
         PROPERTIES
             FOLDER "${folder}"
     )
+
+    if (DEFINED cb_MAN_PAGE)
+        _get_install_dir("share/man/man1" manDir)
+        INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${cb_MAN_PAGE} DESTINATION ${manDir})
+    endif()
 endfunction() # pxr_python_bin
 
 function(pxr_cpp_bin BIN_NAME)
     _get_install_dir(bin installDir)
+
+    set(oneValueArgs
+            MAN_PAGE
+    )
     
     set(multiValueArgs
         LIBRARIES
@@ -159,8 +169,8 @@ function(pxr_cpp_bin BIN_NAME)
     )
 
     cmake_parse_arguments(cb
-        ""  
         ""
+        "${oneValueArgs}"
         "${multiValueArgs}"
         ${ARGN}
     )
@@ -202,6 +212,11 @@ function(pxr_cpp_bin BIN_NAME)
         TARGETS ${BIN_NAME}
         DESTINATION ${installDir}
     )
+
+    if (DEFINED cb_MAN_PAGE)
+        _get_install_dir("share/man/man1" manDir)
+        INSTALL(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${cb_MAN_PAGE} DESTINATION ${manDir})
+    endif()
 endfunction()
 
 function(pxr_library NAME)

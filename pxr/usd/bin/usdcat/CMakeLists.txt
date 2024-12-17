@@ -7,6 +7,9 @@ pxr_cpp_bin(usdcat
         sdf
         usd
         usdUtils
+
+        MAN_PAGE
+        usdcat.1
         )
 
 pxr_install_test_dir(
