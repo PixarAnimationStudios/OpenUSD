@@ -42,7 +42,7 @@ struct GfIsGfVec<class GfVec4f> { static const bool value = true; };
 /// Represents a vector of 4 components of type \c float.
 /// It is intended to be fast and simple.
 ///
-class GfVec4f
+class ARCH_EXPORT_TYPE GfVec4f
 {
 public:
     /// Scalar element type and dimension.

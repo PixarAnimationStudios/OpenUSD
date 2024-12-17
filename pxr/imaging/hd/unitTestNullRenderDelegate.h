@@ -13,7 +13,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class Hd_UnitTestNullRenderDelegate final : public HdRenderDelegate
+class ARCH_EXPORT_TYPE Hd_UnitTestNullRenderDelegate final : public HdRenderDelegate
 {
 public:
     Hd_UnitTestNullRenderDelegate() = default;

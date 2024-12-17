@@ -67,7 +67,7 @@ struct TfTokenFastArbitraryLessThan;
 /// constructors).  However, auto conversion from \c TfToken to \c string and
 /// \c char* is provided.
 ///
-class TfToken
+class ARCH_EXPORT_TYPE TfToken
 {
 public:
     enum _ImmortalTag { Immortal };

@@ -58,7 +58,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdLuxTokens->rightHanded
 /// as the value.
 ///
-class UsdLuxLightFilter : public UsdGeomXformable
+class ARCH_EXPORT_TYPE UsdLuxLightFilter : public UsdGeomXformable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

@@ -58,7 +58,7 @@ public:
 
 };
 
-class Sdf_PrimChildPolicy :
+class ARCH_EXPORT_TYPE Sdf_PrimChildPolicy :
     public Sdf_TokenChildPolicy<SdfPrimSpecHandle>
 {
 public:
@@ -72,7 +72,7 @@ public:
     }
 };
 
-class Sdf_PropertyChildPolicy :
+class ARCH_EXPORT_TYPE Sdf_PropertyChildPolicy :
     public Sdf_TokenChildPolicy<SdfPropertySpecHandle>
 {
 public:
@@ -94,7 +94,7 @@ public:
     }
 };
 
-class Sdf_AttributeChildPolicy :
+class ARCH_EXPORT_TYPE Sdf_AttributeChildPolicy :
     public Sdf_TokenChildPolicy<SdfAttributeSpecHandle>
 {
 public:
@@ -116,7 +116,7 @@ public:
     }
 };
 
-class Sdf_RelationshipChildPolicy : 
+class ARCH_EXPORT_TYPE Sdf_RelationshipChildPolicy : 
     public Sdf_TokenChildPolicy<SdfRelationshipSpecHandle>
 {
 public:
@@ -161,7 +161,7 @@ public:
     }
 };
 
-class Sdf_VariantChildPolicy :
+class ARCH_EXPORT_TYPE Sdf_VariantChildPolicy :
     public Sdf_TokenChildPolicy<SdfVariantSpecHandle>
 {
 public:
@@ -183,7 +183,7 @@ public:
     }
 };
 
-class Sdf_VariantSetChildPolicy :
+class ARCH_EXPORT_TYPE Sdf_VariantSetChildPolicy :
     public Sdf_TokenChildPolicy<SdfVariantSetSpecHandle>
 {
 public:

@@ -38,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Generally, user code will not make use of this.
 ///
-class TfScriptModuleLoader : public TfWeakBase {
+class ARCH_EXPORT_TYPE TfScriptModuleLoader : public TfWeakBase {
 
   public:
 

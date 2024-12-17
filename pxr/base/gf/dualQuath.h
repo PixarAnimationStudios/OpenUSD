@@ -47,7 +47,7 @@ GfHalf GfDot(const GfDualQuath& dq1, const GfDualQuath& dq2);
 ///    https://www.cs.utah.edu/~ladislav/kavan06dual/kavan06dual.pdf
 ///    https://faculty.sites.iastate.edu/jia/files/inline-files/dual-quaternion.pdf
 ///
-class GfDualQuath final
+class ARCH_EXPORT_TYPE GfDualQuath final
 {
   public:
     typedef GfHalf ScalarType;

@@ -34,7 +34,7 @@ using HdReprSharedPtr = std::shared_ptr<HdRepr>;
 /// The render engine state for a given rprim from the scene graph. All data
 /// access (aside from local caches) is delegated to the HdSceneDelegate.
 ///
-class HdRprim
+class ARCH_EXPORT_TYPE HdRprim
 {
 public:
     HD_API

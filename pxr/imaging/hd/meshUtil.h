@@ -297,7 +297,7 @@ private:
 /// drawing order and requires minimal additional GPU data.
 ///
 ///
-class HdMeshEdgeIndexTable
+class ARCH_EXPORT_TYPE HdMeshEdgeIndexTable
 {
 public:
     HD_API

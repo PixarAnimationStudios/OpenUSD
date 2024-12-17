@@ -123,7 +123,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(NdrDiscoveryPlugin);
 ///     </li>
 /// </ul>
 ///
-class NdrDiscoveryPlugin : public TfRefBase, public TfWeakBase
+class ARCH_EXPORT_TYPE NdrDiscoveryPlugin : public TfRefBase, public TfWeakBase
 {
 public:
     using Context = NdrDiscoveryPluginContext;
@@ -147,7 +147,7 @@ public:
 /// \cond
 /// Factory classes should be hidden from the documentation.
 
-class NdrDiscoveryPluginFactoryBase : public TfType::FactoryBase
+class ARCH_EXPORT_TYPE NdrDiscoveryPluginFactoryBase : public TfType::FactoryBase
 {
 public:
     NDR_API

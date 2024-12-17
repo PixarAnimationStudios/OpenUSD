@@ -90,7 +90,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdGeomTokens->rightHanded
 /// as the value.
 ///
-class UsdGeomCamera : public UsdGeomXformable
+class ARCH_EXPORT_TYPE UsdGeomCamera : public UsdGeomXformable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

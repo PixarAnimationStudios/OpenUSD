@@ -26,7 +26,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// disallowed.  Attempts to construct asset paths with such characters will
 /// issue a TfError and produce the default-constructed empty asset path.
 ///
-class SdfAssetPath
+class ARCH_EXPORT_TYPE SdfAssetPath
 {
 public:
     /// \name Constructors

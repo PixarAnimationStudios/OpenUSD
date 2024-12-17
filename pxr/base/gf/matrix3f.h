@@ -61,7 +61,7 @@ class GfQuatf;
 ///        matrix and S represents a scale matrix, the
 ///        product R*S  will rotate a row vector, then scale
 ///        it.
-class GfMatrix3f
+class ARCH_EXPORT_TYPE GfMatrix3f
 {
 public:
     typedef float ScalarType;

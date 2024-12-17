@@ -66,7 +66,7 @@ class SdfAssetPath;
 /// varying (linear), uniform (per curve element), or constant (per prim).
 /// 
 ///
-class UsdGeomHermiteCurves : public UsdGeomCurves
+class ARCH_EXPORT_TYPE UsdGeomHermiteCurves : public UsdGeomCurves
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -198,7 +198,7 @@ public:
     /// Represents points and tangents of the same size. 
     /// 
     /// Utility to interleave point and tangent data. This class is immutable.
-    class PointAndTangentArrays {
+    class ARCH_EXPORT_TYPE PointAndTangentArrays {
         VtArray<GfVec3f> _points;
         VtArray<GfVec3f> _tangents;
 

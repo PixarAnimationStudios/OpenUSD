@@ -23,7 +23,7 @@ class UsdPrim;
 ///
 /// Base class for all lights.
 ///
-class UsdImagingLightAdapter : public UsdImagingInstanceablePrimAdapter {
+class ARCH_EXPORT_TYPE UsdImagingLightAdapter : public UsdImagingInstanceablePrimAdapter {
 public:
     using BaseAdapter = UsdImagingInstanceablePrimAdapter;
 

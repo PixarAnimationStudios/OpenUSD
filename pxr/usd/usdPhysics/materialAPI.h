@@ -39,7 +39,7 @@ class SdfAssetPath;
 /// that have a relationship to this material will have their collision response 
 /// defined through this material.
 ///
-class UsdPhysicsMaterialAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdPhysicsMaterialAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

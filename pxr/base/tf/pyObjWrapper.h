@@ -74,7 +74,7 @@ private:
 /// However it is important to note that callers must ensure the GIL is held
 /// before using these operators!
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-class TfPyObjWrapper
+class ARCH_EXPORT_TYPE TfPyObjWrapper
     : public pxr_boost::python::api::object_operators<TfPyObjWrapper>
 {
     typedef pxr_boost::python::object object;

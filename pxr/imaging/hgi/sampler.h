@@ -104,7 +104,7 @@ bool operator!=(
 /// perform texture sampling operations.
 /// Samplers should be created via Hgi::CreateSampler.
 ///
-class HgiSampler
+class ARCH_EXPORT_TYPE HgiSampler
 {
 public:
     HGI_API

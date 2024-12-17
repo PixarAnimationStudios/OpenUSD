@@ -29,7 +29,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// part and a vector of three imaginary values. Quaternions are used by the
 /// \c GfRotation class to represent arbitrary-axis rotations.
 ///
-class GfQuaternion
+class ARCH_EXPORT_TYPE GfQuaternion
 {
   public:
 

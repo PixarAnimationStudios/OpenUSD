@@ -22,7 +22,7 @@ using HdVolumePtrConstVector = std::vector<class HdVolume const *>;
 ///
 /// Hd schema for a renderable volume primitive.
 ///
-class HdVolume : public HdRprim
+class ARCH_EXPORT_TYPE HdVolume : public HdRprim
 {
 public:
     HD_API

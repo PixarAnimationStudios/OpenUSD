@@ -44,7 +44,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdUITokens->rightHanded
 /// as the value.
 ///
-class UsdUINodeGraphNodeAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdUINodeGraphNodeAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

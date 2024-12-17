@@ -19,7 +19,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// functionality other than to serve as a polymorphic type for the
 /// plugin registry.
 ///
-class HfPluginBase
+class ARCH_EXPORT_TYPE HfPluginBase
 {
 public:
     HF_API

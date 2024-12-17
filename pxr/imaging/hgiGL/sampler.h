@@ -22,7 +22,7 @@ using HgiTextureHandle = HgiHandle<class HgiTexture>;
 ///
 /// OpenGL implementation of HgiSampler
 ///
-class HgiGLSampler final : public HgiSampler
+class ARCH_EXPORT_TYPE HgiGLSampler final : public HgiSampler
 {
 public:
     HGIGL_API

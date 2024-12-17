@@ -20,7 +20,7 @@ class Hgi;
 ///
 /// A single draw pass to a render target/buffer. Stream implementation.
 ///
-class HdSt_RenderPass : public HdRenderPass {
+class ARCH_EXPORT_TYPE HdSt_RenderPass : public HdRenderPass {
 public:
     HDST_API
     HdSt_RenderPass(HdRenderIndex *index, HdRprimCollection const &collection);

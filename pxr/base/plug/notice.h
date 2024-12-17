@@ -22,7 +22,7 @@ class PlugNotice
 {
 public:
     /// Base class for all Plug notices.
-    class Base : public TfNotice
+    class ARCH_EXPORT_TYPE Base : public TfNotice
     {
     public:
         PLUG_API virtual ~Base();
@@ -30,7 +30,7 @@ public:
 
     /// Notice sent after new plugins have been registered with the Plug
     /// registry.
-    class DidRegisterPlugins : public Base
+    class ARCH_EXPORT_TYPE DidRegisterPlugins : public Base
     {
     public:
         explicit DidRegisterPlugins(const PlugPluginPtrVector& newPlugins);

@@ -239,7 +239,7 @@ struct HdxPrimOriginInfo
 ///         influences this operation. For e.g., the subprim indices are ignored
 ///         when the pickTarget is pickPrimsAndInstances.
 ///
-struct HdxPickTaskContextParams
+struct ARCH_EXPORT_TYPE HdxPickTaskContextParams
 {
     using DepthMaskCallback = std::function<void(void)>;
 

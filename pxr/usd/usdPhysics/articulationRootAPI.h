@@ -42,7 +42,7 @@ class SdfAssetPath;
 /// or indirect parent of the root joint which is connected to the world, or 
 /// on the joint itself..
 ///
-class UsdPhysicsArticulationRootAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdPhysicsArticulationRootAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

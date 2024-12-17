@@ -36,7 +36,7 @@ class SdfAssetPath;
 ///
 /// Base class for field primitives.
 ///
-class UsdVolFieldBase : public UsdGeomXformable
+class ARCH_EXPORT_TYPE UsdVolFieldBase : public UsdGeomXformable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

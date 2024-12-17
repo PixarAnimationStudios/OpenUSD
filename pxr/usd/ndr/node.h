@@ -28,7 +28,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// nodes can be created that derive from `NdrNode`; those specialized nodes can
 /// add their own domain-specific data and methods.
 ///
-class NdrNode
+class ARCH_EXPORT_TYPE NdrNode
 {
 public:
     /// Constructor.

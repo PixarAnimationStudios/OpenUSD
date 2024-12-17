@@ -49,7 +49,7 @@ using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
 /// Rendering backends are expected to specialize this abstract class, and
 /// return the specialized object via HdRenderDelegate::CreateRenderPass
 ///
-class HdRenderPass 
+class ARCH_EXPORT_TYPE HdRenderPass 
 {
 public:
     HD_API

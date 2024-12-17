@@ -55,7 +55,7 @@ class VtDictionary;
 /// copies, will incur the cost of duplicating the data, including all the
 /// knots.
 ///
-class TsSpline
+class ARCH_EXPORT_TYPE TsSpline
 {
 public:
     /// \name Construction and value semantics

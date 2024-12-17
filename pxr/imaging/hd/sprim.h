@@ -31,7 +31,7 @@ class HdRenderParam;
 ///
 /// The lifetime of HdSprim is owned by HdRenderIndex.
 ///
-class HdSprim
+class ARCH_EXPORT_TYPE HdSprim
 {
 public:
     HD_API

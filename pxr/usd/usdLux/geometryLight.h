@@ -39,7 +39,7 @@ class SdfAssetPath;
 /// Light emitted outward from a geometric prim (UsdGeomGprim),
 /// which is typically a mesh.
 ///
-class UsdLuxGeometryLight : public UsdLuxNonboundableLightBase
+class ARCH_EXPORT_TYPE UsdLuxGeometryLight : public UsdLuxNonboundableLightBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

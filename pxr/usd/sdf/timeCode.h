@@ -24,7 +24,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// value but is used to indicate that this value should be resolved by any
 /// time based value resolution.
 ///
-class SdfTimeCode
+class ARCH_EXPORT_TYPE SdfTimeCode
 {
 public:
     /// \name Constructors

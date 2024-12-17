@@ -140,7 +140,7 @@ bool operator!=(
 /// To the client (HdSt) texture resources are referred to via
 /// opaque, stateless handles (HgTextureHandle).
 ///
-class HgiTexture
+class ARCH_EXPORT_TYPE HgiTexture
 {
 public:
     HGI_API

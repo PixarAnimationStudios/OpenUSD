@@ -38,7 +38,7 @@ class SdfAssetPath;
 /// Light emitted from one side of a circular disk.
 /// The disk is centered in the XY plane and emits light along the -Z axis.
 ///
-class UsdLuxDiskLight : public UsdLuxBoundableLightBase
+class ARCH_EXPORT_TYPE UsdLuxDiskLight : public UsdLuxBoundableLightBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

@@ -47,7 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// ArDefaultResolver supports creating an ArDefaultResolverContext via
 /// ArResolver::CreateContextFromString by passing a list of directories
 /// delimited by the platform's standard path separator.
-class ArDefaultResolver
+class ARCH_EXPORT_TYPE ArDefaultResolver
     : public ArResolver
 {
 public:

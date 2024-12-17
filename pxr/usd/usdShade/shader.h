@@ -65,7 +65,7 @@ class SdfAssetPath;
 /// input parameters are encapsulated in the property schema UsdShadeInput.
 /// 
 ///
-class UsdShadeShader : public UsdTyped
+class ARCH_EXPORT_TYPE UsdShadeShader : public UsdTyped
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

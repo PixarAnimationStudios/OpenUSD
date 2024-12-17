@@ -53,7 +53,7 @@ using HgiIndirectCommandsUniquePtr = std::unique_ptr<HgiIndirectCommands>;
 /// Execute draw takes the HgiIndirectCommands structure and replays it on the
 /// device.  Currently this is only implemented on the Metal HGI device.
 ///
-class HgiIndirectCommandEncoder : public HgiCmds
+class ARCH_EXPORT_TYPE HgiIndirectCommandEncoder : public HgiCmds
 {
 public:
     HGI_API

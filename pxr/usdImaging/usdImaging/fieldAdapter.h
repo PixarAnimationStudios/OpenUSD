@@ -22,7 +22,7 @@ class UsdPrim;
 ///
 /// Base class for all USD fields.
 ///
-class UsdImagingFieldAdapter : public UsdImagingPrimAdapter {
+class ARCH_EXPORT_TYPE UsdImagingFieldAdapter : public UsdImagingPrimAdapter {
 public:
     using BaseAdapter = UsdImagingPrimAdapter;
 

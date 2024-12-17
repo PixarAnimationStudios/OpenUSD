@@ -60,7 +60,7 @@ inline bool operator!=(
 /// when the program is detroyed, because only the client knows if the shader
 /// functions are used by other shader programs.
 ///
-class HgiShaderProgram
+class ARCH_EXPORT_TYPE HgiShaderProgram
 {
 public:
     HGI_API

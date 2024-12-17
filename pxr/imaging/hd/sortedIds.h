@@ -72,7 +72,7 @@ public:
     void Clear();
 
 private:
-    class _UpdateImpl;
+    struct _UpdateImpl;
 
     enum _EditMode { _NoMode, _InsertMode, _RemoveMode, _UpdateMode };
     

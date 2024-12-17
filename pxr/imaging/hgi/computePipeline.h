@@ -89,7 +89,7 @@ bool operator!=(
 /// To the client (HdSt) compute pipeline resources are referred to via
 /// opaque, stateless handles (HgiComputePipelineHandle).
 ///
-class HgiComputePipeline
+class ARCH_EXPORT_TYPE HgiComputePipeline
 {
 public:
     HGI_API

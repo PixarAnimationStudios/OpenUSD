@@ -119,7 +119,7 @@ public:
 
     /// \class EmptyList
     /// A result value representing an empty list.
-    class EmptyList { };
+    class ARCH_EXPORT_TYPE EmptyList { };
 
     /// \class Result
     class Result

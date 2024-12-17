@@ -103,7 +103,7 @@ using HdStComputationComputeQueuePairVector =
 ///
 /// A central registry of all GPU resources.
 ///
-class HdStResourceRegistry final : public HdResourceRegistry 
+class ARCH_EXPORT_TYPE HdStResourceRegistry final : public HdResourceRegistry 
 {
 public:
     HF_MALLOC_TAG_NEW("new HdStResourceRegistry");

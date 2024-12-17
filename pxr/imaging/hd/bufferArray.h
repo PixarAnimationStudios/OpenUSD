@@ -65,7 +65,7 @@ using HdBufferArrayUsageHint = uint32_t;
 /// can be shared across multiple HdRprims, in the context of buffer
 /// aggregation.
 ///
-class HdBufferArray : public std::enable_shared_from_this<HdBufferArray> 
+class ARCH_EXPORT_TYPE HdBufferArray : public std::enable_shared_from_this<HdBufferArray> 
 {
 public:
     HD_API

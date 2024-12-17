@@ -8,12 +8,13 @@
 #define PXR_IMAGING_GARCH_GL_PLATFORM_CONTEXT_DARWIN_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/garch/api.h"
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class GarchNSGLContextState {
+class ARCH_EXPORT_TYPE GarchNSGLContextState {
 public:
     /// Construct with the current state.
     GarchNSGLContextState();

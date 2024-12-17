@@ -74,7 +74,7 @@ class SdfAssetPath;
 /// 
 /// 
 ///
-class UsdMediaAssetPreviewsAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdMediaAssetPreviewsAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

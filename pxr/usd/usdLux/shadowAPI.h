@@ -41,7 +41,7 @@ class SdfAssetPath;
 /// Controls to refine a light's shadow behavior.  These are
 /// non-physical controls that are valuable for visual lighting work.
 ///
-class UsdLuxShadowAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdLuxShadowAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

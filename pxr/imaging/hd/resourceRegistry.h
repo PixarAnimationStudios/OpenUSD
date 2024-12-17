@@ -30,7 +30,7 @@ using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
 ///
 /// A central registry for resources.
 ///
-class HdResourceRegistry  {
+class ARCH_EXPORT_TYPE HdResourceRegistry  {
 public:
     HF_MALLOC_TAG_NEW("new HdResourceRegistry");
 

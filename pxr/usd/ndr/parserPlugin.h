@@ -105,7 +105,7 @@ TF_REGISTRY_FUNCTION(TfType)                                            \
 ///         the documentation for the `plug` library (in pxr/base).
 ///     </li>
 /// </ul>
-class NdrParserPlugin : public TfWeakBase
+class ARCH_EXPORT_TYPE NdrParserPlugin : public TfWeakBase
 {
 public:
     NDR_API
@@ -150,7 +150,7 @@ public:
 /// \cond
 /// Factory classes should be hidden from the documentation.
 
-class NdrParserPluginFactoryBase : public TfType::FactoryBase
+class ARCH_EXPORT_TYPE NdrParserPluginFactoryBase : public TfType::FactoryBase
 {
 public:
     virtual NdrParserPlugin* New() const = 0;

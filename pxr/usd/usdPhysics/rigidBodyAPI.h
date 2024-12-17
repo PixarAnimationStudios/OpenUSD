@@ -43,7 +43,7 @@ class SdfAssetPath;
 /// it will update this prim's pose. All prims in the hierarchy below this 
 /// prim should move accordingly.
 ///
-class UsdPhysicsRigidBodyAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdPhysicsRigidBodyAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

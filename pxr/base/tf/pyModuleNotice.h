@@ -23,7 +23,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// triggered by this notice to the end of an application iteration.  This, of
 /// course, is good practice in general.
 ///
-class TfPyModuleWasLoaded : public TfNotice {
+class ARCH_EXPORT_TYPE TfPyModuleWasLoaded : public TfNotice {
 public:
     explicit TfPyModuleWasLoaded(std::string const &name) : _name(name) {}
 

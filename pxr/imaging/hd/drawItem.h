@@ -44,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \note
 /// Rendering backends may choose to specialize this class.
 ///
-class HdDrawItem
+class ARCH_EXPORT_TYPE HdDrawItem
 {
 public:
     HF_MALLOC_TAG_NEW("new HdDrawItem");

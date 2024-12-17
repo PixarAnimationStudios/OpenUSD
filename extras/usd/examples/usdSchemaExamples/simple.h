@@ -38,7 +38,7 @@ class SdfAssetPath;
 /// An example of an untyped schema prim. Note that it does not 
 /// specify a typeName
 ///
-class UsdSchemaExamplesSimple : public UsdTyped
+class ARCH_EXPORT_TYPE UsdSchemaExamplesSimple : public UsdTyped
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

@@ -24,7 +24,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Interface for accessing the contents of an asset.
 ///
 /// \see ArResolver::OpenAsset for how to retrieve instances of this object.
-class ArAsset {
+class ARCH_EXPORT_TYPE ArAsset {
 public:
     AR_API
     virtual ~ArAsset();

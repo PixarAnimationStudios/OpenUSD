@@ -39,7 +39,7 @@ using HdStBufferResourceNamedList =
 /// inherited of this interface so that client (drawItem) can be agnostic about
 /// the implementation detail of aggregation.
 ///
-class HdStBufferArrayRange : public HdBufferArrayRange 
+class ARCH_EXPORT_TYPE HdStBufferArrayRange : public HdBufferArrayRange 
 {
 public:
     HdStBufferArrayRange(HdStResourceRegistry* resourceRegistry);

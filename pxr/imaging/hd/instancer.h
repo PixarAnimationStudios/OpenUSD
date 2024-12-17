@@ -105,7 +105,7 @@ class HdRenderParam;
 /// All data access (aside from local caches) is routed to the HdSceneDelegate.
 ///
 
-class HdInstancer {
+class ARCH_EXPORT_TYPE HdInstancer {
 public:
     /// Constructor.
     HD_API

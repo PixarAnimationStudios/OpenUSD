@@ -20,7 +20,7 @@ struct ArchAbiBase2 {
 };
 
 template <class T>
-struct ArchAbiDerived : public ArchAbiBase1, public ArchAbiBase2 {
+struct ARCH_EXPORT_TYPE ArchAbiDerived : public ArchAbiBase1, public ArchAbiBase2 {
     virtual ~ArchAbiDerived() { }
     virtual const char* name() const { return "ArchAbiDerived"; }
 };

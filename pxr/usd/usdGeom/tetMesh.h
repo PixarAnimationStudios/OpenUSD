@@ -47,7 +47,7 @@ class SdfAssetPath;
 /// indices into the TetMesh's <b>points</b> attribute, inherited from 
 /// UsdGeomPointBased.
 ///
-class UsdGeomTetMesh : public UsdGeomPointBased
+class ARCH_EXPORT_TYPE UsdGeomTetMesh : public UsdGeomPointBased
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

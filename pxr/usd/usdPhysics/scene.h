@@ -37,7 +37,7 @@ class SdfAssetPath;
 ///
 /// General physics simulation properties, required for simulation.
 ///
-class UsdPhysicsScene : public UsdTyped
+class ARCH_EXPORT_TYPE UsdPhysicsScene : public UsdTyped
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

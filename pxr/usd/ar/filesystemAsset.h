@@ -24,7 +24,7 @@ class ArResolvedPath;
 /// \class ArFilesystemAsset
 ///
 /// ArAsset implementation for asset represented by a file on a filesystem.
-class ArFilesystemAsset
+class ARCH_EXPORT_TYPE ArFilesystemAsset
     : public ArAsset
 {
 public:

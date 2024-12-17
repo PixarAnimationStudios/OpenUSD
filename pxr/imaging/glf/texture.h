@@ -42,7 +42,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfTexture);
 /// A texture is typically defined by reading texture image data from an image
 /// file but a texture might also represent an attachment of a draw target.
 ///
-class GlfTexture : public TfRefBase, public TfWeakBase
+class ARCH_EXPORT_TYPE GlfTexture : public TfRefBase, public TfWeakBase
 {
 public:
     /// \class Binding

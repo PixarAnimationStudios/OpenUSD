@@ -27,7 +27,7 @@ class VtValue;
 /// format is on the hook for using the provided context to compute any prim
 /// field values it needs and generate the relevant file format arguments for
 /// its content.
-class PcpDynamicFileFormatInterface
+class ARCH_EXPORT_TYPE PcpDynamicFileFormatInterface
 {
 public:
     /// Empty virtual destructor to prevent build errors with some compilers.

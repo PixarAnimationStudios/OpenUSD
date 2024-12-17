@@ -51,7 +51,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// These building blocks may be joined as mentioned above, with `+`, `-`, `&`,
 /// or whitespace, and may be complemented with `~`, and grouped with `(` and
 /// `)`.
-class SdfPathExpression
+class ARCH_EXPORT_TYPE SdfPathExpression
 {
 public:
     using PathPattern = SdfPathPattern;

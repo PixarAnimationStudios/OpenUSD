@@ -208,7 +208,7 @@ protected:
 /// VtArray will log a stack trace for every copy-on-write detach that occurs.
 ///
 template<typename ELEM>
-class VtArray : public Vt_ArrayBase {
+class ARCH_EXPORT_TYPE VtArray : public Vt_ArrayBase {
   public:
 
     /// Type this array holds.

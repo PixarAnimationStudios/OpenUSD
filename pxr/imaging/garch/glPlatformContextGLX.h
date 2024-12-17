@@ -13,7 +13,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class GarchGLXContextState {
+class ARCH_EXPORT_TYPE GarchGLXContextState {
 public:
     /// Construct with the current state.
     GarchGLXContextState();

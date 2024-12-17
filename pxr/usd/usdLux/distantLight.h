@@ -38,7 +38,7 @@ class SdfAssetPath;
 /// Light emitted from a distant source along the -Z axis.
 /// Also known as a directional light.
 ///
-class UsdLuxDistantLight : public UsdLuxNonboundableLightBase
+class ARCH_EXPORT_TYPE UsdLuxDistantLight : public UsdLuxNonboundableLightBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

@@ -52,7 +52,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdRiTokens->rightHanded
 /// as the value.
 ///
-class UsdRiMaterialAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdRiMaterialAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

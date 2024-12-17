@@ -21,7 +21,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // A collection of museum exhibits.  These are spline cases that can be used by
 // tests to exercise various behaviors.
 //
-class TsTest_Museum
+class ARCH_EXPORT_TYPE TsTest_Museum
 {
 public:
     enum DataId

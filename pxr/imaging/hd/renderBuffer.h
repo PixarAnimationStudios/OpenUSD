@@ -29,7 +29,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Render buffers can be targeted by render passes.  They also contain
 /// mapping functionality for reading and writing buffer data.
-class HdRenderBuffer : public HdBprim
+class ARCH_EXPORT_TYPE HdRenderBuffer : public HdBprim
 {
 public:
     // change tracking for HdRenderBuffer

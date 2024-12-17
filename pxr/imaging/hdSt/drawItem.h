@@ -20,7 +20,7 @@ using HdSt_GeometricShaderSharedPtr =
 using HdSt_MaterialNetworkShaderSharedPtr =
         std::shared_ptr<class HdSt_MaterialNetworkShader>;
 
-class HdStDrawItem : public HdDrawItem
+class ARCH_EXPORT_TYPE HdStDrawItem : public HdDrawItem
 {
 public:
     HF_MALLOC_TAG_NEW("new HdStDrawItem");

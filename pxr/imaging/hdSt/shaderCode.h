@@ -55,7 +55,7 @@ class HdStResourceRegistry;
 ///
 /// This interface provides a simple way for clients to affect the
 /// composition of shading programs used for a render pass.
-class HdStShaderCode : public std::enable_shared_from_this<HdStShaderCode>
+class ARCH_EXPORT_TYPE HdStShaderCode : public std::enable_shared_from_this<HdStShaderCode>
 {
 public:
     typedef size_t ID;

@@ -77,7 +77,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// should use HD_DECLARE_DATASOURCE_ABSTRACT, which omits the 
 /// definition of ::New().
 ///
-class HdDataSourceBase
+class ARCH_EXPORT_TYPE HdDataSourceBase
 {
 public:
     HD_DECLARE_DATASOURCE_ABSTRACT(HdDataSourceBase)
@@ -95,7 +95,7 @@ HD_DECLARE_DATASOURCE_HANDLES(HdDataSourceBase);
 /// Note that implementations are responsible for providing cache invalidation,
 /// if necessary.
 ///
-class HdContainerDataSource : public HdDataSourceBase
+class ARCH_EXPORT_TYPE HdContainerDataSource : public HdDataSourceBase
 {
 public:
     HD_DECLARE_DATASOURCE_ABSTRACT(HdContainerDataSource);
@@ -127,7 +127,7 @@ HD_DECLARE_DATASOURCE_HANDLES(HdContainerDataSource);
 /// \p HdSampledDataSource can be used instead. Note that implementations are
 /// responsible for providing cache invalidation, if necessary.
 ///
-class HdVectorDataSource : public HdDataSourceBase
+class ARCH_EXPORT_TYPE HdVectorDataSource : public HdDataSourceBase
 { 
 public:
     HD_DECLARE_DATASOURCE_ABSTRACT(HdVectorDataSource);
@@ -149,7 +149,7 @@ HD_DECLARE_DATASOURCE_HANDLES(HdVectorDataSource);
 /// A datasource representing time-sampled values. Note that implementations
 /// are responsible for providing cache invalidation, if necessary.
 ///
-class HdSampledDataSource : public HdDataSourceBase
+class ARCH_EXPORT_TYPE HdSampledDataSource : public HdDataSourceBase
 {
 public:
     HD_DECLARE_DATASOURCE_ABSTRACT(HdSampledDataSource);
@@ -189,7 +189,7 @@ HD_DECLARE_DATASOURCE_HANDLES(HdSampledDataSource);
 /// A datasource representing a concretely-typed sampled value.
 ///
 template <typename T>
-class HdTypedSampledDataSource : public HdSampledDataSource
+class ARCH_EXPORT_TYPE HdTypedSampledDataSource : public HdSampledDataSource
 {
 public:
     HD_DECLARE_DATASOURCE_ABSTRACT(HdTypedSampledDataSource<T>);
@@ -208,7 +208,7 @@ public:
 /// child being null. This type is useful when composing containers, where a
 /// block might shadow sampled data, and sampled data might shadow nullptr.
 ///
-class HdBlockDataSource : public HdDataSourceBase
+class ARCH_EXPORT_TYPE HdBlockDataSource : public HdDataSourceBase
 {
 public:
     HD_DECLARE_DATASOURCE(HdBlockDataSource);

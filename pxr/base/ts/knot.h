@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// \sa TsTypedKnot
 ///
-class TsKnot
+class ARCH_EXPORT_TYPE TsKnot
 {
 public:
     /// \name Construction and value semantics

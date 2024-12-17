@@ -44,7 +44,7 @@ struct HdSceneIndexPrim
 /// data directly, and it can also register observers to be notified about
 /// scene changes (see HdSceneIndexObserver).
 ///
-class HdSceneIndexBase : public TfRefBase, public TfWeakBase
+class ARCH_EXPORT_TYPE HdSceneIndexBase : public TfRefBase, public TfWeakBase
 {
 public:
     HD_API
@@ -246,7 +246,7 @@ private:
 /// are not automatically registered here, and must be manually added
 /// (generally by the application).
 ///
-class HdSceneIndexNameRegistry
+class ARCH_EXPORT_TYPE HdSceneIndexNameRegistry
     : public TfSingleton<HdSceneIndexNameRegistry> 
 {
     friend class TfSingleton<HdSceneIndexNameRegistry>;
@@ -285,6 +285,8 @@ private:
 
     _NamedInstanceMap _namedInstances;
 };
+
+HD_API_TEMPLATE_CLASS(TfSingleton<HdSceneIndexNameRegistry>);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

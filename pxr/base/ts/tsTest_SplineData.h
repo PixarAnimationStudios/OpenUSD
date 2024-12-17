@@ -19,7 +19,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // A generic way of encoding spline control parameters.  Allows us to pass the
 // same data to different backends (Ts, mayapy, etc) for evaluation.
 //
-class TsTest_SplineData
+class ARCH_EXPORT_TYPE TsTest_SplineData
 {
 public:
     // Interpolation method for a spline segment.

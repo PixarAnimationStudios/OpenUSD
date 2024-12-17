@@ -46,7 +46,7 @@ class SdfAssetPath;
 /// \see \ref Usd_AutoAppliedAPISchemas
 /// 
 ///
-class UsdLuxMeshLightAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdLuxMeshLightAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

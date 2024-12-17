@@ -64,9 +64,7 @@ public:
     using Key = TraceDynamicKey;
 
     /// Returns the singleton instance.
-    TRACE_API static TraceCollector& GetInstance() {
-         return TfSingleton<TraceCollector>::GetInstance();
-    }
+    TRACE_API static TraceCollector& GetInstance();
     
     TRACE_API ~TraceCollector();
 

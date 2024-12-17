@@ -23,7 +23,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(HdMaterialFilteringSceneIndexBase);
 /// only material network data sources. Subclasses implement only 
 /// _GetFilteringFunction to provide a callback to run when a material network
 /// is first queried.
-class HdMaterialFilteringSceneIndexBase :
+class ARCH_EXPORT_TYPE HdMaterialFilteringSceneIndexBase :
     public HdSingleInputFilteringSceneIndexBase
 {
 public:

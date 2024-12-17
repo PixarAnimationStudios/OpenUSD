@@ -388,7 +388,7 @@ typedef std::vector<HdVolumeFieldDescriptor>
 ///
 /// Adapter class providing data exchange with the client scene graph.
 ///
-class HdSceneDelegate {
+class ARCH_EXPORT_TYPE HdSceneDelegate {
 public:
     /// Constructor used for nested delegate objects which share a RenderIndex.
     HD_API

@@ -67,7 +67,7 @@ class GfMatrix3d;
 ///        matrix and T represents a translation matrix, the
 ///        product R*T will rotate a row vector, then translate
 ///        it.
-class GfMatrix4d
+class ARCH_EXPORT_TYPE GfMatrix4d
 {
 public:
     typedef double ScalarType;

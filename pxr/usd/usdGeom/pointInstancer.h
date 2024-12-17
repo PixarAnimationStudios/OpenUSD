@@ -258,7 +258,7 @@ class SdfAssetPath;
 /// \endcode
 /// 
 ///
-class UsdGeomPointInstancer : public UsdGeomBoundable
+class ARCH_EXPORT_TYPE UsdGeomPointInstancer : public UsdGeomBoundable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

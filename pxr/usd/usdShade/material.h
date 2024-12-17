@@ -92,7 +92,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdShadeTokens->rightHanded
 /// as the value.
 ///
-class UsdShadeMaterial : public UsdShadeNodeGraph
+class ARCH_EXPORT_TYPE UsdShadeMaterial : public UsdShadeNodeGraph
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

@@ -40,7 +40,7 @@ GfHalf GfDot(const GfQuath& q1, const GfQuath& q2);
 /// Basic type: a quaternion, a complex number with a real coefficient and
 /// three imaginary coefficients, stored as a 3-vector.
 ///
-class GfQuath
+class ARCH_EXPORT_TYPE GfQuath
 {
   public:
     typedef GfHalf ScalarType;

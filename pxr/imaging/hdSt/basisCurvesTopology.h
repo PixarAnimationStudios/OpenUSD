@@ -25,7 +25,7 @@ using HdBufferSourceSharedPtr = std::shared_ptr<class HdBufferSource>;
 //
 // Storm implementation for basisCurves topology.
 //
-class HdSt_BasisCurvesTopology final : public HdBasisCurvesTopology {
+class ARCH_EXPORT_TYPE HdSt_BasisCurvesTopology final : public HdBasisCurvesTopology {
 public:
     HDST_API
     static HdSt_BasisCurvesTopologySharedPtr New(const HdBasisCurvesTopology &src);

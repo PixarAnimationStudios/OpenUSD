@@ -33,7 +33,7 @@ class ArNotice
 public:
     /// \class ResolverNotice
     /// Base class for all ArResolver-related notices.
-    class ResolverNotice
+    class ARCH_EXPORT_TYPE ResolverNotice
         : public TfNotice
     {
     public:
@@ -45,7 +45,7 @@ public:
     /// \class ResolverChanged
     /// Notice sent when asset paths may resolve to a different path than
     /// before due to a change in the resolver.
-    class ResolverChanged 
+    class ARCH_EXPORT_TYPE ResolverChanged 
         : public ResolverNotice
     {
     public:

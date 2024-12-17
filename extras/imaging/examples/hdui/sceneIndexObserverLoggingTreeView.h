@@ -17,7 +17,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HDUI_API_CLASS HduiSceneIndexObserverLoggingTreeView : public QTreeView
+class ARCH_EXPORT_TYPE HduiSceneIndexObserverLoggingTreeView : public QTreeView
 {
     Q_OBJECT;
 public:
@@ -37,7 +37,7 @@ public Q_SLOTS:
 
 private:
 
-    class HDUI_API_CLASS _ObserverModel :
+    class ARCH_EXPORT_TYPE _ObserverModel :
         public HdSceneIndexObserver, public QAbstractItemModel
     {
     public:

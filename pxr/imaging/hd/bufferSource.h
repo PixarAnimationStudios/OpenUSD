@@ -35,7 +35,7 @@ using HdBufferSourceWeakPtr = std::weak_ptr<HdBufferSource>;
 /// resource registry with the buffer array range that specifies the
 /// destination resource.
 ///
-class HdBufferSource 
+class ARCH_EXPORT_TYPE HdBufferSource 
 {
 public:
     HdBufferSource() : _state(UNRESOLVED) { }
@@ -193,7 +193,7 @@ private:
 ///   virtual void Resolve();
 /// and set the result via _SetResult().
 ///
-class HdComputedBufferSource : public HdBufferSource {
+class ARCH_EXPORT_TYPE HdComputedBufferSource : public HdBufferSource {
 public:
     HD_API
     virtual TfToken const &GetName() const override;
@@ -218,7 +218,7 @@ private:
 /// A abstract base class for pure cpu computation.
 /// the result won't be scheduled for GPU transfer.
 ///
-class HdNullBufferSource : public HdBufferSource {
+class ARCH_EXPORT_TYPE HdNullBufferSource : public HdBufferSource {
 public:
     HD_API
     virtual TfToken const &GetName() const override;

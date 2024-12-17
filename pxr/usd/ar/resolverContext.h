@@ -228,7 +228,7 @@ private:
         return static_cast<const _Typed<Context>&>(untyped);
     }
 
-    struct _Untyped 
+    struct ARCH_EXPORT_TYPE _Untyped 
     {
         AR_API
         virtual ~_Untyped();

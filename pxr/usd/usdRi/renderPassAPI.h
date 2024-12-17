@@ -57,7 +57,7 @@ class SdfAssetPath;
 /// normally, so this collection sets includeRoot to 0.
 /// 
 ///
-class UsdRiRenderPassAPI : public UsdAPISchemaBase
+class ARCH_EXPORT_TYPE UsdRiRenderPassAPI : public UsdAPISchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

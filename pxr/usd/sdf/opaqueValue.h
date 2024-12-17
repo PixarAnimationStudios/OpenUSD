@@ -28,7 +28,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// attribute is an opaque attribute that represents a group of other 
 /// properties.
 ///
-class SdfOpaqueValue final {};
+class ARCH_EXPORT_TYPE SdfOpaqueValue final {};
 
 inline bool
 operator==(SdfOpaqueValue const &, SdfOpaqueValue const &)

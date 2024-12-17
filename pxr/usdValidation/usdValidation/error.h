@@ -33,8 +33,7 @@ class UsdValidationValidator;
 ///       hence reported as warning by the validation task.
 /// Info: Associates the UsdValidationErrorType with information which needs to
 ///       be reported to the users by the validation task.
-enum class UsdValidationErrorType
-{
+enum class ARCH_EXPORT_TYPE UsdValidationErrorType {
     None = 0,
     Error,
     Warn,

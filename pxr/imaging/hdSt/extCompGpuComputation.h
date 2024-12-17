@@ -65,7 +65,7 @@ using HdStExtCompGpuComputationSharedPtr =
 /// \see HdResourceRegistry
 /// \see HdExtComputation
 /// \see HdBufferArrayRange
-class HdStExtCompGpuComputation final : public HdStComputation
+class ARCH_EXPORT_TYPE HdStExtCompGpuComputation final : public HdStComputation
 {
 public:
     /// Constructs a new GPU ExtComputation computation.

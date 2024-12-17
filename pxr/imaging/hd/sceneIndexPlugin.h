@@ -14,7 +14,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdSceneIndexPlugin : public HfPluginBase
+class ARCH_EXPORT_TYPE HdSceneIndexPlugin : public HfPluginBase
 {
 public:
 

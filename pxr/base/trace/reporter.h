@@ -44,7 +44,7 @@ class TraceCollectionAvailable;
 /// This class converts streams of TraceEvent objects into call trees which
 /// can then be used as a data source to a GUI or written out to a file.
 ///
-class TraceReporter : 
+class ARCH_EXPORT_TYPE TraceReporter : 
     public TraceReporterBase {
 public:
 

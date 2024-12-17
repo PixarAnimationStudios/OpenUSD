@@ -53,7 +53,7 @@ class SdfAssetPath;
 /// by multiple Volumes, a Volume's Field prims should be located
 /// under the Volume in namespace, for enhanced organization.
 ///
-class UsdVolVolume : public UsdGeomGprim
+class ARCH_EXPORT_TYPE UsdVolVolume : public UsdGeomGprim
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

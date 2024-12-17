@@ -40,7 +40,7 @@ class SdfTimeCode;
 /// GetReferenceLayerOffset() methods (the latter is the referenceLayerOffset 
 /// property in Python) of the SdfPrimSpec class.
 ///
-class SdfLayerOffset
+class ARCH_EXPORT_TYPE SdfLayerOffset
 {
 public:
     /// \name Constructors

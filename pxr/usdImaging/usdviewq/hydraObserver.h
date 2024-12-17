@@ -129,7 +129,7 @@ private:
 
     bool _Target(const HdSceneIndexBaseRefPtr &sceneIndex);
 
-    class _Observer : public HdSceneIndexObserver
+    class ARCH_EXPORT_TYPE _Observer : public HdSceneIndexObserver
     {
     public:
         USDVIEWQ_API

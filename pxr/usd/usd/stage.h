@@ -133,7 +133,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// stage->GetEditTargetForLocalLayer(stage->GetSessionLayer()) and set that
 /// target in the stage by calling SetEditTarget() or creating a UsdEditContext.
 ///
-class UsdStage : public TfRefBase, public TfWeakBase {
+class ARCH_EXPORT_TYPE UsdStage : public TfRefBase, public TfWeakBase {
 public:
 
     // --------------------------------------------------------------------- //

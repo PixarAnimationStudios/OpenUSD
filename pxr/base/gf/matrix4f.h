@@ -67,7 +67,7 @@ class GfMatrix3f;
 ///        matrix and T represents a translation matrix, the
 ///        product R*T will rotate a row vector, then translate
 ///        it.
-class GfMatrix4f
+class ARCH_EXPORT_TYPE GfMatrix4f
 {
 public:
     typedef float ScalarType;

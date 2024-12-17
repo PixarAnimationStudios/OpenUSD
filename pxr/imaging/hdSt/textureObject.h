@@ -38,7 +38,7 @@ using HdStTextureObjectSharedPtr = std::shared_ptr<class HdStTextureObject>;
 /// Base class for a texture object. The actual GPU resources will be
 /// allocated during the commit phase.
 ///
-class HdStTextureObject :
+class ARCH_EXPORT_TYPE HdStTextureObject :
             public std::enable_shared_from_this<HdStTextureObject>
 {
 public:
@@ -135,7 +135,7 @@ private:
 ///
 /// A base class for uv textures.
 ///
-class HdStUvTextureObject : public HdStTextureObject
+class ARCH_EXPORT_TYPE HdStUvTextureObject : public HdStTextureObject
 {
 public:
     HDST_API

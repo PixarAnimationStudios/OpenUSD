@@ -64,7 +64,7 @@ typedef std::vector<UsdUtilsCoalescingDiagnosticDelegateItem>
 /// results, as well as a compressed view which deduplicates
 /// diagnostic events by their source line number, function and file 
 /// from which they occurred.
-class UsdUtilsCoalescingDiagnosticDelegate : public TfDiagnosticMgr::Delegate {
+class ARCH_EXPORT_TYPE UsdUtilsCoalescingDiagnosticDelegate : public TfDiagnosticMgr::Delegate {
 public:
     USDUTILS_API
     UsdUtilsCoalescingDiagnosticDelegate();

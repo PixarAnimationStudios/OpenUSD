@@ -19,7 +19,7 @@ struct HgiTextureDesc;
 /// Represents CPU data that can be stored in a HdStUvTextureObject, mostly,
 /// likely during the load phase to be committed to the GPU.
 ///
-class HdStTextureCpuData {
+class ARCH_EXPORT_TYPE HdStTextureCpuData {
 public:
     HDST_API
     virtual ~HdStTextureCpuData();

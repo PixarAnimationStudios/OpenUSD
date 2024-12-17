@@ -102,7 +102,7 @@ using SdfShouldCopyValueFn = std::function<
 /// To accommodate this, consumers may provide a callback that applies a
 /// scene description edit in \p valueToCopy via an SdfCopySpecsValueEdit 
 /// object. 
-class SdfCopySpecsValueEdit
+class ARCH_EXPORT_TYPE SdfCopySpecsValueEdit
 {
 public:
     /// Callback to apply a scene description edit to the specified layer and

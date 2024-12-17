@@ -89,7 +89,7 @@ using HdxSelectionTrackerSharedPtr =
 /// HdxSelectionTask takes HdxSelectionTracker as a task parameter, and uploads
 /// the selection buffer encoding to the GPU.
 ///
-class HdxSelectionTracker
+class ARCH_EXPORT_TYPE HdxSelectionTracker
 {
 public:
     HDX_API

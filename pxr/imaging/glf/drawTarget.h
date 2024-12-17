@@ -47,7 +47,7 @@ typedef std::shared_ptr<class GlfGLContext> GlfGLContextSharedPtr;
 /// are also available (by setting the format to GL_DEPTH_STENCIL and
 /// the internalFormat to GL_DEPTH24_STENCIL8)
 ///
-class GlfDrawTarget : public TfRefBase, public TfWeakBase {
+class ARCH_EXPORT_TYPE GlfDrawTarget : public TfRefBase, public TfWeakBase {
 public:
     typedef GlfDrawTarget This;
 

@@ -35,7 +35,7 @@ using HdMeshTopologySharedPtr = std::shared_ptr<class HdMeshTopology>;
 /// of computing derivative topological data (such as indices or subdivision
 /// stencil tables and patch tables).
 ///
-class HdMeshTopology : public HdTopology {
+class ARCH_EXPORT_TYPE HdMeshTopology : public HdTopology {
 public:
     HD_API
     HdMeshTopology();

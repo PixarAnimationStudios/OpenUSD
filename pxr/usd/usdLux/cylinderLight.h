@@ -40,7 +40,7 @@ class SdfAssetPath;
 /// The cylinder does not emit light from the flat end-caps.
 /// 
 ///
-class UsdLuxCylinderLight : public UsdLuxBoundableLightBase
+class ARCH_EXPORT_TYPE UsdLuxCylinderLight : public UsdLuxBoundableLightBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

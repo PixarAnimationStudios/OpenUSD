@@ -40,7 +40,7 @@ using HdTaskContext =
 /// Developers can subclass HdTask to prepare resources, run 3d renderpasses, 
 /// run 2d renderpasses such as compositing or color correction, or coordinate 
 /// integration with the application or other renderers.
-class HdTask {
+class ARCH_EXPORT_TYPE HdTask {
 public:
     /// Construct a new task.
     /// If the task is going to be added to the render index, id

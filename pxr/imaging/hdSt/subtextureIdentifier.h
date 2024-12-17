@@ -25,7 +25,7 @@ class HdStDynamicUvTextureImplementation;
 /// file that can contain several textures (e.g., frames in a movie or
 /// grids in an OpenVDB file).
 /// 
-class HdStSubtextureIdentifier
+class ARCH_EXPORT_TYPE HdStSubtextureIdentifier
 {
 public:
     using ID = size_t;
@@ -38,7 +38,7 @@ public:
 
 protected:
     HDST_API
-    friend size_t hash_value(const HdStSubtextureIdentifier &subId);
+    friend HDST_API size_t hash_value(const HdStSubtextureIdentifier &subId);
 
     virtual ID _Hash() const = 0;
 };
@@ -52,7 +52,7 @@ size_t hash_value(const HdStSubtextureIdentifier &subId);
 /// Base class for information identifying a grid in a volume field
 /// file. Parallels FieldBase in usdVol.
 ///
-class HdStFieldBaseSubtextureIdentifier : public HdStSubtextureIdentifier
+class ARCH_EXPORT_TYPE HdStFieldBaseSubtextureIdentifier : public HdStSubtextureIdentifier
 {
 public:
     /// Get field name.
@@ -92,7 +92,7 @@ private:
 /// (flipVertically = false) which have opposite conventions for the
 /// vertical orientation.
 ///
-class HdStAssetUvSubtextureIdentifier final
+class ARCH_EXPORT_TYPE HdStAssetUvSubtextureIdentifier final
                                 : public HdStSubtextureIdentifier
 {
 public:
@@ -151,7 +151,7 @@ private:
 /// HdStRenderBuffer::Sync/Allocate and the texture is filled by using
 /// it as render target in various render passes.
 ///
-class HdStDynamicUvSubtextureIdentifier : public HdStSubtextureIdentifier
+class ARCH_EXPORT_TYPE HdStDynamicUvSubtextureIdentifier : public HdStSubtextureIdentifier
 {
 public:
     HDST_API
@@ -179,7 +179,7 @@ protected:
 /// Specifies whether a Ptex texture should be loaded with pre-multiplied alpha
 /// values.
 ///
-class HdStPtexSubtextureIdentifier final
+class ARCH_EXPORT_TYPE HdStPtexSubtextureIdentifier final
                                 : public HdStSubtextureIdentifier
 {
 public:
@@ -210,7 +210,7 @@ private:
 /// Specifies whether a Udim texture should be loaded with pre-multiplied alpha
 /// values and the color space in which the texture is encoded.
 ///
-class HdStUdimSubtextureIdentifier final
+class ARCH_EXPORT_TYPE HdStUdimSubtextureIdentifier final
                                 : public HdStSubtextureIdentifier
 {
 public:

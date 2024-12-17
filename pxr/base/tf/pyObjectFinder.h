@@ -19,7 +19,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct Tf_PyObjectFinderBase {
+struct ARCH_EXPORT_TYPE Tf_PyObjectFinderBase {
     TF_API virtual ~Tf_PyObjectFinderBase();
     virtual pxr_boost::python::object Find(void const *objPtr) const = 0;
 };

@@ -29,7 +29,7 @@ public:
     /// Base notification class for scene.  Only useful for type hierarchy
     /// purposes.
     ///
-    class Base : public TfNotice {
+    class ARCH_EXPORT_TYPE Base : public TfNotice {
     public:
         SDF_API ~Base();
     };
@@ -90,7 +90,7 @@ public:
     /// can listen to notices from only the set of layers they care about rather
     /// than listening to the global LayersDidChange notice.
     ///
-    class LayersDidChangeSentPerLayer 
+    class ARCH_EXPORT_TYPE LayersDidChangeSentPerLayer 
         : public Base, public BaseLayersDidChange {
     public:
         LayersDidChangeSentPerLayer(const SdfLayerChangeListVec &changeVec,
@@ -103,7 +103,7 @@ public:
     ///
     /// Global notice sent to indicate that layer contents have changed.
     ///
-    class LayersDidChange
+    class ARCH_EXPORT_TYPE LayersDidChange
         : public Base, public BaseLayersDidChange {
     public:
         LayersDidChange(const SdfLayerChangeListVec &changeVec,
@@ -116,7 +116,7 @@ public:
     ///
     /// Sent when the (scene spec) info of a layer have changed.
     ///
-    class LayerInfoDidChange : public Base {
+    class ARCH_EXPORT_TYPE LayerInfoDidChange : public Base {
     public:
         LayerInfoDidChange( const TfToken &key ) :
             _key(key) {}
@@ -132,7 +132,7 @@ public:
     ///
     /// Sent when the identifier of a layer has changed.
     ///
-    class LayerIdentifierDidChange : public Base {
+    class ARCH_EXPORT_TYPE LayerIdentifierDidChange : public Base {
     public:
         SDF_API
         LayerIdentifierDidChange(const std::string& oldIdentifier,
@@ -155,14 +155,14 @@ public:
     ///
     /// Sent after a layer has been loaded from a file.
     ///
-    class LayerDidReplaceContent : public Base {
+    class ARCH_EXPORT_TYPE LayerDidReplaceContent : public Base {
     public:
         SDF_API ~LayerDidReplaceContent();
     };
 
     /// \class LayerDidReloadContent
     /// Sent after a layer is reloaded.
-    class LayerDidReloadContent : public LayerDidReplaceContent {
+    class ARCH_EXPORT_TYPE LayerDidReloadContent : public LayerDidReplaceContent {
     public:
         SDF_API virtual ~LayerDidReloadContent();
     };
@@ -181,7 +181,7 @@ public:
     /// Similar behavior to LayersDidChange, but only gets sent if a change
     /// in the dirty status of a layer occurs.
     ///
-    class LayerDirtinessChanged : public Base {
+    class ARCH_EXPORT_TYPE LayerDirtinessChanged : public Base {
     public:
         SDF_API ~LayerDirtinessChanged();
     };
@@ -192,7 +192,7 @@ public:
     /// muted layers. Note this does not necessarily mean the specified
     /// layer is currently loaded.
     ///
-    class LayerMutenessChanged : public Base {
+    class ARCH_EXPORT_TYPE LayerMutenessChanged : public Base {
     public:
         LayerMutenessChanged(const std::string& layerPath, bool wasMuted)
             : _layerPath(layerPath)

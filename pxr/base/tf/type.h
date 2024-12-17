@@ -53,7 +53,7 @@ public:
     using DefinitionCallback = void (*)(TfType);
 
     /// Base class of all factory types.
-    class FactoryBase {
+    class ARCH_EXPORT_TYPE FactoryBase {
     public:
         TF_API virtual ~FactoryBase();
     };
@@ -69,7 +69,7 @@ public:
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     // This is a non-templated base class for the templated
     // polymorphic-to-Python infrastructure.
-    struct PyPolymorphicBase
+    struct ARCH_EXPORT_TYPE PyPolymorphicBase
     {
     protected:
         TF_API virtual ~PyPolymorphicBase();

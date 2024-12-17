@@ -62,7 +62,7 @@ class SdfAssetPath;
 /// will be pruned from BBox computation; the authored extent is expected to
 /// incorporate all child bounds.
 ///
-class UsdGeomBoundable : public UsdGeomXformable
+class ARCH_EXPORT_TYPE UsdGeomBoundable : public UsdGeomXformable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

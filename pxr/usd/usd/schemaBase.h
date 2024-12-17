@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// arguments take them by <tt>const &</tt> if const access is sufficient,
 /// otherwise by non-const pointer.
 ///
-class UsdSchemaBase {
+class ARCH_EXPORT_TYPE UsdSchemaBase {
 public:
     /// Compile time constant representing what kind of schema this class is.
     ///

@@ -17,7 +17,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Flattens a data source by using HdOverlayContainerDataSource.
 ///
-class HdFlattenedOverlayDataSourceProvider : public HdFlattenedDataSourceProvider
+class ARCH_EXPORT_TYPE HdFlattenedOverlayDataSourceProvider : public HdFlattenedDataSourceProvider
 {
 public:
     HD_API

@@ -44,7 +44,7 @@ class SdfAssetPath;
 /// \see \ref usdLux_PluginSchemas
 /// 
 ///
-class UsdLuxPluginLight : public UsdGeomXformable
+class ARCH_EXPORT_TYPE UsdLuxPluginLight : public UsdGeomXformable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

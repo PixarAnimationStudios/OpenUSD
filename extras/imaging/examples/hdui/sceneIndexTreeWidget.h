@@ -22,7 +22,7 @@ class Hdui_SceneIndexPrimTreeWidgetItem;
 
 //-----------------------------------------------------------------------------
 
-class HDUI_API_CLASS HduiSceneIndexTreeWidget
+class ARCH_EXPORT_TYPE HduiSceneIndexTreeWidget
     : public QTreeWidget, public HdSceneIndexObserver
 {
     Q_OBJECT;

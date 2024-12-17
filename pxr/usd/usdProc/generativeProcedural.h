@@ -54,7 +54,7 @@ class SdfAssetPath;
 /// So to set an attribute to the value "rightHanded", use UsdProcTokens->rightHanded
 /// as the value.
 ///
-class UsdProcGenerativeProcedural : public UsdGeomBoundable
+class ARCH_EXPORT_TYPE UsdProcGenerativeProcedural : public UsdGeomBoundable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

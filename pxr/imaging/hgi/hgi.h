@@ -90,7 +90,7 @@ using HgiUniquePtr = std::unique_ptr<class Hgi>;
 ///     for i to num_threads
 ///         hgi->SubmitCmds( cmds[i] )
 ///
-class Hgi
+class ARCH_EXPORT_TYPE Hgi
 {
 public:
     HGI_API
@@ -348,7 +348,7 @@ private:
 ///
 /// Hgi factory for plugin system
 ///
-class HgiFactoryBase : public TfType::FactoryBase {
+class ARCH_EXPORT_TYPE HgiFactoryBase : public TfType::FactoryBase {
 public:
     virtual Hgi* New() const = 0;
 };

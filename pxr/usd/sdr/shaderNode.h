@@ -66,7 +66,7 @@ TF_DECLARE_PUBLIC_TOKENS(SdrNodeRole, SDR_API, SDR_NODE_ROLE_TOKENS);
 ///
 /// A specialized version of `NdrNode` which holds shading information.
 ///
-class SdrShaderNode : public NdrNode
+class ARCH_EXPORT_TYPE SdrShaderNode : public NdrNode
 {
 public:
     /// Constructor.

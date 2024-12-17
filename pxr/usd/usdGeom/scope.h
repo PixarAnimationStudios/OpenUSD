@@ -39,7 +39,7 @@ class SdfAssetPath;
 /// through a Scope successfully - it is just a guaranteed no-op from a
 /// transformability perspective.
 ///
-class UsdGeomScope : public UsdGeomImageable
+class ARCH_EXPORT_TYPE UsdGeomScope : public UsdGeomImageable
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

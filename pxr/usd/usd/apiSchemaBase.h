@@ -95,7 +95,7 @@ class SdfAssetPath;
 /// 
 /// 
 ///
-class UsdAPISchemaBase : public UsdSchemaBase
+class ARCH_EXPORT_TYPE UsdAPISchemaBase : public UsdSchemaBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

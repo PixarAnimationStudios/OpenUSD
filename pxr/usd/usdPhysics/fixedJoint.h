@@ -37,7 +37,7 @@ class SdfAssetPath;
 /// Predefined fixed joint type (All degrees of freedom are 
 /// removed.)
 ///
-class UsdPhysicsFixedJoint : public UsdPhysicsJoint
+class ARCH_EXPORT_TYPE UsdPhysicsFixedJoint : public UsdPhysicsJoint
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

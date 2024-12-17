@@ -46,7 +46,7 @@ class SdfAssetPath;
 /// have interpolation metadata.  It's common for authored widths and normals
 /// to have constant or varying interpolation.
 ///
-class UsdGeomPoints : public UsdGeomPointBased
+class ARCH_EXPORT_TYPE UsdGeomPoints : public UsdGeomPointBased
 {
 public:
     /// Compile time constant representing what kind of schema this class is.

@@ -28,7 +28,7 @@ using TsTime = double;
 
 /// Interpolation mode for a spline segment (region between two knots).
 ///
-enum TsInterpMode
+enum ARCH_EXPORT_TYPE TsInterpMode
 {
     TsInterpValueBlock  = 0,  //< No value in this segment.
     TsInterpHeld        = 1,  //< Constant value in this segment.
@@ -38,7 +38,7 @@ enum TsInterpMode
 
 /// Type of interpolation for a spline's \c Curve segments.
 ///
-enum TsCurveType
+enum ARCH_EXPORT_TYPE TsCurveType
 {
     TsCurveTypeBezier  = 0,  //< Bezier curve, free tangent widths.
     TsCurveTypeHermite = 1   //< Hermite curve, like Bezier but fixed tan width.
@@ -47,7 +47,7 @@ enum TsCurveType
 /// Curve-shaping mode for one of a spline's extrapolation regions (before all
 /// knots and after all knots).
 ///
-enum TsExtrapMode
+enum ARCH_EXPORT_TYPE TsExtrapMode
 {
     TsExtrapValueBlock    = 0, //< No value in this region.
     TsExtrapHeld          = 1, //< Constant value in this region.
@@ -146,7 +146,7 @@ public:
 /// See \ref page_ts_regression for a general introduction to regression and
 /// anti-regression.
 ///
-enum TsAntiRegressionMode
+enum ARCH_EXPORT_TYPE TsAntiRegressionMode
 {
     /// Do not enforce.  If there is regression, runtime evaluation will use
     /// KeepRatio.

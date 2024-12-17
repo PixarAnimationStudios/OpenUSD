@@ -84,7 +84,7 @@ TF_DECLARE_PUBLIC_TOKENS(SdrPropertyTokens, SDR_API, SDR_PROPERTY_TOKENS);
 ///
 /// A specialized version of `NdrProperty` which holds shading information.
 ///
-class SdrShaderProperty : public NdrProperty
+class ARCH_EXPORT_TYPE SdrShaderProperty : public NdrProperty
 {
 public:
     // Constructor.

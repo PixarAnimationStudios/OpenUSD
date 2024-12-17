@@ -55,8 +55,8 @@ private:
 
 };
 
-struct TfPyNoticeWrapperBase : public TfType::PyPolymorphicBase {
-    TF_API virtual ~TfPyNoticeWrapperBase();
+struct ARCH_EXPORT_TYPE TfPyNoticeWrapperBase : public TfType::PyPolymorphicBase {
+    virtual ~TfPyNoticeWrapperBase();
     virtual pxr_boost::python::handle<> GetNoticePythonObject() const = 0;
 };
 

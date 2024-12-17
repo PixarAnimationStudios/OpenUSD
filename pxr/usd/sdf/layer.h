@@ -78,7 +78,7 @@ struct Sdf_AssetInfo;
 /// is 24, then a sample at time ordinate 24 should be viewed exactly one second
 /// after the sample at time ordinate 0.
 /// 
-class SdfLayer 
+class ARCH_EXPORT_TYPE SdfLayer 
     : public TfRefBase
     , public TfWeakBase
 {

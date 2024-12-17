@@ -28,7 +28,7 @@ class PcpNodeRef;
 /// A classification of PcpPrimIndex->PcpSite dependencies
 /// by composition structure.
 ///
-enum PcpDependencyType {
+enum ARCH_EXPORT_TYPE PcpDependencyType {
     /// No type of dependency.
     PcpDependencyTypeNone = 0,
 

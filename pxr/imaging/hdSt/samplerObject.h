@@ -62,8 +62,8 @@ protected:
 ///
 /// A sampler suitable for HdStUvTextureObject.
 ///
-class HdStUvSamplerObject final : public HdStSamplerObject {
-public:
+class ARCH_EXPORT_TYPE HdStUvSamplerObject final : public HdStSamplerObject {
+public: 
     HDST_API 
     HdStUvSamplerObject(
         HdStUvTextureObject const &uvTexture,

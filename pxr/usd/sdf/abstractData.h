@@ -53,7 +53,7 @@ TF_DECLARE_PUBLIC_TOKENS(SdfDataTokens, SDF_API, SDF_DATA_TOKENS);
 /// consistency guarantees about the scene description it contains.
 /// Instead, it is a basis for building those things.
 ///
-class SdfAbstractData : public TfRefBase, public TfWeakBase
+class ARCH_EXPORT_TYPE SdfAbstractData : public TfRefBase, public TfWeakBase
 {
 public:
     SdfAbstractData() {}

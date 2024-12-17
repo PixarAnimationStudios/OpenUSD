@@ -19,7 +19,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Implements HdMaterialNetworkInterface interface backed by an
 /// HdMaterialNetwork2 -- which is useful for implementing material
 /// filtering functions without being tied to the legacy data model
-class HdMaterialNetwork2Interface
+class ARCH_EXPORT_TYPE HdMaterialNetwork2Interface
     : public HdMaterialNetworkInterface
 {
 public:

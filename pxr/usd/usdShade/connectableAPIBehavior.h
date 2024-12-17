@@ -28,7 +28,7 @@ class UsdShadeOutput;
 ///
 /// This enables schema libraries to enable UsdShadeConnectableAPI for
 /// their prim types and define its behavior.
-class UsdShadeConnectableAPIBehavior
+class ARCH_EXPORT_TYPE UsdShadeConnectableAPIBehavior
 {
 public:
 

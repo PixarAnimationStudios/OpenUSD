@@ -17,7 +17,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-struct HdSt_MeshShaderKey : public HdSt_ShaderKey
+struct ARCH_EXPORT_TYPE HdSt_MeshShaderKey : public HdSt_ShaderKey
 {
     enum NormalSource
     {

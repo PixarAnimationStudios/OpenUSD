@@ -43,7 +43,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// // resolution.
 /// \endcode
 ///
-class ArDefaultResolverContext
+class ARCH_EXPORT_TYPE ArDefaultResolverContext
 {
 public:
     /// Default construct a context with no search path.

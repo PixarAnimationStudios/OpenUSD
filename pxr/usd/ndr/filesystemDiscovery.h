@@ -41,7 +41,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(_NdrFilesystemDiscoveryPlugin);
 /// while walking the search paths. Set to "true" (case sensitive) if they
 /// should be followed.
 ///
-class _NdrFilesystemDiscoveryPlugin final : public NdrDiscoveryPlugin
+class ARCH_EXPORT_TYPE _NdrFilesystemDiscoveryPlugin final : public NdrDiscoveryPlugin
 {
 public:
     /// A filter for discovered nodes.  If the function returns false

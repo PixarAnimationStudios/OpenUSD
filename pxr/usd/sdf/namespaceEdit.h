@@ -112,7 +112,7 @@ SDF_API std::ostream& operator<<(std::ostream&, const SdfNamespaceEditVector&);
 ///
 /// Detailed information about a namespace edit.
 ///
-struct SdfNamespaceEditDetail {
+struct ARCH_EXPORT_TYPE SdfNamespaceEditDetail {
 public:
     /// Validity of an edit.
     enum Result {

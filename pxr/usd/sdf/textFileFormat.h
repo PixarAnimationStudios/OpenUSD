@@ -38,7 +38,7 @@ class ArAsset;
 ///
 /// Sdf text file format
 ///
-class SdfTextFileFormat : public SdfFileFormat
+class ARCH_EXPORT_TYPE SdfTextFileFormat : public SdfFileFormat
 {
 public:
     // SdfFileFormat overrides.

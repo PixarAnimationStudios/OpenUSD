@@ -8,6 +8,7 @@
 #define PXR_USD_USD_TEST_USD_RESOLVER_CHANGED_RESOLVER_H
 
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/api.h"
 
 #include "pxr/usd/ar/defineResolverContext.h"
 #include "pxr/usd/ar/resolver.h"
@@ -22,7 +23,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class _TestResolverContext
 ///
-class _TestResolverContext
+class ARCH_EXPORT_TYPE _TestResolverContext
 {
 public:
     _TestResolverContext(const std::string& configName_)
@@ -46,7 +47,7 @@ AR_DECLARE_RESOLVER_CONTEXT(_TestResolverContext);
 
 /// \class _TestResolverPluginInterface
 ///
-class _TestResolverPluginInterface
+class ARCH_EXPORT_TYPE _TestResolverPluginInterface
 {
 public:
     virtual ~_TestResolverPluginInterface() { }

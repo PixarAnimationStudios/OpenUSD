@@ -41,7 +41,7 @@ class GfMatrix2f;
 /// Matrices are defined to be in row-major order, so <c>matrix[i][j]</c>
 /// indexes the element in the \e i th row and the \e j th column.
 ///
-class GfMatrix2f
+class ARCH_EXPORT_TYPE GfMatrix2f
 {
 public:
     typedef float ScalarType;

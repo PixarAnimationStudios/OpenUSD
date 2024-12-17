@@ -27,7 +27,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// apply to other graphics backends, such as Vulkan, where the shader functions
 /// are used during rendering.
 ///
-class HgiShaderFunction
+class ARCH_EXPORT_TYPE HgiShaderFunction
 {
 public:
     HGI_API

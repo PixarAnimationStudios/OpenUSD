@@ -42,7 +42,7 @@ void TfDelegatedCountIncrement(Sdf_PathNode const *) noexcept;
 void TfDelegatedCountDecrement(Sdf_PathNode const *) noexcept;
 
 // Tags used for the pools of path nodes.
-struct Sdf_PathPrimTag;
+struct ARCH_EXPORT_TYPE Sdf_PathPrimTag;
 struct Sdf_PathPropTag;
 
 // These are validated below.
@@ -270,7 +270,7 @@ VT_TYPE_IS_CHEAP_TO_COPY(class SdfPath);
 /// the number of values created (since it requires synchronized access to
 /// this table) or copied (since it requires atomic ref-counting operations).
 ///
-class SdfPath
+class ARCH_EXPORT_TYPE SdfPath
 {
 public:
     /// The empty path value, equivalent to SdfPath().

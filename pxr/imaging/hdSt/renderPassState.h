@@ -45,7 +45,7 @@ class HdSt_ResourceBinder;
 ///
 /// Parameters are expressed as GL states, uniforms or shaders.
 ///
-class HdStRenderPassState : public HdRenderPassState
+class ARCH_EXPORT_TYPE HdStRenderPassState : public HdRenderPassState
 {
 public:
     HDST_API

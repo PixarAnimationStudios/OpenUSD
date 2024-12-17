@@ -42,7 +42,7 @@ using HdDriverVector = std::vector<HdDriver*>;
 /// that is obtained from the render delegate and passed to each prim
 /// during Sync processing.
 ///
-class HdRenderParam 
+class ARCH_EXPORT_TYPE HdRenderParam 
 {
 public:
     HdRenderParam() {}
@@ -75,7 +75,7 @@ typedef std::vector<HdRenderSettingDescriptor> HdRenderSettingDescriptorList;
 
 /// \class HdRenderDelegate
 ///
-class HdRenderDelegate
+class ARCH_EXPORT_TYPE HdRenderDelegate
 {
 public:
     HD_API

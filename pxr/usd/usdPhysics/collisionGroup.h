@@ -46,7 +46,7 @@ class SdfAssetPath;
 /// defines the members of this Collisiongroup.
 /// 
 ///
-class UsdPhysicsCollisionGroup : public UsdTyped
+class ARCH_EXPORT_TYPE UsdPhysicsCollisionGroup : public UsdTyped
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
