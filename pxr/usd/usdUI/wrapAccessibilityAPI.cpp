@@ -206,12 +206,6 @@ WRAP_CUSTOM {
             (arg("prim")))
         .staticmethod("CreateDefaultAPI")
 
-    .def("CreateDefaultAPI",
-            (This(*)(const UsdSchemaBase &schemaObj))
-               &This::CreateDefaultAPI,
-            (arg("schemaObj")))
-        .staticmethod("CreateDefaultAPI")
-
     .def("ApplyDefaultAPI",
             (This(*)(const UsdPrim &prim))
                &This::ApplyDefaultAPI,
