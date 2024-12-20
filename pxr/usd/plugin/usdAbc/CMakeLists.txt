@@ -152,6 +152,15 @@ pxr_register_test(testUsdAbcIndexedGeomArb
         USD_ABC_TESTSUFFIX=def
 )
 
+pxr_register_test(testUsdAbcIndexedGeomArbLoad
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat test_indexed_primvar.abc --out good_indexed_primvar.usda"
+    TESTENV testenv/testUsdAbcIndexedGeomArbLoad
+    DIFF_COMPARE good_indexed_primvar.usda
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USD_ABC_TESTSUFFIX=def
+)
+
 pxr_register_test(testUsdAbcInstancing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcInstancing"
