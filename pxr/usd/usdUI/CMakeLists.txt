@@ -9,7 +9,6 @@ pxr_library(usdUI
         vt
         sdf
         usd
-        usdGeom
 
     PUBLIC_HEADERS
         api.h
