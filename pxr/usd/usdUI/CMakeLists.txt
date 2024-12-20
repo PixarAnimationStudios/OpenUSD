@@ -57,17 +57,3 @@ pxr_register_test(testUsdUIAcessibilityAPI
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUIAcessibilityAPI"
         EXPECTED_RETURN_CODE 0
 )
-
-pxr_build_test(testUsdUILocalizationAPI
-        LIBRARIES
-        tf
-        usd
-        usdUI
-        CPPFILES
-        testenv/testUsdUILocalizationAPI.cpp
-)
-
-pxr_register_test(testUsdUILocalizationAPI
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUILocalizationAPI"
-        EXPECTED_RETURN_CODE 0
-)

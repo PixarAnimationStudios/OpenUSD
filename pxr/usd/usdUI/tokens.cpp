@@ -18,9 +18,6 @@ UsdUITokensType::UsdUITokensType() :
     description("description", TfToken::Immortal),
     high("high", TfToken::Immortal),
     label("label", TfToken::Immortal),
-    lang("lang", TfToken::Immortal),
-    localization("localization", TfToken::Immortal),
-    localization_MultipleApplyTemplate_Language("localization:__INSTANCE_NAME__:language", TfToken::Immortal),
     low("low", TfToken::Immortal),
     minimized("minimized", TfToken::Immortal),
     open("open", TfToken::Immortal),
@@ -38,7 +35,6 @@ UsdUITokensType::UsdUITokensType() :
     uiNodegraphNodeStackingOrder("ui:nodegraph:node:stackingOrder", TfToken::Immortal),
     AccessibilityAPI("AccessibilityAPI", TfToken::Immortal),
     Backdrop("Backdrop", TfToken::Immortal),
-    LocalizationAPI("LocalizationAPI", TfToken::Immortal),
     NodeGraphNodeAPI("NodeGraphNodeAPI", TfToken::Immortal),
     SceneGraphPrimAPI("SceneGraphPrimAPI", TfToken::Immortal),
     allTokens({
@@ -51,9 +47,6 @@ UsdUITokensType::UsdUITokensType() :
         description,
         high,
         label,
-        lang,
-        localization,
-        localization_MultipleApplyTemplate_Language,
         low,
         minimized,
         open,
@@ -71,7 +64,6 @@ UsdUITokensType::UsdUITokensType() :
         uiNodegraphNodeStackingOrder,
         AccessibilityAPI,
         Backdrop,
-        LocalizationAPI,
         NodeGraphNodeAPI,
         SceneGraphPrimAPI
     })

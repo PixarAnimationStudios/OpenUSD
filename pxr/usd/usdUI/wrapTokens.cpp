@@ -26,9 +26,6 @@ void wrapUsdUITokens()
     _ADD_TOKEN(cls, description);
     _ADD_TOKEN(cls, high);
     _ADD_TOKEN(cls, label);
-    _ADD_TOKEN(cls, lang);
-    _ADD_TOKEN(cls, localization);
-    _ADD_TOKEN(cls, localization_MultipleApplyTemplate_Language);
     _ADD_TOKEN(cls, low);
     _ADD_TOKEN(cls, minimized);
     _ADD_TOKEN(cls, open);
@@ -46,7 +43,6 @@ void wrapUsdUITokens()
     _ADD_TOKEN(cls, uiNodegraphNodeStackingOrder);
     _ADD_TOKEN(cls, AccessibilityAPI);
     _ADD_TOKEN(cls, Backdrop);
-    _ADD_TOKEN(cls, LocalizationAPI);
     _ADD_TOKEN(cls, NodeGraphNodeAPI);
     _ADD_TOKEN(cls, SceneGraphPrimAPI);
 }

@@ -3,7 +3,6 @@
 # Public Classes
 accessibilityAPI
 backdrop
-localizationAPI
 nodeGraphNodeAPI
 sceneGraphPrimAPI
 tokens
@@ -12,7 +11,6 @@ tokens
 module.cpp
 wrapAccessibilityAPI.cpp
 wrapBackdrop.cpp
-wrapLocalizationAPI.cpp
 wrapNodeGraphNodeAPI.cpp
 wrapSceneGraphPrimAPI.cpp
 wrapTokens.cpp

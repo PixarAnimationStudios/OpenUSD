@@ -81,18 +81,6 @@ struct UsdUITokensType {
     /// 
     /// Name of the label attribute
     const TfToken label;
-    /// \brief "lang"
-    /// 
-    /// The token that delineates language specifications on an attribute
-    const TfToken lang;
-    /// \brief "localization"
-    /// 
-    /// Property namespace prefix for the UsdUILocalizationAPI schema.
-    const TfToken localization;
-    /// \brief "localization:__INSTANCE_NAME__:language"
-    /// 
-    /// UsdUILocalizationAPI
-    const TfToken localization_MultipleApplyTemplate_Language;
     /// \brief "low"
     /// 
     /// Possible value for UsdUIAccessibilityAPI::GetPriorityAttr()
@@ -161,10 +149,6 @@ struct UsdUITokensType {
     /// 
     /// Schema identifer and family for UsdUIBackdrop
     const TfToken Backdrop;
-    /// \brief "LocalizationAPI"
-    /// 
-    /// Schema identifer and family for UsdUILocalizationAPI
-    const TfToken LocalizationAPI;
     /// \brief "NodeGraphNodeAPI"
     /// 
     /// Schema identifer and family for UsdUINodeGraphNodeAPI
