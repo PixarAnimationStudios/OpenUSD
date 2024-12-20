@@ -197,6 +197,27 @@ void wrapUsdUIAccessibilityAPI()
 namespace {
 
 WRAP_CUSTOM {
+    using This = UsdUIAccessibilityAPI;
+
+    _class
+    .def("CreateDefaultAPI",
+            (This(*)(const UsdPrim &prim))
+               &This::CreateDefaultAPI,
+            (arg("prim")))
+        .staticmethod("CreateDefaultAPI")
+
+    .def("CreateDefaultAPI",
+            (This(*)(const UsdSchemaBase &schemaObj))
+               &This::CreateDefaultAPI,
+            (arg("schemaObj")))
+        .staticmethod("CreateDefaultAPI")
+
+    .def("ApplyDefaultAPI",
+            (This(*)(const UsdPrim &prim))
+               &This::ApplyDefaultAPI,
+            (arg("prim")))
+        .staticmethod("ApplyDefaultAPI")
+    ;
 }
 
 }

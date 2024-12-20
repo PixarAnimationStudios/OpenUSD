@@ -242,6 +242,8 @@ public:
     // --------------------------------------------------------------------- //
     /// A short label to concisely describe the prim.
     /// It is not recommended to time vary the label unless the concise description changes substantially.
+    /// 
+    /// There is no specific suggested length for the label, but it is recommended to keep it succint.
     ///
     /// | ||
     /// | -- | -- |
@@ -292,8 +294,10 @@ public:
     // PRIORITY 
     // --------------------------------------------------------------------- //
     /// A hint to the accessibility runtime of how to prioritize this instances label and description,
-    /// relative to others. This attribute is optional. Accessibility runtimes may choose to apply their own
-    /// priority systems that override this.
+    /// relative to others.
+    /// 
+    /// This attribute is optional and is considered a hint that runtimes may ignore, if they feel there are other
+    /// necessities that take precedence over the prioritization values.
     /// 
     /// Priority may not be time varying.
     /// 
