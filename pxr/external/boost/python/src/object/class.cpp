@@ -25,6 +25,7 @@
 #include "pxr/external/boost/python/str.hpp"
 #include "pxr/external/boost/python/ssize_t.hpp"
 #include <functional>
+#include <algorithm>
 #include <vector>
 #include <cstddef>
 #include <cstdint>
