@@ -194,6 +194,13 @@ PcpComposeSiteRelocates(PcpLayerStackRefPtr const &layerStack,
                         SdfPath const &path,
                         SdfRelocatesMap *result);
 
+PCP_API
+void
+PcpComposeSiteRelocates(PcpLayerStackRefPtr const &layerStack,
+                        SdfPath const &path,
+                        std::vector<SdfRelocatesMap> *result,
+                        PcpArcInfoVector *info);
+
 inline void
 PcpComposeSiteRelocates(PcpNodeRef const &node, SdfRelocatesMap *result)
 {

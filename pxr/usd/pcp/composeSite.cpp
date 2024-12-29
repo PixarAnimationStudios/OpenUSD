@@ -267,6 +267,41 @@ PcpComposeSiteRelocates(PcpLayerStackRefPtr const &layerStack,
     }
 }
 
+void
+PcpComposeSiteRelocates(const PcpLayerStackRefPtr &layerStack,
+                        const SdfPath &path,
+                        std::vector<SdfRelocatesMap> *result,
+                        PcpArcInfoVector *info )
+{
+    static const TfToken field = SdfFieldKeys->Relocates;
+
+    TF_REVERSE_FOR_ALL(layer, layerStack->GetLayers()) {
+        SdfRelocates relocates = (*layer)->GetRelocates();
+        // Search for the first relocation where .second (target path) matches the queried path
+        auto relocateIter = std::find_if(
+            relocates.begin(),
+            relocates.end(),
+            [&path](const SdfRelocate& relocate) {
+                return relocate.second == path;
+            }
+        );
+        if (relocateIter != relocates.end()) {
+            const SdfPath& source = relocateIter->first;  // Source path
+            const SdfPath& target = relocateIter->second; // Target path
+
+            SdfRelocatesMap relocMapCopy;
+            relocMapCopy[source.MakeAbsolutePath(path)] = target.MakeAbsolutePath(path);
+
+            result->push_back(std::move(relocMapCopy));
+
+            PcpArcInfo arcInfo;
+            arcInfo.sourceLayer = *layer;
+            arcInfo.arcNum = static_cast<int>(result->size()) - 1;
+            info->push_back(std::move(arcInfo));
+        }
+    }
+}
+
 // Helper for PcpComposeSiteInherits/Specializes/ overloads
 // that want to provide source arc info with the layer that adds each result.
 template <typename ResultType>
