@@ -183,6 +183,10 @@ UsdPrimCompositionQueryArc::GetIntroducingLayer() const
         foundInfo = _GetIntroducingComposeInfo<std::string>(
             *this, &PcpComposeSiteVariantSets, &info, nullptr);
         break;
+    case PcpArcTypeRelocate:
+        foundInfo = _GetIntroducingComposeInfo<SdfRelocatesMap>(
+            *this, &PcpComposeSiteRelocates, &info, nullptr);
+        break;
     default:
         break;
     }
@@ -398,7 +402,7 @@ UsdPrimCompositionQuery::UsdPrimCompositionQuery(const UsdPrim & prim,
     // things like the original copies of specialize nodes that have been
     // moved for strength ordering purposes. 
     for(const PcpNodeRef &node: _expandedPrimIndex->GetNodeRange()) { 
-        if (!node.IsInert()) {
+        if (!node.IsInert() || node.GetArcType() == PcpArcTypeRelocate) {
             _unfilteredArcs.push_back(UsdPrimCompositionQueryArc(node));
         }
     }
