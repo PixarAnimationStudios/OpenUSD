@@ -40,13 +40,10 @@ static _FactoryMap _CreateFactoryMap()
     map[SdfValueTypeNames->AssetArray] = _FactoryImpl<VtArray<SdfAssetPath>>;
     map[SdfValueTypeNames->Bool] = _FactoryImpl<bool>;
     map[SdfValueTypeNames->BoolArray] = _FactoryImpl<VtArray<bool>>;
-    map[SdfValueTypeNames->Color4fArray] = _FactoryImpl<VtArray<GfVec4f>>;
-    map[SdfValueTypeNames->Color4f] = _FactoryImpl<GfVec4f>;
     map[SdfValueTypeNames->Color3fArray] = _FactoryImpl<VtArray<GfVec3f>>;
     map[SdfValueTypeNames->Color3f] = _FactoryImpl<GfVec3f>;
     map[SdfValueTypeNames->Double] = _FactoryImpl<double>;
     map[SdfValueTypeNames->Double2] = _FactoryImpl<GfVec2d>;
-    map[SdfValueTypeNames->Double3] = _FactoryImpl<GfVec3d>;
     map[SdfValueTypeNames->DoubleArray] = _FactoryImpl<VtArray<double>>;
     map[SdfValueTypeNames->Double2Array] = _FactoryImpl<VtArray<GfVec2d>>;
     map[SdfValueTypeNames->Double3Array] = _FactoryImpl<VtArray<GfVec3d>>;
@@ -60,8 +57,6 @@ static _FactoryMap _CreateFactoryMap()
     map[SdfValueTypeNames->Float] = _FactoryImpl<float>;
     map[SdfValueTypeNames->IntArray] = _FactoryImpl<VtArray<int>>;
     map[SdfValueTypeNames->Int] = _FactoryImpl<int>;
-    map[SdfValueTypeNames->Int64Array] = _FactoryImpl<VtArray<int64_t>>;
-    map[SdfValueTypeNames->Int64] = _FactoryImpl<int64_t>;
     map[SdfValueTypeNames->Int2] = _FactoryImpl<GfVec2i>;
     map[SdfValueTypeNames->Matrix4dArray] = _FactoryImpl<VtArray<GfMatrix4d>>;
     map[SdfValueTypeNames->Matrix4d] = _FactoryImpl<GfMatrix4d>;
@@ -94,8 +89,6 @@ static _FactoryMap _CreateFactoryMap()
     map[SdfValueTypeNames->TokenArray] = _FactoryImpl<VtArray<TfToken>>;
     map[SdfValueTypeNames->Vector3fArray] = _FactoryImpl<VtArray<GfVec3f>>;
     map[SdfValueTypeNames->Vector3f] = _FactoryImpl<GfVec3f>;
-    map[SdfValueTypeNames->Vector3dArray] = _FactoryImpl<VtArray<GfVec3d>>;
-    map[SdfValueTypeNames->Vector3d] = _FactoryImpl<GfVec3d>;
 
     return map;
 }
