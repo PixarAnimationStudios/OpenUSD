@@ -86,19 +86,18 @@ size_t
 Sdf_Children<ChildPolicy>::Find(const KeyType &key) const
 {
     if (!TF_VERIFY(IsValid())) {
-        return 0;
+        return _childNames.size();
     }
 
     _UpdateChildNames();
 
     const FieldType expectedKey(_keyPolicy.Canonicalize(key));
-    size_t i = 0;
-    for (i=0; i < _childNames.size(); i++) {
+    for (size_t i=0; i < _childNames.size(); i++) {
         if (_childNames[i] == expectedKey) {
-            break;
+            return i;
         }
     }
-    return i;
+    return _childNames.size();
 }
 
 template<class ChildPolicy>
