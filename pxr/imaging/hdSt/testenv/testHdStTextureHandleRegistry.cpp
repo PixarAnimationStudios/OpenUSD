@@ -349,8 +349,9 @@ My_TestGLDrawing::OffscreenTest()
                 
         {
             TfDeleteFile("reloadingTexture.png");
-            std::ifstream src("reloadingTexture2.png");
-            std::ofstream dst("reloadingTexture.png");
+            constexpr auto mode = std::ios_base::binary;
+            std::ifstream src{"reloadingTexture2.png", mode};
+            std::ofstream dst{"reloadingTexture.png", mode};
             
             dst << src.rdbuf();
         }
