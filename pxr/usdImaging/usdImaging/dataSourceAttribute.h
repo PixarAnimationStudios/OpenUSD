@@ -106,7 +106,10 @@ public:
         return outSampleTimes->size() > 1;
     }
 
-private:
+protected:
+    /// Constructors and member data are protected instead of private
+    /// for use by a specialized subclass for accessing SdfAssetPath
+    /// attributes which need special handling for UDIMs.
 
     /// Constructs a new UsdImagingDataSourceAttribute for the given \p usdAttr
     ///
@@ -137,7 +140,6 @@ private:
             const HdDataSourceLocator &timeVaryingFlagLocator =
                     HdDataSourceLocator::EmptyLocator());
 
-private:
     UsdAttributeQuery _usdAttrQuery;
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
 };
