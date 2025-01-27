@@ -2898,3 +2898,7 @@ if MacOS() and context.buildAppleFramework:
         Add the following framework to your Xcode Project:
         OpenUSD.framework
     """)
+    if not context.prefixFrameworkHeaders:
+        Print("""
+        Configure the SYSTEM_HEADER_SEARCH_PATHS in your Xcode Build Settings to point to the header files within your framework.
+        """)

@@ -193,7 +193,8 @@ if you intend to share source files with other platforms.
 
 2. Build with `--prefix-framework-headers` (or `-DPXR_APPLE_PREFIX_FRAMEWORK_HEADERS=ON` if using CMake)
 to automatically process the frameworks headers. This requires no extra configuration in Xcode, but does require
-that all includes be prefixed with the name of the framework. e.g `#include <OpenUSD/pxr/pxr.h>`
+that all includes be prefixed with the name of the framework. e.g `#include <OpenUSD/pxr/pxr.h>` .
+However, code that use these headers will not be portable with builds of USD without it.
 
 OpenUSD also supports building a combined XCFramework as well of multiple targets.
 This command takes an optional list of targets to build, but will otherwise build all supported platforms.
