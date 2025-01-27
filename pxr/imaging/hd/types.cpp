@@ -424,13 +424,23 @@ HdFormat HdGetComponentFormat(HdFormat f)
     case HdFormatFloat32Vec3:
     case HdFormatFloat32Vec4:
         return HdFormatFloat32;
-    case HdFormatFloat32UInt8:
-        return HdFormatFloat32UInt8; // treat as a single component
+    case HdFormatInt16:
+    case HdFormatInt16Vec2:
+    case HdFormatInt16Vec3:
+    case HdFormatInt16Vec4:
+        return HdFormatInt16;
+    case HdFormatUInt16:
+    case HdFormatUInt16Vec2:
+    case HdFormatUInt16Vec3:
+    case HdFormatUInt16Vec4:
+        return HdFormatUInt16;
     case HdFormatInt32:
     case HdFormatInt32Vec2:
     case HdFormatInt32Vec3:
     case HdFormatInt32Vec4:
         return HdFormatInt32;
+    case HdFormatFloat32UInt8:
+        return HdFormatFloat32UInt8; // treat as a single component
     default:
         return HdFormatInvalid;
     }
@@ -443,18 +453,24 @@ size_t HdGetComponentCount(HdFormat f)
     case HdFormatSNorm8Vec2:
     case HdFormatFloat16Vec2:
     case HdFormatFloat32Vec2:
+    case HdFormatInt16Vec2:
+    case HdFormatUInt16Vec2:
     case HdFormatInt32Vec2:
         return 2;
     case HdFormatUNorm8Vec3:
     case HdFormatSNorm8Vec3:
     case HdFormatFloat16Vec3:
     case HdFormatFloat32Vec3:
+    case HdFormatInt16Vec3:
+    case HdFormatUInt16Vec3:
     case HdFormatInt32Vec3:
         return 3;
     case HdFormatUNorm8Vec4:
     case HdFormatSNorm8Vec4:
     case HdFormatFloat16Vec4:
     case HdFormatFloat32Vec4:
+    case HdFormatInt16Vec4:
+    case HdFormatUInt16Vec4:
     case HdFormatInt32Vec4:
         return 4;
     default:
@@ -478,12 +494,20 @@ size_t HdDataSizeOfFormat(HdFormat f)
     case HdFormatSNorm8Vec4:
         return 4;
     case HdFormatFloat16:
+    case HdFormatInt16:
+    case HdFormatUInt16:
         return 2;
     case HdFormatFloat16Vec2:
+    case HdFormatInt16Vec2:
+    case HdFormatUInt16Vec2:
         return 4;
     case HdFormatFloat16Vec3:
+    case HdFormatInt16Vec3:
+    case HdFormatUInt16Vec3:
         return 6;
     case HdFormatFloat16Vec4:
+    case HdFormatInt16Vec4:
+    case HdFormatUInt16Vec4:
         return 8;
     case HdFormatFloat32:
     case HdFormatInt32:
