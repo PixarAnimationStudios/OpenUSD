@@ -182,17 +182,18 @@ Builds for Apple platforms may optionally build as a framework using the `--buil
 - Building a universal macOS framework is currently not supported. Please generate the arches separately and `lipo` 
   them together after.
 
-To add the Framework to your application, simply add `OpenUSD.framework` to your Xcode project.
+To add the Framework to your application, add `OpenUSD.framework` to your Xcode project.
 It is recommended to set it to `Embed and Sign`.
 
-When including sources from the Framework, you must prefix the include with the framework name.
-However, you should note that these includes are not portable to non-framework builds.
-e.g `#include <OpenUSD/pxr/pxr.h>`
+To setup headers, you may then choose one of two routes:
 
-Optionally, if you want to avoid prefixed includes for your cross platform code, you can manually add the search path
-by setting `SYSTEM_HEADER_SEARCH_PATHS` in your Xcode target to the Headers directory within the framework.
-For example, if your Framework folder is in your project, under a folder with the same name as your target, you would
-set it as `$(SRCROOT)/$(TARGET_NAME)/OpenUSD.framework/Headers`. 
+1. Configure the Xcode `SYSTEM_HEADER_SEARCH_PATHS` to add the path to your headers. e.g
+`$(SRCROOT)/OpenUSD.framework/Headers` if the framework exists in your projects root. This is recommended
+if you intend to share source files with other platforms.
+
+2. Build with `--prefix-framework-headers` (or `-DPXR_APPLE_PREFIX_FRAMEWORK_HEADERS=ON` if using CMake)
+to automatically process the frameworks headers. This requires no extra configuration in Xcode, but does require
+that all includes be prefixed with the name of the framework. e.g `#include <OpenUSD/pxr/pxr.h>`
 
 OpenUSD also supports building a combined XCFramework as well of multiple targets.
 This command takes an optional list of targets to build, but will otherwise build all supported platforms.

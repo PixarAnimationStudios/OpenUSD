@@ -1464,7 +1464,7 @@ function(pxr_create_apple_framework)
         set(EMBEDDED_BUILD "false")
     endif()
 
-    if (PXR_APPLE_APPLY_HEADER_PREFIX)
+    if (PXR_APPLE_PREFIX_FRAMEWORK_HEADERS)
         set(APPLY_HEADER_PREFIX "true")
     else()
         set(APPLY_HEADER_PREFIX "false")
