@@ -820,7 +820,11 @@ _NodeHasTextureCoordPrimvar(
         // for texture coordinates. 
         auto geompropvalueNodes = nodegraph->getNodes(_tokens->geompropvalue);
         for (const mx::NodePtr& mxGeomPropNode : geompropvalueNodes) {
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
             if (mxGeomPropNode->getType() == mx::Type::VECTOR2->getName()) {
+#else
+            if (mxGeomPropNode->getType() == mx::Type::VECTOR2.getName()) {
+#endif
                 return true;
             }
         }
