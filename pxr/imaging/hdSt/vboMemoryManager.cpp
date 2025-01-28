@@ -24,7 +24,6 @@
 
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/enum.h"
 

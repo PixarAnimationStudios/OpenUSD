@@ -8,6 +8,7 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdSt/unitTestGLDrawing.h"
 #include "pxr/imaging/hdSt/unitTestHelper.h"
+#include "pxr/imaging/hdSt/vboMemoryManager.h"
 
 #include "pxr/imaging/hgi/capabilities.h"
 
@@ -15,7 +16,6 @@
 #include "pxr/base/gf/rotation.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/tf/errorMark.h"
-#include "pxr/base/tf/diagnostic.h"
 
 #include <iostream>
 #include <vector>
@@ -120,8 +120,8 @@ My_TestGLDrawing::AddLargeCurve(HdUnitTestDelegate *delegate)
 {
     HdInterpolation colorInterp, widthInterp, opacityInterp;
     colorInterp = widthInterp = opacityInterp = HdInterpolationConstant;
-    
-    static constexpr size_t vboMaxSize = 1 << 30; // default for HD_MAX_VBO_SIZE
+
+    static size_t vboMaxSize = TfGetEnvSetting(HD_MAX_VBO_SIZE);
     const size_t storageMaxSize = _driver->GetHgi()->GetCapabilities()->
         GetMaxShaderStorageBlockSize();
     const size_t maxPointsInVBO = std::min(storageMaxSize, vboMaxSize) / sizeof(GfVec3f);

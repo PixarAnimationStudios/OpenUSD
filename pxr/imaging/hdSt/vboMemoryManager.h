@@ -8,23 +8,26 @@
 #define PXR_IMAGING_HD_ST_VBO_MEMORY_MANAGER_H
 
 #include "pxr/pxr.h"
+
+#include "pxr/base/tf/envSetting.h"
+
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/strategyBase.h"
+#include "pxr/imaging/hdSt/bufferArrayRange.h"
 
 #include "pxr/imaging/hgi/enums.h"
 
 #include "pxr/imaging/hd/bufferArray.h"
-#include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/bufferSource.h"
-
-#include "pxr/base/tf/mallocTag.h"
-#include "pxr/base/tf/token.h"
 
 #include <list>
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+HDST_API
+extern TfEnvSetting<int> HD_MAX_VBO_SIZE;
 
 class HdStResourceRegistry;
 

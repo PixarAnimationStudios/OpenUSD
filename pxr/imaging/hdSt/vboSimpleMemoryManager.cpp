@@ -11,6 +11,7 @@
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/bufferUtils.h"
 #include "pxr/imaging/hdSt/tokens.h"
+#include "pxr/imaging/hdSt/vboMemoryManager.h"
 #include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -30,8 +31,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-extern TfEnvSetting<int> HD_MAX_VBO_SIZE;
 
 // ---------------------------------------------------------------------------
 //  HdStVBOSimpleMemoryManager
