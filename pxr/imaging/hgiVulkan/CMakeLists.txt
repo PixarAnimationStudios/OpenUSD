@@ -47,6 +47,7 @@ pxr_library(hgiVulkan
         vulkan.h
 
     PRIVATE_CLASSES
+        debugCodes
         spirv_reflect
 
     RESOURCE_FILES

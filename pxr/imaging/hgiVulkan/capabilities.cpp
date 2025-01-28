@@ -5,12 +5,15 @@
 // https://openusd.org/license.
 //
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/envSetting.h"
 
 #include "pxr/imaging/hgiVulkan/capabilities.h"
+
 #include "pxr/imaging/hgiVulkan/device.h"
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
+#include "pxr/imaging/hgiVulkan/debugCodes.h"
 
-#include "pxr/base/tf/envSetting.h"
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -18,6 +21,63 @@ TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT, true,
                       "Use Vulkan multi draw indirect");
 TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_BUILTIN_BARYCENTRICS, false,
                       "Use Vulkan built in barycentric coordinates");
+
+static void _DumpDeviceDeviceMemoryProperties(
+    const VkPhysicalDeviceMemoryProperties& vkMemoryProperties)
+{
+    std::cout << "Vulkan memory info:\n";
+    for (uint32_t heapIndex = 0;
+            heapIndex < vkMemoryProperties.memoryHeapCount; heapIndex++) {
+        std::cout << "Heap " << heapIndex << ":\n";
+        const auto& heap = vkMemoryProperties.memoryHeaps[heapIndex];
+        std::cout << "    Size: " << heap.size << "\n";
+        std::cout << "    Flags:";
+        if (heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) {
+            std::cout << " DEVICE_LOCAL";
+        }
+        if (heap.flags & VK_MEMORY_HEAP_MULTI_INSTANCE_BIT) {
+            std::cout << " MULTI_INSTANCE";
+        }
+        std::cout << "\n";
+
+        for (uint32_t typeIndex = 0;
+                typeIndex < vkMemoryProperties.memoryTypeCount; typeIndex++) {
+            const auto& memoryType = vkMemoryProperties.memoryTypes[typeIndex];
+            if (memoryType.heapIndex != heapIndex) {
+                continue;
+            }
+
+            std::cout << "    Memory type " << typeIndex << ":\n";
+            std::cout << "        Flags:";
+            if (memoryType.propertyFlags &
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT) {
+                std::cout << " DEVICE_LOCAL";
+            }
+            if (memoryType.propertyFlags &
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
+                std::cout << " HOST_VISIBLE";
+            }
+            if (memoryType.propertyFlags &
+                    VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) {
+                std::cout << " HOST_COHERENT";
+            }
+            if (memoryType.propertyFlags &
+                    VK_MEMORY_PROPERTY_HOST_CACHED_BIT) {
+                std::cout << " HOST_CACHED";
+            }
+            if (memoryType.propertyFlags &
+                    VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT) {
+                std::cout << " LAZILY_ALLOCATED";
+            }
+            if (memoryType.propertyFlags &
+                    VK_MEMORY_PROPERTY_PROTECTED_BIT) {
+                std::cout << " PROTECTED";
+            }
+            std::cout << "\n";
+        }
+    }
+    std::cout << std::flush;
+}
 
 HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     : supportsTimeStamps(false)
@@ -45,6 +105,10 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     vkGetPhysicalDeviceProperties(physicalDevice, &vkDeviceProperties);
     vkGetPhysicalDeviceFeatures(physicalDevice, &vkDeviceFeatures);
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &vkMemoryProperties);
+
+    if (TfDebug::IsEnabled(HGIVULKAN_DUMP_DEVICE_MEMORY_PROPERTIES)) {
+        _DumpDeviceDeviceMemoryProperties(vkMemoryProperties);
+    }
 
     // Vertex attribute divisor properties ext
     vkVertexAttributeDivisorProperties.sType =
@@ -147,7 +211,7 @@ HgiVulkanCapabilities::~HgiVulkanCapabilities() = default;
 int
 HgiVulkanCapabilities::GetAPIVersion() const
 {
-    return vkDeviceProperties.apiVersion;
+    return static_cast<int>(vkDeviceProperties.apiVersion);
 }
 
 int
