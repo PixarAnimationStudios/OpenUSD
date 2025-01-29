@@ -80,6 +80,9 @@ public:
     // Returns true if the material has a displacement terminal.
     inline bool HasDisplacement() const;
 
+    // Returns true if the material has a custom geometry shader.
+    inline bool HasCustomGeometryShader() const;
+
     // Returns the material's render pass tag.
     inline const TfToken& GetMaterialTag() const;
 
@@ -110,7 +113,7 @@ private:
 
     void _InitFallbackShader();
 
-    static HioGlslfx *_fallbackGlslfx;
+    static HioGlslfxSharedPtr _fallbackGlslfx;
 
     HdSt_MaterialNetworkShaderSharedPtr _materialNetworkShader;
     VolumeMaterialData _volumeMaterialData;
@@ -119,6 +122,7 @@ private:
     bool _hasPtex : 1;
     bool _hasLimitSurfaceEvaluation : 1;
     bool _hasDisplacement : 1;
+    bool _hasCustomGS : 1;
 
     TfToken _materialTag;
     size_t _textureHash;
@@ -139,6 +143,11 @@ inline bool HdStMaterial::HasLimitSurfaceEvaluation() const
 inline bool HdStMaterial::HasDisplacement() const
 {
     return _hasDisplacement;
+}
+
+inline bool HdStMaterial::HasCustomGeometryShader() const
+{
+   return _hasCustomGS;
 }
 
 inline const TfToken& HdStMaterial::GetMaterialTag() const

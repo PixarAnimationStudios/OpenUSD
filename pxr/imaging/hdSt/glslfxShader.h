@@ -32,9 +32,6 @@ public:
     /// If the prim is based on asset, reload that asset.
     HDST_API
     void Reload() override;
-
-private:
-    HioGlslfxSharedPtr _glslfx;
 };
 
 

@@ -23,6 +23,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdSceneDelegate;
+class HioGlslfx;
 
 using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
 
@@ -86,9 +87,15 @@ public:
 
     /// Setter method for prim
     HDST_API
-    void SetFragmentSource(const std::string &source);
+    void SetOverrideSource(TfToken const& shaderStageKey, const std::string& source);
     HDST_API
-    void SetDisplacementSource(const std::string &source);
+    const std::string& GetOverrideSource(TfToken const& shaderStageKey, bool* outHasOverrideSource);
+    HDST_API
+    bool RemoveOverrideSource(TfToken const& shaderStageKey);
+    HDST_API
+    void RemoveAllOverrideSources();
+    HDST_API
+    void SetGlslfx(HioGlslfxSharedPtr glslfx);
     HDST_API
     void SetParams(const HdSt_MaterialParamVector &params);
     HDST_API
@@ -125,6 +132,9 @@ public:
         HdBufferSpecVector * const specs,
         HdBufferSourceSharedPtrVector * const sources);
 
+    HDST_API
+    HioGlslfxSharedPtr GetGlslfx() const { return _glslfx; }
+
 protected:
     HDST_API
     void _SetSource(TfToken const &shaderStageKey, std::string const &source);
@@ -135,12 +145,14 @@ protected:
     HDST_API
     ID _ComputeTextureSourceHash() const;
 
+    HioGlslfxSharedPtr _glslfx;
+    std::map<TfToken, std::string> overrideSources;
+
 private:
-    std::string _fragmentSource;
-    std::string _displacementSource;
+    HioGlslfx const* _GetGlslfx() const override { return _glslfx.get(); }
 
     // Shader Parameters
-    HdSt_MaterialParamVector       _params;
+    HdSt_MaterialParamVector    _params;
     HdBufferSpecVector          _paramSpec;
     HdBufferArrayRangeSharedPtr _paramArray;
     TfTokenVector               _primvarNames;

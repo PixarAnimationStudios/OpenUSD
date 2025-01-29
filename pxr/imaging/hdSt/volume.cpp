@@ -436,7 +436,7 @@ _ComputeMaterialNetworkShader(
     
     // Append the volume shader (calling into the GLSL functions
     // generated above)
-    result->SetFragmentSource(volumeMaterialData.source);
+    result->SetOverrideSource(HdShaderTokens->fragmentShader, volumeMaterialData.source);
 
     return result;
 }

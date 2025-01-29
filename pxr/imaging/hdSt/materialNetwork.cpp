@@ -1100,9 +1100,6 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
 {
     HD_TRACE_FUNCTION();
 
-    _fragmentSource.clear();
-    _displacementSource.clear();
-    _materialMetadata.clear();
     _materialParams.clear();
     _textureDescriptors.clear();
     _materialTag = HdStMaterialTagTokens->defaultMaterialTag;
@@ -1136,21 +1133,13 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
             // will use the fallback shader.
             if (_surfaceGfx->IsValid()) {
                 
-                _fragmentSource = _surfaceGfx->GetSurfaceSource();
-                _volumeSource = _surfaceGfx->GetVolumeSource();
-
-                _materialMetadata = _surfaceGfx->GetMetadata();
-                _materialTag = _GetMaterialTag(_materialMetadata, *surfTerminal);
+                _materialTag = _GetMaterialTag(_surfaceGfx->GetMetadata(), *surfTerminal);
                 _GatherMaterialParams(surfaceNetwork, *surfTerminal,
                                       &_materialParams, &_textureDescriptors, 
                                       _materialTag);
-
-                // OSL networks have a displacement network in hdNetworkMap
-                // under terminal: HdMaterialTerminalTokens->displacement.
-                // For Storm however we expect the displacement shader to be
-                // provided via the surface glslfx / terminal.
-                _displacementSource = _surfaceGfx->GetDisplacementSource();
             }
+            else
+                _surfaceGfx = nullptr;
         }
     }
 }
@@ -1161,34 +1150,16 @@ HdStMaterialNetwork::GetMaterialTag() const
     return _materialTag;
 }
 
-std::string const& 
-HdStMaterialNetwork::GetFragmentCode() const
-{
-    return _fragmentSource;
-}
-
-std::string const& 
-HdStMaterialNetwork::GetVolumeCode() const
-{
-    return _volumeSource;
-}
-
-std::string const&
-HdStMaterialNetwork::GetDisplacementCode() const
-{
-    return _displacementSource;
-}
-
-VtDictionary const&
-HdStMaterialNetwork::GetMetadata() const
-{
-    return _materialMetadata;
-}
-
 HdSt_MaterialParamVector const&
 HdStMaterialNetwork::GetMaterialParams() const
 {
     return _materialParams;
+}
+
+HioGlslfxSharedPtr
+HdStMaterialNetwork::GetGlslfx() const
+{
+    return _surfaceGfx;
 }
 
 HdStMaterialNetwork::TextureDescriptorVector const &

@@ -197,6 +197,10 @@ public:
     HIO_API
     std::string GetSource(const TfToken &shaderStageKey) const;
 
+    /// Tells if source code exists for the specified shader stage.
+    HIO_API
+    bool HasSource(const TfToken& shaderStageKey) const;
+
     /// Get the original file name passed to the constructor
     const std::string &GetFilePath() const { return _globalContext.filename; }
 
@@ -251,6 +255,7 @@ private:
 
     std::string _GetLayout(const TfToken &shaderStageKey) const;
     std::string _GetSource(const TfToken &shaderStageKey) const;
+    bool _HasSource(const TfToken& shaderStageKey) const;
 
     /// Get the layout config as a string formatted as JSON corresponding
     /// to the shader source associated with the given keys.

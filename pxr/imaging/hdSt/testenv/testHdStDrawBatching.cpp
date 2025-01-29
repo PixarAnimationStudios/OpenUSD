@@ -209,6 +209,7 @@ _RegisterDrawItem(
         /*doubleSided=*/false,
         /*hasBuiltinBarycentrics*/false,
         /* hasMetalTessellation */ false,
+        /*hasCustomGeometricMain*/ false,
         /*hasCustomDisplacementTerminal=*/false,
         /*faceVarying=*/false,
         /*hasTopologicalVisibility=*/false,

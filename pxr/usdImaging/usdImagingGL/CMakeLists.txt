@@ -665,6 +665,11 @@ pxr_install_test_dir(
     DEST testUsdImagingGLVelocityMotion_SceneIndex
 )
 
+pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLSilhouette
+    DEST testUsdImagingGLSilhouette
+)
+
 #
 # Register tests that don't depend on build configuration or external libraries
 # (such as MaterialX, OpenVDB, PTEX).
@@ -4760,6 +4765,16 @@ pxr_register_test(testUsdImagingGLVelocityMotion_SceneIndex
     ENV
         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1)
 
+pxr_register_test(testUsdImagingGLSilhouette
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage silhouette.usda -write testUsdImagingGLSilhouette.png -clear 0 0 0 1 -lighting -camera /main_cam"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLSilhouette.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLSilhouette
+)
 #
 # Conditionally install and register MaterialX tests
 #

@@ -1,0 +1,112 @@
+-- glslfx version 0.1
+
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "surfaceShader": { "source": [ "Surface" ] },
+            "geometryShader": { "source": [ "Geometry" ] }
+        }
+    },
+    "parameters" : {
+        "adjacency0": { "default": [0.5, 0.5, 0.5] },
+        "adjacency1": { "default": [0.5, 0.5, 0.5] },
+        "adjacency2": { "default": [0.5, 0.5, 0.5] }
+    },
+    "metadata": {
+        "materialTag": "translucent"
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Surface
+                                                                                    
+vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    return vec4(1, 1, 1, 1);
+}
+
+--- --------------------------------------------------------------------------
+-- layout Geometry
+
+[
+    ["in", "triangles"],
+    ["out", "line_strip"],
+    ["out", "6"]
+]
+
+-- glsl Geometry
+
+vec4 GetPrjSpaceVertex(int index)
+{
+	vec4 pos = GetProjectionMatrix() * inData[index].Peye;
+    pos.z -= pos.w * 2.0 * GetDepthPriority();
+	return pos;
+}
+
+void EmitViewSpaceVertex(int index)
+{
+    outData.Peye = inData[index].Peye;
+    gl_Position = GetPrjSpaceVertex(index);
+    ApplyClipPlanes(outData.Peye);
+    ProcessPrimvarsOut(index);
+    EmitVertex();
+}
+
+void EmitPrjSpaceVertex(int index, vec4 pos)
+{
+    outData.Peye = inData[index].Peye;
+    gl_Position = pos;
+    ApplyClipPlanes(outData.Peye);
+    ProcessPrimvarsOut(index);
+    EmitVertex();
+}
+
+void EmitEdgeViewSpace(int i0, int i1)
+{
+	EmitViewSpaceVertex(i0);
+	EmitViewSpaceVertex(i1);
+	EndPrimitive();
+}
+
+void EmitEdgePrjSpace(int i0, int i1, vec4[3] p)
+{
+	EmitPrjSpaceVertex(i0, p[i0]);
+	EmitPrjSpaceVertex(i1, p[i1]);
+	EndPrimitive();
+}
+
+void main(void)
+{
+	gl_PrimitiveID = gl_PrimitiveIDIn;
+
+	bool isFlipped = IsFlipped(); // consider handedness AND negative-scale
+
+	mat4 prj = GetProjectionMatrix();
+	mat4 view = GetWorldToViewMatrix();
+	mat4 world = ApplyInstanceTransform(HdGet_transform());
+	mat4 wvp = prj * view * world;
+
+	vec4 triW[3] = { GetPrjSpaceVertex(0), GetPrjSpaceVertex(1), GetPrjSpaceVertex(2) };
+	vec4 adjW[3] = { wvp * vec4(HdGet_adjacency0(), 1), wvp * vec4(HdGet_adjacency1(), 1), wvp * vec4(HdGet_adjacency2(), 1) };
+
+	vec3 tri[3];
+	vec3 adj[3];
+	for (int i = 0; i < 3; i++)
+	{
+		tri[i] = triW[i].xyz / triW[i].w;
+		adj[i] = adjW[i].xyz / adjW[i].w;
+	}
+
+	vec3 NF = cross(tri[1] - tri[0], tri[2] - tri[1]);
+	vec3 N01 = cross(tri[0] - tri[1], adj[0] - tri[0]);
+	vec3 N12 = cross(tri[1] - tri[2], adj[1] - tri[1]);
+	vec3 N20 = cross(tri[2] - tri[0], adj[2] - tri[2]);
+
+	if (NF.z * N01.z < 0)
+		EmitEdgePrjSpace(0, 1, triW);
+	if (NF.z * N12.z < 0)
+		EmitEdgePrjSpace(1, 2, triW);
+	if (NF.z * N20.z < 0)
+		EmitEdgePrjSpace(2, 0, triW);
+}

@@ -970,6 +970,9 @@ void emit(int index, vec4 Peye, vec3 Neye)
     EmitVertex();
 }
 
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Geometry.TriangleTess.GSMain
+
 void main(void)
 {
     gl_PrimitiveID = gl_PrimitiveIDIn;
@@ -1090,6 +1093,9 @@ void emit(int index, vec4 Peye, vec3 Neye)
     EmitVertex();
 }
 
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Geometry.Triangle.GSMain
+
 void main(void)
 {
     gl_PrimitiveID = gl_PrimitiveIDIn;
@@ -1165,6 +1171,9 @@ void emit(int index, vec4 Peye, vec3 Neye)
 
     EmitVertex();
 }
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Geometry.TriQuad.GSMain
 
 void main(void)
 {
@@ -1243,6 +1252,9 @@ void emit(int index, vec4 Peye, vec3 Neye)
 
     EmitVertex();
 }
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Geometry.Quad.GSMain
 
 void main(void)
 {

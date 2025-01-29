@@ -19,6 +19,8 @@
 
 #include "pxr/imaging/hgi/capabilities.h"
 
+#include "pxr/imaging/hio/glslfx.h"
+
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/envSetting.h"
 
@@ -40,7 +42,6 @@ _CollectPrimvarNames(const HdSt_MaterialParamVector &params);
 
 HdSt_MaterialNetworkShader::HdSt_MaterialNetworkShader()
  : HdStShaderCode()
- , _fragmentSource()
  , _params()
  , _paramSpec()
  , _paramArray()
@@ -56,19 +57,6 @@ HdSt_MaterialNetworkShader::HdSt_MaterialNetworkShader()
 
 HdSt_MaterialNetworkShader::~HdSt_MaterialNetworkShader() = default;
 
-void
-HdSt_MaterialNetworkShader::_SetSource(
-        TfToken const &shaderStageKey, std::string const &source)
-{
-    if (shaderStageKey == HdShaderTokens->fragmentShader) {
-        _fragmentSource = source;
-        _isValidComputedHash = false;
-    } else if (shaderStageKey == HdShaderTokens->displacementShader) {
-        _displacementSource = source;
-        _isValidComputedHash = false;
-    }
-}
-
 // -------------------------------------------------------------------------- //
 // HdShader Virtual Interface                                                 //
 // -------------------------------------------------------------------------- //
@@ -77,10 +65,19 @@ HdSt_MaterialNetworkShader::_SetSource(
 std::string
 HdSt_MaterialNetworkShader::GetSource(TfToken const &shaderStageKey) const
 {
-    if (shaderStageKey == HdShaderTokens->fragmentShader) {
-        return _fragmentSource;
-    } else if (shaderStageKey == HdShaderTokens->displacementShader) {
-        return _displacementSource;
+    auto it = overrideSources.find(shaderStageKey);
+    if (it != overrideSources.end())
+        return it->second;
+
+    if (_glslfx)
+    {
+        // XXX: add the other stages too.
+        if (shaderStageKey == HdShaderTokens->fragmentShader)
+            return _glslfx->GetSource(HioGlslfxTokens->surfaceShader);
+        if (shaderStageKey == HdShaderTokens->geometryShader)
+            return _glslfx->GetSource(HioGlslfxTokens->geometryShader);
+        if (shaderStageKey == HdShaderTokens->displacementShader)
+            return _glslfx->GetSource(HioGlslfxTokens->displacementShader);
     }
 
     return std::string();
@@ -171,10 +168,11 @@ HdSt_MaterialNetworkShader::_ComputeHash() const
 {
     size_t hash = HdSt_MaterialParam::ComputeHash(_params);
 
-    hash = TfHash::Combine(hash, 
-        ArchHash(_fragmentSource.c_str(), _fragmentSource.size()),
-        ArchHash(_displacementSource.c_str(), _displacementSource.size())
-    );
+    for (const auto& [stage, code] : overrideSources)
+       hash = TfHash::Combine(hash, ArchHash(code.c_str(), code.size()));
+
+    if (_glslfx)
+       hash = TfHash::Combine(hash, _glslfx->GetHash());
 
     // Codegen is inspecting the shader bar spec to generate some
     // of the struct's, so we should probably use _paramSpec
@@ -215,16 +213,55 @@ HdSt_MaterialNetworkShader::_ComputeTextureSourceHash() const
 }
 
 void
-HdSt_MaterialNetworkShader::SetFragmentSource(const std::string &source)
+HdSt_MaterialNetworkShader::SetOverrideSource(TfToken const& shaderStageKey, const std::string& source)
 {
-    _fragmentSource = source;
+    overrideSources[shaderStageKey] = source;
     _isValidComputedHash = false;
 }
 
-void
-HdSt_MaterialNetworkShader::SetDisplacementSource(const std::string &source)
+const std::string&
+HdSt_MaterialNetworkShader::GetOverrideSource(TfToken const& shaderStageKey, bool* outHasOverrideSource)
 {
-    _displacementSource = source;
+    static std::string invalidSource;
+
+    auto it = overrideSources.find(shaderStageKey);
+    if (it != overrideSources.end())
+    {
+        if (outHasOverrideSource)
+            *outHasOverrideSource = true;
+        return it->second;
+    }
+    else
+    {
+        if (outHasOverrideSource)
+            *outHasOverrideSource = true;
+        return invalidSource;
+    }
+}
+
+bool
+HdSt_MaterialNetworkShader::RemoveOverrideSource(TfToken const& shaderStageKey)
+{
+    bool removed = overrideSources.erase(shaderStageKey);
+    if (removed)
+        _isValidComputedHash = false;
+    return removed;
+}
+
+void
+HdSt_MaterialNetworkShader::RemoveAllOverrideSources()
+{
+    if (overrideSources.size())
+    {
+        overrideSources.clear();
+        _isValidComputedHash = false;
+    }
+}
+
+void
+HdSt_MaterialNetworkShader::SetGlslfx(HioGlslfxSharedPtr glslfx)
+{
+    _glslfx = glslfx;
     _isValidComputedHash = false;
 }
 

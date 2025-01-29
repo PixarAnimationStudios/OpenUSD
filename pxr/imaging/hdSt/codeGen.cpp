@@ -11,6 +11,7 @@
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/hgiConversions.h"
 #include "pxr/imaging/hdSt/hioConversions.h"
+#include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
@@ -1540,6 +1541,94 @@ _IsAtomicBufferShaderResource(
     return false;
 }
 
+// This mechanism allows shaders to override layout elements, e.g. a custom geometry shader to specify another input or output format.
+static void
+_MergeLayout(const TfToken& shaderStage, const HioGlslfxResourceLayout::ElementVector& newLayout, HioGlslfxResourceLayout::ElementVector& mergedLayout)
+{
+   if (newLayout.empty())
+      return;
+
+   const auto initialSize = mergedLayout.size();
+   if (initialSize == 0)
+   {
+      mergedLayout.insert(mergedLayout.end(), newLayout.begin(), newLayout.end());
+      return;
+   }
+
+   // XXX: also handle the other shader stages, when we get to implementing their overrides.
+   if (shaderStage == HdShaderTokens->geometryShader)
+   {
+      auto IsInPrimitiveElement = [](const HioGlslfxResourceLayout::Element& element)
+         {
+            return element.kind == Kind::QUALIFIER && element.inOut == InOut::STAGE_IN && (
+               element.qualifiers == _tokens->points ||
+               element.qualifiers == _tokens->lines ||
+               element.qualifiers == _tokens->lines_adjacency ||
+               element.qualifiers == _tokens->triangles ||
+               element.qualifiers == _tokens->triangles_adjacency);
+         };
+      auto IsOutPrimitiveElement = [](const HioGlslfxResourceLayout::Element& element)
+         {
+            return element.kind == Kind::QUALIFIER && element.inOut == InOut::STAGE_OUT && (
+               element.qualifiers == _tokens->points ||
+               element.qualifiers == _tokens->line_strip ||
+               element.qualifiers == _tokens->triangle_strip);
+         };
+      auto IsOutMaxVertNumElement = [&](const HioGlslfxResourceLayout::Element& element)
+         {
+            // On the assumption that the only other possible output qualifier is the max number of vertices.
+            // See also _GenerateHgiResources.
+            return element.kind == Kind::QUALIFIER && element.inOut == InOut::STAGE_OUT && !IsOutPrimitiveElement(element);
+         };
+      for (const auto& newElement : newLayout)
+      {
+         const auto begin = mergedLayout.begin();
+         const auto end = mergedLayout.begin() + (initialSize - 1);
+
+         if (newElement.kind == Kind::QUALIFIER)
+         {
+            if (newElement.inOut == InOut::STAGE_IN)
+            {
+               if (IsInPrimitiveElement(newElement))
+               {
+                  auto it = std::find_if(begin, end, IsInPrimitiveElement);
+                  if (it != end)
+                  {
+                     it->qualifiers = newElement.qualifiers;
+                     continue;
+                  }
+               }
+            }
+            else if (newElement.inOut == InOut::STAGE_OUT)
+            {
+               if (IsOutPrimitiveElement(newElement))
+               {
+                  auto it = std::find_if(begin, end, IsOutPrimitiveElement);
+                  if (it != end)
+                  {
+                     it->qualifiers = newElement.qualifiers;
+                     continue;
+                  }
+               }
+               else if (IsOutMaxVertNumElement(newElement))
+               {
+                  auto it = std::find_if(begin, end, IsOutMaxVertNumElement);
+                  if (it != end)
+                  {
+                     it->qualifiers = newElement.qualifiers;
+                     continue;
+                  }
+               }
+            }
+         }
+
+         mergedLayout.push_back(newElement);
+      }
+   }
+   else
+      mergedLayout.insert(mergedLayout.end(), newLayout.begin(), newLayout.end());
+}
+
 } // anonymous namespace
 
 void
@@ -1572,8 +1661,12 @@ HdSt_CodeGen::_GetShaderResourceLayouts(
         HioGlslfxResourceLayout::ParseLayout(
                 &_resTES, HdShaderTokens->tessEvalShader, layoutDict);
 
-        HioGlslfxResourceLayout::ParseLayout(
-                &_resGS, HdShaderTokens->geometryShader, layoutDict);
+        {
+           ElementVector layout;
+           HioGlslfxResourceLayout::ParseLayout(
+              &layout, HdShaderTokens->geometryShader, layoutDict);
+           _MergeLayout(HdShaderTokens->geometryShader, layout, _resGS);
+        }
 
         HioGlslfxResourceLayout::ParseLayout(
                 &_resFS, HdShaderTokens->fragmentShader, layoutDict);
@@ -2385,7 +2478,9 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             _genPTVS << shader->GetSource(HdShaderTokens->displacementShader);
         }
         if (_hasGS) {
-            _genGS  << shader->GetSource(HdShaderTokens->geometryShader);
+            // custom geometry shader of material network shader goes last
+            if (dynamic_cast<const HdSt_MaterialNetworkShader*>(shader.get()) == nullptr)
+                _genGS << shader->GetSource(HdShaderTokens->geometryShader);
             _genGS  << shader->GetSource(HdShaderTokens->displacementShader);
         }
         if (_hasFS) {
@@ -2431,6 +2526,15 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _genGS  << geometryShader;
     _genFS  << fragmentShader;
     _genCS  << computeShader;
+
+    // custom geometry shader of material network shader last,
+    // because it contains the GS main() function.
+    if (_hasGS)
+       TF_FOR_ALL(it, _shaders) {
+       HdStShaderCodeSharedPtr const& shader = *it;
+       if (dynamic_cast<const HdSt_MaterialNetworkShader*>(shader.get()) != nullptr)
+          _genGS << shader->GetSource(HdShaderTokens->geometryShader);
+    }
 
     // Sanity check that if you provide a control shader, you have also provided
     // an evaluation shader (and vice versa)

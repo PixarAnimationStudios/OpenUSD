@@ -105,9 +105,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainBoxSplineTrianglePTCS,   "Mesh.PostTessControl.BoxSplineTriangle"))
     ((mainBoxSplineTrianglePTVS,   "Mesh.PostTessVertex.BoxSplineTriangle"))
     ((mainTriangleTessGS,          "Mesh.Geometry.TriangleTess"))
+    ((mainTriangleTessGSMain,      "Mesh.Geometry.TriangleTess.GSMain"))
     ((mainTriangleGS,              "Mesh.Geometry.Triangle"))
+    ((mainTriangleGSMain,          "Mesh.Geometry.Triangle.GSMain"))
     ((mainTriQuadGS,               "Mesh.Geometry.TriQuad"))
+    ((mainTriQuadGSMain,           "Mesh.Geometry.TriQuad.GSMain"))
     ((mainQuadGS,                  "Mesh.Geometry.Quad"))
+    ((mainQuadGSMain,              "Mesh.Geometry.Quad.GSMain"))
     ((mainPatchCoordFS,            "Mesh.Fragment.PatchCoord"))
     ((mainPatchCoordNoGSFS,        "Mesh.Fragment.PatchCoord.NoGS"))
     ((mainPatchCoordTessFS,        "Mesh.Fragment.PatchCoord.Tess"))
@@ -150,6 +154,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     bool doubleSided,
     bool hasBuiltinBarycentrics,
     bool hasMetalTessellation,
+    bool hasCustomGeometricMain,
     bool hasCustomDisplacement,
     bool hasPerFaceInterpolation,
     bool hasTopologicalVisibility,
@@ -387,13 +392,30 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         _tokens->noCustomDisplacementGS :
         _tokens->customDisplacementGS;
 
-    GS[gsIndex++] = isPrimTypeQuads
-                        ? _tokens->mainQuadGS
-                        : isPrimTypeTriQuads
-                            ? _tokens->mainTriQuadGS
-                            : isPrimTypePatches
-                                ? _tokens->mainTriangleTessGS
-                                    : _tokens->mainTriangleGS;
+    if (isPrimTypeQuads)
+    {
+        GS[gsIndex++] = _tokens->mainQuadGS;
+        if (!hasCustomGeometricMain)
+            GS[gsIndex++] = _tokens->mainQuadGSMain;
+    }
+    else if (isPrimTypeTriQuads)
+    {
+        GS[gsIndex++] = _tokens->mainTriQuadGS;
+        if (!hasCustomGeometricMain)
+            GS[gsIndex++] = _tokens->mainTriQuadGSMain;
+    }
+    else if (isPrimTypePatches)
+    {
+        GS[gsIndex++] = _tokens->mainTriangleTessGS;
+        if (!hasCustomGeometricMain)
+            GS[gsIndex++] = _tokens->mainTriangleTessGSMain;
+    }
+    else
+    {
+        GS[gsIndex++] = _tokens->mainTriangleGS;
+        if (!hasCustomGeometricMain)
+            GS[gsIndex++] = _tokens->mainTriangleGSMain;
+    }
     GS[gsIndex] = TfToken();
 
     // Optimization : See if we can skip the geometry shader.

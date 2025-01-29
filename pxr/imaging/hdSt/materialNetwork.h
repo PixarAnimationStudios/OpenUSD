@@ -49,19 +49,10 @@ public:
     TfToken const& GetMaterialTag() const;
 
     HDST_API
-    std::string const& GetFragmentCode() const;
-
-    HDST_API
-    std::string const& GetVolumeCode() const;
-
-    HDST_API
-    std::string const& GetDisplacementCode() const;
-
-    HDST_API
-    VtDictionary const& GetMetadata() const;
-
-    HDST_API
     HdSt_MaterialParamVector const& GetMaterialParams() const;
+
+    HDST_API
+    HioGlslfxSharedPtr GetGlslfx() const;
 
     // Information necessary to allocate a texture.
     struct TextureDescriptor
@@ -94,10 +85,6 @@ public:
 
 private:
     TfToken _materialTag;
-    std::string _fragmentSource;
-    std::string _volumeSource;
-    std::string _displacementSource;
-    VtDictionary _materialMetadata;
     HdSt_MaterialParamVector _materialParams;
     TextureDescriptorVector _textureDescriptors;
     HioGlslfxSharedPtr _surfaceGfx;

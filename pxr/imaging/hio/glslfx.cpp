@@ -722,6 +722,29 @@ HioGlslfx::_GetSource(const TfToken &shaderStageKey) const
     return ret;
 }
 
+bool
+HioGlslfx::_HasSource(const TfToken& shaderStageKey) const
+{
+    if (!_config)
+        return false;
+
+    vector<string> sourceKeys = _config->GetSourceKeys(shaderStageKey);
+
+    for (string const& key : sourceKeys)
+    {
+        _SourceMap::const_iterator cit = _sourceMap.find(key);
+
+        if (cit == _sourceMap.end()) {
+            TF_RUNTIME_ERROR("Can't find shader source for <%s> with the key <%s>", shaderStageKey.GetText(), key.c_str());
+            return false;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
 string
 HioGlslfx::GetSurfaceSource() const
 {
@@ -744,6 +767,12 @@ string
 HioGlslfx::GetSource(const TfToken &shaderStageKey) const
 {
     return _GetSource(shaderStageKey);
+}
+
+bool
+HioGlslfx::HasSource(const TfToken& shaderStageKey) const
+{
+    return _HasSource(shaderStageKey);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

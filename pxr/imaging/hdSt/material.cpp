@@ -36,7 +36,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (opacity)
 );
 
-HioGlslfx *HdStMaterial::_fallbackGlslfx = nullptr;
+HioGlslfxSharedPtr HdStMaterial::_fallbackGlslfx;
 
 
 HdStMaterial::HdStMaterial(SdfPath const &id)
@@ -46,6 +46,7 @@ HdStMaterial::HdStMaterial(SdfPath const &id)
  , _hasPtex(false)
  , _hasLimitSurfaceEvaluation(false)
  , _hasDisplacement(false)
+ , _hasCustomGS(false)
  , _materialTag(HdStMaterialTagTokens->defaultMaterialTag)
  , _textureHash(0)
 {
@@ -190,9 +191,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     bool needsRprimMaterialStateUpdate = false;
     bool markBatchesDirty = false;
 
-    std::string fragmentSource;
-    std::string displacementSource;
-    std::string volumeSource;
+    HioGlslfxSharedPtr glslfx;
     VtDictionary materialMetadata;
     TfToken materialTag = _materialTag;
     HdSt_MaterialParamVector params;
@@ -205,27 +204,26 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         if (!hdNetworkMap.terminals.empty() && !hdNetworkMap.map.empty()) {
             _networkProcessor.ProcessMaterialNetwork(GetId(), hdNetworkMap,
                                                     resourceRegistry.get());
-            fragmentSource = _networkProcessor.GetFragmentCode();
-            volumeSource = _networkProcessor.GetVolumeCode();
-            displacementSource = _networkProcessor.GetDisplacementCode();
-            materialMetadata = _networkProcessor.GetMetadata();
+            glslfx = _networkProcessor.GetGlslfx();
+            materialMetadata = glslfx->GetMetadata();
             materialTag = _networkProcessor.GetMaterialTag();
             params = _networkProcessor.GetMaterialParams();
-                textureDescriptors = _networkProcessor.GetTextureDescriptors();
+            textureDescriptors = _networkProcessor.GetTextureDescriptors();
         }
     }
 
-    // Use fallback shader when there is no source for
-    // fragment and displacement shader.
-    if (fragmentSource.empty() &&
-        displacementSource.empty()) {
+    // Use fallback shader when there is no source for the shaders.
+    if (!glslfx) {
 
         _InitFallbackShader();
-        fragmentSource = _fallbackGlslfx->GetSurfaceSource();
+        glslfx = _fallbackGlslfx;
         materialMetadata = _fallbackGlslfx->GetMetadata();
     }
 
     // Update volume material data.
+    std::string volumeSource;
+    if (glslfx)
+       volumeSource = glslfx->GetSource(HioGlslfxTokens->volumeShader);
     if (_volumeMaterialData.source != volumeSource) {
         // If we're updating the volume source, we need to rebatch anything that
         // uses this material.
@@ -244,24 +242,26 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    // If we're updating the fragment or displacement source, we need to
+    // If we're updating the source, we need to
     // rebatch anything that uses this material.
-    std::string const& oldFragmentSource = 
-        _materialNetworkShader->GetSource(HdShaderTokens->fragmentShader);
-    std::string const& oldDisplacementSource =
-        _materialNetworkShader->GetSource(HdShaderTokens->displacementShader);
+    if (glslfx != _materialNetworkShader->GetGlslfx())
+    {
+       markBatchesDirty = true;
+       _materialNetworkShader->SetGlslfx(glslfx);
+    }
 
-    markBatchesDirty |= (oldFragmentSource!=fragmentSource) || 
-                        (oldDisplacementSource!=displacementSource);
-
-    _materialNetworkShader->SetFragmentSource(fragmentSource);
-    _materialNetworkShader->SetDisplacementSource(displacementSource);
-
-    bool hasDisplacement = !(displacementSource.empty());
+    bool hasDisplacement = glslfx && glslfx->HasSource(HioGlslfxTokens->displacementShader);
 
     if (_hasDisplacement != hasDisplacement) {
         _hasDisplacement = hasDisplacement;
         needsRprimMaterialStateUpdate = true;
+    }
+
+    bool hasCustomGS = glslfx && glslfx->HasSource(HioGlslfxTokens->geometryShader);
+    if (_hasCustomGS != hasCustomGS)
+    {
+       _hasCustomGS = hasCustomGS;
+       needsRprimMaterialStateUpdate = true;
     }
 
     bool hasLimitSurfaceEvaluation =
@@ -408,7 +408,7 @@ HdStMaterial::_InitFallbackShader()
 
     const TfToken &filePath = HdStPackageFallbackMaterialNetworkShader();
 
-    _fallbackGlslfx = new HioGlslfx(filePath);
+    _fallbackGlslfx = std::make_shared<HioGlslfx>(filePath);
 
     // Check fallback shader loaded, if not continue with the invalid shader
     // this would mean the shader compilation fails and the prim would not
