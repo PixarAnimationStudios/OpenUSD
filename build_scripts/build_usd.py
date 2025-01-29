@@ -2464,7 +2464,7 @@ if context.buildBoostPython:
 
 if context.buildAlembic:
     if context.enableHDF5:
-        requiredDependencies += [HDF5]
+        requiredDependencies += [ZLIB, HDF5]
     requiredDependencies += [OPENEXR, ALEMBIC]
 
 if context.buildDraco:
