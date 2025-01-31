@@ -940,6 +940,14 @@ class StageView(QGLWidget):
         self._allowAsync = False
         self._bboxstandin = False
 
+        # The original window size before scaling.
+        # Due to rounding errors, this might be different
+        # from self.size() * self.devicePixelRatioF().
+        # If not set, then computed from the device-independent
+        # window size and device pixel ratio as shown above.
+        # Use GetPhysicalWindowSize() to get the correct value.
+        self._physicalWindowSize = None
+
         # Update all properties for the current stage.
         self._stageReplaced()
 
@@ -1530,9 +1538,7 @@ class StageView(QGLWidget):
         
         if self.hasLockedAspectRatio():
             if self._cropImageToCameraViewport:
-                targetAspect = (
-                    float(self.size().width()) / max(1.0, self.size().height()))
-
+                targetAspect = self.aspectRatio()
                 if targetAspect < cameraAspectRatio:
                     windowPolicy =  CameraUtil.MatchHorizontally
             else:
@@ -1540,13 +1546,27 @@ class StageView(QGLWidget):
                     windowPolicy =  CameraUtil.Fit
         
         return windowPolicy
-    
-    def computeWindowSize(self):
+
+    def SetPhysicalWindowSize(self, width, height):
+        self._physicalWindowSize = (width, height)
+        # Round up so we can always crop out a pixel in each dimension
+        # from the framebuffer to get the exact physical size.
+        ratio = self.devicePixelRatioF()
+        self.setFixedSize(ceil(width / ratio), ceil(height / ratio))
+
+    def GetPhysicalWindowSize(self):
+        if self._physicalWindowSize:
+            return self._physicalWindowSize
+
         size = self.size() * self.devicePixelRatioF()
-        return (int(size.width()), int(size.height()))
+        return size.width(), size.height()
+
+    def aspectRatio(self):
+        width, height = self.GetPhysicalWindowSize()
+        return float(width) / max(1.0, height)
 
     def computeWindowViewport(self):
-        return (0, 0) + self.computeWindowSize()
+        return (0, 0) + self.GetPhysicalWindowSize()
 
     def resolveCamera(self):
         """Returns a tuple of the camera to use for rendering (either a scene
@@ -1574,7 +1594,7 @@ class StageView(QGLWidget):
 
         # Conform the camera's frustum to the window viewport, if necessary.
         if not self._cropImageToCameraViewport:
-            targetAspect = float(self.size().width()) / max(1.0, self.size().height())
+            targetAspect = self.aspectRatio()
             if self._fitCameraInViewport:
                 CameraUtil.ConformWindow(gfCam, CameraUtil.Fit, targetAspect)
             else:
@@ -1593,13 +1613,12 @@ class StageView(QGLWidget):
         # Conform the camera viewport to the camera's aspect ratio,
         # and center the camera viewport in the window viewport.
         windowPolicy = CameraUtil.MatchVertically
-        targetAspect = (
-          float(self.size().width()) / max(1.0, self.size().height()))
+        targetAspect = self.aspectRatio()
         if targetAspect < cameraAspectRatio:
             windowPolicy = CameraUtil.MatchHorizontally
 
         viewport = Gf.Range2d(Gf.Vec2d(0, 0),
-                              Gf.Vec2d(self.computeWindowSize()))
+                              Gf.Vec2d(self.GetPhysicalWindowSize()))
         viewport = CameraUtil.ConformedWindow(viewport, windowPolicy, cameraAspectRatio)
 
         viewport = (viewport.GetMin()[0], viewport.GetMin()[1],
@@ -1683,7 +1702,7 @@ class StageView(QGLWidget):
             if self._cropImageToCameraViewport:
                 viewport = cameraViewport
 
-            renderBufferSize = Gf.Vec2i(self.computeWindowSize())
+            renderBufferSize = Gf.Vec2i(self.GetPhysicalWindowSize())
 
             renderer.SetRenderBufferSize(
                 renderBufferSize)
@@ -2088,7 +2107,7 @@ class StageView(QGLWidget):
                     freeCam.AdjustDistance(1 + zoomDelta)
 
             elif self._cameraMode == "truck":
-                height = float(self.size().height())
+                height = float(self.GetPhysicalWindowSize()[1])
                 pixelsToWorld = freeCam.ComputePixelsToWorldFactor(height)
 
                 self._dataModel.viewSettings.freeCamera.Truck(

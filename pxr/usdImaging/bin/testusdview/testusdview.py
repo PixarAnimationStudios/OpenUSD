@@ -49,7 +49,7 @@ class TestUsdView(Usdviewq.Launcher):
         # Set a fixed size on the stage view so that any image tests get a
         # consistent resolution - but only if we've created a viewer
         if appController._stageView:
-            appController._stageView.setFixedSize(597,540)
+            appController._stageView.SetPhysicalWindowSize(597, 540)
 
         # Process initial loading events
         app.processEvents()
