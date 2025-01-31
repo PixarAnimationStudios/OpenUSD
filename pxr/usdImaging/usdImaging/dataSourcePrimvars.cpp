@@ -40,18 +40,11 @@ _GetInterpolation(const UsdAttribute &attr)
 
 // Reject primvars:points since we always want to get the value from
 // the points attribute.
-// Similar for velocities and accelerations.
 static
 bool
 _RejectPrimvar(const TfToken &name)
 {
     if (name == UsdGeomTokens->points) {
-        return true;
-    }
-    if (name == UsdGeomTokens->velocities) {
-        return true;
-    }
-    if (name == UsdGeomTokens->accelerations) {
         return true;
     }
 
