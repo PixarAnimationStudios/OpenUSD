@@ -141,6 +141,9 @@ endif()
 # --TBB
 find_package(TBB REQUIRED COMPONENTS tbb)
 add_definitions(${TBB_DEFINITIONS})
+if ((${TBB_INTERFACE_VERSION} GREATER_EQUAL 12000) AND (${TBB_INTERFACE_VERSION} LESS_EQUAL 12050))
+    add_definitions(-DTBB_PREVIEW_TASK_GROUP_EXTENSIONS)
+endif()
 
 # --math
 if(WIN32)
