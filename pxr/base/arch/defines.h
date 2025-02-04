@@ -24,6 +24,9 @@
 #else
 #define ARCH_OS_OSX
 #endif
+#if TARGET_OS_SIMULATOR
+#define ARCH_OS_SIMULATOR
+#endif
 #elif defined(_WIN32) || defined(_WIN64)
 #define ARCH_OS_WINDOWS
 #endif

@@ -171,6 +171,39 @@ Or for visionOS:
 ```
 > python OpenUSD/build_scripts/build_usd.py --build-target visionOS --build-monolithic /path/to/my_usd_install_dir
 ```
+###### Framework Builds (Experimental)
+
+Builds for Apple platforms may optionally build as a framework using the `--build-apple-framework` flag. 
+
+**NOTE:** This feature is experimental and may change how it functions in future USD builds.
+
+- Framework builds are enabled by default for iOS and visionOS build targets. It can optionally be enabled for macOS.
+- Framework builds require monolithic builds. 
+- Building a universal macOS framework is currently not supported. Please generate the arches separately and `lipo` 
+  them together after.
+
+To add the Framework to your application, add `OpenUSD.framework` to your Xcode project.
+It is recommended to set it to `Embed and Sign`.
+
+To setup headers, you may then choose one of two routes:
+
+1. Configure the Xcode `SYSTEM_HEADER_SEARCH_PATHS` to add the path to your headers. e.g
+`$(SRCROOT)/OpenUSD.framework/Headers` if the framework exists in your projects root. This is recommended
+if you intend to share source files with other platforms.
+
+2. Build with `--prefix-framework-headers` (or `-DPXR_APPLE_PREFIX_FRAMEWORK_HEADERS=ON` if using CMake)
+to automatically process the frameworks headers. This requires no extra configuration in Xcode, but does require
+that all includes be prefixed with the name of the framework. e.g `#include <OpenUSD/pxr/pxr.h>` .
+However, code that use these headers will not be portable with builds of USD without it.
+
+OpenUSD also supports building a combined XCFramework as well of multiple targets.
+This command takes an optional list of targets to build, but will otherwise build all supported platforms.
+
+```
+> python OpenUSD/build_scripts/apple_utils.py xcframework /path/to/my_usd_install_dir
+```
+
+Note that currently, Simulator builds do not render with Imaging as Simulator targets have reduced Metal support.
 
 ##### Windows:
 
