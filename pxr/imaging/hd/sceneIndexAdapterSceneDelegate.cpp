@@ -2577,7 +2577,7 @@ HdSceneIndexAdapterSceneDelegate::GetInstancerId(SdfPath const &id)
         }
 
         if (instancerIds.size() > 0) {
-            instancerId = instancerIds[0];
+            instancerId = instancerIds.AsConst()[0];
         }
     }
 

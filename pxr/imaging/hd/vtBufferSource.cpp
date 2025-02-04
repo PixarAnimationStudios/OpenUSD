@@ -80,7 +80,7 @@ HdVtBufferSource::_SetValue(const VtValue &v, int arraySize, bool allowDoubles)
         _value = VtValue(intValue);
         // Intentionally leave _tupleType as HdTypeBool; see comment above.
     } else if (_value.IsHolding<VtBoolArray>()) {
-        VtBoolArray boolValues = _value.UncheckedGet<VtBoolArray>();
+        const VtBoolArray &boolValues = _value.UncheckedGet<VtBoolArray>();
         VtIntArray intValues(_value.GetArraySize());
         for (size_t i = 0; i < _value.GetArraySize(); i++) {
             intValues[i] = boolValues[i] ? 1 : 0;

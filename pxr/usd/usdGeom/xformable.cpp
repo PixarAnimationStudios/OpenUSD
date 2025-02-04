@@ -638,8 +638,8 @@ UsdGeomXformable::_GetOrderedXformOps(bool *resetsXformStack,
     result.reserve(opOrderVec.size());
 
     UsdPrim thisPrim = GetPrim();
-    for (VtTokenArray::iterator it = opOrderVec.begin() ; 
-         it != opOrderVec.end(); ++it) {
+    for (VtTokenArray::const_iterator it = opOrderVec.cbegin() ; 
+         it != opOrderVec.cend(); ++it) {
 
         const TfToken &opName = *it;
 
@@ -746,9 +746,9 @@ UsdGeomXformable::TransformMightBeTimeVarying() const
     if (opOrderVec.size() == 0) {
         return false;
     }
-
-    for (VtTokenArray::reverse_iterator it = opOrderVec.rbegin() ; 
-         it != opOrderVec.rend(); ++it) {
+    const VtTokenArray &opOrderVecConst = opOrderVec.AsConst();
+    for (VtTokenArray::const_reverse_iterator it = opOrderVecConst.rbegin() ; 
+         it != opOrderVecConst.rend(); ++it) {
 
         const TfToken &opName = *it;
 
@@ -931,15 +931,15 @@ UsdGeomXformable::GetLocalTransformation(
     if (opOrderVec.size() == 0) {
         return true;
     }
-    
-    for (VtTokenArray::reverse_iterator it = opOrderVec.rbegin() ; 
-         it != opOrderVec.rend(); ++it) {
+    const VtTokenArray opOrderVecConst = opOrderVec.AsConst();
+    for (VtTokenArray::const_reverse_iterator it = opOrderVecConst.rbegin() ; 
+         it != opOrderVecConst.rend(); ++it) {
             
         const TfToken &opName = *it;
 
         // Skip the current xformOp and the next one if they're inverses of 
         // each other.
-        if ((it+1) != opOrderVec.rend()) {
+        if ((it+1) != opOrderVecConst.rend()) {
             const TfToken &nextOpName = *(it+1);
             if (_AreInverseXformOps(opName, nextOpName)) {
                 ++it;

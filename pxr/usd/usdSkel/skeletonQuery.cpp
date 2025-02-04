@@ -356,7 +356,10 @@ UsdSkelSkeletonQuery::_ComputeSkinningTransforms(VtArray<Matrix4>* xforms,
 
         if (xforms->size() == inverseBindXforms.size()) {
             // xforms = inverseBindXforms * xforms
-            _MultTransforms<Matrix4>(inverseBindXforms, *xforms, *xforms);
+            // Explicit copy to avoid VT_LOG_STACK_ON_ARRAY_DETACH_COPY log
+            VtArray<Matrix4> xformsTmp(xforms->cbegin(), xforms->cend());
+            _MultTransforms<Matrix4>(inverseBindXforms, xformsTmp.AsConst(), xformsTmp);
+            *xforms = xformsTmp; // Shallow copy
             return true;
         } else {
             TF_WARN("%s -- Size of computed joints transforms [%zu] does not "

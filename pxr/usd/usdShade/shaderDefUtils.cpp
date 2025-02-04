@@ -322,7 +322,8 @@ _CreateSdrShaderProperty(
         VtTokenArray attrAllowedTokens;
         shaderProperty.GetAttr().GetMetadata(SdfFieldKeys->AllowedTokens, 
                 &attrAllowedTokens);
-        for (const TfToken &token : attrAllowedTokens) {
+        const VtTokenArray &attrAllowedTokensConst = attrAllowedTokens.AsConst();
+        for (const TfToken &token : attrAllowedTokensConst) {
             options.emplace_back(std::make_pair(token, TfToken()));
         }
     }

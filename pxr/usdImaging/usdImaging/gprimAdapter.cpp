@@ -609,7 +609,7 @@ UsdImagingGprimAdapter::GetExtent(UsdPrim const& prim,
         // Note:
         // Usd stores extent as 2 float vecs. We do an implicit 
         // conversion to doubles
-        return GfRange3d(extent[0], extent[1]);
+        return GfRange3d(extent.AsConst()[0], extent.AsConst()[1]);
     } else {
         // Return empty range if no value was found, or the wrong number of 
         // extent values were provided.        
