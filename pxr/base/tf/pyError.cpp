@@ -91,8 +91,8 @@ TfPyConvertPythonExceptionToTfErrors()
             extract<vector<TfError> > extractor(args);
             if (extractor.check()) {
                 vector<TfError> errs = extractor();
-                TF_FOR_ALL(e, errs)
-                    TfDiagnosticMgr::GetInstance().AppendError(*e);
+                for(const auto& e: errs)
+                    TfDiagnosticMgr::GetInstance().AppendError(e);
             }
         } else {
             TF_ERROR(exc, TF_PYTHON_EXCEPTION, "Tf Python Exception");

@@ -190,8 +190,8 @@ Tf_MallocTagStringMatchTable::SetMatchList(const std::string& matchList)
 {
     _matchStrings.clear();
     std::vector<std::string> items = TfStringTokenize(matchList, ",\t\n");
-    TF_FOR_ALL(i, items) {
-        _matchStrings.push_back(_MatchString(TfStringTrim(*i, " ")));
+    for(std::string i: items) {
+        _matchStrings.push_back(_MatchString(TfStringTrim(i, " ")));
     }
 }
 
@@ -681,12 +681,12 @@ Tf_MallocGlobalData::_SetTraceNames(const std::string& matchList)
     _traceMatchTable.SetMatchList(matchList);
 
     // Update trace flag on every existing call site.
-    TF_FOR_ALL(i, _callSiteTable) {
-        if (_traceMatchTable.Match(i->second->_name.get())) {
-            i->second->_flags |= Tf_MallocCallSite::_TraceFlag;
+    for(const auto& i: _callSiteTable) {
+        if (_traceMatchTable.Match(i.second->_name.get())) {
+            i.second->_flags |= Tf_MallocCallSite::_TraceFlag;
         }
         else {
-            i->second->_flags &= ~Tf_MallocCallSite::_TraceFlag;
+            i.second->_flags &= ~Tf_MallocCallSite::_TraceFlag;
         }
     }
 }
@@ -757,12 +757,12 @@ Tf_MallocGlobalData::_SetDebugNames(const std::string& matchList)
     _debugMatchTable.SetMatchList(matchList);
 
     // Update debug flag on every existing call site.
-    TF_FOR_ALL(i, _callSiteTable) {
-        if (_debugMatchTable.Match(i->second->_name.get())) {
-            i->second->_flags |= Tf_MallocCallSite::_DebugFlag;
+    for(const auto& i: _callSiteTable) {
+        if (_debugMatchTable.Match(i.second->_name.get())) {
+            i.second->_flags |= Tf_MallocCallSite::_DebugFlag;
         }
         else {
-            i->second->_flags &= ~Tf_MallocCallSite::_DebugFlag;
+            i.second->_flags &= ~Tf_MallocCallSite::_DebugFlag;
         }
     }
 }
@@ -824,10 +824,10 @@ Tf_MallocGlobalData::_BuildUniqueMallocStacks(TfMallocTag::CallTree* tree)
             vector<uintptr_t>, _MallocStackData, _HashMallocStack> _Map;
         _Map map;
 
-        TF_FOR_ALL(it, _callStackTable) {
+        for(const auto& it: _callStackTable) {
             // Since _callStackTable does not change at this point it is
             // ok to store the address of the malloc stack in the data.
-            const TfMallocTag::CallStackInfo &stackInfo = it->second;
+            const TfMallocTag::CallStackInfo &stackInfo = it.second;
             _MallocStackData data = { &stackInfo.stack, 0, 0 };
 
             pair<_Map::iterator, bool> insertResult = map.insert(
@@ -841,8 +841,8 @@ Tf_MallocGlobalData::_BuildUniqueMallocStacks(TfMallocTag::CallTree* tree)
         // Sort the malloc stack data by allocation size.
         std::vector<const _MallocStackData *> sortedStackData;
         sortedStackData.reserve(map.size());
-        TF_FOR_ALL(it, map) {
-            sortedStackData.push_back(&it->second);
+        for(const auto& it: map) {
+            sortedStackData.push_back(&it.second);
         }
 
         std::sort(
@@ -958,8 +958,8 @@ TfMallocTag::GetCapturedMallocStacks()
         traces.swap(_mallocGlobalData->_callStackTable);
     }
 
-    TF_FOR_ALL(i, traces) {
-        result.push_back(i->second.stack);
+    for(const auto& i: traces) {
+        result.push_back(i.second.stack);
     }
 
     return result;
@@ -1088,8 +1088,8 @@ _GetCallSites(TfMallocTag::CallTree::PathNode* node,
         Tf_GetOrCreateCallSite(table, node->siteName.c_str());
     site->_totalBytes += node->nBytesDirect;
 
-    TF_FOR_ALL(pi, node->children) {
-        _GetCallSites(&(*pi), table);
+    for(auto& pi: node->children) {
+        _GetCallSites(&pi, table);
     }
 }
 
@@ -1118,13 +1118,13 @@ TfMallocTag::GetCallTree(CallTree* tree, bool skipRepeated)
 
         // Copy the callsites into the calltree
         tree->callSites.reserve(callSiteTable.size());
-        TF_FOR_ALL(csi, callSiteTable) {
+        for(const auto& csi: callSiteTable) {
             CallTree::CallSite cs = {
-                csi->second->_name.get(),
-                static_cast<size_t>(csi->second->_totalBytes)
+                csi.second->_name.get(),
+                static_cast<size_t>(csi.second->_totalBytes)
             };
             tree->callSites.push_back(cs);
-            delete csi->second;
+            delete csi.second;
         }
 
         gd->_BuildUniqueMallocStacks(tree);
@@ -1228,11 +1228,11 @@ _GetAsCommaSeparatedString(size_t number)
     string str = TfStringPrintf("%ld", number);
     size_t n = str.size();
 
-    TF_FOR_ALL(it, str) {
+    for(char it: str) {
         if (n < str.size() && n%3 == 0) {
             result.push_back(',');
         }
-        result.push_back(*it);
+        result.push_back(it);
         n--;
     }
     return result;
@@ -1345,8 +1345,8 @@ _PrintMallocCallSites(
 
     // Use a map to sort by allocation size.
     map<size_t, const string *> map;
-    TF_FOR_ALL(csi, callSites) {
-        map.insert(make_pair(csi->nBytes, &csi->name));
+    for(const auto& csi: callSites) {
+        map.insert(make_pair(csi.nBytes, &csi.name));
     }
 
     // XXX:cleanup We should pass in maxNameWidth.
@@ -1403,8 +1403,8 @@ _GetNumAllocationInSubTree(
     const TfMallocTag::CallTree::PathNode &node)
 {
     int64_t nAllocations = node.nAllocations;
-    TF_FOR_ALL(it, node.children) {
-        nAllocations += _GetNumAllocationInSubTree(*it);
+    for(const auto& it: node.children) {
+        nAllocations += _GetNumAllocationInSubTree(it);
     }
     return nAllocations;
 }
@@ -1451,15 +1451,15 @@ _ReportMallocNode(
     // (i.e. that sorting is a view into the unaltered source data).
     std::vector<const TfMallocTag::CallTree::PathNode *> sortedChildren;
     sortedChildren.reserve(node.children.size());
-    TF_FOR_ALL(it, node.children) {
-        sortedChildren.push_back(&(*it));
+    for(const auto& it: node.children) {
+        sortedChildren.push_back(&it);
     }
 
     std::sort(
         sortedChildren.begin(), sortedChildren.end(), _MallocPathNodeLessThan);
 
-    TF_FOR_ALL(it, sortedChildren) {
-        _ReportMallocNode(out, **it, level+1);
+    for(const auto& it: sortedChildren) {
+        _ReportMallocNode(out, *it, level+1);
     }
 }
 

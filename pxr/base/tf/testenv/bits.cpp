@@ -139,18 +139,18 @@ Test_TfBits()
         TF_AXIOM(b.GetAsStringLeftToRight() == "0101");
     
         size_t c=0;
-        TF_FOR_ALL(i, b.GetAllView())
-            c += *i;
+        for(const auto& i: b.GetAllView())
+            c += i;
         TF_AXIOM(c == 6);
     
         c=0;
-        TF_FOR_ALL(i, b.GetAllSetView())
-            c += *i;
+        for(const auto& i: b.GetAllSetView())
+            c += i;
         TF_AXIOM(c == 4);
     
         c=0;
-        TF_FOR_ALL(i, b.GetAllUnsetView())
-            c += *i;
+        for(const auto& i: b.GetAllUnsetView())
+            c += i;
         TF_AXIOM(c == 2);
     }
 

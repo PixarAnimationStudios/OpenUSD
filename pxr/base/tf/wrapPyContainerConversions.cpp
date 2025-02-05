@@ -23,8 +23,8 @@ struct Set_ToPython
     static PyObject* convert(CONTAINER_TYPE const &c)
     {
         PyObject* set = PySet_New(NULL);
-        TF_FOR_ALL(i, c) {
-            PySet_Add(set, pxr_boost::python::object(*i).ptr());
+        for(const auto& i: c) {
+            PySet_Add(set, pxr_boost::python::object(i).ptr());
         }
         return set;
     }

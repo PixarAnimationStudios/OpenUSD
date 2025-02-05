@@ -69,11 +69,11 @@ _GetCallStacks()
 
     // Cache address to function name map, one lookup per address.
     std::map<uintptr_t, std::string> functionNames;
-    TF_FOR_ALL(stack, stacks) {
-        TF_FOR_ALL(func, *stack) {
-            std::string& name = functionNames[*func];
+    for(const auto& stack: stacks) {
+        for(const auto& func: stack) {
+            std::string& name = functionNames[func];
             if (name.empty()) {
-                ArchGetAddressInfo(reinterpret_cast<void*>(*func),
+                ArchGetAddressInfo(reinterpret_cast<void*>(func),
                                    NULL, NULL, &name, NULL);
                 if (name.empty()) {
                     name = "<unknown>";
@@ -83,10 +83,10 @@ _GetCallStacks()
     }
 
     std::vector<std::string> result;
-    TF_FOR_ALL(stack, stacks) {
+    for(const auto& stack: stacks) {
         result.push_back(std::string());
         std::string& trace = result.back();
-        TF_FOR_ALL(func, *stack) {
+        for(const auto& func: stack) {
             trace += TfStringPrintf("  0x%016lx: %s\n",
                                     (unsigned long)*func,
                                     functionNames[*func].c_str());

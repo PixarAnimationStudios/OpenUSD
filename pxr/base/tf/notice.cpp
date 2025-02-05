@@ -137,8 +137,8 @@ TfNotice::Revoke(Key& key)
 void
 TfNotice::Revoke(Keys* keys)
 {
-    TF_FOR_ALL(i, *keys) {
-        Revoke(*i);
+    for(auto& i: *keys) {
+        Revoke(i);
     }
     keys->clear();
 }
@@ -158,8 +158,8 @@ TfNotice::RevokeAndWait(Key& key)
 void
 TfNotice::RevokeAndWait(Keys* keys)
 {
-    TF_FOR_ALL(i, *keys) {
-        RevokeAndWait(*i);
+    for(auto& i: *keys) {
+        RevokeAndWait(i);
     }
     keys->clear();
 }

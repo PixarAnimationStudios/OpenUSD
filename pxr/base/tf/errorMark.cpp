@@ -109,11 +109,11 @@ TfReportActiveErrorMarks()
         localStacks = TfErrorMark_GetActiveMarkStacks();
     }
 
-    TF_FOR_ALL(i, localStacks) {
+    for(const auto& i: localStacks) {
         printf("== TfErrorMark @ %p created from ===========================\n",
-               i->first);
+               i.first);
         std::stringstream ss;
-        ArchPrintStackFrames(ss, i->second);
+        ArchPrintStackFrames(ss, i.second);
         printf("%s\n", ss.str().c_str());
     }
 }
