@@ -638,7 +638,7 @@ _MergeAncestors(vector<TypeVector> *seqs, TypeVector *result)
 
         // Try the first element of each non-empty sequence, in order.
         bool anyLeft = false;
-        for(const auto& candSeq: *seqs)
+        for(const TypeVector& candSeq: *seqs)
         {
             if (candSeq.empty())
                 continue;
@@ -648,7 +648,7 @@ _MergeAncestors(vector<TypeVector> *seqs, TypeVector *result)
 
             // Check that the candidate does not occur in the tail
             // ("cdr", in lisp terms) of any of the sequences.
-            for(const auto& checkSeq: *seqs)
+            for(const TypeVector& checkSeq: *seqs)
             {
                 if (checkSeq.size() <= 1)
                     continue;
@@ -679,7 +679,7 @@ _MergeAncestors(vector<TypeVector> *seqs, TypeVector *result)
         result->push_back(cand);
 
         // Remove candidate from input sequences.
-        for(auto& seqIt: *seqs) {
+        for(TypeVector& seqIt: *seqs) {
             if (!seqIt.empty() && seqIt.front() == cand)
                 seqIt.erase( seqIt.begin() );
         }

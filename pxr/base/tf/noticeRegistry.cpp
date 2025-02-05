@@ -138,7 +138,7 @@ _BeginDelivery(const TfNotice &notice,
                const std::type_info &listenerType,
                const std::vector<TfNotice::WeakProbePtr> &probes)
 {
-    for(const auto& i: probes)
+    for(const TfNotice::WeakProbePtr& i: probes)
         if (i)
             i->BeginDelivery(notice, sender,
                                 senderType, listener, listenerType);
@@ -148,7 +148,7 @@ void
 Tf_NoticeRegistry::
 _EndDelivery(const std::vector<TfNotice::WeakProbePtr> &probes)
 {
-    for(const auto& i: probes)
+    for(const TfNotice::WeakProbePtr& i: probes)
         if (i)
             i->EndDelivery();
 }

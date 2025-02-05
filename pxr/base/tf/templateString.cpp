@@ -51,7 +51,7 @@ TfTemplateString::Substitute(const Mapping& mapping) const
     vector<string> evalErrors;
     string result = _Evaluate(mapping, &evalErrors);
 
-    for(const auto& it: evalErrors)
+    for(const string& it: evalErrors)
         TF_CODING_ERROR("%s", it.c_str());
 
     return result;
@@ -69,7 +69,7 @@ void
 TfTemplateString::_EmitParseErrors() const
 {
     tbb::spin_mutex::scoped_lock lock(_data->mutex);
-    for(const auto& it: _data->parseErrors)
+    for(const string& it: _data->parseErrors)
         TF_CODING_ERROR("%s", it.c_str());
 }
 

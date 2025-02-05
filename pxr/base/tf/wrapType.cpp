@@ -222,7 +222,7 @@ _DumpTypeHierarchyRecursive( TfType t, int depth=0 )
 
     printf("%s%s\n", indent.c_str(), t.GetTypeName().c_str());
     std::vector<TfType> derived = t.GetDirectlyDerivedTypes();
-    for(const auto& it: derived) {
+    for(const TfType& it: derived) {
         _DumpTypeHierarchyRecursive( it, depth+1 );
     }
 }
