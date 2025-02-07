@@ -46,8 +46,8 @@ _InitPaths()
     }
 
     // Shuffle paths randomly.
-    const size_t seed =
-        std::chrono::system_clock::now().time_since_epoch().count();
+    const std::mt19937::result_type seed =
+        static_cast<std::mt19937::result_type>(std::chrono::system_clock::now().time_since_epoch().count());
     std::cout << "Random seed: " << seed << "\n";
     std::mt19937 randomGen(seed);
 
@@ -371,7 +371,7 @@ bool
 InsertRemoveDupesTest()
 {
     std::cout << "\n\nInsertRemoveDupesTest():\n";
-    
+
     using P = SdfPath;
     Hd_SortedIds sortedIds;
     SdfPathVector expected;
@@ -381,7 +381,7 @@ InsertRemoveDupesTest()
 
     expected = {P("/A"),P("/B")};
     TF_AXIOM(sortedIds.GetIds() == expected);
-    
+
     sortedIds.Insert(P("/B"));
     sortedIds.Insert(P("/A"));
     sortedIds.Insert(P("/B"));
