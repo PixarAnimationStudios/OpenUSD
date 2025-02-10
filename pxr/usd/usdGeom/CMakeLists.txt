@@ -116,6 +116,20 @@ pxr_build_test(testUsdGeomHasAPI
         testenv/testUsdGeomHasAPI.cpp
 )
 
+pxr_build_test(testUsdGeomExtentThreading
+    LIBRARIES
+        usd
+        usdGeom
+        usdShade
+    CPPFILES
+        testenv/testUsdGeomExtentThreading.cpp
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomExtentThreading
+    DEST testUsdGeomExtentThreading
+)
+
 pxr_install_test_dir(
     SRC testenv/testUsdGeomBasisCurves
     DEST testUsdGeomBasisCurves
@@ -331,6 +345,11 @@ pxr_register_test(testUsdGeomComputeAtTime
 pxr_register_test(testUsdGeomImageable
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomImageable"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdGeomExtentThreading
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomExtentThreading"
     EXPECTED_RETURN_CODE 0
 )
 
