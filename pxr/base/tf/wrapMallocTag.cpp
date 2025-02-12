@@ -88,8 +88,8 @@ _GetCallStacks()
         std::string& trace = result.back();
         for(const auto& func: stack) {
             trace += TfStringPrintf("  0x%016lx: %s\n",
-                                    (unsigned long)*func,
-                                    functionNames[*func].c_str());
+                                    (unsigned long)func,
+                                    functionNames[func].c_str());
         }
         trace += '\n';
     }
