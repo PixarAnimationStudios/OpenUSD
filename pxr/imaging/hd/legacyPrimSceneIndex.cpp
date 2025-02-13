@@ -6,6 +6,8 @@
 //
 #include "pxr/imaging/hd/legacyPrimSceneIndex.h"
 #include "pxr/imaging/hd/dataSourceLegacyPrim.h"
+#include "pxr/imaging/hd/dataSourceLegacyTaskPrim.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -16,6 +18,16 @@ HdLegacyPrimSceneIndex::AddLegacyPrim(SdfPath const &id, TfToken const &type,
 {
     AddPrims({{id, type,
         HdDataSourceLegacyPrim::New(id, type, sceneDelegate)}});
+}
+
+void
+HdLegacyPrimSceneIndex::AddLegacyTask(
+    SdfPath const &id,
+    HdSceneDelegate * const sceneDelegate,
+    HdLegacyTaskFactorySharedPtr factory)
+{
+    AddPrims({{id, HdPrimTypeTokens->task,
+        HdDataSourceLegacyTaskPrim::New(id, sceneDelegate, factory)}});
 }
 
 void

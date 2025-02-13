@@ -161,10 +161,15 @@ HdStPoints::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
             constantPrimvars, HdTokens->displayOpacity);
     }
 
-    HdSt_PointsShaderKey shaderKey;
     HdStResourceRegistrySharedPtr resourceRegistry =
         std::static_pointer_cast<HdStResourceRegistry>(
             sceneDelegate->GetRenderIndex().GetResourceRegistry());
+
+    bool const nativeRoundPoints =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+            IsSet(HgiDeviceCapabilitiesBitsRoundPoints);
+
+    HdSt_PointsShaderKey shaderKey{nativeRoundPoints};
     drawItem->SetGeometricShader(
         HdSt_GeometricShader::Create(shaderKey, resourceRegistry));
 

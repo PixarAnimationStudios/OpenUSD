@@ -218,7 +218,8 @@ _RegisterDrawItem(
         /*enableScalarOverride=*/ true,
         /*isWidget*/ false,
         /* forceOpaqueEdges */ true,
-        /* surfaceEdgeIds */ true);
+        /* surfaceEdgeIds */ true,
+        /* nativeRoundPoints */ true);
 
     // need to register to get batching works
     HdSt_GeometricShaderSharedPtr const geomShader = 
@@ -718,7 +719,7 @@ EmptyDrawBatchTest(HdStResourceRegistrySharedPtr const &registry)
     sharedData.bounds.SetRange(range);
 
     HdStDrawItem drawItem(&sharedData);
-    HdSt_PointsShaderKey shaderKey;
+    HdSt_PointsShaderKey shaderKey{/*nativeRoundPoints*/false};
 
     // need to register to get batching works
     HdSt_GeometricShaderSharedPtr const geomShader = 

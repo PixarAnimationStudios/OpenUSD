@@ -461,7 +461,7 @@ HdSt_MyTestDriver::_Viewer::_CreateRenderTasks(
     HdUnitTestDelegate &sd,
     HdStRenderPassStateSharedPtr const &state)
 {
-    std::string prefix(_viewerName + "/Tasks/");
+    std::string prefix("/" + _viewerName + "/Tasks/");
     
     {
         _drawTaskId = SdfPath(prefix + "DrawTask");

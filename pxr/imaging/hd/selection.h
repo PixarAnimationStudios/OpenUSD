@@ -36,7 +36,7 @@ class HdSelection
 {
 public:
     /// Selection modes allow differentiation in selection highlight behavior.
-    enum HighlightMode {
+    enum HighlightMode : uint32_t {
         HighlightModeSelect = 0, // Active selection
         HighlightModeLocate,     // Rollover selection
         

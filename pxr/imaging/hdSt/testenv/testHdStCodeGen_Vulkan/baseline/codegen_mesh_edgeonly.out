@@ -3,9 +3,9 @@
 #import $TOOLS/hdSt/shaders/mesh.glslfx
 -- configuration
 {"techniques": {"default": {
-"vertexShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "PointId.Vertex.None", "Mesh.Vertex"] }
+"vertexShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "PointId.Vertex.None", "PointDisk.Vertex.None", "Mesh.Vertex"] }
 , "geometryShader" : { "source" : ["Instancing.Transform", "MeshNormal.Flat", "MeshNormal.Geometry.NoFlat", "Geometry.NoCustomDisplacement", "Mesh.Geometry.Triangle"] }
-, "fragmentShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "MeshNormal.Fragment.SingleSided", "MeshFaceCull.Fragment.None", "MeshWire.Fragment.EdgeCoord.Barycentric", "MeshWire.Fragment.EdgeMaskTriangle", "MeshWire.Fragment.EdgeCommon", "MeshWire.Fragment.EdgeParam", "MeshWire.Fragment.FinalEdgeOpacityForce", "MeshWire.Fragment.EdgeOnlyNoBlend", "Fragment.CommonTerminals", "Fragment.Surface", "Fragment.ScalarOverride", "EdgeId.Fragment.Common", "EdgeId.Fragment.TriangleLines", "EdgeId.Fragment.TriangleParam", "PointId.Fragment.Fallback", "Visibility.Fragment.Fallback", "Mesh.Fragment.PatchCoord", "Mesh.Fragment"] }
+, "fragmentShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "MeshNormal.Fragment.SingleSided", "MeshFaceCull.Fragment.None", "MeshWire.Fragment.EdgeCoord.Barycentric", "MeshWire.Fragment.EdgeMaskTriangle", "MeshWire.Fragment.EdgeCommon", "MeshWire.Fragment.EdgeParam", "MeshWire.Fragment.FinalEdgeOpacityForce", "MeshWire.Fragment.EdgeOnlyNoBlend", "Fragment.CommonTerminals", "Fragment.Surface", "Fragment.ScalarOverride", "EdgeId.Fragment.Common", "EdgeId.Fragment.TriangleLines", "EdgeId.Fragment.TriangleParam", "PointId.Fragment.Fallback", "PointDisk.Fragment.None", "Visibility.Fragment.Fallback", "Mesh.Fragment.PatchCoord", "Mesh.Fragment"] }
 }}}
 -------------------------------------------------------
 =======================================================
@@ -28,6 +28,7 @@ int HgiGetBaseInstance() {
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
+#define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
 
@@ -638,6 +639,14 @@ void ProcessPointId(int pointId)
 
 
 
+float ApplyPointSizeBias(float pointSize)
+{
+    // do nothing
+    return pointSize;
+}
+
+
+
 // Fwd declare methods defined in pointId.glslfx, that are used below.
 FORWARD_DECL(int GetPointId());
 FORWARD_DECL(float GetPointRasterSize(int));
@@ -654,7 +663,7 @@ void main(void)
     outData.Neye = GetNormal(vec3(0), 0); // normalized
 
     int pointId = GetPointId();
-    gl_PointSize = GetPointRasterSize(pointId);
+    gl_PointSize = ApplyPointSizeBias(GetPointRasterSize(pointId));
     ProcessPointId(pointId);
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
@@ -681,6 +690,7 @@ void main(void)
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
+#define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
 
@@ -1485,6 +1495,7 @@ void main(void)
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
+#define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
 
@@ -2614,6 +2625,13 @@ int GetPointId()
 }
 
 
+
+void ApplyDiskSampleMask()
+{
+    // do nothing
+}
+
+
 void DiscardBasedOnTopologicalVisibility()
 {
     // Nothing to do, since there's no authored opinion.
@@ -2661,6 +2679,8 @@ vec3 ComputeScreenSpaceNeye()
 
 void main(void)
 {
+    ApplyDiskSampleMask();
+
     bool isFlipped = IsFlipped();
 
     DiscardBasedOnShading(gl_FrontFacing, isFlipped);
@@ -2707,9 +2727,9 @@ void main(void)
 #import $TOOLS/hdSt/shaders/mesh.glslfx
 -- configuration
 {"techniques": {"default": {
-"vertexShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "PointId.Vertex.None", "Mesh.Vertex"] }
+"vertexShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "PointId.Vertex.None", "PointDisk.Vertex.None", "Mesh.Vertex"] }
 , "geometryShader" : { "source" : ["Instancing.Transform", "MeshNormal.Flat", "MeshNormal.Geometry.NoFlat", "Geometry.NoCustomDisplacement", "Mesh.Geometry.Quad"] }
-, "fragmentShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "MeshNormal.Fragment.SingleSided", "MeshFaceCull.Fragment.None", "MeshWire.Fragment.EdgeCoord.Barycentric", "MeshWire.Fragment.EdgeMaskQuad", "MeshWire.Fragment.EdgeCommon", "MeshWire.Fragment.EdgeParam", "MeshWire.Fragment.FinalEdgeOpacityForce", "MeshWire.Fragment.EdgeOnlyNoBlend", "Fragment.CommonTerminals", "Fragment.Surface", "Fragment.ScalarOverride", "EdgeId.Fragment.Common", "EdgeId.Fragment.QuadLines", "EdgeId.Fragment.QuadParam", "PointId.Fragment.Fallback", "Visibility.Fragment.Fallback", "Mesh.Fragment.PatchCoord", "Mesh.Fragment"] }
+, "fragmentShader" : { "source" : ["Instancing.Transform", "MeshNormal.Pass", "MeshNormal.Fragment.SingleSided", "MeshFaceCull.Fragment.None", "MeshWire.Fragment.EdgeCoord.Barycentric", "MeshWire.Fragment.EdgeMaskQuad", "MeshWire.Fragment.EdgeCommon", "MeshWire.Fragment.EdgeParam", "MeshWire.Fragment.FinalEdgeOpacityForce", "MeshWire.Fragment.EdgeOnlyNoBlend", "Fragment.CommonTerminals", "Fragment.Surface", "Fragment.ScalarOverride", "EdgeId.Fragment.Common", "EdgeId.Fragment.QuadLines", "EdgeId.Fragment.QuadParam", "PointId.Fragment.Fallback", "PointDisk.Fragment.None", "Visibility.Fragment.Fallback", "Mesh.Fragment.PatchCoord", "Mesh.Fragment"] }
 }}}
 -------------------------------------------------------
 =======================================================
@@ -2732,6 +2752,7 @@ int HgiGetBaseInstance() {
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
+#define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
 
@@ -3342,6 +3363,14 @@ void ProcessPointId(int pointId)
 
 
 
+float ApplyPointSizeBias(float pointSize)
+{
+    // do nothing
+    return pointSize;
+}
+
+
+
 // Fwd declare methods defined in pointId.glslfx, that are used below.
 FORWARD_DECL(int GetPointId());
 FORWARD_DECL(float GetPointRasterSize(int));
@@ -3358,7 +3387,7 @@ void main(void)
     outData.Neye = GetNormal(vec3(0), 0); // normalized
 
     int pointId = GetPointId();
-    gl_PointSize = GetPointRasterSize(pointId);
+    gl_PointSize = ApplyPointSizeBias(GetPointRasterSize(pointId));
     ProcessPointId(pointId);
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
@@ -3385,6 +3414,7 @@ void main(void)
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
+#define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
 
@@ -4218,6 +4248,7 @@ void main(void)
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
+#define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
 
@@ -5352,6 +5383,13 @@ int GetPointId()
 }
 
 
+
+void ApplyDiskSampleMask()
+{
+    // do nothing
+}
+
+
 void DiscardBasedOnTopologicalVisibility()
 {
     // Nothing to do, since there's no authored opinion.
@@ -5399,6 +5437,8 @@ vec3 ComputeScreenSpaceNeye()
 
 void main(void)
 {
+    ApplyDiskSampleMask();
+
     bool isFlipped = IsFlipped();
 
     DiscardBasedOnShading(gl_FrontFacing, isFlipped);

@@ -9,12 +9,19 @@
 #define PXR_USD_SDR_SHADER_NODE_H
 
 /// \file sdr/shaderNode.h
+///
+/// \note
+/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
+/// in this file. All existing pxr/usd/ndr implementations will be moved to
+/// pxr/usd/sdr.
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdr/api.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/usd/ndr/node.h"
 #include "pxr/usd/sdr/declare.h"
+#include "pxr/usd/sdr/shaderNodeDiscoveryResult.h"
 
 #include <unordered_map>
 
@@ -64,12 +71,18 @@ TF_DECLARE_PUBLIC_TOKENS(SdrNodeRole, SDR_API, SDR_NODE_ROLE_TOKENS);
 
 /// \class SdrShaderNode
 ///
-/// A specialized version of `NdrNode` which holds shading information.
-///
+/// Represents a node that holds shading information. Describes information
+/// like the name of the node, what its inputs and outputs are, and any
+/// associated metadata.
 class SdrShaderNode : public NdrNode
 {
 public:
     /// Constructor.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of the constructor below this constructor,
+    /// which takes `SdrVersion` and `SdrShaderPropertyUniquePtrVec` instead
+    /// of Ndr analogues
     SDR_API
     SdrShaderNode(const NdrIdentifier& identifier,
                   const NdrVersion& version,
@@ -83,9 +96,35 @@ public:
                   const NdrTokenMap& metadata = NdrTokenMap(),
                   const std::string &sourceCode = std::string());
 
+    /// Constructor
+    SDR_API
+    SdrShaderNode(
+        const SdrIdentifier& identifier,
+        const SdrVersion& version,
+        const std::string& name,
+        const TfToken& family,
+        const TfToken& context,
+        const TfToken& sourceType,
+        const std::string& definitionURI,
+        const std::string& implementationURI,
+        SdrShaderPropertyUniquePtrVec&& properties,
+        const SdrTokenMap& metadata = SdrTokenMap(),
+        const std::string &sourceCode = std::string());
+
+    /// Return the version of the node
+    SdrVersion GetShaderVersion() const { return NdrToSdrVersion(_version); }
+
     /// \name Inputs and Outputs
     /// An input or output is also generically referred to as a "property".
     /// @{
+
+    /// Get an ordered list of all the input names on this shader node.
+    SDR_API
+    const SdrTokenVec& GetShaderInputNames() const;
+
+    /// Get an ordered list of all the output names on this shader node.
+    SDR_API
+    const SdrTokenVec& GetShaderOutputNames() const;
 
     /// Get a shader input property by name. `nullptr` is returned if an input
     /// with the given name does not exist.
@@ -100,7 +139,7 @@ public:
     /// Returns the list of all inputs that are tagged as asset identifier 
     /// inputs.
     SDR_API
-    NdrTokenVec GetAssetIdentifierInputNames() const;
+    SdrTokenVec GetAssetIdentifierInputNames() const;
 
     /// Returns the first shader input that is tagged as the default input.
     /// A default input and its value can be used to acquire a fallback value
@@ -145,7 +184,7 @@ public:
 
     /// The departments this node is associated with, if any.
     SDR_API
-    const NdrTokenVec& GetDepartments() const { return _departments; }
+    const SdrTokenVec& GetDepartments() const { return _departments; }
 
     /// Gets the pages on which the node's properties reside (an aggregate of
     /// the unique `SdrShaderProperty::GetPage()` values for all of the node's
@@ -153,7 +192,7 @@ public:
     /// scenario, properties might be divided into two pages, 'Simple' and
     /// 'Advanced'.
     SDR_API
-    const NdrTokenVec& GetPages() const { return _pages; };
+    const SdrTokenVec& GetPages() const { return _pages; };
 
     /// The list of primvars this node knows it requires / uses.
     /// For example, a shader node may require the 'normals' primvar to function
@@ -162,7 +201,7 @@ public:
     /// Together, `GetPrimvars()` and `GetAdditionalPrimvarProperties()`,
     /// provide the complete list of primvar requirements for the node.
     SDR_API
-    const NdrTokenVec& GetPrimvars() const { return _primvars; }
+    const SdrTokenVec& GetPrimvars() const { return _primvars; }
 
     /// The list of string input properties whose values provide the names of
     /// additional primvars consumed by this node. For example, this may return
@@ -171,7 +210,7 @@ public:
     /// from its scene description to determine the name of a primvar the 
     /// node will consume. See `GetPrimvars()` for additional information.
     SDR_API
-    const NdrTokenVec& GetAdditionalPrimvarProperties() const {
+    const SdrTokenVec& GetAdditionalPrimvarProperties() const {
         return _primvarNamingProperties;
     }
 
@@ -195,18 +234,18 @@ public:
     /// returned by `GetPages()`). To get properties that are not assigned to a
     /// page, an empty string can be used for \p pageName.
     SDR_API
-    NdrTokenVec GetPropertyNamesForPage(const std::string& pageName) const;
+    SdrTokenVec GetPropertyNamesForPage(const std::string& pageName) const;
 
     /// Gets all vstructs that are present in the shader.
     SDR_API
-    NdrTokenVec GetAllVstructNames() const;
+    SdrTokenVec GetAllVstructNames() const;
 
     /// @}
 
     // Stores the result of the compliance check of property names to
     // sdrShaderNodeIdentifiers
     using ComplianceResults = std::unordered_map<TfToken,
-                              std::vector<NdrIdentifier>, 
+                              std::vector<SdrIdentifier>, 
                               TfToken::HashFunctor>;
 
     /// This method checks if same named properties of \p shaderNodes are
@@ -239,14 +278,14 @@ protected:
     // consumed by this node, whereas `_primvarNamingProperties` contains the
     // names of string input properties whose values provide the names of
     // additional primvars consumed by this node.
-    NdrTokenVec _primvars;
-    NdrTokenVec _primvarNamingProperties;
+    SdrTokenVec _primvars;
+    SdrTokenVec _primvarNamingProperties;
 
     // Tokenized metadata
     TfToken _label;
     TfToken _category;
-    NdrTokenVec _departments;
-    NdrTokenVec _pages;
+    SdrTokenVec _departments;
+    SdrTokenVec _pages;
 
     SdrPropertyMap _shaderInputs;
     SdrPropertyMap _shaderOutputs;
@@ -256,7 +295,7 @@ private:
     void _InitializePrimvars();
 
     // Determines which pages are present on the node's properties
-    NdrTokenVec _ComputePages() const;
+    SdrTokenVec _ComputePages() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

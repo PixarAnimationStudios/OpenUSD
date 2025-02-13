@@ -112,15 +112,9 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
             hasClear = true;
         }
         
-        if (@available(macos 100.100, ios 8.0, *)) {
-            metalColorAttachment.loadAction = MTLLoadActionLoad;
-        }
-        else {
-            metalColorAttachment.loadAction =
+        metalColorAttachment.loadAction =
                 HgiMetalConversions::GetAttachmentLoadOp(
                     hgiColorAttachment.loadOp);
-        }
-
         metalColorAttachment.storeAction =
             HgiMetalConversions::GetAttachmentStoreOp(
                 hgiColorAttachment.storeOp);

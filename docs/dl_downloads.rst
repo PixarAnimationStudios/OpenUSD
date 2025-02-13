@@ -4,6 +4,10 @@
 Downloads and Videos
 ====================
 
+.. contents:: Table of Contents
+    :local:
+    :depth: 2
+    
 Presentations
 =============
 

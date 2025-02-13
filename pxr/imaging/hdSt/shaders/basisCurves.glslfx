@@ -13,6 +13,7 @@
 #import $TOOLS/hdSt/shaders/instancing.glslfx
 #import $TOOLS/hdSt/shaders/terminals.glslfx
 #import $TOOLS/hdSt/shaders/pointId.glslfx
+#import $TOOLS/hdSt/shaders/pointDisk.glslfx
 #import $TOOLS/hdSt/shaders/visibility.glslfx
 
 // Known issues:
@@ -138,10 +139,12 @@ void SetTessFactors(float out0, float out1, float out2, float out3,
 
 // We will either generate a camera facing normal or use the authored normal.
 FORWARD_DECL(vec3 getNormal(MAT4 transform));
-// Fwd declare methods defined in pointId.glslfx, that are used below.
+// Fwd declare methods defined in pointId.glslfx and pointDisk.glslfx
+// that are used below.
 FORWARD_DECL(int GetPointId());
 FORWARD_DECL(float GetPointRasterSize(int));
 FORWARD_DECL(void ProcessPointId(int));
+FORWARD_DECL(float ApplyPointSizeBias(float));
 
 void main(void)
 {
@@ -164,7 +167,8 @@ void main(void)
 #else
     float scale = 1;
 #endif
-    gl_PointSize = GetPointRasterSize(pointId) * scale;
+    gl_PointSize = ApplyPointSizeBias(
+        GetPointRasterSize(pointId) * scale);
     ProcessPointId(pointId);
 }
 
@@ -216,10 +220,12 @@ vec3 getNormal(MAT4 transform, int index)
 --- --------------------------------------------------------------------------
 -- glsl Curves.Vertex.Wire
 
-// Fwd declare methods defined in pointId.glslfx, that are used below.
+// Fwd declare methods defined in pointId.glslfx and pointDisk.glslfx
+// that are used below.
 FORWARD_DECL(int GetPointId());
 FORWARD_DECL(float GetPointRasterSize(int));
 FORWARD_DECL(void ProcessPointId(int));
+FORWARD_DECL(float ApplyPointSizeBias(float));
 
 void main(void)
 {
@@ -239,8 +245,10 @@ void main(void)
 #else
     float scale = 1;
 #endif
-    gl_PointSize = GetPointRasterSize(pointId) * scale;
-    ProcessPointId(pointId);}
+    gl_PointSize = ApplyPointSizeBias(
+        GetPointRasterSize(pointId) * scale);
+    ProcessPointId(pointId);
+}
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.CommonControl
@@ -1177,6 +1185,8 @@ Coeffs evaluateBasis(float u, const vec4 cv[4])
 
 void main(void)
 {
+    ApplyDiskSampleMask();
+
     DiscardBasedOnTopologicalVisibility();
     
     vec4 color = vec4(0.5, 0.5, 0.5, 1);
@@ -1226,6 +1236,8 @@ void main(void)
 FORWARD_DECL(vec3 fragmentNormal(vec3 position, vec3 normal, float v));
 void main(void)
 {
+    ApplyDiskSampleMask();
+
     DiscardBasedOnTopologicalVisibility();
 
     vec4 color = vec4(0.5, 0.5, 0.5, 1);

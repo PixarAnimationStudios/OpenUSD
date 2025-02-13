@@ -8,7 +8,11 @@
 #ifndef PXR_USD_NDR_FILESYSTEM_DISCOVERY_H
 #define PXR_USD_NDR_FILESYSTEM_DISCOVERY_H
 
-/// \file ndrDiscovery/filesystemDiscovery.h
+/// \file ndr/filesystemDiscovery.h
+///
+/// \deprecated
+/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
+/// in sdr/filesystemDiscovery.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ndr/api.h"
@@ -41,6 +45,10 @@ TF_DECLARE_WEAK_AND_REF_PTRS(_NdrFilesystemDiscoveryPlugin);
 /// while walking the search paths. Set to "true" (case sensitive) if they
 /// should be followed.
 ///
+/// \deprecated
+/// Deprecated in favor of _SdrFilesystemDiscoveryPlugin. 
+/// PXR_NDR_* environment variables will be moved to PXR_SDR_* environment
+/// variables
 class _NdrFilesystemDiscoveryPlugin final : public NdrDiscoveryPlugin
 {
 public:
@@ -65,6 +73,9 @@ public:
 
     /// Discover all of the nodes that appear within the the search paths
     /// provided and match the extensions provided.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of _SdrFilesystemDiscoveryPlugin::DiscoverShaderNodes
     NDR_API
     NdrNodeDiscoveryResultVec DiscoverNodes(const Context&) override;
 

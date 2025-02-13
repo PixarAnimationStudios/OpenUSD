@@ -36,13 +36,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 ////////////////////////////////////////////////////////////////////////
 // Computing layer stacks
 
-// XXX Parallel layer prefetch is only available in usd-mode, until Sd
-// thread-safety issues can be fixed, specifically plugin loading:
-// - FileFormat plugins
-// - value type plugins for parsing AnimSplines
 TF_DEFINE_ENV_SETTING(
     PCP_ENABLE_PARALLEL_LAYER_PREFETCH, true,
-    "Enables parallel, threaded pre-fetch of sublayers.");
+    "Enables parallel, threaded pre-fetch of sublayers in USD mode.");
+
+TF_DEFINE_ENV_SETTING(
+    PCP_ENABLE_PARALLEL_NON_USD_LAYER_PREFETCH, true,
+    "Enables parallel, threaded pre-fetch of sublayers in non-USD mode.");
 
 TF_DEFINE_ENV_SETTING(
     PCP_ENABLE_LEGACY_RELOCATES_BEHAVIOR, true,
@@ -1733,10 +1733,10 @@ PcpLayerStack::_BuildLayerStack(
     
     // Open all the layers in parallel.
     WorkWithScopedDispatcher([&](WorkDispatcher &wd) {
-        // Cannot use parallelism for non-USD clients due to thread-safety
-        // issues in file format plugins & value readers.
-        const bool goParallel = _isUsd && numSublayers > 1 &&
-            TfGetEnvSetting(PCP_ENABLE_PARALLEL_LAYER_PREFETCH);
+        const bool goParallel = numSublayers > 1 && (
+            (_isUsd && TfGetEnvSetting(PCP_ENABLE_PARALLEL_LAYER_PREFETCH)) ||
+            (!_isUsd && TfGetEnvSetting(
+                PCP_ENABLE_PARALLEL_NON_USD_LAYER_PREFETCH)));
 
         for (size_t i=0; i != numSublayers; ++i) {
             if (sublayers[i].empty()) {

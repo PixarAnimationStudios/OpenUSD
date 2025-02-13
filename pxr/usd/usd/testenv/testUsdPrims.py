@@ -935,10 +935,13 @@ class TestUsdPrim(unittest.TestCase):
             w = s.DefinePrim('/World')
             p = s.GetPrimAtPath('/')
             self.assertTrue(p.IsPseudoRoot())
+            self.assertTrue(p.IsValid())
             self.assertFalse(Usd.Prim().IsPseudoRoot())
             self.assertFalse(w.IsPseudoRoot())
             self.assertTrue(w.GetParent().IsPseudoRoot())
+            self.assertTrue(w.GetParent().IsValid())
             self.assertFalse(p.GetParent().IsPseudoRoot())
+            self.assertFalse(p.GetParent().IsValid())
 
     def test_Deactivation(self):
         for fmt in allFormats:

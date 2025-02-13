@@ -58,6 +58,8 @@ using HgiBits = uint32_t;
 ///   The device requires workaround for primitive id</li>
 /// <li>HgiDeviceCapabilitiesBitsIndirectCommandBuffers:
 ///   Indirect command buffers are supported</li>
+/// <li>HgiDeviceCapabilitiesBitsRoundPoints:
+///   Points can be natively rasterized as disks</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
@@ -80,6 +82,7 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsBasePrimitiveOffset     = 1 << 15,
     HgiDeviceCapabilitiesBitsPrimitiveIdEmulation    = 1 << 16,
     HgiDeviceCapabilitiesBitsIndirectCommandBuffers  = 1 << 17,
+    HgiDeviceCapabilitiesBitsRoundPoints             = 1 << 18,
 };
 
 using HgiDeviceCapabilities = HgiBits;

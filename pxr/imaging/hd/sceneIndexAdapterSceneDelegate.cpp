@@ -405,7 +405,7 @@ HdSceneIndexAdapterSceneDelegate::PrimsRemoved(
                     entry.primPath.GetParentPath(),
                     HdChangeTracker::DirtyTopology);
             } else if (primType == HdPrimTypeTokens->task) {
-                GetRenderIndex().RemoveTask(entry.primPath);
+                GetRenderIndex()._RemoveTask(entry.primPath);
             }
         } else {
             // Otherwise, there's a subtree and we need to call _RemoveSubtree.
@@ -488,7 +488,7 @@ HdSceneIndexAdapterSceneDelegate::PrimsDirtied(
                 HdDirtyBitsTranslator::TaskLocatorSetToDirtyBits(
                     entry.dirtyLocators);
             if (dirtyBits != HdChangeTracker::Clean) {
-                GetRenderIndex().GetChangeTracker().MarkTaskDirty(
+                GetRenderIndex().GetChangeTracker()._MarkTaskDirty(
                     indexPath, dirtyBits);
             }
         }
@@ -1239,8 +1239,8 @@ _ToMaterialNetworkMap(
         netSchema.GetTerminals();
     const TfTokenVector names = terminalsSchema.GetNames();
 
-    auto config = HdSampledDataSourceContainerSchema(netSchema.GetConfig());
-    if (config) {
+    if (const HdSampledDataSourceContainerSchema config =
+                                                netSchema.GetConfig()) {
         matHd.config = _ToDictionary(config);
     }
 
@@ -1255,6 +1255,10 @@ _ToMaterialNetworkMap(
 
         // Keep track of the terminals
         TfToken pathTk = connSchema.GetUpstreamNodePath()->GetTypedValue(0);
+        if (pathTk.IsEmpty()) {
+            // Allow setting terminals to an empty string to disable them.
+            continue;
+        }
         SdfPath path(pathTk.GetString());
         matHd.terminals.push_back(path);
 

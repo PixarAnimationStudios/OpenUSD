@@ -3,8 +3,8 @@
 #import $TOOLS/hdSt/shaders/points.glslfx
 -- configuration
 {"techniques": {"default": {
-"vertexShader" : { "source" : ["Instancing.Transform", "Point.Vertex", "PointId.Vertex.PointParam", "Selection.DecodeUtils", "Selection.Vertex.PointSel"] }
-, "fragmentShader" : { "source" : ["Fragment.CommonTerminals", "Fragment.Surface", "Fragment.NoScalarOverride", "Point.Fragment", "PointId.Fragment.PointParam"] }
+"vertexShader" : { "source" : ["Instancing.Transform", "PointDisk.Vertex.PointSizeBias", "Point.Vertex", "PointId.Vertex.PointParam", "Selection.DecodeUtils", "Selection.Vertex.PointSel"] }
+, "fragmentShader" : { "source" : ["Fragment.CommonTerminals", "Fragment.Surface", "Fragment.NoScalarOverride", "PointDisk.Fragment.SampleMask", "Point.Fragment", "PointId.Fragment.PointParam"] }
 }}}
 -------------------------------------------------------
 =======================================================
@@ -27,6 +27,7 @@ int HgiGetBaseVertex() {
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
+#define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
 
@@ -606,6 +607,32 @@ bool IsFlipped()
 }
 
 
+float ApplyPointSizeBias(float pointSize)
+{
+    if (pointSize <= 0) {
+        return 0;
+    }
+
+    // Slightly enlarge the points as the input size reaches 1.
+    // This improves MSAA and prevents tiny point from disappearing
+    // when MSAA is disabled. Similar behaviour is observed when
+    // using native round points on Nvidia GPUs.
+    if (pointSize < 16.0) {
+        pointSize += (16.0 - pointSize) * 0.0825;
+    }
+
+    // We must enlarge the point ever so slightly to make
+    // sure that the rounding sample mask doesn't conflict
+    // with the input edge sample mask. We want our input
+    // sample mask to always be all 1s. This is compensated
+    // in the fragment shader.
+    pointSize += 0.5;
+
+    return pointSize;
+}
+
+
+
 // Fwd declare methods defined in pointId.glslfx, that are used below.
 FORWARD_DECL(int GetPointId());
 FORWARD_DECL(void ProcessPointId(int));
@@ -686,6 +713,7 @@ void main(void)
     ApplyClipPlanes(outData.Peye);
 
     float screenSpaceWidth = ComputeRasterPointSize(transform, outData.Peye.z);
+    screenSpaceWidth = ApplyPointSizeBias(screenSpaceWidth);
     gl_PointSize = clamp(screenSpaceWidth,
                          HD_GL_POINT_SIZE_MIN, HD_GL_POINT_SIZE_MAX);
 
@@ -1105,6 +1133,7 @@ bool IsPointSelected(int pointId)
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
+#define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
 
@@ -1128,6 +1157,7 @@ struct hgi_dmat3 { double m00, m01, m02,
 // //////// Global Structs ////////
 
 // //////// Global Member Declarations ////////
+uint hd_SampleMaskIn = gl_SampleMaskIn[0];
 
 // //////// Global Function Definitions ////////
 
@@ -1750,8 +1780,42 @@ ScalarOverride GetScalarOverride()
 }
 
 
+void ApplyDiskSampleMask()
+{
+    // By using the sample mask directly, don't depend on the
+    // alpha-to-coverage or multisampling state.
+
+    // We can ignore dFdy(gl_PointCoord.y) because on a
+    // square it's the same as dFdx(gl_PointCoord.x).
+    const float pointSize = 1.0 / dFdx(gl_PointCoord.x);
+    const float pointSdf = length(gl_PointCoord - 0.5) - 0.5;
+    // +0.25 to compensate for enlargement in the vertex shader.
+    const float pointSdfPx = pointSdf * pointSize + 0.25;
+    if (pointSdfPx < -1) {
+        // Inside disk edge
+        hd_SampleMask = int(hd_SampleMaskIn);
+    } else if (pointSdfPx > 0) {
+        // Outside disk
+        hd_SampleMask = 0;
+    } else {
+        // On the disk edge
+        const float edgeSdf = clamp(-pointSdfPx, 0.0, 1.0);
+#ifdef HD_HAS_multisampleCount
+        const int sampleCount = int(round(HdGet_multisampleCount() * edgeSdf));
+#else
+        const int sampleCount = int(round(edgeSdf));
+#endif
+        const int sampleMask = ((1 << sampleCount) - 1);
+        hd_SampleMask = int(hd_SampleMaskIn) & sampleMask;
+    }
+}
+
+
+
 void main(void)
 {
+    ApplyDiskSampleMask();
+
     vec3 Peye = inData.Peye.xyz / inData.Peye.w;
     // camera facing.
     vec3 Neye = vec3(0, 0, 1);

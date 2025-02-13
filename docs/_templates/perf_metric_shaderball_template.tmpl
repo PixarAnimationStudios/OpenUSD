@@ -1,4 +1,5 @@
 {% set shaderball_metrics_linux_24_11 = load('performance/24.11_linux_shaderball.yaml', data_format='yaml') %}
+{% set shaderball_metrics_linux_25_02 = load('performance/25.02_linux_shaderball.yaml', data_format='yaml') %}
 
 .. list-table:: Linux Metrics (min/max/mean in seconds)
    :header-rows: 1
@@ -6,28 +7,42 @@
    * - Metric
      - 24.11
      - 25.02
+     - 25.05
    * - Open stage
      - | min: {{ shaderball_metrics_linux_24_11['open_stage']['min'] }}
        | max: {{ shaderball_metrics_linux_24_11['open_stage']['max'] }}
        | mean: {{ shaderball_metrics_linux_24_11['open_stage']['mean']}}
+     - | min: {{ shaderball_metrics_linux_25_02['open_stage']['min'] }}
+       | max: {{ shaderball_metrics_linux_25_02['open_stage']['max'] }}
+       | mean: {{ shaderball_metrics_linux_25_02['open_stage']['mean']}}
      - TBD
    * - Render first image
      - | min: {{ shaderball_metrics_linux_24_11['create_first_image']['min'] }}
        | max: {{ shaderball_metrics_linux_24_11['create_first_image']['max'] }}
        | mean: {{ shaderball_metrics_linux_24_11['create_first_image']['mean']}}
+     - | min: {{ shaderball_metrics_linux_25_02['create_first_image']['min'] }}
+       | max: {{ shaderball_metrics_linux_25_02['create_first_image']['max'] }}
+       | mean: {{ shaderball_metrics_linux_25_02['create_first_image']['mean']}}
      - TBD
    * - Close stage
      - | min: {{ shaderball_metrics_linux_24_11['close_stage']['min'] }}
        | max: {{ shaderball_metrics_linux_24_11['close_stage']['max'] }}
        | mean: {{ shaderball_metrics_linux_24_11['close_stage']['mean']}}
+     - | min: {{ shaderball_metrics_linux_25_02['close_stage']['min'] }}
+       | max: {{ shaderball_metrics_linux_25_02['close_stage']['max'] }}
+       | mean: {{ shaderball_metrics_linux_25_02['close_stage']['mean']}}
      - TBD
    * - Shut down Hydra
      - | min: {{ shaderball_metrics_linux_24_11['shut_down_hydra']['min'] }}
        | max: {{ shaderball_metrics_linux_24_11['shut_down_hydra']['max'] }}
        | mean: {{ shaderball_metrics_linux_24_11['shut_down_hydra']['mean']}}
+     - | min: {{ shaderball_metrics_linux_25_02['shut_down_hydra']['min'] }}
+       | max: {{ shaderball_metrics_linux_25_02['shut_down_hydra']['max'] }}
+       | mean: {{ shaderball_metrics_linux_25_02['shut_down_hydra']['mean']}}
      - TBD     
 
 {% set shaderball_metrics_macos_24_11 = load('performance/24.11_macos_shaderball.yaml', data_format='yaml') %}
+{% set shaderball_metrics_macos_25_02 = load('performance/25.02_macos_shaderball.yaml', data_format='yaml') %}
 
 .. list-table:: macOS Metrics (min/max/mean in seconds)
    :header-rows: 1
@@ -35,28 +50,42 @@
    * - Metric
      - 24.11
      - 25.02
+     - 25.05
    * - Open stage
      - | min: {{ shaderball_metrics_macos_24_11['open_stage']['min'] }}
        | max: {{ shaderball_metrics_macos_24_11['open_stage']['max'] }}
        | mean: {{ shaderball_metrics_macos_24_11['open_stage']['mean']}}
+     - | min: {{ shaderball_metrics_macos_25_02['open_stage']['min'] }}
+       | max: {{ shaderball_metrics_macos_25_02['open_stage']['max'] }}
+       | mean: {{ shaderball_metrics_macos_25_02['open_stage']['mean']}}
      - TBD
    * - Render first image
      - | min: {{ shaderball_metrics_macos_24_11['create_first_image']['min'] }}
        | max: {{ shaderball_metrics_macos_24_11['create_first_image']['max'] }}
        | mean: {{ shaderball_metrics_macos_24_11['create_first_image']['mean']}}
+     - | min: {{ shaderball_metrics_macos_25_02['create_first_image']['min'] }}
+       | max: {{ shaderball_metrics_macos_25_02['create_first_image']['max'] }}
+       | mean: {{ shaderball_metrics_macos_25_02['create_first_image']['mean']}}
      - TBD
    * - Close stage
      - | min: {{ shaderball_metrics_macos_24_11['close_stage']['min'] }}
        | max: {{ shaderball_metrics_macos_24_11['close_stage']['max'] }}
        | mean: {{ shaderball_metrics_macos_24_11['close_stage']['mean']}}
+     - | min: {{ shaderball_metrics_macos_25_02['close_stage']['min'] }}
+       | max: {{ shaderball_metrics_macos_25_02['close_stage']['max'] }}
+       | mean: {{ shaderball_metrics_macos_25_02['close_stage']['mean']}}
      - TBD
    * - Shut down Hydra
      - | min: {{ shaderball_metrics_macos_24_11['shut_down_hydra']['min'] }}
        | max: {{ shaderball_metrics_macos_24_11['shut_down_hydra']['max'] }}
        | mean: {{ shaderball_metrics_macos_24_11['shut_down_hydra']['mean']}}
+     - | min: {{ shaderball_metrics_macos_25_02['shut_down_hydra']['min'] }}
+       | max: {{ shaderball_metrics_macos_25_02['shut_down_hydra']['max'] }}
+       | mean: {{ shaderball_metrics_macos_25_02['shut_down_hydra']['mean']}}
      - TBD     
 
 {% set shaderball_metrics_win_24_11 = load('performance/24.11_windows_shaderball.yaml', data_format='yaml') %}
+{% set shaderball_metrics_win_25_02 = load('performance/25.02_windows_shaderball.yaml', data_format='yaml') %}
 
 .. list-table:: Windows Metrics (min/max/mean in seconds)
    :header-rows: 1
@@ -64,23 +93,36 @@
    * - Metric
      - 24.11
      - 25.02
+     - 25.05
    * - Open stage
      - | min: {{ shaderball_metrics_win_24_11['open_stage']['min'] }}
        | max: {{ shaderball_metrics_win_24_11['open_stage']['max'] }}
        | mean: {{ shaderball_metrics_win_24_11['open_stage']['mean']}}
+     - | min: {{ shaderball_metrics_win_25_02['open_stage']['min'] }}
+       | max: {{ shaderball_metrics_win_25_02['open_stage']['max'] }}
+       | mean: {{ shaderball_metrics_win_25_02['open_stage']['mean']}}
      - TBD
    * - Render first image
      - | min: {{ shaderball_metrics_win_24_11['create_first_image']['min'] }}
        | max: {{ shaderball_metrics_win_24_11['create_first_image']['max'] }}
        | mean: {{ shaderball_metrics_win_24_11['create_first_image']['mean']}}
+     - | min: {{ shaderball_metrics_win_25_02['create_first_image']['min'] }}
+       | max: {{ shaderball_metrics_win_25_02['create_first_image']['max'] }}
+       | mean: {{ shaderball_metrics_win_25_02['create_first_image']['mean']}}
      - TBD
    * - Close stage
      - | min: {{ shaderball_metrics_win_24_11['close_stage']['min'] }}
        | max: {{ shaderball_metrics_win_24_11['close_stage']['max'] }}
        | mean: {{ shaderball_metrics_win_24_11['close_stage']['mean']}}
+     - | min: {{ shaderball_metrics_win_25_02['close_stage']['min'] }}
+       | max: {{ shaderball_metrics_win_25_02['close_stage']['max'] }}
+       | mean: {{ shaderball_metrics_win_25_02['close_stage']['mean']}}
      - TBD
    * - Shut down Hydra
      - | min: {{ shaderball_metrics_win_24_11['shut_down_hydra']['min'] }}
        | max: {{ shaderball_metrics_win_24_11['shut_down_hydra']['max'] }}
        | mean: {{ shaderball_metrics_win_24_11['shut_down_hydra']['mean']}}
+     - | min: {{ shaderball_metrics_win_25_02['shut_down_hydra']['min'] }}
+       | max: {{ shaderball_metrics_win_25_02['shut_down_hydra']['max'] }}
+       | mean: {{ shaderball_metrics_win_25_02['shut_down_hydra']['mean']}}
      - TBD     

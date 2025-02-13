@@ -7,7 +7,7 @@
 import os
 import platform
 import sys
-from distutils.spawn import find_executable
+import shutil
 
 def FindUsdBinary(name):
     """Returns the full path to the named executable if it can be found, or
@@ -20,18 +20,18 @@ def FindUsdBinary(name):
     """
 
     # First search PATH
-    binpath = find_executable(name)
+    binpath = shutil.which(name)
     if binpath:
         return binpath
 
     # Then look relative to the current executable
-    binpath = find_executable(name,
+    binpath = shutil.which(name,
         path=os.path.abspath(os.path.dirname(sys.argv[0])))
     if binpath:
         return binpath
 
     if platform.system() == 'Windows':
-        # find_executable under Windows only returns *.EXE files so we need to
+        # shutil.which under Windows only returns *.EXE files so we need to
         # traverse the tool path.
         path = os.environ.get('PATH', '').split(os.pathsep)
         for base in [os.path.join(p, name) for p in path]:

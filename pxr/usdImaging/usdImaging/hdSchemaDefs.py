@@ -90,6 +90,7 @@
         MEMBERS = [
             ('materialPath', T_PATH, {}),
             ('bindingStrength', T_TOKEN, {}),
+            ('bindingOriginPath', T_PATH, {})
         ],
     ),
 
@@ -115,6 +116,7 @@
             ('collectionPath', T_PATH, {}),
             ('materialPath', T_PATH, {}),
             ('bindingStrength', T_TOKEN, {}),
+            ('bindingOriginPath', T_PATH, {})
         ],
     ),
 
@@ -130,7 +132,7 @@
     ),
 
     #--------------------------------------------------------------------------
-    # usdImaging/usdImagingRenderSettings
+    # usdImaging/usdRenderSettings
     dict(
         SCHEMA_NAME = 'UsdRenderSettings',
         SCHEMA_TOKEN = '__usdRenderSettings',
@@ -160,7 +162,7 @@
     ),
 
     #--------------------------------------------------------------------------
-    # usdImaging/usdImagingRenderProduct
+    # usdImaging/usdRenderProduct
     dict(
         SCHEMA_NAME = 'UsdRenderProduct',
         SCHEMA_TOKEN = '__usdRenderProduct',
@@ -188,7 +190,7 @@
     ),
 
     #--------------------------------------------------------------------------
-    # usdImaging/usdImagingRenderVar
+    # usdImaging/usdRenderVar
     dict(
         SCHEMA_NAME = 'UsdRenderVar',
         SCHEMA_TOKEN = '__usdRenderVar',

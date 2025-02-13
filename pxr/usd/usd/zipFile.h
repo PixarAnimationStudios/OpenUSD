@@ -10,6 +10,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <utility>

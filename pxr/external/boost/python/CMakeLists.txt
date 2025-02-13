@@ -662,11 +662,11 @@ boost_python_test("map_indexing_suite"
 # boost_python_test("numpy/indexing")
 # boost_python_test("numpy/shapes")
 
-boost_python_cpp_test("exec"
-    COMMAND_ARGS "${CMAKE_INSTALL_PREFIX}/tests/exec.py"
+boost_python_cpp_test("exec_"
+    COMMAND_ARGS "${CMAKE_INSTALL_PREFIX}/tests/exec_.py"
 )
 install(
-    FILES "test/exec.py"
+    FILES "test/exec_.py"
     DESTINATION "tests"
 )
 

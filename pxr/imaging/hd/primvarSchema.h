@@ -78,15 +78,15 @@ public:
     // does has indices, GetPrimvarValue() will return the flattened value,
     // while GetIndexedPrimvarValue() will return the unflattened value.
     HD_API
-    HdSampledDataSourceHandle GetPrimvarValue();
+    HdSampledDataSourceHandle GetPrimvarValue() const;
 
     HD_API
-    HdSampledDataSourceHandle GetIndexedPrimvarValue();
+    HdSampledDataSourceHandle GetIndexedPrimvarValue() const;
 
     // Returns true if it contains data sources for an indexed primvar value
     // and for indices.
     HD_API
-    bool IsIndexed();
+    bool IsIndexed() const;
 
     // If the primvar does not have indices, GetFlattenedPrimvarValue() will
     // just return the primvarValue data source which is also returned by
@@ -103,7 +103,7 @@ public:
     // behavior should explicitly call GetFlattenedPrimvarValue.
     //
     HD_API
-    HdSampledDataSourceHandle GetFlattenedPrimvarValue();
+    HdSampledDataSourceHandle GetFlattenedPrimvarValue() const;
 
 // --(END CUSTOM CODE: Schema Methods)--
 

@@ -32,25 +32,36 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // instancing       
     ((instancing,               "Instancing.Transform"))
+
+    // rounded points
+    ((pointSizeBiasVS,          "PointDisk.Vertex.PointSizeBias"))
+    ((noPointSizeBiasVS,        "PointDisk.Vertex.None"))
+    ((diskSampleMaskFS,         "PointDisk.Fragment.SampleMask"))
+    ((noDiskSampleMaskFS,       "PointDisk.Fragment.None"))
 );
 
-HdSt_PointsShaderKey::HdSt_PointsShaderKey()
+HdSt_PointsShaderKey::HdSt_PointsShaderKey(
+    bool nativeRoundPoints)
     : glslfx(_tokens->baseGLSLFX)
 {
     VS[0] = _tokens->instancing;
-    VS[1] = _tokens->mainVS;
-    VS[2] = _tokens->pointIdVS;
-    VS[3] = _tokens->pointIdSelDecodeUtilsVS;
-    VS[4] = _tokens->pointIdSelPointSelVS;
-    VS[5] = TfToken();
+    VS[1] = nativeRoundPoints ? _tokens->noPointSizeBiasVS :
+        _tokens->pointSizeBiasVS;
+    VS[2] = _tokens->mainVS;
+    VS[3] = _tokens->pointIdVS;
+    VS[4] = _tokens->pointIdSelDecodeUtilsVS;
+    VS[5] = _tokens->pointIdSelPointSelVS;
+    VS[6] = TfToken();
 
     // Common must be first as it defines terminal interfaces
     FS[0] = _tokens->commonFS;
     FS[1] = _tokens->surfaceFS;
     FS[2] = _tokens->noScalarOverrideFS;
-    FS[3] = _tokens->mainFS;
-    FS[4] = _tokens->pointIdFS;
-    FS[5] = TfToken();
+    FS[3] = nativeRoundPoints ? _tokens->noDiskSampleMaskFS :
+        _tokens->diskSampleMaskFS;
+    FS[4] = _tokens->mainFS;
+    FS[5] = _tokens->pointIdFS;
+    FS[6] = TfToken();
 }
 
 HdSt_PointsShaderKey::~HdSt_PointsShaderKey()

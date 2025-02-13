@@ -8,30 +8,30 @@
 #define SDRGLSLFX_PARSER_PLUGIN_H
 
 #include "pxr/pxr.h"
-#include "pxr/usd/ndr/declare.h"
-#include "pxr/usd/ndr/parserPlugin.h"
+#include "pxr/usd/sdr/declare.h"
+#include "pxr/usd/sdr/parserPlugin.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Forward declarations
-class NdrNode;
-struct NdrNodeDiscoveryResult;
+class SdrShaderNode;
+struct SdrShaderNodeDiscoveryResult;
 
 /// \class SdrGlslfxParserPlugin
 /// 
 /// Parses shader definitions represented using Glslfx.
 /// 
-class SdrGlslfxParserPlugin: public NdrParserPlugin 
+class SdrGlslfxParserPlugin: public SdrParserPlugin 
 {
 public: 
     SdrGlslfxParserPlugin() = default;
 
     ~SdrGlslfxParserPlugin() override = default;
 
-    NdrNodeUniquePtr Parse(const NdrNodeDiscoveryResult &discoveryResult) 
-        override;
+    SdrShaderNodeUniquePtr ParseShaderNode(
+        const SdrShaderNodeDiscoveryResult &discoveryResult) override;
 
-    const NdrTokenVec &GetDiscoveryTypes() const override;
+    const SdrTokenVec &GetDiscoveryTypes() const override;
 
     const TfToken &GetSourceType() const override;    
 };

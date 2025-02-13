@@ -35,7 +35,7 @@ TF_DEFINE_PUBLIC_TOKENS(UsdImagingCollectionMaterialBindingsSchemaTokens,
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 
 TfTokenVector
-UsdImagingCollectionMaterialBindingsSchema::GetPurposes()
+UsdImagingCollectionMaterialBindingsSchema::GetPurposes() const
 {
     if (HdContainerDataSourceHandle h = GetContainer()) {
         return h->GetNames();
@@ -45,7 +45,8 @@ UsdImagingCollectionMaterialBindingsSchema::GetPurposes()
 }
 
 UsdImagingCollectionMaterialBindingVectorSchema
-UsdImagingCollectionMaterialBindingsSchema::GetCollectionMaterialBindings()
+UsdImagingCollectionMaterialBindingsSchema::
+GetCollectionMaterialBindings() const
 {
     return GetCollectionMaterialBindings(
             UsdImagingCollectionMaterialBindingsSchemaTokens->allPurpose);
@@ -53,7 +54,7 @@ UsdImagingCollectionMaterialBindingsSchema::GetCollectionMaterialBindings()
 
 UsdImagingCollectionMaterialBindingVectorSchema
 UsdImagingCollectionMaterialBindingsSchema::GetCollectionMaterialBindings(
-    TfToken const &purpose)
+    TfToken const &purpose) const
 {
     return UsdImagingCollectionMaterialBindingVectorSchema(
             _GetTypedDataSource<HdVectorDataSource>(purpose));

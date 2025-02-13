@@ -6,8 +6,8 @@
 //
 
 #include "pxr/pxr.h"
-#include "pxr/usd/ndr/node.h"
-#include "pxr/usd/ndr/nodeDiscoveryResult.h"
+#include "pxr/usd/sdr/shaderNode.h"
+#include "pxr/usd/sdr/shaderNodeDiscoveryResult.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/usdShade/shaderDefParser.h"
 
@@ -17,12 +17,23 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 using namespace pxr_boost::python;
 
-// Expose the unique_ptr returned from `Parse()` as a raw ptr. The Python side
+// Expose the unique_ptr returned from `ParseShaderNode()` as a raw ptr. The Python side
 // will be responsible for managing this object.
 static SdrShaderNodePtr
-_Parse(UsdShadeShaderDefParserPlugin& self, const NdrNodeDiscoveryResult& discoveryResult)
+_ParseShaderNode(UsdShadeShaderDefParserPlugin& self,
+       const SdrShaderNodeDiscoveryResult& discoveryResult)
 {
     return dynamic_cast<SdrShaderNodePtr>(
+            self.ParseShaderNode(discoveryResult).release());
+}
+
+/// \deprecated
+/// Deprecated in favor of _ParseShaderNode
+static NdrNodePtr
+_Parse(UsdShadeShaderDefParserPlugin& self,
+       const NdrNodeDiscoveryResult& discoveryResult)
+{
+    return dynamic_cast<NdrNodePtr>(
             self.Parse(discoveryResult).release());
 }
 
@@ -36,6 +47,8 @@ void wrapUsdShadeShaderDefParser()
 
     class_<This, noncopyable>("ShaderDefParserPlugin")
         .def("Parse", &_Parse, return_value_policy<manage_new_object>())
+        .def("ParseShaderNode", &_ParseShaderNode,
+             return_value_policy<manage_new_object>())
         .def("GetDiscoveryTypes", &This::GetDiscoveryTypes, copyRefPolicy)
         .def("GetSourceType", &This::GetSourceType, copyRefPolicy)
         ;

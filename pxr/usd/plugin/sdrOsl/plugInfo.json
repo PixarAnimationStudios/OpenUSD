@@ -9,7 +9,7 @@
             "Info": {
                 "Types": {
                     "SdrOslParserPlugin" : {
-                        "bases": ["NdrParserPlugin"],
+                        "bases": ["SdrParserPlugin"],
                         "displayName": "OSL Node Parser"
                     }
                 }

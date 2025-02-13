@@ -93,10 +93,6 @@ struct UsdRenderTokensType {
     /// 
     /// Possible value for UsdRenderProduct::GetProductTypeAttr()
     const TfToken deepRaster;
-    /// \brief "denoise:enable"
-    /// 
-    /// UsdRenderPass
-    const TfToken denoiseEnable;
     /// \brief "disableDepthOfField"
     /// 
     /// UsdRenderSettingsBase

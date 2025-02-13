@@ -19,6 +19,7 @@ import ctypes
 import datetime
 import fnmatch
 import glob
+import hashlib
 import locale
 import multiprocessing
 import os
@@ -495,6 +496,16 @@ def GetCMakeVersion():
     else:
         return (int(major), int(minor), int(patch))
 
+def ComputeSHA256Hash(filename):
+    """Returns the SHA256 hash of the specified file."""
+    hasher = hashlib.sha256()
+    with open(filename, "rb") as f:
+        buf = None
+        while buf != b'':
+            buf = f.read(4096)
+            hasher.update(buf)
+    return hasher.hexdigest()
+
 def PatchFile(filename, patches, multiLineMatches=False):
     """Applies patches to the specified file. patches is a list of tuples
     (old string, new string)."""
@@ -535,18 +546,31 @@ def DownloadFileWithUrllib(url, outputFilename):
         outfile.write(r.read())
 
 def DownloadURL(url, context, force, extractDir = None, 
-        dontExtract = None):
+                dontExtract = None, destFileName = None,
+                expectedSHA256 = None):
     """Download and extract the archive file at given URL to the
     source directory specified in the context. 
 
     dontExtract may be a sequence of path prefixes that will
     be excluded when extracting the archive.
 
+    destFileName may be a string containing the filename where
+    the file will be downloaded. If unspecified, this filename
+    will be derived from the URL.
+
+    expectedSHA256 may be a string containing the expected SHA256
+    checksum for the downloaded file. If provided, this function
+    will raise a RuntimeError if the SHA256 checksum computed from
+    the file does not match.
+
     Returns the absolute path to the directory where files have 
     been extracted."""
     with CurrentWorkingDirectory(context.srcDir):
-        # Extract filename from URL and see if file already exists. 
-        filename = url.split("/")[-1]       
+        if destFileName:
+            filename = destFileName
+        else:
+            filename = url.split("/")[-1]       
+
         if force and os.path.exists(filename):
             os.remove(filename)
 
@@ -592,6 +616,15 @@ def DownloadURL(url, context, force, extractDir = None,
                                  "this script.")
                 raise RuntimeError("Failed to download {url}: {err}"
                                    .format(url=url, err=errorMsg))
+
+            if expectedSHA256:
+                computedSHA256 = ComputeSHA256Hash(tmpFilename)
+                if computedSHA256 != expectedSHA256:
+                    raise RuntimeError(
+                        "Unexpected SHA256 for {url}: got {computed}, "
+                        "expected {expected}".format(
+                            url=url, computed=computedSHA256,
+                            expected=expectedSHA256))
 
             shutil.move(tmpFilename, filename)
 
@@ -760,13 +793,17 @@ def InstallBoost_Helper(context, force, buildArgs):
     pyInfo = GetPythonInfo(context)
     pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
     if IsVisualStudio2022OrGreater():
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.86.0/source/boost_1_86_0.zip"
+        BOOST_VERSION = (1, 86, 0)
+        BOOST_SHA256 = "cd20a5694e753683e1dc2ee10e2d1bb11704e65893ebcc6ced234ba68e5d8646"
     elif MacOS() or (context.buildBoostPython and pyVer >= (3,11)):
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip"
+        BOOST_VERSION = (1, 82, 0)
+        BOOST_SHA256 = "f7c9e28d242abcd7a2c1b962039fcdd463ca149d1883c3a950bbcc0ce6f7c6d9"
     elif context.buildBoostPython and pyVer >= (3, 10):
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
+        BOOST_VERSION = (1, 78, 0)
+        BOOST_SHA256 = "f22143b5528e081123c3c5ed437e92f648fe69748e95fa6e2bd41484e2986cc3"
     else:
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.zip"
+        BOOST_VERSION = (1, 76, 0)
+        BOOST_SHA256 = "0fd43bb53580ca54afc7221683dfe8c6e3855b351cd6dce53b1a24a7d7fbeedd"
 
     # Documentation files in the boost archive can have exceptionally
     # long paths. This can lead to errors when extracting boost on Windows,
@@ -780,8 +817,34 @@ def InstallBoost_Helper(context, force, buildArgs):
         "*/libs/wave/test/testwave/testfiles/utf8-test-*"
     ]
 
-    with CurrentWorkingDirectory(DownloadURL(BOOST_URL, context, force, 
-                                             dontExtract=dontExtract)):
+    # Provide backup sources for downloading boost to avoid issues when
+    # one mirror goes down.
+    major, minor, patch = BOOST_VERSION
+    version = f"{major}.{minor}.{patch}"
+    filename = f"boost_{major}_{minor}_{patch}.zip"
+    urls = [
+        # The sourceforge mirror is typically faster than archives.boost.io
+        # so we use that first.
+        f"https://sourceforge.net/projects/boost/files/boost/{version}/{filename}/download",
+        f"https://archives.boost.io/release/{version}/source/{filename}"
+    ]
+
+    sourceDir = None
+    for url in urls:
+        try:
+            sourceDir = DownloadURL(url, context, force,
+                                    dontExtract=dontExtract,
+                                    destFileName=filename,
+                                    expectedSHA256=BOOST_SHA256)
+            break
+        except Exception as e:
+            PrintWarning(str(e))
+            if url != urls[-1]:
+                PrintWarning("Trying alternative sources")
+    else:
+        raise RuntimeError("Failed to download boost")
+
+    with CurrentWorkingDirectory(sourceDir):
         if Windows():
             bootstrap = "bootstrap.bat"
         else:
@@ -1306,8 +1369,7 @@ def InstallOpenVDB(context, force, buildArgs):
 
         # Make sure to use boost installed by the build script and not any
         # system installed boost
-        extraArgs.append('-DBoost_NO_BOOST_CMAKE=On')
-        extraArgs.append('-DBoost_NO_SYSTEM_PATHS=True')
+        extraArgs.append('-DBoost_NO_SYSTEM_PATHS=ON')
 
         extraArgs.append('-DBLOSC_ROOT="{instDir}"'
                          .format(instDir=context.instDir))
@@ -1360,8 +1422,7 @@ def InstallOpenImageIO(context, force, buildArgs):
 
         # Make sure to use boost installed by the build script and not any
         # system installed boost
-        extraArgs.append('-DBoost_NO_BOOST_CMAKE=On')
-        extraArgs.append('-DBoost_NO_SYSTEM_PATHS=True')
+        extraArgs.append('-DBoost_NO_SYSTEM_PATHS=ON')
 
         # OpenImageIO 2.3.5 changed the default postfix for debug library
         # names from "" to "_d". USD's build system currently does not support
@@ -1762,6 +1823,11 @@ def InstallUSD(context, force, buildArgs):
             else:
                 extraArgs.append('-DPXR_BUILD_OPENCOLORIO_PLUGIN=OFF')
 
+            if context.enableVulkan:
+                extraArgs.append('-DPXR_ENABLE_VULKAN_SUPPORT=ON')
+            else:
+                extraArgs.append('-DPXR_ENABLE_VULKAN_SUPPORT=OFF')
+
         else:
             extraArgs.append('-DPXR_BUILD_IMAGING=OFF')
 
@@ -1820,8 +1886,8 @@ def InstallUSD(context, force, buildArgs):
 
         # Make sure to use boost installed by the build script and not any
         # system installed boost
-        extraArgs.append('-DBoost_NO_BOOST_CMAKE=On')
-        extraArgs.append('-DBoost_NO_SYSTEM_PATHS=True')
+        extraArgs.append('-DBoost_NO_SYSTEM_PATHS=ON')
+
         extraArgs += buildArgs
 
         RunCMake(context, force, extraArgs)
@@ -1872,7 +1938,7 @@ errors may occur.
 - Embedded Build Targets
 When cross compiling for an embedded target operating system, e.g. iOS, the
 following components are disabled: python, tools, tests, examples, tutorials,
-opencolorio, openimageio, openvdb.
+opencolorio, openimageio, openvdb, vulkan.
 
 - Python Versions and DCC Plugins:
 Some DCCs may ship with and run using their own version of Python. In that case,
@@ -2113,6 +2179,11 @@ subgroup.add_argument("--zlib", dest="build_zlib",
 subgroup.add_argument("--no-zlib", dest="build_zlib",
                       action="store_false",
                       help="Do not install zlib for dependencies")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--vulkan", dest="enable_vulkan", action="store_true",
+                      default=False, help="Enable Vulkan support")
+subgroup.add_argument("--no-vulkan", dest="enable_vulkan", action="store_false",
+                      help="Disable Vulkan support (default)")
 
 group = parser.add_argument_group(title="Imaging Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
@@ -2326,6 +2397,9 @@ class InstallContext:
         self.enableOpenVDB = (self.buildImaging
                               and args.enable_openvdb
                               and not embedded)
+        self.enableVulkan = (self.buildImaging
+                              and args.enable_vulkan
+                              and not embedded)
 
         # - USD Imaging
         self.buildUsdImaging = (args.build_imaging == USD_IMAGING)
@@ -2414,7 +2488,7 @@ if context.buildBoostPython:
 
 if context.buildAlembic:
     if context.enableHDF5:
-        requiredDependencies += [HDF5]
+        requiredDependencies += [ZLIB, HDF5]
     requiredDependencies += [OPENEXR, ALEMBIC]
 
 if context.buildDraco:
@@ -2466,6 +2540,12 @@ if context.buildOneTBB and context.buildEmbree:
     PrintError("Embree support cannot be enabled when building against oneTBB")
     sys.exit(1)
 
+# Error out if user enables Vulkan support but env var VULKAN_SDK is not set.
+if context.enableVulkan and not 'VULKAN_SDK' in os.environ:
+    PrintError("Vulkan support cannot be enabled when VULKAN_SDK environment "
+               "variable is not set")
+    sys.exit(1)
+
 # Error out if user explicitly enabled components which aren't
 # supported for embedded build targets.
 if MacOSTargetEmbedded(context):
@@ -2492,6 +2572,9 @@ if MacOSTargetEmbedded(context):
         sys.exit(1)
     if "--openvdb" in sys.argv:
         PrintError("Cannot build openvdb for embedded build targets")
+        sys.exit(1)
+    if "--vulkan" in sys.argv:
+        PrintError("Cannot build vulkan for embedded build targets")
         sys.exit(1)
 
 # Error out if user explicitly specified building usdview without required
@@ -2659,6 +2742,7 @@ summaryMsg += """\
       OpenImageIO support:      {buildOIIO} 
       OpenColorIO support:      {buildOCIO} 
       PRMan support:            {buildPrman}
+      Vulkan support:           {enableVulkan}
     UsdImaging                  {buildUsdImaging}
       usdview:                  {buildUsdview}
     MaterialX support           {buildMaterialX}
@@ -2731,6 +2815,7 @@ summaryMsg = summaryMsg.format(
     buildTests=("On" if context.buildTests else "Off"),
     buildExamples=("On" if context.buildExamples else "Off"),
     buildTutorials=("On" if context.buildTutorials else "Off"),
+    enableVulkan=("On" if context.enableVulkan else "Off"),
     buildTools=("On" if context.buildTools else "Off"),
     buildUsdValidation=("On" if context.buildUsdValidation else "Off"),
     buildAlembic=("On" if context.buildAlembic else "Off"),

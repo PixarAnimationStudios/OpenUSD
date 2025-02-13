@@ -19,6 +19,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <tuple>
 #include <typeindex>
 #include <type_traits>
 #include <utility>
@@ -71,6 +72,17 @@ TfHashAppend(HashState &h, std::pair<T, U> const &p)
 {
     h.Append(p.first);
     h.Append(p.second);
+}
+
+// Support std::tuple.
+template <class HashState, class... T>
+inline void
+TfHashAppend(HashState &h, std::tuple<T...> const &t)
+{
+    // XXX: 
+    // This gives the same hash for a std::pair<T, U> and std::tuple<T, U>
+    // which may not be ideal in some cases. See USD-10578.
+    std::apply([&h](auto const&... v) { h.Append(v...); }, t);
 }
 
 // Support std::vector. std::vector<bool> specialized below.

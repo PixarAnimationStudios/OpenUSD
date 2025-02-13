@@ -12,6 +12,7 @@
 #include "pxr/base/tf/stringUtils.h"
 
 #include <array>
+#include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -282,6 +283,13 @@ TfCompressedBits::Decompress(TfBits *bits) const
         }
         bitValue = !bitValue;
     }
+}
+
+std::ostream&
+operator<<(std::ostream &out, const TfCompressedBits &bits)
+{
+    out << bits.GetAsStringLeftToRight();
+    return out;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

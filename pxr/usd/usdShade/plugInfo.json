@@ -129,7 +129,7 @@
                     }, 
                     "UsdShadeShaderDefParserPlugin": {
                         "bases": [
-                            "NdrParserPlugin"
+                            "SdrParserPlugin"
                         ], 
                         "displayName": "USD-based shader definition parser plugin"
                     }

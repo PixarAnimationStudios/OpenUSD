@@ -36,6 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (directMaterialBinding) \
     (materialPath) \
     (bindingStrength) \
+    (bindingOriginPath) \
 
 TF_DECLARE_PUBLIC_TOKENS(UsdImagingDirectMaterialBindingSchemaTokens, USDIMAGING_API,
     USD_IMAGING_DIRECT_MATERIAL_BINDING_SCHEMA_TOKENS);
@@ -73,7 +74,10 @@ public:
     HdPathDataSourceHandle GetMaterialPath() const;
 
     USDIMAGING_API
-    HdTokenDataSourceHandle GetBindingStrength() const; 
+    HdTokenDataSourceHandle GetBindingStrength() const;
+
+    USDIMAGING_API
+    HdPathDataSourceHandle GetBindingOriginPath() const; 
 
     /// @}
 
@@ -106,7 +110,8 @@ public:
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdPathDataSourceHandle &materialPath,
-        const HdTokenDataSourceHandle &bindingStrength
+        const HdTokenDataSourceHandle &bindingStrength,
+        const HdPathDataSourceHandle &bindingOriginPath
     );
 
     /// \class UsdImagingDirectMaterialBindingSchema::Builder
@@ -124,6 +129,9 @@ public:
         USDIMAGING_API
         Builder &SetBindingStrength(
             const HdTokenDataSourceHandle &bindingStrength);
+        USDIMAGING_API
+        Builder &SetBindingOriginPath(
+            const HdPathDataSourceHandle &bindingOriginPath);
 
         /// Returns a container data source containing the members set thus far.
         USDIMAGING_API
@@ -132,6 +140,7 @@ public:
     private:
         HdPathDataSourceHandle _materialPath;
         HdTokenDataSourceHandle _bindingStrength;
+        HdPathDataSourceHandle _bindingOriginPath;
 
     };
 

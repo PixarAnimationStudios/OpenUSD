@@ -74,15 +74,15 @@ public:
     /// Returns the purposes for which bindings may be available.
     /// \note This API is preferable to schema.GetContainer()->GetNames().
     USDIMAGING_API
-    TfTokenVector GetPurposes();
+    TfTokenVector GetPurposes() const;
 
     /// Returns the bindings for 'allPurpose'.
     UsdImagingCollectionMaterialBindingVectorSchema
-    GetCollectionMaterialBindings();
+    GetCollectionMaterialBindings() const;
 
     /// Returns the bindings for the requested purpose.
     UsdImagingCollectionMaterialBindingVectorSchema
-    GetCollectionMaterialBindings(const TfToken &purpose);
+    GetCollectionMaterialBindings(const TfToken &purpose) const;
 
 // --(END CUSTOM CODE: Schema Methods)--
 

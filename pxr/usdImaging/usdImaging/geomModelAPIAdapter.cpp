@@ -21,10 +21,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-std::vector<UsdImagingDataSourceMapped::AttributeMapping>
-_GetAttributeMappings()
+std::vector<UsdImagingDataSourceMapped::PropertyMapping>
+_GetPropertyMappings()
 {
-    std::vector<UsdImagingDataSourceMapped::AttributeMapping> result;
+    std::vector<UsdImagingDataSourceMapped::PropertyMapping> result;
 
     for (const TfToken &usdName :
              UsdGeomModelAPI::GetSchemaAttributeNames(
@@ -35,18 +35,19 @@ _GetAttributeMappings()
                 usdName.GetString(), "model");
         if (nameAndMatch.second) {
             result.push_back(
-                { usdName,
-                  HdDataSourceLocator(TfToken(nameAndMatch.first)) });
+                UsdImagingDataSourceMapped::AttributeMapping{
+                    usdName,
+                    HdDataSourceLocator(TfToken(nameAndMatch.first)) });
         }
     }
 
     return result;
 }
 
-const UsdImagingDataSourceMapped::AttributeMappings &
+const UsdImagingDataSourceMapped::PropertyMappings &
 _GetMappings() {
-    static const UsdImagingDataSourceMapped::AttributeMappings result(
-        _GetAttributeMappings(), UsdImagingGeomModelSchema::GetDefaultLocator());
+    static const UsdImagingDataSourceMapped::PropertyMappings result(
+        _GetPropertyMappings(), UsdImagingGeomModelSchema::GetDefaultLocator());
     return result;
 }
 

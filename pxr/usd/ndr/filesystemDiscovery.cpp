@@ -16,10 +16,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-NDR_REGISTER_DISCOVERY_PLUGIN(_NdrFilesystemDiscoveryPlugin)
-
 TF_DEFINE_ENV_SETTING(
     PXR_NDR_FS_PLUGIN_SEARCH_PATHS, "",
+    "Legacy -- deprecated in favor of PXR_SDR_FS_PLUGIN_SEARCH_PATHS. "
     "The paths that should be searched, recursively, for files that represent "
     "nodes. Paths should be separated by either a ':' or a ';' depending on "
     "your platform (it should mimic the PATH attribute).  See "
@@ -27,11 +26,13 @@ TF_DEFINE_ENV_SETTING(
 
 TF_DEFINE_ENV_SETTING(
     PXR_NDR_FS_PLUGIN_ALLOWED_EXTS, "",
+    "Legacy -- deprecated in favor of PXR_SDR_FS_PLUGIN_ALLOWED_EXTS. "
     "The extensions on files that define nodes.  Do not include the leading "
     "'.'. Extensions should be separated by a colon.");
 
 TF_DEFINE_ENV_SETTING(
     PXR_NDR_FS_PLUGIN_FOLLOW_SYMLINKS, false,
+    "Legacy -- deprecated in favor of PXR_SDR_FS_PLUGIN_FOLLOW_SYMLINKS. "
     "Whether symlinks should be followed while walking the search paths. Set "
     "to 'true' (case sensitive) if they should be followed.");
 

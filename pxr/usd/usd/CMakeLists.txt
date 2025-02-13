@@ -227,6 +227,7 @@ pxr_test_scripts(
     testenv/testUsdNamespaceEditorTargetPathFixup.py
     testenv/testUsdNotices.py
     testenv/testUsdObjectsChangedNotices.py
+    testenv/testUsdObjectsChangedNoticesSublayerOps.py
     testenv/testUsdOpaqueAttributes.py
     testenv/testUsdPathExpressionAttrs.py
     testenv/testUsdPayloads.py
@@ -619,6 +620,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdNamespaceEditorTargetPathFixup
     DEST testUsdNamespaceEditorTargetPathFixup
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdObjectsChangedNoticesSublayerOps
+    DEST testUsdObjectsChangedNoticesSublayerOps
 )
 
 pxr_install_test_dir(
@@ -1199,6 +1205,12 @@ pxr_register_test(testUsdNotices
 pxr_register_test(testUsdObjectsChangedNotices
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdObjectsChangedNotices"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdObjectsChangedNoticesSublayerOps
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdObjectsChangedNoticesSublayerOps"
     EXPECTED_RETURN_CODE 0
 )
 

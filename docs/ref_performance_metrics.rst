@@ -12,6 +12,10 @@ page describes what metrics are collected, what hardware and software
 configurations are used, the actual metrics results, and how to generate the
 metrics locally. 
 
+.. contents:: Table of Contents
+    :local:
+    :depth: 2
+
 ***************
 What We Measure
 ***************
@@ -30,8 +34,8 @@ default (items in **bold** are reported on this page):
 * **Total time to start and quit** :program:`usdview`
 * Time to traverse the prims in the stage
 
-We run 10 iterations for each asset, and capture the minimum and maximum times
-for that set of iterations. We also calculate the mean time across the 10
+We run 100 iterations for each asset, and capture the minimum and maximum times
+for that set of iterations. We also calculate the mean time across the 100
 iterations.
 
 For each asset, we first warm the filesystem cache by loading the
@@ -105,10 +109,16 @@ Windows platforms (as described in :ref:`perf_environments`).
 
 .. note::
 
-    For the 24.11 release, there are known issues with obtaining metrics for
-    the Moore Lane asset on Windows, and the create_first_image metric on 
-    macOS. We are actively investigating these issues and will update 
-    published metrics when these issues are resolved.
+    A small increase or decrease in performance metrics over different releases
+    may not necessarily indicate an overall performance improvement or
+    regression in USD. Best-case minimum measurements are taken over multiple
+    iterations, but these measurements may still be subject to some variation,
+    so use the below results with caution. We are investigating these sources
+    of variation.
+
+    Additionally, there are known issues with obtaining the create_first_image
+    metric on macOS. We will update published metrics when this issue is
+    resolved.
 
 .. image:: performance/linux.svg
     :width: 500
@@ -218,7 +228,10 @@ are used (for each asset):
 
 .. code-block:: 
 
-    python usdmeasureperformance.py <asset.usda> -i 10 -a min -o <metrics output filename.yaml>
+    python usdmeasureperformance.py <asset.usda> -i 100 -a min -o <metrics output filename.yaml>
+
+Optionally, `--tracedir <dir>` will output trace information to `dir` that may aid in
+performance debugging.
 
 Adding Custom Metrics
 =====================

@@ -34,7 +34,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrimvarSchemaTokens,
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 
 bool
-HdPrimvarSchema::IsIndexed()
+HdPrimvarSchema::IsIndexed() const
 {
     if (_container) {
         return (_container->Get(HdPrimvarSchemaTokens->
@@ -99,55 +99,38 @@ public:
     _HdDataSourceFlattenedPrimvarValue(
         HdSampledDataSourceHandle indexedValue,
         HdIntArrayDataSourceHandle indices)
-    : _indexedValue(indexedValue)
-    , _indices(indices)
+    : _indexedValue(std::move(indexedValue))
+    , _indices(std::move(indices))
     {
     }
 
     VtValue GetValue(Time shutterOffset) override
     {
-        VtValue indexedValue = _indexedValue->GetValue(shutterOffset);
-        VtIntArray indices = _indices->GetTypedValue(shutterOffset);
+        const VtValue indexedValue = _indexedValue->GetValue(shutterOffset);
+        const VtIntArray indices = _indices->GetTypedValue(shutterOffset);
         return VtVisitValue(indexedValue, _ComputeFlattenedValue(indices));
     }
 
     bool GetContributingSampleTimesForInterval(
-            Time startTime, Time endTime,
-            std::vector<Time> * outSampleTimes) override
+        const Time startTime, const Time endTime,
+        std::vector<Time> * const outSampleTimes) override
     {
-        std::vector<Time> valueSampleTimes;
-        const bool valueVarying =
-            _indexedValue->GetContributingSampleTimesForInterval(
-                startTime, endTime, &valueSampleTimes);
-        std::vector<Time> indexSampleTimes;
-        const bool indexVarying =
-            _indices->GetContributingSampleTimesForInterval(
-                startTime, endTime, &indexSampleTimes);
-
-        if (outSampleTimes) {
-            if (valueVarying && indexVarying) {
-                std::set_union(
-                    valueSampleTimes.begin(), valueSampleTimes.end(),
-                    indexSampleTimes.begin(), indexSampleTimes.end(),
-                    std::back_inserter(*outSampleTimes));
-            } else if (valueVarying) {
-                *outSampleTimes = std::move(valueSampleTimes);
-            } else if (indexVarying) {
-                *outSampleTimes = std::move(indexSampleTimes);
-            }
-        }
-        return valueVarying || indexVarying;
+        HdSampledDataSourceHandle const ds[] = {
+            _indexedValue, _indices };
+        return HdGetMergedContributingSampleTimesForInterval(
+            std::size(ds), ds,
+            startTime, endTime, outSampleTimes);
     }
 
 private:
-    HdSampledDataSourceHandle _indexedValue;
-    HdIntArrayDataSourceHandle _indices;
+    HdSampledDataSourceHandle const _indexedValue;
+    HdIntArrayDataSourceHandle const _indices;
 };
 
 }
 
 HdSampledDataSourceHandle
-HdPrimvarSchema::GetPrimvarValue()
+HdPrimvarSchema::GetPrimvarValue() const
 {
     // overriden definition from primvarSchemaGetValue.template.cpp
     if (_container) {
@@ -173,7 +156,7 @@ HdPrimvarSchema::GetPrimvarValue()
 }
 
 HdSampledDataSourceHandle
-HdPrimvarSchema::GetIndexedPrimvarValue()
+HdPrimvarSchema::GetIndexedPrimvarValue() const
 {
     // overriden definition from primvarSchemaGetIndexedValue.template.cpp
     if (IsIndexed()) {
@@ -186,7 +169,7 @@ HdPrimvarSchema::GetIndexedPrimvarValue()
 }
 
 HdSampledDataSourceHandle
-HdPrimvarSchema::GetFlattenedPrimvarValue()
+HdPrimvarSchema::GetFlattenedPrimvarValue() const
 {
     if (!_container) {
         return nullptr;

@@ -745,25 +745,22 @@ HdAovDescriptor
 HdPrmanRenderDelegate::GetDefaultAovDescriptor(
     TfToken const& name) const
 {
-    if (IsInteractive()) {
-        if (name == HdAovTokens->color) {
-            return HdAovDescriptor(
-                HdFormatFloat32Vec4,
-                false,
-                VtValue(GfVec4f(0.0f)));
-        } else if (name == HdAovTokens->depth) {
-            return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
-        } else if (name == HdAovTokens->primId ||
-                   name == HdAovTokens->instanceId ||
-                   name == HdAovTokens->elementId) {
-            return HdAovDescriptor(HdFormatInt32, false, VtValue(-1));
-        }
+    if (name == HdAovTokens->color) {
         return HdAovDescriptor(
-            HdFormatFloat32Vec3,
+            HdFormatFloat32Vec4,
             false,
-            VtValue(GfVec3f(0.0f)));
+            VtValue(GfVec4f(0.0f)));
+    } else if (name == HdAovTokens->depth) {
+        return HdAovDescriptor(HdFormatFloat32, false, VtValue(1.0f));
+    } else if (name == HdAovTokens->primId ||
+               name == HdAovTokens->instanceId ||
+               name == HdAovTokens->elementId) {
+        return HdAovDescriptor(HdFormatInt32, false, VtValue(-1));
     }
-    return HdAovDescriptor();
+    return HdAovDescriptor(
+        HdFormatFloat32Vec3,
+        false,
+        VtValue(GfVec3f(0.0f)));
 }
 
 TfToken

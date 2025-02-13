@@ -35,6 +35,7 @@
 #include <MaterialXFormat/Environ.h>
 #include <MaterialXFormat/Util.h>
 #include <MaterialXFormat/XmlIo.h>
+#include <MaterialXGenShader/DefaultColorManagementSystem.h>
 #include <MaterialXGenShader/Shader.h>
 #include <MaterialXGenShader/Util.h>
 #include <MaterialXGenOsl/OslShaderGenerator.h>
@@ -63,6 +64,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     (MaterialXOrenNayarDiffuse)
     (ND_generalized_schlick_bsdf)
     (MaterialXGeneralizedSchlick)
+    (ND_burley_diffuse_bsdf)
+    (MaterialXBurleyDiffuse)
+    (ND_dielectric_bsdf)
+    (MaterialXDielectric)
+    (ND_sheen_bsdf)
+    (MaterialXSheen)
 
     // MaterialX - OSL Adapter Node names
     ((SS_Adapter, "StandardSurfaceParameters"))
@@ -117,9 +124,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Color Space
     ((cs_raw, "raw"))
-    ((cs_auto, "auto"))
-    ((cs_srgb, "sRGB"))
-    ((mtlx_srgb, "srgb_texture"))
 
     // For supporting Usd texturing nodes
     (ND_UsdUVTexture)
@@ -200,6 +204,18 @@ _GenMaterialXShaderCode(
     }
     mxContext.registerSourceCodeSearchPath(libSearchPaths);
     mxContext.getOptions().fileTextureVerticalFlip = false;
+    
+    // Initialize the color management system
+    mx::DefaultColorManagementSystemPtr cms =
+        mx::DefaultColorManagementSystem::create(
+            mxContext.getShaderGenerator().getTarget());
+    cms->loadLibrary(HdMtlxStdLibraries());
+    mxContext.getShaderGenerator().setColorManagementSystem(cms);
+
+    // Set the target colorspace
+    // XXX: This is equivalent to the default source colorspace, which does
+    // not yet have a schema and is therefore not yet accessible here
+    mxContext.getOptions().targetColorSpaceOverride = "lin_rec709";
 
     // Get the Node from the Nodegraph/mxDoc 
     mx::NodeGraphPtr mxNodeGraph;
@@ -276,6 +292,12 @@ _GetMaterialBsdfNodeType(TfToken const &hdNodeType)
         return _tokens->MaterialXOrenNayarDiffuse;
     } else if (hdNodeType == _tokens->ND_generalized_schlick_bsdf) {
         return _tokens->MaterialXGeneralizedSchlick;
+    } else if (hdNodeType == _tokens->ND_burley_diffuse_bsdf) {
+        return _tokens->MaterialXBurleyDiffuse;
+    } else if (hdNodeType == _tokens->ND_dielectric_bsdf) {
+        return _tokens->MaterialXDielectric;
+    } else if (hdNodeType == _tokens->ND_sheen_bsdf) {
+        return _tokens->MaterialXSheen;
     }
     return hdNodeType;
 }
@@ -769,35 +791,6 @@ _GetWrapModes(
     }
 }
 
-static TfToken
-_GetColorSpace(
-    HdMaterialNetworkInterface *netInterface,
-#if PXR_VERSION >= 2402
-    TfToken const &hdTextureNodeName,
-    HdMaterialNetworkInterface::NodeParamData paramData)
-#else
-    TfToken const &hdTextureNodeName)
-#endif
-{
-    const TfToken nodeType = netInterface->GetNodeType(hdTextureNodeName);
-    if (nodeType == _tokens->ND_image_vector2 ||
-        nodeType == _tokens->ND_image_vector3 ||
-        nodeType == _tokens->ND_image_vector4 ) {
-        // For images not used as color use "raw" (eg. normal maps)
-        return _tokens->cs_raw;
-    } else {
-#if PXR_VERSION >= 2402
-        if (paramData.colorSpace == _tokens->mtlx_srgb) {
-            return _tokens->cs_srgb;
-        } else {
-            return _tokens->cs_auto;
-        }
-#else
-        return _tokens->cs_auto;
-#endif
-    }
-}
-
 // Returns true is the given mtlxSdrNode requires primvar support for texture 
 // coordinates
 static bool
@@ -820,7 +813,11 @@ _NodeHasTextureCoordPrimvar(
         // for texture coordinates. 
         auto geompropvalueNodes = nodegraph->getNodes(_tokens->geompropvalue);
         for (const mx::NodePtr& mxGeomPropNode : geompropvalueNodes) {
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
             if (mxGeomPropNode->getType() == mx::Type::VECTOR2->getName()) {
+#else
+            if (mxGeomPropNode->getType() == mx::Type::VECTOR2.getName()) {
+#endif
                 return true;
             }
         }
@@ -969,13 +966,9 @@ _UpdateTextureNodes(
                 TfToken uWrap, vWrap;
                 _GetWrapModes(netInterface, textureNodeName, &uWrap, &vWrap);
 
-#if PXR_VERSION >= 2402
-                TfToken colorSpace = 
-                    _GetColorSpace(netInterface, textureNodeName, fileParamData);
-#else
-                TfToken colorSpace = 
-                    _GetColorSpace(netInterface, textureNodeName);
-#endif
+                // Use 'raw' for the colorspace, this allows MaterialX to 
+                // handle any colorspace transforms.
+                const TfToken colorSpace = _tokens->cs_raw;
 
                 std::string const &mxInputValue = TfStringPrintf(
                     "rtxplugin:%s?filename=%s&wrapS=%s&wrapT=%s&sourceColorSpace=%s",

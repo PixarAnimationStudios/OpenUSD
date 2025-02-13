@@ -106,7 +106,7 @@ My_TestGLDrawing::InitTest()
         shaderReg.GetShaderNodeFromSourceCode(
             shaderSource, 
             HioGlslfxTokens->glslfx,
-            NdrTokenMap()); // metadata
+            SdrTokenMap()); // metadata
 
     TfToken const& terminalType = HdMaterialTerminalTokens->surface;
 
@@ -114,7 +114,7 @@ My_TestGLDrawing::InitTest()
     HdMaterialNetworkMap material1;
     HdMaterialNetwork& network1 = material1.map[terminalType];
     HdMaterialNode terminal1;
-    terminal1.path = materialId.AppendPath(SdfPath("/Shader"));
+    terminal1.path = materialId.AppendChild(TfToken("Shader"));
     terminal1.identifier = sdrSurfaceNode->GetIdentifier();
     terminal1.parameters[TfToken("ptexColor")] = VtValue(GfVec3f(1,0,0));
 

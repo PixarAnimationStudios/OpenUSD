@@ -75,6 +75,10 @@ private:
 
         std::vector<HdDataSourceBaseHandle> bindingsDs;
         bindingsDs.reserve(bindings.size());
+
+        const auto thisPrimPathDs =
+            _RetainedTypedDs<SdfPath>::New(_mbApi.GetPath());
+
         for (auto const &binding : bindings) {
             if (binding.IsValid()) {
                 auto const &b = binding;
@@ -88,6 +92,7 @@ private:
                         _RetainedTypedDs<TfToken>::New(
                             UsdShadeMaterialBindingAPI::GetMaterialBindingStrength(
                                 b.GetBindingRel())))
+                    .SetBindingOriginPath(thisPrimPathDs)
                     .Build()
                 );
             }
@@ -139,6 +144,8 @@ public:
                 _RetainedTypedDs<TfToken>::New(
                     UsdShadeMaterialBindingAPI::GetMaterialBindingStrength(
                         bindingRel)))
+            .SetBindingOriginPath(
+                _RetainedTypedDs<SdfPath>::New(_mbApi.GetPath()))
             .Build();
     }
 

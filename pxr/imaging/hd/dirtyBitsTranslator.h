@@ -34,6 +34,9 @@ public:
     HD_API
     static void InstancerDirtyBitsToLocatorSet(TfToken const& primType,
         const HdDirtyBits bits, HdDataSourceLocatorSet *set);
+    HD_API
+    static void TaskDirtyBitsToLocatorSet(
+        const HdDirtyBits bits, HdDataSourceLocatorSet *set);
 
     // Locators to dirty bits.
     HD_API

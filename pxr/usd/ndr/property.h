@@ -9,6 +9,10 @@
 #define PXR_USD_NDR_PROPERTY_H
 
 /// \file ndr/property.h
+///
+/// \deprecated
+/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
+/// in sdr/property.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ndr/api.h"
@@ -31,6 +35,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// In almost all cases, this class will not be used directly. More specialized
 /// properties can be created that derive from `NdrProperty`; those specialized
 /// properties can add their own domain-specific data and methods.
+///
+/// \deprecated
+/// Deprecated in favor of SdrShaderProperty
 class NdrProperty
 {
 public:
@@ -121,6 +128,10 @@ public:
     virtual bool IsConnectable() const;
 
     /// Determines if this property can be connected to the specified property.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of
+    /// SdrShaderProperty::CanConnectTo(SdrShaderProperty)
     NDR_API
     virtual bool CanConnectTo(const NdrProperty& other) const;
 

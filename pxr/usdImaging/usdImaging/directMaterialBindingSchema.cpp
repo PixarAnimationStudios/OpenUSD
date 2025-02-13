@@ -46,15 +46,23 @@ UsdImagingDirectMaterialBindingSchema::GetBindingStrength() const
         UsdImagingDirectMaterialBindingSchemaTokens->bindingStrength);
 }
 
+HdPathDataSourceHandle
+UsdImagingDirectMaterialBindingSchema::GetBindingOriginPath() const
+{
+    return _GetTypedDataSource<HdPathDataSource>(
+        UsdImagingDirectMaterialBindingSchemaTokens->bindingOriginPath);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 UsdImagingDirectMaterialBindingSchema::BuildRetained(
         const HdPathDataSourceHandle &materialPath,
-        const HdTokenDataSourceHandle &bindingStrength
+        const HdTokenDataSourceHandle &bindingStrength,
+        const HdPathDataSourceHandle &bindingOriginPath
 )
 {
-    TfToken _names[2];
-    HdDataSourceBaseHandle _values[2];
+    TfToken _names[3];
+    HdDataSourceBaseHandle _values[3];
 
     size_t _count = 0;
 
@@ -66,6 +74,11 @@ UsdImagingDirectMaterialBindingSchema::BuildRetained(
     if (bindingStrength) {
         _names[_count] = UsdImagingDirectMaterialBindingSchemaTokens->bindingStrength;
         _values[_count++] = bindingStrength;
+    }
+
+    if (bindingOriginPath) {
+        _names[_count] = UsdImagingDirectMaterialBindingSchemaTokens->bindingOriginPath;
+        _values[_count++] = bindingOriginPath;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -86,12 +99,21 @@ UsdImagingDirectMaterialBindingSchema::Builder::SetBindingStrength(
     return *this;
 }
 
+UsdImagingDirectMaterialBindingSchema::Builder &
+UsdImagingDirectMaterialBindingSchema::Builder::SetBindingOriginPath(
+    const HdPathDataSourceHandle &bindingOriginPath)
+{
+    _bindingOriginPath = bindingOriginPath;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 UsdImagingDirectMaterialBindingSchema::Builder::Build()
 {
     return UsdImagingDirectMaterialBindingSchema::BuildRetained(
         _materialPath,
-        _bindingStrength
+        _bindingStrength,
+        _bindingOriginPath
     );
 }
 

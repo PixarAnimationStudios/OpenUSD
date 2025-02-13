@@ -78,6 +78,8 @@
 			/CoordSys/worldSpace
 	[directMaterialBindings]
 		[preview]
+			[bindingOriginPath]
+				/Geom/Subdiv
 			[bindingStrength]
 				weakerThanDescendants
 			[materialPath]

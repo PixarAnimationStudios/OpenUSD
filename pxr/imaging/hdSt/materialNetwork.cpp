@@ -607,7 +607,7 @@ _MakeMaterialParamsForTexture(
     // Get swizzle metadata if possible
     if (SdrShaderPropertyConstPtr sdrProperty = sdrNode->GetShaderOutput(
         outputName)) {
-        NdrTokenMap const& propMetadata = sdrProperty->GetMetadata();
+        SdrTokenMap const& propMetadata = sdrProperty->GetMetadata();
         auto const& it = propMetadata.find(HdStSdrMetadataTokens->swizzle);
         if (it != propMetadata.end()) {
             texParam.swizzle = it->second;
@@ -657,7 +657,7 @@ _MakeMaterialParamsForTexture(
 
     HdStTextureIdentifier textureId;
 
-    NdrTokenVec const& assetIdentifierPropertyNames = 
+    SdrTokenVec const& assetIdentifierPropertyNames = 
         sdrNode->GetAssetIdentifierInputNames();
 
     if (!assetIdentifierPropertyNames.empty()) {
@@ -1031,7 +1031,7 @@ _GatherMaterialParams(
 
     if (sdrNode) {
         SdfPathSet visitedNodes;
-        for (TfToken const& inputName : sdrNode->GetInputNames()) {
+        for (TfToken const& inputName : sdrNode->GetShaderInputNames()) {
             _MakeParamsForInputParameter(
                 network, node, inputName, &visitedNodes,
                 params, textureDescriptors, materialTag);
@@ -1073,7 +1073,7 @@ _GatherMaterialParams(
         // so that these primvars survive 'primvar filtering' that discards any
         // unused primvars on the mesh.
         // If the network lists additional primvars, we add those too.
-        NdrTokenVec pv = sdrNode->GetPrimvars();
+        SdrTokenVec pv = sdrNode->GetPrimvars();
         pv.insert(pv.end(), network.primvars.begin(), network.primvars.end());
         std::sort(pv.begin(), pv.end());
         pv.erase(std::unique(pv.begin(), pv.end()), pv.end());

@@ -1043,6 +1043,11 @@ public:
             HdCameraSchemaTokens->shutterOpen,
             HdCameraSchemaTokens->shutterClose,
             HdCameraSchemaTokens->exposure,
+            HdCameraSchemaTokens->exposureTime,
+            HdCameraSchemaTokens->exposureIso,
+            HdCameraSchemaTokens->exposureFStop,
+            HdCameraSchemaTokens->exposureResponsivity,
+            HdCameraSchemaTokens->linearExposureScale,
             HdCameraSchemaTokens->focusOn,
             HdCameraSchemaTokens->dofAspect,
             HdCameraSchemaTokens->splitDiopter,
@@ -1934,12 +1939,14 @@ public:
 
     TfTokenVector GetNames() override
     {
-        TfTokenVector result;
-        result.push_back(HdExtComputationSchemaTokens->inputValues);
-        result.push_back(HdExtComputationSchemaTokens->inputComputations);
-        result.push_back(HdExtComputationSchemaTokens->outputs);
-        result.push_back(HdExtComputationSchemaTokens->glslKernel);
-        result.push_back(HdExtComputationSchemaTokens->cpuCallback);
+        static const TfTokenVector result = {
+            HdExtComputationSchemaTokens->inputValues,
+            HdExtComputationSchemaTokens->inputComputations,
+            HdExtComputationSchemaTokens->outputs,
+            HdExtComputationSchemaTokens->glslKernel,
+            HdExtComputationSchemaTokens->cpuCallback,
+            HdExtComputationSchemaTokens->dispatchCount,
+            HdExtComputationSchemaTokens->elementCount };
         return result;
     }
 

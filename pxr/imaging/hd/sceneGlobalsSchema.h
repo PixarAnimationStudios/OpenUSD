@@ -41,6 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (startTimeCode) \
     (endTimeCode) \
     (currentFrame) \
+    (sceneStateId) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdSceneGlobalsSchemaTokens, HD_API,
     HD_SCENE_GLOBALS_SCHEMA_TOKENS);
@@ -118,7 +119,10 @@ public:
     HdDoubleDataSourceHandle GetEndTimeCode() const;
 
     HD_API
-    HdDoubleDataSourceHandle GetCurrentFrame() const; 
+    HdDoubleDataSourceHandle GetCurrentFrame() const;
+
+    HD_API
+    HdIntDataSourceHandle GetSceneStateId() const; 
 
     /// @}
 
@@ -165,6 +169,10 @@ public:
     /// Prim-level relative data source locator to locate currentFrame.
     HD_API
     static const HdDataSourceLocator &GetCurrentFrameLocator();
+
+    /// Prim-level relative data source locator to locate sceneStateId.
+    HD_API
+    static const HdDataSourceLocator &GetSceneStateIdLocator();
     /// @} 
 
     /// \name Schema construction
@@ -184,7 +192,8 @@ public:
         const HdPathDataSourceHandle &activeRenderSettingsPrim,
         const HdDoubleDataSourceHandle &startTimeCode,
         const HdDoubleDataSourceHandle &endTimeCode,
-        const HdDoubleDataSourceHandle &currentFrame
+        const HdDoubleDataSourceHandle &currentFrame,
+        const HdIntDataSourceHandle &sceneStateId
     );
 
     /// \class HdSceneGlobalsSchema::Builder
@@ -211,6 +220,9 @@ public:
         HD_API
         Builder &SetCurrentFrame(
             const HdDoubleDataSourceHandle &currentFrame);
+        HD_API
+        Builder &SetSceneStateId(
+            const HdIntDataSourceHandle &sceneStateId);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -222,6 +234,7 @@ public:
         HdDoubleDataSourceHandle _startTimeCode;
         HdDoubleDataSourceHandle _endTimeCode;
         HdDoubleDataSourceHandle _currentFrame;
+        HdIntDataSourceHandle _sceneStateId;
 
     };
 

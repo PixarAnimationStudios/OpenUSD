@@ -112,7 +112,9 @@ to the PXR_PLUGINPATH_NAME environment variable.
 
 At this point, if we open :program:`usdview` we should see a new "Tutorial" 
 menu. If we open this menu and select "Print Message," we should see "Hello, 
-World!" printed to the console.
+World!" printed to the console. If the "Tutorial" menu does not appear,
+try using full paths in the above environment variables and ensure files
+are named exactly `__init__.py` and `plugInfo.json`.
 
 Congratulations! We have just created a new :program:`usdview` plugin!
 
@@ -204,7 +206,7 @@ module.
    from pxr import Tf
    from pxr.Usdviewq.plugin import PluginContainer
    
-   import printer
+   from . import printer
    
    
    class TutorialPluginContainer(PluginContainer):

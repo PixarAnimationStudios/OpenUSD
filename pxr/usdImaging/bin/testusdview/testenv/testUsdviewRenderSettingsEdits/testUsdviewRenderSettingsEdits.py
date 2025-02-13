@@ -23,8 +23,14 @@ def _updateAttribute(appController, productPath, attrName, attrValue):
     attr = product.GetAttribute(attrName)
     attr.Set(attrValue)
 
+def _updateRenderSettingsMetadata(appController, rsPath):
+    stage = appController._dataModel.stage
+    layer = stage.GetSessionLayer()
+    stage.SetEditTarget(layer)
 
-# Test changing the connected SampleFilter.
+    stage.SetMetadata('renderSettingsPrimPath', rsPath)
+
+
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)
 
@@ -35,3 +41,7 @@ def testUsdviewInputFunction(appController):
     # Disable Depth of Field attribute
     _updateAttribute(appController, productPath, 'disableDepthOfField', True)
     appController._takeShot("DofDisabled.png", waitForConvergence=True)
+
+    # Update the Render Settings Prim Path in the stage metadata
+    _updateRenderSettingsMetadata(appController, "/Render/SettingsMurk")
+    appController._takeShot("switchRenderSettings.png", waitForConvergence=True)

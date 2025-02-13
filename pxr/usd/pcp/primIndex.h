@@ -436,11 +436,6 @@ PcpComputePrimIndex(
     PcpPrimIndexOutputs* outputs,
     ArResolver* pathResolver = NULL);
 
-/// Returns true if the 'new' default standin behavior is enabled.
-PCP_API
-bool
-PcpIsNewDefaultStandinBehaviorEnabled();
-
 // Returns true if \p index should be recomputed due to changes to
 // any computed asset paths that were used to find or open layers
 // when originally composing \p index. This may be due to scene

@@ -31,6 +31,11 @@ NdrSdfTypeIndicator::GetNdrType() const {
     return _ndrType;
 }
 
+TfToken
+NdrSdfTypeIndicator::GetSdrType() const {
+    return _ndrType;
+}
+
 bool
 NdrSdfTypeIndicator::HasSdfType() const {
     return _hasSdfTypeMapping;

@@ -802,9 +802,8 @@ _BuildMaterial(
     }
 
     // Collect any 'config' on the Material prim
-    // Collect in to a VtDictionary to take advantage of SetValueAtPath for 
-    // nested namespaces in the attribute names.
-    VtDictionary configDict;
+    TfTokenVector names;
+    std::vector<HdDataSourceBaseHandle> values;
     for (const auto& prop : usdMat.GetPrim().GetPropertiesInNamespace(
             UsdImagingTokens->configPrefix)) {
         const auto& attr = prop.As<UsdAttribute>();
@@ -812,15 +811,14 @@ _BuildMaterial(
             continue;
         }
 
-        std::string name = attr.GetName().GetString();
+        const std::string name = attr.GetName().GetString();
         std::pair<std::string, bool> result =
             SdfPath::StripPrefixNamespace(name, UsdImagingTokens->configPrefix);
-        name = result.first;
+        names.push_back(TfToken(result.first));
 
         VtValue value;
         attr.Get(&value);
-
-        configDict.SetValueAtPath(name, value);
+        values.push_back(HdCreateTypedRetainedDataSource(value));
     }
 
     HdContainerDataSourceHandle nodesDs = 
@@ -830,7 +828,8 @@ _BuildMaterial(
             nodeValues.data());
 
     HdContainerDataSourceHandle configDefaultContext =
-        HdUtils::ConvertVtDictionaryToContainerDS(configDict);
+        HdRetainedContainerDataSource::New(
+            names.size(), names.data(), values.data());
 
     return HdMaterialNetworkSchema::Builder()
         .SetNodes(nodesDs)

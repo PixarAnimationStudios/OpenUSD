@@ -193,9 +193,31 @@ HdDataSourceMaterialNetworkInterface::GetNodeType(
 }
 
 HdContainerDataSourceHandle
-HdDataSourceMaterialNetworkInterface::_GetNodeTypeInfo(const TfToken& nodeName) const
+HdDataSourceMaterialNetworkInterface::_GetOriginalNodeTypeInfo(
+    const TfToken& nodeName) const
 {
     return _ResetIfNecessaryAndGetNode(nodeName).GetNodeTypeInfo();
+}
+
+HdContainerDataSourceHandle
+HdDataSourceMaterialNetworkInterface::_GetNodeTypeInfo(const TfToken& nodeName) const
+{
+    HdDataSourceLocator locator(
+        HdMaterialNetworkSchemaTokens->nodes,
+        nodeName,
+        HdMaterialNodeSchemaTokens->nodeTypeInfo);
+    
+    // Look for overridden NodeTypeInfo first.
+    
+    if (const auto it = _existingOverrides.find(locator); 
+        it != _existingOverrides.end()) 
+    {
+        // Found an override, return it.
+        return HdContainerDataSource::Cast(it->second);
+    }
+    
+    // No override, return the original, if any.
+    return _GetOriginalNodeTypeInfo(nodeName);
 }
 
 TfTokenVector
@@ -430,6 +452,7 @@ HdDataSourceMaterialNetworkInterface::DeleteNode(const TfToken &nodeName)
 
     _networkEditor.Set(locator, nullptr);
     _deletedNodes.insert(nodeName);
+    _nodeTypeInfoOverrides.erase(nodeName);
 }
 
 void
@@ -442,10 +465,53 @@ HdDataSourceMaterialNetworkInterface::SetNodeType(
         nodeName,
         HdMaterialNodeSchemaTokens->nodeIdentifier);
 
-    HdDataSourceBaseHandle ds =
-        HdRetainedTypedSampledDataSource<TfToken>::New(nodeType);
+    if (nodeType.IsEmpty()) {
+        // An empty TfToken removes the nodeType data entirely
+        _SetOverride(locator, nullptr);
+    } else {
+        HdDataSourceBaseHandle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(nodeType);
 
-    _SetOverride(locator, ds);
+        _SetOverride(locator, ds);
+    }
+}
+
+void
+HdDataSourceMaterialNetworkInterface::SetNodeTypeInfoValue(
+    const TfToken &nodeName,
+    const TfToken &key,
+    const VtValue &value
+)
+{
+    // Find an existing editor for this node's nodeTypeInfo data source
+    // or construct a new one.
+    _HdContainerDataSourceEditorSharedPtr ntEditor;
+    
+    if (auto ntIt = _nodeTypeInfoOverrides.find(nodeName); 
+        ntIt != _nodeTypeInfoOverrides.end()) 
+    {
+        ntEditor = ntIt->second;
+    } else {
+        HdContainerDataSourceHandle container = 
+            _GetOriginalNodeTypeInfo(nodeName);
+        if (!container) {
+            // The node never had a nodeTypeInfo data source. 
+            // Construct a new one to pass to the editor.
+            container = HdRetainedContainerDataSource::New();
+        }
+        // Construct and store a new nodeTypeInfo editor.
+        ntEditor = std::make_shared<HdContainerDataSourceEditor>(container); 
+        _nodeTypeInfoOverrides.insert({nodeName, ntEditor});
+    }
+
+    HdDataSourceLocator locator(
+        HdMaterialNetworkSchemaTokens->nodes,
+        nodeName,
+        HdMaterialNodeSchemaTokens->nodeTypeInfo);
+
+    ntEditor->Set(HdDataSourceLocator(key), 
+                         HdRetainedTypedSampledDataSource<VtValue>::New(value));
+    _SetOverride(locator, ntEditor->Finish());
 }
 
 void

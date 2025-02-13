@@ -33,27 +33,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    ((riAttrPrefix, "ri:attributes:volume:"))
+    ((riPrefix, "ri:volume:"))
     (density)
-);
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _openVDBUsdTokens,
-    ((riPrefix, "ri:attributes:"))
-    ((densityMult, "volume:densityMult"))
-    ((densityRolloff, "volume:densityRolloff"))
-    ((filterWidth, "volume:filterWidth"))
-    ((velocityScale, "volume:velocityScale"))
-    ((velocityGrid, "volume:velocityGrid"))
-);
-
-// Defined inside of impl_openvdb
-TF_DEFINE_PRIVATE_TOKENS(
-    _implOpenVDBTokens,
+    (densityGrid)
     (densityMult)
     (densityRolloff)
     (filterWidth)
-    (velocityScale)
     (velocityGrid)
+    (velocityScale)
 );
 
 HdPrman_Field::HdPrman_Field(TfToken const& typeId, SdfPath const& id)
@@ -127,11 +115,19 @@ HdPrman_Volume::GetInitialDirtyBitsMask() const
 
 namespace { // anonymous namespace
 
+TfToken
+_GetFieldName(HdSceneDelegate *sceneDelegate, const HdVolumeFieldDescriptor& field)
+{
+    return sceneDelegate->Get(field.fieldId, HdFieldTokens->fieldName)
+        .GetWithDefault<TfToken>(field.fieldName);
+}
+
 HdPrman_Volume::FieldType
 _DetermineOpenVDBFieldType(HdSceneDelegate *sceneDelegate,
                            HdVolumeFieldDescriptor const& field)
 {
     SdfPath const& fieldId = field.fieldId;
+    const TfToken fieldName = _GetFieldName(sceneDelegate, field);
 
     VtValue fieldDataTypeValue =
         sceneDelegate->Get(fieldId, UsdVolTokens->fieldDataType);
@@ -140,12 +136,12 @@ _DetermineOpenVDBFieldType(HdSceneDelegate *sceneDelegate,
         TF_WARN("Missing fieldDataType attribute on volume field prim %s. "
                 "Assuming float.", fieldId.GetText());
         // Cd is specific to Solaris
-        if (field.fieldName.GetString() == "Cd" ||
-            field.fieldName.GetString().find("color")
+        if (fieldName.GetString() == "Cd" ||
+            fieldName.GetString().find("color")
             != std::string::npos) {
             return HdPrman_Volume::FieldType::ColorType;
-        } else if(field.fieldName.GetString() == "vel" ||
-                  field.fieldName.GetString() == "velocity") {
+        } else if(fieldName.GetString() == "vel" ||
+                  fieldName.GetString() == "velocity") {
             return HdPrman_Volume::FieldType::VectorType;
         }
 
@@ -276,15 +272,27 @@ bool _GetPrimvarValue(HdSceneDelegate *sceneDelegate,
 {
     float time;
     VtValue val;
+    // For now, support both the "ri:attributes:volume:" and
+    // "ri:volume:" namespaces.
     bool foundPrimvar = sceneDelegate->SamplePrimvar(
         id,
-        TfToken(_openVDBUsdTokens->riPrefix.GetString() + name.GetString()),
+        TfToken(_tokens->riAttrPrefix.GetString() + name.GetString()),
         /*maxNumSamples*/ 1, &time, &val);
+    if(!foundPrimvar) {
+        foundPrimvar = sceneDelegate->SamplePrimvar(
+            id,
+            TfToken(_tokens->riPrefix.GetString() + name.GetString()),
+            /*maxNumSamples*/ 1, &time, &val);
+    }
     if(!foundPrimvar) {
         sceneDelegate->SamplePrimvar(id, name,
                                      /*maxNumSamples*/ 1, &time, &val);
     }
     if (foundPrimvar) {
+        // Allow implicit casting for registered cases such as double to float.
+        if (!val.IsHolding<T>() && val.CanCast<T>()) {
+            val = val.Cast<T>();
+        }
         if (val.IsHolding<T>()) {
             *value = val.UncheckedGet<T>();
             return true;
@@ -302,55 +310,44 @@ bool _GetPrimvarValue(HdSceneDelegate *sceneDelegate,
     return false;
 }
 
-//densityRolloff, densityMult, filterWidth, and velocityScale
-
-std::string
-_GetExtraControlsAsJson(HdSceneDelegate *sceneDelegate,
+void
+_EmitOpenVDBVolumeField(HdSceneDelegate *sceneDelegate,
                         const SdfPath& id,
-                        const HdVolumeFieldDescriptorVector& fields)
+                        const HdVolumeFieldDescriptor& field,
+                        RtPrimVarList* primvars,
+                        std::unordered_map<
+                            TfToken, 
+                            std::vector<int>, 
+                            TfToken::HashFunctor
+                        >& fieldIndices, 
+                        TfToken& densityField,
+                        TfToken& velocityField)
 {
-    std::stringstream ss;
+    HdPrman_Volume::FieldType fieldType = _DetermineOpenVDBFieldType(
+        sceneDelegate, field
+    );
 
-    ss << "{";
+    const int fieldIndex
+        = sceneDelegate->Get(field.fieldId, UsdVolTokens->fieldIndex)
+                .GetWithDefault<int>(0);
+    const TfToken fieldName = _GetFieldName(sceneDelegate, field);
 
-    float v = 1.0; // default for densityMult
-    _GetPrimvarValue<float>(sceneDelegate, id, _openVDBUsdTokens->densityMult, &v);
-    ss << "\"" << _implOpenVDBTokens->densityMult.GetText() << "\":" << v;
+    // Set gridGroups to be the USD fieldID
+    fieldIndices[fieldName].push_back(fieldIndex);
 
-    v = 0.0; // default for densityRolloff
-    _GetPrimvarValue<float>(sceneDelegate, id, _openVDBUsdTokens->densityRolloff, &v);
-    ss << ",\"" << _implOpenVDBTokens->densityRolloff.GetText() << "\":" << v;
-
-    v = 0.0; // default for filterWidth
-    _GetPrimvarValue<float>(sceneDelegate, id, _openVDBUsdTokens->filterWidth, &v);
-    ss << ",\"" << _implOpenVDBTokens->filterWidth.GetText() << "\":" << v;
-
-    v = 1.0; // default for velocityScale
-    _GetPrimvarValue<float>(sceneDelegate, id, _openVDBUsdTokens->velocityScale, &v);
-    ss << ",\"" << _implOpenVDBTokens->velocityScale.GetText() << "\":" << v;
-
-    bool setGridGroup = false;
-    for (HdVolumeFieldDescriptor const& field : fields) {
-        const int fieldIndex
-            = sceneDelegate->Get(field.fieldId, UsdVolTokens->fieldIndex)
-                  .GetWithDefault<int>(0);
-        if (setGridGroup) {
-            ss << ",{\"name\":\"" << field.fieldName << "\",\"indices\":["
-               << fieldIndex << "]}";
-        }
-        else {
-            setGridGroup = true;
-            ss << ",\"gridGroups\":[{\"name\":\"" << field.fieldName
-               << "\",\"indices\":[" << fieldIndex << "]}";
-        }
-    }
-    if (setGridGroup) {
-        ss << "]";
+    if (fieldName == densityField) {
+        densityField = TfToken(densityField.GetString() + ":fogvolume");
     }
 
-    ss << "}";
+    if (fieldName == velocityField) {
+        // Force type to be vector
+        fieldType = HdPrman_Volume::VectorType;
+        velocityField = TfToken(velocityField.GetString() + ":fogvolume");
+    }
 
-    return ss.str();
+    HdPrman_Volume::DeclareFieldPrimvar(
+        primvars, RtUString(fieldName.GetText()), fieldType
+    );
 }
 
 void
@@ -365,12 +362,10 @@ _EmitOpenVDBVolume(HdSceneDelegate *sceneDelegate,
         return;
     }
 
-    auto const& firstfield = fields[0];
-
     // There is an implicit assumption that all the fields on this volume are
     // extracted from the same .vdb file, which is determined once from the
     // first field.
-    const VtValue filePath = sceneDelegate->Get(firstfield.fieldId,
+    const VtValue filePath = sceneDelegate->Get(fields[0].fieldId,
                                                 HdFieldTokens->filePath);
     const SdfAssetPath &fileAssetPath = filePath.Get<SdfAssetPath>();
 
@@ -381,8 +376,6 @@ _EmitOpenVDBVolume(HdSceneDelegate *sceneDelegate,
 
     // This will be the first of the string args supplied to the blobbydso. 
     std::string vdbSource;
-    // JSON args.
-    JsObject jsonData;
 
 #ifndef PXR_OPENVDB_SUPPORT_ENABLED
     vdbSource = volumeAssetPath;
@@ -391,12 +384,10 @@ _EmitOpenVDBVolume(HdSceneDelegate *sceneDelegate,
     // string, prepended with a "file:" tag.
     if (TfIsFile(volumeAssetPath)) {
         vdbSource = "file:" + volumeAssetPath;
-
     } else {
         // volumeAssetPath is not a file path. Attempt to resolve
         // it as an ArAsset and retrieve vdb grids from that asset.
-        openvdb::GridPtrVecPtr gridVecPtr =
-            HioOpenVDBGridsFromAsset(volumeAssetPath);
+        openvdb::GridPtrVecPtr gridVecPtr = HioOpenVDBGridsFromAsset(volumeAssetPath);
 
         if (!gridVecPtr) {
             TF_WARN("Failed to retrieve VDB grids from %s.",
@@ -408,7 +399,7 @@ _EmitOpenVDBVolume(HdSceneDelegate *sceneDelegate,
         // are copied from gridVecPtr. (This copy should be fairly cheap since
         // the elements are just shared pointers).
         openvdb::GridPtrVec* grids = new openvdb::GridPtrVec(*gridVecPtr);
-
+ 
         // Ownership of this new vector is given to RixStorage, which
         // will take care of clean-up when rendering is complete.
         RixContext* context = RixGetContext();
@@ -440,86 +431,72 @@ _EmitOpenVDBVolume(HdSceneDelegate *sceneDelegate,
 
         // Copy key into the vdbSource string, prepended with a "key:" tag.
         vdbSource = "key:" + key;
-
-        // Build up JSON args for grid groups. For now we assume all grids in
-        // the VDB provided should be included.
-        std::map<std::string, JsArray> indexMap;
-        for (const auto& grid : *grids) {
-            if (auto meta = grid->getMetadata<openvdb::TypedMetadata<int>>("index")) {
-                indexMap[grid->getName()].emplace_back(meta->value());
-            }
-        }
-
-        if (!indexMap.empty()) {
-            JsArray gridGroups;
-            for (const auto& entry : indexMap) {
-                gridGroups.emplace_back(JsObject {
-                    { "name", JsValue(entry.first) },
-                    { "indices", entry.second },
-                });
-            }
-
-            jsonData["gridGroups"] = std::move(gridGroups);
-        }
     }
 #endif
 
-    const VtValue fieldNameVal = sceneDelegate->Get(firstfield.fieldId,
-                                                    HdFieldTokens->fieldName);
-    const TfToken &fieldName = fieldNameVal.Get<TfToken>();
+    primvars->SetString(RixStr.k_Ri_type, blobbydsoImplOpenVDB);
+
+    // Look for a density field, otherwise default to the first field
+    TfToken densityField = _tokens->density;
+    _GetPrimvarValue<TfToken>(sceneDelegate, id, _tokens->densityGrid, &densityField);
+    if (std::find_if(fields.begin(), fields.end(), 
+        [&](const auto& field) { 
+            return _GetFieldName(sceneDelegate, field) == densityField; 
+        }) == fields.end()
+    )
+        densityField = _GetFieldName(sceneDelegate, fields[0]);
+
+    // Look for a velocity field, otherwise default to empty string
+    TfToken velocityField;
+    _GetPrimvarValue<TfToken>(sceneDelegate, id, _tokens->velocityGrid, &velocityField);
+
+    // The individual fields of this volume need to be declared as primvars
+    std::unordered_map<TfToken, std::vector<int>, TfToken::HashFunctor> fieldIndices;
+    for (HdVolumeFieldDescriptor const& field : fields)
+        _EmitOpenVDBVolumeField(
+            sceneDelegate, id, field, primvars, fieldIndices, densityField, velocityField
+        );
+
+    // Set JSON Arguments
+    JsObject jsonData;
+
+    JsArray gridGroups;
+    for (const auto& gridGroup : fieldIndices) {
+        JsArray indices;
+        for (const auto& index : gridGroup.second)
+            indices.push_back(JsValue(index));
+        gridGroups.emplace_back(JsObject {
+            { "name", JsValue(gridGroup.first) },
+            { "indices", indices },
+        });
+    }
+    jsonData["gridGroups"] = std::move(gridGroups);
+
+    float densityMult = 1.f; // default for densityMult
+    if (_GetPrimvarValue<float>(sceneDelegate, id, _tokens->densityMult, &densityMult))
+        jsonData[_tokens->densityMult.GetText()] = JsValue(densityMult);
+
+    float densityRolloff = 0.f; // default for densityRolloff
+    if (_GetPrimvarValue<float>(sceneDelegate, id, _tokens->densityRolloff, &densityRolloff))
+        jsonData[_tokens->densityRolloff.GetText()] = JsValue(densityRolloff);
+
+    float filterWidth = 0.f; // default for filterWidth
+    if (_GetPrimvarValue<float>(sceneDelegate, id, _tokens->filterWidth, &filterWidth))
+        jsonData[_tokens->filterWidth.GetText()] = JsValue(filterWidth);
+
+    float velocityScale = 1.f; // default for velocityScale
+    if (_GetPrimvarValue<float>(sceneDelegate, id, _tokens->velocityScale, &velocityScale))
+        jsonData[_tokens->velocityScale.GetText()] = JsValue(velocityScale);
 
     const std::string jsonOpts = JsWriteToString(JsValue(std::move(jsonData)));
 
-    primvars->SetString(RixStr.k_Ri_type, blobbydsoImplOpenVDB);
-
-    const auto it = std::find_if(fields.begin(), fields.end(),
-                                 [](const auto & field) {
-                                     return field.fieldName ==_tokens->density;
-                                 });
-    // Look for a field called density, otherwise default to the first field
-    std::string densityFieldName =
-            (it != fields.end()) ?
-        it->fieldName.GetText() : fieldName.GetText();
-
-    densityFieldName += ":fogvolume";
-
-    std::string velocityFieldName;
-    _GetPrimvarValue<std::string>(sceneDelegate, id,
-                                  _openVDBUsdTokens->velocityGrid,
-                                  &velocityFieldName);
-
-
-    // The individual fields of this volume need to be declared as primvars
-    for (HdVolumeFieldDescriptor const& field : fields) {
-        if(velocityFieldName == field.fieldName.GetText()) {
-            HdPrman_Volume::DeclareFieldPrimvar(
-                primvars,
-                RtUString(field.fieldName.GetText()),
-                HdPrman_Volume::FieldType::VectorType);
-        } else {
-            HdPrman_Volume::DeclareFieldPrimvar(
-                primvars,
-                RtUString(field.fieldName.GetText()),
-                _DetermineOpenVDBFieldType(sceneDelegate, field));
-        }
-    }
-    
-    if(!velocityFieldName.empty()) {
-        velocityFieldName += ":fogvolume";
-    }
-
-    // Extract additional controls for the impl_f3d plugin and packaged them as
-    // a JSON dictionary
-    const std::string extraControlsJson = !jsonOpts.empty() ?
-        jsonOpts :
-        _GetExtraControlsAsJson(sceneDelegate, id, fields);
-
+    // Set DSO Arguments
     const unsigned nargs = 4;
     RtUString sa[nargs] = {
         RtUString(vdbSource.c_str()),
-        RtUString(densityFieldName.c_str()),
-        RtUString(velocityFieldName.c_str()),
-        RtUString(extraControlsJson.c_str())
+        RtUString(densityField.GetText()),
+        RtUString(velocityField.GetText()),
+        RtUString(jsonOpts.c_str())
     };
     primvars->SetStringArray(RixStr.k_blobbydso_stringargs, sa, nargs);
 }

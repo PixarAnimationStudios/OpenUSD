@@ -20,12 +20,12 @@ def _findEditorTools(usdFileName, readOnly):
         sys.exit("Error: Couldn't find 'usdcat'. Expected it to be in PATH.")
 
     # Ensure we have a suitable editor available
-    from distutils.spawn import find_executable
+    import shutil
     editorCmd = (os.getenv("USD_EDITOR") or
                  os.getenv("EDITOR") or 
-                 find_executable("emacs") or
-                 find_executable("vim") or
-                 find_executable("notepad"))
+                 shutil.which("emacs") or
+                 shutil.which("vim") or
+                 shutil.which("notepad"))
     
     if not editorCmd:
         sys.exit("Error: Couldn't find a suitable text editor to use. Expected " 
@@ -46,9 +46,13 @@ def _generateTemporaryFile(usdcatCmd, usdFileName, readOnly, prefix):
     usdFileNameBasename = os.path.splitext(os.path.basename(usdFileName))[0]
 
     fullPrefix = prefix or usdFileNameBasename + "_tmp"
+
+    # If readOnly is set, create a temp file in a default location guided by  
+    # the TMPDIR/TEMP/TMP environment variables. 
     import tempfile
+    targetDir = None if readOnly else os.getcwd()
     (usdaFile, usdaFileName) = tempfile.mkstemp(
-        prefix=fullPrefix, suffix='.usda', dir=os.getcwd())
+        prefix=fullPrefix, suffix='.usda', dir=targetDir)
 
     # No need for an open file descriptor, as it locks the file in Windows.
     os.close(usdaFile)
@@ -116,7 +120,9 @@ def main():
                '\n\n')
     parser.add_argument('-n', '--noeffect',
                         dest='readOnly', action='store_true',
-                        help='Do not edit the file.')
+                        help='Do not edit the file. Create the temporary file '
+                        'in a default location guided by the TMPDIR, TEMP, and '
+                        'TMP environment variables.')
     parser.add_argument('-f', '--forcewrite', 
                         dest='forceWrite', action='store_true',
                         help='Override file permissions to allow writing.')

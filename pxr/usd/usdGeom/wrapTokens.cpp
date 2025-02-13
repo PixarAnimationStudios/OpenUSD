@@ -54,6 +54,10 @@ void wrapUsdGeomTokens()
     _ADD_TOKEN(cls, elementSize);
     _ADD_TOKEN(cls, elementType);
     _ADD_TOKEN(cls, exposure);
+    _ADD_TOKEN(cls, exposureFStop);
+    _ADD_TOKEN(cls, exposureIso);
+    _ADD_TOKEN(cls, exposureResponsivity);
+    _ADD_TOKEN(cls, exposureTime);
     _ADD_TOKEN(cls, extent);
     _ADD_TOKEN(cls, extentsHint);
     _ADD_TOKEN(cls, face);

@@ -1096,8 +1096,7 @@ Version 2.6 - Current Head
 ##########################
 
 From version 2.5...
-    * :ref:`Adds opacityMode for different handling of materials with zero 
-    opacity. <updateopacity>`
+    * :ref:`Adds opacityMode for different handling of materials with zero opacity. <updateopacity>`
       `opacityMode` of `transparent` is the previous 2.5 spec behavior in which 
       materials with opacity = 0 still receive a specular reflection, 
       an `opacityMode` of `presence` causes fully transparent materials to 

@@ -44,6 +44,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (primvar)
 );
 
+extern TfEnvSetting<bool> HD_PRMAN_DISABLE_ADAPTIVE_SAMPLING;
 extern TfEnvSetting<bool> HD_PRMAN_DISABLE_HIDER_JITTER;
 extern TfEnvSetting<bool> HD_PRMAN_ENABLE_MOTIONBLUR;
 extern TfEnvSetting<int> HD_PRMAN_NTHREADS;
@@ -828,6 +829,12 @@ GetRileyOptionsFromEnvironment()
     const bool disableJitter = TfGetEnvSetting(HD_PRMAN_DISABLE_HIDER_JITTER);
     if (disableJitter) {
         options.SetInteger(RixStr.k_hider_jitter, !disableJitter);
+    }
+    
+    const bool disableAdaptiveSampling =
+        TfGetEnvSetting(HD_PRMAN_DISABLE_ADAPTIVE_SAMPLING);
+    if (disableAdaptiveSampling) {
+        options.SetFloat(RixStr.k_Ri_PixelVariance, 0.f);
     }
 
     if (ArchHasEnv("HD_PRMAN_MAX_SAMPLES")) {

@@ -207,8 +207,11 @@ protected:
 /// determine where unintended copy-on-write detaches come from.  When set,
 /// VtArray will log a stack trace for every copy-on-write detach that occurs.
 ///
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_NON_EXPORTED_BASE_CLASS
 template<typename ELEM>
 class VtArray : public Vt_ArrayBase {
+ARCH_PRAGMA_POP
   public:
 
     /// Type this array holds.

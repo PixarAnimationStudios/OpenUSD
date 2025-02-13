@@ -2142,7 +2142,6 @@ SdfLayer::PermissionToSave() const
 {
     return _permissionToSave &&
         !IsAnonymous() &&
-        !IsMuted()     &&
         Sdf_CanWriteLayerToPath(GetResolvedPath());
 }
 
@@ -3910,6 +3909,13 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
     // Guard against setting an empty SdfData, which is invalid.
     TF_VERIFY(!newData->IsEmpty() );
 
+    // XXX -- Should this be disallowed when the layer is muted?  We
+    //        should at least put the new data in _mutedLayerData which,
+    //        incidentally, won't have an entry for this layer if the
+    //        layer was clean when muted.  In that case we should also
+    //        not send any change notifications since the content was
+    //        and remains muted.
+
     // This code below performs a series of specific edits to mutate _data
     // to match newData.  This approach provides fine-grained change
     // notification, which allows more efficient invalidation in clients
@@ -4953,6 +4959,71 @@ SdfLayer::_WriteToFile(const string &newFileName,
         return false;
     }
 
+    // Helper class for RAII and unmuting for save.  If the layer is muted
+    // swap in the unmuted data in the c'tor and back out in the d'tor
+    // without any notification or change processing.
+    class _TemporaryUnmuter
+    {
+    public:
+        _TemporaryUnmuter(const std::string& mutedPath,
+                          const SdfAbstractDataRefPtr* data)
+            : _mutedPath(mutedPath)
+            , _data(const_cast<SdfAbstractDataRefPtr*>(data))
+            , _wasMuted(false)
+        {
+            std::unique_lock<std::mutex> lock(*_mutedLayersMutex);
+            if (const auto i = _mutedLayerData->find(_mutedPath);
+                    i != _mutedLayerData->end()) {
+                // Install the unmuted data.
+                _wasMuted  = true;
+                _savedData = *_data;
+                *_data     = i->second;
+            }
+        }
+
+        ~_TemporaryUnmuter()
+        {
+            Unlock();
+        }
+
+        _TemporaryUnmuter(const _TemporaryUnmuter&) = delete;
+        _TemporaryUnmuter(_TemporaryUnmuter&&) = delete;
+        _TemporaryUnmuter& operator=(const _TemporaryUnmuter&) = delete;
+        _TemporaryUnmuter& operator=(_TemporaryUnmuter&&) = delete;
+
+        void Unlock()
+        {
+            if (_wasMuted) {
+                std::unique_lock<std::mutex> lock(*_mutedLayersMutex);
+                if (const auto i = _mutedLayerData->find(_mutedPath);
+                        i != _mutedLayerData->end()) {
+                    if (*_data == i->second) {
+                        // This is the expected case.
+                    }
+                    else {
+                        TF_CODING_ERROR("Layer data modified during save");
+                    }
+                }
+                else {
+                    TF_CODING_ERROR("Layer unmuted during save");
+                }
+                *_data     = _savedData;
+                _savedData = TfNullPtr;
+                _wasMuted  = false;
+            }
+        }
+
+    private:
+        std::string _mutedPath;
+        SdfAbstractDataRefPtr* _data;
+        SdfAbstractDataRefPtr _savedData;
+        bool _wasMuted;
+    };
+
+    // If the layer is muted then restore the contents temporarily while
+    // we save.
+    _TemporaryUnmuter unmuter(_GetMutedPath(), &_data);
+
     // If the output file format has a different schema, then transfer content
     // to an in-memory layer first just to validate schema compatibility.
     const bool differentSchema = &fileFormat->GetSchema() != &GetSchema();
@@ -4976,6 +5047,9 @@ SdfLayer::_WriteToFile(const string &newFileName,
     bool ok = isSave
         ? fileFormat->SaveToFile(*this, newFileName, comment, args)
         : fileFormat->WriteToFile(*this, newFileName, comment, args);
+
+    // Restore the muted data if necessary.
+    unmuter.Unlock();
 
     // If we wrote to the backing file then we're now clean.
     if (ok && isSave) {
@@ -5010,12 +5084,6 @@ bool
 SdfLayer::_Save(bool force) const
 {
     TRACE_FUNCTION();
-
-    if (IsMuted()) {
-        TF_CODING_ERROR("Cannot save muted layer @%s@",
-                        GetIdentifier().c_str());
-        return false;
-    }
 
     if (IsAnonymous()) {
         TF_CODING_ERROR("Cannot save anonymous layer @%s@",
