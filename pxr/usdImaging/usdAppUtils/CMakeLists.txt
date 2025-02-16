@@ -24,11 +24,13 @@ pxr_library(usdAppUtils
     PUBLIC_CLASSES
         camera
         frameRecorder
+        usdWriterDriver
 
     PYMODULE_CPPFILES
         module.cpp
         wrapCamera.cpp
         wrapFrameRecorder.cpp
+        wrapUsdWriterDriver.cpp
 
     PYMODULE_FILES
         __init__.py
@@ -36,6 +38,7 @@ pxr_library(usdAppUtils
         colorArgs.py
         complexityArgs.py
         framesArgs.py
+        fuzzytextdiff.py
         rendererArgs.py
 
     DOXYGEN_FILES
