@@ -1,6 +1,6 @@
 #!/pxrpythonsubst
 #
-# Copyright 2024 Pixar
+# Copyright 2025 Pixar
 #
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
@@ -16,17 +16,16 @@ class TestSdfPathExpressionArray(unittest.TestCase):
         # Create arrays
         exprs1 = Sdf.PathExpressionArray((Sdf.PathExpression('/foo'),
                                          Sdf.PathExpression('/bar')))
-        exprs2 = Sdf.PathExpressionArray(('/foo', '/bar'))
-        self.assertEqual(exprs1, exprs2)
+        with self.assertRaises(TypeError,
+            msg="Implicit conversions from string should fail"):
+            exprs2 = Sdf.PathExpressionArray(('/foo', '/bar'))
 
         # Simple use of PathExpressionArray attributes.
         l = Sdf.Layer.CreateAnonymous()
         p = Sdf.CreatePrimInLayer(l, '/foo')
         a = Sdf.AttributeSpec(p, 'a', Sdf.ValueTypeNames.PathExpressionArray)
         a.default = (Sdf.PathExpression('/foo'), Sdf.PathExpression('/bar'))
-        b = Sdf.AttributeSpec(p, 'b', Sdf.ValueTypeNames.PathExpressionArray)
-        b.default = ('/foo', '/bar')
-        self.assertEqual(a.default, b.default)
+        self.assertEqual(a.default, exprs1)
 
 if __name__ == '__main__':
     unittest.main()

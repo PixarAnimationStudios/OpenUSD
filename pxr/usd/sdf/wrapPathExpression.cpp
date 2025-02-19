@@ -206,8 +206,6 @@ void wrapPathExpression()
         .def(self != self)
         ;
 
-    implicitly_convertible<std::string, SdfPathExpression>();
-
     VtValueFromPython<SdfPathExpression>();
 
     TfPyWrapEnum<PathExpr::Op>();

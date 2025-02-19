@@ -39,11 +39,6 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<VtArray<SdfPathExpression>>();
 }
 
-TF_REGISTRY_FUNCTION(VtValue)
-{
-    VtValue::RegisterSimpleCast<std::string, SdfPathExpression>();
-}
-
 SdfPathExpression::ExpressionReference const &
 SdfPathExpression::ExpressionReference::Weaker()
 {
