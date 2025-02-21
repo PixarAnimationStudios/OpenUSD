@@ -8,6 +8,7 @@
 #include "pxr/imaging/hd/sortedIds.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/errorMark.h"
+#include <chrono>
 #include <random>
 #include <algorithm>
 #include <iterator>
