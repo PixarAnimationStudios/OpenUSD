@@ -127,6 +127,7 @@ UsdImagingIndexProxy::RemovePrimInfoDependency(SdfPath const& cachePath)
             TF_DEBUG(USDIMAGING_CHANGES).
                 Msg("[Revert dependency] <%s> -> <%s>\n",
                     it->first.GetText(), it->second.GetText());
+            primInfo->extraDependencies.erase(it->first);
             _delegate->_dependencyInfo.erase(it);
             break;
         }

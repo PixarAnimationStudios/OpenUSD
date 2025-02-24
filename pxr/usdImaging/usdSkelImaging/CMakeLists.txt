@@ -47,3 +47,32 @@ pxr_library(usdSkelImaging
         plugInfo.json
         shaders/skinning.glslfx
 )
+
+# Build tests
+pxr_build_test(testUsdSkelImagingChanges
+    LIBRARIES
+        usdImaging
+        usdShade
+        usdGeom
+        usdSkel
+        usd
+        sdf
+        hd
+        tf
+        gf
+        arch
+    CPPFILES
+        testenv/testUsdSkelImagingChanges.cpp
+)
+
+# Install (copy test assets and baselines)
+pxr_install_test_dir(
+    SRC testenv/testUsdSkelImagingChanges
+    DEST testUsdSkelImagingChanges
+)
+
+# Register tests
+pxr_register_test(testUsdSkelImagingChanges
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelImagingChanges"
+    EXPECTED_RETURN_CODE 0
+)
