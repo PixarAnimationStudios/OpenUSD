@@ -96,7 +96,12 @@ int main()
     // Open a file, check that the file path from FILE* handle is matched.
     ARCH_AXIOM((firstFile = ArchOpenFile(firstName.c_str(), "rb")) != NULL);
     std::string filePath = ArchGetFileName(firstFile);
+#if defined(ARCH_OS_WINDOWS)
+    ARCH_AXIOM(std::filesystem::equivalent(ArchWindowsUtf8ToUtf16(filePath),
+                   ArchWindowsUtf8ToUtf16(firstName)));
+#else
     ARCH_AXIOM(std::filesystem::equivalent(filePath, firstName));
+#endif
     fclose(firstFile);
 
     // Map the file and assert the bytes are what we expect they are.

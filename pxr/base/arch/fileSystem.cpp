@@ -546,21 +546,13 @@ ArchGetFileName(FILE *file)
     }
 
     if (dwSize != 0) {
-        size_t outSize = WideCharToMultiByte(
-            CP_UTF8, 0, filePath.data(),
-            dwSize,
-            NULL, 0, NULL, NULL);
-        result.resize(outSize);
-        WideCharToMultiByte(
-            CP_UTF8, 0, filePath.data(),
-            -1,
-            &result.front(), outSize, NULL, NULL);
-
         // Strip path prefix if necessary.
         // See https://learn.microsoft.com/en-us/dotnet/standard/io/file-path-formats
         // for format of DOS device paths.
-        auto canonicalPath = std::filesystem::canonical(result);
-        result = canonicalPath.string();
+        
+        auto canonicalPath = std::filesystem::canonical(
+            std::filesystem::path(filePath.begin(), filePath.begin() + dwSize));
+        result = ArchWindowsUtf16ToUtf8(canonicalPath.wstring());
     }
     return result;                                        
 #else
