@@ -232,7 +232,11 @@ static unique_ptr<istream>
 _CreateStreamForFile(string const& filePath)
 {
     if (TfIsFile(filePath)) {
+#if defined(ARCH_OS_WINDOWS)
+        return make_unique<ifstream>(ArchWindowsUtf8ToUtf16(filePath));
+#else
         return make_unique<ifstream>(filePath);
+#endif
     }
 
     const shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
