@@ -114,6 +114,12 @@ Tf_HasAttribute(
         return attribute == 0 || (attribs & attribute) == expected;
     }
 
+    // At this point we know (attribs & FILE_ATTRIBUTE_REPARSE_POINT) != 0
+    // or we would have returned in the if block above. This means linkPath
+    // will be holding the result of calling TfReadLink(path.c_str()). The
+    // code is separated in this way to avoid calling TfReadLink twice. This
+    // is why we can simply pass linkPath to the Tf_HasAttribute call below.
+
     // Read symlinks until we find the real file.
     return Tf_HasAttribute(linkPath, resolveSymlinks, attribute, expected);
 }
