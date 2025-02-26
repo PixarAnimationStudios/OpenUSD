@@ -111,7 +111,6 @@ struct Args {
     std::string colorCorrectionMode;
     std::string complexity;
     int32_t imageWidth;
-    std::string aovName;
     bool domeLightVisibility = true;
     std::string rsPrimPath;
     std::string rpPrimPath;
@@ -479,12 +478,6 @@ static void Configure(CLI::App *app, Args &args) {
                     "Width of the output image. The height will be computed from this "
                     "value and the camera\'s aspect ratio")
             ->default_val(960);
-
-    app->add_option(
-                    "-a,--aov", args.aovName,
-                    "Specify the aov to output")
-            ->default_val("color")
-            ->check(CLI::IsMember({"color", "depth", "primId"}));
 
     app->add_flag(
                     "--enableDomeLightVisibility", args.domeLightVisibility,
