@@ -2514,7 +2514,7 @@ if context.buildAnimXTests:
 # itself does not require it. The --no-zlib flag can be passed to the build
 # script to allow the dependency to find zlib in the build environment.
 if (Linux() or not context.buildZlib) and ZLIB in requiredDependencies:
-    requiredDependencies.remove(ZLIB)
+    requiredDependencies = [r for r in requiredDependencies if r != ZLIB]
 
 # Error out if user is building monolithic library on windows with draco plugin
 # enabled. This currently results in missing symbols.
