@@ -699,6 +699,9 @@ private:
     void _ConnectNodes();
     void _ConnectTerminals(const mx::ConstElementPtr& iface,
                            const UsdShadeConnectableAPI& connectable);
+    bool _IsNodeConnectedToMaterial(const mx::NodePtr& mtlxNode, 
+                                    const mx::NodePtr& mtlxMaterial,
+                                    const std::string& mtlxShaderType);
 
 private:
     mx::ConstNodeDefPtr _mtlxNodeDef;
@@ -736,6 +739,22 @@ _NodeGraphBuilder::SetTarget(
     const mx::ConstElementPtr& childName)
 {
     SetTarget(stage, parentPath.AppendChild(_MakeName(childName)));
+}
+
+bool
+_NodeGraphBuilder::_IsNodeConnectedToMaterial(
+    const mx::NodePtr& mtlxNode,
+    const mx::NodePtr& mtlxMaterial,
+    const std::string & mtlxShaderType)
+{
+    // Check a direct shader of a certain type.
+    // mx::getShaderNodes only checks directly connected input shaders.
+    for (auto mtlxShaderNode: mx::getShaderNodes(mtlxMaterial, mtlxShaderType)) {
+        if (mtlxShaderNode == mtlxNode) {
+            return true;
+        }
+    }
+    return false;
 }
 
 UsdPrim
@@ -780,14 +799,44 @@ _NodeGraphBuilder::Build(ShaderNamesByOutputName* outputs)
         usdPrim = _usdStage->DefinePrim(_usdPath);
     }
 
+    // Collect all materials to check if surfaceshaders have been already made.
+    std::vector<mx::NodePtr> materials;
+    for (mx::NodePtr& mtlxNode : _mtlxContainer->getChildrenOfType<mx::Node>()) {
+        const std::string &nodeType = _Attr(mtlxNode, names.type);
+        if (nodeType == "material")
+            materials.push_back(mtlxNode);
+    }
+
     // Build the graph of nodes.
     for (mx::NodePtr& mtlxNode : _mtlxContainer->getChildrenOfType<mx::Node>()) {
         // If the _mtlxContainer is the document (there is no nodegraph) the 
-        // nodes gathered here will include the material and surfaceshader 
-        // nodes which are not part of the implicit nodegraph. Ignore them.
+        // nodes gathered here will include the material and directly connected
+        // surfaceshader nodes which are not part of the implicit nodegraph. Ignore them.
         const std::string &nodeType = _Attr(mtlxNode, names.type);
-        if (nodeType == "material" || nodeType == "surfaceshader")
+        if (nodeType == "material")
             continue;
+        // Make sure shaders that are part of the implicit nodegraph
+        // are included here. Shaders directly connected to a material
+        // Should already have been setup.
+        // Create the shader if it doesn't exist and copy node def values.
+        bool connectedToMaterial = false;
+        for(auto mtlxMaterial: materials){
+            connectedToMaterial = (
+                _IsNodeConnectedToMaterial(mtlxNode, mtlxMaterial,  mx::SURFACE_SHADER_TYPE_STRING) ||
+                _IsNodeConnectedToMaterial(mtlxNode, mtlxMaterial,  mx::DISPLACEMENT_SHADER_TYPE_STRING) ||
+                _IsNodeConnectedToMaterial(mtlxNode, mtlxMaterial,  mx::VOLUME_SHADER_TYPE_STRING)
+            );
+            if (connectedToMaterial)
+                break;
+        }
+        if (connectedToMaterial){
+            // Ignore connected shaders to material 
+            // as they have been setup prior to this.
+            continue;
+        }
+        TF_DEBUG(USDMTLX_READER).Msg("Adding missing surface shader (%s)\n",
+        mtlxNode->getName().c_str());
+
         _AddNode(mtlxNode, usdPrim);
     }
     _ConnectNodes();
