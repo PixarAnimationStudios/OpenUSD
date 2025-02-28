@@ -232,11 +232,11 @@ public:
 
     /// Erases the element pointed to by \p it. 
     VT_API
-    void erase(iterator it);
+    iterator erase(iterator it);
 
     /// Erases all elements in a range.
     VT_API
-    void erase(iterator f, iterator l);
+    iterator erase(iterator f, iterator l);
 
     /// Erases all of the elements. 
     VT_API
