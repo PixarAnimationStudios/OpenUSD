@@ -16,6 +16,7 @@
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usdValidation/usdValidation/api.h"
 #include "pxr/usdValidation/usdValidation/error.h"
+#include "pxr/usdValidation/usdValidation/timeRange.h"
 #include "pxr/usdValidation/usdValidation/validator.h"
 
 #include <mutex>
@@ -185,6 +186,9 @@ public:
     /// traversed to run prim and schema type validators on all the prims in the
     /// stage. \p predicate will be used to traverse the prims to be validated.
     ///
+    /// PrimValidators and StageValidators will be passed the provided 
+    /// \p timeRange.
+    ///
     /// All the validators run in parallel. Any resulting errors are collected
     /// in the returned vector.
     ///
@@ -195,9 +199,24 @@ public:
     ///
     /// A coding error is issued if the stage being validated is not valid.
     USDVALIDATION_API
-    UsdValidationErrorVector
-    Validate(const UsdStageWeakPtr &stage,
-             const Usd_PrimFlagsPredicate &predicate) const;
+    UsdValidationErrorVector Validate(
+        const UsdStagePtr &stage, 
+        const Usd_PrimFlagsPredicate &predicate, 
+        const UsdValidationTimeRange &timeRange) const;
+
+    /// Run validation on the given valid \p stage by executing the selected
+    /// validators for this UsdValidationContext; Returns a vector of errors
+    ///
+    /// StageValidators and PrimValidators will also be passed the default
+    /// UsdValidationTimeRange, which uses GfInterval::GetFullInterval() 
+    /// as the time interval.
+    ///
+    /// \sa UsdValidationContext::Validate(const UsdStagePtr &stage,
+    /// const Usd_PrimFlagsPredicate &predicate) const
+    USDVALIDATION_API
+    UsdValidationErrorVector Validate(
+        const UsdStagePtr &stage, 
+        const Usd_PrimFlagsPredicate &predicate) const;
 
     /// Run validation on the given valid \p stage by executing the selected
     /// validators for this UsdValidationContext; Returns a vector of errors
@@ -205,34 +224,94 @@ public:
     /// \ref UsdTraverseInstanceProxies "Instance Proxy predicate" is used to
     /// traverse the prims to be validated in this overload.
     ///
-    /// \sa UsdValidationContext::Validate(const UsdStageWeakPtr &stage,
+    /// StageValidators and PrimValidators will also be passed the default
+    /// UsdValidationTimeRange, which uses GfInterval::GetFullInterval() 
+    /// as the time interval.
+    ///
+    /// \sa UsdValidationContext::Validate(const UsdStagePtr &stage,
     /// const Usd_PrimFlagsPredicate &predicate) const
     USDVALIDATION_API
     UsdValidationErrorVector Validate(const UsdStagePtr &stage) const;
 
-    /// Run validation on the given valid \p prims by executing the selected
+    /// Run validation on the given valid \p stage by executing the selected
     /// validators for this UsdValidationContext; Returns a vector of errors
-    /// collected during validation.
     ///
-    /// Only Prim and Schema type validators will be run on the given prims.
+    /// PrimValidators and StageValidators will be passed the provided 
+    /// \p timeRange.
     ///
-    /// All the validators run in parallel. Any resulting errors are collected
-    /// in the returned vector.
+    /// \ref UsdTraverseInstanceProxies "Instance Proxy predicate" is used to
+    /// traverse the prims to be validated in this overload.
     ///
-    /// Note that it's the responsibility of the caller to maintain the lifetime
-    /// of the stage that the prims belong to, during the lifetime of the
-    /// this validation context.
-    ///
-    /// A coding error is issued if any of the prims being validated are
-    /// invalid.
+    /// \sa UsdValidationContext::Validate(const UsdStagePtr &stage,
+    /// const Usd_PrimFlagsPredicate &predicate) const
     USDVALIDATION_API
-    UsdValidationErrorVector Validate(const std::vector<UsdPrim> &prims) const;
+    UsdValidationErrorVector Validate(
+        const UsdStagePtr &stage, 
+        const UsdValidationTimeRange &timeRange) const;
+
+    /// Run validation on the given valid \p stage by executing the selected
+    /// validators for this UsdValidationContext; Returns a vector of errors
+    ///
+    /// PrimValidators and StageValidators will be run on all \p timeCodes.
+    /// If \p timeCodes is empty, then no validation will be performed.
+    ///
+    /// Note that non-time dependent validators will be run only once and time 
+    /// dependent validators will be run at all the provided timeCodes.
+    ///
+    /// \sa UsdValidationContext::Validate(const UsdStagePtr &stage,
+    /// const Usd_PrimFlagsPredicate &predicate) const
+    USDVALIDATION_API
+    UsdValidationErrorVector Validate(
+        const UsdStagePtr &stage, 
+        const Usd_PrimFlagsPredicate &predicate,
+        const std::vector<UsdTimeCode> &timeCodes) const;
+
+    /// Run validation on the given valid \p stage by executing the selected
+    /// validators for this UsdValidationContext; Returns a vector of errors
+    ///
+    /// PrimValidators and StageValidators will be run on all \p timeCodes.
+    /// If \p timeCodes is empty, then no validation will be performed.
+    ///
+    /// Note that non-time dependent validators will be run only once and time 
+    /// dependent validators will be run at all the provided timeCodes.
+    ///
+    /// \ref UsdTraverseInstanceProxies "Instance Proxy predicate" is used to
+    /// traverse the prims to be validated in this overload.
+    ///
+    /// \sa UsdValidationContext::Validate(const UsdStagePtr &stage,
+    /// const Usd_PrimFlagsPredicate &predicate) const
+    USDVALIDATION_API
+    UsdValidationErrorVector Validate(
+        const UsdStagePtr &stage, 
+        const std::vector<UsdTimeCode> &timeCodes) const;
 
     /// Run validation on the given valid \p prims by executing the selected
     /// validators for this UsdValidationContext; Returns a vector of errors
     /// collected during validation.
     ///
-    /// Only Prim and Schema type validators will be run on the given prims.
+    /// Prim and Schema type validators will be run on the given prims using
+    /// UsdValidationTimeRange(), if \p timeRange is not provided.
+    ///
+    /// All the validators run in parallel. Any resulting errors are collected
+    /// in the returned vector.
+    ///
+    /// Note that it's the responsibility of the caller to maintain the lifetime
+    /// of the stage that the prims belong to, during the lifetime of the
+    /// this validation context.
+    ///
+    /// A coding error is issued if any of the prims being validated are
+    /// invalid.
+    USDVALIDATION_API
+    UsdValidationErrorVector Validate(
+        const std::vector<UsdPrim> &prims, 
+        const UsdValidationTimeRange &timeRange = {}) const;
+
+    /// Run validation on the given valid \p prims by executing the selected
+    /// validators for this UsdValidationContext; Returns a vector of errors
+    /// collected during validation.
+    ///
+    /// Prim and Schema type validators will be run on the given prims using
+    /// UsdValidationTimeRange(), if \p timeRange is not provided.
     ///
     /// Note that it's the responsibility of the caller to maintain the lifetime
     /// of the stage that the prims belong to, during the lifetime of the
@@ -244,7 +323,43 @@ public:
     /// A coding error is issued if any of the prims being validated are
     /// invalid.
     USDVALIDATION_API
-    UsdValidationErrorVector Validate(const UsdPrimRange &prims) const;
+    UsdValidationErrorVector Validate(
+        const UsdPrimRange &prims, 
+        const UsdValidationTimeRange &timeRange = {}) const;
+
+    /// Run validation on the given valid \p prims by executing the selected
+    /// validators for this UsdValidationContext; Returns a vector of errors
+    /// collected during validation.
+    ///
+    /// Prim and Schema type validators will be run on all \p timeCodes.
+    /// If \p timeCodes is empty, then no validation will be performed.
+    ///
+    /// Note that non-time dependent validators will be run only once and time 
+    /// dependent validators will be run at all the provided timeCodes.
+    /// 
+    /// \sa UsdValidationContext::Validate(const std::vector<UsdPrim> &prims,
+    /// UsdValidationTimeRange timeRange) const
+    USDVALIDATION_API
+    UsdValidationErrorVector Validate(
+        const std::vector<UsdPrim> &prims, 
+        const std::vector<UsdTimeCode> &timeCodes) const;
+
+    /// Run validation on the given valid \p prims by executing the selected
+    /// validators for this UsdValidationContext; Returns a vector of errors
+    /// collected during validation.
+    ///
+    /// Prim and Schema type validators will be run on all \p timeCodes.
+    /// If \p timeCodes is empty, then no validation will be performed.
+    ///
+    /// Note that non-time dependent validators will be run only once and time 
+    /// dependent validators will be run at all the provided timeCodes.
+    /// 
+    /// \sa UsdValidationContext::Validate(const UsdPrimRange &prims,
+    /// UsdValidationTimeRange timeRange) const
+    USDVALIDATION_API
+    UsdValidationErrorVector Validate(
+        const UsdPrimRange &prims, 
+        const std::vector<UsdTimeCode> &timeCodes) const;
 
 private:
     // helper to initialize UsdValidationContext, given a vector of metadata
@@ -260,22 +375,65 @@ private:
     void _DistributeValidators(
         const std::vector<const UsdValidationValidator *> &validators);
 
+    // Helper enum to specify the state of time dependency for validation.
+    // This is used to determine if context need to run just time dependent, 
+    // just non-time dependent or all validators.
+    enum class _TimeDependencyState {
+        DoTimeDependent,
+        DoNonTimeDependent,
+        All
+    };
+
     // Private helper functions to validate layers, stages and prims.
     void _ValidateLayer(WorkDispatcher &dispatcher, const SdfLayerHandle &layer,
                         UsdValidationErrorVector *errors,
                         std::mutex *errorsMutex) const;
 
-    void _ValidateStage(WorkDispatcher &dispatcher, const UsdStagePtr &stage,
+    // Helper function to validate a stage.
+    //    - Layer Validators for all used layers in the stage
+    //    - Stage Validators for the stage
+    //    - Prim Validators for all prims in the stage, using the predicate
+    //      to traverse the prims on the stage.
+    //
+    // Depending on whether an explicit timeRange is provided or a vector
+    // of timeCodes are provided, this function will do the following:
+    //  - if timeRange is provided, it uses that to validate the stage and
+    //  its prims using the predicate.
+    //  - if timeCodes are provided:
+    //      - Run all non-time dependent validators once.
+    //      - Run all time dependent validators for all timeCodes.
+    void _ValidateStage(WorkDispatcher &dispatcher,
+                        const UsdStagePtr &stage, 
                         UsdValidationErrorVector *errors,
                         std::mutex *errorsMutex,
-                        const Usd_PrimFlagsPredicate &predicate) const;
+                        const Usd_PrimFlagsPredicate &predicate,
+                        const std::variant<UsdValidationTimeRange,
+                            std::vector<UsdTimeCode>> &times) const;
 
     // Helper function to validate prims. Generalized for UsdPrimRange and
     // vector of UsdPrims.
     template <typename T>
-    void _ValidatePrims(WorkDispatcher &dispatcher, const T &prims,
-                        UsdValidationErrorVector *errors,
-                        std::mutex *errorsMutex) const;
+    void _ValidatePrims(
+        WorkDispatcher &dispatcher, const T &prims, 
+        UsdValidationErrorVector *errors, std::mutex *errorsMutex,
+        UsdValidationTimeRange timeRange,
+        _TimeDependencyState timeDependencyState = 
+            _TimeDependencyState::All) const;
+
+    // Helper function to run _ValidatePrims within a scoped dispatcher.
+    // Templated to handle both PrimRange and vector of UsdPrims.
+    // Depending on whether an explicit timeRange is provided or a vector
+    // of timeCodes are provided, this function will do the following:
+    // - if timeRange is provided, it uses that to validate the prims.
+    // - if timeCodes are provided:
+    //    - Run all non-time dependent validators once.
+    //    - Run all time dependent validators for all timeCodes.
+    template <typename T>
+    void _RunValidatePrims(
+        const T &prims, UsdValidationErrorVector *errors, 
+        std::mutex *errorsMutex, 
+        const std::variant<UsdValidationTimeRange, 
+            std::vector<UsdTimeCode>> &times) const;
 
     // Validators catering to a specific schemaType
     using _SchemaTypeValidatorPair

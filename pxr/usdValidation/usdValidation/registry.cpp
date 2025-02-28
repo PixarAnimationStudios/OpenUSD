@@ -24,9 +24,12 @@ TF_INSTANTIATE_SINGLETON(UsdValidationRegistry);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((PluginValidatorsKey, "Validators"))((Keywords, "keywords"))((Doc, "doc"))(
-        (SchemaTypes, "schemaTypes"))((IsSuite, "isSuite"))(
-        (PluginValidatorNameDelimiter, ":")));
+    ((PluginValidatorsKey, "Validators"))
+    ((Keywords, "keywords"))((Doc, "doc"))
+    ((SchemaTypes, "schemaTypes"))
+    ((IsTimeDependent, "isTimeDependent"))
+    ((IsSuite, "isSuite"))
+    ((PluginValidatorNameDelimiter, ":")));
 
 UsdValidationRegistry::UsdValidationRegistry()
 {
@@ -146,6 +149,19 @@ UsdValidationRegistry::_PopulateMetadataFromPlugInfo()
             metadata.keywords.insert(metadata.keywords.end(),
                                      localKeywords.begin(),
                                      localKeywords.end());
+
+            if (const JsValue *const isTimeDependent
+                = TfMapLookupPtr(validatorDict, _tokens->IsTimeDependent)) {
+                if (!isTimeDependent->IsBool()) {
+                    TF_RUNTIME_ERROR("Expected bool for isTimeDependent for "
+                                     "validator '%s'",
+                                     metadata.name.GetText());
+                } else {
+                    metadata.isTimeDependent = isTimeDependent->GetBool();
+                }
+            } else {
+                metadata.isTimeDependent = false;
+            }
 
             if (const JsValue *const isSuite
                 = TfMapLookupPtr(validatorDict, _tokens->IsSuite)) {
@@ -761,6 +777,18 @@ UsdValidationRegistry::_CheckMetadata(
             metadata.name.GetText(), expectSuite, metadata.isSuite);
         return false;
     }
+
+    // return false if we are trying to register a timeDependent validator which
+    // is not a UsdValidatePrimTaskFn!
+    if (!checkForPrimTask && metadata.isTimeDependent) {
+        TF_CODING_ERROR(
+            "Invalid metadata for ('%s') validator. Cannot provide "
+            "isTimeDependent metadata when registering a "
+            "UsdValidateLayerTaskFn or UsdValidateStageTaskFn validator.",
+            metadata.name.GetText());
+        return false;
+    }
+
     return true;
 }
 

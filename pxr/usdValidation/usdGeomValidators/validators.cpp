@@ -16,6 +16,7 @@
 #include "pxr/usdValidation/usdGeomValidators/validatorTokens.h"
 #include "pxr/usdValidation/usdValidation/error.h"
 #include "pxr/usdValidation/usdValidation/registry.h"
+#include "pxr/usdValidation/usdValidation/timeRange.h"
 #include "pxr/usdValidation/usdValidation/validator.h"
 
 #include <algorithm>
@@ -25,7 +26,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 static UsdValidationErrorVector
-_GetStageMetadataErrors(const UsdStagePtr &usdStage)
+_GetStageMetadataErrors(const UsdStagePtr &usdStage, 
+                        const UsdValidationTimeRange &/*timeRange*/)
 {
     UsdValidationErrorVector errors;
     if (!usdStage->HasAuthoredMetadata(UsdGeomTokens->metersPerUnit)) {
@@ -53,7 +55,8 @@ _GetStageMetadataErrors(const UsdStagePtr &usdStage)
 }
 
 static UsdValidationErrorVector
-_SubsetFamilies(const UsdPrim &usdPrim)
+_SubsetFamilies(const UsdPrim &usdPrim, 
+                const UsdValidationTimeRange &/*timeRange*/)
 {
     if (!(usdPrim
           && usdPrim.IsInFamily<UsdGeomImageable>(
@@ -111,7 +114,8 @@ _SubsetFamilies(const UsdPrim &usdPrim)
 }
 
 static UsdValidationErrorVector
-_SubsetParentIsImageable(const UsdPrim &usdPrim)
+_SubsetParentIsImageable(const UsdPrim &usdPrim, 
+                         const UsdValidationTimeRange &/*timeRange*/)
 {
     if (!(usdPrim
           && usdPrim.IsInFamily<UsdGeomSubset>(

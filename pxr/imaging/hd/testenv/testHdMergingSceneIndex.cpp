@@ -218,6 +218,7 @@ _TestNoticesAfterRemove()
     return _CompareValue(
         "NOTICES", logEntries,
         {
+            _LogEntry("remove", "/"),
             _LogEntry("add", "/"),
             _LogEntry("add", "/Parent"),
             _LogEntry("add", "/Parent/Child"),

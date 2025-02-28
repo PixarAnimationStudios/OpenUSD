@@ -5,7 +5,10 @@
 // https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdSkelImaging/skeletonAdapter.h"
+
+#include "pxr/usdImaging/usdSkelImaging/dataSourceSkeletonPrim.h"
 #include "pxr/usdImaging/usdSkelImaging/package.h"
+#include "pxr/usdImaging/usdSkelImaging/tokens.h"
 #include "pxr/usdImaging/usdSkelImaging/utils.h"
 
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
@@ -2585,6 +2588,52 @@ UsdSkelImagingSkeletonAdapter::_UpdateSkinnedPrimForTime(
     }
 }
 
+TfTokenVector
+UsdSkelImagingSkeletonAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdSkelImagingSkeletonAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
+{
+    if (!subprim.IsEmpty()) {
+        return {};
+    }
+
+    return UsdSkelImagingPrimTypeTokens->skeleton;
+}
+
+HdContainerDataSourceHandle
+UsdSkelImagingSkeletonAdapter::GetImagingSubprimData(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (!subprim.IsEmpty()) {
+        return nullptr;
+    }
+
+    return UsdSkelImagingDataSourceSkeletonPrim::New(
+            prim.GetPath(), prim, stageGlobals);
+}
+
+HdDataSourceLocatorSet
+UsdSkelImagingSkeletonAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties,
+        UsdImagingPropertyInvalidationType invalidationType)
+{
+    if (!subprim.IsEmpty()) {
+        return {};
+    }
+
+    return UsdSkelImagingDataSourceSkeletonPrim::Invalidate(
+        prim, subprim,properties, invalidationType);
+}
 
 // ---------------------------------------------------------------------- //
 /// _SkelData

@@ -139,6 +139,121 @@ class "ModelAPI"
 {
 }
 
+class "ColorSpaceAPI" 
+(
+    inherits = </APISchemaBase>
+    doc = """UsdColorSpaceAPI is an API schema that introduces a `colorSpace`
+    property for authoring color space opinions. It also provides a mechanism 
+    to determine the applicable color space within a scope through inheritance.
+    Accordingly, this schema may be applied to any prim to introduce a color 
+    space at any point in a compositional hierachy.
+
+    Color space resolution involves determining the color space authored on an
+    attribute by first examining the attribute itself for a color space which
+    may have been authored via `UsdAttribute::SetColorSpace()`. If none is found,
+    the attribute's prim is checked for the existence of the `UsdColorSpaceAPI`,
+    and any color space authored there. If none is found on the attribute's
+    prim, the prim's ancestors are examined up the hierarchy until an authored
+    color space is found. If no color space is found, an empty `TfToken` is
+    returned.
+
+    Although `ColorSpaceAPI` provides a default color space, that default is not
+    consulted for color space determination of an attribute, or by any of the 
+    resolution methods.
+    
+    For a list of built in color space token values, see `GfColorSpaceNames`.
+
+    Use a pattern like this when determining an attribute's resolved color space:
+    
+    ```
+    if (attr.HasColorSpace()) {
+        return attr.GetColorSpace();
+    }
+    auto csAPI = UsdColorSpaceAPI(attr.GetPrim());
+    return UsdColorSpaceAPI::ComputeColorSpaceName(attr);
+    ```
+
+    `GfColorSpace` and its associated utilities can be used to perform color 
+    transformations; some examples:
+
+    ```
+    srcSpace = GfColorSpace(ComputeColorSpaceName(attr))
+    targetSpace = GfColorSpace(targetSpaceName)
+    targetColor = srcSpace.Convert(targetSpace, srcColor)
+    srcSpace.ConvertRGBSpan(targetSpace, colorSpan)
+    ```
+
+    It is recommended that in situations where performance is a concern, an 
+    application should perform conversions infrequently and cache results
+    wherever possible.
+    
+    """
+    customData = {
+        string apiSchemaType = "singleApply"
+        string extraIncludes = """
+#include "pxr/base/gf/colorSpace.h"
+#include "pxr/base/tf/bigRWMutex.h"
+"""
+    }
+)
+{
+    uniform token colorSpace:name (
+        doc = """The color space that applies to attributes with
+        unauthored color spaces on this prim and its descendents.
+        """
+    )
+}
+
+class "ColorSpaceDefinitionAPI" 
+(
+    inherits = </APISchemaBase>
+    doc = """UsdColorSpaceDefinitionAPI is an API schema for defining a custom
+    color space. Custom color spaces become available for use on prims or for
+    assignment to attributes via the colorSpace:name property on prims that have
+    applied `UsdColorSpaceAPI`. Since color spaces inherit hierarchically, a
+    custom color space defined on a prim will be available to all descendants of
+    that prim, unless overridden by a more local color space definition bearing
+    the same name. Locally redefining color spaces within the same layer could
+    be confusing, so that practice is discouraged.
+
+    The default color space values are equivalent to an identity transform, so
+    applying this schema and invoking `UsdColorSpaceAPI::ComputeColorSpace()`
+    on a prim resolving to a defaulted color definition will return a color
+    space equivalent to the identity transform.
+    """
+    customData = {
+        string apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "colorSpaceDefinition"
+        string extraIncludes = """
+#include "pxr/base/gf/colorSpace.h"
+"""
+    }
+)
+{
+    uniform token name = "custom" (
+        doc = """The name of the color space defined on this prim.
+        """
+    )
+    float2 redChroma = (1, 0) (
+        doc = "Red chromaticity coordinates"
+    )
+    float2 greenChroma = (0, 1) (
+        doc = "Green chromaticity coordinates"
+    )
+    float2 blueChroma = (0, 0) (
+        doc = "Blue chromaticity coordinates"
+    )
+    float2 whitePoint = (0.33333333, 0.33333333) (
+        doc = "Whitepoint chromaticity coordinates"
+    )
+    float gamma = 1.0 (
+        doc = "Gamma value of the log section"
+    )
+    float linearBias = 0.0 (
+        doc = "Linear bias of the log section"
+    )
+}
+
 class "CollectionAPI"
 (
     inherits = </APISchemaBase>

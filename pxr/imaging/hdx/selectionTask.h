@@ -45,6 +45,8 @@ using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
 class HdxSelectionTask : public HdTask
 {
 public:
+    using TaskParams = HdxSelectionTaskParams;
+
     HDX_API
     HdxSelectionTask(HdSceneDelegate* delegate, SdfPath const& id);
 

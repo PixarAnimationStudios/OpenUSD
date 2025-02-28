@@ -119,6 +119,7 @@ pxr_test_scripts(
     testenv/testPcpResolvedPathChange.py
     testenv/testPcpStreamingLayerReload.py
     testenv/testPcpCompositionResults.py
+    testenv/testPcpNegativeOffsetScale.py
 )
 
 pxr_build_test_shared_lib(TestPcpDynamicFileFormatPlugin
@@ -2161,4 +2162,18 @@ pxr_register_test(testPcpLayerRelocatesEditBuilder
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpLayerRelocatesEditBuilder"
     EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testPcpNegativeOffsetScaleAllowed
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpNegativeOffsetScale"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testPcpNegativeOffsetScale
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpNegativeOffsetScale"
+    EXPECTED_RETURN_CODE 0
+    ENV 
+        PCP_ALLOW_NEGATIVE_LAYER_OFFSET_SCALE=0
 )

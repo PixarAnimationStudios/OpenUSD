@@ -207,6 +207,10 @@ HgiVulkanBeginLabel(
         return;
     }
 
+    if (!TF_VERIFY(device && device->vkCmdBeginDebugUtilsLabelEXT)) {
+        return;
+    }
+
     VkCommandBuffer vkCmbuf = cb->GetVulkanCommandBuffer();
     VkDebugUtilsLabelEXT labelInfo = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
     labelInfo.pLabelName = label;
@@ -219,6 +223,10 @@ HgiVulkanEndLabel(
     HgiVulkanCommandBuffer* cb)
 {
     if (!HgiVulkanIsDebugEnabled()) {
+        return;
+    }
+
+    if (!TF_VERIFY(device && device->vkCmdEndDebugUtilsLabelEXT)) {
         return;
     }
 
@@ -235,6 +243,10 @@ HgiVulkanBeginQueueLabel(
         return;
     }
 
+    if (!TF_VERIFY(device && device->vkQueueBeginDebugUtilsLabelEXT)) {
+        return;
+    }
+
     VkQueue gfxQueue = device->GetCommandQueue()->GetVulkanGraphicsQueue();
     VkDebugUtilsLabelEXT labelInfo = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
     labelInfo.pLabelName = label;
@@ -245,6 +257,10 @@ void
 HgiVulkanEndQueueLabel(HgiVulkanDevice* device)
 {
     if (!HgiVulkanIsDebugEnabled()) {
+        return;
+    }
+
+    if (!TF_VERIFY(device && device->vkQueueEndDebugUtilsLabelEXT)) {
         return;
     }
 

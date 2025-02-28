@@ -7,6 +7,7 @@
 
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 #include "pxr/usd/usd/prim.h"
@@ -16,12 +17,14 @@
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/subset.h"
 #include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usdShade/shader.h"
 #include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usdValidation/usdShadeValidators/validatorTokens.h"
 #include "pxr/usdValidation/usdValidation/error.h"
 #include "pxr/usdValidation/usdValidation/registry.h"
+#include "pxr/usdValidation/usdValidation/timeRange.h"
 
 #include <algorithm>
 #include <unordered_map>
@@ -30,7 +33,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 static UsdValidationErrorVector
-_EncapsulationValidator(const UsdPrim &usdPrim)
+_EncapsulationValidator(const UsdPrim &usdPrim, 
+                        const UsdValidationTimeRange &/*timeRange*/)
 {
     const UsdShadeConnectableAPI &connectable = UsdShadeConnectableAPI(usdPrim);
 
@@ -101,7 +105,9 @@ _EncapsulationValidator(const UsdPrim &usdPrim)
 }
 
 static UsdValidationErrorVector
-_MaterialBindingApiAppliedValidator(const UsdPrim &usdPrim)
+_MaterialBindingApiAppliedValidator(
+    const UsdPrim &usdPrim, 
+    const UsdValidationTimeRange &/*timeRange*/)
 {
     UsdValidationErrorVector errors;
 
@@ -134,7 +140,9 @@ _MaterialBindingApiAppliedValidator(const UsdPrim &usdPrim)
 }
 
 static UsdValidationErrorVector
-_MaterialBindingRelationships(const UsdPrim &usdPrim)
+_MaterialBindingRelationships(
+    const UsdPrim &usdPrim, 
+    const UsdValidationTimeRange &/*timeRange*/)
 {
     if (!usdPrim) {
         return {};
@@ -241,7 +249,9 @@ _MaterialBindingCheckCollection(const UsdPrim &prim, const UsdRelationship &rel,
 }
 
 static UsdValidationErrorVector
-_MaterialBindingCollectionValidator(const UsdPrim &usdPrim)
+_MaterialBindingCollectionValidator(
+    const UsdPrim &usdPrim, 
+    const UsdValidationTimeRange &/*timeRange*/)
 {
     if (!usdPrim || !usdPrim.HasAPI<UsdShadeMaterialBindingAPI>()) {
         return {};
@@ -265,7 +275,9 @@ _MaterialBindingCollectionValidator(const UsdPrim &usdPrim)
 }
 
 static UsdValidationErrorVector
-_ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
+_ShaderPropertyTypeConformance(
+    const UsdPrim &usdPrim, 
+    const UsdValidationTimeRange &/*timeRange*/)
 {
     if (!(usdPrim
           && usdPrim.IsInFamily<UsdShadeShader>(
@@ -320,7 +332,8 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
             if (SdrShaderNodeConstPtr sdrShaderNode
                 = SdrRegistry::GetInstance().GetShaderNodeByIdentifier(
                     shaderId)) {
-                for (const TfToken &propName : sdrShaderNode->GetInputNames()) {
+                for (const TfToken &propName :
+                        sdrShaderNode->GetShaderInputNames()) {
                     if (const SdrShaderPropertyConstPtr sdrProp
                         = sdrShaderNode->GetShaderInput(propName)) {
                         propNameToPropertyMap.emplace(propName, sdrProp);
@@ -353,7 +366,8 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
                 = shader.GetShaderNodeForSourceType(TfToken(sourceType))) {
                 shaderNodesFromSourceTypes.push_back(sdrShaderNode);
 
-                for (const TfToken &propName : sdrShaderNode->GetInputNames()) {
+                for (const TfToken &propName :
+                        sdrShaderNode->GetShaderInputNames()) {
                     // Check if property has already been added to the map.
                     if (propNameToPropertyMap.find(propName)
                         == propNameToPropertyMap.end()) {
@@ -440,7 +454,9 @@ _ShaderPropertyTypeConformance(const UsdPrim &usdPrim)
 }
 
 static UsdValidationErrorVector
-_SubsetMaterialBindFamilyName(const UsdPrim &usdPrim)
+_SubsetMaterialBindFamilyName(
+    const UsdPrim &usdPrim, 
+    const UsdValidationTimeRange &/*timeRange*/)
 {
     if (!(usdPrim
           && usdPrim.IsInFamily<UsdGeomSubset>(
@@ -487,7 +503,8 @@ _SubsetMaterialBindFamilyName(const UsdPrim &usdPrim)
 }
 
 static UsdValidationErrorVector
-_SubsetsMaterialBindFamily(const UsdPrim &usdPrim)
+_SubsetsMaterialBindFamily(const UsdPrim &usdPrim, 
+                           const UsdValidationTimeRange &/*timeRange*/)
 {
     if (!(usdPrim
           && usdPrim.IsInFamily<UsdGeomImageable>(
@@ -538,6 +555,252 @@ _SubsetsMaterialBindFamily(const UsdPrim &usdPrim)
     return errors;
 }
 
+static
+UsdValidationErrorVector
+_NormalMapTextureValidator(const UsdPrim& usdPrim,
+                           const UsdValidationTimeRange& /*timeRange*/) 
+{
+    if (!usdPrim.IsA<UsdShadeShader>()) {
+        return {};
+    }
+
+    const UsdShadeShader shader(usdPrim);
+
+    TfToken shaderId;
+    const TfToken UsdPreviewSurface("UsdPreviewSurface");
+
+    // We may have failed to fetch an identifier for asset/source-based
+    // nodes. OR, we could potentially be driven by a UsdPrimvarReader,
+    // in which case we'd have nothing to validate
+    if (!shader.GetShaderId(&shaderId) || shaderId != UsdPreviewSurface) {
+        return {};
+    }
+
+    const TfToken Normal("normal");
+    const UsdShadeInput normalInput = shader.GetInput(Normal);
+    if (!normalInput) {
+        return {};
+    }
+
+    const UsdShadeAttributeVector valueProducingAttributes =
+        UsdShadeUtils::GetValueProducingAttributes(normalInput);
+    if (valueProducingAttributes.empty() ||
+        valueProducingAttributes[0].GetPrim() == usdPrim) {
+        return {};
+    }
+
+    const UsdPrim sourcePrim = valueProducingAttributes[0].GetPrim();
+    UsdShadeShader sourceShader(sourcePrim);
+    if (!sourceShader) {
+        // In theory, could be connected to an interface attribute of a
+        // parent connectable... not useful, but not an error
+        const UsdShadeConnectableAPI& connectable =
+            UsdShadeConnectableAPI(sourcePrim);
+
+        if (connectable){
+            return {};
+        }
+
+        return {
+            UsdValidationError{
+                UsdShadeValidationErrorNameTokens->nonShaderConnection,
+                UsdValidationErrorType::Error,
+                UsdValidationErrorSites{
+                    UsdValidationErrorSite(usdPrim.GetStage(),
+                                           usdPrim.GetPath())
+                },
+                TfStringPrintf("UsdPreviewSurface.normal on prim <%s> is "
+                               "connected to a non-Shader prim.",
+                           usdPrim.GetPath().GetText())
+            }
+        };
+    }
+
+    TfToken sourceShaderId;
+    const TfToken UsdUVTexture("UsdUVTexture");
+
+    bool gotShaderSourceId = sourceShader.GetShaderId(&sourceShaderId);
+
+    // We may have failed to fetch an identifier for asset/source-based
+    // nodes. OR, we could potentially be driven by a UsdPrimvarReader,
+    // in which case we'd have nothing to validate
+    if (!gotShaderSourceId || sourceShaderId != UsdUVTexture) {
+        return {};
+    }
+
+    const auto _GetInputValue = [](const UsdShadeShader &inputShader,
+        const TfToken &token, auto *outputValue) -> bool {
+        const UsdShadeInput input = inputShader.GetInput(token);
+        if (!input) {
+            return false;
+        }
+
+        const UsdShadeAttributeVector valueProducingAttributes =
+            UsdShadeUtils::GetValueProducingAttributes(input);
+
+        // Query value producing attributes for input values.
+        // This has to be a length of 1, otherwise no attribute is producing
+        // a value.
+        // We require an input parameter producing the value.
+        if (valueProducingAttributes.empty() ||
+            valueProducingAttributes.size() != 1 ||
+            !UsdShadeInput::IsInput(valueProducingAttributes[0])) {
+            return false;
+        }
+
+        return valueProducingAttributes[0].Get(outputValue,
+            UsdTimeCode::EarliestTime());
+    };
+
+    SdfAssetPath textureAssetPath;
+    const TfToken File("file");
+    bool valueForFileExists = _GetInputValue(sourceShader, File,
+        &textureAssetPath);
+
+    UsdValidationErrorVector errors;
+
+    if (!valueForFileExists || textureAssetPath.GetResolvedPath().empty()) {
+        std::string assetPath = !textureAssetPath.GetAssetPath().empty()
+        ? textureAssetPath.GetAssetPath()
+        : "";
+        errors.emplace_back(
+            UsdShadeValidationErrorNameTokens->invalidFile,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites{
+                    UsdValidationErrorSite(usdPrim.GetStage(),
+                                           sourcePrim.GetPath())
+            },
+            TfStringPrintf("UsdUVTexture prim <%s> has invalid or "
+                           "unresolvable inputs:file of @%s@",
+                           sourcePrim.GetPath().GetText(), assetPath.c_str()));
+    }
+
+    auto _TextureIs8Bit = [](std::string resolvedPath) {
+
+        std::string extension = ArGetResolver().GetExtension(resolvedPath);
+        extension = TfStringToLower(extension);
+        static const std::unordered_set<std::string> eightBitExtensions =
+            {"bmp", "tga", "png", "jpg", "jpeg", "tif"};
+
+        return eightBitExtensions.find(extension) != eightBitExtensions.end();
+    };
+
+    if (!_TextureIs8Bit(textureAssetPath.GetResolvedPath())) {
+        // Nothing more is required for image depths > 8 bits, which
+        // we assume FOR NOW, are floating point
+        return errors;
+    }
+
+    TfToken colorSpace;
+    const TfToken Raw("raw");
+    bool valueForColorSpaceExists =
+        _GetInputValue(sourceShader, TfToken("sourceColorSpace"), &colorSpace);
+    if (!valueForColorSpaceExists || colorSpace != Raw) {
+        errors.emplace_back(
+            UsdShadeValidationErrorNameTokens->invalidSourceColorSpace,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites{
+                    UsdValidationErrorSite(usdPrim.GetStage(),
+                                           sourcePrim.GetPath())
+            },
+            TfStringPrintf("UsdUVTexture prim <%s> that reads"
+                           " Normal Map @%s@ should set "
+                           "inputs:sourceColorSpace to 'raw'.",
+                           sourcePrim.GetPath().GetText(),
+                           textureAssetPath.GetAssetPath().c_str()));
+    }
+
+    GfVec4f biasVector;
+    const TfToken Bias("bias");
+    bool valueForBiasExists = _GetInputValue(sourceShader, Bias,
+        &biasVector);
+
+    GfVec4f scaleVector;
+    const TfToken Scale("scale");
+    bool valueForScaleExists = _GetInputValue(sourceShader, Scale,
+        &scaleVector);
+
+    if (!(valueForBiasExists && valueForScaleExists))
+    {
+        errors.emplace_back(
+            UsdShadeValidationErrorNameTokens->nonCompliantBiasAndScale,
+            UsdValidationErrorType::Error,
+            UsdValidationErrorSites{
+                UsdValidationErrorSite(usdPrim.GetStage(),
+                    sourcePrim.GetPath())
+            },
+            TfStringPrintf("UsdUVTexture prim <%s> reads 8 bit Normal Map "
+                           "@%s@, which requires that inputs:scale be set to "
+                           "(2, 2, 2, 1) and inputs:bias be set to "
+                           "(-1, -1, -1, 0) for proper interpretation as per "
+                           "the UsdPreviewSurface and UsdUVTexture docs.",
+                           sourcePrim.GetPath().GetText(),
+                           textureAssetPath.GetAssetPath().c_str())
+        );
+        return errors;
+    }
+
+    // We still warn for inputs:scale not conforming to UsdPreviewSurface
+    // guidelines, as some authoring tools may rely on this to scale an
+    // effect of normal perturbations.
+    // don't really care about fourth components...
+    bool nonCompliantScaleValues = scaleVector[0] != 2 ||
+        scaleVector[1] != 2 || scaleVector[2] != 2;
+
+    if (nonCompliantScaleValues)
+    {
+        errors.emplace_back(
+            UsdShadeValidationErrorNameTokens->nonCompliantScale,
+            UsdValidationErrorType::Warn,
+            UsdValidationErrorSites{
+                UsdValidationErrorSite(usdPrim.GetStage(),
+                    sourcePrim.GetPath())
+            },
+            TfStringPrintf("UsdUVTexture prim <%s> reads an 8 bit Normal "
+                           "Map, but has non-standard inputs:scale value "
+                           "of (%.6g, %.6g, %.6g, %.6g). inputs:scale must "
+                           "be set to (2, 2, 2, 1) so as fulfill the "
+                           "requirements of the normals to be in tangent "
+                           "space of [(-1,-1,-1), (1,1,1)] as documented in "
+                           "the UsdPreviewSurface and UsdUVTexture docs.",
+                           sourcePrim.GetPath().GetText(),
+                           scaleVector[0], scaleVector[1], scaleVector[2],
+                           scaleVector[3])
+        );
+    }
+
+    // Note that for a 8bit normal map, inputs:bias must be appropriately
+    // set to [-1, -1, -1, 0] to fulfill the requirements of the
+    // normals to be in tangent space of [(-1,-1,-1), (1,1,1)] as documented
+    // in the UsdPreviewSurface docs. Note this is true only when scale
+    // values are respecting the requirements laid in the
+    // UsdPreviewSurface / UsdUVTexture docs. We continue to warn!
+    if (!nonCompliantScaleValues && (biasVector[0] != -1 ||
+        biasVector[1] != -1 || biasVector[2] != -1))
+    {
+        errors.emplace_back(
+            UsdShadeValidationErrorNameTokens->nonCompliantBias,
+            UsdValidationErrorType::Warn,
+            UsdValidationErrorSites{
+                UsdValidationErrorSite(usdPrim.GetStage(),
+                    sourcePrim.GetPath())
+            },
+            TfStringPrintf("UsdUVTexture prim <%s> reads an 8 bit Normal "
+                            "Map, but has non-standard inputs:bias value of "
+                            "(%.6g, %.6g, %.6g, %.6g). inputs:bias must be "
+                            "set to [-1,-1,-1,0] so as to fulfill the "
+                            "requirements of the normals to be in tangent "
+                            "space of [(-1,-1,-1), (1,1,1)] as documented in "
+                            "the UsdPreviewSurface and UsdUVTexture docs.",
+                            sourcePrim.GetPath().GetText(),
+                            biasVector[0], biasVector[1], biasVector[2],
+                            biasVector[3])
+        );
+    }
+
+    return errors;
+}
+
 TF_REGISTRY_FUNCTION(UsdValidationRegistry)
 {
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
@@ -553,6 +816,10 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     registry.RegisterPluginValidator(
         UsdShadeValidatorNameTokens->materialBindingCollectionValidator,
         _MaterialBindingCollectionValidator);
+
+    registry.RegisterPluginValidator(
+        UsdShadeValidatorNameTokens->normalMapTextureValidator,
+        _NormalMapTextureValidator);
 
     registry.RegisterPluginValidator(
         UsdShadeValidatorNameTokens->shaderSdrCompliance,

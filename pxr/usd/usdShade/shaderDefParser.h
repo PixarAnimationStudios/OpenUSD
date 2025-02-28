@@ -9,20 +9,18 @@
 
 #include "pxr/usd/usdShade/api.h"
 
-#include "pxr/usd/ndr/declare.h"
-#include "pxr/usd/ndr/discoveryPlugin.h"
-#include "pxr/usd/ndr/parserPlugin.h"
+#include "pxr/usd/sdr/declare.h"
+#include "pxr/usd/sdr/discoveryPlugin.h"
+#include "pxr/usd/sdr/parserPlugin.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-class UsdStageCache;
 
 /// \class UsdShadeShaderDefParserPlugin
 /// 
 /// Parses shader definitions represented using USD scene description using the 
 /// schemas provided by UsdShade.
 /// 
-class UsdShadeShaderDefParserPlugin : public NdrParserPlugin 
+class UsdShadeShaderDefParserPlugin : public SdrParserPlugin 
 {
 public: 
     USDSHADE_API
@@ -32,17 +30,14 @@ public:
     ~UsdShadeShaderDefParserPlugin() override = default;
 
     USDSHADE_API
-    NdrNodeUniquePtr Parse(const NdrNodeDiscoveryResult &discoveryResult) 
-        override;
+    SdrShaderNodeUniquePtr ParseShaderNode(
+        const SdrShaderNodeDiscoveryResult &discoveryResult) override;
 
     USDSHADE_API
-    const NdrTokenVec &GetDiscoveryTypes() const override;
+    const SdrTokenVec &GetDiscoveryTypes() const override;
 
     USDSHADE_API
     const TfToken &GetSourceType() const override;    
-
-private:
-    static UsdStageCache _cache;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

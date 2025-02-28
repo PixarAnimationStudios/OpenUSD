@@ -10,8 +10,8 @@
 #include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolvedPath.h"
-#include "pxr/usd/ndr/debugCodes.h"
-#include "pxr/usd/ndr/filesystemDiscoveryHelpers.h"
+#include "pxr/usd/sdr/debugCodes.h"
+#include "pxr/usd/sdr/filesystemDiscoveryHelpers.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdr/shaderProperty.h"
@@ -36,8 +36,6 @@
 namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-TF_DEFINE_PUBLIC_TOKENS(UsdMtlxTokens, USD_MTLX_TOKENS);
 
 namespace {
 
@@ -150,31 +148,31 @@ _GetUsdValue(const std::string& valueString, const std::string& type)
 // Return the contents of a search path environment variable
 // as a vector of strings.  The path is split on the platform's
 // native path list separator.
-static const NdrStringVec
+static const SdrStringVec
 _GetSearchPathsFromEnvVar(const char* name)
 {
     const std::string paths = TfGetenv(name);
     return !paths.empty() 
                 ? TfStringSplit(paths, ARCH_PATH_LIST_SEP) 
-                : NdrStringVec();
+                : SdrStringVec();
 }
 
 // Combines two search path lists.
-static const NdrStringVec
-_MergeSearchPaths(const NdrStringVec& stronger, const NdrStringVec& weaker)
+static const SdrStringVec
+_MergeSearchPaths(const SdrStringVec& stronger, const SdrStringVec& weaker)
 {
-    NdrStringVec result = stronger;
+    SdrStringVec result = stronger;
     result.insert(result.end(), weaker.begin(), weaker.end());
     return result;
 }
 
-static const NdrStringVec
+static const SdrStringVec
 _ComputeStdlibSearchPaths()
 {
     // Get the MaterialX/libraries path(s)
     // This is used to indicate the location of the MaterialX/libraries folder 
     // if moved/changed from the path initialized in PXR_MATERIALX_STDLIB_DIR.
-    NdrStringVec stdlibSearchPaths =
+    SdrStringVec stdlibSearchPaths =
         _GetSearchPathsFromEnvVar("PXR_MTLX_STDLIB_SEARCH_PATHS");
 
     // Add path to the MaterialX standard library discovered at build time.
@@ -185,14 +183,14 @@ _ComputeStdlibSearchPaths()
     return stdlibSearchPaths;
 }
 
-const NdrStringVec&
+const SdrStringVec&
 UsdMtlxStandardLibraryPaths()
 {
     static const auto materialxLibraryPaths = _ComputeStdlibSearchPaths();
     return materialxLibraryPaths;
 }
 
-const NdrStringVec&
+const SdrStringVec&
 UsdMtlxCustomSearchPaths()
 {
     // Get the location of any additional custom mtlx files outside 
@@ -202,7 +200,7 @@ UsdMtlxCustomSearchPaths()
     return materialxCustomSearchPaths;
 }
 
-const NdrStringVec&
+const SdrStringVec&
 UsdMtlxSearchPaths()
 {
     static const auto materialxSearchPaths = 
@@ -211,10 +209,10 @@ UsdMtlxSearchPaths()
     return materialxSearchPaths;
 }
 
-NdrStringVec
+SdrStringVec
 UsdMtlxStandardFileExtensions()
 {
-    static const auto extensions = NdrStringVec{ "mtlx" };
+    static const auto extensions = SdrStringVec{ "mtlx" };
     return extensions;
 }
 
@@ -367,7 +365,7 @@ UsdMtlxGetDocumentFromString(const std::string &mtlxXml)
             document = doc;
         }
         catch (mx::Exception& x) {
-            TF_DEBUG(NDR_PARSING).Msg("MaterialX error reading source XML: %s",
+            TF_DEBUG(SDR_PARSING).Msg("MaterialX error reading source XML: %s",
                                     x.what());
         }
     }
@@ -376,9 +374,9 @@ UsdMtlxGetDocumentFromString(const std::string &mtlxXml)
 }
 
 static void
-_ImportLibraries(const NdrStringVec& searchPaths, mx::Document* document)
+_ImportLibraries(const SdrStringVec& searchPaths, mx::Document* document)
 {
-    for (auto&& fileResult : NdrFsHelpersDiscoverFiles(searchPaths,
+    for (auto&& fileResult : SdrFsHelpersDiscoverFiles(searchPaths,
                                 UsdMtlxStandardFileExtensions(), false)) {
 
         // Read the file. If this fails due to an exception, a runtime
@@ -427,7 +425,7 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
 
     if (!m.IsClean()) {
         for (const auto& error : m) {
-            TF_DEBUG(NDR_PARSING).Msg("%s\n", error.GetCommentary().c_str());
+            TF_DEBUG(SDR_PARSING).Msg("%s\n", error.GetCommentary().c_str());
         }
         m.Clear();
     }
@@ -435,14 +433,14 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
     return document;
 }
 
-NdrVersion
+SdrVersion
 UsdMtlxGetVersion(
     const mx::ConstInterfaceElementPtr& mtlx, bool* implicitDefault)
 {
     TfErrorMark mark;
 
     // Use the default invalid version by default.
-    auto version = NdrVersion().GetAsDefault();
+    auto version = SdrVersion().GetAsDefault();
 
     // Get the version, if any, otherwise use the invalid version.
     std::string versionString = mtlx->getVersionString();
@@ -450,7 +448,7 @@ UsdMtlxGetVersion(
         // No version specified.  Use the default.
     }
     else {
-        if (auto tmp = NdrVersion(versionString)) {
+        if (auto tmp = SdrVersion(versionString)) {
             version = tmp;
         }
         else {
@@ -510,8 +508,6 @@ UsdMtlxGetUsdType(const std::string& mtlxTypeName)
     static const auto table =
         std::unordered_map<std::string, UsdMtlxUsdTypeInfo>{
            { "boolean",       TUPLEX(Bool,          true,  noMatch) },
-           { "color2array",   TUPLEX(Float2Array,   false, noMatch) },
-           { "color2",        TUPLEN(Float2,        false, Float, 2)},
            { "color3array",   TUPLE3(Color3fArray,  true,  Color)   },
            { "color3",        TUPLE3(Color3f,       true,  Color)   },
            { "color4array",   TUPLE3(Color4fArray,  true,  Color4)  },

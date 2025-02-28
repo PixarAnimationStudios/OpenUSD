@@ -36,6 +36,7 @@ pxr_library(usdImaging
         directMaterialBindingsSchema
         dataSourceAttribute
         dataSourceAttributeColorSpace
+        dataSourceAttributeTypeName
         dataSourceBasisCurves
         dataSourceCamera
         dataSourceGprim
@@ -131,6 +132,8 @@ pxr_library(usdImaging
         renderVarAdapter
         representedByAncestorPrimAdapter
         rerootingSceneIndex
+        sceneIndexPlugin
+        sceneIndexPrimAdapter
         sceneIndices
         sphereAdapter
         sphereLightAdapter

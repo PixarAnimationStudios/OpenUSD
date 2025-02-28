@@ -322,7 +322,7 @@ namespace {
     // -------------------------------------------------------------------------
 
     // Helper to convert the type to an Sdf type
-    NdrSdfTypeIndicator
+    SdrSdfTypeIndicator
     _GetTypeAsSdfType(
         const TfToken& type, size_t arraySize, const NdrTokenMap& metadata,
         int usdEncodingVersion)
@@ -337,7 +337,7 @@ namespace {
                 "Invalid/unsupported usdEncodingVersion %d. "
                 "Current version is %d.",
                 usdEncodingVersion, _UsdEncodingVersionsCurrent);
-            return NdrSdfTypeIndicator(SdfValueTypeNames->Token, type, false);
+            return SdrSdfTypeIndicator(SdfValueTypeNames->Token, type, false);
         }
     }
 
@@ -615,6 +615,44 @@ namespace {
             }
         }
 
+        // INT ARRAY (FIXED SIZE 2, 3, 4)
+        // ---------------------------------------------------------------------
+        else if (sdrType == SdrPropertyTypes->Int &&
+                 isArray) {
+            VtIntArray arrayVal;
+            _GetValue(sdrDefaultValue, &arrayVal);
+
+            if (arrayVal.size() != arraySize) {
+                TF_DEBUG(SDR_TYPE_CONFORMANCE).Msg(
+                    "Default value for fixed size int array type does not "
+                    "have the right length (%zu vs expected %zu)",
+                    arrayVal.size(), arraySize);
+                return sdrDefaultValue;
+            } 
+
+            // We return a fixed-size array for arrays with size 2, 3, or 4
+            // because SdrShaderProperty::GetTypeAsSdfType returns a specific
+            // size type (Int2, Int3, Int4).  If in the future we want to
+            // return a VtIntArray instead, we need to change the logic in
+            // SdrShaderProperty::GetTypeAsSdfType
+            if (arraySize == 2) {
+                return VtValue(
+                        GfVec2i(arrayVal[0], 
+                            arrayVal[1]));
+            } else if (arraySize == 3) {
+                return VtValue(
+                        GfVec3i(arrayVal[0],
+                            arrayVal[1],
+                            arrayVal[2]));
+            } else if (arraySize == 4) {
+                return VtValue(
+                        GfVec4i(arrayVal[0],
+                            arrayVal[1],
+                            arrayVal[2],
+                            arrayVal[3]));
+            }
+        }
+
         // Default value's type was not conformant, but no special translation
         // step was found. So we use the default value of the SdfTypeName, which
         // is guaranteed to match
@@ -777,6 +815,13 @@ SdrShaderProperty::CanConnectTo(const NdrProperty& other) const
     return false;
 }
 
+bool 
+SdrShaderProperty::CanConnectTo(const SdrShaderProperty& other) const
+{
+    const NdrProperty& prop = other;
+    return CanConnectTo(prop);
+}
+
 bool
 SdrShaderProperty::IsVStructMember() const
 {
@@ -789,7 +834,7 @@ SdrShaderProperty::IsVStruct() const
     return _type == SdrPropertyTypes->Vstruct;
 }
 
-NdrSdfTypeIndicator
+SdrSdfTypeIndicator
 SdrShaderProperty::GetTypeAsSdfType() const
 {
     return _GetTypeAsSdfType(_type, _arraySize, _metadata,

@@ -51,6 +51,8 @@ struct HdxOitResolveTaskParams
 class HdxOitResolveTask : public HdTask 
 {
 public:
+    using TaskParams = HdxOitResolveTaskParams;
+
     HDX_API
     static bool IsOitEnabled();
 

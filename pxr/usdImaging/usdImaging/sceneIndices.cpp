@@ -13,6 +13,7 @@
 #include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/renderSettingsFlatteningSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/sceneIndexPlugin.h"
 #include "pxr/usdImaging/usdImaging/selectionSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/unloadedDrawModeSceneIndex.h"
@@ -28,7 +29,62 @@
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/sceneIndexUtil.h"
 
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/registry.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfRegistryManager::GetInstance().SubscribeTo<UsdImagingSceneIndexPlugin>();
+}
+
+static
+HdSceneIndexBaseRefPtr
+_AddPluginSceneIndices(HdSceneIndexBaseRefPtr sceneIndex)
+{
+    PlugRegistry &plugRegistry = PlugRegistry::GetInstance();
+
+    std::set<TfType> pluginTypes;
+    PlugRegistry::GetAllDerivedTypes(
+        TfType::Find<UsdImagingSceneIndexPlugin>(), &pluginTypes);
+
+    for (const TfType &pluginType : pluginTypes) {
+        PlugPluginPtr const plugin = plugRegistry.GetPluginForType(pluginType);
+        if (!plugin) {
+            TF_CODING_ERROR(
+                "Could not get plugin for type %s.",
+                pluginType.GetTypeName().c_str());
+            continue;
+        }
+        if (!plugin->Load()) {
+            TF_CODING_ERROR(
+                "Could not load plugin %s.",
+                plugin->GetName().c_str());
+            continue;
+        }
+
+        UsdImagingSceneIndexPlugin::FactoryBase * const factory =
+            pluginType.GetFactory<UsdImagingSceneIndexPlugin::FactoryBase>();
+        if (!factory) {
+            TF_CODING_ERROR(
+                "No factory for UsdImagingSceneIndexPlugin %s.",
+                plugin->GetName().c_str());
+            continue;
+        }
+        UsdImagingSceneIndexPluginUniquePtr const sceneIndexPlugin =
+            factory->Create();
+        if (!sceneIndexPlugin) {
+            TF_CODING_ERROR(
+                "Could not create UsdImagingSceneIndexPlugin %s.",
+                plugin->GetName().c_str());
+            continue;
+        }
+        sceneIndex = sceneIndexPlugin->AppendSceneIndex(sceneIndex);
+    }
+    
+    return sceneIndex;
+}
 
 static
 HdContainerDataSourceHandle
@@ -168,6 +224,9 @@ UsdImagingCreateSceneIndices(
     sceneIndex = UsdImagingMaterialBindingsResolvingSceneIndex::New(
                         sceneIndex, /* inputArgs = */ nullptr);
 
+    sceneIndex =
+        _AddPluginSceneIndices(sceneIndex);
+    
     sceneIndex = result.selectionSceneIndex =
         UsdImagingSelectionSceneIndex::New(sceneIndex);
     

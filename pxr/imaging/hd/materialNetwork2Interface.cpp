@@ -11,6 +11,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (colorSpace)
+    (typeName)
 );
 
 HdMaterialNode2 *
@@ -54,6 +55,44 @@ HdMaterialNetwork2Interface::_GetOrCreateNode(const TfToken &nodeName)
 
     _lastAccessedNode = &_materialNetwork->nodes[SdfPath(nodeName.data())];
     return  _lastAccessedNode;
+}
+
+TfTokenVector
+_GetKeysFromVtDictionary(const VtDictionary& dict, const std::string prefix="")
+{
+    TfTokenVector keys;
+    for (const auto& it : dict) {
+
+        const std::string key =
+            prefix.empty() 
+                ? it.first 
+                : prefix + ":" + it.first;
+        keys.emplace_back(TfToken(key));
+
+        if (it.second.IsHolding<VtDictionary>()) {
+            TfTokenVector subKeys =
+                _GetKeysFromVtDictionary(
+                    it.second.UncheckedGet<VtDictionary>(), key);
+            keys.insert(keys.end(), subKeys.begin(), subKeys.end());
+        }
+    }
+    return keys;
+}
+
+TfTokenVector
+HdMaterialNetwork2Interface::GetMaterialConfigKeys() const
+{
+    return _GetKeysFromVtDictionary(_materialNetwork->config);
+}
+
+VtValue
+HdMaterialNetwork2Interface::GetMaterialConfigValue(const TfToken& key) const
+{
+    const auto it = _materialNetwork->config.find(key.GetString());
+    if (it != _materialNetwork->config.end()) {
+        return it->second;
+    }
+    return VtValue();
 }
 
 TfTokenVector
@@ -141,6 +180,13 @@ HdMaterialNetwork2Interface::GetNodeParameterData(
         if (csIt != node->parameters.end()) {
             paramData.colorSpace = csIt->second.Get<TfToken>();
         }
+        // TypeName
+        const TfToken typeNameParamName(SdfPath::JoinIdentifier(
+            _tokens->typeName, paramName));
+        const auto tnIt = node->parameters.find(typeNameParamName);
+        if (tnIt != node->parameters.end()) {
+            paramData.typeName = tnIt->second.Get<TfToken>();
+        }
     }
     return paramData;
 }
@@ -197,6 +243,15 @@ HdMaterialNetwork2Interface::SetNodeType(
 }
 
 void
+HdMaterialNetwork2Interface::SetNodeTypeInfoValue(
+    const TfToken &nodeName,
+    const TfToken &key,
+    const VtValue &value)
+{
+    // no-op
+}
+
+void
 HdMaterialNetwork2Interface::SetNodeParameterValue(
     const TfToken &nodeName,
     const TfToken &paramName,
@@ -223,6 +278,12 @@ HdMaterialNetwork2Interface::SetNodeParameterData(
                 SdfPath::JoinIdentifier(_tokens->colorSpace, paramName));
             node->parameters[csParamName] = VtValue(paramData.colorSpace);
         }
+        // TypeName
+        if (!paramData.typeName.IsEmpty()) {
+            const TfToken tnParamName(
+                SdfPath::JoinIdentifier(_tokens->typeName, paramName));
+            node->parameters[tnParamName] = VtValue(paramData.typeName);
+        }
     }
 }
 
@@ -233,6 +294,15 @@ HdMaterialNetwork2Interface::DeleteNodeParameter(
 {
     if (HdMaterialNode2 *node = _GetNode(nodeName)) {
         node->parameters.erase(paramName);
+
+        // ColorSpace
+        const TfToken csParamName(
+            SdfPath::JoinIdentifier(_tokens->colorSpace, paramName));
+        node->parameters.erase(csParamName);
+        // TypeName
+        const TfToken tnParamName(
+            SdfPath::JoinIdentifier(_tokens->typeName, paramName));
+        node->parameters.erase(tnParamName);
     }
 }
 

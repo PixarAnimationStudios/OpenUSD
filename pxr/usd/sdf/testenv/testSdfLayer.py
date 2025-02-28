@@ -535,6 +535,11 @@ def "Root"
         _TestWithRelativePath('FindOrOpenRelativeLayer.sdf')
         _TestWithRelativePath('subdir/FindOrOpenRelativeLayer.sdf')
 
+        srcLayer = Sdf.Layer.CreateAnonymous()
+        assetPath = "test.usd:SDF_FORMAT_ARGS:order=100"
+        self.assertEqual(Sdf.ComputeAssetPathRelativeToLayer(
+            srcLayer, assetPath), assetPath)
+
     @unittest.skipIf(preferredResolver != sdfTestResolver,
                      "Test uses search-path functionality specific to "
                      "the default test resolver")

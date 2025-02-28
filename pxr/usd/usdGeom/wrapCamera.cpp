@@ -129,6 +129,34 @@ _CreateExposureAttr(UsdGeomCamera &self,
     return self.CreateExposureAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateExposureIsoAttr(UsdGeomCamera &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateExposureIsoAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateExposureTimeAttr(UsdGeomCamera &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateExposureTimeAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateExposureFStopAttr(UsdGeomCamera &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateExposureFStopAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateExposureResponsivityAttr(UsdGeomCamera &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateExposureResponsivityAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
+}
 
 static std::string
 _Repr(const UsdGeomCamera &self)
@@ -269,6 +297,34 @@ void wrapUsdGeomCamera()
              &_CreateExposureAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
+        
+        .def("GetExposureIsoAttr",
+             &This::GetExposureIsoAttr)
+        .def("CreateExposureIsoAttr",
+             &_CreateExposureIsoAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetExposureTimeAttr",
+             &This::GetExposureTimeAttr)
+        .def("CreateExposureTimeAttr",
+             &_CreateExposureTimeAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetExposureFStopAttr",
+             &This::GetExposureFStopAttr)
+        .def("CreateExposureFStopAttr",
+             &_CreateExposureFStopAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetExposureResponsivityAttr",
+             &This::GetExposureResponsivityAttr)
+        .def("CreateExposureResponsivityAttr",
+             &_CreateExposureResponsivityAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;
@@ -304,6 +360,9 @@ WRAP_CUSTOM {
         .def("SetFromCamera", &UsdGeomCamera::SetFromCamera,
              (arg("camera"),
               arg("time") = UsdTimeCode::Default()))
+        .def("ComputeLinearExposureScale",
+             &UsdGeomCamera::ComputeLinearExposureScale,
+             (arg("time") = UsdTimeCode::Default()))
     ;
 }
 

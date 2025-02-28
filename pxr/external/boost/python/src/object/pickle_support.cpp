@@ -48,6 +48,25 @@ namespace {
       }
       result.append(initargs);
       object getstate = getattr(instance_obj, "__getstate__", none);
+
+      // Python 3.11 added a default implementation of __getstate__ to
+      // object, which we need to ignore to maintain previous behavior.
+      // 
+      // For example, if a class had pickle support enabled but did not
+      // provide __getstate__, instances with items directly added to their
+      // __dict__ would skip the __getstate_manages_dict__ safeguard below
+      // prior to 3.11. After 3.11, the safeguard would be triggered.
+#if PY_VERSION_HEX >= 0x030b00f0
+      if (!getstate.is_none()) {
+          object class_getstate = getattr(instance_class, "__getstate__", none);
+          handle<> obj_getstate(PyObject_GetAttrString(
+              (PyObject*)&PyBaseObject_Type, "__getstate__"));
+          if (class_getstate.ptr() == obj_getstate.get()) {
+              getstate = none;
+          }
+      }
+#endif
+
       object instance_dict = getattr(instance_obj, "__dict__", none);
       long len_instance_dict = 0;
       if (!instance_dict.is_none()) {

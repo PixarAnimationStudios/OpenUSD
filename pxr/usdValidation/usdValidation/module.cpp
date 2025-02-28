@@ -11,8 +11,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
-    TF_WRAP(UsdValidationContext);
-    TF_WRAP(UsdValidationError);
     TF_WRAP(UsdValidationRegistry);
+    TF_WRAP(UsdValidationTimeRange);
     TF_WRAP(UsdValidationValidator);
+    TF_WRAP(UsdValidationError);
+    TF_WRAP(UsdValidationContext);
 }

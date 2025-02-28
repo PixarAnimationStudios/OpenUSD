@@ -16,6 +16,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct HdxColorChannelTaskParams;
+
 /// \class HdxColorChannelTask
 ///
 /// A task for choosing a color channel for display.
@@ -23,6 +25,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdxColorChannelTask : public HdxTask
 {
 public:
+    using TaskParams = HdxColorChannelTaskParams;
+
     HDX_API
     HdxColorChannelTask(HdSceneDelegate* delegate, SdfPath const& id);
 

@@ -71,6 +71,8 @@ struct HdxColorCorrectionTaskParams
 class HdxColorCorrectionTask : public HdxTask
 {
 public:
+    using TaskParams = HdxColorCorrectionTaskParams;
+
     HDX_API
     HdxColorCorrectionTask(HdSceneDelegate* delegate, SdfPath const& id);
 

@@ -1043,6 +1043,11 @@ public:
             HdCameraSchemaTokens->shutterOpen,
             HdCameraSchemaTokens->shutterClose,
             HdCameraSchemaTokens->exposure,
+            HdCameraSchemaTokens->exposureTime,
+            HdCameraSchemaTokens->exposureIso,
+            HdCameraSchemaTokens->exposureFStop,
+            HdCameraSchemaTokens->exposureResponsivity,
+            HdCameraSchemaTokens->linearExposureScale,
             HdCameraSchemaTokens->focusOn,
             HdCameraSchemaTokens->dofAspect,
             HdCameraSchemaTokens->splitDiopter,
@@ -1934,12 +1939,14 @@ public:
 
     TfTokenVector GetNames() override
     {
-        TfTokenVector result;
-        result.push_back(HdExtComputationSchemaTokens->inputValues);
-        result.push_back(HdExtComputationSchemaTokens->inputComputations);
-        result.push_back(HdExtComputationSchemaTokens->outputs);
-        result.push_back(HdExtComputationSchemaTokens->glslKernel);
-        result.push_back(HdExtComputationSchemaTokens->cpuCallback);
+        static const TfTokenVector result = {
+            HdExtComputationSchemaTokens->inputValues,
+            HdExtComputationSchemaTokens->inputComputations,
+            HdExtComputationSchemaTokens->outputs,
+            HdExtComputationSchemaTokens->glslKernel,
+            HdExtComputationSchemaTokens->cpuCallback,
+            HdExtComputationSchemaTokens->dispatchCount,
+            HdExtComputationSchemaTokens->elementCount };
         return result;
     }
 
@@ -2066,24 +2073,6 @@ private:
 
 // ----------------------------------------------------------------------------
 
-static HdContainerDataSourceHandle
-_ToContainerDS(const VtDictionary &dict)
-{
-    std::vector<TfToken> names;
-    std::vector<HdDataSourceBaseHandle> values;
-    const size_t numDictEntries = dict.size();
-    names.reserve(numDictEntries);
-    values.reserve(numDictEntries);
-
-    for (const auto &pair : dict) {
-        names.push_back(TfToken(pair.first));
-        values.push_back(
-            HdRetainedSampledDataSource::New(pair.second));
-    }
-    return HdRetainedContainerDataSource::New(
-        names.size(), names.data(), values.data());
-}
-
 using HdRenderProducts = HdRenderSettings::RenderProducts;
 static HdVectorDataSourceHandle
 _ToVectorDS(const HdRenderProducts &hdProducts)
@@ -2110,7 +2099,8 @@ _ToVectorDS(const HdRenderProducts &hdProducts)
                         HdRetainedTypedSampledDataSource<TfToken>::New(
                             hdVar.sourceType))
                     .SetNamespacedSettings(
-                        _ToContainerDS(hdVar.namespacedSettings))
+                        HdUtils::ConvertVtDictionaryToContainerDS(
+                            hdVar.namespacedSettings))
                     .Build());
         }
 
@@ -2157,7 +2147,8 @@ _ToVectorDS(const HdRenderProducts &hdProducts)
                     HdRetainedTypedSampledDataSource<bool>::New(
                         hdProduct.disableDepthOfField))
                 .SetNamespacedSettings(
-                    _ToContainerDS(hdProduct.namespacedSettings))
+                    HdUtils::ConvertVtDictionaryToContainerDS(
+                        hdProduct.namespacedSettings))
                 .Build());
     }
 
@@ -2194,7 +2185,7 @@ public:
             const VtValue value = _sceneDelegate->Get(
                 _id, HdRenderSettingsPrimTokens->namespacedSettings);
             if (value.IsHolding<VtDictionary>()) {
-                return _ToContainerDS(
+                return HdUtils::ConvertVtDictionaryToContainerDS(
                     value.UncheckedGet<VtDictionary>());
             }
         }
@@ -2311,7 +2302,7 @@ public:
             const VtValue value = _sceneDelegate->Get(
                 _id, HdImageShaderSchemaTokens->constants);
             if (value.IsHolding<VtDictionary>()) {
-                return _ToContainerDS(
+                return HdUtils::ConvertVtDictionaryToContainerDS(
                     value.UncheckedGet<VtDictionary>());
             } else {
                 return nullptr;

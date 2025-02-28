@@ -17,7 +17,8 @@
 // 7 -> 8: Added outHitNormal parameter to UsdImagingGLEngine::TestIntersection()
 // 8 -> 9: Removed the "HydraDisabled" renderer (i.e. LegacyEngine).
 // 9 -> 10: Added new UsdImagingGLEngine::TestIntersection() method with resolve mode
-#define USDIMAGINGGL_API_VERSION 10
+// 10 -> 11: Removed UsdImagingGLRenderParams::enableIdRender.
+#define USDIMAGINGGL_API_VERSION 11
 
 #endif // PXR_USD_IMAGING_USD_IMAGING_GL_VERSION_H
 

@@ -9,6 +9,10 @@
 #define PXR_USD_NDR_NODE_H
 
 /// \file ndr/node.h
+///
+/// \deprecated
+/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
+/// in sdr/shaderNode.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ndr/api.h"
@@ -28,6 +32,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// nodes can be created that derive from `NdrNode`; those specialized nodes can
 /// add their own domain-specific data and methods.
 ///
+/// \deprecated
+/// Deprecated in favor of SdrShaderNode
 class NdrNode
 {
 public:
@@ -56,6 +62,9 @@ public:
     const NdrIdentifier& GetIdentifier() const { return _identifier; }
 
     /// Return the version of the node
+    ///
+    /// \deprecated
+    /// Deprecated in favor of SdrShaderNode::GetShaderVersion
     NdrVersion GetVersion() const { return _version; }
 
     /// Gets the name of the node.
@@ -144,20 +153,32 @@ public:
     /// @{
 
     /// Get an ordered list of all the input names on this node.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of SdrShaderNode::GetShaderInputNames
     NDR_API
     const NdrTokenVec& GetInputNames() const;
 
     /// Get an ordered list of all the output names on this node.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of SdrShaderNode::GetShaderOutputNames
     NDR_API
     const NdrTokenVec& GetOutputNames() const;
 
     /// Get an input property by name. `nullptr` is returned if an input with
     /// the given name does not exist.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of SdrShaderNode::GetShaderInput
     NDR_API
     NdrPropertyConstPtr GetInput(const TfToken& inputName) const;
 
     /// Get an output property by name. `nullptr` is returned if an output with
     /// the given name does not exist.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of SdrShaderNode::GetShaderOutput
     NDR_API
     NdrPropertyConstPtr GetOutput(const TfToken& outputName) const;
 

@@ -7,18 +7,23 @@
 /// \file alembicReader.cpp
 
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolvedPath.h"
+#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/plugin/usdAbc/alembicReader.h"
 #include "pxr/usd/plugin/usdAbc/alembicUtil.h"
 #include "pxr/usd/usdGeom/hermiteCurves.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/sdf/schema.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/work/threadLimits.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/ostreamMethods.h"
+#include "pxr/base/tf/fileUtils.h"
 #include <Alembic/Abc/ArchiveInfo.h>
 #include <Alembic/Abc/IArchive.h>
 #include <Alembic/Abc/IObject.h>
@@ -801,6 +806,8 @@ private:
                    const ISampleSelector& selector,
                    const UsdAbc_AlembicDataAny& value) const;
 
+    std::string _OpenAndGetMappedFilePath(const std::string& filePath);
+
     // Custom auto-lock that safely ignores a NULL pointer.
     class _Lock {
     public:
@@ -853,6 +860,10 @@ private:
     _PrimMap _prims;
     Prim* _pseudoRoot;
     UsdAbc_TimeSamples _allTimeSamples;
+
+    // Asset holders to keep a reference alive so that resolver doesn't 
+    // attempt to cleanup asset until the asset is no longer in use.
+    std::vector<std::shared_ptr<ArAsset>> _assetHolders;
 };
 
 static
@@ -872,6 +883,36 @@ _ReaderContext::_ReaderContext() :
     // Do nothing
 }
 
+std::string
+_ReaderContext::_OpenAndGetMappedFilePath(const std::string& filePath)
+{
+    // Return as it is if it's a local path or symlink.
+    if (!TfIsFile(filePath, true))
+    {
+        // Open asset with Ar to support URLs other than local paths.
+        std::shared_ptr<ArAsset> asset =
+            ArGetResolver().OpenAsset(ArResolvedPath(filePath));
+        if (asset)
+        {
+            FILE* fileHandle; size_t fileOffset;
+            std::tie(fileHandle, fileOffset) = asset->GetFileUnsafe();
+            // Check file offset also to ensure that the .abc file
+            // we're looking at isn't embedded in a .usdz or other package
+            if (fileHandle && fileOffset == 0)
+            {
+                // If file handle is presented, use mapped file path instead of original one.
+                const std::string mappedFilePath = ArchGetFileName(fileHandle);
+                _assetHolders.emplace_back(std::move(asset));
+
+                return mappedFilePath;
+            }
+        }
+    }
+
+    // Otherwise, fallback to original asset path.
+    return filePath;
+}
+
 bool
 _ReaderContext::Open(const std::string& filePath, std::string* errorLog,
                      const SdfFileFormat::FileFormatArguments& args)
@@ -883,11 +924,11 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog,
         auto abcLayers = args.find("abcLayers");
         if (abcLayers != args.end()) {
             for (auto&& l : TfStringSplit(abcLayers->second, ",")) {
-                layeredABC.emplace_back(std::move(l));
+                layeredABC.emplace_back(_OpenAndGetMappedFilePath(l));
             }
         }
     }
-    layeredABC.emplace_back(filePath);
+    layeredABC.emplace_back(_OpenAndGetMappedFilePath(filePath));
 
 #if PXR_HDF5_SUPPORT_ENABLED && !H5_HAVE_THREADSAFE
     // HDF5 may not be thread-safe.
@@ -1507,6 +1548,7 @@ _ReaderContext::_Clear()
     _allTimeSamples.clear();
     _instanceSources.clear();
     _instances.clear();
+    _assetHolders.clear();
 }
 
 const _ReaderContext::Prim*

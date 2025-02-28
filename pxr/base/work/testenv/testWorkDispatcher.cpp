@@ -366,10 +366,13 @@ _TestDispatcherCancellation(Graph *graph)
     DispatcherType parentDispatcher;
 
     parentDispatcher.Run(&_DelayedGraphTask<DispatcherType>, graph);
+    TF_AXIOM(!parentDispatcher.IsCancelled());
     std::this_thread::sleep_for(std::chrono::seconds(1));
     std::cout << "\tCancelling..." << std::endl;
     parentDispatcher.Cancel();
+    TF_AXIOM(parentDispatcher.IsCancelled());
     parentDispatcher.Wait();
+    TF_AXIOM(!parentDispatcher.IsCancelled());
     
     return graph->GetNumNodesRun() == numNodesPerLevel * numLevels;
 }

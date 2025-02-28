@@ -17,22 +17,37 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 static
-bool
-_CheckInstanceValidationLayerSupport(const char * layerName)
+std::vector<const char*>
+_RemoveUnsupportedInstanceLayers(
+    const std::vector<const char*>& desiredLayers)
 {
-    uint32_t layerCount;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-    std::vector<VkLayerProperties> availableLayers(layerCount);
+    // Determine available instance layers.
+    uint32_t numAvailableLayers = 0u;
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vkEnumerateInstanceLayerProperties(&numAvailableLayers, nullptr)
+    );
+    std::vector<VkLayerProperties> availableLayers;
+    availableLayers.resize(numAvailableLayers);
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vkEnumerateInstanceLayerProperties(
+            &numAvailableLayers,
+            availableLayers.data())
+    );
 
-    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+    std::vector<const char*> layers;
 
-    for (const auto& layerProperties : availableLayers) {
-        if (strcmp(layerName, layerProperties.layerName) == 0) {
-            return true;
+    // Only add layers to the list if they're available.
+    for (const auto& lay : desiredLayers) {
+        if (std::any_of(availableLayers.begin(), availableLayers.end(),
+            [name = lay](const VkLayerProperties& p) 
+            { return strcmp(p.layerName, name) == 0; })) {
+            layers.push_back(lay);
+        } else if (HgiVulkanIsDebugEnabled()) {
+            TF_STATUS("Instance layer %s is not available, skipping it", lay);
         }
     }
 
-    return false;
+    return layers;
 }
 
 static
@@ -42,23 +57,25 @@ _RemoveUnsupportedInstanceExtensions(
 {
     // Determine available instance extensions.
     uint32_t numAvailableExtensions = 0u;
-    TF_VERIFY(vkEnumerateInstanceExtensionProperties(
-        nullptr, &numAvailableExtensions, nullptr) == VK_SUCCESS);
+    HGIVULKAN_VERIFY_VK_RESULT(vkEnumerateInstanceExtensionProperties(
+        nullptr, &numAvailableExtensions, nullptr));
     std::vector<VkExtensionProperties> availableExtensions;
     availableExtensions.resize(numAvailableExtensions);
-    TF_VERIFY(vkEnumerateInstanceExtensionProperties(
+    HGIVULKAN_VERIFY_VK_RESULT(vkEnumerateInstanceExtensionProperties(
         nullptr, &numAvailableExtensions,
-        availableExtensions.data()) == VK_SUCCESS);
+        availableExtensions.data()));
 
     std::vector<const char*> extensions;
 
     // Only add extensions to the list if they're available.
     for (const auto& ext : desiredExtensions) {
-        if (std::find_if(availableExtensions.begin(), availableExtensions.end(),
+        if (std::any_of(availableExtensions.begin(), availableExtensions.end(),
             [name = ext](const VkExtensionProperties& p) 
-            { return strcmp(p.extensionName, name) == 0; })
-                != availableExtensions.end()) {
+            { return strcmp(p.extensionName, name) == 0; })) {
             extensions.push_back(ext);
+        } else {
+            TF_STATUS("Instance extension %s is not available, skipping it",
+                ext);
         }
     }
 
@@ -70,6 +87,7 @@ HgiVulkanInstance::HgiVulkanInstance()
     , vkCreateDebugUtilsMessengerEXT(nullptr)
     , vkDestroyDebugUtilsMessengerEXT(nullptr)
     , _vkInstance(nullptr)
+    , _hasPresentation(false)
 {
     VkApplicationInfo appInfo = {VK_STRUCTURE_TYPE_APPLICATION_INFO};
     appInfo.apiVersion = VK_API_VERSION_1_3;
@@ -101,28 +119,25 @@ HgiVulkanInstance::HgiVulkanInstance()
         VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
     };
 
-    // Enable validation layers extension.
-    // Requires VK_LAYER_PATH to be set.
-    const std::vector<const char*> debugLayers = {
-        "VK_LAYER_KHRONOS_validation"
-    };
+    std::vector<const char*> layers;
     if (HgiVulkanIsDebugEnabled()) {
-        for (const auto& debugLayer : debugLayers) {
-            if (!_CheckInstanceValidationLayerSupport(debugLayer)) {
-                TF_WARN("Instance layer %s is not present, instance "
-                    "creation will fail", debugLayer);
-            }
-        }
+        layers.push_back("VK_LAYER_KHRONOS_validation");
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        createInfo.ppEnabledLayerNames = debugLayers.data();
-        createInfo.enabledLayerCount =
-            static_cast<uint32_t>(debugLayers.size());
     }
 
+    layers = _RemoveUnsupportedInstanceLayers(layers);
     extensions = _RemoveUnsupportedInstanceExtensions(extensions);
-    
+
+    _hasPresentation = std::any_of(extensions.begin(), extensions.end(),
+        [](const char* extensionName) {
+            return strcmp(extensionName, VK_KHR_SURFACE_EXTENSION_NAME) == 0;
+        });
+
+    createInfo.ppEnabledLayerNames = layers.data();
+    createInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+    createInfo.enabledExtensionCount =
+        static_cast<uint32_t>(extensions.size());
 
     #if defined(VK_USE_PLATFORM_METAL_EXT)
         if (std::find(extensions.begin(), extensions.end(),

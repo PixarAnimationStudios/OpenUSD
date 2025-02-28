@@ -616,9 +616,6 @@ HdsiMaterialOverrideResolvingSceneIndex::GetPrim(const SdfPath &primPath) const
     TRACE_FUNCTION();
 
     const HdSceneIndexBaseRefPtr inputScene = _GetInputSceneIndex();
-    if (!inputScene) {
-        return HdSceneIndexPrim();
-    }
 
     HdSceneIndexPrim prim = inputScene->GetPrim(primPath);
 
@@ -629,8 +626,10 @@ HdsiMaterialOverrideResolvingSceneIndex::GetPrim(const SdfPath &primPath) const
     // Only do work if we've found a "material" scene index prim.  Replace the 
     // data source with a wrapped data source, which will do the actual work of 
     // applying the override values to the correct material node parameters.
-    prim.dataSource = 
-        _PrimContainerDataSource::New(prim.dataSource, primPath);
+    if (prim.dataSource) {
+        prim.dataSource = 
+            _PrimContainerDataSource::New(prim.dataSource, primPath);
+    }
 
     return prim;
 }

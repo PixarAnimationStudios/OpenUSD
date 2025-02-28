@@ -22,10 +22,8 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-static void
-_TestSdfLayerCreateDiffChangelist()
-{
-    // Create layers to diff
+static std::pair<SdfLayerRefPtr, SdfLayerRefPtr>
+_CreateLayerDiffTestLayers() {
     SdfLayerRefPtr actualLayer = SdfLayer::CreateAnonymous();
     actualLayer->ImportFromString(    
         R"(#sdf 1.4.32
@@ -57,81 +55,178 @@ _TestSdfLayerCreateDiffChangelist()
             def "p" {}
     )");
 
-    const auto createTestChangelist = [](bool compareValues) {
-        VtValue value;
-        SdfChangeList changeList;
+    return std::make_pair(actualLayer, diffLayer);
+}
 
-        
-        changeList.DidRemoveProperty(SdfPath("/r.propR"), false);
-        changeList.DidRemovePrim(SdfPath("/r"), false);
-        changeList.DidRemoveProperty(SdfPath("/p.propP"), false);
-        changeList.DidRemovePrim(SdfPath("/a"), true);
-        changeList.DidAddPrim(SdfPath("/n"), false);
-        changeList.DidChangeInfo(SdfPath("/n"), SdfFieldKeys->Specifier, 
-            std::move(value), VtValue(SdfSpecifierDef));
-        changeList.DidAddProperty(SdfPath("/n.propN"), true);
-        changeList.DidAddPrim(SdfPath("/z"), false);
-        changeList.DidChangeInfo(SdfPath("/z"), SdfFieldKeys->Specifier, 
-            std::move(value), VtValue(SdfSpecifierDef));
+static void _CompareChangeLists(
+    const SdfChangeList &expected, 
+    const SdfChangeList &actual)
+{
+    std::ostringstream expectedClStr, actualClStr;
+    expectedClStr << expected;
+    actualClStr << actual;
 
-        if (compareValues) {
-            VtValue oldValue(1);
-            changeList.DidChangeInfo(SdfPath("/r.propR"), SdfFieldKeys->Default, 
-                std::move(oldValue), VtValue());
-            changeList.DidChangeInfo(SdfPath("/n.propN"), 
-                SdfFieldKeys->TypeName, std::move(oldValue), VtValue("int"));
-            changeList.DidChangeInfo(SdfPath("/n.propN"), SdfFieldKeys->Default, 
-                std::move(oldValue), VtValue(1));
-            changeList.DidChangeInfo(SdfPath("/n.propN"), SdfFieldKeys->Custom, 
-                std::move(oldValue), VtValue(0));
-            changeList.DidChangeInfo(SdfPath("/n.propN"), 
-                SdfFieldKeys->Variability, std::move(oldValue), 
-                VtValue(SdfVariabilityVarying));
-            oldValue = VtValue(1);
-            changeList.DidChangeInfo(SdfPath("/p.propP"), SdfFieldKeys->Default, 
-                std::move(oldValue), VtValue());
-            oldValue = VtValue(1);
-            changeList.DidChangeInfo(SdfPath("/c.propC"), SdfFieldKeys->Default, 
-                std::move(oldValue), VtValue(2));
-        }
+    TF_AXIOM(actualClStr.str() == expectedClStr.str());
+}
 
-        return changeList;
-    };
+static void
+_TestSdfLayerCreateDiffChangeListWithoutValues()
+{
+    const auto [actualLayer, diffLayer] = _CreateLayerDiffTestLayers();
+
+    SdfChangeList expectedCl;
+    expectedCl.DidRemoveProperty(SdfPath("/r.propR"), false);
+    expectedCl.DidRemovePrim(SdfPath("/r"), false);
+    expectedCl.DidRemoveProperty(SdfPath("/p.propP"), false);
+    expectedCl.DidRemovePrim(SdfPath("/a"), true);
+    expectedCl.DidAddPrim(SdfPath("/n"), false);
+    expectedCl.DidChangeInfo(SdfPath("/n"), SdfFieldKeys->Specifier, 
+        std::move(VtValue()), VtValue(SdfSpecifierDef));
+    expectedCl.DidAddProperty(SdfPath("/n.propN"), false);
+    expectedCl.DidAddPrim(SdfPath("/z"), false);
+    expectedCl.DidChangeInfo(SdfPath("/z"), SdfFieldKeys->Specifier, 
+        std::move(VtValue()), VtValue(SdfSpecifierDef));
+    expectedCl.DidRemoveProperty(SdfPath("/c.propC"), false);
+    expectedCl.DidAddProperty(SdfPath("/c.propC"), false);
 
     // Copy the layer so we can verify it does not change during the operation
     SdfLayerRefPtr expectedLayer = SdfLayer::CreateAnonymous();
     expectedLayer->TransferContent(actualLayer);
 
-    // build the changelist we expect to see when not comparing values
-    SdfChangeList expectedCl = createTestChangelist(false);
-    SdfChangeList expectedClValues = createTestChangelist(true);
-
-
     // Ensure that the layer remains unchanged during the process
     std::string actualLayerStr, expectedLayerStr;
-    TF_AXIOM(actualLayer->ExportToString(&actualLayerStr));
     TF_AXIOM(expectedLayer->ExportToString(&expectedLayerStr));
-    TF_AXIOM(actualLayerStr == expectedLayerStr);
 
     SdfChangeList actualCl = actualLayer->CreateDiff(diffLayer, 
             /*compareFieldValues*/ false);
 
-    SdfChangeList actualClValues = actualLayer->CreateDiff(
-        diffLayer, /*compareFieldValues*/ true);
-    
-    // Ensure that a reasonable changelist is generated
-    std::ostringstream actualClStr, expectedClStr;
-    std::ostringstream actualClValuesStr, expectedClValuesStr;
-    actualClStr << actualCl;
-    expectedClStr << expectedCl;
-    actualClValuesStr << actualClValues;
-    expectedClValuesStr << expectedClValues;
+    TF_AXIOM(expectedLayer->ExportToString(&actualLayerStr));
+    TF_AXIOM(actualLayerStr == expectedLayerStr);
 
-    TF_AXIOM(actualClStr.str() == expectedClStr.str());
-    TF_AXIOM(actualClValuesStr.str() == expectedClValuesStr.str());
+    _CompareChangeLists(expectedCl, actualCl);
 }
 
-static void _TestSdfChangeManagerExtractLocalChanges()
+static void
+_TestSdfLayerCreateDiffChangeListWithValues()
+{
+    const auto [actualLayer, diffLayer] = _CreateLayerDiffTestLayers();
+
+    SdfChangeList expectedCl;
+    expectedCl.DidRemoveProperty(SdfPath("/r.propR"), false);
+    expectedCl.DidRemovePrim(SdfPath("/r"), false);
+    expectedCl.DidRemoveProperty(SdfPath("/p.propP"), false);
+    expectedCl.DidRemovePrim(SdfPath("/a"), true);
+    expectedCl.DidAddPrim(SdfPath("/n"), false);
+    expectedCl.DidChangeInfo(SdfPath("/n"), SdfFieldKeys->Specifier, 
+        std::move(VtValue()), VtValue(SdfSpecifierDef));
+    expectedCl.DidChangeInfo(SdfPath("/r.propR"), SdfFieldKeys->Default, 
+        std::move(VtValue(1)), VtValue());
+    expectedCl.DidAddProperty(SdfPath("/n.propN"), true);
+    expectedCl.DidChangeInfo(SdfPath("/n.propN"), 
+        SdfFieldKeys->TypeName, std::move(VtValue()), VtValue("int"));
+    expectedCl.DidChangeInfo(SdfPath("/n.propN"), SdfFieldKeys->Default, 
+        std::move(VtValue()), VtValue(1));
+    expectedCl.DidChangeInfo(SdfPath("/n.propN"), SdfFieldKeys->Custom, 
+        std::move(VtValue()), VtValue(0));
+    expectedCl.DidChangeInfo(SdfPath("/n.propN"), 
+        SdfFieldKeys->Variability, std::move(VtValue()), 
+        VtValue(SdfVariabilityVarying));
+    expectedCl.DidChangeInfo(SdfPath("/p.propP"), SdfFieldKeys->Default, 
+        std::move(VtValue(1)), VtValue());
+    expectedCl.DidAddPrim(SdfPath("/z"), false);
+    expectedCl.DidChangeInfo(SdfPath("/z"), SdfFieldKeys->Specifier, 
+        std::move(VtValue()), VtValue(SdfSpecifierDef));
+    expectedCl.DidChangeInfo(SdfPath("/c.propC"), SdfFieldKeys->Default, 
+        std::move(VtValue(1)), VtValue(2));
+
+    // Copy the layer so we can verify it does not change during the operation
+    SdfLayerRefPtr expectedLayer = SdfLayer::CreateAnonymous();
+    expectedLayer->TransferContent(actualLayer);
+
+    // Ensure that the layer remains unchanged during the process
+    std::string actualLayerStr, expectedLayerStr;
+    TF_AXIOM(expectedLayer->ExportToString(&expectedLayerStr));
+
+    SdfChangeList actualCl = actualLayer->CreateDiff(diffLayer, 
+            /*compareFieldValues*/ true);
+
+    TF_AXIOM(expectedLayer->ExportToString(&actualLayerStr));
+    TF_AXIOM(actualLayerStr == expectedLayerStr);
+
+    _CompareChangeLists(expectedCl, actualCl);
+
+}
+
+static std::pair<SdfLayerRefPtr, SdfLayerRefPtr>
+_CreateTimeSampleLayerDiffTestLayers()
+{
+    SdfLayerRefPtr layerA = SdfLayer::CreateAnonymous();
+    layerA->ImportFromString(    
+        R"(#sdf 1.4.32
+            def Sphere "PixarBall"
+            {
+                double radius = 100
+                double radius.timeSamples = {
+                    1: 100,
+                    24: 500,
+                }
+            }
+        )"
+    );
+
+    SdfLayerRefPtr layerB = SdfLayer::CreateAnonymous();
+    layerB->ImportFromString(    
+        R"(#sdf 1.4.32
+            def Sphere "PixarBall"
+            {
+                double radius = 100
+                double radius.timeSamples = {
+                    1: 50,
+                    48: 1000,
+                }
+            }
+        )"
+    );
+
+    return std::make_pair(layerA, layerB);
+}
+
+static void 
+_testSdfLayerCreateDiffTimeSamplesWithoutValues()
+{
+    const auto [layerA, layerB] = _CreateTimeSampleLayerDiffTestLayers();
+
+    SdfChangeList expectedCl;
+    expectedCl.DidRemoveProperty(SdfPath("/PixarBall.radius"), false);
+    expectedCl.DidAddProperty(SdfPath("/PixarBall.radius"), false);
+
+    SdfChangeList actualCl = layerA->CreateDiff(layerB, 
+            /*compareFieldValues*/ false);
+
+    _CompareChangeLists(expectedCl, actualCl);
+}
+
+static void 
+_testSdfLayerCreateDiffTimeSamplesWithValues()
+{
+    const auto [layerA, layerB] = _CreateTimeSampleLayerDiffTestLayers();
+
+    SdfChangeList expectedCl;
+    SdfTimeSampleMap samplesA = {{1, VtValue(100)}, {24, VtValue(500)}};
+    SdfTimeSampleMap samplesB = {{1, VtValue(50)}, {48, VtValue(1000)}};
+    expectedCl.DidChangeInfo(SdfPath("/PixarBall.radius"), 
+        SdfFieldKeys->TimeSamples, std::move(VtValue(samplesA)), 
+        VtValue(samplesB));
+    expectedCl.DidChangeAttributeTimeSamples(SdfPath("/PixarBall.radius"));
+
+    SdfChangeList actualCl = layerA->CreateDiff(
+        layerB, /*compareFieldValues*/ true);
+
+    _CompareChangeLists(expectedCl, actualCl);
+}
+
+static void 
+_TestSdfChangeManagerExtractLocalChanges()
 {
     struct Listener : public TfWeakBase
     {
@@ -776,7 +871,10 @@ int
 main(int argc, char **argv)
 {
     _TestSdfChangeManagerExtractLocalChanges();
-    _TestSdfLayerCreateDiffChangelist();
+    _TestSdfLayerCreateDiffChangeListWithoutValues();
+    _TestSdfLayerCreateDiffChangeListWithValues();
+    _testSdfLayerCreateDiffTimeSamplesWithValues();
+    _testSdfLayerCreateDiffTimeSamplesWithoutValues();
     _TestSdfLayerDictKeyOps();
     _TestSdfLayerTimeSampleValueType();
     _TestSdfLayerTransferContents();

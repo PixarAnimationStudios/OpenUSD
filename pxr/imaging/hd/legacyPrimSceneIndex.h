@@ -12,6 +12,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
+using HdLegacyTaskFactorySharedPtr = std::shared_ptr<class HdLegacyTaskFactory>;
 
 TF_DECLARE_REF_PTRS(HdLegacyPrimSceneIndex);
 
@@ -31,10 +32,17 @@ public:
         return TfCreateRefPtr(new HdLegacyPrimSceneIndex);
     }
 
-    /// custom insertion wrapper called by HdRenderIndex during population
-    /// of legacy HdSceneDelegates
+    /// Custom insertion wrapper called by HdRenderIndex during population
+    /// of legacy HdSceneDelegate's.
     void AddLegacyPrim(SdfPath const &id, TfToken const &type,
         HdSceneDelegate *sceneDelegate);
+
+    /// Custom insertion wrapper called by HdRenderIndex::InsertTask<T>
+    /// during population of legacy HdSceneDelegate's 
+    void AddLegacyTask(
+        SdfPath const &id,
+        HdSceneDelegate *sceneDelegate,
+        HdLegacyTaskFactorySharedPtr factory);
 
     /// Remove only the prim at \p id without affecting children.
     ///

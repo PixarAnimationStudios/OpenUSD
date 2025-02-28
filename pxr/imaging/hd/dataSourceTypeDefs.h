@@ -85,6 +85,8 @@ using HdVec3iDataSource = HdTypedSampledDataSource<GfVec3i>;
 using HdVec3iDataSourceHandle = HdVec3iDataSource::Handle;
 using HdVec3iArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec3i>>;
 using HdVec3iArrayDataSourceHandle = HdVec3iArrayDataSource::Handle;
+using HdVec3hArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec3h>>;
+using HdVec3hArrayDataSourceHandle = HdVec3hArrayDataSource::Handle;
 using HdVec3fDataSource = HdTypedSampledDataSource<GfVec3f>;
 using HdVec3fDataSourceHandle = HdVec3fDataSource::Handle;
 using HdVec3fArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec3f>>;
@@ -100,8 +102,13 @@ using HdVec4iArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec4i>>;
 using HdVec4iArrayDataSourceHandle = HdVec4iArrayDataSource::Handle;
 using HdVec4fDataSource = HdTypedSampledDataSource<GfVec4f>;
 using HdVec4fDataSourceHandle = HdVec4fDataSource::Handle;
+using HdVec4fArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec4f>>;
+using HdVec4fArrayDataSourceHandle = HdVec4fArrayDataSource::Handle;
 using HdVec4dArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec4d>>;
 using HdVec4dArrayDataSourceHandle = HdVec4dArrayDataSource::Handle;
+
+using HdQuatfArrayDataSource = HdTypedSampledDataSource<VtArray<GfQuatf>>;
+using HdQuatfArrayDataSourceHandle = HdQuatfArrayDataSource::Handle;
 
 using HdMatrixDataSource = HdTypedSampledDataSource<GfMatrix4d>;
 using HdMatrixDataSourceHandle = HdMatrixDataSource::Handle;

@@ -14,6 +14,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct HdxAovInputTaskParams;
+
 /// \class HdxAovInputTask
 ///
 /// A task for taking input AOV data comming from a render buffer that was 
@@ -28,6 +30,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdxAovInputTask : public HdxTask
 {
 public:
+    using TaskParams = HdxAovInputTaskParams;
+
     HDX_API
     HdxAovInputTask(HdSceneDelegate* delegate, SdfPath const& id);
 
@@ -89,10 +93,7 @@ private:
 ///
 struct HdxAovInputTaskParams
 {
-    HdxAovInputTaskParams()
-        : aovBufferPath()
-        , depthBufferPath()
-        {}
+    HdxAovInputTaskParams() {}
 
     SdfPath aovBufferPath;
     SdfPath depthBufferPath;

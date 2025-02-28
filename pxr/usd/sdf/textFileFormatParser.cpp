@@ -4249,23 +4249,31 @@ Sdf_ParseLayer(
     context.magicIdentifierToken = magicId;
     context.versionString = versionString;
 
-    // read the entire file into memory
-    size_t size = asset->GetSize();
-    std::string buffer(size, ' ');
-    if (asset->Read(&buffer[0], size, 0) != size)
-    {
+    // Use the ArAsset buffer facility.
+    auto bufferPtr = asset->GetBuffer();
+    if (!bufferPtr) {
         TF_RUNTIME_ERROR("Failed to read asset contents @%s@: "
             "an error occurred while reading",
             fileContext.c_str());
+        return false;
     }
 
-    Sdf_TextFileFormatParser::PEGTL_NS::string_input<> content { 
-        std::move(buffer), fileContext};
+    // We make the 'Source' type string_view here so that it's cheap to copy
+    // the input object -- pegtl seems to do that sometimes, seems for
+    // unwinding/rematching maybe?
+    using PegtlInput = Sdf_TextFileFormatParser::PEGTL_NS::memory_input<
+        Sdf_TextFileFormatParser::PEGTL_NS::tracking_mode::lazy,
+        Sdf_TextFileFormatParser::PEGTL_NS::eol::lf_crlf,
+        std::string_view
+        >;
+
+    PegtlInput content { bufferPtr.get(), asset->GetSize(), fileContext };
     context.values.errorReporter =
         [&context, capture0 = std::cref(content)](auto && PH1) { 
-            return Sdf_TextFileFormatParser::_ReportParseError<
-            Sdf_TextFileFormatParser::PEGTL_NS::string_input<>>(
-                context, capture0, std::forward<decltype(PH1)>(PH1)); };
+            return Sdf_TextFileFormatParser
+                ::_ReportParseError<PegtlInput>(
+                    context, capture0, std::forward<decltype(PH1)>(PH1));
+        };
     bool status = false;
     try
     {

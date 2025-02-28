@@ -2142,7 +2142,6 @@ SdfLayer::PermissionToSave() const
 {
     return _permissionToSave &&
         !IsAnonymous() &&
-        !IsMuted()     &&
         Sdf_CanWriteLayerToPath(GetResolvedPath());
 }
 
@@ -3910,6 +3909,13 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
     // Guard against setting an empty SdfData, which is invalid.
     TF_VERIFY(!newData->IsEmpty() );
 
+    // XXX -- Should this be disallowed when the layer is muted?  We
+    //        should at least put the new data in _mutedLayerData which,
+    //        incidentally, won't have an entry for this layer if the
+    //        layer was clean when muted.  In that case we should also
+    //        not send any change notifications since the content was
+    //        and remains muted.
+
     // This code below performs a series of specific edits to mutate _data
     // to match newData.  This approach provides fine-grained change
     // notification, which allows more efficient invalidation in clients
@@ -4076,21 +4082,21 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
         TF_REVERSE_FOR_ALL(i, specsToDelete.paths) {
             const SdfPath &path = *i;
 
-            const bool processFields = 
-                path.IsPropertyPath() ? processPropertyFields : true;
+            if (!processPropertyFields && path.IsPropertyPath()) {
+                deleteSpecFunc(path, /* inert */ false);
+                continue;
+            }
 
-            if (processFields) {
-                std::vector<TfToken> fields = ListFields(path);
+            std::vector<TfToken> fields = ListFields(path);
 
-                SdfSpecType specType = _data->GetSpecType(path);
-                const SdfSchema::SpecDefinition* specDefinition = 
-                    GetSchema().GetSpecDefinition(specType);
+            SdfSpecType specType = _data->GetSpecType(path);
+            const SdfSchema::SpecDefinition* specDefinition = 
+                GetSchema().GetSpecDefinition(specType);
 
-                TF_FOR_ALL(field, fields) {
-                    if (!specDefinition->IsRequiredField(*field)) {
-                        setFieldFunc(
-                            path, *field, VtValue(), /* oldValue */ nullptr);
-                    }
+            TF_FOR_ALL(field, fields) {
+                if (!specDefinition->IsRequiredField(*field)) {
+                    setFieldFunc(
+                        path, *field, VtValue(), /* oldValue */ nullptr);
                 }
             }
 
@@ -4154,9 +4160,17 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
                                                 TfToken())
                         .IsEmpty());
             } else if (path.IsPropertyPath()) {
-                // Properties are considered inert if they are custom.
-                inert = !newData->GetAs<bool>(path, SdfFieldKeys->Custom,
-                                              false);
+                // If we are processing property fields, a path is
+                // considered inert if it is custom. If not processing fields
+                // we assume the worst case that property specs are never inert.
+                // This approach sacrifices some granularity but ensures
+                // downstream clients will process any changes in fields for
+                // this spec without us having to pay the potentially expensive
+                // cost of examining the actual field values at this time.
+                if (processPropertyFields) {
+                    inert = !newData->GetAs<bool>(
+                        path, SdfFieldKeys->Custom, false);
+                }
             }
 
             SdfSpecType specType = newData->GetSpecType(path);
@@ -4197,18 +4211,34 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
     {
         struct _SpecUpdater : public SdfAbstractDataSpecVisitor {
             _SpecUpdater(const SdfLayer* layer_,
+                         const SdfAbstractDataPtr &newData_,
                          const SdfSchemaBase &newDataSchema_,
                          const bool processPropertyFields_,
+                         const DeleteSpecFunc &deleteSpecFunc_,
+                         const CreateSpecFunc &createSpecFunc_,
                          const SetFieldFunc &setFieldFunc_)
                 : layer(layer_)
+                , newData(newData_)
                 , newDataSchema(newDataSchema_)
                 , processPropertyFields(processPropertyFields_)
-                , setFieldFunc(setFieldFunc_){}
+                , deleteSpecFunc(deleteSpecFunc_)
+                , createSpecFunc(createSpecFunc_)
+                , setFieldFunc(setFieldFunc_) {}
 
             virtual bool VisitSpec(
                 const SdfAbstractData& newData, const SdfPath& path)
             {
+                // note processPropertyFields can only be false if we
+                // are creating diffs, so this will be a non-destructive
+                // operation.  Additionally, if we created or deleted the spec
+                // earlier in this operation we do not want to add these
+                // additional entries.
                 if (!processPropertyFields && path.IsPropertyPath()) {
+                    if (newData.HasSpec(path) && layer->HasSpec(path)) {
+                        deleteSpecFunc(path, /* inert */ false);
+                        createSpecFunc(path, layer->GetSpecType(path), 
+                                        /* inert */ false); 
+                    }
                     return true;
                 }
 
@@ -4257,7 +4287,7 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
                             setFieldFunc(
                                 path, field, newValue, &oldValue);
                         }
-                    }
+                    } 
                 }
 
                 return true;
@@ -4269,17 +4299,20 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
             }
 
             const SdfLayer* layer;
+            const SdfAbstractDataPtr &newData;
             const SdfSchemaBase &newDataSchema;
             const bool processPropertyFields;
+            const DeleteSpecFunc &deleteSpecFunc;
+            const CreateSpecFunc &createSpecFunc;
             const SetFieldFunc &setFieldFunc;
             std::map<TfToken, SdfPath> unrecognizedFields;
         };
 
         // If no newDataSchema is supplied, we assume the newData adheres to
         // this layer's schema.
-        _SpecUpdater updater( this, 
+        _SpecUpdater updater( this, newData,
             newDataSchema ? *newDataSchema : GetSchema(), 
-            processPropertyFields, setFieldFunc);
+            processPropertyFields, deleteSpecFunc, createSpecFunc,setFieldFunc);
         newData->VisitSpecs(&updater);
 
         // If there were unrecognized fields, report an error.
@@ -4926,6 +4959,71 @@ SdfLayer::_WriteToFile(const string &newFileName,
         return false;
     }
 
+    // Helper class for RAII and unmuting for save.  If the layer is muted
+    // swap in the unmuted data in the c'tor and back out in the d'tor
+    // without any notification or change processing.
+    class _TemporaryUnmuter
+    {
+    public:
+        _TemporaryUnmuter(const std::string& mutedPath,
+                          const SdfAbstractDataRefPtr* data)
+            : _mutedPath(mutedPath)
+            , _data(const_cast<SdfAbstractDataRefPtr*>(data))
+            , _wasMuted(false)
+        {
+            std::unique_lock<std::mutex> lock(*_mutedLayersMutex);
+            if (const auto i = _mutedLayerData->find(_mutedPath);
+                    i != _mutedLayerData->end()) {
+                // Install the unmuted data.
+                _wasMuted  = true;
+                _savedData = *_data;
+                *_data     = i->second;
+            }
+        }
+
+        ~_TemporaryUnmuter()
+        {
+            Unlock();
+        }
+
+        _TemporaryUnmuter(const _TemporaryUnmuter&) = delete;
+        _TemporaryUnmuter(_TemporaryUnmuter&&) = delete;
+        _TemporaryUnmuter& operator=(const _TemporaryUnmuter&) = delete;
+        _TemporaryUnmuter& operator=(_TemporaryUnmuter&&) = delete;
+
+        void Unlock()
+        {
+            if (_wasMuted) {
+                std::unique_lock<std::mutex> lock(*_mutedLayersMutex);
+                if (const auto i = _mutedLayerData->find(_mutedPath);
+                        i != _mutedLayerData->end()) {
+                    if (*_data == i->second) {
+                        // This is the expected case.
+                    }
+                    else {
+                        TF_CODING_ERROR("Layer data modified during save");
+                    }
+                }
+                else {
+                    TF_CODING_ERROR("Layer unmuted during save");
+                }
+                *_data     = _savedData;
+                _savedData = TfNullPtr;
+                _wasMuted  = false;
+            }
+        }
+
+    private:
+        std::string _mutedPath;
+        SdfAbstractDataRefPtr* _data;
+        SdfAbstractDataRefPtr _savedData;
+        bool _wasMuted;
+    };
+
+    // If the layer is muted then restore the contents temporarily while
+    // we save.
+    _TemporaryUnmuter unmuter(_GetMutedPath(), &_data);
+
     // If the output file format has a different schema, then transfer content
     // to an in-memory layer first just to validate schema compatibility.
     const bool differentSchema = &fileFormat->GetSchema() != &GetSchema();
@@ -4949,6 +5047,9 @@ SdfLayer::_WriteToFile(const string &newFileName,
     bool ok = isSave
         ? fileFormat->SaveToFile(*this, newFileName, comment, args)
         : fileFormat->WriteToFile(*this, newFileName, comment, args);
+
+    // Restore the muted data if necessary.
+    unmuter.Unlock();
 
     // If we wrote to the backing file then we're now clean.
     if (ok && isSave) {
@@ -4983,12 +5084,6 @@ bool
 SdfLayer::_Save(bool force) const
 {
     TRACE_FUNCTION();
-
-    if (IsMuted()) {
-        TF_CODING_ERROR("Cannot save muted layer @%s@",
-                        GetIdentifier().c_str());
-        return false;
-    }
 
     if (IsAnonymous()) {
         TF_CODING_ERROR("Cannot save anonymous layer @%s@",

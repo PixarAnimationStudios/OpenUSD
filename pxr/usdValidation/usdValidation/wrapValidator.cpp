@@ -40,10 +40,12 @@ namespace
         const TfTokenVector &keywords,
         const TfToken &doc,
         const TfTokenVector &schemaTypes,
+        bool isTimeDependent,
         bool isSuite)
     {
         return new UsdValidationValidatorMetadata{
-            name, plugin, keywords, doc, schemaTypes, isSuite };
+            name, plugin, keywords, doc, schemaTypes, isTimeDependent, 
+            isSuite };
     }
 
     list
@@ -68,6 +70,7 @@ void wrapUsdValidationValidator()
                                            arg("keywords") = TfTokenVector(),
                                            arg("doc") = TfToken(),
                                            arg("schemaTypes") = TfTokenVector(),
+                                           arg("isTimeDependent") = false,
                                            arg("isSuite") = false)))
         .add_property("name", make_getter(
             &UsdValidationValidatorMetadata::name, 
@@ -76,6 +79,8 @@ void wrapUsdValidationValidator()
             &UsdValidationValidatorMetadata::pluginPtr, 
             return_value_policy<return_by_value>()))
         .def_readonly("doc", &UsdValidationValidatorMetadata::doc)
+        .def_readonly("isTimeDependent", 
+                      &UsdValidationValidatorMetadata::isTimeDependent)
         .def_readonly("isSuite", &UsdValidationValidatorMetadata::isSuite)
         .def("GetKeywords", 
              +[](const UsdValidationValidatorMetadata &self) {
@@ -95,28 +100,32 @@ void wrapUsdValidationValidator()
              },
              return_value_policy<return_by_value>())
         .def("Validate", 
-             +[](const UsdValidationValidator& validator, 
-                 const SdfLayerHandle& layer) 
+             +[](const UsdValidationValidator &validator, 
+                 const SdfLayerHandle &layer) 
                 -> UsdValidationErrorVector {
                 return validator.Validate(layer);
              },
              return_value_policy<TfPySequenceToList>(),
              (arg("layer")))
         .def("Validate", 
-             +[](const UsdValidationValidator& validator, 
-                 const UsdStagePtr& stage) 
+             +[](const UsdValidationValidator &validator, 
+                 const UsdStagePtr &stage, 
+                 const UsdValidationTimeRange &timeRange) 
                 -> UsdValidationErrorVector {
-                return validator.Validate(stage);
+                return validator.Validate(stage, timeRange);
              },
              return_value_policy<TfPySequenceToList>(),
-             (arg("stage")))
+             (arg("stage"), 
+              arg("timeRange") = UsdValidationTimeRange()))
         .def("Validate", 
-             +[](const UsdValidationValidator& validator, const UsdPrim& prim) 
+             +[](const UsdValidationValidator &validator, const UsdPrim &prim,
+                 const UsdValidationTimeRange &timeRange)
                 -> UsdValidationErrorVector {
-                return validator.Validate(prim);
+                return validator.Validate(prim, timeRange);
              },
              return_value_policy<TfPySequenceToList>(),
-             (arg("prim")))
+             (arg("prim"), 
+              arg("timeRange") = UsdValidationTimeRange()))
         .def("__eq__", 
              +[](const UsdValidationValidator *left, 
                  const UsdValidationValidator *right) {

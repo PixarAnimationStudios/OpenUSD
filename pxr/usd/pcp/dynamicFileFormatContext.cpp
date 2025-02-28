@@ -93,11 +93,10 @@ private:
             }
         }
 
-        const bool isParent = node == _parent;
         TF_FOR_ALL(childNode, Pcp_GetChildrenRange(node)) {
             // If this is the parent, check if each of its children
             // is weaker than the future node
-            if (isParent) {
+            if (node == _parent) {
                 if (PcpCompareSiblingPayloadNodeStrength(
                     _parent, _arcNum, *childNode) == -1) {
                     return true;
@@ -128,8 +127,8 @@ private:
             }
         }
 
-        // Do not look for opinions from nodes weaker than the parent.
-        return isParent;
+        // Continue looking for opinions
+        return false;
     };
 
     // Recursively composes opinions from ancestors of the parent node and 

@@ -375,8 +375,12 @@ HgiVulkanConversions::GetFormat(HgiFormat inFormat, bool depthFormat)
 
     // Special case for float32 depth format not properly handled by
     // _FormatTable
-    if (depthFormat && inFormat == HgiFormatFloat32) {
-        vkFormat = VK_FORMAT_D32_SFLOAT;
+    if (depthFormat) {
+        if (inFormat == HgiFormatFloat32) {
+            vkFormat = VK_FORMAT_D32_SFLOAT;
+        } else if (inFormat == HgiFormatFloat32UInt8) {
+            vkFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
+        }
     }
 
     return vkFormat;

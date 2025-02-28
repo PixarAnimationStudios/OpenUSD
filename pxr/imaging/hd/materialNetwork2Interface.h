@@ -38,6 +38,11 @@ public:
     }
 
     HD_API
+    TfTokenVector GetMaterialConfigKeys() const override;
+    HD_API
+    VtValue GetMaterialConfigValue(const TfToken& key) const override;
+
+    HD_API
     std::string GetModelAssetName() const override {
         return std::string();
     }
@@ -85,6 +90,12 @@ public:
     void SetNodeType(
         const TfToken &nodeName,
         const TfToken &nodeType) override;
+
+    HD_API
+    virtual void SetNodeTypeInfoValue(
+        const TfToken &nodeName,
+        const TfToken &key,
+        const VtValue &value) override;
 
     HD_API
     void SetNodeParameterValue(

@@ -83,7 +83,11 @@ Sdf_ResolvePath(
     ArAssetInfo* assetInfo)
 {
     TRACE_FUNCTION();
-    return ArGetResolver().Resolve(layerPath);
+    string strippedLayerPath;
+    string layerArgs;
+    Sdf_SplitIdentifier(layerPath, &strippedLayerPath, &layerArgs);
+    
+    return ArGetResolver().Resolve(strippedLayerPath);
 }
 
 bool

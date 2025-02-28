@@ -12,6 +12,7 @@
 #include "pxr/usdValidation/usdSkelValidators/validatorTokens.h"
 #include "pxr/usdValidation/usdValidation/error.h"
 #include "pxr/usdValidation/usdValidation/registry.h"
+#include "pxr/usdValidation/usdValidation/timeRange.h"
 #include "pxr/usdValidation/usdValidation/validator.h"
 
 #include <algorithm>
@@ -20,7 +21,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 static UsdValidationErrorVector
-_SkelBindingApiAppliedValidator(const UsdPrim &usdPrim)
+_SkelBindingApiAppliedValidator(
+    const UsdPrim &usdPrim, 
+    const UsdValidationTimeRange &/*timeRange*/)
 {
     UsdValidationErrorVector errors;
 
@@ -63,7 +66,8 @@ _SkelBindingApiAppliedValidator(const UsdPrim &usdPrim)
 }
 
 static UsdValidationErrorVector
-_SkelBindingApiValidator(const UsdPrim &usdPrim)
+_SkelBindingApiValidator(const UsdPrim &usdPrim, 
+                         const UsdValidationTimeRange &/*timeRange*/)
 {
     UsdValidationErrorVector errors;
 

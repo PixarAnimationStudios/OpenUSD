@@ -10,6 +10,7 @@
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/usdImaging/usdviewq/api.h"
 
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -76,6 +77,18 @@ public:
     std::vector<std::string> GetInputDisplayNames(
         const IndexList &inputIndices);
 
+    /// Recurses through all input scene indices and lists them all by
+    /// display name. Includes targeted scene index itself.
+    USDVIEWQ_API
+    std::vector<std::string> GetNestedInputDisplayNames();
+
+    /// Given an index into GetNestedInputDisplayNames(), sets the
+    /// corresponding scene index as targeted HdSceneIndex.
+    ///
+    /// Returns false, if index was out of bounds.
+    USDVIEWQ_API
+    bool TargetToNestedInputSceneIndex(size_t nestedInputIndex);
+    
     /// Returns the paths of the immediate children of the specified
     /// \p primPath for the actively observer scene index.
     USDVIEWQ_API
@@ -129,6 +142,9 @@ private:
 
     bool _Target(const HdSceneIndexBaseRefPtr &sceneIndex);
 
+    // Fill _nestedInputSceneIndices.
+    void _ComputeNestedInputSceneIndices();
+
     class _Observer : public HdSceneIndexObserver
     {
     public:
@@ -155,6 +171,10 @@ private:
 
         NoticeEntryVector notices;
     };
+
+    // Cached result for GetNestedInputDisplayNames and
+    // TargetToNestedInputSceneIndex.
+    std::optional<HdSceneIndexBaseRefPtrVector> _nestedInputSceneIndices;
 
     HdSceneIndexBaseRefPtr _sceneIndex;
     _Observer _observer;

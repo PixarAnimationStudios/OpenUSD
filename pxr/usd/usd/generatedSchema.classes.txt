@@ -4,6 +4,8 @@
 apiSchemaBase
 clipsAPI
 collectionAPI
+colorSpaceAPI
+colorSpaceDefinitionAPI
 modelAPI
 tokens
 typed
@@ -13,6 +15,8 @@ module.cpp
 wrapAPISchemaBase.cpp
 wrapClipsAPI.cpp
 wrapCollectionAPI.cpp
+wrapColorSpaceAPI.cpp
+wrapColorSpaceDefinitionAPI.cpp
 wrapModelAPI.cpp
 wrapTokens.cpp
 wrapTyped.cpp

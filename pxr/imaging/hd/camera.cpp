@@ -41,6 +41,11 @@ HdCamera::HdCamera(SdfPath const &id)
   , _shutterOpen(0.0)
   , _shutterClose(0.0)
   , _exposure(0.0f)
+  , _exposureTime(1.0f)
+  , _exposureIso(100.0f)
+  , _exposureFStop(1.0f)
+  , _exposureResponsivity(1.0f)
+  , _linearExposureScale(1.0f)
   , _lensDistortionType(HdCameraTokens->standard)
   , _lensDistortionK1(0.0f)
   , _lensDistortionK2(0.0f)
@@ -236,6 +241,41 @@ HdCamera::Sync(HdSceneDelegate * sceneDelegate,
                 id, HdCameraTokens->exposure);
         if (!vExposure.IsEmpty()) {
             _exposure = vExposure.Get<float>();
+        }
+
+        const VtValue vExposureTime =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->exposureTime);
+        if (!vExposureTime.IsEmpty()) {
+            _exposureTime = vExposureTime.Get<float>();
+        }
+
+        const VtValue vExposureIso =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->exposureIso);
+        if (!vExposureIso.IsEmpty()) {
+            _exposureIso = vExposureIso.Get<float>();
+        }
+
+        const VtValue vExposureFStop =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->exposureFStop);
+        if (!vExposureFStop.IsEmpty()) {
+            _exposureFStop = vExposureFStop.Get<float>();
+        }
+
+        const VtValue vExposureResponsivity =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->exposureResponsivity);
+        if (!vExposureResponsivity.IsEmpty()) {
+            _exposureResponsivity = vExposureResponsivity.Get<float>();
+        }
+
+        const VtValue vLinearExposureScale =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->linearExposureScale);
+        if (!vLinearExposureScale.IsEmpty()) {
+            _linearExposureScale = vLinearExposureScale.Get<float>();
         }
 
         const VtValue vLensDistortionType =

@@ -55,6 +55,7 @@
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/usd/ar/resolverScopedCache.h"
 
+#include "pxr/base/gf/half.h"
 #include "pxr/base/gf/interval.h"
 #include "pxr/base/gf/multiInterval.h"
 
@@ -76,6 +77,8 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/ts/spline.h"
+#include "pxr/base/ts/types.h"
+#include "pxr/base/ts/valueTypeDispatch.h"
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/utils.h"
@@ -1842,7 +1845,7 @@ _SetMappedValueForEditTarget(UsdObject const &obj,
                              const Fn &setValueImpl)
 {
     if (!obj.Is<UsdAttribute>()) {
-        TF_CODING_ERROR("Splines can only be set in attributes");
+        TF_CODING_ERROR("Splines can only be set on attributes");
         return false;
     }
 
@@ -1853,6 +1856,8 @@ _SetMappedValueForEditTarget(UsdObject const &obj,
     const UsdAttribute attr = obj.As<UsdAttribute>();
     const TfType attrType = Usd_TypeQueryAccess::GetAttributeValueType(attr);
     if (!attrType) {
+        TF_CODING_ERROR("Spline on attr <%s> not compatible: attribute has no "
+                        "value type", attr.GetPath().GetText());
         return false;
     }
     const bool attrIsTimeValued = (attrType == timecodeType);
@@ -8201,6 +8206,33 @@ UsdStage::_GetValue(UsdTimeCode time, const UsdAttribute &attr,
         *this, time, attr, result);
 }
 
+// Define a helper struct which is used with TsDispatchToValueTypeTemplate
+// to dispatch to the appropriate Eval function based on the value type.
+template <typename S>
+struct _EvalSplineFunctor
+{
+    template <typename T>
+    void operator()(const TsSpline& spline, double localTime,
+                    const SdfLayerOffset& layerToStageOffset, T* result,
+                    bool* successOut)
+    {
+        S val;
+        if (!spline.Eval(localTime, &val)) {
+            return;
+        }
+        *successOut = true;
+        if (spline.IsTimeValued()) {
+            val = layerToStageOffset * val;
+        }
+        // save the values in the result
+        if constexpr (std::is_base_of<SdfAbstractDataValue, T>::value) {
+            *successOut = result->StoreValue(val);
+        } else {
+            *result = val;
+        }
+    }
+};
+
 class UsdStage_ResolveInfoAccess
 {
 public:
@@ -8250,7 +8282,39 @@ public:
 
         return Usd_GetOrInterpolateValue(
             layer, specPath, localTime, lower, upper, interpolator, result);
-    } 
+    }
+
+    template <class T>
+    static bool _GetSplineValue(
+        UsdTimeCode time, const UsdAttribute& attr,
+        const UsdResolveInfo &info, T *result)
+    {
+        const SdfPath specPath =
+            info._primPathInLayerStack.AppendProperty(attr.GetName());
+        const SdfLayerHandle& layer = info._layer;
+        const double localTime =
+            info._layerToStageOffset.GetInverse() * time.GetValue();
+
+        TF_DEBUG(USD_VALUE_RESOLUTION).Msg(
+            "RESOLVE: reading field %s:%s from @%s@, "
+            "with requested time = %.3f (local time = %.3f)\n",
+            specPath.GetText(),
+            SdfFieldKeys->Spline.GetText(),
+            layer->GetIdentifier().c_str(),
+            time.GetValue(),
+            localTime);
+
+        const TsSpline& spline = *(info._spline);
+
+        bool success = false;
+
+        // Use the Spline's value type to dispatch to the appropriate Evaluator.
+        TsDispatchToValueTypeTemplate<_EvalSplineFunctor>(
+            spline.GetValueType(), spline, localTime, info._layerToStageOffset, 
+            result, &success);
+
+        return success;
+    }
 
     template <class T>
     static bool _GetClipValue(
@@ -8385,6 +8449,10 @@ UsdStage::_GetValueImpl(UsdTimeCode time, const UsdAttribute &attr,
             extraResolveInfo.clipSet,
             &extraResolveInfo.lowerSample, &extraResolveInfo.upperSample,
             interpolator, result);
+    }
+    else if (resolveInfo._source == UsdResolveInfoSourceSpline) {
+        return UsdStage_ResolveInfoAccess::_GetSplineValue(
+            time, attr, resolveInfo, result);
     }
     else if (resolveInfo._source == UsdResolveInfoSourceDefault ||
              resolveInfo._source == UsdResolveInfoSourceFallback) {
@@ -8608,8 +8676,17 @@ struct UsdStage::_ResolveInfoResolver
                             &_extraInfo->lowerSample, 
                             &_extraInfo->upperSample)) {
             _resolveInfo->_source = UsdResolveInfoSourceTimeSamples;
-        }
-        else { 
+        } else if (layer->HasField(specPath, SdfFieldKeys->Spline)) {
+            _resolveInfo->_source = UsdResolveInfoSourceSpline;
+            // In order to optimize read only / playback workflow, we save the
+            // spline in the resolve info. Do note that with every resync /
+            // info change (which could potentially have modified this spline), 
+            // resolve info should be invalidated, which in directly means the 
+            // attribute query should be invalidated, since it holds the 
+            // resolveInfo).
+            _resolveInfo->_spline = layer->GetFieldAs<TsSpline>(
+                specPath, SdfFieldKeys->Spline);
+        } else { 
             Usd_DefaultValueResult defValue = Usd_HasDefault(
                 layer, specPath, _extraInfo->defaultOrFallbackValue);
             if (defValue == Usd_DefaultValueResult::Found) {
@@ -8743,12 +8820,13 @@ UsdStage::_GetResolveInfoImpl(
     
     if (TfDebug::IsEnabled(USD_VALIDATE_VARIABILITY) &&
         (resolveInfo->_source == UsdResolveInfoSourceTimeSamples ||
+         resolveInfo->_source == UsdResolveInfoSourceSpline ||
          resolveInfo->_source == UsdResolveInfoSourceValueClips) &&
         _GetVariability(attr) == SdfVariabilityUniform) {
 
         TF_DEBUG(USD_VALIDATE_VARIABILITY)
-            .Msg("Warning: detected time sample value on "
-                 "uniform attribute <%s>\n", 
+            .Msg("Warning: detected time-varying value on uniform "
+                 "attribute <%s>\n", 
                  UsdDescribe(attr).c_str());
     }
 }
@@ -8928,6 +9006,10 @@ UsdStage::_GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
     if (info._source == UsdResolveInfoSourceTimeSamples) {
         return UsdStage_ResolveInfoAccess::_GetTimeSampleValue(
             time, attr, info, nullptr, nullptr, interpolator, result);
+    }
+    else if (info._source == UsdResolveInfoSourceSpline) {
+        return UsdStage_ResolveInfoAccess::_GetSplineValue(
+            time, attr, info, result);
     }
     else if (info._source == UsdResolveInfoSourceDefault) {
         const SdfPath specPath =
@@ -9315,6 +9397,13 @@ bool
 UsdStage::_ValueMightBeTimeVaryingFromResolveInfo(const UsdResolveInfo &info,
                                                   const UsdAttribute &attr) const
 {
+    if (info._source == UsdResolveInfoSourceSpline) {
+        // Although a spline could represent a constant function, determining
+        // this would require analyzing the spline, which is potentially 
+        // expensive. Hence, all splines are deemed as possibly time varying.
+        return true;
+    }
+
     if (info._source == UsdResolveInfoSourceValueClips) {
         // Do a specialized check for value clips instead of falling through
         // to calling _GetNumTimeSamplesFromResolveInfo, which requires opening

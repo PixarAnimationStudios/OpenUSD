@@ -18,6 +18,7 @@
 #include "pxr/usd/pcp/pathTranslation.h"
 #include "pxr/usd/pcp/utils.h"
 #include "pxr/usd/sdf/changeList.h"
+#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/base/tf/envSetting.h"
@@ -1555,6 +1556,7 @@ PcpChanges::_DidMuteLayer(
     if (!TfGetEnvSetting(PCP_ENABLE_MINIMAL_CHANGES_FOR_LAYER_OPERATIONS) ||
         !mutedLayer ||
         mutedLayer->IsEmpty() ||
+        mutedLayer->GetFileFormat()->IsPackage() ||
         Pcp_LayerMightHaveRelocates(cache, mutedLayer))
     {
         _DidChangeSublayerAndLayerStacks(
@@ -1614,6 +1616,7 @@ PcpChanges::_DidUnmuteLayer(
     if (!TfGetEnvSetting(PCP_ENABLE_MINIMAL_CHANGES_FOR_LAYER_OPERATIONS) ||
         !unmutedLayer ||
         unmutedLayer->IsEmpty() ||
+        unmutedLayer->GetFileFormat()->IsPackage() ||
         Pcp_LayerMightHaveRelocates(cache, unmutedLayer)) 
     {
         _DidChangeSublayerAndLayerStacks(
@@ -2197,17 +2200,27 @@ PcpChanges::_DidAddOrRemoveSublayer(
     std::string* debugSummary,
     std::vector<bool>* significant)
 {
+    PcpCacheChanges& cacheChanges = _GetCacheChanges(cache);
+
+    // Before processing any sublayer paths first check if we have encountered
+    // this layer / sublayer path before.  If we have, it indicates that there
+    // is a cycle in this layer stack.
+    const auto key = std::make_pair(layer, sublayerPath);
+    if (!cacheChanges._processedLayerSublayerPathPairs.insert(key).second) {
+        significant->resize(layerStacks.size(), false);
+        return;
+    }
+
     PCP_APPEND_DEBUG(
         "  Layer @%s@ changed sublayers\n",
         layer ? layer->GetIdentifier().c_str() : "invalid");
 
     const auto& processChanges = 
-        [this, &cache, &sublayerPath, &debugSummary, &layer](
+        [this, &cache, &sublayerPath, &debugSummary, &layer, &cacheChanges](
             const SdfLayerRefPtr sublayer,
             const PcpLayerStackPtrVector& layerStacks,
             _SublayerChangeType sublayerChange)
         {
-            PcpCacheChanges& cacheChanges = _GetCacheChanges(cache);
             if (sublayer) {
                 _lifeboat.Retain(sublayer);
                 cacheChanges.didAddOrRemoveNonEmptySublayer |= !sublayer->IsEmpty();
@@ -2228,6 +2241,7 @@ PcpChanges::_DidAddOrRemoveSublayer(
                     PCP_ENABLE_MINIMAL_CHANGES_FOR_LAYER_OPERATIONS) ||
                 !sublayer ||
                 sublayer->IsEmpty() ||
+                sublayer->GetFileFormat()->IsPackage() ||
                 Pcp_LayerMightHaveRelocates(cache, sublayer)) 
             {
                 bool isSignificant = false;

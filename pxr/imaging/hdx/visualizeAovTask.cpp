@@ -373,7 +373,7 @@ HdxVisualizeAovTask::_CreatePipeline(HgiTextureDesc const& outputTextureDesc)
 }
 
 bool
-HdxVisualizeAovTask::_CreateSampler()
+HdxVisualizeAovTask::_CreateSampler(HgiTextureDesc const& inputAovTextureDesc)
 {
     if (_sampler) {
         return true;
@@ -381,8 +381,13 @@ HdxVisualizeAovTask::_CreateSampler()
 
     HgiSamplerDesc sampDesc;
 
-    sampDesc.magFilter = HgiSamplerFilterLinear;
-    sampDesc.minFilter = HgiSamplerFilterLinear;
+    if (HgiIsFloatFormat(inputAovTextureDesc.format)) {
+        sampDesc.magFilter = HgiSamplerFilterLinear;
+        sampDesc.minFilter = HgiSamplerFilterLinear;
+    } else {
+        sampDesc.magFilter = HgiSamplerFilterNearest;
+        sampDesc.minFilter = HgiSamplerFilterNearest;
+    }
 
     sampDesc.addressModeU = HgiSamplerAddressModeClampToEdge;
     sampDesc.addressModeV = HgiSamplerAddressModeClampToEdge;
@@ -591,10 +596,13 @@ HdxVisualizeAovTask::Execute(HdTaskContext* ctx)
         ctx, HdxAovTokens->colorIntermediate, &aovTextureIntermediate);
     HgiTextureDesc const& aovTexDesc = aovTexture->GetDescriptor();
 
+    // Transition from color target layout to shader read layout
+    aovTexture->SubmitLayoutChange(HgiTextureUsageBitsShaderRead);
+
     if (!TF_VERIFY(_CreateBufferResources())) {
         return;
     }
-    if (!TF_VERIFY(_CreateSampler())) {
+    if (!TF_VERIFY(_CreateSampler(/*inputTextureDesc*/aovTexDesc))) {
         return;
     }
     if (!TF_VERIFY(_CreateShaderResources(/*inputTextureDesc*/aovTexDesc))) {
@@ -629,6 +637,9 @@ HdxVisualizeAovTask::Execute(HdTaskContext* ctx)
     }
 
     _ApplyVisualizationKernel(outputTexture);
+
+    // Restore the original color target layout
+    aovTexture->SubmitLayoutChange(HgiTextureUsageBitsColorTarget);
 
     if (canUseIntermediateAovTexture) {
         // Swap the handles on the task context so that future downstream tasks

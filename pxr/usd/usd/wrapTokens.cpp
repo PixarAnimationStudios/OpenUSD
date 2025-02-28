@@ -27,6 +27,16 @@ void wrapUsdTokens()
     _ADD_TOKEN(cls, collection_MultipleApplyTemplate_IncludeRoot);
     _ADD_TOKEN(cls, collection_MultipleApplyTemplate_Includes);
     _ADD_TOKEN(cls, collection_MultipleApplyTemplate_MembershipExpression);
+    _ADD_TOKEN(cls, colorSpaceDefinition);
+    _ADD_TOKEN(cls, colorSpaceDefinition_MultipleApplyTemplate_BlueChroma);
+    _ADD_TOKEN(cls, colorSpaceDefinition_MultipleApplyTemplate_Gamma);
+    _ADD_TOKEN(cls, colorSpaceDefinition_MultipleApplyTemplate_GreenChroma);
+    _ADD_TOKEN(cls, colorSpaceDefinition_MultipleApplyTemplate_LinearBias);
+    _ADD_TOKEN(cls, colorSpaceDefinition_MultipleApplyTemplate_Name);
+    _ADD_TOKEN(cls, colorSpaceDefinition_MultipleApplyTemplate_RedChroma);
+    _ADD_TOKEN(cls, colorSpaceDefinition_MultipleApplyTemplate_WhitePoint);
+    _ADD_TOKEN(cls, colorSpaceName);
+    _ADD_TOKEN(cls, custom);
     _ADD_TOKEN(cls, exclude);
     _ADD_TOKEN(cls, expandPrims);
     _ADD_TOKEN(cls, expandPrimsAndProperties);
@@ -35,6 +45,8 @@ void wrapUsdTokens()
     _ADD_TOKEN(cls, APISchemaBase);
     _ADD_TOKEN(cls, ClipsAPI);
     _ADD_TOKEN(cls, CollectionAPI);
+    _ADD_TOKEN(cls, ColorSpaceAPI);
+    _ADD_TOKEN(cls, ColorSpaceDefinitionAPI);
     _ADD_TOKEN(cls, ModelAPI);
     _ADD_TOKEN(cls, Typed);
 }

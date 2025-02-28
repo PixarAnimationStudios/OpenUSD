@@ -172,4 +172,28 @@ HdEngine::Execute(HdRenderIndex *index, HdTaskSharedPtrVector *tasks)
     }
 }
 
+void
+HdEngine::Execute(HdRenderIndex * const index,
+                  const SdfPathVector &taskPaths)
+{
+    HdTaskSharedPtrVector tasks;
+    tasks.reserve(taskPaths.size());
+    for (const SdfPath &taskPath : taskPaths) {
+        if (taskPath.IsEmpty()) {
+            TF_CODING_ERROR(
+                "Empty task path given to HdEngine::Execute()");
+            continue;
+        }
+        HdTaskSharedPtr task = index->GetTask(taskPath);
+        if (!task) {
+            TF_CODING_ERROR(
+                "No task at %s in render index in HdEngine::Execute()",
+                taskPath.GetText());
+            continue;
+        }
+        tasks.push_back(std::move(task));
+    }
+    Execute(index, &tasks);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

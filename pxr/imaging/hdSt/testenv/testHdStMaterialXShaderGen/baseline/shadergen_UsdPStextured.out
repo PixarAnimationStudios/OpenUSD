@@ -149,11 +149,15 @@ void mxInit(vec4 Peye, vec3 Neye)
 
     // Calculate the worldspace tangent vector 
 #ifdef HD_HAS_st
-    vec3 tangentWorld = ComputeTangentVector(positionWorld, normalWorld, HdGet_st());
+    mat3 TBN = ComputeTBNMatrix(positionWorld, normalWorld, HdGet_st());
+    vec3 tangentWorld = TBN[0];
+    vec3 bitangentWorld = TBN[1];
 #else 
-    vec3 tangentWorld = cross(normalWorld, vec3(0, 1, 0));
+    vec3 bitangentWorld = vec3(0, 1, 0);
+    vec3 tangentWorld = cross(normalWorld, bitangentWorld);
     if (length(tangentWorld) < M_FLOAT_EPS) {
-        tangentWorld = cross(normalWorld, vec3(1, 0, 0));
+        bitangentWorld = vec3(1, 0, 0);
+        tangentWorld = cross(normalWorld, bitangentWorld);
     }
 #endif
 

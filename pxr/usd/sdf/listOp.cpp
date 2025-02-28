@@ -18,6 +18,7 @@
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/tf/pxrTslRobinMap/robin_set.h"
 
 #include <ostream>
 
@@ -161,10 +162,56 @@ SdfListOp<T>::GetAppliedItems() const
 }
 
 template <typename T>
-std::vector<T> _MakeUnique(const std::vector<T> items, bool reverse=false)
+bool
+SdfListOp<T>::_MakeUnique(std::vector<T>& items, bool reverse, std::string* errMsg)
 {
-    TfDenseHashSet<T, TfHash> existingSet;
+    // Many of the vectors we see here are either just a few elements long
+    // (references, payloads) or are already sorted and unique (topology
+    // indexes, etc).
+    if (items.size() <= 1) {
+        return true;
+    }
+
+    // Many are of small size, just check all pairs.
+    if (items.size() <= 10) {
+        bool isUnique = true;
+        using iter = typename std::vector<T>::const_iterator;
+        iter iend = std::prev(items.end()), jend = items.end();
+        for (iter i = items.begin(); i != iend; ++i) {
+            for (iter j = std::next(i); j != jend; ++j) {
+                if (*i == *j) {
+                    isUnique = false;
+                }
+            }
+        }
+        if (isUnique) {
+            return true;
+        }
+    }
+
+    // Check for strictly sorted order.
+    auto comp = _ItemComparator();
+    if (std::adjacent_find(items.begin(), items.end(),
+                        [comp](T const &l, T const &r) {
+                            return !comp(l, r);
+                        }) == items.end()) {
+        return true;
+    } 
+
+    // Otherwise do a more expensive copy & sort to check for dupes.
+    std::vector<T> copy(items);
+    std::sort(copy.begin(), copy.end(), _ItemComparator());
+    auto duplicate = std::adjacent_find(copy.begin(), copy.end());
+    
+    if (duplicate == copy.end()) 
+    {
+        return true; 
+    }
+
+    // If duplicates are present, remove them
+    pxr_tsl::robin_set<T, TfHash> existingSet;
     std::vector<T> uniqueItems;
+    uniqueItems.reserve(items.size());
 
     if (reverse) {
         for (auto it = items.rbegin(); it != items.rend(); it++) {
@@ -180,15 +227,21 @@ std::vector<T> _MakeUnique(const std::vector<T> items, bool reverse=false)
             }
         }
     }
-    return uniqueItems;
+        
+    items = uniqueItems;
+    if (errMsg) {
+        *errMsg = "Duplicate item found in SdfListOp: %s.", TfStringify(*duplicate);
+    }
+    return false;
 }
 
 template <typename T>
-void 
-SdfListOp<T>::SetExplicitItems(const ItemVector &items)
+bool 
+SdfListOp<T>::SetExplicitItems(const ItemVector &items, std::string *errMsg)
 {
     _SetExplicit(true);
-    _explicitItems = _MakeUnique(items);
+    _explicitItems = items;
+    return _MakeUnique(_explicitItems, false, errMsg);
 }
 
 template <typename T>
@@ -200,27 +253,30 @@ SdfListOp<T>::SetAddedItems(const ItemVector &items)
 }
 
 template <typename T>
-void 
-SdfListOp<T>::SetPrependedItems(const ItemVector &items)
+bool 
+SdfListOp<T>::SetPrependedItems(const ItemVector &items, std::string *errMsg)
 {
     _SetExplicit(false);
-    _prependedItems = _MakeUnique(items);
+    _prependedItems = items;
+    return _MakeUnique(_prependedItems, false, errMsg);
 }
 
 template <typename T>
-void 
-SdfListOp<T>::SetAppendedItems(const ItemVector &items)
+bool 
+SdfListOp<T>::SetAppendedItems(const ItemVector &items, std::string *errMsg)
 {
     _SetExplicit(false);
-    _appendedItems = _MakeUnique(items, true);
+    _appendedItems = items;
+    return _MakeUnique(_appendedItems, true, errMsg);
 }
 
 template <typename T>
-void 
-SdfListOp<T>::SetDeletedItems(const ItemVector &items)
+bool 
+SdfListOp<T>::SetDeletedItems(const ItemVector &items, std::string *errMsg)
 {
     _SetExplicit(false);
-    _deletedItems = _MakeUnique(items);
+    _deletedItems = items;
+    return _MakeUnique(_deletedItems, false, errMsg);
 }
 
 template <typename T>
@@ -232,29 +288,26 @@ SdfListOp<T>::SetOrderedItems(const ItemVector &items)
 }
 
 template <typename T>
-void
-SdfListOp<T>::SetItems(const ItemVector &items, SdfListOpType type)
+bool
+SdfListOp<T>::SetItems(const ItemVector &items, SdfListOpType type, std::string *errMsg)
 {
     switch(type) {
     case SdfListOpTypeExplicit:
-        SetExplicitItems(items);
-        break;
+        return SetExplicitItems(items, errMsg);
     case SdfListOpTypeAdded:
         SetAddedItems(items);
         break;
     case SdfListOpTypePrepended:
-        SetPrependedItems(items);
-        break;
+        return SetPrependedItems(items, errMsg);
     case SdfListOpTypeAppended:
-        SetAppendedItems(items);
-        break;
+        return SetAppendedItems(items, errMsg);
     case SdfListOpTypeDeleted:
-        SetDeletedItems(items);
-        break;
+        return SetDeletedItems(items, errMsg);
     case SdfListOpTypeOrdered:
         SetOrderedItems(items);
         break;
     }
+    return true;
 }
 
 template <typename T>

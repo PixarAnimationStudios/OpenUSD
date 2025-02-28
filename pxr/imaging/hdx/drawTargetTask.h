@@ -20,6 +20,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStDrawTarget;
 class HdStDrawTargetRenderPassState;
+struct HdxDrawTargetTaskParams;
 using HdStRenderPassStateSharedPtr
     = std::shared_ptr<class HdStRenderPassState>;
 using HdStSimpleLightingShaderSharedPtr
@@ -32,6 +33,8 @@ TF_DECLARE_REF_PTRS(GlfSimpleLightingContext);
 class HdxDrawTargetTask  : public HdTask
 {
 public:
+    using TaskParams = HdxDrawTargetTaskParams;
+
     HDX_API
     HdxDrawTargetTask(HdSceneDelegate* delegate, SdfPath const& id);
 

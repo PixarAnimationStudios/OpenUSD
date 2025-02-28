@@ -62,6 +62,8 @@ struct HdxBoundingBoxTaskParams
 class HdxBoundingBoxTask : public HdxTask
 {
 public:
+    using TaskParams = HdxBoundingBoxTaskParams;
+
     HDX_API
     HdxBoundingBoxTask(HdSceneDelegate* delegate, const SdfPath& id);
 

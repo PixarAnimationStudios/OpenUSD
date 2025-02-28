@@ -18,6 +18,7 @@ WorkDispatcher::WorkDispatcher()
 #if TBB_INTERFACE_VERSION_MAJOR >= 12
       , _taskGroup(_context)
 #endif
+      , _isCancelled(false)
 {
     _waitCleanupFlag.clear();
     
@@ -33,7 +34,11 @@ WorkDispatcher::WorkDispatcher()
 #if TBB_INTERFACE_VERSION_MAJOR >= 12
 inline tbb::detail::d1::wait_context& 
 WorkDispatcher::_TaskGroup::_GetInternalWaitContext() {
+#if TBB_INTERFACE_VERSION_MINOR >= 14
+    return m_wait_vertex.get_context();
+#else
     return m_wait_ctx;
+#endif
 }
 #endif
 
@@ -72,12 +77,20 @@ WorkDispatcher::Wait()
         }
         _errors.clear();
         _waitCleanupFlag.clear();
+        _isCancelled = false;
     }
+}
+
+bool
+WorkDispatcher::IsCancelled() const
+{
+    return _isCancelled;
 }
 
 void
 WorkDispatcher::Cancel()
 {
+    _isCancelled = true;
 #if TBB_INTERFACE_VERSION_MAJOR >= 12
     _taskGroup.cancel();
 #else

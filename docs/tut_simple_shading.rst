@@ -49,7 +49,7 @@ other scenes. In a python shell, execute the following:
 
    from pxr import Gf, Kind, Sdf, Usd, UsdGeom, UsdShade
    
-   stage = Usd.Stage.CreateNew("simpleShading.usd")
+   stage = Usd.Stage.CreateNew("simpleShading.usda")
    UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.y)
    
    modelRoot = UsdGeom.Xform.Define(stage, "/TexModel")
@@ -87,7 +87,7 @@ multiple times). In another command shell, try:
 
 .. code-block:: sh
 
-   > usdview simpleShading.usd
+   > usdview simpleShading.usda
 
 We should see something like:
 

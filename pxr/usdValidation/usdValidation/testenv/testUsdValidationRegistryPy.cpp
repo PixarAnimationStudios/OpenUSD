@@ -8,6 +8,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usdValidation/usdValidation/error.h"
 #include "pxr/usdValidation/usdValidation/registry.h"
+#include "pxr/usdValidation/usdValidation/timeRange.h"
 #include "pxr/usdValidation/usdValidation/validator.h"
 
 #include <iostream>
@@ -20,7 +21,8 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     UsdValidationRegistry &registry = UsdValidationRegistry::GetInstance();
     {
         const UsdValidateStageTaskFn stageTaskFn
-            = [](const UsdStagePtr &usdStage) {
+            = [](const UsdStagePtr &usdStage, 
+                 const UsdValidationTimeRange &/*timeRange*/) {
                   return UsdValidationErrorVector { UsdValidationError(
                       TfToken("TestValidator1"), UsdValidationErrorType::Error,
                       { UsdValidationErrorSite(usdStage, SdfPath("/")) },
@@ -35,15 +37,16 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
             nullptr,
             { TfToken("IncludedInAll"), TfToken("SomeKeyword1") },
             "TestValidator1 for keywords metadata parsing",
-            {},
-            false
+            {}
         };
 
         registry.RegisterValidator(metadata, stageTaskFn);
         TF_AXIOM(m.IsClean());
     }
     {
-        const UsdValidatePrimTaskFn primTaskFn = [](const UsdPrim & /*prim*/) {
+        const UsdValidatePrimTaskFn primTaskFn = [](
+            const UsdPrim & /*prim*/, 
+            const UsdValidationTimeRange &/*timeRange*/) {
             return UsdValidationErrorVector {};
         };
 
@@ -54,8 +57,7 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
             nullptr,
             { TfToken("IncludedInAll") },
             "TestValidator2 for schemaType metadata parsing",
-            { TfToken("SomePrimType"), TfToken("SomeAPISchema") },
-            false
+            { TfToken("SomePrimType"), TfToken("SomeAPISchema") }
         };
         registry.RegisterValidator(metadata, primTaskFn);
         TF_AXIOM(m.IsClean());
@@ -71,6 +73,7 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
             { TfToken("IncludedInAll"), TfToken("SuiteValidator") },
             "Suite of TestValidator1 and TestValidator2",
             {},
+            false,
             true
         };
         registry.RegisterValidatorSuite(metadata, containedValidators);

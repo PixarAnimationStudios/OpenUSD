@@ -79,6 +79,9 @@ bool Ts_ConvertFromStandardHelper(
 ////////////////////////////////////////////////////////////////////////////////
 // TEMPLATE DEFINITIONS
 
+#define _MAKE_CLAUSE(unused, tuple)                                 \
+    std::is_same_v<NonVolatileT, TS_SPLINE_VALUE_CPP_TYPE(tuple)> ||
+
 template <typename T>
 bool TsConvertToStandardTangent(
     const TsTime widthIn,
@@ -90,11 +93,10 @@ bool TsConvertToStandardTangent(
     T* slopeOut)
 {
     using NonVolatileT = typename std::remove_volatile<T>::type;
-    static_assert((std::is_same_v<NonVolatileT, double> ||
-                   std::is_same_v<NonVolatileT, float> ||
-                   std::is_same_v<NonVolatileT, GfHalf>),
-                  "Can only use double, float, or GfHalf values in"
-                  " TsConvertToStandardTangent.");
+
+    static_assert((
+        TF_PP_SEQ_FOR_EACH(_MAKE_CLAUSE, ~, TS_SPLINE_SUPPORTED_VALUE_TYPES) \
+            false), "Can only use the values supported by the spline system.");
 
     return Ts_ConvertToStandardHelper(
         widthIn, slopeOrHeightIn, convertHeightToSlope, divideValuesByThree,
@@ -112,16 +114,17 @@ bool TsConvertFromStandardTangent(
     T* slopeOrHeightOut)
 {
     using NonVolatileT = typename std::remove_volatile<T>::type;
-    static_assert((std::is_same_v<NonVolatileT, double> ||
-                   std::is_same_v<NonVolatileT, float> ||
-                   std::is_same_v<NonVolatileT, GfHalf>),
-                  "Can only use double, float, or GfHalf values in"
-                  " TsConvertFromStandardTangent.");
+
+    static_assert((
+        TF_PP_SEQ_FOR_EACH(_MAKE_CLAUSE, ~, TS_SPLINE_SUPPORTED_VALUE_TYPES) \
+            false), "Can only use the values supported by the spline system.");
 
     return Ts_ConvertFromStandardHelper(
         widthIn, slopeIn, convertSlopeToHeight, multiplyValuesByThree,
         negateHeight, widthOut, slopeOrHeightOut);
 }
+
+#undef _MAKE_CLAUSE
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

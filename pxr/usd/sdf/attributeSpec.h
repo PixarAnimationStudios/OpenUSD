@@ -119,12 +119,13 @@ public:
     SDF_API
     void ClearDisplayUnit();
 
-    /// Returns the color-space in which a color or texture valued attribute 
-    /// is authored.
+    /// Returns the color space in which a color or texture valued attribute 
+    /// is authored. Refer to GfColorSpaceNames for the list of built in
+    /// color spaces.
     SDF_API
     TfToken GetColorSpace() const;
 
-    /// Sets the color-space in which a color or texture valued attribute is 
+    /// Sets the color space in which a color or texture valued attribute is 
     /// authored.
     SDF_API
     void SetColorSpace(const TfToken &colorSpace);

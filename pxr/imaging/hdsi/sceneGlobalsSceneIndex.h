@@ -11,6 +11,7 @@
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/usd/sdf/path.h"
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -51,6 +52,14 @@ public:
     HDSI_API
     void SetCurrentFrame(const double &);
 
+    /// Injects an arbitrary value that identifies the state of the input scene
+    /// at that point in time. This value ends up in the render index scene
+    /// globals once that state is processed by Hydra. This is useful for the
+    /// client to identify when certain scene edits have been processed by
+    /// Hydra.
+    HDSI_API
+    void SetSceneStateId(const int &);
+
     // ------------------------------------------------------------------------
     // Satisfying HdSceneIndexBase
     // ------------------------------------------------------------------------
@@ -88,8 +97,9 @@ private:
     friend class _SceneGlobalsDataSource;
 
     SdfPath _activeRenderPassPrimPath;
-    SdfPath _activeRenderSettingsPrimPath;
+    std::optional<SdfPath> _activeRenderSettingsPrimPath;
     double _time = std::numeric_limits<double>::quiet_NaN();
+    int _sceneStateId = 0;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -34,10 +34,12 @@ TF_REGISTRY_FUNCTION(TfType)
 // static
 bool TsSpline::IsSupportedValueType(const TfType valueType)
 {
-    return (
-        valueType == Ts_GetType<double>()
-        || valueType == Ts_GetType<float>()
-        || valueType == Ts_GetType<GfHalf>());
+#define _CHECK_TYPE(unused, tuple) \
+    (valueType == Ts_GetType<TS_SPLINE_VALUE_CPP_TYPE(tuple)>()) ||
+
+    return (TF_PP_SEQ_FOR_EACH(_CHECK_TYPE, ~, TS_SPLINE_SUPPORTED_VALUE_TYPES)
+        false);
+#undef _CHECK_TYPE
 }
 
 ////////////////////////////////////////////////////////////////////////////////

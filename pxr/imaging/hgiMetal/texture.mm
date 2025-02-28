@@ -23,10 +23,6 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
     MTLResourceOptions resourceOptions = MTLResourceStorageModePrivate;
     MTLTextureUsage usage = MTLTextureUsageShaderRead;
 
-    if (desc.initialData && desc.pixelsByteSize > 0) {
-        resourceOptions = hgi->GetCapabilities()->defaultStorageMode;
-    }
-
     MTLPixelFormat mtlFormat = HgiMetalConversions::GetPixelFormat(
         desc.format, desc.usage);
 

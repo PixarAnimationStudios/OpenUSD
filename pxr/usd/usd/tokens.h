@@ -85,6 +85,46 @@ struct UsdTokensType {
     /// 
     /// UsdCollectionAPI
     const TfToken collection_MultipleApplyTemplate_MembershipExpression;
+    /// \brief "colorSpaceDefinition"
+    /// 
+    /// Property namespace prefix for the UsdColorSpaceDefinitionAPI schema.
+    const TfToken colorSpaceDefinition;
+    /// \brief "colorSpaceDefinition:__INSTANCE_NAME__:blueChroma"
+    /// 
+    /// UsdColorSpaceDefinitionAPI
+    const TfToken colorSpaceDefinition_MultipleApplyTemplate_BlueChroma;
+    /// \brief "colorSpaceDefinition:__INSTANCE_NAME__:gamma"
+    /// 
+    /// UsdColorSpaceDefinitionAPI
+    const TfToken colorSpaceDefinition_MultipleApplyTemplate_Gamma;
+    /// \brief "colorSpaceDefinition:__INSTANCE_NAME__:greenChroma"
+    /// 
+    /// UsdColorSpaceDefinitionAPI
+    const TfToken colorSpaceDefinition_MultipleApplyTemplate_GreenChroma;
+    /// \brief "colorSpaceDefinition:__INSTANCE_NAME__:linearBias"
+    /// 
+    /// UsdColorSpaceDefinitionAPI
+    const TfToken colorSpaceDefinition_MultipleApplyTemplate_LinearBias;
+    /// \brief "colorSpaceDefinition:__INSTANCE_NAME__:name"
+    /// 
+    /// UsdColorSpaceDefinitionAPI
+    const TfToken colorSpaceDefinition_MultipleApplyTemplate_Name;
+    /// \brief "colorSpaceDefinition:__INSTANCE_NAME__:redChroma"
+    /// 
+    /// UsdColorSpaceDefinitionAPI
+    const TfToken colorSpaceDefinition_MultipleApplyTemplate_RedChroma;
+    /// \brief "colorSpaceDefinition:__INSTANCE_NAME__:whitePoint"
+    /// 
+    /// UsdColorSpaceDefinitionAPI
+    const TfToken colorSpaceDefinition_MultipleApplyTemplate_WhitePoint;
+    /// \brief "colorSpace:name"
+    /// 
+    /// UsdColorSpaceAPI
+    const TfToken colorSpaceName;
+    /// \brief "custom"
+    /// 
+    /// Fallback value for UsdColorSpaceDefinitionAPI::GetNameAttr()
+    const TfToken custom;
     /// \brief "exclude"
     /// 
     ///  This is the token used to exclude a path from a collection.  Although it is not a possible value for the "expansionRule" attribute, it is used as the expansionRule for excluded paths  in UsdCollectionAPI::MembershipQuery::IsPathIncluded. 
@@ -117,6 +157,14 @@ struct UsdTokensType {
     /// 
     /// Schema identifer and family for UsdCollectionAPI
     const TfToken CollectionAPI;
+    /// \brief "ColorSpaceAPI"
+    /// 
+    /// Schema identifer and family for UsdColorSpaceAPI
+    const TfToken ColorSpaceAPI;
+    /// \brief "ColorSpaceDefinitionAPI"
+    /// 
+    /// Schema identifer and family for UsdColorSpaceDefinitionAPI
+    const TfToken ColorSpaceDefinitionAPI;
     /// \brief "ModelAPI"
     /// 
     /// Schema identifer and family for UsdModelAPI

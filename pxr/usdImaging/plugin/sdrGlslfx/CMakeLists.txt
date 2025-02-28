@@ -4,7 +4,6 @@ set(PXR_PACKAGE sdrGlslfx)
 pxr_plugin(sdrGlslfx
     LIBRARIES
         ar
-        ndr
         sdr
         hio
 

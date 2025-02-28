@@ -14,6 +14,7 @@
 #include "pxr/usdValidation/usdValidation/validator.h"
 #include "pxr/usdValidation/usdValidation/context.h"
 #include "pxr/usdValidation/usdValidation/error.h"
+#include "pxr/usdValidation/usdValidation/timeRange.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
@@ -65,19 +66,74 @@ void wrapUsdValidationContext()
              },
              return_value_policy<TfPySequenceToList>(),
              (arg("stage"), arg("predicate")))
+        .def("Validate",
+             +[](const UsdValidationContext &ctx, const UsdStagePtr &stage, 
+                 const Usd_PrimFlagsPredicate &predicate,
+                 const UsdValidationTimeRange &timeRange)
+                -> UsdValidationErrorVector {
+                return ctx.Validate(stage, predicate, timeRange);
+             },
+             return_value_policy<TfPySequenceToList>(),
+             (arg("stage"), arg("predicate"), arg("timeRange")))
+        .def("Validate", 
+             +[](const UsdValidationContext &ctx, const UsdStagePtr &stage,
+                 const UsdValidationTimeRange &timeRange) 
+                -> UsdValidationErrorVector {
+                return ctx.Validate(stage, timeRange);
+             },
+             return_value_policy<TfPySequenceToList>(),
+             (arg("stage"), arg("timeRange")))
+        .def("Validate",
+             +[](const UsdValidationContext &ctx, const UsdStagePtr &stage,
+                 const Usd_PrimFlagsPredicate &predicate,
+                 const std::vector<UsdTimeCode> &timeCodes)
+                -> UsdValidationErrorVector {
+                return ctx.Validate(stage, predicate, timeCodes);
+            },
+            return_value_policy<TfPySequenceToList>(),
+            (arg("stage"), arg("predicate"), arg("timeCodes")))
+        .def("Validate",
+             +[](const UsdValidationContext &ctx, const UsdStagePtr &stage,
+                 const std::vector<UsdTimeCode> &timeCodes)
+                -> UsdValidationErrorVector {
+                return ctx.Validate(stage, timeCodes);
+            },
+            return_value_policy<TfPySequenceToList>(),
+            (arg("stage"), arg("timeCodes")))
         .def("Validate", 
              +[](const UsdValidationContext &ctx, 
-                 const std::vector<UsdPrim> &prims) 
+                 const std::vector<UsdPrim> &prims,
+                 const UsdValidationTimeRange &timeRange)
                 -> UsdValidationErrorVector {
-                return ctx.Validate(prims);
+                return ctx.Validate(prims, timeRange);
              },
              return_value_policy<TfPySequenceToList>(),
-             (arg("prims")))
+             (arg("prims"), 
+              arg("timeRange") = UsdValidationTimeRange()))
         .def("Validate", 
-             +[](const UsdValidationContext &ctx, const UsdPrimRange &prims) 
+             +[](const UsdValidationContext &ctx, const UsdPrimRange &prims,
+                 const UsdValidationTimeRange &timeRange)
                 -> UsdValidationErrorVector {
-                return ctx.Validate(prims);
+                return ctx.Validate(prims, timeRange);
              },
              return_value_policy<TfPySequenceToList>(),
-             (arg("prims")));
+             (arg("prims"), 
+              arg("timeCode") = UsdValidationTimeRange()))
+        .def("Validate",
+             +[](const UsdValidationContext &ctx,
+                 const std::vector<UsdPrim> &prims,
+                 const std::vector<UsdTimeCode> &timeCodes)
+                -> UsdValidationErrorVector {
+                return ctx.Validate(prims, timeCodes);
+             },
+             return_value_policy<TfPySequenceToList>(),
+             (arg("prims"), arg("timeCodes")))
+        .def("Validate",
+             +[](const UsdValidationContext &ctx, const UsdPrimRange &prims,
+                 const std::vector<UsdTimeCode> &timeCodes)
+                -> UsdValidationErrorVector {
+                return ctx.Validate(prims, timeCodes);
+             },
+             return_value_policy<TfPySequenceToList>(),
+             (arg("prims"), arg("timeCodes")));
 }

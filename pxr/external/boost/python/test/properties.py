@@ -58,7 +58,7 @@ class instance count from object:
 1
 
 as expected you can't assign new value to read only property
->>> x1.value_r = 2
+>>> x1.value_r = 2    # doctest: +IGNORE_EXCEPTION_DETAIL
 Traceback (most recent call last):
   File "properties.py", line 49, in ?
     x1.value_r = 2

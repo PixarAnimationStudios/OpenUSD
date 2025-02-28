@@ -35,6 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_MATERIAL_NODE_PARAMETER_SCHEMA_TOKENS \
     (value) \
     (colorSpace) \
+    (typeName) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdMaterialNodeParameterSchemaTokens, HD_API,
     HD_MATERIAL_NODE_PARAMETER_SCHEMA_TOKENS);
@@ -66,7 +67,10 @@ public:
     HdSampledDataSourceHandle GetValue() const;
 
     HD_API
-    HdTokenDataSourceHandle GetColorSpace() const; 
+    HdTokenDataSourceHandle GetColorSpace() const;
+
+    HD_API
+    HdTokenDataSourceHandle GetTypeName() const; 
 
     /// @} 
 
@@ -84,7 +88,8 @@ public:
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdSampledDataSourceHandle &value,
-        const HdTokenDataSourceHandle &colorSpace
+        const HdTokenDataSourceHandle &colorSpace,
+        const HdTokenDataSourceHandle &typeName
     );
 
     /// \class HdMaterialNodeParameterSchema::Builder
@@ -102,6 +107,9 @@ public:
         HD_API
         Builder &SetColorSpace(
             const HdTokenDataSourceHandle &colorSpace);
+        HD_API
+        Builder &SetTypeName(
+            const HdTokenDataSourceHandle &typeName);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -110,6 +118,7 @@ public:
     private:
         HdSampledDataSourceHandle _value;
         HdTokenDataSourceHandle _colorSpace;
+        HdTokenDataSourceHandle _typeName;
 
     };
 

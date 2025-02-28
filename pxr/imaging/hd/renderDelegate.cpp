@@ -40,6 +40,27 @@ HdRenderDelegate::HdRenderDelegate()
 {
 }
 
+bool
+HdRenderParam::SetArbitraryValue(const TfToken& key, const VtValue& value)
+{
+    // Default implementation does not allow setting any arbitrary values.
+    return false;
+}
+
+VtValue
+HdRenderParam::GetArbitraryValue(const TfToken& key) const
+{
+    // Default implementation does not provide any arbitrary values.
+    return VtValue();
+}
+
+bool
+HdRenderParam::HasArbitraryValue(const TfToken& key) const
+{
+    // Default implementation does not provide any arbitrary values.
+    return false;
+}
+
 HdRenderDelegate::HdRenderDelegate(HdRenderSettingsMap const& settingsMap)
     : _settingsMap(settingsMap), _settingsVersion(1)
 {

@@ -4,7 +4,7 @@
             "Info": {
                 "Types": {
                     "UsdShadersDiscoveryPlugin" : {
-                        "bases": ["NdrDiscoveryPlugin"],
+                        "bases": ["SdrDiscoveryPlugin"],
                         "displayName": "USD-based shader definition discovery plugin."
                     }
                 },

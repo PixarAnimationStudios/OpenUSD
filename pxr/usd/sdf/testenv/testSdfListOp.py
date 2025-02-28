@@ -66,6 +66,22 @@ class TestSdfListOp(unittest.TestCase):
 
         # Ensure duplicates are removed when using setter methods.
         self.assertEqual(
+            _ExplicitItems([1])
+            .explicitItems,
+            [1])
+        self.assertEqual(
+            _ExplicitItems([1,1])
+            .explicitItems,
+            [1])
+        self.assertEqual(
+            _ExplicitItems([1,2,3])
+            .explicitItems,
+            [1,2,3])
+        self.assertEqual(
+            _ExplicitItems([1,2,3,4,5,6,7,8,9,10,11,11])
+            .explicitItems,
+            [1,2,3,4,5,6,7,8,9,10,11])
+        self.assertEqual(
             _ExplicitItems([1,2,1,3])
             .explicitItems,
             [1,2,3])

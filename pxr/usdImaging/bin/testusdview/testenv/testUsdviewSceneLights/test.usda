@@ -1,7 +1,19 @@
 #usda 1.0
 (
     upAxis = "Z"
+    renderSettingsPrimPath = "/Render/Settings"
 )
+
+def Scope "Render"
+{
+    def RenderSettings "Settings"
+    {
+        bool ri:hider:jitter = 0
+        float ri:Ri:PixelVariance = 0.0
+        int ri:hider:minsamples = 4
+        int ri:hider:maxsamples = 4
+    }
+}
 
 def Scope "World"
 {
@@ -14,7 +26,7 @@ def Scope "World"
     }
 }
 
-def Scope "Lights" 
+def Scope "Lights"
 {
     def SphereLight "light1"
     {

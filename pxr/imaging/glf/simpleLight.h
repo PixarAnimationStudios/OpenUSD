@@ -38,16 +38,19 @@ public:
     GLF_API
     void SetTransform(GfMatrix4d const & mat);
 
+    /// The ambient light value is in the renderer's working color space
     GLF_API
     GfVec4f const & GetAmbient() const;
     GLF_API
     void SetAmbient(GfVec4f const & ambient);
 
+    /// The diffuse light value is in the renderer's working color space
     GLF_API
     GfVec4f const & GetDiffuse() const;
     GLF_API
     void SetDiffuse(GfVec4f const & diffuse);
 
+    /// The specular light value is in the renderer's working color space
     GLF_API
     GfVec4f const & GetSpecular() const;
     GLF_API

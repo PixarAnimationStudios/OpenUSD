@@ -270,8 +270,21 @@ Test_TfHash()
     std::pair<int, float> intfloat = {1, 2.34};
     printf("hash(pair<int, float>): %zu\n", h(intfloat));
 
+    std::tuple<int, float> intfloat2 = {1, 2.34};
+    printf("hash(tuple<int, float>): %zu\n", h(intfloat2));
+
+    std::tuple<int, float, double> intfloatdouble = {1, 2.34, 5.678};
+    printf("hash(tuple<int, float, double>): %zu\n", h(intfloatdouble));
+
     std::vector<std::pair<int, float>> vp { intfloat, intfloat, intfloat };
     printf("hash(vector<pair<int, float>>): %zu\n", h(vp));
+
+    std::vector<std::tuple<int, float>> vp2 { intfloat2, intfloat2, intfloat2 };
+    printf("hash(vector<tuple<int, float>>): %zu\n", h(vp2));
+
+    std::vector<std::tuple<int, float, double>> vt { 
+        intfloatdouble, intfloatdouble, intfloatdouble };
+    printf("hash(vector<tuple<int, float, double>>): %zu\n", h(vt));
 
     MultipleThings mt;
     printf("hash(MultipleThings): %zu\n", h(mt));

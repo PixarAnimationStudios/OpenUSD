@@ -53,8 +53,10 @@ class TestUsdSplines(unittest.TestCase):
             prim = stage.DefinePrim(Sdf.Path("/MyPrim"))
             attr = prim.CreateAttribute("myAttr", attrType)
             self.assertFalse(attr.HasSpline())
+            self.assertFalse(attr.ValueMightBeTimeVarying())
             attr.SetSpline(spline)
             self.assertTrue(attr.HasSpline())
+            self.assertTrue(attr.ValueMightBeTimeVarying())
             print(f"Original spline, {case}, {format}:")
             print(spline)
 
@@ -71,7 +73,6 @@ class TestUsdSplines(unittest.TestCase):
                 spline2 = attr2.GetSpline()
                 print(f"Round-tripped spline, {case}, {format}:")
                 print(spline2)
-
                 self.assertEqual(spline, spline2)
 
     def test_Serialization_Empty(self):
@@ -231,7 +232,11 @@ class TestUsdSplines(unittest.TestCase):
 
         prim = stage.DefinePrim(Sdf.Path("/MyPrim"))
         attr = prim.CreateAttribute("myAttr", attrType)
+        self.assertFalse(attr.HasSpline())
+        self.assertFalse(attr.ValueMightBeTimeVarying())
         attr.SetSpline(spline)
+        self.assertTrue(attr.HasSpline())
+        self.assertTrue(attr.ValueMightBeTimeVarying())
 
         sdfAttr = deepLayer.GetAttributeAtPath("/MyPrim.myAttr")
         sdfSpline = sdfAttr.GetInfo("spline")
@@ -240,6 +245,10 @@ class TestUsdSplines(unittest.TestCase):
 
         attr2 = stage.GetAttributeAtPath("/MyPrim.myAttr")
         spline2 = attr2.GetSpline()
+        print (f"Explicit spline eval, {case}:")
+        print (spline2.Eval(1.0))
+        print (f"Attribute Get spline eval, {case}:")
+        print (attr2.Get(1.0))
         print(f"Retrieved spline, {case}:")
         print(spline2)
 
@@ -269,15 +278,6 @@ class TestUsdSplines(unittest.TestCase):
             attrType = Sdf.ValueTypeNames.TimeCode, timeValued = True,
             scale = 2.0)
 
-    def test_LayerOffsets_Reversed(self):
-        """
-        Test writing and reading splines across time-reversing layer offsets.
-        """
-        self._DoLayerOffsetTest(
-            "test_LayerOffsets_Reversed",
-            attrType = Sdf.ValueTypeNames.Double, timeValued = False,
-            scale = -2.0)
-
     def test_InvalidType(self):
         """
         Verify that a spline cannot be assigned to an attribute of an
@@ -289,6 +289,8 @@ class TestUsdSplines(unittest.TestCase):
         spline = self._GetTestSpline()
 
         gotException = False
+        self.assertFalse(attr.HasSpline())
+        self.assertFalse(attr.ValueMightBeTimeVarying())
         try:
             attr.SetSpline(spline)
         except Tf.ErrorException as e:
@@ -297,8 +299,9 @@ class TestUsdSplines(unittest.TestCase):
             print(e)
         except:
             pass
-
         self.assertTrue(gotException)
+        self.assertFalse(attr.HasSpline())
+        self.assertFalse(attr.ValueMightBeTimeVarying())
 
 
 if __name__ == "__main__":

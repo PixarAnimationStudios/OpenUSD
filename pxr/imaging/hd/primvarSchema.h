@@ -38,6 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (indices) \
     (interpolation) \
     (role) \
+    (elementSize) \
     (transform) \
     (constant) \
     (uniform) \
@@ -78,15 +79,15 @@ public:
     // does has indices, GetPrimvarValue() will return the flattened value,
     // while GetIndexedPrimvarValue() will return the unflattened value.
     HD_API
-    HdSampledDataSourceHandle GetPrimvarValue();
+    HdSampledDataSourceHandle GetPrimvarValue() const;
 
     HD_API
-    HdSampledDataSourceHandle GetIndexedPrimvarValue();
+    HdSampledDataSourceHandle GetIndexedPrimvarValue() const;
 
     // Returns true if it contains data sources for an indexed primvar value
     // and for indices.
     HD_API
-    bool IsIndexed();
+    bool IsIndexed() const;
 
     // If the primvar does not have indices, GetFlattenedPrimvarValue() will
     // just return the primvarValue data source which is also returned by
@@ -103,7 +104,7 @@ public:
     // behavior should explicitly call GetFlattenedPrimvarValue.
     //
     HD_API
-    HdSampledDataSourceHandle GetFlattenedPrimvarValue();
+    HdSampledDataSourceHandle GetFlattenedPrimvarValue() const;
 
 // --(END CUSTOM CODE: Schema Methods)--
 
@@ -117,7 +118,12 @@ public:
     HdTokenDataSourceHandle GetInterpolation() const;
 
     HD_API
-    HdTokenDataSourceHandle GetRole() const; 
+    HdTokenDataSourceHandle GetRole() const;
+
+    /// The number of values in the value array that must be aggregated for
+    /// each element on the the primitive (same as UsdGeomPrimvar).
+    HD_API
+    HdIntDataSourceHandle GetElementSize() const; 
 
     /// @} 
 
@@ -138,7 +144,8 @@ public:
         const HdSampledDataSourceHandle &indexedPrimvarValue,
         const HdIntArrayDataSourceHandle &indices,
         const HdTokenDataSourceHandle &interpolation,
-        const HdTokenDataSourceHandle &role
+        const HdTokenDataSourceHandle &role,
+        const HdIntDataSourceHandle &elementSize
     );
 
     /// \class HdPrimvarSchema::Builder
@@ -165,6 +172,9 @@ public:
         HD_API
         Builder &SetRole(
             const HdTokenDataSourceHandle &role);
+        HD_API
+        Builder &SetElementSize(
+            const HdIntDataSourceHandle &elementSize);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -176,6 +186,7 @@ public:
         HdIntArrayDataSourceHandle _indices;
         HdTokenDataSourceHandle _interpolation;
         HdTokenDataSourceHandle _role;
+        HdIntDataSourceHandle _elementSize;
 
     };
 

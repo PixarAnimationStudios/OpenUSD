@@ -86,8 +86,6 @@ GlfSimpleShadowArray::SetShadowMapResolutions(
         _viewMatrix.resize(numShadowMaps, GfMatrix4d().SetIdentity());
         _projectionMatrix.resize(numShadowMaps, GfMatrix4d().SetIdentity());
     }
-
-    _texturesAllocatedExternally = false;
 }
 
 size_t
@@ -151,6 +149,12 @@ GlfSimpleShadowArray::SetProjectionMatrix(size_t index, GfMatrix4d const & matri
 GfMatrix4d
 GlfSimpleShadowArray::GetWorldToShadowMatrix(size_t index) const
 {
+    // Transform shadow space clip coordinates such that after the homegenous
+    // divide, the resulting XYZ coordinates are in the range [0,1] and not
+    // the NDC [-1,1].
+    // This is used during shadow map sampling. (X,Y) serves as the texture
+    // coordinate and Z is the compare value.
+    // 
     GfMatrix4d size = GfMatrix4d().SetScale(GfVec3d(0.5, 0.5, 0.5));
     GfMatrix4d center = GfMatrix4d().SetTranslate(GfVec3d(0.5, 0.5, 0.5));
     return GetViewMatrix(index) * GetProjectionMatrix(index) * size * center;

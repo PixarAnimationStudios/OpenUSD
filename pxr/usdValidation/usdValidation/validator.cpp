@@ -8,6 +8,7 @@
 #include "pxr/usdValidation/usdValidation/validator.h"
 
 #include "pxr/usdValidation/usdValidation/error.h"
+#include "pxr/usdValidation/usdValidation/timeRange.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -74,11 +75,14 @@ UsdValidationValidator::Validate(const SdfLayerHandle &layer) const
 }
 
 UsdValidationErrorVector
-UsdValidationValidator::Validate(const UsdStagePtr &usdStage) const
+UsdValidationValidator::Validate(
+    const UsdStagePtr &usdStage,
+    const UsdValidationTimeRange &timeRange) const
 {
     const UsdValidateStageTaskFn *stageTaskFn = _GetValidateStageTask();
     if (stageTaskFn) {
-        UsdValidationErrorVector errors = (*stageTaskFn)(usdStage);
+        UsdValidationErrorVector errors = 
+            (*stageTaskFn)(usdStage, timeRange);
         for (UsdValidationError &error : errors) {
             error._SetValidator(this);
         }
@@ -88,11 +92,14 @@ UsdValidationValidator::Validate(const UsdStagePtr &usdStage) const
 }
 
 UsdValidationErrorVector
-UsdValidationValidator::Validate(const UsdPrim &usdPrim) const
+UsdValidationValidator::Validate(
+    const UsdPrim &usdPrim, 
+    const UsdValidationTimeRange &timeRange) const
 {
     const UsdValidatePrimTaskFn *primTaskFn = _GetValidatePrimTask();
     if (primTaskFn) {
-        UsdValidationErrorVector errors = (*primTaskFn)(usdPrim);
+        UsdValidationErrorVector errors = 
+            (*primTaskFn)(usdPrim, timeRange);
         for (UsdValidationError &error : errors) {
             error._SetValidator(this);
         }

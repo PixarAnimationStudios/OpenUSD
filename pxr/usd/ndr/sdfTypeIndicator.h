@@ -9,6 +9,10 @@
 #define PXR_USD_NDR_SDF_TYPE_INDICATOR_H
 
 /// \file ndr/sdfTypeIndicator.h
+///
+/// \deprecated
+/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
+/// in sdr/registry.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ndr/api.h"
@@ -28,6 +32,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// will return false, and GetSdfType() will return either
 /// SdfValueTypeNames->TokenArray or SdfValueTypeNames->Token. GetNdrType()
 /// will return the original Ndr Property type.
+///
+/// \deprecated
+/// Deprecated in favor of SdrSdfTypeIndicator
 class NdrSdfTypeIndicator
 {
 public:
@@ -45,8 +52,16 @@ public:
 
     /// Gets the original Ndr property type associated with the represented
     /// Ndr property type to Sdf type mapping.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of GetSdrType
     NDR_API
     TfToken GetNdrType() const;
+
+    /// Gets the original Sdr property type associated with the represented
+    /// Sdr property type to Sdf type mapping.
+    NDR_API
+    TfToken GetSdrType() const;
 
     /// Whether an exact Sdf type exists for the represented Ndr property type
     /// to Sdf type mapping.

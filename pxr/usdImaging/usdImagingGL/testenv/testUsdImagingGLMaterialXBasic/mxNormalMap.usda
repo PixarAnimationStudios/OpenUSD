@@ -99,8 +99,11 @@ def Xform "NormalMapTest"
             }
         }
 
-        def Material "MxPS_NormalMap"
+        def Material "MxPS_NormalMap" (
+            prepend apiSchemas = ["MaterialXConfigAPI"]
+        )
         {
+            string config:mtlx:version = "1.38"
             token outputs:mtlx:surface.connect = </NormalMapTest/Looks/MxPS_NormalMap/PreviewSurface.outputs:out>
 
             def Shader "PreviewSurface"
@@ -131,8 +134,11 @@ def Xform "NormalMapTest"
             }
         }
 
-        def Material "MxSS_NormalMap"
+        def Material "MxSS_NormalMap" (
+            prepend apiSchemas = ["MaterialXConfigAPI"]
+        )
         {
+            string config:mtlx:version = "1.38"
             token outputs:mtlx:surface.connect = </NormalMapTest/Looks/MxSS_NormalMap/PreviewSurface.outputs:out>
 
             def Shader "PreviewSurface"

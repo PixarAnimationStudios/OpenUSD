@@ -36,6 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_MATERIAL_SCHEMA_TOKENS \
     (material) \
     ((universalRenderContext, "")) \
+    ((all, "__all")) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdMaterialSchemaTokens, HD_API,
     HD_MATERIAL_SCHEMA_TOKENS);
@@ -146,6 +147,9 @@ public:
 
     HD_API
     HdMaterialNetworkSchema GetMaterialNetwork(TfToken const &context);
+
+    HD_API
+    HdMaterialNetworkSchema GetMaterialNetwork(TfTokenVector const &contexts);
 
 // --(END CUSTOM CODE: Schema Methods)--
 

@@ -11,27 +11,37 @@
 /// \file rmanDiscovery/rmanDiscovery.h
 
 #include "pxr/pxr.h"
+#if PXR_VERSION >= 2505
+#include "pxr/usd/sdr/discoveryPlugin.h"
+#else
 #include "pxr/usd/ndr/discoveryPlugin.h"
+#endif
 #include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+#if PXR_VERSION < 2505
+using SdrDiscoveryPlugin = NdrDiscoveryPlugin;
+using SdrShaderNodeDiscoveryResult = NdrNodeDiscoveryResult;
+using SdrStringVec = NdrStringVec;
+#endif
 
 /// \class RmanDiscoveryPlugin
 ///
 /// Discovers nodes supported by the HdPrman render delegate.
 ///
-class RmanDiscoveryPlugin final : public NdrDiscoveryPlugin
+class RmanDiscoveryPlugin final : public SdrDiscoveryPlugin
 {
 public:
     /// A filter for discovered nodes.  If the function returns false
     /// then the discovered node is discarded.  Otherwise the function
     /// can modify the discovery result.
-    using Filter = std::function<bool(NdrNodeDiscoveryResult&)>;
+    using Filter = std::function<bool(SdrShaderNodeDiscoveryResult&)>;
 
     /// Constructor.
     RmanDiscoveryPlugin();
 
-    /// DiscoverNodes() will pass each result to the given function for
+    /// DiscoverShaderNodes() will pass each result to the given function for
     /// modification.  If the function returns false then the result is
     /// discarded.
     RmanDiscoveryPlugin(Filter filter);
@@ -41,19 +51,23 @@ public:
 
     /// Discover all of the nodes that appear within the the search paths
     /// provided and match the extensions provided.
+#if PXR_VERSION >= 2505
+    SdrShaderNodeDiscoveryResultVec DiscoverShaderNodes(const Context&) override;
+#else
     NdrNodeDiscoveryResultVec DiscoverNodes(const Context&) override;
+#endif
 
     /// Gets the paths that this plugin is searching for nodes in.
-    const NdrStringVec& GetSearchURIs() const override;
+    const SdrStringVec& GetSearchURIs() const override;
 
 private:
     /// The paths (abs) indicating where the plugin should search for nodes.
-    NdrStringVec _searchPaths;
+    SdrStringVec _searchPaths;
 
     /// The extensions (excluding leading '.') that signify a valid node file.
     /// The extension will be used as the `type` member in the resulting
-    /// `NdrNodeDiscoveryResult` instance.
-    NdrStringVec _allowedExtensions;
+    /// `SdrShaderNodeDiscoveryResult` instance.
+    SdrStringVec _allowedExtensions;
 
     /// Whether or not to follow symlinks while scanning directories for files.
     bool _followSymlinks;
@@ -63,7 +77,7 @@ private:
 };
 
 void
-RmanDiscoveryPlugin_SetDefaultSearchPaths(const NdrStringVec &paths);
+RmanDiscoveryPlugin_SetDefaultSearchPaths(const SdrStringVec &paths);
 
 void
 RmanDiscoveryPlugin_SetDefaultFollowSymlinks(bool followSymlinks);

@@ -1,11 +1,11 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2025 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 #include "nodeIdentifierResolvingSceneIndexPlugin.h"
 
-#include "nodeIdentifierResolvingSceneIndex.h"
+#include "pxr/imaging/hdsi/nodeIdentifierResolvingSceneIndex.h"
 
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 
@@ -13,6 +13,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (glslfx)
     ((sceneIndexPluginName, "HdSt_NodeIdentifierResolvingSceneIndexPlugin"))
 );
 
@@ -47,7 +48,8 @@ HdSt_NodeIdentifierResolvingSceneIndexPlugin::_AppendSceneIndex(
     const HdContainerDataSourceHandle& inputArgs)
 {
     TF_UNUSED(inputArgs);
-    return HdSt_NodeIdentifierResolvingSceneIndex::New(inputSceneIndex);
+    return HdSiNodeIdentifierResolvingSceneIndex::New(inputSceneIndex, 
+                                             /* sourceType */_tokens->glslfx);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

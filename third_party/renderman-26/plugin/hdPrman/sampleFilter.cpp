@@ -19,12 +19,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#if PXR_VERSION < 2505
+using SdrTokenVec = NdrTokenVec;
+#endif
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (resource)
 );
 
-TF_MAKE_STATIC_DATA(NdrTokenVec, _sourceTypes) {
+TF_MAKE_STATIC_DATA(SdrTokenVec, _sourceTypes) {
     *_sourceTypes = { TfToken("OSL"), 
                       TfToken("RmanCpp"), }; }
 

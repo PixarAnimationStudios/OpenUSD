@@ -6,6 +6,7 @@ pxr_library(usdValidation
         sdf
         plug
         tf
+        gf
         usd
         work
         ${TBB_tbb_LIBRARY}
@@ -17,6 +18,7 @@ pxr_library(usdValidation
         context 
         error
         registry
+        timeRange
         validator
         validatorTokens
 
@@ -31,6 +33,7 @@ pxr_library(usdValidation
         wrapContext.cpp
         wrapError.cpp
         wrapRegistry.cpp
+        wrapTimeRange.cpp
         wrapValidator.cpp
 
     PYMODULE_FILES

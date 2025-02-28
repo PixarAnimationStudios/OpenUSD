@@ -7,13 +7,15 @@
 
 #include "pxr/usdValidation/usdValidation/error.h"
 #include "pxr/usdValidation/usdValidation/registry.h"
+#include "pxr/usdValidation/usdValidation/timeRange.h"
 #include "pxr/usdValidation/usdValidation/validator.h"
 #include "pxr/usdValidation/usdValidation/validatorTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 static UsdValidationErrorVector
-_GetCompositionErrors(const UsdStagePtr &usdStage)
+_GetCompositionErrors(const UsdStagePtr &usdStage, 
+                      const UsdValidationTimeRange &/*timeRange*/)
 {
     UsdValidationErrorVector errors;
     const PcpErrorVector pcpErrors = usdStage->GetCompositionErrors();
@@ -29,7 +31,8 @@ _GetCompositionErrors(const UsdStagePtr &usdStage)
 }
 
 static UsdValidationErrorVector
-_GetStageMetadataErrors(const UsdStagePtr &usdStage)
+_GetStageMetadataErrors(const UsdStagePtr &usdStage, 
+                        const UsdValidationTimeRange &/*timeRange*/)
 {
     UsdValidationErrorVector errors;
     if (!usdStage->GetDefaultPrim()) {

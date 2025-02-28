@@ -16,19 +16,21 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define USD_SHADE_VALIDATOR_NAME_TOKENS                                        \
-    ((encapsulationValidator,                                                  \
-      "usdShadeValidators:EncapsulationRulesValidator"))                       \
-    ((materialBindingApiAppliedValidator,                                      \
-      "usdShadeValidators:MaterialBindingApiAppliedValidator"))                \
-    ((materialBindingRelationships,                                            \
-      "usdShadeValidators:MaterialBindingRelationships"))                      \
-    ((materialBindingCollectionValidator,                                      \
-      "usdShadeValidators:MaterialBindingCollectionValidator"))                \
-    ((shaderSdrCompliance, "usdShadeValidators:ShaderSdrCompliance"))          \
-    ((subsetMaterialBindFamilyName,                                            \
-      "usdShadeValidators:SubsetMaterialBindFamilyName"))                      \
-    ((subsetsMaterialBindFamily,                                               \
+#define USD_SHADE_VALIDATOR_NAME_TOKENS                                       \
+    ((encapsulationValidator,                                                 \
+      "usdShadeValidators:EncapsulationRulesValidator"))                      \
+    ((materialBindingApiAppliedValidator,                                     \
+      "usdShadeValidators:MaterialBindingApiAppliedValidator"))               \
+    ((materialBindingRelationships,                                           \
+      "usdShadeValidators:MaterialBindingRelationships"))                     \
+    ((materialBindingCollectionValidator,                                     \
+      "usdShadeValidators:MaterialBindingCollectionValidator"))               \
+    ((normalMapTextureValidator,                                              \
+      "usdShadeValidators:NormalMapTextureValidator"))                        \
+    ((shaderSdrCompliance, "usdShadeValidators:ShaderSdrCompliance"))         \
+    ((subsetMaterialBindFamilyName,                                           \
+      "usdShadeValidators:SubsetMaterialBindFamilyName"))                     \
+    ((subsetsMaterialBindFamily,                                              \
       "usdShadeValidators:SubsetsMaterialBindFamily"))
 
 #define USD_SHADE_VALIDATOR_KEYWORD_TOKENS (UsdShadeValidators)
@@ -47,6 +49,13 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((incompatShaderPropertyWarning, "IncompatShaderPropertyWarning"))         \
     ((mismatchPropertyType, "MismatchedPropertyType"))                         \
     ((missingFamilyNameOnGeomSubset, "MissingFamilyNameOnGeomSubset"))         \
+    ((nonShaderConnection, "NonShaderConnection"))                             \
+    ((invalidFile, "InvalidFile"))                                             \
+    ((invalidShaderPrim, "InvalidShaderPrim"))                                 \
+    ((invalidSourceColorSpace, "InvalidSourceColorSpace"))                     \
+    ((nonCompliantBiasAndScale, "NonCompliantBiasAndScale"))                   \
+    ((nonCompliantScale, "NonCompliantScaleValues"))                           \
+    ((nonCompliantBias, "NonCompliantBiasValues"))                             \
     ((invalidFamilyType, "InvalidFamilyType"))
 
 /// \def USD_SHADE_VALIDATOR_NAME_TOKENS

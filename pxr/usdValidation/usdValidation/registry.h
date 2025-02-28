@@ -83,7 +83,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     UsdValidationRegistry& registry = UsdValidationRegistry::GetInstance();
 ///     const TfToken validatorName("usdValidation:StageMetadataValidator");
 ///     const UsdValidateStageTaskFn stageTaskFn =
-///         [](const UsdStagePtr &usdStage) {
+///         [](const UsdStagePtr &usdStage,
+///            const UsdValidationTimeRange &timeRange) {
 ///             UsdValidationErrorVector errors;
 ///             if (!usdStage->GetDefaultPrim()) {
 ///                 errors.emplace_back(UsdValidationErrorType::Error,

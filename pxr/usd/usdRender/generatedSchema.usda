@@ -489,9 +489,6 @@ class RenderPass "RenderPass" (
         command[4] = "{fileName}" # the fileName property will be substituted
         '''
     )
-    uniform bool denoise:enable = 0 (
-        doc = "When True, this Pass pass should be denoised."
-    )
     uniform asset fileName (
         doc = """The asset that contains the rendering prims or other 
         information needed to render this pass.

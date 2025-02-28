@@ -65,9 +65,9 @@ public:
 
 private:
     static
-    std::vector<UsdImagingDataSourceMapped::AttributeMapping>
-    _GetAttributeMappings() {
-        std::vector<UsdImagingDataSourceMapped::AttributeMapping> result;
+    std::vector<UsdImagingDataSourceMapped::PropertyMapping>
+    _GetPropertyMappings() {
+        std::vector<UsdImagingDataSourceMapped::PropertyMapping> result;
 
         for (const TfToken &usdName :
                  UsdSchemaType::GetSchemaAttributeNames(
@@ -77,16 +77,18 @@ private:
                 // in UsdImagingDataSourcePrim::Get. 
                 continue;
             }
-            result.push_back({ usdName, HdDataSourceLocator(usdName)});
+            result.push_back(
+                UsdImagingDataSourceMapped::AttributeMapping{
+                    usdName, HdDataSourceLocator(usdName)});
         }
         return result;
     }
     
     static
-    const UsdImagingDataSourceMapped::AttributeMappings &
+    const UsdImagingDataSourceMapped::PropertyMappings &
     _GetMappings() {
-        static const UsdImagingDataSourceMapped::AttributeMappings result(
-            _GetAttributeMappings(), HdSchemaType::GetDefaultLocator());
+        static const UsdImagingDataSourceMapped::PropertyMappings result(
+            _GetPropertyMappings(), HdSchemaType::GetDefaultLocator());
         return result;
     }
 

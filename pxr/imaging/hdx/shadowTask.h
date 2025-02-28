@@ -74,6 +74,8 @@ struct HdxShadowTaskParams
 class HdxShadowTask : public HdTask
 {
 public:
+    using TaskParams = HdxShadowTaskParams;
+
     HDX_API
     HdxShadowTask(HdSceneDelegate* delegate, SdfPath const& id);
 

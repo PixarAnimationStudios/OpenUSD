@@ -21,6 +21,7 @@
 #include "pxr/usd/ndr/property.h"
 #include "pxr/usd/ndr/registry.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/base/tf/diagnostic.h"
 
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/envSetting.h"
@@ -29,17 +30,35 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
     PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY, 0,
+    "Legacy - deprecated in favor of PXR_SDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY. "
     "The auto-discovery of discovery plugins in ndr can be skipped. "
     "This is used mostly for testing purposes.");
 
 TF_DEFINE_ENV_SETTING(
     PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY, 0,
+    "Legacy - deprecated in favor of PXR_SDR_SKIP_PARSER_PLUGIN_DISCOVERY. "
     "The auto-discovery of parser plugins in ndr can be skipped. "
     "This is used mostly for testing purposes.");
 
 TF_DEFINE_ENV_SETTING(
     PXR_NDR_DISABLE_PLUGINS, "",
-    "Comma separated list of Ndr plugins to disable.  Note that disabling plugins may cause "
+    "Legacy - deprecated in favor of PXR_SDR_DISABLE_PLUGINS. "
+    "Comma separated list of Ndr plugins to disable.  Note that disabling "
+    "plugins may cause shaders in your scenes to malfunction.");
+
+TF_DEFINE_ENV_SETTING(
+    PXR_SDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY, 0,
+    "The auto-discovery of discovery plugins in sdr can be skipped. "
+    "This is used mostly for testing purposes.");
+
+TF_DEFINE_ENV_SETTING(
+    PXR_SDR_SKIP_PARSER_PLUGIN_DISCOVERY, 0,
+    "The auto-discovery of parser plugins in sdr can be skipped. "
+    "This is used mostly for testing purposes.");
+
+TF_DEFINE_ENV_SETTING(
+    PXR_SDR_DISABLE_PLUGINS, "",
+    "Comma separated list of Sdr plugins to disable.  Note that disabling plugins may cause "
     "shaders in your scenes to malfunction.");
 
 // This function is used for property validation. It explictly is validating 
@@ -878,7 +897,8 @@ NdrRegistry::_FindAndInstantiateDiscoveryPlugins()
 {
     // The auto-discovery of discovery plugins can be skipped. This is mostly
     // for testing purposes.
-    if (TfGetEnvSetting(PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY)) {
+    if (TfGetEnvSetting(PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY) ||
+            TfGetEnvSetting(PXR_SDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY)) {
         return;
     }
 
@@ -887,9 +907,25 @@ NdrRegistry::_FindAndInstantiateDiscoveryPlugins()
     PlugRegistry::GetInstance().GetAllDerivedTypes<NdrDiscoveryPlugin>(
         &discoveryPluginTypes);
 
+    // SdrDiscoveryPlugin is derived from NdrDiscoveryPlugin but is virtual.
+    // We want to run SdrDiscoveryPlugin subclasses but not SdrDiscoveryPlugin
+    // itself. We also want to run _SdrFilesystemDiscoveryPlugin but not
+    // the deprecated _NdrFilesystemDiscoveryPlugin.
+    discoveryPluginTypes.erase(TfType::FindByName("SdrDiscoveryPlugin"));
+    discoveryPluginTypes.erase(TfType::FindByName(
+        "_NdrFilesystemDiscoveryPlugin"));
+
     // Allow plugins to be disabled.
-    const std::string disabledPluginsStr = TfGetEnvSetting(PXR_NDR_DISABLE_PLUGINS);
-    const std::set<std::string> disabledPlugins = TfStringTokenizeToSet(disabledPluginsStr, ",");
+    const std::string disabledPluginsStr =
+        TfGetEnvSetting(PXR_SDR_DISABLE_PLUGINS);
+    std::set<std::string> disabledPlugins =
+        TfStringTokenizeToSet(disabledPluginsStr, ",");
+    const std::string legacyDisabledPluginsStr =
+        TfGetEnvSetting(PXR_NDR_DISABLE_PLUGINS);
+    const std::set<std::string> legacyDisabledPlugins =
+        TfStringTokenizeToSet(legacyDisabledPluginsStr, ",");
+    disabledPlugins.insert(legacyDisabledPlugins.begin(),
+                           legacyDisabledPlugins.end());
 
     // Instantiate any discovery plugins that were found
     for (const TfType& discoveryPluginType : discoveryPluginTypes) {
@@ -919,7 +955,8 @@ NdrRegistry::_FindAndInstantiateParserPlugins()
 {
     // The auto-discovery of parser plugins can be skipped. This is mostly
     // for testing purposes.
-    if (TfGetEnvSetting(PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY)) {
+    if (TfGetEnvSetting(PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY) ||
+            TfGetEnvSetting(PXR_SDR_SKIP_PARSER_PLUGIN_DISCOVERY)) {
         return;
     }
 
@@ -927,6 +964,14 @@ NdrRegistry::_FindAndInstantiateParserPlugins()
     std::set<TfType> parserPluginTypes;
     PlugRegistry::GetInstance().GetAllDerivedTypes<NdrParserPlugin>(
         &parserPluginTypes);
+
+    // XXX: This type erasure is effective only for the Ndr/Sdr transition
+    // and will be removed once Ndr is fully removed.
+    // 
+    // SdrParserPlugin is derived from NdrParserPlugin but is virtual.
+    // We want to run SdrParserPlugin subclasses but not SdrParserPlugin
+    // itself.
+    parserPluginTypes.erase(TfType::FindByName("SdrParserPlugin"));
 
     _InstantiateParserPlugins(parserPluginTypes);
 }

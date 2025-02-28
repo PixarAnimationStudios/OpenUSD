@@ -154,23 +154,34 @@ public:
 
     /// Sets the explicit items. If duplicates are present in \p items, 
     /// preserves the first occurence.
-    SDF_API void SetExplicitItems(const ItemVector &items);
+    /// Returns true if no duplicates were present, false otherwise. If
+    /// duplicates were present, errMsg is set to indicate which item was duplicated.
+    SDF_API bool SetExplicitItems(const ItemVector &items, std::string* errMsg = nullptr);
 
     /// Sets the prepended items. If duplicates are present in \p items, 
     /// preserves the first occurence.
-    SDF_API void SetPrependedItems(const ItemVector &items);
+    /// Returns true if no duplicates were present, false otherwise. If
+    /// duplicates were present, errMsg is set to indicate which item was duplicated.
+    SDF_API bool SetPrependedItems(const ItemVector &items, std::string* errMsg = nullptr);
 
     /// Sets the appended items. If duplicates are present in \p items, 
     /// preserves the last occurence.
-    SDF_API void SetAppendedItems(const ItemVector &items);
+    /// Returns true if no duplicates were present, false otherwise. If
+    /// duplicates were present, errMsg is set to indicate which item was duplicated.
+    SDF_API bool SetAppendedItems(const ItemVector &items, std::string* errMsg = nullptr);
 
     /// Sets the deleted items. If duplicates are present in \p items, 
     /// preserves the first occurence.
-    SDF_API void SetDeletedItems(const ItemVector &items);
+    /// Returns true if no duplicates were present, false otherwise. If
+    /// duplicates were present, errMsg is set to indicate which item was duplicated.
+    SDF_API bool SetDeletedItems(const ItemVector &items, std::string* errMsg = nullptr);
 
     /// Sets the item vector for the given operation \p type.
     /// Removes duplicates in \p items if present.
-    SDF_API void SetItems(const ItemVector &items, SdfListOpType type);
+    /// Returns true if no duplicates were present, false otherwise. If
+    /// duplicates were present, errMsg is set to indicate which item was duplicated.
+    SDF_API bool SetItems(const ItemVector &items, SdfListOpType type, 
+                            std::string* errMsg = nullptr);
 
     /// Removes all items and changes the list to be non-explicit.
     SDF_API void Clear();
@@ -318,6 +329,8 @@ private:
     template <class ItemType>
     friend void SdfApplyListOrdering(std::vector<ItemType> *v,
                                     const std::vector<ItemType> &order);
+    bool _MakeUnique(std::vector<T>& items, bool reverse=false, 
+                    std::string* errMsg = nullptr);
 
 private:
     bool _isExplicit;

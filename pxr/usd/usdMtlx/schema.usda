@@ -1,0 +1,42 @@
+#usda 1.0
+(
+    "This file describes the USD MaterialX schemata for code generation."
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName       = "usdMtlx"
+        string libraryPath       = "pxr/usd/usdMtlx"
+        dictionary libraryTokens = {
+            dictionary DefaultOutputName = {
+                string value = "out"
+            }
+        }
+    }
+)
+{
+}
+
+class "MaterialXConfigAPI" (
+    inherits = </APISchemaBase>
+    doc = """MaterialXConfigAPI is an API schema that provides an interface for
+    storing information about the MaterialX environment.
+
+    Initially, it only exposes an interface to record the MaterialX library
+    version that data was authored against. The intention is to use this
+    information to allow the MaterialX library to perform upgrades on data
+    from prior MaterialX versions.
+    """
+    customData = {
+        token[] apiSchemaCanOnlyApplyTo = ["UsdShadeMaterial"]
+    }
+) {
+    string config:mtlx:version = "1.38" (
+        doc = """MaterialX library version that the data has been authored
+        against. Defaults to 1.38 to allow correct verisoning of old files."""
+    )
+}
+

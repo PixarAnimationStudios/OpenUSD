@@ -238,10 +238,10 @@ HdxAovInputTask::_UpdateTexture(
     HdFormat hdFormat = buffer->GetFormat();
     // HgiFormatFloat32Vec3 not a supported texture format for Vulkan. Convert
     // data to vec4 format.
+    std::vector<float> float4Data;
     if (hdFormat == HdFormatFloat32Vec3) {
         hdFormat = HdFormatFloat32Vec4;
         const size_t numValues = 3 * dim[0] * dim[1] * dim[2];
-        std::vector<float> float4Data;
         _ConvertRGBtoRGBA(
             reinterpret_cast<const float*>(pixelData), numValues, &float4Data);
         pixelData = reinterpret_cast<const void*>(float4Data.data());

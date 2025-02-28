@@ -19,30 +19,13 @@
 
 #include "pxr/imaging/hd/renderPassSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/utils.h"
 
 #include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-
-static HdContainerDataSourceHandle
-_ToContainerDS(const VtDictionary &dict)
-{
-    std::vector<TfToken> names;
-    std::vector<HdDataSourceBaseHandle> values;
-    const size_t numDictEntries = dict.size();
-    names.reserve(numDictEntries);
-    values.reserve(numDictEntries);
-
-    for (const auto &pair : dict) {
-        names.push_back(TfToken(pair.first));
-        values.push_back(
-            HdRetainedSampledDataSource::New(pair.second));
-    }
-    return HdRetainedContainerDataSource::New(
-        names.size(), names.data(), values.data());
-}
 
 inline TfTokenVector
 _Concat(const TfTokenVector &a, const TfTokenVector &b)
@@ -234,7 +217,7 @@ public:
             VtDictionary settingsDict =
                 _ComputeNamespacedSettings(_usdRenderSettings.GetPrim());
 
-            return _ToContainerDS(settingsDict);
+            return HdUtils::ConvertVtDictionaryToContainerDS(settingsDict);
         }
 
         if (name == UsdImagingUsdRenderSettingsSchemaTokens->camera) {
@@ -396,7 +379,7 @@ public:
             VtDictionary settingsDict =
                 _ComputeNamespacedSettings(_usdRenderProduct.GetPrim());
 
-            return _ToContainerDS(settingsDict);
+            return HdUtils::ConvertVtDictionaryToContainerDS(settingsDict);
         }
 
         if (name == UsdImagingUsdRenderProductSchemaTokens->camera) {
@@ -571,7 +554,7 @@ public:
             VtDictionary settingsDict =
                 _ComputeNamespacedSettings(_usdRenderVar.GetPrim());
 
-            return _ToContainerDS(settingsDict);
+            return HdUtils::ConvertVtDictionaryToContainerDS(settingsDict);
 
         }
 

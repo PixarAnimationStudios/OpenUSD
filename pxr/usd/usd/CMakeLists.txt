@@ -227,6 +227,7 @@ pxr_test_scripts(
     testenv/testUsdNamespaceEditorTargetPathFixup.py
     testenv/testUsdNotices.py
     testenv/testUsdObjectsChangedNotices.py
+    testenv/testUsdObjectsChangedNoticesSublayerOps.py
     testenv/testUsdOpaqueAttributes.py
     testenv/testUsdPathExpressionAttrs.py
     testenv/testUsdPayloads.py
@@ -249,6 +250,7 @@ pxr_test_scripts(
     testenv/testUsdStageDefaultResolver.py
     testenv/testUsdStageLoadUnload.py
     testenv/testUsdStagePopulationMasks.py
+    testenv/testUsdTimeCode.py
     testenv/testUsdTimeCodeRepr.py
     testenv/testUsdTimeOffsets.py
     testenv/testUsdTimeSamples.py
@@ -296,6 +298,13 @@ pxr_build_test(testUsdAttributeInterpolationCpp
         usd
     CPPFILES
         testenv/testUsdAttributeInterpolationCpp.cpp
+)
+
+pxr_build_test(testUsdColorSpaceAPI
+    LIBRARIES
+        usd
+    CPPFILES
+        testenv/testUsdColorSpaceAPI.cpp
 )
 
 pxr_build_test(testUsdCreateAttributeCpp
@@ -472,6 +481,16 @@ pxr_build_test(testUsdUsdzBugGHSA01
         testenv/testUsdUsdzBugGHSA01.cpp
 )
 
+pxr_build_test(testUsdSplinesCpp
+    LIBRARIES
+        tf
+        ts
+        sdf
+        usd
+    CPPFILES
+        testenv/testUsdSplinesCpp.cpp
+)
+
 
 pxr_install_test_dir(
     SRC testenv/testUsdAppliedAPISchemas
@@ -611,6 +630,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdNamespaceEditorTargetPathFixup
     DEST testUsdNamespaceEditorTargetPathFixup
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdObjectsChangedNoticesSublayerOps
+    DEST testUsdObjectsChangedNoticesSublayerOps
 )
 
 pxr_install_test_dir(
@@ -1039,6 +1063,12 @@ pxr_register_test(testUsdTimeCodeRepr
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdTimeCode
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeCode"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdTimeOffsets
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeOffsets"
@@ -1188,6 +1218,12 @@ pxr_register_test(testUsdObjectsChangedNotices
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdObjectsChangedNoticesSublayerOps
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdObjectsChangedNoticesSublayerOps"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdNamespaceEditor
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNamespaceEditor"
@@ -1272,6 +1308,11 @@ pxr_register_test(testUsdTimeValueAuthoring
 
 pxr_register_test(testUsdTimeValueAuthoringCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeValueAuthoringCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSplinesCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSplinesCpp"
     EXPECTED_RETURN_CODE 0
 )
 

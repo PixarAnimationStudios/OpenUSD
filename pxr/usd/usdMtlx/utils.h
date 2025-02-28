@@ -10,7 +10,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdMtlx/api.h"
-#include "pxr/usd/ndr/declare.h"
+#include "pxr/usd/sdr/declare.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/vt/value.h"
@@ -20,22 +20,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define USD_MTLX_TOKENS \
-    ((DefaultOutputName, "out"))
-
-TF_DECLARE_PUBLIC_TOKENS(UsdMtlxTokens, USDMTLX_API, USD_MTLX_TOKENS);
-
 /// Return the MaterialX standard library paths.  All standard library
 /// files (and only standard library files) should be found on these
 /// paths.
 USDMTLX_API
-const NdrStringVec&
+const SdrStringVec&
 UsdMtlxStandardLibraryPaths();
 
 /// Return the paths to directories containing custom MaterialX files, set in 
 /// the environment variable 'PXR_MTLX_PLUGIN_SEARCH_PATHS'
 USDMTLX_API
-const NdrStringVec&
+const SdrStringVec&
 UsdMtlxCustomSearchPaths();
 
 /// Return the MaterialX search paths. In order, this includes:
@@ -44,12 +39,12 @@ UsdMtlxCustomSearchPaths();
 /// - standard library paths set in the env var 'PXR_MTLX_STDLIB_SEARCH_PATHS'
 /// - path to the MaterialX standard library discovered at build time.
 USDMTLX_API
-const NdrStringVec&
+const SdrStringVec&
 UsdMtlxSearchPaths();
 
 /// Return the MaterialX standard file extensions.
 USDMTLX_API
-NdrStringVec
+SdrStringVec
 UsdMtlxStandardFileExtensions();
 
 /// Return the MaterialX document at \p resolvedPath.  Return null if the
@@ -82,7 +77,7 @@ UsdMtlxGetDocumentFromString(const std::string &mtlxXml);
 // otherwise we set it to true;  and we return the version as a
 // default if isdefaultversion exists and is set to "true".
 USDMTLX_API
-NdrVersion
+SdrVersion
 UsdMtlxGetVersion(const MaterialX::ConstInterfaceElementPtr& mtlx,
                   bool* implicitDefault = nullptr);
 

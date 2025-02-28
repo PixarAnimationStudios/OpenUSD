@@ -46,15 +46,23 @@ HdMaterialNodeParameterSchema::GetColorSpace() const
         HdMaterialNodeParameterSchemaTokens->colorSpace);
 }
 
+HdTokenDataSourceHandle
+HdMaterialNodeParameterSchema::GetTypeName() const
+{
+    return _GetTypedDataSource<HdTokenDataSource>(
+        HdMaterialNodeParameterSchemaTokens->typeName);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdMaterialNodeParameterSchema::BuildRetained(
         const HdSampledDataSourceHandle &value,
-        const HdTokenDataSourceHandle &colorSpace
+        const HdTokenDataSourceHandle &colorSpace,
+        const HdTokenDataSourceHandle &typeName
 )
 {
-    TfToken _names[2];
-    HdDataSourceBaseHandle _values[2];
+    TfToken _names[3];
+    HdDataSourceBaseHandle _values[3];
 
     size_t _count = 0;
 
@@ -66,6 +74,11 @@ HdMaterialNodeParameterSchema::BuildRetained(
     if (colorSpace) {
         _names[_count] = HdMaterialNodeParameterSchemaTokens->colorSpace;
         _values[_count++] = colorSpace;
+    }
+
+    if (typeName) {
+        _names[_count] = HdMaterialNodeParameterSchemaTokens->typeName;
+        _values[_count++] = typeName;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -86,12 +99,21 @@ HdMaterialNodeParameterSchema::Builder::SetColorSpace(
     return *this;
 }
 
+HdMaterialNodeParameterSchema::Builder &
+HdMaterialNodeParameterSchema::Builder::SetTypeName(
+    const HdTokenDataSourceHandle &typeName)
+{
+    _typeName = typeName;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdMaterialNodeParameterSchema::Builder::Build()
 {
     return HdMaterialNodeParameterSchema::BuildRetained(
         _value,
-        _colorSpace
+        _colorSpace,
+        _typeName
     );
 } 
 

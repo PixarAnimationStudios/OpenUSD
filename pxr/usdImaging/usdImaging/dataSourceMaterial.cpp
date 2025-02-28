@@ -8,6 +8,8 @@
 
 #include "pxr/usdImaging/usdImaging/dataSourceAttribute.h"
 #include "pxr/usdImaging/usdImaging/dataSourceAttributeColorSpace.h"
+#include "pxr/usdImaging/usdImaging/dataSourceAttributeTypeName.h"
+#include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/usd/usdLux/lightAPI.h"
 #include "pxr/usd/usdLux/lightFilter.h"
@@ -26,6 +28,7 @@
 #include "pxr/imaging/hd/materialNodeParameterSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/materialInterfaceMappingSchema.h"
+#include "pxr/imaging/hd/utils.h"
 
 #include "pxr/base/work/utils.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -173,6 +176,8 @@ public:
                             _locatorPrefix.Append(paramValueLocator)))
                     .SetColorSpace(
                         UsdImagingDataSourceAttributeColorSpace::New(attr))
+                    .SetTypeName(
+                        UsdImagingDataSourceAttributeTypeName::New(attr))
                     .Build();
             }
         }
@@ -560,6 +565,9 @@ UsdImagingDataSourceMaterial::GetNames()
             renderContexts.push_back(renderContext);
         }
     }
+
+    // Always add the 'all' render context
+    renderContexts.push_back(HdMaterialSchemaTokens->all);
     return renderContexts;
 }
 
@@ -724,18 +732,23 @@ _BuildMaterial(
     const SdfPath materialPrefix = usdMat.GetPrim().GetPath();
 
     _TokenDataSourceMap nodeDataSources;
-
     for (UsdShadeOutput &output : usdMat.GetOutputs()) {
-        // Skip terminals from other contexts.
-        if (_GetRenderContextForShaderOutput(output) != renderContext) {
-            continue;
+        // When building a material for a render context other than 'all' skip 
+        // terminals from other contexts.
+        if (renderContext != HdMaterialSchemaTokens->all) {
+            if (_GetRenderContextForShaderOutput(output) != renderContext) {
+                continue;
+            }
         }
 
         // E.g. "ri:surface"
         TfToken outputName = output.GetBaseName();
 
-        // Strip the renderContext, if there is one.
-        if (!renderContext.IsEmpty()) {
+        // When building a material for the 'all' render context do not strip
+        // the render context string from the output name, so that outputs for
+        // different render contexts can coexist.
+        if (renderContext != HdMaterialSchemaTokens->all && 
+            !renderContext.IsEmpty()) {
             // Skip the renderContext and subsequent ':'
             outputName = TfToken(
                 outputName.GetString().substr(renderContext.size()+1));
@@ -747,19 +760,45 @@ _BuildMaterial(
                 continue;
             }
 
-            UsdShadeConnectableAPI upstreamShader = _ComputeOutputSource(
+            const UsdShadeConnectableAPI upstreamShader = _ComputeOutputSource(
                 UsdShadeMaterial(usdMat), outputName, {renderContext}, sourceInfo);
 
-            _WalkGraph(upstreamShader,
-                &nodeDataSources,
-                stageGlobals,
-                renderContext,
-                sceneIndexPath,
+            const HdDataSourceLocator nodesLocatorPrefix =
                 locatorPrefix.IsEmpty()
                     ? locatorPrefix
-                    : locatorPrefix.Append(
-                        HdMaterialNetworkSchemaTokens->nodes),
-                materialPrefix);
+                    : locatorPrefix.Append(HdMaterialNetworkSchemaTokens->nodes);
+
+            if (renderContext == HdMaterialSchemaTokens->all) {
+                // When building a material for the 'all' render context
+                // create data sources for every shader prim underneath it,
+                // even if they are not connected to a terminal.
+                const UsdPrim usdMaterial = usdMat.GetPrim();
+                for (const UsdPrim& child : usdMaterial.GetDescendants()) {
+                    const UsdShadeShader usdShader(child);
+                    if (!usdShader) {
+                        continue;
+                    }
+
+                    const SdfPath nodePath = usdShader.GetPath();
+                    const TfToken nodeName = 
+                        _RelativePath(materialPrefix, nodePath).GetToken();
+                    HdDataSourceBaseHandle nodeValue =
+                        _UsdImagingDataSourceShadingNode::New(
+                            usdShader, stageGlobals, renderContext,
+                            sceneIndexPath, nodesLocatorPrefix, materialPrefix);
+                    nodeDataSources.insert({nodeName, nodeValue});
+                }
+            } else {
+                // Walk the graph starting from an output and only include 
+                // nodes that are connected to it.
+                _WalkGraph(upstreamShader,
+                    &nodeDataSources,
+                    stageGlobals,
+                    renderContext,
+                    sceneIndexPath,
+                    nodesLocatorPrefix,
+                    materialPrefix);
+            }
 
             terminalsNames.push_back(outputName);
 
@@ -796,6 +835,25 @@ _BuildMaterial(
         nodeValues.push_back(tokenDsPair.second);
     }
 
+    // Collect any 'config' on the Material prim
+    TfTokenVector names;
+    std::vector<HdDataSourceBaseHandle> values;
+    for (const auto& prop : usdMat.GetPrim().GetPropertiesInNamespace(
+            UsdImagingTokens->configPrefix)) {
+        const auto& attr = prop.As<UsdAttribute>();
+        if (!attr) {
+            continue;
+        }
+
+        const std::string name = attr.GetName().GetString();
+        std::pair<std::string, bool> result =
+            SdfPath::StripPrefixNamespace(name, UsdImagingTokens->configPrefix);
+        names.push_back(TfToken(result.first));
+
+        VtValue value;
+        attr.Get(&value);
+        values.push_back(HdCreateTypedRetainedDataSource(value));
+    }
 
     HdContainerDataSourceHandle nodesDs = 
         HdRetainedContainerDataSource::New(
@@ -803,10 +861,14 @@ _BuildMaterial(
             nodeNames.data(),
             nodeValues.data());
 
+    HdContainerDataSourceHandle configDefaultContext =
+        HdRetainedContainerDataSource::New(
+            names.size(), names.data(), values.data());
 
     return HdMaterialNetworkSchema::Builder()
         .SetNodes(nodesDs)
         .SetTerminals(terminalsDs)
+        .SetConfig(configDefaultContext)
         .SetInterfaceMappings(_UsdImagingDataSourceInterfaceMappings::New(
             UsdShadeMaterial(usdMat.GetPrim())))
         .Build();

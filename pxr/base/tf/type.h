@@ -574,13 +574,13 @@ public:
     /// has methods to instantiate the type given various arguments and must
     /// inherit from \c FactoryBase.  The factory cannot be changed once set.
     TF_API
-    void SetFactory(std::unique_ptr<FactoryBase> factory) const;
+    void SetFactory(std::unique_ptr<FactoryBase> &&factory) const;
 
     /// Sets the factory object for this type.  A type's factory typically
     /// has methods to instantiate the type given various arguments and must
     /// inherit from \c FactoryBase.  The factory cannot be changed once set.
     template <class T>
-    void SetFactory(std::unique_ptr<T>& factory) const {
+    void SetFactory(std::unique_ptr<T> &&factory) const {
         SetFactory(std::unique_ptr<FactoryBase>(std::move(factory)));
     }
 
@@ -592,7 +592,7 @@ public:
     /// Sets the factory object for this type.  A type's factory typically
     /// has methods to instantiate the type given various arguments and must
     /// inherit from \c FactoryBase.  The factory cannot be changed once set.
-    const TfType& Factory(std::unique_ptr<FactoryBase> factory) const {
+    const TfType& Factory(std::unique_ptr<FactoryBase> &&factory) const {
         SetFactory(std::move(factory));
         return *this;
     }
@@ -601,7 +601,7 @@ public:
     /// has methods to instantiate the type given various arguments and must
     /// inherit from \c FactoryBase.  The factory cannot be changed once set.
     template <class T>
-    const TfType& Factory(std::unique_ptr<T>& factory) const
+    const TfType& Factory(std::unique_ptr<T> &&factory) const
     {
         SetFactory(std::unique_ptr<FactoryBase>(std::move(factory)));
         return *this;

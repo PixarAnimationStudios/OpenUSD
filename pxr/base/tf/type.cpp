@@ -1107,7 +1107,7 @@ TfType::CastFromAncestor(TfType ancestor, void* addr) const
 }
 
 void
-TfType::SetFactory(std::unique_ptr<FactoryBase> factory) const
+TfType::SetFactory(std::unique_ptr<FactoryBase> &&factory) const
 {
     if (IsUnknown() || IsRoot()) {
         TF_CODING_ERROR("Cannot set factory of %s\n",

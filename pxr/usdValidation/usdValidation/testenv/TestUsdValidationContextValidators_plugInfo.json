@@ -18,7 +18,8 @@
                     },
                     "Test3": {
                         "doc": "A generic prim validator",
-                        "keywords": ["Keyword1"]
+                        "keywords": ["Keyword1"],
+                        "isTimeDependent": true
                     },
                     "Test4": {
                         "doc": "validator for testBaseType",

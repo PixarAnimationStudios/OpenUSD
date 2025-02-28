@@ -1,6 +1,7 @@
 #usda 1.0
 (
     upAxis = "Y"
+    renderSettingsPrimPath = "/Render/RenderSettings"
 )
 
 def Scope "World"
@@ -141,6 +142,7 @@ def Scope "Render"
     {
         token outputs:ri:displayFilters.connect = </Render/DisplayFilter.outputs:result>
         token outputs:ri:sampleFilters.connect = </Render/SampleFilter.outputs:result>
+        bool ri:hider:jitter = 0
         float ri:Ri:PixelVariance = 0.0
         int ri:hider:minsamples = 32
         int ri:hider:maxsamples = 32

@@ -224,7 +224,7 @@ public:
     using const_iterator = typename _Locators::const_iterator;
 
     /// The empty set.
-    explicit HdDataSourceLocatorSet() {}
+    HdDataSourceLocatorSet() {}
 
     /// The set containing everything.
     HD_API

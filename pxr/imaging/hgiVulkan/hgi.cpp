@@ -50,15 +50,17 @@ HgiVulkan::HgiVulkan()
 
 HgiVulkan::~HgiVulkan()
 {
-    HgiVulkanCommandQueue* queue = _device->GetCommandQueue();
+    if (HgiVulkanCommandQueue* queue = _device->GetCommandQueue()) {
+        // Wait for command buffers to complete, then reset command buffers for
+        // each device's queue.
+        queue->ResetConsumedCommandBuffers(
+            HgiSubmitWaitTypeWaitUntilCompleted);
 
-    // Wait for command buffers to complete, then reset command buffers for 
-    // each device's queue.
-    queue->ResetConsumedCommandBuffers(HgiSubmitWaitTypeWaitUntilCompleted);
+        // Wait for all devices and perform final garbage collection.
+        _device->WaitForIdle();
+        _garbageCollector->PerformGarbageCollection(_device);
+    }
 
-    // Wait for all devices and perform final garbage collection.
-    _device->WaitForIdle();
-    _garbageCollector->PerformGarbageCollection(_device);
     delete _garbageCollector;
     delete _device;
     delete _instance;
@@ -67,6 +69,11 @@ HgiVulkan::~HgiVulkan()
 bool
 HgiVulkan::IsBackendSupported() const
 {
+    // Check if we at least found a usable device.
+    if (!_device->GetVulkanDevice()) {
+        return false;
+    }
+
     // Want Vulkan 1.2 or higher.
     const uint32_t apiVersion = GetCapabilities()->GetAPIVersion();
     const uint32_t majorVersion = VK_VERSION_MAJOR(apiVersion);

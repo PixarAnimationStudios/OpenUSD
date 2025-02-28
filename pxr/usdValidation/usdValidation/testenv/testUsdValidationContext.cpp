@@ -11,7 +11,10 @@
 #include "pxr/usdValidation/usdValidation/context.h"
 #include "pxr/usdValidation/usdValidation/error.h"
 #include "pxr/usdValidation/usdValidation/registry.h"
+#include "pxr/usdValidation/usdValidation/timeRange.h"
 #include "pxr/usdValidation/usdValidation/validator.h"
+
+#include <iostream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -368,6 +371,95 @@ _TestUsdValidationContext()
             }
         }
     }
+    {
+        static const std::string layerWithTimeCodes =
+            R"usda(#usda 1.0
+            def "World"
+            {
+                def BaseTypeTest "baseType"
+                {
+                    float attr = 3
+                    float attr.timeSamples = {
+                        1: 1,
+                        2: 2,
+                        3: 3
+                    }
+                }
+            }
+        )usda";
+
+        // Create a ValidationContext with Test3 and Test4 validators
+        std::vector<const UsdValidationValidator *> validators =
+            UsdValidationRegistry::GetInstance().GetOrLoadValidatorsByName(
+                { TfToken("testUsdValidationContextValidatorsPlugin:Test3"),
+                  TfToken("testUsdValidationContextValidatorsPlugin:Test4") });
+        UsdValidationContext context(validators);
+
+        SdfLayerRefPtr testLayer = SdfLayer::CreateAnonymous(".usda");
+        testLayer->ImportFromString(layerWithTimeCodes);
+        UsdStageRefPtr stage = UsdStage::Open(testLayer);
+
+        // Validate Stage with ProxyPrim traversal predicate and default
+        // UsdValidationTimeRange which is full interval.
+        UsdValidationErrorVector errors = context.Validate(stage);
+        // Refer the implementation for Test3 in 
+        // testUsdValidationContextValidators.cpp:
+        // 1 - error for Test4 testBaseType prim type validator which runs on
+        //   the baseType prim. (This is not a time dependent validator).
+        // 1 - error for Test3 generic prim validator which runs on the /World
+        //   prim with full interval + default but since no attributes on 
+        //   /World, an error is reported for that in the implementation.
+        // 1 - error for Test3 generic prim validator emulating handling of
+        //   uniform attribute validation at default time.
+        // 3 - errors for Test3 generic prim validator which runs on the 
+        //   /World/baseType prim with full interval, that is 1 error for each
+        //   time sample on the attr attribute.
+        TF_AXIOM(errors.size() == 6);
+
+        // Also Validate the same stage but with only 
+        // GfInterval::GetFullInterval, which does not include 
+        // UsdTimeCode::Default
+        errors.clear();
+        errors = context.Validate(
+            stage, UsdValidationTimeRange(
+                GfInterval::GetFullInterval(), false));
+        // Refer the implementation for Test3 in 
+        // testUsdValidationContextValidators.cpp:
+        // 1 - error for Test4 testBaseType prim type validator which runs on
+        //   the baseType prim. (This is not a time dependent validator).
+        // 3 - errors for Test3 generic prim validator which runs on the 
+        //   /World/baseType prim with full interval, that is 1 error for each
+        //   time sample on the attr attribute.
+        TF_AXIOM(errors.size() == 4);
+
+        // Also Validate the /World/baseType prim which has attributes with
+        // timeSamples but with a TimeRange which has an empty interval but
+        // includes UsdTimeCode::Default.
+        std::vector<UsdPrim> prims = 
+            { stage->GetPrimAtPath(SdfPath("/World/baseType")) };
+        errors.clear();
+        errors = context.Validate(prims, 
+                                  UsdValidationTimeRange(GfInterval(), true));
+        // 1 error for Test4 testBaseType prim type validator which runs on
+        //   the baseType prim. (This is not a time dependent validator).
+        // 1 error for Test3 generic prim validator which runs on the
+        //   /World/baseType prim with empty interval but includes 
+        //   UsdTimeCode::Default. (The time dependent validator implementation 
+        //   has a check for this case to emulate uniform attribute validation 
+        //   on a prim which also has time dependent attributes.)
+        TF_AXIOM(errors.size() == 2);
+
+        // Also Validate a specific prim at a specific timeCode
+        errors.clear();
+        const std::vector<UsdTimeCode> timeCodes = { 1, 2 };
+        // Validate specific /World/baseType prim at times 1 and 2.
+        errors = context.Validate(prims, timeCodes);
+        // 1 error for Test4 (non time dependent validator) testBaseType prim 
+        // type validator which runs on the baseType prim.
+        // 2 errors for Test3 generic prim validator which runs on the
+        //  /World/baseType prim at timeCode 1 and 2, specified times.
+        TF_AXIOM(errors.size() == 3);
+    }
 }
 
 int
@@ -397,9 +489,12 @@ main()
         metadata.keywords = { TfToken("Keyword2") };
         metadata.pluginPtr = nullptr;
         metadata.doc = "This is a non-plugin based validator.";
+        metadata.isTimeDependent = false;
         metadata.isSuite = false;
 
-        const UsdValidatePrimTaskFn primTaskFn = [](const UsdPrim &prim) {
+        const UsdValidatePrimTaskFn primTaskFn = [](
+            const UsdPrim &prim,
+            const UsdValidationTimeRange &/*timeRange*/) {
             const TfToken errorId("nonPluginError");
             return UsdValidationErrorVector { UsdValidationError(
                 errorId, UsdValidationErrorType::Error,

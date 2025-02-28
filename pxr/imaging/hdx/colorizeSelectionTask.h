@@ -57,6 +57,8 @@ struct HdxColorizeSelectionTaskParams
 class HdxColorizeSelectionTask : public HdxTask
 {
 public:
+    using TaskParams = HdxColorizeSelectionTaskParams;
+
     HDX_API
     HdxColorizeSelectionTask(HdSceneDelegate* delegate, SdfPath const& id);
 

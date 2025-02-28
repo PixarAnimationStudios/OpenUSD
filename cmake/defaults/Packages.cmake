@@ -24,18 +24,9 @@ if((PXR_ENABLE_PYTHON_SUPPORT AND PXR_USE_BOOST_PYTHON) OR PXR_ENABLE_OPENVDB_SU
     # Find Boost package before getting any boost specific components as we need to
     # disable boost-provided cmake config, based on the boost version found.
     find_package(Boost REQUIRED)
-
-    # Boost provided cmake files (introduced in boost version 1.70) result in 
-    # inconsistent build failures on different platforms, when trying to find boost 
-    # component dependencies like python, etc. Refer some related
-    # discussions:
-    # https://github.com/boostorg/python/issues/262#issuecomment-483069294
-    # https://github.com/boostorg/boost_install/issues/12#issuecomment-508683006
-    #
-    # Hence to avoid issues with Boost provided cmake config, Boost_NO_BOOST_CMAKE
-    # is enabled by default for boost version 1.70 and above. If a user explicitly 
-    # set Boost_NO_BOOST_CMAKE to Off, following will be a no-op.
-    option(Boost_NO_BOOST_CMAKE "Disable boost-provided cmake config" ON)
+    # If a user explicitly sets Boost_NO_BOOST_CMAKE to On, following will
+    # disable the use of boost provided cmake config.
+    option(Boost_NO_BOOST_CMAKE "Disable boost-provided cmake config" OFF)
     if (Boost_NO_BOOST_CMAKE)
       message(STATUS "Disabling boost-provided cmake config")
     endif()

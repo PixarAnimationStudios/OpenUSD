@@ -10,9 +10,12 @@
 /// \file
 
 #include "pxr/pxr.h"
+#include "pxr/base/gf/interval.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/timeCode.h"
 #include "pxr/usdValidation/usdValidation/api.h"
+#include "pxr/usdValidation/usdValidation/timeRange.h"
 
 #include <functional>
 #include <string>
@@ -41,6 +44,11 @@ class UsdPrim;
 /// - keywords: Keywords associated with this validator.
 /// - doc: Doc string explaining the purpose of the validator.
 /// - schemaTypes: If the validator is associated with specific schemaTypes.
+/// - isTimeDependent: If the validator is testing rules which are time
+///   dependent. Note that only PrimValidators and StageValidators can be time 
+///   dependent, as these are the ones which can evaluate time dependent 
+///   properties. Note that its still recommended to use PrimValidators for
+///   time dependent properties. Default is false.
 /// - isSuite: If the validator represents a suite of validators.
 ///
 struct UsdValidationValidatorMetadata
@@ -70,18 +78,17 @@ struct UsdValidationValidatorMetadata
     /// plugInfo.json
     TfTokenVector schemaTypes;
 
+    /// whether this test is time dependent or not.
+    /// Only PrimValidators and StageValidators can be time dependent.
+    /// By default this is false.
+    bool isTimeDependent;
+
     /// whether this test represents a test suite or not
     bool isSuite;
 }; // UsdValidationValidatorMetadata
 
 using UsdValidationValidatorMetadataVector
     = std::vector<UsdValidationValidatorMetadata>;
-
-// TODO:
-// - TimeCode (Range), leaving right now for brevity. Will introduce in
-// subsequent iterations.
-//
-//
 
 /// \defgroup UsdValidateTaskFn_group Validating Task Functions
 ///
@@ -93,14 +100,14 @@ using UsdValidationValidatorMetadataVector
 /// @{
 
 /// UsdValidateLayerTaskFn: Validation logic operating on a given SdfLayerHandle
-using UsdValidateLayerTaskFn
-    = std::function<UsdValidationErrorVector(const SdfLayerHandle &)>;
+using UsdValidateLayerTaskFn = std::function<UsdValidationErrorVector(
+    const SdfLayerHandle &)>;
 /// UsdValidateStageTaskFn: Validation logic operating on a given UsdStage
-using UsdValidateStageTaskFn
-    = std::function<UsdValidationErrorVector(const UsdStagePtr &)>;
+using UsdValidateStageTaskFn = std::function<UsdValidationErrorVector(
+    const UsdStagePtr &, const UsdValidationTimeRange)>;
 /// UsdValidatePrimTaskFn: Validation logic operating on a given UsdPrim
-using UsdValidatePrimTaskFn
-    = std::function<UsdValidationErrorVector(const UsdPrim &)>;
+using UsdValidatePrimTaskFn = std::function<UsdValidationErrorVector(
+    const UsdPrim &, const UsdValidationTimeRange)>;
 
 /// @}
 
@@ -178,18 +185,32 @@ public:
     /// Run validation on the given \p usdStage by executing the contained
     /// validateTaskFn and returns UsdValidationErrorVector.
     ///
+    /// \p timeRange is used to evaluate the prims and their properties in 
+    /// the stage at a specific time or interval. If no \p timeRange is 
+    /// provided, then full time interval is used by validation callback's 
+    /// implementation.
+    ///
     /// If this Validator doesn't provide a UsdValidateStageTaskFn, then an
     /// empty vector is returned, which signifies no error.
     USDVALIDATION_API
-    UsdValidationErrorVector Validate(const UsdStagePtr &usdStage) const;
+    UsdValidationErrorVector Validate(
+        const UsdStagePtr &usdStage,
+        const UsdValidationTimeRange &timeRange = {}) const;
 
     /// Run validation on the given \p usdPrim by executing the contained
     /// validateTaskFn and returns UsdValidationErrorVector.
     ///
+    /// \p timeRange is used to evaluate the prims and their properties in 
+    /// the stage at a specific time or interval. If no \p timeRange is 
+    /// provided, then full time interval is used by validation callback's 
+    /// implementation.
+    ///
     /// If this Validator doesn't provide a UsdValidatePrimTaskFn, then an
     /// empty vector is returned, which signifies no error.
     USDVALIDATION_API
-    UsdValidationErrorVector Validate(const UsdPrim &usdPrim) const;
+    UsdValidationErrorVector Validate(
+        const UsdPrim &usdPrim, 
+        const UsdValidationTimeRange &timeRange = {}) const;
 
 private:
     // To make sure registry can query task types on a validator.
@@ -233,6 +254,8 @@ private:
 /// UsdValidationValidatorSuite instances are immutable and non-copyable. Note
 /// that all validator suites which are registered with the
 /// UsdValidationRegistry are immortal.
+///
+/// isTimeDependent metadata is a no-op for a UsdValidationValidatorSuite.
 ///
 /// \sa UsdValidationRegistry
 class UsdValidationValidatorSuite

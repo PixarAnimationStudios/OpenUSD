@@ -61,6 +61,8 @@ shader UsdPreviewSurfaceParameters
         [[ string widget = "null" ]],
     output float glassRoughnessOut = 0.0
         [[ string widget = "null" ]],
+    output float refractionGainOut = 0.0
+        [[ string widget = "null" ]],
     output float presenceOut = 1.0
         [[ string widget = "null" ]],
     
@@ -145,6 +147,7 @@ shader UsdPreviewSurfaceParameters
                 glassIorOut = ior;
                 glassRoughnessOut = 0.0;
                 diffuseGainOut *= opacityAdjusted;
+                refractionGainOut = (1.0 - opacityAdjusted);
                 presenceOut = opacityAdjusted;
             }
 

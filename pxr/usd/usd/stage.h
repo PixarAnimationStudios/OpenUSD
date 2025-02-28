@@ -1464,10 +1464,10 @@ public:
     /// \anchor Usd_ColorConfigurationAPI
     /// \name Color Configuration API
     ///
-    /// Methods for authoring and querying the color configuration to 
-    /// be used to interpret the per-attribute color-spaces. An external 
-    /// system (like OpenColorIO) is typically used for interpreting the
-    /// configuration.
+    /// Methods for authoring and querying the display color configuration 
+    /// encoded in layer metadata. This color configuration information is
+    /// stored as a convenience for use in pipeline tools and is unrelated
+    /// to color space information associated with Usd attributes or textures.
     /// 
     /// Site-wide fallback values for the colorConfiguration and
     /// colorManagementSystem metadata can be set in the plugInfo.json file of 
@@ -1475,49 +1475,23 @@ public:
     /// 
     /// \code{.json}
     ///         "UsdColorConfigFallbacks": {
-    ///             "colorConfiguration" = "https://github.com/imageworks/OpenColorIO-Configs/blob/master/aces_1.0.1/config.ocio",
+    ///             "colorConfiguration" = "https://path/to/color/config.ocio",
     ///             "colorManagementSystem" : "OpenColorIO"
     ///         }
     /// \endcode
     /// 
-    /// The color space in which a given color or texture attribute is authored 
-    /// is set as token-valued metadata 'colorSpace' on the attribute. For 
-    /// color or texture attributes that don't have an authored 'colorSpace'
-    /// value, the fallback color-space is gleaned from the color configuration 
-    /// oracle. This is usually the config's <b>scene_linear</b> role
-    /// color-space.
-    /// 
-    /// Here's the pseudo-code for determining an attribute's color-space.
-    /// 
-    /// \code{.cpp}
-    /// UsdStageRefPtr stage = UsdStage::Open(filePath);
-    /// UsdPrim prim = stage->GetPrimAtPath("/path/to/prim")
-    /// UsdAttribute attr = prim.GetAttribute("someColorAttr");
-    /// TfToken colorSpace = attr.GetColorSpace();
-    /// if (colorSpace.IsEmpty()) {
-    ///     // If colorSpace is empty, get the default from the stage's 
-    ///     // colorConfiguration, using external API (not provided by USD).
-    ///     colorSpace = ExternalAPI::GetDefaultColorSpace(
-    ///                         stage->GetColorConfiguration());
-    /// }
-    /// \endcode
-    ///
-    /// \sa \ref Usd_AttributeColorSpaceAPI "UsdAttribute ColorSpace API"
-    /// 
-    /// 
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// Sets the default color configuration to be used to interpret the 
-    /// per-attribute color-spaces in the composed USD stage. This is specified
-    /// as asset path which can be resolved to the color spec file.
+    /// Sets the default color configuration to be used for querying color
+    /// configuration metadata stored in a layer. This data is informational
+    /// for use in pipeline tools.
     /// 
     /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
     USD_API
     void SetColorConfiguration(const SdfAssetPath &colorConfig) const;
 
-    /// Returns the default color configuration used to interpret the per-
-    /// attribute color-spaces in the composed USD stage.
+    /// Returns the default color configuration stored in layer metadata.
     /// 
     /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
     USD_API
@@ -1544,7 +1518,6 @@ public:
     /// 
     /// The python wrapping of this method returns a tuple containing 
     /// (colorConfiguration, colorManagementSystem).
-    /// 
     /// 
     /// \sa SetColorConfigFallbacks,
     /// \ref Usd_ColorConfigurationAPI "Color Configuration API"

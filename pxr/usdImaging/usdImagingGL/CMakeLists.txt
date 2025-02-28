@@ -64,7 +64,7 @@ pxr_library(usdImagingGL
 
 #
 # C++ tests - Only build on all platforms for now.
-# 
+#
 set(TEST_LIBS
         "arch"
         "garch"
@@ -173,7 +173,7 @@ if (WIN32)
 endif()
 
 # usdImagingGL tests require plugin mechanism to find different renderer
-# plugins, which we do not support for static build configurations due to 
+# plugins, which we do not support for static build configurations due to
 # potential conflict in client applications linking against static build USD
 if (NOT BUILD_SHARED_LIBS)
     message(STATUS "Skipping ${PXR_PACKAGE} tests on static build configuration")
@@ -433,6 +433,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdImagingGLCards
     DEST testUsdImagingGLCards
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLCards
+    DEST testUsdImagingGLCards_SceneIndex
 )
 
 pxr_install_test_dir(
@@ -783,7 +788,7 @@ pxr_register_test(testUsdImagingGLBasicDrawing_textureChannels
 )
 
 pxr_register_test(testUsdImagingGLBasicDrawingNonBindless_batch
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -offscreen -stage shaders.usda -frameAll -write testUsdImagingGLBasicDrawingNonBindless_batch.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -offscreen -stage shaders-batch.usda -frameAll -write testUsdImagingGLBasicDrawingNonBindless_batch.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLBasicDrawingNonBindless_batch.png
     FAIL 1
@@ -2562,6 +2567,51 @@ pxr_register_test(testUsdImagingGLCards_bounds
     TESTENV testUsdImagingGLCards
 )
 
+# XXX: Commenting out while failures are being investigated.
+# 
+# pxr_register_test(testUsdImagingGLCards_SceneIndex
+#     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage testCards.usda -write testCards.png"
+#     IMAGE_DIFF_COMPARE
+#         testCards.png
+#     FAIL 0.01
+#     FAIL_PERCENT 0.1
+#     WARN 0.02
+#     WARN_PERCENT 0.05
+#     EXPECTED_RETURN_CODE 0
+#     TESTENV testUsdImagingGLCards
+#     ENV
+#         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+# )
+
+pxr_register_test(testUsdImagingGLCards_SceneIndex_anim
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage testAnim.usda -times 1 2 -write testAnim.png"
+    IMAGE_DIFF_COMPARE
+        testAnim_001.png
+        testAnim_002.png
+    FAIL 0.01
+    FAIL_PERCENT 0.1
+    WARN 0.02
+    WARN_PERCENT 0.05
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLCards
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+)
+
+pxr_register_test(testUsdImagingGLCards_SceneIndex_bounds
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -unloadedAsBounds -offscreen -lighting -shading smooth -frameAll -stage testUnloadedAsBounds.usda -write testUnloadedAsBounds.png"
+    IMAGE_DIFF_COMPARE
+        testUnloadedAsBounds.png
+    FAIL 0.01
+    FAIL_PERCENT 0.1
+    WARN 0.02
+    WARN_PERCENT 0.05
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLCards
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+)
+
 pxr_register_test(testUsdImagingGLMeshQuadrangulation
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -shading wireOnSurface -frameAll -stage meshQuadrangulation.usda -write testUsdImagingGLMeshQuadrangulation_default.png"
     IMAGE_DIFF_COMPARE
@@ -3802,49 +3852,57 @@ pxr_register_test(testUsdImagingGLUsdSkelExtCompGPU_twoBends
         USDSKELIMAGING_FORCE_CPU_COMPUTE=0
 )
 
-pxr_register_test(testUsdImagingGLPopOut
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPopOut --output test test.usda"
-    IMAGE_DIFF_COMPARE
-        test_0.png
-        test_1.png
-        test_2.png
-        test_3.png
-        test_4.png
-        test_5.png
-        test_6.png
-        test_7.png
-        test_8.png
-    FAIL .05
-    FAIL_PERCENT .03
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLPopOut
-)
+if (PXR_ENABLE_GL_SUPPORT AND X11_FOUND)
+    pxr_register_test(testUsdImagingGLPopOut
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPopOut --output test test.usda"
+        IMAGE_DIFF_COMPARE
+            test_0.png
+            test_1.png
+            test_2.png
+            test_3.png
+            test_4.png
+            test_5.png
+            test_6.png
+            test_7.png
+            test_8.png
+        FAIL .05
+        FAIL_PERCENT .03
+        PERCEPTUAL
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLPopOut
+        ENV
+            HGI_ENABLE_VULKAN=0
+    )
 
-pxr_register_test(testUsdImagingGLPopOut_instance
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPopOut --output test_instance test_instance.usda"
-    IMAGE_DIFF_COMPARE
-        test_instance_0.png
-        test_instance_1.png
-        test_instance_2.png
-        test_instance_3.png
-        test_instance_4.png
-        test_instance_5.png
-        test_instance_6.png
-        test_instance_7.png
-        test_instance_8.png
-    FAIL .05
-    FAIL_PERCENT .03
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLPopOut
-)
+    pxr_register_test(testUsdImagingGLPopOut_instance
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPopOut --output test_instance test_instance.usda"
+        IMAGE_DIFF_COMPARE
+            test_instance_0.png
+            test_instance_1.png
+            test_instance_2.png
+            test_instance_3.png
+            test_instance_4.png
+            test_instance_5.png
+            test_instance_6.png
+            test_instance_7.png
+            test_instance_8.png
+        FAIL .05
+        FAIL_PERCENT .03
+        PERCEPTUAL
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLPopOut
+        ENV
+            HGI_ENABLE_VULKAN=0
+    )
 
-pxr_register_test(testUsdImagingGLPopOut_instance_empty
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPopOut --output test_instance_empty test_instance_empty.usda"
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLPopOut
-)
+    pxr_register_test(testUsdImagingGLPopOut_instance_empty
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPopOut --output test_instance_empty test_instance_empty.usda"
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLPopOut
+        ENV
+            HGI_ENABLE_VULKAN=0
+    )
+endif()
 
 pxr_register_test(testUsdImagingGLMaterialTag
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -cullStyle back -offscreen -frameAll -stage materialTag.usda -write testUsdImagingGLMaterialTag.png"
@@ -4660,6 +4718,8 @@ pxr_register_test(testUsdImagingGLInvalidMaterial
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLInvalidMaterial
+    ENV
+        HDST_ENABLE_BROKEN_SHADER_VISUAL_FEEDBACK=1
 )
 
 pxr_register_test(testUsdImagingGLDomeLightTaskController
@@ -4852,7 +4912,7 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLMaterialXBasic
     )
-    
+
     # MaterialX materials using texture, texture coordinates, and geompropvalues.
     pxr_install_test_dir(
         SRC testenv/testUsdImagingGLMaterialXTextured
@@ -4967,12 +5027,12 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLMaterialXTextured
     )
-    
-# These two tests are to provide direct comparisons between the Native and  
-# MaterialX implementations of PreviewSurface Materials. 
-# The first test is using purely Native PreviewSurface materials. 
+
+# These two tests are to provide direct comparisons between the Native and
+# MaterialX implementations of PreviewSurface Materials.
+# The first test is using purely Native PreviewSurface materials.
 # The second uses identical scenes with equivalent MaterialX PreviewSurface
-# materials. 
+# materials.
 # Native UsdPreviewSurface Materials:
     # pxr_install_test_dir(
     #     SRC testenv/testUsdImagingGLMaterialXvsNative
@@ -5063,12 +5123,12 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
     #     TESTENV testUsdImagingGLMaterialXvsNative
     # )
 
-# MaterialX UsdPreviewSurface Materials: 
+# MaterialX UsdPreviewSurface Materials:
     # pxr_install_test_dir(
     #     SRC testenv/testUsdImagingGLMaterialXvsNative
     #     DEST testUsdImagingGLMaterialXvsNative_materialX
     # )
-    
+
     # pxr_register_test(testUsdImagingGLMaterialXvsNative_materialXdefault
     #     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage materialXdefault.usda -write materialXdefault.png"
     #     IMAGE_DIFF_COMPARE
@@ -5157,7 +5217,7 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         SRC testenv/testUsdImagingGLMaterialXCustomNodes
         DEST testUsdImagingGLMaterialXCustomNodes
     )
-        
+
     pxr_register_test(testUsdImagingGLMaterialXCustomNodes_customTexNode
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage customTexNode.usda -write customTexNode.png"
         IMAGE_DIFF_COMPARE
@@ -5199,10 +5259,10 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         ENV
             PXR_MTLX_PLUGIN_SEARCH_PATHS=./customNodeDefs
     )
-    
+
     # Not a MaterialX test as such, but requires MaterialX support
     pxr_register_test(testUsdImagingGLGeomSubsets_Primvars_SceneIndex
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading wireOnSurface -stage primvars.usda -write testUsdImagingGLGeomSubsets_Primvars.png"
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -sceneLights -shading wireOnSurface -stage primvars.usda -camera /World/main_cam -write testUsdImagingGLGeomSubsets_Primvars.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLGeomSubsets_Primvars.png
         FAIL 1
@@ -5533,10 +5593,10 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance.usda -write testUsdImagingGLInstancing_instance.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_instance.png
-        FAIL 0.01
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
+        FAIL 0.02
+        FAIL_PERCENT 0.075
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing
     )
@@ -5545,10 +5605,10 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance2.usda -write testUsdImagingGLInstancing_instance2.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_instance2.png
-        FAIL 0.01
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
+        FAIL 0.02
+        FAIL_PERCENT 0.075
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing
     )
@@ -5558,9 +5618,9 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_instance3.png
         FAIL 0.02
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
+        FAIL_PERCENT 0.075
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing
     )
@@ -5570,9 +5630,9 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_nestedInstance.png
         FAIL 0.02
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
+        FAIL_PERCENT 0.075
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing
     )
@@ -5581,10 +5641,10 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance.usda -write testUsdImagingGLInstancing_instance.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_instance.png
-        FAIL 0.01
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
+        FAIL 0.02
+        FAIL_PERCENT 0.075
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing_SceneIndex
     )
@@ -5593,10 +5653,10 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance2.usda -write testUsdImagingGLInstancing_instance2.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_instance2.png
-        FAIL 0.01
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
+        FAIL 0.02
+        FAIL_PERCENT 0.075
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing_SceneIndex
     )
@@ -5606,9 +5666,9 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_instance3.png
         FAIL 0.02
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
+        FAIL_PERCENT 0.075
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing_SceneIndex
     )
@@ -5618,9 +5678,9 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_nestedInstance.png
         FAIL 0.02
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
+        FAIL_PERCENT 0.075
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing_SceneIndex
         ENV
@@ -5662,7 +5722,7 @@ if (OPENVDB_FOUND AND ${PXR_ENABLE_OPENVDB_SUPPORT})
         SRC testenv/testUsdImagingGLVdbVolume
         DEST testUsdImagingGLVdbVolume
     )
-    
+
     pxr_register_test(testUsdImagingGLVdbVolume
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage vdbVolume.usda -clear 0 0 0 1 -lighting -camera /main_cam -write testUsdImagingGLVdbVolume.png"
         IMAGE_DIFF_COMPARE

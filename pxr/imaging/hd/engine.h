@@ -68,6 +68,10 @@ public:
                  HdTaskSharedPtrVector *tasks);
 
 
+    HD_API
+    void Execute(HdRenderIndex * index,
+                 const SdfPathVector &taskPaths);
+
 private:
     /// Context containing token-value pairs, that is passed to each
     /// task in the render graph.  The task-context can be pre-populated

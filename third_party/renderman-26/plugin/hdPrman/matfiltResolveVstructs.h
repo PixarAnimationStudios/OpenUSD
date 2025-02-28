@@ -10,11 +10,20 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/materialNetworkInterface.h"
+
+#if PXR_VERSION >= 2505
+#include "pxr/usd/sdr/declare.h"
+#else
 #include "pxr/usd/ndr/declare.h"
+#endif
 
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+#if PXR_VERSION < 2505
+using SdrTokenVec = NdrTokenVec;
+#endif
 
 /// Expands "virtual struct" connections for RenderMan.
 /// If requested, conditional actions are evaluated.
@@ -50,7 +59,7 @@ public:
             const TfToken &nodeInputId,
             const TfToken &upstreamNodeId,
             const TfToken &upstreamNodeOutput,
-            const NdrTokenVec &shaderTypePriority,
+            const SdrTokenVec &shaderTypePriority,
             HdMaterialNetworkInterface *networkInterface) const;
 private:
     MatfiltVstructConditionalEvaluator() = default;

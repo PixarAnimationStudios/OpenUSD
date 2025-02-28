@@ -1,6 +1,7 @@
 #usda 1.0
 (
     upAxis = "Y"
+    renderSettingsPrimPath = "/Render/RenderSettings"
 )
 
 def Scope "World"
@@ -144,6 +145,7 @@ def Scope "Render"
         int ri:hider:minsamples = 32
         int ri:hider:maxsamples = 32
         int ri:hider:incremental = 0
+        bool ri:hider:jitter = 0
     }
 
     def PxrMurkFilter "MurkFilter1"

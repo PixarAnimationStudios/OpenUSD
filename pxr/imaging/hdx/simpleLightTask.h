@@ -28,6 +28,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdRenderIndex;
 class HdSceneDelegate;
 class HdCamera;
+struct HdxSimpleLightTaskParams;
 
 using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
 using HdStSimpleLightingShaderSharedPtr =
@@ -41,6 +42,8 @@ TF_DECLARE_REF_PTRS(GlfSimpleShadowArray);
 class HdxSimpleLightTask : public HdTask
 {
 public:
+    using TaskParams = HdxSimpleLightTaskParams;
+
     HDX_API
     HdxSimpleLightTask(HdSceneDelegate* delegate, SdfPath const& id);
 
@@ -112,7 +115,8 @@ private:
     HdxSimpleLightTask &operator =(const HdxSimpleLightTask &) = delete;
 };
 
-struct HdxSimpleLightTaskParams {
+struct HdxSimpleLightTaskParams
+{
     HdxSimpleLightTaskParams()
         : cameraPath()
         , lightIncludePaths(1, SdfPath::AbsoluteRootPath())

@@ -157,8 +157,18 @@ and :usda:`opacity`.
 
   When *opacity* is 1.0 then the gprim is fully opaque, if it is smaller than
   1.0 then the prim is translucent, when it is 0 the gprim is fully transparent.
-  Fully transparent objects receive no lighting response, thus they always 
-  serve as cutouts, even in "transparency mode".
+  Fully transparent objects will still receive a lighting response when the
+  *opacityMode* is *transparent*, however they will not receive any lighting
+  when the *opacityMode* is set to *presence*.
+
+* **opacityMode - token - transparent**
+
+  This input dictates how materials with zero opacity are interpreted and 
+  takes one of two inputs: *transparent* or *presence*. When the value is 
+  *transparent* materials with zero opacity still receive a lighting response 
+  as, for example, perfectly clear glass still has a specular response.
+  However, when set to *presence* these materials will not receive any 
+  lighting and thus they always serve as cutouts.
 
 .. _addopacitythreshold:
 
@@ -176,10 +186,9 @@ and :usda:`opacity`.
   greater than or equal to the *opacityThreshold* will be fully visible.  Thus,
   the *opacityThreshold* serves as a switch for how the *opacity* input is
   interpreted; this "translucent or masked" behavior is common in engines and
-  renderers, and makes the UsdPreviewSurface easier to interchange. It does
-  imply, however, that it is not possible to faithfully recreate a
-  translucent material that also provides an opacity-based mask with a
-  non-zero opacityThreshold. 
+  renderers, and makes the UsdPreviewSurface easier to interchange. Recreating 
+  a translucent material that also provides a zero opacity-based mask, can be 
+  achieved by setting *opacityThreshold* to zero and *opacityMode* to *presence*.
 
 .. _updateior:
 
@@ -1087,8 +1096,8 @@ Version 2.6 - Current Head
 ##########################
 
 From version 2.5...
-    * :ref:`Updates description of UsdPreviewSurface behavior when opacity is 0.
-      <updateopacity>`
-      Removes the statement that materials with opacity = 0 still receive a 
-      specular reflection, instead indicating that fully transparent materials
+    * :ref:`Adds opacityMode for different handling of materials with zero opacity. <updateopacity>`
+      `opacityMode` of `transparent` is the previous 2.5 spec behavior in which 
+      materials with opacity = 0 still receive a specular reflection, 
+      an `opacityMode` of `presence` causes fully transparent materials to 
       receive no lighting response.

@@ -4,7 +4,6 @@ set(PXR_PACKAGE usdShaders)
 pxr_plugin(usdShaders
     LIBRARIES
         ar
-        ndr
         sdr
         usdShade
 

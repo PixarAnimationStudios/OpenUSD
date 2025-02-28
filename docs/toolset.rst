@@ -389,7 +389,13 @@ usdmeasureperformance
 *********************
 
 Helper script to measure usdview asset performance. Recommended usage is
-`usdmeasureperformance <asset.usd> -i 10 --agg min -o <metrics.yaml>`
+`usdmeasureperformance <asset.usd> -i 10 --agg min -o <metrics.yaml>`.
+If there exists a file ending in `overrides.usda` in the same directory as the
+given asset file, the file will be supplied as `--sessionLayer` to usdview and
+testusdview invocations. This allows provision of specific variant selections,
+for example. The first file found by os.listdir will be used. Ensure there is
+only one file ending in `overrides.usda` in the asset directory to remove
+ambiguity.
 
 .. literalinclude:: toolset.help
    :language: none

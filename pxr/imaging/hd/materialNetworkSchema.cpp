@@ -53,16 +53,24 @@ HdMaterialNetworkSchema::GetInterfaceMappings() const
         HdMaterialNetworkSchemaTokens->interfaceMappings));
 }
 
+HdSampledDataSourceContainerSchema
+HdMaterialNetworkSchema::GetConfig() const
+{
+    return HdSampledDataSourceContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
+        HdMaterialNetworkSchemaTokens->config));
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdMaterialNetworkSchema::BuildRetained(
         const HdContainerDataSourceHandle &nodes,
         const HdContainerDataSourceHandle &terminals,
-        const HdContainerDataSourceHandle &interfaceMappings
+        const HdContainerDataSourceHandle &interfaceMappings,
+        const HdContainerDataSourceHandle &config
 )
 {
-    TfToken _names[3];
-    HdDataSourceBaseHandle _values[3];
+    TfToken _names[4];
+    HdDataSourceBaseHandle _values[4];
 
     size_t _count = 0;
 
@@ -79,6 +87,11 @@ HdMaterialNetworkSchema::BuildRetained(
     if (interfaceMappings) {
         _names[_count] = HdMaterialNetworkSchemaTokens->interfaceMappings;
         _values[_count++] = interfaceMappings;
+    }
+
+    if (config) {
+        _names[_count] = HdMaterialNetworkSchemaTokens->config;
+        _values[_count++] = config;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -107,13 +120,22 @@ HdMaterialNetworkSchema::Builder::SetInterfaceMappings(
     return *this;
 }
 
+HdMaterialNetworkSchema::Builder &
+HdMaterialNetworkSchema::Builder::SetConfig(
+    const HdContainerDataSourceHandle &config)
+{
+    _config = config;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdMaterialNetworkSchema::Builder::Build()
 {
     return HdMaterialNetworkSchema::BuildRetained(
         _nodes,
         _terminals,
-        _interfaceMappings
+        _interfaceMappings,
+        _config
     );
 } 
 

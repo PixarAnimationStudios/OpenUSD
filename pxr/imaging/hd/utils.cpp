@@ -148,6 +148,7 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
     struct ParamData {
         VtValue value;
         TfToken colorSpace;
+        TfToken typeName;
     };
 
     for (auto const &iter: hdNetworkMap.map) {
@@ -167,20 +168,28 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
             std::vector<TfToken> paramsNames;
             std::vector<HdDataSourceBaseHandle> paramsValues;
 
-            // Gather parameter value and colorspace metadata in paramsInfo, a 
-            // mapping of the parameter name to its value and colorspace data.
+            // Gather parameter value, colorspace and typename metadata in 
+            // paramsInfo, a mapping of the parameter name to its value and 
+            // metadata.
             std::map<std::string, ParamData> paramsInfo;
             for (const auto &p : node.parameters) {
 
-                // Strip "colorSpace" prefix 
-                const std::pair<std::string, bool> res = 
+                // Colorspace metadata - strip "colorSpace" prefix 
+                const std::pair<std::string, bool> csRes = 
                     SdfPath::StripPrefixNamespace(p.first, 
                         HdMaterialNodeParameterSchemaTokens->colorSpace);
-
-                // Colorspace metadata
-                if (res.second) {
-                    paramsInfo[res.first].colorSpace = p.second.Get<TfToken>();
+                if (csRes.second) {
+                    paramsInfo[csRes.first].colorSpace = p.second.Get<TfToken>();
                 }
+
+                // TypeName metadata - strip "typeName" prefix 
+                const std::pair<std::string, bool> vtRes = 
+                    SdfPath::StripPrefixNamespace(p.first, 
+                        HdMaterialNodeParameterSchemaTokens->typeName);
+                if (vtRes.second) {
+                    paramsInfo[vtRes.first].typeName = p.second.Get<TfToken>();
+                }
+
                 // Value 
                 else {
                     paramsInfo[p.first].value = p.second.Get<VtValue>();
@@ -200,6 +209,11 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
                             ? nullptr
                             : HdRetainedTypedSampledDataSource<TfToken>::New(
                                 item.second.colorSpace))
+                        .SetTypeName(
+                            item.second.typeName.IsEmpty()
+                            ? nullptr
+                            : HdRetainedTypedSampledDataSource<TfToken>::New(
+                                item.second.typeName))
                         .Build()
                 );
             }
@@ -286,9 +300,13 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
             terminalsNames.data(),
             terminalsValues.data());
 
+    HdContainerDataSourceHandle configDefaultContext =
+        ConvertVtDictionaryToContainerDS(hdNetworkMap.config);
+
     return HdMaterialNetworkSchema::Builder()
         .SetNodes(nodesDefaultContext)
         .SetTerminals(terminalsDefaultContext)
+        .SetConfig(configDefaultContext)
         .Build();
 }
 
@@ -305,6 +323,23 @@ ConvertHdMaterialNetworkToHdMaterialSchema(
         1, 
         &defaultContext, 
         &network);
+}
+
+HdContainerDataSourceHandle
+ConvertVtDictionaryToContainerDS(const VtDictionary &dict)
+{
+    TfTokenVector names;
+    std::vector<HdDataSourceBaseHandle> values;
+    const size_t numDictEntries = dict.size();
+    names.reserve(numDictEntries);
+    values.reserve(numDictEntries);
+
+    for (const auto &pair : dict) {
+        names.push_back(TfToken(pair.first));
+        values.push_back(HdCreateTypedRetainedDataSource(pair.second));
+    }
+    return HdRetainedContainerDataSource::New(
+        names.size(), names.data(), values.data());
 }
 
 }

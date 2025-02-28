@@ -29,6 +29,16 @@ static std::string __repr__(GfColorSpace const &self)
         TfStringPrintf("ColorSpace(%s)", TfPyRepr(self.GetName()).c_str());
 }
 
+pxr_boost::python::tuple ConvertPrimariesAndWhitePoint(const GfColorSpace& self) {
+    auto result = self.GetPrimariesAndWhitePoint();
+    return pxr_boost::python::make_tuple(
+        std::get<0>(result),
+        std::get<1>(result),
+        std::get<2>(result),
+        std::get<3>(result)
+    );
+}
+
 } // anon
 
 void wrapColorSpace()
@@ -50,7 +60,8 @@ void wrapColorSpace()
         .def("GetGamma", &GfColorSpace::GetGamma)
         .def("GetLinearBias", &GfColorSpace::GetLinearBias)
         .def("GetTransferFunctionParams", &GfColorSpace::GetTransferFunctionParams)
-        .def("GetPrimariesAndWhitePoint", &GfColorSpace::GetPrimariesAndWhitePoint)
+        .def("GetPrimariesAndWhitePoint", &ConvertPrimariesAndWhitePoint)
+        .def("IsValid", &GfColorSpace::IsValid)
         .def(self == self)
         .def(self != self);
 

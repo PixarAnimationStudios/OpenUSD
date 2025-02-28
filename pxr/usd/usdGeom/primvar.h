@@ -205,11 +205,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// primvar.SetInterpolation(UsdGeomTokens->varying);
 /// \endcode
 /// 
-/// Reprinted and adapted from <a HREF="http://renderman.pixar.com/resources/current/rps/appnote.22.html#classSpecifiers">
-/// the RPS documentation</a>, which contains further details, \em interpolation
-/// describes how the Primvar will be interpolated over the uv parameter
-/// space of a surface primitive (or curve or pointcloud).  The possible
-/// values are:
+/// \em Interpolation describes how the Primvar will be interpolated over the 
+/// uv parameter space of a surface primitive (or Curves, Points, or 
+/// PointInstancer schemas). The possible values are:
 /// \li <b>constant</b> One value remains constant over the entire surface 
 ///     primitive.
 /// \li <b>uniform</b> One value remains constant for each uv patch segment of 
@@ -223,6 +221,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>faceVarying</b> For polygons and subdivision surfaces, four values 
 ///     are interpolated over each face of the mesh. Bilinear interpolation 
 ///     is used for interpolation between the four values.
+///
+/// See <a href="https://openusd.org/release/user_guides/primvars.html">Primvars</a> 
+/// for visual examples and details on the different interpolation modes. Also,
+/// see the schema documentation for non-surface schemas for details on how 
+/// the interpolation modes are interpreted for those schemas.
 ///
 /// \section Usd_Extending_UsdObject_Classes UsdGeomPrimvar As Example of Attribute Schema
 ///

@@ -10,26 +10,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-template <>
-TfType Ts_GetType<double>()
-{
-    static const TfType tfType = TfType::Find<double>();
-    return tfType;
+#define _MAKE_CLAUSE(unused, tuple)                                     \
+template <>                                                             \
+TfType Ts_GetType<TS_SPLINE_VALUE_CPP_TYPE(tuple)>()                    \
+{                                                                       \
+    static const TfType tfType =                                        \
+        TfType::Find<TF_PP_TUPLE_ELEM(1, tuple)>();                     \
+    return tfType;                                                      \
 }
-
-template <>
-TfType Ts_GetType<float>()
-{
-    static const TfType tfType = TfType::Find<float>();
-    return tfType;
-}
-
-template <>
-TfType Ts_GetType<GfHalf>()
-{
-    static const TfType tfType = TfType::Find<GfHalf>();
-    return tfType;
-}
+TF_PP_SEQ_FOR_EACH(_MAKE_CLAUSE, ~, TS_SPLINE_SUPPORTED_VALUE_TYPES)
+#undef _MAKE_CLAUSE
 
 TfType Ts_GetTypeFromTypeName(const std::string &typeName)
 {

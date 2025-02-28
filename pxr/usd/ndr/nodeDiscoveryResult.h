@@ -14,6 +14,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// Represents the raw data of a node, and some other bits of metadata, that
 /// were determined via a `NdrDiscoveryPlugin`.
+///
+/// \deprecated
+/// Deprecated in favor of SdrShaderNodeDiscoveryResult
 struct NdrNodeDiscoveryResult {
     /// Constructor.
     NdrNodeDiscoveryResult(

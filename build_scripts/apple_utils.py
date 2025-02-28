@@ -204,7 +204,11 @@ def CreateUniversalBinaries(context, libNames, x86Dir, armDir):
         "{XCODE_ROOT}/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo".format(
                 XCODE_ROOT=xcodeRoot)
     for libName in libNames:
-        outputName = os.path.join(context.instDir, "lib", libName)
+        outputDir = os.path.join(context.instDir, "lib")
+        if not os.path.isdir(outputDir):
+            os.mkdir(outputDir)
+
+        outputName = os.path.join(outputDir, libName)
         if not os.path.islink("{x86Dir}/{libName}".format(
                                 x86Dir=x86Dir, libName=libName)):
             if os.path.exists(outputName):

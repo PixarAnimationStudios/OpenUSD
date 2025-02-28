@@ -9,6 +9,8 @@
 TF_WRAP(UsdTyped);
 TF_WRAP(UsdAPISchemaBase);
 TF_WRAP(UsdModelAPI);
+TF_WRAP(UsdColorSpaceAPI);
+TF_WRAP(UsdColorSpaceDefinitionAPI);
 TF_WRAP(UsdCollectionAPI);
 TF_WRAP(UsdClipsAPI);
 TF_WRAP(UsdTokens);

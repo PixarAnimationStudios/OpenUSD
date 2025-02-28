@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
         shaderReg.GetShaderNodeFromSourceCode(
             source, 
             HioGlslfxTokens->glslfx,
-            NdrTokenMap()); // metadata
+            SdrTokenMap()); // metadata
 
     TfToken const& terminalType = HdMaterialTerminalTokens->surface;
 

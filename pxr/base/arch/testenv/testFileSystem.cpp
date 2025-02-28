@@ -14,6 +14,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -91,6 +92,12 @@ int main()
     fputs(testContent, firstFile);
     fclose(firstFile);
     ARCH_AXIOM(ArchGetFileLength(firstName.c_str()) == strlen(testContent));
+
+    // Open a file, check that the file path from FILE* handle is matched.
+    ARCH_AXIOM((firstFile = ArchOpenFile(firstName.c_str(), "rb")) != NULL);
+    std::string filePath = ArchGetFileName(firstFile);
+    ARCH_AXIOM(std::filesystem::equivalent(filePath, firstName));
+    fclose(firstFile);
 
     // Map the file and assert the bytes are what we expect they are.
     ARCH_AXIOM((firstFile = ArchOpenFile(firstName.c_str(), "rb")) != NULL);

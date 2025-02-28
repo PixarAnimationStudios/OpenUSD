@@ -379,6 +379,27 @@ UsdImagingMaterialAdapter::GetMaterialResource(UsdPrim const &prim,
             time);
     }
 
+    // Collect any 'config' on the Material prim
+    VtDictionary configDict;
+    for (const auto& prop : material.GetPrim().GetPropertiesInNamespace(
+            UsdImagingTokens->configPrefix)) {
+        const auto& attr = prop.As<UsdAttribute>();
+        if (!attr) {
+            continue;
+        }
+
+        std::string name = attr.GetName().GetString();
+        std::pair<std::string, bool> result =
+            SdfPath::StripPrefixNamespace(name, UsdImagingTokens->configPrefix);
+        name = result.first;
+
+        VtValue value;
+        attr.Get(&value);
+
+        configDict.insert({name, value});
+    }
+    networkMap.config = configDict;
+
     return VtValue(networkMap);
 }
 

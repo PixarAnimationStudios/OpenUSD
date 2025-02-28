@@ -267,6 +267,13 @@ void SetTimeTest()
                 TfToken("nodes"),
                 TfToken("/testMaterial/Surface"),
                 TfToken("parameters"),
+                TfToken("emitColor")).Append(TfToken("value")),
+            HdDataSourceLocator(
+                TfToken("material"),
+                TfToken("__all"),
+                TfToken("nodes"),
+                TfToken("/testMaterial/Surface"),
+                TfToken("parameters"),
                 TfToken("emitColor")).Append(TfToken("value"))
             }
         }

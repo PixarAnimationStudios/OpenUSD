@@ -107,6 +107,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     (convert)
     // Constants: they get inlined in the source.
     (constant)
+    
+    // Atan2 Nodes are Not topological but their inputs change between v1.38 
+    // and v1.39 so we need to include them in the the annonymize network
+    // otherwise the generated shader will not have the correct values. 
+    (atan2)
 );
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -219,10 +224,10 @@ HdSt_GenMaterialXShader(
     cms->loadLibrary(stdLibraries);
     mxContext.getShaderGenerator().setColorManagementSystem(cms);
 
-    // Set the colorspace
-    // XXX: This is the equivalent of the default source colorSpace, which does
-    // not yet have a schema and is therefore not yet accessable here 
-    mxDoc->setColorSpace("lin_rec709");
+    // Set the target colorspace
+    // XXX: This is equivalent to the scene referred color space, and is 
+    // not yet accessible here
+    mxContext.getOptions().targetColorSpaceOverride = "lin_rec709";
 
     // Add the Direct Light mtlx file to the mxDoc 
     mx::DocumentPtr lightDoc = mx::createDocument();
@@ -510,7 +515,8 @@ _UpdatePrimvarNodes(
                 texCoordName = metadata[SdrNodeMetadata->Primvars];
             }
 
-            (*mxHdPrimvarMap)[texCoordName] = mx::Type::VECTOR2->getName();
+            (*mxHdPrimvarMap)[texCoordName] =
+                HdStMaterialXHelpers::GetVector2Name();
         }
     }
 }
@@ -628,26 +634,41 @@ _GetGlTFSurfaceMaterialTag(HdMaterialNode2 const& terminal)
     return materialToken.GetString();
 }
 
-static const mx::TypeDesc*
+static const mx::TypeDesc
 _GetMxTypeDescription(std::string const& typeName)
 {
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    using MxTypeDesc = const mx::TypeDesc*;
+#else
+    using MxTypeDesc = const mx::TypeDesc;
+#endif
+
     // Add whatever is necessary for current codebase:
-    static const auto _typeLibrary = 
-        std::map<std::string, const mx::TypeDesc*>{
-            {"float", mx::Type::FLOAT},
-            {"color3", mx::Type::COLOR3},
-            {"color4", mx::Type::COLOR4},
-            {"vector2", mx::Type::VECTOR2},
-            {"vector3", mx::Type::VECTOR3},
-            {"vector4", mx::Type::VECTOR4},
-            {"surfaceshader", mx::Type::SURFACESHADER}
-        };
+    static const auto _typeLibrary =
+      std::map<std::string, MxTypeDesc>{
+          {"float", mx::Type::FLOAT},
+          {"color3", mx::Type::COLOR3},
+          {"color4", mx::Type::COLOR4},
+          {"vector2", mx::Type::VECTOR2},
+          {"vector3", mx::Type::VECTOR3},
+          {"vector4", mx::Type::VECTOR4},
+          {"surfaceshader", mx::Type::SURFACESHADER}
+      };
 
     const auto typeDescIt = _typeLibrary.find(typeName);
     if (typeDescIt != _typeLibrary.end()) {
-        return typeDescIt->second;
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+      return *typeDescIt->second;
+#else
+      return typeDescIt->second;
+#endif
     }
-    return nullptr;
+
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+    return *mx::Type::NONE;
+#else
+    return mx::Type::NONE;
+#endif
 }
 
 // This function adds a stripped down version of the surfaceshader node to the
@@ -672,14 +693,14 @@ _AddStrippedSurfaceNode(
         if (!mxInputDef) {
             continue;
         }
-        auto const* mxTypeDesc = _GetMxTypeDescription(mxInputDef->getType());
-        if (!mxTypeDesc) {
+        auto const mxTypeDesc = _GetMxTypeDescription(mxInputDef->getType());
+        if (HdStMaterialXHelpers::MxTypeIsNone(mxTypeDesc)) {
             continue;
         }
         // If hdNode is connected to the surfaceshader node, recursively call 
         // this function to make sure that surfaceshader node is added to 
         // the mxDocument
-        if (mxTypeDesc == mx::Type::SURFACESHADER) {
+        if (HdStMaterialXHelpers::MxTypeIsSurfaceShader(mxTypeDesc)) {
             auto const& hdConnectedPath = connIt.second.front().upstreamNode;
             auto const& hdConnectedNode = hdNetwork.nodes.at(hdConnectedPath);
             mx::NodePtr mxConnectedNode =
@@ -690,14 +711,14 @@ _AddStrippedSurfaceNode(
             mxInput->setConnectedNode(mxConnectedNode);
         }
         // Add the connection as an input with each component set to 0.5
-        else if (mxTypeDesc->getBaseType() == mx::TypeDesc::BASETYPE_FLOAT &&
-                 mxTypeDesc->getSemantic() != mx::TypeDesc::SEMANTIC_MATRIX) {
+        else if (mxTypeDesc.getBaseType() == mx::TypeDesc::BASETYPE_FLOAT &&
+                 mxTypeDesc.getSemantic() != mx::TypeDesc::SEMANTIC_MATRIX) {
             std::string valueStr = "0.5";
-            for (size_t i = 1; i < mxTypeDesc->getSize(); ++i) {
+            for (size_t i = 1; i < mxTypeDesc.getSize(); ++i) {
                 valueStr += ", 0.5";
             }
             mx::InputPtr mxInput =
-                mxNode->addInput(mxInputDef->getName(), mxInputDef->getType());
+                mxNode->addInputFromNodeDef(mxInputDef->getName());
             mxInput->setValueString(valueStr);
         }
     }
@@ -709,16 +730,16 @@ _AddStrippedSurfaceNode(
         if (!mxInputDef) {
             continue;
         }
-        auto const* mxTypeDesc = _GetMxTypeDescription(mxInputDef->getType());
-        if (!mxTypeDesc) {
+        auto const mxTypeDesc = _GetMxTypeDescription(mxInputDef->getType());
+        if (HdStMaterialXHelpers::MxTypeIsNone(mxTypeDesc)) {
             continue;
         }
 
-        if (mxTypeDesc->getBaseType() == mx::TypeDesc::BASETYPE_FLOAT &&
-            mxTypeDesc->getSemantic() != mx::TypeDesc::SEMANTIC_MATRIX) {
+        if (mxTypeDesc.getBaseType() == mx::TypeDesc::BASETYPE_FLOAT &&
+            mxTypeDesc.getSemantic() != mx::TypeDesc::SEMANTIC_MATRIX) {
             // Add the parameter as an input to the mxNode in the mx Document
             mx::InputPtr mxInput =
-                mxNode->addInput(mxInputDef->getName(), mxInputDef->getType());
+                mxNode->addInputFromNodeDef(mxInputDef->getName());
             mxInput->setValueString(HdMtlxConvertToString(paramIt.second));
         }
     }
@@ -781,9 +802,9 @@ _GetMaterialTag(
         // Outputting anything that is not a surfaceshader will be
         // considered opaque, unless outputting a color4 or vector4.
         // XXX This is not fully per USD specs, but is supported by MaterialX.
-        auto const* typeDesc = 
+        auto const typeDesc =
             _GetMxTypeDescription(activeOutputs.back()->getType());
-        if (typeDesc == mx::Type::COLOR4 || typeDesc == mx::Type::VECTOR4) {
+        if (typeDesc.isFloat4()) {
             return HdStMaterialTagTokens->translucent.GetString();
         }
         return HdStMaterialTagTokens->defaultMaterialTag.GetString();
@@ -1094,7 +1115,7 @@ _AddMaterialXParams(
 
         // MaterialX parameter Information
         const auto* variable = paramsBlock[i];
-        const auto varType = variable->getType();
+        const auto varType = HdStMaterialXHelpers::GetMxTypeDesc(variable);
 
         // Create a corresponding HdSt_MaterialParam
         HdSt_MaterialParam param;
@@ -1105,65 +1126,69 @@ _AddMaterialXParams(
         const auto paramValueIt =
             mxParamNameToValue.find(variable->getVariable());
         if (paramValueIt != mxParamNameToValue.end()) {
-            if (varType->getBaseType() == mx::TypeDesc::BASETYPE_BOOLEAN ||
-                varType->getBaseType() == mx::TypeDesc::BASETYPE_FLOAT ||
-                varType->getBaseType() == mx::TypeDesc::BASETYPE_INTEGER) {
+            if (varType.getBaseType() == mx::TypeDesc::BASETYPE_BOOLEAN ||
+                varType.getBaseType() == mx::TypeDesc::BASETYPE_FLOAT ||
+                varType.getBaseType() == mx::TypeDesc::BASETYPE_INTEGER) {
                 param.fallbackValue = paramValueIt->second;
             }
         }
         // If it was not found in the mapping use the value from the MaterialX
         // variable to get the value. 
+        // Note that if the network was upgraded in Hdmtlx, and the node's 
+        // parameter names changed they will not be found through the above 
+        // mapping and instead need to be found from the variables in the 
+        // MaterialX glslfxShader. 
         else {
             std::string separator;
             const auto varValue = variable->getValue();
             std::istringstream valueStream(varValue
                 ? varValue->getValueString() : std::string());
-            if (varType->getBaseType() == mx::TypeDesc::BASETYPE_BOOLEAN) {
+            if (varType.getBaseType() == mx::TypeDesc::BASETYPE_BOOLEAN) {
                 const bool val = valueStream.str() == "true";
                 param.fallbackValue = VtValue(val);
             }
-            else if (varType->getBaseType() == mx::TypeDesc::BASETYPE_FLOAT) {
-                if (varType->getSize() == 1) {
+            else if (varType.getBaseType() == mx::TypeDesc::BASETYPE_FLOAT) {
+                if (varType.getSize() == 1) {
                     float val;
                     valueStream >> val;
                     param.fallbackValue = VtValue(val);
                 }
-                else if (varType->getSize() == 2) {
+                else if (varType.getSize() == 2) {
                     GfVec2f val;
                     valueStream >> val[0] >> separator >> val[1];
                     param.fallbackValue = VtValue(val);
                 }
-                else if (varType->getSize() == 3) {
+                else if (varType.getSize() == 3) {
                     GfVec3f val;
                     valueStream >> val[0] >> separator >> val[1] >> separator 
                                 >> val[2];
                     param.fallbackValue = VtValue(val);
                 }
-                else if (varType->getSize() == 4) {
+                else if (varType.getSize() == 4) {
                     GfVec4f val;
                     valueStream >> val[0] >> separator >> val[1] >> separator
                                 >> val[2] >> separator >> val[3];
                     param.fallbackValue = VtValue(val);
                 }
             }
-            else if (varType->getBaseType() == mx::TypeDesc::BASETYPE_INTEGER) {
-                if (varType->getSize() == 1) {
+            else if (varType.getBaseType() == mx::TypeDesc::BASETYPE_INTEGER) {
+                if (varType.getSize() == 1) {
                     int val;
                     valueStream >> val;
                     param.fallbackValue = VtValue(val);
                 }
-                else if (varType->getSize() == 2) {
+                else if (varType.getSize() == 2) {
                     GfVec2i val;
                     valueStream >> val[0] >> separator >> val[1];
                     param.fallbackValue = VtValue(val);
                 }
-                else if (varType->getSize() == 3) {
+                else if (varType.getSize() == 3) {
                     GfVec3i val;
                     valueStream >> val[0] >> separator >> val[1] >> separator 
                                 >> val[2];
                     param.fallbackValue = VtValue(val);
                 }
-                else if (varType->getSize() == 4) {
+                else if (varType.getSize() == 4) {
                     GfVec4i val;
                     valueStream >> val[0] >> separator >> val[1] >> separator
                         >> val[2] >> separator >> val[3];
@@ -1177,7 +1202,7 @@ _AddMaterialXParams(
         }
 
         // For filename inputs, manage the associated texture node
-        if (varType->getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME) {
+        if (varType.getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME) {
             // Get the anonymized MaterialX node name from the param name
             // annonNodeName_paramName -> annonNodeName
             std::string mxNodeName = variable->getVariable();
@@ -1314,6 +1339,7 @@ size_t _BuildEquivalentMaterialNetwork(
     // Copy the incoming hdNetwork to the topoNetwork using only the 
     // anonymized names
     topoNetwork->primvars = hdNetwork.primvars;
+    topoNetwork->config = hdNetwork.config;
     for (const auto& terminal : hdNetwork.terminals) {
         topoNetwork->terminals.emplace(
             terminal.first,
@@ -1334,11 +1360,11 @@ size_t _BuildEquivalentMaterialNetwork(
             // Parameters that are color managed are also topological as they
             // result in different nodes being added in the MaterialX graph
             for (const auto& param: inNode.parameters) {
+                // If this parameter is used to indicate a colorspace on a  
+                // color managed input, find and add that corresponding input
                 const auto colorManagedInput = 
                     SdfPath::StripPrefixNamespace(param.first.GetString(),
                                                   SdfFieldKeys->ColorSpace);
-                // If this parameter is to indicate a colorspace on a color 
-                // managed input, find and add that corresponding input
                 if (colorManagedInput.second) {
                     outNode.parameters.insert(param);
 
@@ -1479,7 +1505,7 @@ HdSt_ApplyMaterialXFilter(
             sdrRegistry.GetShaderNodeFromSourceCode(
                 glslfxSourceCode,
                 HioGlslfxTokens->glslfx,
-                NdrTokenMap()); // metadata
+                SdrTokenMap()); // metadata
         HdMaterialNode2 newTerminalNode;
         newTerminalNode.nodeTypeId = sdrNode->GetIdentifier();
         newTerminalNode.inputConnections = terminalNode.inputConnections;

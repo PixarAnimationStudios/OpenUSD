@@ -157,11 +157,21 @@ def _diff(fileName, baselineDir, verbose, failuresDir=None):
     # Use the diff program or equivalent, rather than filecmp or similar
     # because it's possible we might want to specify other diff programs
     # in the future.
+
     import platform
-    if platform.system() == 'Windows':
-        diff = 'fc.exe'
-    else:
-        diff = '/usr/bin/diff'
+    isWindows = platform.system() == 'Windows'
+
+    diffTool = shutil.which('diff')
+    diffToolBaseArgs = ['--strip-trailing-cr']
+    if not diffTool and isWindows:
+        diffTool = 'fc.exe'
+        diffToolBaseArgs = ['/t']
+
+    if not diffTool:
+        sys.stderr.write(
+            "Error: could not find \"diff\" or \"fc.exe\" tool. "
+            "Make sure it's in your PATH.\n")
+        return False
 
     filesToDiff = glob.glob(fileName)
     if not filesToDiff:
@@ -171,7 +181,7 @@ def _diff(fileName, baselineDir, verbose, failuresDir=None):
 
     for fileToDiff in filesToDiff:
         baselineFile = _resolvePath(baselineDir, fileToDiff)
-        cmd = [diff, baselineFile, fileToDiff]
+        cmd = [diffTool, *diffToolBaseArgs, baselineFile, fileToDiff]
         if verbose:
             print("diffing with {0}".format(cmd))
 

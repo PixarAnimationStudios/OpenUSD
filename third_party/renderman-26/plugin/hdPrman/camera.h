@@ -136,7 +136,7 @@ public:
     }
 
     float GetApertureDensity() const {
-        return _apertureAngle;
+        return _apertureDensity;
     }
 
     float GetApertureNSides() const {

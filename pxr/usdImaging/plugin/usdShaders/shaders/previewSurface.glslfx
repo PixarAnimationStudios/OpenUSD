@@ -335,6 +335,7 @@ evaluateIndirectLighting(
             fresnel);
         lod = clearcoatRoughness * MAX_REFLECTION_LOD;
         prefilter = HdTextureLod_domeLightPrefilter(Rcoord, lod).rgb;
+        brdf = HdGet_domeLightBRDF(vec2(NdotE, clearcoatRoughness)).rg;
         clearcoat = prefilter * (clearcoatF * brdf.x + brdf.y);
     }
 

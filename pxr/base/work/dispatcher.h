@@ -124,6 +124,10 @@ public:
     /// pending tasks to complete.
     WORK_API void Cancel();
 
+    /// Returns true if Cancel() has been called.  Calling Wait() will reset the
+    /// cancel state.
+    WORK_API bool IsCancelled() const;
+
 private:
     typedef tbb::concurrent_vector<TfErrorTransport> _ErrorTransports;
 
@@ -208,6 +212,7 @@ private:
     // dispatcher.
     tbb::empty_task* _rootTask;
 #endif
+    std::atomic<bool> _isCancelled;
 
     // The error transports we use to transmit errors in other threads back to
     // this thread.

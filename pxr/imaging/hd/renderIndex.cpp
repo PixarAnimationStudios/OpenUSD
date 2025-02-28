@@ -600,9 +600,10 @@ HdRenderIndex::_Clear()
 // -------------------------------------------------------------------------- //
 
 void
-HdRenderIndex::_TrackDelegateTask(HdSceneDelegate* delegate,
-                                  SdfPath const& taskId,
-                                  HdTaskCreateFnc taskCreateFnc)
+HdRenderIndex::_InsertSceneDelegateTask(
+        HdSceneDelegate* const delegate, 
+        SdfPath const& taskId,
+        HdLegacyTaskFactorySharedPtr factory)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -611,7 +612,13 @@ HdRenderIndex::_TrackDelegateTask(HdSceneDelegate* delegate,
         return;
     }
 
-    HdTaskSharedPtr const task = taskCreateFnc(delegate, taskId);
+    if (_IsEnabledSceneIndexEmulation()) {
+        _emulationSceneIndex->AddLegacyTask(
+            taskId, delegate, std::move(factory));
+        return;
+    }
+
+    HdTaskSharedPtr const task = factory->Create(delegate, taskId);
     _InsertTask(delegate, taskId, task);
 }
 
@@ -640,6 +647,17 @@ HdRenderIndex::GetTask(SdfPath const& id) const {
 
 void
 HdRenderIndex::RemoveTask(SdfPath const& id)
+{
+    if (_IsEnabledSceneIndexEmulation()) {
+        _emulationSceneIndex->RemovePrim(id);
+        return;
+    }
+
+    _RemoveTask(id);
+}
+
+void
+HdRenderIndex::_RemoveTask(SdfPath const& id)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();

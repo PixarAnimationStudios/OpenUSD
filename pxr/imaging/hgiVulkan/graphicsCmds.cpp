@@ -19,14 +19,27 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static
-bool
-_IsInt32Format(HgiFormat format)
+static void
+_SetVkClearColorValue(
+    HgiAttachmentDesc const& attachmentDesc,
+    VkClearColorValue* clearColorValue)
 {
-    return (format == HgiFormatInt32) ||
-           (format == HgiFormatInt32Vec2) ||
-           (format == HgiFormatInt32Vec3) ||
-           (format == HgiFormatInt32Vec4);
+    // Special handling for int format used by id renders.
+    if (HgiIsFloatFormat(attachmentDesc.format)) {
+        clearColorValue->float32[0] = attachmentDesc.clearValue[0];
+        clearColorValue->float32[1] = attachmentDesc.clearValue[1];
+        clearColorValue->float32[2] = attachmentDesc.clearValue[2];
+        clearColorValue->float32[3] = attachmentDesc.clearValue[3];
+    } else {
+        clearColorValue->int32[0] =
+            static_cast<int32_t>(attachmentDesc.clearValue[0]);
+        clearColorValue->int32[1] =
+            static_cast<int32_t>(attachmentDesc.clearValue[1]);
+        clearColorValue->int32[2] =
+            static_cast<int32_t>(attachmentDesc.clearValue[2]);
+        clearColorValue->int32[3] =
+            static_cast<int32_t>(attachmentDesc.clearValue[3]);
+    }
 }
 
 HgiVulkanGraphicsCmds::HgiVulkanGraphicsCmds(
@@ -48,19 +61,7 @@ HgiVulkanGraphicsCmds::HgiVulkanGraphicsCmds(
     for (HgiAttachmentDesc const& attachmentDesc :
         _descriptor.colorAttachmentDescs) {
         VkClearValue vkClearValue;
-
-        // Special handling for int format used by id renders.
-        if (_IsInt32Format(attachmentDesc.format)) {
-            vkClearValue.color.int32[0] = attachmentDesc.clearValue[0];
-            vkClearValue.color.int32[1] = attachmentDesc.clearValue[1];
-            vkClearValue.color.int32[2] = attachmentDesc.clearValue[2];
-            vkClearValue.color.int32[3] = attachmentDesc.clearValue[3];
-        } else {
-            vkClearValue.color.float32[0] = attachmentDesc.clearValue[0];
-            vkClearValue.color.float32[1] = attachmentDesc.clearValue[1];
-            vkClearValue.color.float32[2] = attachmentDesc.clearValue[2];
-            vkClearValue.color.float32[3] = attachmentDesc.clearValue[3];
-        }
+        _SetVkClearColorValue(attachmentDesc, &vkClearValue.color);
         _vkClearValues.push_back(vkClearValue);
     }
 
@@ -393,12 +394,9 @@ HgiVulkanGraphicsCmds::_ClearAttachmentsIfNeeded()
         HgiAttachmentDesc const colorAttachmentDesc =
             _descriptor.colorAttachmentDescs[i];
         if (colorAttachmentDesc.loadOp == HgiAttachmentLoadOpClear) {
-            VkClearColorValue vkClearColor; 
-            vkClearColor.float32[0] = colorAttachmentDesc.clearValue[0];
-            vkClearColor.float32[1] = colorAttachmentDesc.clearValue[1];
-            vkClearColor.float32[2] = colorAttachmentDesc.clearValue[2];
-            vkClearColor.float32[3] = colorAttachmentDesc.clearValue[3];
-                
+            VkClearColorValue vkClearColor;
+            _SetVkClearColorValue(colorAttachmentDesc, &vkClearColor);
+
             if (_descriptor.colorTextures[i]) {
                 HgiVulkanTexture* texture = static_cast<HgiVulkanTexture*>(
                     _descriptor.colorTextures[i].Get());

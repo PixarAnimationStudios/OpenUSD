@@ -409,10 +409,6 @@ class RenderPass "RenderPass" (
         """
     )
 
-    uniform bool denoise:enable = false (
-        doc = """When True, this Pass pass should be denoised."""
-    )
-
     uniform bool collection:renderVisibility:includeRoot = 1 (
         customData = {
             bool apiSchemaOverride = true

@@ -670,6 +670,7 @@ private:
     void _MarkSprimDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
     void _MarkBprimDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
     void _MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
+    void _MarkTaskDirty(SdfPath const& id, HdDirtyBits bits=AllDirty);
 };
 
 

@@ -37,8 +37,15 @@ public:
     PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = 0;
     PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = 0;
 
+    /// Does the instance support presentation?
+    bool HasPresentation() const
+    {
+        return _hasPresentation;
+    }
+
 private:
     VkInstance _vkInstance;
+    bool _hasPresentation;
 };
 
 

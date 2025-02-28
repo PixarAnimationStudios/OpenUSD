@@ -17,7 +17,13 @@
                     }, 
                     "MaterialBindingRelationships": {
                         "doc": "All properties named 'material:binding' or in that namespace should be relationships."
-                    }, 
+                    },
+                    "NormalMapTextureValidator" : {
+                        "doc": "UsdUVTexture nodes that feed the _inputs:normals_ of a UsdPreviewSurface must ensure that the data is encoded and scaled properly. Specifically, since normals are expected to be in the range [(-1,-1,-1), (1,1,1)], the Texture node must transform 8-bit textures from their [0..1] range by setting its _inputs:scale_ to (2, 2, 2, 1) and _inputs:bias_ to (-1, -1, -1, 0). Normal map data is commonly expected to be linearly encoded.  However, many image-writing tools automatically set the profile of three-channel, 8-bit images to SRGB.  To prevent an unwanted transformation, the UsdUVTexture's _inputs:sourceColorSpace_ must be set to raw.",
+                        "schemaTypes": [
+                            "UsdShadeShader"
+                        ]
+                    },
                     "ShaderSdrCompliance": {
                         "doc": "Shader prim's input types must be conforming to their appropriate sdf types in the respective sdr shader.", 
                         "schemaTypes": [

@@ -457,6 +457,26 @@ HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(TfToken const& primType,
     }
 }
 
+/* static */
+void
+HdDirtyBitsTranslator::TaskDirtyBitsToLocatorSet(
+    const HdDirtyBits bits, HdDataSourceLocatorSet *set)
+{
+    if (ARCH_UNLIKELY(set == nullptr)) {
+        return;
+    }
+
+    if (bits & HdChangeTracker::DirtyCollection) {
+        set->append(HdLegacyTaskSchema::GetCollectionLocator());
+    }
+    if (bits & HdChangeTracker::DirtyParams) {
+        set->append(HdLegacyTaskSchema::GetParametersLocator());
+    }
+    if (bits & HdChangeTracker::DirtyRenderTags) {
+        set->append(HdLegacyTaskSchema::GetRenderTagsLocator());
+    }
+}
+
 // ----------------------------------------------------------------------------
 
 static bool

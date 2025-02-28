@@ -61,6 +61,8 @@ struct HdxPickFromRenderBufferTaskParams
 class HdxPickFromRenderBufferTask : public HdxTask
 {
 public:
+    using TaskParams = HdxPickFromRenderBufferTaskParams;
+
     HDX_API
     HdxPickFromRenderBufferTask(HdSceneDelegate *delegate, SdfPath const& id);
 

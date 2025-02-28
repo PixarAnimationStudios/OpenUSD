@@ -87,7 +87,7 @@ class UIFonts(ConstantsGroup):
     ABSTRACT_PRIM = NORMAL
 
     INHERITED = QtGui.QFont()
-    INHERITED.setPointSize(BASE_POINT_SIZE * 0.8)
+    INHERITED.setPointSizeF(BASE_POINT_SIZE * 0.8)
     INHERITED.setWeight(QtGui.QFont.Normal)
     INHERITED.setItalic(True)
 

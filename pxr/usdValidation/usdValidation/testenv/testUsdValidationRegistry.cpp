@@ -13,6 +13,7 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/usdValidation/usdValidation/error.h"
 #include "pxr/usdValidation/usdValidation/registry.h"
+#include "pxr/usdValidation/usdValidation/timeRange.h"
 #include "pxr/usdValidation/usdValidation/validator.h"
 #include "pxr/usdValidation/usdValidation/validatorTokens.h"
 
@@ -25,7 +26,8 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     {
         const TfToken validatorName("testValidationPlugin:TestValidator1");
         const UsdValidateStageTaskFn stageTaskFn
-            = [](const UsdStagePtr &usdStage) {
+            = [](const UsdStagePtr &usdStage, 
+                 const UsdValidationTimeRange &/*timeRange*/) {
                   const TfToken validationErrorId("ErrorId");
                   return UsdValidationErrorVector { UsdValidationError(
                       validationErrorId, UsdValidationErrorType::Error,
@@ -41,7 +43,9 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     }
     {
         const TfToken validatorName("testValidationPlugin:TestValidator2");
-        const UsdValidatePrimTaskFn primTaskFn = [](const UsdPrim & /*prim*/) {
+        const UsdValidatePrimTaskFn primTaskFn = [](
+            const UsdPrim & /*prim*/, 
+            const UsdValidationTimeRange &/*timeRange*/) {
             return UsdValidationErrorVector {};
         };
 
@@ -52,7 +56,9 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     }
     {
         const TfToken validatorName("testValidationPlugin:TestValidator3");
-        const UsdValidatePrimTaskFn primTaskFn = [](const UsdPrim & /*prim*/) {
+        const UsdValidatePrimTaskFn primTaskFn = [](
+            const UsdPrim & /*prim*/, 
+            const UsdValidationTimeRange &/*timeRange*/) {
             return UsdValidationErrorVector {};
         };
 
@@ -74,7 +80,8 @@ TF_REGISTRY_FUNCTION(UsdValidationRegistry)
     {
         const TfToken validatorName("testValidationPlugin:FailedValidator");
         const UsdValidateStageTaskFn stageTaskFn
-            = [](const UsdStagePtr & /*stage*/) {
+            = [](const UsdStagePtr & /*stage*/, 
+                 const UsdValidationTimeRange &/*timeRange*/) {
                   return UsdValidationErrorVector {};
               };
 

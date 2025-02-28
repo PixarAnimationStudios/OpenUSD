@@ -162,6 +162,11 @@ HGI_API
 HgiFormat HgiGetComponentBaseFormat(
     HgiFormat f);
 
+/// Returns true if the scalar type of the format is a floating point type.
+HGI_API
+bool HgiIsFloatFormat(
+    HgiFormat f);
+
 /// Returns mip infos.
 ///
 /// If dataByteSize is specified, the levels stops when the total memory

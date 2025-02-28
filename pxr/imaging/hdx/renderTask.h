@@ -20,6 +20,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class HdSceneDelegate;
+struct HdxRenderTaskParams;
 
 using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
 using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
@@ -47,6 +48,8 @@ using HdxRenderSetupTaskSharedPtr = std::shared_ptr<class HdxRenderSetupTask>;
 class HdxRenderTask : public HdxTask
 {
 public:
+    using TaskParams = HdxRenderTaskParams;
+    
     HDX_API
     HdxRenderTask(HdSceneDelegate* delegate, SdfPath const& id);
 

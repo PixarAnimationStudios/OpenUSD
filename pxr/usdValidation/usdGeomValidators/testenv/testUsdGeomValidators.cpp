@@ -43,8 +43,8 @@ TestUsdGeomValidators()
         = registry.GetValidatorMetadataForPlugin(
             _tokens->usdGeomValidatorsPlugin);
     TF_AXIOM(metadata.size() == 3);
-    for (const UsdValidationValidatorMetadata &metadata : metadata) {
-        validatorMetadataNameSet.insert(metadata.name);
+    for (const UsdValidationValidatorMetadata &m: metadata) {
+        validatorMetadataNameSet.insert(m.name);
     }
 
     TF_AXIOM(validatorMetadataNameSet == expectedUsdGeomValidatorNames);

@@ -48,8 +48,9 @@ bool Sdf_CanCreateNewLayerWithIdentifier(
     std::string* whyNot);
 
 /// Returns the resolved path for \p layerPath if an asset exists at that
-/// path. Otherwise, returns an empty ArResolvedPath. Populates \p assetInfo
-/// if it's non-nullptr.
+/// path. The returned path is stripped of its file format arguments.
+/// If an asset does not exist at that path, returns an empty ArResolvedPath. 
+/// Populates \p assetInfo if it's non-nullptr.
 ArResolvedPath Sdf_ResolvePath(
     const std::string& layerPath,
     ArAssetInfo* assetInfo = nullptr);

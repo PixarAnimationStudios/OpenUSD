@@ -156,8 +156,8 @@ SdfPathVector
 HdSelection::GetAllSelectedPrimPaths() const
 {
     SdfPathVector paths;
-    for (int mode = HdSelection::HighlightModeSelect;
-             mode < HdSelection::HighlightModeCount; mode++) {
+    for (uint32_t mode = HdSelection::HighlightModeSelect;
+                  mode < HdSelection::HighlightModeCount; mode++) {
         _GetSelectionPrimPathsForMode(HighlightMode(mode), &paths);
     }
     return paths;

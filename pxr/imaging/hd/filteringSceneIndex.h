@@ -167,18 +167,22 @@ private:
         _Observer(HdSingleInputFilteringSceneIndexBase *owner)
         : _owner(owner) {}
 
+        HD_API
         void PrimsAdded(
                 const HdSceneIndexBase &sender,
                 const AddedPrimEntries &entries) override;
 
+        HD_API
         void PrimsRemoved(
                 const HdSceneIndexBase &sender,
                 const RemovedPrimEntries &entries) override;
 
+        HD_API
         void PrimsDirtied(
                 const HdSceneIndexBase &sender,
                 const DirtiedPrimEntries &entries) override;
 
+        HD_API
         void PrimsRenamed(
                 const HdSceneIndexBase &sender,
                 const RenamedPrimEntries &entries) override;

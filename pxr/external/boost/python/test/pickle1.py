@@ -24,6 +24,15 @@ r'''>>> import pickle1_ext
     >>> print(wl.greet())
     Hello from California!
 
+    >>> wd = pickle1_ext.world('Emeryville')
+    >>> wd.zipcode = 94608
+    >>> pstr = pickle.dumps(wd)
+    >>> wl = pickle.loads(pstr)
+    >>> print(wd.greet(), "({})".format(wd.zipcode))
+    Hello from Emeryville! (94608)
+    >>> print(wl.greet(), "({})".format(wl.zipcode))
+    Hello from Emeryville! (94608)
+
     >>> noop = pickle1_ext.noop()
     >>> try: pickle.dumps(noop)
     ... except RuntimeError as e: print(str(e)[:55])

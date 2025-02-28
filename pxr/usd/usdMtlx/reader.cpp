@@ -8,6 +8,8 @@
 #include "pxr/usd/usdMtlx/debugCodes.h"
 #include "pxr/usd/usdMtlx/reader.h"
 #include "pxr/usd/usdMtlx/utils.h"
+#include "pxr/usd/usdMtlx/materialXConfigAPI.h"
+#include "pxr/usd/usdMtlx/tokens.h"
 
 #include "pxr/usd/usdGeom/primvar.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
@@ -18,7 +20,7 @@
 #include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/usdShade/utils.h"
 #include "pxr/usd/usdUI/nodeGraphNodeAPI.h"
-#include "pxr/usd/ndr/declare.h"
+#include "pxr/usd/sdr/declare.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/tokens.h"
@@ -273,7 +275,7 @@ _FindMatchingNodeDef(
     const mx::ConstInterfaceElementPtr& mtlxInterface,
     const std::string& family,
     const std::string& type,
-    const NdrVersion& version,
+    const SdrVersion& version,
     const std::string& target)
 {
     mx::ConstNodeDefPtr result = nullptr;
@@ -329,7 +331,7 @@ mx::ConstNodeDefPtr
 _FindMatchingNodeDef(
     const mx::ConstNodePtr& mtlxShaderNode,
     const std::string& family,
-    const NdrVersion& version,
+    const SdrVersion& version,
     const std::string& target,
     const mx::ConstInterfaceElementPtr& mtlxInterface = mx::NodeDefPtr())
 {
@@ -393,16 +395,16 @@ _GetNodeDef(const mx::ConstNodePtr& mtlxNode)
 
 // Get the shader id for a MaterialX nodedef.
 static
-NdrIdentifier
+SdrIdentifier
 _GetShaderId(const mx::ConstNodeDefPtr& mtlxNodeDef)
 {
-    return mtlxNodeDef ? NdrIdentifier(mtlxNodeDef->getName())
-                       : NdrIdentifier();
+    return mtlxNodeDef ? SdrIdentifier(mtlxNodeDef->getName())
+                       : SdrIdentifier();
 }
 
 // Get the shader id for a MaterialX node.
 static
-NdrIdentifier
+SdrIdentifier
 _GetShaderId(const mx::ConstNodePtr& mtlxNode)
 {
     return _GetShaderId(_GetNodeDef(mtlxNode));
@@ -873,7 +875,7 @@ _NodeGraphBuilder::_AddNode(
     const UsdPrim &usdParent)
 {
     // Create the shader.
-    NdrIdentifier shaderId = _GetShaderId(mtlxNode);
+    SdrIdentifier shaderId = _GetShaderId(mtlxNode);
     if (shaderId.IsEmpty()) {
         // If we don't have an interface then this is okay.
         if (_mtlxNodeDef) {
@@ -1467,6 +1469,13 @@ _Context::BeginMaterial(const mx::ConstNodePtr& mtlxMaterial)
         auto materialPath =
             _materialsPath.AppendChild(_MakeName(mtlxMaterial));
         if (auto usdMaterial = UsdShadeMaterial::Define(_stage, materialPath)) {
+            // Store the MaterialX document version on the created prim.
+            auto mtlxConfigAPI =
+                UsdMtlxMaterialXConfigAPI::Apply(usdMaterial.GetPrim());
+            auto mtlxVersionStr =
+                mtlxMaterial->getDocument()->getVersionString();
+            mtlxConfigAPI.CreateConfigMtlxVersionAttr(VtValue(mtlxVersionStr));
+
             _SetCoreUIAttributes(usdMaterial.GetPrim(), mtlxMaterial);
 
             // Record the material for later variants.
@@ -1599,7 +1608,7 @@ _Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
         }
     }
     if (auto primvars = UsdGeomPrimvarsAPI(_usdMaterial)) {
-        for (auto mtlxToken: mtlxShaderNode->getChildren()) {
+        for (auto mtlxToken : mtlxShaderNode->getChildren()) {
             if (mtlxToken->getCategory() == names.token) {
                 // Always use the string type for MaterialX tokens.
                 auto primvar =
@@ -1630,8 +1639,8 @@ _Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
     if (auto output = usdShader.GetOutput(_tokens->light)) {
         // USD doesn't support this type.
         UsdShadeConnectableAPI::ConnectToSource(
-            _usdMaterial.CreateOutput(_tokens->light, SdfValueTypeNames->Token),
-            output);
+            _usdMaterial.CreateOutput(
+                _tokens->light, SdfValueTypeNames->Token), output);
     }
 
     // Connect other semantic shader outputs.
@@ -1642,8 +1651,8 @@ _Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
             name != UsdShadeTokens->volume &&
             name != _tokens->light) {
             UsdShadeConnectableAPI::ConnectToSource(
-                _usdMaterial.CreateOutput(name, SdfValueTypeNames->Token),
-                output);
+                _usdMaterial.CreateOutput(
+                    name, SdfValueTypeNames->Token), output);
         }
     }
 

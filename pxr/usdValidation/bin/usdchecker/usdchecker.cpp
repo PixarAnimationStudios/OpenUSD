@@ -569,6 +569,25 @@ _UsdChecker(const Args& args)
                             UsdValidatorNameTokens->stageMetadataChecker;
                     }), metadata.end());
         }
+        if (args.rootPackageOnly) {
+            // Remove UsdUtilsValidators:UsdzPackageValidator
+            metadata.erase(
+                std::remove_if(
+                    metadata.begin(), metadata.end(), 
+                    [](const UsdValidationValidatorMetadata &meta) {
+                        return meta.name == 
+                            UsdUtilsValidatorNameTokens->usdzPackageValidator;
+                    }), metadata.end());
+        } else {
+            // Remove UsdUtilsValidators:RootPackageValidator
+            metadata.erase(
+                std::remove_if(
+                    metadata.begin(), metadata.end(), 
+                    [](const UsdValidationValidatorMetadata &meta) {
+                        return meta.name == 
+                            UsdUtilsValidatorNameTokens->rootPackageValidator;
+                    }), metadata.end());
+        }
         // TODO rootPackageOnly
         //   - This can be handled via a keyword. Have a UsdzPackageValidator
         //   and a UsdzRootPackageValidator, and appropriately select the

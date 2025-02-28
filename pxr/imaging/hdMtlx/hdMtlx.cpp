@@ -5,12 +5,14 @@
 // https://openusd.org/license.
 //
 #include "pxr/imaging/hdMtlx/hdMtlx.h"
+#include "pxr/imaging/hdMtlx/debugCodes.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/materialNetwork2Interface.h"
 
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/matrix3d.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/tf/debug.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/schema.h"
@@ -40,13 +42,39 @@ TF_DEFINE_PRIVATE_TOKENS(
     (geompropvalue)
     (filename)
     (ND_surface)
+    (typeName)
+    ((mtlxVersion, "mtlx:version"))
+);
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _usdTypeTokens,
+    ((boolType, "bool"))
+    ((intType, "int"))
+    (intarray)
+    ((floatType, "float"))
+    (floatarray)
+    (color3f)
+    (color3fArray)
+    (color4f)
+    (color4fArray)
+    (float2)
+    (float2Array)
+    (float3)
+    (float3Array)
+    (float4)
+    (float4Array)
+    (matrix3d)
+    (matrix4d)
+    (asset)
+    (string)
+    (stringArray)
 );
 
 static mx::FileSearchPath
 _ComputeSearchPaths()
 {
     mx::FileSearchPath searchPaths;
-    static const NdrStringVec searchPathStrings = UsdMtlxSearchPaths();
+    static const SdrStringVec searchPathStrings = UsdMtlxSearchPaths();
     for (auto path : searchPathStrings) {
         searchPaths.append(mx::FilePath(path));
     }
@@ -222,14 +250,71 @@ _UsesTexcoordNode(mx::NodeDefPtr const& mxNodeDef)
 }
 
 static std::string
-_GetInputType(mx::NodeDefPtr const& mxNodeDef, std::string const& mxInputName)
+_ConvertToMtlxType(const TfToken& usdTypeName)
 {
+    static const auto _typeTable =
+      std::unordered_map<TfToken, std::string, TfToken::HashFunctor>{
+           {_usdTypeTokens->boolType,    "boolean"},
+           {_usdTypeTokens->intType,     "integer"},
+           {_usdTypeTokens->intarray,    "integerarray"},
+           {_usdTypeTokens->floatType,   "float"},
+           {_usdTypeTokens->floatarray,  "floatarray"},
+           {_usdTypeTokens->color3f,     "color3"},
+           {_usdTypeTokens->color3fArray,"color3array"},
+           {_usdTypeTokens->color4f,     "color4"},
+           {_usdTypeTokens->color4fArray,"color4array"},
+           {_usdTypeTokens->float2,      "vector2"},
+           {_usdTypeTokens->float2Array, "vector2array"},
+           {_usdTypeTokens->float3,      "vector3"},
+           {_usdTypeTokens->float3Array, "vector3array"},
+           {_usdTypeTokens->float4,      "vector4"},
+           {_usdTypeTokens->float4Array, "vector4array"},
+           {_usdTypeTokens->matrix3d,    "matrix33"},
+           {_usdTypeTokens->matrix4d,    "matrix44"},
+           {_usdTypeTokens->asset,       "filename"},
+           {_usdTypeTokens->string,      "string"},
+           {_usdTypeTokens->stringArray, "stringarray"}
+      };
+    auto typeIt = _typeTable.find(usdTypeName);
+    return typeIt == _typeTable.end() ? "" : typeIt->second;
+}
+
+static std::string
+_GetInputType(
+    mx::NodeDefPtr const& mxNodeDef, 
+    std::string const& mxInputName,
+    TfToken const& usdTypeName=TfToken())
+{
+    // If given, use the usdTypeName to get the materialX input type
+    if (!usdTypeName.IsEmpty()) {
+        return _ConvertToMtlxType(usdTypeName);
+    }
+
+    // Otherwise look to the nodedef to get the input type
     std::string mxInputType;
     mx::InputPtr mxInput = mxNodeDef->getActiveInput(mxInputName);
     if (mxInput) {
         mxInputType = mxInput->getType();
     }
     return mxInputType;
+}
+
+// Nodedef names may change between MaterialX versions, so given the 
+// prevMxNodeDefName get the corresponding nodedef name appropriate for the 
+// version of MaterialX being used. 
+static std::string
+_GetNodeDefName(std::string const& prevMxNodeDefName)
+{
+    // This handles the case that nodedef names have changed between MaterialX
+    // v1.38 and the current version
+    std::string mxNodeDefName = prevMxNodeDefName;
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION >= 39
+    // Between v1.38 and v1.39 only the normalmap nodedef name changed
+    if (prevMxNodeDefName == "ND_normalmap") {
+        mxNodeDefName = "ND_normalmap_float";
+    }
+#endif
+    return mxNodeDefName;
 }
 
 // Add a MaterialX version of the hdNode to the mxDoc/mxNodeGraph
@@ -245,7 +330,8 @@ _AddMaterialXNode(
 {
     // Get the mxNode information
     TfToken hdNodeType = netInterface->GetNodeType(hdNodeName);
-    mx::NodeDefPtr mxNodeDef = mxDoc->getNodeDef(hdNodeType.GetString());
+    mx::NodeDefPtr mxNodeDef =
+        mxDoc->getNodeDef(_GetNodeDefName(hdNodeType.GetString()));
     if (!mxNodeDef) {
         TF_WARN("NodeDef not found for Node '%s'", hdNodeType.GetText());
         // Instead of returning here, use a ND_surface definition so that the
@@ -255,10 +341,11 @@ _AddMaterialXNode(
         // out of the shader compile in hdPrman.
         mxNodeDef = mxDoc->getNodeDef(_tokens->ND_surface);
     }
+
     const SdfPath hdNodePath(hdNodeName.GetString());
-    const std::string mxNodeCategory = _GetMxNodeString(mxNodeDef);
-    const std::string &mxNodeType = mxNodeDef->getType();
     const std::string &mxNodeName = HdMtlxCreateNameFromPath(hdNodePath);
+    const std::string &mxNodeCategory = _GetMxNodeString(mxNodeDef);
+    const std::string &mxNodeType = mxNodeDef->getType();
 
     // Add the mxNode to the mxNodeGraph
     mx::NodePtr mxNode =
@@ -280,23 +367,32 @@ _AddMaterialXNode(
     TfTokenVector hdNodeParamNames =
         netInterface->GetAuthoredNodeParameterNames(hdNodeName);
     for (TfToken const &paramName : hdNodeParamNames) {
-        // Get the MaterialX Parameter info
         const std::string &mxInputName = paramName.GetString();
+
+        // Skip Colorspace and typeName parameters, these are already 
+        // captured in the paramData. Note: these inputs are of the form:
+        //  'colorSpace:inputName' and 'typeName:inputName'
+        const std::pair<std::string, bool> csResult = 
+            SdfPath::StripPrefixNamespace(mxInputName, SdfFieldKeys->ColorSpace);
+        if (csResult.second) {
+            continue;
+        }
+        const std::pair<std::string, bool> tnResult = 
+            SdfPath::StripPrefixNamespace(mxInputName, _tokens->typeName);
+        if (tnResult.second) {
+            continue;
+        }
+
+        // Get the MaterialX Parameter info
         const HdMaterialNetworkInterface::NodeParamData paramData = 
             netInterface->GetNodeParameterData(hdNodeName, paramName);
         const std::string mxInputValue = HdMtlxConvertToString(paramData.value);
 
-        // Skip Colorspace parameter, this is already captured in the paramData.
-        // Note: Colorspace inputNames are of the form 'colorSpace:inputName'
-        const std::pair<std::string, bool> result = 
-            SdfPath::StripPrefixNamespace(mxInputName, SdfFieldKeys->ColorSpace);
-        if (result.second) {
-            continue;
-        }
-
-        // Set the input value, and colorspace  on the mxNode
-        mx::InputPtr mxInput = mxNode->setInputValue(
-            mxInputName, mxInputValue, _GetInputType(mxNodeDef, mxInputName));
+        // Set the input value, and colorspace on the mxNode
+        const std::string mxInputType = 
+            _GetInputType(mxNodeDef, mxInputName, paramData.typeName);
+        mx::InputPtr mxInput = 
+            mxNode->setInputValue(mxInputName, mxInputValue, mxInputType);
         if (!paramData.colorSpace.IsEmpty()) {
             mxInput->setColorSpace(paramData.colorSpace);
         }
@@ -503,19 +599,26 @@ _AddParameterInputsToTerminalNode(
     }
 
     for (TfToken const &paramName : paramNames) {
-        // Get the MaterialX Parameter info
         const std::string &mxInputName = paramName.GetString();
+
+        // Skip Colorspace and typeName parameters, these are already 
+        // captured in the paramData. Note: these inputs are of the form:
+        //  'colorSpace:inputName' and 'typeName:inputName'
+        const std::pair<std::string, bool> csResult = 
+            SdfPath::StripPrefixNamespace(mxInputName, SdfFieldKeys->ColorSpace);
+        if (csResult.second) {
+            continue;
+        }
+        const std::pair<std::string, bool> tnResult = 
+            SdfPath::StripPrefixNamespace(mxInputName, _tokens->typeName);
+        if (tnResult.second) {
+            continue;
+        }
+
+        // Get the MaterialX Parameter info
         const HdMaterialNetworkInterface::NodeParamData paramData = 
             netInterface->GetNodeParameterData(terminalNodeName, paramName);
         const std::string mxInputValue = HdMtlxConvertToString(paramData.value);
-
-        // Skip Colorspace parameter, this is already captured in the paramData.
-        // Note: Colorspace inputNames are of the form 'colorSpace:inputName'
-        const std::pair<std::string, bool> result = 
-            SdfPath::StripPrefixNamespace(mxInputName, SdfFieldKeys->ColorSpace);
-        if (result.second) {
-            continue;
-        }
 
         // Set the Input value on the mxShaderNode
         mx::InputPtr mxInput = mxShaderNode->setInputValue(
@@ -587,6 +690,23 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
     // Initialize a MaterialX Document
     mx::DocumentPtr mxDoc = mx::createDocument();
     mxDoc->importLibrary(libraries);
+
+    // Get the version of the MaterialX document if specified, otherwise
+    // default to v1.38.
+    std::string materialXVersionString = "1.38";
+    const VtValue materialXVersionValue =
+        netInterface->GetMaterialConfigValue(_tokens->mtlxVersion);
+    if (materialXVersionValue.IsHolding<std::string>()) {
+        materialXVersionString = materialXVersionValue.Get<std::string>();
+        TF_DEBUG(HDMTLX_VERSION_UPGRADE).Msg(
+            "[%s] : MaterialX document version : '%s'\n",
+            TF_FUNC_NAME().c_str(), materialXVersionString.c_str());
+    } else {
+        TF_DEBUG(HDMTLX_VERSION_UPGRADE).Msg(
+            "[%s] : MaterialX document version : '%s' (Using default)\n",
+            TF_FUNC_NAME().c_str(), materialXVersionString.c_str());
+    }
+    mxDoc->setVersionString(materialXVersionString);
     
     // Create a material that instantiates the shader
     SdfPath materialPath = netInterface->GetMaterialPrimPath();
@@ -608,6 +728,33 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
         terminalNodeName,
         mxType,
         mxShaderNode);
+
+    if (TfDebug::IsEnabled(HDMTLX_VERSION_UPGRADE)) {
+        const std::string filename = mxMaterial->getName() + "_before.mtlx";
+        TF_DEBUG(HDMTLX_VERSION_UPGRADE).Msg(
+            "[%s] : MaterialX document before upgrade: '%s'\n",
+            TF_FUNC_NAME().c_str(), filename.c_str());
+        mx::writeToXmlFile(mxDoc, mx::FilePath(filename));
+    }
+
+    // Potentially upgrade the MaterialX document to the "current" version,
+    // using the MaterialX upgrade mechanism.
+    mxDoc->upgradeVersion();
+
+    if (TfDebug::IsEnabled(HDMTLX_VERSION_UPGRADE)) {
+        const std::string filename = mxMaterial->getName() + "_after.mtlx";
+        TF_DEBUG(HDMTLX_VERSION_UPGRADE).Msg(
+            "[%s] : MaterialX document after upgrade: '%s'\n",
+            TF_FUNC_NAME().c_str(), filename.c_str());
+        mx::writeToXmlFile(mxDoc, mx::FilePath(filename));
+    } 
+    else if (TfDebug::IsEnabled(HDMTLX_WRITE_DOCUMENT)) {
+        const std::string filename = mxMaterial->getName() + ".mtlx";
+        TF_DEBUG(HDMTLX_WRITE_DOCUMENT).Msg(
+            "[%s] : MaterialX document: '%s'\n",
+            TF_FUNC_NAME().c_str(), filename.c_str());
+        mx::writeToXmlFile(mxDoc, mx::FilePath(filename));
+    }
 
     // Validate the MaterialX Document.
     {

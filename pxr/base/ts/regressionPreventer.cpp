@@ -818,8 +818,8 @@ TsTime TsRegressionPreventer::_SegmentSolver::_GetProposedActiveWidth() const
 {
     const TsTime width = (
         _whichSegment == PreSegment ?
-        _activeKnotState->proposedKnot.GetPreTanWidth() :
-        _activeKnotState->proposedKnot.GetPostTanWidth());
+        _activeKnotState->proposedParams.preTanWidth :
+        _activeKnotState->proposedParams.postTanWidth);
     return width / _GetSegmentWidth();
 }
 
@@ -827,8 +827,8 @@ TsTime TsRegressionPreventer::_SegmentSolver::_GetProposedOppositeWidth() const
 {
     const TsTime width = (
         _whichSegment == PreSegment ?
-        _oppositeKnotState->proposedKnot.GetPostTanWidth() :
-        _oppositeKnotState->proposedKnot.GetPreTanWidth());
+        _oppositeKnotState->proposedParams.postTanWidth :
+        _oppositeKnotState->proposedParams.preTanWidth);
     return width / _GetSegmentWidth();
 }
 
@@ -937,8 +937,8 @@ void TsRegressionPreventer::_SegmentSolver::_SetEndWidth(
 TsTime TsRegressionPreventer::_SegmentSolver::_GetSegmentWidth() const
 {
     TsTime width =
-        _activeKnotState->proposedKnot.GetTime() -
-        _oppositeKnotState->proposedKnot.GetTime();
+        _activeKnotState->proposedParams.time -
+        _oppositeKnotState->proposedParams.time;
 
     if (_whichSegment == PostSegment)
     {
@@ -988,7 +988,8 @@ TsRegressionPreventer::_WorkingKnotState::_WorkingKnotState(
     const TsKnot &proposedKnotIn)
     : parentState(parentState),
       proposedKnot(proposedKnotIn),
-      workingParams(*(proposedKnotIn._GetData()))
+      proposedParams(*(proposedKnot._GetData())),
+      workingParams(proposedParams)
 {
 }
 
@@ -996,19 +997,16 @@ TsRegressionPreventer::_WorkingKnotState::_WorkingKnotState(
     _KnotState* const parentState)
     : parentState(parentState),
       proposedKnot(parentState->originalKnot),
-      workingParams(*(parentState->originalKnot._GetData()))
+      proposedParams(*(proposedKnot._GetData())),
+      workingParams(proposedParams)
 {
 }
 
 TsRegressionPreventer::_WorkingKnotState::_WorkingKnotState(
     const Ts_KnotData &originalParamsIn)
     : parentState(nullptr),
-      // Not a real knot; just conforming to the storage.
-      proposedKnot(
-          new Ts_KnotData(originalParamsIn),
-          Ts_GetType<double>(),
-          VtDictionary()),
-      workingParams(originalParamsIn)
+      proposedParams(originalParamsIn),
+      workingParams(proposedParams)
 {
 }
 

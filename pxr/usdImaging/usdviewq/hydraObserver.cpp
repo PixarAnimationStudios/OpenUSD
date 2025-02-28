@@ -9,6 +9,7 @@
 
 #include "pxr/base/tf/stringUtils.h"
 
+#include <deque>
 #include <typeinfo>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -58,7 +59,6 @@ UsdviewqHydraObserver::TargetToInputSceneIndex(const IndexList &inputIndices)
     return false;
 }
 
-
 bool
 UsdviewqHydraObserver::TargetToNamedSceneIndex(const std::string &name)
 {
@@ -69,6 +69,8 @@ UsdviewqHydraObserver::TargetToNamedSceneIndex(const std::string &name)
 bool
 UsdviewqHydraObserver::_Target(const HdSceneIndexBaseRefPtr &sceneIndex)
 {
+    _nestedInputSceneIndices.reset();
+    
     if (_sceneIndex) {
         _sceneIndex->RemoveObserver(HdSceneIndexObserverPtr(&_observer));
     }
@@ -134,6 +136,63 @@ UsdviewqHydraObserver::GetInputDisplayNames(const IndexList &inputIndices)
     }
 
     return result;
+}
+
+std::vector<std::string>
+UsdviewqHydraObserver::GetNestedInputDisplayNames()
+{
+    _ComputeNestedInputSceneIndices();
+
+    std::vector<std::string> result;
+    result.reserve(_nestedInputSceneIndices->size());
+    for (const HdSceneIndexBaseRefPtr &inputScene : *_nestedInputSceneIndices) {
+        result.push_back(_GetDisplayName(inputScene));
+    }
+    return result;
+}
+
+bool
+UsdviewqHydraObserver::TargetToNestedInputSceneIndex(
+    const size_t nestedInputIndex)
+{
+    _ComputeNestedInputSceneIndices();
+
+    if (!(nestedInputIndex < _nestedInputSceneIndices->size())) {
+        return false;
+    }
+
+    return _Target((*_nestedInputSceneIndices)[nestedInputIndex]);
+}
+
+void
+UsdviewqHydraObserver::_ComputeNestedInputSceneIndices()
+{
+    if (_nestedInputSceneIndices) {
+        return;
+    }
+
+    _nestedInputSceneIndices = HdSceneIndexBaseRefPtrVector();
+
+    std::set<HdSceneIndexBaseRefPtr> visited = { };
+    std::deque<HdSceneIndexBaseRefPtr> pending = { _sceneIndex };
+
+    while (!pending.empty()) {
+        HdSceneIndexBaseRefPtr const sceneIndex = pending.front();
+        pending.pop_front();
+        if (!visited.insert(sceneIndex).second) {
+            continue;
+        }
+        _nestedInputSceneIndices->push_back(sceneIndex);
+        auto const filteringSceneIndex =
+            TfDynamic_cast<HdFilteringSceneIndexBaseRefPtr>(sceneIndex);
+        if (!filteringSceneIndex) {
+            continue;
+        }
+        for (HdSceneIndexBaseRefPtr const &inputScene :
+                 filteringSceneIndex->GetInputScenes()) {
+            pending.push_back(inputScene);
+        }
+    }
 }
 
 SdfPathVector

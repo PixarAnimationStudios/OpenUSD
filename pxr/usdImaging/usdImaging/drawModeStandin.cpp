@@ -197,7 +197,7 @@ public:
             return src->GetContributingSampleTimesForInterval(
                 startTime, endTime, outSampleTimes);
         }
-        
+
         return false;
     }
 
@@ -238,7 +238,7 @@ public:
 
 private:
     _Vec4fFromVec3fDataSource(
-        const HdVec3fDataSourceHandle source, 
+        const HdVec3fDataSourceHandle source,
         const float alpha)
       : _vec3fSource(source),
         _alpha(alpha)
@@ -552,7 +552,7 @@ _ComputeBoundsTopology()
             /* edge pairs */  0, 1, 4, 5, 6, 7, 2, 3 };
     const VtIntArray curveVertexCounts{
             static_cast<int>(curveIndices.size()) };
-    
+
     return HdBasisCurvesTopologySchema::Builder()
         .SetCurveVertexCounts(
                 HdRetainedTypedSampledDataSource<VtIntArray>::New(
@@ -670,12 +670,12 @@ public:
                 UsdImagingGeomModelSchemaTokens->drawModeColor);
         const bool dirtyColor =
             dirtyLocators.Intersects(colorLocator);
-        
+
         if (dirtyExtent || dirtyColor) {
             HdDataSourceLocatorSet primDirtyLocators = dirtyLocators;
             if (dirtyExtent) {
                 // Points depends on extent, so dirty it as well.
-                static const HdDataSourceLocator pointsValue = 
+                static const HdDataSourceLocator pointsValue =
                     HdPrimvarsSchema::GetPointsLocator()
                         .Append(HdPrimvarSchemaTokens->primvarValue);
                 primDirtyLocators.insert(pointsValue);
@@ -771,7 +771,7 @@ _ComputeOriginTopology()
     const VtIntArray curveIndices{ 0, 1, 0, 2, 0, 3};
     const VtIntArray curveVertexCounts{
             static_cast<int>(curveIndices.size()) };
-    
+
     return HdBasisCurvesTopologySchema::Builder()
         .SetCurveVertexCounts(
                 HdRetainedTypedSampledDataSource<VtIntArray>::New(
@@ -883,7 +883,7 @@ public:
                 UsdImagingGeomModelSchemaTokens->drawModeColor);
         const bool dirtyColor =
             dirtyLocators.Intersects(colorLocator);
-        
+
         if (dirtyColor) {
             // Display color is given by model:drawModeColor, so
             // dirty it as well.
@@ -972,7 +972,7 @@ using _MaterialsDict = std::unordered_map<
 class _CardsDataCache
 {
 public:
-    _CardsDataCache(const SdfPath &primPath, 
+    _CardsDataCache(const SdfPath &primPath,
         const HdContainerDataSourceHandle &primSource)
       : _primPath(primPath)
       , _primSource(primSource)
@@ -1001,10 +1001,10 @@ public:
 
     /// An individual face geometry subset.
     HdContainerDataSourceHandle
-    GetGeomSubset(const TfToken& name) { 
+    GetGeomSubset(const TfToken& name) {
         return _GetCardsData()->GetSubset(name);
     }
-    
+
     TfTokenVector
     GetGeomSubsetNames() {
         TfTokenVector names;
@@ -1068,7 +1068,7 @@ private:
     {
         using SubsetMap = std::unordered_map<TfToken,
             HdContainerDataSourceHandle, TfToken::HashFunctor>;
-            
+
         _CardsData(const _SchemaValues &values, const SdfPath &primPath);
 
         TfToken cardGeometry;
@@ -1078,7 +1078,7 @@ private:
         SubsetMap geomSubsets;
         HdContainerDataSourceHandle meshTopology;
         _MaterialsDict materials;
-        
+
         HdContainerDataSourceHandle
         GetSubset(const TfToken& name) {
             const auto it = geomSubsets.find(name);
@@ -1087,7 +1087,7 @@ private:
             }
             return nullptr;
         }
-        
+
     private:
         static
         VtVec3fArray
@@ -1097,7 +1097,7 @@ private:
         _ComputeUVs(const _SchemaValues &values);
         static
         SubsetMap
-        _ComputeGeomSubsets(const _SchemaValues &values, 
+        _ComputeGeomSubsets(const _SchemaValues &values,
             const SdfPath &primPath);
         static const
         _MaterialsDict
@@ -1186,7 +1186,7 @@ GetWorldToScreenFromImageMetadata(
     // XXX: OpenImageIO >= 2.2 no longer flips 'worldtoscreen' with 'worldToNDC'
     // on read and write, so assets where 'worldtoscreen' was written with > 2.2
     // have 'worldToNDC' actually in the metadata, and OIIO < 2.2 would read
-    // and return 'worldToNDC' from the file in response to a request for 
+    // and return 'worldToNDC' from the file in response to a request for
     // 'worldtoscreen'. OIIO >= 2.2 no longer does either, so 'worldtoscreen'
     // gets written as 'worldtoscreen' and returned when asked for
     // 'worldtoscreen'. Issues only arise when trying to read 'worldtoscreen'
@@ -1200,7 +1200,7 @@ GetWorldToScreenFromImageMetadata(
     // semantic meanings, and should not be conflated. Unfortunately, users will
     // have to continue to conflate them for a while as assets transition into
     // vfx2022 (which uses OIIO 2.3). So we will need to check for both.
-    
+
     if (!img->GetMetadata(_imageMetadataTokens->worldtoscreen, &worldtoscreen)) {
         if (img->GetMetadata(_imageMetadataTokens->worldToNDC, &worldtoscreen)) {
             TF_WARN("The texture asset '%s' may have been authored by an "
@@ -1209,12 +1209,12 @@ GetWorldToScreenFromImageMetadata(
             file.c_str());
         } else {
             TF_WARN("The texture asset '%s' lacks a worldtoscreen matrix in "
-            "metadata. Cards draw mode may not appear as expected.", 
+            "metadata. Cards draw mode may not appear as expected.",
             file.c_str());
             return false;
         }
     }
-    
+
     if (worldtoscreen.IsHolding<std::vector<float>>()) {
         return _ConvertToMatrix(
             worldtoscreen.UncheckedGet<std::vector<float>>(), mat);
@@ -1360,7 +1360,7 @@ _CardsDataCache::_CardsData::_ComputePoints(const _SchemaValues &values)
     if (values.cardGeometry == UsdGeomTokens->fromTexture) {
         // This card geometry computes the points using the
         // metadata from the images.
-        
+
         static const GfVec3f pts[4] = {
             GfVec3f( 1, -1, 0),
             GfVec3f(-1, -1, 0),
@@ -1390,12 +1390,20 @@ _CardsDataCache::_CardsData::_ComputePoints(const _SchemaValues &values)
         // For cardGeometry = cross, we draw two quads with the same vertices
         // but different orientations. We cull the back so that we do not see
         // z-fighting.
-        
+
         // Start with the face of the cube parallel to the y-z-plane and with
         // outward-facing normal being the positive x-axis - or the quad parallel
         // to that face dividing the cube in two equal boxes.
         //
         const float x = values.cardGeometry == UsdGeomTokens->box ? 1.0f : 0.5f;
+
+        // We need a small gap between the + and - cards when using cross
+        // geometry to prevent coplanarity, which can cause floppiness in Prman.
+
+        const float eps =
+            values.cardGeometry == UsdGeomTokens->cross
+              ? 0x1.0p-23  // 1.0 * 2^-23, approx 1.19e-7
+              : 0.f;
         const GfVec3f pts[4] = {
             { x, 1, 1 },
             { x, 0, 1 },
@@ -1412,7 +1420,7 @@ _CardsDataCache::_CardsData::_ComputePoints(const _SchemaValues &values)
                     // Apply transform so that face is suitable for
                     // required axis.
                     points.push_back(
-                        _Transform(pts[k], i));
+                        _Transform(pts[k] + eps * GfVec3f::Axis(i), i));
                 }
             }
             if (values.hasFace[i + 3]) {
@@ -1422,7 +1430,7 @@ _CardsDataCache::_CardsData::_ComputePoints(const _SchemaValues &values)
                     // symmetry about the center of the box.
                     // We also reverse the order of the points.
                     points.push_back(
-                        one - _Transform(pts[3 - k], i));
+                        one - _Transform(pts[3 - k] + eps * GfVec3f::Axis(i), i));
                 }
             }
         }
@@ -1435,21 +1443,21 @@ _CardsDataCache::_CardsData::SubsetMap
 _CardsDataCache::_CardsData::_ComputeGeomSubsets(
     const _SchemaValues &values, const SdfPath &primPath)
 {
-    static const std::array<TfToken, 6> subsetNameTokens = 
+    static const std::array<TfToken, 6> subsetNameTokens =
         _AddAxesToNames("subset", "");
-    static const std::array<TfToken, 6> materialNameTokens = 
+    static const std::array<TfToken, 6> materialNameTokens =
         _AddAxesToNames("subsetMaterial", "");
-    
+
     SubsetMap subsets;
 
     // Do not generate subsets if there are no textures for any face.
-    // The entire standin prim will use the renderer's fallback material, which 
+    // The entire standin prim will use the renderer's fallback material, which
     // should pick up displayColor and displayOpacity.
     if (values.hasTexture.count()) {
 
         // The face index we need to build the geomSubset depends on the order
         // in which we created the faces when building the points and on which
-        // faces actually got created. So we need to iterate through the faces 
+        // faces actually got created. So we need to iterate through the faces
         // in the same order we used before, rather than the order of faces in
         // the values hasFace and hasTexture arrays. The index variable i in
         // this loop shall be the former, and vi will be the recovered index
@@ -1460,7 +1468,7 @@ _CardsDataCache::_CardsData::_ComputeGeomSubsets(
 
         // Token order in materialNameTokens and subsetNameTokens
         // is the same as in values, so use vi to access those too.
-        
+
         for (size_t i = 0; i < 6; i++) {
             const size_t vi = (i % 2 == 0 ? 0 : 3) + i / 2;
             if (!values.hasFace[vi]) {
@@ -1494,7 +1502,7 @@ _CardsDataCache::_CardsData::_ComputeGeomSubsets(
             };
 
             subsets.insert({
-                subsetNameTokens[vi], 
+                subsetNameTokens[vi],
                 HdRetainedContainerDataSource::New(
                     HdGeomSubsetSchema::GetSchemaToken(),
                     HdGeomSubsetSchema::Builder()
@@ -1610,7 +1618,7 @@ _CardsDataCache::_CardsData::_ComputeUVs(const _SchemaValues &values)
 HdDataSourceBaseHandle
 _ComputeConnection(const TfToken &nodeName, const TfToken &outputName)
 {
-    HdDataSourceBaseHandle srcs[] = { 
+    HdDataSourceBaseHandle srcs[] = {
         HdMaterialConnectionSchema::Builder()
             .SetUpstreamNodePath(
                 HdRetainedTypedSampledDataSource<TfToken>::New(nodeName))
@@ -1631,7 +1639,7 @@ _CardsTextureNode(const HdAssetPathDataSourceHandle &file,
     static const TfToken inputConnectionNames[] = { _UsdUVTextureTokens->st };
     const HdDataSourceBaseHandle inputConnections[] = {
         _ComputeConnection(
-            _materialNodeNameTokens->cardUvCoords, 
+            _materialNodeNameTokens->cardUvCoords,
             _UsdPrimvarReaderTokens->result) };
 
     static const TfToken paramsNames[] = {
@@ -1694,7 +1702,7 @@ _CardsSurfaceNode(const bool hasTexture, const HdDataSourceBaseHandle& fallback)
         HdMaterialNodeParameterSchema::Builder()
             .SetValue(HdRetainedTypedSampledDataSource<float>::New(0.1f))
             .Build();
-    static const HdDataSourceBaseHandle fallbackParam = 
+    static const HdDataSourceBaseHandle fallbackParam =
         HdMaterialNodeParameterSchema::Builder()
             .SetValue(HdSampledDataSource::Cast(fallback))
             .Build();
@@ -1767,14 +1775,14 @@ _CardsUVNode()
 const _MaterialsDict
 _CardsDataCache::_CardsData::_ComputeMaterials(const _SchemaValues &values)
 {
-    static const std::array<TfToken, 6> materialNameTokens = 
+    static const std::array<TfToken, 6> materialNameTokens =
         _AddAxesToNames("subsetMaterial", "");
 
-    const HdDataSourceBaseHandle vec4Fallback = 
+    const HdDataSourceBaseHandle vec4Fallback =
         _Vec4fFromVec3fDataSource::New(values.drawModeColor, 1.0f);
 
     _MaterialsDict materials;
-    
+
     // do not generate any materials if there are no textures for any face
     if (values.hasTexture.count()) {
         for (auto i = 0; i < 6; ++i) {
@@ -1814,7 +1822,7 @@ _CardsDataCache::_CardsData::_ComputeMaterials(const _SchemaValues &values)
                                 HdRetainedTypedSampledDataSource<TfToken>::New(
                                     HdMaterialTerminalTokens->surface))
                             .Build());
-                
+
                 networkNames.push_back(HdMaterialSchemaTokens->universalRenderContext);
                 networks.push_back(HdMaterialNetworkSchema::Builder()
                     .SetNodes(
@@ -1872,7 +1880,7 @@ public:
                    min[1] * (1.0f - pt[1]) + max[1] * pt[1],
                    min[2] * (1.0f - pt[2]) + max[2] * pt[2] };
         }
-        
+
         return pts;
     }
 
@@ -1928,7 +1936,7 @@ public:
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
         if (name == HdPrimvarsSchemaTokens->points) {
-            return 
+            return
                 _PrimvarDataSource::New(
                     _CardsPointsPrimvarValueDataSource::New(
                         _primSource, _dataCache),
@@ -1936,7 +1944,7 @@ public:
                     HdPrimvarSchemaTokens->point);
         }
         if (name == _primvarNameTokens->cardsUv) {
-            return 
+            return
                 _PrimvarDataSource::New(
                     _dataCache->GetUVs(),
                     HdPrimvarSchemaTokens->vertex,
@@ -1975,7 +1983,7 @@ public:
     TfTokenVector GetNames() override {
         static const TfTokenVector result = _Concat(
             _PrimDataSource::GetNames(),
-            { 
+            {
                 HdMeshSchemaTokens->mesh,
                 HdPrimvarsSchemaTokens->primvars,
                 HdExtentSchemaTokens->extent
@@ -2023,7 +2031,7 @@ private:
 HdDataSourceLocatorSet
 _ComputeMaterialColorInputLocators()
 {
-    static const auto nodes = 
+    static const auto nodes =
         HdDataSourceLocator(HdMaterialSchemaTokens->universalRenderContext)
             .Append(HdMaterialNetworkSchemaTokens->nodes);
     return {
@@ -2122,7 +2130,7 @@ public:
                 UsdImagingGeomModelSchemaTokens->cardTextureYNeg),
             UsdImagingGeomModelSchema::GetDefaultLocator().Append(
                 UsdImagingGeomModelSchemaTokens->cardTextureZNeg) };
-        
+
         // Blast the entire thing.
         if (dirtyLocators.Intersects(cardLocators)) {
             (*needsRefresh) = true;

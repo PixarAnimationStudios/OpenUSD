@@ -35,8 +35,8 @@ TestUsdSkelValidators()
     // keyword, our validators registered in usdSkelValidators are a subset of
     // the entire set.
     std::set<TfToken> validatorMetadataNameSet;
-    for (const UsdValidationValidatorMetadata &metadata : metadata) {
-        validatorMetadataNameSet.insert(metadata.name);
+    for (const UsdValidationValidatorMetadata &m : metadata) {
+        validatorMetadataNameSet.insert(m.name);
     }
 
     const std::set<TfToken> expectedValidatorNames

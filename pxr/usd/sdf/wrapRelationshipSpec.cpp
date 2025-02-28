@@ -39,11 +39,11 @@ void wrapRelationshipSpec()
         .def("__unused__", 
             SdfMakePySpecConstructor(&This::New,
                 "__init__(ownerPrimSpec, name, custom = True, variability = "
-                "Sd.VariabilityUniform)\n"
+                "Sdf.VariabilityUniform)\n"
                 "ownerPrimSpec: PrimSpec\n"
                 "name : string\n"
                 "custom : bool\n"
-                "varibility : Sd.Variability\n"),
+                "variability : Sdf.Variability\n"),
                 (arg("ownerPrimSpec"),
                  arg("name"),
                  arg("custom") = true,

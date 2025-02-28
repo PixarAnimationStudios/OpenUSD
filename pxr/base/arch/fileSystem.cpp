@@ -21,6 +21,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cerrno>
+#include <filesystem>
 #include <memory>
 #include <utility>
 
@@ -532,24 +533,35 @@ ArchGetFileName(FILE *file)
     }
     return result;
 #elif defined (ARCH_OS_WINDOWS)
-    static constexpr DWORD bufSize =
-        sizeof(FILE_NAME_INFO) + sizeof(WCHAR) * 4096;
-    HANDLE hfile = _FileToWinHANDLE(file);
-    auto fileNameInfo = reinterpret_cast<PFILE_NAME_INFO>(malloc(bufSize));
     string result;
-    if (GetFileInformationByHandleEx(
-            hfile, FileNameInfo, static_cast<void *>(fileNameInfo), bufSize)) {
+    std::vector<WCHAR> filePath(MAX_PATH);
+    HANDLE hfile = _FileToWinHANDLE(file);
+    DWORD dwSize = GetFinalPathNameByHandleW(hfile, filePath.data(), MAX_PATH, VOLUME_NAME_DOS);
+    // * dwSize == 0. Fail.
+    // * dwSize < MAX_PATH. Success, and dwSize returns the size without null terminator.
+    // * dwSize >= MAX_PATH. Buffer is too small, and dwSize returns the size with null terminator.
+    if (dwSize >= MAX_PATH) {
+        filePath.resize(dwSize);
+        dwSize = GetFinalPathNameByHandleW(hfile, filePath.data(), dwSize, VOLUME_NAME_DOS);
+    }
+
+    if (dwSize != 0) {
         size_t outSize = WideCharToMultiByte(
-            CP_UTF8, 0, fileNameInfo->FileName,
-            fileNameInfo->FileNameLength/sizeof(WCHAR),
+            CP_UTF8, 0, filePath.data(),
+            dwSize,
             NULL, 0, NULL, NULL);
         result.resize(outSize);
         WideCharToMultiByte(
-            CP_UTF8, 0, fileNameInfo->FileName,
-            fileNameInfo->FileNameLength/sizeof(WCHAR),
+            CP_UTF8, 0, filePath.data(),
+            -1,
             &result.front(), outSize, NULL, NULL);
+
+        // Strip path prefix if necessary.
+        // See https://learn.microsoft.com/en-us/dotnet/standard/io/file-path-formats
+        // for format of DOS device paths.
+        auto canonicalPath = std::filesystem::canonical(result);
+        result = canonicalPath.string();
     }
-    free(fileNameInfo);
     return result;                                        
 #else
 #error Unknown system architecture

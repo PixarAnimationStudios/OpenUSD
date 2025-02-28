@@ -192,6 +192,32 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
                     std::make_shared<HdStRenderPassState>(
                         renderPassShadowShader);
 
+                //                
+                // The pipeline state below merits explanation.
+                // Hardcoded state:
+                // 1. Depth clamping is enabled, which disables clipping for the
+                //    clip-space Z coordinate. So, objects between the shadow
+                //    camera and the near plane, and those behind the far plane
+                //    may not be clipped.
+                // 2, The depth range is set to [0.0, 0.99999] and not [0,1].
+                //    This is done to clamps the depth of objects behind the far
+                //    plane of the shadow frustum to 1. Note that the hardware
+                //    always clamps depth values to [0,1], even when using float
+                //    depth buffer formats. See ARB_depth_buffer_float.
+                // 
+                // Configurable state:
+                // a. Depth function: This goes hand-in-hand with the shadow
+                //    sampler's compare function, the depth range and the clear
+                //    value used. All of these are currently hardcoded!
+                //    XXX The simple lighting shader hardcodes the compare to
+                //        LEQUAL and the clear value to 1.0.
+                //        See HdStSimpleLightingShader::AllocateTextureHandles.
+                //
+                // b. Slope-scale bias:
+                //    This offsets the fragment's interpolated depth using the
+                //    slope and constant factors.
+                //    XXX Do positive values push away or towards the eye?
+                //     
                 renderPassState->SetDepthFunc(_params.depthFunc);
                 renderPassState->SetDepthBiasUseDefault(
                     !_params.depthBiasEnable);
@@ -277,6 +303,19 @@ void
 HdxShadowTask::Prepare(HdTaskContext* ctx,
                        HdRenderIndex* renderIndex)
 {
+    GlfSimpleLightingContextRefPtr lightingContext;
+    if (!_GetTaskContextData(ctx,
+            HdxTokens->lightingContext, &lightingContext)) {
+        return;
+    }
+
+    GlfSimpleShadowArrayRefPtr const shadows = lightingContext->GetShadows();
+    if (shadows->GetNumShadowMapPasses() == 0) {
+        // Bail if we are not generating shadow maps. We don't want to call
+        // Prepare on outdated AOV bindings.
+        return;
+    }
+
     HdResourceRegistrySharedPtr resourceRegistry =
         renderIndex->GetResourceRegistry();
 

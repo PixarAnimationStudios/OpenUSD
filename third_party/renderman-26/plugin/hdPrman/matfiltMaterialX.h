@@ -10,7 +10,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/materialNetworkInterface.h"
-#include "pxr/usd/ndr/declare.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

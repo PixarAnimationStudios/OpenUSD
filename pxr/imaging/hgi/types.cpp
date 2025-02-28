@@ -237,6 +237,33 @@ HgiGetComponentBaseFormat(
     return HgiFormatInvalid;
 }
 
+bool
+HgiIsFloatFormat(
+    const HgiFormat f)
+{
+    switch (HgiGetComponentBaseFormat(f)) {
+    case HgiFormatUNorm8:
+    case HgiFormatSNorm8:
+    case HgiFormatFloat16:
+    case HgiFormatFloat32:
+    case HgiFormatFloat32UInt8: // Unclear
+    case HgiFormatBC6FloatVec3:
+    case HgiFormatBC6UFloatVec3:
+    case HgiFormatPackedInt1010102:
+        return true;
+    case HgiFormatInt16:
+    case HgiFormatUInt16:
+    case HgiFormatInt32:
+        return false;
+    case HgiFormatInvalid:
+        TF_CODING_ERROR("Invalid Format");
+        return false;
+    default:
+        TF_CODING_ERROR("Missing Format");
+        return false;
+    }
+}
+
 uint16_t
 _ComputeNumMipLevels(const GfVec3i &dimensions)
 {

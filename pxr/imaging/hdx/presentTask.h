@@ -61,6 +61,8 @@ struct HdxPresentTaskParams
 class HdxPresentTask : public HdxTask
 {
 public:
+    using TaskParams = HdxPresentTaskParams;
+    
     // Returns true if the format is supported for presentation. This is useful
     // for upstream tasks to prepare the AOV data accordingly, and keeps the 
     // interop step simple.

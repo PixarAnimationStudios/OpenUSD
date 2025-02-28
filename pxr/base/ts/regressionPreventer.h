@@ -168,12 +168,6 @@ private:
         _Mode mode,
         bool limit);
 
-    // NOTE: we store knot data in two different ways.  When we need access to
-    // all the knot data, suitable for setting into the spline, we store a
-    // TsKnot, which has a copy of all the data, including typed data and custom
-    // data.  When we only need access to a copy of the time parameters, we
-    // store an un-subclassed Ts_KnotData.
-
     // PERFORMANCE NOTE: this class would probably be faster if it dealt
     // directly with Ts_SplineData and Ts_KnotData, rather than going through
     // TsSpline and TsKnot.
@@ -230,11 +224,11 @@ private:
         _WorkingKnotState(
             _KnotState *parentState);
 
-        // For batch use.  Stores only the proposed time parameters.  Has no
-        // parent state, and cannot be used to write to the spline.  The only
-        // output is 'working'.
+        // For batch use.  Stores only the original time parameters, which are
+        // used as the proposed parameters.  Has no parent state, and cannot be
+        // used to write to the spline.  The only output is 'working'.
         _WorkingKnotState(
-            const Ts_KnotData &original);
+            const Ts_KnotData &originalParams);
 
         // Write the proposed value to the spline, without adjustment.  Update
         // the parent state's 'current'.
@@ -248,8 +242,11 @@ private:
         // Link to whole-operation state.
         _KnotState* const parentState;
 
-        // Proposed knot.
+        // The proposed knot, if one was provided.
         const TsKnot proposedKnot;
+
+        // The proposed time parameters.
+        const Ts_KnotData proposedParams;
 
         // Copy of time parameters that we are modifying.
         Ts_KnotData workingParams;

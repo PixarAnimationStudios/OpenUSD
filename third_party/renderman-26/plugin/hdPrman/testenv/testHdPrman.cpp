@@ -67,7 +67,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (testCollection)
 
     ((renderContext, "ri"))
-    ((fixedSampleCount, "ri:light:fixedSampleCount"))
     ((threads, "ri:limits:threads"))
     ((jitter, "ri:hider:jitter"))
     ((minSamples, "ri:hider:minsamples"))
@@ -82,130 +81,6 @@ TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_USE_RENDER_SETTINGS_PRIM, true,
                       "Use the Render Settings Prim instead of the "
                       "UsdRenderSpec for testHdPrman.");
 
-TF_DECLARE_REF_PTRS(_FixedLightSamplesSceneIndex);
-/// \class _FixedLightSamplesSceneIndex
-///
-/// Scene index for setting fixed sample count on all lights that do not have
-/// an authored value. This helps eliminate variability between test runs.
-///
-class _FixedLightSamplesSceneIndex: public HdSingleInputFilteringSceneIndexBase
-{
-public:
-    static _FixedLightSamplesSceneIndexRefPtr New(
-        const HdSceneIndexBaseRefPtr& inputSceneIndex)
-    {
-        return TfCreateRefPtr(
-            new _FixedLightSamplesSceneIndex(inputSceneIndex));
-    }
-    HdSceneIndexPrim GetPrim(const SdfPath& primPath) const override
-    {
-        const HdSceneIndexPrim& prim = _GetInputSceneIndex()->GetPrim(primPath);
-        
-        // XXX: Conditions are in the negative to save indent space
-
-        // Return unmodified if not a light
-        if (!HdPrimTypeIsLight(prim.primType) && !_IsMeshLight(prim)) { 
-            return prim;
-        }
-
-        // Get the light shader network
-        const HdContainerDataSourceHandle& shaderDS = 
-            HdMaterialSchema::GetFromParent(prim.dataSource)
-            .GetMaterialNetwork(_tokens->renderContext)
-#if HD_API_VERSION >= 63
-            .GetContainer()
-#endif
-            ;
-        
-        // Return unmodified if no light shader network
-        if (!shaderDS) {
-            return prim;
-        }
-
-        // Interface with the light shader network
-        HdDataSourceMaterialNetworkInterface shaderNI(
-            primPath, shaderDS, prim.dataSource);
-        
-        // look up the light terminal connection
-        const auto lightTC = shaderNI.GetTerminalConnection(
-            HdMaterialTerminalTokens->light);
-        
-        // Return unmodified if no light terminal connection
-        if (!lightTC.first) { 
-            return prim;
-        }
-
-        // Get authored names
-        const TfTokenVector authoredNames = shaderNI
-            .GetAuthoredNodeParameterNames(lightTC.second.upstreamNodeName);
-        
-        // Return unmodified if authored
-        if (std::find(authoredNames.begin(), authoredNames.end(),
-            _tokens->fixedSampleCount) != authoredNames.end()) {
-            return prim;
-        }
-
-        // We have a valid light shader network with no authored value for
-        // inputs:ri:light:fixedSampleCount. Set it to 1.
-        shaderNI.SetNodeParameterValue(
-            lightTC.second.upstreamNodeName,
-            _tokens->fixedSampleCount,
-            VtValue(1));
-
-        // return the overlay
-        return {
-            prim.primType,
-            HdOverlayContainerDataSource::New(
-                HdRetainedContainerDataSource::New(
-                    HdMaterialSchemaTokens->material,
-                    HdRetainedContainerDataSource::New(
-                        _tokens->renderContext,
-                        shaderNI.Finish())),
-                prim.dataSource)
-        };
-    }
-    SdfPathVector GetChildPrimPaths(const SdfPath& primPath) const override
-    {
-        return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
-    }
-protected:
-    _FixedLightSamplesSceneIndex(const HdSceneIndexBaseRefPtr& inputSceneIndex)
-        : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
-    { }
-    void _PrimsAdded(
-        const HdSceneIndexBase& sender,
-        const HdSceneIndexObserver::AddedPrimEntries& entries) override
-    {
-        _SendPrimsAdded(entries);
-    }
-    void _PrimsRemoved(
-        const HdSceneIndexBase& sender,
-        const HdSceneIndexObserver::RemovedPrimEntries& entries) override
-    {
-        _SendPrimsRemoved(entries);
-    }
-    void _PrimsDirtied(
-        const HdSceneIndexBase& sender,
-        const HdSceneIndexObserver::DirtiedPrimEntries& entries) override
-    {
-        _SendPrimsDirtied(entries);
-    }
-private:
-    static bool _IsMeshLight(const HdSceneIndexPrim& prim)
-    {
-        if ((prim.primType == HdPrimTypeTokens->mesh) ||
-            (prim.primType == HdPrimTypeTokens->volume)) {
-            if (auto lightS = HdLightSchema::GetFromParent(prim.dataSource)) {
-                if (auto isLightDS = HdBoolDataSource::Cast(
-                    lightS.GetContainer()->Get(HdTokens->isLight))) {
-                    return isLightDS->GetTypedValue(0.0f);
-                }
-            }
-        }
-        return false;
-    }
-};
-
 static TfStopwatch s_timer_prmanRender;
 static const GfVec2i s_fallbackResolution(512, 512);
 static const TfToken s_fallbackConformPolicy(
@@ -218,7 +93,6 @@ static const TfToken s_fallbackConformPolicy(
 //
 struct _AppSceneIndices {
     HdsiSceneGlobalsSceneIndexRefPtr sceneGlobalsSceneIndex;
-    _FixedLightSamplesSceneIndexRefPtr fixedLightSamplesSceneIndex;
 };
 
 using _AppSceneIndicesSharedPtr = std::shared_ptr<_AppSceneIndices>;
@@ -735,26 +609,6 @@ _AppendSceneGlobalsSceneIndexCallback(
     return inputScene;
 }
 
-HdSceneIndexBaseRefPtr
-_AppendFixedLightSamplesSceneIndexCallback(
-    const std::string& renderInstanceId,
-    const HdSceneIndexBaseRefPtr& inputScene,
-    const HdContainerDataSourceHandle& inputArgs)
-{
-    _AppSceneIndicesSharedPtr appSceneIndices =
-        s_renderInstanceTracker->GetInstance(renderInstanceId);
-    
-    if (appSceneIndices) {
-        auto& flssi = appSceneIndices->fixedLightSamplesSceneIndex;
-        flssi = _FixedLightSamplesSceneIndex::New(inputScene);
-        flssi->SetDisplayName("Fixed Light Samples Scene Index");
-        return flssi;
-    }
-    TF_CODING_ERROR("Did not find appSceneIndices instance for %s",
-        renderInstanceId.c_str());
-    return inputScene;
-}
-
 void
 _RegisterApplicationSceneIndices()
 {
@@ -776,19 +630,6 @@ _RegisterApplicationSceneIndices()
             /* inputArgs = */ nullptr,
             insertionPhase,
             HdSceneIndexPluginRegistry::InsertionOrderAtStart
-        );
-    }
-
-    // FLSSI
-    {
-        // After mesh light resolving scene index
-        const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 115;
-        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-            std::string(),
-            _AppendFixedLightSamplesSceneIndexCallback,
-            /* inputArgs = */ nullptr,
-            insertionPhase,
-            HdSceneIndexPluginRegistry::InsertionOrderAtEnd
         );
     }
 }

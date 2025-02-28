@@ -29,7 +29,6 @@ void wrapUsdRenderTokens()
     _ADD_TOKEN(cls, dataType);
     _ADD_TOKEN(cls, dataWindowNDC);
     _ADD_TOKEN(cls, deepRaster);
-    _ADD_TOKEN(cls, denoiseEnable);
     _ADD_TOKEN(cls, disableDepthOfField);
     _ADD_TOKEN(cls, disableMotionBlur);
     _ADD_TOKEN(cls, expandAperture);

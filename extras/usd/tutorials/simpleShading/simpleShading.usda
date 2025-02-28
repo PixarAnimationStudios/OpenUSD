@@ -16,7 +16,7 @@ def Xform "TexModel" (
         int[] faceVertexIndices = [0, 1, 2, 3]
         rel material:binding = </TexModel/boardMat>
         point3f[] points = [(-430, -145, 0), (430, -145, 0), (430, 145, 0), (-430, 145, 0)]
-        texCoord2f[] primvars:st = [(0, 0), (2, 0), (2, 2), (0, 2)] (
+        texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
             interpolation = "varying"
         )
     }

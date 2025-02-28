@@ -13,6 +13,13 @@ By default, all metrics from `usdview --timing` and EXPLICIT_METRICS
 any additional custom scripts to `testusdview` in addition to the default
 EXPLICIT_METRICS, please provide the "--custom-metrics" command line argument.
 See the --help documentation for more info on `--custom-metrics` format.
+
+If there exists a file ending in `overrides.usda` in the same directory as the
+given asset file, the file will be supplied as `--sessionLayer` to usdview and
+testusdview invocations. This allows provision of specific variant selections,
+for example. The first file found by os.listdir will be used. Ensure there is
+only one file ending in `overrides.usda` in the asset directory to remove
+ambiguity.
 """
 import argparse
 import functools
@@ -73,7 +80,7 @@ def warmCache(assetPath):
         raise
 
 
-def measurePerformance(assetPath, traceDir, iteration):
+def measurePerformance(assetPath, traceDir, iteration, sessionLayer):
     """
     Run usdview to produce native timing information.
     """
@@ -83,7 +90,13 @@ def measurePerformance(assetPath, traceDir, iteration):
         traceFile = os.path.join(traceDir, f"usdview_{iteration}.trace")
         traceArgs = f"--traceToFile {traceFile} --traceFormat trace"
 
-    command = f"usdview --quitAfterStartup --timing {assetPath} {traceArgs}"
+    if sessionLayer:
+        sessionLayer = f"--sessionLayer {sessionLayer}"
+    else:
+        sessionLayer = ""
+
+    command = (f"usdview --quitAfterStartup --timing {sessionLayer} "
+               f"{assetPath} {traceArgs}")
     try:
         result = subprocess.run(command,
                                 shell=True,
@@ -97,10 +110,19 @@ def measurePerformance(assetPath, traceDir, iteration):
     return parseOutput(output, parseTiming, traceFile)
 
 
-def measureTestusdviewPerf(assetPath, testusdviewMetrics, traceDir, iteration):
+def measureTestusdviewPerf(assetPath,
+                           testusdviewMetrics,
+                           traceDir,
+                           iteration,
+                           sessionLayer):
     """
     Run timing scripts for metrics registered in `testusdviewMetrics`.
     """
+    if sessionLayer:
+        sessionLayer = f"--sessionLayer {sessionLayer}"
+    else:
+        sessionLayer = ""
+
     metrics = {}
     for script, metricExpressions in testusdviewMetrics.items():
         traceArgs = ""
@@ -112,7 +134,7 @@ def measureTestusdviewPerf(assetPath, testusdviewMetrics, traceDir, iteration):
             traceArgs = f"--traceToFile {traceFile} --traceFormat trace"
 
         command = (f"testusdview --norender {traceArgs} --testScript "
-                   f"{script} {assetPath}")
+                   f"{script} {sessionLayer} {assetPath}")
         try:
             result = subprocess.run(command,
                                     shell=True,
@@ -221,14 +243,26 @@ def run(assetPath, testusdviewMetrics, traceDir, iteration):
     """
     Collect performance metrics.
     """
+    # Supply session layer overrides, if found
+    assetDir = os.path.dirname(assetPath)
+    sessionLayer = None
+    for fname in os.listdir(assetDir):
+        if fname.endswith("overrides.usda"):
+            sessionLayer = os.path.join(assetDir, fname)
+            break
+
     # Measure `usdview --timing` native metrics
-    usdviewMetrics = measurePerformance(assetPath, traceDir, iteration)
+    usdviewMetrics = measurePerformance(assetPath,
+                                        traceDir,
+                                        iteration,
+                                        sessionLayer)
 
     # Measure custom `testusdview` metrics
     customMetrics = measureTestusdviewPerf(assetPath,
                                            testusdviewMetrics,
                                            traceDir,
-                                           iteration)
+                                           iteration,
+                                           sessionLayer)
 
     metrics = {}
     metrics.update(usdviewMetrics)

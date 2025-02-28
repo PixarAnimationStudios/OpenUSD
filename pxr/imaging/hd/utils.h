@@ -163,6 +163,10 @@ HdContainerDataSourceHandle
 ConvertHdMaterialNetworkToHdMaterialSchema(
     const HdMaterialNetworkMap &hdNetworkMap);
 
+HD_API
+HdContainerDataSourceHandle
+ConvertVtDictionaryToContainerDS(const VtDictionary &dict);
+
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

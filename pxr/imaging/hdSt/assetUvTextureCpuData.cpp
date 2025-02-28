@@ -119,15 +119,15 @@ HdStAssetUvTextureCpuData::HdStAssetUvTextureCpuData(
     const size_t memSize =
         lastMipInfo.byteOffset + lastMipInfo.byteSizePerLayer;
     {
-        TRACE_FUNCTION_SCOPE("allocating memory");
+        TRACE_SCOPE("Allocating memory for UV texture");
         _rawBuffer =
             std::make_unique<unsigned char[]>(memSize);
     }
 
     {
-        // Read the actual mips from each image and store them in a big buffer of
-        // contiguous memory.
-        TRACE_FUNCTION_SCOPE("filling in image data");
+        // Read the actual mips from each image and store them in a big buffer
+        // of contiguous memory.
+        TRACE_SCOPE_DYNAMIC("Streaming UV texture data for " + filePath);
 
         for (size_t i = 0; i < numUsableMips; ++i) {
             if (!HdStTextureUtils::ReadAndConvertImage(

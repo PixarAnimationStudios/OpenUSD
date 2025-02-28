@@ -236,19 +236,17 @@ pxr_register_test(testUsdChecker18
 #    EXPECTED_RETURN_CODE 1
 #)
 
-# rootPackageOnly is not supported on new useNewValidationFramework, as it will
-# require adding its own validator, see notes in usdchecker.cpp
+# "rootPackageOnly" won't report validation errors within the subpackages, so it should pass
+pxr_register_test(testUsdChecker20
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useNewValidationFramework --arkit --rootPackageOnly bad/sceneWithInvalidPackage.usda"
+    EXPECTED_RETURN_CODE 0
+)
 
-# Adding a "rootPackageOnly" option to the command line will make the clean files
-#pxr_register_test(testUsdChecker20
-#    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useNewValidationFramework --arkit --rootPackageOnly clean/clean_flat.usdz"
-#    EXPECTED_RETURN_CODE 0
-#)
-
-#pxr_register_test(testUsdChecker21
-#    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useNewValidationFramework --arkit clean/clean_flat.usdz"
-#    EXPECTED_RETURN_CODE 1
-#)
+# Removing rootPackageOnly, should fail as the subpackage has invalid content
+pxr_register_test(testUsdChecker21
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker --useNewValidationFramework --arkit bad/sceneWithInvalidPackage.usda"
+    EXPECTED_RETURN_CODE 1
+)
 
 pxr_install_test_dir(
     SRC testenv/testUsdChecker

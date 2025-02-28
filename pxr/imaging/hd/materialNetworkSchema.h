@@ -37,6 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (nodes) \
     (terminals) \
     (interfaceMappings) \
+    (config) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdMaterialNetworkSchemaTokens, HD_API,
     HD_MATERIAL_NETWORK_SCHEMA_TOKENS);
@@ -107,7 +108,10 @@ public:
     /// parameters. Each mapped material node parameter is a container defined
     /// by the InterfaceMappings schema.
     HD_API
-    HdMaterialInterfaceMappingsContainerSchema GetInterfaceMappings() const; 
+    HdMaterialInterfaceMappingsContainerSchema GetInterfaceMappings() const;
+
+    HD_API
+    HdSampledDataSourceContainerSchema GetConfig() const; 
 
     /// @} 
 
@@ -126,7 +130,8 @@ public:
     BuildRetained(
         const HdContainerDataSourceHandle &nodes,
         const HdContainerDataSourceHandle &terminals,
-        const HdContainerDataSourceHandle &interfaceMappings
+        const HdContainerDataSourceHandle &interfaceMappings,
+        const HdContainerDataSourceHandle &config
     );
 
     /// \class HdMaterialNetworkSchema::Builder
@@ -147,6 +152,9 @@ public:
         HD_API
         Builder &SetInterfaceMappings(
             const HdContainerDataSourceHandle &interfaceMappings);
+        HD_API
+        Builder &SetConfig(
+            const HdContainerDataSourceHandle &config);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -156,6 +164,7 @@ public:
         HdContainerDataSourceHandle _nodes;
         HdContainerDataSourceHandle _terminals;
         HdContainerDataSourceHandle _interfaceMappings;
+        HdContainerDataSourceHandle _config;
 
     };
 

@@ -28,11 +28,21 @@ void wrapUsdShadeShaderDefUtils()
              (arg("shaderDef"), arg("sourceUri")),
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetNodeDiscoveryResults")
+        .def("GetDiscoveryResults", 
+             &UsdShadeShaderDefUtils::GetDiscoveryResults,
+             (arg("shaderDef"), arg("sourceUri")),
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetDiscoveryResults")
         .def("GetShaderProperties", 
              &UsdShadeShaderDefUtils::GetShaderProperties,
              arg("shaderDef"),
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetShaderProperties")
+        .def("GetProperties", 
+             &UsdShadeShaderDefUtils::GetProperties,
+             arg("shaderDef"),
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetProperties")
         .def("GetPrimvarNamesMetadataString", 
              &UsdShadeShaderDefUtils::GetPrimvarNamesMetadataString,
              (arg("metadata"), arg("shaderDef")))

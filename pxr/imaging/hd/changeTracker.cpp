@@ -401,6 +401,26 @@ HdChangeTracker::MarkTaskDirty(SdfPath const& id, HdDirtyBits bits)
         return;
     }
 
+    if (_emulationSceneIndex) {
+        HdDataSourceLocatorSet locators;
+        HdDirtyBitsTranslator::TaskDirtyBitsToLocatorSet(
+            bits, &locators);
+        if (!locators.IsEmpty()) {
+            _emulationSceneIndex->DirtyPrims({{id, locators}});
+        }
+    } else {
+        _MarkTaskDirty(id, bits);
+    }
+}
+
+void
+HdChangeTracker::_MarkTaskDirty(SdfPath const& id, HdDirtyBits bits)
+{
+    if (ARCH_UNLIKELY(bits == HdChangeTracker::Clean)) {
+        TF_CODING_ERROR("MarkTaskDirty called with bits == clean!");
+        return;
+    }
+
     _IDStateMap::iterator it = _taskState.find(id);
     if (!TF_VERIFY(it != _taskState.end(), "Task Id = %s", id.GetText())) {
         return;

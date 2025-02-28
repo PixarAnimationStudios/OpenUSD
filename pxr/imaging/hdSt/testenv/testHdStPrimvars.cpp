@@ -40,15 +40,26 @@ PrintPerfCounter(HdPerfLog &perfLog, TfToken const &token)
 static void
 Dump(std::string const &message, VtDictionary dict, HdPerfLog &perfLog)
 {
-    // Get the keys in sorted order.  This ensures consistent reporting
+    // These vary between platforms and runs, we don't want them in the diff.
+    static const std::unordered_set<std::string> skippedKeys = {
+        HdTokens->drawingShader,
+        HdTokens->computeShader,
+        HdPerfTokens->gpuMemoryUsed,
+        HdPerfTokens->uboSize,
+        HdPerfTokens->ssboSize,
+    };
+
+    // Get the keys in sorted order. This ensures consistent reporting
     // regardless of the sort order of dict.
     std::set<std::string> keys;
-    for (auto v: dict) {
-        keys.insert(v.first);
+    for (const auto& [key, _] : dict) {
+        if (!skippedKeys.count(key)) {
+            keys.insert(key);
+        }
     }
 
     std::cout << message;
-    for (auto key: keys) {
+    for (const auto& key: keys) {
         std::cout << key << ", ";
         const VtValue& value = dict[key];
         if (value.IsHolding<size_t>()) {
@@ -231,4 +242,3 @@ int main()
         return EXIT_FAILURE;
     }
 }
-

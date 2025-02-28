@@ -41,24 +41,32 @@ namespace {
 // data flow.
 //
 HdContainerDataSourceHandle
-_BuildFallbackSettings()
+_BuildFallbackNamespacedSettingsDataSource()
 {
-    return nullptr;
+    return HdRetainedContainerDataSource::New();
+}
+
+HdContainerDataSourceHandle
+_BuildFallbackRenderSettingsSchemaDataSource()
+{
+    // Return a valid data source to configure the scene index to add the
+    // fallback prim if necessary.
+    return
+        HdRenderSettingsSchema::Builder()
+        .SetNamespacedSettings(_BuildFallbackNamespacedSettingsDataSource())
+        .SetActive(
+            HdRetainedTypedSampledDataSource<bool>::New(false))
+        // XXX: Add fallback render products, color space, purposes, etc.
+        .Build();
 }
 
 HdContainerDataSourceHandle
 _BuildFallbackRenderSettingsPrimDataSource()
 {
-    // Return a valid data source to configure the scene index to add the
-    // fallback prim if necessary.
-    // For now, we populate the active field to do so.
     return
-        HdRenderSettingsSchema::Builder()
-        .SetNamespacedSettings(_BuildFallbackSettings())
-        .SetActive(
-            HdRetainedTypedSampledDataSource<bool>::New(false))
-        // XXX Add fallback render products, color space, purposes, etc.
-        .Build();
+        HdRetainedContainerDataSource::New(
+            HdRenderSettingsSchemaTokens->renderSettings,
+            _BuildFallbackRenderSettingsSchemaDataSource());
 }
 
 }

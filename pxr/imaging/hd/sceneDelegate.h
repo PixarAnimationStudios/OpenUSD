@@ -223,6 +223,7 @@ struct HdModelDrawMode {
     , cardGeometry(HdModelDrawModeTokens->cross)
     {}
 
+    /// DrawModeColor is specified in the rendering color space
     HdModelDrawMode(
         TfToken const& drawMode_,
         bool applyDrawMode_=false,
@@ -524,10 +525,18 @@ public:
     // -----------------------------------------------------------------------//
 
     /// Store up to \a maxSampleCount transform samples in \a *sampleValues.
-    /// Returns the union of the authored samples and the boundaries 
-    /// of the current camera shutter interval. If this number is greater
-    /// than maxSampleCount, you might want to call this function again 
-    /// to get all the authored data.
+    /// Fills the given \a sampleValues and \a sampleTimes arrays with the
+    /// authored samples  that contribute to the delegate's current shutter
+    /// interval and their frame-relative times. If a shutter interval boundary
+    /// falls between authored sample times, the bracketing sample(s) are
+    /// included, which will lie outside the shutter interval. It is the
+    /// caller's responsibility to interpolate the bracketing samples to the
+    /// shutter interval if desired.
+    ///
+    /// If the number of contributing sample times is greater than
+    /// maxSampleCount, you might want to call this function again to get all
+    /// the authored data.
+    ///
     /// Sample times are relative to the scene delegate's current time.
     /// \see GetTransform()
     HD_API
@@ -537,9 +546,9 @@ public:
                     float *sampleTimes, 
                     GfMatrix4d *sampleValues);
 
-    // An overload of SampleTransform that explicitly takes the startTime
-    // and endTime rather than relying on the scene delegate having state
-    // about what the source of the current shutter interval should be.
+    /// An overload of SampleTransform that takes frame-relative \a startTime
+    /// and \a endTime, rather than relying on the scene delegate's internal
+    /// state to define the shutter interval.
     HD_API
     virtual size_t
     SampleTransform(SdfPath const & id,
@@ -549,17 +558,18 @@ public:
                     float *sampleTimes,
                     GfMatrix4d *sampleValues);
 
-    /// Convenience form of SampleTransform() that takes an HdTimeSampleArray.
-    /// This function returns the union of the authored transform samples 
-    /// and the boundaries of the current camera shutter interval.
+    /// Convenience form of SampleTransform that takes an HdTimeSampleArray.
+    /// This function fills the given HdTimeSampleArray with the contributing
+    /// samples and their times for the delegate's current shutter interval.
     template <unsigned int CAPACITY>
     void
     SampleTransform(SdfPath const & id,
                     HdTimeSampleArray<GfMatrix4d, CAPACITY> *sa);
 
-    /// Convenience form of SampleTransform() that takes an HdTimeSampleArray.
-    /// This function returns the union of the authored transform samples 
-    /// and the boundaries of the current camera shutter interval.
+    /// Convenience form of SampleTransform that takes an explict interval and
+    /// an HdTimeSampleArray. This function fills the given HdTimeSampleArray
+    /// with the contributing samples and their times for the given frame-
+    /// relative shutter interval.
     template <unsigned int CAPACITY>
     void
     SampleTransform(SdfPath const & id,
@@ -568,10 +578,18 @@ public:
                     HdTimeSampleArray<GfMatrix4d, CAPACITY> *sa);
 
     /// Store up to \a maxSampleCount transform samples in \a *sampleValues.
-    /// Returns the union of the authored samples and the boundaries 
-    /// of the current camera shutter interval. If this number is greater
-    /// than maxSampleCount, you might want to call this function again 
-    /// to get all the authored data.
+    /// Fills the given \a sampleValues and \a sampleTimes arrays with the
+    /// authored samples  that contribute to the delegate's current shutter
+    /// interval and their frame-relative times. If a shutter interval boundary
+    /// falls between authored sample times, the bracketing sample(s) are
+    /// included, which will lie outside the shutter interval. It is the
+    /// caller's responsibility to interpolate the bracketing samples to the
+    /// shutter interval if desired.
+    ///
+    /// If the number of contributing sample times is greater than
+    /// maxSampleCount, you might want to call this function again to get all
+    /// the authored data.
+    ///
     /// Sample times are relative to the scene delegate's current time.
     /// \see GetInstancerTransform()
     HD_API
@@ -581,10 +599,9 @@ public:
                              float *sampleTimes,
                              GfMatrix4d *sampleValues);
 
-    // An overload of SampleInstancerTransform that explicitly takes the
-    // startTime and endTime rather than relying on the scene delegate
-    // having state about what the source of the current shutter interval
-    // should be.
+    /// An overload of SampleInstancerTransform that takes frame-relative
+    /// \a startTime and \a endTime, rather than relying on the scene delegate's
+    /// internal state to define the shutter interval.
     HD_API
     virtual size_t
     SampleInstancerTransform(SdfPath const &instancerId,
@@ -594,19 +611,19 @@ public:
                              float *sampleTimes,
                              GfMatrix4d *sampleValues);
 
-    /// Convenience form of SampleInstancerTransform()
-    /// that takes an HdTimeSampleArray.
-    /// This function returns the union of the authored samples 
-    /// and the boundaries of the current camera shutter interval.
+    /// Convenience form of SampleInstancerTransform that takes an
+    /// HdTimeSampleArray. This function fills the given HdTimeSampleArray with
+    /// the contributing samples and their times for the delegate's current
+    /// shutter interval.
     template <unsigned int CAPACITY>
     void
     SampleInstancerTransform(SdfPath const &instancerId,
                              HdTimeSampleArray<GfMatrix4d, CAPACITY> *sa);
 
-    /// Convenience form of SampleInstancerTransform()
-    /// that takes an HdTimeSampleArray.
-    /// This function returns the union of the authored samples 
-    /// and the boundaries of the current camera shutter interval.
+    /// Convenience form of SampleInstancerTransform that takes an explict
+    /// interval and an HdTimeSampleArray. This function fills the given
+    /// HdTimeSampleArray with the contributing samples and their times for the
+    /// given frame-relative shutter interval.
     template <unsigned int CAPACITY>
     void
     SampleInstancerTransform(SdfPath const &instancerId,
@@ -614,10 +631,17 @@ public:
                              HdTimeSampleArray<GfMatrix4d, CAPACITY> *sa);
 
     /// Store up to \a maxSampleCount primvar samples in \a *samplesValues.
-    /// Returns the union of the authored samples and the boundaries 
-    /// of the current camera shutter interval. If this number is greater
-    /// than maxSampleCount, you might want to call this function again 
-    /// to get all the authored data.
+    /// Fills the given \a sampleValues and \a sampleTimes arrays with the
+    /// authored samples  that contribute to the delegate's current shutter
+    /// interval and their frame-relative times. If a shutter interval boundary
+    /// falls between authored sample times, the bracketing sample(s) are
+    /// included, which will lie outside the shutter interval. It is the
+    /// caller's responsibility to interpolate the bracketing samples to the
+    /// shutter interval if desired.
+    ///
+    /// If the number of contributing sample times is greater than
+    /// maxSampleCount, you might want to call this function again to get all
+    /// the authored data.
     ///
     /// Sample values that are array-valued will have a size described
     /// by the HdPrimvarDescriptor as applied to the toplogy.
@@ -638,9 +662,9 @@ public:
                   float *sampleTimes, 
                   VtValue *sampleValues);
 
-    // An overload of SamplePrimvar that explicitly takes the startTime
-    // and endTime rather than relying on the scene delegate having state
-    // about what the source of the current shutter interval should be.
+    /// An overload of SamplePrimvar that takes frame-relative \a startTime and
+    /// \a endTime, rather than relying on the scene delegate's internal state
+    /// to define the shutter interval.
     HD_API
     virtual size_t
     SamplePrimvar(SdfPath const& id, 
@@ -651,18 +675,19 @@ public:
                   float *sampleTimes, 
                   VtValue *sampleValues);
 
-    /// Convenience form of SamplePrimvar() that takes an HdTimeSampleArray.
-    /// This function returns the union of the authored samples 
-    /// and the boundaries of the current camera shutter interval.
+    /// Convenience form of SamplePrimvar that takes an HdTimeSampleArray.
+    /// This function fills the given HdTimeSampleArray with the contributing
+    /// samples and their times for the delegate's current shutter interval.
     template <unsigned int CAPACITY>
     void 
     SamplePrimvar(SdfPath const &id, 
                   TfToken const& key,
                   HdTimeSampleArray<VtValue, CAPACITY> *sa);
 
-    /// Convenience form of SamplePrimvar() that takes an HdTimeSampleArray.
-    /// This function returns the union of the authored samples 
-    /// and the boundaries of the current camera shutter interval.
+    /// Convenience form of SamplePrimvar that takes an explict interval and
+    /// an HdTimeSampleArray. This function fills the given HdTimeSampleArray
+    /// with the contributing samples and their times for the given frame-
+    /// relative shutter interval.
     template <unsigned int CAPACITY>
     void 
     SamplePrimvar(SdfPath const &id, 
@@ -670,11 +695,11 @@ public:
                   float startTime,
                   float endTime,
                   HdTimeSampleArray<VtValue, CAPACITY> *sa);
-    
-    /// SamplePrimvar() for getting an unflattened primvar and its indices. If 
-    /// \a *sampleIndices is not nullptr and the primvar has indices, it will 
-    /// return unflattened primvar samples in \a *sampleValues and the primvar's 
-    /// sampled indices in \a *sampleIndices, clearing the \a *sampleIndices 
+
+    /// SamplePrimvar() for getting an unflattened primvar and its indices. If
+    /// \a *sampleIndices is not nullptr and the primvar has indices, it will
+    /// return unflattened primvar samples in \a *sampleValues and the primvar's
+    /// sampled indices in \a *sampleIndices, clearing the \a *sampleIndices
     /// array if the primvar is not indexed.
     HD_API
     virtual size_t
@@ -685,9 +710,9 @@ public:
                          VtValue *sampleValues,
                          VtIntArray *sampleIndices);
 
-    // An overload of SampleIndexedPrimvar that explicitly takes the startTime
-    // and endTime rather than relying on the scene delegate having state
-    // about what the source of the current shutter interval should be.
+    /// An overload of SampleIndexedPrimvar that takes frame-relative
+    /// \a startTime and \a endTime, rather than relying on the scene delegate's
+    /// internal state to define the shutter interval.
     HD_API
     virtual size_t
     SampleIndexedPrimvar(SdfPath const& id, 
@@ -698,20 +723,21 @@ public:
                          float *sampleTimes, 
                          VtValue *sampleValues,
                          VtIntArray *sampleIndices);
-    
-    
-    /// Convenience form of SampleIndexedPrimvar() that takes 
-    /// HdTimeSampleArrays. This function returns the union of the authored 
-    /// samples and the boundaries of the current camera shutter interval.
+
+    /// Convenience form of SampleIndexedPrimvar that takes an
+    /// HdIndexedTimeSampleArray. This function fills the given
+    /// HdIndexedTimeSampleArray with the contributing samples and their times
+    /// for the delegate's current shutter interval.
     template <unsigned int CAPACITY>
     void 
     SampleIndexedPrimvar(SdfPath const &id, 
                          TfToken const& key,
                          HdIndexedTimeSampleArray<VtValue, CAPACITY> *sa);
 
-    /// Convenience form of SampleIndexedPrimvar() that takes 
-    /// HdTimeSampleArrays. This function returns the union of the authored 
-    /// samples and the boundaries of the current camera shutter interval.
+    /// Convenience form of SampleIndexedPrimvar that takes an explict interval
+    /// and an HdIndexedTimeSampleArray. This function fills the given
+    /// HdIndexedTimeSampleArray with the contributing samples and their times
+    /// for the given frame-relative shutter interval.
     template <unsigned int CAPACITY>
     void 
     SampleIndexedPrimvar(SdfPath const &id, 

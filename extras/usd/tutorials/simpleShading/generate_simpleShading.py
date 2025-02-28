@@ -32,7 +32,7 @@ billboard.CreateExtentAttr([(-430, -145, 0), (430, 145, 0)])
 texCoords = UsdGeom.PrimvarsAPI(billboard).CreatePrimvar("st", 
                                     Sdf.ValueTypeNames.TexCoord2fArray, 
                                     UsdGeom.Tokens.varying)
-texCoords.Set([(0, 0), (2, 0), (2,2), (0, 2)])
+texCoords.Set([(0, 0), (1, 0), (1,1), (0, 1)])
 
 # Now make a Material that contains a PBR preview surface, a texture reader,
 # and a primvar reader to fetch the texture coordinate from the geometry

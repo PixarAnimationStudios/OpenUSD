@@ -1,11 +1,11 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef PXR_USD_USDMTLX_API_H
-#define PXR_USD_USDMTLX_API_H
+#ifndef USDMTLX_API_H
+#define USDMTLX_API_H
 
 #include "pxr/base/arch/export.h"
 

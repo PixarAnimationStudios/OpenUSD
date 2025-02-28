@@ -80,6 +80,16 @@ def Shader "UsdPreviewSurface" (
     float inputs:opacity = 1.0 (
         doc = """Opacity of the material."""
     )
+ 
+    token inputs:opacityMode = "transparent" (
+        allowedTokens = ["transparent", "presence"]
+        connectability = "interfaceOnly"
+        doc = """This is used to determine how opacity is interpreted when its 
+        value is zero. When set to "transparent" the material will still 
+        receive a lighting resoponse, "presence" results in no lighting 
+        response. Note that when opacityThreshold is non-zero, opacityMode is 
+        ignored."""
+    )
 
     float inputs:opacityThreshold = 0.0 (
         connectability = "interfaceOnly"

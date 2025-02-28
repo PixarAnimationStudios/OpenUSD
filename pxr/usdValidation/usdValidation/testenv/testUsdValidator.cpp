@@ -8,6 +8,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usdValidation/usdValidation/error.h"
+#include "pxr/usdValidation/usdValidation/timeRange.h"
 #include "pxr/usdValidation/usdValidation/validator.h"
 
 #include <iostream>
@@ -56,7 +57,8 @@ TestSimpleValidator()
         "TestSimpleStageValidator.ErrorOnStage");
     // Simple StageValidator
     UsdValidateStageTaskFn validateStageTaskFn
-        = [errorName](const UsdStageRefPtr &usdStage) {
+        = [errorName](const UsdStageRefPtr &usdStage,
+                      const UsdValidationTimeRange &/*timeRange*/) {
               return UsdValidationErrorVector { UsdValidationError(
                   errorName, UsdValidationErrorType::Error,
                   { UsdValidationErrorSite(usdStage,
@@ -104,8 +106,9 @@ TestSimpleValidator()
 
     // Simple SchemaTypeValidator
     const TfToken errorName2("ErrorOnSchemaType");
-    UsdValidatePrimTaskFn validatePrimTaskFn = [errorName2](
-                                                   const UsdPrim &usdPrim) {
+    UsdValidatePrimTaskFn validatePrimTaskFn = 
+        [errorName2](const UsdPrim &usdPrim, 
+                     const UsdValidationTimeRange &/*timeRange*/) {
         return UsdValidationErrorVector { UsdValidationError(
             errorName2, UsdValidationErrorType::Error,
             { UsdValidationErrorSite(usdPrim.GetStage(), usdPrim.GetPath()) },

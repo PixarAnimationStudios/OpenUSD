@@ -30,6 +30,8 @@ pxr_build_test(testUsdUtilsValidators
         tf
         sdf
         usd
+        usdGeom
+        usdShade
         usdValidation
         usdUtils
         usdUtilsValidators

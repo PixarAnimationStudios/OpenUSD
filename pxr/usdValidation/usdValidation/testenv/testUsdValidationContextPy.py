@@ -7,7 +7,7 @@
 
 import os, unittest
 
-from pxr import Plug, Sdf, Tf, Usd, UsdValidation
+from pxr import Plug, Sdf, Tf, Gf, Usd, UsdValidation
 
 class TestUsdValidationContextPy(unittest.TestCase):
 
@@ -322,6 +322,79 @@ class TestUsdValidationContextPy(unittest.TestCase):
                 self._TestError7(error)
             else:
                 self.assertFalse(True)
+
+        layerWithTimeCodes = """#usda 1.0
+        def "World"
+        {
+            def BaseTypeTest "baseType"
+            {
+                float attr = 3
+                float attr.timeSamples = {
+                    1: 1,
+                    2: 2,
+                    3: 3
+                }
+            }
+        }
+        """
+        # Create a ValidationContext with Test3 and Test4 validators
+        validators = \
+            UsdValidation.ValidationRegistry().GetOrLoadValidatorsByName(
+            ["testUsdValidationContextValidatorsPlugin:Test3",
+             "testUsdValidationContextValidatorsPlugin:Test4"])
+        context = UsdValidation.ValidationContext(validators)
+        testLayer = Sdf.Layer.CreateAnonymous(".usda")
+        testLayer.ImportFromString(layerWithTimeCodes)
+        stage = Usd.Stage.Open(testLayer)
+        # Validate Stage with ProxyPrim traversal predicate and default
+        # UsdValidationTimeRange which is full interval.
+        errors = context.Validate(stage)
+        # Refer the implementation for Test3 in 
+        # testUsdValidationContextValidators.cpp:
+        # 1 - error for Test4 testBaseType prim type validator which runs on
+        #   the baseType prim. (This is not a time dependent validator).
+        # 1 - error for Test3 generic prim validator which runs on the /World
+        #   prim with full interval + default but since no attributes on 
+        #   /World, an error is reported for that in the implementation.
+        # 3 - errors for Test3 generic prim validator which runs on the 
+        #   /World/baseType prim with full interval, that is 1 error for each
+        #   time sample on the attr attribute.
+        self.assertEqual(len(errors), 6)
+
+        # Also Validate the same stage but with only 
+        # GfInterval::GetFullInterval, which does not include 
+        # UsdTimeCode::Default
+        errors = context.Validate(stage, UsdValidation.ValidationTimeRange(
+            Gf.Interval.GetFullInterval(), False));
+        # 1 - error for Test4 testBaseType prim type validator which runs on
+        #   the baseType prim. (This is not a time dependent validator).
+        # 3 - errors for Test3 generic prim validator which runs on the 
+        #   /World/baseType prim with full interval, that is 1 error for each
+        #   time sample on the attr attribute.
+        self.assertEqual(len(errors), 4)
+
+        # Also Validate the /World/baseType prim which has attributes with
+        # timeSamples but with a TimeRange which has an empty interval but
+        # includes UsdTimeCode::Default.
+        prims = [stage.GetPrimAtPath("/World/baseType")]
+        errors = context.Validate(prims, UsdValidation.ValidationTimeRange(
+            Gf.Interval(), True));
+        # 1 error for Test4 testBaseType prim type validator which runs on
+        #   the baseType prim. (This is not a time dependent validator).
+        # 1 error for Test3 generic prim validator which runs on the
+        #   /World/baseType prim with empty interval but includes 
+        #   UsdTimeCode::Default. (The time dependent validator implementation 
+        #   has a check for this case to emulate uniform attribute validation 
+        #   on a prim which also has time dependent attributes.)
+        self.assertEqual(len(errors), 2)
+
+        # Validate specific /World/baseType prim at times 1 and 2.
+        errors = context.Validate(prims, [Usd.TimeCode(1), Usd.TimeCode(2)])
+        # 1 error for Test4 (non time dependent validator) testBaseType prim 
+        # type validator which runs on the baseType prim.
+        # 2 errors for Test3 generic prim validator which runs on the
+        #  /World/baseType prim at timeCode 1 and 2, specified times.
+        self.assertEqual(len(errors), 3)
 
 if __name__ == "__main__":
     unittest.main()

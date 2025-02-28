@@ -14,6 +14,7 @@
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usdValidation/usdValidation/registry.h"
+#include "pxr/usdValidation/usdValidation/timeRange.h"
 #include "pxr/usdValidation/usdValidation/validator.h"
 
 #include <unordered_set>
@@ -297,8 +298,10 @@ UsdValidationContext::Validate(const SdfLayerHandle &layer) const
 }
 
 UsdValidationErrorVector
-UsdValidationContext::Validate(const UsdStagePtr &stage,
-                               const Usd_PrimFlagsPredicate &predicate) const
+UsdValidationContext::Validate(
+    const UsdStagePtr &stage,
+    const Usd_PrimFlagsPredicate &predicate,
+    const UsdValidationTimeRange &timeRange) const
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage provided to validate.");
@@ -308,10 +311,19 @@ UsdValidationContext::Validate(const UsdStagePtr &stage,
     UsdValidationErrorVector errors;
     std::mutex errorsMutex;
     WorkWithScopedDispatcher([this, &stage, &errors, &errorsMutex,
-                              &predicate](WorkDispatcher &dispatcher) {
-        _ValidateStage(dispatcher, stage, &errors, &errorsMutex, predicate);
+                              &predicate, &timeRange](
+                             WorkDispatcher &dispatcher) {
+        _ValidateStage(dispatcher, stage, &errors, &errorsMutex, predicate,
+                       timeRange);
     });
     return errors;
+}
+
+UsdValidationErrorVector
+UsdValidationContext::Validate(const UsdStagePtr &stage,
+                               const Usd_PrimFlagsPredicate &predicate) const
+{
+    return Validate(stage, predicate, UsdValidationTimeRange());
 }
 
 UsdValidationErrorVector
@@ -321,26 +333,84 @@ UsdValidationContext::Validate(const UsdStagePtr &stage) const
 }
 
 UsdValidationErrorVector
-UsdValidationContext::Validate(const std::vector<UsdPrim> &prims) const
+UsdValidationContext::Validate(
+    const UsdStagePtr &stage,
+    const UsdValidationTimeRange &timeRange) const
 {
+    return Validate(stage, UsdTraverseInstanceProxies(UsdPrimDefaultPredicate),
+                    timeRange);
+}
+
+UsdValidationErrorVector
+UsdValidationContext::Validate(const UsdStagePtr &stage,
+                               const Usd_PrimFlagsPredicate &predicate,
+                               const std::vector<UsdTimeCode> &timeCodes) const
+{
+    if (!stage) {
+        TF_CODING_ERROR("Invalid stage provided to validate.");
+        return {};
+    }
+
     UsdValidationErrorVector errors;
     std::mutex errorsMutex;
     WorkWithScopedDispatcher(
-        [this, &prims, &errors, &errorsMutex](WorkDispatcher &dispatcher) {
-            _ValidatePrims(dispatcher, prims, &errors, &errorsMutex);
-        });
+        [this, &stage, &errors, &errorsMutex, &predicate, timeCodes](
+            WorkDispatcher &dispatcher) {
+        _ValidateStage(dispatcher, stage, &errors, &errorsMutex, predicate,
+                       timeCodes);
+    });
+
     return errors;
 }
 
 UsdValidationErrorVector
-UsdValidationContext::Validate(const UsdPrimRange &prims) const
+UsdValidationContext::Validate(const UsdStagePtr &stage,
+                               const std::vector<UsdTimeCode> &timeCodes) const
+{
+    return Validate(stage, UsdTraverseInstanceProxies(UsdPrimDefaultPredicate),
+                    timeCodes);
+}
+
+UsdValidationErrorVector
+UsdValidationContext::Validate(
+    const std::vector<UsdPrim> &prims, 
+    const UsdValidationTimeRange &timeRange) const
 {
     UsdValidationErrorVector errors;
     std::mutex errorsMutex;
-    WorkWithScopedDispatcher(
-        [this, &prims, &errors, &errorsMutex](WorkDispatcher &dispatcher) {
-            _ValidatePrims(dispatcher, prims, &errors, &errorsMutex);
-        });
+    _RunValidatePrims(prims, &errors, &errorsMutex, timeRange);
+    return errors;
+}
+
+UsdValidationErrorVector
+UsdValidationContext::Validate(
+    const UsdPrimRange &prims, 
+    const UsdValidationTimeRange &timeRange) const
+{
+    UsdValidationErrorVector errors;
+    std::mutex errorsMutex;
+    _RunValidatePrims(prims, &errors, &errorsMutex, timeRange);
+    return errors;
+}
+
+UsdValidationErrorVector
+UsdValidationContext::Validate(
+    const std::vector<UsdPrim> &prims, 
+    const std::vector<UsdTimeCode> &timeCodes) const
+{
+    UsdValidationErrorVector errors;
+    std::mutex errorsMutex;
+    _RunValidatePrims(prims, &errors, &errorsMutex, timeCodes);
+    return errors;
+}
+
+UsdValidationErrorVector
+UsdValidationContext::Validate(
+    const UsdPrimRange &prims, const std::vector<UsdTimeCode> &timeCodes) const
+{
+    UsdValidationErrorVector errors;
+    std::mutex errorsMutex;
+    _RunValidatePrims(prims, &errors, &errorsMutex, timeCodes);
     return errors;
 }
 
@@ -381,7 +451,9 @@ void
 UsdValidationContext::_ValidateStage(
     WorkDispatcher &dispatcher, const UsdStagePtr &stage,
     UsdValidationErrorVector *errors, std::mutex *errorsMutex,
-    const Usd_PrimFlagsPredicate &predicate) const
+    const Usd_PrimFlagsPredicate &predicate,
+    const std::variant<UsdValidationTimeRange, 
+        std::vector<UsdTimeCode>> &times) const
 {
     // If we reached here via Validate(const UsdStagePtr&), then the stage
     // must be valid.
@@ -393,29 +465,122 @@ UsdValidationContext::_ValidateStage(
         _ValidateLayer(dispatcher, layer, errors, errorsMutex);
     }
 
-    for (const UsdValidationValidator *validator : _stageValidators) {
-        dispatcher.Run([validator, stage, errors, errorsMutex]() {
-            _AddErrors(validator->Validate(stage), errors, errorsMutex);
-        });
+    auto _RunValidators = [this, &dispatcher, stage, errors, errorsMutex, 
+                           predicate](
+            const UsdValidationTimeRange &timeRange,
+            const _TimeDependencyState timeDependencyState = 
+                _TimeDependencyState::All) 
+    {
+        for (const UsdValidationValidator *validator : _stageValidators) {
+            // skip non-time dependent validators if state is DoTimeDependent,
+            // or skip time dependent validators if state is DoNonTimeDependent
+            if ((timeDependencyState == _TimeDependencyState::DoTimeDependent
+                    && !validator->GetMetadata().isTimeDependent) || 
+                (timeDependencyState == _TimeDependencyState::DoNonTimeDependent
+                    && validator->GetMetadata().isTimeDependent)) {
+                continue;
+            }
+            dispatcher.Run([validator, stage, errors, errorsMutex, timeRange]() {
+                _AddErrors(validator->Validate(stage, timeRange), errors,
+                           errorsMutex);
+            });
+        }
+
+        _ValidatePrims(dispatcher, stage->Traverse(predicate), errors, 
+                       errorsMutex, timeRange, timeDependencyState);
+    };
+
+    // Run stage and prim validators for timeRange
+    if (std::holds_alternative<UsdValidationTimeRange>(times)) {
+            _RunValidators(std::get<UsdValidationTimeRange>(times));
+        return;
     }
-    _ValidatePrims(dispatcher, stage->Traverse(predicate), errors, errorsMutex);
+
+    std::vector<UsdTimeCode> timeCodes = 
+        std::get<std::vector<UsdTimeCode>>(times);
+    if (timeCodes.empty()) {
+        return;
+    }
+
+    // Run TimeNonDependent validators
+    _RunValidators(UsdValidationTimeRange(), 
+                   _TimeDependencyState::DoNonTimeDependent);
+
+    for (const UsdTimeCode &timeCode : timeCodes) {
+        _RunValidators(UsdValidationTimeRange(timeCode), 
+                       _TimeDependencyState::DoTimeDependent);
+    }
 }
 
 template <typename T>
 void
-UsdValidationContext::_ValidatePrims(WorkDispatcher &dispatcher, const T &prims,
-                                     UsdValidationErrorVector *errors,
-                                     std::mutex *errorsMutex) const
+UsdValidationContext::_RunValidatePrims(
+    const T &prims, UsdValidationErrorVector *errors, std::mutex *errorsMutex,
+    const std::variant<UsdValidationTimeRange, 
+        std::vector<UsdTimeCode>> &times) const
+{
+    // Both PrimRange and vector<> have empty() method. We only use this for
+    // these 2 types.
+    if (prims.empty()) {
+        return;
+    }
+
+    WorkWithScopedDispatcher(
+        [this, &prims, errors, errorsMutex, times](WorkDispatcher &dispatcher) {
+            // timeRange
+            if (std::holds_alternative<UsdValidationTimeRange>(times)) {
+                _ValidatePrims(dispatcher, prims, errors, errorsMutex, 
+                               std::get<UsdValidationTimeRange>(times));
+                return;
+            }
+
+            // Explicit timeCodes
+            std::vector<UsdTimeCode> timeCodes = 
+                std::get<std::vector<UsdTimeCode>>(times);
+            if (timeCodes.empty()) {
+                return;
+            }
+
+            // Run only non-time dependent validators for all prims once
+            _ValidatePrims(dispatcher, prims, errors, errorsMutex, 
+                           UsdValidationTimeRange(),
+                           _TimeDependencyState::DoNonTimeDependent);
+            // Run only time dependent validators for each timeCode in timeCodes
+            for (const UsdTimeCode &timeCode : timeCodes) {
+                _ValidatePrims(dispatcher, prims, errors, errorsMutex, 
+                               UsdValidationTimeRange(timeCode),
+                               _TimeDependencyState::DoTimeDependent);
+            }
+        });
+}
+
+template <typename T>
+void
+UsdValidationContext::_ValidatePrims(
+    WorkDispatcher &dispatcher, const T &prims, 
+    UsdValidationErrorVector *errors, std::mutex *errorsMutex,
+    UsdValidationTimeRange timeRange, 
+    const _TimeDependencyState timeDependencyState) const
 {
     for (const UsdValidationValidator *validator : _primValidators) {
+        // skip non-time dependent validators if state is DoTimeDependent, or
+        // skip time dependent validators if state is DoNonTimeDependent
+        if ((timeDependencyState == _TimeDependencyState::DoTimeDependent
+                && !validator->GetMetadata().isTimeDependent) ||
+            (timeDependencyState == _TimeDependencyState::DoNonTimeDependent
+                && validator->GetMetadata().isTimeDependent)) {
+            continue;
+        }
         for (const UsdPrim &prim : prims) {
             if (!prim) {
                 TF_CODING_ERROR("Invalid prim found in the vector of prims to "
                                 "validate.");
                 return;
             }
-            dispatcher.Run([validator, prim, errors, errorsMutex]() {
-                _AddErrors(validator->Validate(prim), errors, errorsMutex);
+            dispatcher.Run([validator, prim, errors, errorsMutex, 
+                           timeRange]() {
+                _AddErrors(validator->Validate(prim, timeRange), 
+                           errors, errorsMutex);
             });
         }
     }
@@ -429,9 +594,22 @@ UsdValidationContext::_ValidatePrims(WorkDispatcher &dispatcher, const T &prims,
             }
             if (_ShouldRunSchemaTypeValidator(prim, pair.first)) {
                 for (const UsdValidationValidator *validator : pair.second) {
-                    dispatcher.Run([validator, prim, errors, errorsMutex]() {
-                        _AddErrors(validator->Validate(prim), errors,
-                                   errorsMutex);
+                    // skip non-time dependent validators if state is 
+                    // DoTimeDependent, or
+                    // skip time dependent validators if state is
+                    // DoNonTimeDependent
+                    if ((timeDependencyState == 
+                            _TimeDependencyState::DoTimeDependent && 
+                                !validator->GetMetadata().isTimeDependent) ||
+                        (timeDependencyState ==
+                            _TimeDependencyState::DoNonTimeDependent &&
+                                validator->GetMetadata().isTimeDependent)) {
+                        continue;
+                    }
+                    dispatcher.Run(
+                        [validator, prim, errors, errorsMutex, timeRange]() {
+                            _AddErrors(validator->Validate(prim, timeRange), 
+                                       errors, errorsMutex);
                     });
                 }
             }
@@ -443,10 +621,14 @@ UsdValidationContext::_ValidatePrims(WorkDispatcher &dispatcher, const T &prims,
 // Prims
 template void UsdValidationContext::_ValidatePrims<UsdPrimRange>(
     WorkDispatcher &dispatcher, const UsdPrimRange &prims,
-    UsdValidationErrorVector *errors, std::mutex *errorsMutex) const;
+    UsdValidationErrorVector *errors, std::mutex *errorsMutex,
+    UsdValidationTimeRange timeRange, 
+    const _TimeDependencyState timeDependencyState) const;
 
 template void UsdValidationContext::_ValidatePrims<std::vector<UsdPrim>>(
     WorkDispatcher &dispatcher, const std::vector<UsdPrim> &prims,
-    UsdValidationErrorVector *errors, std::mutex *errorsMutex) const;
+    UsdValidationErrorVector *errors, std::mutex *errorsMutex,
+    UsdValidationTimeRange timeRange, 
+    const _TimeDependencyState timeDependencyState) const;
 
 PXR_NAMESPACE_CLOSE_SCOPE

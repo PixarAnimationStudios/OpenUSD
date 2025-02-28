@@ -50,6 +50,11 @@ public:
     }
 
     HD_API
+    TfTokenVector GetMaterialConfigKeys() const override;
+    HD_API
+    VtValue GetMaterialConfigValue(const TfToken& key) const override;
+
+    HD_API
     std::string GetModelAssetName() const override;
 
     HD_API
@@ -90,10 +95,19 @@ public:
     HD_API
     void DeleteNode(const TfToken &nodeName) override;
 
+    /// Set the nodeType for the shader node with the given \p nodeName. 
+    /// If \p nodeType is empty then the nodeType attribute will be removed
+    /// from the node's dataSource.
     HD_API
     void SetNodeType(
         const TfToken &nodeName,
         const TfToken &nodeType) override;
+
+    HD_API
+    void SetNodeTypeInfoValue(
+        const TfToken &nodeName,
+        const TfToken &key,
+        const VtValue &value) override;
 
     HD_API
     void SetNodeParameterValue(
@@ -143,12 +157,28 @@ public:
     HdContainerDataSourceHandle Finish();
 
 private:
+
+    /// Return the nodeTypeInfo dataSource, if it exists, for the specified 
+    /// \p nodeName. Does NOT take into account any overrides of the nodeType 
+    /// data that may have been authored by SetNodeTypeInfoValue().
+    HdContainerDataSourceHandle _GetOriginalNodeTypeInfo(
+            const TfToken& nodeName) const;
+
+    /// Return the nodeTypeInfo dataSource for the supplied \p nodeName,  
+    /// taking into account any overrides that may have been authored.
     HdContainerDataSourceHandle _GetNodeTypeInfo(
             const TfToken& nodeName) const;
 
     using _OverrideMap =
         std::unordered_map<HdDataSourceLocator, HdDataSourceBaseHandle,
             TfHash>;
+
+    using _HdContainerDataSourceEditorSharedPtr = 
+        std::shared_ptr<class HdContainerDataSourceEditor>;
+
+    using _NodeTypeInfoMap = 
+        std::unordered_map<TfToken, _HdContainerDataSourceEditorSharedPtr, 
+            TfToken::HashFunctor>;
 
     using _TokenSet = std::unordered_set<TfToken, TfHash>;
 
@@ -159,6 +189,7 @@ private:
     SdfPath _materialPrimPath;
     mutable HdMaterialNetworkSchema _networkSchema;
     HdContainerDataSourceEditor _networkEditor;
+    _NodeTypeInfoMap _nodeTypeInfoOverrides;
     HdContainerDataSourceHandle _primContainer;
     _OverrideMap _existingOverrides;
     _TokenSet _overriddenNodes;

@@ -35,6 +35,7 @@
 #include <deque>
 #include <list>
 #include <set>
+#include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -99,6 +100,19 @@ namespace TfPyContainerConversions {
       pxr_boost::python::tuple result =
         pxr_boost::python::make_tuple(a.first, a.second);
       return pxr_boost::python::incref(result.ptr());
+    }
+  };
+
+  template <typename... T>
+  struct to_tuple<std::tuple<T...>> {
+    static PyObject* convert(std::tuple<T...> const& a)
+    {
+      return std::apply(
+        [](T const&... v) {
+          pxr_boost::python::tuple result =
+            pxr_boost::python::make_tuple(v...);
+          return pxr_boost::python::incref(result.ptr());
+        }, a);
     }
   };
 
@@ -308,27 +322,27 @@ namespace TfPyContainerConversions {
     }
   };
 
-  template <typename PairType>
-  struct from_python_tuple_pair {
-    typedef typename PairType::first_type first_type;
-    typedef typename PairType::second_type second_type;
+  template <typename Indexes, typename TupleType, typename... T>
+  struct from_python_tuple_impl;
 
-    from_python_tuple_pair()
+  template <size_t... I, typename TupleType, typename... T>
+  struct from_python_tuple_impl<std::index_sequence<I...>, TupleType, T...>
+  {
+    from_python_tuple_impl()
     {
       pxr_boost::python::converter::registry::push_back(
         &convertible,
         &construct,
-        pxr_boost::python::type_id<PairType>());
+        pxr_boost::python::type_id<TupleType>());
     }
 
     static void* convertible(PyObject* obj_ptr)
     {
-      if (!PyTuple_Check(obj_ptr) || PyTuple_Size(obj_ptr) != 2) {
+      if (!PyTuple_Check(obj_ptr) || PyTuple_Size(obj_ptr) != sizeof...(T)) {
         return 0;
       }
-      pxr_boost::python::extract<first_type> e1(PyTuple_GetItem(obj_ptr, 0));
-      pxr_boost::python::extract<second_type> e2(PyTuple_GetItem(obj_ptr, 1));
-      if (!e1.check() || !e2.check()) {
+      if ((!pxr_boost::python::extract<T>(
+             PyTuple_GetItem(obj_ptr, I)).check() || ...)) {
         return 0;
       }
       return obj_ptr;
@@ -339,13 +353,32 @@ namespace TfPyContainerConversions {
       pxr_boost::python::converter::rvalue_from_python_stage1_data* data)
     {
       void* storage = (
-        (pxr_boost::python::converter::rvalue_from_python_storage<PairType>*)
+        (pxr_boost::python::converter::rvalue_from_python_storage<TupleType>*)
           data)->storage.bytes;
-      pxr_boost::python::extract<first_type>  e1(PyTuple_GetItem(obj_ptr, 0));
-      pxr_boost::python::extract<second_type> e2(PyTuple_GetItem(obj_ptr, 1));
-      new (storage) PairType(e1(), e2());
+      new (storage) TupleType(
+        pxr_boost::python::extract<T>(PyTuple_GetItem(obj_ptr, I))()...);
       data->convertible = storage;
     }
+  };
+
+  template <typename PairType>
+  struct from_python_tuple_pair
+    : from_python_tuple_impl<
+        std::make_index_sequence<2>, PairType, 
+        typename PairType::first_type, typename PairType::second_type
+      >
+  {
+  };
+
+  template <typename TupleType>
+  struct from_python_tuple;
+
+  template <typename... T>
+  struct from_python_tuple<std::tuple<T...>>
+    : from_python_tuple_impl<
+        std::index_sequence_for<T...>, std::tuple<T...>, T...
+      >
+  {
   };
 
   template <typename ContainerType>

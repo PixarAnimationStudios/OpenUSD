@@ -24,5 +24,6 @@ void wrapSdfTypeIndicator()
         .def("GetSdfType", &This::GetSdfType)
         .def("HasSdfType", &This::HasSdfType)
         .def("GetNdrType", &This::GetNdrType)
+        .def("GetSdrType", &This::GetNdrType)
         ;
 }

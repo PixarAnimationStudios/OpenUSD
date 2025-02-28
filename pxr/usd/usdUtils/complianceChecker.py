@@ -557,7 +557,7 @@ Specifically:
             self._AddWarning("%s prim <%s> reads an 8 bit Normal Map, "
                              "but has non-standard inputs:scale value of %s." 
                              "inputs:scale must be set to (2, 2, 2, 1) so as " 
-                             "fullfill the requirements of the normals to be " 
+                             "fulfill the requirements of the normals to be " 
                              "in tangent space of [(-1,-1,-1), (1,1,1)] as "
                              "documented in the UsdPreviewSurface and "
                              "UsdUVTexture docs." %\
@@ -567,19 +567,19 @@ Specifically:
         
 
         # Note that for a 8bit normal map, inputs:bias must be appropriately
-        # set to [-1, -1, -1, 0] so as to fullfill the requirements of the
+        # set to [-1, -1, -1, 0] so as to fulfill the requirements of the
         # normals to be in tangent space of [(-1,-1,-1), (1,1,1)] as documented 
         # in the UsdPreviewSurface docs. Note this is true only when scale
         # values are respecting the requirements laid in the
         # UsdPreviewSurface / UsdUVTexture docs. We continue to warn!
         if (not nonCompliantScaleValues and 
                 (bias[0] != -1 or bias[1] != -1 or bias[2] != -1)):
-            self._AddError("%s prim <%s> reads an 8 bit Normal Map, but has "
-                           "non-standard inputs:bias value of %s. inputs:bias "
-                           "must be set to [-1,-1,-1,0] so as to fullfill "
-                           "the requirements of the normals to be in tangent "
-                           "space of [(-1,-1,-1), (1,1,1)] as documented "
-                           "in the UsdPreviewSurface and UsdUVTexture docs." %\
+            self._AddWarning("%s prim <%s> reads an 8 bit Normal Map, but has "
+                             "non-standard inputs:bias value of %s. inputs:bias"
+                             " must be set to [-1,-1,-1,0] so as to fulfill the"
+                             "requirements of the normals to be in tangent "
+                             "space of [(-1,-1,-1), (1,1,1)] as documented in "
+                             "the UsdPreviewSurface and UsdUVTexture docs." %\
                              (NodeTypes.UsdUVTexture,
                               sourcePrim.GetPath(), str(bias)))
 
@@ -656,8 +656,8 @@ class ShaderPropertyTypeConformanceChecker(BaseRuleChecker):
                                                    assetLevelChecks)
 
     def _FillSdrNameToTypeMap(self, shadeNode, mapping):
-        for inputName in shadeNode.GetInputNames():
-            prop = shadeNode.GetInput(inputName)
+        for inputName in shadeNode.GetShaderInputNames():
+            prop = shadeNode.GetShaderInput(inputName)
             propName = prop.GetName()
             mapping[propName] = prop.GetTypeAsSdfType().GetSdfType()
 

@@ -1,5 +1,5 @@
---- original/stb_image.h	2024-05-21 15:30:18.887733957 -0700
-+++ stb_image.h	2024-05-21 15:17:49.371401403 -0700
+--- original/stb_image.h	2024-12-09 08:40:54
++++ stb_image.h	2024-12-09 08:41:15
 @@ -490,14 +490,14 @@
  STBIDEF void     stbi_image_free      (void *retval_from_stbi_load);
  
@@ -28,7 +28,13 @@
  static int      stbi__png_is16(stbi__context *s);
  #endif
  
-@@ -4631,6 +4631,7 @@
+@@ -4626,11 +4626,12 @@
+    return 1;
+ }
+ 
+-typedef struct
++typedef struct stbi__png_type
+ {
     stbi__context *s;
     stbi_uc *idata, *expanded, *out;
     int depth;
