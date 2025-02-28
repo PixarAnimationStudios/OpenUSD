@@ -130,7 +130,8 @@ bool CheckNestedArticulationRoot(const UsdPrim& usdPrim)
 
 static
 UsdValidationErrorVector
-_GetRigidBodyErrors(const UsdPrim& usdPrim)
+_GetRigidBodyErrors(const UsdPrim &usdPrim, 
+    const UsdValidationTimeRange &/*timeRange*/)
 {   
     UsdValidationErrorVector errors;
 
@@ -263,7 +264,8 @@ bool CheckNonUniformScale(const UsdPrim& usdPrim)
 
 static
 UsdValidationErrorVector
-_GetColliderErrors(const UsdPrim& usdPrim)
+_GetColliderErrors(const UsdPrim &usdPrim, 
+    const UsdValidationTimeRange &/*timeRange*/)
 {
     UsdValidationErrorVector errors;
 
@@ -379,7 +381,8 @@ _GetColliderErrors(const UsdPrim& usdPrim)
 
 static
 UsdValidationErrorVector
-_GetArticulationErrors(const UsdPrim& usdPrim)
+_GetArticulationErrors(const UsdPrim &usdPrim, 
+    const UsdValidationTimeRange &/*timeRange*/)
 {
     UsdValidationErrorVector errors;
 
@@ -484,7 +487,8 @@ bool CheckJointRel(const SdfPath& relPath, const UsdPrim& jointPrim)
 
 static
 UsdValidationErrorVector
-_GetPhysicsJointErrors(const UsdPrim& usdPrim)
+_GetPhysicsJointErrors(const UsdPrim &usdPrim, 
+    const UsdValidationTimeRange &/*timeRange*/)
 {
     UsdValidationErrorVector errors;
 
