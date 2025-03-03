@@ -438,10 +438,6 @@ namespace {
 // nullptr property node pointer) plus all the properties that hang off it.
 struct _PropToTokenTable
 {
-    void Init() {
-        _data = std::make_shared<_Data>();
-    }
-
     // Note that this function returns a TfToken lvalue reference that needs to
     // live/be valid as long as this object is around.
     template <class Fn>
@@ -475,7 +471,7 @@ private:
         tbb::spin_mutex mutex;
     };
 
-    std::shared_ptr<_Data> _data;
+    std::shared_ptr<_Data> _data { new _Data };
 };
 
 } // anon
@@ -498,12 +494,8 @@ Sdf_PathNode::GetPathToken(Sdf_PathNode const *primPart,
     TfAutoMallocTag tag2("Sdf_PathNode::GetPathToken");
 
     _PrimToPropTokenTables::accessor primAccessor;
-    bool newValue = _pathTokenTable->insert(
-        primAccessor, std::make_pair(primPart, _PropToTokenTable()));
+    _pathTokenTable->insert(primAccessor, primPart);
     auto &propToTokenTable = primAccessor->second;
-    if (newValue) {
-        propToTokenTable.Init();
-    }
     // Release the primAccessor here, since the call to _CreatePathToken below
     // can cause reentry here (for embedded target paths).
     primAccessor.release();
