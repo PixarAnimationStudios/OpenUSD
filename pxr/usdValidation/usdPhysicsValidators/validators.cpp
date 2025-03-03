@@ -21,7 +21,9 @@
 #include "pxr/usd/usdGeom/sphere.h"
 #include "pxr/usd/usdGeom/cone.h"
 #include "pxr/usd/usdGeom/capsule.h"
+#include "pxr/usd/usdGeom/capsule_1.h"
 #include "pxr/usd/usdGeom/cylinder.h"
+#include "pxr/usd/usdGeom/cylinder_1.h"
 #include "pxr/usd/usdGeom/points.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdPhysics/rigidBodyAPI.h"
@@ -36,30 +38,30 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-template<typename T>
-inline bool ScaleIsUniform(T scaleX, T scaleY, T scaleZ, T eps = T(1.0e-5))
+inline bool ScaleIsUniform(const GfVec3d& scale)
 {
+    const double eps = 1.0e-5;
     // Find min and max scale values
-    T lo, hi;
+    double lo, hi;
 
-    if (scaleX < scaleY)
+    if (scale[0] < scale[1])
     {
-        lo = scaleX;
-        hi = scaleY;
+        lo = scale[0];
+        hi = scale[1];
     }
     else
     {
-        lo = scaleY;
-        hi = scaleX;
+        lo = scale[1];
+        hi = scale[0];
     }
 
-    if (scaleZ < lo)
+    if (scale[2] < lo)
     {
-        lo = scaleZ;
+        lo = scale[2];
     }
-    else if (scaleZ > hi)
+    else if (scale[2] > hi)
     {
-        hi = scaleZ;
+        hi = scale[2];
     }
 
     if (lo* hi < 0.0)
@@ -198,7 +200,7 @@ _GetRigidBodyErrors(const UsdPrim &usdPrim,
             const GfTransform tr(mat);
             const GfVec3d sc = tr.GetScale();
 
-            if (!ScaleIsUniform(sc[0], sc[1], sc[2]) &&
+            if (!ScaleIsUniform(sc) &&
                 tr.GetScaleOrientation().GetQuaternion() != GfQuaternion::GetIdentity())
             {
                 errors.emplace_back(
@@ -258,7 +260,7 @@ bool CheckNonUniformScale(const UsdPrim& usdPrim)
         xform.ComputeLocalToWorldTransform(UsdTimeCode::Default()));
 
     const GfVec3d sc = tr.GetScale();
-    return ScaleIsUniform(sc[0], sc[1], sc[2]);
+    return ScaleIsUniform(sc);
 }
 
 
@@ -277,81 +279,29 @@ _GetColliderErrors(const UsdPrim &usdPrim,
             UsdValidationErrorSite(usdPrim.GetStage(), usdPrim.GetPath())
         };
 
-        if (usdPrim.IsA<UsdGeomSphere>())
+    if (usdPrim.IsA<UsdGeomSphere>() ||
+        usdPrim.IsA<UsdGeomCapsule>() ||
+        usdPrim.IsA<UsdGeomCapsule_1>() ||
+        usdPrim.IsA<UsdGeomCylinder>() ||
+        usdPrim.IsA<UsdGeomCylinder_1>() ||
+        usdPrim.IsA<UsdGeomCone>() ||
+        usdPrim.IsA<UsdGeomPoints>() )
+    {
+        // non uniform scale check
+        if (!CheckNonUniformScale(usdPrim))
         {
-            // non uniform scale check
-            if (!CheckNonUniformScale(usdPrim))
-            {
-                errors.emplace_back(
-                    UsdPhysicsValidationErrorNameTokens->colliderNonUniformScale,
-                    UsdValidationErrorType::Error,
-                    primErrorSites,
-                    TfStringPrintf(
-                        "Non-uniform scale is not supported for sphere geometry, prim path: %s",
-                        usdPrim.GetPath().GetText())
-                );
-            }            
-        }
-        else if (usdPrim.IsA<UsdGeomCapsule>())
+            errors.emplace_back(
+                UsdPhysicsValidationErrorNameTokens->colliderNonUniformScale,
+                UsdValidationErrorType::Error,
+                primErrorSites,
+                TfStringPrintf(
+                    "Non-uniform scale is not supported for %s geometry, prim path: %s",
+                    usdPrim.GetTypeName().GetText(), usdPrim.GetPath().GetText())
+            );
+        }            
+    }
+        if (usdPrim.IsA<UsdGeomPoints>())
         {
-            // non uniform scale check
-            if (!CheckNonUniformScale(usdPrim))
-            {
-                errors.emplace_back(
-                    UsdPhysicsValidationErrorNameTokens->colliderNonUniformScale,
-                    UsdValidationErrorType::Error,
-                    primErrorSites,
-                    TfStringPrintf(
-                        "Non-uniform scale is not supported for sphere geometry, prim path: %s",
-                        usdPrim.GetPath().GetText())
-                );
-            }
-        }
-        else if (usdPrim.IsA<UsdGeomCylinder>())
-        {
-            // non uniform scale check
-            if (!CheckNonUniformScale(usdPrim))
-            {
-                errors.emplace_back(
-                    UsdPhysicsValidationErrorNameTokens->colliderNonUniformScale,
-                    UsdValidationErrorType::Error,
-                    primErrorSites,
-                    TfStringPrintf(
-                        "Non-uniform scale is not supported for sphere geometry, prim path: %s",
-                        usdPrim.GetPath().GetText())
-                );
-            }
-        }
-        else if (usdPrim.IsA<UsdGeomCone>())
-        {
-            // non uniform scale check
-            if (!CheckNonUniformScale(usdPrim))
-            {
-                errors.emplace_back(
-                    UsdPhysicsValidationErrorNameTokens->colliderNonUniformScale,
-                    UsdValidationErrorType::Error,
-                    primErrorSites,
-                    TfStringPrintf(
-                        "Non-uniform scale is not supported for sphere geometry, prim path: %s",
-                        usdPrim.GetPath().GetText())
-                );
-            }
-        }
-        else if (usdPrim.IsA<UsdGeomPoints>())
-        {
-            // non uniform scale check
-            if (!CheckNonUniformScale(usdPrim))
-            {
-                errors.emplace_back(
-                    UsdPhysicsValidationErrorNameTokens->colliderNonUniformScale,
-                    UsdValidationErrorType::Error,
-                    primErrorSites,
-                    TfStringPrintf(
-                        "Non-uniform scale is not supported for sphere geometry, prim path: %s",
-                        usdPrim.GetPath().GetText())
-                );
-            }
-
             {
                 const UsdGeomPoints shape(usdPrim);
 

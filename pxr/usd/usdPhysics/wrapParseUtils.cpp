@@ -38,178 +38,32 @@ void registerVectorConverter(const char* name)
     class_<std::vector<T>>(name).def(vector_indexing_suite<std::vector<T>>());
 }
 
-
-class MarshalCallback
-{
-public:
-
-    SdfPathVector scenePrimPaths;
-    std::vector<UsdPhysicsSceneDesc> sceneDescs;
-
-    SdfPathVector rigidBodyPrimPaths;
-    std::vector<UsdPhysicsRigidBodyDesc> rigidBodyDescs;
-
-    SdfPathVector sphereShapePrimPaths;
-    std::vector<UsdPhysicsSphereShapeDesc> sphereShapeDescs;
- 
-    SdfPathVector cubeShapePrimPaths;
-    std::vector<UsdPhysicsCubeShapeDesc> cubeShapeDescs;
-
-    SdfPathVector capsuleShapePrimPaths;
-    std::vector<UsdPhysicsCapsuleShapeDesc> capsuleShapeDescs;
-
-    SdfPathVector cylinderShapePrimPaths;
-    std::vector<UsdPhysicsCylinderShapeDesc> cylinderShapeDescs;
-
-    SdfPathVector coneShapePrimPaths;
-    std::vector<UsdPhysicsConeShapeDesc> coneShapeDescs;
-
-    SdfPathVector meshShapePrimPaths;
-    std::vector<UsdPhysicsMeshShapeDesc> meshShapeDescs;
-
-    SdfPathVector planeShapePrimPaths;
-    std::vector<UsdPhysicsPlaneShapeDesc> planeShapeDescs;
-
-    SdfPathVector customShapePrimPaths;
-    std::vector<UsdPhysicsCustomShapeDesc> customShapeDescs;
-
-    SdfPathVector spherePointShapePrimPaths;
-    std::vector<UsdPhysicsSpherePointsShapeDesc> spherePointsShapeDescs;
-
-    SdfPathVector fixedJointPrimPaths;
-    std::vector<UsdPhysicsFixedJointDesc> fixedJointDescs;
-
-    SdfPathVector revoluteJointPrimPaths;
-    std::vector<UsdPhysicsRevoluteJointDesc> revoluteJointDescs;
-
-    SdfPathVector prismaticJointPrimPaths;
-    std::vector<UsdPhysicsPrismaticJointDesc> prismaticJointDescs;
-
-    SdfPathVector sphericalJointPrimPaths;
-    std::vector<UsdPhysicsSphericalJointDesc> sphericalJointDescs;
-
-    SdfPathVector distanceJointPrimPaths;
-    std::vector<UsdPhysicsDistanceJointDesc> distanceJointDescs;
-
-    SdfPathVector d6JointPrimPaths;
-    std::vector<UsdPhysicsD6JointDesc> d6JointDescs;
-
-    SdfPathVector customJointPrimPaths;
-    std::vector<UsdPhysicsCustomJointDesc> customJointDescs;
-
-    SdfPathVector rigidBodyMaterialPrimPaths;
-    std::vector<UsdPhysicsRigidBodyMaterialDesc> rigidBodyMaterialDescs;
-
-    SdfPathVector articulationPrimPaths;
-    std::vector<UsdPhysicsArticulationDesc> articulationDescs;
-
-    SdfPathVector collisionGroupPrimPaths;
-    std::vector<UsdPhysicsCollisionGroupDesc> collisionGroupDescs;
-
-    void clear()
-    {
-        scenePrimPaths.clear();
-        sceneDescs.clear();
-
-        rigidBodyPrimPaths.clear();
-        rigidBodyDescs.clear();
-
-        sphereShapePrimPaths.clear();
-        sphereShapeDescs.clear();
-
-        cubeShapePrimPaths.clear();
-        cubeShapeDescs.clear();
-
-        capsuleShapePrimPaths.clear();
-        capsuleShapeDescs.clear();
-
-        cylinderShapePrimPaths.clear();
-        cylinderShapeDescs.clear();
-
-        coneShapePrimPaths.clear();
-        coneShapeDescs.clear();
-
-        meshShapePrimPaths.clear();
-        meshShapeDescs.clear();
-
-        planeShapePrimPaths.clear();
-        planeShapeDescs.clear();
-
-        customShapePrimPaths.clear();
-        customShapeDescs.clear();
-
-        spherePointShapePrimPaths.clear();
-        spherePointsShapeDescs.clear();
-
-        fixedJointPrimPaths.clear();
-        fixedJointDescs.clear();
-
-        revoluteJointPrimPaths.clear();
-        revoluteJointDescs.clear();
-
-        prismaticJointPrimPaths.clear();
-        prismaticJointDescs.clear();
-
-        sphericalJointPrimPaths.clear();
-        sphericalJointDescs.clear();
-
-        distanceJointPrimPaths.clear();
-        distanceJointDescs.clear();
-
-        d6JointPrimPaths.clear();
-        d6JointDescs.clear();
-
-        customJointPrimPaths.clear();
-        customJointDescs.clear();
-
-        rigidBodyMaterialPrimPaths.clear();
-        rigidBodyMaterialDescs.clear();
-
-        articulationPrimPaths.clear();
-        articulationDescs.clear();
-
-        collisionGroupPrimPaths.clear();
-        collisionGroupDescs.clear();
-    }
-
-} gMarshalCallback;
-
 template <typename DescType>
-void copyDescs(TfSpan<const SdfPath> primsSource,
-               SdfPathVector& primsDest,
-               TfSpan<const UsdPhysicsObjectDesc> objectDescsSource, 
-               std::vector<DescType>& objectDescsDest)
+void moveDescsToDict(UsdPhysicsObjectType objectType,
+    TfSpan<const SdfPath> primsSource,
+    TfSpan<const UsdPhysicsObjectDesc> objectDescsSource,
+    pxr_boost::python::dict* retDict)
 {
-    primsDest.resize(primsSource.size());
-    objectDescsDest.resize(objectDescsSource.size());
+    const SdfPathVector primPaths(primsSource.begin(), primsSource.end());
+    const TfSpan<const DescType> objDescsSpan((const DescType*)objectDescsSource.data(), objectDescsSource.size());
+    const std::vector<DescType> objDescs(objDescsSpan.begin(), objDescsSpan.end());
 
-    TF_VERIFY(primsDest.size() == objectDescsDest.size());
-
-    if (!objectDescsDest.empty())
-    {
-        const DescType* sourceDesc =
-            reinterpret_cast<const DescType*>(objectDescsSource.data());
-
-        for (size_t i = 0; i < objectDescsDest.size(); i++)
-        {
-            primsDest[i] = primsSource[i];
-            objectDescsDest[i] = sourceDesc[i];
-        }
-    }
+    (*retDict)[objectType] =
+        pxr_boost::python::make_tuple(
+            primPaths, 
+            objDescs);
 }
 
-void ReportPhysicsObjectsFn(UsdPhysicsObjectType::Enum type,
+void ReportPhysicsObjectsFn(UsdPhysicsObjectType type,
                             TfSpan<const SdfPath> primPaths,
                             TfSpan<const UsdPhysicsObjectDesc> objectDescs,
                             const VtValue& userData)
 {
-    MarshalCallback* cb = userData.GetWithDefault<MarshalCallback*>(nullptr);
-    if (!cb) {
-        TfPyThrowTypeError("User data can only store MasrshallCallaback*");
+    pxr_boost::python::dict* retDict = userData.GetWithDefault<pxr_boost::python::dict*>(nullptr);
+    if (!retDict) {
         return;
     }
     if (primPaths.size() != objectDescs.size()) {
-        TfPyThrowValueError("primPaths and objectDescs must have the same size.");
         return;
     }
 
@@ -217,136 +71,150 @@ void ReportPhysicsObjectsFn(UsdPhysicsObjectType::Enum type,
     {
     case UsdPhysicsObjectType::Scene:
     {
-        copyDescs(primPaths, cb->scenePrimPaths, objectDescs, 
-                  cb->sceneDescs);
+        moveDescsToDict<UsdPhysicsSceneDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::RigidBody:
     {
-        copyDescs(primPaths, cb->rigidBodyPrimPaths, objectDescs, 
-                  cb->rigidBodyDescs);
+        moveDescsToDict<UsdPhysicsRigidBodyDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::SphereShape:
     {
-        copyDescs(primPaths, cb->sphereShapePrimPaths, objectDescs, 
-                  cb->sphereShapeDescs);
+        moveDescsToDict<UsdPhysicsSphereShapeDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::CubeShape:
     {
-        copyDescs(primPaths, cb->cubeShapePrimPaths, objectDescs, 
-                  cb->cubeShapeDescs);
+        moveDescsToDict<UsdPhysicsCubeShapeDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::CapsuleShape:
     {
-        copyDescs(primPaths, cb->capsuleShapePrimPaths, objectDescs, 
-                  cb->capsuleShapeDescs);
+        moveDescsToDict<UsdPhysicsCapsuleShapeDesc>(type, 
+            primPaths, objectDescs, retDict);
+    }
+    break;
+    case UsdPhysicsObjectType::Capsule1Shape:
+    {
+        moveDescsToDict<UsdPhysicsCapsule1ShapeDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::CylinderShape:
     {
-        copyDescs(primPaths, cb->cylinderShapePrimPaths, objectDescs, 
-                  cb->cylinderShapeDescs);
+        moveDescsToDict<UsdPhysicsCylinderShapeDesc>(type, 
+            primPaths, objectDescs, retDict);
+    }
+    break;
+    case UsdPhysicsObjectType::Cylinder1Shape:
+    {
+        moveDescsToDict<UsdPhysicsCylinder1ShapeDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::ConeShape:
     {
-        copyDescs(primPaths, cb->coneShapePrimPaths, objectDescs, 
-                  cb->coneShapeDescs);
+        moveDescsToDict<UsdPhysicsConeShapeDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::MeshShape:
     {
-        copyDescs(primPaths, cb->meshShapePrimPaths, objectDescs, 
-                  cb->meshShapeDescs);
+        moveDescsToDict<UsdPhysicsMeshShapeDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::PlaneShape:
     {
-        copyDescs(primPaths, cb->planeShapePrimPaths, objectDescs, 
-                  cb->planeShapeDescs);
+        moveDescsToDict<UsdPhysicsPlaneShapeDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::CustomShape:
     {
-        copyDescs(primPaths, cb->customShapePrimPaths, objectDescs,
-                  cb->customShapeDescs);
+        moveDescsToDict<UsdPhysicsCustomShapeDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::SpherePointsShape:
     {
-        copyDescs(primPaths, cb->spherePointShapePrimPaths, objectDescs,
-                  cb->spherePointsShapeDescs);
+        moveDescsToDict<UsdPhysicsSpherePointsShapeDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::FixedJoint:
     {
-        copyDescs(primPaths, cb->fixedJointPrimPaths, objectDescs, 
-                  cb->fixedJointDescs);
+        moveDescsToDict<UsdPhysicsFixedJointDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::RevoluteJoint:
     {
-        copyDescs(primPaths, cb->revoluteJointPrimPaths, objectDescs,
-                  cb->revoluteJointDescs);
+        moveDescsToDict<UsdPhysicsRevoluteJointDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::PrismaticJoint:
     {
-        copyDescs(primPaths, cb->prismaticJointPrimPaths, objectDescs,
-                  cb->prismaticJointDescs);
+        moveDescsToDict<UsdPhysicsPrismaticJointDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::SphericalJoint:
     {
-        copyDescs(primPaths, cb->sphericalJointPrimPaths, objectDescs,
-                  cb->sphericalJointDescs);
+        moveDescsToDict<UsdPhysicsSphericalJointDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::DistanceJoint:
     {
-        copyDescs(primPaths, cb->distanceJointPrimPaths, objectDescs,
-                  cb->distanceJointDescs);
+        moveDescsToDict<UsdPhysicsDistanceJointDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::D6Joint:
     {
-        copyDescs(primPaths, cb->d6JointPrimPaths, objectDescs, 
-                  cb->d6JointDescs);
+        moveDescsToDict<UsdPhysicsD6JointDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::CustomJoint:
     {
-        copyDescs(primPaths, cb->customJointPrimPaths, objectDescs,
-            cb->customJointDescs);
+        moveDescsToDict<UsdPhysicsCustomJointDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::RigidBodyMaterial:
     {
-        copyDescs(primPaths, cb->rigidBodyMaterialPrimPaths, 
-                  objectDescs, cb->rigidBodyMaterialDescs);
+        moveDescsToDict<UsdPhysicsRigidBodyMaterialDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::Articulation:
     {
-        copyDescs(primPaths, cb->articulationPrimPaths, objectDescs,
-                  cb->articulationDescs);
+        moveDescsToDict<UsdPhysicsArticulationDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::CollisionGroup:
     {
-        copyDescs(primPaths, cb->collisionGroupPrimPaths, objectDescs,
-                  cb->collisionGroupDescs);
+        moveDescsToDict<UsdPhysicsCollisionGroupDesc>(type, 
+            primPaths, objectDescs, retDict);
     }
     break;
     case UsdPhysicsObjectType::Undefined:
-    default:
     {
-        TF_DIAGNOSTIC_WARNING("UsdPhysicsObject type unknown for python "
+        TF_WARN("UsdPhysicsObject type unknown for python "
                               "wrapping.");
     }
+    break;
+    default:
+        TF_VERIFY(false);
     break;
     }
 }
@@ -412,163 +280,12 @@ dict _LoadUsdPhysicsFromRange(UsdStageWeakPtr stage,
         customTokensValid = true;
     }
 
-    gMarshalCallback.clear();
+    dict retDict;    
     const bool ret_val = LoadUsdPhysicsFromRange(stage, includePaths,
-        ReportPhysicsObjectsFn, VtValue(&gMarshalCallback),
+        ReportPhysicsObjectsFn, VtValue(&retDict),
         !excludePaths.empty() ? &excludePaths : nullptr,
         customTokensValid ? &parsingCustomTokens : nullptr,
-        !simulationOwners.empty() ? &simulationOwners : nullptr);
-    dict retDict;
-    if (ret_val)
-    {
-        if (!gMarshalCallback.sceneDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::Scene] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.scenePrimPaths, 
-                    gMarshalCallback.sceneDescs);
-        }
-        if (!gMarshalCallback.rigidBodyDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::RigidBody] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.rigidBodyPrimPaths, 
-                    gMarshalCallback.rigidBodyDescs);
-        }
-        if (!gMarshalCallback.sphereShapeDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::SphereShape] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.sphereShapePrimPaths, 
-                    gMarshalCallback.sphereShapeDescs);
-        }
-        if (!gMarshalCallback.cubeShapeDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::CubeShape] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.cubeShapePrimPaths, 
-                    gMarshalCallback.cubeShapeDescs);
-        }
-        if (!gMarshalCallback.capsuleShapeDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::CapsuleShape] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.capsuleShapePrimPaths, 
-                    gMarshalCallback.capsuleShapeDescs);
-        }
-        if (!gMarshalCallback.cylinderShapeDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::CylinderShape] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.cylinderShapePrimPaths, 
-                    gMarshalCallback.cylinderShapeDescs);
-        }
-        if (!gMarshalCallback.coneShapeDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::ConeShape] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.coneShapePrimPaths, 
-                    gMarshalCallback.coneShapeDescs);
-        }
-        if (!gMarshalCallback.meshShapeDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::MeshShape] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.meshShapePrimPaths, 
-                    gMarshalCallback.meshShapeDescs);
-        }
-        if (!gMarshalCallback.planeShapeDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::PlaneShape] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.planeShapePrimPaths, 
-                    gMarshalCallback.planeShapeDescs);
-        }
-        if (!gMarshalCallback.customShapeDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::CustomShape] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.customShapePrimPaths, 
-                    gMarshalCallback.customShapeDescs);
-        }
-        if (!gMarshalCallback.spherePointsShapeDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::SpherePointsShape] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.spherePointShapePrimPaths, 
-                    gMarshalCallback.spherePointsShapeDescs);
-        }
-        if (!gMarshalCallback.fixedJointDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::FixedJoint] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.fixedJointPrimPaths, 
-                    gMarshalCallback.fixedJointDescs);
-        }
-        if (!gMarshalCallback.revoluteJointDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::RevoluteJoint] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.revoluteJointPrimPaths, 
-                    gMarshalCallback.revoluteJointDescs);
-        }
-        if (!gMarshalCallback.prismaticJointDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::PrismaticJoint] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.prismaticJointPrimPaths, 
-                    gMarshalCallback.prismaticJointDescs);
-        }
-        if (!gMarshalCallback.sphericalJointDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::SphericalJoint] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.sphericalJointPrimPaths, 
-                    gMarshalCallback.sphericalJointDescs);
-        }
-        if (!gMarshalCallback.distanceJointDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::DistanceJoint] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.distanceJointPrimPaths, 
-                    gMarshalCallback.distanceJointDescs);
-        }
-        if (!gMarshalCallback.d6JointDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::D6Joint] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.d6JointPrimPaths, 
-                    gMarshalCallback.d6JointDescs);
-        }
-        if (!gMarshalCallback.customJointDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::CustomJoint] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.customJointPrimPaths, 
-                    gMarshalCallback.customJointDescs);
-        }
-        if (!gMarshalCallback.rigidBodyMaterialDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::RigidBodyMaterial] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.rigidBodyMaterialPrimPaths, 
-                    gMarshalCallback.rigidBodyMaterialDescs);
-        }
-        if (!gMarshalCallback.articulationDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::Articulation] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.articulationPrimPaths, 
-                    gMarshalCallback.articulationDescs);
-        }
-        if (!gMarshalCallback.collisionGroupDescs.empty())
-        {
-            retDict[UsdPhysicsObjectType::CollisionGroup] =
-                pxr_boost::python::make_tuple(
-                    gMarshalCallback.collisionGroupPrimPaths, 
-                    gMarshalCallback.collisionGroupDescs);
-        }
-    }
+        !simulationOwners.empty() ? &simulationOwners : nullptr);    
     return retDict;
 }
 
@@ -677,12 +394,38 @@ _CapsuleShapeDesc_Repr(const UsdPhysicsCapsuleShapeDesc& self)
 }
 
 static std::string
+_Capsule1ShapeDesc_Repr(const UsdPhysicsCapsule1ShapeDesc& self)
+{
+    return TfStringPrintf(
+        "%sCapsule1ShapeDesc(topRadius=%s, bottomRadius=%s, halfHeight=%s, axis=%s), parent %s",
+        TF_PY_REPR_PREFIX.c_str(),
+        TfPyRepr(self.topRadius).c_str(),
+        TfPyRepr(self.bottomRadius).c_str(),
+        TfPyRepr(self.halfHeight).c_str(),
+        TfPyRepr(self.axis).c_str(),
+        _ShapeDesc_Repr(self).c_str());
+}
+
+static std::string
 _CylinderShapeDesc_Repr(const UsdPhysicsCylinderShapeDesc& self)
 {
     return TfStringPrintf(
         "%sCylinderShapeDesc(radius=%s, halfHeight=%s, axis=%s), parent %s",
         TF_PY_REPR_PREFIX.c_str(),
         TfPyRepr(self.radius).c_str(),
+        TfPyRepr(self.halfHeight).c_str(),
+        TfPyRepr(self.axis).c_str(),
+        _ShapeDesc_Repr(self).c_str());
+}
+
+static std::string
+_Cylinder1ShapeDesc_Repr(const UsdPhysicsCylinder1ShapeDesc& self)
+{
+    return TfStringPrintf(
+        "%sCylinder1ShapeDesc(topRadius=%s, bottomRadius=%s, halfHeight=%s, axis=%s), parent %s",
+        TF_PY_REPR_PREFIX.c_str(),
+        TfPyRepr(self.topRadius).c_str(),
+        TfPyRepr(self.bottomRadius).c_str(),
         TfPyRepr(self.halfHeight).c_str(),
         TfPyRepr(self.axis).c_str(),
         _ShapeDesc_Repr(self).c_str());
@@ -848,7 +591,7 @@ _JointDesc_Repr(const UsdPhysicsJointDesc& self)
 }
 
 static std::string
-_JointLimitDOFPair_Repr(const std::pair<UsdPhysicsJointDOF::Enum, 
+_JointLimitDOFPair_Repr(const std::pair<UsdPhysicsJointDOF, 
                         UsdPhysicsJointLimit>& self)
 {
     return TfStringPrintf("%sJointLimitDOFPair(first=%s, second=%s)",
@@ -858,7 +601,7 @@ _JointLimitDOFPair_Repr(const std::pair<UsdPhysicsJointDOF::Enum,
 }
 
 static std::string
-_JointDriveDOFPair_Repr(const std::pair<UsdPhysicsJointDOF::Enum, 
+_JointDriveDOFPair_Repr(const std::pair<UsdPhysicsJointDOF, 
                         UsdPhysicsJointDrive>& self)
 {
     return TfStringPrintf("%sJointDriveDOFPair(first=%s, second=%s)",
@@ -926,14 +669,16 @@ _DistanceJointDesc_Repr(const UsdPhysicsDistanceJointDesc& self)
 
 void wrapParseUtils()
 {
-    enum_<UsdPhysicsObjectType::Enum>("ObjectType")
+    enum_<UsdPhysicsObjectType>("ObjectType")
         .value("Undefined", UsdPhysicsObjectType::Undefined)
         .value("Scene", UsdPhysicsObjectType::Scene)
         .value("RigidBody", UsdPhysicsObjectType::RigidBody)
         .value("SphereShape", UsdPhysicsObjectType::SphereShape)
         .value("CubeShape", UsdPhysicsObjectType::CubeShape)
         .value("CapsuleShape", UsdPhysicsObjectType::CapsuleShape)
+        .value("Capsule1Shape", UsdPhysicsObjectType::Capsule1Shape)
         .value("CylinderShape", UsdPhysicsObjectType::CylinderShape)
+        .value("Cylinder1Shape", UsdPhysicsObjectType::Cylinder1Shape)
         .value("ConeShape", UsdPhysicsObjectType::ConeShape)
         .value("MeshShape", UsdPhysicsObjectType::MeshShape)
         .value("PlaneShape", UsdPhysicsObjectType::PlaneShape)
@@ -951,13 +696,13 @@ void wrapParseUtils()
         .value("CollisionGroup", UsdPhysicsObjectType::CollisionGroup)
         ;
 
-    enum_<UsdPhysicsAxis::Enum>("Axis")
+    enum_<UsdPhysicsAxis>("Axis")
         .value("X", UsdPhysicsAxis::X)
         .value("Y", UsdPhysicsAxis::Y)
         .value("Z", UsdPhysicsAxis::Z)
         ;
 
-    enum_<UsdPhysicsJointDOF::Enum>("JointDOF")
+    enum_<UsdPhysicsJointDOF>("JointDOF")
         .value("Distance", UsdPhysicsJointDOF::Distance)
         .value("TransX", UsdPhysicsJointDOF::TransX)
         .value("TransY", UsdPhysicsJointDOF::TransY)
@@ -1058,6 +803,16 @@ void wrapParseUtils()
         .def_readonly("axis", &UsdPhysicsCapsuleShapeDesc::axis)
         .def("__repr__", _CapsuleShapeDesc_Repr);
 
+    class_<UsdPhysicsCapsule1ShapeDesc, 
+        bases<UsdPhysicsShapeDesc>>
+            cs1dcls("Capsule1ShapeDesc", no_init);
+    cs1dcls
+        .def_readonly("topRadius", &UsdPhysicsCapsule1ShapeDesc::topRadius)
+        .def_readonly("bottomRadius", &UsdPhysicsCapsule1ShapeDesc::bottomRadius)
+        .def_readonly("halfHeight", &UsdPhysicsCapsule1ShapeDesc::halfHeight)
+        .def_readonly("axis", &UsdPhysicsCapsule1ShapeDesc::axis)
+        .def("__repr__", _Capsule1ShapeDesc_Repr);
+
     class_<UsdPhysicsCylinderShapeDesc, 
         bases<UsdPhysicsShapeDesc>>
             cysdcls("CylinderShapeDesc", no_init);
@@ -1066,6 +821,16 @@ void wrapParseUtils()
         .def_readonly("halfHeight", &UsdPhysicsCylinderShapeDesc::halfHeight)
         .def_readonly("axis", &UsdPhysicsCylinderShapeDesc::axis)
         .def("__repr__", _CylinderShapeDesc_Repr);
+
+    class_<UsdPhysicsCylinder1ShapeDesc, 
+        bases<UsdPhysicsShapeDesc>>
+            cys1dcls("Cylinder1ShapeDesc", no_init);
+    cys1dcls
+        .def_readonly("topRadius", &UsdPhysicsCylinder1ShapeDesc::topRadius)
+        .def_readonly("bottomRadius", &UsdPhysicsCylinder1ShapeDesc::bottomRadius)
+        .def_readonly("halfHeight", &UsdPhysicsCylinder1ShapeDesc::halfHeight)
+        .def_readonly("axis", &UsdPhysicsCylinder1ShapeDesc::axis)
+        .def("__repr__", _Cylinder1ShapeDesc_Repr);
 
     class_<UsdPhysicsConeShapeDesc, 
         bases<UsdPhysicsShapeDesc>>
@@ -1217,19 +982,19 @@ void wrapParseUtils()
         bases<UsdPhysicsJointDesc>>
             fjdscls("FixedJointDesc", no_init);
 
-    class_<std::pair<UsdPhysicsJointDOF::Enum, UsdPhysicsJointLimit> >(
+    class_<std::pair<UsdPhysicsJointDOF, UsdPhysicsJointLimit> >(
         "JointLimitDOFPair")
-        .def_readwrite("first", &std::pair<UsdPhysicsJointDOF::Enum, 
+        .def_readwrite("first", &std::pair<UsdPhysicsJointDOF, 
                        UsdPhysicsJointLimit>::first)
-        .def_readwrite("second", &std::pair<UsdPhysicsJointDOF::Enum, 
+        .def_readwrite("second", &std::pair<UsdPhysicsJointDOF, 
                        UsdPhysicsJointLimit>::second)
         .def("__repr__", _JointLimitDOFPair_Repr);
 
-    class_<std::pair<UsdPhysicsJointDOF::Enum, UsdPhysicsJointDrive> >(
+    class_<std::pair<UsdPhysicsJointDOF, UsdPhysicsJointDrive> >(
         "JointDriveDOFPair")
-        .def_readwrite("first", &std::pair<UsdPhysicsJointDOF::Enum, 
+        .def_readwrite("first", &std::pair<UsdPhysicsJointDOF, 
                        UsdPhysicsJointDrive>::first)
-        .def_readwrite("second", &std::pair<UsdPhysicsJointDOF::Enum, 
+        .def_readwrite("second", &std::pair<UsdPhysicsJointDOF, 
                        UsdPhysicsJointDrive>::second)
         .def("__repr__", _JointDriveDOFPair_Repr);
 
@@ -1278,11 +1043,11 @@ void wrapParseUtils()
     registerVectorConverter<UsdCollectionMembershipQuery>
         ("PhysicsCollectionMembershipQueryVector");
 
-    registerVectorConverter<std::pair<UsdPhysicsJointDOF::Enum, 
+    registerVectorConverter<std::pair<UsdPhysicsJointDOF, 
         UsdPhysicsJointLimit>>
             ("PhysicsJointLimitDOFVector");
 
-    registerVectorConverter<std::pair<UsdPhysicsJointDOF::Enum, 
+    registerVectorConverter<std::pair<UsdPhysicsJointDOF, 
         UsdPhysicsJointDrive>>
             ("PhysicsJointDriveDOFVector");
 
@@ -1296,8 +1061,13 @@ void wrapParseUtils()
 
     registerVectorConverter<UsdPhysicsCapsuleShapeDesc>("CapsuleShapeDescVector");
 
+    registerVectorConverter<UsdPhysicsCapsule1ShapeDesc>("Capsule1ShapeDescVector");
+
     registerVectorConverter<UsdPhysicsCylinderShapeDesc>(
         "CylinderShapeDescVector");
+
+    registerVectorConverter<UsdPhysicsCylinder1ShapeDesc>(
+        "Cylinder1ShapeDescVector");
 
     registerVectorConverter<UsdPhysicsConeShapeDesc>("ConeShapeDescVector");
 

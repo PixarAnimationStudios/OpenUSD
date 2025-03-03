@@ -2,11 +2,11 @@
 
 \page usdPhysics_page_front UsdPhysics : USD Physics Parsing Utils
 
-<b>USD Physics Parsing Utils Overview.</b>
+\section USD Physics Parsing Utils Overview.
 
 \tableofcontents
 
-\section usdPhysics_parsing_purpose_and_scope Purpose and Scope
+\subsection usdPhysics_parsing_purpose_and_scope Purpose and Scope
 
 When the UsdPhysics schema is applied to the stage, processing the stage UsdPrims
 and creating a consistent physics representation can be challenging, especially
@@ -17,7 +17,7 @@ function returns a callback or dictionary with parsed physics descriptors.
 Additionally, it can leverage the concept of simulation owners to partition the 
 stage for multiple simulation engines.
 
-\section usdPhysics_parsing Specification
+\subsection usdPhysics_parsing Specification
 
 The UsdPhysics schemas add physics capabilities to USD; however, deducing and 
 parsing the physics information can be non-trivial and may be misinterpreted. 
@@ -30,8 +30,8 @@ The parsing utility function takes several input parameters that need
 to be described:
 
 \li The stage to be parsed.
-\li Include paths vector, this vector define what all paths will be included 
-for parsing. The parsing will construct a UsdPrimRange from each UsdPrim found on 
+\li Include paths vector. This vector define what all paths will be included 
+for parsing. The parsing will construct a UsdPrimRange from each UsdPrim found in 
 the given paths (the UsdPrimRange will traverse instance proxies). Its possible
 to exclude some paths through an exclude vector, see exclude path vector parameter.
 \li Report callback function that reports the descriptors back to the calling 
@@ -39,8 +39,10 @@ code. The report function returns an array of the same descriptors to be
 processed efficiently. Note that in python instead of a callback function all 
 the descriptors are returned in a dictionary, where the key is the descriptor 
 type and the value is a tuple of UsdPrim paths array and descriptors array.
-\li User data can be provided, these are then sent to the callback function, the 
-user data is not passed in the python version.
+\li User data is an optional parameter. Clients of ReportFn can optionally 
+provide userData which is a Simulator aware data structure wrapped in VtValue. 
+A client's implementation can then unpack any parsed physics object description 
+to the Simulator aware data structures in their implementation of UsdPhysicsReportFn.
 \li Optional exclude paths vector, this vector defines what UsdPrims are pruned 
 from the UsdPrimRange traversal done during parsing.
 \li Optional custom physics tokens. There can be multiple optional custom 
@@ -81,7 +83,7 @@ descriptor is invalidated rather then removed from the array.
 
 \subsection usdPhysics_scene_descriptor Physics Scene Descriptor
 
-For eachUsdPhysicsScene prim a PhysicsDesc is reported, this descriptor 
+For each UsdPhysicsScene prim a PhysicsDesc is reported, this descriptor 
 contains:
 
 \li Gravity direction, if there is no authored value or sentinel value provided
@@ -93,8 +95,8 @@ a default Earth gravity is computed based on the stage meters per unit value.
 
 If the parsing utility is provided with a list of allowed simulation owners, 
 the behavior changes. The returned PhysicsSceneDesc objects are restricted to 
-only thoseUsdPhysicsScene prims whose paths match one of the provided 
-simulation owners. It is expected that theUsdPhysicsScene prim path is the 
+only those UsdPhysicsScene prims whose paths match one of the provided 
+simulation owners. It is expected that the UsdPhysicsScene prim path is the 
 simulation owner that defines where each body or collision belongs.
 
 \subsection usdPhysics_material_descriptor Physics RigidBody Material Descriptor
@@ -230,7 +232,7 @@ space.
 it's the expected radius in world space. 
 Note since the capsule can't have generic non-uniform scale, if non-uniform 
 scale around radius is found a warning is reported. The scale along the provided 
-axes does scale the height, while scale around the other two axis define the 
+axis does scale the height, while scale around the other two axes define the
 radius scale, the maximum of those is used in case of a non-uniform scale.
 
 \subsection usdPhysics_cylinder_collision_descriptor Physics Cylinder Shape Descriptor
@@ -336,7 +338,7 @@ skipped.
 
 Common base physics joint descriptor, this base class should not be instantiated. 
 All joint types are derived from this base descriptor. For parsing, any 
-UsdPhysics.Joint prim and it's derived types a joint descriptor is reported. 
+UsdPhysics.Joint prim and its derived types a joint descriptor is reported. 
 This descriptor contains:
 
 \li Path relationship defined in body0 rel, this path does not necessarily have 
@@ -378,7 +380,7 @@ revolute joint adds this information:
 
 \li The revolute joint axis.
 \li The revolute joint limit, it can be enabled or disabled. Additionally a pair 
-of low high angle is reported (note that the unit's are by default degree as per 
+of low high angle is reported (note that the units are by default degree as per 
 USD spec).
 \li The revolute joint drive, the drive that can be added to the revolute joint. 
 Drive does have target position, target velocity, stiffness and damping. The 
@@ -405,7 +407,7 @@ spherical joint adds this information:
 
 \li The spherical joint axis.
 \li The spherical joint limit, it can be enabled or disabled. Additionally a 
-cone0 and cone1 angle is reported (note that the unit's are by default degree as 
+cone0 and cone1 angle is reported (note that the units are by default degree as 
 per USD spec). Note that in python the limit is always just lower/upper, the 
 lower value is cone0 value and upper value is the cone1 value. 
 
@@ -414,9 +416,9 @@ lower value is cone0 value and upper value is the cone1 value.
 For each UsdPhysicsDistanceJoint a distance joint descriptor is reported. The 
 distance joint adds this information:
 
-\li Boolean stating whether the minimum limit is enabled as both limit's can be 
+\li Boolean stating whether the minimum limit is enabled as both limits can be 
 enabled disabled independently.
-\li Boolean stating whether the maximum limit is enabled as both limit's can be 
+\li Boolean stating whether the maximum limit is enabled as both limits can be 
 enabled disabled independently.
 \li The limit, for minimum and maximum definition. Note that in python the lower 
 value defines the minimum, while the upper value defines the maximum. Both 

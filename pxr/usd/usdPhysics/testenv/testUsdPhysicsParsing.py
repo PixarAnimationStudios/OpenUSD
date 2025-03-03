@@ -58,10 +58,16 @@ class TestUsdPhysicsParsing(unittest.TestCase):
             "sphere" : {"type" : UsdGeom.Sphere, "radius" : 30},
             "capsule" : {"type" : UsdGeom.Capsule, "radius" : 30, "height" : 10, 
                          "axis" : UsdGeom.Tokens.y},
+            "capsule_1" : {"type" : UsdGeom.Capsule_1, "topRadius" : 30,
+                         "bottomRadius" : 20, "height" : 10, 
+                         "axis" : UsdGeom.Tokens.y},
             "cone" : {"type" : UsdGeom.Cone, "radius" : 30, "height" : 10, 
                       "axis" : UsdGeom.Tokens.z},
             "cylinder" : {"type" : UsdGeom.Cylinder, "radius" : 30, 
                           "height" : 10, "axis" : UsdGeom.Tokens.y},
+            "cylinder_1" : {"type" : UsdGeom.Cylinder_1, "topRadius" : 30,
+                         "bottomRadius" : 20, "height" : 10, 
+                         "axis" : UsdGeom.Tokens.y},
             "plane" : {"type" : UsdGeom.Plane, "axis" : UsdGeom.Tokens.z},
             "mesh" : {"type" : UsdGeom.Mesh},
             "points" : {"type" : UsdGeom.Points},
@@ -77,6 +83,11 @@ class TestUsdPhysicsParsing(unittest.TestCase):
                 shape.GetRadiusAttr().Set(params["radius"])
             elif (key == "capsule") or (key == "cone") or (key == "cylinder"):
                 shape.GetRadiusAttr().Set(params["radius"])
+                shape.GetHeightAttr().Set(params["height"])
+                shape.GetAxisAttr().Set(params["axis"])
+            elif (key == "capsule_1") or (key == "cylinder_1"):
+                shape.GetRadiusTopAttr().Set(params["topRadius"])
+                shape.GetRadiusBottomAttr().Set(params["bottomRadius"])
                 shape.GetHeightAttr().Set(params["height"])
                 shape.GetAxisAttr().Set(params["axis"])
             elif (key == "plane"):
@@ -108,8 +119,7 @@ class TestUsdPhysicsParsing(unittest.TestCase):
                 self.assertTrue(prim_path == shape_prim.GetPrimPath())
                 self.assertTrue(desc.rigidBody == Sdf.Path())
                 self.assertTrue(desc.collisionEnabled is True)
-                self.assertTrue(len(desc.materials) == 1)
-                self.assertTrue(desc.materials[0] == Sdf.Path())
+                self.assertTrue(len(desc.materials) == 0)                
                 self.assertTrue(len(desc.simulationOwners) == 0)
                 self.assertTrue(len(desc.filteredCollisions) == 0)
 
@@ -151,6 +161,21 @@ class TestUsdPhysicsParsing(unittest.TestCase):
                         self.assertEqual(desc.axis, UsdPhysics.Axis.Y)
 
                         num_shape_found = num_shape_found + 1
+                elif key == UsdPhysics.ObjectType.Capsule1Shape:
+                    for prim_path, desc in zip(prim_paths, descs):
+                        # common shape
+                        compare_shape_params(desc)
+
+                        # capsule_1 shape
+                        self.assertEqual(desc.topRadius, 
+                                         params["topRadius"] * scale[0])
+                        self.assertEqual(desc.bottomRadius, 
+                                         params["bottomRadius"] * scale[0])
+                        self.assertEqual(desc.halfHeight, 
+                                         params["height"] * 0.5 * scale[0])
+                        self.assertEqual(desc.axis, UsdPhysics.Axis.Y)
+
+                        num_shape_found = num_shape_found + 1
                 elif key == UsdPhysics.ObjectType.ConeShape:
                     for prim_path, desc in zip(prim_paths, descs):
                         # common shape
@@ -172,6 +197,21 @@ class TestUsdPhysicsParsing(unittest.TestCase):
                         # cylinder shape
                         self.assertEqual(desc.radius, 
                                          params["radius"] * scale[0])
+                        self.assertEqual(desc.halfHeight, 
+                                         params["height"] * 0.5 * scale[0])
+                        self.assertEqual(desc.axis, UsdPhysics.Axis.Y)
+
+                        num_shape_found = num_shape_found + 1
+                elif key == UsdPhysics.ObjectType.Cylinder1Shape:
+                    for prim_path, desc in zip(prim_paths, descs):
+                        # common shape
+                        compare_shape_params(desc)
+
+                        # capsule_1 shape
+                        self.assertEqual(desc.topRadius, 
+                                         params["topRadius"] * scale[0])
+                        self.assertEqual(desc.bottomRadius, 
+                                         params["bottomRadius"] * scale[0])
                         self.assertEqual(desc.halfHeight, 
                                          params["height"] * 0.5 * scale[0])
                         self.assertEqual(desc.axis, UsdPhysics.Axis.Y)
@@ -543,14 +583,11 @@ class TestUsdPhysicsParsing(unittest.TestCase):
             elif key == UsdPhysics.ObjectType.MeshShape:
                 for prim_path, desc in zip(prim_paths, descs):
                     mesh_found = True
-                    # three materials, the last material is the one applied 
-                    # eventually to the collision itself
-                    self.assertTrue(len(desc.materials) == 3)                                           
+                    self.assertTrue(len(desc.materials) == 2)
                     self.assertTrue(desc.materials[0] == 
                                     materialPrim0.GetPrim().GetPrimPath())
                     self.assertTrue(desc.materials[1] == 
-                                    materialPrim1.GetPrim().GetPrimPath())
-                    self.assertTrue(desc.materials[2] == Sdf.Path())
+                                    materialPrim1.GetPrim().GetPrimPath())                    
             elif key == UsdPhysics.ObjectType.RigidBodyMaterial:
                 for prim_path, desc in zip(prim_paths, descs):
                     num_materials = num_materials + 1
