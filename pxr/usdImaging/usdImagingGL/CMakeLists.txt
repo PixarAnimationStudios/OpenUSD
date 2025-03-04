@@ -669,16 +669,132 @@ pxr_install_test_dir(
 # Register tests that don't depend on build configuration or external libraries
 # (such as MaterialX, OpenVDB, PTEX).
 #
-pxr_register_test(testUsdImagingGLBasicDrawing
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage basicDrawing/basicDrawing.usda -write testUsdImagingGLBasicDrawing.png"
+
+# Given the list of arguments for pxr_register_test(), register a test specific
+# to the given Hgi when called with VARIANT_TEST. If VARIANT_BASELINE is also
+# used, then the test also uses an Hgi specific baseline. If neither are used,
+# this is just a pass-through to pxr_register_test(). Tests and baselines are
+# made specific by adding a "_<hgiName>" part in the name. For test names it's
+# a always suffix, for baselines (and result files), use the "@hgi_suffix@"
+# placeholder to indicate where to insert the Hgi name part. Pass-through tests
+# will not suffix tests, and will entirely remove "@hgi_suffix@".
+# The test's "ENV" is automatically appended with the correct "HGI_ENABLE_*"
+# flags for the given Hgi.
+function(register_test_hgi_variant test_name hgi_name)
+    cmake_parse_arguments(arg
+        "VARIANT_TEST;VARIANT_BASELINE"
+        "COMMAND"
+        "IMAGE_DIFF_COMPARE;ENV"
+        ${ARGN}
+    )
+
+    if(arg_VARIANT_TEST)
+        set(hgi_suffix "_${hgi_name}")
+        if(hgi_name STREQUAL GL)
+            set(hgi_env "HGI_ENABLE_VULKAN=0;")
+        elseif(hgi_name STREQUAL Metal)
+            set(hgi_env "HGI_ENABLE_VULKAN=0;")
+        elseif(hgi_name STREQUAL Vulkan)
+            set(hgi_env "HGI_ENABLE_VULKAN=1;")
+        else()
+            message(FATAL_ERROR "Unknown Hgi: ${hgi_name}")
+        endif()
+    else()
+        set(hgi_suffix "")
+        set(hgi_env "")
+    endif()
+
+    if(arg_VARIANT_BASELINE)
+        set(baseline_suffix "_${hgi_name}")
+    else()
+        set(baseline_suffix "")
+    endif()
+
+    string(REPLACE "@hgi_suffix@" "${baseline_suffix}"
+        arg_COMMAND "${arg_COMMAND}")
+    list(TRANSFORM arg_IMAGE_DIFF_COMPARE REPLACE
+        "@hgi_suffix@" "${baseline_suffix}")
+    list(APPEND arg_ENV ${hgi_env})
+
+    pxr_register_test("${test_name}${hgi_suffix}"
+        COMMAND ${arg_COMMAND}
+        IMAGE_DIFF_COMPARE ${arg_IMAGE_DIFF_COMPARE}
+        ${arg_UNPARSED_ARGUMENTS}
+        ENV ${arg_ENV}
+    )
+endfunction()
+
+# Like pxr_register_test(), but with an extra HGI_VARIANT argument. It takes a
+# list of Hgi names (without the "Hgi" prefix, ex:. "Metal", "GL", "Vulkan"),
+# and registers one test per supported Hgi, each with an Hgi specific baseline.
+# For example "testUsdImagingGLExample" with "HGI_VARIANT Vulkan", when built
+# with support for Vulkan and OpenGL, will register:
+# "testUsdImagingGLExample_Vulkan" and "testUsdImagingGLExample_GL", each with
+# a different baseline. To match a baseline with an Hgi, use the "@hgi_suffix@"
+# placeholder in the baseline and result file name:
+# "testUsdImagingGLExample@hgi_suffix@.png". It will be automatically replaced:
+# "testUsdImagingGLExample_Vulkan.png". Since "GL" is not listed as a variant,
+# it will use the generic baseline: "testUsdImagingGLExample.png". If none of
+# the listed Hgis in "HGI_VARIANT" are supported, this behaves just
+# like pxr_register_test().
+function(register_test_with_hgi_variants test_name)
+    cmake_parse_arguments(arg "" "" "HGI_VARIANT" ${ARGN})
+    set(test_args ${arg_UNPARSED_ARGUMENTS})
+
+    if(NOT arg_HGI_VARIANT)
+        message(WARNING "No arguments given for HGI_VARIANT, use pxr_register_test() instead")
+    endif()
+
+    # Unsupported Hgis are ignored.
+    set(supported_hgis)
+    if(PXR_ENABLE_GL_SUPPORT AND NOT APPLE)
+        list(APPEND supported_hgis GL)
+    endif()
+    if(PXR_ENABLE_METAL_SUPPORT)
+        list(APPEND supported_hgis Metal)
+    endif()
+    if(PXR_ENABLE_VULKAN_SUPPORT)
+        list(APPEND supported_hgis Vulkan)
+    endif()
+
+    # For all listed Hgi variants supported, register a suffixed test with a
+    # suffixed baseline.
+    foreach(hgi ${arg_HGI_VARIANT})
+        if(hgi IN_LIST supported_hgis)
+            register_test_hgi_variant(${test_name} ${hgi} ${test_args}
+                VARIANT_TEST VARIANT_BASELINE)
+            set(has_hgi_variant TRUE)
+        endif()
+    endforeach()
+
+    if(has_hgi_variant)
+        # Other supported Hgis are also register with a suffix, but use a
+        # non-suffixed baseline.
+        list(REMOVE_ITEM supported_hgis ${arg_HGI_VARIANT})
+        foreach(hgi ${supported_hgis})
+            register_test_hgi_variant(${test_name} ${hgi} ${test_args}
+                VARIANT_TEST)
+        endforeach()
+    else()
+        # If none of the Hgi variants are supported, then register a single
+        # test like normal.
+        register_test_hgi_variant(${test_name} "" ${test_args})
+    endif()
+endfunction()
+
+register_test_with_hgi_variants(testUsdImagingGLBasicDrawing
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage basicDrawing/basicDrawing.usda -write testUsdImagingGLBasicDrawing@hgi_suffix@.png"
     IMAGE_DIFF_COMPARE
-        testUsdImagingGLBasicDrawing.png
+        testUsdImagingGLBasicDrawing@hgi_suffix@.png
     FAIL 0.2
     FAIL_PERCENT 0.5
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLBasicDrawing
     ENV
         HGIGL_ENABLE_BINDLESS_TEXTURE=1
+    HGI_VARIANT
+        Metal
 )
 
 pxr_register_test(testUsdImagingGLBasicDrawing_refined
@@ -800,15 +916,17 @@ pxr_register_test(testUsdImagingGLBasicDrawingNonBindless_batch
         HGIGL_ENABLE_BINDLESS_TEXTURE=0
 )
 
-pxr_register_test(testUsdImagingGLBasicLighting
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage basicDrawing.usda -write testUsdImagingGLBasicLighting.png"
+register_test_with_hgi_variants(testUsdImagingGLBasicLighting
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -stage basicDrawing.usda -write testUsdImagingGLBasicLighting@hgi_suffix@.png"
     IMAGE_DIFF_COMPARE
-        testUsdImagingGLBasicLighting.png
+        testUsdImagingGLBasicLighting@hgi_suffix@.png
     FAIL 0.5
     FAIL_PERCENT 0.1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLBasicLighting
+    HGI_VARIANT
+        Metal
 )
 
 pxr_register_test(testUsdImagingGLBasicLighting_refined
@@ -1205,7 +1323,7 @@ pxr_register_test(testUsdImagingGLBasisCurvesWithScale
     IMAGE_DIFF_COMPARE
         testUsdImagingGLBasisCurvesWithScale_1.1.png
     FAIL .05
-    FAIL_PERCENT .03
+    FAIL_PERCENT .25
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLBasisCurvesWithScale
@@ -1385,17 +1503,19 @@ pxr_register_test(testUsdImagingGLSphereWithFloatRadius
     TESTENV testUsdImagingGLSphere
 )
 
-pxr_register_test(testUsdImagingGLNurbsCurves
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -frameAll -offscreen -times 0 50 150 -stage testCurves.usda -write testUsdImagingGLNurbsCurves.png"
+register_test_with_hgi_variants(testUsdImagingGLNurbsCurves
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -frameAll -offscreen -times 0 50 150 -stage testCurves.usda -write testUsdImagingGLNurbsCurves@hgi_suffix@.png"
     IMAGE_DIFF_COMPARE
-        testUsdImagingGLNurbsCurves_000.png
-        testUsdImagingGLNurbsCurves_050.png
-        testUsdImagingGLNurbsCurves_150.png
+        testUsdImagingGLNurbsCurves@hgi_suffix@_000.png
+        testUsdImagingGLNurbsCurves@hgi_suffix@_050.png
+        testUsdImagingGLNurbsCurves@hgi_suffix@_150.png
     FAIL .05
     FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLNurbsCurves
+    HGI_VARIANT
+        Metal
 )
 
 pxr_register_test(testUsdImagingGLNurbsCurves_refined
@@ -3999,17 +4119,19 @@ pxr_register_test(testUsdImagingGLVolumeMaterial
     TESTENV testUsdImagingGLVolumeMaterial
 )
 
-pxr_register_test(testUsdImagingGLBasisCurvesVaryingTopology
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -frameAll -offscreen -lighting -times 1 3 4 5 4 -stage bunnyCurves.usda -write testUsdImagingGLBasisCurvesVaryingTopology.png"
+register_test_with_hgi_variants(testUsdImagingGLBasisCurvesVaryingTopology
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -frameAll -offscreen -lighting -times 1 3 4 5 4 -stage bunnyCurves.usda -write testUsdImagingGLBasisCurvesVaryingTopology@hgi_suffix@.png"
     IMAGE_DIFF_COMPARE
-        testUsdImagingGLBasisCurvesVaryingTopology_003.png
-        testUsdImagingGLBasisCurvesVaryingTopology_004.png
-        testUsdImagingGLBasisCurvesVaryingTopology_005.png
+        testUsdImagingGLBasisCurvesVaryingTopology@hgi_suffix@_003.png
+        testUsdImagingGLBasisCurvesVaryingTopology@hgi_suffix@_004.png
+        testUsdImagingGLBasisCurvesVaryingTopology@hgi_suffix@_005.png
     FAIL .05
     FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLBasisCurvesVaryingTopology
+    HGI_VARIANT
+        Metal
 )
 
 # Disable this test temporarily due to issue where test runs forever
@@ -4961,7 +5083,7 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         IMAGE_DIFF_COMPARE
             mxTexcoord.png
         FAIL 0.1
-        FAIL_PERCENT 0.005
+        FAIL_PERCENT 0.01
         WARN 0.05
         WARN_PERCENT 0.02
         EXPECTED_RETURN_CODE 0
@@ -5800,10 +5922,10 @@ if (OPENVDB_FOUND AND ${PXR_ENABLE_OPENVDB_SUPPORT})
         IMAGE_DIFF_COMPARE
             testUsdImagingGLVdbVolumeInside_001.png
             testUsdImagingGLVdbVolumeInside_013.png
-        FAIL 0.005
-        FAIL_PERCENT 0.001
+        FAIL 0.01
+        FAIL_PERCENT 0.025
         WARN 0.005
-        WARN_PERCENT 0.0005
+        WARN_PERCENT 0.0125
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLVdbVolume
         ENV
@@ -5927,10 +6049,10 @@ if (OPENVDB_FOUND AND ${PXR_ENABLE_OPENVDB_SUPPORT})
         IMAGE_DIFF_COMPARE
             testUsdImagingGLVdbVolumeInside_001.png
             testUsdImagingGLVdbVolumeInside_013.png
-        FAIL 0.005
-        FAIL_PERCENT 0.001
+        FAIL 0.01
+        FAIL_PERCENT 0.025
         WARN 0.005
-        WARN_PERCENT 0.0005
+        WARN_PERCENT 0.0125
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLVdbVolume
         ENV

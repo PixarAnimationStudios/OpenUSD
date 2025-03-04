@@ -61,9 +61,7 @@ _MakeNewPlatformDefaultHgi()
         #elif defined(ARCH_OS_WINDOWS)
             "HgiGL";
         #else
-            ""; 
-            #error Unknown Platform
-            return nullptr;
+            #error Unsupported Platform
         #endif
 
     if (TfGetEnvSetting(HGI_ENABLE_VULKAN)) {
@@ -71,7 +69,7 @@ _MakeNewPlatformDefaultHgi()
             hgiType = "HgiVulkan";
         #else
             TF_CODING_ERROR(
-                "Build requires PXR_VULKAN_SUPPORT_ENABLED=true to use Vulkan");
+                "Build requires PXR_VULKAN_SUPPORT_ENABLED=1 to use Vulkan");
         #endif
     }
 
