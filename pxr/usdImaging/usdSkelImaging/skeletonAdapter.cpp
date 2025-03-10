@@ -910,7 +910,7 @@ UsdSkelImagingSkeletonAdapter::InvokeComputation(
     }
 
     // Explicit copy of the skinnedPoints to avoid VT_LOG_STACK_ON_ARRAY_DETACH_COPY logs
-    VtVec3fArray skinnedPoints(restPoints.UncheckedGet<VtVec3fArray>().begin(), 
+    VtVec3fArray skinnedPoints(restPoints.UncheckedGet<VtVec3fArray>().begin(), // TODO: MakeUnique()
                                 restPoints.UncheckedGet<VtVec3fArray>().end());
 
     _ApplyPackedBlendShapes(blendShapeOffsets.UncheckedGet<VtVec4fArray>(),
