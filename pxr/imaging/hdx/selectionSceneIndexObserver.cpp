@@ -16,13 +16,16 @@
 
 #include "pxr/base/trace/trace.h"
 
+#include <mutex>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 static void
 _AddToSelection(
     HdSceneIndexBaseRefPtr const &sceneIndex,
     const SdfPath &primPath,
-    HdSelectionSharedPtr const &result);
+    HdSelectionSharedPtr const &result,
+    std::mutex &resultMutex);
 
 HdxSelectionSceneIndexObserver::HdxSelectionSceneIndexObserver()
  : _version(0)
@@ -35,15 +38,17 @@ void
 _PopulateFromSceneIndex(
     HdSceneIndexBaseRefPtr const &sceneIndex,
     const SdfPath &path,
-    HdSelectionSharedPtr const &result)
+    HdSelectionSharedPtr const &result,
+    std::mutex &resultMutex)
 {
-    _AddToSelection(sceneIndex, path, result);
+    _AddToSelection(sceneIndex, path, result, resultMutex);
     const SdfPathVector childPaths = sceneIndex->GetChildPrimPaths(path);
     if (!childPaths.empty()) {
         WorkParallelForEach(
             childPaths.begin(), childPaths.end(),
             [&](SdfPath const& childPath) {
-                _PopulateFromSceneIndex(sceneIndex, childPath, result);
+                _PopulateFromSceneIndex(
+                    sceneIndex, childPath, result, resultMutex);
             });
     }
 }
@@ -68,8 +73,9 @@ HdxSelectionSceneIndexObserver::SetSceneIndex(
 
     if (_sceneIndex) {
         sceneIndex->AddObserver(self);
+        std::mutex resultMutex;
         _PopulateFromSceneIndex(
-            sceneIndex, SdfPath::AbsoluteRootPath(), _selection);
+            sceneIndex, SdfPath::AbsoluteRootPath(), _selection, resultMutex);
     }
     
     _version++;
@@ -214,7 +220,8 @@ _AddToSelection(
     HdSceneIndexBaseRefPtr const &sceneIndex,
     HdSelectionSchema &selectionSchema,
     const SdfPath &primPath,
-    HdSelectionSharedPtr const &result)
+    HdSelectionSharedPtr const &result,
+    std::mutex &resultMutex)
 {
     // Only support fully selected for now.
     HdBoolDataSourceHandle const ds = selectionSchema.GetFullySelected();
@@ -230,19 +237,22 @@ _AddToSelection(
     HdInstanceIndicesVectorSchema instanceIndicesVectorSchema =
         selectionSchema.GetNestedInstanceIndices();
 
-    if (instanceIndicesVectorSchema.GetNumElements() > 0) {
-        result->AddInstance(
-            HdSelection::HighlightModeSelect,
-            primPath,
-            // The information in the schema is nested, that is it
-            // the instance id for each nesting level.
-            // HdSelection only expects one number for each selected
-            // instance encoding the selection of all levels.
-            _GetInstanceIndices(sceneIndex, instanceIndicesVectorSchema));
-    } else {
-        result->AddRprim(
-            HdSelection::HighlightModeSelect,
-            primPath);
+    {
+        std::unique_lock lock(resultMutex);
+        if (instanceIndicesVectorSchema.GetNumElements() > 0) {
+            result->AddInstance(
+                HdSelection::HighlightModeSelect,
+                primPath,
+                // The information in the schema is nested, that is it
+                // the instance id for each nesting level.
+                // HdSelection only expects one number for each selected
+                // instance encoding the selection of all levels.
+                _GetInstanceIndices(sceneIndex, instanceIndicesVectorSchema));
+        } else {
+            result->AddRprim(
+                HdSelection::HighlightModeSelect,
+                primPath);
+        }
     }
 }
 
@@ -253,7 +263,8 @@ void
 _AddToSelection(
     HdSceneIndexBaseRefPtr const &sceneIndex,
     const SdfPath &primPath,
-    HdSelectionSharedPtr const &result)
+    HdSelectionSharedPtr const &result, 
+    std::mutex &resultMutex)
 {
     HdSelectionsSchema selectionsSchema =
         HdSelectionsSchema::GetFromParent(
@@ -269,7 +280,8 @@ _AddToSelection(
             sceneIndex,
             selectionSchema,
             primPath,
-            result);
+            result, 
+            resultMutex);
     }    
 }    
     
@@ -289,8 +301,9 @@ HdxSelectionSceneIndexObserver::_ComputeSelection()
 
     _dirtiedPrims.insert(prims.begin(), prims.end());
 
+    std::mutex resultMutex;
     for (const SdfPath &path : _dirtiedPrims) {
-        _AddToSelection(_sceneIndex, path, result);
+        _AddToSelection(_sceneIndex, path, result, resultMutex);
     }
 
     _dirtiedPrims.clear();

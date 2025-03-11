@@ -53,7 +53,20 @@ pxr_library(sdr
 )
 
 pxr_test_scripts(
+    testenv/testSdrFilesystemDiscovery.py
     testenv/testSdrRegistry.py
+    testenv/testSdrVersion.py
+)
+
+pxr_install_test_dir(
+    SRC testenv/testSdrFilesystemDiscovery.testenv
+    DEST testSdrFilesystemDiscovery
+)
+
+pxr_register_test(testSdrFilesystemDiscovery
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdrFilesystemDiscovery"
+    EXPECTED_RETURN_CODE 0
 )
 
 pxr_build_test_shared_lib(TestSdrRegistry
@@ -74,4 +87,10 @@ pxr_register_test(testSdrRegistry
     ENV
         PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY=1
         PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY=1
+)
+
+pxr_register_test(testSdrVersion
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdrVersion"
+    EXPECTED_RETURN_CODE 0
 )

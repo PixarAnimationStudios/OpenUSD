@@ -30,6 +30,7 @@ class TestPcpCache(unittest.TestCase):
         pcpCache = Pcp.Cache(lsi, fileFormatTarget='sdf')
         (pi, _) = pcpCache.ComputePrimIndex('/PrimWithReferences')
         self.assertTrue(pi.IsValid())
+        self.assertFalse(pi.IsUsd())
         self.assertEqual(len(pi.localErrors), 0)
 
         # Should be two local errors corresponding to invalid asset paths,
@@ -37,10 +38,19 @@ class TestPcpCache(unittest.TestCase):
         pcpCache = Pcp.Cache(lsi, fileFormatTarget='Presto')
         (pi, _) = pcpCache.ComputePrimIndex('/PrimWithReferences')
         self.assertTrue(pi.IsValid())
+        self.assertFalse(pi.IsUsd())
         self.assertEqual(len(pi.localErrors), 2)
         self.assertTrue(all([(isinstance(e, Pcp.ErrorInvalidAssetPath) 
                          for e in pi.localErrors)]))
 
+        # Create a PcpCache in USD mode. Computed prim indexes will be in USD
+        # mode unlike the prior non-USD caches.
+        usdPcpCache = Pcp.Cache(lsi, usd=True)
+        self.assertTrue(usdPcpCache)
+        (pi, _) = usdPcpCache.ComputePrimIndex('/PrimWithReferences')
+        self.assertTrue(pi.IsValid())
+        self.assertTrue(pi.IsUsd())
+        self.assertEqual(len(pi.localErrors), 0)
 
     def test_PcpCacheReloadSessionLayers(self):
         rootLayer = Sdf.Layer.CreateAnonymous()

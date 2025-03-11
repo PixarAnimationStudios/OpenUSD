@@ -13,14 +13,14 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/ndr/nodeDiscoveryResult.h"
+#include "pxr/usd/sdr/shaderNodeDiscoveryResult.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 #include "pxr/imaging/hio/glslfx.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-NDR_REGISTER_PARSER_PLUGIN(SdrGlslfxParserPlugin);
+SDR_REGISTER_PARSER_PLUGIN(SdrGlslfxParserPlugin);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -30,10 +30,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sourceType, "glslfx"))
 );
 
-const NdrTokenVec& 
+const SdrTokenVec& 
 SdrGlslfxParserPlugin::GetDiscoveryTypes() const
 {
-    static const NdrTokenVec _DiscoveryTypes = {_tokens->discoveryType};
+    static const SdrTokenVec _DiscoveryTypes = {_tokens->discoveryType};
     return _DiscoveryTypes;
 }
 
@@ -171,8 +171,9 @@ ConvertToSdrCompatibleValueAndType(
     return any;
 }
 
-NdrNodeUniquePtr
-SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
+SdrShaderNodeUniquePtr
+SdrGlslfxParserPlugin::ParseShaderNode(
+    const SdrShaderNodeDiscoveryResult& discoveryResult)
 {
     std::unique_ptr<HioGlslfx> glslfx;
 
@@ -185,10 +186,10 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
         glslfx = std::make_unique<HioGlslfx>(sourceCodeStream);
 
     } else {
-        TF_WARN("Invalid NdrNodeDiscoveryResult with identifier %s: both uri "
-            "and sourceCode are empty.", nodeIdentifier.GetText());
+        TF_WARN("Invalid SdrShaderNodeDiscoveryResult with identifier %s: "
+            "both uri and sourceCode are empty.", nodeIdentifier.GetText());
 
-        return NdrParserPlugin::GetInvalidNode(discoveryResult);
+        return SdrParserPlugin::GetInvalidShaderNode(discoveryResult);
     }
 
     std::string errorString;
@@ -198,7 +199,7 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             errorString.c_str());
     }
 
-    NdrPropertyUniquePtrVec nodeProperties;
+    SdrShaderPropertyUniquePtrVec nodeProperties;
 
     HioGlslfxConfig::Parameters params = glslfx->GetParameters();
     for (HioGlslfxConfig::Parameter const & p : params) {
@@ -210,9 +211,9 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             &arraySize,
             &sdrType);
 
-        NdrTokenMap hints;
-        NdrOptionVec options;
-        NdrTokenMap localMetadata;
+        SdrTokenMap hints;
+        SdrOptionVec options;
+        SdrTokenMap localMetadata;
         nodeProperties.push_back(
             std::make_unique<SdrShaderProperty>(
                 TfToken(p.name),
@@ -242,9 +243,9 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             defaultValue = VtValue(GfVec3f(0.0,0.0,0.0));
         }
 
-        NdrTokenMap hints;
-        NdrOptionVec options;
-        NdrTokenMap localMetadata;
+        SdrTokenMap hints;
+        SdrOptionVec options;
+        SdrTokenMap localMetadata;
         nodeProperties.push_back(
             std::make_unique<SdrShaderProperty>(
                 TfToken(t.name),
@@ -258,7 +259,7 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             ));
     }
 
-    NdrTokenMap metadata = discoveryResult.metadata;
+    SdrTokenMap metadata = discoveryResult.metadata;
     std::vector<std::string> primvarNames;
     if (metadata.count(SdrNodeMetadata->Primvars)) {
         primvarNames.push_back(metadata.at(SdrNodeMetadata->Primvars));

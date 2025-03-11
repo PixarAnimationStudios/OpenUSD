@@ -697,7 +697,7 @@ public:
 
     /// Computes the ratio between incident luminance and photometric exposure 
     /// (in lux-seconds), given the <tt>exposure</tt>, <tt>exposure:iso</tt>, 
-    /// <tt>exposure:fnumber</tt>, <tt>exposure:time</tt> and
+    /// <tt>exposure:fStop</tt>, <tt>exposure:time</tt> and
     /// <tt>exposure:responsivity</tt> attributes.
     ///
     /// This is expected to be applied as a multiplier to the brightness of the 

@@ -24,6 +24,8 @@ TF_REGISTRY_FUNCTION(TfEnum)
                      "Attribute time samples");
     TF_ADD_ENUM_NAME(UsdResolveInfoSourceValueClips,
                      "Value clips");
+    TF_ADD_ENUM_NAME(UsdResolveInfoSourceSpline,
+                     "Spline value");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

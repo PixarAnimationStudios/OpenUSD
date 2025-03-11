@@ -13,9 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/converter/as_to_python_function.hpp>
-#else
 # include "pxr/external/boost/python/converter/to_python_function_type.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
@@ -58,5 +55,4 @@ struct as_to_python_function
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_AS_TO_PYTHON_FUNCTION_HPP

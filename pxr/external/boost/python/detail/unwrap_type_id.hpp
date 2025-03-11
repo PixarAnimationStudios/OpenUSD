@@ -12,10 +12,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/unwrap_type_id.hpp>
-#else
-
 # include "pxr/external/boost/python/type_id.hpp"
 
 # include "pxr/external/boost/python/detail/mpl2/bool.hpp"
@@ -40,5 +36,4 @@ inline type_info unwrap_type_id(U*, wrapper<T>*)
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_UNWRAP_TYPE_ID_HPP

@@ -14,10 +14,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/result.hpp>
-#else
-
 #  include "pxr/external/boost/python/type.hpp"
 
 #  include "pxr/external/boost/python/detail/preprocessor.hpp"
@@ -59,5 +55,4 @@ result(X const&, short = 0) { return 0; }
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_RESULT_HPP

@@ -505,6 +505,8 @@ private:
     stats::Session *_statsSession;
     int _progressPercent;
     int _progressMode;
+    uint64_t _startTime;
+    uint64_t _stopTime;
 
     // Riley instance.
     riley::Riley *_riley;
@@ -622,6 +624,7 @@ private:
 
     // Resolution for the render pass via render pass state.
     GfVec2i _resolution;
+    std::string _resolutionStr; // Used by UpdateRenderStats
 
     RtParamList _integratorParams;
     /// ------------------------------------------------------------------------

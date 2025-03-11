@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/def_helper_fwd.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/not_specified.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
@@ -26,5 +22,4 @@ struct def_helper;
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEF_HELPER_FWD_HPP

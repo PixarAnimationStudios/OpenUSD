@@ -341,6 +341,10 @@ HdDataSourceMaterialNetworkInterface::GetNodeParameterData(
             if (colorSpaceDS) {
                 paramData.colorSpace = colorSpaceDS->GetTypedValue(0);
             }
+            HdTokenDataSourceHandle typeNameDS = pSchema.GetTypeName();
+            if (typeNameDS) {
+                paramData.typeName = typeNameDS->GetTypedValue(0);
+            }
             return paramData;
         }
         // overridden with nullptr data source means deletion
@@ -353,9 +357,13 @@ HdDataSourceMaterialNetworkInterface::GetNodeParameterData(
         if (HdSampledDataSourceHandle paramValueDS = pSchema.GetValue()) {
             paramData.value = paramValueDS->GetValue(0);
         }
-            // ColorSpace
+        // ColorSpace
         if (HdTokenDataSourceHandle colorSpaceDS = pSchema.GetColorSpace()) {
             paramData.colorSpace = colorSpaceDS->GetTypedValue(0);
+        }
+        // TypeName
+        if (HdTokenDataSourceHandle typeNameDS = pSchema.GetTypeName()) {
+            paramData.typeName = typeNameDS->GetTypedValue(0);
         }
     }
 
@@ -554,6 +562,11 @@ HdDataSourceMaterialNetworkInterface::SetNodeParameterData(
                     ? nullptr /* colorSpace */
                     : HdRetainedTypedSampledDataSource<TfToken>::New(
                         paramData.colorSpace))
+            .SetTypeName(
+                paramData.typeName.IsEmpty()
+                    ? nullptr /* typeName */
+                    : HdRetainedTypedSampledDataSource<TfToken>::New(
+                        paramData.typeName))
             .Build();
     _SetOverride(locator, ds);
 }

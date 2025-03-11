@@ -19,7 +19,6 @@ pxr_plugin(sdrOsl
         tf
         vt
         ar
-        ndr
         sdr
         ${OSL_QUERY_LIBRARY}
         ${OIIO_LIBRARIES}

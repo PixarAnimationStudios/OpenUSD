@@ -4,7 +4,7 @@
             "Info": {
                 "Types": {
                     "RmanDiscoveryPlugin" : {
-                        "bases": ["NdrDiscoveryPlugin"],
+                        "bases": ["SdrDiscoveryPlugin"],
                         "displayName": "RenderMan .args/.osl Discovery"
                     }
                 }

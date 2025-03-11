@@ -134,6 +134,16 @@ SdrShaderNode::_PostProcessProperties()
     }
 }
 
+const SdrTokenVec&
+SdrShaderNode::GetShaderInputNames() const {
+    return NdrNode::GetInputNames();
+}
+
+const SdrTokenVec&
+SdrShaderNode::GetShaderOutputNames() const {
+    return NdrNode::GetOutputNames();
+}
+
 SdrShaderPropertyConstPtr
 SdrShaderNode::GetShaderInput(const TfToken& inputName) const
 {

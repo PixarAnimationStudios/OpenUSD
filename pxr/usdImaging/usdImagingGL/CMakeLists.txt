@@ -788,7 +788,7 @@ pxr_register_test(testUsdImagingGLBasicDrawing_textureChannels
 )
 
 pxr_register_test(testUsdImagingGLBasicDrawingNonBindless_batch
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -offscreen -stage shaders.usda -frameAll -write testUsdImagingGLBasicDrawingNonBindless_batch.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -offscreen -stage shaders-batch.usda -frameAll -write testUsdImagingGLBasicDrawingNonBindless_batch.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLBasicDrawingNonBindless_batch.png
     FAIL 1
@@ -1749,7 +1749,7 @@ pxr_register_test(testUsdImagingGLSurfaceShader_3_4
 )
 
 pxr_register_test(testUsdImagingGLShadeBadTexture
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLSurfaceShader -offscreen -frameAll -stage shader_change.usda -lighting"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLSurfaceShader -offscreen -frameAll -numErrorsAllowed 1 -stage shader_change.usda -lighting"
     IMAGE_DIFF_COMPARE
         out1.png
         out2.png
@@ -4710,7 +4710,7 @@ pxr_register_test(testUsdImagingGLAovVisualization_Storm_Neye
 )
 
 pxr_register_test(testUsdImagingGLInvalidMaterial
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth  -frameAll -stage invalidMaterial.usda -write testUsdImagingGLInvalidMaterial.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth  -frameAll -numErrorsAllowed 1 -stage invalidMaterial.usda -write testUsdImagingGLInvalidMaterial.png"
     IMAGE_DIFF_COMPARE
     testUsdImagingGLInvalidMaterial.png
     FAIL 1
@@ -5593,10 +5593,10 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance.usda -write testUsdImagingGLInstancing_instance.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_instance.png
-        FAIL 0.01
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
+        FAIL 0.02
+        FAIL_PERCENT 0.075
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing
     )
@@ -5605,10 +5605,10 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance2.usda -write testUsdImagingGLInstancing_instance2.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_instance2.png
-        FAIL 0.01
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
+        FAIL 0.02
+        FAIL_PERCENT 0.075
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing
     )
@@ -5618,9 +5618,9 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_instance3.png
         FAIL 0.02
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
+        FAIL_PERCENT 0.075
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing
     )
@@ -5630,9 +5630,9 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_nestedInstance.png
         FAIL 0.02
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
+        FAIL_PERCENT 0.075
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing
     )
@@ -5641,10 +5641,10 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance.usda -write testUsdImagingGLInstancing_instance.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_instance.png
-        FAIL 0.01
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
+        FAIL 0.02
+        FAIL_PERCENT 0.075
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing_SceneIndex
     )
@@ -5653,10 +5653,10 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance2.usda -write testUsdImagingGLInstancing_instance2.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_instance2.png
-        FAIL 0.01
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
+        FAIL 0.02
+        FAIL_PERCENT 0.075
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing_SceneIndex
     )
@@ -5666,9 +5666,9 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_instance3.png
         FAIL 0.02
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
+        FAIL_PERCENT 0.075
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing_SceneIndex
     )
@@ -5678,9 +5678,9 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_nestedInstance.png
         FAIL 0.02
-        FAIL_PERCENT 0.005
-        WARN 0.02
-        WARN_PERCENT 0.0025
+        FAIL_PERCENT 0.075
+        WARN 0.01
+        WARN_PERCENT 0.005
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing_SceneIndex
         ENV

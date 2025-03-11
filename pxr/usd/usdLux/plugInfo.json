@@ -246,12 +246,12 @@
                     }, 
                     "UsdLux_DiscoveryPlugin": {
                         "bases": [
-                            "NdrDiscoveryPlugin"
+                            "SdrDiscoveryPlugin"
                         ]
                     }, 
                     "UsdLux_LightDefParserPlugin": {
                         "bases": [
-                            "NdrParserPlugin"
+                            "SdrParserPlugin"
                         ]
                     }
                 }

@@ -244,7 +244,7 @@ class Shader "Shader" (
 #include "pxr/usd/usdShade/input.h"
 #include "pxr/usd/usdShade/output.h"
 #include "pxr/usd/usdShade/tokens.h"
-#include "pxr/usd/ndr/declare.h"
+#include "pxr/usd/sdr/declare.h"
 #include "pxr/usd/sdr/shaderNode.h"'''
     }
 ) {
@@ -267,7 +267,7 @@ class "NodeDefAPI"
 
     This schema provides properties that allow a prim to identify an external
     node definition, either by a direct identifier key into the SdrRegistry
-    (info:id), an asset to be parsed by a suitable NdrParserPlugin
+    (info:id), an asset to be parsed by a suitable SdrParserPlugin
     (info:sourceAsset), or an inline source code that must also be parsed
     (info:sourceCode); as well as a selector attribute to determine which
     specifier is active (info:implementationSource).
@@ -275,7 +275,7 @@ class "NodeDefAPI"
     customData = {
         token apiSchemaType = "singleApply"
         string extraIncludes = """
-#include "pxr/usd/ndr/declare.h"
+#include "pxr/usd/sdr/declare.h"
 #include "pxr/usd/sdr/shaderNode.h"
     """
         dictionary schemaTokens = {

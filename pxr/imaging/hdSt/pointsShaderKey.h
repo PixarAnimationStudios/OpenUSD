@@ -19,7 +19,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HdSt_PointsShaderKey : public HdSt_ShaderKey
 {
     HDST_API
-    HdSt_PointsShaderKey();
+    HdSt_PointsShaderKey(bool nativeRoundPoints);
     HDST_API
     ~HdSt_PointsShaderKey();
 
@@ -33,8 +33,8 @@ struct HdSt_PointsShaderKey : public HdSt_ShaderKey
     }
 
     TfToken glslfx;
-    TfToken VS[6];
-    TfToken FS[6];
+    TfToken VS[7];
+    TfToken FS[7];
 };
 
 

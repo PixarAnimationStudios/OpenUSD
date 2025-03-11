@@ -140,7 +140,7 @@ _StringFromValue(const TfToken& s)
 static string
 _StringFromValue(const SdfAssetPath& assetPath)
 {
-    return _StringFromAssetPath(assetPath.GetAssetPath());
+    return _StringFromAssetPath(assetPath.GetAuthoredPath());
 }
 
 static string

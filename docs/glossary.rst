@@ -854,7 +854,7 @@ Default Value
 Many assets consist entirely of a static (with respect to time) definition,
 which really exists "outside time". When encoding such assets in a format that
 only allows `timeSamples <#usdglossary-timesample>`_, one must choose a
-"sentinel" time ordinate at which to record static data, and hope that no other
+"sentinel" time coordinate at which to record static data, and hope that no other
 application uses that sentinel time for any other purpose. This can be fragile,
 and also lead to the "static" definition becoming overshadowed and not easily
 accessible when overridden in a stronger layer.
@@ -863,7 +863,7 @@ USD addresses this problem by providing a completely separate field for each
 attribute, called its *default*. This field can be authored and resolved in
 isolation of any authored timeSamples anywhere in an attribute's `index
 <#usdglossary-index>`_, by using the universal, reserved sentinel
-:usdcpp:`UsdTimeCode::Default` as the (implicit or explicit) time ordinate to
+:usdcpp:`UsdTimeCode::Default` as the (implicit or explicit) time coordinate to
 :usdcpp:`UsdAttribute::Get` and :usdcpp:`UsdAttribute::Set`.  When
 `resolving an attribute's value <#usdglossary-valueresolution>`_ at a
 non-Default time, defaults still participate, but within a given `primSpec
@@ -1423,8 +1423,7 @@ Interpolation
   :usda:`Mesh` primitive, a primitive can contain a single value to be held across
   the entire mesh, one value per-face, one value per-point to be interpolated
   either linearly or with the mesh's subdivision basis function, or one value per
-  face-vertex. For more information, see `Interpolation of Primitive
-  Variables. <api/class_usd_geom_primvar.html#Usd_InterpolationVals>`_
+  face-vertex. For more information, see :ref:`primvars`.
 
 .. _usdglossary-isaschema:
 
@@ -2303,7 +2302,7 @@ surface/volume of the primitive. In USD, you create and retrieve primvars using
 the :usdcpp:`UsdGeomImageable` schema, and interact with the special primvar
 encoding using the :usdcpp:`UsdGeomPrimvar` schema.
 
-There are two key aspects of Primvar identity:
+There are two key aspects of Primvars:
 
     * Primvars define a value that can vary across the primitive on which they
       are defined, via `prescribed interpolation rules
@@ -2311,11 +2310,15 @@ There are two key aspects of Primvar identity:
 
        ..
 
-    * Taken collectively on a prim, its Primvars describe the "per-primitive
-      overrides" to the shader(s) to which the prim is bound. Different
-      renderers may communicate the variables to the shaders using different
-      mechanisms over which Usd has no control; Primvars simply provide the
-      classification that any renderer should use to locate potential overrides.
+    * Taken collectively on a prim, its Primvars describe "per-primitive 
+      overrides" used to communicate variables to consumers, such as providing
+      providing joint influences for UsdSkel schemas, or shader variables for
+      renderers. In the shader use-case, different renderers may communicate the 
+      variables to the shaders using different mechanisms over which USD has no 
+      control; Primvars simply provide the classification that any renderer 
+      should use to locate potential overrides.
+
+For examples of primvars and primvar interpolation modes, see :ref:`primvars`.
 
 .. _usdglossary-property:
 
@@ -3501,17 +3504,110 @@ offset and scale time-varying data contained in the sub-layer(s)
 TimeCode
 ********
 
-*TimeCodes* are the unit-less time ordinate in USD. A :usdcpp:`UsdTimeCode` can
-encode the ordinate for a `TimeSample <#usdglossary-timesample>`_ in
-double-precision floating point, but can also encode the ordinate that maps to
+*TimeCodes* are the unit-less time coordinate in USD. A :usdcpp:`UsdTimeCode` 
+can encode the coordinate for a `TimeSample <#usdglossary-timesample>`_ in
+double-precision floating point, but can also encode the coordinate that maps to
 an attribute's `Default Value <#usdglossary-defaultvalue>`_. For any given
-composed scene, defined by its root layer, the TimeCode ordinates of the
-TimeSamples contained in the scene are scaled to seconds by the root layer's
+composed scene, defined by its root layer, the TimeCode coordinates of the
+TimeSamples contained in the scene are 
+:ref:`scaled to seconds <usdglossary-timecodes-scaled>` by the root layer's
 :usda:`timeCodesPerSecond` metadata, which can be retrieved with
 :usdcpp:`UsdStage::GetTimeCodesPerSecond`.  This allows clients great
 flexibility to encode their TimeSamples within the range and scale that makes
 the most sense for their application, while retaining a robust mapping to "real
 time" for decoding and playback.
+
+TimeCodes can also appear in USD scenes as the :usda:`timeCode` metadata or 
+attribute value type, and when they do, queried attribute *values* will receive 
+the same time-remapping that TimeSample coordinates do. Such timeCode-valued 
+attributes can serve as "timing curves" that maintain their accuracy through 
+composed layer offsets.
+
+.. _usdglossary-timecodes-scaled
+
+TimeCodes Scaled to Real Time
+*****************************
+
+For a composed scene, :ref:`TimeCode <usdglossary-timecode>` coordinate values 
+from :ref:`TimeSamples <usdglossary-timesample>` are scaled to real-time seconds 
+by the root layer's (or session layer's) :usda:`timeCodesPerSecond` metadata. 
+In the following example layer, the translation TimeSample on Sphere at TimeCode 
+240 corresponds to 10 seconds of real time, based on the layer's 
+:usda:`timeCodesPerSecond` of 24.
+
+.. code-block:: usda 
+
+  #usda 1.0
+  (
+      timeCodesPerSecond = 24
+      endTimeCode = 240
+      startTimeCode = 1
+  )
+
+  def Xform "Asset"
+  {
+      def Sphere "Sphere"
+      {
+          double3 xformOp:translate.timeSamples = {
+              1: (0, 5.0, 0),
+              240: (0, -5.0, 0),
+          }
+          uniform token[] xformOpOrder = ["xformOp:translate"]
+      }
+  }
+
+
+If a layer specifies :usda:`timeCodesPerSecond` and is sublayered or referenced 
+into another layer, the TimeCode values and TimeSample coordinates in the 
+sublayered/referenced layer are automatically scaled to map into the timing 
+defined by the root layer's :usda:`timeCodesPerSecond`. If the previous example 
+layer was referenced into another layer that specified a 
+:usda:`timeCodesPerSecond` value of 48, the TimeSamples on Sphere would be 
+scaled accordingly. For example, the TimeSample at TimeCode 240 would be scaled 
+to TimeCode 480 to ensure that the translation still occurs at 10 seconds of 
+real time.
+
+USD also provides the :usda:`framesPerSecond` layer metadata, however this is 
+not used to directly scale TimeCodes, but instead used as an indication of the 
+desired play-back rate when the animation is viewed in a playback device 
+(DCC tool, usdview, etc). If the previous example layer specified a 
+:usda:`framesPerSecond` of 12, this would *not* change the scaling of the 
+TimeSample at TimeCode 240, and instead change the playback rate in a playback 
+device to march forward by two TimeCodes for each consecutive rendered frame, 
+which will be held for 1/12 of a second.
+
+.. code-block:: usda
+
+  #usda 1.0
+  (
+      timeCodesPerSecond = 24
+      framesPerSecond = 12
+      endTimeCode = 240
+      startTimeCode = 1
+  )
+
+Note that :usda:`framesPerSecond` can be used indirectly to scale TimeCodes, 
+because it is used as a fallback value for :usda:`timeCodesPerSecond` if 
+:usda:`timeCodesPerSecond` is not set. The order of precedence USD uses for 
+determining the :usda:`timeCodesPerSecond` to use is: 
+
+* :usda:`timeCodesPerSecond` from session layer
+* :usda:`timeCodesPerSecond` from root layer
+* :usda:`framesPerSecond` from session layer
+* :usda:`framesPerSecond` from root layer
+* fallback value of 24 
+
+The general best practice is to use :usda:`timeCodesPerSecond` to specify how 
+TimeCodes are scaled to real time, and :usda:`framesPerSecond` if you need to 
+encode a specific playback rate on playback devices, regardless of how many 
+samples per second are recorded in the USD scene.
+
+.. note::
+
+    We provide the information about :usda:`framesPerSecond` as fallback for 
+    :usda:`timeCodesPerSecond` primarily as a debugging aid, should you observe 
+    unexpected time-scaling. The fallback behavior derives only from USD's 
+    relationship to Pixar's Presto animation system.
 
 .. _usdglossary-timesample:
 
@@ -3525,16 +3621,16 @@ The term *timeSample* is used in two related contexts in USD:
       
       Each `PropertySpec <#usdglossary-propertyspec>`_ for an `Attribute
       <#usdglossary-attribute>`_ can contain a collection called *timeSamples*
-      that maps `TimeCode <#usdglossary-timecode>`_ ordinates to values of the
+      that maps `TimeCode <#usdglossary-timecode>`_ coordinates to values of the
       Attribute's type.
 
-    * **The time-ordinate for an Attribute** 
+    * **The time-coordinate for an Attribute** 
 
-      USD API sometimes refers to just the ordinate of a time-varying value as a
-      TimeSample; for example, :usdcpp:`UsdAttribute::GetTimeSamples` and
+      USD API sometimes refers to just the coordinate of a time-varying value as 
+      a TimeSample; for example, :usdcpp:`UsdAttribute::GetTimeSamples` and
       :usdcpp:`UsdAttribute::GetTimeSamplesInInterval` return
-      a simple vector of time ordinates at which samples may be resolved on the
-      attribute.
+      a simple vector of time coordinates at which samples may be resolved on 
+      the attribute.
 
 .. _usdglossary-typedschema:
 
@@ -3710,7 +3806,7 @@ unique in three ways:
 
     #. **Interpolation** 
 
-       If the requested time ordinate falls between two samples, and the
+       If the requested time coordinate falls between two samples, and the
        :usdcpp:`stage is configured for linear interpolation
        <UsdStage::SetInterpolationType>` (which it
        is by default), then we will `attempt to apply linear interpolation of
@@ -3746,7 +3842,7 @@ unique in three ways:
    which will ensure that if there is *any* timeSample authored for the
    attribute, it will provide the value, rather than the *default*, which is all
    that is consulted when :cpp:`UsdTimeCode::Default()` is the given time
-   ordinate.
+   coordinate.
 
 .. _usdglossary-variability:
 

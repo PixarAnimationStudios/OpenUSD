@@ -12,7 +12,11 @@
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/plug/plugin.h"
 #include "rmanDiscovery.h"
+#if PXR_VERSION >= 2505
+#include "pxr/usd/sdr/filesystemDiscoveryHelpers.h"
+#else
 #include "pxr/usd/ndr/filesystemDiscoveryHelpers.h"
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -22,16 +26,21 @@ TF_DEFINE_PRIVATE_TOKENS(
     (oso)
 );
 
+#if PXR_VERSION >= 2505
+SDR_REGISTER_DISCOVERY_PLUGIN(RmanDiscoveryPlugin)
+#else
 NDR_REGISTER_DISCOVERY_PLUGIN(RmanDiscoveryPlugin)
+using SdrStringVec = NdrStringVec;
+#endif
 
-static NdrStringVec computeDefaultSearchPaths()
+static SdrStringVec computeDefaultSearchPaths()
 {
-    NdrStringVec searchPaths;
+    SdrStringVec searchPaths;
 
     // RMAN_SHADERPATH contains OSL (.oso)
     std::string shaderpath = TfGetenv("RMAN_SHADERPATH");
     if (!shaderpath.empty()) {
-        NdrStringVec paths = TfStringSplit(shaderpath, ARCH_PATH_LIST_SEP);
+        SdrStringVec paths = TfStringSplit(shaderpath, ARCH_PATH_LIST_SEP);
         for (std::string const& path : paths)
             searchPaths.push_back(path);
     } 
@@ -55,7 +64,7 @@ static NdrStringVec computeDefaultSearchPaths()
     std::string rixpluginpath = TfGetenv("RMAN_RIXPLUGINPATH");
     if (!rixpluginpath.empty()) {
         // Assume that args files are under an 'Args' directory
-        NdrStringVec paths = TfStringSplit(rixpluginpath, ARCH_PATH_LIST_SEP);
+        SdrStringVec paths = TfStringSplit(rixpluginpath, ARCH_PATH_LIST_SEP);
         for (std::string const& path : paths) {
             searchPaths.push_back(TfStringCatPaths(path, "Args"));
         }
@@ -68,15 +77,15 @@ static NdrStringVec computeDefaultSearchPaths()
     return searchPaths;
 }
 
-static NdrStringVec &
+static SdrStringVec &
 RmanDiscoveryPlugin_GetDefaultSearchPaths()
 {
-    static NdrStringVec defaultSearchPaths = computeDefaultSearchPaths();
+    static SdrStringVec defaultSearchPaths = computeDefaultSearchPaths();
     return defaultSearchPaths;
 }
 
 void
-RmanDiscoveryPlugin_SetDefaultSearchPaths(const NdrStringVec &paths)
+RmanDiscoveryPlugin_SetDefaultSearchPaths(const SdrStringVec &paths)
 {
     RmanDiscoveryPlugin_GetDefaultSearchPaths() = paths;
 }
@@ -109,24 +118,31 @@ RmanDiscoveryPlugin::RmanDiscoveryPlugin(Filter filter)
 
 RmanDiscoveryPlugin::~RmanDiscoveryPlugin() = default;
 
+#if PXR_VERSION >= 2505
+SdrShaderNodeDiscoveryResultVec
+RmanDiscoveryPlugin::DiscoverShaderNodes(const Context& context)
+{
+    auto result = SdrFsHelpersDiscoverShaderNodes(
+#else
 NdrNodeDiscoveryResultVec
 RmanDiscoveryPlugin::DiscoverNodes(const Context& context)
 {
     auto result = NdrFsHelpersDiscoverNodes(
+#endif
         _searchPaths, _allowedExtensions, _followSymlinks, &context
     );
 
     // Filter results.
     if (_filter) {
         result.erase(std::remove_if(result.begin(), result.end(), 
-            [this](NdrNodeDiscoveryResult &dr) { return !this->_filter(dr); }), 
+            [this](SdrShaderNodeDiscoveryResult &dr) { return !this->_filter(dr); }), 
             result.end());
     }
 
     return result;
 }
 
-const NdrStringVec& 
+const SdrStringVec& 
 RmanDiscoveryPlugin::GetSearchURIs() const
 {
     return _searchPaths;

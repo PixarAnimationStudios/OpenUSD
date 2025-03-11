@@ -200,6 +200,7 @@ pxr_library(hdSt
         shaders/meshWire.glslfx
         shaders/points.glslfx
         shaders/pointId.glslfx
+        shaders/pointDisk.glslfx
         shaders/ptexTexture.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx

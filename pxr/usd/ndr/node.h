@@ -153,10 +153,16 @@ public:
     /// @{
 
     /// Get an ordered list of all the input names on this node.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of SdrShaderNode::GetShaderInputNames
     NDR_API
     const NdrTokenVec& GetInputNames() const;
 
     /// Get an ordered list of all the output names on this node.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of SdrShaderNode::GetShaderOutputNames
     NDR_API
     const NdrTokenVec& GetOutputNames() const;
 

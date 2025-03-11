@@ -17,10 +17,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/none.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
@@ -29,5 +25,4 @@ inline PyObject* none() { Py_INCREF(Py_None); return Py_None; }
     
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_NONE_HPP

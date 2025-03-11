@@ -115,10 +115,10 @@ UsdShadeInput::HasRenderType() const
 }
 
 
-NdrTokenMap
+SdrTokenMap
 UsdShadeInput::GetSdrMetadata() const
 {
-    NdrTokenMap result;
+    SdrTokenMap result;
 
     VtDictionary sdrMetadata;
     if (GetAttr().GetMetadata(UsdShadeTokens->sdrMetadata, &sdrMetadata)){
@@ -139,7 +139,7 @@ UsdShadeInput::GetSdrMetadataByKey(const TfToken &key) const
 }
     
 void 
-UsdShadeInput::SetSdrMetadata(const NdrTokenMap &sdrMetadata) const
+UsdShadeInput::SetSdrMetadata(const SdrTokenMap &sdrMetadata) const
 {
     for (auto &i: sdrMetadata) {
         SetSdrMetadataByKey(i.first, i.second);

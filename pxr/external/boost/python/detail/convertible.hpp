@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/convertible.hpp>
-#else
-
 # if defined(__EDG_VERSION__) && __EDG_VERSION__ <= 241
 #  include "pxr/external/boost/python/detail/mpl2/if.hpp"
 #  include "pxr/external/boost/python/detail/type_traits.hpp"
@@ -47,5 +43,4 @@ struct convertible
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CONVERTIBLE_HPP

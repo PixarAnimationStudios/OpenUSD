@@ -33,6 +33,8 @@ using UsdImagingGLEngineSharedPtr = std::shared_ptr<class UsdImagingGLEngine>;
 
 int main(int argc, char *argv[])
 {
+    TfErrorMark mark;
+
     // prepare GL context
     int width = 512, height = 512;
     GarchGLDebugWindow window("UsdImagingGL Test", width, height);
@@ -124,4 +126,12 @@ int main(int argc, char *argv[])
     engine->Render(stage->GetPseudoRoot(), params);
     UsdImagingGL_UnitTestGLDrawing::WriteAovToFile(
         engine.get(), HdAovTokens->color, "add_sublayer_with_sub.png");
+    
+    if (mark.IsClean()) {
+        std::cout << "OK" << std::endl;
+        return EXIT_SUCCESS;
+    } else {
+        std::cout << "FAILED" << std::endl;
+        return EXIT_FAILURE;
+    }
 }

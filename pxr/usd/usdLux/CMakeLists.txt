@@ -7,8 +7,8 @@ pxr_library(usdLux
     LIBRARIES
         tf
         vt
-        ndr
         sdf
+        sdr
         usd
         usdGeom
         usdShade

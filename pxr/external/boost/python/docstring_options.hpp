@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/docstring_options.hpp>
-#else
-
 #include "pxr/external/boost/python/object/function.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
@@ -139,5 +135,4 @@ class PXR_BOOST_PYTHON_DECL docstring_options
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DOCSTRING_OPTIONS_HPP

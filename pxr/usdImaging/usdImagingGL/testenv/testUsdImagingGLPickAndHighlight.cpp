@@ -202,86 +202,26 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     std::cout << "My_TestGLDrawing::DrawTest()\n";
 
     std::cout << "Testing just picking/TestIntersection without rendering\n";
-    const std::map<TfToken, OutHit>& expectedOutputs = {
-        { 
-            TfToken(""), 
-                { GfVec3d(3.386115312576294, -2.0000052452087402, -0.5881438851356506),
+
+    static const TfToken _stormRendererPluginName("HdStormRendererPlugin");
+    const OutHit expectedOut =
+        (_engine->GetCurrentRendererId() == _stormRendererPluginName) ?
+        OutHit{ GfVec3d(3.386115312576294, -2.0000052452087402, -0.5881438851356506),
                 GfVec3d(0, -0.9980430603027344, 2.2161007702308985e-16),
                 SdfPath("/Group/GI1/I1/Mesh1/Plane1"), 
                 _stage->GetPrimAtPath(SdfPath("/Group/GI1/I1")).GetPrototype().
-                    GetPath().AppendPath(SdfPath("Mesh1")),
+                GetPath().AppendPath(SdfPath("Mesh1")),
                 2,
-                {} }
-        },
-        {
-            TfToken("HdEmbreeRendererPlugin"), 
-                { GfVec3d(5.819578170776367, -15.916473388671875, -4.240192413330078),
+                {}
+        } :
+        OutHit{ GfVec3d(5.819578170776367, -15.916473388671875, -4.240192413330078),
                 GfVec3d(0, 0, 0),
                 SdfPath("/Instance/I1/Mesh1/Plane1"), 
                 SdfPath::EmptyPath(),
                 0,
-                {} }
-        }
-    };
+                {}
+        };
 
-    const UsdImagingGLEngine::IntersectionResultVector expectedOutputVector = {
-        {
-        GfVec3d(0.0, 0.0, 0.0),
-        GfVec3d(0.0, 0.0, 0.0),
-        SdfPath("/Group/GI1/I1/Mesh1/Plane1"),
-        _stage->GetPrimAtPath(SdfPath("/Group/GI1/I1")).GetPrototype().
-            GetPath().AppendPath(SdfPath("Mesh1")),
-        2,
-        {}
-        },
-        {
-        GfVec3d(0.0, 0.0, 0.0),
-        GfVec3d(0.0, 0.0, 0.0),
-        SdfPath("/Group/GI2/I1/Mesh1/Plane2"),
-        _stage->GetPrimAtPath(SdfPath("/Group/GI2/I1")).GetPrototype().
-            GetPath().AppendPath(SdfPath("Mesh1")),
-        3,
-        {}
-        },
-        {
-        GfVec3d(0.0, 0.0, 0.0),
-        GfVec3d(0.0, 0.0, 0.0),
-        SdfPath("/Instance/I1/Mesh1/Plane1"),
-        _stage->GetPrimAtPath(SdfPath("/Instance/I1")).GetPrototype().
-            GetPath().AppendPath(SdfPath("Mesh1")),
-        0,
-        {}
-        },
-        {
-        GfVec3d(0.0, 0.0, 0.0),
-        GfVec3d(0.0, 0.0, 0.0),
-        SdfPath("/Group/GI2/I1/Mesh1/Plane1"),
-        _stage->GetPrimAtPath(SdfPath("/Group/GI2/I1")).GetPrototype().
-            GetPath().AppendPath(SdfPath("Mesh1")),
-        3,
-        {}
-        },
-        {
-        GfVec3d(0.0, 0.0, 0.0),
-        GfVec3d(0.0, 0.0, 0.0),
-        SdfPath("/Group/GI1/I1/Mesh1/Plane2"),
-        _stage->GetPrimAtPath(SdfPath("/Group/GI1/I1")).GetPrototype().
-            GetPath().AppendPath(SdfPath("Mesh1")),
-        2,
-        {}
-        },
-        {
-        GfVec3d(0.0, 0.0, 0.0),
-        GfVec3d(0.0, 0.0, 0.0),
-        SdfPath("/Instance/I1/Mesh1/Plane2"),
-        _stage->GetPrimAtPath(SdfPath("/Instance/I1")).GetPrototype().
-            GetPath().AppendPath(SdfPath("Mesh1")),
-        0,
-        {}
-        }
-    };
-
-    const OutHit& expectedOut = expectedOutputs.at(_GetRenderer());
     Draw(false);
     OutHit testOut;
     Pick(GfVec2i(320, 130), GfVec2i(171, 131), &testOut);
@@ -302,9 +242,67 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     }
 
     // currently only HdStorm supports deep selection
-    static const TfToken _stormRendererPluginName("HdStormRendererPlugin");
     if (_engine->GetCurrentRendererId() == _stormRendererPluginName)
     {
+        const UsdImagingGLEngine::IntersectionResultVector
+            expectedOutputVector =
+        {
+            {
+            GfVec3d(0.0, 0.0, 0.0),
+            GfVec3d(0.0, 0.0, 0.0),
+            SdfPath("/Group/GI1/I1/Mesh1/Plane1"),
+            _stage->GetPrimAtPath(SdfPath("/Group/GI1/I1")).GetPrototype().
+                GetPath().AppendPath(SdfPath("Mesh1")),
+            2,
+            {}
+            },
+            {
+            GfVec3d(0.0, 0.0, 0.0),
+            GfVec3d(0.0, 0.0, 0.0),
+            SdfPath("/Group/GI2/I1/Mesh1/Plane2"),
+            _stage->GetPrimAtPath(SdfPath("/Group/GI2/I1")).GetPrototype().
+                GetPath().AppendPath(SdfPath("Mesh1")),
+            3,
+            {}
+            },
+            {
+            GfVec3d(0.0, 0.0, 0.0),
+            GfVec3d(0.0, 0.0, 0.0),
+            SdfPath("/Instance/I1/Mesh1/Plane1"),
+            _stage->GetPrimAtPath(SdfPath("/Instance/I1")).GetPrototype().
+                GetPath().AppendPath(SdfPath("Mesh1")),
+            0,
+            {}
+            },
+            {
+            GfVec3d(0.0, 0.0, 0.0),
+            GfVec3d(0.0, 0.0, 0.0),
+            SdfPath("/Group/GI2/I1/Mesh1/Plane1"),
+            _stage->GetPrimAtPath(SdfPath("/Group/GI2/I1")).GetPrototype().
+                GetPath().AppendPath(SdfPath("Mesh1")),
+            3,
+            {}
+            },
+            {
+            GfVec3d(0.0, 0.0, 0.0),
+            GfVec3d(0.0, 0.0, 0.0),
+            SdfPath("/Group/GI1/I1/Mesh1/Plane2"),
+            _stage->GetPrimAtPath(SdfPath("/Group/GI1/I1")).GetPrototype().
+                GetPath().AppendPath(SdfPath("Mesh1")),
+            2,
+            {}
+            },
+            {
+            GfVec3d(0.0, 0.0, 0.0),
+            GfVec3d(0.0, 0.0, 0.0),
+            SdfPath("/Instance/I1/Mesh1/Plane2"),
+            _stage->GetPrimAtPath(SdfPath("/Instance/I1")).GetPrototype().
+                GetPath().AppendPath(SdfPath("Mesh1")),
+            0,
+            {}
+            }
+        };
+
         // Test windowed deep selection
         UsdImagingGLEngine::IntersectionResultVector testOutVector;
         DeepSelect(GfVec2i(320, 130), GfVec2i(171, 131), testOutVector);
@@ -553,6 +551,15 @@ BasicTest(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+    TfErrorMark mark;
+
     BasicTest(argc, argv);
-    std::cout << "OK" << std::endl;
+
+    if (mark.IsClean()) {
+        std::cout << "OK" << std::endl;
+        return EXIT_SUCCESS;
+    } else {
+        std::cout << "FAILED" << std::endl;
+        return EXIT_FAILURE;
+    }
 }

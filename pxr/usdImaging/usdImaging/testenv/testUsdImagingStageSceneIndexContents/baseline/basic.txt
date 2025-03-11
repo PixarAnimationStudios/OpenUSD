@@ -76,12 +76,6 @@
 			/CoordSys/modelSpace
 		[worldSpace]
 			/CoordSys/worldSpace
-	[directMaterialBindings]
-		[preview]
-			[bindingStrength]
-				weakerThanDescendants
-			[materialPath]
-				/Materials/MyMaterial
 	[extent]
 		[max]
 			(2, 2, 2)
@@ -143,6 +137,14 @@
 				[(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
 			[role]
 				point
+	[usdMaterialBindings]
+		[preview]
+			[0]
+				[directMaterialBinding]
+					[bindingStrength]
+						weakerThanDescendants
+					[materialPath]
+						/Materials/MyMaterial
 </Materials> type = 
 	[__usdPrimInfo]
 		[isLoaded]
@@ -168,6 +170,76 @@
 			[config]
 			[interfaceMappings]
 			[nodes]
+				[MyPrimvar]
+					[inputConnections]
+					[nodeIdentifier]
+						HwPrimvar_1
+					[parameters]
+						[varname]
+							[colorSpace]
+								
+							[typeName]
+								token
+							[value]
+								map1_uv
+				[MySurface]
+					[inputConnections]
+						[diffuseColor]
+							[0]
+								[upstreamNodeOutputName]
+									color
+								[upstreamNodePath]
+									MyTexture
+					[nodeIdentifier]
+						
+					[nodeTypeInfo]
+						[glslfx:sourceAsset]
+							@shader1.glslfx@
+						[implementationSource]
+							sourceAsset
+						[sdrMetadata]
+							{}
+					[parameters]
+				[MyTexture]
+					[inputConnections]
+						[uv]
+							[0]
+								[upstreamNodeOutputName]
+									result
+								[upstreamNodePath]
+									MyPrimvar
+					[nodeIdentifier]
+						HwUvTexture_1
+					[parameters]
+						[file]
+							[colorSpace]
+								
+							[typeName]
+								asset
+							[value]
+								@texture1.jpg@
+			[terminals]
+				[surface]
+					[upstreamNodeOutputName]
+						surface
+					[upstreamNodePath]
+						MySurface
+		[__all]
+			[config]
+			[interfaceMappings]
+			[nodes]
+				[DisconnectedNode]
+					[inputConnections]
+					[nodeIdentifier]
+						AbsFloat_1
+					[parameters]
+						[input]
+							[colorSpace]
+								
+							[typeName]
+								float
+							[value]
+								1.2
 				[MyPrimvar]
 					[inputConnections]
 					[nodeIdentifier]

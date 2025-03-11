@@ -14,10 +14,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/ssize_t.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
@@ -38,5 +34,4 @@ ssize_t const ssize_t_min = INT_MIN;
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_SSIZE_T_HPP

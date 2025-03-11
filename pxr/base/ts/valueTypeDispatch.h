@@ -47,22 +47,14 @@ template <
 void TsDispatchToValueTypeTemplate(
     TfType valueType, Args&&... args)
 {
-    if (valueType == Ts_GetType<double>())
-    {
-        Cls<double>()(std::forward<Args>(args)...);
-    }
-    else if (valueType == Ts_GetType<float>())
-    {
-        Cls<float>()(std::forward<Args>(args)...);
-    }
-    else if (valueType == Ts_GetType<GfHalf>())
-    {
-        Cls<GfHalf>()(std::forward<Args>(args)...);
-    }
-    else
-    {
-        TF_CODING_ERROR("Unsupported spline value type");
-    }
+#define _MAKE_CLAUSE(unused, tuple)                                         \
+if (valueType == Ts_GetType<TS_SPLINE_VALUE_CPP_TYPE(tuple)>())             \
+{                                                                           \
+    Cls<TS_SPLINE_VALUE_CPP_TYPE(tuple)>()(std::forward<Args>(args)...);    \
+    return;                                                                 \
+}
+TF_PP_SEQ_FOR_EACH(_MAKE_CLAUSE, ~, TS_SPLINE_SUPPORTED_VALUE_TYPES)
+    TF_CODING_ERROR("Unsupported spline value type");
 }
 
 

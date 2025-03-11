@@ -4,7 +4,7 @@
             "Info": {
                 "Types": {
                     "SdrGlslfxParserPlugin": {
-                        "bases": ["NdrParserPlugin"], 
+                        "bases": ["SdrParserPlugin"], 
                         "displayName": "Glslfx-based shader definition parser plugin"
                     }
                 }

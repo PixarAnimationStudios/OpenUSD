@@ -746,9 +746,8 @@ UsdGeomXformable::TransformMightBeTimeVarying() const
     if (opOrderVec.size() == 0) {
         return false;
     }
-    const VtTokenArray &opOrderVecConst = opOrderVec.AsConst();
-    for (VtTokenArray::const_reverse_iterator it = opOrderVecConst.rbegin() ; 
-         it != opOrderVecConst.rend(); ++it) {
+    for (VtTokenArray::const_reverse_iterator it = opOrderVec.crbegin() ; 
+         it != opOrderVec.crend(); ++it) {
 
         const TfToken &opName = *it;
 

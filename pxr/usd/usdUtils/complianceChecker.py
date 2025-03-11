@@ -656,8 +656,8 @@ class ShaderPropertyTypeConformanceChecker(BaseRuleChecker):
                                                    assetLevelChecks)
 
     def _FillSdrNameToTypeMap(self, shadeNode, mapping):
-        for inputName in shadeNode.GetInputNames():
-            prop = shadeNode.GetInput(inputName)
+        for inputName in shadeNode.GetShaderInputNames():
+            prop = shadeNode.GetShaderInput(inputName)
             propName = prop.GetName()
             mapping[propName] = prop.GetTypeAsSdfType().GetSdfType()
 

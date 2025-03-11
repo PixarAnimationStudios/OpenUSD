@@ -6,9 +6,9 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usdMtlx/utils.h"
-#include "pxr/usd/ndr/declare.h"
-#include "pxr/usd/ndr/discoveryPlugin.h"
-#include "pxr/usd/ndr/filesystemDiscoveryHelpers.h"
+#include "pxr/usd/sdr/declare.h"
+#include "pxr/usd/sdr/discoveryPlugin.h"
+#include "pxr/usd/sdr/filesystemDiscoveryHelpers.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -29,7 +29,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((discoveryType, "mtlx"))
 );
 
-// Maps a nodedef name to its NdrNode name.
+// Maps a nodedef name to its SdrShaderNode name.
 using _NameMapping = std::map<std::string, std::string>;
 
 // Fill the name mapping with the shortest name found in the inheritance
@@ -85,7 +85,7 @@ _MapNodeNamesToBaseForVersioning(mx::ConstElementPtr mtlx, _NameMapping* mapping
     }
 }
 
-// Choose an Ndr name based on compatible MaterialX nodedef names.
+// Choose an Sdr name based on compatible MaterialX nodedef names.
 _NameMapping
 _ComputeNameMapping(const mx::ConstDocumentPtr& doc)
 {
@@ -119,7 +119,7 @@ _ComputeNameMapping(const mx::ConstDocumentPtr& doc)
     return result;
 }
 
-// Return the Ndr name for a nodedef name.
+// Return the Sdr name for a nodedef name.
 std::string
 _ChooseName(const std::string& nodeDefName, const _NameMapping& nameMapping)
 {
@@ -132,9 +132,9 @@ _ChooseName(const std::string& nodeDefName, const _NameMapping& nameMapping)
 static
 void
 _DiscoverNodes(
-    NdrNodeDiscoveryResultVec* result,
+    SdrShaderNodeDiscoveryResultVec* result,
     const mx::ConstDocumentPtr& doc,
-    const NdrDiscoveryUri& fileResult,
+    const SdrDiscoveryUri& fileResult,
     const _NameMapping& nameMapping)
 {
     TRACE_FUNCTION();
@@ -145,7 +145,7 @@ _DiscoverNodes(
     for (auto&& nodeDef: doc->getNodeDefs()) {
         bool implicitDefault;
         result->emplace_back(
-            NdrIdentifier(nodeDef->getName()),
+            SdrIdentifier(nodeDef->getName()),
             UsdMtlxGetVersion(nodeDef, &implicitDefault),
             _ChooseName(nodeDef->getName(), nameMapping),
             TfToken(nodeDef->getNodeString()),
@@ -160,22 +160,22 @@ _DiscoverNodes(
 } // anonymous namespace
 
 /// Discovers nodes in MaterialX files.
-class UsdMtlxDiscoveryPlugin : public NdrDiscoveryPlugin {
+class UsdMtlxDiscoveryPlugin : public SdrDiscoveryPlugin {
 public:
     UsdMtlxDiscoveryPlugin();
     ~UsdMtlxDiscoveryPlugin() override = default;
 
     /// Discover all of the nodes that appear within the the search paths
     /// provided and match the extensions provided.
-    NdrNodeDiscoveryResultVec DiscoverNodes(const Context&) override;
+    SdrShaderNodeDiscoveryResultVec DiscoverShaderNodes(const Context&) override;
 
     /// Gets the paths that this plugin is searching for nodes in.
-    const NdrStringVec& GetSearchURIs() const override;
+    const SdrStringVec& GetSearchURIs() const override;
 
 private:
     /// The paths (abs) indicating where the plugin should search for nodes.
-    NdrStringVec _customSearchPaths;
-    NdrStringVec _allSearchPaths;
+    SdrStringVec _customSearchPaths;
+    SdrStringVec _allSearchPaths;
 };
 
 UsdMtlxDiscoveryPlugin::UsdMtlxDiscoveryPlugin()
@@ -186,12 +186,12 @@ UsdMtlxDiscoveryPlugin::UsdMtlxDiscoveryPlugin()
     _allSearchPaths = UsdMtlxSearchPaths();
 }
 
-NdrNodeDiscoveryResultVec
-UsdMtlxDiscoveryPlugin::DiscoverNodes(const Context& context)
+SdrShaderNodeDiscoveryResultVec
+UsdMtlxDiscoveryPlugin::DiscoverShaderNodes(const Context& context)
 {
     TRACE_FUNCTION();
 
-    NdrNodeDiscoveryResultVec result;
+    SdrShaderNodeDiscoveryResultVec result;
 
     // Merge all MaterialX standard library files into a single document.
     //
@@ -207,7 +207,7 @@ UsdMtlxDiscoveryPlugin::DiscoverNodes(const Context& context)
 
     // Find the mtlx files from other search paths.
     for (auto&& fileResult:
-            NdrFsHelpersDiscoverFiles(
+            SdrFsHelpersDiscoverFiles(
                 _customSearchPaths,
                 UsdMtlxStandardFileExtensions(),
                 TfGetenvBool("USDMTLX_PLUGIN_FOLLOW_SYMLINKS", false))) {
@@ -220,7 +220,7 @@ UsdMtlxDiscoveryPlugin::DiscoverNodes(const Context& context)
     return result;
 }
 
-const NdrStringVec&
+const SdrStringVec&
 UsdMtlxDiscoveryPlugin::GetSearchURIs() const
 {
     TRACE_FUNCTION();
@@ -228,6 +228,6 @@ UsdMtlxDiscoveryPlugin::GetSearchURIs() const
     return _allSearchPaths;
 }
 
-NDR_REGISTER_DISCOVERY_PLUGIN(UsdMtlxDiscoveryPlugin)
+SDR_REGISTER_DISCOVERY_PLUGIN(UsdMtlxDiscoveryPlugin)
 
 PXR_NAMESPACE_CLOSE_SCOPE

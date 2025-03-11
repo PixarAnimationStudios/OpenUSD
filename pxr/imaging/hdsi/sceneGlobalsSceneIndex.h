@@ -11,6 +11,7 @@
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/usd/sdf/path.h"
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -96,7 +97,7 @@ private:
     friend class _SceneGlobalsDataSource;
 
     SdfPath _activeRenderPassPrimPath;
-    SdfPath _activeRenderSettingsPrimPath;
+    std::optional<SdfPath> _activeRenderSettingsPrimPath;
     double _time = std::numeric_limits<double>::quiet_NaN();
     int _sceneStateId = 0;
 };

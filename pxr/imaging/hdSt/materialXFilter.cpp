@@ -224,10 +224,10 @@ HdSt_GenMaterialXShader(
     cms->loadLibrary(stdLibraries);
     mxContext.getShaderGenerator().setColorManagementSystem(cms);
 
-    // Set the colorspace
-    // XXX: This is the equivalent of the default source colorSpace, which does
-    // not yet have a schema and is therefore not yet accessable here 
-    mxDoc->setColorSpace("lin_rec709");
+    // Set the target colorspace
+    // XXX: This is equivalent to the scene referred color space, and is 
+    // not yet accessible here
+    mxContext.getOptions().targetColorSpaceOverride = "lin_rec709";
 
     // Add the Direct Light mtlx file to the mxDoc 
     mx::DocumentPtr lightDoc = mx::createDocument();
@@ -1505,7 +1505,7 @@ HdSt_ApplyMaterialXFilter(
             sdrRegistry.GetShaderNodeFromSourceCode(
                 glslfxSourceCode,
                 HioGlslfxTokens->glslfx,
-                NdrTokenMap()); // metadata
+                SdrTokenMap()); // metadata
         HdMaterialNode2 newTerminalNode;
         newTerminalNode.nodeTypeId = sdrNode->GetIdentifier();
         newTerminalNode.inputConnections = terminalNode.inputConnections;

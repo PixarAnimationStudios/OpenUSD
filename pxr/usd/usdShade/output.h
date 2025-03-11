@@ -12,7 +12,7 @@
 #include "pxr/usd/usdShade/types.h"
 #include "pxr/usd/usdShade/utils.h"
 #include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/ndr/declare.h"
+#include "pxr/usd/sdr/declare.h"
 
 #include <vector>
 
@@ -123,15 +123,15 @@ public:
     /// We expect the keys in sdrMetadata to correspond to the keys 
     /// in \ref SdrPropertyMetadata. However, this is not strictly enforced by
     /// the API. The only allowed value type in the "sdrMetadata" dictionary is 
-    /// a std::string since it needs to be converted into a NdrTokenMap, which 
+    /// a std::string since it needs to be converted into a SdrTokenMap, which 
     /// Sdr will parse using the utilities available in \ref SdrMetadataHelpers.
     /// 
     /// @{
 
     /// Returns this Output's composed "sdrMetadata" dictionary as a 
-    /// NdrTokenMap.
+    /// SdrTokenMap.
     USDSHADE_API
-    NdrTokenMap GetSdrMetadata() const;
+    SdrTokenMap GetSdrMetadata() const;
     
     /// Returns the value corresponding to \p key in the composed 
     /// <b>sdrMetadata</b> dictionary.
@@ -141,7 +141,7 @@ public:
     /// Authors the given \p sdrMetadata value on this Output at the current 
     /// EditTarget.
     USDSHADE_API
-    void SetSdrMetadata(const NdrTokenMap &sdrMetadata) const;
+    void SetSdrMetadata(const SdrTokenMap &sdrMetadata) const;
 
     /// Sets the value corresponding to \p key to the given string \p value, in 
     /// the Output's "sdrMetadata" dictionary at the current EditTarget.

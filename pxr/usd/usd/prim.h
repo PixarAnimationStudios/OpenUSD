@@ -1524,8 +1524,8 @@ public:
     /// \name Parent & Stage
     // --------------------------------------------------------------------- //
 
-    /// Return this prim's parent prim.  Return an invalid UsdPrim if this is a
-    /// root prim.
+    /// Return this prim's parent prim.  Return a pseudoroot UsdPrim if this is
+    /// a root prim.  Return an invalid UsdPrim if this is a pseudoroot prim.
     UsdPrim GetParent() const {
         Usd_PrimDataConstPtr prim = get_pointer(_Prim());
         SdfPath proxyPrimPath = _ProxyPrimPath();

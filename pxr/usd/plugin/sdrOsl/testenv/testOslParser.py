@@ -7,7 +7,7 @@
 
 import os
 import unittest
-from pxr import Ndr
+from pxr import Sdr
 from pxr import SdrOsl
 from pxr.Sdr import shaderParserTestUtils as utils
 
@@ -22,9 +22,9 @@ class TestShaderNode(unittest.TestCase):
                       "primvars":"a|b|c"}
         cls.blindData = "unused blind data"
 
-        discoveryResult = Ndr.NodeDiscoveryResult(
+        discoveryResult = Sdr.NodeDiscoveryResult(
             "TestNodeOSL",   # Identifier
-            Ndr.Version(),   # Version
+            Sdr.Version(),   # Version
             "TestNodeOSL",   # Name
             "",              # Family
             "oso",           # Discovery type (extension)
@@ -37,12 +37,12 @@ class TestShaderNode(unittest.TestCase):
             subIdentifier=""
         )
 
-        cls.node = SdrOsl.OslParser().Parse(discoveryResult)
+        cls.node = SdrOsl.OslParser().ParseShaderNode(discoveryResult)
         assert cls.node is not None
 
     def test_Basic(self):
         """
-        Tests all node and property methods that originate from Ndr and are not
+        Tests all node and property methods that originate from Sdr and are not
         shading-specific, but still need to be tested to ensure the parser did
         its job correctly.
         """
@@ -81,9 +81,9 @@ class TestShaderNode(unittest.TestCase):
         blindData = ""
         subIdentifier = ""
 
-        discoveryResult = Ndr.NodeDiscoveryResult(
+        discoveryResult = Sdr.NodeDiscoveryResult(
             "TestShaderPropertiesNodeOSL",  # Identifier
-            Ndr.Version(),                  # Version
+            Sdr.Version(),                  # Version
             "TestShaderPropertiesNodeOSL",  # Name
             "",                             # Family
             "oso",                          # Discovery type (extension)
@@ -95,7 +95,7 @@ class TestShaderNode(unittest.TestCase):
             blindData,                      # blindData
             subIdentifier                   # subIdentifier
         )
-        node = SdrOsl.OslParser().Parse(discoveryResult)
+        node = SdrOsl.OslParser().ParseShaderNode(discoveryResult)
         assert node is not None
 
         utils.TestShaderPropertiesNode(node)

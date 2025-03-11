@@ -35,7 +35,7 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// \class UsdAttribute
 ///
 /// Scenegraph object for authoring and retrieving numeric, string, and array
-/// valued data, sampled over time.
+/// valued data, sampled over time, or animated by a spline
 ///
 /// The allowed value types for UsdAttribute are dictated by the Sdf
 /// ("Scene Description Foundations") core's data model, which we summarize in
@@ -46,15 +46,15 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// In addition to its value type, an Attribute has two other defining
 /// qualities:
 /// \li <b>Variability</b> Expresses whether an attribute is intended to
-/// have time samples (GetVariability() == \c SdfVariabilityVarying), or only
-/// a default (GetVariability() == \c SdfVariabilityUniform).  For more on
-/// reasoning about time samples, 
+/// have time samples or a spline (GetVariability() == \c SdfVariabilityVarying), 
+/// or only a default (GetVariability() == \c SdfVariabilityUniform).  For more 
+/// on reasoning about time samples, 
 /// see \ref Usd_AttributeValueMethods "Value & Time-Sample Accessors".
 ///
 /// \li <b>Custom</b> Determines whether an attribute belongs to a
 /// schema (IsCustom() == \c false), or is a user-defined, custom attribute.
 /// schema attributes will always be defined on a prim of the schema type,
-/// ans may possess fallback values from the schema, whereas custom 
+/// and may possess fallback values from the schema, whereas custom 
 /// attributes must always first be authored in order to be defined.  Note
 /// that \em custom is actually an aspect of UsdProperty, as UsdRelationship
 /// can also be custom or provided by a schema.
@@ -89,6 +89,10 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// attribute values at times where no value is explicitly authored.
 /// The desired behavior may be specified via UsdStage::SetInterpolationType.
 /// That behavior will be used for all calls to UsdAttribute::Get.
+///
+/// Note that for attributes with spline value sources, the interpolation
+/// behavior is determined by the spline itself, and the interpolation type
+/// set on the stage is ignored.
 ///
 /// The supported interpolation types are:
 ///
@@ -147,11 +151,14 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// \section Usd_AssetPathValuedAttributes Attributes of type SdfAssetPath and UsdAttribute::Get()
 ///
 /// If an attribute's value type is SdfAssetPath or SdfAssetPathArray, Get()
-/// performs extra work to compute the resolved asset paths, using the layer
-/// that has the strongest value opinion as the anchor for "relative" asset
-/// paths.  Both the unresolved and resolved results are available through
-/// SdfAssetPath::GetAssetPath() and SdfAssetPath::GetResolvedPath(),
-/// respectively.
+/// does extra work to perform variable expression evaluation and compute
+/// resolved asset paths. The layer that has the strongest value opinion is 
+/// used as the anchor for "relative" asset paths.  The unresolved results are
+/// available through SdfAssetPath::GetAssetPath. The fully resolved path
+/// (including any substitutions) can be retrieved with
+/// SdfAssetPath::GetResolvedPath. The authored or evaluated paths may
+/// be explicitly retrieved through SdfAssetPath::GetAuthoredPath and 
+/// SdfAssetPath::GetEvaluatedPath respectively.
 ///
 /// Clients that call Get() on many asset-path-valued attributes may wish to
 /// employ an ArResolverScopedCache to improve asset path resolution
@@ -169,8 +176,8 @@ public:
     /// @{
 
     /// An attribute's variability expresses whether it is intended to have
-    /// time-samples (\c SdfVariabilityVarying), or only a single default 
-    /// value (\c SdfVariabilityUniform).
+    /// time-samples or splines (\c SdfVariabilityVarying), or only a single 
+    /// default value (\c SdfVariabilityUniform).
     ///
     /// Variability is required meta-data of all attributes, and its fallback
     /// value is SdfVariabilityVarying.
@@ -374,9 +381,10 @@ public:
     /// If this function returns false, it is certain that this attribute's
     /// value remains constant over time.
     ///
-    /// This function is equivalent to checking if GetNumTimeSamples() > 1,
-    /// but may be more efficient since it does not actually need to get a
-    /// full count of all time samples.
+    /// This function checks if the attribute either has more than 1 time
+    /// samples or is spline valued. Which is more efficient than actually
+    /// counting the time samples or evaluating the spline, both of which
+    /// are potentially expensive operations.
     USD_API
     bool ValueMightBeTimeVarying() const;
 
@@ -475,19 +483,25 @@ public:
     USD_API
     bool Set(const VtValue& value, UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    /// IN DEVELOPMENT.
+    /// Returns true if the attribute has a spline as a value source.
+    ///
+    /// That is if a stronger default value is authored over weaker spline
+    /// value, the default value will hide the spline value and return false.
     USD_API
     bool HasSpline() const;
 
-    /// IN DEVELOPMENT.
+    /// Returns a copy of the spline.
+    ///
+    /// If a stronger default value is authored over weaker spline value, the
+    /// default value will hide the spline value.
     USD_API
     TsSpline GetSpline() const;
 
-    /// IN DEVELOPMENT.
+    /// Set the spline using the current edit target.
     USD_API
     bool SetSpline(const TsSpline &spline);
 
-    /// Clears the authored default value and all time samples for this
+    /// Clears the authored default value, all time samples and spline for this
     /// attribute at the current EditTarget and returns true on success.
     ///
     /// Calling clear when either no value is authored or no spec is present,

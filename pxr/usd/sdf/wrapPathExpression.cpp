@@ -13,6 +13,7 @@
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/vt/wrapArray.h"
 
 #include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/pathExpressionEval.h"
@@ -32,6 +33,11 @@ using namespace pxr_boost::python;
 using PathExpr = SdfPathExpression;
 using ExpressionReference = PathExpr::ExpressionReference;
 using PathPattern = PathExpr::PathPattern;
+
+TF_REGISTRY_FUNCTION(VtValue)
+{
+    VtRegisterValueCastsFromPythonSequencesToArray<SdfPathExpression>();
+}
 
 static std::string
 _Repr(SdfPathExpression const &self) {
@@ -59,6 +65,11 @@ _GetBasicPredicateLib() {
         })
         .Define("isPropertyPath", [](SdfPath const &p) {
             return p.IsPropertyPath();
+        })
+        .Define("capital", [](SdfPath const &p) {
+            std::string const &name = p.GetName();
+            auto isCap = [](char l) { return 'A' <= l && l <= 'Z'; };
+            return !name.empty() && isCap(name[0]);
         })
         ;
     return theLib;
@@ -199,6 +210,7 @@ void wrapPathExpression()
         .def(self == self)
         .def(self != self)
         ;
+
     VtValueFromPython<SdfPathExpression>();
 
     TfPyWrapEnum<PathExpr::Op>();

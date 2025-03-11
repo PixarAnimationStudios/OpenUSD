@@ -9,13 +9,31 @@ pxr_library(usdSkelImaging
         usdSkel
 
     PUBLIC_CLASSES
-        skeletonAdapter
-        skelRootAdapter
+        animationAdapter
+        animationSchema
+        bindingAPIAdapter
+        bindingSchema
+        blendShapeAdapter
+        blendShapeSchema
+        dataSourceAnimationPrim
+        dataSourceBindingAPI
+        dataSourceBlendShapePrim
+        dataSourceSkeletonPrim
+        extComputations
+        inbetweenShapeSchema
         package
+        resolvingSceneIndexPlugin
+        skelData
+        skeletonAdapter
+        skeletonSchema
+        skelGuideData
+        skelRootAdapter
+        tokens
         utils
 
     PUBLIC_HEADERS
         api.h
+        dataSourceUtils.h
 
     RESOURCE_FILES
         plugInfo.json

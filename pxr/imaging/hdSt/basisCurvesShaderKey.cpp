@@ -128,6 +128,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((surfaceFS,                       "Fragment.Surface"))
     ((surfaceUnlitFS,                  "Fragment.SurfaceUnlit"))
     ((scalarOverrideFS,                "Fragment.ScalarOverride"))
+
+    // rounded points
+    ((pointSizeBiasVS,                 "PointDisk.Vertex.PointSizeBias"))
+    ((noPointSizeBiasVS,               "PointDisk.Vertex.None"))
+    ((diskSampleMaskFS,                "PointDisk.Fragment.SampleMask"))
+    ((noDiskSampleMaskFS,              "PointDisk.Fragment.None"))
 );
 
 static TfToken HdSt_BasisToShaderKey(const TfToken& basis){
@@ -151,7 +157,8 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     TfToken shadingTerminal,
     bool hasAuthoredTopologicalVisibility,
     bool pointsShadingEnabled,
-    bool hasMetalTessellation)
+    bool hasMetalTessellation,
+    bool nativeRoundPoints)
     : useMetalTessellation(false)
     , glslfx(_tokens->baseGLSLFX)
 {
@@ -201,8 +208,11 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
         VS[vsIndex++] = _tokens->pointIdVS;
         VS[vsIndex++] = _tokens->pointIdSelDecodeUtilsVS;
         VS[vsIndex++] = _tokens->pointIdSelPointSelVS;
+        VS[vsIndex++] = nativeRoundPoints ? _tokens->noPointSizeBiasVS :
+            _tokens->pointSizeBiasVS;
     } else {
         VS[vsIndex++] = _tokens->pointIdNoneVS;
+        VS[vsIndex++] =  _tokens->noPointSizeBiasVS;
     }
     VS[vsIndex]  = TfToken();
 
@@ -485,11 +495,17 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     }
     FS[fsIndex++] = _tokens->scalarOverrideFS;
 
-    FS[fsIndex++] = isPrimTypePoints?
-                        _tokens->pointIdFS : _tokens->pointIdFallbackFS;
-    
+    if (isPrimTypePoints) {
+        FS[fsIndex++] = _tokens->pointIdFS;
+        FS[fsIndex++] = nativeRoundPoints ? _tokens->noDiskSampleMaskFS :
+            _tokens->diskSampleMaskFS;
+    } else {
+        FS[fsIndex++] = _tokens->pointIdFallbackFS;
+        FS[fsIndex++] = _tokens->noDiskSampleMaskFS;
+    }
+
     FS[fsIndex++] = hasAuthoredTopologicalVisibility? _tokens->topVisFS :
-                                                      _tokens->topVisFallbackFS;
+                        _tokens->topVisFallbackFS;
 
 
     if (drawStyle == HdSt_BasisCurvesShaderKey::WIRE || 

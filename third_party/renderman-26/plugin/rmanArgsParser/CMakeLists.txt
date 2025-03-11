@@ -8,7 +8,6 @@ pxr_plugin(rmanArgsParser
         tf
         vt
         ar
-        ndr
         sdr
 
     PRIVATE_CLASSES

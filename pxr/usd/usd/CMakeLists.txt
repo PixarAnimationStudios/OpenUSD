@@ -141,12 +141,19 @@ pxr_library(usd
 
     PYMODULE_FILES
         __init__.py
+        usdGenSchema.py
 
     RESOURCE_FILES
+        codegenTemplates/__init__.py
         codegenTemplates/api.h
+        codegenTemplates/CMakeLists.txt
         codegenTemplates/generatedSchema.classes.txt
         codegenTemplates/generatedSchema.module.h
+        codegenTemplates/module.cpp
+        codegenTemplates/moduleDeps.cpp
         codegenTemplates/plugInfo.json:no_subst
+        codegenTemplates/schema.usda
+        codegenTemplates/schemaUserDoc.usda
         codegenTemplates/schemaClass.cpp
         codegenTemplates/schemaClass.h
         codegenTemplates/tokens.cpp
@@ -189,10 +196,22 @@ else()
     )
 endif()
 
+if (NOT PXR_ENABLE_PYTHON_SUPPORT)
+    message(STATUS "Skipping building usdInitSchema, Python modules required.")
+elseif (NOT JINJA2_FOUND)
+    message(WARNING "Skipping building usdInitSchema due to missing dependency: Jinja2")
+else()
+    pxr_python_bin(usdInitSchema
+        DEPENDENCIES
+            usd
+    )
+endif()
+
 pxr_test_scripts(
     testenv/testUsdAppliedAPISchemas.py
     testenv/testUsdAttributeBlocking.py
     testenv/testUsdAttributeConnections.py
+    testenv/testUsdAttributeAssetPathVariableExpressions.py
     testenv/testUsdAttributeQuery.py
     testenv/testUsdBugs.py
     testenv/testUsdBug119633.py
@@ -221,12 +240,17 @@ pxr_test_scripts(
     testenv/testUsdModel.py
     testenv/testUsdNamespaceEditor.py
     testenv/testUsdNamespaceEditorDependentEditsBase.py:testUsdNamespaceEditorDependentEditsBase.py
+    testenv/testUsdNamespaceEditorDependentEditsBasicClassArcs.py
     testenv/testUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads.py
+    testenv/testUsdNamespaceEditorDependentEditsBasicRelocates.py
     testenv/testUsdNamespaceEditorDependentEditsBasicSublayers.py
+    testenv/testUsdNamespaceEditorDependentEditsBasicVariants.py
+    testenv/testUsdNamespaceEditorDependentEditsSiblingNodeSpecConflicts.py
     testenv/testUsdNamespaceEditorProperties.py
     testenv/testUsdNamespaceEditorTargetPathFixup.py
     testenv/testUsdNotices.py
     testenv/testUsdObjectsChangedNotices.py
+    testenv/testUsdObjectsChangedNoticesSublayerOps.py
     testenv/testUsdOpaqueAttributes.py
     testenv/testUsdPathExpressionAttrs.py
     testenv/testUsdPayloads.py
@@ -480,6 +504,16 @@ pxr_build_test(testUsdUsdzBugGHSA01
         testenv/testUsdUsdzBugGHSA01.cpp
 )
 
+pxr_build_test(testUsdSplinesCpp
+    LIBRARIES
+        tf
+        ts
+        sdf
+        usd
+    CPPFILES
+        testenv/testUsdSplinesCpp.cpp
+)
+
 
 pxr_install_test_dir(
     SRC testenv/testUsdAppliedAPISchemas
@@ -619,6 +653,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdNamespaceEditorTargetPathFixup
     DEST testUsdNamespaceEditorTargetPathFixup
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdObjectsChangedNoticesSublayerOps
+    DEST testUsdObjectsChangedNoticesSublayerOps
 )
 
 pxr_install_test_dir(
@@ -784,6 +823,12 @@ pxr_register_test(testUsdAttributeBlockingCpp
 pxr_register_test(testUsdAttributeConnections
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeConnections"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAttributeAssetPathVariableExpressions
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeAssetPathVariableExpressions"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -1202,9 +1247,21 @@ pxr_register_test(testUsdObjectsChangedNotices
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdObjectsChangedNoticesSublayerOps
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdObjectsChangedNoticesSublayerOps"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdNamespaceEditor
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNamespaceEditor"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdNamespaceEditorDependentEditsBasicClassArcs
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNamespaceEditorDependentEditsBasicClassArcs"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -1214,9 +1271,27 @@ pxr_register_test(testUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdNamespaceEditorDependentEditsBasicRelocates
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNamespaceEditorDependentEditsBasicRelocates"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdNamespaceEditorDependentEditsBasicSublayers
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNamespaceEditorDependentEditsBasicSublayers"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdNamespaceEditorDependentEditsBasicVariants
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNamespaceEditorDependentEditsBasicVariants"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdNamespaceEditorDependentEditsSiblingNodeSpecConflicts
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNamespaceEditorDependentEditsSiblingNodeSpecConflicts"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -1286,6 +1361,11 @@ pxr_register_test(testUsdTimeValueAuthoring
 
 pxr_register_test(testUsdTimeValueAuthoringCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeValueAuthoringCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSplinesCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSplinesCpp"
     EXPECTED_RETURN_CODE 0
 )
 

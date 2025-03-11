@@ -73,8 +73,11 @@ _SceneGlobalsDataSource::Get(const TfToken &name)
         return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
     }
     if (name == HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim) {
-        SdfPath const &path = _si->_activeRenderSettingsPrimPath;
-        return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
+        if (_si->_activeRenderSettingsPrimPath) {
+            SdfPath const &path = *_si->_activeRenderSettingsPrimPath;
+            return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
+        }
+        return nullptr;
     }
     if (name == HdSceneGlobalsSchemaTokens->currentFrame) {
         const double timeCode = _si->_time;

@@ -10,10 +10,10 @@ For more details, please visit the web site [here](http://openusd.org).
 Build Status
 ------------
 
-|         |   Linux   |  Windows  |   macOS   |
-|:-------:|:---------:|:---------:|:---------:|
-|   dev   | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=dev&amp;jobName=Linux)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=dev) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=dev&amp;jobName=Windows)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=dev) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=dev&amp;jobName=macOS)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=dev) |
-|  release | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=release&amp;jobName=Linux)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=release) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=release&amp;jobName=Windows)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=release) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=release&amp;jobName=macOS)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=release) |
+|         |   Status   |
+|:-------:|:---------:|
+|   dev   | [![BuildUSD](https://github.com/PixarAnimationStudios/OpenUSD/actions/workflows/buildusd.yml/badge.svg?branch=dev)](https://github.com/PixarAnimationStudios/OpenUSD/actions/workflows/buildusd.yml) |
+|  release | [![BuildUSD](https://github.com/PixarAnimationStudios/OpenUSD/actions/workflows/buildusd.yml/badge.svg?branch=release)](https://github.com/PixarAnimationStudios/OpenUSD/actions/workflows/buildusd.yml) |
 
 Additional Documentation
 ------------------------

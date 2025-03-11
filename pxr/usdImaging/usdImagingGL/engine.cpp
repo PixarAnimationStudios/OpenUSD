@@ -30,6 +30,7 @@
 #include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
 #include "pxr/imaging/hdsi/sceneGlobalsSceneIndex.h"
 #include "pxr/imaging/hdx/pickTask.h"
+#include "pxr/imaging/hdx/task.h"
 #include "pxr/imaging/hdx/taskController.h"
 #include "pxr/imaging/hdx/tokens.h"
 
@@ -437,7 +438,7 @@ UsdImagingGLEngine::RenderBatch(
 
     _UpdateDomeLightCameraVisibility();
 
-    _Execute(params, _taskController->GetRenderingTasks());
+    _Execute(params, _taskController->GetRenderingTaskPaths());
 }
 
 void 
@@ -468,11 +469,26 @@ UsdImagingGLEngine::Render(
 bool
 UsdImagingGLEngine::IsConverged() const
 {
-    if (ARCH_UNLIKELY(!_renderDelegate)) {
+    if (ARCH_UNLIKELY(!(_taskController && _renderIndex))) {
         return true;
     }
+    
+    const SdfPathVector taskPaths =
+        _taskController->GetRenderingTaskPaths();
 
-    return _taskController->IsConverged();
+    for (const SdfPath &taskPath : taskPaths) {
+        const HdxTask * const hdxTask =
+            dynamic_cast<const HdxTask*>(
+                _renderIndex->GetTask(taskPath).get());
+        if (!hdxTask) {
+            continue;
+        }
+        if (!hdxTask->IsConverged()) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 //----------------------------------------------------------------------------
@@ -822,7 +838,7 @@ UsdImagingGLEngine::TestIntersection(
     const VtValue vtPickCtxParams(pickCtxParams);
 
     _engine->SetTaskContextData(HdxPickTokens->pickParams, vtPickCtxParams);
-    _Execute(params, _taskController->GetPickingTasks());
+    _Execute(params, _taskController->GetPickingTaskPaths());
 
     // return false if there were no hits
     if (allHits.size() == 0) {
@@ -1672,6 +1688,18 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
     }
 }
 
+void 
+UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
+                             const SdfPathVector &taskPaths)
+{
+    {
+        // Release the GIL before calling into hydra, in case any hydra plugins
+        // call into python.
+        TF_PY_ALLOW_THREADS_IN_SCOPE();
+        _engine->Execute(_renderIndex.get(), taskPaths);
+    }
+}
+
 bool 
 UsdImagingGLEngine::_CanPrepare(const UsdPrim& root)
 {
@@ -1860,11 +1888,9 @@ UsdImagingGLEngine::_MakeHydraUsdImagingGLRenderParams(
         renderParams.drawMode == UsdImagingGLDrawMode::DRAW_POINTS) {
         params.enableLighting = false;
     } else {
-        params.enableLighting =  renderParams.enableLighting &&
-                                !renderParams.enableIdRender;
+        params.enableLighting =  renderParams.enableLighting;
     }
 
-    params.enableIdRender      = renderParams.enableIdRender;
     params.depthBiasUseDefault = true;
     params.depthFunc           = HdCmpFuncLess;
     params.cullStyle           = USD_2_HD_CULL_STYLE[

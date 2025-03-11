@@ -7,7 +7,7 @@
 #include "pxr/usdImaging/usdImaging/niInstanceAggregationSceneIndex.h"
 
 #include "pxr/usdImaging/usdImaging/niPrototypeSceneIndex.h"
-
+#include "pxr/usdImaging/usdImaging/rerootingContainerDataSource.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((propagatedPrototypesScope, "UsdNiPropagatedPrototypes")));
-                         
+
 
 namespace UsdImaging_NiInstanceAggregationSceneIndex_Impl {
 
@@ -47,11 +47,11 @@ _GetPrimvarsSchema(
     if (!sceneIndex) {
         return HdPrimvarsSchema(nullptr);
     }
-    return 
+    return
         HdPrimvarsSchema::GetFromParent(
             sceneIndex->GetPrim(primPath).dataSource);
 }
-    
+
 // Gets primvar from prim at given path with given name in scene index.
 HdPrimvarSchema
 _GetPrimvarSchema(
@@ -128,7 +128,7 @@ _GetTypedPrimvarValue(
     HdSceneIndexBaseRefPtr const &sceneIndex,
     const SdfPath &primPath,
     const TfToken &primvarName)
-{ 
+{
     const VtValue value =
         _GetPrimvarValue(sceneIndex, primPath, primvarName);
     if (value.IsHolding<T>()) {
@@ -143,7 +143,7 @@ _GetTypedPrimvarValue(
     }
     return {};
 }
-    
+
 GfMatrix4d
 _GetPrimTransform(
     HdSceneIndexBaseRefPtr const &sceneIndex, const SdfPath &primPath)
@@ -191,7 +191,7 @@ public:
         const HdSampledDataSource::Time shutterOffset) override
     {
         VtArray<T> result(_instances->size());
-        
+
         int i = 0;
         for (const SdfPath &instance : *_instances) {
             result[i] = _GetTypedPrimvarValue<T>(
@@ -226,7 +226,7 @@ public:
     {
         return _PrimvarValueDataSource<T>::New(
             _inputSceneIndex, _instances, _primvarName);
-        
+
     }
 
     template <class T>
@@ -315,7 +315,7 @@ public:
                 return nullptr;
             }
             const SdfPath &primPath = *(_instances->begin());
-            return 
+            return
                 _GetPrimvarSchema(_inputSceneIndex, primPath, name)
                     .GetRole();
         }
@@ -365,7 +365,7 @@ public:
     VtArray<GfMatrix4d> GetTypedValue(const Time shutterOffset) override
     {
         VtArray<GfMatrix4d> result(_instances->size());
-        
+
         int i = 0;
         for (const SdfPath &instance : *_instances) {
             // If this is for a native instance within a Usd point instancer's
@@ -568,7 +568,7 @@ _GetVisibility(HdSceneIndexBaseRefPtr const &sceneIndex,
     }
 
     HdContainerDataSourceHandle const primDs =
-        sceneIndex->GetPrim(primPath).dataSource;        
+        sceneIndex->GetPrim(primPath).dataSource;
     HdBoolDataSourceHandle const ds =
         HdVisibilitySchema::GetFromParent(primDs).GetVisibility();
     if (!ds) {
@@ -713,7 +713,7 @@ std::string
 _ComputeConstantPrimvarsRoleHash(HdPrimvarsSchema primvarsSchema)
 {
     std::map<TfToken, TfToken> nameToRole;
-    
+
     for (const TfToken &name : primvarsSchema.GetPrimvarNames()) {
         HdPrimvarSchema primvarSchema = primvarsSchema.GetPrimvar(name);
         if (HdTokenDataSourceHandle const interpolationSrc =
@@ -896,11 +896,11 @@ public:
     void
     PrimsAdded(const HdSceneIndexBase &sender,
                const AddedPrimEntries &entries) override;
-    
+
     void
     PrimsDirtied(const HdSceneIndexBase &sender,
                  const DirtiedPrimEntries &entries) override;
-    
+
     void
     PrimsRemoved(const HdSceneIndexBase &sender,
                  const RemovedPrimEntries &entries) override;
@@ -922,7 +922,8 @@ private:
     using _PathToIntSharedPtr = std::shared_ptr<_PathToInt>;
     using _PathToPathToInt = std::map<SdfPath, _PathToIntSharedPtr>;
 
-    _InstanceInfo _GetInfo(const HdContainerDataSourceHandle &primSource);
+    _InstanceInfo _GetInfo(const SdfPath &primPath,
+                           const HdContainerDataSourceHandle &primSource);
     _InstanceInfo _GetInfo(const SdfPath &primPath);
 
     void _Populate();
@@ -937,7 +938,7 @@ private:
     void _ResyncPrim(const SdfPath &primPath);
     void _DirtyInstancerForInstance(const SdfPath &instance,
                                     const HdDataSourceLocatorSet &locators);
-    
+
     enum class _RemovalLevel : unsigned char {
         None = 0,
         Instance = 1,
@@ -1180,7 +1181,8 @@ _InstanceObserver::_Populate()
 }
 
 _InstanceInfo
-_InstanceObserver::_GetInfo(const HdContainerDataSourceHandle &primSource)
+_InstanceObserver::_GetInfo(const SdfPath &primPath,
+                            const HdContainerDataSourceHandle &primSource)
 {
     _InstanceInfo result;
 
@@ -1200,7 +1202,32 @@ _InstanceObserver::_GetInfo(const HdContainerDataSourceHandle &primSource)
         }
     }
     result.bindingHash = _ComputeBindingHash(
-        primSource, _instanceDataSourceNames);
+        // If this instance at primPath, say </MyInstance>, has a binding that
+        // is one of its namespace descendents, say </MyInstance/MyMaterial>,
+        // then the binding is really pointing to <MyMaterial> in the prototype.
+        //
+        // In other words, only the part relative to primPath is important for
+        // the binding in such a case.
+        //
+        // However, we do need to regard their bindings as distinct if both
+        // </MyInstance> and </MyInstance2> bind the same relative material
+        // <MyMaterial> but in two different prototypes.
+        //
+        // Thus, we do include the prototype name in the path translation.
+        //
+        // Note that we do another path translation below in
+        // _AddInstance when calling _MakeBindingCopy. That path translation is
+        // using a different path, namely that of the propagated prototype.
+        //
+        // The reason for using a different path here is to avoid a chicken and
+        // egg problem: we cannot use the path of the propagated prototype when
+        // computing the binding hash because that path itself depends on the
+        // binding hash.
+        UsdImagingRerootingContainerDataSource::New(
+            primSource,
+            primPath,
+            SdfPath::AbsoluteRootPath().AppendChild(result.prototypeName)),
+        _instanceDataSourceNames);
 
     return result;
 }
@@ -1208,7 +1235,7 @@ _InstanceObserver::_GetInfo(const HdContainerDataSourceHandle &primSource)
 _InstanceInfo
 _InstanceObserver::_GetInfo(const SdfPath &primPath)
 {
-    return _GetInfo(_inputScene->GetPrim(primPath).dataSource);
+    return _GetInfo(primPath, _inputScene->GetPrim(primPath).dataSource);
 }
 
 void
@@ -1226,7 +1253,11 @@ _InstanceObserver::_AddInstance(const SdfPath &primPath,
             { { info.GetBindingPrimPath(),
                 TfToken(),
                 _MakeBindingCopy(
-                    _inputScene->GetPrim(primPath).dataSource,
+                    // See the comment in _GetInfo when computing the binding
+                    // hash.
+                    UsdImagingRerootingContainerDataSource::New(
+                        _inputScene->GetPrim(primPath).dataSource,
+                        primPath, info.GetPrototypePath()),
                     _instanceDataSourceNames) } } );
     }
 
@@ -1391,11 +1422,11 @@ _InstanceObserver::_RemoveInstanceFromInfoToInstance(
 
             it1->second.erase(it2);
         }
-    
+
         if (!it1->second.empty()) {
             return _RemovalLevel::Instancer;
         }
-        
+
         it0->second.erase(it1);
     }
 
@@ -1441,7 +1472,7 @@ _InstanceObserver::_DirtyInstancerForInstance(
     }
 
     const SdfPath &instancer = it->second.GetInstancerPath();
-    
+
     _retainedSceneIndex->DirtyPrims({{instancer, locators}});
 }
 
@@ -1563,7 +1594,7 @@ _InstanceObserver::_ComputeInstanceToIndex(
     if (it0 == _infoToInstance.end()) {
         return result;
     }
-        
+
     auto it1 = it0->second.find(info.bindingHash);
     if (it1 == it0->second.end()) {
         return result;
@@ -1703,4 +1734,3 @@ _RetainedSceneIndexObserver::PrimsRenamed(
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

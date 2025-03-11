@@ -249,7 +249,7 @@ My_TestGLDrawing::DrawTest()
         _tokens->glslfxFilename, _tokens->defaultToken);
     HdStShaderCodeSharedPtrVector shaders = { renderPassShader, shader };
     
-    HdSt_PointsShaderKey shaderKey = HdSt_PointsShaderKey();
+    HdSt_PointsShaderKey shaderKey{/*nativeRoundPoints*/false};
 
     // Create the geometric shader.
     HdInstance<HdSt_GeometricShaderSharedPtr> geometricShaderInstance =

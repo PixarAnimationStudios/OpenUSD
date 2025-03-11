@@ -228,7 +228,8 @@ HgiVulkanShaderGenerator::_WriteMacros(std::ostream &ss)
           "#define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, "
           "expected, desired)\n"
           "#define atomic_int int\n"
-          "#define atomic_uint uint\n";
+          "#define atomic_uint uint\n"
+          "#define hd_SampleMask gl_SampleMask[0]\n";
 
     // Advertise to shader code that we support double precision math
     ss << "\n"
@@ -347,6 +348,7 @@ HgiVulkanShaderGenerator::_WriteInOuts(
         "gl_FragDepth",
         "gl_PointSize",
         "gl_CullDistance",
+        "hd_SampleMask",
     };
 
     // Some params are built-in, but we may want to declare them in the shader 
@@ -372,7 +374,8 @@ HgiVulkanShaderGenerator::_WriteInOuts(
         { HgiShaderKeywordTokens->hdLayer, "gl_Layer"},
         { HgiShaderKeywordTokens->hdViewportIndex, "gl_ViewportIndex"},
         { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"},
-        { HgiShaderKeywordTokens->hdBaryCoordNoPersp, "gl_BaryCoordNoPerspEXT"}
+        { HgiShaderKeywordTokens->hdBaryCoordNoPersp, "gl_BaryCoordNoPerspEXT"},
+        { HgiShaderKeywordTokens->hdSampleMaskIn, "gl_SampleMaskIn[0]"}
     };
 
     const bool in_qualifier = qualifier == "in";
@@ -402,11 +405,7 @@ HgiVulkanShaderGenerator::_WriteInOuts(
             const std::string &role = param.role;
             auto const& keyword = takenInParams.find(role);
             if (keyword != takenInParams.end()) {
-                if (role == HgiShaderKeywordTokens->hdGlobalInvocationID ||
-                    role == HgiShaderKeywordTokens->hdVertexID ||
-                    role == HgiShaderKeywordTokens->hdInstanceID ||
-                    role == HgiShaderKeywordTokens->hdBaseInstance ||
-                    role == HgiShaderKeywordTokens->hdBaryCoordNoPersp) {
+                if (paramName != keyword->second) {
                     CreateShaderSection<HgiVulkanKeywordShaderSection>(
                         paramName,
                         param.type,

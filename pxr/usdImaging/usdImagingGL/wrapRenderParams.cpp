@@ -53,7 +53,6 @@ wrapRenderParams()
         .def_readwrite("showProxy", &Params::showProxy)
         .def_readwrite("forceRefresh", &Params::forceRefresh)
         .def_readwrite("cullStyle", &Params::cullStyle)
-        .def_readwrite("enableIdRender", &Params::enableIdRender)
         .def_readwrite("enableLighting", &Params::enableLighting)
         .def_readwrite("enableSampleAlphaToCoverage", 
             &Params::enableSampleAlphaToCoverage)

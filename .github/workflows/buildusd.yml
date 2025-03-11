@@ -184,9 +184,7 @@ jobs:
             USDinst
           key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION }}-${{ hashFiles('build_scripts/**/*') }}
       - name: Upload artifacts
-        # use v3 because actions/upload-artifact@v4 fails
-        # see https://github.com/actions/upload-artifact/issues/485
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: usd-win64
           path: USDinst

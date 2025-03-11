@@ -12,7 +12,6 @@ pxr_plugin(rmanOslParser
         tf
         vt
         ar
-        ndr
         sdr
         ${PXRCORE_LIBRARY}
         ${PRMAN_LIBRARY}        

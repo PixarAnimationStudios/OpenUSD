@@ -279,7 +279,8 @@ bool
 UsdAttribute::Clear() const
 {
     return ClearDefault() 
-       && ClearMetadata(SdfFieldKeys->TimeSamples);
+       && ClearMetadata(SdfFieldKeys->TimeSamples)
+       && ClearMetadata(SdfFieldKeys->Spline);
 }
 
 bool

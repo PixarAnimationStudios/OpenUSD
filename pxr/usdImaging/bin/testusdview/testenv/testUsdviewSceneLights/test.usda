@@ -34,6 +34,5 @@ def Scope "Lights"
         float inputs:intensity = 20
         double3 xformOp:translate = (3, -3, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
-        int inputs:ri:light:fixedSampleCount = 1
     }
 }

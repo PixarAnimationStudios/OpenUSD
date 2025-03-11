@@ -100,7 +100,13 @@ PcpCache::PcpCache(
         _layerStackIdentifier, _fileFormatTarget, _usd)),
     _primDependencies(new Pcp_Dependencies())
 {
-    // Do nothing
+    _primIndexInputs
+        .Cache(this)
+        .VariantFallbacks(&_variantFallbackMap)
+        .IncludedPayloads(&_includedPayloads)
+        .Cull(TfGetEnvSetting(PCP_CULLING))
+        .USD(_usd)
+        .FileFormatTarget(_fileFormatTarget);
 }
 
 PcpCache::~PcpCache()
@@ -365,15 +371,10 @@ PcpCache::IsLayerMuted(const SdfLayerHandle& anchorLayer,
         anchorLayer, layerId, canonicalMutedLayerId);
 }
 
-PcpPrimIndexInputs 
-PcpCache::GetPrimIndexInputs()
+const PcpPrimIndexInputs &
+PcpCache::GetPrimIndexInputs() const
 {
-    return PcpPrimIndexInputs()
-        .Cache(this)
-        .VariantFallbacks(&_variantFallbackMap)
-        .IncludedPayloads(&_includedPayloads)
-        .Cull(TfGetEnvSetting(PCP_CULLING))
-        .FileFormatTarget(_fileFormatTarget);
+    return _primIndexInputs;
 }
 
 PcpLayerStackRefPtr
@@ -1669,10 +1670,8 @@ PcpCache::_ComputePrimIndexesInParallel(
     // Once all the indexes are computed, add them to the cache and add their
     // dependencies to the dependencies structures.
 
-    PcpPrimIndexInputs inputs = GetPrimIndexInputs()
-        .USD(_usd)
-        .IncludePayloadPredicate(payloadPred)
-        ;
+    PcpPrimIndexInputs inputs = GetPrimIndexInputs();
+    inputs.IncludePayloadPredicate(payloadPred);
 
     indexer->Prepare(childrenPred, inputs, allErrors, &parentCache,
                      mallocTag1, mallocTag2);
@@ -1694,7 +1693,7 @@ PcpCache::_ComputePrimIndexesInParallel(
 const PcpPrimIndex &
 PcpCache::ComputePrimIndex(const SdfPath & path, PcpErrorVector *allErrors) {
     return _ComputePrimIndexWithCompatibleInputs(
-        path, GetPrimIndexInputs().USD(_usd), allErrors);
+        path, GetPrimIndexInputs(), allErrors);
 }
 
 const PcpPrimIndex &

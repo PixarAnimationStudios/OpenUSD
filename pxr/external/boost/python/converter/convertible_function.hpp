@@ -13,15 +13,10 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/converter/convertible_function.hpp>
-#else
-
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
 
 typedef void* (*convertible_function)(PyObject*);
     
 }}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_CONVERTIBLE_FUNCTION_HPP

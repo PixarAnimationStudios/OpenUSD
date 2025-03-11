@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/invoke.hpp>
-#else
-
 #  include "pxr/external/boost/python/detail/prefix.hpp"
 #  include "pxr/external/boost/python/detail/preprocessor.hpp"
 #  include "pxr/external/boost/python/detail/none.hpp"
@@ -88,5 +84,4 @@ inline PyObject* invoke(invoke_tag_<true,true>, RC const&, F& f, TC& tc, AC&... 
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_INVOKE_HPP

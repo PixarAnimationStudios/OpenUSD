@@ -1,111 +1,39 @@
 set(PXR_PREFIX pxr/external/boost)
 set(PXR_PACKAGE python)
 
-set(libs "")
-set(include_dirs "")
-set(cppfiles "")
-
-# If we're building our own pxr_boost::python library, then we need
-# to specify the source files as well as our dependency on Python.
-# Otherwise, this library is just a pass-through for boost::python.
-if (PXR_USE_INTERNAL_BOOST_PYTHON)
-    # Use PYTHON_LIBRARIES instead of the Python3::Python target
-    # directly when specifying library dependencies to ensure
-    # PXR_PY_UNDEFINED_DYNAMIC_LOOKUP is respected.
-    set(libs
-        ${PYTHON_LIBRARIES}
-    )
-
-    # Specify PYTHON_INCLUDE_DIRS explicitly to ensure this library
-    # picks up Python headers when PXR_PY_UNDEFINED_DYNAMIC_LOOKUP
-    # is set.
-    set(include_dirs
-        ${PYTHON_INCLUDE_DIRS}
-    )
-
-    set(cppfiles
-        src/converter/arg_to_python_base.cpp
-        src/converter/builtin_converters.cpp
-        src/converter/from_python.cpp
-        src/converter/registry.cpp
-        src/converter/type_id.cpp
-        src/dict.cpp
-        src/errors.cpp
-        src/exec.cpp
-        src/import.cpp
-        src/list.cpp
-        src/long.cpp
-        src/module.cpp
-        src/object/class.cpp
-        src/object/enum.cpp
-        src/object/function.cpp
-        src/object/function_doc_signature.cpp
-        src/object/inheritance.cpp
-        src/object/iterator.cpp
-        src/object/life_support.cpp
-        src/object/pickle_support.cpp
-        src/object/stl_iterator.cpp
-        src/object_operators.cpp
-        src/object_protocol.cpp
-        src/slice.cpp
-        src/str.cpp
-        src/tuple.cpp
-        src/wrapper.cpp
-
-        # These source files are for boost::python's numpy extension.
-        # We do not build these because we don't use this extension
-        # and don't want to add a numpy dependency to the build.
-        #
-        # src/numpy/dtype.cpp
-        # src/numpy/matrix.cpp
-        # src/numpy/ndarray.cpp
-        # src/numpy/numpy.cpp
-        # src/numpy/scalars.cpp
-        # src/numpy/ufunc.cpp
-    )
-
-    # By default CMake defines NDEBUG in CMAKE_CXX_FLAGS_<config> for
-    # non-debug build configurations, which applies to all targets
-    # created in this directory. This disables assert calls in unit
-    # tests, rendering them useless in those configurations.
-    #
-    # To avoid this, we remove NDEBUG from CMAKE_CXX_FLAGS_<config>
-    # and reapply it only to the main library itself below.
-    if (MSVC)
-        set(ndebug_flag "/DNDEBUG")
-    else()
-        set(ndebug_flag "-DNDEBUG")
-    endif()
-
-    foreach(config RELEASE RELWITHDEBINFO MINSIZEREL)
-        string(REPLACE
-            ${ndebug_flag} ""
-            CMAKE_CXX_FLAGS_${config} ${CMAKE_CXX_FLAGS_${config}}
-        )
-    endforeach()
-
+# By default CMake defines NDEBUG in CMAKE_CXX_FLAGS_<config> for
+# non-debug build configurations, which applies to all targets
+# created in this directory. This disables assert calls in unit
+# tests, rendering them useless in those configurations.
+#
+# To avoid this, we remove NDEBUG from CMAKE_CXX_FLAGS_<config>
+# and reapply it only to the main library itself below.
+if (MSVC)
+    set(ndebug_flag "/DNDEBUG")
 else()
-    set(libs
-        ${Boost_PYTHON_LIBRARY}
-    )
-
-    set(include_dirs
-        ${Boost_INCLUDE_DIRS}
-    )
-
-    # Workaround lack of build support for header-only libs.
-    set(cppfiles 
-        build-workaround.cpp
-    )
+    set(ndebug_flag "-DNDEBUG")
 endif()
+
+foreach(config RELEASE RELWITHDEBINFO MINSIZEREL)
+    string(REPLACE
+        ${ndebug_flag} ""
+        CMAKE_CXX_FLAGS_${config} ${CMAKE_CXX_FLAGS_${config}}
+    )
+endforeach()
 
 pxr_library(python
     LIBRARIES
         boost
-        ${libs}
+        # Use PYTHON_LIBRARIES instead of the Python3::Python target
+        # directly when specifying library dependencies to ensure
+        # PXR_PY_UNDEFINED_DYNAMIC_LOOKUP is respected.
+        ${PYTHON_LIBRARIES}
 
     INCLUDE_DIRS
-        ${include_dirs}
+        # Specify PYTHON_INCLUDE_DIRS explicitly to ensure this library
+        # picks up Python headers when PXR_PY_UNDEFINED_DYNAMIC_LOOKUP
+        # is set.
+        ${PYTHON_INCLUDE_DIRS}
 
     PUBLIC_HEADERS
         arg_from_python.hpp
@@ -351,7 +279,44 @@ pxr_library(python
         # numpy.hpp
 
     CPPFILES
-        ${cppfiles}
+        src/converter/arg_to_python_base.cpp
+        src/converter/builtin_converters.cpp
+        src/converter/from_python.cpp
+        src/converter/registry.cpp
+        src/converter/type_id.cpp
+        src/dict.cpp
+        src/errors.cpp
+        src/exec.cpp
+        src/import.cpp
+        src/list.cpp
+        src/long.cpp
+        src/module.cpp
+        src/object/class.cpp
+        src/object/enum.cpp
+        src/object/function.cpp
+        src/object/function_doc_signature.cpp
+        src/object/inheritance.cpp
+        src/object/iterator.cpp
+        src/object/life_support.cpp
+        src/object/pickle_support.cpp
+        src/object/stl_iterator.cpp
+        src/object_operators.cpp
+        src/object_protocol.cpp
+        src/slice.cpp
+        src/str.cpp
+        src/tuple.cpp
+        src/wrapper.cpp
+
+        # These source files are for boost::python's numpy extension.
+        # We do not build these because we don't use this extension
+        # and don't want to add a numpy dependency to the build.
+        #
+        # src/numpy/dtype.cpp
+        # src/numpy/matrix.cpp
+        # src/numpy/ndarray.cpp
+        # src/numpy/numpy.cpp
+        # src/numpy/scalars.cpp
+        # src/numpy/ufunc.cpp
 
     DISABLE_PRECOMPILED_HEADERS
 )
@@ -362,32 +327,16 @@ target_compile_definitions(python
     PUBLIC PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 )
 
-if (PXR_USE_INTERNAL_BOOST_PYTHON)
-    # Add PXR_BOOST_PYTHON_SOURCE when building this library to ensure symbols
-    # decorated with PXR_BOOST_PYTHON_DECL are exported.
-    target_compile_definitions(python
-        PRIVATE PXR_BOOST_PYTHON_SOURCE
-    )
+# Add PXR_BOOST_PYTHON_SOURCE when building this library to ensure symbols
+# decorated with PXR_BOOST_PYTHON_DECL are exported.
+target_compile_definitions(python
+    PRIVATE PXR_BOOST_PYTHON_SOURCE
+)
 
-    # See comment about NDEBUG above.
-    target_compile_definitions(python
-        PRIVATE $<$<NOT:$<CONFIG:Debug>>:NDEBUG>
-    )
-else()
-    # Ensure symbol in build-workaround.cpp is exported on Windows,
-    # otherwise the build will error out at link time because no
-    # .lib file will be generated. Using this setting is OK because
-    # we only expect there to be one exportable symbol in this library.
-    set_target_properties(python
-        PROPERTIES 
-            WINDOWS_EXPORT_ALL_SYMBOLS TRUE
-    )
-
-    # Skip building tests, since in this case this library doesn't
-    # have any functionality on its own -- it's just a pass-through
-    # for boost::python.
-    return()
-endif()
+# See comment about NDEBUG above.
+target_compile_definitions(python
+    PRIVATE $<$<NOT:$<CONFIG:Debug>>:NDEBUG>
+)
 
 # Since we're not going through the normal pxr_build_test macros
 # we need to elide tests here if requested.

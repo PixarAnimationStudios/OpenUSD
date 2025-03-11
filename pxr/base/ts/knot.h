@@ -11,12 +11,14 @@
 #include "pxr/pxr.h"
 #include "pxr/base/ts/api.h"
 #include "pxr/base/ts/knotData.h"
+#include "pxr/base/ts/types.h"
 #include "pxr/base/ts/typeHelpers.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/gf/half.h"
-#include "pxr/base/tf/type.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
+#include "pxr/base/tf/type.h"
 
 #include <string>
 #include <memory>
@@ -367,6 +369,16 @@ using TsFloatKnot = TsTypedKnot<float>;
 /// \class TsHalfKnot
 /// A knot-construction convenience.  See TsTypedKnot.
 using TsHalfKnot = TsTypedKnot<GfHalf>;
+
+// Make sure we have coverage for all allowed types.
+#define _MAKE_CLAUSE(unused, tuple)                                          \
+    static_assert(std::is_same_v<TF_PP_CAT(TF_PP_CAT(Ts,                     \
+                    TS_SPLINE_VALUE_TYPE_NAME(tuple)), Knot),                \
+                  TsTypedKnot<TS_SPLINE_VALUE_CPP_TYPE(tuple)>>,             \
+                  "Incorrect type alias for TsKnot type: " #tuple);
+TF_PP_SEQ_FOR_EACH(_MAKE_CLAUSE, ~, TS_SPLINE_SUPPORTED_VALUE_TYPES)
+#undef _MAKE_CLAUSE
+
 
 
 ////////////////////////////////////////////////////////////////////////////////

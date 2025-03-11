@@ -311,7 +311,8 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
         # evaluating the expression and no resolved path.
         self.assertEqual(
             src_stage.GetAttributeAtPath('/TestRef.a').Get(),
-            Sdf.AssetPath('./test_from_ref.usda'))
+            Sdf.AssetPath(authoredPath='`"./${NAME}.usda"`', 
+                          evaluatedPath='./test_from_ref.usda'))
 
         # Now, flatten the *referenced* layer stack retrieved from /TestRef's
         # prim index. Flattening should evaluate the expression using the

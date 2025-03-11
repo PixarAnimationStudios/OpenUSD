@@ -338,6 +338,16 @@ std::ostream& operator<<(std::ostream&, const PcpLayerStackPtr&);
 PCP_API
 std::ostream& operator<<(std::ostream&, const PcpLayerStackRefPtr&);
 
+/// Returns true if negative layer offsets and scales are allowed.
+///
+/// Negative layer offset scales are deprecated and a warning will be issued
+/// when commulative scale during composition is negative with 
+/// PCP_ALLOW_NEGATIVE_LAYER_OFFSET_SCALE is set to true (default right now).
+/// If PCP_ALLOW_NEGATIVE_LAYER_OFFSET_SCALE is set to false, a coding error
+/// will be issued when a negative scale is encountered.
+PCP_API
+bool PcpNegativeLayerOffsetScaleAllowed();
+
 /// Checks if the source and target paths constitute a valid relocates. This
 /// validation is not context specific, i.e. if this returns false, the 
 /// combination of source and target paths is always invalid for any attempted

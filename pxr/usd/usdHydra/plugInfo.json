@@ -8,7 +8,7 @@
                 "Types": {
                     "UsdHydraDiscoveryPlugin": {
                         "bases": [
-                            "NdrDiscoveryPlugin"
+                            "SdrDiscoveryPlugin"
                         ], 
                         "displayName": "Discovery plugin for deprecated hydra shaders."
                     }, 

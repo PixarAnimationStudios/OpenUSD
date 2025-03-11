@@ -62,7 +62,6 @@ PtDspyError DspyImageOpen(
     if (!buf) {
         return PkDspyErrorBadParams;
     }
-    std::lock_guard<std::mutex> lock(buf->mutex);
 
     int count = 2;
     int origin[2];
@@ -74,10 +73,11 @@ PtDspyError DspyImageOpen(
                                 origin, paramCount, parameters);
     s_dspy->FindIntsInParamList("OriginalSize", &count,
                                 originalSize, paramCount, parameters);
-    buf->Resize(originalSize[0], originalSize[1],
-                origin[0], origin[1],
-                width, height);
 
+    {
+        std::lock_guard<std::mutex> lock(buf->mutex);
+        buf->Resize(originalSize[0], originalSize[1], origin[0], origin[1], width, height);
+    }
     *handle_p = buf;
     return PkDspyErrorNone;
 }
@@ -599,7 +599,7 @@ public:
                 m_alphaOffset = srfoffsets[i];
             }
         }
-
+        std::lock_guard<std::mutex> lock(m_buf->mutex);
         m_buf->Resize(width, height);
         return true;
     }

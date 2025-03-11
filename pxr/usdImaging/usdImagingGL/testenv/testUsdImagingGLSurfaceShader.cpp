@@ -255,15 +255,30 @@ My_TestGLDrawing::MouseMove(int x, int y, int modKeys)
     _mousePos[1] = y;
 }
 
-void
+int
 BasicTest(int argc, char *argv[])
 {
+    TfErrorMark mark;
+
     My_TestGLDrawing driver;
     driver.RunTest(argc, argv);
+
+    if (mark.IsClean()) {
+        std::cout << "OK" << std::endl;
+        return EXIT_SUCCESS;
+    } else {
+        size_t numErrors = 0;
+        mark.GetBegin(&numErrors);
+        if (static_cast<int>(numErrors) <= driver.GetNumErrorsAllowed()) {
+            std::cout << "OK" << std::endl;
+            return EXIT_SUCCESS;
+        }
+        std::cout << "FAILED" << std::endl;
+        return EXIT_FAILURE;
+    }
 }
 
 int main(int argc, char *argv[])
 {
-    BasicTest(argc, argv);
-    std::cout << "OK" << std::endl;
+    return BasicTest(argc, argv);
 }

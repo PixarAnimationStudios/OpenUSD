@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/object/class_wrapper.hpp>
-#else
-
 # include "pxr/external/boost/python/to_python_converter.hpp"
 # include "pxr/external/boost/python/ref.hpp"
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
@@ -69,5 +65,4 @@ struct class_value_wrapper
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CLASS_WRAPPER_HPP

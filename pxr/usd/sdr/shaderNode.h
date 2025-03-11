@@ -118,6 +118,14 @@ public:
     /// An input or output is also generically referred to as a "property".
     /// @{
 
+    /// Get an ordered list of all the input names on this shader node.
+    SDR_API
+    const SdrTokenVec& GetShaderInputNames() const;
+
+    /// Get an ordered list of all the output names on this shader node.
+    SDR_API
+    const SdrTokenVec& GetShaderOutputNames() const;
+
     /// Get a shader input property by name. `nullptr` is returned if an input
     /// with the given name does not exist.
     SDR_API

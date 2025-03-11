@@ -32,6 +32,13 @@ def Scope "Materials"
             uniform token inputs:varname = "map1_uv"
             float2 outputs:result
         }
+
+        # Node not connected to terminal
+        def Shader "DisconnectedNode"
+        {
+            uniform token info:id = "AbsFloat_1"
+            float inputs:input = 1.2
+        }
     }
 }
 

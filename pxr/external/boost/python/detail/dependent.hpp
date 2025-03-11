@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/dependent.hpp>
-#else
-
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 // A way to turn a concrete type T into a type dependent on U. This
@@ -36,5 +32,4 @@ struct dependent
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEPENDENT_HPP

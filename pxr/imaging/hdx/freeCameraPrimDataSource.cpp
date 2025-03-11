@@ -53,27 +53,27 @@ public:
         }
         if (name == HdCameraSchemaTokens->horizontalAperture) {
             return HdRetainedTypedSampledDataSource<float>::New(
-                _Camera().GetHorizontalAperture() /
+                _Camera().GetHorizontalAperture() *
                 GfCamera::APERTURE_UNIT);
         }
         if (name == HdCameraSchemaTokens->verticalAperture) {
             return HdRetainedTypedSampledDataSource<float>::New(
-                _Camera().GetVerticalAperture() /
+                _Camera().GetVerticalAperture() *
                 GfCamera::APERTURE_UNIT);
         }
         if (name == HdCameraSchemaTokens->horizontalApertureOffset) {
             return HdRetainedTypedSampledDataSource<float>::New(
-                _Camera().GetHorizontalApertureOffset() /
+                _Camera().GetHorizontalApertureOffset() *
                 GfCamera::APERTURE_UNIT);
         }
         if (name == HdCameraSchemaTokens->verticalApertureOffset) {
             return HdRetainedTypedSampledDataSource<float>::New(
-                _Camera().GetVerticalApertureOffset() /
+                _Camera().GetVerticalApertureOffset() *
                 GfCamera::APERTURE_UNIT);
         }
         if (name == HdCameraSchemaTokens->focalLength) {
             return HdRetainedTypedSampledDataSource<float>::New(
-                _Camera().GetFocalLength() /
+                _Camera().GetFocalLength() *
                 GfCamera::FOCAL_LENGTH_UNIT);
         }
         if (name == HdCameraSchemaTokens->clippingRange) {

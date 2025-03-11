@@ -8,6 +8,7 @@
 from pxr import Usd
 from pxr import UsdAppUtils
 from pxr import UsdUtils
+from pxr import Tf
 
 import os
 import sys
@@ -97,4 +98,6 @@ class TestUsdAppUtilsFrameRecorder(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    errorMark = Tf.Error.Mark()
     unittest.main()
+    AssertTrue(errorMark.IsClean())

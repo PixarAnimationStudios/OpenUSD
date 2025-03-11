@@ -141,7 +141,8 @@ private:
             UsdAttributeQuery valueQuery,
             UsdAttributeQuery indicesQuery,
             HdTokenDataSourceHandle interpolation,
-            HdTokenDataSourceHandle role);
+            HdTokenDataSourceHandle role,
+            HdIntDataSourceHandle elementSize = nullptr);
 
 private:
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
@@ -149,6 +150,7 @@ private:
     UsdAttributeQuery _indicesQuery;
     HdTokenDataSourceHandle _interpolation;
     HdTokenDataSourceHandle _role;
+    HdIntDataSourceHandle _elementSize;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourcePrimvar);

@@ -88,8 +88,9 @@ HdMaterialNetwork2Interface::GetMaterialConfigKeys() const
 VtValue
 HdMaterialNetwork2Interface::GetMaterialConfigValue(const TfToken& key) const
 {
-    if (auto result = _materialNetwork->config.GetValueAtPath(key.GetString())){
-        return *result;
+    const auto it = _materialNetwork->config.find(key.GetString());
+    if (it != _materialNetwork->config.end()) {
+        return it->second;
     }
     return VtValue();
 }

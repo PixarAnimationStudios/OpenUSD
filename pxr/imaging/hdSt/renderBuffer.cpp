@@ -23,13 +23,12 @@ HgiTextureUsage _GetTextureUsage(HdFormat format, TfToken const &name)
     // We are assuming at some point in a render buffer's lifetime it could be
     // used to read from, so provide that ability to the render buffer. This is 
     // especially useful for the HgiVulkan backend.
-
-    if (HdAovHasDepthSemantic(name)) {
-        return HgiTextureUsageBitsDepthTarget | HgiTextureUsageBitsShaderRead;
-    } else if (HdAovHasDepthStencilSemantic(name)) {
+    if (HdAovHasDepthStencilSemantic(name)) {
         return HgiTextureUsageBitsDepthTarget |
-               HgiTextureUsageBitsStencilTarget |
-               HgiTextureUsageBitsShaderRead;
+            HgiTextureUsageBitsStencilTarget |
+            HgiTextureUsageBitsShaderRead;
+    } else if (HdAovHasDepthSemantic(name)) {
+        return HgiTextureUsageBitsDepthTarget | HgiTextureUsageBitsShaderRead;
     }
 
     return HgiTextureUsageBitsColorTarget | HgiTextureUsageBitsShaderRead;

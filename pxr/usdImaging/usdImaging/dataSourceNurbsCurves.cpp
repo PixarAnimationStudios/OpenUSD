@@ -20,10 +20,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-std::vector<UsdImagingDataSourceMapped::AttributeMapping>
-_GetAttributeMappings()
+std::vector<UsdImagingDataSourceMapped::PropertyMapping>
+_GetPropertyMappings()
 {
-    std::vector<UsdImagingDataSourceMapped::AttributeMapping> result;
+    std::vector<UsdImagingDataSourceMapped::PropertyMapping> result;
 
     for (const TfToken &usdName :
              UsdGeomNurbsCurves::GetSchemaAttributeNames(
@@ -33,7 +33,9 @@ _GetAttributeMappings()
             // primvar we process in the prim source below).
             continue;
         }
-        result.push_back({ usdName, HdDataSourceLocator(usdName) });
+        result.push_back(
+            UsdImagingDataSourceMapped::AttributeMapping{
+                usdName, HdDataSourceLocator(usdName) });
     }
 
     for (const TfToken &usdName :
@@ -44,16 +46,18 @@ _GetAttributeMappings()
             // primvar that UsdImagingDataSourceGprim gives us).
             continue;
         }
-        result.push_back({ usdName, HdDataSourceLocator(usdName) });
+        result.push_back(
+            UsdImagingDataSourceMapped::AttributeMapping{
+                usdName, HdDataSourceLocator(usdName) });
     }
 
     return result;
 }
 
-const UsdImagingDataSourceMapped::AttributeMappings &
+const UsdImagingDataSourceMapped::PropertyMappings &
 _GetMappings() {
-    static const UsdImagingDataSourceMapped::AttributeMappings result(
-        _GetAttributeMappings(), HdNurbsCurvesSchema::GetDefaultLocator());
+    static const UsdImagingDataSourceMapped::PropertyMappings result(
+        _GetPropertyMappings(), HdNurbsCurvesSchema::GetDefaultLocator());
     return result;
 }
 

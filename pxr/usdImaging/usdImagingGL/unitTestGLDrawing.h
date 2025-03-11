@@ -74,6 +74,7 @@ public:
     CameraUtilConformWindowPolicy const &
     GetWindowPolicy() const { return _windowPolicy; }
     UsdImagingGLCullStyle GetCullStyle() const { return _cullStyle; }
+    int GetNumErrorsAllowed() const { return _numErrorsAllowed; }
 
     void RunTest(int argc, char *argv[]);
 
@@ -155,6 +156,8 @@ private:
     bool _showProxy;
     bool _presentComposite;
     bool _presentDisabled;
+
+    int _numErrorsAllowed;
 };
 
 

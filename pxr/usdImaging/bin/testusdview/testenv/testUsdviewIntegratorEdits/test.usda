@@ -59,7 +59,6 @@ def Scope "World"
             double3 xformOp:rotateXYZ = (-60, 31.5, 0)
             double3 xformOp:translate = (3.6, 11.4, 6)
             token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
-            int inputs:ri:light:fixedSampleCount = 1
         }
     }
 }

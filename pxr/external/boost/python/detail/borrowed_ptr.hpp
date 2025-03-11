@@ -4,9 +4,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/borrowed_ptr.hpp>
-#else
 //
 // Copyright 2024 Pixar
 // Licensed under the terms set forth in the LICENSE.txt file available at
@@ -88,5 +85,4 @@ inline T* get_managed_object(detail::borrowed<T> const volatile* p, tag_t)
 
 }} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // #ifndef PXR_EXTERNAL_BOOST_PYTHON_DETAIL_BORROWED_PTR_HPP

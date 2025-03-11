@@ -15,10 +15,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/numpy/ndarray.hpp>
-#else
-
 /**
  *  @brief Object manager and various utilities for numpy.ndarray.
  */
@@ -322,5 +318,4 @@ NUMPY_OBJECT_MANAGER_TRAITS(numpy::ndarray);
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

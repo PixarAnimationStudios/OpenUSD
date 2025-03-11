@@ -59,7 +59,8 @@ struct HdSt_BasisCurvesShaderKey : public HdSt_ShaderKey
                               TfToken shadingTerminal,
                               bool hasAuthoredTopologicalVisibility,
                               bool pointsShadingEnabled,
-                              bool hasMetalTessellation);
+                              bool hasMetalTessellation,
+                              bool nativeRoundPoints);
 
     HDST_API
     ~HdSt_BasisCurvesShaderKey();
@@ -83,12 +84,12 @@ struct HdSt_BasisCurvesShaderKey : public HdSt_ShaderKey
     HdSt_GeometricShader::PrimitiveType primType;
     bool useMetalTessellation;
     TfToken glslfx;
-    TfToken VS[7];
+    TfToken VS[8];
     TfToken TCS[7];
     TfToken TES[12];
     TfToken PTCS[9];
     TfToken PTVS[14];
-    TfToken FS[8];
+    TfToken FS[9];
 };
 
 
