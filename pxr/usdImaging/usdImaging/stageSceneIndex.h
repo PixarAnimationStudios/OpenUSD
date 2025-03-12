@@ -157,6 +157,7 @@ private:
 
     // Note: resync paths mean we remove the whole subtree and repopulate.
     SdfPathVector _usdPrimsToResync;
+    SdfPath _usdPrimBeingRemoved;
     // Property changes get converted into PrimsDirtied messages.
     std::map<SdfPath, TfTokenVector> _usdPropertiesToUpdate;
     std::map<SdfPath, TfTokenVector> _usdPropertiesToResync;
