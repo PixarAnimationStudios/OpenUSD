@@ -140,10 +140,8 @@ UsdSkelImagingInvokeExtComputation(
         ctx->RaiseComputationError();
         return;
     }
-
-    // Explicit copy of the skinnedPoints to avoid VT_LOG_STACK_ON_ARRAY_DETACH_COPY logs
-    VtVec3fArray skinnedPoints(restPointsValue.UncheckedGet<VtVec3fArray>().begin(), // TODO: MakeUnique()
-                               restPointsValue.UncheckedGet<VtVec3fArray>().end());
+    // TODO: MakeUnique()
+    VtVec3fArray skinnedPoints = restPointsValue.UncheckedGet<VtVec3fArray>();
 
     _ApplyPackedBlendShapes(
         blendShapeOffsetsValue.UncheckedGet<VtVec4fArray>(),
