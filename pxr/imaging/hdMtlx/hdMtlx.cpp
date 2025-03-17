@@ -32,6 +32,8 @@
 #include <MaterialXFormat/Util.h>
 #include <MaterialXFormat/XmlIo.h>
 
+#include <regex>
+
 namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -300,10 +302,10 @@ _GetInputType(
 }
 
 // Nodedef names may change between MaterialX versions, so given the 
-// prevMxNodeDefName get the corresponding nodedef name appropriate for the 
+// prevMxNodeDefName get the corresponding nodedef appropriate for the 
 // version of MaterialX being used. 
-static std::string
-_GetNodeDefName(std::string const& prevMxNodeDefName)
+static mx::NodeDefPtr
+_GetNodeDef(const mx::DocumentPtr& mxDoc, std::string const& prevMxNodeDefName)
 {
     // This handles the case that nodedef names have changed between MaterialX
     // v1.38 and the current version
@@ -313,8 +315,21 @@ _GetNodeDefName(std::string const& prevMxNodeDefName)
     if (prevMxNodeDefName == "ND_normalmap") {
         mxNodeDefName = "ND_normalmap_float";
     }
+    // Swizzle nodes were also deleted. Provide temporary NodeDef.
+    static const auto swizzleRegex = std::regex("ND_swizzle_([^_]+)_([^_]+)");
+    static auto swizzleDoc = mx::createDocument();
+    std::smatch match;
+    if (std::regex_match(prevMxNodeDefName, match, swizzleRegex)) {
+        if (auto swizzleDef = swizzleDoc->getNodeDef(prevMxNodeDefName)) {
+            return swizzleDef;
+        }
+        auto nd = swizzleDoc->addNodeDef(prevMxNodeDefName, match[2].str(), "swizzle");
+        nd->addInput("in", match[1].str());
+        nd->addInput("channels", "string");
+        return nd;
+    }
 #endif
-    return mxNodeDefName;
+    return mxDoc->getNodeDef(mxNodeDefName);
 }
 
 // Add a MaterialX version of the hdNode to the mxDoc/mxNodeGraph
@@ -330,8 +345,7 @@ _AddMaterialXNode(
 {
     // Get the mxNode information
     TfToken hdNodeType = netInterface->GetNodeType(hdNodeName);
-    mx::NodeDefPtr mxNodeDef =
-        mxDoc->getNodeDef(_GetNodeDefName(hdNodeType.GetString()));
+    mx::NodeDefPtr mxNodeDef = _GetNodeDef(mxDoc, hdNodeType.GetString());
     if (!mxNodeDef) {
         TF_WARN("NodeDef not found for Node '%s'", hdNodeType.GetText());
         // Instead of returning here, use a ND_surface definition so that the
