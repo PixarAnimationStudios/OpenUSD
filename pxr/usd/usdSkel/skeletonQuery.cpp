@@ -356,7 +356,7 @@ UsdSkelSkeletonQuery::_ComputeSkinningTransforms(VtArray<Matrix4>* xforms,
 
         if (xforms->size() == inverseBindXforms.size()) {
             // xforms = inverseBindXforms * xforms
-            // Explicit copy to avoid VT_LOG_STACK_ON_ARRAY_DETACH_COPY log
+            // Explicit copy to avoid VT_LOG_STACK_ON_ARRAY_DETACH_COPY log - TODO: MakeUnique()
             VtArray<Matrix4> xformsTmp(xforms->cbegin(), xforms->cend());
             _MultTransforms<Matrix4>(inverseBindXforms, xformsTmp.AsConst(), xformsTmp);
             *xforms = xformsTmp; // Shallow copy
