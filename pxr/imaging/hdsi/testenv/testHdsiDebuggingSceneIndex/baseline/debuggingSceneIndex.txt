@@ -1,0 +1,2 @@
+[HdsiDebuggingSceneIndex] Instantiated for Scene index adding prim without notice.
+[HdsiDebuggingSceneIndex] ERROR: GetChildPrimPaths(/) includes /A even though the prim was not included in a previous call to GetChildPrimPaths or its parent was deleted without it being re-added.

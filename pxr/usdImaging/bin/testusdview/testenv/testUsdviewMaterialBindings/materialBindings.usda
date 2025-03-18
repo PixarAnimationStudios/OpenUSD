@@ -1,0 +1,351 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Xform "Scene"
+{
+    def Xform "Column0" (
+        prepend apiSchemas = ["CollectionAPI:cubes", "MaterialBindingAPI"]
+    )
+    {
+        rel collection:cubes:includes = </Scene/Column0>
+        rel material:binding:collection:cubes = [
+            </Scene/Column0.collection:cubes>,
+            </Materials/Mat4>,
+        ] (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+
+        def Cube "Cube0" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat0>
+            double3 xformOp:translate = (0, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat0>
+            double3 xformOp:translate = (0, 3, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat0>
+            double3 xformOp:translate = (0, 6, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat0>
+            double3 xformOp:translate = (0, 9, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube4" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat0>
+            double3 xformOp:translate = (0, 12, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Xform "Column1" (
+        prepend apiSchemas = ["CollectionAPI:cubes", "MaterialBindingAPI"]
+    )
+    {
+        rel collection:cubes:includes = </Scene/Column1>
+        rel material:binding:collection:cubes = [
+            </Scene/Column1.collection:cubes>,
+            </Materials/Mat5>,
+        ] (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+
+        def Cube "Cube0" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat1>
+            double3 xformOp:translate = (3, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat1>
+            double3 xformOp:translate = (3, 3, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat1>
+            double3 xformOp:translate = (3, 6, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat1>
+            double3 xformOp:translate = (3, 9, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube4" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat1>
+            double3 xformOp:translate = (3, 12, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Xform "Column2" (
+        prepend apiSchemas = ["CollectionAPI:cubes", "MaterialBindingAPI"]
+    )
+    {
+        rel collection:cubes:includes = </Scene/Column2>
+        rel material:binding:collection:cubes = [
+            </Scene/Column2.collection:cubes>,
+            </Materials/Mat6>,
+        ] (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+
+        def Cube "Cube0" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat2>
+            double3 xformOp:translate = (6, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat2>
+            double3 xformOp:translate = (6, 3, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat2>
+            double3 xformOp:translate = (6, 6, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat2>
+            double3 xformOp:translate = (6, 9, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube4" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat2>
+            double3 xformOp:translate = (6, 12, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Xform "Column3" (
+        prepend apiSchemas = ["CollectionAPI:cubes", "MaterialBindingAPI"]
+    )
+    {
+        rel collection:cubes:includes = </Scene/Column3>
+        rel material:binding:collection:cubes = [
+            </Scene/Column3.collection:cubes>,
+            </Materials/Mat7>,
+        ] (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+
+        def Cube "Cube0" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat3>
+            double3 xformOp:translate = (9, 0, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube1" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat3>
+            double3 xformOp:translate = (9, 3, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube2" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat3>
+            double3 xformOp:translate = (9, 6, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube3" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat3>
+            double3 xformOp:translate = (9, 9, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube4" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            rel material:binding = </Materials/Mat3>
+            double3 xformOp:translate = (9, 12, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+}
+
+def "Materials"
+{
+    def Material "Mat0"
+    {
+        token outputs:surface.connect = </Materials/Mat0/Shader.outputs:surface>
+
+        def Shader "Shader"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (1, 0, 0)
+            token outputs:surface
+        }
+    }
+
+    def Material "Mat1"
+    {
+        token outputs:surface.connect = </Materials/Mat1/Shader.outputs:surface>
+
+        def Shader "Shader"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0, 1, 0)
+            token outputs:surface
+        }
+    }
+
+    def Material "Mat2"
+    {
+        token outputs:surface.connect = </Materials/Mat2/Shader.outputs:surface>
+
+        def Shader "Shader"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0, 0, 1)
+            token outputs:surface
+        }
+    }
+
+    def Material "Mat3"
+    {
+        token outputs:surface.connect = </Materials/Mat3/Shader.outputs:surface>
+
+        def Shader "Shader"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (1, 1, 0)
+            token outputs:surface
+        }
+    }
+
+    def Material "Mat4"
+    {
+        token outputs:surface.connect = </Materials/Mat4/Shader.outputs:surface>
+
+        def Shader "Shader"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.5, 0, 0.5)
+            token outputs:surface
+        }
+    }
+
+    def Material "Mat5"
+    {
+        token outputs:surface.connect = </Materials/Mat5/Shader.outputs:surface>
+
+        def Shader "Shader"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0, 0.5, 0.5)
+            token outputs:surface
+        }
+    }
+
+    def Material "Mat6"
+    {
+        token outputs:surface.connect = </Materials/Mat6/Shader.outputs:surface>
+
+        def Shader "Shader"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.5, 0.5, 0)
+            token outputs:surface
+        }
+    }
+
+    def Material "Mat7"
+    {
+        token outputs:surface.connect = </Materials/Mat7/Shader.outputs:surface>
+
+        def Shader "Shader"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.2, 0.2, 0.2)
+            token outputs:surface
+        }
+    }
+
+    def Material "Fallback"
+    {
+        token outputs:surface.connect = </Materials/Fallback/Shader.outputs:surface>
+
+        def Shader "Shader"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.5, 0.5, 0.5)
+            token outputs:surface
+        }
+    }
+}
+

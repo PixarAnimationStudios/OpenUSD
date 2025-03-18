@@ -34,10 +34,20 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hio/imageRegistry.h"
 #include "pxr/usd/ar/resolver.h"
+
+#if PXR_VERSION >= 2505
+#include "pxr/usd/sdr/declare.h"
+#else
 #include "pxr/usd/ndr/declare.h"
+#endif
+
 #include "pxr/usd/sdf/assetPath.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+#if PXR_VERSION < 2505
+using SdrStringVec = NdrStringVec;
+#endif
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -519,7 +529,7 @@ _UpdateSearchPathsFromEnvironment(RtParamList& options)
     {
         // searchpath:shader contains OSL (.oso)
         std::string shaderpath = TfGetenv("RMAN_SHADERPATH");
-        NdrStringVec paths;
+        SdrStringVec paths;
         if (!shaderpath.empty()) {
             // RenderMan expects ':' as path separator, regardless of platform
             for (auto path : TfStringSplit(shaderpath, ARCH_PATH_LIST_SEP))
@@ -545,7 +555,7 @@ _UpdateSearchPathsFromEnvironment(RtParamList& options)
     {
         // searchpath:rixplugin contains C++ (.so) plugins
         std::string rixpluginpath = TfGetenv("RMAN_RIXPLUGINPATH");
-        NdrStringVec paths;
+        SdrStringVec paths;
         if (!rixpluginpath.empty()) {
             // RenderMan expects ':' as path separator, regardless of platform
             for (auto path : TfStringSplit(rixpluginpath, ARCH_PATH_LIST_SEP))
@@ -565,7 +575,7 @@ _UpdateSearchPathsFromEnvironment(RtParamList& options)
     {
         // searchpath:texture contains textures (.tex) and Rtx plugins (.so)
         std::string texturepath = TfGetenv("RMAN_TEXTUREPATH");
-        NdrStringVec paths;
+        SdrStringVec paths;
         if (!texturepath.empty()) {
             // RenderMan expects ':' as path separator, regardless of platform
             for (auto path : TfStringSplit(texturepath, ARCH_PATH_LIST_SEP))
@@ -596,7 +606,7 @@ _UpdateSearchPathsFromEnvironment(RtParamList& options)
 
     {
         std::string proceduralpath = TfGetenv("RMAN_PROCEDURALPATH");
-        NdrStringVec paths;
+        SdrStringVec paths;
         if (!proceduralpath.empty()) {
             // RenderMan expects ':' as path separator, regardless of platform
             for (std::string const& path : TfStringSplit(proceduralpath,
@@ -617,7 +627,7 @@ _UpdateSearchPathsFromEnvironment(RtParamList& options)
 
     {
         std::string displaypath = TfGetenv("RMAN_DISPLAYPATH");
-        NdrStringVec paths;
+        SdrStringVec paths;
         if (!displaypath.empty()) {
             // RenderMan expects ':' as path separator, regardless of platform
             for (std::string const& path : TfStringSplit(displaypath,

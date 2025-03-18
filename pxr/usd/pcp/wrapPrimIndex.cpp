@@ -91,6 +91,7 @@ void wrapPrimIndex()
                                     return_value_policy<TfPySequenceToList>()))
 
         .def("IsValid", &This::IsValid)
+        .def("IsUsd", &This::IsUsd)
         .def("IsInstanceable", &This::IsInstanceable)
 
         .def("ComputePrimChildNames", &_ComputePrimChildNames)

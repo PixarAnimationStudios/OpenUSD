@@ -132,6 +132,9 @@ associated with interpolating data across a surface.  UsdGeomPrimvarsAPI
 provides the interface for creating and querying primvars on a prim, as well
 as the computations related to primvar inheritance.
 
+See <a href="https://openusd.org/release/user_guides/primvars.html">Primvars</a> 
+for visual examples and details on the different interpolation modes. 
+
 \section UsdGeom_ImageablePurpose Imageable Purpose
 
 Purpose is a concept we have found useful in our pipeline for 

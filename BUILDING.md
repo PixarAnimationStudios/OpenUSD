@@ -333,9 +333,9 @@ Alembic library specified in ALEMBIC_DIR.
 
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 
-Support for Alembic files using the HDF5 backend is enabled by default but can be
-disabled by specifying the cmake flag `PXR_ENABLE_HDF5_SUPPORT=FALSE`. HDF5
-support requires the following dependencies:
+Support for Alembic files using the HDF5 backend can be enabled by specifying
+the cmake flag `PXR_ENABLE_HDF5_SUPPORT=TRUE`. HDF5 support requires the
+following dependencies:
 
 | Dependency Name    | Description     |
 | ------------------ |---------------- |
@@ -468,25 +468,6 @@ pxr/pxr.h, which facilitates using namespaces:
 | PXR_NAMESPACE_CLOSE_SCOPE      | Closes the namespace.                                                |
 | PXR_NS                         | Explicit qualification on items, e.g. `PXR_NS::TfToken foo = ...`|
 | PXR_NAMESPACE_USING_DIRECTIVE  | Enacts a using-directive, e.g. `using namespace PXR_NS;`         |
-
-##### ASCII Parser Editing/Validation
-
-There is an ASCII parser for the USD file format, which can be found in
-[sdf](pxr/usd/sdf). Most users will not have a need to edit the parser, but
-for the adventurous ones, there are a couple additional requirements.
-
-If you choose to edit the ASCII parsers, make sure
-`PXR_VALIDATE_GENERATED_CODE` is set to `TRUE`.  This flag enables tests
-that check the generated code in [sdf](pxr/usd/lib/sdf) and
-[gf](pxr/base/lib/gf).
-
-| Dependency Name    | Description                                             |
-| ------------------ | ------------------------------------------------------- |
-| FLEX_EXECUTABLE    | Path to [flex](http://flex.sourceforge.net/) executable |
-| BISON_EXECUTABLE   | Path to [bison](https://www.gnu.org/software/bison/) executable  |
-
-See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
-
 
 ##### USD Schema Generation
 

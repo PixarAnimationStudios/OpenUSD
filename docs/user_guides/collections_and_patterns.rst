@@ -654,11 +654,7 @@ collections:
     is the default behavior.
   * ``expandPrimsAndProperties``: Like ``expandPrims``, but all properties on 
     all included prims also belong to the collection. 
-  * ``explicitOnly``: Only applies to relationship-mode collections. For 
-    pattern-based collections, if ``expansionRule`` is set to ``explicitOnly``, 
-    the ``ComputeIncludedObjectsFromCollection()`` 
-    and ``ComputeIncludedPathsFromCollection()`` CollectionAPI APIs return no
-    results.
+  * ``explicitOnly``: Equivalent to ``expandPrims``.
 
 The following example shows a pattern-based collection configured to 
 match prims (but not properties) that have the LightAPI schema applied, and

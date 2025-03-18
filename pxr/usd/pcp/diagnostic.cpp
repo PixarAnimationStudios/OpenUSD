@@ -107,6 +107,8 @@ std::string Pcp_Dump(
         node.GetNamespaceDepth());
     s += TfStringPrintf("    Depth below introduction: %d\n", 
         node.GetDepthBelowIntroduction());
+    s += TfStringPrintf("    Is due to ancestor:       %s\n", 
+        _GetString(node.IsDueToAncestor()));
     s += TfStringPrintf("    Permission:               %s\n",
         TfEnum::GetDisplayName(node.GetPermission()).c_str());
     s += TfStringPrintf("    Is restricted:            %s\n", 

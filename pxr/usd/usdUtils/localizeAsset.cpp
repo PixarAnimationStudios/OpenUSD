@@ -83,14 +83,16 @@ protected:
         constexpr size_t COPY_BUFFER_SIZE = 4096U;
         char buffer[COPY_BUFFER_SIZE];
         size_t dataRemaining = sourceAsset->GetSize();
+        size_t offset = 0;
 
         while (dataRemaining > 0) {
             size_t chunkSize = std::min(dataRemaining, COPY_BUFFER_SIZE);
 
-            sourceAsset->Read(buffer, chunkSize, 0);
-            destAsset->Write(buffer, chunkSize, 0);
+            sourceAsset->Read(buffer, chunkSize, offset);
+            destAsset->Write(buffer, chunkSize, offset);
 
             dataRemaining -= chunkSize;
+            offset += chunkSize;
         }
 
         return true;

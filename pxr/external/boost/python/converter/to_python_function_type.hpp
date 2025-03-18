@@ -13,9 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/converter/to_python_function_type.hpp>
-#else
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace converter { 
@@ -27,5 +24,4 @@ typedef PyObject* (*to_python_function_t)(void const*);
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_TO_PYTHON_FUNCTION_TYPE_HPP

@@ -15,10 +15,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/converter/shared_ptr_to_python.hpp>
-#else
-
 #include "pxr/external/boost/python/refcount.hpp"
 #include "pxr/external/boost/python/converter/shared_ptr_deleter.hpp"
 #ifdef PXR_BOOST_PYTHON_HAS_BOOST_SHARED_PTR
@@ -54,5 +50,4 @@ PyObject* shared_ptr_to_python(std::shared_ptr<T> const& x)
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

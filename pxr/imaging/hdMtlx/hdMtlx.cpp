@@ -367,11 +367,7 @@ _AddMaterialXNode(
     TfTokenVector hdNodeParamNames =
         netInterface->GetAuthoredNodeParameterNames(hdNodeName);
     for (TfToken const &paramName : hdNodeParamNames) {
-        // Get the MaterialX Parameter info
         const std::string &mxInputName = paramName.GetString();
-        const HdMaterialNetworkInterface::NodeParamData paramData = 
-            netInterface->GetNodeParameterData(hdNodeName, paramName);
-        const std::string mxInputValue = HdMtlxConvertToString(paramData.value);
 
         // Skip Colorspace and typeName parameters, these are already 
         // captured in the paramData. Note: these inputs are of the form:
@@ -386,6 +382,11 @@ _AddMaterialXNode(
         if (tnResult.second) {
             continue;
         }
+
+        // Get the MaterialX Parameter info
+        const HdMaterialNetworkInterface::NodeParamData paramData = 
+            netInterface->GetNodeParameterData(hdNodeName, paramName);
+        const std::string mxInputValue = HdMtlxConvertToString(paramData.value);
 
         // Set the input value, and colorspace on the mxNode
         const std::string mxInputType = 
@@ -598,11 +599,7 @@ _AddParameterInputsToTerminalNode(
     }
 
     for (TfToken const &paramName : paramNames) {
-        // Get the MaterialX Parameter info
         const std::string &mxInputName = paramName.GetString();
-        const HdMaterialNetworkInterface::NodeParamData paramData = 
-            netInterface->GetNodeParameterData(terminalNodeName, paramName);
-        const std::string mxInputValue = HdMtlxConvertToString(paramData.value);
 
         // Skip Colorspace and typeName parameters, these are already 
         // captured in the paramData. Note: these inputs are of the form:
@@ -617,6 +614,11 @@ _AddParameterInputsToTerminalNode(
         if (tnResult.second) {
             continue;
         }
+
+        // Get the MaterialX Parameter info
+        const HdMaterialNetworkInterface::NodeParamData paramData = 
+            netInterface->GetNodeParameterData(terminalNodeName, paramName);
+        const std::string mxInputValue = HdMtlxConvertToString(paramData.value);
 
         // Set the Input value on the mxShaderNode
         mx::InputPtr mxInput = mxShaderNode->setInputValue(

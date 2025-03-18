@@ -106,10 +106,12 @@ public:
     using DataSourceRelationshipFactoryPtr =
         DataSourceRelationshipFactory *;
 
+    USDIMAGING_API
     static
     const DataSourceRelationshipFactoryFn&
     GetPathFromRelationshipDataSourceFactory();
 
+    USDIMAGING_API
     static
     const DataSourceRelationshipFactoryFn&
     GetPathArrayFromRelationshipDataSourceFactory();

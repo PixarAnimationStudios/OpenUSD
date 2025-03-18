@@ -335,6 +335,15 @@ UsdAbc_AlembicData::GetBracketingTimeSamplesForPath(
 }
 
 bool
+UsdAbc_AlembicData::GetPreviousTimeSampleForPath(
+    const SdfPath& path,
+    double time, double* tPrevious) const
+{
+    return _reader &&
+           _reader->ListTimeSamplesForPath(path).PreviousTime(time, tPrevious);
+}
+
+bool
 UsdAbc_AlembicData::QueryTimeSample(
     const SdfPath& path,
     double time,

@@ -2371,31 +2371,6 @@ _GetOutputDisplayDriverType(
     return _GetOutputDisplayDriverType(outputExt);
 }
 
-// Temporary workaround for RMAN-21883:
-//
-// The args file for d_openexr says the default for asrgba is 1.
-// The code for d_openexr uses a default of 0.
-//
-// The args default is reflected into the USD Ri schema; consequently,
-// USD app integrations may assume they can skip exporting values that
-// match this value.  The result is that there is no way for users to
-// request that value.
-//
-// Here, we update the default parameters to match the args file.
-// If no value is present, we explicitly set it to 1.
-static void
-_ApplyOpenexrDriverWorkaround(HdPrman_RenderViewDesc::DisplayDesc *display)
-{
-    static const RtUString openexr("openexr");
-    static const RtUString asrgba("asrgba");
-    if (display->driver == openexr) {
-        uint32_t paramId;
-        if (!display->params.GetParamId(asrgba, paramId)) {
-            display->params.SetInteger(asrgba, 1);
-        }
-    }
-}
-
 static
 HdPrman_RenderViewDesc
 _ComputeRenderViewDesc(
@@ -2486,9 +2461,6 @@ _ComputeRenderViewDesc(
                 VtDefault = VtDictionary()),
             _tokens->riDisplayDriverNamespace);
 
-        // XXX Temporary; see RMAN-21883
-        _ApplyOpenexrDriverWorkaround(&displayDesc);
-
         const VtIntArray &renderVarIndices =
             VtDictionaryGet<VtIntArray>(
                 renderProduct,
@@ -2550,9 +2522,6 @@ _ComputeRenderViewDesc(
             _tokens->riDisplayDriverNamespace);
         displayDesc.driver = _GetOutputDisplayDriverType(
             product.namespacedSettings, product.name, product.type);
-
-        // XXX Temporary; see RMAN-21883
-        _ApplyOpenexrDriverWorkaround(&displayDesc);
 
         /* RenderVar */
         for (const HdRenderSettings::RenderProduct::RenderVar &renderVar :

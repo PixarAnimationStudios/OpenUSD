@@ -1331,6 +1331,7 @@ PcpChanges::DidChange(const PcpCache* cache,
             for (size_t i = 0, n = oldPaths.size(); i != n; ++i) {
                 const SdfPath& oldPath = oldPaths[i];
                 const SdfPath& newPath = newPaths[i];
+
                 // Do every path dependent on the new path.  We might
                 // have an object at the new path and we're replacing
                 // it with the object at the old path.  So we must
@@ -1362,8 +1363,11 @@ PcpChanges::DidChange(const PcpCache* cache,
                     SdfPath newIndexPath;
                     // If this isn't a delete then translate newPath
                     if (!newPath.IsEmpty()) {
-                        newIndexPath =
-                            dep.mapFunc.MapSourceToTarget(newPath);
+                        // Note that we have to strip variant selections from
+                        // new path as the map functions from variant nodes do
+                        // not map variant selection paths.
+                        newIndexPath = dep.mapFunc.MapSourceToTarget(
+                            newPath.StripAllVariantSelections());
                     }
                     renameChanges[dep.indexPath] = newIndexPath;
                     PCP_APPEND_DEBUG("  renameChanges <%s> to <%s>\n",

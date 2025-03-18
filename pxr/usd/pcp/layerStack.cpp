@@ -52,6 +52,15 @@ TF_DEFINE_ENV_SETTING(
     "non-USD caches/layer stacks; the legacy behavior cannot be enabled in USD "
     "mode");
 
+TF_DEFINE_ENV_SETTING(
+    PCP_ALLOW_NEGATIVE_LAYER_OFFSET_SCALE, true,
+    "Enables the use of negative layer offset scale. This behavior is "
+    "deprecated and a warning will be issued if this setting is enabled, "
+    "otherwise a coding error will be issued. Negative layer offset scale on a "
+    "composed property doesn't make sense, as it reverses the direction of "
+    "time, and can lead to incorrect and non intuitive results.");
+
+
 struct Pcp_SublayerInfo {
     Pcp_SublayerInfo() = default;
     Pcp_SublayerInfo(const SdfLayerRefPtr& layer_, const SdfLayerOffset& offset_,
@@ -1649,6 +1658,14 @@ PcpLayerStack::_Compute(const std::string &fileFormatTarget,
     }
 }
 
+bool
+PcpNegativeLayerOffsetScaleAllowed()
+{
+    static bool allowed = 
+        TfGetEnvSetting(PCP_ALLOW_NEGATIVE_LAYER_OFFSET_SCALE);
+    return allowed;
+}
+
 SdfLayerTreeHandle
 PcpLayerStack::_BuildLayerStack(
     const SdfLayerHandle & layer,
@@ -1786,8 +1803,20 @@ PcpLayerStack::_BuildLayerStack(
 
         // Check sublayer offset.
         SdfLayerOffset sublayerOffset = sublayerOffsets[i];
-        if (!sublayerOffset.IsValid()
-            || !sublayerOffset.GetInverse().IsValid()) {
+
+        const bool isNegativeScale = sublayerOffset.GetScale() < 0.0;
+        const bool negativeScaleAllowed = PcpNegativeLayerOffsetScaleAllowed();
+
+        if (isNegativeScale && negativeScaleAllowed) {
+            // Report warning.
+            TF_WARN("Layer @%s@ has a negative offset scale. Negative scale "
+                    "offsets are deprecated.",
+                    layer->GetIdentifier().c_str());
+        }
+
+        if ((isNegativeScale && !negativeScaleAllowed) ||
+            !sublayerOffset.IsValid() || 
+            !sublayerOffset.GetInverse().IsValid()) {
             // Report error, but continue with an identity layer offset.
             PcpErrorInvalidSublayerOffsetPtr err =
                 PcpErrorInvalidSublayerOffset::New();

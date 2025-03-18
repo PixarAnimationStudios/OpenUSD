@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/object/iterator_core.hpp>
-#else
-
 # include "pxr/external/boost/python/object_fwd.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects {
@@ -26,5 +22,4 @@ PXR_BOOST_PYTHON_DECL void stop_iteration_error();
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::object
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ITERATOR_CORE_HPP

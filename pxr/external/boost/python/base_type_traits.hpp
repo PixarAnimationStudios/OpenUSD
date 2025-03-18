@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/base_type_traits.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
@@ -52,5 +48,4 @@ struct base_type_traits<PyMethodObject>
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_BASE_TYPE_TRAITS_HPP

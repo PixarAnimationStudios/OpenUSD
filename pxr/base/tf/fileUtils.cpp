@@ -80,13 +80,22 @@ Tf_HasAttribute(
 
     // Ignore reparse points on network volumes. They can't be resolved
     // properly, so simply remove the reparse point attribute and treat
-    // it like a regular file/directory.
+    // it like a regular file/directory. Also ignore reparse points where
+    // TfReadLink returns the passed in path. As described in ArchReadLink,
+    // this will happen in cases where the reparse points are NT Object
+    // Manager paths, which cannot be used as file paths. Or if TfReadLink
+    // returns an empty string, that means we could not resolve the link
+    // at all, so treat it as if it is not a link.
+    std::string linkPath;
     if ((attribs & FILE_ATTRIBUTE_REPARSE_POINT) != 0) {
         // Calling PathIsNetworkPath sometimes sets the "last error" to an
         // error code indicating an incomplete overlapped I/O function. We
         // want to ignore this error.
         DWORD olderr = GetLastError();
-        if (PathIsNetworkPathW(pathW.c_str())) {
+        linkPath = TfReadLink(path.c_str());
+        if (PathIsNetworkPathW(pathW.c_str()) ||
+            linkPath.empty() ||
+            path == linkPath) {
             attribs &= ~FILE_ATTRIBUTE_REPARSE_POINT;
         }
         SetLastError(olderr);
@@ -105,9 +114,14 @@ Tf_HasAttribute(
         return attribute == 0 || (attribs & attribute) == expected;
     }
 
+    // At this point we know (attribs & FILE_ATTRIBUTE_REPARSE_POINT) != 0
+    // or we would have returned in the if block above. This means linkPath
+    // will be holding the result of calling TfReadLink(path.c_str()). The
+    // code is separated in this way to avoid calling TfReadLink twice. This
+    // is why we can simply pass linkPath to the Tf_HasAttribute call below.
+
     // Read symlinks until we find the real file.
-    return Tf_HasAttribute(TfReadLink(path.c_str()), resolveSymlinks,
-                           attribute, expected);
+    return Tf_HasAttribute(linkPath, resolveSymlinks, attribute, expected);
 }
 
 // Same as above but the bits in attribute must all be set.

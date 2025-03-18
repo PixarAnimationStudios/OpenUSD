@@ -298,5 +298,41 @@ def "Foo" {
         self.assertEqual(test2_attr.Get(20.0), 10)
         self.assertEqual(test2_attr.Get(30.0), 10)
 
+    def test_PreviousTimeSamples(self):
+
+        def _CheckPreviousTimeSamples(layer):
+            # No Previous sample before first sample
+            self.assertFalse(
+                layer.GetPreviousTimeSampleForPath("/Prim.attr", 0.0)[0])
+            # No Previous sample at first sample
+            self.assertFalse(
+                layer.GetPreviousTimeSampleForPath("/Prim.attr", 1.0)[0])
+            # Previous sample at 2.0 is 1.0
+            self.assertTrue(
+                layer.GetPreviousTimeSampleForPath("/Prim.attr", 2.0)[0])
+            self.assertEqual(
+                layer.GetPreviousTimeSampleForPath("/Prim.attr", 2.0)[1], 1.0)
+            # Previous sample at outside the range is the last sample
+            self.assertTrue(
+                layer.GetPreviousTimeSampleForPath("/Prim.attr", 7.0)[0])
+            self.assertEqual(
+                layer.GetPreviousTimeSampleForPath("/Prim.attr", 7.0)[1], 3.0)
+
+        layerContent = '''#usda 1.0
+        def "Prim" {
+            double attr.timeSamples = {
+                1.0: 1.0,
+                2.0: 2.0,
+                3.0: 3.0
+            }
+        }
+        '''.strip()
+        sdfLayer = Sdf.Layer.CreateAnonymous(".usda")
+        sdfLayer.ImportFromString(layerContent)
+        _CheckPreviousTimeSamples(sdfLayer)
+        sdfLayer = Sdf.Layer.CreateAnonymous(".usdc")
+        sdfLayer.ImportFromString(layerContent)
+        _CheckPreviousTimeSamples(sdfLayer)
+
 if __name__ == "__main__":
     unittest.main()

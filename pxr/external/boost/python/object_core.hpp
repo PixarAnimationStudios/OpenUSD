@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/object_core.hpp>
-#else
-
 # define PXR_BOOST_PYTHON_OBJECT_HAS_IS_NONE // added 2010-03-15 by rwgk
 
 # include "pxr/external/boost/python/detail/prefix.hpp"
@@ -488,5 +484,4 @@ inline PyObject* get_managed_object(object const& x, tag_t)
 
 # include "pxr/external/boost/python/slice_nil.hpp"
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_CORE_HPP

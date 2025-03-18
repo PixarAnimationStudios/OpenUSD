@@ -2010,9 +2010,10 @@ UsdPrim::ComputeExpandedPrimIndex() const
     PcpCache* cache = _GetStage()->_GetPcpCache();
     
     PcpPrimIndexOutputs outputs;
+    PcpPrimIndexInputs inputs = cache->GetPrimIndexInputs();
     PcpComputePrimIndex(
         primIndexPath, cache->GetLayerStack(),
-        cache->GetPrimIndexInputs().Cull(false), 
+        inputs.Cull(false), 
         &outputs);
 
     _GetStage()->_ReportPcpErrors(

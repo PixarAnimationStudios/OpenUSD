@@ -35,6 +35,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#if PXR_VERSION < 2505
+using SdrTokenVec = NdrTokenVec;
+using SdrOptionVec = NdrOptionVec;
+#endif
+
 TF_DEFINE_ENV_SETTING(HD_PRMAN_MATERIALID, true,
                       "Enable __materialid as hash of material network");
 static bool _enableMaterialID =
@@ -61,7 +66,7 @@ TF_DEFINE_ENV_SETTING(HD_PRMAN_TEX_EXTS, "tex:dds",
                       "that do not require txmake processing."
                       "eg. tex:dds:tx");
 
-TF_MAKE_STATIC_DATA(NdrTokenVec, _sourceTypesOslFirst) {
+TF_MAKE_STATIC_DATA(SdrTokenVec, _sourceTypesOslFirst) {
     *_sourceTypesOslFirst = {
         TfToken("OSL"),
         TfToken("RmanCpp"),
@@ -70,7 +75,7 @@ TF_MAKE_STATIC_DATA(NdrTokenVec, _sourceTypesOslFirst) {
 #endif
     };}
 
-TF_MAKE_STATIC_DATA(NdrTokenVec, _sourceTypesCppFirst) {
+TF_MAKE_STATIC_DATA(SdrTokenVec, _sourceTypesCppFirst) {
     *_sourceTypesCppFirst = {
         TfToken("RmanCpp"),
         TfToken("OSL"),
@@ -131,7 +136,7 @@ struct _HashMaterial {
     }
 };
 
-TF_MAKE_STATIC_DATA(NdrTokenVec, _texExts) {
+TF_MAKE_STATIC_DATA(SdrTokenVec, _texExts) {
     *_texExts = TfToTokenVector(TfStringSplit(
         TfGetEnvSetting(HD_PRMAN_TEX_EXTS), ":"));
     }
@@ -237,7 +242,7 @@ _ConvertToVec3fArray(const VtArray<GfVec3d>& v)
 
 static int
 _ConvertOptionTokenToInt(
-    const TfToken &option, const NdrOptionVec &options, bool *ok)
+    const TfToken &option, const SdrOptionVec &options, bool *ok)
 {
     for (const auto &tokenPair : options) {
         if (tokenPair.first == option) {

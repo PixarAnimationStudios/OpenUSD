@@ -220,7 +220,7 @@ TestUsdShadeShaderPropertyCompliance()
     UsdShadeShader shaderDef
         = UsdShadeShader::Get(shaderDefStage, SdfPath("/TestShaderNode"));
     SdrRegistry::GetInstance().AddDiscoveryResult(
-        UsdShadeShaderDefUtils::GetNodeDiscoveryResults(
+        UsdShadeShaderDefUtils::GetDiscoveryResults(
             shaderDef, shaderDefStage->GetRootLayer()->GetRealPath())[0]);
 
     // Now lets test our ShaderProperty validator

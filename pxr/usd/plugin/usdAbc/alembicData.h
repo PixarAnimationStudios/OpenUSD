@@ -76,6 +76,9 @@ public:
                                     double time,
                                     double* tLower, double* tUpper) const;
     virtual bool
+    GetPreviousTimeSampleForPath(const SdfPath&, double time, 
+                                 double* tPrevious) const;
+    virtual bool
     QueryTimeSample(const SdfPath&, double time,
                     SdfAbstractDataValue* value) const;
     virtual bool

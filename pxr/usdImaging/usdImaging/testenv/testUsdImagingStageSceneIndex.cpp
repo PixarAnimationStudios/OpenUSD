@@ -267,6 +267,13 @@ void SetTimeTest()
                 TfToken("nodes"),
                 TfToken("/testMaterial/Surface"),
                 TfToken("parameters"),
+                TfToken("emitColor")).Append(TfToken("value")),
+            HdDataSourceLocator(
+                TfToken("material"),
+                TfToken("__all"),
+                TfToken("nodes"),
+                TfToken("/testMaterial/Surface"),
+                TfToken("parameters"),
                 TfToken("emitColor")).Append(TfToken("value"))
             }
         }
@@ -453,9 +460,10 @@ void AddNonEmptyLayerTest()
     PrimListener primListener;
     inputSceneIndex->AddObserver(HdSceneIndexObserverPtr(&primListener));
 
-    // Create a layer with just an over on "/cube".
+    // Create a layer with a single prim on "/cube".
     SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
     SdfPrimSpecHandle prim = SdfCreatePrimInLayer(layer, SdfPath("/cube"));
+    prim->SetField(SdfFieldKeys->Specifier, SdfSpecifierDef);
     stage->GetRootLayer()->InsertSubLayerPath(layer->GetIdentifier());
 
     inputSceneIndex->ApplyPendingUpdates();

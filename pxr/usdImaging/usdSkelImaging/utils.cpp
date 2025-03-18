@@ -139,11 +139,12 @@ _FindBestAlignedBasis(const GfMatrix4d& mx, const GfVec3d& dir)
     return 2;
 }
 
+} // namespace
 
 void
-_ComputePointsForSingleBone(GfVec3f* points,
-                            const GfMatrix4d& xform,
-                            const GfMatrix4d& parentXform)
+UsdSkelImagingComputePointsForSingleBone(const GfMatrix4d& xform,
+                                         const GfMatrix4d& parentXform,
+                                         GfVec3f* const points)
 {
     GfVec3f end = GfVec3f(xform.ExtractTranslation());
     GfVec3f start = GfVec3f(parentXform.ExtractTranslation());
@@ -178,10 +179,6 @@ _ComputePointsForSingleBone(GfVec3f* points,
     points[3] = start - i - j;
     points[4] = start - i + j;
 }
-
-
-} // namespace
-
 
 bool
 UsdSkelImagingComputeBonePoints(const UsdSkelTopology& topology,
@@ -255,9 +252,10 @@ UsdSkelImagingComputeBonePoints(const UsdSkelTopology& topology,
                     int parent = topology.GetParent(i);
                     TF_DEV_AXIOM(parent >= 0 && parent < numJoints);
 
-                    _ComputePointsForSingleBone(points + offset,
-                                                jointSkelXforms[i],
-                                                jointSkelXforms[parent]);
+                    UsdSkelImagingComputePointsForSingleBone(
+                        jointSkelXforms[i],
+                        jointSkelXforms[parent],
+                        points + offset);
                 }
             }
         });

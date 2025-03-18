@@ -43,6 +43,7 @@
 #include <cfloat>
 #include <cinttypes>
 #include <cmath>
+#include <complex>
 #include <condition_variable>
 #include <cstdarg>
 #include <cstddef>
@@ -72,6 +73,7 @@
 #include <optional>
 #include <ostream>
 #include <set>
+#include <shared_mutex>
 #include <sstream>
 #include <stdarg.h>
 #include <stddef.h>
@@ -95,15 +97,6 @@
 #ifdef PXR_OCIO_PLUGIN_ENABLED
 #include <OpenColorIO/OpenColorIO.h>
 #endif // PXR_OCIO_PLUGIN_ENABLED
-#if defined(PXR_PYTHON_SUPPORT_ENABLED) && !defined(PXR_USE_INTERNAL_BOOST_PYTHON)
-#include "pxr/external/boost/python/common.hpp"
-#include <boost/python/object_fwd.hpp>
-#include <boost/python/object_operators.hpp>
-#if defined(__APPLE__) // Fix breakage caused by Python's pyport.h.
-#undef tolower
-#undef toupper
-#endif
-#endif // PXR_PYTHON_SUPPORT_ENABLED && !PXR_USE_INTERNAL_BOOST_PYTHON
 #include <tbb/blocked_range.h>
 #include <tbb/cache_aligned_allocator.h>
 #include <tbb/concurrent_hash_map.h>

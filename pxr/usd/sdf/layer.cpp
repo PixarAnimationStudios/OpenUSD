@@ -1219,9 +1219,17 @@ SdfLayer::GetNumTimeSamplesForPath(const SdfPath& path) const
 bool 
 SdfLayer::GetBracketingTimeSamplesForPath(const SdfPath& path, 
                                           double time,
-                                          double* tLower, double* tUpper)
+                                          double* tLower, double* tUpper) const
 {
-    return _data->GetBracketingTimeSamplesForPath(path, time, tLower, tUpper);
+    return _data->GetBracketingTimeSamplesForPath(
+        path, time, tLower, tUpper);
+}
+
+bool
+SdfLayer::GetPreviousTimeSampleForPath(
+    const SdfPath& path, double time, double* tPrevious) const
+{
+    return _data->GetPreviousTimeSampleForPath(path, time, tPrevious);
 }
 
 bool 
@@ -3953,6 +3961,16 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
             _PrimCreateSpec(std::forward<decltype(args)>(args)...);
         };
 
+    const auto getFieldValuesFunc = 
+        [this](const SdfSchemaBase &newDataSchema,
+               const SdfAbstractData &newData,
+               const SdfPath& path,
+               const TfToken& field)
+        {
+            return std::make_pair(GetField(path, field), 
+                _GetField(newDataSchema, newData, path, field));
+        };
+
     const auto setFieldFunc = 
         [this](auto&&... args)
         {
@@ -3974,7 +3992,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
         };
 
     _ProcessIncomingData(newData, newDataSchema, /*processPropertyFields*/ true,
-        deleteSpecFunc, createSpecFunc, setFieldFunc, errorFunc);
+        deleteSpecFunc, createSpecFunc, getFieldValuesFunc, setFieldFunc, errorFunc);
 
     // Verify that the result matches.
     // TODO Enable in debug builds.
@@ -4011,6 +4029,39 @@ SdfLayer::CreateDiff(
             Sdf_ChangeManager::Get().DidAddSpec(_self, path, inert);
         };
 
+    const auto getFieldValuesFunc = 
+        [this](const SdfSchemaBase &newDataSchema,
+               const SdfAbstractData &newData,
+               const SdfPath& path,
+               const TfToken& field)
+        {
+            VtValue oldValue = GetField(path, field);
+            VtValue newValue = _GetField(newDataSchema, newData, path, field);
+
+            // We do not want to generate change list info entries for
+            // newly created specs that have default values for 
+            // specifier. In the case this function is being called from
+            // CreateDiff, which is a read only operation, a spec at the
+            // given path in layer will not have been created. This 
+            // causes the call to layer->GetField(...) to not return
+            // values for required fields as it normally would. We
+            // workaround that by introducing the values for required
+            // fields ourselves. This avoids downstream clients from
+            // interpreting this as a significant change.
+            // XXX: Note that we currently only manually provide default
+            // values for prim paths. We might want to take a similar approach
+            // for property specs in the future but as-is in the worst case
+            // their absence may trigger a property resync which is not
+            // typically an expensive operation.
+            if (oldValue.IsEmpty() && path.IsPrimPath()) {
+                if (field == SdfFieldKeys->Specifier) {
+                    oldValue = SdfSpecifierOver;
+                }
+            }
+
+            return std::make_pair(std::move(oldValue), std::move(newValue));
+        };
+
     const auto setFieldFunc = 
         [this](const SdfPath& path, const TfToken& fieldName, 
                const VtValue& value, VtValue* oldValuePtr) 
@@ -4029,24 +4080,24 @@ SdfLayer::CreateDiff(
         };
 
     _ProcessIncomingData(layer->_data, &layer->GetSchema(), processPropertyFields,
-        deleteSpecFunc, createSpecFunc, setFieldFunc, errorFunc);
+        deleteSpecFunc, createSpecFunc, getFieldValuesFunc, setFieldFunc, errorFunc);
 
     return Sdf_ChangeManager::Get().ExtractLocalChanges(_self);
 }
 
 template<typename DeleteSpecFunc, typename CreateSpecFunc, 
-         typename SetFieldFunc, typename ErrorFunc>
+         typename GetFieldValuesFunc, typename SetFieldFunc, typename ErrorFunc>
 void
 SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
                         const SdfSchemaBase *newDataSchema,
                         bool processPropertyFields,
                         const DeleteSpecFunc &deleteSpecFunc,
                         const CreateSpecFunc &createSpecFunc,
+                        const GetFieldValuesFunc &getFieldValuesFunc,
                         const SetFieldFunc &setFieldFunc,
                         const ErrorFunc &errorFunc) const
 {
     const bool differentSchema = newDataSchema && newDataSchema != &GetSchema();
-
     // Remove specs that no longer exist or whose required fields changed.
     {
         // Collect specs to delete, ordered by namespace.
@@ -4216,6 +4267,7 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
                          const bool processPropertyFields_,
                          const DeleteSpecFunc &deleteSpecFunc_,
                          const CreateSpecFunc &createSpecFunc_,
+                         const GetFieldValuesFunc &getFieldValuesFunc_,
                          const SetFieldFunc &setFieldFunc_)
                 : layer(layer_)
                 , newData(newData_)
@@ -4223,6 +4275,7 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
                 , processPropertyFields(processPropertyFields_)
                 , deleteSpecFunc(deleteSpecFunc_)
                 , createSpecFunc(createSpecFunc_)
+                , getFieldValuesFunc(getFieldValuesFunc_)
                 , setFieldFunc(setFieldFunc_) {}
 
             virtual bool VisitSpec(
@@ -4271,9 +4324,9 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
 
                 // Set field values.
                 for (TfToken const &field: newFields) {
-                    VtValue newValue =
-                        _GetField(newDataSchema, newData, path, field);
-                    VtValue oldValue = layer->GetField(path, field);
+                    auto [oldValue, newValue] = getFieldValuesFunc(
+                        newDataSchema, newData, path, field);
+
                     if (oldValue != newValue) {
                         if (differentSchema && oldValue.IsEmpty() &&
                             !thisLayerSchema.IsValidFieldForSpec(
@@ -4304,6 +4357,7 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
             const bool processPropertyFields;
             const DeleteSpecFunc &deleteSpecFunc;
             const CreateSpecFunc &createSpecFunc;
+            const GetFieldValuesFunc & getFieldValuesFunc;
             const SetFieldFunc &setFieldFunc;
             std::map<TfToken, SdfPath> unrecognizedFields;
         };
@@ -4312,7 +4366,8 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
         // this layer's schema.
         _SpecUpdater updater( this, newData,
             newDataSchema ? *newDataSchema : GetSchema(), 
-            processPropertyFields, deleteSpecFunc, createSpecFunc,setFieldFunc);
+            processPropertyFields, deleteSpecFunc, createSpecFunc,
+            getFieldValuesFunc, setFieldFunc);
         newData->VisitSpecs(&updater);
 
         // If there were unrecognized fields, report an error.

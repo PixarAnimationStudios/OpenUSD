@@ -13,9 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/converter/registry.hpp>
-#else
 # include "pxr/external/boost/python/type_id.hpp"
 # include "pxr/external/boost/python/converter/to_python_function_type.hpp"
 # include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
@@ -64,5 +61,4 @@ namespace registry
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTRY_HPP

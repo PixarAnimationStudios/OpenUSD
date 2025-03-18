@@ -5,16 +5,12 @@ on:
     branches:
       - dev
       - release
-  issue_comment:                                     
+  issue_comment:
     types: [created]
-
-env:
-  PYTHON_VERSION: "3.9"
-  PYTHON_VERSION_MAC: "3.11"
 
 jobs:
   GetUser:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 5
     outputs:
       require-result: ${{ steps.check.outputs.require-result }}
@@ -24,8 +20,9 @@ jobs:
         with:
           require: 'write'
           username: ${{ github.event.comment.user.login }}
+
   GetGitRef:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 5
     outputs:
       ref: ${{ steps.setter.outputs.ref }}
@@ -45,13 +42,17 @@ jobs:
         id: setter
         run: |
           echo "ref=$REF" >> "$GITHUB_OUTPUT"
+
   Linux:
-    needs: [GetUser, GetGitRef]
+    needs:
+      - GetUser
+      - GetGitRef
     if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/AzurePipelines run') && needs.GetUser.outputs.require-result == 'true' ) || github.event_name == 'push' }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
+    env:
+      PYTHON_VERSION: "3.9"
     timeout-minutes: 120
     steps:
-      - run: echo ${{ needs.GetUser.outputs.require-result }}
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -83,7 +84,7 @@ jobs:
         with:
           path: |
             USDinst
-          key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION }}-${{ hashFiles('build_scripts/**/*') }}
+          key: ${{ steps.cache-usd-build-dependency.outputs.cache-primary-key }}
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -91,12 +92,15 @@ jobs:
           path: USDinst
 
   macOS:
-    needs: [GetUser, GetGitRef]
+    needs:
+      - GetUser
+      - GetGitRef
     if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/AzurePipelines run') && needs.GetUser.outputs.require-result == 'true' ) || github.event_name == 'push' }}
     runs-on: macos-13
+    env:
+      PYTHON_VERSION: "3.11"
     timeout-minutes: 120
     steps:
-      - run: echo ${{ needs.GetUser.outputs.require-result }}
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -107,11 +111,11 @@ jobs:
         with:
           path: |
             USDinst
-          key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION_MAC }}-${{ hashFiles('build_scripts/**/*') }}
+          key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION }}-${{ hashFiles('build_scripts/**/*') }}
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.PYTHON_VERSION_MAC }}
+          python-version: ${{ env.PYTHON_VERSION }}
           check-latest: false
       - name: Install dependencies
         run: |
@@ -132,7 +136,7 @@ jobs:
         with:
           path: |
             USDinst
-          key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION_MAC }}-${{ hashFiles('build_scripts/**/*') }}
+          key: ${{ steps.cache-usd-build-dependency.outputs.cache-primary-key }}
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -140,12 +144,15 @@ jobs:
           path: USDinst
 
   Windows:
-    needs: [GetUser, GetGitRef]
+    needs:
+      - GetUser
+      - GetGitRef
     if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/AzurePipelines run') && needs.GetUser.outputs.require-result == 'true' ) || github.event_name == 'push' }}
     runs-on: windows-2019
+    env:
+      PYTHON_VERSION: "3.9"
     timeout-minutes: 120
     steps:
-      - run: echo ${{ needs.GetUser.outputs.require-result }}
       - name: Checkout code
         uses: actions/checkout@v4
         with:
@@ -168,23 +175,18 @@ jobs:
           python -m pip install PyOpenGL PySide2
       - name: Build USD
         run: |
-          REM Unset BOOST_ROOT on Windows. The VS2017-Win2016 image
-          REM sets this env var to a pre-installed boost which causes
-          REM the USD build to favor this over the boost built by
-          REM build_usd.py. This causes the build to fail, because
-          REM the pre-installed boost does not include boost_python27
-          call set BOOST_ROOT=
           python build_scripts/build_usd.py --no-materialx --generator "Visual Studio 16 2019" --build USDgen/build --src USDgen/src USDinst --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF" -v
-        shell: cmd          
+        shell: cmd
       - name: Save build artifacts to cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: |
             USDinst
-          key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION }}-${{ hashFiles('build_scripts/**/*') }}
+          key: ${{ steps.cache-usd-build-dependency.outputs.cache-primary-key }}
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: usd-win64
           path: USDinst
+

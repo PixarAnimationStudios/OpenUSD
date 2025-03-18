@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/preprocessor.hpp>
-#else
-
 # ifndef PXR_BOOST_PYTHON_MAX_ARITY
 #  define PXR_BOOST_PYTHON_MAX_ARITY 15
 # endif
@@ -33,5 +29,4 @@
     M(volatile, __VA_ARGS__)                            \
     M(const volatile, __VA_ARGS__)
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_PREPROCESSOR_HPP

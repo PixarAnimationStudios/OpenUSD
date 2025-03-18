@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/converter/rvalue_from_python_data.hpp>
-#else
-
 # include "pxr/external/boost/python/converter/constructor_function.hpp"
 # include "pxr/external/boost/python/detail/referent_storage.hpp"
 # include "pxr/external/boost/python/detail/destroy.hpp"
@@ -159,5 +155,4 @@ inline rvalue_from_python_data<T>::~rvalue_from_python_data()
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_RVALUE_FROM_PYTHON_DATA_HPP

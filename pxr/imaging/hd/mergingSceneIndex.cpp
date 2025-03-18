@@ -66,6 +66,15 @@ HdMergingSceneIndex::AddInputScene(
     const HdSceneIndexBaseRefPtr &inputScene,
     const SdfPath &activeInputSceneRoot)
 {
+    InsertInputScene(_inputs.size(), inputScene, activeInputSceneRoot);
+}
+
+void
+HdMergingSceneIndex::InsertInputScene(
+        const size_t pos,
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const SdfPath &activeInputSceneRoot)
+{
     TRACE_FUNCTION();
 
     if (!inputScene) {
@@ -94,7 +103,7 @@ HdMergingSceneIndex::AddInputScene(
         }
     }
 
-    _inputs.emplace_back(inputScene, activeInputSceneRoot);
+    _inputs.emplace(_inputs.begin() + pos, inputScene, activeInputSceneRoot);
     inputScene->AddObserver(HdSceneIndexObserverPtr(&_observer));
 
     if (!_IsObserved()) {

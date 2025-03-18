@@ -15,10 +15,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/converter/shared_ptr_from_python.hpp>
-#else
-
 #include "pxr/external/boost/python/handle.hpp"
 #include "pxr/external/boost/python/converter/shared_ptr_deleter.hpp"
 #include "pxr/external/boost/python/converter/from_python.hpp"
@@ -80,5 +76,4 @@ struct shared_ptr_from_python
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

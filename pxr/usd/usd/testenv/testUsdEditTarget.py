@@ -297,5 +297,54 @@ class TestUsdEditTarget(unittest.TestCase):
             with Usd.EditContext(None):
                 pass
 
+    def test_BugRegressionTest_VariantEditTargetCrash(self):
+        '''Regression test for github issue #2844 -
+        Crash on namespace edit inside a variant edit target'''
+
+        # Create a stage with a root xform
+        stage = Usd.Stage.CreateInMemory()
+        prim = stage.DefinePrim("/root", "Xform")
+
+        # Add variant set
+        variant_sets = prim.GetVariantSets()
+        variant_set = variant_sets.AddVariantSet("model")
+
+        # Add some variants
+        variant_set.AddVariant("main")
+        variant_set.AddVariant("damaged")
+        variant_set.AddVariant("ice")
+
+        # Set the variant selection
+        variant_set.SetVariantSelection("main")
+
+        edit_target = variant_set.GetVariantEditTarget()
+        stage.SetEditTarget(edit_target)
+
+        child = stage.DefinePrim("/root/child", "Xform")
+        # there is only one prim spec in this case, it's in the variant set
+        spec = next(iter(child.GetPrimStack()))  
+        self.assertEqual(spec.path, '/root{model=main}child')
+
+        # Rename, keep parent
+        edit = Sdf.NamespaceEdit.Rename(
+            spec.path,
+            "new_name"
+        )
+
+        layer = spec.layer
+        batch_edit = Sdf.BatchNamespaceEdit()
+        batch_edit.Add(edit)
+        layer.Apply(batch_edit)
+
+        child = stage.GetPrimAtPath("/root/new_name")
+        self.assertTrue(child, msg="Renamed child must exist")
+        self.assertFalse(stage.GetPrimAtPath("/root/child"), 
+                         msg="Old prim name must not exist")
+
+        # However, accessing the prim stack for the renamed prim would have 
+        # crash before this bug was fixed
+        prim_stack = child.GetPrimStack()  # USED TO CRASH
+        self.assertEqual(prim_stack[0].path, '/root{model=main}new_name')
+
 if __name__ == "__main__":
     unittest.main()

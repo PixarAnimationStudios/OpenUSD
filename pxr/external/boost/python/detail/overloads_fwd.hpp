@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/overloads_fwd.hpp>
-#else
-
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 // forward declarations
@@ -27,5 +23,4 @@ inline void define_with_defaults(char const* name, OverloadsT const&, NameSpaceT
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_OVERLOADS_FWD_HPP

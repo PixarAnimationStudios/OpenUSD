@@ -7,7 +7,6 @@ pxr_library(usdShadeValidators
         plug
         sdf
         usd
-        ndr
         sdr
         usdShade
         usdValidation

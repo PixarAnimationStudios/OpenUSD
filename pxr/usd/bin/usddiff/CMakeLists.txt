@@ -370,3 +370,18 @@ pxr_register_test(testDiffToolIterateUsdz4
     PRE_PATH
         ${CMAKE_INSTALL_PREFIX}/bin
 )
+
+pxr_install_test_dir(
+    SRC testenv/testDiffToolIterateUsdz
+    DEST testDiffToolIterateUsdz5
+)
+
+pxr_register_test(testDiffToolIterateUsdz5
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usddiff a_crate.usdz b_crate.usdz"
+    EXPECTED_RETURN_CODE 1
+    STDOUT_REDIRECT iterate_usd_crate.txt
+    DIFF_COMPARE iterate_usd_crate.txt
+    PRE_PATH
+        ${CMAKE_INSTALL_PREFIX}/bin
+)

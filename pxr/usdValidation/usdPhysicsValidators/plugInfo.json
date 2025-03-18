@@ -1,0 +1,54 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Validators": {
+                    "RigidBodyChecker": {
+                        "doc": "Validates all of the UsdPhysicsRigidBodyAPIs applied to a prim.", 
+                        "keywords": [
+                            "UsdPhysicsRigidBodyAPI"
+                        ], 
+                        "schemaTypes": [
+                            "UsdPhysicsRigidBodyAPI"
+                        ]
+                    }, 
+                    "ColliderChecker": {
+                        "doc": "Validates all of the UsdPhysicsCollisionAPIs applied to a prim.", 
+                        "keywords": [
+                            "UsdPhysicsCollisionAPI"
+                        ], 
+                        "schemaTypes": [
+                            "UsdPhysicsCollisionAPI"
+                        ]
+                    }, 
+                    "ArticulationChecker": {
+                        "doc": "Validates all of the UsdPhysicsArticulationAPIs applied to a prim.", 
+                        "keywords": [
+                            "UsdPhysicsArticulationAPI"
+                        ], 
+                        "schemaTypes": [
+                            "UsdPhysicsArticulationAPI"
+                        ]
+                    }, 
+                    "PhysicsJointChecker": {
+                        "doc": "Validates all of the UsdPhysicsJoint prims.", 
+                        "keywords": [
+                            "UsdPhysicsJoint"
+                        ], 
+                        "schemaTypes": [
+                            "UsdPhysicsJoint"
+                        ]
+                    }, 
+                    "keywords": [
+                        "UsdPhysicsValidators"
+                    ]
+                }
+            }, 
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@", 
+            "Name": "usdPhysicsValidators", 
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@", 
+            "Root": "@PLUG_INFO_ROOT@", 
+            "Type": "library"
+        }
+    ]
+}

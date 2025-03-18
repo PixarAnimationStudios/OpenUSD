@@ -1,0 +1,28 @@
+Differences in a_crate.usdz[basic.usdc] and b_crate.usdz[basic.usdc]:
+@@ -13 +13 @@
+-    float[] primvars:displayOpacity = [0.4]
++    float[] primvars:displayOpacity = [0.8]
+@@ -45,0 +46 @@
++    add references = @./cone2.usda@
+@@ -48,11 +48,0 @@
+-    def Xform "geom"
+-    {
+-        def Cone "cone1"
+-        {
+-            double height = 4
+-            float[] primvars:displayOpacity = [0.4]
+-            double3 xformOp:rotateXYZ = (45, 0, 0)
+-            double3 xformOp:translate = (0, 0, 3)
+-            uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+-        }
+-    }
+@@ -69 +58,0 @@
+-    asset baseline = @./baseline.txt@
+Differences in a_crate.usdz[sphere.usdz[sphere.usda]] and b_crate.usdz[sphere.usdz[sphere.usda]]:
+@@ -9,2 +9,2 @@
+-    double radius = 1
+-    double3 xformOp:translate = (-5, 0, 0)
++    double radius = 2
++    double3 xformOp:translate = (-6, 0, 0)
+Only in baseline: a_crate.usdz[baseline.txt].
+Not in baseline: b_crate.usdz[cone2.usda].

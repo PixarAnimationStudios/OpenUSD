@@ -122,21 +122,33 @@ SdfAssetPath::SdfAssetPath()
 {
 }
 
-SdfAssetPath::SdfAssetPath(const std::string &path)
-    : _assetPath(path)
-{
-    if (!_ValidateAssetPathString(path.c_str())) {
+SdfAssetPath::SdfAssetPath(const std::string &authoredPath)
+    : _authoredPath(authoredPath)
+{   
+    if (!_ValidateAssetPathString(authoredPath.c_str())) {
         *this = SdfAssetPath();
     }
 }
 
-SdfAssetPath::SdfAssetPath(const std::string &path,
+SdfAssetPath::SdfAssetPath(const std::string &authoredPath,
                            const std::string &resolvedPath)
-    : _assetPath(path)
+    : _authoredPath(authoredPath)
     , _resolvedPath(resolvedPath)
 {
-    if (!_ValidateAssetPathString(path.c_str()) ||
+    if (!_ValidateAssetPathString(authoredPath.c_str()) ||
         !_ValidateAssetPathString(resolvedPath.c_str())) {
+        *this = SdfAssetPath();
+    }
+}
+
+SdfAssetPath::SdfAssetPath(const SdfAssetPathParams &params)
+    : _authoredPath(params.authoredPath)
+    , _evaluatedPath(params.evaluatedPath)
+    , _resolvedPath(params.resolvedPath)
+{
+    if (!_ValidateAssetPathString(params.authoredPath.c_str()) ||
+        !_ValidateAssetPathString(params.evaluatedPath.c_str()) ||
+        !_ValidateAssetPathString(params.resolvedPath.c_str())) {
         *this = SdfAssetPath();
     }
 }
@@ -144,12 +156,8 @@ SdfAssetPath::SdfAssetPath(const std::string &path,
 bool
 SdfAssetPath::operator<(const SdfAssetPath &rhs) const
 {
-    if (_assetPath < rhs._assetPath)
-        return true;
-    if (rhs._assetPath < _assetPath)
-        return false;
-
-    return _resolvedPath < rhs._resolvedPath;
+    return std::tie(_authoredPath, _resolvedPath, _evaluatedPath) < 
+           std::tie(rhs._authoredPath, rhs._resolvedPath, rhs._evaluatedPath);
 }
 
 std::ostream& 

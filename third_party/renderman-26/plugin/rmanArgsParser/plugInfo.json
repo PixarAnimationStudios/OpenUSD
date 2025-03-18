@@ -9,7 +9,7 @@
             "Info": {
                 "Types": {
                     "RmanArgsParserPlugin" : {
-                        "bases": ["NdrParserPlugin"],
+                        "bases": ["SdrParserPlugin"],
                         "displayName": "RenderMan .args Node Parser"
                     }
                 }

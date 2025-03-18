@@ -45,6 +45,10 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#if PXR_VERSION < 2505
+using SdrTokenMap = NdrTokenMap;
+#endif
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (mtlx)
@@ -143,8 +147,8 @@ _FindGraphAndNodeByName(
     mx::DocumentPtr const &mxDoc,
     std::string const &mxNodeGraphName,
     std::string const &mxNodeName,
-    mx::NodeGraphPtr * mxNodeGraph,
-    mx::NodePtr * mxNode)
+    mx::NodeGraphPtr *mxNodeGraph,
+    mx::NodePtr *mxNode)
 {
     // Graph names are uniquified with mxDoc->createValidChildName in hdMtlx,
     // so attempting to get the graph by the expected name may fail.
@@ -152,25 +156,25 @@ _FindGraphAndNodeByName(
 
     *mxNodeGraph = mxDoc->getNodeGraph(mxNodeGraphName);
 
-    if(*mxNodeGraph) {
+    if (*mxNodeGraph) {
         *mxNode = (*mxNodeGraph)->getNode(mxNodeName);
     }
-    if(!*mxNode) {
+    if (!*mxNode) {
         std::vector<mx::NodeGraphPtr> graphs = mxDoc->getNodeGraphs();
         // first try last graph
-        if(graphs.size()) {
+        if (graphs.size()) {
             *mxNode =
                 (*(graphs.rbegin()))->getNode(mxNodeName);
-            if(*mxNode) {
+            if (*mxNode) {
                 *mxNodeGraph = *graphs.rbegin();
             }
         }
         // Sometimes the above approach fails, so go looking
         // through all the graph nodes for the texture
-        if(!*mxNode) {
+        if (!*mxNode) {
             for(auto graph : graphs) {
                 *mxNode = graph->getNode(mxNodeName);
-                if(*mxNode) {
+                if (*mxNode) {
                     *mxNodeGraph = graph;
                     break;
                 }
@@ -227,11 +231,11 @@ _GenMaterialXShaderCode(
                             &mxNodeGraph,
                             &mxNode);
 
-    if(!mxNodeGraph) {
+    if (!mxNodeGraph) {
         TF_WARN("NodeGraph '%s' not found in the mxDoc.",
                 mxNodeGraphName.c_str());
-         return mx::EMPTY_STRING;
-   }
+        return mx::EMPTY_STRING;
+    }
 
     if (!mxNode) {
         TF_WARN("Node '%s' not found in '%s' nodeGraph.",
@@ -550,7 +554,11 @@ _UpdateNetwork(
                 // Update the connection into the terminal node so that the
                 // output makes it into the closure
                 TfToken const &inputName = cName;
+#if PXR_VERSION >= 2505
+                if (sdrNode->GetShaderOutput(outputName)) {
+#else
                 if (sdrNode->GetOutput(outputName)) {
+#endif
                     netInterface->SetNodeInputConnection(
                         terminalNodeName,
                         inputName,
@@ -568,11 +576,29 @@ _UpdateNetwork(
             // Recursively look upstream for the first mtlx pattern.
             // In other words, skip over non-mtlx nodes and mtlx bsdf nodes.
             SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
-            const TfToken nodeType = netInterface->GetNodeType(upstreamNodeName);
+            SdfPath const nodePath = SdfPath(upstreamNodeName);
+            std::string const &mxNodeName = HdMtlxCreateNameFromPath(nodePath);
+            std::string const &mxNodeGraphName =
+                nodePath.GetParentPath().GetName();
+            
+            mx::NodePtr mxNode;
+            mx::NodeGraphPtr mxNodeGraph;
+            _FindGraphAndNodeByName(
+                mxDoc, mxNodeGraphName, mxNodeName, &mxNodeGraph, &mxNode);
+
+            // If this node was written in an older version of MaterialX, we 
+            // want to look to the mxDoc for the nodeType because that will 
+            // have the updated information to match the version of MaterialX 
+            // that is being used. 
+            const TfToken nodeType =
+                mxNode
+                    ? TfToken(mxNode->getNodeDefString())
+                    : netInterface->GetNodeType(upstreamNodeName);
+
             const SdrShaderNodeConstPtr sdrMtlxNode =
                 sdrRegistry.GetShaderNodeByIdentifierAndType(
                     nodeType, _tokens->mtlx);
-            if(!sdrMtlxNode ||
+            if (!sdrMtlxNode ||
                TfStringEndsWith(nodeType.GetText(), "_bsdf")) {
                 _UpdateNetwork(netInterface, upstreamNodeName, mxDoc,
                                searchPath, nodesToKeep, nodesToRemove);
@@ -590,15 +616,10 @@ _UpdateNetwork(
             nodesToKeep.insert(upstreamNodeName);
 
             // Generate the oslSource code for the connected upstream node
-            SdfPath const nodePath = SdfPath(upstreamNodeName);
-            std::string const &mxNodeName =
-                    HdMtlxCreateNameFromPath(nodePath);
-            std::string const &mxNodeGraphName =
-                nodePath.GetParentPath().GetName();
             std::string shaderName = mxNodeName + "Shader";
             std::string oslSource = _GenMaterialXShaderCode(
                 mxDoc, searchPath, shaderName, mxNodeName, mxNodeGraphName);
-            
+
             if (oslSource.empty()) {
                 continue;
             }
@@ -614,11 +635,11 @@ _UpdateNetwork(
             SdrShaderNodeConstPtr sdrNode = 
                 sdrRegistry.GetShaderNodeFromAsset(
                                 SdfAssetPath(compiledShaderPath),
-                                NdrTokenMap(),  // metadata
+                                SdrTokenMap(),  // metadata
                                 _tokens->mtlx,  // subId
                                 _tokens->OSL);  // sourceType
 
-            if(!sdrNode) {
+            if (!sdrNode) {
                 continue;
             }
 
@@ -628,7 +649,11 @@ _UpdateNetwork(
 
             // Update the connection into the terminal node so that the 
             // nodegraph outputs make their way into the closure
+#if PXR_VERSION >= 2505
+            if (sdrNode->GetShaderOutput(outputName)) {
+#else
             if (sdrNode->GetOutput(outputName)) {
+#endif
                 TfToken inputName = cName;
                 TfToken updatedInputName = _GetUpdatedInputToken(inputName);
                 bool deletePreviousConnection = false;
@@ -719,7 +744,11 @@ _TransformTerminalNode(
     netInterface->SetNodeType(rmanShaderNodeName, shaderType);
 
     // Connect the RenderMan material inputs to the Adapter's outputs
+#if PXR_VERSION >= 2505
+    for (const auto& inParamName: sdrShader->GetShaderInputNames()) {
+#else
     for (const auto& inParamName: sdrShader->GetInputNames()) {
+#endif
 
         if (sdrShader->GetShaderInput(inParamName)) {
 

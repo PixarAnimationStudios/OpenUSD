@@ -53,24 +53,16 @@ UsdImagingCollectionMaterialBindingSchema::GetBindingStrength() const
         UsdImagingCollectionMaterialBindingSchemaTokens->bindingStrength);
 }
 
-HdPathDataSourceHandle
-UsdImagingCollectionMaterialBindingSchema::GetBindingOriginPath() const
-{
-    return _GetTypedDataSource<HdPathDataSource>(
-        UsdImagingCollectionMaterialBindingSchemaTokens->bindingOriginPath);
-}
-
 /*static*/
 HdContainerDataSourceHandle
 UsdImagingCollectionMaterialBindingSchema::BuildRetained(
         const HdPathDataSourceHandle &collectionPath,
         const HdPathDataSourceHandle &materialPath,
-        const HdTokenDataSourceHandle &bindingStrength,
-        const HdPathDataSourceHandle &bindingOriginPath
+        const HdTokenDataSourceHandle &bindingStrength
 )
 {
-    TfToken _names[4];
-    HdDataSourceBaseHandle _values[4];
+    TfToken _names[3];
+    HdDataSourceBaseHandle _values[3];
 
     size_t _count = 0;
 
@@ -87,11 +79,6 @@ UsdImagingCollectionMaterialBindingSchema::BuildRetained(
     if (bindingStrength) {
         _names[_count] = UsdImagingCollectionMaterialBindingSchemaTokens->bindingStrength;
         _values[_count++] = bindingStrength;
-    }
-
-    if (bindingOriginPath) {
-        _names[_count] = UsdImagingCollectionMaterialBindingSchemaTokens->bindingOriginPath;
-        _values[_count++] = bindingOriginPath;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -120,22 +107,13 @@ UsdImagingCollectionMaterialBindingSchema::Builder::SetBindingStrength(
     return *this;
 }
 
-UsdImagingCollectionMaterialBindingSchema::Builder &
-UsdImagingCollectionMaterialBindingSchema::Builder::SetBindingOriginPath(
-    const HdPathDataSourceHandle &bindingOriginPath)
-{
-    _bindingOriginPath = bindingOriginPath;
-    return *this;
-}
-
 HdContainerDataSourceHandle
 UsdImagingCollectionMaterialBindingSchema::Builder::Build()
 {
     return UsdImagingCollectionMaterialBindingSchema::BuildRetained(
         _collectionPath,
         _materialPath,
-        _bindingStrength,
-        _bindingOriginPath
+        _bindingStrength
     );
 }
 

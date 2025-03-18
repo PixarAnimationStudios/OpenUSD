@@ -224,6 +224,13 @@ HdPrimvarSchema::GetRole() const
         HdPrimvarSchemaTokens->role);
 }
 
+HdIntDataSourceHandle
+HdPrimvarSchema::GetElementSize() const
+{
+    return _GetTypedDataSource<HdIntDataSource>(
+        HdPrimvarSchemaTokens->elementSize);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdPrimvarSchema::BuildRetained(
@@ -231,11 +238,12 @@ HdPrimvarSchema::BuildRetained(
         const HdSampledDataSourceHandle &indexedPrimvarValue,
         const HdIntArrayDataSourceHandle &indices,
         const HdTokenDataSourceHandle &interpolation,
-        const HdTokenDataSourceHandle &role
+        const HdTokenDataSourceHandle &role,
+        const HdIntDataSourceHandle &elementSize
 )
 {
-    TfToken _names[5];
-    HdDataSourceBaseHandle _values[5];
+    TfToken _names[6];
+    HdDataSourceBaseHandle _values[6];
 
     size_t _count = 0;
 
@@ -262,6 +270,11 @@ HdPrimvarSchema::BuildRetained(
     if (role) {
         _names[_count] = HdPrimvarSchemaTokens->role;
         _values[_count++] = role;
+    }
+
+    if (elementSize) {
+        _names[_count] = HdPrimvarSchemaTokens->elementSize;
+        _values[_count++] = elementSize;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -306,6 +319,14 @@ HdPrimvarSchema::Builder::SetRole(
     return *this;
 }
 
+HdPrimvarSchema::Builder &
+HdPrimvarSchema::Builder::SetElementSize(
+    const HdIntDataSourceHandle &elementSize)
+{
+    _elementSize = elementSize;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdPrimvarSchema::Builder::Build()
 {
@@ -314,7 +335,8 @@ HdPrimvarSchema::Builder::Build()
         _indexedPrimvarValue,
         _indices,
         _interpolation,
-        _role
+        _role,
+        _elementSize
     );
 }
 

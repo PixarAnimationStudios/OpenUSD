@@ -16,6 +16,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// \anchor TS_SPLINE_SUPPORTED_VALUE_TYPES
+/// Sequence of value types that are supported by the spline system.
+/// \li <b>double</b>
+/// \li <b>float</b>
+/// \li <b>GfHalf</b>
+/// \hideinitializer
+#define TS_SPLINE_SUPPORTED_VALUE_TYPES         \
+    ((Double,   double))                        \
+    ((Float,    float))                         \
+    ((Half,     GfHalf))
+
+#define TS_SPLINE_VALUE_TYPE_NAME(x) TF_PP_TUPLE_ELEM(0, x)
+#define TS_SPLINE_VALUE_CPP_TYPE(x) TF_PP_TUPLE_ELEM(1, x)
 
 // Times are encoded as double.
 using TsTime = double;

@@ -22,12 +22,16 @@
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
+#include "pxr/base/tf/errorMark.h"
+
 #include <iostream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 int main(int argc, char *argv[])
 {
+    TfErrorMark mark;
+
     HdPerfLog& perfLog = HdPerfLog::GetInstance();
     perfLog.Enable();
 
@@ -184,5 +188,11 @@ int main(int argc, char *argv[])
 
     // --------------------------------------------------------------------
 
-    std::cout << "OK" << std::endl;
+    if (mark.IsClean()) {
+        std::cout << "OK" << std::endl;
+        return EXIT_SUCCESS;
+    } else {
+        std::cout << "FAILED" << std::endl;
+        return EXIT_FAILURE;
+    }
 }

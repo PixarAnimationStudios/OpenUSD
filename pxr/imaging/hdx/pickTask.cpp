@@ -249,7 +249,7 @@ HdxPickTask::_CreateAovBindings()
             _GetAovPath(_tokens->widgetDepthStencil));
 
         HdAovDescriptor depthDesc = renderDelegate->GetDefaultAovDescriptor(
-            HdAovTokens->depth);
+            _depthToken);
 
         _widgetAovBindings = _pickableAovBindings;
         for (auto& binding : _widgetAovBindings) {

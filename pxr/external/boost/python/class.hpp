@@ -13,11 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include "pxr/external/boost/python/noncopyable.hpp"
-#include <boost/python/class.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/noncopyable.hpp"
@@ -570,5 +565,4 @@ inline class_<W,X1,X2,X3>::class_(char const* name, char const* doc, no_init_t)
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CLASS_HPP

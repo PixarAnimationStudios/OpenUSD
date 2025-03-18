@@ -98,6 +98,10 @@ public:
     GetBracketingTimeSamplesForPath(const SdfPath& path,
                                     double time,
                                     double* tLower, double* tUpper) const;
+
+    virtual bool
+    GetPreviousTimeSampleForPath(const SdfPath& path, double time,
+                                 double* tPrevious) const;
     
     virtual bool
     QueryTimeSample(const SdfPath& path, double time,

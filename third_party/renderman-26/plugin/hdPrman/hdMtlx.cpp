@@ -39,6 +39,10 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#if PXR_VERSION < 2505
+using SdrStringVec = NdrStringVec;
+#endif
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (texcoord)
@@ -51,7 +55,7 @@ static mx::FileSearchPath
 _ComputeSearchPaths()
 {
     mx::FileSearchPath searchPaths;
-    static const NdrStringVec searchPathStrings = UsdMtlxSearchPaths();
+    static const SdrStringVec searchPathStrings = UsdMtlxSearchPaths();
     for (auto path : searchPathStrings) {
         searchPaths.append(mx::FilePath(path));
     }

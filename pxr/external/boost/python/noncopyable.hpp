@@ -9,18 +9,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-
-#include <boost/noncopyable.hpp>
-
-namespace PXR_BOOST_NAMESPACE { namespace python {
-
-using boost::noncopyable;
-
-}} // namespace PXR_BOOST_NAMESPACE::python
-
-#else
-
 namespace PXR_BOOST_NAMESPACE { namespace python {
 
 // Tag structure used with class_ to indicate that the wrapped C++ type
@@ -31,7 +19,5 @@ struct noncopyable final
 };
 
 }} // namespace PXR_BOOST_NAMESPACE::python
-
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 
 #endif // PXR_EXTERNAL_BOOST_PYTHON_NONCOPYABLE_HPP

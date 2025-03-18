@@ -270,7 +270,9 @@ SdrGlslfxParserPlugin::ParseShaderNode(
         primvarNames.push_back(a.name);
     }
 
-    metadata[SdrNodeMetadata->Primvars] = TfStringJoin(primvarNames, "|");
+    if (!primvarNames.empty()) {
+        metadata[SdrNodeMetadata->Primvars] = TfStringJoin(primvarNames, "|");
+    }
 
     // XXX: Add support for reading metadata from glslfx and converting
     //      to node metadata

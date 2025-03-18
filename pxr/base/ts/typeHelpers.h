@@ -10,6 +10,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/ts/api.h"
+#include "pxr/base/ts/types.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/tf/type.h"
 
@@ -24,37 +25,24 @@ PXR_NAMESPACE_OPEN_SCOPE
 template <typename T>
 TfType Ts_GetType();
 
-template <>
-TS_API TfType Ts_GetType<double>();
-
-template <>
-TS_API TfType Ts_GetType<float>();
-
-template <>
-TS_API TfType Ts_GetType<GfHalf>();
-
-
 // Compile-time type whose value is true only for supported value types.
 //
 template <typename T>
 struct Ts_IsSupportedValueType;
 
-template <>
-struct Ts_IsSupportedValueType<double> :
-    public std::bool_constant<true> {};
-
-template <>
-struct Ts_IsSupportedValueType<float> :
-    public std::bool_constant<true> {};
-
-template <>
-struct Ts_IsSupportedValueType<GfHalf> :
-    public std::bool_constant<true> {};
-
+// Default to false.
 template <typename T>
-struct Ts_IsSupportedValueType :
-    public std::bool_constant<false> {};
+struct Ts_IsSupportedValueType : public std::false_type {};
 
+// Specializations for supported value types.
+#define _MAKE_CLAUSE(unused, tuple)                                      \
+    template <>                                                          \
+    TS_API TfType Ts_GetType<TS_SPLINE_VALUE_CPP_TYPE(tuple)>();         \
+    template <>                                                          \
+    struct Ts_IsSupportedValueType<TS_SPLINE_VALUE_CPP_TYPE(tuple)> :    \
+        public std::true_type {};
+TF_PP_SEQ_FOR_EACH(_MAKE_CLAUSE, ~, TS_SPLINE_SUPPORTED_VALUE_TYPES)
+#undef _MAKE_CLAUSE
 
 // Mapping from Python type names to TfTypes for supported spline value types.
 // These strings align with type names used in downstream libraries; we can't

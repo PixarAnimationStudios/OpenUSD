@@ -543,8 +543,11 @@ ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
         builder->AddProperty(mtlxOutput, true, nullptr);
     }
 
-    builder->metadata[SdrNodeMetadata->Primvars] =
-        TfStringJoin(primvars.begin(), primvars.end(), "|");
+    const std::string primvarsStr = TfStringJoin(primvars.begin(), 
+                                                 primvars.end(), "|");
+    if (!primvarsStr.empty()) {
+        builder->metadata[SdrNodeMetadata->Primvars] = primvarsStr;
+    }
 }
 
 } // anonymous namespace

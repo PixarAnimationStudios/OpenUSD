@@ -269,6 +269,11 @@
             ('indices', T_INTARRAY, {}),
             ('interpolation', T_TOKEN, {}),
             ('role', T_TOKEN, {}),
+            ('elementSize', T_INT,
+             dict(DOC = '''
+                 The number of values in the value array that must be aggregated
+                 for each element on the the primitive
+                 (same as UsdGeomPrimvar).'''))
         ],
         EXTRA_TOKENS = [
             'transform',
@@ -559,6 +564,7 @@
         SCHEMA_TOKEN = 'material',
         EXTRA_TOKENS = [
             '(universalRenderContext, "")',
+            '(all, "__all")',
         ],
         ADD_DEFAULT_LOCATOR = True,
 

@@ -1552,7 +1552,17 @@ public:
     SDF_API
     bool GetBracketingTimeSamplesForPath(const SdfPath& path, 
                                          double time,
-                                         double* tLower, double* tUpper);
+                                         double* tLower, double* tUpper) const;
+
+    /// Returns the previous time sample authored just before the querying \p 
+    /// time.
+    ///
+    /// If there is no time sample authored just before \p time, this function
+    /// returns false. Otherwise, it returns true and sets \p tPrevious to the
+    /// time of the previous sample.
+    SDF_API
+    bool GetPreviousTimeSampleForPath(const SdfPath& path, double time,
+                                      double* tPrevious) const;
 
     SDF_API
     bool QueryTimeSample(const SdfPath& path, double time, 
@@ -1879,12 +1889,13 @@ private:
     // consider property spec fields. In some cases, this can avoid expensive
     // operations which would pull large amounts of data.
     template<typename DeleteSpecFunc, typename CreateSpecFunc, 
-            typename SetFieldFunc, typename ErrorFunc>
+            typename GetFieldValuesFunc, typename SetFieldFunc, typename ErrorFunc>
     void _ProcessIncomingData(const SdfAbstractDataPtr &newData,
                               const SdfSchemaBase *newDataSchema,
                               bool processPropertyFields,
                               const DeleteSpecFunc &deleteSpecFunc,
                               const CreateSpecFunc &createSpecFunc,
+                              const GetFieldValuesFunc &getFieldValuesFunc,
                               const SetFieldFunc &setFieldFunc,
                               const ErrorFunc &errorFunc) const;
 

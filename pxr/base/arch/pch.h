@@ -68,6 +68,7 @@
 #include <atomic>
 #include <cctype>
 #include <cerrno>
+#include <charconv>
 #include <cinttypes>
 #include <cmath>
 #include <csignal>
@@ -79,6 +80,7 @@
 #include <ctime>
 #include <errno.h>
 #include <fcntl.h>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <inttypes.h>
@@ -100,8 +102,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
+#include <string_view>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <system_error>
 #include <thread>
 #include <time.h>
 #include <type_traits>

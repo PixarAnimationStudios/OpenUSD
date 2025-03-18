@@ -16,10 +16,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/signature.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/detail/mpl2/if.hpp"
@@ -151,5 +147,4 @@ PXR_BOOST_PYTHON_APPLY_QUALIFIERS(PXR_BOOST_PYTHON_GET_SIGNATURE_MEMBERS);
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_SIGNATURE_HPP

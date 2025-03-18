@@ -71,6 +71,17 @@ class TestSdfLayer(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             layer.identifier = "anon:testing"
 
+    def test_SetIdentifierAnonymousLayer(self):
+        layer = Sdf.Layer.CreateAnonymous()
+        anonIdentifier = layer.identifier
+        nonAnonIdentifier = 'tmp_testSetIdentifierAnonymousLayer.sdf'
+        layer.identifier = nonAnonIdentifier
+
+        layer = Sdf.Layer.FindOrOpen(nonAnonIdentifier)
+        self.assertTrue(layer)
+        anonLayer = Sdf.Layer.FindOrOpen(anonIdentifier)
+        self.assertFalse(anonLayer)
+
     def test_SetIdentifierWithArgs(self):
         layer = Sdf.Layer.CreateAnonymous()
         layer.Export("testSetIdentifierWithArgs.sdf")

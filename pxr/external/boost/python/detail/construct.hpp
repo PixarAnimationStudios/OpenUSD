@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/construct.hpp>
-#else
-
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 template <class T, class Arg>
@@ -45,5 +41,4 @@ void construct_referent(void* storage, Arg& x, T(*tag)() = 0)
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CONSTRUCT_HPP

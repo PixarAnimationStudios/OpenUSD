@@ -7,10 +7,17 @@
 \note The Ndr library is deprecated and will be deleted soon. Use this
 Sdr library instead.
 
+In the context of Sdr, a "shader" is any program that takes input and produces
+output.
+
 Sdr provides a framework in which you can register shader
 nodes with Sdr, and subsequently ask for information about those nodes.
 Additionally, shader node parsing and "discovery" are done via
 plugins to keep Sdr extendable.
+
+If this is your first time working with Sdr, we recommend you read the
+\ref SdrShaderPropertyTypes "SdrShaderProperty Types section"
+to understand some implicit behaviors.
 
 \tableofcontents
 
@@ -101,93 +108,71 @@ See the documentation for `SdrDiscoveryPlugin` for more information.
 \section sdr_customParser Custom Parser Plugin
 See the documentation for `SdrParserPlugin` for more information.
 
-# Discussion of SdrPropertyTypes {#SdrPropertyTypes}
+# SdrShaderProperty Types {#SdrShaderPropertyTypes}
 
-Sdr defines a limited set of types:
-- Int
-- String
-- Float
-- Color
-- Point
-- Normal
-- Vector
-- Matrix
-- Struct
-- Terminal
-- VStruct
-- Unknown
+A SdrShaderProperty's type is described using the given SdrPropertyType token,
+as well as SdrShaderProperty::GetArraySize(), if
+SdrShaderProperty::IsDynamicArray() is true. SdrPropertyType tokens are defined
+<a href="https://github.com/PixarAnimationStudios/OpenUSD/blob/0fff6d96b28de6ecf44a428271b912169a3d8986/pxr/usd/sdr/shaderProperty.h#L33-L46">
+here.
+</a>
 
+For whether a SdrShaderProperty can connect to another SdrShaderProperty based
+on its type, see the implementation of `SdrShaderProperty::CanConnectTo`.
+SdrShaderProperty connectability has more flexibility than a simple type
+equivalence check does; for example, a property of type SdrPropertyTypes->Color
+can connect to another property of type SdrPropertyTypes->Vector because they
+both represent a "Float3".
 
-## Two notions of types (SdrPropertyType and SdfValueTypeName)
+## Type determination
+
+Sdr defines a limited set of types with SdrPropertyType tokens. These types
+correspond to certain SdfValueTypeNames. There are two levels of type
+determination described below.
+
+1. Type determination during SdrShaderProperty constructions.
+2. Conversion to SdfValueTypeName from SdrShaderProperty type.
+
+Metadata-based controls may modify each type determination step.
+Each step is detailed in sections below.
 
 The SdrPropertyType is not written out to a USD layer, but with the aid of other
 information and metadata gathered from a node's shader definition, the
 SdrPropertyType is mapped to an SdfValueTypeName that is written into USD
-layers.  The SdfValueTypeNames are a much richer and wider set of types, and it
+layers. The SdfValueTypeNames are a much richer and wider set of types, and it
 is this type that is looked at during opinion composition.
 
-For most of the basic SdrPropertyTypes, we have direct mappings to
-SdfValueTypeNames given the Sdr type and if it is an array.  For some of the
-SdrPropertyTypes, we use metadata to aid the translation to a particular
-SdfValueTypeName (see below).
-
 Clients writing SdrParserPlugin sub-classes for Sdr need only be concerned with
-a property's SdrPropertyType.  Sdr will handle the details of assigning the
+a property's SdrPropertyType. Sdr will handle the details of assigning the
 correct SdfValueTypeName.
 
+### Type determination during SdrShaderProperty construction
 
-## Discussion of the special Sdr property types
+If the property's 'role' metadata is 'none', this triggers automatic
+SdrPropertyType transformation during SdrShaderProperty construction time.
+The SdrPropertyType will be transformed to be as generic as possible.
+For example, if a property of original SdrPropertyTypes->Color has 'role'
+specified as 'none', then the property will actually become
+SdrPropertyTypes->Float with an arraysize of 3.
 
-Some SdrPropertyTypes are a little special because there is no reasonable
-corresponding SdfValueTypeName, so we map them all to SdfValueTypeName->Token,
-which is typically reserved for an Unknown type.
+See
+<a href="https://github.com/PixarAnimationStudios/OpenUSD/blob/0fff6d96b28de6ecf44a428271b912169a3d8986/pxr/usd/sdr/shaderProperty.cpp#L110-L138">
+this map
+</a>
+for all property construction-time type transformations from 'none' roles.
 
-The special SdrPropertyTypes that map to 'Token' are:
-- Struct -  Struct types
-- Terminal - Certain properties represent 'terminal' ports (ie. surface,
-             displacement, volume, etc)
-- Vstruct - An abstract struct type that can connect to any other 'vstruct', and
-            connections are only made if a matching vstruct member is found.
+### SdfValueTypeName conversion from SdrShaderProperty fields
 
-As described, these special SdrPropertyTypes cannot be represented as a
-SdfValueTypeName, which is why we simply map them to 'Token'.  A user can
-find the original struct type or terminal type of one of these properties by
-examining the 'renderType' metadata on the property, since this original type
-information is not preserved in either the SdrPropertyType or SdfValueTypeName.
+SdfValueTypeName conversion is governed by 
+<a href="https://github.com/PixarAnimationStudios/OpenUSD/blob/0fff6d96b28de6ecf44a428271b912169a3d8986/pxr/usd/sdr/shaderProperty.cpp#L37-L68">
+these conversion maps
+</a>
+and is triggered by call to SdrShaderProperty::GetTypeAsSdfType.
 
-
-## Sdr metadata that is used to determine SdrPropertyType
-
-As mentioned previously, metadata can be used to drive the parsing of a
-SdrPropertyType.  This metadata does need to be authored by shader writers.
-Some of these metadata tags are:
-- 'renderType' - The 'renderType' metadata should be specified for Struct,
-   Terminal, and Vstruct properties.
-   - On a Struct, the metadata would be 'renderType' = 'struct structName',
-     where structName is the actual struct's typename
-   - On a Terminal, the metadata would be 'renderType' = 'terminal terminalName'
-     where terminalName is the actual kind of terminal
-   - On a Vstruct, the metadata would be 'renderType' = 'vstruct', since there is
-     no further specific type name for a vstruct
-- 'role' - The 'role' metadata can be specified for any SdrPropertyType, and the
-   value of 'role' will determine if the property will be transformed to a
-   different SdrPropertyType.  This metadata is special in that parser plugin
-   writers do NOT need to handle any SdrPropertyType transformations.  Parser
-   writers simply need to parse the property as usual and allow
-   SdrShaderProperty to apply any needed transformations to the SdrPropertyType.
-   The 'role' metadata can only have the following predefined values:
-   - 'none' - If 'role' is 'none', then the SdrPropertyType will be
-     transformed to be as generic as possible.  For example, if a property of
-     original SdrPropertyTypes->Color has 'role' specified as 'none', then the
-     property will actually become SdrPropertyTypes->Float.
-
-## Sdr metadata that is used to determine SdfValueTypeName
-
-Some metadata is used to drive the conversion of an SdfValueTypeName.
+However, the presence of some metadata on SdrShaderProperty alters conversion.
 Metadata that is used for SdfValueTypeName conversion is authored either by 
 shader writers (SdrUsdDefinitionName), or it should be injected into an 
 SdrShaderProperty by a parser plugin writer (IsAssetIdentifier).
-This includes:
 - SdrPropertyMetadata->IsAssetIdentifier - This metadata tag is injected by a
   parser if the parser determines that the property is an asset. The presence
   of this metadata tag then guides the type mapping to choose
@@ -206,6 +191,40 @@ This includes:
   representation. When sdrUsdDefinitionType is specified, Sdr will do its best
   to convert the default value provided in the shader definition into the
   requested SdfValueType.
+
+### Special Sdr property types {#SpecialSdrShaderPropertyTypes}
+
+Three types are specific to Sdr and have no corresponding SdfValueTypeName.
+
+- SdrPropertyTypes->Struct -  Struct types
+- SdrPropertyTypes->Terminal - Certain properties represent 'terminal' ports
+  (ie. surface, displacement, volume, etc)
+- SdrPropertyTypes->Vstruct - An abstract struct type that can connect to any
+  other 'vstruct', and connections are only made if a matching vstruct member
+  is found.
+
+These special types have no reasonable corresponding SdfValueTypeName,
+so we map them to SdfValueTypeName->Token, which is typically reserved
+for an Unknown type.
+
+Traditional methods of accessing type information will give incomplete info for
+the above special cases, for example:
+`SdrShaderProperty::GetType` returns a "struct" token without indicating what _kind_
+of struct it represents, and `SdrShaderProperty::GetTypeAsSdfType().GetSdfType`
+returns `SdfValueTypeNames->Token`, which is even more ambiguous than "struct".
+
+Therefore to provide more complete type info, the 'renderType' metadata
+should be authored when creating a SdrShaderProperty with one of the above special
+types.
+- On a Struct, the metadata should be 'renderType' = 'struct structName',
+  where structName is the actual struct's typename
+- On a Terminal, the metadata should be 'renderType' = 'terminal terminalName'
+  where terminalName is the actual kind of terminal
+- On a Vstruct, the metadata should be 'renderType' = 'vstruct', since there is
+  no further specific type name for a vstruct
+
+A user can find the original struct type or terminal type of one of these properties
+by examining the 'renderType' metadata on the property directly.
 
 ## Some examples illustrating the treatment of property types
 

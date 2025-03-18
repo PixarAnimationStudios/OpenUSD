@@ -13,9 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/converter/registered_pointee.hpp>
-#else
 # include "pxr/external/boost/python/converter/registered.hpp"
 # include "pxr/external/boost/python/converter/pointer_type_id.hpp"
 # include "pxr/external/boost/python/converter/registry.hpp"
@@ -38,5 +35,4 @@ struct registered_pointee
 };
 }}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_REGISTERED_POINTEE_HPP

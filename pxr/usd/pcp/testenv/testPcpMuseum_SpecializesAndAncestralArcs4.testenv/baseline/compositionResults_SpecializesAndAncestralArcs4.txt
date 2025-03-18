@@ -1,0 +1,207 @@
+Loading @SpecializesAndAncestralArcs4/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Parent>
+
+Prim Stack:
+    root.sdf             /Parent
+    root.sdf             /PI
+    ref.sdf              /PR
+    root.sdf             /PIS
+    root.sdf             /PISI
+
+Child names:
+     ['Child', 'Sibling']
+
+------------------------------------------------------------------------
+Results for composing </Parent/Child>
+
+Prim Stack:
+    root.sdf             /Parent/Child
+    root.sdf             /Parent/Sibling
+    root.sdf             /PI/Sibling
+    root.sdf             /PIS/Sibling
+    root.sdf             /PISI/Sibling
+    root.sdf             /PI/Child
+    ref.sdf              /PR/Child
+    ref.sdf              /PR/Sibling
+    root.sdf             /PIS/Child
+    root.sdf             /PISI/Child
+
+------------------------------------------------------------------------
+Results for composing </Parent/Sibling>
+
+Prim Stack:
+    root.sdf             /Parent/Sibling
+    root.sdf             /PI/Sibling
+    ref.sdf              /PR/Sibling
+    root.sdf             /PIS/Sibling
+    root.sdf             /PISI/Sibling
+
+------------------------------------------------------------------------
+Results for composing </Parent2>
+
+Prim Stack:
+    root.sdf             /Parent2
+    root.sdf             /PI
+    ref.sdf              /PR
+    root.sdf             /PIS
+    root.sdf             /PISI
+    root.sdf             /PS
+    root.sdf             /PSI
+
+Child names:
+     ['Child', 'Sibling']
+
+------------------------------------------------------------------------
+Results for composing </Parent2/Child>
+
+Prim Stack:
+    root.sdf             /Parent2/Child
+    root.sdf             /Parent2/Sibling
+    root.sdf             /PI/Sibling
+    root.sdf             /PI/Child
+    ref.sdf              /PR/Child
+    ref.sdf              /PR/Sibling
+    root.sdf             /PIS/Sibling
+    root.sdf             /PISI/Sibling
+    root.sdf             /PS/Sibling
+    root.sdf             /PSI/Sibling
+    root.sdf             /PIS/Child
+    root.sdf             /PISI/Child
+    root.sdf             /PS/Child
+    root.sdf             /PSI/Child
+
+------------------------------------------------------------------------
+Results for composing </Parent2/Sibling>
+
+Prim Stack:
+    root.sdf             /Parent2/Sibling
+    root.sdf             /PI/Sibling
+    ref.sdf              /PR/Sibling
+    root.sdf             /PIS/Sibling
+    root.sdf             /PISI/Sibling
+    root.sdf             /PS/Sibling
+    root.sdf             /PSI/Sibling
+
+------------------------------------------------------------------------
+Results for composing </PS>
+
+Prim Stack:
+    root.sdf             /PS
+    root.sdf             /PSI
+
+Child names:
+     ['Child', 'Sibling']
+
+------------------------------------------------------------------------
+Results for composing </PS/Child>
+
+Prim Stack:
+    root.sdf             /PS/Child
+    root.sdf             /PSI/Child
+
+------------------------------------------------------------------------
+Results for composing </PS/Sibling>
+
+Prim Stack:
+    root.sdf             /PS/Sibling
+    root.sdf             /PSI/Sibling
+
+------------------------------------------------------------------------
+Results for composing </PSI>
+
+Prim Stack:
+    root.sdf             /PSI
+
+Child names:
+     ['Child', 'Sibling']
+
+------------------------------------------------------------------------
+Results for composing </PSI/Child>
+
+Prim Stack:
+    root.sdf             /PSI/Child
+
+------------------------------------------------------------------------
+Results for composing </PSI/Sibling>
+
+Prim Stack:
+    root.sdf             /PSI/Sibling
+
+------------------------------------------------------------------------
+Results for composing </PI>
+
+Prim Stack:
+    root.sdf             /PI
+    root.sdf             /PIS
+    root.sdf             /PISI
+
+Child names:
+     ['Child', 'Sibling']
+
+------------------------------------------------------------------------
+Results for composing </PI/Child>
+
+Prim Stack:
+    root.sdf             /PI/Child
+    root.sdf             /PIS/Child
+    root.sdf             /PISI/Child
+
+------------------------------------------------------------------------
+Results for composing </PI/Sibling>
+
+Prim Stack:
+    root.sdf             /PI/Sibling
+    root.sdf             /PIS/Sibling
+    root.sdf             /PISI/Sibling
+
+------------------------------------------------------------------------
+Results for composing </PIS>
+
+Prim Stack:
+    root.sdf             /PIS
+    root.sdf             /PISI
+
+Child names:
+     ['Child', 'Sibling']
+
+------------------------------------------------------------------------
+Results for composing </PIS/Child>
+
+Prim Stack:
+    root.sdf             /PIS/Child
+    root.sdf             /PISI/Child
+
+------------------------------------------------------------------------
+Results for composing </PIS/Sibling>
+
+Prim Stack:
+    root.sdf             /PIS/Sibling
+    root.sdf             /PISI/Sibling
+
+------------------------------------------------------------------------
+Results for composing </PISI>
+
+Prim Stack:
+    root.sdf             /PISI
+
+Child names:
+     ['Child', 'Sibling']
+
+------------------------------------------------------------------------
+Results for composing </PISI/Child>
+
+Prim Stack:
+    root.sdf             /PISI/Child
+
+------------------------------------------------------------------------
+Results for composing </PISI/Sibling>
+
+Prim Stack:
+    root.sdf             /PISI/Sibling
+

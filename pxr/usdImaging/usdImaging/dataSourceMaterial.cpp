@@ -565,6 +565,9 @@ UsdImagingDataSourceMaterial::GetNames()
             renderContexts.push_back(renderContext);
         }
     }
+
+    // Always add the 'all' render context
+    renderContexts.push_back(HdMaterialSchemaTokens->all);
     return renderContexts;
 }
 
@@ -729,18 +732,23 @@ _BuildMaterial(
     const SdfPath materialPrefix = usdMat.GetPrim().GetPath();
 
     _TokenDataSourceMap nodeDataSources;
-
     for (UsdShadeOutput &output : usdMat.GetOutputs()) {
-        // Skip terminals from other contexts.
-        if (_GetRenderContextForShaderOutput(output) != renderContext) {
-            continue;
+        // When building a material for a render context other than 'all' skip 
+        // terminals from other contexts.
+        if (renderContext != HdMaterialSchemaTokens->all) {
+            if (_GetRenderContextForShaderOutput(output) != renderContext) {
+                continue;
+            }
         }
 
         // E.g. "ri:surface"
         TfToken outputName = output.GetBaseName();
 
-        // Strip the renderContext, if there is one.
-        if (!renderContext.IsEmpty()) {
+        // When building a material for the 'all' render context do not strip
+        // the render context string from the output name, so that outputs for
+        // different render contexts can coexist.
+        if (renderContext != HdMaterialSchemaTokens->all && 
+            !renderContext.IsEmpty()) {
             // Skip the renderContext and subsequent ':'
             outputName = TfToken(
                 outputName.GetString().substr(renderContext.size()+1));
@@ -752,19 +760,45 @@ _BuildMaterial(
                 continue;
             }
 
-            UsdShadeConnectableAPI upstreamShader = _ComputeOutputSource(
+            const UsdShadeConnectableAPI upstreamShader = _ComputeOutputSource(
                 UsdShadeMaterial(usdMat), outputName, {renderContext}, sourceInfo);
 
-            _WalkGraph(upstreamShader,
-                &nodeDataSources,
-                stageGlobals,
-                renderContext,
-                sceneIndexPath,
+            const HdDataSourceLocator nodesLocatorPrefix =
                 locatorPrefix.IsEmpty()
                     ? locatorPrefix
-                    : locatorPrefix.Append(
-                        HdMaterialNetworkSchemaTokens->nodes),
-                materialPrefix);
+                    : locatorPrefix.Append(HdMaterialNetworkSchemaTokens->nodes);
+
+            if (renderContext == HdMaterialSchemaTokens->all) {
+                // When building a material for the 'all' render context
+                // create data sources for every shader prim underneath it,
+                // even if they are not connected to a terminal.
+                const UsdPrim usdMaterial = usdMat.GetPrim();
+                for (const UsdPrim& child : usdMaterial.GetDescendants()) {
+                    const UsdShadeShader usdShader(child);
+                    if (!usdShader) {
+                        continue;
+                    }
+
+                    const SdfPath nodePath = usdShader.GetPath();
+                    const TfToken nodeName = 
+                        _RelativePath(materialPrefix, nodePath).GetToken();
+                    HdDataSourceBaseHandle nodeValue =
+                        _UsdImagingDataSourceShadingNode::New(
+                            usdShader, stageGlobals, renderContext,
+                            sceneIndexPath, nodesLocatorPrefix, materialPrefix);
+                    nodeDataSources.insert({nodeName, nodeValue});
+                }
+            } else {
+                // Walk the graph starting from an output and only include 
+                // nodes that are connected to it.
+                _WalkGraph(upstreamShader,
+                    &nodeDataSources,
+                    stageGlobals,
+                    renderContext,
+                    sceneIndexPath,
+                    nodesLocatorPrefix,
+                    materialPrefix);
+            }
 
             terminalsNames.push_back(outputName);
 
