@@ -275,8 +275,8 @@ class TestPlug(unittest.TestCase):
         self.assertEqual(listener.numReceived, 0)
 
         # try to load an unloadable plugin
-        # NOTE: This test is broken on Windows ARM64, so is switched off
-        if not "ARM" in os.environ.get('PROCESSOR_IDENTIFIER'):
+        # XXX: This test is broken on Windows ARM64, so is switched off
+        if "ARMv" not in os.environ.get('PROCESSOR_IDENTIFIER', ''):
             badPlugin = Plug.Registry().GetPluginForType('TestPlugUnloadable')
             self.assertIsNotNone(badPlugin)
             with self.assertRaises(RuntimeError):

@@ -158,7 +158,7 @@ def GetWindowsHostArch():
     identifier = os.environ.get('PROCESSOR_IDENTIFIER')
     # ARM64 identifiers currently start with "ARMv8 ...."
     # Note: This could be modified in the future to distinguish between ARMv8 and ARMv9
-    if "ARM" in identifier:
+    if "ARMv" in identifier:
         return "ARM64"
     elif any(x64Arch in identifier for x64Arch in ["AMD64", "Intel64", "EM64T"]):
         return "x64"
@@ -405,8 +405,7 @@ def RunCMake(context, force, extraArgs = None):
 
     # Note - don't want to add -A (architecture flag) if generator is, ie, Ninja
     if IsVisualStudio2019OrGreater() and "Visual Studio" in generator:
-        windowsHostArch = GetWindowsHostArch()
-        generator = generator + " -A " + windowsHostArch
+        generator = generator + " -A " + GetWindowsHostArch()
 
     toolset = context.cmakeToolset
     if toolset is not None:
@@ -2540,6 +2539,10 @@ if "--usdview" in sys.argv:
     if not context.buildPython:
         PrintError("Cannot build usdview when Python support is disabled.")
         sys.exit(1)
+
+if Windows() and GetWindowsHostArch() == "ARM64" and not context.buildOneTBB:
+    PrintError("Windows ARM64 builds require oneTBB. Enable via the --onetbb argument")
+    sys.exit(1)
 
 dependenciesToBuild = []
 for dep in requiredDependencies:
