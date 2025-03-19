@@ -975,7 +975,7 @@ BOOST = Dependency("boost", InstallBoost, *BOOST_VERSION_FILES)
 ############################################################
 # Intel oneTBB
 
-ONETBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.9.0.zip"
+ONETBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.12.0.zip"
 
 def InstallOneTBB(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ONETBB_URL, context, force)):
