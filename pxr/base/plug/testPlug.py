@@ -275,7 +275,13 @@ class TestPlug(unittest.TestCase):
         self.assertEqual(listener.numReceived, 0)
 
         # try to load an unloadable plugin
-        # XXX: This test is broken on Windows ARM64, so is switched off
+        # XXX:
+        # On Windows ARM64 loading TestPlugUnloadable (which intentionally uses
+        # an undefined external symbol) unexpectedly crashes in the underlying
+        # LoadLibrary system call with an EXCEPTION_ACCESS_VIOLATION, instead of
+        # returning NULL as it does on x64, which should be the intended behaviour.
+        # For now we just skip this test on Windows ARM64. More discussion at:
+        # https://github.com/PixarAnimationStudios/OpenUSD/pull/3430.
         if "ARMv" not in os.environ.get('PROCESSOR_IDENTIFIER', ''):
             badPlugin = Plug.Registry().GetPluginForType('TestPlugUnloadable')
             self.assertIsNotNone(badPlugin)

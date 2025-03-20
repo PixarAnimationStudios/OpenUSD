@@ -2491,6 +2491,14 @@ if context.buildOneTBB and context.buildEmbree:
     PrintError("Embree support cannot be enabled when building against oneTBB")
     sys.exit(1)
 
+# Windows ARM64 requires oneTBB. Since oneTBB is a non-standard option for the
+# currently aligned version of the VFX Reference Platform, we error out and 
+# require the user to explicitly specify --onetbb instead of silently switching
+# to oneTBB for them.
+if Windows() and GetWindowsHostArch() == "ARM64" and not context.buildOneTBB:
+    PrintError("Windows ARM64 builds require oneTBB. Enable via the --onetbb argument")
+    sys.exit(1)
+
 # Error out if user enables Vulkan support but env var VULKAN_SDK is not set.
 if context.enableVulkan and not 'VULKAN_SDK' in os.environ:
     PrintError("Vulkan support cannot be enabled when VULKAN_SDK environment "
@@ -2539,10 +2547,6 @@ if "--usdview" in sys.argv:
     if not context.buildPython:
         PrintError("Cannot build usdview when Python support is disabled.")
         sys.exit(1)
-
-if Windows() and GetWindowsHostArch() == "ARM64" and not context.buildOneTBB:
-    PrintError("Windows ARM64 builds require oneTBB. Enable via the --onetbb argument")
-    sys.exit(1)
 
 dependenciesToBuild = []
 for dep in requiredDependencies:

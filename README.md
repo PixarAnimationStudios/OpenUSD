@@ -176,7 +176,7 @@ Or for visionOS:
 
 On Windows, it is possible to compile for either x64, or ARM64.
 **Note**: ARM64EC is not compatible at this time.
-**Note 2**: Imaging is not supported on ARM64 at present
+**Note 2**: usdview is not supported on ARM64 at present, due to lack of PySide
 
 Launch the "x64 Native Tools Command Prompt" (or "ARM64 Native Tools Command
 Prompt" where appropriate) for your version of Visual Studio, and run the script
