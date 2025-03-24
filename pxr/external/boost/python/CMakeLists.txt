@@ -338,6 +338,23 @@ target_compile_definitions(python
     PRIVATE $<$<NOT:$<CONFIG:Debug>>:NDEBUG>
 )
 
+# Even if PXR_PY_UNDEFINED_DYNAMIC_LOOKUP is defined (to avoid that the usd python extensions
+# links to the python library, to avoid problems with statically linked python interpreters) 
+# we want that executables that link usd_python to link with the Python library, 
+# as otherwise they would fail due to missing symbols, see
+# https://github.com/PixarAnimationStudios/OpenUSD/issues/2371
+# and https://github.com/PixarAnimationStudios/OpenUSD/issues/2568
+# This can be done by adding to INTERFACE_LINK_LIBRARIES the appropriate generator expression,
+# that will evalute to empty when usd_python is linked to a library, but it will evaluate to
+# Python3::Python when linked to an executable
+if (PXR_PY_UNDEFINED_DYNAMIC_LOOKUP)
+    # This should equivalent to target_link_libraries(python INTERFACE ...), that we can't
+    # use as pxr_library already use the target_link_libraries plain signature, and the two can't be mixed
+    set_property(TARGET python APPEND PROPERTY INTERFACE_LINK_LIBRARIES
+        "$<$<STREQUAL:$<TARGET_PROPERTY:TYPE>,EXECUTABLE>:Python3::Python>"
+    )
+endif()
+
 # Since we're not going through the normal pxr_build_test macros
 # we need to elide tests here if requested.
 if (NOT PXR_BUILD_TESTS)
