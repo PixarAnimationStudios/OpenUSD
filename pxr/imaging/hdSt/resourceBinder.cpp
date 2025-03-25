@@ -1630,6 +1630,8 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     
     hash = TfHash::Combine(
         hash,
+        drawingCoordBufferBinding.offset,
+        drawingCoordBufferBinding.stride,
         drawingCoord0Binding.binding.GetValue(),
         drawingCoord0Binding.dataType,
         drawingCoord1Binding.binding.GetValue(),
