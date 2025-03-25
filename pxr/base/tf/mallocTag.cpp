@@ -1088,8 +1088,8 @@ _GetCallSites(TfMallocTag::CallTree::PathNode* node,
         Tf_GetOrCreateCallSite(table, node->siteName.c_str());
     site->_totalBytes += node->nBytesDirect;
 
-    for(auto& pi: node->children) {
-        _GetCallSites(&pi, table);
+    for(TfMallocTag::CallTree::PathNode& child: node->children) {
+        _GetCallSites(&child, table);
     }
 }
 
@@ -1403,8 +1403,8 @@ _GetNumAllocationInSubTree(
     const TfMallocTag::CallTree::PathNode &node)
 {
     int64_t nAllocations = node.nAllocations;
-    for(const auto& it: node.children) {
-        nAllocations += _GetNumAllocationInSubTree(it);
+    for(const TfMallocTag::CallTree::PathNode& child: node.children) {
+        nAllocations += _GetNumAllocationInSubTree(child);
     }
     return nAllocations;
 }
@@ -1451,15 +1451,15 @@ _ReportMallocNode(
     // (i.e. that sorting is a view into the unaltered source data).
     std::vector<const TfMallocTag::CallTree::PathNode *> sortedChildren;
     sortedChildren.reserve(node.children.size());
-    for(const auto& it: node.children) {
-        sortedChildren.push_back(&it);
+    for(const TfMallocTag::CallTree::PathNode& child: node.children) {
+        sortedChildren.push_back(&child);
     }
 
     std::sort(
         sortedChildren.begin(), sortedChildren.end(), _MallocPathNodeLessThan);
 
-    for(const auto& it: sortedChildren) {
-        _ReportMallocNode(out, *it, level+1);
+    for(const TfMallocTag::CallTree::PathNode& child: sortedChildren) {
+        _ReportMallocNode(out, *child, level+1);
     }
 }
 

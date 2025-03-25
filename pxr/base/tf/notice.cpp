@@ -135,12 +135,12 @@ TfNotice::Revoke(Key& key)
 }
 
 void
-TfNotice::Revoke(Keys* keys)
+TfNotice::Revoke(Keys& keys)
 {
-    for(auto& i: *keys) {
+    for(Key& i: keys) {
         Revoke(i);
     }
-    keys->clear();
+    keys.clear();
 }
 
 bool
@@ -156,12 +156,12 @@ TfNotice::RevokeAndWait(Key& key)
 }
 
 void
-TfNotice::RevokeAndWait(Keys* keys)
+TfNotice::RevokeAndWait(Keys& keys)
 {
-    for(auto& i: *keys) {
+    for(Key& i: keys) {
         RevokeAndWait(i);
     }
-    keys->clear();
+    keys.clear();
 }
 
 void

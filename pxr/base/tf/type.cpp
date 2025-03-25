@@ -629,7 +629,7 @@ TfType::GetAllDerivedTypes(std::set<TfType> *result) const
 
 // Helper for resolving ancestor order in the case of multiple inheritance.
 static bool
-_MergeAncestors(vector<TypeVector> *seqs, TypeVector *result)
+_MergeAncestors(vector<TypeVector> &seqs, TypeVector * result)
 {
     while(true)
     {
@@ -638,7 +638,7 @@ _MergeAncestors(vector<TypeVector> *seqs, TypeVector *result)
 
         // Try the first element of each non-empty sequence, in order.
         bool anyLeft = false;
-        for(const TypeVector& candSeq: *seqs)
+        for(const TypeVector& candSeq: seqs)
         {
             if (candSeq.empty())
                 continue;
@@ -648,7 +648,7 @@ _MergeAncestors(vector<TypeVector> *seqs, TypeVector *result)
 
             // Check that the candidate does not occur in the tail
             // ("cdr", in lisp terms) of any of the sequences.
-            for(const TypeVector& checkSeq: *seqs)
+            for(const TypeVector& checkSeq: seqs)
             {
                 if (checkSeq.size() <= 1)
                     continue;
@@ -679,7 +679,7 @@ _MergeAncestors(vector<TypeVector> *seqs, TypeVector *result)
         result->push_back(cand);
 
         // Remove candidate from input sequences.
-        for(TypeVector& seqIt: *seqs) {
+        for(TypeVector& seqIt: seqs) {
             if (!seqIt.empty() && seqIt.front() == cand)
                 seqIt.erase( seqIt.begin() );
         }
@@ -729,7 +729,7 @@ TfType::GetAllAncestorTypes(vector<TfType> *result) const
     }
 
     // Merge the input sequences to resolve final inheritance order.
-    bool ok = _MergeAncestors( &seqs, result );
+    bool ok = _MergeAncestors(seqs, result );
 
     if (!ok) {
         TF_CODING_ERROR("Cannot resolve ancestor classes for '%s' "
