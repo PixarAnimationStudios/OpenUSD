@@ -78,6 +78,9 @@ if MacOS():
 def MacOSTargetEmbedded(context):
     return MacOS() and apple_utils.TargetEmbeddedOS(context)
 
+def CondaEnvQ():
+    return "CONDA_PREFIX" in os.environ
+
 def GetLocale():
     if Windows():
         # Windows handles encoding a little differently then Linux / Mac
@@ -187,7 +190,14 @@ def GetPythonInfo(context):
                 suffix=('_d' if context.buildDebug and context.debugPython
                         else ''))
         elif Linux():
-            return sysconfig.get_config_var("LDLIBRARY")
+            if CondaEnvQ():
+                return "libpython{version}.so".format(
+                    version=(sysconfig.get_config_var('LDVERSION') or
+                             sysconfig.get_config_var('VERSION') or
+                            pythonVersion))
+            else:
+                return sysconfig.get_config_var("LDLIBRARY")
+
         elif MacOS():
             return "libpython{version}.dylib".format(
                 version=(sysconfig.get_config_var('LDVERSION') or
