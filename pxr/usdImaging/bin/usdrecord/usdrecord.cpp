@@ -1,32 +1,19 @@
 //
 // Copyright 2022 Apple
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/pxrCLI11/CLI11.h"
 #include "pxr/base/tf/exception.h"
+#include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/scoped.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/trace/collector.h"
+#include "pxr/base/trace/reporter.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/usdRender/pass.h"
@@ -92,7 +79,6 @@ public:
 };
 #endif
 
-
 using namespace pxr_CLI;
 
 struct Args {
@@ -114,7 +100,32 @@ struct Args {
     bool domeLightVisibility = true;
     std::string rsPrimPath;
     std::string rpPrimPath;
+    std::string traceToFile;
+    std::string traceFormat;
+    bool memstats = false;
 };
+
+void _DumpMallocTags(UsdStageRefPtr usdStage) {
+    if (!TfMallocTag::IsInitialized()) {
+        std::cout << "Unable to accumulate memory usage since the Pxr MallocTag system was not initialized" << std::endl;
+        return;
+    }
+
+    TfMallocTag::CallTree callTree;
+    TfMallocTag::GetCallTree(&callTree);
+
+    auto memInMb = TfMallocTag::GetTotalBytes();// / (1024.0 * 1024.0);
+
+    auto rootLayerIdentifier = usdStage->GetRootLayer()->GetIdentifier();
+    auto layerName = TfGetBaseName(rootLayerIdentifier);
+
+    std::string reportName = ArchMakeTmpFileName(layerName, ".mallocTag");
+
+    std::ofstream os(reportName);
+    callTree.Report(os, "");
+    std::cout << "Memory consumption of usdrecord for " << layerName << " is " << memInMb << " Mb" << std::endl;
+    std::cout << "For detailed analysis, see " << reportName << std::endl;
+}
 
 // cameraArgs.py module
 SdfPath cameraArgs_GetCameraSdfPath(const std::string &cameraPath) {
@@ -501,6 +512,31 @@ static void Configure(CLI::App *app, Args &args) {
                     "stage metadata, using this argument will override that opinion. "
                     "Furthermore any properties authored on the RenderSettings will "
                     "override other arguments (imageWidth, camera, outputImagePath)");
+
+    app->add_option("--traceToFile", args.traceToFile,
+                    "Start tracing at application startup and "
+                    "write --traceFormat specified format output to the "
+                    "specified trace file when the application quits");
+
+    app->add_option("--traceFormat", args.traceFormat,
+                    "Output format for trace file specified by "
+                    "--traceToFile. \'chrome\' files can be read in "
+                    "chrome, \'trace\' files are simple text reports. "
+                    "(default=chrome)")
+            ->default_val("chrome")
+            ->check(CLI::IsMember({"chrome", "trace"}));
+
+// TODO - determine if this this the correct way to guard presenting the command line argument
+// this would provide a cleaner user experience.
+#ifdef PXR_ARCH_SUPPORT_MALLOC_HOOKS
+    app->add_flag("--memstats", args.memstats,
+                    "Use the Pxr MallocTags memory accounting system to profile "
+                    "USD, saving results to a tmp file, with a summary to the console. "
+                    "Will have no effect if MallocTags are not supported in the "
+                    "USD installation.")
+            ->default_val(false);
+#endif
+
 }
 
 static int32_t UsdRecord(const Args &args) {
@@ -517,6 +553,17 @@ static int32_t UsdRecord(const Args &args) {
     std::vector<TfToken> purposes;
     for (const auto& purposeStr : purposesStrs) {
         purposes.emplace_back(TfToken(purposeStr));
+    }
+
+    if (args.memstats) {
+        std::string reason;
+        if (!TfMallocTag::Initialize(&reason)) {
+            std::cerr << "MallocTag cannot initialize : '" << reason << "'" << std::endl;
+        }
+    }
+
+    if (!args.traceToFile.empty()) {
+        TraceCollector::GetInstance().SetEnabled(true);
     }
 
     // Load the root layer.
@@ -707,6 +754,25 @@ static int32_t UsdRecord(const Args &args) {
 
     // Release our reference to the frame recorder so it can be deleted before other resources are freed
     frameRecorder = nullptr;
+
+    if (TraceCollector::GetInstance().IsEnabled()) {
+        TraceCollector::GetInstance().SetEnabled(false);
+        if (args.traceFormat == "trace") {
+            std::ofstream os(args.traceToFile, std::ios_base::out);
+            TraceReporter::GetGlobalReporter()->Report(os);
+
+        } else if (args.traceFormat == "chrome") {
+            std::ofstream os(args.traceToFile, std::ios_base::out);
+            TraceReporter::GetGlobalReporter()->ReportChromeTracing(os);
+
+        } else {
+            TF_CODING_ERROR("Invalid trace format option provided: %s - trace/chrome are the valid options", args.traceFormat.c_str());
+        }
+    }
+
+    if (args.memstats) {
+        _DumpMallocTags(usdStage);
+    }
 
     return 0;
 }
