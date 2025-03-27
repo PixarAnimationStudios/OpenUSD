@@ -1027,10 +1027,12 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
 
         if (HdAovHasDepthSemantic(aov.aovName) ||
             HdAovHasDepthStencilSemantic(aov.aovName)) {
-            desc.depthAttachmentDesc = std::move(attachmentDesc);
-            desc.depthTexture = hgiTexHandle;
-            if (hgiResolveHandle) {
-                desc.depthResolveTexture = hgiResolveHandle;
+            if (_depthTestEnabled || _depthMaskEnabled) {
+                desc.depthAttachmentDesc = std::move(attachmentDesc);
+                desc.depthTexture = hgiTexHandle;
+                if (hgiResolveHandle) {
+                    desc.depthResolveTexture = hgiResolveHandle;
+                }
             }
         } else if (TF_VERIFY(desc.colorAttachmentDescs.size() < maxColorTex,
                    "Too many aov bindings for color attachments"))
@@ -1129,7 +1131,9 @@ HdStRenderPassState::_InitAttachmentState(
 
         if (HdAovHasDepthSemantic(binding.aovName) ||
             HdAovHasDepthStencilSemantic(binding.aovName)) {
-            pipeDesc->depthAttachmentDesc = attachment;
+            if (_depthTestEnabled || _depthMaskEnabled) {
+                pipeDesc->depthAttachmentDesc = attachment;
+            }
         } else {
             pipeDesc->colorAttachmentDescs.push_back(attachment);
         }
