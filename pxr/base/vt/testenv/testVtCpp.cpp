@@ -889,6 +889,23 @@ testDictionaryIterators()
                 "have equal values.");
         }
     }
+
+
+    // Check a dictionaries erase method allows iterator incrementing
+    {
+        VtDictionary a = {key1, key2, key3};
+        for (auto it = a.begin(); it != a.end();) {
+            it = a.erase(it);
+            if (it != a.end()) {
+                it = it++;
+            }
+        }
+
+        if (!a.empty()) {
+            die("VtDictionary::erase iterator did not remove all items");
+        }
+    }
+
 }
 
 static void
