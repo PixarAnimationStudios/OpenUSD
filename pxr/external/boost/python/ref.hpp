@@ -10,22 +10,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-
-#include <boost/core/ref.hpp>
-
-namespace PXR_BOOST_NAMESPACE { namespace python {
-
-using boost::ref;
-using boost::cref;
-using boost::reference_wrapper;
-using boost::is_reference_wrapper;
-using boost::unwrap_reference;
-
-}} // namespace PXR_BOOST_NAMESPACE::python
-
-#else
-
 #include <functional>
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
@@ -58,5 +42,4 @@ struct unwrap_reference<std::reference_wrapper<U>>
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_REF_HPP

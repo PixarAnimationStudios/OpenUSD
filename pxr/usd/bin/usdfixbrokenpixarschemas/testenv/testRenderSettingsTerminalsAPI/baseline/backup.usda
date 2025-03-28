@@ -1,0 +1,29 @@
+#usda 1.0
+(
+    upAxis = "Z"
+    metersPerUnit = 1
+    defaultPrim = "RenderSettings"
+)
+
+def RenderSettings "RenderSettings"
+{
+    token outputs:ri:displayFilters.connect = </RenderSettings/displayFilter.outputs:result>
+    token outputs:ri:integrator.connect = </RenderSettings/integrator.outputs:result>
+    token outputs:ri:sampleFilters.connect = </RenderSettings/sampleFilter.outputs:result>
+}
+
+def PxrPathTracer "integrator"
+{
+    token outputs:result
+}
+
+def PxrMurkFilter "sampleFilter"
+{
+    token outputs:result
+}
+
+def PxrColorTransformDisplayFilter "displayFilter"
+{
+    token outputs:result
+}
+

@@ -56,16 +56,32 @@ public:
     /// -------------------------------------------------------
     /// Execution API
 
-    /// Obtain the set of tasks managed by the task controller,
+    /// Obtain paths to the tasks managed by the task controller,
     /// for image generation. The tasks returned will be different
     /// based on current renderer state.
     HDX_API
-    HdTaskSharedPtrVector const GetRenderingTasks() const;
-
-    /// Obtain the set of tasks managed by the task controller,
+    SdfPathVector GetRenderingTaskPaths() const;
+    
+    /// Obtain paths to tasks managed by the task controller,
     /// for picking.
     HDX_API
-    HdTaskSharedPtrVector const GetPickingTasks() const;
+    SdfPathVector GetPickingTaskPaths() const;
+
+    /// \deprecated Use GetRenderingTaskPaths
+    ///
+    /// Deprecated in preparation of changing to an
+    /// HdxTaskControllerSceneIndex.
+    ///
+    HDX_API
+    HdTaskSharedPtrVector GetRenderingTasks() const;
+
+    /// \deprecated Use GetPickingTaskPaths
+    ///
+    /// Deprecated in preparation of changing to an
+    /// HdxTaskControllerSceneIndex.
+    ///
+    HDX_API
+    HdTaskSharedPtrVector GetPickingTasks() const;
 
     /// -------------------------------------------------------
     /// Rendering API
@@ -137,7 +153,7 @@ public:
     /// -------------------------------------------------------
     /// Camera and Framing API
     
-    /// Set the size of the render buffers baking the AOVs.
+    /// Set the size of the render buffers backing the AOVs.
     /// GUI applications should set this to the size of the window.
     ///
     HDX_API
@@ -220,6 +236,15 @@ public:
     /// Progressive Image Generation
 
     /// Return whether the image has converged.
+    ///
+    /// \deprecated
+    ///
+    /// Instead, checks whether HdxTask::IsConverged for a
+    /// task in the render index for each path in GetRenderingTaskPaths().
+    ///
+    /// Deprecated in preparation of changing to an
+    /// HdxTaskControllerSceneIndex.
+    ///
     HDX_API
     bool IsConverged() const;
 

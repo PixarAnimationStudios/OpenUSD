@@ -38,6 +38,7 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/smallVector.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/trace/trace.h"

@@ -93,6 +93,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // The tags supported by Storm are:
 //    defaultMaterialTag : opaque geometry
 //    masked : opaque geometry that uses cutout masks (e.g., foliage)
+//    displayInOverlay : geometry that should be drawn on top (e.g. guides)
 //    translucentToSelection: opaque geometry that allows occluded selection
 //                            to show through
 //    additive : transparent geometry (cheap OIT solution w/o sorting)
@@ -101,6 +102,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDST_MATERIAL_TAG_TOKENS                \
     (defaultMaterialTag)                        \
     (masked)                                    \
+    (displayInOverlay)                          \
     (translucentToSelection)                    \
     (additive)                                  \
     (translucent)                               \

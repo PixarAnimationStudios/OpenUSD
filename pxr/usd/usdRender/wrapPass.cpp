@@ -52,13 +52,6 @@ _CreateFileNameAttr(UsdRenderPass &self,
     return self.CreateFileNameAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Asset), writeSparsely);
 }
-        
-static UsdAttribute
-_CreateDenoiseEnableAttr(UsdRenderPass &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateDenoiseEnableAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
-}
 
 static std::string
 _Repr(const UsdRenderPass &self)
@@ -120,13 +113,6 @@ void wrapUsdRenderPass()
              &This::GetFileNameAttr)
         .def("CreateFileNameAttr",
              &_CreateFileNameAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
-        
-        .def("GetDenoiseEnableAttr",
-             &This::GetDenoiseEnableAttr)
-        .def("CreateDenoiseEnableAttr",
-             &_CreateDenoiseEnableAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

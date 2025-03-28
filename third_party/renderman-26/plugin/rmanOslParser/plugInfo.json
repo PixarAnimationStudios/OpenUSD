@@ -9,7 +9,7 @@
             "Info": {
                 "Types": {
                     "RmanOslParserPlugin" : {
-                        "bases": ["NdrParserPlugin"],
+                        "bases": ["SdrParserPlugin"],
                         "displayName": "RenderMan .osl Node Parser"
                     }                    
                 }

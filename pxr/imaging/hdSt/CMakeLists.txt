@@ -165,7 +165,6 @@ pxr_library(hdSt
         materialParam
         meshShaderKey
         meshTopology 
-        nodeIdentifierResolvingSceneIndex
         nodeIdentifierResolvingSceneIndexPlugin
         pipelineDrawBatch
         pointsShaderKey
@@ -199,8 +198,10 @@ pxr_library(hdSt
         shaders/meshFaceCull.glslfx
         shaders/meshNormal.glslfx
         shaders/meshWire.glslfx
+        shaders/overlayShader.glslfx
         shaders/points.glslfx
         shaders/pointId.glslfx
+        shaders/pointDisk.glslfx
         shaders/ptexTexture.glslfx
         shaders/renderPass.glslfx
         shaders/renderPassShader.glslfx

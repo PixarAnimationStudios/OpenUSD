@@ -323,13 +323,9 @@ def _diffUsdz(base, comp, brief, baseStack, compStack):
 
             #run a traditional diff
             else:
-                _, diffCmd, diffCmdArgs = _findDiffTools()
-
-                diffResult |= _launchDiffTool(diffCmd, 
-                                                diffCmdArgs, 
-                                                tempBaseline.name, 
-                                                tempComparison.name, 
-                                                brief)
+                diffResult |= _runDiff(
+                    tempBaseline.name, tempComparison.name,
+                    flatten=False, noeffect=True, brief=brief)
 
     for b in baseOnly:
         print('Only in baseline: %s.' % _getArchivePath(baseStack, b))

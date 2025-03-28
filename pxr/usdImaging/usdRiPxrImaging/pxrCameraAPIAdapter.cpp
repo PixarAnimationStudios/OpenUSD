@@ -57,11 +57,11 @@ _DataSourceAuthoredAttributeNew(
 // This method or a generalization of this method might be useful for other
 // adapters. Consider moving it to a more central place such as UsdImaging.
 //
-std::vector<UsdImagingDataSourceMapped::AttributeMapping>
-_GetNamespacedAttributeMappingsForAppliedSchema(
+std::vector<UsdImagingDataSourceMapped::PropertyMapping>
+_GetNamespacedPropertyMappingsForAppliedSchema(
     const TfToken &appliedSchemaName)
 {
-    std::vector<UsdImagingDataSourceMapped::AttributeMapping> result;
+    std::vector<UsdImagingDataSourceMapped::PropertyMapping> result;
 
     const UsdPrimDefinition * const primDef =
         UsdSchemaRegistry::GetInstance().FindAppliedAPIPrimDefinition(
@@ -87,19 +87,20 @@ _GetNamespacedAttributeMappingsForAppliedSchema(
         }
 
         result.push_back(
-            { usdName,
-              HdDataSourceLocator(namespaceAndName.first,
-                                  namespaceAndName.second),
-              _DataSourceAuthoredAttributeNew});
+            UsdImagingDataSourceMapped::AttributeMapping{
+                usdName,
+                HdDataSourceLocator(namespaceAndName.first,
+                                    namespaceAndName.second),
+                _DataSourceAuthoredAttributeNew});
     }
 
     return result;
 }
 
-const UsdImagingDataSourceMapped::AttributeMappings &
+const UsdImagingDataSourceMapped::PropertyMappings &
 _GetMappings() {
-    static const UsdImagingDataSourceMapped::AttributeMappings result(
-        _GetNamespacedAttributeMappingsForAppliedSchema(
+    static const UsdImagingDataSourceMapped::PropertyMappings result(
+        _GetNamespacedPropertyMappingsForAppliedSchema(
             TfToken(_appliedSchemaName)),
         HdCameraSchema::GetNamespacedPropertiesLocator());
     return result;

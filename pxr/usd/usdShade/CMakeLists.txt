@@ -9,7 +9,6 @@ pxr_library(usdShade
         vt
         js
         sdf
-        ndr
         sdr
         usd
         usdGeom

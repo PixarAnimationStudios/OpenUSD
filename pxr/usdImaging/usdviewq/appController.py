@@ -2717,8 +2717,18 @@ class AppController(QtCore.QObject):
     def GrabViewportShot(self, cropToAspectRatio=False):
         '''Returns a QImage of the current stage view in usdview.'''
         if self._stageView:
-            return self._stageView.grabFrameBuffer(
+            shot = self._stageView.grabFrameBuffer(
                 cropToAspectRatio=cropToAspectRatio)
+            # The framebuffer might be a pixel larger in either dimension
+            # because its size was rounded up when applying the device
+            # pixel ratio, so crop the extra down to the original physical size.
+            width, height = self._stageView.GetPhysicalWindowSize()
+            width = min(width, shot.width())
+            height = min(height, shot.height())
+            if shot.width() == width and shot.height() == height:
+                return shot
+            else:
+                return shot.copy(0, 0, width, height)
         else:
             return None
 

@@ -150,6 +150,18 @@ Arch_ValidateAssumptions()
             ARCH_ERROR("Big-endian byte order not supported.");
         }
     }    
+
+    /*
+     * Make sure that ARM64_CNTVCT == 0x5F02 on Windows ARM64
+     * This is manually calculated in pxr/base/arch/timing.h to
+     * avoid including <windows.h>
+     */
+#if defined(ARCH_OS_WINDOWS) && defined(ARCH_CPU_ARM)
+    {
+        static_assert(ARM64_CNTVCT == 0x5F02,
+            "Manually calculated ARM64_CNTVCT value is no longer correct");
+    }
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

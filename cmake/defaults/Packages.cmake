@@ -20,35 +20,6 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
 set(PXR_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 
-# --OpenVDB. Detect version early to determine if Boost is needed for it.
-if (PXR_BUILD_IMAGING AND PXR_ENABLE_OPENVDB_SUPPORT)
-    set(REQUIRES_Imath TRUE)
-    find_package(OpenVDB REQUIRED)
-    add_definitions(-DPXR_OPENVDB_SUPPORT_ENABLED)
-endif()
-
-if((PXR_ENABLE_PYTHON_SUPPORT AND PXR_USE_BOOST_PYTHON) OR
-   (PXR_ENABLE_OPENVDB_SUPPORT AND NOT (OPENVDB_VERSION VERSION_GREATER_EQUAL "12.0.0")))
-    # Find Boost package before getting any boost specific components as we need to
-    # disable boost-provided cmake config, based on the boost version found.
-    find_package(Boost REQUIRED)
-
-    # Boost provided cmake files (introduced in boost version 1.70) result in 
-    # inconsistent build failures on different platforms, when trying to find boost 
-    # component dependencies like python, etc. Refer some related
-    # discussions:
-    # https://github.com/boostorg/python/issues/262#issuecomment-483069294
-    # https://github.com/boostorg/boost_install/issues/12#issuecomment-508683006
-    #
-    # Hence to avoid issues with Boost provided cmake config, Boost_NO_BOOST_CMAKE
-    # is enabled by default for boost version 1.70 and above. If a user explicitly 
-    # set Boost_NO_BOOST_CMAKE to Off, following will be a no-op.
-    option(Boost_NO_BOOST_CMAKE "Disable boost-provided cmake config" ON)
-    if (Boost_NO_BOOST_CMAKE)
-      message(STATUS "Disabling boost-provided cmake config")
-    endif()
-endif()
-
 if(PXR_ENABLE_PYTHON_SUPPORT)
     # 1--Python.
     macro(setup_python_package package)
@@ -103,34 +74,6 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     # USD builds only work with Python3
     setup_python_package(Python3)
 
-    if(PXR_USE_BOOST_PYTHON)
-        if(WIN32 AND PXR_USE_DEBUG_PYTHON)
-            set(Boost_USE_DEBUG_PYTHON ON)
-        endif()
-
-        # Manually specify VS2022, 2019, and 2017 as USD's supported compiler versions
-        if(WIN32)
-            set(Boost_COMPILER "-vc143;-vc142;-vc141")
-        endif()
-
-        # As of boost 1.67 the boost_python component name includes the
-        # associated Python version (e.g. python27, python36). 
-        # XXX: After boost 1.73, boost provided config files should be able to 
-        # work without specifying a python version!
-        # https://github.com/boostorg/boost_install/blob/master/BoostConfig.cmake
-
-        # Find the component under the versioned name and then set the generic
-        # Boost_PYTHON_LIBRARY variable so that we don't have to duplicate this
-        # logic in each library's CMakeLists.txt.
-        set(python_version_nodot "${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}")
-        find_package(Boost
-            COMPONENTS
-            python${python_version_nodot}
-            REQUIRED
-        )
-        set(Boost_PYTHON_LIBRARY "${Boost_PYTHON${python_version_nodot}_LIBRARY}")
-    endif()
-
     # --Jinja2
     find_package(Jinja2)
 else()
@@ -147,7 +90,15 @@ endif()
 
 
 # --TBB
-find_package(TBB REQUIRED COMPONENTS tbb)
+find_package(TBB CONFIG)
+if(TBB_DIR)
+    # Found in CONFIG mode.
+    set(TBB_tbb_LIBRARY TBB::tbb)
+    set(PXR_FIND_TBB_IN_CONFIG ON)
+else()
+    find_package(TBB REQUIRED COMPONENTS tbb)
+    set(PXR_FIND_TBB_IN_CONFIG OFF)
+endif()
 add_definitions(${TBB_DEFINITIONS})
 
 # --math
@@ -259,11 +210,51 @@ if (PXR_BUILD_IMAGING)
     endif()
     # --Opensubdiv
     set(OPENSUBDIV_USE_GPU ${PXR_BUILD_GPU_SUPPORT})
-    find_package(OpenSubdiv 3 REQUIRED)
+    find_package(OpenSubdiv 3 CONFIG)
+    if(OpenSubdiv_DIR)
+        # Found in CONFIG mode.
+        # First check the shared, then the static library, just like find_library() in FindOpenSubdiv.cmake.
+        foreach(postfix "" "_static")
+            if(NOT TARGET OpenSubdiv::osdCPU${postfix})
+                continue()
+            endif()
+            set(OPENSUBDIV_LIBRARIES OpenSubdiv::osdCPU${postfix})
+            if(OPENSUBDIV_USE_GPU)
+                list(APPEND OPENSUBDIV_LIBRARIES OpenSubdiv::osdGPU${postfix})
+            endif()
+            break()
+        endforeach()
+    endif()
+    if(OPENSUBDIV_LIBRARIES)
+        list(GET OPENSUBDIV_LIBRARIES 0 OPENSUBDIV_OSDCPU_LIBRARY)
+        set(PXR_FIND_OPENSUBDIV_IN_CONFIG ON)
+    else()
+        # Try again with the find-module.
+        find_package(OpenSubdiv 3 REQUIRED)
+        set(PXR_FIND_OPENSUBDIV_IN_CONFIG OFF)
+    endif()
     # --Ptex
     if (PXR_ENABLE_PTEX_SUPPORT)
         find_package(PTex REQUIRED)
         add_definitions(-DPXR_PTEX_SUPPORT_ENABLED)
+    endif()
+    # --OpenVDB
+    if (PXR_ENABLE_OPENVDB_SUPPORT)
+        set(REQUIRES_Imath TRUE)
+        find_package(OpenVDB REQUIRED)
+        add_definitions(-DPXR_OPENVDB_SUPPORT_ENABLED)
+
+        if(OPENVDB_VERSION VERSION_LESS "12.0.0")
+            # Find Boost package before getting any boost specific components as we need to
+            # disable boost-provided cmake config, based on the boost version found.
+            find_package(Boost REQUIRED)
+            # If a user explicitly sets Boost_NO_BOOST_CMAKE to On, following will
+            # disable the use of boost provided cmake config.
+            option(Boost_NO_BOOST_CMAKE "Disable boost-provided cmake config" OFF)
+            if (Boost_NO_BOOST_CMAKE)
+              message(STATUS "Disabling boost-provided cmake config")
+            endif()
+        endif()
     endif()
     # --X11
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux")

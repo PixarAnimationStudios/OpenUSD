@@ -247,20 +247,19 @@ class TestUsdAppUtilsCmdlineArgs(unittest.TestCase):
         args = self._parser.parse_args([])
         self.assertEqual(args.rendererPlugin, None)
 
-        # Storm is named 'Metal' on Apple platforms and 'GL' otherwise.
-        if platform.system() == 'Darwin':
-            args = self._parser.parse_args(['--renderer', 'Metal'])
-            self.assertEqual(args.rendererPlugin, 'Metal')
+        args = self._parser.parse_args(['--renderer', 'GL'])
+        self.assertEqual(args.rendererPlugin, 'GL')
 
-            args = self._parser.parse_args(['-r', 'Metal'])
-            self.assertEqual(args.rendererPlugin, 'Metal')
-        else:
-            args = self._parser.parse_args(['--renderer', 'GL'])
-            self.assertEqual(args.rendererPlugin, 'GL')
+        args = self._parser.parse_args(['-r', 'GL'])
+        self.assertEqual(args.rendererPlugin, 'GL')
 
-            args = self._parser.parse_args(['-r', 'GL'])
-            self.assertEqual(args.rendererPlugin, 'GL')
+        # Arg "Storm" should alias to "GL"
+        args = self._parser.parse_args(['--renderer', 'Storm'])
+        self.assertEqual(args.rendererPlugin, 'GL')
 
+        args = self._parser.parse_args(['-r', 'Storm'])
+        self.assertEqual(args.rendererPlugin, 'GL')
+   
         # Test passing an invalid option.
         parser = _NonExitingArgumentParser(prog=self._progName)
         UsdAppUtils.rendererArgs.AddCmdlineArgs(parser)

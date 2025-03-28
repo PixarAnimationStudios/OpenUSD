@@ -26,6 +26,7 @@ def _makeFileName(variantInfo, index):
 def _modifySettings(appController):
     appController._dataModel.viewSettings.showBBoxes = False
     appController._dataModel.viewSettings.showHUD = False
+    appController._dataModel.viewSettings.selHighlightMode = 'Never'
 
 def _setupWidgets(appController):
     # Select our prim with the variant authored

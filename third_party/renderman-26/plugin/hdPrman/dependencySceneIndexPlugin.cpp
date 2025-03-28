@@ -60,9 +60,12 @@ TF_REGISTRY_FUNCTION(TfType)
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
     // This scene index should be added *before*
-    // HdPrman_DependencyForwardingSceneIndexPlugin (which currently uses 1000).
+    // HdPrman_DependencyForwardingSceneIndexPlugin (which currently uses 1000),
+    // but subsequent to any scene indexes that generate data sources which
+    // imply dependencies for this scene index to add.  An example is
+    // HdPrman_PortalLightResolvingSceneIndexPlugin.
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase
-        = 100;
+        = 900;
 
     for(const auto& rendererDisplayName : HdPrman_GetPluginDisplayNames()) {
         HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(

@@ -14,6 +14,8 @@
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceLocator.h"
 
+#include <variant>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace UsdImagingDataSourceMapped_Impl
@@ -44,6 +46,22 @@ public:
 
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceMapped);
 
+    /// Base class to specify how a property on the given Usd prim maps to a
+    /// data source in this (nested) container data source.
+    struct PropertyMappingBase
+    {
+        /// Name of attribute on Usd Prim.
+        ///
+        TfToken usdName;
+
+        /// Corresponding location in this data source.
+        ///
+        /// Has to be non-empty. If length is greater than one, nested
+        /// container data sources will be created.
+        ///
+        HdDataSourceLocator hdLocator;
+    };
+    
     /// Signature of function to compute data source from attribute.
     ///
     /// This could be generalized to HdDataSourceBaseHandle but we use
@@ -60,21 +78,10 @@ public:
     using DataSourceAttributeFactoryPtr =
         DataSourceAttributeFactory *;
 
-    /// Specify how one attribute on given Usd prim maps to data source in
+    /// Specify how an attribute on the given Usd prim maps to a data source in
     /// this (nested) container data source.
-    struct AttributeMapping final
+    struct AttributeMapping final : PropertyMappingBase
     {
-        /// Name of attribute on Usd Prim.
-        ///
-        TfToken usdName;
-
-        /// Corresponding location in this data source.
-        ///
-        /// Has to be non-empty. If length is greater than one, nested
-        /// container data sources will be created.
-        ///
-        HdDataSourceLocator hdLocator;
-
         /// Function to compute data source from UsdAttribute.
         ///
         /// Defaults to the appropriate overload of
@@ -89,20 +96,51 @@ public:
                 UsdImagingDataSourceAttributeNew);
     };
 
+    using DataSourceRelationshipFactory =
+        HdDataSourceBaseHandle(const UsdRelationship &,
+                               const UsdImagingDataSourceStageGlobals &,
+                               const SdfPath &,
+                               const HdDataSourceLocator &);
+    using DataSourceRelationshipFactoryFn =
+        std::function<DataSourceRelationshipFactory>;
+    using DataSourceRelationshipFactoryPtr =
+        DataSourceRelationshipFactory *;
+
+    USDIMAGING_API
+    static
+    const DataSourceRelationshipFactoryFn&
+    GetPathFromRelationshipDataSourceFactory();
+
+    USDIMAGING_API
+    static
+    const DataSourceRelationshipFactoryFn&
+    GetPathArrayFromRelationshipDataSourceFactory();
+
+    /// Specify how a relationship on the given Usd prim maps to a data source
+    /// in this (nested) container data source.
+    struct RelationshipMapping final : PropertyMappingBase
+    {
+        /// Function to compute data source from UsdRelationship.
+        DataSourceRelationshipFactoryFn factory;
+    };
+
+    using PropertyMapping =
+        std::variant<AttributeMapping, RelationshipMapping>;
+    
     /// Specify how attributes on given Usd prim maps to data sources in
     /// this (nested) container data source.
-    class AttributeMappings final
+    class PropertyMappings final
     {
     public:
         /// dataSourcePrefix is the location of this
         /// UsdImagingDataSourceMapped within a prim data source.
         USDIMAGING_API
-        AttributeMappings(
-            const std::vector<AttributeMapping> &mappings,
+        PropertyMappings(
+            const std::vector<PropertyMapping> &mappings,
             const HdDataSourceLocator &datasourcePrefix);
 
         USDIMAGING_API
-        ~AttributeMappings();
+        ~PropertyMappings();
         
     private:
         friend class UsdImagingDataSourceMapped;
@@ -111,7 +149,7 @@ public:
             UsdImagingDataSourceMapped_Impl::_ContainerMappingsSharedPtr;
 
         // Flat list with absolute locators for invalidation.
-        std::vector<AttributeMapping> _absoluteMappings;
+        std::vector<PropertyMappingBase> _absoluteMappings;
         // Nested list to implement HdContainerDataSource::Get.
         _ContainerMappingsSharedPtr _containerMappings;
     };
@@ -126,7 +164,7 @@ public:
     static
     HdDataSourceLocatorSet
     Invalidate(const TfTokenVector &usdNames,
-               const AttributeMappings &mappings);
+               const PropertyMappings &mappings);
 
     USDIMAGING_API
     ~UsdImagingDataSourceMapped() override;
@@ -139,7 +177,7 @@ private:
     UsdImagingDataSourceMapped(
         UsdPrim const &usdPrim,
         const SdfPath &sceneIndexPath,
-        const AttributeMappings &mappings,
+        const PropertyMappings &mappings,
         const UsdImagingDataSourceStageGlobals &stageGlobals);
 
     UsdImagingDataSourceMapped(

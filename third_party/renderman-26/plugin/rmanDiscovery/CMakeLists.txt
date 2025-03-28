@@ -8,7 +8,6 @@ pxr_plugin(rmanDiscovery
         tf
         vt
         ar
-        ndr
         sdr
 
     PRIVATE_CLASSES

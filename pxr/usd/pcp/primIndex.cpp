@@ -54,21 +54,11 @@ using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(
-    MENV30_ENABLE_NEW_DEFAULT_STANDIN_BEHAVIOR, true,
-    "If enabled then standin preference is weakest opinion.");
-
 static inline PcpPrimIndex const *
 _GetOriginatingIndex(PcpPrimIndex_StackFrame *previousFrame,
                      PcpPrimIndexOutputs *outputs) {
     return ARCH_UNLIKELY(previousFrame) ?
         previousFrame->originatingIndex : &outputs->primIndex;
-}
-
-bool
-PcpIsNewDefaultStandinBehaviorEnabled()
-{
-    return TfGetEnvSetting(MENV30_ENABLE_NEW_DEFAULT_STANDIN_BEHAVIOR);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -419,6 +409,7 @@ PcpPrimIndexInputs::IsEquivalentTo(const PcpPrimIndexInputs& inputs) const
     return 
         _CheckIfEquivalent(variantFallbacks, inputs.variantFallbacks) && 
         _CheckIfEquivalent(includedPayloads, inputs.includedPayloads) && 
+        usd == inputs.usd && 
         cull == inputs.cull;
 }
 
@@ -492,11 +483,12 @@ _GatherNodesRecursively(const PcpNodeRef& node,
                         std::vector<PcpNodeRef> *result);
 
 static bool
-_HasSpecializesChild(const PcpNodeRef & parent)
+_HasSpecializesChildInSubtree(const PcpNodeRef & parent)
 {
-    TF_FOR_ALL(child, Pcp_GetChildrenRange(parent)) {
-        if (PcpIsSpecializeArc((*child).GetArcType()))
+    for (PcpNodeRef child : Pcp_GetSubtreeRange(parent)) {
+        if (PcpIsSpecializeArc(child.GetArcType())) {
             return true;
+        }
     }
     return false;
 }
@@ -1375,13 +1367,11 @@ struct Pcp_PrimIndexer
                     // beneath this node to the appropriate location.
                     AddTask(Task(Task::Type::EvalImpliedSpecializes, base));
                 }
-                else if (_HasSpecializesChild(n)) {
+                else if (_HasSpecializesChildInSubtree(n)) {
                     // The new node is not a specializes node or beneath a
-                    // specializes node, but has specializes children.
-                    // Such children represent arcs found during the recursive 
-                    // computation of the node's subgraph.  We need to pick them 
-                    // up and continue propagating them now that we are
-                    // merging the subgraph into the parent graph.
+                    // specializes node, but has specializes children. We also
+                    // need to propagate those children to the appropriate
+                    // location.
                     AddTask(Task(Task::Type::EvalImpliedSpecializes, n));
                 }
             }
@@ -2132,8 +2122,20 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
             fail = true;
         }
 
+        const bool isNegativeScale = layerOffset.GetScale() < 0.0;
+        const bool negativeScaleAllowed = PcpNegativeLayerOffsetScaleAllowed();
+
+        if (isNegativeScale && negativeScaleAllowed) {
+            TF_WARN("Found negative scale in layer offset for %s to @%s@<%s>. "
+                    "Negative offset scale is deprecated.",
+                    ARC_TYPE == PcpArcTypePayload ? "payload" : "reference",
+                    info.authoredAssetPath.c_str(), 
+                    refOrPayload.GetPrimPath().GetText());
+        }
+
         // Validate layer offset in original reference or payload.
-        if (!layerOffset.IsValid() ||
+        if ((isNegativeScale && !negativeScaleAllowed) ||
+            !layerOffset.IsValid() ||
             !layerOffset.GetInverse().IsValid()) {
             PcpErrorInvalidReferenceOffsetPtr err =
                 PcpErrorInvalidReferenceOffset::New();
@@ -3534,10 +3536,6 @@ _EvalImpliedClassTree(
     }
 }
 
-static bool
-_IsPropagatedSpecializesNode(
-    const PcpNodeRef& node);
-
 static void
 _EvalImpliedClasses(
     PcpNodeRef node,
@@ -3557,7 +3555,7 @@ _EvalImpliedClasses(
     // the origin of these specializes arcs -- this ensures the origin
     // nodes of the propagated inherits have a consistent strength 
     // ordering.  This is handled with the implied specializes task.
-    if (_IsPropagatedSpecializesNode(node)) {
+    if (Pcp_IsPropagatedSpecializesNode(node)) {
         return;
     }
 
@@ -3628,18 +3626,6 @@ _EvalNodeSpecializes(
 
     // Add specializes arcs.
     _AddClassBasedArcs(node, specArcs, PcpArcTypeSpecialize, indexer);
-}
-
-// Returns true if the given node is a specializes node that
-// has been propagated to the root of the graph for strength
-// ordering purposes in _EvalImpliedSpecializes.
-static bool
-_IsPropagatedSpecializesNode(
-    const PcpNodeRef& node)
-{
-    return (PcpIsSpecializeArc(node.GetArcType()) && 
-            node.GetParentNode() == node.GetRootNode() && 
-            node.GetSite() == node.GetOriginNode().GetSite());
 }
 
 static bool
@@ -3725,6 +3711,7 @@ _PropagateNodeToParent(
             newNode.SetHasSymmetry(srcNode.HasSymmetry());
             newNode.SetPermission(srcNode.GetPermission());
             newNode.SetRestricted(srcNode.IsRestricted());
+            newNode.SetIsDueToAncestor(srcNode.IsDueToAncestor());
 
             // If we're propagating nodes to the origin, newNode may be a
             // previously-existing node that was created during an ancestral
@@ -3963,7 +3950,7 @@ _EvalImpliedSpecializes(
     if (!node.GetParentNode())
         return;
 
-    if (_IsPropagatedSpecializesNode(node)) {
+    if (Pcp_IsPropagatedSpecializesNode(node)) {
         _FindArcsToPropagateToOrigin(node, indexer);
     }
     else {
@@ -4217,99 +4204,6 @@ _ComposeVariantSelection(
     }
 }
 
-static bool
-_ShouldUseVariantFallback(
-    const Pcp_PrimIndexer *indexer,
-    const std::string& vset,
-    const std::string& vsel,
-    const std::string& vselFallback,
-    const PcpNodeRef &nodeWithVsel)
-{
-    // Can't use fallback if we don't have one.
-    if (vselFallback.empty()) {
-        return false;
-    }
-
-    // If there's no variant selected then use the default.
-    if (vsel.empty()) {
-        return true;
-    }
-
-    // The "standin" variant set has special behavior, below.
-    // All other variant sets default when there is no selection.
-    //
-    // XXX This logic can be simpler when we remove the old standin stuff
-    if (vset != "standin") {
-        return false;
-    }
-
-    // If we're using the new behavior then the preferences can't win over
-    // the opinion in vsel.
-    if (PcpIsNewDefaultStandinBehaviorEnabled()) {
-        return false;
-    }
-
-    // From here down we're trying to match the Csd policy, which can
-    // be rather peculiar.  See bugs 29039 and 32264 for history that
-    // lead to some of these policies.
-
-    // If nodeWithVsel is a variant node that makes a selection for vset,
-    // it structurally represents the fact that we have already decided
-    // which variant selection to use for vset in this primIndex.  In
-    // this case, we do not want to apply standin preferences, because
-    // we will have already applied them.
-    //
-    // (Applying the policy again here could give us an incorrect result,
-    // because this might be a different nodeWithVsel than was used
-    // originally to apply the policy.)
-    if (nodeWithVsel.GetArcType() == PcpArcTypeVariant      &&
-        nodeWithVsel.GetPath().IsPrimVariantSelectionPath() &&
-        nodeWithVsel.GetPath().GetVariantSelection().first == vset) {
-        return false;
-    }
-
-    // Use the standin preference if the authored selection came from
-    // inside the payload.
-    for (PcpNodeRef n = nodeWithVsel; n; n = n.GetParentNode()) {
-        if (n.GetArcType() == PcpArcTypePayload) {
-            return true;
-        }
-    }
-
-    // Use vsel if it came from a session layer, otherwise check the
-    // standin preferences. For efficiency, we iterate over the full
-    // layer stack instead of using PcpLayerStack::GetSessionLayerStack.
-    const SdfLayerHandle rootLayer = 
-        indexer->rootSite.layerStack->GetIdentifier().rootLayer;
-    TF_FOR_ALL(layer, indexer->rootSite.layerStack->GetLayers()) {
-        if (*layer == rootLayer) {
-            break;
-        }
-
-        static const TfToken field = SdfFieldKeys->VariantSelection;
-
-        const VtValue& value =
-            (*layer)->GetField(indexer->rootSite.path, field);
-        if (value.IsHolding<SdfVariantSelectionMap>()) {
-            const SdfVariantSelectionMap & vselMap =
-                value.UncheckedGet<SdfVariantSelectionMap>();
-            SdfVariantSelectionMap::const_iterator i = vselMap.find(vset);
-            if (i != vselMap.end() && i->second == vsel) {
-                // Standin selection came from the session layer.
-                return false;
-            }
-        }
-    }
-
-    // If we don't have a standin selection in the root node then check
-    // the standin preferences.
-    if (nodeWithVsel.GetArcType() != PcpArcTypeRoot) {
-        return true;
-    }
-
-    return false;
-}
-
 static std::string
 _ChooseBestFallbackAmongOptions(
     const std::string &vset,
@@ -4536,52 +4430,20 @@ _EvalNodeAuthoredVariant(
         return;
     }
 
-    // Compose options.
-    std::set<std::string> vsetOptions;
-    PcpComposeSiteVariantSetOptions(
-        node.GetLayerStack(), vsetPath, vset, &vsetOptions);
-
-    // Determine what the fallback selection would be.
-    // Generally speaking, authoring opinions win over fallbacks, however if
-    // MENV30_ENABLE_NEW_DEFAULT_STANDIN_BEHAVIOR==false then that is not
-    // always the case, and we must check the fallback here first.
-    // TODO Remove this once we phase out the old behavior!
-    const std::string vselFallback =
-        _ChooseBestFallbackAmongOptions( vset, vsetOptions,
-                                         *indexer->inputs.variantFallbacks );
-    if (!vselFallback.empty()) {
-        PCP_INDEXING_MSG(
-            indexer, node, "Found fallback {%s=%s}",
-            vset.c_str(),
-            vselFallback.c_str());
-    }
-
     // Determine the authored variant selection for this set, if any.
     std::string vsel;
     PcpNodeRef nodeWithVsel;
     _ComposeVariantSelection(node, vsetPath.StripAllVariantSelections(),
                              indexer, vset, &vsel, &nodeWithVsel);
 
-    // Check if we should use the fallback
-    if (_ShouldUseVariantFallback(indexer, vset, vsel, vselFallback,
-                                  nodeWithVsel)) {
+    // If no variant was explicitly chosen, check if we should use the
+    // fallback.
+    if (vsel.empty()) {
         PCP_INDEXING_MSG(indexer, node, "Deferring to variant fallback");
         indexer->AddTask(Task(
             (isAncestral ?
                 Task::Type::EvalNodeAncestralVariantFallback :
                 Task::Type::EvalNodeVariantFallback),
-            node, vsetPath, vset, vsetNum));
-        return;
-    }
-    // If no variant was chosen, do not expand this variant set.
-    if (vsel.empty()) {
-        PCP_INDEXING_MSG(indexer, node,
-                         "No variant selection found for set '%s'",
-                         vset.c_str());
-        indexer->AddTask(Task(
-            (isAncestral ? 
-                Task::Type::EvalNodeAncestralVariantNoneFound :
-                Task::Type::EvalNodeVariantNoneFound),
             node, vsetPath, vset, vsetNum));
         return;
     }
@@ -5137,7 +4999,7 @@ _CullSubtreesWithNoOpinions(
     // test_PrimIndexCulling_SpecializesHierarchy in testPcpPrimIndex for
     // an example.
     TF_REVERSE_FOR_ALL(child, Pcp_GetChildrenRange(primIndex->GetRootNode())) {
-        if (_IsPropagatedSpecializesNode(*child)) {
+        if (Pcp_IsPropagatedSpecializesNode(*child)) {
             std::unordered_set<PcpLayerStackSite, TfHash> culledSites;
             _CullSubtreesWithNoOpinionsHelper(
                 *child, rootSite, culledDeps, &culledSites);
@@ -5147,7 +5009,7 @@ _CullSubtreesWithNoOpinions(
     }
 
     TF_FOR_ALL(child, Pcp_GetChildrenRange(primIndex->GetRootNode())) {
-        if (!_IsPropagatedSpecializesNode(*child)) {
+        if (!Pcp_IsPropagatedSpecializesNode(*child)) {
             _CullSubtreesWithNoOpinionsHelper(*child, rootSite, culledDeps);
         }
     }

@@ -501,6 +501,17 @@ bool TsSpline::_Eval(
     return true;
 }
 
+// Implement a special case that will ensure the contents of the VtValue output
+// variable contain a value of the same type (double, float, or GfHalf) as the
+// spline.
+template <>
+TS_API
+bool TsSpline::_Eval(
+    const TsTime time,
+    VtValue* const valueOut,
+    const Ts_EvalAspect aspect,
+    const Ts_EvalLocation location) const;
+
 template <typename T>
 bool TsSpline::Eval(const TsTime time, T* const valueOut) const
 {

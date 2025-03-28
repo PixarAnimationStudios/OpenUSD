@@ -14,6 +14,7 @@
 # free to do whatever they want with mainwindow for testing.
 
 import pxr.Usdviewq as Usdviewq
+import pxr.Tf as Tf
 from pxr.Usdviewq import AppController
 from pxr.Usdviewq.qt import QtWidgets
 
@@ -49,7 +50,7 @@ class TestUsdView(Usdviewq.Launcher):
         # Set a fixed size on the stage view so that any image tests get a
         # consistent resolution - but only if we've created a viewer
         if appController._stageView:
-            appController._stageView.setFixedSize(597,540)
+            appController._stageView.SetPhysicalWindowSize(597, 540)
 
         # Process initial loading events
         app.processEvents()
@@ -140,4 +141,7 @@ AppController._takeShot = _takeShot
 
 
 if __name__ == '__main__':
+    errorMark = Tf.Error.Mark()
     TestUsdView().Run()
+    assert errorMark.IsClean()
+    

@@ -207,7 +207,7 @@ public:
         
         if (changed && _initialized) {
             lock.release();
-            TfDebugSymbolsChangedNotice().Send();
+            TfDebugSymbolEnableChangedNotice().Send();
         }
     }
 
@@ -228,7 +228,7 @@ public:
 
         if (_initialized) {
             lock.release();
-            TfDebugSymbolsChangedNotice().Send();
+            TfDebugSymbolEnableChangedNotice().Send();
         }
     }
 

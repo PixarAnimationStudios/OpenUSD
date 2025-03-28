@@ -12,16 +12,26 @@
 
 #include "pxr/pxr.h"
 #include "rmanArgsParser/api.h"
+
+#if PXR_VERSION >= 2505
+#include "pxr/usd/sdr/parserPlugin.h"
+#else
 #include "pxr/usd/ndr/parserPlugin.h"
+#endif
 
 #include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#if PXR_VERSION < 2505
+using SdrParserPlugin = NdrParserPlugin;
+using SdrTokenVec = NdrTokenVec;
+#endif
+
 /// \class RmanArgsParserPlugin
 ///
 /// Parses Args files. For more information on parser plugins, see the
-/// documentation for `NdrParserPlugin`.
+/// documentation for `SdrParserPlugin`.
 ///
 /// \section schema Schema
 /// The following elements, along with their attributes (italics) and child
@@ -58,7 +68,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   * _vstructmember_
 ///   * _sdrDefinitionName_ (renames parameter, sends original args param name to
 ///                          SdrShaderProperty::GetImplementationName())
-///   * Note: other uncategorized attributes are available via NdrNode::GetHints()
+///   * Note: other uncategorized attributes are available via SdrShaderNode::GetHints()
 /// * <page> _Can be nested_
 ///   * _name_
 /// * <help>
@@ -98,7 +108,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// attributes mean, see the Renderman documentation on the Args format. Items
 /// marked with a '!' are deprecated and will output a warning.
 ///
-class RmanArgsParserPlugin : public NdrParserPlugin
+class RmanArgsParserPlugin : public SdrParserPlugin
 {
 public:
     RMAN_ARGS_PARSER_API
@@ -107,10 +117,15 @@ public:
     ~RmanArgsParserPlugin();
 
     RMAN_ARGS_PARSER_API
+#if PXR_VERSION >= 2505
+    SdrShaderNodeUniquePtr ParseShaderNode(
+        const SdrShaderNodeDiscoveryResult& discoveryRes) override;
+#else
     NdrNodeUniquePtr Parse(const NdrNodeDiscoveryResult& discoveryRes) override;
+#endif
 
     RMAN_ARGS_PARSER_API
-    const NdrTokenVec& GetDiscoveryTypes() const override;
+    const SdrTokenVec& GetDiscoveryTypes() const override;
 
     RMAN_ARGS_PARSER_API
     const TfToken& GetSourceType() const override;

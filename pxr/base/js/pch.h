@@ -35,6 +35,7 @@
 #include <stddef.h>
 #include <string>
 #include <sys/types.h>
+#include <tuple>
 #include <type_traits>
 #include <typeindex>
 #include <typeinfo>

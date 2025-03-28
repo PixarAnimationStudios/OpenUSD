@@ -115,11 +115,16 @@ class TestUsdZipFile(unittest.TestCase):
         def _GetFileSize(file):
             return os.stat(file).st_size
 
+        def _ComputeCRC(file):
+            import zlib
+            with open(file, "rb") as f:
+                return zlib.crc32(f.read())
+
         fileInfo = zf.GetFileInfo("src/a.test")
         self.assertEqual(fileInfo.dataOffset, 64)
         self.assertEqual(fileInfo.size, _GetFileSize("src/a.test"))
         self.assertEqual(fileInfo.uncompressedSize, _GetFileSize("src/a.test"))
-        self.assertEqual(fileInfo.crc, 2187659876)
+        self.assertEqual(fileInfo.crc, _ComputeCRC("src/a.test"))
         self.assertEqual(fileInfo.compressionMethod, 0)
         self.assertFalse(fileInfo.encrypted)
 

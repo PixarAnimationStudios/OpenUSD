@@ -61,5 +61,31 @@ class TestUsdTimeCodeRepr(unittest.TestCase):
         self.assertEqual(timeRepr, 'Usd.TimeCode(12.0)')
         self.assertEqual(eval(timeRepr), timeCode)
 
+    def testPreTimeRepr(self):
+        """
+        Validates the string representation of a pre-time code.
+        """
+        timeCode = Usd.TimeCode.PreTime(123.0)
+        timeRepr = repr(timeCode)
+        self.assertEqual(timeRepr, 'Usd.TimeCode.PreTime(123.0)')
+        self.assertEqual(eval(timeRepr), timeCode)
+
+        # Verify that a pre-time code is constructable from an Sdf.TimeCode 
+        timeCode = Usd.TimeCode.PreTime(Sdf.TimeCode(12))
+        timeRepr = repr(timeCode)
+        self.assertEqual(timeRepr, 'Usd.TimeCode.PreTime(12.0)')
+        self.assertEqual(eval(timeRepr), timeCode)
+
+    def testPreTimeEarliestRepr(self):
+        """
+        Validates the string representation of a pre-time earliest time code.
+        """
+        timeCode = Usd.TimeCode.PreTime(Usd.TimeCode.EarliestTime().GetValue())
+        timeRepr = repr(timeCode)
+        self.assertEqual(
+            timeRepr, 
+            'Usd.TimeCode.PreTime(Usd.TimeCode.EarliestTime().GetValue())')
+        self.assertEqual(eval(timeRepr), timeCode)
+
 if __name__ == "__main__":
     unittest.main()

@@ -12,10 +12,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/indirect_traits.hpp>
-#else
-
 #include <type_traits>
 
 namespace PXR_BOOST_NAMESPACE { namespace python {
@@ -171,5 +167,4 @@ struct is_pointer_to_class
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_INDIRECT_TRAITS_HPP

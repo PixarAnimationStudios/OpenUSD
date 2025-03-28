@@ -231,7 +231,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (worldToViewMatrix)                         \
     (worldToViewInverseMatrix)                  \
     (stepSize)                                  \
-    (stepSizeLighting)
+    (stepSizeLighting)                          \
+    (multisampleCount)
 
 // Deprecated. Use: HdStMaterialTagTokens
 #define HD_MATERIALTAG_TOKENS                   \
@@ -252,8 +253,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (guide)                                     \
     (hidden)                                    \
     (proxy)                                     \
-    (render)                                    \
-    (widget)
+    (render)
 
 #define HD_RENDER_CONTEXT_TOKENS                \
     ((universal, ""))

@@ -11,7 +11,6 @@ pxr_library(usdMtlx
     LIBRARIES
         arch
         gf
-        ndr
         sdf
         sdr
         tf

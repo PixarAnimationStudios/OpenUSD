@@ -47,6 +47,7 @@ HgiVulkanTexture::HgiVulkanTexture(
 {
     GfVec3i const& dimensions = desc.dimensions;
     bool const isDepthBuffer = desc.usage & HgiTextureUsageBitsDepthTarget;
+    bool const isStencilBuffer = desc.usage & HgiTextureUsageBitsStencilTarget;
 
     //
     // Gather image create info
@@ -152,11 +153,14 @@ HgiVulkanTexture::HgiVulkanTexture(
     // that can be accessed through this image view.
     // It's possible to create multiple image views for a single image
     // referring to different (and/or overlapping) ranges of the image.
-    // A 'view' must be either depth or stencil, not both, especially when used
-    // in a descriptor set. For now we assume we always want the 'depth' aspect.
-    view.subresourceRange.aspectMask = isDepthBuffer ?
-        VK_IMAGE_ASPECT_DEPTH_BIT /*| VK_IMAGE_ASPECT_STENCIL_BIT*/ :
-        VK_IMAGE_ASPECT_COLOR_BIT;
+    if (isDepthBuffer) {
+        view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        if (isStencilBuffer) {
+            view.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+    } else {
+        view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
 
     view.subresourceRange.baseMipLevel = 0;
     view.subresourceRange.baseArrayLayer = 0;

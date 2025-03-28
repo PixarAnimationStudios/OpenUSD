@@ -1285,6 +1285,30 @@ Usd_CrateData::GetBracketingTimeSamplesForPath(
 }
 
 bool
+Usd_CrateData::GetPreviousTimeSampleForPath(
+    const SdfPath& path, double time, double* tPrevious) const
+{
+    vector<double> const &times = _impl->_ListTimeSamplesForPath(path);
+    if (times.empty() || time <= times.front()) {
+        // no samples, or 
+        // can't get previous sample for time before first sample.
+        return false;
+    } else if (time > times.back()) {
+        // last sample is the previous time sample, as time is greater than
+        // the last sample time.
+        *tPrevious = times.back();
+    } else {
+        auto i = lower_bound(times.begin(), times.end(), time);
+        // We need to back up one sample to get the previous sample from
+        // the lower_bound. If the lower_bound is the first sample, we would
+        // have returned false above.
+        TF_VERIFY(i != times.begin());
+        *tPrevious = i[-1];
+    }
+    return true;
+}
+
+bool
 Usd_CrateData::QueryTimeSample(const SdfPath& path,
                                double time, VtValue *value) const
 {

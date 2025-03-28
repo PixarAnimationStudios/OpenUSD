@@ -115,9 +115,9 @@ HdStPackageSimpleLightingShader()
 }
 
 TfToken
-HdStPackageWidgetShader()
+HdStPackageOverlayShader()
 {
-    static TfToken s = _GetShaderPath("widgetShader.glslfx");
+    static TfToken s = _GetShaderPath("overlayShader.glslfx");
     return s;
 }
 

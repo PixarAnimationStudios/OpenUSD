@@ -849,17 +849,24 @@ SdfPath::AppendChild(TfToken const &childName) const {
         }
         return true;
     };
+    
     Sdf_PathPrimNodeHandle childNode = 
         Sdf_PathNode::FindOrCreatePrim(_primPart.get(), childName, isValid);
 
     if (ARCH_UNLIKELY(!childNode)) {
         if (childName == SdfPathTokens->parentPathElement) {
-            return GetParentPath();
+            ret = GetParentPath();
+        }
+        else {
+            ret._primPart = nullptr;
         }
     }
+    else {
+        ret._primPart = std::move(childNode);
+        cache.Store(_primPart, childName, ret._primPart, storeIndex);
+    }
 
-    return { std::move(childNode), {} };
-    
+    return ret;
 }
 
 

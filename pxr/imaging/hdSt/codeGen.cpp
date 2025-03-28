@@ -2779,6 +2779,19 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
                 HgiShaderKeywordTokens->hdBaryCoordNoPersp);
         }
 
+        if (_geometricShader->GetPrimitiveType() ==
+            HdSt_GeometricShader::PrimitiveType::PRIM_POINTS) {
+            HgiShaderFunctionAddStageInput(&desc, "hd_SampleMaskIn", "uint",
+                HgiShaderKeywordTokens->hdSampleMaskIn);
+            if (!registry->GetHgi()->GetCapabilities()->IsSet(
+                    HgiDeviceCapabilitiesBitsRoundPoints)) {
+                HgiShaderFunctionAddStageInput(&desc, "gl_PointCoord", "vec2",
+                    HgiShaderKeywordTokens->hdPointCoord);
+                HgiShaderFunctionAddStageOutput(&desc, "hd_SampleMask",
+                    "uint", HgiShaderKeywordTokens->hdSampleMask);
+            }
+        }
+
         if (!glslProgram->CompileShader(desc)) {
             return nullptr;
         }
@@ -3180,7 +3193,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             HgiShaderKeywordTokens->hdFrontFacing);
         HgiShaderFunctionAddStageInput(
             &fsDesc, "gl_FragCoord", "vec4",
-            HgiShaderKeywordTokens->hdPosition);
+            HgiShaderKeywordTokens->hdFragCoord);
         const bool builtinBarycentricsEnabled =
             registry->GetHgi()->GetCapabilities()->IsSet(
                 HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
@@ -3188,6 +3201,19 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             HgiShaderFunctionAddStageInput(
                 &fsDesc, "hd_BaryCoordNoPersp", "vec3",
                 HgiShaderKeywordTokens->hdBaryCoordNoPersp);
+        }
+
+        if (_geometricShader->GetPrimitiveType() ==
+            HdSt_GeometricShader::PrimitiveType::PRIM_POINTS) {
+            HgiShaderFunctionAddStageInput(&fsDesc, "hd_SampleMaskIn", "uint",
+                HgiShaderKeywordTokens->hdSampleMaskIn);
+            if (!registry->GetHgi()->GetCapabilities()->IsSet(
+                    HgiDeviceCapabilitiesBitsRoundPoints)) {
+                HgiShaderFunctionAddStageInput(&fsDesc, "gl_PointCoord", "vec2",
+                    HgiShaderKeywordTokens->hdPointCoord);
+                HgiShaderFunctionAddStageOutput(&fsDesc, "hd_SampleMask",
+                    "uint", HgiShaderKeywordTokens->hdSampleMask);
+            }
         }
 
         if (!glslProgram->CompileShader(fsDesc)) {

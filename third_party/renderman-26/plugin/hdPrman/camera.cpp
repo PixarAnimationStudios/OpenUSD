@@ -44,7 +44,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((orthowidth,                     "ri:camera:orthowidth"))
     ((window,                         "ri:camera:window"))
     ((dofAspect,                      "ri:camera:dofaspect"))
-    ((extremeOffset,                  "ri:camera:extremeoffset"))
     ((apertureNSides,                 "ri:camera:aperturensides"))
     ((apertureAngle,                  "ri:camera:apertureangle"))
     ((apertureRoundness,              "ri:camera:apertureroundness"))
@@ -132,7 +131,6 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
             _tokensLegacy->orthowidth,
             _tokensLegacy->window,
             _tokensLegacy->dofAspect,
-            _tokensLegacy->extremeOffset,
             _tokensLegacy->apertureNSides,
             _tokensLegacy->apertureAngle,
             _tokensLegacy->apertureRoundness,
@@ -347,12 +345,6 @@ HdPrmanCamera::SetRileyCameraParams(RtParamList& camParams,
         _GetDictItem<float>(_params, _tokensLegacy->dofAspect);
     if (dofAspect) {
         camParamsOverride.SetFloat(RixStr.k_dofaspect, *dofAspect);
-    }
-
-    float const *extremeOffset =
-        _GetDictItem<float>(_params, _tokensLegacy->extremeOffset);
-    if (extremeOffset) {
-        camParamsOverride.SetFloat(RixStr.k_extrememoffset, *extremeOffset);
     }
 
     int const *apertureNSides =

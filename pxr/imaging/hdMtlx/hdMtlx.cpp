@@ -32,6 +32,8 @@
 #include <MaterialXFormat/Util.h>
 #include <MaterialXFormat/XmlIo.h>
 
+#include <regex>
+
 namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -74,7 +76,7 @@ static mx::FileSearchPath
 _ComputeSearchPaths()
 {
     mx::FileSearchPath searchPaths;
-    static const NdrStringVec searchPathStrings = UsdMtlxSearchPaths();
+    static const SdrStringVec searchPathStrings = UsdMtlxSearchPaths();
     for (auto path : searchPathStrings) {
         searchPaths.append(mx::FilePath(path));
     }
@@ -299,22 +301,37 @@ _GetInputType(
     return mxInputType;
 }
 
-// Nodedef names may change between MaterialX versions, so given the 
-// prevMxNodeDefName get the corresponding nodedef name appropriate for the 
-// version of MaterialX being used. 
-static std::string
-_GetNodeDefName(std::string const& prevMxNodeDefName)
+// Between MaterialX versions nodeDef names may change or nodes may be removed.
+// So given the prevMxNodeDefName return the corresponding nodeDef appropriate 
+// for the version of MaterialX being used, or a temporary nodeDef if the node 
+// was removed. 
+static mx::NodeDefPtr
+_GetNodeDef(const mx::DocumentPtr& mxDoc, std::string const& prevMxNodeDefName)
 {
-    // This handles the case that nodedef names have changed between MaterialX
-    // v1.38 and the current version
+    // For nodeDef name changes or node removals between MaterialX v1.38 and 
+    // the current version
     std::string mxNodeDefName = prevMxNodeDefName;
 #if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION >= 39
-    // Between v1.38 and v1.39 only the normalmap nodedef name changed
+    // The normalmap nodeDef name changed in v1.39
     if (prevMxNodeDefName == "ND_normalmap") {
         mxNodeDefName = "ND_normalmap_float";
     }
+    // Swizzle nodes were deleted in v1.39, return a temporary NodeDef
+    std::smatch match;
+    static const auto swizzleRegex = std::regex("ND_swizzle_([^_]+)_([^_]+)");
+    if (std::regex_match(prevMxNodeDefName, match, swizzleRegex)) {
+        static mx::DocumentPtr swizzleDoc = mx::createDocument();
+        if (auto swizzleNodeDef = swizzleDoc->getNodeDef(prevMxNodeDefName)) {
+            return swizzleNodeDef;
+        }
+        mx::NodeDefPtr swizzleNodeDef = swizzleDoc->addNodeDef(
+            prevMxNodeDefName, match[2].str(), "swizzle");
+        swizzleNodeDef->addInput("in", match[1].str());
+        swizzleNodeDef->addInput("channels", "string");
+        return swizzleNodeDef;
+    }
 #endif
-    return mxNodeDefName;
+    return mxDoc->getNodeDef(mxNodeDefName);
 }
 
 // Add a MaterialX version of the hdNode to the mxDoc/mxNodeGraph
@@ -330,8 +347,7 @@ _AddMaterialXNode(
 {
     // Get the mxNode information
     TfToken hdNodeType = netInterface->GetNodeType(hdNodeName);
-    mx::NodeDefPtr mxNodeDef =
-        mxDoc->getNodeDef(_GetNodeDefName(hdNodeType.GetString()));
+    mx::NodeDefPtr mxNodeDef = _GetNodeDef(mxDoc, hdNodeType.GetString());
     if (!mxNodeDef) {
         TF_WARN("NodeDef not found for Node '%s'", hdNodeType.GetText());
         // Instead of returning here, use a ND_surface definition so that the
@@ -367,11 +383,7 @@ _AddMaterialXNode(
     TfTokenVector hdNodeParamNames =
         netInterface->GetAuthoredNodeParameterNames(hdNodeName);
     for (TfToken const &paramName : hdNodeParamNames) {
-        // Get the MaterialX Parameter info
         const std::string &mxInputName = paramName.GetString();
-        const HdMaterialNetworkInterface::NodeParamData paramData = 
-            netInterface->GetNodeParameterData(hdNodeName, paramName);
-        const std::string mxInputValue = HdMtlxConvertToString(paramData.value);
 
         // Skip Colorspace and typeName parameters, these are already 
         // captured in the paramData. Note: these inputs are of the form:
@@ -386,6 +398,11 @@ _AddMaterialXNode(
         if (tnResult.second) {
             continue;
         }
+
+        // Get the MaterialX Parameter info
+        const HdMaterialNetworkInterface::NodeParamData paramData = 
+            netInterface->GetNodeParameterData(hdNodeName, paramName);
+        const std::string mxInputValue = HdMtlxConvertToString(paramData.value);
 
         // Set the input value, and colorspace on the mxNode
         const std::string mxInputType = 
@@ -598,11 +615,7 @@ _AddParameterInputsToTerminalNode(
     }
 
     for (TfToken const &paramName : paramNames) {
-        // Get the MaterialX Parameter info
         const std::string &mxInputName = paramName.GetString();
-        const HdMaterialNetworkInterface::NodeParamData paramData = 
-            netInterface->GetNodeParameterData(terminalNodeName, paramName);
-        const std::string mxInputValue = HdMtlxConvertToString(paramData.value);
 
         // Skip Colorspace and typeName parameters, these are already 
         // captured in the paramData. Note: these inputs are of the form:
@@ -617,6 +630,11 @@ _AddParameterInputsToTerminalNode(
         if (tnResult.second) {
             continue;
         }
+
+        // Get the MaterialX Parameter info
+        const HdMaterialNetworkInterface::NodeParamData paramData = 
+            netInterface->GetNodeParameterData(terminalNodeName, paramName);
+        const std::string mxInputValue = HdMtlxConvertToString(paramData.value);
 
         // Set the Input value on the mxShaderNode
         mx::InputPtr mxInput = mxShaderNode->setInputValue(
@@ -690,7 +708,8 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
     mxDoc->importLibrary(libraries);
 
     // Get the version of the MaterialX document if specified, otherwise
-    // default to v1.38.
+    // default to v1.38. Note that we should always default to 1.38 to handle 
+    // the case where older USD files have not made use of this config schema. 
     std::string materialXVersionString = "1.38";
     const VtValue materialXVersionValue =
         netInterface->GetMaterialConfigValue(_tokens->mtlxVersion);

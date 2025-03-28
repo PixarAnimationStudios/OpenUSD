@@ -8,27 +8,46 @@
 
 #include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/extentResolvingSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h"
 #include "pxr/usdImaging/usdImaging/materialBindingsResolvingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/renderSettingsFlatteningSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/sceneIndexPlugin.h"
 #include "pxr/usdImaging/usdImaging/selectionSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/unloadedDrawModeSceneIndex.h"
 
-#include "pxr/usdImaging/usdImaging/collectionMaterialBindingsSchema.h"
-#include "pxr/usdImaging/usdImaging/directMaterialBindingsSchema.h"
 #include "pxr/usdImaging/usdImaging/geomModelSchema.h"
+#include "pxr/usdImaging/usdImaging/materialBindingsSchema.h"
 
-#include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/sceneIndexUtil.h"
 
+#include "pxr/base/trace/trace.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfRegistryManager::GetInstance().SubscribeTo<UsdImagingSceneIndexPlugin>();
+}
+
+static
+HdSceneIndexBaseRefPtr
+_AddPluginSceneIndices(HdSceneIndexBaseRefPtr sceneIndex)
+{
+    TRACE_FUNCTION();
+    
+    for (const UsdImagingSceneIndexPluginUniquePtr &sceneIndexPlugin :
+             UsdImagingSceneIndexPlugin::GetAllSceneIndexPlugins()) {
+        sceneIndex = sceneIndexPlugin->AppendSceneIndex(sceneIndex);
+    }
+    
+    return sceneIndex;
+}
 
 static
 HdContainerDataSourceHandle
@@ -75,6 +94,30 @@ _GetStageName(UsdStageRefPtr const &stage)
     }
     return rootLayer->GetIdentifier();
 }
+
+static
+TfTokenVector
+_InstanceDataSourceNames()
+{
+    TRACE_FUNCTION();
+    
+    TfTokenVector result = {
+        UsdImagingMaterialBindingsSchema::GetSchemaToken(),
+        HdPurposeSchema::GetSchemaToken(),
+        // We include model to aggregate scene indices
+        // by draw mode.
+        UsdImagingGeomModelSchema::GetSchemaToken()
+    };
+
+    for (const UsdImagingSceneIndexPluginUniquePtr &plugin :
+             UsdImagingSceneIndexPlugin::GetAllSceneIndexPlugins()) {
+        for (const TfToken &name : plugin->InstanceDataSourceNames()) {
+            result.push_back(name);
+        }
+    }
+
+    return result;
+};
 
 UsdImagingSceneIndices
 UsdImagingCreateSceneIndices(
@@ -124,14 +167,8 @@ UsdImagingCreateSceneIndices(
         // Names of data sources that need to have the same values
         // across native instances for the instances be aggregated
         // together.
-        static const TfTokenVector instanceDataSourceNames = {
-            UsdImagingDirectMaterialBindingsSchema::GetSchemaToken(),
-            UsdImagingCollectionMaterialBindingsSchema::GetSchemaToken(),
-            HdPurposeSchema::GetSchemaToken(),
-            // We include model to aggregate scene indices
-            // by draw mode.
-            UsdImagingGeomModelSchema::GetSchemaToken()
-        };
+        static const TfTokenVector instanceDataSourceNames =
+            _InstanceDataSourceNames();
 
         using SceneIndexAppendCallback =
             UsdImagingNiPrototypePropagatingSceneIndex::
@@ -168,6 +205,9 @@ UsdImagingCreateSceneIndices(
     sceneIndex = UsdImagingMaterialBindingsResolvingSceneIndex::New(
                         sceneIndex, /* inputArgs = */ nullptr);
 
+    sceneIndex =
+        _AddPluginSceneIndices(sceneIndex);
+    
     sceneIndex = result.selectionSceneIndex =
         UsdImagingSelectionSceneIndex::New(sceneIndex);
     

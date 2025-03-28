@@ -323,7 +323,7 @@ class TestUsdInherits(unittest.TestCase):
             self.assertEqual(child.GetInherits().GetAllDirectInherits(),
                 [Sdf.Path(path) for path in [
                     '/CI', '/CRI', '/CRI_NOSPEC', '/PRCI', '/PRCI_NOSPEC',
-                    '/Parent/Sibling', '/PISI/Sibling', '/PSI/Sibling',
+                    '/Parent/Sibling'
                 ]])
 
     def test_ListPosition(self):

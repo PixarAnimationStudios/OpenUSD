@@ -30,6 +30,7 @@
 #include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
 #include "pxr/imaging/hdsi/sceneGlobalsSceneIndex.h"
 #include "pxr/imaging/hdx/pickTask.h"
+#include "pxr/imaging/hdx/task.h"
 #include "pxr/imaging/hdx/taskController.h"
 #include "pxr/imaging/hdx/tokens.h"
 
@@ -97,23 +98,6 @@ _GetUseSceneIndices()
         (TfGetEnvSetting(USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX) == true);
 
     return useSceneIndices;
-}
-
-std::string
-_GetPlatformDependentRendererDisplayName(HfPluginDesc const &pluginDescriptor)
-{
-#if defined(__APPLE__)
-    // Rendering for Storm is delegated to Hgi. We override the
-    // display name for macOS since the Hgi implementation for
-    // macOS uses Metal instead of GL. Eventually, this should
-    // properly delegate to using Hgi to determine the display
-    // name for Storm.
-    static const TfToken _stormRendererPluginName("HdStormRendererPlugin");
-    if (pluginDescriptor.id == _stormRendererPluginName) {
-        return "Metal";
-    }
-#endif
-    return pluginDescriptor.displayName;
 }
 
 } // anonymous namespace
@@ -437,7 +421,7 @@ UsdImagingGLEngine::RenderBatch(
 
     _UpdateDomeLightCameraVisibility();
 
-    _Execute(params, _taskController->GetRenderingTasks());
+    _Execute(params, _taskController->GetRenderingTaskPaths());
 }
 
 void 
@@ -468,11 +452,26 @@ UsdImagingGLEngine::Render(
 bool
 UsdImagingGLEngine::IsConverged() const
 {
-    if (ARCH_UNLIKELY(!_renderDelegate)) {
+    if (ARCH_UNLIKELY(!(_taskController && _renderIndex))) {
         return true;
     }
+    
+    const SdfPathVector taskPaths =
+        _taskController->GetRenderingTaskPaths();
 
-    return _taskController->IsConverged();
+    for (const SdfPath &taskPath : taskPaths) {
+        const HdxTask * const hdxTask =
+            dynamic_cast<const HdxTask*>(
+                _renderIndex->GetTask(taskPath).get());
+        if (!hdxTask) {
+            continue;
+        }
+        if (!hdxTask->IsConverged()) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 //----------------------------------------------------------------------------
@@ -822,7 +821,7 @@ UsdImagingGLEngine::TestIntersection(
     const VtValue vtPickCtxParams(pickCtxParams);
 
     _engine->SetTaskContextData(HdxPickTokens->pickParams, vtPickCtxParams);
-    _Execute(params, _taskController->GetPickingTasks());
+    _Execute(params, _taskController->GetPickingTaskPaths());
 
     // return false if there were no hits
     if (allHits.size() == 0) {
@@ -962,7 +961,25 @@ UsdImagingGLEngine::GetRendererDisplayName(TfToken const &id)
         return std::string();
     }
 
-    return _GetPlatformDependentRendererDisplayName(pluginDescriptor);
+    // Storm's display name is GL, but that's just confusing since it
+    // also has Metal and Vulkan implementations. Change it here for now,
+    // eventually it will have to be properly renamed.
+    static const TfToken _stormRendererPluginName("HdStormRendererPlugin");
+    if (pluginDescriptor.id == _stormRendererPluginName) {
+        return "Storm";
+    }
+
+    return pluginDescriptor.displayName;
+}
+
+std::string
+UsdImagingGLEngine::GetRendererHgiDisplayName() const
+{
+    if (!_hgi) {
+        return "";
+    }
+
+    return _hgi->GetAPIName();
 }
 
 bool
@@ -1672,6 +1689,18 @@ UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
     }
 }
 
+void 
+UsdImagingGLEngine::_Execute(const UsdImagingGLRenderParams &params,
+                             const SdfPathVector &taskPaths)
+{
+    {
+        // Release the GIL before calling into hydra, in case any hydra plugins
+        // call into python.
+        TF_PY_ALLOW_THREADS_IN_SCOPE();
+        _engine->Execute(_renderIndex.get(), taskPaths);
+    }
+}
+
 bool 
 UsdImagingGLEngine::_CanPrepare(const UsdPrim& root)
 {
@@ -1860,11 +1889,9 @@ UsdImagingGLEngine::_MakeHydraUsdImagingGLRenderParams(
         renderParams.drawMode == UsdImagingGLDrawMode::DRAW_POINTS) {
         params.enableLighting = false;
     } else {
-        params.enableLighting =  renderParams.enableLighting &&
-                                !renderParams.enableIdRender;
+        params.enableLighting =  renderParams.enableLighting;
     }
 
-    params.enableIdRender      = renderParams.enableIdRender;
     params.depthBiasUseDefault = true;
     params.depthFunc           = HdCmpFuncLess;
     params.cullStyle           = USD_2_HD_CULL_STYLE[
@@ -1912,6 +1939,7 @@ UsdImagingGLEngine::_ComputeRenderTags(UsdImagingGLRenderParams const& params,
 TfToken
 UsdImagingGLEngine::_GetDefaultRendererPluginId()
 {
+    // XXX clachanski
     static const std::string defaultRendererDisplayName = 
         TfGetenv("HD_DEFAULT_RENDERER", "");
 
@@ -2015,4 +2043,3 @@ UsdImagingGLEngine::PollForAsynchronousUpdates() const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

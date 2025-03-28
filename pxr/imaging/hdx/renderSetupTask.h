@@ -90,7 +90,6 @@ public:
 private:
     HdRenderPassStateSharedPtr _renderPassState;
     HdStRenderPassShaderSharedPtr _colorRenderPassShader;
-    HdStRenderPassShaderSharedPtr _idRenderPassShader;
     SdfPath _cameraId;
     CameraUtilFraming _framing;
     std::optional<CameraUtilConformWindowPolicy> _overrideWindowPolicy;
@@ -99,7 +98,6 @@ private:
     GfVec4d _viewport;
     HdRenderPassAovBindingVector _aovBindings;
     HdRenderPassAovBindingVector _aovInputBindings;
-    bool _enableIdRenderFromParams;
 
     void _SetRenderpassShadersForStorm(
         HdStRenderPassState *renderPassState,
@@ -128,7 +126,6 @@ struct HdxRenderTaskParams
         , pointColor(GfVec4f(0,0,0,1))
         , pointSize(3.0)
         , enableLighting(false)
-        , enableIdRender(false)
         , alphaThreshold(0.0)
         , enableSceneMaterials(true)
         , enableSceneLights(true)
@@ -178,9 +175,6 @@ struct HdxRenderTaskParams
     GfVec4f pointColor;
     float pointSize;
     bool enableLighting;
-    // Note: enableIdRender is deprecated in favor of using the primId AOV, and 
-    // will be removed as a param soon.
-    bool enableIdRender;
     float alphaThreshold;
     bool enableSceneMaterials;
     bool enableSceneLights;

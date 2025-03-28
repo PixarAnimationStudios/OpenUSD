@@ -12,7 +12,7 @@
                     "MaterialBindingCollectionValidator": {
                         "doc": "Verify that a collection defining a material binding is well-formed", 
                         "schemaTypes": [
-                            "MaterialBindingAPI"
+                            "UsdShadeMaterialBindingAPI"
                         ]
                     }, 
                     "MaterialBindingRelationships": {

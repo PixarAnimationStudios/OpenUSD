@@ -15,10 +15,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/numpy/ufunc.hpp>
-#else
-
 /**
  *  @brief Utilities to create ufunc-like broadcasting functions out of C++ functors.
  */
@@ -215,5 +211,4 @@ NUMPY_OBJECT_MANAGER_TRAITS(numpy::multi_iter);
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

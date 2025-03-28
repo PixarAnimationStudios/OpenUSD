@@ -15,10 +15,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/is_shared_ptr.hpp>
-#else
-
 #include "pxr/external/boost/python/detail/is_xxx.hpp"
 #ifdef PXR_BOOST_PYTHON_HAS_BOOST_SHARED_PTR
 #include <boost/shared_ptr.hpp>
@@ -36,5 +32,4 @@ struct is_shared_ptr<boost::shared_ptr<T> > : std::true_type {};
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

@@ -104,6 +104,10 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+#if PXR_VERSION < 2505
+using SdrTokenVec = NdrTokenVec;
+#endif
+
 // ---------------------------------------------------------------------------
 
 struct _VSCGConditionalBase
@@ -115,7 +119,7 @@ struct _VSCGConditionalBase
     virtual bool Eval(
         const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
-        const NdrTokenVec & shaderTypePriority) = 0;
+        const SdrTokenVec & shaderTypePriority) = 0;
 };
 
 // ---------------------------------------------------------------------------
@@ -140,7 +144,7 @@ struct ConditionalParamIsConnected : public ConditionalParamBase
     bool Eval(
         const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
-        const NdrTokenVec & shaderTypePriority) override
+        const SdrTokenVec & shaderTypePriority) override
     {
         return !interface->GetNodeInputConnection(nodeName, paramName).empty();
     }
@@ -154,7 +158,7 @@ struct ConditionalParamIsNotConnected : public ConditionalParamBase
     bool Eval(
         const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
-        const NdrTokenVec & shaderTypePriority) override
+        const SdrTokenVec & shaderTypePriority) override
     {
         return interface->GetNodeInputConnection(nodeName, paramName).empty();
     }
@@ -168,7 +172,7 @@ struct ConditionalParamIsSet : public ConditionalParamBase
     bool Eval(
         const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
-        const NdrTokenVec & shaderTypePriority) override
+        const SdrTokenVec & shaderTypePriority) override
     {
         return !interface->GetNodeParameterValue(nodeName, paramName).IsEmpty();
     }
@@ -182,7 +186,7 @@ struct ConditionalParamIsNotSet : public ConditionalParamBase
     bool Eval(
         const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
-        const NdrTokenVec & shaderTypePriority) override
+        const SdrTokenVec & shaderTypePriority) override
     {
         return interface->GetNodeParameterValue(nodeName, paramName).IsEmpty();
     }
@@ -225,7 +229,7 @@ struct ConditionalParamCmpBase : public ConditionalParamBase
         const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
         const TfToken & paramName,
-        const NdrTokenVec & shaderTypePriority,
+        const SdrTokenVec & shaderTypePriority,
         VtValue * result)
     {
         
@@ -240,8 +244,13 @@ struct ConditionalParamCmpBase : public ConditionalParamBase
 
         if (SdrShaderNodeConstPtr sdrNode = reg.GetShaderNodeByIdentifier(
                 interface->GetNodeType(nodeName), shaderTypePriority)) {
+#if PXR_VERSION >= 2505
+            if (SdrShaderPropertyConstPtr sdrProp = sdrNode->GetShaderInput(paramName)) {
+                *result = sdrProp->GetDefaultValue();
+#else
             if (NdrPropertyConstPtr ndrProp = sdrNode->GetInput(paramName)) {
                 *result = ndrProp->GetDefaultValue();
+#endif
                 return true;
             }
         }
@@ -256,7 +265,7 @@ struct ConditionalParamCmpBase : public ConditionalParamBase
     bool Eval(
         const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
-        const NdrTokenVec & shaderTypePriority) override
+        const SdrTokenVec & shaderTypePriority) override
     {
         VtValue paramValue;
         if (!GetParameterValue(interface,
@@ -390,7 +399,7 @@ struct ConditionalAnd : _VSCGConditionalBase
     bool Eval(
         const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
-        const NdrTokenVec & shaderTypePriority) override
+        const SdrTokenVec & shaderTypePriority) override
     {
         return (left && left->Eval(interface, nodeName, shaderTypePriority))
                 && (right && right->Eval(
@@ -418,7 +427,7 @@ struct ConditionalOr : _VSCGConditionalBase
     bool Eval(
         const HdMaterialNetworkInterface *interface,
         const TfToken &nodeName,
-        const NdrTokenVec & shaderTypePriority) override
+        const SdrTokenVec & shaderTypePriority) override
     {
         return (left && left->Eval(interface, nodeName, shaderTypePriority))
                 || (right && right->Eval(
@@ -3917,7 +3926,7 @@ void MatfiltVstructConditionalEvaluator::Evaluate(
     const TfToken & nodeInputId,
     const TfToken & upstreamNodeId,
     const TfToken & upstreamNodeOutput,
-    const NdrTokenVec & shaderTypePriority,
+    const SdrTokenVec & shaderTypePriority,
     HdMaterialNetworkInterface *interface) const
 {
     if (!_impl) {
@@ -3974,13 +3983,22 @@ void MatfiltVstructConditionalEvaluator::Evaluate(
             // TODO, warn
             break;
         }
+#if PXR_VERSION >= 2505
+        SdrShaderPropertyConstPtr sdrProp = sdrNode->GetShaderInput(nodeInputId);
+        if (!sdrProp) {
+            // TODO, warn
+            break;
+        }
+        TfToken inputType = sdrProp->GetType();
+#else
         NdrPropertyConstPtr ndrProp = sdrNode->GetInput(nodeInputId);
         if (!ndrProp) {
             // TODO, warn
             break;
         }
-        VtValue value = chosenAction->value;
         TfToken inputType = ndrProp->GetType();
+#endif
+        VtValue value = chosenAction->value;
         if (value.IsHolding<std::string>()) {
             if (inputType == SdrPropertyTypes->String) {
                 interface->SetNodeParameterValue(nodeId, nodeInputId, value);
@@ -4035,19 +4053,24 @@ void MatfiltVstructConditionalEvaluator::Evaluate(
                 // TODO warn?
                 break;
             }
-            NdrPropertyConstPtr ndrProp =
+#if PXR_VERSION >= 2505
+            SdrShaderPropertyConstPtr prop =
+                    sdrNode->GetShaderInput(nodeInputId);
+            SdrShaderPropertyConstPtr upstreamProp =
+                    sdrUpstreamNode->GetShaderInput(copyParamName);
+#else
+            NdrPropertyConstPtr prop =
                     sdrNode->GetInput(nodeInputId);
-
-            NdrPropertyConstPtr ndrUpstreamProp =
+            NdrPropertyConstPtr upstreamProp =
                     sdrUpstreamNode->GetInput(copyParamName);
-
-            if (!ndrProp || !ndrUpstreamProp) {
+#endif
+            if (!prop || !upstreamProp) {
                 // TODO warn?
                 break;
             }
 
             // TODO, convert between int and float
-            if (ndrProp->GetType() == ndrUpstreamProp->GetType()) {
+            if (prop->GetType() == upstreamProp->GetType()) {
 
                 VtValue value =
                     interface->GetNodeParameterValue(
@@ -4059,7 +4082,7 @@ void MatfiltVstructConditionalEvaluator::Evaluate(
                 } else {
                     // use default
                     interface->SetNodeParameterValue(
-                        nodeId, nodeInputId, ndrUpstreamProp->GetDefaultValue());
+                        nodeId, nodeInputId, upstreamProp->GetDefaultValue());
                 }
             } else {
                 // TODO warn?

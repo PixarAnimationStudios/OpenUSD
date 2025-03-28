@@ -31,6 +31,11 @@ GetBasicPredicateLib() {
         .Define("isPropertyPath", [](SdfPath const &p) {
             return p.IsPropertyPath();
         })
+        .Define("capital", [](SdfPath const &p) {
+            std::string const &name = p.GetName();
+            auto isCap = [](char l) { return 'A' <= l && l <= 'Z'; };
+            return !name.empty() && isCap(name[0]);
+        })
         ;
     return theLib;
 }
@@ -52,6 +57,17 @@ struct MatchEval {
 static void
 TestBasics()
 {
+    {
+        auto eval = MatchEval { SdfPathExpression("/foo//") };
+        TF_AXIOM(eval.Match(SdfPath("/foo")));
+    }    
+
+    {
+        auto eval = MatchEval { 
+            SdfPathExpression("/foo//{isPrimPath}") };
+        TF_AXIOM(eval.Match(SdfPath("/foo")));
+    }    
+
     {
         // Allow leading & trailing whitespace.
         TF_AXIOM(SdfPathExpression("  /foo//bar").GetText() == "/foo//bar");
@@ -138,7 +154,9 @@ TestBasics()
         auto eval = MatchEval { 
             SdfPathExpression("/foo*//bar//{isPrimPath}") };
         
+        TF_AXIOM(eval.Match(SdfPath("/foo/bar")));
         TF_AXIOM(eval.Match(SdfPath("/foo/bar/a")));
+        TF_AXIOM(eval.Match(SdfPath("/foo/x/bar")));
         TF_AXIOM(eval.Match(SdfPath("/foo/x/bar/b")));
         TF_AXIOM(eval.Match(SdfPath("/foo/x/y/z/bar/c")));
         TF_AXIOM(eval.Match(SdfPath("/foo/x/y/z/bar/baz")));
@@ -147,7 +165,9 @@ TestBasics()
         TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar/baz/qux.attr")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/x/y/z/bar/baz/qux.ns:attr")));
 
+        TF_AXIOM(eval.Match(SdfPath("/fooXYZ/bar")));
         TF_AXIOM(eval.Match(SdfPath("/fooXYZ/bar/a")));
+        TF_AXIOM(eval.Match(SdfPath("/fooABC/x/bar")));
         TF_AXIOM(eval.Match(SdfPath("/fooABC/x/bar/a/b/c")));
         TF_AXIOM(eval.Match(SdfPath("/foo123/x/y/z/bar/x")));
         TF_AXIOM(eval.Match(SdfPath("/fooASDF/x/y/z/bar/baz")));
@@ -330,14 +350,7 @@ static void
 TestSearch()
 {
     // Super simple predicate library for paths for testing.
-    auto predLib = SdfPredicateLibrary<SdfPath const &>()
-        .Define("isPrimPath", [](SdfPath const &p) {
-            return p.IsPrimPath();
-        })
-        .Define("isPropertyPath", [](SdfPath const &p) {
-            return p.IsPropertyPath();
-        })
-        ;
+    auto predLib = GetBasicPredicateLib();
 
     // Paths must follow a depth-first traversal order.
     SdfPathVector paths;
@@ -579,6 +592,23 @@ TestSearch()
                  "/Foo/geom/foo/bar/foo/bar/foo",
                  "/Foo/geom/foo/bar/foo/bar/foo/bar" });
 
+    testSearch("/World//{isPrimPath}",
+               { "/World",
+                 "/World/anim",
+                 "/World/anim/chars",
+                 "/World/anim/chars/Mike",
+                 "/World/anim/chars/Mike/geom",
+                 "/World/anim/chars/Mike/geom/body_sbdv",
+                 "/World/anim/chars/Sully",
+                 "/World/anim/chars/Sully/geom",
+                 "/World/anim/chars/Sully/geom/body_sbdv",
+                 "/World/anim/sets",
+                 "/World/anim/sets/Bedroom",
+                 "/World/anim/sets/Bedroom/Furniture",
+                 "/World/anim/sets/Bedroom/Furniture/Bed",
+                 "/World/anim/sets/Bedroom/Furniture/Desk",
+                 "/World/anim/sets/Bedroom/Furniture/Chair" });
+
     testSearch("//*{isPrimPath}",
                { "/World",
                  "/World/anim",
@@ -680,6 +710,62 @@ TestSearch()
                  "/Foo/geom/foo/bar/foo/bar",
                  "/Foo/geom/foo/bar/foo/bar/foo",
                  "/Foo/geom/foo/bar/foo/bar/foo/bar" });
+
+    testSearchWithPaths(pathsNoRoot, "//{isPrimPath}//{isPrimPath}",
+               { "/World",
+                 "/World/anim",
+                 "/World/anim/chars",
+                 "/World/anim/chars/Mike",
+                 "/World/anim/chars/Mike/geom",
+                 "/World/anim/chars/Mike/geom/body_sbdv",
+                 "/World/anim/chars/Sully",
+                 "/World/anim/chars/Sully/geom",
+                 "/World/anim/chars/Sully/geom/body_sbdv",
+                 "/World/anim/sets",
+                 "/World/anim/sets/Bedroom",
+                 "/World/anim/sets/Bedroom/Furniture",
+                 "/World/anim/sets/Bedroom/Furniture/Bed",
+                 "/World/anim/sets/Bedroom/Furniture/Desk",
+                 "/World/anim/sets/Bedroom/Furniture/Chair",
+                 "/Foo",
+                 "/Foo/geom",
+                 "/Foo/geom/foo",
+                 "/Foo/geom/foo/bar",
+                 "/Foo/geom/foo/bar/foo",
+                 "/Foo/geom/foo/bar/foo/bar",
+                 "/Foo/geom/foo/bar/foo/bar/foo",
+                 "/Foo/geom/foo/bar/foo/bar/foo/bar"
+               });
+
+    testSearchWithPaths(pathsNoRoot, "/World//{isPrimPath}//{isPrimPath}",
+               { "/World",
+                 "/World/anim",
+                 "/World/anim/chars",
+                 "/World/anim/chars/Mike",
+                 "/World/anim/chars/Mike/geom",
+                 "/World/anim/chars/Mike/geom/body_sbdv",
+                 "/World/anim/chars/Sully",
+                 "/World/anim/chars/Sully/geom",
+                 "/World/anim/chars/Sully/geom/body_sbdv",
+                 "/World/anim/sets",
+                 "/World/anim/sets/Bedroom",
+                 "/World/anim/sets/Bedroom/Furniture",
+                 "/World/anim/sets/Bedroom/Furniture/Bed",
+                 "/World/anim/sets/Bedroom/Furniture/Desk",
+                 "/World/anim/sets/Bedroom/Furniture/Chair" });
+
+    testSearchWithPaths(pathsNoRoot, "/World/anim//{capital}//{isPrimPath}",
+               { "/World/anim/chars/Mike",
+                 "/World/anim/chars/Mike/geom",
+                 "/World/anim/chars/Mike/geom/body_sbdv",
+                 "/World/anim/chars/Sully",
+                 "/World/anim/chars/Sully/geom",
+                 "/World/anim/chars/Sully/geom/body_sbdv",
+                 "/World/anim/sets/Bedroom",
+                 "/World/anim/sets/Bedroom/Furniture",
+                 "/World/anim/sets/Bedroom/Furniture/Bed",
+                 "/World/anim/sets/Bedroom/Furniture/Desk",
+                 "/World/anim/sets/Bedroom/Furniture/Chair" });
 
     testSearchWithPaths(pathsNoRoot, "//*{isPrimPath}",
                { "/World",

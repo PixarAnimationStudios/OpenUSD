@@ -114,6 +114,8 @@ void wrapEngine()
             .def("GetRendererDisplayName", 
                     &UsdImagingGLEngine::GetRendererDisplayName)
                 .staticmethod("GetRendererDisplayName")
+            .def("GetRendererHgiDisplayName",
+                    &UsdImagingGLEngine::GetRendererHgiDisplayName)
             .def("GetCurrentRendererId", 
                     &UsdImagingGLEngine::GetCurrentRendererId)
             .def("SetRendererPlugin", 

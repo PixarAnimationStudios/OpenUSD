@@ -379,10 +379,10 @@ UsdShadeNodeDefAPI::GetSourceCode(
     return false;
 }
 
-static NdrTokenMap
+static SdrTokenMap
 _GetSdrMetadata(UsdPrim const& prim)
 {
-    NdrTokenMap result;
+    SdrTokenMap result;
 
     VtDictionary sdrMetadata;
     if (prim.GetMetadata(UsdShadeTokens->sdrMetadata, &sdrMetadata)){

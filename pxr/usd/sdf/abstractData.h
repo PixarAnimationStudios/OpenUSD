@@ -336,7 +336,8 @@ public:
 
     SDF_API
     virtual bool
-    GetBracketingTimeSamples(double time, double* tLower, double* tUpper) const = 0;
+    GetBracketingTimeSamples(double time, double* tLower, 
+                             double* tUpper) const = 0;
 
     SDF_API
     virtual size_t
@@ -347,6 +348,23 @@ public:
     GetBracketingTimeSamplesForPath(const SdfPath& path, 
                                     double time,
                                     double* tLower, double* tUpper) const = 0;
+
+    /// Returns the previous time sample authored just before the querying \p 
+    /// time.
+    ///
+    /// If there is no time sample authored just before \p time, this function
+    /// returns false. Otherwise, it returns true and sets \p tPrevious to the
+    /// time of the previous sample.
+    ///
+    /// \note The base class implementation provides an inefficient 
+    /// implementation by searching for bracketing time samples twice, if 
+    /// \p time happens to land on an authored time sample. Its recommended to 
+    /// override this method with a more efficient implementation catering to 
+    /// the specific data representation.
+    SDF_API
+    virtual bool
+    GetPreviousTimeSampleForPath(const SdfPath& path, double time, 
+                                 double* tPrevious) const;
 
     SDF_API
     virtual bool

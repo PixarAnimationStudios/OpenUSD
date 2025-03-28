@@ -13,6 +13,7 @@
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
+#include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/loops.h"
@@ -61,15 +62,24 @@ _ComputePrototypeRootOverlaySource(const SdfPath &instancer)
     if (instancer.IsEmpty()) {
         return nullptr;
     }
-    
-    return
+
+    static HdContainerDataSourceHandle const ds =
         HdRetainedContainerDataSource::New(
             HdXformSchema::GetSchemaToken(),
             HdXformSchema::Builder()
                 .SetResetXformStack(
                     HdRetainedTypedSampledDataSource<bool>::New(
                         true))
-            .Build());
+                .Build(),
+            // We ignore the visibility authored on a prototype instanced
+            // by a point instancer in USD.
+            HdVisibilitySchema::GetSchemaToken(),
+            HdVisibilitySchema::Builder()
+                .SetVisibility(
+                    HdRetainedTypedSampledDataSource<bool>::New(
+                        true))
+                .Build());
+    return ds;
 }
 
 bool

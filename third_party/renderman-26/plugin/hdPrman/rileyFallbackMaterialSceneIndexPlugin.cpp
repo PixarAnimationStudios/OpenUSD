@@ -32,15 +32,20 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
 
+#if PXR_VERSION < 2505
+using SdrIdentifier = NdrIdentifier;
+using SdrTokenVec = NdrTokenVec;
+#endif
+
 static
 HdContainerDataSourceHandle
 _MaterialNodeDataSource(
     const TfToken &rileyShadingNodeType,
-    const NdrIdentifier &identifier,
+    const SdrIdentifier &identifier,
     const TfToken &rileyHandle,
     const HdContainerDataSourceHandle &params)
 {
-    static const NdrTokenVec sourceTypes = {
+    static const SdrTokenVec sourceTypes = {
         TfToken("OSL"),
         TfToken("RmanCpp")
     };

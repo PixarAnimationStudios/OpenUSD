@@ -573,6 +573,15 @@ Usd_ClipSet::GetBracketingTimeSamplesForPath(
     return true;
 }
 
+bool
+Usd_ClipSet::GetPreviousTimeSampleForPath(
+    const SdfPath& path, double time, double* tPrevious) const
+{
+    TF_CODING_ERROR("GetPreviousTimeSampleForPath is not implemented.");
+    return false;
+}
+
+
 std::set<double>
 Usd_ClipSet::ListTimeSamplesForPath(const SdfPath& path) const
 {

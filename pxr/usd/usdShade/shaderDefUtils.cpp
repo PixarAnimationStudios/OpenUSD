@@ -12,7 +12,7 @@
 
 #include "pxr/usd/ar/resolver.h"
 
-#include "pxr/usd/ndr/filesystemDiscoveryHelpers.h"
+#include "pxr/usd/sdr/filesystemDiscoveryHelpers.h"
 
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/schema.h"
@@ -41,7 +41,22 @@ UsdShadeShaderDefUtils::GetNodeDiscoveryResults(
     const UsdShadeShader &shaderDef,
     const std::string &sourceUri)
 {
-    NdrNodeDiscoveryResultVec result;
+    SdrShaderNodeDiscoveryResultVec sdrVec = GetDiscoveryResults(
+        shaderDef, sourceUri);
+    NdrNodeDiscoveryResultVec ndrVec;
+    for (const SdrShaderNodeDiscoveryResult& sdrRes : sdrVec) {
+        ndrVec.push_back(sdrRes.ToNdrNodeDiscoveryResult());
+    }
+    return ndrVec;
+}
+
+/* static */
+SdrShaderNodeDiscoveryResultVec 
+UsdShadeShaderDefUtils::GetDiscoveryResults(
+    const UsdShadeShader &shaderDef,
+    const std::string &sourceUri)
+{
+    SdrShaderNodeDiscoveryResultVec result;
 
     // Implementation source must be sourceAsset for the shader to represent 
     // nodes in Sdr.
@@ -55,8 +70,8 @@ UsdShadeShaderDefUtils::GetNodeDiscoveryResults(
     // identifier.
     TfToken family;
     TfToken name; 
-    NdrVersion version; 
-    if (!NdrFsHelpersSplitShaderIdentifier(shaderDefPrim.GetName(), 
+    SdrVersion version; 
+    if (!SdrFsHelpersSplitShaderIdentifier(shaderDefPrim.GetName(), 
                 &family, &name, &version)) {
         // A warning has already been issued by SplitShaderIdentifier.
         return result;
@@ -210,7 +225,7 @@ static
 std::pair<TfToken, size_t>
 _GetShaderPropertyTypeAndArraySize(
     const SdfValueTypeName &typeName,
-    const NdrTokenMap& metadata,
+    const SdrTokenMap& metadata,
     VtValue* defaultValue)
 {
     // XXX Note that the shaderDefParser does not currently parse 'struct' or
@@ -294,13 +309,13 @@ _CreateSdrShaderProperty(
     const ShaderProperty& shaderProperty,
     bool isOutput,
     const VtValue& shaderDefaultValue,
-    const NdrTokenMap& shaderMetadata)
+    const SdrTokenMap& shaderMetadata)
 {
     const std::string propName = shaderProperty.GetBaseName();
     VtValue defaultValue = shaderDefaultValue;
-    NdrTokenMap metadata = shaderMetadata;
-    NdrTokenMap hints;
-    NdrOptionVec options;
+    SdrTokenMap metadata = shaderMetadata;
+    SdrTokenMap hints;
+    SdrOptionVec options;
 
     // Update metadata if string should represent a SdfAssetPath
     if (shaderProperty.GetTypeName() == SdfValueTypeNames->Asset ||
@@ -353,13 +368,26 @@ NdrPropertyUniquePtrVec
 UsdShadeShaderDefUtils::GetShaderProperties(
     const UsdShadeConnectableAPI &shaderDef)
 {
-    NdrPropertyUniquePtrVec result;
+    NdrPropertyUniquePtrVec vec;
+    SdrShaderPropertyUniquePtrVec sdrVec = GetProperties(shaderDef);
+    for (SdrShaderPropertyUniquePtr& sdrProp: sdrVec) {
+        vec.push_back(NdrPropertyUniquePtr(std::move(sdrProp)));
+    }
+    return vec;
+}
+
+/*static*/
+SdrShaderPropertyUniquePtrVec 
+UsdShadeShaderDefUtils::GetProperties(
+    const UsdShadeConnectableAPI &shaderDef)
+{
+    SdrShaderPropertyUniquePtrVec result;
     for (auto &shaderInput : shaderDef.GetInputs(/* onlyAuthored */ false)) {
         // Only inputs will have default value provided
         VtValue defaultValue;
         shaderInput.Get(&defaultValue);
 
-        NdrTokenMap metadata = shaderInput.GetSdrMetadata();
+        SdrTokenMap metadata = shaderInput.GetSdrMetadata();
 
         // Only inputs might have this metadata key
         auto iter = metadata.find(_tokens->defaultInput);
@@ -403,7 +431,7 @@ UsdShadeShaderDefUtils::GetShaderProperties(
 /*static*/
 std::string 
 UsdShadeShaderDefUtils::GetPrimvarNamesMetadataString(
-    const NdrTokenMap metadata,
+    const SdrTokenMap metadata,
     const UsdShadeConnectableAPI &shaderDef)
 {
     // If there's an existing value in the definition, we must append to it.

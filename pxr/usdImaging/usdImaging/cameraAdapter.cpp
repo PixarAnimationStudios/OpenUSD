@@ -242,9 +242,30 @@ UsdImagingCameraAdapter::Get(UsdPrim const& prim,
         cam.GetShutterCloseAttr().Get(&vShutterClose, time); // conversion n/a
         return vShutterClose;
     } else if (key == HdCameraTokens->exposure) {
-        VtValue v;
-        cam.GetExposureAttr().Get(&v, time); // conversion n/a
-        return v;
+        // The raw exponential compensation attribute.
+        // See "linearExposureScale" below for the computed linear multiplier.
+        VtValue vExposureExponent;
+        cam.GetExposureAttr().Get(&vExposureExponent, time); // conversion n/a
+        return vExposureExponent;
+    } else if (key == HdCameraTokens->exposureTime) {
+        VtValue vExposureTime;
+        cam.GetExposureTimeAttr().Get(&vExposureTime, time); // conversion n/a
+        return vExposureTime;
+    } else if (key == HdCameraTokens->exposureIso) {
+        VtValue vExposureIso;
+        cam.GetExposureIsoAttr().Get(&vExposureIso, time); // conversion n/a
+        return vExposureIso;
+    } else if (key == HdCameraTokens->exposureFStop) {
+        VtValue vExposureFStop;
+        cam.GetExposureFStopAttr().Get(&vExposureFStop, time); // conversion n/a
+        return vExposureFStop;
+    } else if (key == HdCameraTokens->exposureResponsivity) {
+        VtValue vExposureResponsivity;
+        cam.GetExposureResponsivityAttr().Get(&vExposureResponsivity, time); // conversion n/a
+        return vExposureResponsivity;
+    } else if (key == HdCameraTokens->linearExposureScale) {
+        // The computed linear exposure multiplier.
+        return VtValue(cam.ComputeLinearExposureScale(time));
     }
 
     VtValue v;
@@ -276,7 +297,11 @@ UsdImagingCameraAdapter::ProcessPropertyChange(UsdPrim const& prim,
         propertyName == UsdGeomTokens->focusDistance ||
         propertyName == UsdGeomTokens->shutterOpen ||
         propertyName == UsdGeomTokens->shutterClose ||
-        propertyName == UsdGeomTokens->exposure)
+        propertyName == UsdGeomTokens->exposure ||
+        propertyName == UsdGeomTokens->exposureTime ||
+        propertyName == UsdGeomTokens->exposureIso ||
+        propertyName == UsdGeomTokens->exposureFStop ||
+        propertyName == UsdGeomTokens->exposureResponsivity)
         
         return HdCamera::DirtyParams;
 

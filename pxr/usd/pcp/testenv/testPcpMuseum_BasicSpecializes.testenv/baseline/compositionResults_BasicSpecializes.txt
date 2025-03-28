@@ -5,6 +5,57 @@ Layer Stack:
      root.sdf
 
 ------------------------------------------------------------------------
+Results for composing </BasicSpecializes1>
+
+Prim Stack:
+    root.sdf             /BasicSpecializes1
+    root.sdf             /BasicSpecializes2
+
+------------------------------------------------------------------------
+Results for composing </BasicSpecializes2>
+
+Prim Stack:
+    root.sdf             /BasicSpecializes2
+
+------------------------------------------------------------------------
+Results for composing </Basic>
+
+Prim Stack:
+    root.sdf             /Basic
+    root.sdf             /BasicSpecializes1
+    root.sdf             /BasicSpecializes2
+
+------------------------------------------------------------------------
+Results for composing </BasicLocal>
+
+Prim Stack:
+    root.sdf             /BasicLocal
+
+Child names:
+     ['Specializes1', 'Specializes2', 'Local']
+
+------------------------------------------------------------------------
+Results for composing </BasicLocal/Specializes1>
+
+Prim Stack:
+    root.sdf             /BasicLocal/Specializes1
+    root.sdf             /BasicLocal/Specializes2
+
+------------------------------------------------------------------------
+Results for composing </BasicLocal/Specializes2>
+
+Prim Stack:
+    root.sdf             /BasicLocal/Specializes2
+
+------------------------------------------------------------------------
+Results for composing </BasicLocal/Local>
+
+Prim Stack:
+    root.sdf             /BasicLocal/Local
+    root.sdf             /BasicLocal/Specializes1
+    root.sdf             /BasicLocal/Specializes2
+
+------------------------------------------------------------------------
 Results for composing </Base>
 
 Prim Stack:

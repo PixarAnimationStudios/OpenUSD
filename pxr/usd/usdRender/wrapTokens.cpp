@@ -22,6 +22,7 @@ void wrapUsdRenderTokens()
     _ADD_TOKEN(cls, adjustPixelAspectRatio);
     _ADD_TOKEN(cls, aspectRatioConformPolicy);
     _ADD_TOKEN(cls, camera);
+    _ADD_TOKEN(cls, collectionCameraVisibilityIncludeRoot);
     _ADD_TOKEN(cls, collectionRenderVisibilityIncludeRoot);
     _ADD_TOKEN(cls, color3f);
     _ADD_TOKEN(cls, command);
@@ -29,7 +30,6 @@ void wrapUsdRenderTokens()
     _ADD_TOKEN(cls, dataType);
     _ADD_TOKEN(cls, dataWindowNDC);
     _ADD_TOKEN(cls, deepRaster);
-    _ADD_TOKEN(cls, denoiseEnable);
     _ADD_TOKEN(cls, disableDepthOfField);
     _ADD_TOKEN(cls, disableMotionBlur);
     _ADD_TOKEN(cls, expandAperture);

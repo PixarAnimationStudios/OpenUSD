@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/call_method.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 #  include "pxr/external/boost/python/converter/arg_to_python.hpp"
@@ -51,5 +47,4 @@ call_method(PyObject* self, char const* name, A const&... a)
 }} // namespace PXR_BOOST_NAMESPACE::python
 
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_CALL_METHOD_HPP

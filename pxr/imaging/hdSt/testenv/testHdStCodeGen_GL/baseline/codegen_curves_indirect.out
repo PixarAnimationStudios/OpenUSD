@@ -3,10 +3,10 @@
 #import $TOOLS/hdSt/shaders/basisCurves.glslfx
 -- configuration
 {"techniques": {"default": {
-"vertexShader" : { "source" : ["Instancing.Transform", "Curves.Vertex.Wire", "Curves.Vertex.Normal.Implicit", "PointId.Vertex.None"] }
+"vertexShader" : { "source" : ["Instancing.Transform", "Curves.Vertex.Wire", "Curves.Vertex.Normal.Implicit", "PointId.Vertex.None", "PointDisk.Vertex.None"] }
 , "tessControlShader" : { "source" : ["Curves.CommonData", "Curves.TessFactorsGLSL", "Curves.CommonControl", "Curves.Tess.CurveData.Wire", "Curves.TessControl.Cubic.Wire"] }
 , "tessEvalShader" : { "source" : ["Curves.CommonData", "Instancing.Transform", "Curves.Tess.CurveData.Wire", "Curves.TessEval.Cubic.Wire", "Curves.BezierBasis", "Curves.Cubic.VaryingInterpolation"] }
-, "fragmentShader" : { "source" : ["Fragment.CommonTerminals", "Fragment.Surface", "Fragment.ScalarOverride", "PointId.Fragment.Fallback", "Visibility.Fragment.Fallback", "Curves.Fragment.Wire"] }
+, "fragmentShader" : { "source" : ["Fragment.CommonTerminals", "Fragment.Surface", "Fragment.ScalarOverride", "PointId.Fragment.Fallback", "PointDisk.Fragment.None", "Visibility.Fragment.Fallback", "Curves.Fragment.Wire"] }
 }}}
 -------------------------------------------------------
 =======================================================
@@ -29,6 +29,7 @@ int HgiGetBaseVertex() {
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
+#define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
 
@@ -611,10 +612,12 @@ bool IsFlipped()
 }
 
 
-// Fwd declare methods defined in pointId.glslfx, that are used below.
+// Fwd declare methods defined in pointId.glslfx and pointDisk.glslfx
+// that are used below.
 FORWARD_DECL(int GetPointId());
 FORWARD_DECL(float GetPointRasterSize(int));
 FORWARD_DECL(void ProcessPointId(int));
+FORWARD_DECL(float ApplyPointSizeBias(float));
 
 void main(void)
 {
@@ -634,8 +637,10 @@ void main(void)
 #else
     float scale = 1;
 #endif
-    gl_PointSize = GetPointRasterSize(pointId) * scale;
-    ProcessPointId(pointId);}
+    gl_PointSize = ApplyPointSizeBias(
+        GetPointRasterSize(pointId) * scale);
+    ProcessPointId(pointId);
+}
 
 
 
@@ -664,6 +669,14 @@ void ProcessPointId(int pointId)
 }
 
 
+
+float ApplyPointSizeBias(float pointSize)
+{
+    // do nothing
+    return pointSize;
+}
+
+
 =======================================================
   TESS CONTROL SHADER                                  
 =======================================================
@@ -680,6 +693,7 @@ void ProcessPointId(int pointId)
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
+#define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
 
@@ -1193,6 +1207,7 @@ void determineLODSettings(CurveData vertexData)
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
+#define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
 
@@ -1948,6 +1963,7 @@ vec4 InterpolatePrimvar(vec4 inPv0, vec4 inPv1, vec4 inPv2, vec4 inPv3,
 #define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, expected, desired)
 #define atomic_int int
 #define atomic_uint uint
+#define hd_SampleMask gl_SampleMask[0]
 
 #define HGI_HAS_DOUBLE_TYPE 1
 
@@ -2632,6 +2648,13 @@ int GetPointId()
 }
 
 
+
+void ApplyDiskSampleMask()
+{
+    // do nothing
+}
+
+
 void DiscardBasedOnTopologicalVisibility()
 {
     // Nothing to do, since there's no authored opinion.
@@ -2641,6 +2664,8 @@ void DiscardBasedOnTopologicalVisibility()
 
 void main(void)
 {
+    ApplyDiskSampleMask();
+
     DiscardBasedOnTopologicalVisibility();
 
     vec4 color = vec4(0.5, 0.5, 0.5, 1);
@@ -2656,7 +2681,9 @@ void main(void)
     // shader fast, we use this camera-facing approximation.
     vec3 Neye = vec3(0,0,1);
 
-    vec4 patchCoord = vec4(0);
+    // y = 0.5 to approximate the wire shading the midpoint
+    // of the curve width-wise
+    vec4 patchCoord = vec4(0, 0.5, 0, 0);
 
     color = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord);
 

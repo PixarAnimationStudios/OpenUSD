@@ -20,10 +20,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/config.hpp>
-#else
-
 # if defined(_MSC_VER)
 
 #  pragma warning (disable : 4786) // disable truncated debug symbols
@@ -85,5 +81,4 @@
 #define PXR_BOOST_PYTHON_SUPPORTS_PY_SIGNATURES // enables smooth transition
 #endif
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CONFIG_HPP

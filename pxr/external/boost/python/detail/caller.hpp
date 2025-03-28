@@ -14,10 +14,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/caller.hpp>
-#else
-
 #  include "pxr/external/boost/python/type_id.hpp"
 #  include "pxr/external/boost/python/handle.hpp"
 
@@ -290,5 +286,4 @@ struct caller_arity<std::index_sequence<N...>>
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_CALLER_HPP

@@ -65,6 +65,10 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderSettingsBase
     const TfToken camera;
+    /// \brief "collection:cameraVisibility:includeRoot"
+    /// 
+    /// UsdRenderPass
+    const TfToken collectionCameraVisibilityIncludeRoot;
     /// \brief "collection:renderVisibility:includeRoot"
     /// 
     /// UsdRenderPass
@@ -93,10 +97,6 @@ struct UsdRenderTokensType {
     /// 
     /// Possible value for UsdRenderProduct::GetProductTypeAttr()
     const TfToken deepRaster;
-    /// \brief "denoise:enable"
-    /// 
-    /// UsdRenderPass
-    const TfToken denoiseEnable;
     /// \brief "disableDepthOfField"
     /// 
     /// UsdRenderSettingsBase

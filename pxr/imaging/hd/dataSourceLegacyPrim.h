@@ -32,6 +32,15 @@ class HdSceneDelegate;
 TF_DECLARE_PUBLIC_TOKENS(HdLegacyPrimTypeTokens, HD_API, 
                          HD_LEGACY_PRIMTYPE_TOKENS);
 
+/// Instancers from scene delegates ignore visibility.
+/// This fixes that usdImaging does not update the visibility of an instancer
+/// properly.
+#define HD_LEGACY_FLAG_TOKENS \
+    (isLegacyInstancer)
+
+TF_DECLARE_PUBLIC_TOKENS(HdLegacyFlagTokens, HD_API, 
+                         HD_LEGACY_FLAG_TOKENS);
+
 /// \class HdDataSourceLegacyPrim
 ///
 /// This is an HdContainerDataSource which represents a prim-level data source

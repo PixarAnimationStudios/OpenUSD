@@ -49,6 +49,31 @@ public:
     HD_API
     virtual ~HdRenderParam();
 
+    /// Set a custom value in the render param's implementation. 
+    /// The \p key identifies the value, while \p value holds the data to set. 
+    /// Return true if the value was successfully set, false if the operation is
+    /// not supported for the specified key or value.
+    /// Since this method can be called by client code, it must be thread-safe.
+    HD_API
+    virtual bool SetArbitraryValue(const TfToken& key, const VtValue& value);
+
+    /// Retrieve a custom value identified by \p key from the render param's
+    /// implementation. The value could have been set via SetArbitraryValue() or
+    /// provided internally by the render param. 
+    /// Return an empty VtValue if no value is associated with the key. 
+    /// This can either be used to retrieve arbitrary values by the 
+    /// render delegate or by Hydra client code.
+    /// Since this method can be called by client code, it must be thread-safe.
+    HD_API
+    virtual VtValue GetArbitraryValue(const TfToken& key) const;
+
+    /// Check whether a valid custom value exists for the specified \p key 
+    /// in the render param's implementation. Returns true if the value 
+    /// exists, false otherwise.
+    /// Since this method can be called by client code, it must be thread-safe.
+    HD_API
+    virtual bool HasArbitraryValue(const TfToken& key) const;
+
 private:
     // Hydra will not attempt to copy the class.
     HdRenderParam(const HdRenderParam &) = delete;

@@ -6,4 +6,10 @@
 def Camera "camera"
 {
     float horizontalAperture = 1.0
+
+    float exposure = 1.0
+    float exposure:time = 0.01
+    float exposure:fStop = 4.0
+    float exposure:iso = 400
+    float exposure:responsivity = 3
 }

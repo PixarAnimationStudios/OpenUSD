@@ -137,14 +137,15 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 /// {
 ///     def Cube "MyCube"
 ///     {
-///          rel:material:binding = </MyMaterial>
 ///     }
 /// }
 ///
 /// def "Cube_1" (
 ///     instanceable = true
 ///     references = </MyPrototype>
+///     prepend apiSchemas = ["MaterialBindingAPI"]
 /// {
+///     rel:material:binding = </Cube_1/MyMaterial>
 /// }
 ///
 /// UsdImaging_NiInstanceAggregationSceneIndex (with empty prototype root)
@@ -157,7 +158,7 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///     primType: ""
 ///     dataSource:
 ///         materialBinding:
-///             "": /MyMaterial
+///             "": /UsdNiPropagatedPrototypes/Binding312...436/__Prototype_1/UsdNiInstancer/MyMaterial # Note that it was translated to point into the propagated prototype by the UsdImagingRerootingContainerDataSource.
 /// /UsdNiPropagatedPrototypes/Binding312...436/__Prototype_1
 ///     primType: ""
 /// /UsdNiPropagatedPrototypes/Binding312...436/__Prototype_1/UsdNiInstancer

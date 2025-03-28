@@ -88,8 +88,9 @@ HdMaterialNetwork2Interface::GetMaterialConfigKeys() const
 VtValue
 HdMaterialNetwork2Interface::GetMaterialConfigValue(const TfToken& key) const
 {
-    if (auto result = _materialNetwork->config.GetValueAtPath(key.GetString())){
-        return *result;
+    const auto it = _materialNetwork->config.find(key.GetString());
+    if (it != _materialNetwork->config.end()) {
+        return it->second;
     }
     return VtValue();
 }
@@ -239,6 +240,15 @@ HdMaterialNetwork2Interface::SetNodeType(
     if (HdMaterialNode2 *node = _GetOrCreateNode(nodeName)) {
         node->nodeTypeId = nodeType;
     }
+}
+
+void
+HdMaterialNetwork2Interface::SetNodeTypeInfoValue(
+    const TfToken &nodeName,
+    const TfToken &key,
+    const VtValue &value)
+{
+    // no-op
 }
 
 void

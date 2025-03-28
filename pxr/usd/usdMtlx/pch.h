@@ -45,6 +45,7 @@
 #include <cfloat>
 #include <cinttypes>
 #include <cmath>
+#include <complex>
 #include <cstdarg>
 #include <cstddef>
 #include <cstdint>
@@ -57,6 +58,7 @@
 #include <functional>
 #include <initializer_list>
 #include <iosfwd>
+#include <iostream>
 #include <iterator>
 #include <limits>
 #include <list>
@@ -67,6 +69,7 @@
 #include <new>
 #include <numeric>
 #include <optional>
+#include <ostream>
 #include <set>
 #include <sstream>
 #include <stdarg.h>
@@ -91,30 +94,6 @@
 #include <MaterialXFormat/Util.h>
 #include <MaterialXFormat/XmlIo.h>
 #endif // PXR_MATERIALX_SUPPORT_ENABLED
-#if defined(PXR_PYTHON_SUPPORT_ENABLED) && !defined(PXR_USE_INTERNAL_BOOST_PYTHON)
-#include "pxr/external/boost/python/common.hpp"
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/def_visitor.hpp>
-#include <boost/python/default_call_policies.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/errors.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/handle.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/module.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/object/iterator.hpp>
-#include <boost/python/object_fwd.hpp>
-#include <boost/python/object_operators.hpp>
-#include <boost/python/raw_function.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python/type_id.hpp>
-#if defined(__APPLE__) // Fix breakage caused by Python's pyport.h.
-#undef tolower
-#undef toupper
-#endif
-#endif // PXR_PYTHON_SUPPORT_ENABLED && !PXR_USE_INTERNAL_BOOST_PYTHON
 #include <tbb/blocked_range.h>
 #include <tbb/cache_aligned_allocator.h>
 #include <tbb/concurrent_hash_map.h>

@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/string_literal.hpp>
-#else
-
 # include <cstddef>
 # include "pxr/external/boost/python/type.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
@@ -47,5 +43,4 @@ struct is_string_literal<T[n]>
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_STRING_LITERAL_HPP

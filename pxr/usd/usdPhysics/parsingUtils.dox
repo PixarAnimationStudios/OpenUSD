@@ -1,0 +1,482 @@
+/*!
+
+\page usdPhysics_page_front UsdPhysics : USD Physics Parsing Utils
+
+\section USD Physics Parsing Utils Overview.
+
+\tableofcontents
+
+\subsection usdPhysics_parsing_purpose_and_scope Purpose and Scope
+
+When the UsdPhysics schema is applied to the stage, processing the stage UsdPrims
+and creating a consistent physics representation can be challenging, especially
+when dealing with different simulators. The UsdPhysics Parsing Utilities are
+designed to help achieve a consistent physics representation as defined in 
+the USD stage. The stage, or generally a vector of paths, is parsed, and the 
+function returns a callback or dictionary with parsed physics descriptors. 
+Additionally, it can leverage the concept of simulation owners to partition the 
+stage for multiple simulation engines.
+
+\subsection usdPhysics_parsing Specification
+
+The UsdPhysics schemas add physics capabilities to USD; however, deducing and 
+parsing the physics information can be non-trivial and may be misinterpreted. 
+This section aims to specify what data are returned by the parsing utilities 
+and what to expect in the parsed physics descriptors.
+
+\subsection usdPhysics_utils_params Physics Parsing Parameters
+
+The parsing utility function takes several input parameters that need
+to be described:
+
+\li The stage to be parsed.
+\li Include paths vector. This vector define what all paths will be included 
+for parsing. The parsing will construct a UsdPrimRange from each UsdPrim found in 
+the given paths (the UsdPrimRange will traverse instance proxies). Its possible
+to exclude some paths through an exclude vector, see exclude path vector parameter.
+\li Report callback function that reports the descriptors back to the calling 
+code. The report function returns an array of the same descriptors to be 
+processed efficiently. Note that in python instead of a callback function all 
+the descriptors are returned in a dictionary, where the key is the descriptor 
+type and the value is a tuple of UsdPrim paths array and descriptors array.
+\li User data is an optional parameter. Clients of ReportFn can optionally 
+provide userData which is a Simulator aware data structure wrapped in VtValue. 
+A client's implementation can then unpack any parsed physics object description 
+to the Simulator aware data structures in their implementation of UsdPhysicsReportFn.
+\li Optional exclude paths vector, this vector defines what UsdPrims are pruned 
+from the UsdPrimRange traversal done during parsing.
+\li Optional custom physics tokens. There can be multiple optional custom 
+physics tokens defined.
+The custom tokens can hold three arrays of tokens that define a custom behavior. 
+The custom geometry tokens specify if a certain geometry should be treated as a
+custom geometry that the calling code will handle. The custom joint tokens 
+specify which joints are custom and the calling code needs to handle them. The 
+custom point instancer tokens specify what point instancer hierarchies should be 
+ignored in addition to standard point instancers. Note that point instancer 
+hierarchies are skipped. It is expected that for a point instancer that one 
+does parse individual prototypes.
+\li Optional simulation owners can be provided to restrict parsing to only 
+certain simulation owners. It is expected that simulation owners are PhysicsScene
+primitives. The parsing will then restrict parsing only to those scenes and
+objects that do have a simulation owner set to those scenes. If empty SdfPath 
+is provided, objects without a simulation owner are also returned. The behavior
+for simulation owners is described below for each type.
+
+\subsection usdPhysics_utils_determinism Physics Parsing Determinism
+
+The parsing should be deterministic; it's important that each subsequent run 
+reports the same information in the same order. This is especially crucial for 
+elements like articulation roots. In some cases, the parsing sacrifices 
+performance to achieve deterministic results.
+
+\subsection usdPhysics_object_descriptor Physics Object Descriptor
+
+The base physics object descriptor is never returned, all types are derived
+from this base class. This base class contains this physics information:
+
+\li Type of the physics descriptor, PhysicsObjectType::Enum defines all types 
+available.
+\li UsdPrim path that this descriptor was parsed from.
+\li IsValid boolean that specifies whether a returned described is valid or not.
+Note that the descriptors are processed in batches and if validation fails the
+descriptor is invalidated rather then removed from the array. 
+
+\subsection usdPhysics_scene_descriptor Physics Scene Descriptor
+
+For each UsdPhysicsScene prim a PhysicsDesc is reported, this descriptor 
+contains:
+
+\li Gravity direction, if there is no authored value or sentinel value provided
+a default direction is computed based on the stage upAxis.
+\li Gravity magnitude, if there is no authored value or sentinel value provided
+a default Earth gravity is computed based on the stage meters per unit value.
+
+\subsubsection usdPhysics_scene_descriptor_simulation_owner Physics Scene Simulation Owner Behavior
+
+If the parsing utility is provided with a list of allowed simulation owners, 
+the behavior changes. The returned PhysicsSceneDesc objects are restricted to 
+only those UsdPhysicsScene prims whose paths match one of the provided 
+simulation owners. It is expected that the UsdPhysicsScene prim path is the 
+simulation owner that defines where each body or collision belongs.
+
+\subsection usdPhysics_material_descriptor Physics RigidBody Material Descriptor
+
+For each prim with UsdPhysicsMaterialAPI a UsdPhysicsRigidBodyMaterialDesc is 
+reported, this descriptor contains:
+
+\li Static friction defined in USD.
+\li Dynamic friction defined in USD.
+\li Restitution defined in USD.
+\li Density defined in USD, note that density is expected to be specified in 
+the stage unit's.
+
+\subsubsection usdPhysics_material_descriptor_simulation_owner Physics RigidBody Material Simulation Owner Behavior
+
+Since prims can be added/enabled during runtime, all physics materials are 
+returned and not restricted by the simulation owners.
+
+\subsection usdPhysics_collision_group_descriptor Physics Collision Group Descriptor
+
+For each prim with UsdPhysicsCollisionGroup a possible 
+PhysicsCollisionGroupDesc is created. In a subsequent pass the collision groups 
+descriptors merge based on the mergeGroups attribute. The final list contains 
+the merged groups and contains this information:
+
+\li Inverted filtered groups boolean specifying whether the group does not 
+(default true) collide with the provided list of filtered groups.
+\li Filtered groups list, list of groups that this group should not collide by 
+default (can be inverted by boolean above).
+\li If group should be merged, the specified merge group name.
+\li Merged groups list, list of all groups paths that were merged together.
+
+\subsubsection usdPhysics_collision_group_descriptor_simulation_owner Physics Collision Group Simulation Owner Behavior
+
+Since prims can be added/enabled during runtime, all physics collision groups 
+are returned and not restricted by the simulation owners.
+
+\subsection usdPhysics_rigid_body_descriptor Physics RigidBody Descriptor
+
+For each UsdGeom.Xformable prim with UsdPhysicsRigidBodyAPI, a physics rigid body
+descriptor is reported. Note that nesting rigid bodies is not allowed; 
+therefore, an error will be reported if attempted. To nest rigid bodies, it is 
+necessary to add resetXformOpStack on the rigid body. The reported descriptor 
+contains this information:
+
+\li List of collisions that belong to this rigid body.
+\li List of simulation owners for this rigid body, the behavior is described 
+below.
+\li List of filtered collisions, the list contains all paths that the rigid body 
+should not collide with. Note that this can be an arbitrary path in the USD 
+hierarchy. it's up to the implementation to check what objects are created under 
+the hierarchy.
+\li World position of the rigid body.
+\li World orientation of the rigid body.
+\li World scale of the rigid body.
+\li Rigid body enabled boolean for fast toggle between a dynamic and static body.
+\li Kinematic body boolean, kinematic body is expected to be driven by 
+transformation changes.
+\li Starts asleep boolean, specifies if a body should be awake or not when the 
+sim starts.
+\li Initial angular velocity (note that the expected unit's are in degree and 
+body local space).
+\li Initial linear velocity (note that the expected velocity is in body local 
+space). 
+
+\subsubsection usdPhysics_rigid_body_descriptor_simulation_owner Physics RigidBody Simulation Owner Behavior
+
+The rigid body's simulation owners list is compared with the provided requested 
+simulation owners list. If a match is found, the rigid body is reported; 
+otherwise, the rigid body is skipped.
+
+\subsection usdPhysics_collision_descriptor Physics Shape Descriptor
+
+Physics shape descriptor is the base class for all specific shapes reported. In 
+general for each prim with UsdPhysicsCollisionAPI a derived physics shape 
+descriptor is returned. The base shape descriptor contains this shared 
+information:
+
+\li Rigid body that the collision belongs to, if the rigid body path is not 
+valid, it's considered a static collision.
+\li Local position relative to the rigid body primitive, if static collision, 
+the local position is a world position.
+\li Local orientation relative to the rigid body primitive, if static collision, 
+the local orientation is a world orientation.
+\li Local scale relative to the rigid body primitive, if static collision, the 
+local scale is a world position.
+\li List of used materials (path to a prim with material API). This list 
+contains invalid SdfPath if no material is defined for the collision prim. Note 
+that there can be multiple materials returned, this can happen in case when 
+UsdGeom.Mesh primitive is parsed and it does have UsdGeom.Subset defined with 
+different materials applied. The last material in this case is the material 
+applied to the mesh prim (can be invalid path if no material applied).
+\li List of simulation owners for this collision, the behavior is described below.
+\li List of filtered collisions, the list contains all paths that the collision 
+should not collide with. Note that this can be an arbitrary path in the USD 
+hierarchy. It's up to the implementation to check what objects are created under 
+the hierarchy.
+\li List of collision groups this collision belongs to, note that only collision 
+groups that are part of the current parsing include paths are checked for a scoped 
+parse, this needs to be checked for already existing groups reported by full parse.
+\li Boolean to specify whether collision is enabled or disabled, this can be 
+used to create objects in physics and then avoid runtime creation on the objects 
+while toggling the USD attribute that enables/disables the collision.
+
+Note that many collision representations do not support non-uniform scale, 
+behavior for each type is described below. While non-uniform scale works for some 
+representations, scale of the orientation (skew) never works, and warnings should be reported.
+
+\subsection usdPhysics_sphere_collision_descriptor Physics Sphere Shape Descriptor
+
+If physics collision API is applied to a UsdGeom.Sphere primitive, then a 
+physics sphere shape descriptor is reported.
+The descriptor contains this additional information:
+
+\li The sphere radius. Note that the radius already contains scale, so it's the 
+expected radius in world space. Also, since the sphere can't have non-uniform 
+scale, if non-uniform scale is found a warning is reported. In case of a 
+non-uniform scale the maximum of the scale per axis value is used to scale the 
+UsdGeom.Sphere radius.
+
+\subsection usdPhysics_capsule_collision_descriptor Physics Capsule Shape Descriptor
+
+If physics collision API is applied to a UsdGeom.Capsule primitive, then a 
+physics capsule shape descriptor is reported.
+The descriptor contains this additional information:
+
+\li The axis around which the capsule is represented.
+\li The capsule half height, measured from the center to the cylindrical top, 
+where the hemispherical sphere based on radius is added.
+Note that the height contains already scale so it's the expected height in world 
+space. 
+\li The radius of the capsule, note that the radius contains already scale so 
+it's the expected radius in world space. 
+Note since the capsule can't have generic non-uniform scale, if non-uniform 
+scale around radius is found a warning is reported. The scale along the provided 
+axis does scale the height, while scale around the other two axes define the
+radius scale, the maximum of those is used in case of a non-uniform scale.
+
+\subsection usdPhysics_cylinder_collision_descriptor Physics Cylinder Shape Descriptor
+
+If physics collision API is applied to a UsdGeom.Cylinder primitive, then a 
+physics cylinder shape descriptor is reported.
+The descriptor contains this additional information:
+
+\li The axis around which the cylinder is represented.
+\li The cylinder half height, measured from the center to the cylindrical top.
+Note that the height contains already scale so it's the expected height in world 
+space. 
+\li The radius of the cylinder, note that the radius contains already scale so 
+it's the expected radius in world space. 
+Note since the cylinder can't have generic non-uniform scale, if non-uniform 
+scale around radius is found a warning is reported. The scale along the provided 
+axes does scale the height, while scale around the other two axis define the 
+radius scale, the maximum of those is used in case of a non-uniform scale.
+
+\subsection usdPhysics_cone_collision_descriptor Physics Cone Shape Descriptor
+
+If physics collision API is applied to a UsdGeom.Cone primitive, then a physics 
+cone shape descriptor is reported.
+The descriptor contains this additional information:
+
+\li The axis around which the cone is represented.
+\li The cone half height, measured from the center to the cone top.
+Note that the height contains already scale so it's the expected height in world 
+space. 
+\li The radius of the cone, note that the radius contains already scale so it's 
+the expected radius in world space. 
+Note since the cone can't have generic non-uniform scale, if non-uniform scale 
+around radius is found a warning is reported. The scale along the provided axes 
+does scale the height, while scale around the other two axis define the radius 
+scale, the maximum of those is used in case of a non-uniform scale.
+
+\subsection usdPhysics_cube_collision_descriptor Physics Cube Shape Descriptor
+
+If physics collision API is applied to a UsdGeom.Cube primitive, then a physics 
+cube shape descriptor is reported.
+The descriptor contains this additional information:
+
+\li The half extent of the cube including scale. Non-uniform scale in this case 
+is supported as the cube size is multiplied by the world scale.
+
+\subsection usdPhysics_plane_collision_descriptor Physics Plane Shape Descriptor
+
+If physics collision API is applied to a UsdGeom.Plane primitive, then a physics 
+plane shape descriptor is reported.
+The descriptor contains this additional information:
+
+\li The axis where the plane normal is pointing.
+
+\subsection usdPhysics_mesh_collision_descriptor Physics Mesh Shape Descriptor
+
+If physics collision API is applied to a UsdGeom.Mesh primitive, then a physics 
+mesh shape descriptor is reported.
+The descriptor contains this additional information:
+
+\li The desired approximation for the mesh geometry.
+\li The mesh world scale, note that the points are not scaled, hence for meshes 
+we need a separate scale information.
+\li Hint whether the mesh is double sided or not.
+
+\subsection usdPhysics_sphere_points_collision_descriptor Physics Sphere Points Shape Descriptor
+
+If physics collision API is applied to a UsdGeom.Points primitive, then a 
+physics sphere points shape descriptor is reported.
+The descriptor contains this additional information:
+
+\li The list of sphere points to be created, each sphere point is defined by a 
+center and radius in world coordinate. Note that non-uniform scale
+is not supported, the max per axis scale is applied.
+
+\subsection usdPhysics_custom_collision_descriptor Physics Custom Shape Descriptor
+
+Custom collisions can be defined on UsdPrims, if a custom shape token is 
+provided to the parsing function then if the prim type or any of the prim 
+applied APIs matches the custom shape token a custom shape descriptor is 
+reported, these collisions are then handled by the application. The custom shape 
+descriptor contains:
+
+\li Custom geometry token that was provided to the parsing function, this identifies the custom geometry.
+
+\li The list of sphere points to be created, each sphere point is defined by a 
+center and radius in world coordinate. Note that non-uniform scale is not 
+supported, the max per axis scale is applied.
+
+\subsubsection usdPhysics_collision_descriptor_simulation_owner Physics Collision Simulation Owner Behavior
+
+Collisions can have their own list of simulation owners to which they can belong. 
+However, since they are associated with a rigid body, the behavior changes 
+depending on whether or not they belong to a rigid body. If a collision belongs 
+to a rigid body and one of the rigid body's simulation owners matches the 
+requested simulation owners list, then the collision is reported. If the rigid 
+body's simulation owners do not match, the collision is not reported. If a 
+collision does not belong to a rigid body, then the collision's simulation 
+owners list is compared with the provided requested simulation owners list, and 
+if a match is found, the collision is reported; otherwise, the collision is 
+skipped.
+
+\subsection usdPhysics_joint_descriptor Physics Joint Descriptor
+
+Common base physics joint descriptor, this base class should not be instantiated. 
+All joint types are derived from this base descriptor. For parsing, any 
+UsdPhysics.Joint prim and its derived types a joint descriptor is reported. 
+This descriptor contains:
+
+\li Path relationship defined in body0 rel, this path does not necessarily have 
+to be the body path, it's possible to use some child prim as the relationship. 
+Empty SdfPath means, the joint does have a world anchor, note that at least one 
+dynamic body should be defined for body0 or body1.
+\li Path relationship defined in body1 rel, this path does not necessarily have 
+to be the body path, it's possible to use some child prim as the relationship. 
+Empty SdfPath means, the joint does have a world anchor, note that at least one 
+dynamic body should be defined for body0 or body1.
+\li Path to body0, this does not have to be the path defined in the body0 rel, 
+this is the path to the body that the joint is constraining. All poses defined 
+in the descriptor are relative to the rigid body rather then the rel prim.
+\li Path to body1, this does not have to be the path defined in the body1 rel, 
+this is the path to the body that the joint is constraining. All poses defined 
+in the descriptor are relative to the rigid body rather then the rel prim.
+\li Local position against the body0 world frame.
+\li Local orientation against the body0 world frame.
+\li Local position against the body1 world frame.
+\li Local orientation against the body1 world frame.
+\li Boolean to quickly toggle the joint enabled/disable state.
+\li Boolean that defines whether collision between the constrained bodies is 
+enabled or disabled.
+\li Boolean that can exclude joint from articulation, this is required in cases 
+where articulation topology would create closed loops, those are in many cases 
+not supported.
+\li Break force, when the joint breaks.
+\li Break torque when the joint breaks. 
+
+\subsection usdPhysics_fixed_joint_descriptor Physics Fixed Joint Descriptor
+
+For each UsdPhysicsFixedJoint a fixed joint descriptor is reported. The fixed 
+joint does not have any additional parameters to be reported.
+
+\subsection usdPhysics_revolute_joint_descriptor Physics Revolute Joint Descriptor
+
+For each UsdPhysicsRevoluteJoint a revolute joint descriptor is reported. The 
+revolute joint adds this information:
+
+\li The revolute joint axis.
+\li The revolute joint limit, it can be enabled or disabled. Additionally a pair 
+of low high angle is reported (note that the units are by default degree as per 
+USD spec).
+\li The revolute joint drive, the drive that can be added to the revolute joint. 
+Drive does have target position, target velocity, stiffness and damping. The 
+expected drive formula looks like this -
+force = spring * (target position - position) + damping * (targetVelocity - velocity)
+
+\subsection usdPhysics_prismatic_joint_descriptor Physics Prismatic Joint Descriptor
+
+For each UsdPhysicsPrismaticJoint a prismatic joint descriptor is reported. The 
+prismatic joint adds this information:
+
+\li The prismatic joint axis.
+\li The prismatic joint limit, it can be enabled or disabled. Additionally a 
+pair of low high angle is reported.
+\li The prismatic joint drive, the drive that can be added to the prismatic 
+joint. Drive does have target position, target velocity, stiffness and damping. 
+The expected drive formula looks like this -
+force = spring * (target position - position) + damping * (targetVelocity - velocity)
+
+\subsection usdPhysics_spherical_joint_descriptor Physics Spherical Joint Descriptor
+
+For each UsdPhysicsSphericalJoint a spherical joint descriptor is reported. The 
+spherical joint adds this information:
+
+\li The spherical joint axis.
+\li The spherical joint limit, it can be enabled or disabled. Additionally a 
+cone0 and cone1 angle is reported (note that the units are by default degree as 
+per USD spec). Note that in python the limit is always just lower/upper, the 
+lower value is cone0 value and upper value is the cone1 value. 
+
+\subsection usdPhysics_distance_joint_descriptor Physics Distance Joint Descriptor
+
+For each UsdPhysicsDistanceJoint a distance joint descriptor is reported. The 
+distance joint adds this information:
+
+\li Boolean stating whether the minimum limit is enabled as both limits can be 
+enabled disabled independently.
+\li Boolean stating whether the maximum limit is enabled as both limits can be 
+enabled disabled independently.
+\li The limit, for minimum and maximum definition. Note that in python the lower 
+value defines the minimum, while the upper value defines the maximum. Both 
+values are only valid if the bools above are true.
+
+\subsection usdPhysics_d6_joint_descriptor Physics D6 Joint Descriptor
+
+For each UsdPhysicsJoint a D6 joint descriptor is reported. The D6 joint is a 
+generic joint that can be setup per axis. The parsing reports these:
+
+\li List of limit pairs, where first is the DOF, while the second is the actual 
+limit. Note that for the DOF, there can be three states, the limit is not set - 
+free, limit is set lower is lower then upper then the limit is valid from lower 
+to upper. If upper is lower then lower, then the DOF is considered locked.
+\li List of drive pairs, where first is the DOF, while the second is the drive.
+
+\subsection usdPhysics_custom_joint_descriptor Physics Custom Joint Descriptor
+
+For each derived UsdPhysicsJoint type that matches the custom joint token 
+provided to the parsing custom joint descriptor is reported. This type does not 
+have any additional information.
+
+\subsubsection usdPhysics_joint_descriptor_simulation_owner Physics Joint Simulation Owner Behavior
+
+Joints do not have own simulation owner, the simulation owner is decided based 
+on the bodies the joint constrained. If both rigid bodies belong to the same 
+simulation owner and the simulation owner is passed as the argument to parsing, 
+the joint is returned.  
+
+\subsection usdPhysics_articulation_descriptor Physics Articulation Descriptor
+
+For each UsdPhysicsArticulationRootAPI, an articulation descriptor is returned. 
+The articulation root API serves as a hint for the solver that the topology below 
+the articulation root should be solved as a reduced coordinate system. Note that 
+it is not possible to nest articulation root APIs within a hierarchy; doing so 
+will result in an error. The articulation descriptor contains this information:
+
+\li List of root paths is provided, with each path in this list indicating that 
+a topology starts from this root. There can be multiple topologies found under 
+one articulation root. Note that the root can be reported as either a rigid body 
+path, in which case the articulated topology is considered floating, or as a joint 
+path, in which case the articulated topology is considered fixed-based.
+\li List of filtered collisions for this articulation.
+\li List of joints that belong to this articulation.
+\li List of bodies that belong to this articulation
+
+It is expected that the articulation descriptor information is used to construct 
+a reduced coordinate topology, starting from the reported roots and using the 
+provided list of joints and bodies to construct the topology. Note that in the 
+case of closed loops, the joints are usually excluded from the articulation; 
+however, they are still reported in the list of joints.
+
+\subsubsection usdPhysics_articulation_descriptor_simulation_owner Physics Articulation Simulation Owner Behavior
+
+Articulations do not have their own simulation owner; the simulation owner is 
+determined based on the bodies that belong to the articulation. If all bodies 
+have the same simulation owner, then the articulation is reported and should be 
+created. If there is no alignment among the bodies regarding where they should 
+be simulated, the articulation is not reported.
+
+*/

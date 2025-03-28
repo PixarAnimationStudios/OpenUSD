@@ -119,6 +119,7 @@ pxr_test_scripts(
     testenv/testPcpResolvedPathChange.py
     testenv/testPcpStreamingLayerReload.py
     testenv/testPcpCompositionResults.py
+    testenv/testPcpNegativeOffsetScale.py
 )
 
 pxr_build_test_shared_lib(TestPcpDynamicFileFormatPlugin
@@ -556,6 +557,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_SpecializesAndAncestralArcs3.testenv
     DEST testPcpMuseum_SpecializesAndAncestralArcs3
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_SpecializesAndAncestralArcs4.testenv
+    DEST testPcpMuseum_SpecializesAndAncestralArcs4
 )
 
 pxr_install_test_dir(
@@ -1352,6 +1358,21 @@ pxr_register_test(testPcpMuseum_SpecializesAndAncestralArcs3
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd SpecializesAndAncestralArcs3/root.sdf" 
     STDOUT_REDIRECT compositionResults_SpecializesAndAncestralArcs3.txt
     DIFF_COMPARE compositionResults_SpecializesAndAncestralArcs3.txt 
+)
+
+pxr_register_test(testPcpMuseum_SpecializesAndAncestralArcs4
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd SpecializesAndAncestralArcs4/root.sdf" 
+    STDOUT_REDIRECT compositionResults_SpecializesAndAncestralArcs4.txt
+    DIFF_COMPARE compositionResults_SpecializesAndAncestralArcs4.txt 
+)
+
+pxr_register_test(testPcpMuseum_SpecializesAndAncestralArcs4_graph
+    PYTHON
+    TESTENV testPcpMuseum_SpecializesAndAncestralArcs4
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --usd --dumpPath /Parent/Child SpecializesAndAncestralArcs4/root.sdf" 
+    STDOUT_REDIRECT compositionResults_SpecializesAndAncestralArcs4_graph.txt
+    DIFF_COMPARE compositionResults_SpecializesAndAncestralArcs4_graph.txt 
 )
 
 pxr_register_test(testPcpMuseum_SubrootInheritsAndVariants
@@ -2161,4 +2182,18 @@ pxr_register_test(testPcpLayerRelocatesEditBuilder
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpLayerRelocatesEditBuilder"
     EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testPcpNegativeOffsetScaleAllowed
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpNegativeOffsetScale"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testPcpNegativeOffsetScale
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpNegativeOffsetScale"
+    EXPECTED_RETURN_CODE 0
+    ENV 
+        PCP_ALLOW_NEGATIVE_LAYER_OFFSET_SCALE=0
 )

@@ -81,11 +81,11 @@ _TestSdfLayerCreateDiffChangeListWithoutValues()
     expectedCl.DidRemovePrim(SdfPath("/a"), true);
     expectedCl.DidAddPrim(SdfPath("/n"), false);
     expectedCl.DidChangeInfo(SdfPath("/n"), SdfFieldKeys->Specifier, 
-        std::move(VtValue()), VtValue(SdfSpecifierDef));
+        std::move(VtValue(SdfSpecifierOver)), VtValue(SdfSpecifierDef));
     expectedCl.DidAddProperty(SdfPath("/n.propN"), false);
     expectedCl.DidAddPrim(SdfPath("/z"), false);
     expectedCl.DidChangeInfo(SdfPath("/z"), SdfFieldKeys->Specifier, 
-        std::move(VtValue()), VtValue(SdfSpecifierDef));
+        std::move(VtValue(SdfSpecifierOver)), VtValue(SdfSpecifierDef));
     expectedCl.DidRemoveProperty(SdfPath("/c.propC"), false);
     expectedCl.DidAddProperty(SdfPath("/c.propC"), false);
 
@@ -118,7 +118,7 @@ _TestSdfLayerCreateDiffChangeListWithValues()
     expectedCl.DidRemovePrim(SdfPath("/a"), true);
     expectedCl.DidAddPrim(SdfPath("/n"), false);
     expectedCl.DidChangeInfo(SdfPath("/n"), SdfFieldKeys->Specifier, 
-        std::move(VtValue()), VtValue(SdfSpecifierDef));
+        std::move(VtValue(SdfSpecifierOver)), VtValue(SdfSpecifierDef));
     expectedCl.DidChangeInfo(SdfPath("/r.propR"), SdfFieldKeys->Default, 
         std::move(VtValue(1)), VtValue());
     expectedCl.DidAddProperty(SdfPath("/n.propN"), true);
@@ -135,7 +135,7 @@ _TestSdfLayerCreateDiffChangeListWithValues()
         std::move(VtValue(1)), VtValue());
     expectedCl.DidAddPrim(SdfPath("/z"), false);
     expectedCl.DidChangeInfo(SdfPath("/z"), SdfFieldKeys->Specifier, 
-        std::move(VtValue()), VtValue(SdfSpecifierDef));
+        std::move(VtValue(SdfSpecifierOver)), VtValue(SdfSpecifierDef));
     expectedCl.DidChangeInfo(SdfPath("/c.propC"), SdfFieldKeys->Default, 
         std::move(VtValue(1)), VtValue(2));
 
@@ -273,6 +273,40 @@ _TestSdfChangeManagerExtractLocalChanges()
     }
 
     TF_AXIOM(listener.invocations == 1);
+}
+
+static void
+_TestSdfLayerCreateDiffDiffWithOver()
+{
+    SdfLayerRefPtr layer = SdfLayer::CreateAnonymous();
+    SdfPrimSpecHandle p = SdfCreatePrimInLayer(layer, SdfPath("/p"));
+
+    SdfLayerRefPtr empty = SdfLayer::CreateAnonymous();
+
+    // Test that when creating a diff that results in the addition of an
+    // inert prim there should be no info field entries for change of
+    // specifier
+    {
+        SdfChangeList expectedCl;
+        expectedCl.DidAddPrim(SdfPath("/p"), true);
+        SdfChangeList actualCl = empty->CreateDiff(layer);
+        _CompareChangeLists(expectedCl, actualCl);
+    }
+
+    p->SetField(SdfFieldKeys->Specifier, SdfSpecifierDef);
+
+    // Explicit test that when creating a diff that results in the addition of
+    // a non-inert prim with typename there should be an info field entries for
+    // specifier
+    {
+        SdfChangeList expectedCl;
+        expectedCl.DidAddPrim(SdfPath("/p"), false);
+        expectedCl.DidChangeInfo(SdfPath("/p"), SdfFieldKeys->Specifier, 
+            std::move(VtValue(SdfSpecifierOver)), VtValue(SdfSpecifierDef));
+        SdfChangeList actualCl = empty->CreateDiff(layer);
+        _CompareChangeLists(expectedCl, actualCl);
+    }
+
 }
 
 static void
@@ -875,6 +909,7 @@ main(int argc, char **argv)
     _TestSdfLayerCreateDiffChangeListWithValues();
     _testSdfLayerCreateDiffTimeSamplesWithValues();
     _testSdfLayerCreateDiffTimeSamplesWithoutValues();
+    _TestSdfLayerCreateDiffDiffWithOver();
     _TestSdfLayerDictKeyOps();
     _TestSdfLayerTimeSampleValueType();
     _TestSdfLayerTransferContents();

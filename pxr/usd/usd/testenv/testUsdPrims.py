@@ -904,8 +904,10 @@ class TestUsdPrim(unittest.TestCase):
             # are valid. Also dump them to a string just to force
             # all nodes in the prim index to be touched.
             self.assertTrue(prim.GetPrimIndex().IsValid())
+            self.assertTrue(prim.GetPrimIndex().IsUsd())
             self.assertTrue(prim.GetPrimIndex().DumpToString())
             self.assertTrue(prim.ComputeExpandedPrimIndex().IsValid())
+            self.assertTrue(prim.ComputeExpandedPrimIndex().IsUsd())
             self.assertTrue(prim.ComputeExpandedPrimIndex().DumpToString())
 
         for fmt in allFormats:
@@ -920,8 +922,10 @@ class TestUsdPrim(unittest.TestCase):
             # composition queries.
             prototype = s.GetPrototypes()[0]
             self.assertFalse(prototype.GetPrimIndex().IsValid())
+            self.assertFalse(prototype.GetPrimIndex().IsUsd())
             self.assertFalse(prototype.GetPrimIndex().DumpToString())
             self.assertTrue(prototype.ComputeExpandedPrimIndex().IsValid())
+            self.assertTrue(prototype.ComputeExpandedPrimIndex().IsUsd())
             self.assertTrue(prototype.ComputeExpandedPrimIndex().DumpToString())
 
             # However, prims beneath prototypes do expose a valid prim index.
@@ -935,10 +939,13 @@ class TestUsdPrim(unittest.TestCase):
             w = s.DefinePrim('/World')
             p = s.GetPrimAtPath('/')
             self.assertTrue(p.IsPseudoRoot())
+            self.assertTrue(p.IsValid())
             self.assertFalse(Usd.Prim().IsPseudoRoot())
             self.assertFalse(w.IsPseudoRoot())
             self.assertTrue(w.GetParent().IsPseudoRoot())
+            self.assertTrue(w.GetParent().IsValid())
             self.assertFalse(p.GetParent().IsPseudoRoot())
+            self.assertFalse(p.GetParent().IsValid())
 
     def test_Deactivation(self):
         for fmt in allFormats:

@@ -16,7 +16,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdShade/tokens.h"
 
-#include "pxr/usd/ndr/declare.h"
+#include "pxr/usd/sdr/declare.h"
 #include "pxr/usd/sdr/shaderNode.h"
     
 
@@ -53,7 +53,7 @@ class SdfAssetPath;
 /// 
 /// This schema provides properties that allow a prim to identify an external
 /// node definition, either by a direct identifier key into the SdrRegistry
-/// (info:id), an asset to be parsed by a suitable NdrParserPlugin
+/// (info:id), an asset to be parsed by a suitable SdrParserPlugin
 /// (info:sourceAsset), or an inline source code that must also be parsed
 /// (info:sourceCode); as well as a selector attribute to determine which
 /// specifier is active (info:implementationSource).
@@ -284,8 +284,8 @@ public:
     /// the type of shader source or its implementation. For example: osl, 
     /// glslfx, riCpp etc. This allows a shader to specify different sourceAsset
     /// (or sourceCode) values for different sourceTypes. The sourceType tokens 
-    /// usually correspond to the sourceType value of the NdrParserPlugin that's 
-    /// used to parse the shader source (\ref NdrParserPlugin::SourceType).
+    /// usually correspond to the sourceType value of the SdrParserPlugin that's 
+    /// used to parse the shader source (\ref SdrParserPlugin::SourceType).
     /// 
     /// When sourceType is empty, the corresponding sourceAsset or sourceCode is 
     /// considered to be "universal" (or fallback), which is represented by the 

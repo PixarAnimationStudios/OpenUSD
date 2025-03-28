@@ -24,5 +24,3 @@ C.usd, the stages A and B, while distinct, share dependence on C.usd.  If one
 thread, therefore, is mutating C.usd, then **no other thread 
 can mutate A.usd or B.usd** because either would cause simultaneous changes
 to either stage A or stage B.
-
-## Usd's Internal Use of Multi-threading {#Usd_InternalMultiThreading}

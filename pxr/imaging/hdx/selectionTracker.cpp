@@ -213,8 +213,8 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(
     // or it's empty. Likewise if both enableSelectionHighlight and
     // enableLocateHighlight are false (in which case highlights is nullptr).
     if (!highlights || highlights->IsEmpty()) {
-        for (int mode = HdSelection::HighlightModeSelect;
-                 mode < HdSelection::HighlightModeCount;
+        for (size_t mode = HdSelection::HighlightModeSelect;
+                    mode < HdSelection::HighlightModeCount;
                  mode++) {
             (*offsets)[mode + 1] = SELECT_NONE;
         }
@@ -236,9 +236,9 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(
 
     TF_VERIFY(sizeof(modeEnabled) / sizeof(modeEnabled[0]) == HdSelection::HighlightModeCount);
 
-    for (int mode = HdSelection::HighlightModeSelect;
-             mode < HdSelection::HighlightModeCount;
-             mode++) {
+    for (size_t mode = HdSelection::HighlightModeSelect;
+                mode < HdSelection::HighlightModeCount;
+                mode++) {
        
         std::vector<int> output;
         const bool modeHasSelection = modeEnabled[mode] && _GetSelectionOffsets(
@@ -260,7 +260,7 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(
 
             copyOffset += output.size();
 
-            TF_DEBUG(HDX_SELECTION_SETUP).Msg("Highlight mode %d has %lu "
+            TF_DEBUG(HDX_SELECTION_SETUP).Msg("Highlight mode %zu has %lu "
                 "entries\n", mode, output.size());
         }
     }

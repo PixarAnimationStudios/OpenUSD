@@ -20,7 +20,6 @@ void wrapUsdRiTokens()
     _ADD_TOKEN(cls, bspline);
     _ADD_TOKEN(cls, cameraVisibility);
     _ADD_TOKEN(cls, catmullRom);
-    _ADD_TOKEN(cls, collectionCameraVisibilityIncludeRoot);
     _ADD_TOKEN(cls, constant);
     _ADD_TOKEN(cls, interpolation);
     _ADD_TOKEN(cls, linear);
@@ -33,7 +32,6 @@ void wrapUsdRiTokens()
     _ADD_TOKEN(cls, spline);
     _ADD_TOKEN(cls, values);
     _ADD_TOKEN(cls, RiMaterialAPI);
-    _ADD_TOKEN(cls, RiRenderPassAPI);
     _ADD_TOKEN(cls, RiSplineAPI);
     _ADD_TOKEN(cls, StatementsAPI);
 }

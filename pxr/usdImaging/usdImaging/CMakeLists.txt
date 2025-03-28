@@ -31,9 +31,7 @@ pxr_library(usdImaging
         adapterRegistry
         collectionCache
         collectionMaterialBindingSchema
-        collectionMaterialBindingsSchema
         directMaterialBindingSchema
-        directMaterialBindingsSchema
         dataSourceAttribute
         dataSourceAttributeColorSpace
         dataSourceAttributeTypeName
@@ -91,7 +89,7 @@ pxr_library(usdImaging
         fieldAdapter
         flattenedDataSourceProviders
         flattenedGeomModelDataSourceProvider
-        flattenedDirectMaterialBindingsDataSourceProvider
+        flattenedMaterialBindingsDataSourceProvider
         geometryLightAdapter
         geomModelAPIAdapter
         gprimAdapter
@@ -104,6 +102,8 @@ pxr_library(usdImaging
         lightFilterAdapter
         materialAdapter
         materialBindingAPIAdapter
+        materialBindingSchema
+        materialBindingsSchema
         materialBindingsResolvingSceneIndex
         meshAdapter
         niPrototypePropagatingSceneIndex
@@ -131,7 +131,10 @@ pxr_library(usdImaging
         renderSettingsFlatteningSceneIndex
         renderVarAdapter
         representedByAncestorPrimAdapter
+        rerootingContainerDataSource
         rerootingSceneIndex
+        sceneIndexPlugin
+        sceneIndexPrimAdapter
         sceneIndices
         sphereAdapter
         sphereLightAdapter

@@ -13,9 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/return_arg.hpp>
-#else
 # include "pxr/external/boost/python/default_call_policies.hpp"
 # include "pxr/external/boost/python/detail/none.hpp"
 # include "pxr/external/boost/python/detail/value_arg.hpp"
@@ -117,5 +114,4 @@ struct return_self
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_RETURN_ARG_HPP

@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/converter/pointer_type_id.hpp>
-#else
-
 # include "pxr/external/boost/python/type_id.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
@@ -77,5 +73,4 @@ type_info pointer_type_id(T(*)() = 0)
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_POINTER_TYPE_ID_HPP

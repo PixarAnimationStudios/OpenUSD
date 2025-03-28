@@ -21,6 +21,12 @@ PXR_NAMESPACE_USING_DIRECTIVE
         type actual = type();                                   \
         TF_AXIOM(knot.getter(&actual));                         \
         TF_AXIOM(GfIsClose(actual, expected, 1e-3));            \
+                                                                \
+        VtValue value;                                          \
+        TF_AXIOM(knot.getter(&value));                          \
+        TF_AXIOM(value.IsHolding<type>());                      \
+        actual = value.Get<type>();                             \
+        TF_AXIOM(GfIsClose(actual, expected, 1e-3));            \
     }
 
 
@@ -110,6 +116,7 @@ void TestSplineIO()
     TF_AXIOM(spline.GetPostExtrapolation().mode == TsExtrapHeld);
     TF_AXIOM(spline.GetKnots().empty());
     TF_AXIOM(!spline.HasRegressiveTangents());
+
     T value = 0;
     TF_AXIOM(!spline.Eval(0, &value));
     TF_AXIOM(!spline.EvalPreValue(0, &value));
@@ -117,12 +124,28 @@ void TestSplineIO()
     TF_AXIOM(!spline.EvalPreDerivative(0, &value));
     TF_AXIOM(!spline.EvalHeld(0, &value));
     TF_AXIOM(!spline.EvalPreValueHeld(0, &value));
+
+    VtValue vtValue;
+    TF_AXIOM(!spline.Eval(0, &vtValue));
+    TF_AXIOM(vtValue.IsEmpty());
+    TF_AXIOM(!spline.EvalPreValue(0, &vtValue));
+    TF_AXIOM(vtValue.IsEmpty());
+    TF_AXIOM(!spline.EvalDerivative(0, &vtValue));
+    TF_AXIOM(vtValue.IsEmpty());
+    TF_AXIOM(!spline.EvalPreDerivative(0, &vtValue));
+    TF_AXIOM(vtValue.IsEmpty());
+    TF_AXIOM(!spline.EvalHeld(0, &vtValue));
+    TF_AXIOM(vtValue.IsEmpty());
+    TF_AXIOM(!spline.EvalPreValueHeld(0, &vtValue));
+    TF_AXIOM(vtValue.IsEmpty());
+
     TF_AXIOM(spline.IsEmpty());
     TF_AXIOM(!spline.HasValueBlocks());
     TF_AXIOM(!spline.HasLoops());
     TF_AXIOM(!spline.HasInnerLoops());
     TF_AXIOM(!spline.HasExtrapolatingLoops());
     TF_AXIOM(!spline.HasValueBlockAtTime(0));
+
 
     // Round-trip some values.
     spline.SetTimeValued(true);
@@ -143,12 +166,32 @@ void TestSplineIO()
     TsTypedKnot<T> knot2;
     TF_AXIOM(spline.GetKnot(1, &knot2));
     TF_AXIOM(knot2 == knot);
+
     TF_AXIOM(spline.Eval(0, &value) && value == 5);
     TF_AXIOM(spline.EvalPreValue(0, &value) && value == 5);
     TF_AXIOM(spline.EvalDerivative(0, &value) && value == 0);
     TF_AXIOM(spline.EvalPreDerivative(0, &value) && value == 0);
     TF_AXIOM(spline.EvalHeld(0, &value) && value == 5);
     TF_AXIOM(spline.EvalPreValueHeld(0, &value) && value == 5);
+
+    TF_AXIOM(spline.Eval(0, &vtValue) &&
+             vtValue.IsHolding<T>() &&
+             vtValue.Get<T>() == 5);
+    TF_AXIOM(spline.EvalPreValue(0, &vtValue) &&
+             vtValue.IsHolding<T>() &&
+             vtValue.Get<T>() == 5);
+    TF_AXIOM(spline.EvalDerivative(0, &vtValue) &&
+             vtValue.IsHolding<T>() &&
+             vtValue.Get<T>() == 0);
+    TF_AXIOM(spline.EvalPreDerivative(0, &vtValue) &&
+             vtValue.IsHolding<T>() &&
+             vtValue.Get<T>() == 0);
+    TF_AXIOM(spline.EvalHeld(0, &vtValue) &&
+             vtValue.IsHolding<T>() &&
+             vtValue.Get<T>() == 5);
+    TF_AXIOM(spline.EvalPreValueHeld(0, &vtValue) &&
+             vtValue.IsHolding<T>() &&
+             vtValue.Get<T>() == 5);
 
     // Equality, assignment, copy-on-write, and copy construction.
     TsSpline spline2;
@@ -177,25 +220,59 @@ void TestSplineIO()
     TF_AXIOM(splineAR.SetKnot(knotAR2));
     TF_AXIOM(splineAR.SetKnot(knotAR3));
     TF_AXIOM(splineAR.GetKnots().size() == 3);
+
     TF_AXIOM(splineAR.Eval(-1, &value) && value == 1);
     TF_AXIOM(splineAR.Eval(2.5, &value) && value == 2);
     TF_AXIOM(splineAR.Eval(4, &value) && value == 3);
+
+    TF_AXIOM(splineAR.Eval(-1, &vtValue) &&
+             vtValue.IsHolding<T>() &&
+             vtValue.Get<T>() == 1);
+    TF_AXIOM(splineAR.Eval(2.5, &vtValue) &&
+             vtValue.IsHolding<T>() &&
+             vtValue.Get<T>() == 2);
+    TF_AXIOM(splineAR.Eval(4, &vtValue) &&
+             vtValue.IsHolding<T>() &&
+             vtValue.Get<T>() == 3);
+
     splineAR.ClearKnots();
     TF_AXIOM(splineAR.IsEmpty());
 
     // Add knots as KnotMap.
     splineAR.SetKnots(TsKnotMap{knotAR1, knotAR2, knotAR3});
     TF_AXIOM(splineAR.GetKnots().size() == 3);
+
     TF_AXIOM(splineAR.Eval(-1, &value) && value == 1);
     TF_AXIOM(splineAR.Eval(2.5, &value) && value == 2);
     TF_AXIOM(splineAR.Eval(4, &value) && value == 3);
 
+    TF_AXIOM(splineAR.Eval(-1, &vtValue) &&
+             vtValue.IsHolding<T>() &&
+             vtValue.Get<T>() == 1);
+    TF_AXIOM(splineAR.Eval(2.5, &vtValue) &&
+             vtValue.IsHolding<T>() &&
+             vtValue.Get<T>() == 2);
+    TF_AXIOM(splineAR.Eval(4, &vtValue) &&
+             vtValue.IsHolding<T>() &&
+             vtValue.Get<T>() == 3);
+
     // Remove a knot.
     splineAR.RemoveKnot(2);
     TF_AXIOM(splineAR.GetKnots().size() == 2);
+
     TF_AXIOM(splineAR.Eval(-1, &value) && value == 1);
     TF_AXIOM(splineAR.Eval(2.5, &value) && value == 1);
     TF_AXIOM(splineAR.Eval(4, &value) && value == 3);
+
+    TF_AXIOM(splineAR.Eval(-1, &vtValue) &&
+             vtValue.IsHolding<T>() &&
+             vtValue.Get<T>() == 1);
+    TF_AXIOM(splineAR.Eval(2.5, &vtValue) &&
+             vtValue.IsHolding<T>() &&
+             vtValue.Get<T>() == 1);
+    TF_AXIOM(splineAR.Eval(4, &vtValue) &&
+             vtValue.IsHolding<T>() &&
+             vtValue.Get<T>() == 3);
 }
 
 int main()

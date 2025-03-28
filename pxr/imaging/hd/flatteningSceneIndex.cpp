@@ -52,10 +52,10 @@ private:
     _PrimLevelWrappingDataSource(
         const HdFlatteningSceneIndex &flatteningSceneIndex,
         const SdfPath &primPath,
-        const HdContainerDataSourceHandle &inputDataSource)
+        const HdSceneIndexPrim &inputPrim)
       : _flatteningSceneIndex(flatteningSceneIndex)
       , _primPath(primPath)
-      , _inputDataSource(inputDataSource)
+      , _inputPrim(inputPrim)
       , _computedDataSources(
           _flatteningSceneIndex.GetFlattenedDataSourceNames().size())
     {
@@ -63,7 +63,7 @@ private:
     
     const HdFlatteningSceneIndex &_flatteningSceneIndex;
     const SdfPath _primPath;
-    HdContainerDataSourceHandle const _inputDataSource;
+    const HdSceneIndexPrim _inputPrim;
 
     // Parallel to HdFlatteningSceneIndex::GetFlattenedDataSourceNames()
     TfSmallVector<HdDataSourceBaseAtomicHandle, _smallVectorSize>
@@ -144,11 +144,11 @@ _Insert(const TfTokenVector &vec,
 TfTokenVector
 _PrimLevelWrappingDataSource::GetNames()
 {
-    if (!_inputDataSource) {
+    if (!_inputPrim.dataSource) {
         return _flatteningSceneIndex.GetFlattenedDataSourceNames();
     }
 
-    TfTokenVector result = _inputDataSource->GetNames();
+    TfTokenVector result = _inputPrim.dataSource->GetNames();
     _Insert(_flatteningSceneIndex.GetFlattenedDataSourceNames(), &result);
     return result;
 };        
@@ -177,7 +177,7 @@ _PrimLevelWrappingDataSource::Get(
             _flatteningSceneIndex,
             _primPath,
             name,
-            _inputDataSource);
+            _inputPrim);
         HdDataSourceBaseHandle flattenedDs = 
             providers[i]->GetFlattenedDataSource(ctx);
         if (!flattenedDs) {
@@ -202,8 +202,8 @@ _PrimLevelWrappingDataSource::Get(
         }
     }
 
-    if (_inputDataSource) {
-        return _inputDataSource->Get(name);
+    if (_inputPrim.dataSource) {
+        return _inputPrim.dataSource->Get(name);
     }
     return nullptr;
 }
@@ -279,7 +279,7 @@ HdFlatteningSceneIndex::GetPrim(const SdfPath &primPath) const
     // Wrap the input datasource even when null, to support dirtying
     // down non-contiguous hierarchy
     prim.dataSource = _PrimLevelWrappingDataSource::New(
-        *this, primPath, prim.dataSource);
+        *this, primPath, prim);
 
     // Store in the recent prims cache
     if (!_recentPrims.insert(std::make_pair(primPath, prim))) {

@@ -14,10 +14,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/object/pointer_holder.hpp>
-#else
-
 #  include "pxr/external/boost/python/type.hpp"
 
 #  include "pxr/external/boost/python/instance_holder.hpp"
@@ -167,5 +163,4 @@ void* pointer_holder_back_reference<Pointer, Value>::holds(type_info dst_t, bool
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_POINTER_HOLDER_HPP

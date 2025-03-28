@@ -17,6 +17,7 @@
 #import $TOOLS/hdSt/shaders/terminals.glslfx
 #import $TOOLS/hdSt/shaders/edgeId.glslfx
 #import $TOOLS/hdSt/shaders/pointId.glslfx
+#import $TOOLS/hdSt/shaders/pointDisk.glslfx
 #import $TOOLS/hdSt/shaders/visibility.glslfx
 
 --- --------------------------------------------------------------------------
@@ -48,7 +49,7 @@ void main(void)
     outData.Neye = GetNormal(vec3(0), 0); // normalized
 
     int pointId = GetPointId();
-    gl_PointSize = GetPointRasterSize(pointId);
+    gl_PointSize = ApplyPointSizeBias(GetPointRasterSize(pointId));
     ProcessPointId(pointId);
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
@@ -94,7 +95,7 @@ void main(void)
     MAT4 transform = ApplyInstanceTransform(HdGet_transform());
 
     int pointId = GetPointId();
-    gl_PointSize = GetPointRasterSize(pointId);
+    gl_PointSize = ApplyPointSizeBias(GetPointRasterSize(pointId));
     ProcessPointId(pointId);
 
     vec4 point0 = GetWorldToViewMatrix() * transform * vec4(points[0],1.0);
@@ -167,7 +168,7 @@ void main(void)
     MAT4 transform = ApplyInstanceTransform(HdGet_transform());
 
     int pointId = GetPointId();
-    gl_PointSize = GetPointRasterSize(pointId);
+    gl_PointSize = ApplyPointSizeBias(GetPointRasterSize(pointId));
     ProcessPointId(pointId);
 
     vec4 point0 = GetWorldToViewMatrix() * transform * vec4(points[0],1.0);
@@ -251,7 +252,7 @@ void main(void)
     MAT4 transform = ApplyInstanceTransform(HdGet_transform());
 
     int pointId = GetPointId();
-    gl_PointSize = GetPointRasterSize(pointId);
+    gl_PointSize = ApplyPointSizeBias(GetPointRasterSize(pointId));
     ProcessPointId(pointId);
 
     vec4 point0 = GetWorldToViewMatrix() * transform * vec4(points[0],1.0);
@@ -689,7 +690,7 @@ void main(void)
     MAT4 transform = ApplyInstanceTransform(HdGet_transform());
 
     int pointId = GetPointId();
-    gl_PointSize = GetPointRasterSize(pointId);
+    gl_PointSize = ApplyPointSizeBias(GetPointRasterSize(pointId));
     ProcessPointId(pointId);
 
     const ivec3 patchParam = GetPatchParam();
@@ -872,7 +873,7 @@ void main(void)
     MAT4 transform = ApplyInstanceTransform(HdGet_transform());
 
     int pointId = GetPointId();
-    gl_PointSize = GetPointRasterSize(pointId);
+    gl_PointSize = ApplyPointSizeBias(GetPointRasterSize(pointId));
     ProcessPointId(pointId);
 
     const ivec3 patchParam = GetPatchParam();
@@ -1474,6 +1475,8 @@ vec3 ComputeScreenSpaceNeye()
 
 void main(void)
 {
+    ApplyDiskSampleMask();
+
     bool isFlipped = IsFlipped();
 
     DiscardBasedOnShading(gl_FrontFacing, isFlipped);

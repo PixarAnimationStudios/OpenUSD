@@ -15,10 +15,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/object/class_metadata.hpp>
-#else
-
 #include "pxr/external/boost/python/converter/shared_ptr_from_python.hpp"
 #include "pxr/external/boost/python/object/inheritance.hpp"
 #include "pxr/external/boost/python/object/class_wrapper.hpp"
@@ -309,5 +305,4 @@ struct class_metadata
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::object
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

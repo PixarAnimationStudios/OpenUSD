@@ -8,7 +8,7 @@
                 "Types": {
                     "UsdMtlxDiscoveryPlugin": {
                         "bases": [
-                            "NdrDiscoveryPlugin"
+                            "SdrDiscoveryPlugin"
                         ], 
                         "displayName": "MaterialX Discovery"
                     }, 
@@ -42,7 +42,7 @@
                     }, 
                     "UsdMtlxParserPlugin": {
                         "bases": [
-                            "NdrParserPlugin"
+                            "SdrParserPlugin"
                         ], 
                         "displayName": "MaterialX Node Parser"
                     }

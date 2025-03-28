@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <iosfwd>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -1951,13 +1952,10 @@ struct Tf_ShouldIterateOverCopy<TfCompressedBits::AllUnsetView> :
     std::true_type
 {};
 
-//! \brief Output a TfBits, as a stream of 0s and 1s.
-// \ingroup group_tf_DebuggingOutput
-inline std::ostream&
-operator<<(std::ostream &out, const TfCompressedBits &bits) {
-    out << bits.GetAsStringLeftToRight();
-    return out;
-}
+/// Output a TfBits, as a stream of 0s and 1s.
+/// \ingroup group_tf_DebuggingOutput
+TF_API std::ostream&
+operator<<(std::ostream &out, const TfCompressedBits &bits);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -44,15 +44,14 @@ class TestFileFormat(unittest.TestCase):
 
     def test_MissingMaterialXDocument(self):
         """
-        Verify that a MaterialX file without a materialx element is okay.
+        Verify that a MaterialX file without a materialx element fails.
         """
-        stage = UsdMtlx._TestString(
+        with self.assertRaises(Tf.ErrorException) as e:
+            UsdMtlx._TestString(
             '''<?xml version="1.0" ?>
                <not_materialx version="1.35">
                </not_materialx>
             ''')
-        self.assertEqual(stage.GetRootLayer().ExportToString(),
-                         _EmptyLayer())
 
     def test_EmptyMaterialXDocument(self):
         """

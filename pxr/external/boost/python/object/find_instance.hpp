@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/object/find_instance.hpp>
-#else
-
 # include "pxr/external/boost/python/type_id.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
@@ -30,5 +26,4 @@ PXR_BOOST_PYTHON_DECL void* find_instance_impl(PyObject*, type_info, bool null_s
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FIND_INSTANCE_HPP

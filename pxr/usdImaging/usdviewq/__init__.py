@@ -108,7 +108,8 @@ class Launcher(object):
 
         UsdAppUtils.rendererArgs.AddCmdlineArgs(parser,
                 altHelpText=("Which render backend to use (named as it "
-                            "appears in the menu)."))
+                            "appears in the menu). 'GL' and 'Storm' currently"
+                            "alias to the same renderer, Storm."))
         
         parser.add_argument('--select', action='store', default='/',
                             dest='primPath', type=str,

@@ -5,6 +5,8 @@
 # https://openusd.org/license.
 #
 
+import argparse
+
 def GetAllPluginArguments():
     """
     Returns argument strings for all the renderer plugins available.
@@ -41,11 +43,27 @@ def AddCmdlineArgs(argsParser, altHelpText=''):
     helpText = altHelpText
     if not helpText:
         helpText = (
-            'Hydra renderer plugin to use when generating images')
+            'Hydra renderer plugin to use when generating images. "GL" and '
+            '"Storm" currently alias to the same renderer, Storm.')
 
     renderers = GetAllPluginArguments()
+    # "GL" is still (unfortunately) the offical display name for Storm, but 
+    # we've hacked UsdImagingGLEngine::GetRendererDisplayName to instead 
+    # return "Storm" for the HdStormRendererPlugin. We still wish to support 
+    # "GL" as an argument here, however. Both "GL" and "Storm" refer to the 
+    # Storm renderer.
+    renderers.append('GL')
 
-    argsParser.add_argument('--renderer', '-r', action='store',
+    class ResolveStormAlias(argparse.Action):
+        def __call__(self, parser, namespace, value, option_string):
+            if value == 'Storm':
+                setattr(namespace, self.dest, 'GL')
+            else:
+                setattr(namespace, self.dest, value)
+
+    argsParser.add_argument('--renderer', '-r',
         dest='rendererPlugin',
         choices=renderers,
-        help=helpText)
+        help=helpText,
+        action=ResolveStormAlias)
+    

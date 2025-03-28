@@ -18,19 +18,25 @@ public:
     using BaseAdapter = UsdImagingAPISchemaAdapter;
 
     USDIMAGING_API
+    TfToken GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfToken const& appliedInstanceName) override;
+    
+    USDIMAGING_API
     HdContainerDataSourceHandle GetImagingSubprimData(
-            UsdPrim const& prim,
-            TfToken const& subprim,
-            TfToken const& appliedInstanceName,
-            const UsdImagingDataSourceStageGlobals &stageGlobals) override;
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfToken const& appliedInstanceName,
+        const UsdImagingDataSourceStageGlobals &stageGlobals) override;
 
     USDIMAGING_API
     HdDataSourceLocatorSet InvalidateImagingSubprim(
-            UsdPrim const& prim,
-            TfToken const& subprim,
-            TfToken const& appliedInstanceName,
-            TfTokenVector const& properties,
-            UsdImagingPropertyInvalidationType invalidationType) override;
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfToken const& appliedInstanceName,
+        TfTokenVector const& properties,
+        UsdImagingPropertyInvalidationType invalidationType) override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

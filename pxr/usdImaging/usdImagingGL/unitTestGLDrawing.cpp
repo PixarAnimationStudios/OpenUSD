@@ -272,6 +272,7 @@ UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
     , _showProxy(UsdImagingGLRenderParams().showProxy)
     , _presentComposite(false)
     , _presentDisabled(false)
+    , _numErrorsAllowed(0)
 {
 }
 
@@ -493,6 +494,7 @@ static void Usage(int argc, char *argv[])
 "  -windowPolicy [matchVertically|matchHorizontally|fit|crop|dontConform]\n"
 "                      Forces the window policy\n"
 "                      (defaults to matchVertically to match usdview)\n"
+"  -numErrorsAllowed n Number of errors allowed before test fails (default 0)"
 ;
 
     Die(usage, TfGetBaseName(argv[0]).c_str());
@@ -530,6 +532,24 @@ static double ParseDouble(int& i, int argc, char *argv[],
         ParseError(argv[0], "invalid parameter for '%s': %s",
                    argv[i], argv[i + 1]);
     }
+    ++i;
+    if (invalid) {
+        *invalid = false;
+    }
+    return result;
+}
+
+
+static int ParseInt(int& i, int argc, char *argv[], bool* invalid = nullptr)
+{
+    if (i + 1 == argc) {
+        if (invalid) {
+            *invalid = true;
+            return 0.0;
+        }
+        ParseError(argv[0], "missing parameter for '%s'", argv[i]);
+    }
+    int result = atoi(argv[i + 1]);
     ++i;
     if (invalid) {
         *invalid = false;
@@ -763,6 +783,10 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         }
         else if (strcmp(argv[i], "-presentDisabled") == 0) {
             _presentDisabled = true;
+        }
+        else if (strcmp(argv[i], "-numErrorsAllowed") == 0) {
+            // CheckForMissingArguments(i, 1, argc, argv);
+            _numErrorsAllowed = ParseInt(i, argc, argv);
         }
         else {
             ParseError(argv[0], "unknown argument %s", argv[i]);

@@ -6,6 +6,8 @@
 //
 #include "pxr/imaging/hd/dataSource.h"
 
+#include "pxr/base/trace/trace.h"
+
 #include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -72,6 +74,8 @@ HdGetMergedContributingSampleTimesForInterval(
     const HdSampledDataSource::Time endTime,
     std::vector<HdSampledDataSource::Time> * const outSampleTimes)
 {
+    TRACE_FUNCTION();
+
     bool result = false;
     for (size_t i = 0; i < count; i++) {
         if (!inputDataSources[i]) {
@@ -95,6 +99,16 @@ HdGetMergedContributingSampleTimesForInterval(
             *outSampleTimes = _Union(*outSampleTimes, times);
         }
     }
+
+    // TODO:
+    //
+    // We can potentially drop sample times outside of startTime and endTime.
+    // For example, assume that startTime = 0 and endTime = 1 and that we
+    // have two input data sources.
+    // Furthermore, assume that the first input data source gives samples for
+    // -1 and 1 and second for -2 and 1.
+    // Currently, the function would return -2, -1 and 1 as times. But both
+    // -2 and -1 are before the startTime, so we can drop -2.
 
     return result;
 }

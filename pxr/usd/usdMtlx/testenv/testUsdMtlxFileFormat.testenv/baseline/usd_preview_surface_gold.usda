@@ -8,7 +8,7 @@ def "MaterialX"
             prepend apiSchemas = ["MaterialXConfigAPI"]
         )
         {
-            string config:mtlx:version = "1.38"
+            string config:mtlx:version = "1.39"
             float inputs:clearcoat
             float inputs:clearcoatRoughness
             color3f inputs:diffuseColor = (0.944, 0.776, 0.373)
@@ -19,6 +19,7 @@ def "MaterialX"
             float3 inputs:normal
             float inputs:occlusion
             float inputs:opacity
+            int inputs:opacityMode
             float inputs:opacityThreshold
             float inputs:roughness = 0.02
             color3f inputs:specularColor = (0, 0, 0)
@@ -39,6 +40,7 @@ def "MaterialX"
                 float3 inputs:normal.connect = </MaterialX/Materials/USD_Gold.inputs:normal>
                 float inputs:occlusion.connect = </MaterialX/Materials/USD_Gold.inputs:occlusion>
                 float inputs:opacity.connect = </MaterialX/Materials/USD_Gold.inputs:opacity>
+                int inputs:opacityMode.connect = </MaterialX/Materials/USD_Gold.inputs:opacityMode>
                 float inputs:opacityThreshold.connect = </MaterialX/Materials/USD_Gold.inputs:opacityThreshold>
                 float inputs:roughness.connect = </MaterialX/Materials/USD_Gold.inputs:roughness>
                 color3f inputs:specularColor.connect = </MaterialX/Materials/USD_Gold.inputs:specularColor>

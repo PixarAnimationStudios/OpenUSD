@@ -293,9 +293,9 @@ _ProcessPreviewSurfaceNode(
             {{nodeName, _tokens->dispScalarOut}});
     }
 
-// In 2302 and beyond, we can use
+// In 2311 and beyond, we can use
 // HdPrman_PreviewSurfacePrimvarsSceneIndexPlugin.
-#if PXR_VERSION < 2302
+#if PXR_VERSION < 2311
 
     // One additional "dummy" node to author primvar opinions on the
     // material to be passed to the gprim.
@@ -317,7 +317,7 @@ _ProcessPreviewSurfaceNode(
         pxrSurfaceNodeName, _tokens->displacementBoundSphere,
         {{primvarPassNodeName, _tokens->displacementBoundSphere}});
 
-#endif // PXR_VERSION < 2302
+#endif // PXR_VERSION < 2311
     
     // Update network terminals to point to the PxrSurface and PxrDisplacement
     // nodes that were added.

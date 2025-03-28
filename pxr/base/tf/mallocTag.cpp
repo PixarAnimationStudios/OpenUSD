@@ -556,7 +556,6 @@ class TfMallocTag::Tls {
 public:
     static
     TfMallocTag::_ThreadData &Find() {
-#if defined(ARCH_HAS_THREAD_LOCAL)
         // This thread_local must be placed in static TLS to prevent re-entry.
         // Starting in glibc 2.25, dynamic TLS allocation uses malloc.  Making
         // this allocation after malloc tags have been initialized results in
@@ -576,10 +575,6 @@ public:
             : ArchAlignedAlloc(alignof(_ThreadData), sizeof(_ThreadData));
         data = new (dataBuffer) _ThreadData();
         return *data;
-#else
-        TF_FATAL_ERROR("TfMallocTag not supported on platforms "
-                       "without thread_local");
-#endif
     }
 };
 

@@ -315,6 +315,20 @@ class RenderPass "RenderPass" (
     to objects associated with the render settings, such as image
     post-processing filters, even when UsdGeomVisibilityAPI may apply.
 
+    \\anchor usd_cameraVisibility
+    The cameraVisibility collection defines which scene objects should
+    be directly visible in camera.  Objects that are not in this
+    collection should still participate in other light paths such
+    as shadowing, reflections, and refraction.  By default everything in
+    the scene should be visible to camera, so this collection sets
+    includeRoot to 1.
+
+    \\anchor usd_matte
+    The matte collection defines scene objects that should act as
+    matte objects.  Matte objects render with zero alpha.  By
+    default, everything in the scene should render normally, so
+    this collection sets includeRoot to 0.
+
     \\anchor usdRender_pruning
     The prune collection specifies a collection of objects to be removed
     ("pruned") from the scene prior to rendering.  Whereas visibility
@@ -334,7 +348,7 @@ class RenderPass "RenderPass" (
          string extraIncludes = """
 #include "pxr/usd/usd/collectionAPI.h" """
     }
-    prepend apiSchemas = ["CollectionAPI:renderVisibility", "CollectionAPI:prune"]
+    prepend apiSchemas = ["CollectionAPI:renderVisibility", "CollectionAPI:cameraVisibility", "CollectionAPI:prune", "CollectionAPI:matte"]
 ) {
     uniform token passType (
         doc = """A string used to categorize differently structured 
@@ -409,11 +423,12 @@ class RenderPass "RenderPass" (
         """
     )
 
-    uniform bool denoise:enable = false (
-        doc = """When True, this Pass pass should be denoised."""
-    )
-
     uniform bool collection:renderVisibility:includeRoot = 1 (
+        customData = {
+            bool apiSchemaOverride = true
+        }
+    )
+    uniform bool collection:cameraVisibility:includeRoot = 1 (
         customData = {
             bool apiSchemaOverride = true
         }

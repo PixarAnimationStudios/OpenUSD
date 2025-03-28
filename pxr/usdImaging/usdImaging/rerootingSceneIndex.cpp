@@ -6,216 +6,13 @@
 //
 #include "pxr/usdImaging/usdImaging/rerootingSceneIndex.h"
 
+#include "pxr/usdImaging/usdImaging/rerootingContainerDataSource.h"
+
 #include "pxr/base/trace/trace.h"
-#include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/systemSchema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-namespace {
-
-class _RerootingSceneIndexPathDataSource : public HdPathDataSource
-{
-public:
-    HD_DECLARE_DATASOURCE(_RerootingSceneIndexPathDataSource)
-
-    _RerootingSceneIndexPathDataSource(
-        const SdfPath &srcPrefix,
-        const SdfPath &dstPrefix,
-        HdPathDataSourceHandle const &inputDataSource)
-      : _srcPrefix(srcPrefix)
-      , _dstPrefix(dstPrefix)
-      , _inputDataSource(inputDataSource)
-    {
-    }
-
-    VtValue GetValue(const Time shutterOffset) override
-    {
-        return VtValue(GetTypedValue(shutterOffset));
-    }
-
-    bool GetContributingSampleTimesForInterval(
-        const Time startTime,
-        const Time endTime,
-        std::vector<Time> * const outSampleTimes) override
-    {
-        if (!_inputDataSource) {
-            return false;
-        }
-
-        return _inputDataSource->GetContributingSampleTimesForInterval(
-                startTime, endTime, outSampleTimes);
-    }
-
-    SdfPath GetTypedValue(const Time shutterOffset) override
-    {
-        if (!_inputDataSource) {
-            return SdfPath();
-        }
-
-        const SdfPath srcPath = _inputDataSource->GetTypedValue(shutterOffset);
-        return srcPath.ReplacePrefix(_srcPrefix, _dstPrefix);
-    }
-
-private:
-    const SdfPath _srcPrefix;
-    const SdfPath _dstPrefix;
-    HdPathDataSourceHandle const _inputDataSource;
-};
-
-// ----------------------------------------------------------------------------
-
-class _RerootingSceneIndexPathArrayDataSource : public HdPathArrayDataSource
-{
-public:
-    HD_DECLARE_DATASOURCE(_RerootingSceneIndexPathArrayDataSource)
-
-    _RerootingSceneIndexPathArrayDataSource(
-        const SdfPath& srcPrefix,
-        const SdfPath& dstPrefix,
-        HdPathArrayDataSourceHandle const & inputDataSource)
-      : _srcPrefix(srcPrefix)
-      , _dstPrefix(dstPrefix)
-      , _inputDataSource(inputDataSource)
-    {
-    }
-
-    VtValue GetValue(const Time shutterOffset) override
-    {
-        return VtValue(GetTypedValue(shutterOffset));
-    }
-
-    bool GetContributingSampleTimesForInterval(
-        const Time startTime,
-        const Time endTime,
-        std::vector<Time>*  const outSampleTimes) override
-    {
-        if (!_inputDataSource) {
-            return false;
-        }
-
-        return _inputDataSource->GetContributingSampleTimesForInterval(
-            startTime, endTime, outSampleTimes);
-    }
-
-    VtArray<SdfPath> GetTypedValue(const Time shutterOffset) override
-    {
-        if (!_inputDataSource) {
-            return {};
-        }
-
-        VtArray<SdfPath> result
-            = _inputDataSource->GetTypedValue(shutterOffset);
-
-        const size_t n = result.size();
-
-        if (n == 0) {
-            return result;
-        }
-
-        size_t i = 0;
-
-        // If _srcPrefix is absolute root path, we know that we
-        // need to translate every path.
-        if (!_srcPrefix.IsAbsoluteRootPath()) {
-            // Find the first element where we need to change the path.
-            //
-            // Use const & so that paths[i] does not trigger VtArray
-            // to make a copy.
-            const VtArray<SdfPath> &paths = result.AsConst();
-            while (!paths[i].HasPrefix(_srcPrefix)) {
-                ++i;
-                if (i == n) {
-                    // No need to modify result if no path needed
-                    // to be changed.
-                    return result;
-                }
-            }
-        }
-
-        // Starting with the first element where the path matched the
-        // prefix, process it and all following elements.
-        for (; i < n; i++) {
-            SdfPath &path = result[i];
-            path = path.ReplacePrefix(_srcPrefix, _dstPrefix);
-        }
-
-        return result;
-    }
-
-private:
-    const SdfPath _srcPrefix;
-    const SdfPath _dstPrefix;
-    HdPathArrayDataSourceHandle const _inputDataSource;
-};
-
-// ----------------------------------------------------------------------------
-
-class _RerootingSceneIndexContainerDataSource : public HdContainerDataSource
-{
-public:
-    HD_DECLARE_DATASOURCE(_RerootingSceneIndexContainerDataSource)
-
-    _RerootingSceneIndexContainerDataSource(
-        const SdfPath &srcPrefix,
-        const SdfPath &dstPrefix,
-        HdContainerDataSourceHandle const &inputDataSource)
-      : _srcPrefix(srcPrefix)
-      , _dstPrefix(dstPrefix)
-      , _inputDataSource(inputDataSource)
-    {
-    }
-
-    TfTokenVector GetNames() override
-    {
-        if (!_inputDataSource) {
-            return {};
-        }
-
-        return _inputDataSource->GetNames();
-    }
-
-    HdDataSourceBaseHandle Get(const TfToken& name) override
-    {
-        if (!_inputDataSource) {
-            return nullptr;
-        }
-
-        // wrap child containers so that we can wrap their children
-        HdDataSourceBaseHandle const childSource = _inputDataSource->Get(name);
-        if (!childSource) {
-            return nullptr;
-        }
-
-        if (auto childContainer =
-                HdContainerDataSource::Cast(childSource)) {
-            return New(_srcPrefix, _dstPrefix, std::move(childContainer));
-        }
-
-        if (auto childPathDataSource =
-                HdTypedSampledDataSource<SdfPath>::Cast(childSource)) {
-            return _RerootingSceneIndexPathDataSource::New(
-                _srcPrefix, _dstPrefix, childPathDataSource);
-        }
-
-        if (auto childPathArrayDataSource =
-                HdTypedSampledDataSource<VtArray<SdfPath>>::Cast(
-                    childSource)) {
-            return _RerootingSceneIndexPathArrayDataSource::New(
-                _srcPrefix, _dstPrefix, childPathArrayDataSource);
-        }
-
-        return childSource;
-    }
-
-private:
-    const SdfPath _srcPrefix;
-    const SdfPath _dstPrefix;
-    HdContainerDataSourceHandle const _inputDataSource;
-};
-
-} // anonymous namespace
 
 UsdImagingRerootingSceneIndex::UsdImagingRerootingSceneIndex(
     HdSceneIndexBaseRefPtr const &inputScene,
@@ -248,8 +45,8 @@ UsdImagingRerootingSceneIndex::GetPrim(const SdfPath& primPath) const
         // Wrap the container data source so that paths are properly re-mapped.
         // When src == dst, we can short-circuit this.
         if (!_srcEqualsDst) {
-            prim.dataSource = _RerootingSceneIndexContainerDataSource::New(
-                _srcPrefix, _dstPrefix, prim.dataSource);
+            prim.dataSource = UsdImagingRerootingContainerDataSource::New(
+                prim.dataSource, _srcPrefix, _dstPrefix);
         }
 
         // If we are at the dst root, we'll compose the system data source.

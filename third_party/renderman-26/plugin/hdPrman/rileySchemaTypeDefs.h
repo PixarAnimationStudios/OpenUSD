@@ -11,8 +11,8 @@
 /* ** defs.py or the (*)Schema.template.h files to make changes.           ** */
 /* ************************************************************************** */
 
-#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_SCHEMA_TYPEDEFS_H
-#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_SCHEMA_TYPEDEFS_H
+#ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_SCHEMA_TYPEDEFS_H
+#define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_SCHEMA_TYPEDEFS_H
 
 #include "hdPrman/api.h"
 

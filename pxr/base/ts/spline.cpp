@@ -34,10 +34,12 @@ TF_REGISTRY_FUNCTION(TfType)
 // static
 bool TsSpline::IsSupportedValueType(const TfType valueType)
 {
-    return (
-        valueType == Ts_GetType<double>()
-        || valueType == Ts_GetType<float>()
-        || valueType == Ts_GetType<GfHalf>());
+#define _CHECK_TYPE(unused, tuple) \
+    (valueType == Ts_GetType<TS_SPLINE_VALUE_CPP_TYPE(tuple)>()) ||
+
+    return (TF_PP_SEQ_FOR_EACH(_CHECK_TYPE, ~, TS_SPLINE_SUPPORTED_VALUE_TYPES)
+        false);
+#undef _CHECK_TYPE
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -341,6 +343,38 @@ bool TsSpline::DoSidesDiffer(
     Eval(time, &value);
     return (value == preValue);
 }
+
+template <>
+bool TsSpline::_Eval(
+    const TsTime time,
+    VtValue* const valueOut,
+    const Ts_EvalAspect aspect,
+    const Ts_EvalLocation location) const
+{
+    const std::optional<double> result =
+        Ts_Eval(_GetData(), time, aspect, location);
+
+    if (!result)
+    {
+        return false;
+    }
+
+#define _ASSIGN_TYPE(unused, tuple)                                       \
+    if (GetValueType() == Ts_GetType<TS_SPLINE_VALUE_CPP_TYPE(tuple)>())  \
+    {                                                                     \
+        *valueOut = TS_SPLINE_VALUE_CPP_TYPE(tuple)(*result);             \
+        return true;                                                      \
+    }
+
+    TF_PP_SEQ_FOR_EACH(_ASSIGN_TYPE, ~, TS_SPLINE_SUPPORTED_VALUE_TYPES);
+
+    TF_CODING_ERROR("Unsupported spline value type");
+
+#undef _ASSIGN_TYPE
+
+    return false;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Whole-Spline Queries

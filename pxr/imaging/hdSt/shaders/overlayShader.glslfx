@@ -1,0 +1,66 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2021 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/overlayShader.glslfx
+
+---
+--- The fallback overlay shader is used as a replacement shader if the
+--- original material shader failed to compile. It needs to
+--- define both the surfaceShader() and displacementShader() terminals.
+---
+-- configuration
+{
+    "techniques": {
+        "default": {
+            "displacementShader": {
+                "source": [ "Overlay.Displacement" ]
+            },
+            "surfaceShader": {
+                "source": [ "Overlay.Surface" ]
+            }
+        }
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Overlay.Surface
+
+vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
+{
+    float d = 1.0;
+    vec4 bg = vec4(0,0,0,1);
+
+#ifdef HD_HAS_depthReadback
+    d = texelFetch(HdGetSampler_depthReadback(), ivec2(gl_FragCoord.xy),
+        0).x;
+#endif
+
+#ifdef HD_HAS_colorReadback
+    bg = texelFetch(HdGetSampler_colorReadback(), ivec2(gl_FragCoord.xy),
+        0);
+#endif
+
+    vec4 colorOut = color;
+    if (d <= gl_FragCoord.z) {
+        const float showThroughAlpha = 0.3;
+        float adjAlpha = showThroughAlpha * color.a;
+        colorOut.rgb = color.rgb*adjAlpha + bg.rgb*bg.a*(1-adjAlpha);
+        colorOut.a = adjAlpha + bg.a*(1.0-adjAlpha);
+    }
+
+    return colorOut;
+}
+--- --------------------------------------------------------------------------
+-- glsl Overlay.Displacement
+
+vec4 displacementShader(int index, vec4 Peye, vec3 Neye, vec4 patchCoord)
+{
+    return Peye;
+}

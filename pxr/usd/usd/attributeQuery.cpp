@@ -134,9 +134,8 @@ UsdAttributeQuery::_Get(T* value, UsdTimeCode time) const
     // varying, then the stored resolve info won't give us the correct value 
     // for default time. In this case we have to get the resolve info at default
     // time and query the value from that.
-    if (time.IsDefault() &&
-            (_resolveInfo.GetSource() == UsdResolveInfoSourceTimeSamples ||
-             _resolveInfo.GetSource() == UsdResolveInfoSourceValueClips)) {
+    if (time.IsDefault() && 
+            _resolveInfo.ValueSourceMightBeTimeVarying()) {
 
         static const UsdTimeCode defaultTime = UsdTimeCode::Default();
         UsdResolveInfo defaultResolveInfo;

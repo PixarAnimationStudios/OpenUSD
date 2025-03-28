@@ -1219,9 +1219,17 @@ SdfLayer::GetNumTimeSamplesForPath(const SdfPath& path) const
 bool 
 SdfLayer::GetBracketingTimeSamplesForPath(const SdfPath& path, 
                                           double time,
-                                          double* tLower, double* tUpper)
+                                          double* tLower, double* tUpper) const
 {
-    return _data->GetBracketingTimeSamplesForPath(path, time, tLower, tUpper);
+    return _data->GetBracketingTimeSamplesForPath(
+        path, time, tLower, tUpper);
+}
+
+bool
+SdfLayer::GetPreviousTimeSampleForPath(
+    const SdfPath& path, double time, double* tPrevious) const
+{
+    return _data->GetPreviousTimeSampleForPath(path, time, tPrevious);
 }
 
 bool 
@@ -2142,7 +2150,6 @@ SdfLayer::PermissionToSave() const
 {
     return _permissionToSave &&
         !IsAnonymous() &&
-        !IsMuted()     &&
         Sdf_CanWriteLayerToPath(GetResolvedPath());
 }
 
@@ -3910,6 +3917,13 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
     // Guard against setting an empty SdfData, which is invalid.
     TF_VERIFY(!newData->IsEmpty() );
 
+    // XXX -- Should this be disallowed when the layer is muted?  We
+    //        should at least put the new data in _mutedLayerData which,
+    //        incidentally, won't have an entry for this layer if the
+    //        layer was clean when muted.  In that case we should also
+    //        not send any change notifications since the content was
+    //        and remains muted.
+
     // This code below performs a series of specific edits to mutate _data
     // to match newData.  This approach provides fine-grained change
     // notification, which allows more efficient invalidation in clients
@@ -3947,6 +3961,16 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
             _PrimCreateSpec(std::forward<decltype(args)>(args)...);
         };
 
+    const auto getFieldValuesFunc = 
+        [this](const SdfSchemaBase &newDataSchema,
+               const SdfAbstractData &newData,
+               const SdfPath& path,
+               const TfToken& field)
+        {
+            return std::make_pair(GetField(path, field), 
+                _GetField(newDataSchema, newData, path, field));
+        };
+
     const auto setFieldFunc = 
         [this](auto&&... args)
         {
@@ -3968,7 +3992,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
         };
 
     _ProcessIncomingData(newData, newDataSchema, /*processPropertyFields*/ true,
-        deleteSpecFunc, createSpecFunc, setFieldFunc, errorFunc);
+        deleteSpecFunc, createSpecFunc, getFieldValuesFunc, setFieldFunc, errorFunc);
 
     // Verify that the result matches.
     // TODO Enable in debug builds.
@@ -4005,6 +4029,39 @@ SdfLayer::CreateDiff(
             Sdf_ChangeManager::Get().DidAddSpec(_self, path, inert);
         };
 
+    const auto getFieldValuesFunc = 
+        [this](const SdfSchemaBase &newDataSchema,
+               const SdfAbstractData &newData,
+               const SdfPath& path,
+               const TfToken& field)
+        {
+            VtValue oldValue = GetField(path, field);
+            VtValue newValue = _GetField(newDataSchema, newData, path, field);
+
+            // We do not want to generate change list info entries for
+            // newly created specs that have default values for 
+            // specifier. In the case this function is being called from
+            // CreateDiff, which is a read only operation, a spec at the
+            // given path in layer will not have been created. This 
+            // causes the call to layer->GetField(...) to not return
+            // values for required fields as it normally would. We
+            // workaround that by introducing the values for required
+            // fields ourselves. This avoids downstream clients from
+            // interpreting this as a significant change.
+            // XXX: Note that we currently only manually provide default
+            // values for prim paths. We might want to take a similar approach
+            // for property specs in the future but as-is in the worst case
+            // their absence may trigger a property resync which is not
+            // typically an expensive operation.
+            if (oldValue.IsEmpty() && path.IsPrimPath()) {
+                if (field == SdfFieldKeys->Specifier) {
+                    oldValue = SdfSpecifierOver;
+                }
+            }
+
+            return std::make_pair(std::move(oldValue), std::move(newValue));
+        };
+
     const auto setFieldFunc = 
         [this](const SdfPath& path, const TfToken& fieldName, 
                const VtValue& value, VtValue* oldValuePtr) 
@@ -4023,24 +4080,24 @@ SdfLayer::CreateDiff(
         };
 
     _ProcessIncomingData(layer->_data, &layer->GetSchema(), processPropertyFields,
-        deleteSpecFunc, createSpecFunc, setFieldFunc, errorFunc);
+        deleteSpecFunc, createSpecFunc, getFieldValuesFunc, setFieldFunc, errorFunc);
 
     return Sdf_ChangeManager::Get().ExtractLocalChanges(_self);
 }
 
 template<typename DeleteSpecFunc, typename CreateSpecFunc, 
-         typename SetFieldFunc, typename ErrorFunc>
+         typename GetFieldValuesFunc, typename SetFieldFunc, typename ErrorFunc>
 void
 SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
                         const SdfSchemaBase *newDataSchema,
                         bool processPropertyFields,
                         const DeleteSpecFunc &deleteSpecFunc,
                         const CreateSpecFunc &createSpecFunc,
+                        const GetFieldValuesFunc &getFieldValuesFunc,
                         const SetFieldFunc &setFieldFunc,
                         const ErrorFunc &errorFunc) const
 {
     const bool differentSchema = newDataSchema && newDataSchema != &GetSchema();
-
     // Remove specs that no longer exist or whose required fields changed.
     {
         // Collect specs to delete, ordered by namespace.
@@ -4210,6 +4267,7 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
                          const bool processPropertyFields_,
                          const DeleteSpecFunc &deleteSpecFunc_,
                          const CreateSpecFunc &createSpecFunc_,
+                         const GetFieldValuesFunc &getFieldValuesFunc_,
                          const SetFieldFunc &setFieldFunc_)
                 : layer(layer_)
                 , newData(newData_)
@@ -4217,6 +4275,7 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
                 , processPropertyFields(processPropertyFields_)
                 , deleteSpecFunc(deleteSpecFunc_)
                 , createSpecFunc(createSpecFunc_)
+                , getFieldValuesFunc(getFieldValuesFunc_)
                 , setFieldFunc(setFieldFunc_) {}
 
             virtual bool VisitSpec(
@@ -4265,9 +4324,9 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
 
                 // Set field values.
                 for (TfToken const &field: newFields) {
-                    VtValue newValue =
-                        _GetField(newDataSchema, newData, path, field);
-                    VtValue oldValue = layer->GetField(path, field);
+                    auto [oldValue, newValue] = getFieldValuesFunc(
+                        newDataSchema, newData, path, field);
+
                     if (oldValue != newValue) {
                         if (differentSchema && oldValue.IsEmpty() &&
                             !thisLayerSchema.IsValidFieldForSpec(
@@ -4298,6 +4357,7 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
             const bool processPropertyFields;
             const DeleteSpecFunc &deleteSpecFunc;
             const CreateSpecFunc &createSpecFunc;
+            const GetFieldValuesFunc & getFieldValuesFunc;
             const SetFieldFunc &setFieldFunc;
             std::map<TfToken, SdfPath> unrecognizedFields;
         };
@@ -4306,7 +4366,8 @@ SdfLayer::_ProcessIncomingData(const SdfAbstractDataPtr &newData,
         // this layer's schema.
         _SpecUpdater updater( this, newData,
             newDataSchema ? *newDataSchema : GetSchema(), 
-            processPropertyFields, deleteSpecFunc, createSpecFunc,setFieldFunc);
+            processPropertyFields, deleteSpecFunc, createSpecFunc,
+            getFieldValuesFunc, setFieldFunc);
         newData->VisitSpecs(&updater);
 
         // If there were unrecognized fields, report an error.
@@ -4953,6 +5014,71 @@ SdfLayer::_WriteToFile(const string &newFileName,
         return false;
     }
 
+    // Helper class for RAII and unmuting for save.  If the layer is muted
+    // swap in the unmuted data in the c'tor and back out in the d'tor
+    // without any notification or change processing.
+    class _TemporaryUnmuter
+    {
+    public:
+        _TemporaryUnmuter(const std::string& mutedPath,
+                          const SdfAbstractDataRefPtr* data)
+            : _mutedPath(mutedPath)
+            , _data(const_cast<SdfAbstractDataRefPtr*>(data))
+            , _wasMuted(false)
+        {
+            std::unique_lock<std::mutex> lock(*_mutedLayersMutex);
+            if (const auto i = _mutedLayerData->find(_mutedPath);
+                    i != _mutedLayerData->end()) {
+                // Install the unmuted data.
+                _wasMuted  = true;
+                _savedData = *_data;
+                *_data     = i->second;
+            }
+        }
+
+        ~_TemporaryUnmuter()
+        {
+            Unlock();
+        }
+
+        _TemporaryUnmuter(const _TemporaryUnmuter&) = delete;
+        _TemporaryUnmuter(_TemporaryUnmuter&&) = delete;
+        _TemporaryUnmuter& operator=(const _TemporaryUnmuter&) = delete;
+        _TemporaryUnmuter& operator=(_TemporaryUnmuter&&) = delete;
+
+        void Unlock()
+        {
+            if (_wasMuted) {
+                std::unique_lock<std::mutex> lock(*_mutedLayersMutex);
+                if (const auto i = _mutedLayerData->find(_mutedPath);
+                        i != _mutedLayerData->end()) {
+                    if (*_data == i->second) {
+                        // This is the expected case.
+                    }
+                    else {
+                        TF_CODING_ERROR("Layer data modified during save");
+                    }
+                }
+                else {
+                    TF_CODING_ERROR("Layer unmuted during save");
+                }
+                *_data     = _savedData;
+                _savedData = TfNullPtr;
+                _wasMuted  = false;
+            }
+        }
+
+    private:
+        std::string _mutedPath;
+        SdfAbstractDataRefPtr* _data;
+        SdfAbstractDataRefPtr _savedData;
+        bool _wasMuted;
+    };
+
+    // If the layer is muted then restore the contents temporarily while
+    // we save.
+    _TemporaryUnmuter unmuter(_GetMutedPath(), &_data);
+
     // If the output file format has a different schema, then transfer content
     // to an in-memory layer first just to validate schema compatibility.
     const bool differentSchema = &fileFormat->GetSchema() != &GetSchema();
@@ -4976,6 +5102,9 @@ SdfLayer::_WriteToFile(const string &newFileName,
     bool ok = isSave
         ? fileFormat->SaveToFile(*this, newFileName, comment, args)
         : fileFormat->WriteToFile(*this, newFileName, comment, args);
+
+    // Restore the muted data if necessary.
+    unmuter.Unlock();
 
     // If we wrote to the backing file then we're now clean.
     if (ok && isSave) {
@@ -5010,12 +5139,6 @@ bool
 SdfLayer::_Save(bool force) const
 {
     TRACE_FUNCTION();
-
-    if (IsMuted()) {
-        TF_CODING_ERROR("Cannot save muted layer @%s@",
-                        GetIdentifier().c_str());
-        return false;
-    }
 
     if (IsAnonymous()) {
         TF_CODING_ERROR("Cannot save anonymous layer @%s@",

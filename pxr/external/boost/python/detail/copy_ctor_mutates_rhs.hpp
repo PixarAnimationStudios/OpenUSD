@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/copy_ctor_mutates_rhs.hpp>
-#else
-
 #include "pxr/external/boost/python/detail/is_auto_ptr.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
@@ -29,5 +25,4 @@ struct copy_ctor_mutates_rhs
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_COPY_CTOR_MUTATES_RHS_HPP

@@ -493,7 +493,7 @@ based on what is supported in the target rendering system.
 
 # UsdShade Based Shader Definition {#UsdShadeShaderDefinition}
 
-UsdShade has an NdrParserPlugin (\ref UsdShadeShaderDefParserPlugin) that 
+UsdShade has an SdrParserPlugin (\ref UsdShadeShaderDefParserPlugin) that 
 enables shader definitions to be encoded as USD scene description using the 
 schemas available in UsdShade. A discovery plugin can open a USD stage 
 containing shader definitions and populate the shader registry with nodes 

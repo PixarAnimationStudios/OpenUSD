@@ -24,6 +24,7 @@
 
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
+#include "pxr/imaging/hdSt/renderPass.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
@@ -50,7 +51,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (PickBufferBinding)
     (Picking)
 
-    (widgetDepthStencil)
+    (overlayDepthStencil)
 );
 
 namespace {
@@ -108,8 +109,8 @@ _GetAovPath(TfToken const& aovName)
 // -------------------------------------------------------------------------- //
 HdxPickTask::HdxPickTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdTask(id)
-    , _allRenderTags()
-    , _nonWidgetRenderTags()
+    , _renderTags()
+    , _useOverlayPass(false)
     , _index(nullptr)
     , _hgi(nullptr)
     , _pickableDepthIndex(0)
@@ -150,12 +151,12 @@ HdxPickTask::_InitIfNeeded()
     for (HdRenderPassAovBinding const & aovBinding : _pickableAovBindings) {
         _ResizeOrCreateBufferForAOV(aovBinding);
     }
-    for (HdRenderPassAovBinding const & aovBinding : _widgetAovBindings) {
+    for (HdRenderPassAovBinding const & aovBinding : _overlayAovBindings) {
         _ResizeOrCreateBufferForAOV(aovBinding);
     }
 
     if (_pickableRenderPass == nullptr || _occluderRenderPass == nullptr ||
-        _widgetRenderPass == nullptr) {
+        _overlayRenderPass == nullptr) {
         // The collection created below is just for satisfying the HdRenderPass
         // constructor. The collections for the render passes are set in Query.
         HdRprimCollection col(HdTokens->geometry,
@@ -164,13 +165,13 @@ HdxPickTask::_InitIfNeeded()
             _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
         _occluderRenderPass =
             _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
-        _widgetRenderPass = 
+        _overlayRenderPass = 
             _index->GetRenderDelegate()->CreateRenderPass(&*_index, col);
 
         // initialize renderPassStates with ID render shader
         _pickableRenderPassState = _InitIdRenderPassState(_index);
         _occluderRenderPassState = _InitIdRenderPassState(_index);
-        _widgetRenderPassState = _InitIdRenderPassState(_index);
+        _overlayRenderPassState = _InitIdRenderPassState(_index);
         // Turn off color writes for the occluders, wherein we want to only
         // condition the depth buffer and not write out any IDs.
         // XXX: This is a hacky alternative to using a different shader mixin
@@ -239,31 +240,32 @@ HdxPickTask::_CreateAovBindings()
         }
     }
 
-    // Set up widget render pass' depth binding, a fresh empty depthStencil
-    // buffer, so that inter-widget occlusion is correct while widgets all draw
-    // in front of any previously-drawn items.  While writing to other AOVs,
-    // don't clear them at all, so that previously-drawn items are retained.
+    // Set up overlay render pass depth binding, a fresh empty depthStencil
+    // buffer, so that inter-item overlay occlusion is correct while overlay
+    // items all draw in front of any previously-drawn items.  While writing to
+    // other AOVs, don't clear them at all, so that previously-drawn items are
+    // retained.
     {
-        _widgetDepthStencilBuffer = std::make_unique<HdStRenderBuffer>(
+        _overlayDepthStencilBuffer = std::make_unique<HdStRenderBuffer>(
             hdStResourceRegistry.get(),
-            _GetAovPath(_tokens->widgetDepthStencil));
+            _GetAovPath(_tokens->overlayDepthStencil));
 
         HdAovDescriptor depthDesc = renderDelegate->GetDefaultAovDescriptor(
-            HdAovTokens->depth);
+            _depthToken);
 
-        _widgetAovBindings = _pickableAovBindings;
-        for (auto& binding : _widgetAovBindings) {
+        _overlayAovBindings = _pickableAovBindings;
+        for (auto& binding : _overlayAovBindings) {
             binding.clearValue = VtValue();
         }
 
-        HdRenderPassAovBinding widgetDepthBinding;
-        widgetDepthBinding.aovName = _tokens->widgetDepthStencil;
-        widgetDepthBinding.renderBufferId = _GetAovPath(
-            _tokens->widgetDepthStencil);
-        widgetDepthBinding.aovSettings = depthDesc.aovSettings;
-        widgetDepthBinding.renderBuffer = _widgetDepthStencilBuffer.get();
-        widgetDepthBinding.clearValue = VtValue(GfVec4f(1));
-        _widgetAovBindings.back() = widgetDepthBinding;
+        HdRenderPassAovBinding overlayDepthBinding;
+        overlayDepthBinding.aovName = _tokens->overlayDepthStencil;
+        overlayDepthBinding.renderBufferId = _GetAovPath(
+            _tokens->overlayDepthStencil);
+        overlayDepthBinding.aovSettings = depthDesc.aovSettings;
+        overlayDepthBinding.renderBuffer = _overlayDepthStencilBuffer.get();
+        overlayDepthBinding.clearValue = VtValue(GfVec4f(1));
+        _overlayAovBindings.back() = overlayDepthBinding;
     }
 }
 
@@ -276,7 +278,7 @@ HdxPickTask::_CleanupAovBindings()
         for (auto const & aovBuffer : _pickableAovBuffers) {
             aovBuffer->Finalize(renderParam);
         }
-        _widgetDepthStencilBuffer->Finalize(renderParam);
+        _overlayDepthStencilBuffer->Finalize(renderParam);
     }
     _pickableAovBuffers.clear();
     _pickableAovBindings.clear();
@@ -397,10 +399,24 @@ HdxPickTask::_UseOcclusionPass() const
 }
 
 bool
-HdxPickTask::_UseWidgetPass() const
+HdxPickTask::_UseOverlayPass() const
 {
-    return _allRenderTags != _nonWidgetRenderTags;
+    return _useOverlayPass;
 }
+
+void
+HdxPickTask::_UpdateUseOverlayPass()
+{
+    // Check if the overlay pass is actually needed using HasDrawItems().
+    // This assumes the function only be called during Prepare or Execute.
+    if (_useOverlayPass) {
+        if (HdSt_RenderPass* overlayRenderPass =
+                dynamic_cast<HdSt_RenderPass*>(_overlayRenderPass.get())) {
+            _useOverlayPass = overlayRenderPass->HasDrawItems(GetRenderTags());
+        }
+    }
+}
+
 
 template<typename T>
 HdStTextureUtils::AlignedBuffer<T>
@@ -459,18 +475,11 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
     }
 
     if ((*dirtyBits) & HdChangeTracker::DirtyRenderTags) {
-        _allRenderTags = _GetTaskRenderTags(delegate);
-        // Split the supplied render tags into the "widget" tag if any,
-        // and the remaining tags.  Later we render these groups in separate
-        // passes.
-        _nonWidgetRenderTags.clear();
-        _nonWidgetRenderTags.reserve(_allRenderTags.size());
-        for (const TfToken& tag : _allRenderTags) {
-            if (tag != HdxRenderTagTokens->widget) {
-                _nonWidgetRenderTags.push_back(tag);
-            }
-        }
+        _renderTags = _GetTaskRenderTags(delegate);
     }
+
+    // At this point in the process, we have to assume the overlay pass is used.
+    _useOverlayPass = true;
 
     _GetTaskContextData(ctx, HdxPickTokens->pickParams, &_contextParams);
 
@@ -486,7 +495,7 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
     
     HdRenderPassStateSharedPtr states[] = {_pickableRenderPassState,
                                            _occluderRenderPassState,
-                                           _widgetRenderPassState};
+                                           _overlayRenderPassState};
 
     // Are we using stencil conditioning?
     bool needStencilConditioning =
@@ -560,8 +569,8 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
     if (_UseOcclusionPass()) {
         _occluderRenderPassState->SetAovBindings({_occluderAovBinding});
     }
-    if (_UseWidgetPass()) {
-        _widgetRenderPassState->SetAovBindings(_widgetAovBindings);
+    if (_UseOverlayPass()) {
+        _overlayRenderPassState->SetAovBindings(_overlayAovBindings);
     }
 
     // Update the collections
@@ -574,12 +583,14 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
     // (ii) [mandatory] id render for "pickable" prims: This writes out the
     // various id's for prims that pass the depth test.
     //
-    // (iii) [optional] id render for "widget" prims.  This pass, along with
-    // bound color and depth input AOVs, allows widget materials the choice of 
+    // (iii) [optional] id render for "overlay" prims.  This pass, along with
+    // bound color and depth input AOVs, allows overlay materials the choice of 
     // drawing always-on-top, blending to show through occluders, or being
     // occluded as normal, depending on their shader behavior.  Note this 
-    // drawing scheme leaves widgets out of the shared depth buffer for 
-    // simplicity.
+    // drawing scheme leaves overlay items out of the shared depth buffer for 
+    // simplicity.  Also note that the "overlay" prims will be drawn twice
+    // since they will be included in the other passes, since we can only cull
+    // by renderTag and not materialTag.
     if (_UseOcclusionPass()) {
         // Pass (i) from above
         HdRprimCollection occluderCol =
@@ -591,16 +602,19 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
     _pickableRenderPass->SetRprimCollection(_contextParams.collection);
 
     // Pass (iii) from above
-    if (_UseWidgetPass()) {
-        _widgetRenderPass->SetRprimCollection(_contextParams.collection);
+    if (_UseOverlayPass()) {
+        HdRprimCollection overlayCol =
+            HdRprimCollection(_contextParams.collection);
+        overlayCol.SetMaterialTag(HdStMaterialTagTokens->displayInOverlay);
+        _overlayRenderPass->SetRprimCollection(overlayCol);
     }
 
     if (_UseOcclusionPass()) {
         _occluderRenderPass->Sync();
     }
     _pickableRenderPass->Sync();
-    if (_UseWidgetPass()) {
-        _widgetRenderPass->Sync();
+    if (_UseOverlayPass()) {
+        _overlayRenderPass->Sync();
     }
 
     *dirtyBits = HdChangeTracker::Clean;
@@ -618,12 +632,16 @@ HdxPickTask::Prepare(HdTaskContext* ctx,
         return;
     }
 
+    // Check if the overlay pass is actually needed, which should only be
+    // called during Prepare or Execute.
+    _UpdateUseOverlayPass();
+
     if (_UseOcclusionPass()) {
         _occluderRenderPassState->Prepare(renderIndex->GetResourceRegistry());
     }
     _pickableRenderPassState->Prepare(renderIndex->GetResourceRegistry());
-    if (_UseWidgetPass()) {
-        _widgetRenderPassState->Prepare(renderIndex->GetResourceRegistry());
+    if (_UseOverlayPass()) {
+        _overlayRenderPassState->Prepare(renderIndex->GetResourceRegistry());
     }  
 
     _ClearPickBuffer();
@@ -722,6 +740,10 @@ HdxPickTask::Execute(HdTaskContext* ctx)
 {
     GLF_GROUP_FUNCTION();
 
+    // Check if the overlay pass is actually needed, which should only be
+    // called during Prepare or Execute.
+    _UpdateUseOverlayPass();
+
     // This is important for Hgi garbage collection to run.
     _hgi->StartFrame();
 
@@ -736,12 +758,12 @@ HdxPickTask::Execute(HdTaskContext* ctx)
         _ConditionStencilWithGLCallback(_contextParams.depthMaskCallback,
             _pickableAovBindings[_pickableDepthIndex].renderBuffer);
         _ConditionStencilWithGLCallback(_contextParams.depthMaskCallback,
-            _widgetDepthStencilBuffer.get());
+            _overlayDepthStencilBuffer.get());
     }
 
     if (_UseOcclusionPass()) {
         _occluderRenderPass->Execute(_occluderRenderPassState,
-                                     _nonWidgetRenderTags);
+                                     GetRenderTags());
         // Prevent the depth from being cleared so that occluders are retained.
         _pickableAovBindings[_pickableDepthIndex].clearValue = VtValue();
     }
@@ -759,19 +781,19 @@ HdxPickTask::Execute(HdTaskContext* ctx)
     // Push the changes to the clearValue into the renderPassState.
     _pickableRenderPassState->SetAovBindings(_pickableAovBindings);
     _pickableRenderPass->Execute(_pickableRenderPassState,
-                                 _nonWidgetRenderTags);
+                                 GetRenderTags());
 
-    if (_UseWidgetPass()) {
+    if (_UseOverlayPass()) {
         if (needStencilConditioning) {
-            // Prevent widget depthStencil from being cleared so that stencil is
-            // retained.
-            _widgetAovBindings.back().clearValue = VtValue();
+            // Prevent overlay depthStencil from being cleared so that the
+            // stencil is retained.
+            _overlayAovBindings.back().clearValue = VtValue();
         } else {
-            _widgetAovBindings.back().clearValue = VtValue(GfVec4f(1.0f));
+            _overlayAovBindings.back().clearValue = VtValue(GfVec4f(1.0f));
         }
-        _widgetRenderPassState->SetAovBindings(_widgetAovBindings);
-        _widgetRenderPass->Execute(_widgetRenderPassState,
-            {HdxRenderTagTokens->widget});
+        _overlayRenderPassState->SetAovBindings(_overlayAovBindings);
+        _overlayRenderPass->Execute(_overlayRenderPassState,
+                                    GetRenderTags());
     }
 
     // For 'resolveDeep' mode, read hits from the pick buffer.
@@ -909,7 +931,7 @@ void HdxPickTask::_ResolveDeep()
 const TfTokenVector &
 HdxPickTask::GetRenderTags() const
 {
-    return _allRenderTags;
+    return _renderTags;
 }
 
 // -------------------------------------------------------------------------- //

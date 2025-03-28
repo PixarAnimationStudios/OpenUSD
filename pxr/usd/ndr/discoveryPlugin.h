@@ -8,7 +8,11 @@
 #ifndef PXR_USD_NDR_DISCOVERY_PLUGIN_H
 #define PXR_USD_NDR_DISCOVERY_PLUGIN_H
 
-/// \file ndr/registry.h
+/// \file ndr/discoveryPlugin.h
+///
+/// \deprecated
+/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
+/// in sdr/discoveryPlugin.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ndr/api.h"
@@ -23,6 +27,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Register a discovery plugin (`DiscoveryPluginClass`) with the plugin system.
 /// If registered, the discovery plugin will execute its discovery process when
 /// the registry is instantiated.
+///
+/// \deprecated
+/// Deprecated in favor of SDR_REGISTER_DISCOVERY_PLUGIN
 #define NDR_REGISTER_DISCOVERY_PLUGIN(DiscoveryPluginClass)                   \
 TF_REGISTRY_FUNCTION(TfType)                                                  \
 {                                                                             \
@@ -35,6 +42,9 @@ TF_DECLARE_WEAK_AND_REF_PTRS(NdrDiscoveryPluginContext);
 /// A context for discovery.  Discovery plugins can use this to get
 /// a limited set of non-local information without direct coupling
 /// between plugins.
+///
+/// \deprecated
+/// Deprecated in favor of SdrDiscoveryPluginContext
 class NdrDiscoveryPluginContext : public TfRefBase, public TfWeakBase
 {
 public:
@@ -123,6 +133,8 @@ TF_DECLARE_WEAK_AND_REF_PTRS(NdrDiscoveryPlugin);
 ///     </li>
 /// </ul>
 ///
+/// \deprecated
+/// Deprecated in favor of SdrDiscoveryPlugin
 class NdrDiscoveryPlugin : public TfRefBase, public TfWeakBase
 {
 public:
@@ -135,6 +147,8 @@ public:
 
     /// Finds and returns all nodes that the implementing plugin should be
     /// aware of.
+    /// \deprecated
+    /// Deprecated in favor of SdrDiscoveryPlugin::DiscoverShaderNodes.
     NDR_API
     virtual NdrNodeDiscoveryResultVec DiscoverNodes(const Context&) = 0;
 
@@ -146,7 +160,9 @@ public:
 
 /// \cond
 /// Factory classes should be hidden from the documentation.
-
+/// \deprecated
+/// Deprecated in favor of SdrDiscoveryPluginFactoryBase and
+/// SdrDiscoveryPluginFactory
 class NdrDiscoveryPluginFactoryBase : public TfType::FactoryBase
 {
 public:

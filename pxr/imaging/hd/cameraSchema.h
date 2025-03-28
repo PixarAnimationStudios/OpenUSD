@@ -50,6 +50,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     (shutterOpen) \
     (shutterClose) \
     (exposure) \
+    (exposureTime) \
+    (exposureIso) \
+    (exposureFStop) \
+    (exposureResponsivity) \
+    (linearExposureScale) \
     (focusOn) \
     (dofAspect) \
     (splitDiopter) \
@@ -130,6 +135,21 @@ public:
     HdFloatDataSourceHandle GetExposure() const;
 
     HD_API
+    HdFloatDataSourceHandle GetExposureTime() const;
+
+    HD_API
+    HdFloatDataSourceHandle GetExposureIso() const;
+
+    HD_API
+    HdFloatDataSourceHandle GetExposureFStop() const;
+
+    HD_API
+    HdFloatDataSourceHandle GetExposureResponsivity() const;
+
+    HD_API
+    HdFloatDataSourceHandle GetLinearExposureScale() const;
+
+    HD_API
     HdBoolDataSourceHandle GetFocusOn() const;
 
     HD_API
@@ -178,6 +198,30 @@ public:
     HD_API
     static const HdDataSourceLocator &GetShutterCloseLocator();
 
+    /// Prim-level relative data source locator to locate exposure.
+    HD_API
+    static const HdDataSourceLocator &GetExposureLocator();
+
+    /// Prim-level relative data source locator to locate exposureTime.
+    HD_API
+    static const HdDataSourceLocator &GetExposureTimeLocator();
+
+    /// Prim-level relative data source locator to locate exposureIso.
+    HD_API
+    static const HdDataSourceLocator &GetExposureIsoLocator();
+
+    /// Prim-level relative data source locator to locate exposureFStop.
+    HD_API
+    static const HdDataSourceLocator &GetExposureFStopLocator();
+
+    /// Prim-level relative data source locator to locate exposureResponsivity.
+    HD_API
+    static const HdDataSourceLocator &GetExposureResponsivityLocator();
+
+    /// Prim-level relative data source locator to locate linearExposureScale.
+    HD_API
+    static const HdDataSourceLocator &GetLinearExposureScaleLocator();
+
     /// Prim-level relative data source locator to locate namespacedProperties.
     HD_API
     static const HdDataSourceLocator &GetNamespacedPropertiesLocator();
@@ -209,6 +253,11 @@ public:
         const HdDoubleDataSourceHandle &shutterOpen,
         const HdDoubleDataSourceHandle &shutterClose,
         const HdFloatDataSourceHandle &exposure,
+        const HdFloatDataSourceHandle &exposureTime,
+        const HdFloatDataSourceHandle &exposureIso,
+        const HdFloatDataSourceHandle &exposureFStop,
+        const HdFloatDataSourceHandle &exposureResponsivity,
+        const HdFloatDataSourceHandle &linearExposureScale,
         const HdBoolDataSourceHandle &focusOn,
         const HdFloatDataSourceHandle &dofAspect,
         const HdContainerDataSourceHandle &splitDiopter,
@@ -265,6 +314,21 @@ public:
         Builder &SetExposure(
             const HdFloatDataSourceHandle &exposure);
         HD_API
+        Builder &SetExposureTime(
+            const HdFloatDataSourceHandle &exposureTime);
+        HD_API
+        Builder &SetExposureIso(
+            const HdFloatDataSourceHandle &exposureIso);
+        HD_API
+        Builder &SetExposureFStop(
+            const HdFloatDataSourceHandle &exposureFStop);
+        HD_API
+        Builder &SetExposureResponsivity(
+            const HdFloatDataSourceHandle &exposureResponsivity);
+        HD_API
+        Builder &SetLinearExposureScale(
+            const HdFloatDataSourceHandle &linearExposureScale);
+        HD_API
         Builder &SetFocusOn(
             const HdBoolDataSourceHandle &focusOn);
         HD_API
@@ -298,6 +362,11 @@ public:
         HdDoubleDataSourceHandle _shutterOpen;
         HdDoubleDataSourceHandle _shutterClose;
         HdFloatDataSourceHandle _exposure;
+        HdFloatDataSourceHandle _exposureTime;
+        HdFloatDataSourceHandle _exposureIso;
+        HdFloatDataSourceHandle _exposureFStop;
+        HdFloatDataSourceHandle _exposureResponsivity;
+        HdFloatDataSourceHandle _linearExposureScale;
         HdBoolDataSourceHandle _focusOn;
         HdFloatDataSourceHandle _dofAspect;
         HdContainerDataSourceHandle _splitDiopter;

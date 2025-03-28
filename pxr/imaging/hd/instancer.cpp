@@ -123,7 +123,8 @@ HdInstancer::GetInitialDirtyBitsMask() const
     return HdChangeTracker::DirtyTransform |
            HdChangeTracker::DirtyPrimvar |
            HdChangeTracker::DirtyInstanceIndex |
-           HdChangeTracker::DirtyInstancer;
+           HdChangeTracker::DirtyInstancer |
+           HdChangeTracker::DirtyVisibility;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -396,7 +396,7 @@ UsdImagingMaterialAdapter::GetMaterialResource(UsdPrim const &prim,
         VtValue value;
         attr.Get(&value);
 
-        configDict.SetValueAtPath(name, value);
+        configDict.insert({name, value});
     }
     networkMap.config = configDict;
 

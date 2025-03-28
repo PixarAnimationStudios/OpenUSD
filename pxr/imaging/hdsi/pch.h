@@ -32,6 +32,7 @@
 #include <cfloat>
 #include <cinttypes>
 #include <cmath>
+#include <complex>
 #include <cstdarg>
 #include <cstddef>
 #include <cstdint>
@@ -43,6 +44,7 @@
 #include <functional>
 #include <initializer_list>
 #include <iosfwd>
+#include <iostream>
 #include <iterator>
 #include <limits>
 #include <list>
@@ -50,8 +52,11 @@
 #include <map>
 #include <math.h>
 #include <memory>
+#include <mutex>
 #include <new>
 #include <numeric>
+#include <optional>
+#include <ostream>
 #include <set>
 #include <sstream>
 #include <stdarg.h>
@@ -68,18 +73,15 @@
 #include <utility>
 #include <variant>
 #include <vector>
-#if defined(PXR_PYTHON_SUPPORT_ENABLED) && !defined(PXR_USE_INTERNAL_BOOST_PYTHON)
-#include "pxr/external/boost/python/common.hpp"
-#include <boost/python/object_fwd.hpp>
-#include <boost/python/object_operators.hpp>
-#if defined(__APPLE__) // Fix breakage caused by Python's pyport.h.
-#undef tolower
-#undef toupper
-#endif
-#endif // PXR_PYTHON_SUPPORT_ENABLED && !PXR_USE_INTERNAL_BOOST_PYTHON
+#include <tbb/blocked_range.h>
 #include <tbb/cache_aligned_allocator.h>
 #include <tbb/concurrent_queue.h>
+#include <tbb/concurrent_vector.h>
+#include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_mutex.h>
+#include <tbb/spin_rw_mutex.h>
+#include <tbb/task.h>
+#include <tbb/task_group.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

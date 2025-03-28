@@ -65,6 +65,36 @@ SdrShaderNode::SdrShaderNode(
     _pages = _ComputePages();
 }
 
+NdrPropertyUniquePtrVec
+_SdrShaderPropertiesToNdr(SdrShaderPropertyUniquePtrVec&& properties) {
+    // Cast shader node properties to node properties.
+    // Node properties are deprecated, so this function will be removed
+    // once ndr is deleted.
+    NdrPropertyUniquePtrVec ndrProperties;
+    for (SdrShaderPropertyUniquePtr& uniquePtr : std::move(properties)) {
+        ndrProperties.push_back(NdrPropertyUniquePtr(std::move(uniquePtr)));
+    }
+    return ndrProperties;
+}
+
+SdrShaderNode::SdrShaderNode(
+    const SdrIdentifier& identifier,
+    const SdrVersion& version,
+    const std::string& name,
+    const TfToken& family,
+    const TfToken& context,
+    const TfToken& sourceType,
+    const std::string& definitionURI,
+    const std::string& implementationURI,
+    SdrShaderPropertyUniquePtrVec&& properties,
+    const SdrTokenMap& metadata,
+    const std::string &sourceCode)
+    : SdrShaderNode(identifier,
+        SdrToNdrVersion(version),
+        name, family, context, sourceType, definitionURI, implementationURI,
+        _SdrShaderPropertiesToNdr(std::move(properties)),
+        metadata, sourceCode) {}
+
 void
 SdrShaderNode::_PostProcessProperties()
 {
@@ -102,6 +132,16 @@ SdrShaderNode::_PostProcessProperties()
         // this method has been called.
         shaderProperty->_FinalizeProperty();
     }
+}
+
+const SdrTokenVec&
+SdrShaderNode::GetShaderInputNames() const {
+    return NdrNode::GetInputNames();
+}
+
+const SdrTokenVec&
+SdrShaderNode::GetShaderOutputNames() const {
+    return NdrNode::GetOutputNames();
 }
 
 SdrShaderPropertyConstPtr

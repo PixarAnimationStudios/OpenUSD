@@ -82,6 +82,13 @@ HdSceneGlobalsSchema::GetCurrentFrame() const
         HdSceneGlobalsSchemaTokens->currentFrame);
 }
 
+HdIntDataSourceHandle
+HdSceneGlobalsSchema::GetSceneStateId() const
+{
+    return _GetTypedDataSource<HdIntDataSource>(
+        HdSceneGlobalsSchemaTokens->sceneStateId);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdSceneGlobalsSchema::BuildRetained(
@@ -89,11 +96,12 @@ HdSceneGlobalsSchema::BuildRetained(
         const HdPathDataSourceHandle &activeRenderSettingsPrim,
         const HdDoubleDataSourceHandle &startTimeCode,
         const HdDoubleDataSourceHandle &endTimeCode,
-        const HdDoubleDataSourceHandle &currentFrame
+        const HdDoubleDataSourceHandle &currentFrame,
+        const HdIntDataSourceHandle &sceneStateId
 )
 {
-    TfToken _names[5];
-    HdDataSourceBaseHandle _values[5];
+    TfToken _names[6];
+    HdDataSourceBaseHandle _values[6];
 
     size_t _count = 0;
 
@@ -120,6 +128,11 @@ HdSceneGlobalsSchema::BuildRetained(
     if (currentFrame) {
         _names[_count] = HdSceneGlobalsSchemaTokens->currentFrame;
         _values[_count++] = currentFrame;
+    }
+
+    if (sceneStateId) {
+        _names[_count] = HdSceneGlobalsSchemaTokens->sceneStateId;
+        _values[_count++] = sceneStateId;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -164,6 +177,14 @@ HdSceneGlobalsSchema::Builder::SetCurrentFrame(
     return *this;
 }
 
+HdSceneGlobalsSchema::Builder &
+HdSceneGlobalsSchema::Builder::SetSceneStateId(
+    const HdIntDataSourceHandle &sceneStateId)
+{
+    _sceneStateId = sceneStateId;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdSceneGlobalsSchema::Builder::Build()
 {
@@ -172,7 +193,8 @@ HdSceneGlobalsSchema::Builder::Build()
         _activeRenderSettingsPrim,
         _startTimeCode,
         _endTimeCode,
-        _currentFrame
+        _currentFrame,
+        _sceneStateId
     );
 }
 
@@ -250,6 +272,16 @@ HdSceneGlobalsSchema::GetCurrentFrameLocator()
     static const HdDataSourceLocator locator =
         GetDefaultLocator().Append(
             HdSceneGlobalsSchemaTokens->currentFrame);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+HdSceneGlobalsSchema::GetSceneStateIdLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdSceneGlobalsSchemaTokens->sceneStateId);
     return locator;
 } 
 

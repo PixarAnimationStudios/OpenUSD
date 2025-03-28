@@ -5,8 +5,8 @@
 // https://openusd.org/license.
 //
 
-#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_ARCH_DEFS_H
-#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_ARCH_DEFS_H
+#ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_ARCH_DEFS_H
+#define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_ARCH_DEFS_H
 
 // PRMan depends on a nonstandard set of architecture defines which, when prman
 // is built, are defined in the build script and passed to the compiler as -D
@@ -40,4 +40,4 @@
     #endif
 #endif
 
-#endif // EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_ARCH_DEFS_H
+#endif // EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_ARCH_DEFS_H

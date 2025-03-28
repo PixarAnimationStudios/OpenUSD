@@ -1,5 +1,23 @@
 # Change Log
 
+## [25.02a] - 2025-02-04
+
+### Build
+
+- Fixed a bug where builds with build_usd.py would fail when enabling the
+  Alembic plugin with HDF5 support.
+  (PR: [#3501](https://github.com/PixarAnimationStudios/OpenUSD/pull/3501)
+
+### USD
+
+- Fixed regressions when processing sublayer operations on package layers
+  or layers that contain sublayer cycles.
+  (Issue: [#3493](https://github.com/PixarAnimationStudios/OpenUSD/issues/3493))
+
+### RenderMan Hydra Plugin
+
+- Fixed build failure with MaterialX 1.39.
+
 ## [25.02] - 2025-01-21
 
 ### Build

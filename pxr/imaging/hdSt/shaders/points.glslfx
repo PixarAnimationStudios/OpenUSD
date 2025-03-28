@@ -13,6 +13,7 @@
 #import $TOOLS/hdSt/shaders/instancing.glslfx
 #import $TOOLS/hdSt/shaders/terminals.glslfx
 #import $TOOLS/hdSt/shaders/pointId.glslfx
+#import $TOOLS/hdSt/shaders/pointDisk.glslfx
 
 --- --------------------------------------------------------------------------
 -- layout Point.Vertex
@@ -106,6 +107,7 @@ void main(void)
     ApplyClipPlanes(outData.Peye);
 
     float screenSpaceWidth = ComputeRasterPointSize(transform, outData.Peye.z);
+    screenSpaceWidth = ApplyPointSizeBias(screenSpaceWidth);
     gl_PointSize = clamp(screenSpaceWidth,
                          HD_GL_POINT_SIZE_MIN, HD_GL_POINT_SIZE_MAX);
 
@@ -126,6 +128,8 @@ void main(void)
 
 void main(void)
 {
+    ApplyDiskSampleMask();
+
     vec3 Peye = inData.Peye.xyz / inData.Peye.w;
     // camera facing.
     vec3 Neye = vec3(0, 0, 1);

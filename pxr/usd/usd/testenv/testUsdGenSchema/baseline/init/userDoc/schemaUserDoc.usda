@@ -1,0 +1,20 @@
+#usda 1.0
+(
+    # Use this file to optionally add schema user doc for your schema classes
+    # and properties. User doc can be provided in the "userDoc" and 
+    # "userDocBrief" custom metadata strings, using Markdown format. 
+
+    # For example schema user doc, see the schemaUserDoc.usda file in
+    # pxr/usd/usdVol/userDoc, and the built HTML output at 
+    # https://openusd.org/release/user_guides/schemas/usdVol/usdVol_toc.html
+
+    # For more details on authoring and building schema user doc, see
+    # "Generating Schema User Docs" in docs/README.md.
+
+    subLayers = [
+        # Sublayer domain schema.usda to get proper schema inheritance structure 
+        # and property fallback values. User doc is added as overs to schema 
+        # class metadata. 
+        @../schema.usda@
+    ]
+)

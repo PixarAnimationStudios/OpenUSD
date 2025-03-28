@@ -214,4 +214,13 @@ Pcp_TranslatePathFromNodeToRootOrClosestNode(
     return std::make_pair(curPath, curNode);
 }
 
+bool
+Pcp_IsPropagatedSpecializesNode(
+    const PcpNodeRef& node)
+{
+    return (PcpIsSpecializeArc(node.GetArcType()) &&
+            node.GetParentNode() == node.GetRootNode() &&
+            node.GetSite() == node.GetOriginNode().GetSite());
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

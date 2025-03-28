@@ -12,9 +12,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// \note
+/// NDR debug codes will be moved to corresponding SDR debug codes
 
 TF_DEBUG_CODES(
-
     NDR_DISCOVERY,
     NDR_PARSING,
     NDR_INFO,

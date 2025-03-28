@@ -332,7 +332,8 @@ _ShaderPropertyTypeConformance(
             if (SdrShaderNodeConstPtr sdrShaderNode
                 = SdrRegistry::GetInstance().GetShaderNodeByIdentifier(
                     shaderId)) {
-                for (const TfToken &propName : sdrShaderNode->GetInputNames()) {
+                for (const TfToken &propName :
+                        sdrShaderNode->GetShaderInputNames()) {
                     if (const SdrShaderPropertyConstPtr sdrProp
                         = sdrShaderNode->GetShaderInput(propName)) {
                         propNameToPropertyMap.emplace(propName, sdrProp);
@@ -365,7 +366,8 @@ _ShaderPropertyTypeConformance(
                 = shader.GetShaderNodeForSourceType(TfToken(sourceType))) {
                 shaderNodesFromSourceTypes.push_back(sdrShaderNode);
 
-                for (const TfToken &propName : sdrShaderNode->GetInputNames()) {
+                for (const TfToken &propName :
+                        sdrShaderNode->GetShaderInputNames()) {
                     // Check if property has already been added to the map.
                     if (propNameToPropertyMap.find(propName)
                         == propNameToPropertyMap.end()) {

@@ -76,6 +76,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdLegacyPrimTypeTokens, HD_LEGACY_PRIMTYPE_TOKENS);
 
+TF_DEFINE_PUBLIC_TOKENS(HdLegacyFlagTokens, HD_LEGACY_FLAG_TOKENS);
+
 // XXX: currently private and duplicated where used so as to not yet formally
 //      define this convention.
 TF_DEFINE_PRIVATE_TOKENS(
@@ -1043,6 +1045,11 @@ public:
             HdCameraSchemaTokens->shutterOpen,
             HdCameraSchemaTokens->shutterClose,
             HdCameraSchemaTokens->exposure,
+            HdCameraSchemaTokens->exposureTime,
+            HdCameraSchemaTokens->exposureIso,
+            HdCameraSchemaTokens->exposureFStop,
+            HdCameraSchemaTokens->exposureResponsivity,
+            HdCameraSchemaTokens->linearExposureScale,
             HdCameraSchemaTokens->focusOn,
             HdCameraSchemaTokens->dofAspect,
             HdCameraSchemaTokens->splitDiopter,
@@ -1482,6 +1489,7 @@ public:
         TfTokenVector results;
         results.push_back(HdInstancerTopologySchemaTokens->prototypes);
         results.push_back(HdInstancerTopologySchemaTokens->instanceIndices);
+        results.push_back(HdLegacyFlagTokens->isLegacyInstancer);
         return results;
     }
 
@@ -1493,6 +1501,8 @@ public:
         } else if (name == HdInstancerTopologySchemaTokens->instanceIndices) {
             return Hd_InstanceIndicesDataSource::New(
                     _id, _sceneDelegate, _protos);
+        } else if (name == HdLegacyFlagTokens->isLegacyInstancer) {
+            return HdRetainedTypedSampledDataSource<bool>::New(true);
         } else {
             return nullptr;
         }
@@ -1561,6 +1571,7 @@ public:
         results.push_back(HdLegacyDisplayStyleSchemaTokens->refineLevel);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->flatShadingEnabled);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->displacementEnabled);
+        results.push_back(HdLegacyDisplayStyleSchemaTokens->displayInOverlay);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->pointsShadingEnabled);
         results.push_back(HdLegacyDisplayStyleSchemaTokens->materialIsFinal);
@@ -1595,6 +1606,13 @@ public:
             }
             return HdRetainedTypedSampledDataSource<bool>::New(
                     _displayStyle.displacementEnabled);
+        } else if (name == HdLegacyDisplayStyleSchemaTokens->displayInOverlay) {
+            if (!_displayStyleRead) {
+                _displayStyle = _sceneDelegate->GetDisplayStyle(_id);
+                _displayStyleRead = true;
+            }
+            return HdRetainedTypedSampledDataSource<bool>::New(
+                    _displayStyle.displayInOverlay);
         } else if (name == HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough) {
             if (!_displayStyleRead) {
                 _displayStyle = _sceneDelegate->GetDisplayStyle(_id);
@@ -1934,12 +1952,14 @@ public:
 
     TfTokenVector GetNames() override
     {
-        TfTokenVector result;
-        result.push_back(HdExtComputationSchemaTokens->inputValues);
-        result.push_back(HdExtComputationSchemaTokens->inputComputations);
-        result.push_back(HdExtComputationSchemaTokens->outputs);
-        result.push_back(HdExtComputationSchemaTokens->glslKernel);
-        result.push_back(HdExtComputationSchemaTokens->cpuCallback);
+        static const TfTokenVector result = {
+            HdExtComputationSchemaTokens->inputValues,
+            HdExtComputationSchemaTokens->inputComputations,
+            HdExtComputationSchemaTokens->outputs,
+            HdExtComputationSchemaTokens->glslKernel,
+            HdExtComputationSchemaTokens->cpuCallback,
+            HdExtComputationSchemaTokens->dispatchCount,
+            HdExtComputationSchemaTokens->elementCount };
         return result;
     }
 

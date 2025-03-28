@@ -87,6 +87,20 @@ class SdfAssetPath;
 /// to objects associated with the render settings, such as image
 /// post-processing filters, even when UsdGeomVisibilityAPI may apply.
 /// 
+/// \anchor usd_cameraVisibility
+/// The cameraVisibility collection defines which scene objects should
+/// be directly visible in camera.  Objects that are not in this
+/// collection should still participate in other light paths such
+/// as shadowing, reflections, and refraction.  By default everything in
+/// the scene should be visible to camera, so this collection sets
+/// includeRoot to 1.
+/// 
+/// \anchor usd_matte
+/// The matte collection defines scene objects that should act as
+/// matte objects.  Matte objects render with zero alpha.  By
+/// default, everything in the scene should render normally, so
+/// this collection sets includeRoot to 0.
+/// 
 /// \anchor usdRender_pruning
 /// The prune collection specifies a collection of objects to be removed
 /// ("pruned") from the scene prior to rendering.  Whereas visibility
@@ -293,29 +307,6 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDRENDER_API
     UsdAttribute CreateFileNameAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
-
-public:
-    // --------------------------------------------------------------------- //
-    // DENOISEENABLE 
-    // --------------------------------------------------------------------- //
-    /// When True, this Pass pass should be denoised.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `uniform bool denoise:enable = 0` |
-    /// | C++ Type | bool |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Bool |
-    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    USDRENDER_API
-    UsdAttribute GetDenoiseEnableAttr() const;
-
-    /// See GetDenoiseEnableAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDRENDER_API
-    UsdAttribute CreateDenoiseEnableAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //

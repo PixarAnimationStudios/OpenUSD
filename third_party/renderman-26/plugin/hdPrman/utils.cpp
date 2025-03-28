@@ -34,16 +34,27 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hio/imageRegistry.h"
 #include "pxr/usd/ar/resolver.h"
+
+#if PXR_VERSION >= 2505
+#include "pxr/usd/sdr/declare.h"
+#else
 #include "pxr/usd/ndr/declare.h"
+#endif
+
 #include "pxr/usd/sdf/assetPath.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+#if PXR_VERSION < 2505
+using SdrStringVec = NdrStringVec;
+#endif
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (primvar)
 );
 
+extern TfEnvSetting<bool> HD_PRMAN_DISABLE_ADAPTIVE_SAMPLING;
 extern TfEnvSetting<bool> HD_PRMAN_DISABLE_HIDER_JITTER;
 extern TfEnvSetting<bool> HD_PRMAN_ENABLE_MOTIONBLUR;
 extern TfEnvSetting<int> HD_PRMAN_NTHREADS;
@@ -518,7 +529,7 @@ _UpdateSearchPathsFromEnvironment(RtParamList& options)
     {
         // searchpath:shader contains OSL (.oso)
         std::string shaderpath = TfGetenv("RMAN_SHADERPATH");
-        NdrStringVec paths;
+        SdrStringVec paths;
         if (!shaderpath.empty()) {
             // RenderMan expects ':' as path separator, regardless of platform
             for (auto path : TfStringSplit(shaderpath, ARCH_PATH_LIST_SEP))
@@ -544,7 +555,7 @@ _UpdateSearchPathsFromEnvironment(RtParamList& options)
     {
         // searchpath:rixplugin contains C++ (.so) plugins
         std::string rixpluginpath = TfGetenv("RMAN_RIXPLUGINPATH");
-        NdrStringVec paths;
+        SdrStringVec paths;
         if (!rixpluginpath.empty()) {
             // RenderMan expects ':' as path separator, regardless of platform
             for (auto path : TfStringSplit(rixpluginpath, ARCH_PATH_LIST_SEP))
@@ -564,7 +575,7 @@ _UpdateSearchPathsFromEnvironment(RtParamList& options)
     {
         // searchpath:texture contains textures (.tex) and Rtx plugins (.so)
         std::string texturepath = TfGetenv("RMAN_TEXTUREPATH");
-        NdrStringVec paths;
+        SdrStringVec paths;
         if (!texturepath.empty()) {
             // RenderMan expects ':' as path separator, regardless of platform
             for (auto path : TfStringSplit(texturepath, ARCH_PATH_LIST_SEP))
@@ -595,7 +606,7 @@ _UpdateSearchPathsFromEnvironment(RtParamList& options)
 
     {
         std::string proceduralpath = TfGetenv("RMAN_PROCEDURALPATH");
-        NdrStringVec paths;
+        SdrStringVec paths;
         if (!proceduralpath.empty()) {
             // RenderMan expects ':' as path separator, regardless of platform
             for (std::string const& path : TfStringSplit(proceduralpath,
@@ -616,7 +627,7 @@ _UpdateSearchPathsFromEnvironment(RtParamList& options)
 
     {
         std::string displaypath = TfGetenv("RMAN_DISPLAYPATH");
-        NdrStringVec paths;
+        SdrStringVec paths;
         if (!displaypath.empty()) {
             // RenderMan expects ':' as path separator, regardless of platform
             for (std::string const& path : TfStringSplit(displaypath,
@@ -828,6 +839,12 @@ GetRileyOptionsFromEnvironment()
     const bool disableJitter = TfGetEnvSetting(HD_PRMAN_DISABLE_HIDER_JITTER);
     if (disableJitter) {
         options.SetInteger(RixStr.k_hider_jitter, !disableJitter);
+    }
+    
+    const bool disableAdaptiveSampling =
+        TfGetEnvSetting(HD_PRMAN_DISABLE_ADAPTIVE_SAMPLING);
+    if (disableAdaptiveSampling) {
+        options.SetFloat(RixStr.k_Ri_PixelVariance, 0.f);
     }
 
     if (ArchHasEnv("HD_PRMAN_MAX_SAMPLES")) {

@@ -10,6 +10,10 @@ from pxr import Tf
 import unittest
 
 class TestPyContainerConversions(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        Tf.Tf_TestPyContainerConversions.Init()
+
     def test_VectorConversions(self):
         vec = (1, 2, 3)
         vecTimesTwo = Tf.Tf_TestPyContainerConversions.GetVectorTimesTwo(vec)
@@ -19,6 +23,11 @@ class TestPyContainerConversions(unittest.TestCase):
         pair = (1, 2)
         pairTimesTwo = Tf.Tf_TestPyContainerConversions.GetPairTimesTwo(pair)
         self.assertEqual(pairTimesTwo, (2.0, 4.0))
+
+    def test_TupleConversions(self):
+        tup = (1, 2, 3)
+        tupTimesTwo = Tf.Tf_TestPyContainerConversions.GetTupleTimesTwo(tup)
+        self.assertEqual(tupTimesTwo, (2.0, 4.0, 6.0))
 
     def test_VectorTokensConversions(self):
         tokens = ['my', 'list', 'of', 'tokens']

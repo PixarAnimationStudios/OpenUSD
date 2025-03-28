@@ -13,16 +13,16 @@ class TestRmanOslParser(unittest.TestCase):
     def test_Basic(self):
         r = Sdr.Registry()
 
-        uvTextureNode = r.GetNodeByName('UsdUVTexture', ['OSL'])
+        uvTextureNode = r.GetShaderNodeByName('UsdUVTexture', ['OSL'])
         self.assertTrue(uvTextureNode)
         self.assertEqual(
-            uvTextureNode.GetInputNames(),
+            uvTextureNode.GetShaderInputNames(),
             ['file', 'st', 'wrapS', 'wrapT', 'fallback', 'scale', 'bias'])
 
-        primvarReaderNode = r.GetNodeByName('UsdPrimvarReader_float', ['OSL'])
+        primvarReaderNode = r.GetShaderNodeByName('UsdPrimvarReader_float', ['OSL'])
         self.assertTrue(primvarReaderNode)
         self.assertEqual(
-            primvarReaderNode.GetInputNames(),
+            primvarReaderNode.GetShaderInputNames(),
             ['varname', 'fallback'])
 
 if __name__ == '__main__':

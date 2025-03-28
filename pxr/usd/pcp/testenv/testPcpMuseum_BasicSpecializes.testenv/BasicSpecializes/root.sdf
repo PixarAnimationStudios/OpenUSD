@@ -5,6 +5,45 @@
     """
 )
 
+class "BasicSpecializes1" (
+    specializes = </BasicSpecializes2>
+)
+{
+}
+
+class "BasicSpecializes2"
+{
+}
+
+def "Basic" (
+    # This test case just exercises a simple chain of root specializes
+    # in the local layer stack.
+    specializes = </BasicSpecializes1>
+)
+{
+}
+
+def "BasicLocal"
+{
+    class "Specializes1" (
+        specializes = </BasicLocal/Specializes2>
+    )
+    {
+    }
+
+    class "Specializes2"
+    {
+    }
+
+    def "Local" (
+        # This test case just exercises a simple chain of subroot specializes
+        # in the local layer stack.
+        specializes = </BasicLocal/Specializes1>
+    )
+    {
+    }
+}
+
 over "Base"
 {
 }

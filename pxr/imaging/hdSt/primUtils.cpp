@@ -50,10 +50,10 @@ TF_DEFINE_ENV_SETTING(HDST_ENABLE_SHARED_VERTEX_PRIMVAR, 1,
 
 TF_MAKE_STATIC_DATA(
     HdSt_MaterialNetworkShaderSharedPtr,
-    _fallbackWidgetShader)
+    _fallbackOverlayShader)
 {
-    *_fallbackWidgetShader = std::make_shared<HdStGLSLFXShader>(
-        std::make_shared<HioGlslfx>(HdStPackageWidgetShader()));
+    *_fallbackOverlayShader = std::make_shared<HdStGLSLFXShader>(
+        std::make_shared<HioGlslfx>(HdStPackageOverlayShader()));
 }
 
 // -----------------------------------------------------------------------------
@@ -290,15 +290,23 @@ HdStSetMaterialTag(HdRenderParam * const renderParam,
 }
 
 // Opinion precedence:
-// Show occluded selection > Material opinion > displayOpacity primvar
-//
+//   Display In Overlay >
+//     Show occluded selection >
+//       Material opinion >
+//         displayOpacity primvar
 static
 TfToken
 _ComputeMaterialTag(HdSceneDelegate * const delegate,
+                    HdDrawItem *drawItem,
                     SdfPath const & materialId,
                     const bool hasDisplayOpacityPrimvar,
+                    const bool displayInOverlay,
                     const bool occludedSelectionShowsThrough)
 {
+    if (displayInOverlay) {
+        return HdStMaterialTagTokens->displayInOverlay;
+    }
+
     if (occludedSelectionShowsThrough) {
         return HdStMaterialTagTokens->translucentToSelection;
     }
@@ -324,13 +332,14 @@ HdStSetMaterialTag(HdSceneDelegate * const delegate,
                    HdDrawItem *drawItem,
                    SdfPath const & materialId,
                    const bool hasDisplayOpacityPrimvar,
+                   const bool displayInOverlay,
                    const bool occludedSelectionShowsThrough)
 {
     HdStSetMaterialTag(
         renderParam, drawItem,
         _ComputeMaterialTag(
-            delegate, materialId, hasDisplayOpacityPrimvar, 
-            occludedSelectionShowsThrough));
+            delegate, drawItem, materialId, hasDisplayOpacityPrimvar,
+            displayInOverlay, occludedSelectionShowsThrough));
 }
 
 HdSt_MaterialNetworkShaderSharedPtr
@@ -352,11 +361,14 @@ HdStGetMaterialNetworkShader(
     HdStMaterial const * material = static_cast<HdStMaterial const *>(
             renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
     if (material == nullptr) {
-        if (prim->GetRenderTag(delegate) == HdRenderTagTokens->widget) {
-            TF_DEBUG(HD_RPRIM_UPDATED).Msg("Using built-in widget material for "
-                "%s\n", prim->GetId().GetText());
-               
-            return *_fallbackWidgetShader;
+        const bool displayInOverlay =
+            delegate->GetDisplayStyle(prim->GetId()).displayInOverlay;
+
+        if (displayInOverlay) {
+            TF_DEBUG(HD_RPRIM_UPDATED).Msg("Using built-in overlay material for"
+                " %s\n", prim->GetId().GetText());
+
+            return *_fallbackOverlayShader;
         } else {
             TF_DEBUG(HD_RPRIM_UPDATED).Msg("Using fallback material for %s\n",
                 prim->GetId().GetText());

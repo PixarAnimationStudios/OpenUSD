@@ -62,6 +62,15 @@ public:
         const SdfPath& path, double time,
         double* lower, double* upper) const;
 
+    /// Returns the previous time sample authored just before the querying \p 
+    /// time.
+    ///
+    /// If there is no time sample authored just before \p time, this function
+    /// returns false. Otherwise, it returns true and sets \p tPrevious to the
+    /// time of the previous sample.
+    bool GetPreviousTimeSampleForPath(
+        const SdfPath& path, double time, double* tPrevious) const;
+
     /// Return set of time samples for attribute at \p path.
     std::set<double> ListTimeSamplesForPath(const SdfPath& path) const;
 

@@ -400,9 +400,9 @@ class RenderProduct "RenderProduct" (
 }
 
 class RenderPass "RenderPass" (
-    apiSchemas = ["CollectionAPI:renderVisibility", "CollectionAPI:prune"]
+    apiSchemas = ["CollectionAPI:renderVisibility", "CollectionAPI:cameraVisibility", "CollectionAPI:prune", "CollectionAPI:matte"]
     customData = {
-        token[] apiSchemaOverridePropertyNames = ["collection:renderVisibility:includeRoot"]
+        token[] apiSchemaOverridePropertyNames = ["collection:cameraVisibility:includeRoot", "collection:renderVisibility:includeRoot"]
     }
     doc = """A RenderPass prim encapsulates necessary information
     to generate multi-pass renders.  In a multi-pass render, multiple
@@ -454,6 +454,20 @@ class RenderPass "RenderPass" (
     to objects associated with the render settings, such as image
     post-processing filters, even when UsdGeomVisibilityAPI may apply.
 
+    \\anchor usd_cameraVisibility
+    The cameraVisibility collection defines which scene objects should
+    be directly visible in camera.  Objects that are not in this
+    collection should still participate in other light paths such
+    as shadowing, reflections, and refraction.  By default everything in
+    the scene should be visible to camera, so this collection sets
+    includeRoot to 1.
+
+    \\anchor usd_matte
+    The matte collection defines scene objects that should act as
+    matte objects.  Matte objects render with zero alpha.  By
+    default, everything in the scene should render normally, so
+    this collection sets includeRoot to 0.
+
     \\anchor usdRender_pruning
     The prune collection specifies a collection of objects to be removed
     (\"pruned\") from the scene prior to rendering.  Whereas visibility
@@ -470,6 +484,7 @@ class RenderPass "RenderPass" (
     """
 )
 {
+    uniform bool collection:cameraVisibility:includeRoot = 1
     uniform bool collection:renderVisibility:includeRoot = 1
     uniform string[] command (
         doc = '''The command to run in order to generate
@@ -488,9 +503,6 @@ class RenderPass "RenderPass" (
         command[3] = "-0.15"
         command[4] = "{fileName}" # the fileName property will be substituted
         '''
-    )
-    uniform bool denoise:enable = 0 (
-        doc = "When True, this Pass pass should be denoised."
     )
     uniform asset fileName (
         doc = """The asset that contains the rendering prims or other 

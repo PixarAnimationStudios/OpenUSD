@@ -8,24 +8,11 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/changeList.h"
 #include "pxr/base/tf/enum.h"
-#include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/type.h"
 
 #include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-namespace {
-struct _PathFastLessThan {
-    inline bool
-    operator()(SdfChangeList::EntryList::value_type const &a,
-               SdfChangeList::EntryList::value_type const &b) const {
-        return SdfPath::FastLessThan()(a.first, b.first);
-    }
-};
-} // anon
-
-TF_INSTANTIATE_SINGLETON(SdfChangeList);
 
 TF_REGISTRY_FUNCTION(TfType)
 {

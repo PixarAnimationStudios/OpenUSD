@@ -11,6 +11,7 @@
 #include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/errorMark.h"
 
 #include <MaterialXGenShader/Util.h>
 
@@ -142,6 +143,8 @@ void TestShaderGen(
 
 int main(int argc, char *argv[])
 {
+    TfErrorMark mark;
+
     HdSt_MxShaderGenInfo mxHdInfo;
     mx::FilePath mtlxFile = "standard_surface_default.mtlx";
 
@@ -184,4 +187,10 @@ int main(int argc, char *argv[])
         }
     }
     TestShaderGen(mtlxFile, &mxHdInfo);
+
+    if (mark.IsClean()) {
+        return EXIT_SUCCESS;
+    } else {
+        return EXIT_FAILURE;
+    }
 }

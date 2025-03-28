@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/object/stl_iterator_core.hpp>
-#else
-
 # include "pxr/external/boost/python/object_fwd.hpp"
 # include "pxr/external/boost/python/handle_fwd.hpp"
 
@@ -36,5 +32,4 @@ private:
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::object
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_STL_ITERATOR_CORE_HPP

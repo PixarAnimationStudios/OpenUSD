@@ -34,8 +34,17 @@ public:
     /// at which prims should be considered. This is an optional optimization
     /// to avoid having to query multiple inputs when it's known in advance
     /// which might be relevant for a given prim.
+    ///
+    /// Equivalent to `InsertInputScene(inputScene, activeInputSceneRoot,
+    /// numInputScenes)`.
     HD_API
     void AddInputScene(
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const SdfPath &activeInputSceneRoot);
+
+    HD_API
+    void InsertInputScene(
+        const size_t pos,
         const HdSceneIndexBaseRefPtr &inputScene,
         const SdfPath &activeInputSceneRoot);
 

@@ -94,18 +94,6 @@
     ),
 
     #--------------------------------------------------------------------------
-    # usdImaging/DirectMaterialBindings - corresponds to UsdShadeMaterialBindingAPI::DirectBinding
-    dict(
-        SCHEMA_NAME = 'DirectMaterialBindings',
-        SCHEMA_TOKEN = 'directMaterialBindings',
-        EXTRA_TOKENS = [
-            '(allPurpose, "")',
-        ],
-        ADD_DEFAULT_LOCATOR = True,
-        GENERIC_BUILD_RETAINED = True,
-    ),
-
-    #--------------------------------------------------------------------------
     # usdImaging/collectionMaterialBinding - corresponds to UsdShadeMaterialBindingAPI::CollectionBinding
     dict(
         SCHEMA_NAME = 'CollectionMaterialBinding',
@@ -119,10 +107,41 @@
     ),
 
     #--------------------------------------------------------------------------
-    # usdImaging/collectionMaterialBindings - corresponds to UsdShadeMaterialBindingAPI::CollectionBinding
+    # usdImaging/materialBinding
     dict(
-        SCHEMA_NAME = 'CollectionMaterialBindings',
-        SCHEMA_TOKEN = 'collectionMaterialBindings',
+        SCHEMA_NAME = 'MaterialBinding',
+        # HdMaterialBinding schema uses the 'materialBinding' token
+        # (locator), so we use a different token here.
+        SCHEMA_TOKEN = 'usdMaterialBinding',
+        DOC = '''The {{ SCHEMA_CLASS_NAME }} specifies a container for a prim's
+        material bindings for a particular purpose. Note that only one direct
+        binding but any number of collection-based bindings may be declared
+        for a given purpose.
+        See UsdImagingMaterialBindingsSchema which specifies the purposes and
+        their associated bindings.''',
+        SCHEMA_INCLUDES =
+            ['{{LIBRARY_PATH}}/directMaterialBindingSchema'],
+        ADD_DEFAULT_LOCATOR = True,
+        MEMBERS = [
+            ('directMaterialBinding', 'UsdImagingDirectMaterialBindingSchema', {}),
+            ('collectionMaterialBindings', 'UsdImagingCollectionMaterialBindingVectorSchema', {}),
+        ],
+    ),
+
+    #--------------------------------------------------------------------------
+    # usdImaging/materialBindings - corresponds to UsdShadeMaterialBindingAPI
+    dict(
+        SCHEMA_NAME = 'MaterialBindings',
+        # Note: HdMaterialBindings schema uses the 'materialBindings' token
+        # (locator), so we use a different token here.
+        SCHEMA_TOKEN = 'usdMaterialBindings',
+        DOC = '''The {{ SCHEMA_CLASS_NAME }} specifies a container for all the
+        material bindings declared on a prim. The material binding purpose
+        serves as the key, with the value being a vector of
+        UsdImagingMaterialBindingSchema. While one entry (element) would suffice
+        for a prim's material bindings opinion, we use a vector for aggregating
+        ancestor material bindings to model the inheritance semantics of
+        UsdShadeMaterialBindingAPI.''',
         ADD_DEFAULT_LOCATOR = True,
         EXTRA_TOKENS = [
             '(allPurpose, "")',
@@ -130,7 +149,7 @@
     ),
 
     #--------------------------------------------------------------------------
-    # usdImaging/usdImagingRenderSettings
+    # usdImaging/usdRenderSettings
     dict(
         SCHEMA_NAME = 'UsdRenderSettings',
         SCHEMA_TOKEN = '__usdRenderSettings',
@@ -160,7 +179,7 @@
     ),
 
     #--------------------------------------------------------------------------
-    # usdImaging/usdImagingRenderProduct
+    # usdImaging/usdRenderProduct
     dict(
         SCHEMA_NAME = 'UsdRenderProduct',
         SCHEMA_TOKEN = '__usdRenderProduct',
@@ -188,7 +207,7 @@
     ),
 
     #--------------------------------------------------------------------------
-    # usdImaging/usdImagingRenderVar
+    # usdImaging/usdRenderVar
     dict(
         SCHEMA_NAME = 'UsdRenderVar',
         SCHEMA_TOKEN = '__usdRenderVar',

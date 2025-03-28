@@ -15,6 +15,7 @@
 #include "pxr/imaging/hdSt/simpleLightingShader.h"
 #include "pxr/imaging/hdSt/textureHandle.h"
 #include "pxr/imaging/hdSt/textureObject.h"
+#include "pxr/imaging/hdSt/samplerObject.h"
 
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -162,7 +163,7 @@ HdxSkydomeTask::Execute(HdTaskContext* ctx)
     }
     
     // Bind the skydome texture 
-    _compositor->BindTextures({_skydomeTexture});
+    _compositor->BindTextures({_skydomeTexture}, {_skydomeSampler});
 
     // Get the viewport size
     GfVec4i viewport = hdStRenderPassState->ComputeViewport();
@@ -230,7 +231,14 @@ HdxSkydomeTask::_GetSkydomeTexture(HdTaskContext* ctx)
     if (!domeLightTextureObject->IsValid()) {
         return false;
     }
+    const HdStUvSamplerObject *const domeLightSamplerObject =
+        dynamic_cast<HdStUvSamplerObject*>(
+            domeLightTextureHandle->GetSamplerObject().get());
+    if (!domeLightSamplerObject) {
+        return false;
+    }
     _skydomeTexture = domeLightTextureObject->GetTexture();
+    _skydomeSampler = domeLightSamplerObject->GetSampler();
 
     return true;
 }

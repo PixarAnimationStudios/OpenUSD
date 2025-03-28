@@ -13,14 +13,9 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/module.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/module_init.hpp"
 # define PXR_BOOST_PYTHON_MODULE PXR_BOOST_PYTHON_MODULE_INIT
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // MODULE_DWA20011221_HPP

@@ -162,7 +162,6 @@ HdSt_TextureObjectRegistry::Commit()
 
     {
         TRACE_FUNCTION_SCOPE("Loading textures");
-        HF_TRACE_FUNCTION_SCOPE("Loading textures");
         TF_DESCRIBE_SCOPE("Loading %zu textures", result.size());
 
         if (_isGlfBaseTextureDataThreadSafe) {

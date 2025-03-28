@@ -1,0 +1,89 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2025 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/pointDisk.glslfx
+
+--- --------------------------------------------------------------------------
+-- glsl PointDisk.Vertex.PointSizeBias
+
+float ApplyPointSizeBias(float pointSize)
+{
+    if (pointSize <= 0) {
+        return 0;
+    }
+
+    // Slightly enlarge the points as the input size reaches 1.
+    // This improves MSAA and prevents tiny point from disappearing
+    // when MSAA is disabled. Similar behaviour is observed when
+    // using native round points on Nvidia GPUs.
+    if (pointSize < 16.0) {
+        pointSize += (16.0 - pointSize) * 0.0825;
+    }
+
+    // We must enlarge the point ever so slightly to make
+    // sure that the rounding sample mask doesn't conflict
+    // with the input edge sample mask. We want our input
+    // sample mask to always be all 1s. This is compensated
+    // in the fragment shader.
+    pointSize += 0.5;
+
+    return pointSize;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl PointDisk.Vertex.None
+
+float ApplyPointSizeBias(float pointSize)
+{
+    // do nothing
+    return pointSize;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl PointDisk.Fragment.SampleMask
+
+void ApplyDiskSampleMask()
+{
+    // By using the sample mask directly, don't depend on the
+    // alpha-to-coverage or multisampling state.
+
+    // We can ignore dFdy(gl_PointCoord.y) because on a
+    // square it's the same as dFdx(gl_PointCoord.x).
+    const float pointSize = 1.0 / dFdx(gl_PointCoord.x);
+    const float pointSdf = length(gl_PointCoord - 0.5) - 0.5;
+    // +0.25 to compensate for enlargement in the vertex shader.
+    const float pointSdfPx = pointSdf * pointSize + 0.25;
+    if (pointSdfPx < -1) {
+        // Inside disk edge
+        hd_SampleMask = int(hd_SampleMaskIn);
+    } else if (pointSdfPx > 0) {
+        // Outside disk
+        hd_SampleMask = 0;
+    } else {
+        // On the disk edge
+        const float edgeSdf = clamp(-pointSdfPx, 0.0, 1.0);
+#ifdef HD_HAS_multisampleCount
+        const int sampleCount = int(round(HdGet_multisampleCount() * edgeSdf));
+#else
+        const int sampleCount = int(round(edgeSdf));
+#endif
+        const int sampleMask = ((1 << sampleCount) - 1);
+        hd_SampleMask = int(hd_SampleMaskIn) & sampleMask;
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl PointDisk.Fragment.None
+
+void ApplyDiskSampleMask()
+{
+    // do nothing
+}
+

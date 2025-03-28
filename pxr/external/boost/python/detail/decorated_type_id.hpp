@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/decorated_type_id.hpp>
-#else
-
 # include "pxr/external/boost/python/type_id.hpp"
 # include "pxr/external/boost/python/detail/indirect_traits.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
@@ -110,5 +106,4 @@ PXR_BOOST_PYTHON_DECL std::ostream& operator<<(std::ostream&, decorated_type_inf
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DECORATED_TYPE_ID_HPP

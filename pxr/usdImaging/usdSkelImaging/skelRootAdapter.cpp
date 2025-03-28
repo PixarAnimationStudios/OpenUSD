@@ -5,15 +5,20 @@
 // https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdSkelImaging/skelRootAdapter.h"
+
+#include "pxr/usdImaging/usdSkelImaging/bindingSchema.h"
 #include "pxr/usdImaging/usdSkelImaging/skeletonAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usdGeom/boundable.h"
@@ -63,7 +68,7 @@ UsdSkelImagingSkelRootAdapter::Populate(
     UsdSkelRoot skelRoot(prim);
     UsdSkelCache skelCache;
     skelCache.Populate(skelRoot, predicate);
-    
+
     std::vector<UsdSkelBinding> bindings;
     if (!skelCache.ComputeSkelBindings(skelRoot, &bindings, predicate)) {
         return {};
@@ -185,6 +190,60 @@ UsdSkelImagingSkelRootAdapter::_RemovePrim(const SdfPath& cachePath,
 {
     // The SkeletonAdapter is registered for skeletons and skinned prims, so
     // there's no work to be done here.
+}
+
+TfTokenVector
+UsdSkelImagingSkelRootAdapter::GetImagingSubprims(UsdPrim const &prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdSkelImagingSkelRootAdapter::GetImagingSubprimType(
+    UsdPrim const &prim,
+    TfToken const &subprim)
+{
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdSkelImagingSkelRootAdapter::GetImagingSubprimData(
+    UsdPrim const& prim,
+    TfToken const& subprim,
+    const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (!subprim.IsEmpty()) {
+        return nullptr;
+    }
+
+    static HdContainerDataSourceHandle const skelRootDs =
+        HdRetainedContainerDataSource::New(
+            UsdSkelImagingBindingSchema::GetSchemaToken(),
+            HdRetainedContainerDataSource::New(
+                UsdSkelImagingBindingSchemaTokens->hasSkelRoot,
+                HdRetainedTypedSampledDataSource<bool>::New(true)));
+
+    return
+        HdOverlayContainerDataSource::New(
+            UsdImagingDataSourcePrim::New(
+                prim.GetPath(), prim, stageGlobals),
+            skelRootDs);
+
+}
+
+HdDataSourceLocatorSet
+UsdSkelImagingSkelRootAdapter::InvalidateImagingSubprim(
+    UsdPrim const& prim,
+    TfToken const& subprim,
+    TfTokenVector const& properties,
+    UsdImagingPropertyInvalidationType invalidationType)
+{
+    if (!subprim.IsEmpty()) {
+        return {};
+    }
+
+    return UsdImagingDataSourcePrim::Invalidate(
+        prim, subprim, properties, invalidationType);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

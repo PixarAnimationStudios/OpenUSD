@@ -126,7 +126,7 @@ void wrapAttributeSpec()
         .def("__unused__",
             SdfMakePySpecConstructor(wrapNewPrimAttr,
                 "__init__(ownerPrimSpec, name, typeName, "
-                "variability = Sd.VariabilityVarying, "
+                "variability = Sdf.VariabilityVarying, "
                 "declaresCustom = False)\n"
                 "ownerPrimSpec : PrimSpec\n"
                 "name : string\n"

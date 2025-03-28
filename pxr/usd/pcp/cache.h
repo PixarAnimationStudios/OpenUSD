@@ -238,8 +238,13 @@ public:
 
     /// Returns parameter object containing all inputs for the prim index
     /// computation used by this cache. 
+    ///
+    /// Note that this inputs object holds raw pointers to internal objects 
+    /// within this cache as well as a raw pointer to the cache itself. In other
+    /// words, even if a copy is made of this inputs structure, it still may
+    /// only be used within the lifetime of this cache.
     PCP_API
-    PcpPrimIndexInputs GetPrimIndexInputs();
+    const PcpPrimIndexInputs &GetPrimIndexInputs() const;
 
     /// @}
 
@@ -771,6 +776,10 @@ private:
     // value describing the necessary cache invalidation.
     PayloadSet _includedPayloads;
     PcpVariantFallbackMap _variantFallbackMap;
+
+    // The default prim index inputs used when computing a prim index within
+    // this cache.
+    PcpPrimIndexInputs _primIndexInputs;
 
     // Cached computation types.
     typedef Pcp_LayerStackRegistryRefPtr _LayerStackCache;

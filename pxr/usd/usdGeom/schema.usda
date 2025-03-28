@@ -2303,6 +2303,42 @@ class Camera "Camera" (
     However, it follows that if even one property is authored in the correct
     scene units, then they all must be.
 
+    \\section UsdGeom_CameraExposure Camera Exposure Model
+
+    UsdGeomCamera models exposure by a camera in terms of exposure time, ISO,
+    f-stop, and exposure compensation, mirroring the controls on a real camera.
+    These parameters are provided by \\ref UsdGeomCamera::GetExposureTimeAttr(),
+    \\ref UsdGeomCamera::GetExposureIsoAttr(),
+    \\ref UsdGeomCamera::GetExposureFStopAttr(), 
+    and \\ref UsdGeomCamera::GetExposureAttr(), respectively. 
+    \\ref UsdGeomCamera::GetExposureResponsivityAttr() provides an additional
+    scaling factor to model the overall responsivity of the system,
+    including response of the sensor and loss by the lens.
+
+    The calculated scaling factor can be obtained from 
+    \\ref UsdGeomCamera::ComputeLinearExposureScale(). It is computed as:
+    \\code
+        linearExposureScale = exposureResponsivity * 
+            (exposureTime * (exposureIso/100) * pow(2, exposure)) 
+            / (exposureFStop * exposureFStop)
+    \\endcode
+
+    This scaling factor is combined from two parts: The first, known as the
+    __imaging ratio__ (in _steradian-second_), converts from incident luminance
+    at the front of the lens system, in _nit_ (_cd/m^2_), to photometric
+    exposure at the sensor in _lux-second_. The second, `exposureResponsivity` 
+    (in _inverse lux-second_), converts from photometric exposure at the sensor,
+    in _lux-second_, to a unitless output signal.
+
+    For a thorough treatment of this topic, see
+    https://github.com/wetadigital/physlight/blob/main/docs/physLight-v1.3-1bdb6ec3-20230805.pdf,
+    Section 2.2. Note that we are essentially implementing Equation 2.7, but are 
+    choosing C such that it exactly cancels with the factor of pi in the
+    numerator, replacing it with a responsivity factor that defaults to 1.
+
+    Renderers should simply multiply the brightness of the image by the exposure 
+    scale. The default values for the exposure-related attributes combine to
+    give a scale of 1.0.
     
     \\sa \\ref UsdGeom_LinAlgBasics
      """
@@ -2343,7 +2379,7 @@ class Camera "Camera" (
 
     # depth of field
     float fStop = 0.0 (
-        doc = """Lens aperture. Defaults to 0.0, which turns off focusing.""")
+        doc = """Lens aperture. Defaults to 0.0, which turns off depth of field effects.""")
     float focusDistance = 0.0 (
         doc = """Distance from the camera to the focus plane in scene units; see 
                  \\ref UsdGeom_CameraUnits .""")
@@ -2364,15 +2400,46 @@ class Camera "Camera" (
         doc = """Frame relative shutter close time, analogous comments from
                  shutter:open apply. A value greater or equal to shutter:open
                  should be authored, otherwise there is no exposure and a
-                 renderer should produce a black image."""
+                 renderer should produce a black image. Used for motion blur."""
     )
     
     # exposure adjustment
     float exposure = 0.0 (
-        doc = """Exposure adjustment, as a log base-2 value.  The default
+        doc = """Exposure compensation, as a log base-2 value.  The default
                  of 0.0 has no effect.  A value of 1.0 will double the
                  image-plane intensities in a rendered image; a value of
                  -1.0 will halve them."""
+    )
+
+    # exposure controls
+    float exposure:iso = 100.0 (
+        doc = """The speed rating of the sensor or film when calculating exposure.
+                 Higher numbers give a brighter image, lower numbers darker."""
+    )
+
+    float exposure:time = 1.0 (
+        doc = """Time in seconds that the sensor is exposed to light when calculating exposure.
+                 Longer exposure times create a brighter image, shorter times darker.
+                 Note that shutter:open and shutter:close model essentially the 
+                 same property of a physical camera, but are for specifying the 
+                 size of the motion blur streak which is for practical purposes
+                 useful to keep separate."""
+    )
+
+    float exposure:fStop = 1.0 (
+        doc = """f-stop of the aperture when calculating exposure. Smaller numbers
+                 create a brighter image, larger numbers darker.
+                 Note that the `fStop` attribute also models the diameter of the camera
+                 aperture, but for specifying depth of field.  For practical 
+                 purposes it is useful to keep the exposure and the depth of field
+                 controls separate.
+                 """
+    )
+
+    float exposure:responsivity = 1.0 (
+        doc = """Scalar multiplier representing overall responsivity of the 
+                 sensor system to light when calculating exposure. Intended to be
+                 used as a per camera/lens system measured scaling value."""
     )
 }
 

@@ -94,6 +94,34 @@ def "VariantWithParams" (
     double TestPcp_radius = 20
 }
 
+def "VariantWithParams2" (
+    references = [@./params.sdf@</Params>]
+    payload = @cone.testpcpdynamic@
+    variants = {
+        string dynamicVariant = "even"
+        string dynamicRadius = "even"
+    }
+    prepend variantSets = ["dynamicVariant", "dynamicRadius"]
+)
+{
+    variantSet "dynamicVariant" = {
+    "odd" (TestPcp_depth = 3) {
+      int TestPcp_depth = 3
+    }
+    "even" (TestPcp_depth = 2) {
+      int TestPcp_depth = 2
+    }
+  }
+    variantSet "dynamicRadius" = {
+    "odd" (TestPcp_radius = 30) {
+      double TestPcp_radius = 30
+    }
+    "even" (TestPcp_radius = 20) {
+      double TestPcp_radius = 20
+    }
+  }
+}
+
 def "ParamRef" (
     references = @./params.sdf@</Params1>
 ){}
@@ -164,5 +192,25 @@ def "Set"
 
         }
 
+    }
+}
+
+def "PayloadInVariant" (
+    variantSets = "x"
+    prepend references = @./params.sdf@</Params>
+    variants = {
+        string x = "a"
+    }
+    TestPcp_num = 4
+)
+{
+    int TestPcp_num = 4
+
+    variantSet "x" = {
+       "a" (
+           references = [@./payload.sdf@</PayloadCone>]
+       )
+       {
+       }
     }
 }

@@ -27,29 +27,32 @@ TF_DEFINE_PRIVATE_TOKENS(
 static TfStaticData<UsdStageCache> _StageCache;
 
 static
-NdrTokenMap
+SdrTokenMap
 _GetSdrMetadata(const UsdShadeShader &shaderDef,
-                const NdrTokenMap &discoveryResultMetadata) 
+                const SdrTokenMap &discoveryResultMetadata) 
 {
     // XXX Currently, this parser does not support 'vstruct' parsing, but if
     //     we decide to support 'vstruct' type in the future, we would need to
     //     identify 'vstruct' types in this function by examining the metadata.
 
-    NdrTokenMap metadata = discoveryResultMetadata;
+    SdrTokenMap metadata = discoveryResultMetadata;
 
     auto shaderDefMetadata = shaderDef.GetSdrMetadata();
     metadata.insert(shaderDefMetadata.begin(), shaderDefMetadata.end());
 
-    metadata[SdrNodeMetadata->Primvars] = 
+    const std::string primvarsStr = 
         UsdShadeShaderDefUtils::GetPrimvarNamesMetadataString(
-            metadata, shaderDef.ConnectableAPI());
+                                          metadata, shaderDef.ConnectableAPI());
+    if (!primvarsStr.empty()) {
+        metadata[SdrNodeMetadata->Primvars] = primvarsStr;
+    }
 
     return metadata;
 }
 
-NdrNodeUniquePtr 
-UsdShadeShaderDefParserPlugin::Parse(
-    const NdrNodeDiscoveryResult &discoveryResult)
+SdrShaderNodeUniquePtr 
+UsdShadeShaderDefParserPlugin::ParseShaderNode(
+    const SdrShaderNodeDiscoveryResult &discoveryResult)
 {
     const std::string &rootLayerPath = discoveryResult.resolvedUri;
 
@@ -61,7 +64,7 @@ UsdShadeShaderDefParserPlugin::Parse(
     }
 
     if (!stage) {
-        return NdrParserPlugin::GetInvalidNode(discoveryResult);;
+        return SdrParserPlugin::GetInvalidShaderNode(discoveryResult);;
     }
 
     UsdPrim shaderDefPrim;
@@ -80,18 +83,18 @@ UsdShadeShaderDefParserPlugin::Parse(
     }
 
     if (!shaderDefPrim) {
-        return NdrParserPlugin::GetInvalidNode(discoveryResult);;
+        return SdrParserPlugin::GetInvalidShaderNode(discoveryResult);;
     }
 
     UsdShadeShader shaderDef(shaderDefPrim);
     if (!shaderDef) {
-        return NdrParserPlugin::GetInvalidNode(discoveryResult);;
+        return SdrParserPlugin::GetInvalidShaderNode(discoveryResult);;
     }
 
     SdfAssetPath nodeUriAssetPath;
     if (!shaderDef.GetSourceAsset(&nodeUriAssetPath,
                                   discoveryResult.sourceType)) {
-        return NdrParserPlugin::GetInvalidNode(discoveryResult);
+        return SdrParserPlugin::GetInvalidShaderNode(discoveryResult);
     }
 
     const std::string &resolvedImplementationUri = nodeUriAssetPath.GetResolvedPath();
@@ -99,10 +102,10 @@ UsdShadeShaderDefParserPlugin::Parse(
         TF_RUNTIME_ERROR("Unable to resolve path @%s@ in shader "
             "definition file '%s'", nodeUriAssetPath.GetAssetPath().c_str(), 
             rootLayerPath.c_str());
-        return NdrParserPlugin::GetInvalidNode(discoveryResult);
+        return SdrParserPlugin::GetInvalidShaderNode(discoveryResult);
     }
 
-    return NdrNodeUniquePtr(new SdrShaderNode(
+    return SdrShaderNodeUniquePtr(new SdrShaderNode(
         discoveryResult.identifier, 
         discoveryResult.version,
         discoveryResult.name,
@@ -111,7 +114,7 @@ UsdShadeShaderDefParserPlugin::Parse(
         discoveryResult.sourceType, /* sourceType */
         rootLayerPath,
         resolvedImplementationUri,
-        UsdShadeShaderDefUtils::GetShaderProperties(
+        UsdShadeShaderDefUtils::GetProperties(
             shaderDef.ConnectableAPI()),
         _GetSdrMetadata(shaderDef, discoveryResult.metadata),
         discoveryResult.sourceCode
@@ -119,10 +122,10 @@ UsdShadeShaderDefParserPlugin::Parse(
     
 }
 
-const NdrTokenVec &
+const SdrTokenVec &
 UsdShadeShaderDefParserPlugin::GetDiscoveryTypes() const 
 {
-    static const NdrTokenVec discoveryTypes{_tokens->usda, 
+    static const SdrTokenVec discoveryTypes{_tokens->usda, 
                                             _tokens->usdc, 
                                             _tokens->usd};
     return discoveryTypes;
@@ -137,6 +140,6 @@ UsdShadeShaderDefParserPlugin::GetSourceType() const
     return empty;
 }
 
-NDR_REGISTER_PARSER_PLUGIN(UsdShadeShaderDefParserPlugin);
+SDR_REGISTER_PARSER_PLUGIN(UsdShadeShaderDefParserPlugin);
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -147,6 +147,15 @@ private:
     friend class PcpCache;
     friend class PcpChanges;
 
+    using _ProcessedLayerSublayerPathPairsKey = 
+        std::pair<SdfLayerHandle, std::string>;
+
+    // Set of hashed layer / sublayer path pairs that have been processed in
+    // in this round of changes.  These values are checked in order to avoid
+    // recursively processing cycles created in layer stacks.
+    std::unordered_set<_ProcessedLayerSublayerPathPairsKey, TfHash> 
+        _processedLayerSublayerPathPairs;
+
     // Must rebuild the prim/property stacks at each path due to a change
     // that only affects the internal representation of the stack and
     // not its contents.  Because this causes no externally-observable

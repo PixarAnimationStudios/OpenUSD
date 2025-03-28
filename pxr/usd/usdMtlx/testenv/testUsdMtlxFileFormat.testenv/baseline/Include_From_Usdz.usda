@@ -15,7 +15,7 @@ def "MaterialX"
             prepend variantSets = "vs_simple_srf"
         )
         {
-            string config:mtlx:version = "1.38"
+            string config:mtlx:version = "1.39"
             color3f inputs:diffColor
             color3f inputs:otherColor1
             color3f inputs:otherColor2
@@ -82,7 +82,7 @@ def "MaterialX"
             prepend variantSets = "vs_simple_srf"
         )
         {
-            string config:mtlx:version = "1.38"
+            string config:mtlx:version = "1.39"
             color3f inputs:diffColor
             color3f inputs:otherColor1
             color3f inputs:otherColor2
@@ -115,7 +115,7 @@ def "MaterialX"
             prepend apiSchemas = ["MaterialXConfigAPI"]
         )
         {
-            string config:mtlx:version = "1.38"
+            string config:mtlx:version = "1.39"
             token inputs:custom (
                 renderType = "customtype"
             )
@@ -142,7 +142,7 @@ def "MaterialX"
             prepend apiSchemas = ["MaterialXConfigAPI"]
         )
         {
-            string config:mtlx:version = "1.38"
+            string config:mtlx:version = "1.39"
             token inputs:custom (
                 renderType = "customtype"
             )
@@ -173,7 +173,7 @@ def "MaterialX"
             prepend apiSchemas = ["MaterialXConfigAPI"]
         )
         {
-            string config:mtlx:version = "1.38"
+            string config:mtlx:version = "1.39"
             token inputs:custom (
                 renderType = "customtype"
             )
@@ -198,7 +198,7 @@ def "MaterialX"
             prepend apiSchemas = ["MaterialXConfigAPI"]
         )
         {
-            string config:mtlx:version = "1.38"
+            string config:mtlx:version = "1.39"
             token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn/sr_vn.outputs:surface>
 
             def Shader "sr_vn" (
@@ -212,7 +212,7 @@ def "MaterialX"
             prepend apiSchemas = ["MaterialXConfigAPI"]
         )
         {
-            string config:mtlx:version = "1.38"
+            string config:mtlx:version = "1.39"
             token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_1_0/sr_vn2.outputs:surface>
 
             def Shader "sr_vn2" (
@@ -226,7 +226,7 @@ def "MaterialX"
             prepend apiSchemas = ["MaterialXConfigAPI"]
         )
         {
-            string config:mtlx:version = "1.38"
+            string config:mtlx:version = "1.39"
             token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_nd_1_0/sr_vn3.outputs:surface>
 
             def Shader "sr_vn3" (
@@ -240,7 +240,7 @@ def "MaterialX"
             prepend apiSchemas = ["MaterialXConfigAPI"]
         )
         {
-            string config:mtlx:version = "1.38"
+            string config:mtlx:version = "1.39"
             token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_2_0/sr_vn4.outputs:surface>
 
             def Shader "sr_vn4" (
@@ -254,7 +254,7 @@ def "MaterialX"
             prepend apiSchemas = ["MaterialXConfigAPI"]
         )
         {
-            string config:mtlx:version = "1.38"
+            string config:mtlx:version = "1.39"
             token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_2_1/sr_vn5.outputs:surface>
 
             def Shader "sr_vn5" (
@@ -268,7 +268,7 @@ def "MaterialX"
             prepend apiSchemas = ["MaterialXConfigAPI"]
         )
         {
-            string config:mtlx:version = "1.38"
+            string config:mtlx:version = "1.39"
             token outputs:mtlx:surface.connect = </MaterialX/Materials/m_vn_nd_2x/sr_vn6.outputs:surface>
 
             def Shader "sr_vn6" (

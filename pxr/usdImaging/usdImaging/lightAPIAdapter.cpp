@@ -111,6 +111,27 @@ private:
 
 } // namespace anonymous
 
+TfToken
+UsdImagingLightAPIAdapter::GetImagingSubprimType(
+    UsdPrim const& prim,
+    TfToken const& subprim,
+    TfToken const& appliedInstanceName)
+{
+    // UsdLuxLightAPI is not a multi-apply schema.
+    if (!appliedInstanceName.IsEmpty()) {
+        return TfToken();
+    }
+    // Override the prim type only for the primary hydra prim.
+    // This adapter does not define any additional subprims.
+    if (!subprim.IsEmpty()) {
+        return TfToken();
+    }
+
+    // Note that this opinion weakly composes with opinions from other
+    // adapters servicing this prim.
+    return HdLightSchemaTokens->light;
+}
+
 HdContainerDataSourceHandle
 UsdImagingLightAPIAdapter::GetImagingSubprimData(
     UsdPrim const& prim,

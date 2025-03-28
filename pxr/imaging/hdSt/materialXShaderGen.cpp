@@ -135,7 +135,9 @@ _IsHardcodedPublicUniform(const mx::TypeDesc& varType)
 
 template<typename Base>
 void
-HdStMaterialXShaderGen<Base>::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
+HdStMaterialXShaderGen<Base>::_EmitGlslfxHeader(
+    mx::GenContext& mxContext,
+    mx::ShaderStage& mxStage) const
 {
     // Glslfx version and configuration
     emitLine("-- glslfx version 0.1", mxStage, false);
@@ -164,7 +166,7 @@ HdStMaterialXShaderGen<Base>::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
         for (mx::StringMap::const_reference primvarPair : _mxHdPrimvarMap) {
             const std::string type =
                 HdStMaterialXHelpers::MxGetTypeString(
-                    Base::_syntax, primvarPair.second);
+                    Base::_syntax, mxContext, primvarPair.second);
             if (type.empty() ) {
                 TF_WARN("MaterialX geomprop '%s' has unknown type '%s'",
                         primvarPair.first.c_str(), primvarPair.second.c_str());
@@ -672,9 +674,8 @@ HdStMaterialXShaderGen<Base>::emitLine(
     // 'occlusion' represents shadow occlusion. We don't use MaterialX's
     // shadow implementation (hwShadowMap is false). Instead, use our own 
     // per-light occlusion value calculated in mxInit() and stored in lightData.
-    // Note: Metal uses float3, Glsl uses vec3, in the line we're looking for.
-    if (_emittingSurfaceNode && (str == "vec3 L = lightShader.direction" ||
-                                 str == "float3 L = lightShader.direction" )) {
+    if (_emittingSurfaceNode &&
+        TfStringEndsWith(str, "L = lightShader.direction")) {
         emitLine(
             "occlusion = u_lightData[activeLightIndex].shadowOcclusion", stage);
     }
@@ -879,7 +880,13 @@ namespace {
 template<>
 HdStMaterialXShaderGen<mx::GlslShaderGenerator>::HdStMaterialXShaderGen(
     HdSt_MxShaderGenInfo const& mxHdInfo)
+#if (MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38) || \
+    (MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 39 && \
+     MATERIALX_BUILD_VERSION <= 2)
     : mx::GlslShaderGenerator(),
+#else
+    : mx::GlslShaderGenerator(mx::TypeSystem::create()),
+#endif
       _mxHdTextureMap(mxHdInfo.textureMap),
       _mxHdPrimvarMap(mxHdInfo.primvarMap),
       _mxHdPrimvarDefaultValueMap(mxHdInfo.primvarDefaultValueMap),
@@ -935,7 +942,7 @@ HdStMaterialXShaderGenGlsl::_EmitGlslfxShader(
     addStageUniform(mx::HW::LIGHT_DATA, mx::Type::FLOAT,
         "shadowOcclusion", mxStage);
 
-    _EmitGlslfxHeader(mxStage);
+    _EmitGlslfxHeader(mxContext, mxStage);
     _EmitMxFunctions(mxGraph, mxContext, mxStage);
     _EmitMxSurfaceShader(mxGraph, mxContext, mxStage);
 }
@@ -1032,7 +1039,13 @@ namespace {
 template<>
 HdStMaterialXShaderGen<mx::VkShaderGenerator>::HdStMaterialXShaderGen(
     HdSt_MxShaderGenInfo const& mxHdInfo)
+#if (MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38) || \
+    (MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 39 && \
+     MATERIALX_BUILD_VERSION <= 2)
     : mx::VkShaderGenerator(),
+#else
+    : mx::VkShaderGenerator(mx::TypeSystem::create()),
+#endif
       _mxHdTextureMap(mxHdInfo.textureMap),
       _mxHdPrimvarMap(mxHdInfo.primvarMap),
       _mxHdPrimvarDefaultValueMap(mxHdInfo.primvarDefaultValueMap),
@@ -1088,7 +1101,7 @@ HdStMaterialXShaderGenVkGlsl::_EmitGlslfxShader(
     addStageUniform(mx::HW::LIGHT_DATA, mx::Type::FLOAT,
         "shadowOcclusion", mxStage);
 
-    _EmitGlslfxHeader(mxStage);
+    _EmitGlslfxHeader(mxContext, mxStage);
     _EmitMxFunctions(mxGraph, mxContext, mxStage);
     _EmitMxSurfaceShader(mxGraph, mxContext, mxStage);
 }
@@ -1184,7 +1197,13 @@ namespace {
 template<>
 HdStMaterialXShaderGen<mx::MslShaderGenerator>::HdStMaterialXShaderGen(
     HdSt_MxShaderGenInfo const& mxHdInfo)
+#if (MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38) || \
+    (MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 39 && \
+     MATERIALX_BUILD_VERSION <= 2)
     : mx::MslShaderGenerator(),
+#else
+    : mx::MslShaderGenerator(mx::TypeSystem::create()),
+#endif
       _mxHdTextureMap(mxHdInfo.textureMap),
       _mxHdPrimvarMap(mxHdInfo.primvarMap),
       _mxHdPrimvarDefaultValueMap(mxHdInfo.primvarDefaultValueMap),
@@ -1293,7 +1312,7 @@ HdStMaterialXShaderGenMsl::_EmitGlslfxMetalHeader(
     mx::GenContext& mxContext,
     mx::ShaderStage& mxStage) const
 {
-    _EmitGlslfxHeader(mxStage);
+    _EmitGlslfxHeader(mxContext, mxStage);
     emitLineBreak(mxStage);
     emitLineBreak(mxStage);
     emitLine("//Metal Shading Language version " + getVersion(), mxStage, false);
@@ -1310,11 +1329,11 @@ HdStMaterialXShaderGenMsl::_EmitMxFunctions(
     mx::ShaderStage& mxStage) const
 {
     mx::ShaderGenerator::emitLibraryInclude(
-        "pbrlib/" + mx::GlslShaderGenerator::TARGET
-        + "/lib/mx_microfacet.glsl", mxContext, mxStage);
-    mx::ShaderGenerator::emitLibraryInclude(
         "stdlib/" + mx::MslShaderGenerator::TARGET
         + "/lib/mx_math.metal", mxContext, mxStage);
+    mx::ShaderGenerator::emitLibraryInclude(
+        "pbrlib/" + mx::GlslShaderGenerator::TARGET
+        + "/lib/mx_microfacet.glsl", mxContext, mxStage);
     _EmitConstantsUniformsAndTypeDefs(
         mxContext, mxStage,_syntax->getConstantQualifier());
 
@@ -1407,15 +1426,20 @@ HdStMaterialXHelpers::GetMxTypeDesc(const mx::ShaderPort* port)
 
 const std::string 
 HdStMaterialXHelpers::MxGetTypeString(
-    mx::SyntaxPtr mxSyntax, const std::string& typeName)
+    mx::SyntaxPtr mxSyntax,
+    const mx::GenContext& mxContext,
+    const std::string& typeName)
 {
 #if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
     const mx::TypeDesc* mxType = mx::TypeDesc::get(typeName);
     if (!mxType) {
         return mx::Type::NONE->getName();
     }
+#elif MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 39 && \
+    MATERIALX_BUILD_VERSION <=2
+     const mx::TypeDesc mxType = mx::TypeDesc::get(typeName);
 #else
-    const mx::TypeDesc mxType = mx::TypeDesc::get(typeName);
+    const mx::TypeDesc mxType = mxContext.getTypeDesc(typeName);
 #endif
     return mxSyntax->getTypeName(mxType);
 }

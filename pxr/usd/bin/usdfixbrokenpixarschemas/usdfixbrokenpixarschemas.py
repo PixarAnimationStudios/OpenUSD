@@ -34,6 +34,7 @@ def _FixUsdAsset(usdAsset):
     usdLayerFixer.FixupSkelBindingAPI()
     usdLayerFixer.FixupUpAxis()
     usdLayerFixer.FixupCoordSysAPI()
+    usdLayerFixer.FixupRenderSettingsTerminalsAPI()
     if usdLayerFixer.IsLayerUpdated():
         usdLayer.Save()
         return True

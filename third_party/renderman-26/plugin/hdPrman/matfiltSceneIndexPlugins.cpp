@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2025 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -22,6 +22,9 @@
 #include "pxr/imaging/hd/materialNetworkInterface.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+#if HD_API_VERSION >= 76
+#include "pxr/imaging/hdsi/nodeIdentifierResolvingSceneIndex.h"
+#endif
 
 #include <string>
 #include <vector>
@@ -31,9 +34,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (applyConditionals)
+    (OSL)
     ((previewMatPluginName, "HdPrman_PreviewMaterialFilteringSceneIndexPlugin"))
     ((materialXPluginName,  "HdPrman_MaterialXFilteringSceneIndexPlugin"))
     ((vstructPluginName,    "HdPrman_VirtualStructResolvingSceneIndexPlugin"))
+    ((nodeIdPluginName, "HdPrman_NodeIdentifierResolvingSceneIndexPlugin"))
 );
 
 /// Ordering of the matfilt operations. This is necessary when using scene
@@ -43,7 +48,8 @@ enum _MatfiltOrder
 {
     Start = 0,
     ConnectionResolve = 100, // vstruct
-    NodeTranslation = 110, // matx, preview surface
+    NodeTranslation = 110, // matx, preview surface,
+    NodeIdResolution = 120, // nodeId's for sourceAsset shaders
     End = 200,
 };
 
@@ -64,6 +70,11 @@ TF_REGISTRY_FUNCTION(TfType)
     
     HdSceneIndexPluginRegistry::Define<
         HdPrman_VirtualStructResolvingSceneIndexPlugin>();
+
+#if HD_API_VERSION >= 76
+    HdSceneIndexPluginRegistry::Define<
+        HdPrman_NodeIdentifierResolvingSceneIndexPlugin>();
+#endif
 }
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
@@ -94,6 +105,13 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
             _tokens->vstructPluginName,
             inputArgs,
             _MatfiltOrder::ConnectionResolve,
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            rendererDisplayName,
+            _tokens->nodeIdPluginName,
+            inputArgs,
+            _MatfiltOrder::NodeIdResolution,
             HdSceneIndexPluginRegistry::InsertionOrderAtStart);
     }
 }
@@ -256,5 +274,22 @@ HdPrman_VirtualStructResolvingSceneIndexPlugin::_AppendSceneIndex(
     return HdPrman_VirtualStructResolvingSceneIndex::New(
                 inputScene, applyConditionals);
 }
+
+/// ----------------------------------------------------------------------------
+
+#if HD_API_VERSION >= 76
+HdPrman_NodeIdentifierResolvingSceneIndexPlugin::
+HdPrman_NodeIdentifierResolvingSceneIndexPlugin() = default;
+
+HdSceneIndexBaseRefPtr
+HdPrman_NodeIdentifierResolvingSceneIndexPlugin::_AppendSceneIndex(
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const HdContainerDataSourceHandle &inputArgs)
+{
+    TF_UNUSED(inputArgs);
+    return HdSiNodeIdentifierResolvingSceneIndex::New(
+                inputScene, /* sourceType */_tokens->OSL);
+}
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

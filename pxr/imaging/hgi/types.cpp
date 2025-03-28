@@ -243,49 +243,25 @@ HgiIsFloatFormat(
 {
     switch (HgiGetComponentBaseFormat(f)) {
     case HgiFormatUNorm8:
-    case HgiFormatUNorm8Vec2:
-    case HgiFormatUNorm8Vec4:
     case HgiFormatSNorm8:
-    case HgiFormatSNorm8Vec2:
-    case HgiFormatSNorm8Vec4:
     case HgiFormatFloat16:
-    case HgiFormatFloat16Vec2:
-    case HgiFormatFloat16Vec3:
-    case HgiFormatFloat16Vec4:
     case HgiFormatFloat32:
-    case HgiFormatFloat32Vec2:
-    case HgiFormatFloat32Vec3:
-    case HgiFormatFloat32Vec4:
-    case HgiFormatUNorm8Vec4srgb:
+    case HgiFormatFloat32UInt8: // Unclear
     case HgiFormatBC6FloatVec3:
     case HgiFormatBC6UFloatVec3:
-    case HgiFormatBC7UNorm8Vec4:
-    case HgiFormatBC7UNorm8Vec4srgb:
-    case HgiFormatBC1UNorm8Vec4:
-    case HgiFormatBC3UNorm8Vec4:
-    case HgiFormatFloat32UInt8: // Unclear
     case HgiFormatPackedInt1010102:
         return true;
     case HgiFormatInt16:
-    case HgiFormatInt16Vec2:
-    case HgiFormatInt16Vec3:
-    case HgiFormatInt16Vec4:
     case HgiFormatUInt16:
-    case HgiFormatUInt16Vec2:
-    case HgiFormatUInt16Vec3:
-    case HgiFormatUInt16Vec4:
     case HgiFormatInt32:
-    case HgiFormatInt32Vec2:
-    case HgiFormatInt32Vec3:
-    case HgiFormatInt32Vec4:
         return false;
-    case HgiFormatCount:
     case HgiFormatInvalid:
         TF_CODING_ERROR("Invalid Format");
         return false;
+    default:
+        TF_CODING_ERROR("Missing Format");
+        return false;
     }
-    TF_CODING_ERROR("Missing Format");
-    return false;
 }
 
 uint16_t

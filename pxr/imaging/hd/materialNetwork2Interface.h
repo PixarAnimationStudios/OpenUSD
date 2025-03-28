@@ -92,6 +92,12 @@ public:
         const TfToken &nodeType) override;
 
     HD_API
+    virtual void SetNodeTypeInfoValue(
+        const TfToken &nodeName,
+        const TfToken &key,
+        const VtValue &value) override;
+
+    HD_API
     void SetNodeParameterValue(
         const TfToken &nodeName,
         const TfToken &paramName,

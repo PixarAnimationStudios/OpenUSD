@@ -45,7 +45,10 @@ HgiVulkanSampler::HgiVulkanSampler(
     sampler.mipLodBias = 0.0f;
     sampler.mipmapMode = HgiVulkanConversions::GetMipFilter(desc.mipFilter);
     sampler.minLod = 0.0f;
-    sampler.maxLod = FLT_MAX;
+    sampler.maxLod = desc.mipFilter == HgiMipFilterNotMipmapped
+        ? 0.25 : VK_LOD_CLAMP_NONE;
+    // 0.25 if not mipmapped, to emulate OpenGL
+    // See https://registry.khronos.org/vulkan/specs/latest/man/html/VkSamplerCreateInfo.html#_description
 
     if ((desc.minFilter != HgiSamplerFilterNearest ||
          desc.mipFilter == HgiMipFilterLinear) &&

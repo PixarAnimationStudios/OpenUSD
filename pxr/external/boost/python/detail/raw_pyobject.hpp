@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/raw_pyobject.hpp>
-#else
-
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 //
@@ -41,5 +37,4 @@ typedef new_non_null_reference_t* new_non_null_reference;
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_RAW_PYOBJECT_HPP

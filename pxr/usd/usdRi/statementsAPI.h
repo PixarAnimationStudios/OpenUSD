@@ -278,6 +278,9 @@ public:
     // --------------------------------------------------------------------- //
     // SetCoordinateSystem
     // --------------------------------------------------------------------- //
+    /// \deprecated This API will be removed in a future release.  Clients
+    /// should use UsdShadeCoordSysAPI instead.
+    ///
     /// Sets the "ri:coordinateSystem" attribute to the given string value,
     /// creating the attribute if needed. That identifies this prim as providing
     /// a coordinate system, which can be retrieved via
@@ -292,6 +295,9 @@ public:
     // --------------------------------------------------------------------- //
     // GetCoordinateSystem
     // --------------------------------------------------------------------- //
+    /// \deprecated This API will be removed in a future release.  Clients
+    /// should use UsdShadeCoordSysAPI instead.
+    ///
     /// Returns the value in the "ri:coordinateSystem" attribute if it exists.
     ///
     USDRI_API
@@ -300,6 +306,9 @@ public:
     // --------------------------------------------------------------------- //
     // HasCoordinateSystem
     // --------------------------------------------------------------------- //
+    /// \deprecated This API will be removed in a future release.  Clients
+    /// should use UsdShadeCoordSysAPI instead.
+    ///
     /// Returns true if the underlying prim has a ri:coordinateSystem opinion.
     ///
     USDRI_API
@@ -308,6 +317,9 @@ public:
     // --------------------------------------------------------------------- //
     // SetScopedCoordinateSystem
     // --------------------------------------------------------------------- //
+    /// \deprecated This API will be removed in a future release.  Clients
+    /// should use UsdShadeCoordSysAPI instead.
+    ///
     /// Sets the "ri:scopedCoordinateSystem" attribute to the given string
     /// value, creating the attribute if needed. That identifies this prim as
     /// providing a coordinate system, which can be retrieved via
@@ -324,6 +336,9 @@ public:
     // --------------------------------------------------------------------- //
     // GetScopedCoordinateSystem
     // --------------------------------------------------------------------- //
+    /// \deprecated This API will be removed in a future release.  Clients
+    /// should use UsdShadeCoordSysAPI instead.
+    ///
     /// Returns the value in the "ri:scopedCoordinateSystem" attribute if it
     /// exists.
     ///
@@ -333,6 +348,9 @@ public:
     // --------------------------------------------------------------------- //
     // HasScopedCoordinateSystem
     // --------------------------------------------------------------------- //
+    /// \deprecated This API will be removed in a future release.  Clients
+    /// should use UsdShadeCoordSysAPI instead.
+    ///
     /// Returns true if the underlying prim has a ri:scopedCoordinateSystem
     /// opinion.
     ///
@@ -342,6 +360,9 @@ public:
     // --------------------------------------------------------------------- //
     // GetModelCoordinateSystems
     // --------------------------------------------------------------------- //
+    /// \deprecated This API will be removed in a future release.  Clients
+    /// should use UsdShadeCoordSysAPI instead.
+    ///
     /// Populates the output \p targets with the authored
     /// ri:modelCoordinateSystems, if any. Returns true if the query was
     /// successful.
@@ -352,6 +373,9 @@ public:
     // --------------------------------------------------------------------- //
     // GetModelScopedCoordinateSystems
     // --------------------------------------------------------------------- //
+    /// \deprecated This API will be removed in a future release.  Clients
+    /// should use UsdShadeCoordSysAPI instead.
+    ///
     /// Populates the output \p targets with the authored
     /// ri:modelScopedCoordinateSystems, if any.  Returns true if the query was
     /// successful.

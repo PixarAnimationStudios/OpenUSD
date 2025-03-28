@@ -68,6 +68,11 @@ _CollectAncestorTypeValidators(
     // validators for all ancestor types are collected.
     for (const TfToken &schemaType : schemaTypeNames) {
         const TfType type = UsdSchemaRegistry::GetTypeFromName(schemaType);
+        if (type.IsUnknown()) {
+            TF_WARN("Unknown schema type '%s' provided to validate.",
+                    schemaType.GetText());
+            continue;
+        }
         std::vector<TfType> ancestorTypes;
         type.GetAllAncestorTypes(&ancestorTypes);
         for (const TfType &ancestorType : ancestorTypes) {

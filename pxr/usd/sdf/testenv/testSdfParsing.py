@@ -47,6 +47,9 @@ class TestSdfParsing(unittest.TestCase):
         # This will mean that your new test runs first and you can spot
         # failures much quicker.
         testFiles = '''
+        225_multiline_with_SplineKnotParamList.sdf
+        224_spline_post_shaping_with_comment.sdf
+        223_bad_spline_post_shaping_spacing.sdf
         222_dict_key_control_characters.sdf
         221_bad_spline_type.sdf
         220_splines.sdf

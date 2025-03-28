@@ -58,7 +58,8 @@ _SceneGlobalsDataSource::GetNames()
     static const TfTokenVector names = {
         HdSceneGlobalsSchemaTokens->activeRenderPassPrim,
         HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim,
-        HdSceneGlobalsSchemaTokens->currentFrame
+        HdSceneGlobalsSchemaTokens->currentFrame,
+        HdSceneGlobalsSchemaTokens->sceneStateId
     };
 
     return names;
@@ -72,12 +73,19 @@ _SceneGlobalsDataSource::Get(const TfToken &name)
         return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
     }
     if (name == HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim) {
-        SdfPath const &path = _si->_activeRenderSettingsPrimPath;
-        return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
+        if (_si->_activeRenderSettingsPrimPath) {
+            SdfPath const &path = *_si->_activeRenderSettingsPrimPath;
+            return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
+        }
+        return nullptr;
     }
     if (name == HdSceneGlobalsSchemaTokens->currentFrame) {
         const double timeCode = _si->_time;
         return HdRetainedTypedSampledDataSource<double>::New(timeCode);
+    }
+    if (name == HdSceneGlobalsSchemaTokens->sceneStateId) {
+        const int sceneStateId = _si->_sceneStateId;
+        return HdRetainedTypedSampledDataSource<int>::New(sceneStateId);
     }
 
     return nullptr;
@@ -150,6 +158,21 @@ HdsiSceneGlobalsSceneIndex::SetCurrentFrame(const double &time)
     }
 }
 
+void
+HdsiSceneGlobalsSceneIndex::SetSceneStateId(const int &id)
+{
+    if (_sceneStateId == id) {
+        return;
+    }
+
+    _sceneStateId = id;
+
+    if (_IsObserved()) {
+        _SendPrimsDirtied({{
+            HdSceneGlobalsSchema::GetDefaultPrimPath(),
+            HdSceneGlobalsSchema::GetSceneStateIdLocator()}});
+    }
+}
 
 HdSceneIndexPrim
 HdsiSceneGlobalsSceneIndex::GetPrim(const SdfPath &primPath) const

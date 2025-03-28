@@ -77,6 +77,8 @@ void wrapShaderProperty()
         .def("IsVStruct", &This::IsVStruct)
         .def("GetValidConnectionTypes", &This::GetValidConnectionTypes,
             copyRefPolicy)
+        .def("CanConnectTo", (bool (SdrShaderProperty::*)(
+            const SdrShaderProperty&) const) &This::CanConnectTo)
         .def("IsAssetIdentifier", &This::IsAssetIdentifier)
         .def("IsDefaultInput", &This::IsDefaultInput)
         ;

@@ -23,7 +23,6 @@ generated that will compile and work with USD Core successfully:
       direct subLayer.
 """
 
-from __future__ import print_function
 import dataclasses
 import sys, os, re, inspect
 import keyword
@@ -1646,6 +1645,8 @@ def _UpdateUserDocForRegistry(filePath, flatLayer):
             continue
         if userDocStage is not None:
             userDocCls = userDocStage.GetPrimAtPath(cls.path)
+            if not userDocCls:
+                userDocCls = None
         else:
             userDocCls = None
         briefUserDoc = _GetUserDocForSchemaObj(cls, userDocCls)
@@ -1948,6 +1949,13 @@ if __name__ == '__main__':
     codeGenPath = os.path.abspath(args.codeGenPath)
     schemaPath = os.path.abspath(args.schemaPath)
 
+    # Check for expected library files
+    expectedFiles = ["__init__.py", "CMakeLists.txt", 'module.cpp']
+    for file in expectedFiles:
+        if not os.path.exists(os.path.join(codeGenPath, file)):
+            Print('WARNING: File {0} is missing. Run usdInitSchema to set up ' 
+                  'build necessities'.format(file))
+
     if args.templatePath:
         templatePath = os.path.abspath(args.templatePath)
     else:
@@ -1972,7 +1980,8 @@ if __name__ == '__main__':
     # Error Checking
     #
     if not os.path.isfile(schemaPath):
-        Print.Err('Usage Error: First positional argument must be a USD schema file.')
+        Print.Err('Usage Error: First positional argument must be a USD schema '
+                  'file. Use usdInitSchema.py to generate a template.')
         parser.print_help()
         sys.exit(1)
     if args.templatePath and not os.path.isdir(templatePath):

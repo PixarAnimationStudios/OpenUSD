@@ -20,6 +20,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#if PXR_VERSION < 2505
+using SdrTokenVec = NdrTokenVec;
+#endif
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (vstructmemberaliases)         \
@@ -60,21 +64,29 @@ struct _ShaderInfoEntry {
     /// Constructs a _ShaderInfoEntry::Ptr for a single shader without caching
     static Ptr
     Build(const TfToken &nodeTypeId,
-          const NdrTokenVec &shaderTypePriority)
+          const SdrTokenVec &shaderTypePriority)
     {
         auto result = Ptr(new _ShaderInfoEntry);
         if (auto sdrShader =
                 SdrRegistry::GetInstance().GetShaderNodeByIdentifier(
                         nodeTypeId, shaderTypePriority))
         {
+#if PXR_VERSION >= 2505
+            for (const auto &inputName : sdrShader->GetShaderInputNames()) {
+#else
             for (const auto &inputName : sdrShader->GetInputNames()) {
+#endif
                 auto sdrInput = sdrShader->GetShaderInput(inputName);
                 if (!sdrInput) {
                     continue;
                 }
                 _ProcessProperty(result, sdrInput);
             }
+#if PXR_VERSION >= 2505
+            for (const auto &outputName : sdrShader->GetShaderOutputNames()) {
+#else
             for (const auto &outputName : sdrShader->GetOutputNames()) {
+#endif
                 auto sdrOutput = sdrShader->GetShaderOutput(outputName);
                 if (!sdrOutput) {
                     continue;
@@ -91,7 +103,7 @@ struct _ShaderInfoEntry {
     /// Constructs and caches a _ShaderInfoEntry::Ptr for a single shader
     static Ptr
     Get(const TfToken &nodeTypeId,
-        const NdrTokenVec &shaderTypePriority)
+        const SdrTokenVec &shaderTypePriority)
     {
         std::lock_guard<std::mutex> lock(_cachedEntryMutex);
 
@@ -173,7 +185,7 @@ _ResolveVstructsForNode(
     HdMaterialNetworkInterface *interface,
     const TfToken &nodeId,
     std::set<TfToken> &resolvedNodeNames,
-    const NdrTokenVec &shaderTypePriority,
+    const SdrTokenVec &shaderTypePriority,
     bool enableConditions)
 {
     if (resolvedNodeNames.find(nodeId) != resolvedNodeNames.end()) {
@@ -316,7 +328,7 @@ MatfiltResolveVstructs(
         return;
     }
 
-    static const NdrTokenVec shaderTypePriority = {
+    static const SdrTokenVec shaderTypePriority = {
         TfToken("OSL"),
         TfToken("RmanCpp"),
     };

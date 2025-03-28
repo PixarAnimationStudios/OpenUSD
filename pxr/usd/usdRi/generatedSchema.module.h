@@ -9,5 +9,4 @@
 TF_WRAP(UsdRiStatementsAPI);
 TF_WRAP(UsdRiMaterialAPI);
 TF_WRAP(UsdRiSplineAPI);
-TF_WRAP(UsdRiRenderPassAPI);
 TF_WRAP(UsdRiTokens);

@@ -322,7 +322,7 @@ namespace {
     // -------------------------------------------------------------------------
 
     // Helper to convert the type to an Sdf type
-    NdrSdfTypeIndicator
+    SdrSdfTypeIndicator
     _GetTypeAsSdfType(
         const TfToken& type, size_t arraySize, const NdrTokenMap& metadata,
         int usdEncodingVersion)
@@ -337,7 +337,7 @@ namespace {
                 "Invalid/unsupported usdEncodingVersion %d. "
                 "Current version is %d.",
                 usdEncodingVersion, _UsdEncodingVersionsCurrent);
-            return NdrSdfTypeIndicator(SdfValueTypeNames->Token, type, false);
+            return SdrSdfTypeIndicator(SdfValueTypeNames->Token, type, false);
         }
     }
 
@@ -815,6 +815,13 @@ SdrShaderProperty::CanConnectTo(const NdrProperty& other) const
     return false;
 }
 
+bool 
+SdrShaderProperty::CanConnectTo(const SdrShaderProperty& other) const
+{
+    const NdrProperty& prop = other;
+    return CanConnectTo(prop);
+}
+
 bool
 SdrShaderProperty::IsVStructMember() const
 {
@@ -827,7 +834,7 @@ SdrShaderProperty::IsVStruct() const
     return _type == SdrPropertyTypes->Vstruct;
 }
 
-NdrSdfTypeIndicator
+SdrSdfTypeIndicator
 SdrShaderProperty::GetTypeAsSdfType() const
 {
     return _GetTypeAsSdfType(_type, _arraySize, _metadata,

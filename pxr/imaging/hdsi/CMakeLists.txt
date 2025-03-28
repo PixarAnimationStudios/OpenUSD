@@ -18,6 +18,8 @@ pxr_library(hdsi
     PUBLIC_CLASSES
         computeSceneIndexDiff
         coordSysPrimSceneIndex
+        debuggingSceneIndex
+        debuggingSceneIndexPlugin
         extComputationDependencySceneIndex
         extComputationPrimvarPruningSceneIndex
         implicitSurfaceSceneIndex
@@ -26,6 +28,7 @@ pxr_library(hdsi
         materialBindingResolvingSceneIndex
         materialOverrideResolvingSceneIndex
         materialPrimvarTransferSceneIndex
+        nodeIdentifierResolvingSceneIndex
         nurbsApproximatingSceneIndex
         pinnedCurveExpandingSceneIndex
         primManagingSceneIndexObserver
@@ -42,6 +45,9 @@ pxr_library(hdsi
     PUBLIC_HEADERS
         api.h
         version.h
+
+    RESOURCE_FILES
+        plugInfo.json
 )
 
 pxr_build_test(testHdsiComputeSceneIndexDiff

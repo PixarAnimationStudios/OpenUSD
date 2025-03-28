@@ -25,24 +25,6 @@
 
 const float farPlane = 1.0;
 
-float wrapSampleValue(float value)
-{
-    if (value < 0.0) {
-        value += 1.0;
-    }
-    else if (value > 1.0) {
-        value -= 1.0;
-    }
-    return value;
-}
-
-vec2 getSampleCoord(vec3 sample3D)
-{
-    vec2 latLong = ProjectToLatLong(sample3D);
-    return vec2(wrapSampleValue(latLong.x), wrapSampleValue(latLong.y));
-}
-
-
 void main(void)
 {
     // Transform the UV coordinates into NDC space and place at the far plane
@@ -58,7 +40,7 @@ void main(void)
         ( lightTransform * viewToWorld * vec4(sampleDirection, 0.0) ).xyz;
     
     // Sample Skydome Texture with the sampleDirection
-    vec2 sampleCoord = getSampleCoord(sampleDirection);
+    vec2 sampleCoord = ProjectToLatLong(sampleDirection);
     hd_FragColor = vec4(HgiGet_skydomeTexture(sampleCoord).xyz, 1.0);
     gl_FragDepth = farPlane;
 }

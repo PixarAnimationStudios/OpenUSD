@@ -4,8 +4,8 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_GPRIM_H
-#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_GPRIM_H
+#ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_GPRIM_H
+#define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_GPRIM_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
@@ -257,13 +257,13 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
         primvars.SetString(RixStr.k_identifier_object,
                            RtUString(id.GetName().c_str()));
 
-// In 2302 and beyond, we can use
+// In 2311 and beyond, we can use
 // HdPrman_PreviewSurfacePrimvarsSceneIndexPlugin.
-#if PXR_VERSION < 2302
+#if PXR_VERSION < 2311
         // Transfer material opinions of primvars.
         HdPrman_TransferMaterialPrimvarOpinions(sceneDelegate, hdMaterialId,
             primvars);
-#endif // PXR_VERSION < 2302
+#endif // PXR_VERSION < 2311
 
         // Adjust _prototypeIds array.
         const size_t oldCount = _prototypeIds.size();
@@ -512,4 +512,4 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_GPRIM_H
+#endif // EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_GPRIM_H

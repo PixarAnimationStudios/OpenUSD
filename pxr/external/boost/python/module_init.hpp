@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/module_init.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # ifndef PXR_BOOST_PYTHON_MODULE_INIT
@@ -87,5 +83,4 @@ extern "C" PXR_BOOST_PYTHON_SYMBOL_EXPORT _PXR_BOOST_PYTHON_MODULE_INIT(name)
 
 # endif
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_MODULE_INIT_HPP

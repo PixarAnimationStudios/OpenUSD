@@ -23,6 +23,7 @@ ARCH_PRAGMA_UNUSED_FUNCTION
 #include "pxr/usd/ar/writableAsset.h"
 
 #include "pxr/base/arch/defines.h"
+#include "pxr/base/arch/export.h"
 #include "pxr/base/arch/pragmas.h"
 #include "pxr/base/gf/colorSpace.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -30,9 +31,6 @@ ARCH_PRAGMA_UNUSED_FUNCTION
 #include "pxr/base/tf/type.h"
 
 #include "pxr/imaging/plugin/hioAvif/AVIF/src/avif/avif.h"
-
-
-#include "pxr/base/arch/export.h"
 
 #if defined(PXR_STATIC)
 #   define HIOAVIF_API
@@ -47,98 +45,6 @@ ARCH_PRAGMA_UNUSED_FUNCTION
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-// It's necessary to export the class so it's typeinfo is visible for registration
-class HIOAVIF_API Hio_AVIFImage final : public HioImage
-{
-    std::shared_ptr<ArAsset> _asset;
-    std::string              _filename;
-    int _width = 0;
-    int _height = 0;
-
-    avifImage *_avifImage = nullptr;
-    bool _imposeSRGBTransfer = false;
-
-    // mutable because GetMetadata is const, yet it doesn't make sense
-    // to cache the dictionary unless metadata is requested.
-    mutable VtDictionary     _metadata;
-
-public:
-    Hio_AVIFImage() = default;
-    ~Hio_AVIFImage() override {
-        Cleanup();
-    }
-
-    void Cleanup() {
-        if (_avifImage) {
-            avifImageDestroy(_avifImage);
-            _avifImage = nullptr;
-        }
-    }
-
-    const std::shared_ptr<ArAsset> Asset() const { return _asset; }
-
-    bool Read(StorageSpec const &storage) override {
-        return ReadCropped(0, 0, 0, 0, storage); 
-    }
-    bool ReadCropped(int const cropTop,  int const cropBottom,
-                     int const cropLeft, int const cropRight,
-                     StorageSpec const &storage) override;
-    bool Write(StorageSpec const &storage,
-               VtDictionary const &metadata) override;
-
-    // We're decoding AVIF to linear float16.
-    bool IsColorSpaceSRGB() const override {
-        if (_imposeSRGBTransfer)
-            return true;
-
-        if (_avifImage) {
-            // special case for BT709 with unspecified transfer function to match
-            // behavior observed in Apple's Finder and web browsers.
-            if (_avifImage->colorPrimaries == AVIF_COLOR_PRIMARIES_BT709 &&
-                _avifImage->transferCharacteristics == AVIF_TRANSFER_CHARACTERISTICS_UNSPECIFIED)
-                return true;
-            
-            // if the transfer function is SRGB-like, assume SRGB
-            switch (_avifImage->transferCharacteristics) {
-                case AVIF_TRANSFER_CHARACTERISTICS_BT709:
-                case AVIF_TRANSFER_CHARACTERISTICS_BT470M:
-                case AVIF_TRANSFER_CHARACTERISTICS_SRGB:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-        return false;
-    }
-
-    // hardcoded to f16v4, although in the future, f16v3 could be a future option
-    // if our supported hardware enables support for that as a texture format.
-    HioFormat GetFormat() const override { return HioFormatFloat16Vec4; }
-    int  GetWidth() const override { return _height; }
-    int  GetHeight() const override { return _width; }
-    int  GetBytesPerPixel() const override { return 16; } // 4 * sizeof(float16)
-    int  GetNumMipLevels() const override { return 0; }
-    bool GetMetadata(TfToken const &key, VtValue *value) const override { return false; }
-    bool GetSamplerMetadata(HioAddressDimension dim,
-                            HioAddressMode *param) const override { return false; }
-    std::string const& GetFilename() const override { return _filename; }
-
-    const VtDictionary& GetMetadata() const { return _metadata; }
-
-protected:
-    bool _OpenForReading(std::string const &filename, int subimage, int mip,
-                         SourceColorSpace sourceColorSpace,
-                         bool suppressErrors) override;
-    bool _OpenForWriting(std::string const &filename) override;
-};
-
-TF_REGISTRY_FUNCTION(TfType)
-{
-    using Image = Hio_AVIFImage;
-    TfType t = TfType::Define<Image, TfType::Bases<Image::HioImage>>();
-    t.SetFactory<HioImageFactory<Image>>();
-}
 
 namespace {
 
@@ -296,10 +202,10 @@ namespace {
     class ImageProcessor
     {
     public:
-        // Flip the image in-place.
+        // Flip the image in place.
         static void FlipImage(T* buffer, int width, int height, int channelCount)
         {
-            // use std::swap_ranges to flip the image in-place
+            // use std::swap_ranges to flip the image in place
             for (int y = 0; y < height / 2; ++y) {
                 std::swap_ranges(
                                  buffer + y * width * channelCount,
@@ -332,17 +238,6 @@ namespace {
             }
         }
         
-        static void HalfToFloat(GfHalf* buffer, float* outBuffer,
-                                int width, int height, int channelCount)
-        {
-            if (!buffer || !outBuffer)
-                return;
-            
-            for (int i = 0; i < width * height * channelCount; ++i) {
-                outBuffer[i] = buffer[i];
-            }
-        }
-        
         static void FloatToHalf(float* buffer, GfHalf* outBuffer,
                                 int width, int height, int channelCount)
         {
@@ -368,186 +263,209 @@ namespace {
             dstImg.data = (uint8_t*) dst;
             return nanoexr_Gaussian_resample(&srcImg, &dstImg);
         }
+
+        static bool ResizeImage(const float* src, float* dst,
+                                int srcWidth, int srcHeight, int dstWidth, int dstHeight, int channelCount) {
+            nanoexr_ImageData_t srcImg = {
+                (uint8_t*) src,
+                channelCount * sizeof(float) * srcWidth * srcHeight,
+                EXR_PIXEL_FLOAT,
+                channelCount, srcWidth, srcHeight, 0, srcHeight - 1
+            };
+            nanoexr_ImageData_t dstImg = {
+                (uint8_t*) dst,
+                channelCount * sizeof(float) * dstWidth * dstHeight,
+                EXR_PIXEL_FLOAT,
+                channelCount, dstWidth, dstHeight, 0, dstHeight - 1
+            };
+            return nanoexr_Gaussian_resample(&srcImg, &dstImg);
+        }
+    };
+
+
+    class AvifWrapper {
+        avifImage* _yuvImage = nullptr;
+        std::shared_ptr<float[]> _buffer;
+
+    public:
+        AvifWrapper() = default;
+        ~AvifWrapper() {
+            if (_yuvImage) {
+                avifImageDestroy(_yuvImage);
+            }
+        }
+
+        avifImage* Image() const { return _yuvImage; }
+
+        avifResult Read(uint8_t* data, size_t dataSize) {
+            if (!dataSize) {
+                return AVIF_RESULT_NO_CONTENT;
+            }
+            _yuvImage = avifImageCreateEmpty();
+            if (!_yuvImage) {
+                return AVIF_RESULT_UNKNOWN_ERROR;
+            }
+            avifDecoder* decoder = avifDecoderCreate();
+            if (!decoder) {
+                avifImageDestroy(_yuvImage);
+                return AVIF_RESULT_NO_CODEC_AVAILABLE;
+            }
+            avifResult result = avifDecoderReadMemory(decoder, _yuvImage,
+                                                      data, dataSize);
+            avifDecoderDestroy(decoder);
+            return result;
+        }
+
+        bool SourceIsSRGB() const {
+            // if the transfer function is SRGB-like, assume SRGB
+            switch (_yuvImage->transferCharacteristics) {
+                case AVIF_TRANSFER_CHARACTERISTICS_UNSPECIFIED:
+                    // special case for BT709 with unspecified transfer function to match
+                    // behavior observed in Apple's Finder and web browsers.
+                    return _yuvImage->colorPrimaries == AVIF_COLOR_PRIMARIES_BT709 ||
+                           _yuvImage->colorPrimaries == AVIF_COLOR_PRIMARIES_UNSPECIFIED;
+
+                case AVIF_TRANSFER_CHARACTERISTICS_BT709:
+                case AVIF_TRANSFER_CHARACTERISTICS_BT470M:
+                case AVIF_TRANSFER_CHARACTERISTICS_SRGB:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        GfVec2f Dimensions() const {
+            if (!_yuvImage) {
+                return GfVec2f(0.0f, 0.0f);
+            }
+            return GfVec2f(_yuvImage->width, _yuvImage->height); 
+        }
+
+        // templated CovertTORGBA, note that only GfHalf and uint8_t are
+        // by the avif library.
+        template <typename T>
+        bool ConvertToRGBA(T* buffer, size_t bufferSize) {
+            static_assert(std::is_same<T, GfHalf>::value || std::is_same<T, uint8_t>::value,
+                          "Only GfHalf and uint8_t are supported");
+            if (!_yuvImage) {
+                return false;
+            }
+            avifRGBImage rgb;
+            memset(&rgb, 0, sizeof(rgb));
+            avifRGBImageSetDefaults(&rgb, _yuvImage);
+            rgb.width = _yuvImage->width;
+            rgb.height = _yuvImage->height;
+            rgb.depth = sizeof(T) * 8; // bits per channel
+            rgb.format = AVIF_RGB_FORMAT_RGBA;
+            rgb.chromaUpsampling = AVIF_CHROMA_UPSAMPLING_AUTOMATIC;
+            rgb.chromaDownsampling = AVIF_CHROMA_DOWNSAMPLING_AUTOMATIC;
+            rgb.avoidLibYUV = AVIF_FALSE;
+            rgb.ignoreAlpha = AVIF_FALSE;
+            rgb.alphaPremultiplied = AVIF_FALSE;
+            rgb.isFloat = std::is_same<T, GfHalf>::value;
+            rgb.maxThreads = 1;
+            rgb.pixels = (uint8_t*) buffer;
+            rgb.rowBytes = rgb.width * 4 * sizeof(T);
+            avifResult result = avifImageYUVToRGB(_yuvImage, &rgb);
+            return result == AVIF_RESULT_OK;
+        }
+
+        std::shared_ptr<float[]> RGBAFloatBuffer() {
+            if (!_yuvImage) {
+                return {};
+            }
+            // if the yuvImage is 8 bit, call ConvertToRGBA<uint8_t>, otherwise
+            // call ConvertToRGBA<GfHalf>.
+            size_t bufferSize = _yuvImage->width * _yuvImage->height * 4;
+            if (_yuvImage->depth == 8) {
+                std::unique_ptr<uint8_t[]> buffer(new uint8_t[bufferSize]);
+                if (!ConvertToRGBA(buffer.get(), bufferSize)) {
+                    return {};
+                }
+                // convert to float
+                std::shared_ptr<float[]> floatBuffer(new float[bufferSize]);
+                for (size_t i = 0; i < bufferSize; ++i) {
+                    floatBuffer[i] = buffer[i] / 255.0f;
+                }
+                return floatBuffer;
+            }
+            std::unique_ptr<GfHalf[]> buffer(new GfHalf[bufferSize]);
+            if (!ConvertToRGBA(buffer.get(), bufferSize)) {
+                return {};
+            }
+            // convert to float
+            std::shared_ptr<float[]> floatBuffer(new float[bufferSize]);
+            for (size_t i = 0; i < bufferSize; ++i) {
+                floatBuffer[i] = buffer[i];
+            }
+            return floatBuffer;
+        }
     };
    
 } // anon
 
-bool Hio_AVIFImage::ReadCropped(
-                int const cropTop,  int const cropBottom,
-                int const cropLeft, int const cropRight, 
-                StorageSpec const& storage)
+
+// It's necessary to export the class so it's typeinfo is visible for registration
+class HIOAVIF_API Hio_AVIFImage final : public HioImage
 {
-    if (!_avifImage)
-        return false;
-    if (cropTop < 0 || cropBottom < 0 || cropLeft < 0 || cropRight < 0)
-        return false;
+    std::shared_ptr<ArAsset> _asset;
+    std::string              _filename;
+    int _width = 0;
+    int _height = 0;
 
-    // Convert to RGB
-    avifRGBImage rgb;
-    const int bytesPerChannel = 2;
-    const int channelCount = HioGetComponentCount(storage.format);
-    if (channelCount < 3)
-        return false;
+    SourceColorSpace _sourceColorSpace;
 
-    bool outputIsFloat = HioGetHioType(storage.format) == HioTypeFloat;
-    bool outputIsHalf =  HioGetHioType(storage.format) == HioTypeHalfFloat;
-    if (!(outputIsFloat || outputIsHalf))
-        return false;
+    // mutable because GetMetadata is const, yet it doesn't make sense
+    // to cache the dictionary unless metadata is requested.
+    mutable VtDictionary     _metadata;
 
-    bool flip = storage.flipped;
+public:
+    Hio_AVIFImage() = default;
+    ~Hio_AVIFImage() = default;
 
-    memset(&rgb, 0, sizeof(rgb));
-    avifRGBImageSetDefaults(&rgb, _avifImage);
-    rgb.width = _avifImage->width;  // avifRGBImage and avifImage must agree
-    rgb.height = _avifImage->height;
-    rgb.depth = 8 * bytesPerChannel;
-    rgb.format = channelCount == 3? AVIF_RGB_FORMAT_RGB : AVIF_RGB_FORMAT_RGBA;
-    rgb.chromaUpsampling = AVIF_CHROMA_UPSAMPLING_AUTOMATIC;
-    rgb.chromaDownsampling = AVIF_CHROMA_DOWNSAMPLING_AUTOMATIC;
-    rgb.ignoreAlpha = false;
-    rgb.alphaPremultiplied = false;
-    rgb.isFloat = true;
-    rgb.pixels = (uint8_t*)
-            calloc(channelCount * bytesPerChannel * rgb.width * rgb.height, 1);
-    rgb.rowBytes = rgb.width * channelCount * bytesPerChannel;
-    if (rgb.depth != 16 && rgb.isFloat) {
-        TF_CODING_ERROR("Only half floats are supported for AVIF decoding");
+    const std::shared_ptr<ArAsset> Asset() const { return _asset; }
+
+    bool Read(StorageSpec const &storage) override {
+        return ReadCropped(0, 0, 0, 0, storage); 
     }
+    bool ReadCropped(int const cropTop,  int const cropBottom,
+                     int const cropLeft, int const cropRight,
+                     StorageSpec const &storage) override;
+    bool Write(StorageSpec const &storage,
+               VtDictionary const &metadata) override { return false; }
 
-    avifResult result = avifImageYUVToRGB(_avifImage, &rgb);
-    if (result != AVIF_RESULT_OK) {
-        TF_RUNTIME_ERROR("Error parsing AVIF file: %s\n", avifResultToString(result));
-        free(rgb.pixels);
-        Cleanup();
+    // We're decoding AVIF to linear float16.
+    bool IsColorSpaceSRGB() const override {
         return false;
     }
 
-    // these input pointers will be used to track the data source
-    // for the final copy to storage.data.
-    GfHalf* inputHalf = (GfHalf*) rgb.pixels;
-    float* inputFloat = nullptr;
+    // hardcoded to f16v4, as it's a common hardware requirement that f16
+    // textures are stored in RGBA format.
+    HioFormat GetFormat() const override { return HioFormatFloat16Vec4; }
+    int  GetWidth() const override { return _width; }
+    int  GetHeight() const override { return _height; }
+    int  GetBytesPerPixel() const override { return 16; } // 4 * sizeof(float16)
+    int  GetNumMipLevels() const override { return 0; } // AVIF can store mips, an improvement for the future.
+    bool GetMetadata(TfToken const &key, VtValue *value) const override { return false; }
+    bool GetSamplerMetadata(HioAddressDimension dim,
+                            HioAddressMode *param) const override { return false; }
+    std::string const& GetFilename() const override { return _filename; }
 
-    nanoexr_ImageData_t img;
-    memset(&img, 0, sizeof(img));
+    const VtDictionary& GetMetadata() const { return _metadata; }
 
-    img.data = (uint8_t*) rgb.pixels;
-    img.pixelType = EXR_PIXEL_HALF;
-    img.channelCount = channelCount;
-    img.width = rgb.width;
-    img.height = rgb.height;
-    img.dataWindowMinY = 0;
-    img.dataWindowMaxY = rgb.height - 1;
+protected:
+    bool _OpenForReading(std::string const &filename, int subimage, int mip,
+                         SourceColorSpace sourceColorSpace,
+                         bool suppressErrors) override;
+    bool _OpenForWriting(std::string const &filename) override { return false; }
+};
 
-    // crop in place
-    ImageProcessor<GfHalf>::CropImage((GfHalf*) img.data,
-                                      img.width, img.height,
-                                      img.channelCount,
-                                      cropTop, cropBottom,
-                                      cropLeft, cropRight);
-
-    // adjust dimensions as needed
-    img.width = img.width - cropLeft - cropRight;
-    img.width = img.height - cropTop - cropBottom;
-    img.dataWindowMinY = img.height - 1;
-
-    if (flip) {
-        ImageProcessor<GfHalf>::FlipImage((GfHalf*) img.data,
-                                          img.width,
-                                          img.height,
-                                          img.channelCount);
-    }
-
-    // resize
-    bool resizing = (img.width != storage.width) ||
-                    (img.width != storage.height);
-
-    std::vector<float> outF32;
-    if (resizing) {
-        // resize in float
-        std::vector<float> f32(img.width * img.height * channelCount);
-        ImageProcessor<uint16_t>::HalfToFloat(
-                                      inputHalf,
-                                      f32.data(),
-                                      img.width, img.height,
-                                      channelCount);
-
-        nanoexr_ImageData_t src = { 0 };
-        src.data = reinterpret_cast<uint8_t*>(f32.data());
-        src.channelCount = channelCount;
-        src.dataSize = img.width * img.height * channelCount * sizeof(float);
-        src.pixelType = EXR_PIXEL_FLOAT;
-        src.width = img.width;
-        src.height = img.height;
-
-        outF32.resize(img.width * img.height * channelCount);
-        inputFloat = outF32.data();
-
-        nanoexr_ImageData_t dst = { 0 };
-        dst.channelCount = channelCount;
-        dst.dataSize = storage.width * storage.height * channelCount * sizeof(float);
-        dst.pixelType = EXR_PIXEL_FLOAT;
-        dst.width = storage.width;
-        dst.height = storage.height;
-        dst.data = (uint8_t*) inputFloat;
-
-        nanoexr_Gaussian_resample(&src, &dst);
-
-        inputHalf = nullptr;
-    }
-
-    if (_imposeSRGBTransfer) {
-        // if the image was resized, the input data is now in inputFloat
-        // otherwise, it is in inputHalf
-        if (inputFloat == nullptr) {
-            // resize outF32 to the correct size
-            outF32.resize(img.width * img.height * channelCount);
-            ImageProcessor<uint16_t>::HalfToFloat(
-                                      inputHalf,
-                                      outF32.data(),
-                                      img.width, img.height,
-                                      channelCount);
-            inputFloat = outF32.data();
-            inputHalf = nullptr;
-        }
-        GfColorSpace dst(GfColorSpaceNames->SRGBRec709);
-        GfColorSpace src(GfColorSpaceNames->LinearRec709);
-        if (channelCount == 3)
-            dst.ConvertRGBSpan(src, TfSpan<float>(inputFloat, img.width * img.height * channelCount));
-        else
-            dst.ConvertRGBASpan(src, TfSpan<float>(inputFloat, img.width * img.height * channelCount));
-    }
-
-    // Finally, copy the data to storage.data
-    if (outputIsHalf) {
-        if (inputHalf != nullptr) {
-            // copy rgb.pixels to storage.data
-            memcpy(storage.data, inputHalf,
-                   rgb.width * rgb.height * channelCount * sizeof(GfHalf));
-        }
-        else {
-            // convert float to half
-            ImageProcessor<float>::FloatToHalf(
-                                    inputFloat, (GfHalf*) storage.data,
-                                    rgb.width, rgb.height, channelCount);
-        }
-    }
-    else {
-        // output float case
-        if (inputHalf != nullptr) {
-            // convert half to float
-            ImageProcessor<GfHalf>::HalfToFloat(
-                                    inputHalf, (float*) storage.data,
-                                    rgb.width, rgb.height, channelCount);
-        }
-        else {
-            // copy rgb.pixels to storage.data
-            memcpy(storage.data, inputFloat,
-                   rgb.width * rgb.height * channelCount * sizeof(float));
-        }
-    }
-
-    free(rgb.pixels);
-    return true;
+TF_REGISTRY_FUNCTION(TfType)
+{
+    using Image = Hio_AVIFImage;
+    TfType t = TfType::Define<Image, TfType::Bases<Image::HioImage>>();
+    t.SetFactory<HioImageFactory<Image>>();
 }
 
 bool Hio_AVIFImage::_OpenForReading(std::string const &filename,
@@ -555,56 +473,166 @@ bool Hio_AVIFImage::_OpenForReading(std::string const &filename,
                                     SourceColorSpace sourceColorSpace,
                                     bool /*suppressErrors*/)
 {
-    Cleanup();
     _width = 0;
     _height = 0;
+    _sourceColorSpace = sourceColorSpace;
     _filename = filename;
     _asset = ArGetResolver().OpenAsset(ArResolvedPath(filename));
     if (!_asset) {
         return false;
     }
 
-    size_t sz = _asset->GetSize();
-    uint8_t* data = (uint8_t*) malloc(sz);
-    size_t offset = 0;
-    size_t readSize = _asset->Read(data, sz, offset);
-    if (!readSize)
-        return false;
-
-    // Initialize libavif
-    _avifImage = avifImageCreateEmpty();
-    avifDecoder *decoder = avifDecoderCreate();
-    avifResult result = avifDecoderReadMemory(decoder, _avifImage, data, readSize);
-    avifDecoderDestroy(decoder);
-    if (result != AVIF_RESULT_OK) {
-        TF_RUNTIME_ERROR("Error parsing AVIF file: %s\n", avifResultToString(result));
-        Cleanup();
+    size_t dataSize = _asset->GetSize();
+    if (!dataSize) {
         return false;
     }
-    _width = _avifImage->width;
-    _height = _avifImage->height;
 
-    // if the transfer function is unspecified, and the colorspace is Rec709
-    // set the transfer function to sRGB. This is to match behavior observed
-    // in Apple's Finder, and web browsers.
-    _imposeSRGBTransfer =
-        (sourceColorSpace == HioImage::SourceColorSpace::Auto ||
-         sourceColorSpace == HioImage::SourceColorSpace::SRGB) &&
-        (_avifImage->transferCharacteristics == AVIF_TRANSFER_CHARACTERISTICS_UNSPECIFIED) &&
-        (_avifImage->colorPrimaries == AVIF_COLOR_PRIMARIES_UNSPECIFIED);
+    std::unique_ptr<uint8_t[]> data(new uint8_t[dataSize]);
+    const size_t offset = 0;
+    size_t readSize = _asset->Read(data.get(), dataSize, offset);
+    if (readSize <  dataSize) {
+        return false;
+    }
+
+    AvifWrapper avif;
+    avifResult result = avif.Read(data.get(), dataSize);
+    if (result != AVIF_RESULT_OK) {
+        TF_RUNTIME_ERROR("Error parsing AVIF file: %s\n", avifResultToString(result));
+        return false;
+    }
+
+    GfVec2f size = avif.Dimensions();
+    _width = size[0];
+    _height = size[1];
+
     return true;
 }
 
-// Writing is not supported.
-bool Hio_AVIFImage::Write(StorageSpec const&, VtDictionary const &metadata)
+bool Hio_AVIFImage::ReadCropped(
+                int const cropTop,  int const cropBottom,
+                int const cropLeft, int const cropRight, 
+                StorageSpec const& storage)
 {
-    return false;
-}
+    // Check if the AVIF file was opened for read prior to calling ReadCropped.
+    if (!_asset) {
+        return false;
+    }
 
-bool Hio_AVIFImage::_OpenForWriting(std::string const &filename)
-{
-    return false;
-}
+    if (cropTop < 0 || cropBottom < 0 || cropLeft < 0 || cropRight < 0) {
+        return false;
+    }
 
+    // if cropping would elide the entire image, return.
+    int newWidth = _width - cropLeft - cropRight;
+    int newHeight = _height - cropTop - cropBottom;
+    if (newWidth <= 0 || newHeight <= 0) {
+        return false;
+    }
+
+    bool outputIsFloat = HioGetHioType(storage.format) == HioTypeFloat;
+    bool outputIsHalf =  HioGetHioType(storage.format) == HioTypeHalfFloat;
+    if (!(outputIsFloat || outputIsHalf)) {
+        return false;
+    }
+
+    const int channelCount = HioGetComponentCount(storage.format);
+    if (channelCount < 4) {
+        return false;
+    }
+
+    size_t dataSize = _asset->GetSize();
+    if (!dataSize) {
+        return false;
+    }
+
+    std::unique_ptr<uint8_t[]> data(new uint8_t[dataSize]);
+    const size_t offset = 0;
+    size_t readSize = _asset->Read(data.get(), dataSize, offset);
+    if (readSize <  dataSize) {
+        return false;
+    }
+
+    AvifWrapper avif;
+    avifResult result = avif.Read(data.get(), dataSize);
+    if (result != AVIF_RESULT_OK) {
+        TF_RUNTIME_ERROR("Error parsing AVIF file: %s\n", avifResultToString(result));
+        return false;
+    }
+
+    std::shared_ptr<float[]> buffer = avif.RGBAFloatBuffer();
+    
+    // The image is now in linear float16 format.
+    // Crop in place.
+    if (newWidth != _width || newHeight != _height) {
+        // crop in place.
+        ImageProcessor<float>::CropImage(buffer.get(),
+                                          _width, _height, channelCount,
+                                          cropTop, cropBottom,
+                                          cropLeft, cropRight);
+    }
+
+    // flip the cropped image in place.
+    if (storage.flipped) {
+        ImageProcessor<float>::FlipImage(buffer.get(),
+                                          newWidth, newHeight, channelCount);
+    }
+
+    // apply or remove the sRGB transfer function as needed.
+
+
+    // note that in the future, Hio will support more color spaces than Rec709,
+    // but today, we need to conform AVIF files to Rec709.
+    bool removeSRGB = avif.SourceIsSRGB();
+    float srcPrimaries[8];
+    avifColorPrimariesGetValues(avif.Image()->colorPrimaries, srcPrimaries);
+    GfColorSpace src(TfToken("from AVIF"),
+                                { srcPrimaries[0], srcPrimaries[1] }, // red
+                                { srcPrimaries[2], srcPrimaries[3] }, // green
+                                { srcPrimaries[4], srcPrimaries[5] }, // blue
+                                { srcPrimaries[6], srcPrimaries[7] }, // white
+                                removeSRGB ? 2.4f : 1.0f,
+                                removeSRGB ? 0.055f : 0.0f);
+
+    GfColorSpace dst(GfColorSpaceNames->LinearRec709);
+    src.ConvertRGBASpan(dst, TfSpan<float>(buffer.get(), newWidth * newHeight * channelCount));
+    
+    if (newWidth == storage.width && newHeight == storage.height) {
+        if (outputIsHalf) {
+            // convert to half directly to storage.data
+            ImageProcessor<GfHalf>::FloatToHalf(buffer.get(),
+                                                (GfHalf*) storage.data,
+                                                 newWidth, newHeight, channelCount);
+            return true;
+        }
+
+        // copy directly to storage.data
+        memcpy(storage.data, buffer.get(),
+                newWidth * newHeight * channelCount * sizeof(float));
+        return true;
+    }
+
+    // if the output is float, resize the image directly to the storage.data buffer.
+    if (outputIsFloat) {
+        return ImageProcessor<float>::ResizeImage(buffer.get(),
+                                                    (float*) storage.data,
+                                                    newWidth, newHeight, 
+                                                    _width, _height, channelCount);
+    }
+
+    // The output is half, resize the image to a temporary buffer and then
+    // convert to half to the storage.data buffer.
+    std::unique_ptr<float[]> resizedBuffer(new float[newWidth * newHeight * channelCount]);
+    if (!ImageProcessor<float>::ResizeImage(buffer.get(),
+                                            resizedBuffer.get(),
+                                            newWidth, newHeight, 
+                                            _width, _height, channelCount)) {
+        return false;
+    }
+
+    ImageProcessor<float>::FloatToHalf(resizedBuffer.get(),
+                                        (GfHalf*) storage.data,
+                                        storage.width, storage.height, channelCount);
+    return true;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

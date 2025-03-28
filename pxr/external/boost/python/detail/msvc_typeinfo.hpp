@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/msvc_typeinfo.hpp>
-#else
-
 #include <typeinfo>
 #include "pxr/external/boost/python/type.hpp"
 
@@ -93,5 +89,4 @@ inline typeinfo assert_array_typeid_compiles()
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
 # endif // BOOST_INTEL_CXX_VERSION
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_MSVC_TYPEINFO_HPP

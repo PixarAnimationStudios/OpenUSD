@@ -117,6 +117,8 @@ private:
 
 int main(int argc, char *argv[])
 {
+    TfErrorMark mark;
+
     std::string stageFilePath;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
@@ -453,5 +455,11 @@ int main(int argc, char *argv[])
     //
 
 
-    return EXIT_SUCCESS;
+    if (mark.IsClean()) {
+        std::cout << "OK" << std::endl;
+        return EXIT_SUCCESS;
+    } else {
+        std::cout << "FAILED" << std::endl;
+        return EXIT_FAILURE;
+    }
 }

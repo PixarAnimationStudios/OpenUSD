@@ -163,6 +163,7 @@ private:
     HdDirtyBits _customDirtyBitsInUse;
     int _refineLevel;  // XXX: could be moved into HdBasisCurveTopology.
     bool _displayOpacity : 1;
+    bool _displayInOverlay : 1;
     bool _occludedSelectionShowsThrough : 1;
     bool _pointsShadingEnabled : 1;
 };

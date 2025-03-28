@@ -16,10 +16,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/defaults_gen.hpp>
-#else
-
 #include "pxr/external/boost/python/detail/preprocessor.hpp"
 #include "pxr/external/boost/python/detail/mpl2/at.hpp"
 #include "pxr/external/boost/python/detail/mpl2/size.hpp"
@@ -280,7 +276,6 @@ struct fstubs_name                                                      \
 #define PXR_BOOST_PYTHON_MEM_FUN_GENERATOR PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS
 
 ///////////////////////////////////////////////////////////////////////////////
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_DEFAULTS_GEN_HPP
 
 

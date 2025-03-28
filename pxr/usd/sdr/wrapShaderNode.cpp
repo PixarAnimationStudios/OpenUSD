@@ -53,10 +53,15 @@ void wrapShaderNode()
                         SdrShaderNodeConstPtrToPythonConverter>();
 
     class_<This, ThisPtr, bases<NdrNode>, noncopyable>("ShaderNode", no_init)
+        .def("GetShaderVersion", &This::GetShaderVersion)
         .def("GetShaderInput", &This::GetShaderInput,
             return_internal_reference<>())
         .def("GetShaderOutput", &This::GetShaderOutput,
             return_internal_reference<>())
+        .def("GetShaderInputNames", &This::GetShaderInputNames,
+            copyRefPolicy)
+        .def("GetShaderOutputNames", &This::GetShaderOutputNames,
+            copyRefPolicy)
         .def("GetAssetIdentifierInputNames", &This::GetAssetIdentifierInputNames,
             return_value_policy<TfPySequenceToList>())
         .def("GetDefaultInput", &This::GetDefaultInput,

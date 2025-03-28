@@ -45,7 +45,8 @@ public:
 
 protected:
     // Helper functions to generate the Glslfx Shader
-    void _EmitGlslfxHeader(MaterialX::ShaderStage& mxStage) const;
+    void _EmitGlslfxHeader(MaterialX::GenContext& mxContext,
+                           MaterialX::ShaderStage& mxStage) const;
 
     void _EmitMxSurfaceShader(const MaterialX::ShaderGraph& mxGraph,
                               MaterialX::GenContext& mxContext,
@@ -201,7 +202,9 @@ bool MxTypeIsSurfaceShader(MaterialX::TypeDesc typeDesc);
 bool MxTypeDescIsFilename(const MaterialX::TypeDesc typeDesc);
 const MaterialX::TypeDesc GetMxTypeDesc(const MaterialX::ShaderPort* port);
 const std::string MxGetTypeString(
-    MaterialX::SyntaxPtr syntax, const std::string& typeName);
+    MaterialX::SyntaxPtr syntax, 
+    const MaterialX::GenContext& mxContext,
+    const std::string& typeName);
 const std::string& GetVector2Name();
 
 } // namespace HdStMaterialXHelpers

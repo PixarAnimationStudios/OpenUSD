@@ -298,5 +298,363 @@ def "Foo" {
         self.assertEqual(test2_attr.Get(20.0), 10)
         self.assertEqual(test2_attr.Get(30.0), 10)
 
+    def test_PreviousTimeSamples(self):
+
+        def _CheckPreviousTimeSamples(layer):
+            # No Previous sample before first sample
+            self.assertFalse(
+                layer.GetPreviousTimeSampleForPath("/Prim.attr", 0.0)[0])
+            # No Previous sample at first sample
+            self.assertFalse(
+                layer.GetPreviousTimeSampleForPath("/Prim.attr", 1.0)[0])
+            # Previous sample at 2.0 is 1.0
+            self.assertTrue(
+                layer.GetPreviousTimeSampleForPath("/Prim.attr", 2.0)[0])
+            self.assertEqual(
+                layer.GetPreviousTimeSampleForPath("/Prim.attr", 2.0)[1], 1.0)
+            # Previous sample at outside the range is the last sample
+            self.assertTrue(
+                layer.GetPreviousTimeSampleForPath("/Prim.attr", 7.0)[0])
+            self.assertEqual(
+                layer.GetPreviousTimeSampleForPath("/Prim.attr", 7.0)[1], 3.0)
+
+        layerContent = '''#usda 1.0
+        def "Prim" {
+            double attr.timeSamples = {
+                1.0: 1.0,
+                2.0: 2.0,
+                3.0: 3.0
+            }
+        }
+        '''.strip()
+        sdfLayer = Sdf.Layer.CreateAnonymous(".usda")
+        sdfLayer.ImportFromString(layerContent)
+        _CheckPreviousTimeSamples(sdfLayer)
+        sdfLayer = Sdf.Layer.CreateAnonymous(".usdc")
+        sdfLayer.ImportFromString(layerContent)
+        _CheckPreviousTimeSamples(sdfLayer)
+
+    def test_PreTimeTimeSamples(self):
+        layer = Sdf.Layer.CreateAnonymous("preValueTimeSamples.usda")
+
+        ### Test for pure held interpolators -- types which are held
+        layer.ImportFromString(
+            '''#usda 1.0
+            def "Foo" {
+                string x.timeSamples = {
+                    1: "zero",
+                    2: "one",
+                    3: "two"
+                }
+            }
+            '''.strip())
+        stage = Usd.Stage.Open(layer)
+        x = stage.GetAttributeAtPath('/Foo.x')
+        # Ordinary time samples queries.
+        self.assertEqual(x.Get(Usd.TimeCode(0)), 'zero')
+        self.assertEqual(x.Get(Usd.TimeCode(1)), 'zero')
+        self.assertEqual(x.Get(Usd.TimeCode(2)), 'one')
+        self.assertEqual(x.Get(Usd.TimeCode(3)), 'two')
+        self.assertEqual(x.Get(Usd.TimeCode(4)), 'two')
+        # Pre-time queries.
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(0)), "zero")
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(1)), "zero")
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(1.5)), "zero")
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(2)), "zero")
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(2.5)), "one")
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(3)), "one")
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(4)), "two")
+
+        # Test for Linear types, note that prevalue doesn't have any special
+        # behavior here, other than the block or mismatched array size types which
+        # falls back to held interpolation as done in the subsequent tests.
+        layer.ImportFromString(
+            '''#usda 1.0
+            def "Foo" {
+                double x.timeSamples = {
+                    1: 0.0,
+                    2: 1.1,
+                    3: 2.2
+                }
+            }
+            '''.strip())
+        stage = Usd.Stage.Open(layer)
+        x = stage.GetPrimAtPath('/Foo').GetAttribute('x')
+        # Ordinary time samples queries are same as prevalue queries.
+        self.assertEqual(x.Get(Usd.TimeCode(0)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode(1)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode(2)), 1.1)
+        self.assertEqual(x.Get(Usd.TimeCode(3)), 2.2)
+        self.assertEqual(x.Get(Usd.TimeCode(4)), 2.2)
+        # Pre-time queries.
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(0)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(1)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(1.5)), 
+                         x.Get(Usd.TimeCode(1.5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(2)), 1.1)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(2.5)), 
+                         x.Get(Usd.TimeCode(2.5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(3)), 2.2)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(4)), 2.2)
+
+        # Test for Linear types, with in between value blocks, making it
+        # fallback to Held interpolation.
+        layer.ImportFromString(
+            '''#usda 1.0
+            def "Foo" {
+                double x.timeSamples = {
+                    1: 0.0,
+                    2: None,
+                    3: 2.2
+                }
+            }
+            '''.strip())
+        stage = Usd.Stage.Open(layer)
+        x = stage.GetPrimAtPath('/Foo').GetAttribute('x')
+        # Ordinary time samples queries are same as prevalue queries.
+        self.assertEqual(x.Get(Usd.TimeCode(0)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode(1)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode(2)), None)
+        self.assertEqual(x.Get(Usd.TimeCode(3)), 2.2)
+        self.assertEqual(x.Get(Usd.TimeCode(4)), 2.2)
+        # Pre-time queries.
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(0)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(1)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(1.5)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(1.5)), 
+                         x.Get(Usd.TimeCode(1.5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(2)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(2.5)), None)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(2.5)), 
+                         x.Get(Usd.TimeCode(2.5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(3)), None)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(4)), 2.2)
+
+        # Test for Linear array types, with values of different sizes in
+        # consecutive samples, causing fallback to held behavior.
+        layer.ImportFromString(
+            '''#usda 1.0
+            def "Foo" {
+                double[] x.timeSamples = {
+                    1: [0.0, 1.0],
+                    2: [1.0],
+                    3: [2.0, 3.0],
+                    4: [4.0, 5.0],
+                    5: None,
+                    6: [6.0, 7.0]
+                }
+            }
+            '''.strip())
+        stage = Usd.Stage.Open(layer)
+        x = stage.GetPrimAtPath('/Foo').GetAttribute('x')
+        # Ordinary time samples queries are same as prevalue queries.
+        self.assertEqual(x.Get(Usd.TimeCode(0)), Vt.DoubleArray(2, (0, 1)))
+        self.assertEqual(x.Get(Usd.TimeCode(1)), Vt.DoubleArray(2, (0, 1)))
+        self.assertEqual(x.Get(Usd.TimeCode(2)), Vt.DoubleArray(1, (1,)))
+        self.assertEqual(x.Get(Usd.TimeCode(3)), Vt.DoubleArray(2, (2, 3)))
+        self.assertEqual(x.Get(Usd.TimeCode(4)), Vt.DoubleArray(2, (4, 5)))
+        self.assertEqual(x.Get(Usd.TimeCode(5)), None)
+        self.assertEqual(x.Get(Usd.TimeCode(6)), Vt.DoubleArray(2, (6, 7)))
+        self.assertEqual(x.Get(Usd.TimeCode(7)), Vt.DoubleArray(2, (6, 7)))
+        # Pre-time queries.
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(0)), 
+                         Vt.DoubleArray(2, (0, 1)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(1)), 
+                         Vt.DoubleArray(2, (0, 1)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(1.5)), 
+                         Vt.DoubleArray(2, (0, 1)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(1.5)), 
+                         x.Get(Usd.TimeCode(1.5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(2)), 
+                               Vt.DoubleArray(2, (0, 1)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(2.5)), 
+                               Vt.DoubleArray(1, (1,)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(2.5)), 
+                         x.Get(Usd.TimeCode(2.5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(3)), 
+                         Vt.DoubleArray(1, (1,)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(3.5)), 
+                         Vt.DoubleArray(2, (3, 4)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(3.5)), 
+                         x.Get(Usd.TimeCode(3.5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(4)), 
+                         Vt.DoubleArray(2, (4, 5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(4.5)), 
+                         Vt.DoubleArray(2, (4, 5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(4.5)), 
+                         x.Get(Usd.TimeCode(4.5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(5)), 
+                         Vt.DoubleArray(2, (4, 5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(6)), None)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(7)), 
+                         Vt.DoubleArray(2, (6, 7)))
+
+    def test_PreTimeTimeSamplesOffset(self):
+        layer = Sdf.Layer.CreateAnonymous("preValueTimeSamples.usda")
+
+        ### Test for pure held interpolators -- types which are held
+        layer.ImportFromString(
+            '''#usda 1.0
+            def "Foo" {
+                string x.timeSamples = {
+                    1: "zero",
+                    2: "one",
+                    3: "two"
+                }
+            }
+            '''.strip())
+        stage = Usd.Stage.Open(layer)
+        FooOffset = stage.DefinePrim('/FooOffset')
+        FooOffset.GetReferences().AddInternalReference(
+            '/Foo', Sdf.LayerOffset(offset=10))
+        x = stage.GetAttributeAtPath('/FooOffset.x')
+        # Ordinary time samples queries.
+        self.assertEqual(x.Get(Usd.TimeCode(0)), 'zero')
+        self.assertEqual(x.Get(Usd.TimeCode(11)), 'zero')
+        self.assertEqual(x.Get(Usd.TimeCode(12)), 'one')
+        self.assertEqual(x.Get(Usd.TimeCode(13)), 'two')
+        self.assertEqual(x.Get(Usd.TimeCode(14)), 'two')
+        # Pre-time queries.
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(2.5)), "zero")
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(11)), "zero")
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(11.5)), "zero")
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(12)), "zero")
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(12.5)), "one")
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(13)), "one")
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(14)), "two")
+
+        # Test for Linear types, note that prevalue doesn't have any special
+        # behavior here, other than the block or mismatched array size types which
+        # falls back to held interpolation as done in the subsequent tests.
+        layer.ImportFromString(
+            '''#usda 1.0
+            def "Foo" {
+                double x.timeSamples = {
+                    1: 0.0,
+                    2: 1.1,
+                    3: 2.2
+                }
+            }
+            '''.strip())
+        stage = Usd.Stage.Open(layer)
+        FooOffset = stage.DefinePrim('/FooOffset')
+        FooOffset.GetReferences().AddInternalReference(
+            '/Foo', Sdf.LayerOffset(offset=10))
+        x = stage.GetAttributeAtPath('/FooOffset.x')
+        # Ordinary time samples queries are same as prevalue queries.
+        self.assertEqual(x.Get(Usd.TimeCode(0)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode(11)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode(12)), 1.1)
+        self.assertEqual(x.Get(Usd.TimeCode(13)), 2.2)
+        self.assertEqual(x.Get(Usd.TimeCode(14)), 2.2)
+        # Pre-time queries.
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(0)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(11)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(11.5)), 
+                         x.Get(Usd.TimeCode(11.5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(12)), 1.1)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(12.5)), 
+                         x.Get(Usd.TimeCode(12.5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(13)), 2.2)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(14)), 2.2)
+
+        # Test for Linear types, with in between value blocks, making it
+        # fallback to Held interpolation.
+        layer.ImportFromString(
+            '''#usda 1.0
+            def "Foo" {
+                double x.timeSamples = {
+                    1: 0.0,
+                    2: None,
+                    3: 2.2
+                }
+            }
+            '''.strip())
+        stage = Usd.Stage.Open(layer)
+        FooOffset = stage.DefinePrim('/FooOffset')
+        FooOffset.GetReferences().AddInternalReference(
+            '/Foo', Sdf.LayerOffset(offset=10))
+        x = stage.GetAttributeAtPath('/FooOffset.x')
+        # Ordinary time samples queries are same as prevalue queries.
+        self.assertEqual(x.Get(Usd.TimeCode(0)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode(11)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode(12)), None)
+        self.assertEqual(x.Get(Usd.TimeCode(13)), 2.2)
+        self.assertEqual(x.Get(Usd.TimeCode(14)), 2.2)
+        # Pre-time queries.
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(0)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(11)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(11.5)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(11.5)), 
+                         x.Get(Usd.TimeCode(11.5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(12)), 0.0)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(12.5)), None)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(12.5)), 
+                         x.Get(Usd.TimeCode(12.5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(13)), None)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(14)), 2.2)
+
+        # Test for Linear array types, with values of different sizes in
+        # consecutive samples, causing fallback to held behavior.
+        layer.ImportFromString(
+            '''#usda 1.0
+            def "Foo" {
+                double[] x.timeSamples = {
+                    1: [0.0, 1.0],
+                    2: [1.0],
+                    3: [2.0, 3.0],
+                    4: [4.0, 5.0],
+                    5: None,
+                    6: [6.0, 7.0]
+                }
+            }
+            '''.strip())
+        stage = Usd.Stage.Open(layer)
+        FooOffset = stage.DefinePrim('/FooOffset')
+        FooOffset.GetReferences().AddInternalReference(
+            '/Foo', Sdf.LayerOffset(offset=10))
+        x = stage.GetAttributeAtPath('/FooOffset.x')
+        # Ordinary time samples queries are same as prevalue queries.
+        self.assertEqual(x.Get(Usd.TimeCode(0)), Vt.DoubleArray(2, (0, 1)))
+        self.assertEqual(x.Get(Usd.TimeCode(11)), Vt.DoubleArray(2, (0, 1)))
+        self.assertEqual(x.Get(Usd.TimeCode(12)), Vt.DoubleArray(1, (1,)))
+        self.assertEqual(x.Get(Usd.TimeCode(13)), Vt.DoubleArray(2, (2, 3)))
+        self.assertEqual(x.Get(Usd.TimeCode(14)), Vt.DoubleArray(2, (4, 5)))
+        self.assertEqual(x.Get(Usd.TimeCode(15)), None)
+        self.assertEqual(x.Get(Usd.TimeCode(16)), Vt.DoubleArray(2, (6, 7)))
+        self.assertEqual(x.Get(Usd.TimeCode(17)), Vt.DoubleArray(2, (6, 7)))
+        # Pre-time queries.
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(0)), 
+                         Vt.DoubleArray(2, (0, 1)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(11)), 
+                         Vt.DoubleArray(2, (0, 1)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(11.5)), 
+                         Vt.DoubleArray(2, (0, 1)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(11.5)), 
+                         x.Get(Usd.TimeCode(11.5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(12)), 
+                               Vt.DoubleArray(2, (0, 1)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(12.5)), 
+                               Vt.DoubleArray(1, (1,)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(12.5)), 
+                         x.Get(Usd.TimeCode(12.5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(13)), 
+                         Vt.DoubleArray(1, (1,)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(13.5)), 
+                         Vt.DoubleArray(2, (3, 4)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(13.5)), 
+                         x.Get(Usd.TimeCode(13.5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(14)), 
+                         Vt.DoubleArray(2, (4, 5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(14.5)), 
+                         Vt.DoubleArray(2, (4, 5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(14.5)), 
+                         x.Get(Usd.TimeCode(14.5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(15)), 
+                         Vt.DoubleArray(2, (4, 5)))
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(16)), None)
+        self.assertEqual(x.Get(Usd.TimeCode.PreTime(17)), 
+                         Vt.DoubleArray(2, (6, 7)))
+
 if __name__ == "__main__":
     unittest.main()
