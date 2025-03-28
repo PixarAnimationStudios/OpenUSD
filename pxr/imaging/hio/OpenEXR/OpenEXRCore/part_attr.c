@@ -71,7 +71,7 @@ exr_get_attribute_by_name (
     const char*             name,
     const exr_attribute_t** outattr)
 {
-    exr_attribute_t* tmpptr;
+    exr_attribute_t* tmpptr = NULL;
     exr_result_t     rv;
     EXR_PROMOTE_CONST_CONTEXT_AND_PART_OR_ERROR (ctxt, part_index);
 

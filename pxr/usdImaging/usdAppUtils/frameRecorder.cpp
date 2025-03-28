@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/usdImaging/usdAppUtils/frameRecorder.h"
@@ -52,15 +35,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
     const TfToken& rendererPluginId,
-    bool gpuEnabled, 
-    const SdfPath& renderSettingsPrimPath) :
+    bool gpuEnabled) :
     _imagingEngine(HdDriver(), rendererPluginId, gpuEnabled),
     _imageWidth(960u),
     _complexity(1.0f),
     _colorCorrectionMode(HdxColorCorrectionTokens->disabled),
     _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy}),
-    _renderSettingsPrimPath(renderSettingsPrimPath),
-    _cameraLightEnabled(true)
+    _cameraLightEnabled(true),
+    _domeLightsVisible(false)
 {
     // Disable presentation to avoid the need to create an OpenGL context when
     // using other graphics APIs such as Metal and Vulkan.
@@ -69,10 +51,23 @@ UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
     // Set the interactive to be false on the HdRenderSettingsMap 
     _imagingEngine.SetRendererSetting(
         HdRenderSettingsTokens->enableInteractive, VtValue(false));
+}
 
-    // Set the Active RenderSettings Prim path when not empty.
-    if (!renderSettingsPrimPath.IsEmpty()) {
-        _imagingEngine.SetActiveRenderSettingsPrimPath(renderSettingsPrimPath);
+void
+UsdAppUtilsFrameRecorder::SetActiveRenderSettingsPrimPath(SdfPath const& path)
+{
+    _renderSettingsPrimPath = path;
+    if (!_renderSettingsPrimPath.IsEmpty()) {
+        _imagingEngine.SetActiveRenderSettingsPrimPath(_renderSettingsPrimPath);
+    }
+}
+
+void 
+UsdAppUtilsFrameRecorder::SetActiveRenderPassPrimPath(SdfPath const& path)
+{
+    _renderPassPrimPath = path;
+    if (!_renderPassPrimPath.IsEmpty()) {
+        _imagingEngine.SetActiveRenderPassPrimPath(_renderPassPrimPath);
     }
 }
 
@@ -101,6 +96,12 @@ void
 UsdAppUtilsFrameRecorder::SetCameraLightEnabled(bool cameraLightEnabled)
 {
     _cameraLightEnabled = cameraLightEnabled;
+}
+
+void
+UsdAppUtilsFrameRecorder::SetDomeLightVisibility(bool domeLightsVisible)
+{
+    _domeLightsVisible = domeLightsVisible;
 }
 
 void
@@ -410,6 +411,7 @@ UsdAppUtilsFrameRecorder::Record(
         const GfVec3d &cameraPos = frustum.GetPosition();
         GlfSimpleLight cameraLight(
             GfVec4f(cameraPos[0], cameraPos[1], cameraPos[2], 1.0f));
+        cameraLight.SetTransform(frustum.ComputeViewInverse());
         cameraLight.SetAmbient(SCENE_AMBIENT);
         lights.push_back(cameraLight);
     }
@@ -423,6 +425,10 @@ UsdAppUtilsFrameRecorder::Record(
     material.SetShininess(SHININESS_DEFAULT);
 
     _imagingEngine.SetLightingState(lights, material, SCENE_AMBIENT);
+
+    _imagingEngine.SetRendererSetting(
+        HdRenderSettingsTokens->domeLightCameraVisibility,
+        VtValue(_domeLightsVisible));
 
     UsdImagingGLRenderParams renderParams;
     renderParams.frame = timeCode;

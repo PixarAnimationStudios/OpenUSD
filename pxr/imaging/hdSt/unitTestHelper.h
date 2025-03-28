@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_ST_UNIT_TEST_HELPER_H
 #define PXR_IMAGING_HD_ST_UNIT_TEST_HELPER_H
@@ -227,7 +210,7 @@ HdSt_TestDriverBase<SceneDelegate>::_Init(HdReprSelector const &reprSelector)
     tracker.AddCollection(_collection.GetName());
 }
 
-static
+static inline
 HdCamera::Projection
 _ToHd(const GfCamera::Projection projection)
 {
@@ -567,10 +550,17 @@ public:
 
     HDST_API
     const HdRenderPassSharedPtr &GetRenderPass();
+    
+    HDST_API
+    Hgi* GetHgi() {
+        return _GetHgi();
+    }
 
 private:
     void _CreateRenderPassState();
 };
+
+using HdSt_TestDriverUniquePtr = std::unique_ptr<HdSt_TestDriver>;
 
 // --------------------------------------------------------------------------
 
@@ -599,16 +589,21 @@ public:
     HDST_API
     void UnbindResources(int program,
                          HdSt_ResourceBinder const &binder) override;
+    HDST_API
     void AddBindings(HdStBindingRequestVector *customBindings) override;
 
     /// HdStLightingShader overrides
+    HDST_API
     void SetCamera(GfMatrix4d const &worldToViewMatrix,
                    GfMatrix4d const &projectionMatrix) override;
 
+    HDST_API
     void SetSceneAmbient(GfVec3f const &color);
+    HDST_API
     void SetLight(int light, GfVec3f const &dir, GfVec3f const &color);
 
     /// Prepare lighting resource buffers
+    HDST_API
     void Prepare();
 
 private:
@@ -646,6 +641,9 @@ public:
 
     HDST_API
     Hgi * GetHgi() { return _hgi.get(); }
+    
+    HDST_API
+    HdStResourceRegistrySharedPtr const & GetResourceRegistry();
 
 private:
     void _CreateShaderProgram();
@@ -658,6 +656,11 @@ private:
     void _PrintCompileErrors();
 
     HgiUniquePtr _hgi;
+    HdDriver _hgiDriver;
+    HdStRenderDelegate _renderDelegate;
+    std::unique_ptr<HdRenderIndex> _renderIndex;
+    HdStResourceRegistrySharedPtr _resourceRegistry;
+
     HgiBufferHandle _indexBuffer;
     HgiBufferHandle _vertexBuffer;
     HgiShaderProgramHandle _shaderProgram;

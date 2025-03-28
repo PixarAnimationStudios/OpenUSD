@@ -22,7 +22,7 @@ these files to a working directory and make them writable.
    composed result shows the locally-authored blue color.  That stronger local
    opinion overrides the opinions from variants.
 
-   See :ref:`glossary:LIVRPS Strength Ordering` for more details on
+   See :ref:`usdglossary-livrpsstrengthordering` for more details on
    strength order in USD.
 
    .. code-block:: python
@@ -279,7 +279,7 @@ these files to a working directory and make them writable.
 
    .. admonition:: Opinion Strength Order
 
-      :ref:`Strength order <glossary:LIVRPS Strength Ordering>` is a fundamental
+      :ref:`Strength order <usdglossary-livrpsstrengthordering>` is a fundamental
       part of USD.
 
 #. Examine the composed result.
@@ -344,7 +344,7 @@ these files to a working directory and make them writable.
    .. image:: http://openusd.org/images/tut_authoring_variants_helloworld2.png
                 
 #. In the interpreter you can see the variant selections that usdview authors to
-   the `session layer <#usdglossary-sessionlayer>`_ . This is the same sparse 
+   the :ref:`session layer <usdglossary-sessionlayer>`. This is the same sparse 
    override you would see if you referenced this layer into another one and 
    authored the variant selection in the referencing layer.
 

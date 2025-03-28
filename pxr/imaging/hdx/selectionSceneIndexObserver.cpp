@@ -1,25 +1,8 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdx/selectionSceneIndexObserver.h"
 
@@ -29,10 +12,20 @@
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/selectionSchema.h"
 #include "pxr/imaging/hd/selectionsSchema.h"
+#include "pxr/base/work/loops.h"
 
 #include "pxr/base/trace/trace.h"
 
+#include <mutex>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+static void
+_AddToSelection(
+    HdSceneIndexBaseRefPtr const &sceneIndex,
+    const SdfPath &primPath,
+    HdSelectionSharedPtr const &result,
+    std::mutex &resultMutex);
 
 HdxSelectionSceneIndexObserver::HdxSelectionSceneIndexObserver()
  : _version(0)
@@ -40,17 +33,23 @@ HdxSelectionSceneIndexObserver::HdxSelectionSceneIndexObserver()
 {
 }
 
-// TODO: Move UsdImaging_SceneIndexPrimView to hd and use it here.
 static
 void
 _PopulateFromSceneIndex(
     HdSceneIndexBaseRefPtr const &sceneIndex,
     const SdfPath &path,
-    SdfPathSet * const paths)
+    HdSelectionSharedPtr const &result,
+    std::mutex &resultMutex)
 {
-    paths->insert(path);
-    for (const SdfPath &child : sceneIndex->GetChildPrimPaths(path)) {
-        _PopulateFromSceneIndex(sceneIndex, child, paths);
+    _AddToSelection(sceneIndex, path, result, resultMutex);
+    const SdfPathVector childPaths = sceneIndex->GetChildPrimPaths(path);
+    if (!childPaths.empty()) {
+        WorkParallelForEach(
+            childPaths.begin(), childPaths.end(),
+            [&](SdfPath const& childPath) {
+                _PopulateFromSceneIndex(
+                    sceneIndex, childPath, result, resultMutex);
+            });
     }
 }
 
@@ -68,14 +67,17 @@ HdxSelectionSceneIndexObserver::SetSceneIndex(
         _sceneIndex->RemoveObserver(self);
     }
 
-    if (sceneIndex) {
+    _sceneIndex = sceneIndex;
+    _selection = std::make_shared<HdSelection>();
+    _dirtiedPrims.clear();
+
+    if (_sceneIndex) {
         sceneIndex->AddObserver(self);
+        std::mutex resultMutex;
         _PopulateFromSceneIndex(
-            sceneIndex, SdfPath::AbsoluteRootPath(), &_dirtiedPrims);
+            sceneIndex, SdfPath::AbsoluteRootPath(), _selection, resultMutex);
     }
     
-    _sceneIndex = sceneIndex;
-
     _version++;
 }
 
@@ -218,7 +220,8 @@ _AddToSelection(
     HdSceneIndexBaseRefPtr const &sceneIndex,
     HdSelectionSchema &selectionSchema,
     const SdfPath &primPath,
-    HdSelectionSharedPtr const &result)
+    HdSelectionSharedPtr const &result,
+    std::mutex &resultMutex)
 {
     // Only support fully selected for now.
     HdBoolDataSourceHandle const ds = selectionSchema.GetFullySelected();
@@ -234,19 +237,22 @@ _AddToSelection(
     HdInstanceIndicesVectorSchema instanceIndicesVectorSchema =
         selectionSchema.GetNestedInstanceIndices();
 
-    if (instanceIndicesVectorSchema.GetNumElements() > 0) {
-        result->AddInstance(
-            HdSelection::HighlightModeSelect,
-            primPath,
-            // The information in the schema is nested, that is it
-            // the instance id for each nesting level.
-            // HdSelection only expects one number for each selected
-            // instance encoding the selection of all levels.
-            _GetInstanceIndices(sceneIndex, instanceIndicesVectorSchema));
-    } else {
-        result->AddRprim(
-            HdSelection::HighlightModeSelect,
-            primPath);
+    {
+        std::unique_lock lock(resultMutex);
+        if (instanceIndicesVectorSchema.GetNumElements() > 0) {
+            result->AddInstance(
+                HdSelection::HighlightModeSelect,
+                primPath,
+                // The information in the schema is nested, that is it
+                // the instance id for each nesting level.
+                // HdSelection only expects one number for each selected
+                // instance encoding the selection of all levels.
+                _GetInstanceIndices(sceneIndex, instanceIndicesVectorSchema));
+        } else {
+            result->AddRprim(
+                HdSelection::HighlightModeSelect,
+                primPath);
+        }
     }
 }
 
@@ -257,7 +263,8 @@ void
 _AddToSelection(
     HdSceneIndexBaseRefPtr const &sceneIndex,
     const SdfPath &primPath,
-    HdSelectionSharedPtr const &result)
+    HdSelectionSharedPtr const &result, 
+    std::mutex &resultMutex)
 {
     HdSelectionsSchema selectionsSchema =
         HdSelectionsSchema::GetFromParent(
@@ -273,7 +280,8 @@ _AddToSelection(
             sceneIndex,
             selectionSchema,
             primPath,
-            result);
+            result, 
+            resultMutex);
     }    
 }    
     
@@ -293,8 +301,9 @@ HdxSelectionSceneIndexObserver::_ComputeSelection()
 
     _dirtiedPrims.insert(prims.begin(), prims.end());
 
+    std::mutex resultMutex;
     for (const SdfPath &path : _dirtiedPrims) {
-        _AddToSelection(_sceneIndex, path, result);
+        _AddToSelection(_sceneIndex, path, result, resultMutex);
     }
 
     _dirtiedPrims.clear();

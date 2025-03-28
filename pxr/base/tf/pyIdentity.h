@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_TF_PY_IDENTITY_H
 #define PXR_BASE_TF_PY_IDENTITY_H
@@ -37,15 +20,13 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/handle.hpp>
-#include <boost/python/object.hpp>
+#include "pxr/external/boost/python/handle.hpp"
 
 #include "pxr/base/tf/hashmap.h"
 
-// Specializations for boost::python::pointee and get_pointer for TfRefPtr and
+// Specializations for pxr_boost::python::pointee and get_pointer for TfRefPtr and
 // TfWeakPtr.
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
 
 // TfWeakPtrFacade
 template <template <class> class X, class Y>
@@ -137,38 +118,22 @@ struct Tf_PyOwnershipHelper<Ptr,
         std::is_same<TfRefPtr<typename Ptr::DataType>, Ptr>::value &&
         std::is_base_of<TfRefBase, typename Ptr::DataType>::value>>
 {
-    struct _RefPtrHolder {
-        static boost::python::object
-        Get(Ptr const &refptr) {
-            TfPyLock pyLock;
-            _WrapIfNecessary();
-            return boost::python::object(_RefPtrHolder(refptr));
-        }
-        static void _WrapIfNecessary() {
-            TfPyLock pyLock;
-            if (TfPyIsNone(TfPyGetClassObject<_RefPtrHolder>())) {
-                std::string name =
-                    "__" + ArchGetDemangled(typeid(typename Ptr::DataType)) +
-                    "__RefPtrHolder";
-                name = TfStringReplace(name, "<", "_");
-                name = TfStringReplace(name, ">", "_");
-                name = TfStringReplace(name, "::", "_");
-                boost::python::class_<_RefPtrHolder>(name.c_str(),
-                                                     boost::python::no_init);
-            }
-        }
-      private:
-        explicit _RefPtrHolder(Ptr const &refptr) : _refptr(refptr) {}
-        Ptr _refptr;
-    };
-    
     static void Add(Ptr ptr, const void *uniqueId, PyObject *self) {
 
         TfPyLock pyLock;
 
-        // Make the python object keep the c++ object alive.
-        int ret = PyObject_SetAttrString(self, "__owner",
-                                         _RefPtrHolder::Get(ptr).ptr());
+        // Create a capsule to hold on to a heap-allocated instance of
+        // Ptr. We'll set this as an attribute on the Python object so
+        // it keeps the C++ object alive.
+        pxr_boost::python::handle<> capsule(
+            PyCapsule_New(
+                new Ptr(ptr), "refptr",
+                +[](PyObject* capsule) {
+                    void* heldPtr = PyCapsule_GetPointer(capsule, "refptr");
+                    delete static_cast<Ptr*>(heldPtr);
+                }));
+
+        int ret = PyObject_SetAttrString(self, "__owner", capsule.get());
         if (ret == -1) {
             // CODE_COVERAGE_OFF
             TF_WARN("Could not set __owner attribute on python object!");

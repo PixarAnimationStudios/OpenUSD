@@ -1,3 +1,9 @@
+#
+# Copyright 2016 Pixar
+#
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
+#
 # set a timestamp id to identify this run of tests in the environment, if not
 # already set
 if (NOT DEFINED ENV{PXR_CTEST_RUN_ID})

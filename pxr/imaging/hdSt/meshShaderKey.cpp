@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 
@@ -81,15 +64,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((patchEdgeOnlyFS,             "MeshPatchWire.Fragment.EdgeOnly"))
     ((patchEdgeOnSurfFS,           "MeshPatchWire.Fragment.EdgeOnSurface"))
 
-    ((selWireOffsetGS,             "Selection.Geometry.WireSelOffset"))
-    ((selWireNoOffsetGS,           "Selection.Geometry.WireSelNoOffset"))
-    
     // selection decoding
     ((selDecodeUtils,              "Selection.DecodeUtils"))
     ((selPointSelVS,               "Selection.Vertex.PointSel"))
-    ((selElementSelGS,             "Selection.Geometry.ElementSel"))
 
     // edge id mixins (for edge picking & selection)
+    ((edgeIdNoneFS,                "EdgeId.Fragment.None"))
     ((edgeIdCommonFS,              "EdgeId.Fragment.Common"))
     ((edgeIdTriangleSurfFS,        "EdgeId.Fragment.TriangleSurface"))
     ((edgeIdTriangleLineFS,        "EdgeId.Fragment.TriangleLines"))
@@ -110,6 +90,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // main for all the shader stages
     ((mainVS,                      "Mesh.Vertex"))
+    ((mainPatchCommonTCS,          "Mesh.TessControl.PatchCommon"))
     ((mainBSplineQuadTCS,          "Mesh.TessControl.BSplineQuad"))
     ((mainBezierQuadTES,           "Mesh.TessEval.BezierQuad"))
     ((mainBoxSplineTriangleTCS,    "Mesh.TessControl.BoxSplineTriangle"))
@@ -118,6 +99,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainTrianglePTVS,            "Mesh.PostTessVertex.Triangle"))
     ((mainQuadPTVS,                "Mesh.PostTessVertex.Quad"))
     ((mainTriQuadPTVS,             "Mesh.PostTessVertex.TriQuad"))
+    ((mainPatchCommonPTCS,         "Mesh.PostTessControl.PatchCommon"))
     ((mainBSplineQuadPTCS,         "Mesh.PostTessControl.BSplineQuad"))
     ((mainBSplineQuadPTVS,         "Mesh.PostTessVertex.BSplineQuad"))
     ((mainBoxSplineTrianglePTCS,   "Mesh.PostTessControl.BoxSplineTriangle"))
@@ -154,6 +136,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((pointShadedFS,               "Fragment.PointShaded"))
     ((scalarOverrideFS,            "Fragment.ScalarOverride"))
     ((noScalarOverrideFS,          "Fragment.NoScalarOverride"))
+
+    // rounded points
+    ((pointSizeBiasVS,             "PointDisk.Vertex.PointSizeBias"))
+    ((noPointSizeBiasVS,           "PointDisk.Vertex.None"))
+    ((diskSampleMaskFS,            "PointDisk.Fragment.SampleMask"))
+    ((noDiskSampleMaskFS,          "PointDisk.Fragment.None"))
 );
 
 HdSt_MeshShaderKey::HdSt_MeshShaderKey(
@@ -176,7 +164,9 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     bool hasInstancer,
     bool enableScalarOverride,
     bool pointsShadingEnabled,
-    bool forceOpaqueEdges)
+    bool forceOpaqueEdges,
+    bool surfaceEdgeIds,
+    bool nativeRoundPoints)
     : primType(primitiveType)
     , cullStyle(cullStyle)
     , hasMirroredTransform(hasMirroredTransform)
@@ -219,8 +209,9 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                              geomStyle == HdMeshGeomStyleHullEdgeOnSurf;
 
     // Selected edges can be highlighted even if not otherwise displayed
-    const bool renderSelectedEdges = geomStyle == HdMeshGeomStyleSurf ||
-                                     geomStyle == HdMeshGeomStyleHull;
+    const bool renderSurfaceEdgeIds = surfaceEdgeIds &&
+                                      (geomStyle == HdMeshGeomStyleSurf ||
+                                       geomStyle == HdMeshGeomStyleHull);
 
     /* Normals configurations:
      * Smooth normals:
@@ -271,8 +262,11 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         VS[vsIndex++] = _tokens->pointIdVS;
         VS[vsIndex++] = _tokens->selDecodeUtils;
         VS[vsIndex++] = _tokens->selPointSelVS;
+        VS[vsIndex++] = nativeRoundPoints ? _tokens->noPointSizeBiasVS :
+            _tokens->pointSizeBiasVS;
     } else {
         VS[vsIndex++] =  _tokens->pointIdNoneVS;
+        VS[vsIndex++] =  _tokens->noPointSizeBiasVS;
     }
     VS[vsIndex++] = _tokens->mainVS;
     VS[vsIndex] = TfToken();
@@ -329,8 +323,11 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             PTVS[ptvsIndex++] = _tokens->pointIdVS;
             PTVS[ptvsIndex++] = _tokens->selDecodeUtils;
             PTVS[ptvsIndex++] = _tokens->selPointSelVS;
+            PTVS[ptvsIndex++] = nativeRoundPoints ? _tokens->noPointSizeBiasVS :
+                _tokens->pointSizeBiasVS;
         } else {
             PTVS[ptvsIndex++] =  _tokens->pointIdNoneVS;
+            PTVS[ptvsIndex++] =  _tokens->noPointSizeBiasVS;
         }
 
         if (hasCustomDisplacement) {
@@ -347,10 +344,12 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             PTVS[ptvsIndex++] = _tokens->mainTriQuadPTVS;
         } else if (isPrimTypePatchesBSpline) {
             PTCS[ptcsIndex++] = _tokens->instancing;
+            PTCS[ptcsIndex++] = _tokens->mainPatchCommonPTCS;
             PTCS[ptcsIndex++] = _tokens->mainBSplineQuadPTCS;
             PTVS[ptvsIndex++] = _tokens->mainBSplineQuadPTVS;
         } else if (isPrimTypePatchesBoxSplineTriangle) {
             PTCS[ptcsIndex++] = _tokens->instancing;
+            PTCS[ptcsIndex++] = _tokens->mainPatchCommonPTCS;
             PTCS[ptcsIndex++] = _tokens->mainBoxSplineTrianglePTCS;
             PTVS[ptvsIndex++] = _tokens->mainBoxSplineTrianglePTVS;
         }
@@ -362,22 +361,24 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     bool const ptvsStageEnabled = !PTVS[0].IsEmpty();
 
     // tessellation control shader
-    if (!ptvsStageEnabled) {
-        TCS[0] = isPrimTypePatches ? _tokens->instancing : TfToken();
-        TCS[1] = isPrimTypePatches ? isPrimTypePatchesBSpline
-                                     ? _tokens->mainBSplineQuadTCS
-                                     : _tokens->mainBoxSplineTriangleTCS
-                                   : TfToken();
-        TCS[2] = TfToken();
+    if (isPrimTypePatches && !ptvsStageEnabled) {
+        TCS[0] = _tokens->instancing;
+        TCS[1] = _tokens->mainPatchCommonTCS;
+        TCS[2] = isPrimTypePatchesBSpline
+                     ? _tokens->mainBSplineQuadTCS
+                     : _tokens->mainBoxSplineTriangleTCS;
+        TCS[3] = TfToken();
 
         // tessellation evaluation shader
-        TES[0] = isPrimTypePatches ? _tokens->instancing : TfToken();
-        TES[1] = isPrimTypePatches ? isPrimTypePatchesBSpline
-                                     ? _tokens->mainBezierQuadTES
-                                     : _tokens->mainBezierTriangleTES
-                                   : TfToken();
-        TES[2] = isPrimTypePatches ? _tokens->mainVaryingInterpTES : TfToken();
+        TES[0] = _tokens->instancing;
+        TES[1] = isPrimTypePatchesBSpline
+                     ? _tokens->mainBezierQuadTES
+                     : _tokens->mainBezierTriangleTES;
+        TES[2] = _tokens->mainVaryingInterpTES;
         TES[3] = TfToken();
+    } else {
+        TCS[0] = TfToken();
+        TES[0] = TfToken();
     }
 
     // geometry shader
@@ -392,16 +393,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
    
     GS[gsIndex++] = (normalsSource == NormalSourceFlatGeometric) ?
             _tokens->normalsGeometryFlat : _tokens->normalsGeometryNoFlat;
-
-    // emit "ComputeSelectionOffset" GS function.
-    if (renderWireframe) {
-        // emit necessary selection decoding and helper mixins
-        GS[gsIndex++] = _tokens->selDecodeUtils;
-        GS[gsIndex++] = _tokens->selElementSelGS;
-        GS[gsIndex++] = _tokens->selWireOffsetGS;
-    } else {
-        GS[gsIndex++] = _tokens->selWireNoOffsetGS;
-    }
 
     // Displacement shading can be disabled explicitly, or if the entrypoint
     // doesn't exist (resolved in HdStMesh).
@@ -429,7 +420,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             && (isPrimTypeTris ||
                 isPrimTypeTriQuads)
             // whether we can skip generating coords for edges
-            && ((!renderWireframe && !renderEdges && !renderSelectedEdges) ||
+            && ((!renderWireframe && !renderEdges && !renderSurfaceEdgeIds) ||
                 hasFragmentShaderBarycentrics)
             // whether we can skip generating coords for per-face interpolation
             && (!hasPerFaceInterpolation ||
@@ -579,7 +570,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // EdgeId mixin(s) for edge picking and selection
     // Note: When rendering a mesh as points, we handle this in code gen.
-    if (!isPrimTypePoints) {
+    if (renderWireframe || renderEdges || renderSurfaceEdgeIds) {
         FS[fsIndex++] = _tokens->edgeIdCommonFS;
         if (isPrimTypeTris || isPrimTypePatchesBoxSplineTriangle) {
             if (polygonMode == HdPolygonModeLine) {
@@ -596,13 +587,22 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             }
             FS[fsIndex++] = _tokens->edgeIdQuadParamFS;
         }
+    } else if (!isPrimTypePoints) {
+        FS[fsIndex++] = _tokens->edgeIdNoneFS;
     }
 
     // PointId mixin for point picking and selection
-    FS[fsIndex++] = isPrimTypePoints? _tokens->pointIdFS :
-                                      _tokens->pointIdFallbackFS;
+    if (isPrimTypePoints) {
+        FS[fsIndex++] = _tokens->pointIdFS;
+        FS[fsIndex++] = nativeRoundPoints ? _tokens->noDiskSampleMaskFS :
+            _tokens->diskSampleMaskFS;
+    } else {
+        FS[fsIndex++] = _tokens->pointIdFallbackFS;
+        FS[fsIndex++] = _tokens->noDiskSampleMaskFS;
+    }
+
     FS[fsIndex++] = hasTopologicalVisibility? _tokens->topVisFS :
-                                              _tokens->topVisFallbackFS;
+                        _tokens->topVisFallbackFS;
 
     // Triangles
     if (isPrimTypeTris && ptvsStageEnabled) {

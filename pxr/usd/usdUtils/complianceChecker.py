@@ -1,25 +1,8 @@
 #
 # Copyright 2018 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 
 from __future__ import print_function
@@ -574,7 +557,7 @@ Specifically:
             self._AddWarning("%s prim <%s> reads an 8 bit Normal Map, "
                              "but has non-standard inputs:scale value of %s." 
                              "inputs:scale must be set to (2, 2, 2, 1) so as " 
-                             "fullfill the requirements of the normals to be " 
+                             "fulfill the requirements of the normals to be " 
                              "in tangent space of [(-1,-1,-1), (1,1,1)] as "
                              "documented in the UsdPreviewSurface and "
                              "UsdUVTexture docs." %\
@@ -584,19 +567,19 @@ Specifically:
         
 
         # Note that for a 8bit normal map, inputs:bias must be appropriately
-        # set to [-1, -1, -1, 0] so as to fullfill the requirements of the
+        # set to [-1, -1, -1, 0] so as to fulfill the requirements of the
         # normals to be in tangent space of [(-1,-1,-1), (1,1,1)] as documented 
         # in the UsdPreviewSurface docs. Note this is true only when scale
         # values are respecting the requirements laid in the
         # UsdPreviewSurface / UsdUVTexture docs. We continue to warn!
         if (not nonCompliantScaleValues and 
                 (bias[0] != -1 or bias[1] != -1 or bias[2] != -1)):
-            self._AddError("%s prim <%s> reads an 8 bit Normal Map, but has "
-                           "non-standard inputs:bias value of %s. inputs:bias "
-                           "must be set to [-1,-1,-1,0] so as to fullfill "
-                           "the requirements of the normals to be in tangent "
-                           "space of [(-1,-1,-1), (1,1,1)] as documented "
-                           "in the UsdPreviewSurface and UsdUVTexture docs." %\
+            self._AddWarning("%s prim <%s> reads an 8 bit Normal Map, but has "
+                             "non-standard inputs:bias value of %s. inputs:bias"
+                             " must be set to [-1,-1,-1,0] so as to fulfill the"
+                             "requirements of the normals to be in tangent "
+                             "space of [(-1,-1,-1), (1,1,1)] as documented in "
+                             "the UsdPreviewSurface and UsdUVTexture docs." %\
                              (NodeTypes.UsdUVTexture,
                               sourcePrim.GetPath(), str(bias)))
 
@@ -673,11 +656,10 @@ class ShaderPropertyTypeConformanceChecker(BaseRuleChecker):
                                                    assetLevelChecks)
 
     def _FillSdrNameToTypeMap(self, shadeNode, mapping):
-        for inputName in shadeNode.GetInputNames():
-            prop = shadeNode.GetInput(inputName)
+        for inputName in shadeNode.GetShaderInputNames():
+            prop = shadeNode.GetShaderInput(inputName)
             propName = prop.GetName()
-            sdfType, sdfHint = prop.GetTypeAsSdfType()
-            mapping[propName] = sdfType
+            mapping[propName] = prop.GetTypeAsSdfType().GetSdfType()
 
 
 
@@ -1091,7 +1073,16 @@ class ComplianceChecker(object):
 
         # Collect all warnings using a diagnostic delegate.
         delegate = UsdUtils.CoalescingDiagnosticDelegate()
-        usdStage = Usd.Stage.Open(inputFile)
+        from pxr import Tf
+        try:
+            # It is possible Usd.Stage.Open will raise a TF_RUNTIME_ERROR
+            # (example via usdAbc plugin) which should be appropriately handled.
+            usdStage = Usd.Stage.Open(inputFile)
+        except Tf.ErrorException as e:
+            self._AddError("Failed to open USD stage from file '%s': %s" % 
+                    (inputFile, str(e)))
+            return
+
         stageOpenDiagnostics = delegate.TakeUncoalescedDiagnostics()
 
         for rule in self._rules:
@@ -1101,8 +1092,15 @@ class ComplianceChecker(object):
         with Ar.ResolverContextBinder(usdStage.GetPathResolverContext()):
             # This recursively computes all of inputFiles's external 
             # dependencies.
-            (allLayers, allAssets, unresolvedPaths) = \
+            from pxr import Tf
+            try:
+                (allLayers, allAssets, unresolvedPaths) = \
                     UsdUtils.ComputeAllDependencies(Sdf.AssetPath(inputFile))
+            except Tf.ErrorException as e:
+                self._AddError(
+                    "Failed to compute dependencies for file '%s': %s" % 
+                        (inputFile, str(e)))
+                return
             for rule in self._rules:
                 rule.CheckUnresolvedPaths(unresolvedPaths)
                 rule.CheckDependencies(usdStage, allLayers, allAssets)

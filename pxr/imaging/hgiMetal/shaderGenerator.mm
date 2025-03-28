@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/imaging/hgiMetal/shaderGenerator.h"
@@ -167,7 +150,7 @@ T* _BuildStructInstance(
 }
 
 bool
-_GetBuiltinKeyword(HgiShaderFunctionParamDesc const &param,
+_GetBuiltinInputKeyword(HgiShaderFunctionParamDesc const &param,
                    std::string *keyword = nullptr)
 {
     //possible metal attributes on shader inputs.
@@ -184,7 +167,9 @@ _GetBuiltinKeyword(HgiShaderFunctionParamDesc const &param,
        {HgiShaderKeywordTokens->hdFrontFacing, "front_facing"},
        {HgiShaderKeywordTokens->hdPosition, "position"},
        {HgiShaderKeywordTokens->hdBaryCoordNoPersp, "barycentric_coord"},
-       {HgiShaderKeywordTokens->hdFragCoord, "position"}
+       {HgiShaderKeywordTokens->hdFragCoord, "position"},
+       {HgiShaderKeywordTokens->hdPointCoord, "point_coord"},
+       {HgiShaderKeywordTokens->hdSampleMaskIn, "sample_mask"},
     };
 
     //check if has a role
@@ -197,7 +182,31 @@ _GetBuiltinKeyword(HgiShaderFunctionParamDesc const &param,
             return true;
         }
     }
-    
+
+    return false;
+}
+
+bool
+_GetBuiltinOutputKeyword(HgiShaderFunctionParamDesc const &param,
+                   std::string *keyword = nullptr)
+{
+    // possible metal attributes on shader output.
+    // Map from descriptor to Metal
+    const static std::unordered_map<std::string, std::string> roleIndexM {
+       {HgiShaderKeywordTokens->hdSampleMask, "sample_mask"},
+    };
+
+    //check if has a role
+    if(!param.role.empty()) {
+        auto it = roleIndexM.find(param.role);
+        if (it != roleIndexM.end()) {
+            if (keyword) {
+                *keyword = it->second;
+            }
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -303,9 +312,22 @@ _GetDeclarationDefinitions()
         " atomic_fetch_add_explicit(&a, v, memory_order_relaxed)\n"
         "#define ATOMIC_EXCHANGE(a, desired)"
         " atomic_exchange_explicit(&a, desired, memory_order_relaxed)\n"
-        "#define ATOMIC_COMP_SWAP(a, expected, desired) \\"
-        "  atomic_compare_exchange_strong_explicit(&a, &expected, desired, "
-        "memory_order_relaxed, memory_order_relaxed)\n"
+        "int atomicCompSwap(device atomic_int *a, int expected, int desired) {\n"
+        "    int found = expected;\n"
+        "    while(!atomic_compare_exchange_weak_explicit(a, &found, desired,\n"
+        "        memory_order_relaxed, memory_order_relaxed)) {\n"
+        "        if (found != expected) { return found; }\n"
+        "        else { found = expected; }\n"
+        "    } return expected; }\n"
+        "uint atomicCompSwap(device atomic_uint *a, uint expected, uint desired) {\n"
+        "    uint found = expected;\n"
+        "    while(!atomic_compare_exchange_weak_explicit(a, &found, desired,\n"
+        "        memory_order_relaxed, memory_order_relaxed)) {\n"
+        "        if (found != expected) { return found; }\n"
+        "        else { found = expected; }\n"
+        "    } return expected; }\n"
+        "#define ATOMIC_COMP_SWAP(a, expected, desired)"
+        " atomicCompSwap(&a, expected, desired)\n"
         "\n";
 }
 
@@ -689,7 +711,7 @@ ShaderStageData::AccumulateParams(
         };
 
         for(const HgiShaderFunctionParamDesc &p : params) {
-            if (_GetBuiltinKeyword(p)) continue;
+            if (_GetBuiltinInputKeyword(p)) continue;
             //For metal, the role is the actual attribute so far
             std::string indexAsStr;
             //check if has a role
@@ -705,11 +727,13 @@ ShaderStageData::AccumulateParams(
 
             HgiShaderSectionAttributeVector attributes = {};
             if (!p.role.empty()) {
-                attributes.push_back(HgiShaderSectionAttribute{p.role, indexAsStr});
+                std::string role = p.role;
+                _GetBuiltinOutputKeyword(p, &role);
+                attributes.push_back(HgiShaderSectionAttribute{std::move(role), indexAsStr});
             }
             else if (p.interstageSlot != -1) {
                 std::string role = "user(slot" + std::to_string(p.interstageSlot) + ")";
-                attributes.push_back(HgiShaderSectionAttribute{role, indexAsStr});
+                attributes.push_back(HgiShaderSectionAttribute{std::move(role), indexAsStr});
             }
 
             attributes.push_back(HgiShaderSectionAttribute{
@@ -729,7 +753,7 @@ ShaderStageData::AccumulateParams(
         int nextLocation = 0;
         for (size_t i = 0; i < params.size(); i++) {
             const HgiShaderFunctionParamDesc &p = params[i];
-            if (_GetBuiltinKeyword(p)) continue;
+            if (_GetBuiltinInputKeyword(p)) continue;
 
             const int location =
                 (p.location != -1) ? p.location : nextLocation;
@@ -1213,29 +1237,24 @@ HgiMetalShaderStageEntryPoint::_Init(
         generator);
 }
 
-//Instantiate special keyword shader sections based on the given descriptor
+// Instantiate special keyword shader input sections based on the given
+// descriptor
 void HgiMetalShaderGenerator::_BuildKeywordInputShaderSections(
     const HgiShaderFunctionDesc &descriptor)
 {
-    //possible metal attributes on shader inputs.
-    // Map from descriptor to Metal
-    std::unordered_map<std::string, std::string> roleIndexM {
-       {HgiShaderKeywordTokens->hdGlobalInvocationID, "thread_position_in_grid"}
-    };
-
     const std::vector<HgiShaderFunctionParamDesc> &inputs =
         descriptor.stageInputs;
     for (size_t i = 0; i < inputs.size(); ++i) {
         const HgiShaderFunctionParamDesc &p(inputs[i]);
 
         std::string msl_attrib;
-        if(_GetBuiltinKeyword(p, &msl_attrib)) {
+        if(_GetBuiltinInputKeyword(p, &msl_attrib)) {
             const std::string &keywordName = p.nameInShader;
 
             const HgiShaderSectionAttributeVector attributes = {
                 HgiShaderSectionAttribute{msl_attrib, "" }};
 
-            //Shader section vector on the generator
+            // Shader section vector on the generator
             // owns all sections, point to it in the vector
             CreateShaderSection<HgiMetalKeywordInputShaderSection>(
                 keywordName,
@@ -1300,7 +1319,7 @@ HgiMetalShaderGenerator::_BuildShaderStageEntryPoints(
     const ShaderStageData stageData(descriptor, this);
 
     std::stringstream functionAttributesSS = std::stringstream();
-    
+
     switch (descriptor.shaderStage) {
         case HgiShaderStageVertex: {
             return std::make_unique

@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_RENDER_DELEGATE_H
 #define PXR_IMAGING_HD_RENDER_DELEGATE_H
@@ -65,6 +48,31 @@ public:
     HdRenderParam() {}
     HD_API
     virtual ~HdRenderParam();
+
+    /// Set a custom value in the render param's implementation. 
+    /// The \p key identifies the value, while \p value holds the data to set. 
+    /// Return true if the value was successfully set, false if the operation is
+    /// not supported for the specified key or value.
+    /// Since this method can be called by client code, it must be thread-safe.
+    HD_API
+    virtual bool SetArbitraryValue(const TfToken& key, const VtValue& value);
+
+    /// Retrieve a custom value identified by \p key from the render param's
+    /// implementation. The value could have been set via SetArbitraryValue() or
+    /// provided internally by the render param. 
+    /// Return an empty VtValue if no value is associated with the key. 
+    /// This can either be used to retrieve arbitrary values by the 
+    /// render delegate or by Hydra client code.
+    /// Since this method can be called by client code, it must be thread-safe.
+    HD_API
+    virtual VtValue GetArbitraryValue(const TfToken& key) const;
+
+    /// Check whether a valid custom value exists for the specified \p key 
+    /// in the render param's implementation. Returns true if the value 
+    /// exists, false otherwise.
+    /// Since this method can be called by client code, it must be thread-safe.
+    HD_API
+    virtual bool HasArbitraryValue(const TfToken& key) const;
 
 private:
     // Hydra will not attempt to copy the class.
@@ -522,8 +530,10 @@ public:
     HD_API
     virtual void Update();
 
-    /// Whether or not multithreaded sync is enabled for the specified prim type.
-    bool IsParallelSyncEnabled(TfToken primType) const;
+    /// Whether or not multithreaded sync is enabled for the
+    /// specified prim type.
+    HD_API
+    virtual bool IsParallelSyncEnabled(const TfToken &primType) const;
 
 protected:
     /// This class must be derived from.
@@ -549,7 +559,7 @@ protected:
 
 private:
 
-    friend class HdRendererPluginRegistry;
+    friend class HdRendererPlugin;
     ///
     /// Populated when instantiated via the HdRendererPluginRegistry and
     /// currently used to associate a renderer delegate instance with related

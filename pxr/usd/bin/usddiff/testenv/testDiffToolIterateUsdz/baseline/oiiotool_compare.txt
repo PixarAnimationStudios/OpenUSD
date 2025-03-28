@@ -1,4 +1,3 @@
 Differences in image_gifa.usdz[usd.gif] and image_gifb.usdz[usd.gif]:
-  79545 pixels (31.8%) over 1e-06
   79545 pixels (31.8%) failed the perceptual test
 FAILURE

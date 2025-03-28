@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_SDF_CHANGE_LIST_H
 #define PXR_USD_SDF_CHANGE_LIST_H
@@ -65,35 +48,35 @@ public:
         SubLayerOffset
     };
 
-    void DidReplaceLayerContent();
-    void DidReloadLayerContent();
-    void DidChangeLayerResolvedPath();
-    void DidChangeLayerIdentifier(const std::string &oldIdentifier);
-    void DidChangeSublayerPaths(const std::string &subLayerPath,
+    SDF_API void DidReplaceLayerContent();
+    SDF_API void DidReloadLayerContent();
+    SDF_API void DidChangeLayerResolvedPath();
+    SDF_API void DidChangeLayerIdentifier(const std::string &oldIdentifier);
+    SDF_API void DidChangeSublayerPaths(const std::string &subLayerPath,
                                 SubLayerChangeType changeType);
 
-    void DidAddPrim(const SdfPath &primPath, bool inert);
-    void DidRemovePrim(const SdfPath &primPath, bool inert);
-    void DidMovePrim(const SdfPath &oldPath, const SdfPath &newPath);
-    void DidReorderPrims(const SdfPath &parentPath);
-    void DidChangePrimName(const SdfPath &oldPath, const SdfPath &newPath);
-    void DidChangePrimVariantSets(const SdfPath &primPath);
-    void DidChangePrimInheritPaths(const SdfPath &primPath);
-    void DidChangePrimReferences(const SdfPath &primPath);
-    void DidChangePrimSpecializes(const SdfPath &primPath);
+    SDF_API void DidAddPrim(const SdfPath &primPath, bool inert);
+    SDF_API void DidRemovePrim(const SdfPath &primPath, bool inert);
+    SDF_API void DidMovePrim(const SdfPath &oldPath, const SdfPath &newPath);
+    SDF_API void DidReorderPrims(const SdfPath &parentPath);
+    SDF_API void DidChangePrimName(const SdfPath &oldPath, const SdfPath &newPath);
+    SDF_API void DidChangePrimVariantSets(const SdfPath &primPath);
+    SDF_API void DidChangePrimInheritPaths(const SdfPath &primPath);
+    SDF_API void DidChangePrimReferences(const SdfPath &primPath);
+    SDF_API void DidChangePrimSpecializes(const SdfPath &primPath);
 
-    void DidAddProperty(const SdfPath &propPath, bool hasOnlyRequiredFields);
-    void DidRemoveProperty(const SdfPath &propPath, bool hasOnlyRequiredFields);
-    void DidReorderProperties(const SdfPath &propPath);
-    void DidChangePropertyName(const SdfPath &oldPath, const SdfPath &newPath);
+    SDF_API void DidAddProperty(const SdfPath &propPath, bool hasOnlyRequiredFields);
+    SDF_API void DidRemoveProperty(const SdfPath &propPath, bool hasOnlyRequiredFields);
+    SDF_API void DidReorderProperties(const SdfPath &propPath);
+    SDF_API void DidChangePropertyName(const SdfPath &oldPath, const SdfPath &newPath);
 
-    void DidChangeAttributeTimeSamples(const SdfPath &attrPath);
-    void DidChangeAttributeConnection(const SdfPath &attrPath);
-    void DidChangeRelationshipTargets(const SdfPath &relPath);
-    void DidAddTarget(const SdfPath &targetPath);
-    void DidRemoveTarget(const SdfPath &targetPath);
+    SDF_API void DidChangeAttributeTimeSamples(const SdfPath &attrPath);
+    SDF_API void DidChangeAttributeConnection(const SdfPath &attrPath);
+    SDF_API void DidChangeRelationshipTargets(const SdfPath &relPath);
+    SDF_API void DidAddTarget(const SdfPath &targetPath);
+    SDF_API void DidRemoveTarget(const SdfPath &targetPath);
 
-    void DidChangeInfo(const SdfPath &path, const TfToken &key,
+    SDF_API void DidChangeInfo(const SdfPath &path, const TfToken &key,
                        VtValue &&oldValue, const VtValue &newValue);
 
     /// \struct Entry

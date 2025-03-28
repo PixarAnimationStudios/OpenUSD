@@ -1,31 +1,18 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #ifndef PXR_USD_NDR_DISCOVERY_PLUGIN_H
 #define PXR_USD_NDR_DISCOVERY_PLUGIN_H
 
-/// \file ndr/registry.h
+/// \file ndr/discoveryPlugin.h
+///
+/// \deprecated
+/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
+/// in sdr/discoveryPlugin.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ndr/api.h"
@@ -40,6 +27,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Register a discovery plugin (`DiscoveryPluginClass`) with the plugin system.
 /// If registered, the discovery plugin will execute its discovery process when
 /// the registry is instantiated.
+///
+/// \deprecated
+/// Deprecated in favor of SDR_REGISTER_DISCOVERY_PLUGIN
 #define NDR_REGISTER_DISCOVERY_PLUGIN(DiscoveryPluginClass)                   \
 TF_REGISTRY_FUNCTION(TfType)                                                  \
 {                                                                             \
@@ -52,6 +42,9 @@ TF_DECLARE_WEAK_AND_REF_PTRS(NdrDiscoveryPluginContext);
 /// A context for discovery.  Discovery plugins can use this to get
 /// a limited set of non-local information without direct coupling
 /// between plugins.
+///
+/// \deprecated
+/// Deprecated in favor of SdrDiscoveryPluginContext
 class NdrDiscoveryPluginContext : public TfRefBase, public TfWeakBase
 {
 public:
@@ -140,6 +133,8 @@ TF_DECLARE_WEAK_AND_REF_PTRS(NdrDiscoveryPlugin);
 ///     </li>
 /// </ul>
 ///
+/// \deprecated
+/// Deprecated in favor of SdrDiscoveryPlugin
 class NdrDiscoveryPlugin : public TfRefBase, public TfWeakBase
 {
 public:
@@ -152,6 +147,8 @@ public:
 
     /// Finds and returns all nodes that the implementing plugin should be
     /// aware of.
+    /// \deprecated
+    /// Deprecated in favor of SdrDiscoveryPlugin::DiscoverShaderNodes.
     NDR_API
     virtual NdrNodeDiscoveryResultVec DiscoverNodes(const Context&) = 0;
 
@@ -163,7 +160,9 @@ public:
 
 /// \cond
 /// Factory classes should be hidden from the documentation.
-
+/// \deprecated
+/// Deprecated in favor of SdrDiscoveryPluginFactoryBase and
+/// SdrDiscoveryPluginFactory
 class NdrDiscoveryPluginFactoryBase : public TfType::FactoryBase
 {
 public:

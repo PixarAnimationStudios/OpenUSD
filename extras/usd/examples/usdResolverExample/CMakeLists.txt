@@ -16,9 +16,6 @@ pxr_plugin(${PXR_PACKAGE}
     PUBLIC_HEADERS
         api.h
 
-    PYTHON_CPPFILES
-        moduleDeps.cpp
-
     PYMODULE_CPPFILES
         module.cpp
         wrapResolverContext.cpp

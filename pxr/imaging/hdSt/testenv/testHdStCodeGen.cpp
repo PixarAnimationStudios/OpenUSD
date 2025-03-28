@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 //
 
@@ -33,14 +16,19 @@
 #include "pxr/imaging/hdSt/meshShaderKey.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/pointsShaderKey.h"
+#include "pxr/imaging/hdSt/renderDelegate.h"
 #include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/drawingCoord.h"
+#include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/basisCurves.h"
+#include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprimSharedData.h"
 #include "pxr/imaging/hd/tokens.h"
+
+#include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/imaging/glf/testGLContext.h"
 #include "pxr/imaging/hio/glslfx.h"
@@ -76,9 +64,21 @@ TF_DEFINE_PRIVATE_TOKENS(
     (dmat4)
 );
 
+static void
+DumpShaderSource(const std::string& source)
+{
+    std::istringstream stream{source};
+    for (std::string line; std::getline(stream, line); ) {
+        // Remove glslfx source line comments
+        if (!TfStringStartsWith(line, "// line ")) {
+            std::cout << line << '\n';
+        }
+    }
+}
+
 static bool
-CodeGenTest(HdSt_ShaderKey const &key, bool useBindlessBuffer,
-            bool instance, bool smoothNormals)
+CodeGenTest(HdStResourceRegistrySharedPtr const &registry,
+    HdSt_ShaderKey const &key, bool instance, bool smoothNormals)
 {
     TfErrorMark mark;
 
@@ -87,9 +87,6 @@ CodeGenTest(HdSt_ShaderKey const &key, bool useBindlessBuffer,
     sharedData.instancerLevels = 0;
     HdStDrawItem drawItem(&sharedData);
 
-    static HgiUniquePtr hgi = Hgi::CreatePlatformDefaultHgi();
-    static HdStResourceRegistrySharedPtr registry(
-        new HdStResourceRegistry(hgi.get()));
 
     HdDrawingCoord *drawingCoord = drawItem.GetDrawingCoord();
 
@@ -290,38 +287,38 @@ CodeGenTest(HdSt_ShaderKey const &key, bool useBindlessBuffer,
     std::cout <<
         "=======================================================\n"
         "  VERTEX SHADER                                        \n"
-        "=======================================================\n"
-              << codeGen.GetVertexShaderSource();
+        "=======================================================\n";
+    DumpShaderSource(codeGen.GetVertexShaderSource());
     std::cout <<
         "=======================================================\n"
         "  TESS CONTROL SHADER                                  \n"
-        "=======================================================\n"
-              << codeGen.GetTessControlShaderSource();
+        "=======================================================\n";
+    DumpShaderSource(codeGen.GetTessControlShaderSource());
     std::cout <<
         "=======================================================\n"
         "  TESS EVAL SHADER                                     \n"
-        "=======================================================\n"
-              << codeGen.GetTessEvalShaderSource();
+        "=======================================================\n";
+    DumpShaderSource(codeGen.GetTessEvalShaderSource());
     std::cout <<
         "=======================================================\n"
         "  GEOMETRY SHADER                                      \n"
-        "=======================================================\n"
-              << codeGen.GetGeometryShaderSource();
+        "=======================================================\n";
+    DumpShaderSource(codeGen.GetGeometryShaderSource());
     std::cout <<
         "=======================================================\n"
         "  FRAGMENT SHADER                                      \n"
-        "=======================================================\n"
-              << codeGen.GetFragmentShaderSource();
+        "=======================================================\n";
+    DumpShaderSource(codeGen.GetFragmentShaderSource());
 
     return TF_VERIFY(mark.IsClean());
 }
 
 bool
-TestShader(HdSt_ShaderKey const &key, bool bindless, 
-           bool instance, bool smoothNormals)
+TestShader(HdStResourceRegistrySharedPtr const &registry,
+    HdSt_ShaderKey const &key, bool instance, bool smoothNormals)
 {
     bool success = true;
-    success &= CodeGenTest(key, bindless, instance, smoothNormals);
+    success &= CodeGenTest(registry, key, instance, smoothNormals);
     return success;
 }
 
@@ -341,7 +338,6 @@ int main(int argc, char *argv[])
     bool mesh = false;
     bool curves = false;
     bool points = false;
-    bool bindless = false;
     HdMeshGeomStyle geomStyle = HdMeshGeomStyleSurf;
 
     for (int i=0; i<argc; ++i) {
@@ -357,8 +353,6 @@ int main(int argc, char *argv[])
             blendWireframeColor = true;
         } else if (arg == "--instance") {
             instance = true;
-        } else if (arg == "--bindless") {
-            bindless = true;
         } else if (arg == "--mesh") {
             mesh = true;
         } else if (arg == "--curves") {
@@ -370,9 +364,19 @@ int main(int argc, char *argv[])
         }
     }
 
+    HgiUniquePtr const hgi = Hgi::CreatePlatformDefaultHgi();
+    HdDriver driver{HgiTokens->renderDriver, VtValue(hgi.get())};
+    HdStRenderDelegate renderDelegate;
+    std::unique_ptr<HdRenderIndex> const index(
+        HdRenderIndex::New(&renderDelegate, {&driver}));
+    HdStResourceRegistrySharedPtr const registry =
+        std::static_pointer_cast<HdStResourceRegistry>(
+            index->GetResourceRegistry());
+
     // mesh
     if (mesh) {
         success &= TestShader(
+            registry,
             HdSt_MeshShaderKey(
                 HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_TRIANGLES, 
                 /* shadingTerminal */ TfToken(), 
@@ -393,10 +397,13 @@ int main(int argc, char *argv[])
                 /* hasMirroredTransform */ false,
                 instance,
                 /* enableScalarOverride */ true,
-                /* isWidget */ false,
-                /* forceOpaqueEdges */ true),
-                bindless, instance, smoothNormals);
+                /* pointsShadingEnabled */ false,
+                /* forceOpaqueEdges */ true,
+                /* surfaceEdgeIds */ true,
+                /* nativeRoundPoints */ true),
+                 instance, smoothNormals);
         success &= TestShader(
+            registry,
             HdSt_MeshShaderKey(
                 HdSt_GeometricShader::PrimitiveType::PRIM_MESH_COARSE_QUADS, 
                 /* shadingTerminal */ TfToken(), 
@@ -416,14 +423,17 @@ int main(int argc, char *argv[])
                 /* hasMirroredTransform */ false,
                 instance,
                 /* enableScalarOverride */ true,
-                /* isWidget */ false,
-                /* forceOpaqueEdges */ true),
-                bindless, instance, smoothNormals);
+                /* pointsShadingEnabled */ false,
+                /* forceOpaqueEdges */ true,
+                /* surfaceEdgeIds */ true,
+                /* nativeRoundPoints */ true),
+                 instance, smoothNormals);
     }
 
     // curves
     if (curves) {
         success &= TestShader(
+            registry,
             HdSt_BasisCurvesShaderKey(HdTokens->cubic,
                             HdTokens->bezier,
                             HdSt_BasisCurvesShaderKey::WIRE,
@@ -431,14 +441,16 @@ int main(int argc, char *argv[])
                             true,
                             HdBasisCurvesReprDescTokens->surfaceShader,
                             topologicalVisibility,
-                            /* isWidget */ false, false),
-                            bindless, instance, false);
+                            /* pointsShadingEnabled */ false,
+                            /* hasMetalTessellation */ false,
+                            /* nativeRoundPoints */ true),
+                             instance, false);
     }
 
     // points
     if (points) {
-        success &= TestShader(HdSt_PointsShaderKey(),
-                              bindless, instance, false);
+        success &= TestShader(registry, HdSt_PointsShaderKey(
+            /* nativeRoundPoints */ false), instance, false);
     }
 
     if (success) {

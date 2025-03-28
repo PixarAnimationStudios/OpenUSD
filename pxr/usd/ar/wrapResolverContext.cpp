@@ -1,33 +1,16 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
-//
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/make_constructor.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/resolverContext.h"
@@ -36,9 +19,9 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -50,7 +33,7 @@ struct Ar_ResolverContextFromPython
     {
         converter::registry::push_back(
             &_convertible, &_construct,
-            boost::python::type_id<ArResolverContext>());
+            pxr_boost::python::type_id<ArResolverContext>());
     }
 
     static void* _convertible(PyObject* obj_ptr) 
@@ -89,9 +72,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Ar_ResolverContextPythonAccess
 {
 public:
-    static boost::python::list GetAsList(const ArResolverContext& ctx)
+    static pxr_boost::python::list GetAsList(const ArResolverContext& ctx)
     {
-        boost::python::list l;
+        pxr_boost::python::list l;
         for (const auto& data : ctx._contexts) {
             l.append(data->GetPythonObj().Get());
         }
@@ -113,7 +96,7 @@ public:
 PXR_NAMESPACE_CLOSE_SCOPE
 
 static ArResolverContext*
-_Create(const boost::python::object& obj)
+_Create(const pxr_boost::python::object& obj)
 {
     extract<ArResolverContext> convertToContext(obj);
     return new ArResolverContext(convertToContext());

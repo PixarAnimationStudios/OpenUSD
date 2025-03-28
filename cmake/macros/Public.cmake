@@ -1,25 +1,8 @@
 #
 # Copyright 2016 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 include(Private)
 
@@ -93,7 +76,7 @@ function(pxr_python_bin BIN_NAME)
     )
 
     # If we can't build Python modules then do nothing.
-    if(NOT TARGET python)
+    if(NOT TARGET python_modules)
         message(STATUS "Skipping Python program ${BIN_NAME}, Python modules required")
         return()
     endif()
@@ -158,7 +141,7 @@ function(pxr_python_bin BIN_NAME)
     add_custom_target(${BIN_NAME}_script
         DEPENDS ${outputs} ${pb_DEPENDENCIES}
     )
-    add_dependencies(python ${BIN_NAME}_script)
+    add_dependencies(python_modules ${BIN_NAME}_script)
 
     _get_folder("" folder)
     set_target_properties(${BIN_NAME}_script
@@ -224,6 +207,7 @@ endfunction()
 function(pxr_library NAME)
     set(options
         DISABLE_PRECOMPILED_HEADERS
+        INCLUDE_SCHEMA_FILES
     )
     set(oneValueArgs
         TYPE
@@ -259,21 +243,88 @@ function(pxr_library NAME)
     # If python support is enabled, merge the python specific categories
     # with the more general before setting up compilation.
     if(PXR_ENABLE_PYTHON_SUPPORT)
+        set(libraryRequiresPython 0)
         if(args_PYTHON_PUBLIC_CLASSES)
             list(APPEND args_PUBLIC_CLASSES ${args_PYTHON_PUBLIC_CLASSES})
+            set(libraryRequiresPython 1)
         endif()
         if(args_PYTHON_PUBLIC_HEADERS)
             list(APPEND args_PUBLIC_HEADERS ${args_PYTHON_PUBLIC_HEADERS})
+            set(libraryRequiresPython 1)
         endif()
         if(args_PYTHON_PRIVATE_CLASSES)
             list(APPEND args_PRIVATE_CLASSES ${args_PYTHON_PRIVATE_CLASSES})
+            set(libraryRequiresPython 1)
         endif()
         if(args_PYTHON_PRIVATE_HEADERS)
             list(APPEND args_PRIVATE_HEADERS ${args_PYTHON_PRIVATE_HEADERS})
+            set(libraryRequiresPython 1)
         endif()
         if(args_PYTHON_CPPFILES)
             list(APPEND args_CPPFILES ${args_PYTHON_CPPFILES})
+            set(libraryRequiresPython 1)
         endif()
+
+        if(libraryRequiresPython)
+            list(APPEND args_LIBRARIES ${PYTHON_LIBRARIES} python)
+            list(APPEND args_INCLUDE_DIRS ${PYTHON_INCLUDE_DIRS})
+        endif()
+    endif()
+
+    # If this is a schema library, add schema classes
+    if (args_INCLUDE_SCHEMA_FILES)
+        set(filePath "generatedSchema.classes.txt")
+
+        # Register a dependency so that cmake will regenerate the build
+        # system if generatedSchema.classes.txt changes
+        set_property(
+            DIRECTORY 
+            APPEND 
+            PROPERTY CMAKE_CONFIGURE_DEPENDS 
+            ${filePath}
+        )
+
+        # Read the generated classes
+        file(STRINGS ${filePath} fileContents)
+
+        # fileType potential values:
+        # -1: Skip line
+        # 0: Public Classes
+        # 1: Python Module Files
+        # 2: Resource Files
+        set(fileType -1)
+
+        foreach(line ${fileContents})
+            # Determine which section of the generated file we are in.
+            if (${fileType} EQUAL -1)
+                string(FIND ${line} "# Public Classes" found)
+                if (NOT ${found} EQUAL -1)
+                    set(fileType 0)
+                    continue()
+                endif()
+            elseif(${fileType} EQUAL 0)
+                string(FIND ${line} "# Python Module Files" found)
+                if (NOT ${found} EQUAL -1)
+                    set(fileType 1)
+                    continue()
+                endif()
+            elseif(${fileType} EQUAL 1)
+                string(FIND ${line} "# Resource Files" found)
+                if (NOT ${found} EQUAL -1)
+                    set(fileType 2)
+                    continue()
+                endif()
+            endif()
+
+            # Depending on the file type, append to the appropriate list.
+            if (${fileType} EQUAL 0)
+                list(APPEND args_PUBLIC_CLASSES ${line})
+            elseif(${fileType} EQUAL 1)
+                list(APPEND args_PYMODULE_CPPFILES ${line})
+            elseif(${fileType} EQUAL 2)
+                list(APPEND args_RESOURCE_FILES ${line})
+            endif()
+        endforeach()
     endif()
 
     # Collect libraries.
@@ -335,6 +386,30 @@ function(pxr_library NAME)
         set(pch "OFF")
     endif()
 
+    if (PXR_ENABLE_PYTHON_SUPPORT AND args_PYMODULE_CPPFILES)
+        # If moduleDeps.cpp does not exist, create one
+        set(moduleDepsFileName "moduleDeps.cpp")
+        list(FIND args_PYTHON_CPPFILES ${moduleDepsFileName} foundModuleDeps)
+        if (${foundModuleDeps} EQUAL -1)
+            # Add moduleDeps.cpp as a built file
+            list(APPEND args_CPPFILES ${moduleDepsFileName})
+
+            # Keep only our libraries in the module dependencies
+            foreach(library ${args_LIBRARIES})
+                if (TARGET ${library}) 
+                    list(APPEND localLibs ${library})
+                endif()
+            endforeach()
+
+            # Generate moduleDeps.cpp
+            _get_python_module_name(${NAME} pyModuleName)
+            add_custom_command(
+                OUTPUT ${moduleDepsFileName}
+                COMMAND ${CMAKE_COMMAND} -DlibraryName=${NAME} -DmoduleName=${pyModuleName} -DsourceDir=${PROJECT_SOURCE_DIR} -Dlibraries="${localLibs}" -Doutfile=${moduleDepsFileName} -P "${PROJECT_SOURCE_DIR}/cmake/macros/genModuleDepsCpp.cmake"
+                DEPENDS "CMakeLists.txt")
+        endif()
+    endif()
+
     _pxr_library(${NAME}
         TYPE "${args_TYPE}"
         PREFIX "${prefix}"
@@ -353,13 +428,15 @@ function(pxr_library NAME)
     )
 
     if(PXR_ENABLE_PYTHON_SUPPORT AND (args_PYMODULE_CPPFILES OR args_PYMODULE_FILES OR args_PYSIDE_UI_FILES))
+        list(APPEND pythonModuleIncludeDirs ${PYTHON_INCLUDE_DIRS})
+
         _pxr_python_module(
             ${NAME}
             WRAPPED_LIB_INSTALL_PREFIX "${libInstallPrefix}"
             PYTHON_FILES ${args_PYMODULE_FILES}
             PYSIDE_UI_FILES ${args_PYSIDE_UI_FILES}
             CPPFILES ${args_PYMODULE_CPPFILES}
-            INCLUDE_DIRS ${args_INCLUDE_DIRS}
+            INCLUDE_DIRS "${args_INCLUDE_DIRS};${pythonModuleIncludeDirs}"
             PRECOMPILED_HEADERS ${pch}
             PRECOMPILED_HEADER_NAME ${args_PRECOMPILED_HEADER_NAME}
         )
@@ -405,7 +482,7 @@ endfunction() # pxr_setup_python
 
 function (pxr_create_test_module MODULE_NAME)
     # If we can't build Python modules then do nothing.
-    if(NOT TARGET python)
+    if(NOT TARGET python_modules)
         return()
     endif()
 
@@ -590,7 +667,7 @@ endfunction() # pxr_build_test
 
 function(pxr_test_scripts)
     # If we can't build Python modules then do nothing.
-    if(NOT TARGET python)
+    if(NOT TARGET python_modules)
         return()
     endif()
 
@@ -605,7 +682,24 @@ function(pxr_test_scripts)
     endif()
 
     foreach(file ${ARGN})
-        get_filename_component(destFile ${file} NAME_WE)
+        # Perform regex match to extract both source resource path and
+        # destination resource path.
+        # Regex match appropriately takes care of windows drive letter followed
+        # by a ":", which is also the token we use to separate the source and
+        # destination resource paths.
+        string(REGEX MATCHALL "([A-Za-z]:)?([^:]+)" file "${file}")
+
+        list(LENGTH file n)
+        if (n EQUAL 1)
+            get_filename_component(destFile ${file} NAME_WE)
+        elseif (n EQUAL 2)
+           list(GET file 1 destFile)
+           list(GET file 0 file)
+        else()
+           message(FATAL_ERROR
+               "Failed to parse test file path ${file}")
+        endif()        
+
         # XXX -- We shouldn't have to install to run tests.
         install(
             PROGRAMS ${file}
@@ -683,7 +777,7 @@ function(pxr_register_test TEST_NAME)
         endif()
     endif()
 
-    if(NOT TARGET python)
+    if(NOT TARGET python_modules)
         # Implicit requirement.  Python modules require shared USD
         # libraries.  If the test runs python it's certainly going
         # to load USD modules.  If the test uses C++ to load USD
@@ -848,6 +942,10 @@ function(pxr_register_test TEST_NAME)
     # directory where these files are installed.
     if (NOT TARGET shared_libs)
         set(testWrapperCmd ${testWrapperCmd} --env-var=${PXR_PLUGINPATH_NAME}=${CMAKE_INSTALL_PREFIX}/lib/usd)
+    endif()
+
+    if (PXR_TEST_RUN_TEMP_DIR_PREFIX)
+          set(testWrapperCmd ${testWrapperCmd} --tempdirprefix=${PXR_TEST_RUN_TEMP_DIR_PREFIX})
     endif()
 
     # Ensure that Python imports the Python files built by this build.
@@ -1043,9 +1141,9 @@ function(pxr_toplevel_prologue)
     endif()
 
     # Create a target for targets that require Python.  Each should add
-    # itself as a dependency to the "python" target.
+    # itself as a dependency to the "python_modules" target.
     if(TARGET shared_libs AND PXR_ENABLE_PYTHON_SUPPORT)
-        add_custom_target(python ALL)
+        add_custom_target(python_modules ALL)
     endif()
 endfunction() # pxr_toplevel_prologue
 
@@ -1331,3 +1429,21 @@ function(pxr_docs_only_dir NAME)
         )
     endif()
 endfunction() # pxr_docs_only_dir
+
+# Sets rpaths for the specified TARGET to the given RPATHS. The target's
+# runtime destination directory is given by ORIGIN. If ORIGIN is not
+# absolute it is assumed to be relative to CMAKE_INSTALL_PREFIX.
+function(pxr_set_rpaths_for_target TARGET)
+    set(oneValueArgs ORIGIN)
+    set(multiValueArgs RPATHS)
+    cmake_parse_arguments(args "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+    _pxr_init_rpath(rpath ${args_ORIGIN})
+
+    foreach(path IN LISTS args_RPATHS)
+        _pxr_add_rpath(rpath ${path})
+    endforeach()
+
+    _pxr_install_rpath(rpath ${TARGET})
+
+endfunction() # pxr_set_rpaths_for_target

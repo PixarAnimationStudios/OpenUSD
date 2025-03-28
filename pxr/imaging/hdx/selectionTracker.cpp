@@ -1,31 +1,16 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdx/selectionTracker.h"
 
 #include "pxr/imaging/hdx/debugCodes.h"
 #include "pxr/imaging/hdx/selectionSceneIndexObserver.h"
 
+#include "pxr/imaging/hd/mesh.h"
+#include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/base/trace/trace.h"
@@ -228,8 +213,8 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(
     // or it's empty. Likewise if both enableSelectionHighlight and
     // enableLocateHighlight are false (in which case highlights is nullptr).
     if (!highlights || highlights->IsEmpty()) {
-        for (int mode = HdSelection::HighlightModeSelect;
-                 mode < HdSelection::HighlightModeCount;
+        for (size_t mode = HdSelection::HighlightModeSelect;
+                    mode < HdSelection::HighlightModeCount;
                  mode++) {
             (*offsets)[mode + 1] = SELECT_NONE;
         }
@@ -251,9 +236,9 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(
 
     TF_VERIFY(sizeof(modeEnabled) / sizeof(modeEnabled[0]) == HdSelection::HighlightModeCount);
 
-    for (int mode = HdSelection::HighlightModeSelect;
-             mode < HdSelection::HighlightModeCount;
-             mode++) {
+    for (size_t mode = HdSelection::HighlightModeSelect;
+                mode < HdSelection::HighlightModeCount;
+                mode++) {
        
         std::vector<int> output;
         const bool modeHasSelection = modeEnabled[mode] && _GetSelectionOffsets(
@@ -275,7 +260,7 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(
 
             copyOffset += output.size();
 
-            TF_DEBUG(HDX_SELECTION_SETUP).Msg("Highlight mode %d has %lu "
+            TF_DEBUG(HDX_SELECTION_SETUP).Msg("Highlight mode %zu has %lu "
                 "entries\n", mode, output.size());
         }
     }
@@ -425,6 +410,37 @@ bool _FillPointSelOffsets(int type,
     return hasSelectedPoints;
 }
 
+// Returns the element edges (mesh edge indices) for all
+// mesh edges incident on selected elements (mesh faces).
+static
+std::vector<VtIntArray>
+_GetElementEdges(
+    HdRenderIndex const * const index,
+    SdfPath const & objPath,
+    std::vector<VtIntArray> elementIndices)
+{
+    if (elementIndices.empty()) {
+        return elementIndices;
+    }
+
+    std::vector<VtIntArray> result;
+
+    HdMesh const *mesh = dynamic_cast<HdMesh const *>(index->GetRprim(objPath));
+    if (mesh && mesh->GetTopology()) {
+
+        HdMeshEdgeIndexTable const edgeIndexTable(mesh->GetTopology().get());
+
+        for (VtIntArray const &elements : elementIndices) {
+            if (!elements.empty()) {
+                result.push_back(
+                    edgeIndexTable.CollectFaceEdgeIndices(elements));
+            }
+        }
+    }
+
+    return result;
+}
+
 namespace {
 
 constexpr int INVALID = -1;
@@ -515,9 +531,9 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelectionSharedPtr const &selection,
     //
     // All data is aggregated into a single  buffer with the following layout:
     //
-    // [ prims | points | edges | elements | instances ]
-    //          <-------- subprims ------->
-    //          <------------- per prim --------------->
+    // [ prims | points | edges | elementEdges | elements | instances ]
+    //          <----------- subprims ------------------->
+    //          <------------------ per prim ------------------------>
     //  
     //  Each section above is prefixed with [start,end) ranges and the values of
     //  each range follow the three cases outlined.
@@ -531,10 +547,11 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelectionSharedPtr const &selection,
     bool const SELECT_NONE = 0;
 
     enum SubPrimType {
-        ELEMENT  = 0,
-        EDGE     = 1,
-        POINT    = 2,
-        INSTANCE = 3
+        ELEMENT       = 0,
+        ELEMENT_EDGE  = 1,
+        EDGE          = 2,
+        POINT         = 3,
+        INSTANCE      = 4
     };
 
     _DebugPrintArray("ids", ids);
@@ -588,6 +605,20 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelectionSharedPtr const &selection,
                                 netSubprimOffset, output)) {
             netSubprimOffset = curOffset + modeOffset;
             _DebugPrintArray("edges", *output);
+        }
+
+        // ------------------------------------------------------------------ //
+        // Subprimitives: Edges incident on elements (mesh faces).
+        // ------------------------------------------------------------------ //
+        curOffset = output->size();
+        if (_FillSubprimSelOffsets(ELEMENT_EDGE,
+                                   _GetElementEdges(
+                                        index, objPath,
+                                        primSelState->elementIndices),
+                                   netSubprimOffset,
+                                   output)) {
+            netSubprimOffset = curOffset + modeOffset;
+            _DebugPrintArray("elementEdges", *output);
         }
 
         // ------------------------------------------------------------------ //

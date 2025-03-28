@@ -1,28 +1,12 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/attributeSpec.h"
+#include "pxr/usd/sdf/changeManager.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/notice.h"
 #include "pxr/usd/sdf/path.h"
@@ -33,9 +17,297 @@
 #include "pxr/usd/sdf/schema.h"
 
 #include <map>
+#include <sstream>
 #include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+static std::pair<SdfLayerRefPtr, SdfLayerRefPtr>
+_CreateLayerDiffTestLayers() {
+    SdfLayerRefPtr actualLayer = SdfLayer::CreateAnonymous();
+    actualLayer->ImportFromString(    
+        R"(#sdf 1.4.32
+            over "a"{}
+            def "b"{}
+            over "c"{
+                int propC = 1
+            }
+            def "r" {
+                int propR = 1
+            }
+            def "p" {
+                int propP = 1
+            }
+            )"
+    );
+
+    SdfLayerRefPtr diffLayer = SdfLayer::CreateAnonymous();
+    diffLayer->ImportFromString(
+        R"(#sdf 1.4.32
+            def "z"{}
+            def "b"{}
+            over "c"{
+                int propC = 2
+            }
+            def "n" {
+                int propN = 1
+            }
+            def "p" {}
+    )");
+
+    return std::make_pair(actualLayer, diffLayer);
+}
+
+static void _CompareChangeLists(
+    const SdfChangeList &expected, 
+    const SdfChangeList &actual)
+{
+    std::ostringstream expectedClStr, actualClStr;
+    expectedClStr << expected;
+    actualClStr << actual;
+
+    TF_AXIOM(actualClStr.str() == expectedClStr.str());
+}
+
+static void
+_TestSdfLayerCreateDiffChangeListWithoutValues()
+{
+    const auto [actualLayer, diffLayer] = _CreateLayerDiffTestLayers();
+
+    SdfChangeList expectedCl;
+    expectedCl.DidRemoveProperty(SdfPath("/r.propR"), false);
+    expectedCl.DidRemovePrim(SdfPath("/r"), false);
+    expectedCl.DidRemoveProperty(SdfPath("/p.propP"), false);
+    expectedCl.DidRemovePrim(SdfPath("/a"), true);
+    expectedCl.DidAddPrim(SdfPath("/n"), false);
+    expectedCl.DidChangeInfo(SdfPath("/n"), SdfFieldKeys->Specifier, 
+        std::move(VtValue(SdfSpecifierOver)), VtValue(SdfSpecifierDef));
+    expectedCl.DidAddProperty(SdfPath("/n.propN"), false);
+    expectedCl.DidAddPrim(SdfPath("/z"), false);
+    expectedCl.DidChangeInfo(SdfPath("/z"), SdfFieldKeys->Specifier, 
+        std::move(VtValue(SdfSpecifierOver)), VtValue(SdfSpecifierDef));
+    expectedCl.DidRemoveProperty(SdfPath("/c.propC"), false);
+    expectedCl.DidAddProperty(SdfPath("/c.propC"), false);
+
+    // Copy the layer so we can verify it does not change during the operation
+    SdfLayerRefPtr expectedLayer = SdfLayer::CreateAnonymous();
+    expectedLayer->TransferContent(actualLayer);
+
+    // Ensure that the layer remains unchanged during the process
+    std::string actualLayerStr, expectedLayerStr;
+    TF_AXIOM(expectedLayer->ExportToString(&expectedLayerStr));
+
+    SdfChangeList actualCl = actualLayer->CreateDiff(diffLayer, 
+            /*compareFieldValues*/ false);
+
+    TF_AXIOM(expectedLayer->ExportToString(&actualLayerStr));
+    TF_AXIOM(actualLayerStr == expectedLayerStr);
+
+    _CompareChangeLists(expectedCl, actualCl);
+}
+
+static void
+_TestSdfLayerCreateDiffChangeListWithValues()
+{
+    const auto [actualLayer, diffLayer] = _CreateLayerDiffTestLayers();
+
+    SdfChangeList expectedCl;
+    expectedCl.DidRemoveProperty(SdfPath("/r.propR"), false);
+    expectedCl.DidRemovePrim(SdfPath("/r"), false);
+    expectedCl.DidRemoveProperty(SdfPath("/p.propP"), false);
+    expectedCl.DidRemovePrim(SdfPath("/a"), true);
+    expectedCl.DidAddPrim(SdfPath("/n"), false);
+    expectedCl.DidChangeInfo(SdfPath("/n"), SdfFieldKeys->Specifier, 
+        std::move(VtValue(SdfSpecifierOver)), VtValue(SdfSpecifierDef));
+    expectedCl.DidChangeInfo(SdfPath("/r.propR"), SdfFieldKeys->Default, 
+        std::move(VtValue(1)), VtValue());
+    expectedCl.DidAddProperty(SdfPath("/n.propN"), true);
+    expectedCl.DidChangeInfo(SdfPath("/n.propN"), 
+        SdfFieldKeys->TypeName, std::move(VtValue()), VtValue("int"));
+    expectedCl.DidChangeInfo(SdfPath("/n.propN"), SdfFieldKeys->Default, 
+        std::move(VtValue()), VtValue(1));
+    expectedCl.DidChangeInfo(SdfPath("/n.propN"), SdfFieldKeys->Custom, 
+        std::move(VtValue()), VtValue(0));
+    expectedCl.DidChangeInfo(SdfPath("/n.propN"), 
+        SdfFieldKeys->Variability, std::move(VtValue()), 
+        VtValue(SdfVariabilityVarying));
+    expectedCl.DidChangeInfo(SdfPath("/p.propP"), SdfFieldKeys->Default, 
+        std::move(VtValue(1)), VtValue());
+    expectedCl.DidAddPrim(SdfPath("/z"), false);
+    expectedCl.DidChangeInfo(SdfPath("/z"), SdfFieldKeys->Specifier, 
+        std::move(VtValue(SdfSpecifierOver)), VtValue(SdfSpecifierDef));
+    expectedCl.DidChangeInfo(SdfPath("/c.propC"), SdfFieldKeys->Default, 
+        std::move(VtValue(1)), VtValue(2));
+
+    // Copy the layer so we can verify it does not change during the operation
+    SdfLayerRefPtr expectedLayer = SdfLayer::CreateAnonymous();
+    expectedLayer->TransferContent(actualLayer);
+
+    // Ensure that the layer remains unchanged during the process
+    std::string actualLayerStr, expectedLayerStr;
+    TF_AXIOM(expectedLayer->ExportToString(&expectedLayerStr));
+
+    SdfChangeList actualCl = actualLayer->CreateDiff(diffLayer, 
+            /*compareFieldValues*/ true);
+
+    TF_AXIOM(expectedLayer->ExportToString(&actualLayerStr));
+    TF_AXIOM(actualLayerStr == expectedLayerStr);
+
+    _CompareChangeLists(expectedCl, actualCl);
+
+}
+
+static std::pair<SdfLayerRefPtr, SdfLayerRefPtr>
+_CreateTimeSampleLayerDiffTestLayers()
+{
+    SdfLayerRefPtr layerA = SdfLayer::CreateAnonymous();
+    layerA->ImportFromString(    
+        R"(#sdf 1.4.32
+            def Sphere "PixarBall"
+            {
+                double radius = 100
+                double radius.timeSamples = {
+                    1: 100,
+                    24: 500,
+                }
+            }
+        )"
+    );
+
+    SdfLayerRefPtr layerB = SdfLayer::CreateAnonymous();
+    layerB->ImportFromString(    
+        R"(#sdf 1.4.32
+            def Sphere "PixarBall"
+            {
+                double radius = 100
+                double radius.timeSamples = {
+                    1: 50,
+                    48: 1000,
+                }
+            }
+        )"
+    );
+
+    return std::make_pair(layerA, layerB);
+}
+
+static void 
+_testSdfLayerCreateDiffTimeSamplesWithoutValues()
+{
+    const auto [layerA, layerB] = _CreateTimeSampleLayerDiffTestLayers();
+
+    SdfChangeList expectedCl;
+    expectedCl.DidRemoveProperty(SdfPath("/PixarBall.radius"), false);
+    expectedCl.DidAddProperty(SdfPath("/PixarBall.radius"), false);
+
+    SdfChangeList actualCl = layerA->CreateDiff(layerB, 
+            /*compareFieldValues*/ false);
+
+    _CompareChangeLists(expectedCl, actualCl);
+}
+
+static void 
+_testSdfLayerCreateDiffTimeSamplesWithValues()
+{
+    const auto [layerA, layerB] = _CreateTimeSampleLayerDiffTestLayers();
+
+    SdfChangeList expectedCl;
+    SdfTimeSampleMap samplesA = {{1, VtValue(100)}, {24, VtValue(500)}};
+    SdfTimeSampleMap samplesB = {{1, VtValue(50)}, {48, VtValue(1000)}};
+    expectedCl.DidChangeInfo(SdfPath("/PixarBall.radius"), 
+        SdfFieldKeys->TimeSamples, std::move(VtValue(samplesA)), 
+        VtValue(samplesB));
+    expectedCl.DidChangeAttributeTimeSamples(SdfPath("/PixarBall.radius"));
+
+    SdfChangeList actualCl = layerA->CreateDiff(
+        layerB, /*compareFieldValues*/ true);
+
+    _CompareChangeLists(expectedCl, actualCl);
+}
+
+static void 
+_TestSdfChangeManagerExtractLocalChanges()
+{
+    struct Listener : public TfWeakBase
+    {
+        void LayersDidChange(const SdfNotice::LayersDidChange& change)
+        {
+            invocations += 1;
+        }
+
+        Listener()
+        {
+            _key = TfNotice::Register(
+                TfCreateWeakPtr(this), &Listener::LayersDidChange );
+        }
+
+        ~Listener()
+        {
+            TfNotice::Revoke(_key);
+        }
+
+        TfNotice::Key _key;
+        size_t invocations = 0;
+    };
+
+    SdfLayerRefPtr testLayer = SdfLayer::CreateAnonymous();
+    Listener listener;
+
+    // This block should trigger an invocation of the listener
+    {
+        SdfChangeBlock block;
+        SdfCreatePrimInLayer(testLayer, SdfPath("/test1"));
+    }
+
+    TF_AXIOM(listener.invocations == 1);
+
+    // There should be no additional invocation of the the listener once the
+    // the block goes out of scope because the changes for the layer have been
+    // extracted.
+    {
+        SdfChangeBlock block;
+        SdfCreatePrimInLayer(testLayer, SdfPath("/test2"));
+        SdfChangeList changes = 
+            Sdf_ChangeManager::Get().ExtractLocalChanges(testLayer);
+        TF_AXIOM(!changes.GetEntryList().empty());
+    }
+
+    TF_AXIOM(listener.invocations == 1);
+}
+
+static void
+_TestSdfLayerCreateDiffDiffWithOver()
+{
+    SdfLayerRefPtr layer = SdfLayer::CreateAnonymous();
+    SdfPrimSpecHandle p = SdfCreatePrimInLayer(layer, SdfPath("/p"));
+
+    SdfLayerRefPtr empty = SdfLayer::CreateAnonymous();
+
+    // Test that when creating a diff that results in the addition of an
+    // inert prim there should be no info field entries for change of
+    // specifier
+    {
+        SdfChangeList expectedCl;
+        expectedCl.DidAddPrim(SdfPath("/p"), true);
+        SdfChangeList actualCl = empty->CreateDiff(layer);
+        _CompareChangeLists(expectedCl, actualCl);
+    }
+
+    p->SetField(SdfFieldKeys->Specifier, SdfSpecifierDef);
+
+    // Explicit test that when creating a diff that results in the addition of
+    // a non-inert prim with typename there should be an info field entries for
+    // specifier
+    {
+        SdfChangeList expectedCl;
+        expectedCl.DidAddPrim(SdfPath("/p"), false);
+        expectedCl.DidChangeInfo(SdfPath("/p"), SdfFieldKeys->Specifier, 
+            std::move(VtValue(SdfSpecifierOver)), VtValue(SdfSpecifierDef));
+        SdfChangeList actualCl = empty->CreateDiff(layer);
+        _CompareChangeLists(expectedCl, actualCl);
+    }
+
+}
 
 static void
 _TestSdfLayerDictKeyOps()
@@ -113,6 +385,45 @@ _TestSdfLayerTimeSampleValueType()
     TF_AXIOM(layer->QueryTimeSample(attr->GetPath(), 4.0, &vtValue));
     TF_AXIOM(vtValue.IsHolding<double>());
     TF_AXIOM(vtValue.UncheckedGet<double>() == 4.0);
+
+    // Ensure time samples can be set and retrieved directly on
+    // attributes themselves.
+    attr->SetTimeSample(5.0, 5.0);
+    TF_AXIOM(attr->QueryTimeSample(5.0, &value));
+    TF_AXIOM(value == 5.0);
+    TF_AXIOM(attr->GetNumTimeSamples() == 5);
+    TF_AXIOM(attr->QueryTimeSample(4.0, &value));
+    TF_AXIOM(value == 4.0);
+}
+
+static void
+_TestSdfLayerTransferContentsEmptyLayer()
+{
+    // Tests that setting data on non empty layers properly cleans up all
+    // specs in that layer without the use of SdfLayer::_IsInertSubtree
+    const char* layerStr = 
+    R"(#sdf 1.4.32
+    def "Root"{
+        def "Node1" (
+            prepend variantSets = "testVariants"
+            variants = { string testVariants = "option1" }
+        )
+        {
+            variantSet "testVariants" = {
+                "option1" {
+                    def "VariantChild" {}
+                }
+            }
+            def "Node1Child" {}
+        }
+    })";
+
+    SdfLayerRefPtr srcLayer = SdfLayer::CreateAnonymous();
+    srcLayer->ImportFromString(layerStr);
+    TF_AXIOM(!srcLayer->IsEmpty());
+    
+    srcLayer->TransferContent(SdfLayer::CreateAnonymous());
+    TF_AXIOM(srcLayer->IsEmpty());
 }
 
 static void
@@ -467,13 +778,23 @@ _TestSdfSchemaPathValidation()
     TF_AXIOM(!schema.IsValidReference(SdfReference("a.sdf", 
                                                    SdfPath("/A{x=y}B"))));
 
-    TF_AXIOM(schema.IsValidRelocatesPath(SdfPath("A")));
-    TF_AXIOM(schema.IsValidRelocatesPath(SdfPath("/A")));
-    TF_AXIOM(schema.IsValidRelocatesPath(SdfPath("/A/B")));
-    TF_AXIOM(!schema.IsValidRelocatesPath(SdfPath()));
-    TF_AXIOM(!schema.IsValidRelocatesPath(SdfPath("/A.a")));
-    TF_AXIOM(!schema.IsValidRelocatesPath(SdfPath("/A{x=y}")));
-    TF_AXIOM(!schema.IsValidRelocatesPath(SdfPath("/A{x=y}B")));
+    TF_AXIOM(schema.IsValidRelocatesSourcePath(SdfPath("A")));
+    TF_AXIOM(schema.IsValidRelocatesSourcePath(SdfPath("/A")));
+    TF_AXIOM(schema.IsValidRelocatesSourcePath(SdfPath("/A/B")));
+    TF_AXIOM(!schema.IsValidRelocatesSourcePath(SdfPath()));
+    TF_AXIOM(!schema.IsValidRelocatesSourcePath(SdfPath("/A.a")));
+    TF_AXIOM(!schema.IsValidRelocatesSourcePath(SdfPath("/A{x=y}")));
+    TF_AXIOM(!schema.IsValidRelocatesSourcePath(SdfPath("/A{x=y}B")));
+
+    // IsValidRelocatesTargetPath is the same as IsValidRelocatesSourcePath
+    // except that the empty path is allowed for target paths.
+    TF_AXIOM(schema.IsValidRelocatesTargetPath(SdfPath("A")));
+    TF_AXIOM(schema.IsValidRelocatesTargetPath(SdfPath("/A")));
+    TF_AXIOM(schema.IsValidRelocatesTargetPath(SdfPath("/A/B")));
+    TF_AXIOM(schema.IsValidRelocatesTargetPath(SdfPath()));
+    TF_AXIOM(!schema.IsValidRelocatesTargetPath(SdfPath("/A.a")));
+    TF_AXIOM(!schema.IsValidRelocatesTargetPath(SdfPath("/A{x=y}")));
+    TF_AXIOM(!schema.IsValidRelocatesTargetPath(SdfPath("/A{x=y}B")));
 }
 
 static void 
@@ -519,17 +840,86 @@ _TestSdfMapEditorProxyOperators()
     TF_AXIOM(testMap >= invalidProxyA);
 }
 
+static void 
+_TestSdfAbstractDataValue()
+{
+    int i = 123;
+
+    SdfAbstractDataTypedValue<int> a(&i);
+
+    TF_AXIOM(a.valueType == typeid(int));
+    TF_AXIOM(!a.isValueBlock);
+    TF_AXIOM(!a.typeMismatch);
+
+    // Store a different value of the correct type.
+    a.StoreValue(234);
+    TF_AXIOM(i == 234);
+    TF_AXIOM(!a.isValueBlock);
+    TF_AXIOM(!a.typeMismatch);
+
+    // Store via VtValue.
+    a.StoreValue(VtValue { 345 });
+    TF_AXIOM(i == 345);
+    TF_AXIOM(!a.isValueBlock);
+    TF_AXIOM(!a.typeMismatch);
+
+    // Store an incorrect type.
+    a.StoreValue(1.234);
+    TF_AXIOM(i == 345);
+    TF_AXIOM(!a.isValueBlock);
+    TF_AXIOM(a.typeMismatch);
+
+    // Store the correct type again, this should clear the `typeMismatch` flag.
+    a.StoreValue(456);
+    TF_AXIOM(i == 456);
+    TF_AXIOM(!a.isValueBlock);
+    TF_AXIOM(!a.typeMismatch);
+
+    // Store an incorrect type via VtValue.
+    a.StoreValue(VtValue { 1.234 });
+    TF_AXIOM(i == 456);
+    TF_AXIOM(!a.isValueBlock);
+    TF_AXIOM(a.typeMismatch);
+    
+    // Store the correct type via VtValue.
+    a.StoreValue(VtValue { 567 });
+    TF_AXIOM(i == 567);
+    TF_AXIOM(!a.isValueBlock);
+    TF_AXIOM(!a.typeMismatch);
+
+    // Store a value block.
+    a.StoreValue(SdfValueBlock {});
+    TF_AXIOM(!a.typeMismatch);
+    TF_AXIOM(a.isValueBlock);
+
+    // Store a non-block, then store a block via VtValue.
+    a.StoreValue(678);
+    TF_AXIOM(i == 678);
+    TF_AXIOM(!a.isValueBlock);
+    a.StoreValue(VtValue { SdfValueBlock {} });
+    TF_AXIOM(!a.typeMismatch);
+    TF_AXIOM(a.isValueBlock);
+}
+
 int
 main(int argc, char **argv)
 {
+    _TestSdfChangeManagerExtractLocalChanges();
+    _TestSdfLayerCreateDiffChangeListWithoutValues();
+    _TestSdfLayerCreateDiffChangeListWithValues();
+    _testSdfLayerCreateDiffTimeSamplesWithValues();
+    _testSdfLayerCreateDiffTimeSamplesWithoutValues();
+    _TestSdfLayerCreateDiffDiffWithOver();
     _TestSdfLayerDictKeyOps();
     _TestSdfLayerTimeSampleValueType();
     _TestSdfLayerTransferContents();
+    _TestSdfLayerTransferContentsEmptyLayer();
     _TestSdfRelationshipTargetSpecEdits();
     _TestSdfPathFindLongestPrefix();
     _TestSdfFpsAndTcps();
     _TestSdfSchemaPathValidation();
     _TestSdfMapEditorProxyOperators();
+    _TestSdfAbstractDataValue();
 
     return 0;
 }

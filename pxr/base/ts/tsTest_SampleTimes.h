@@ -1,25 +1,8 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #ifndef PXR_BASE_TS_TS_TEST_SAMPLE_TIMES_H
@@ -40,20 +23,32 @@ public:
     // A time at which to perform evaluation.  Typically just a time, but can
     // also be a "pre" time, which at a dual-valued knot can differ from the
     // ordinary value.
-    struct TS_API SampleTime
+    class SampleTime
     {
+    public:
         double time = 0.0;
         bool pre = false;
 
     public:
+        TS_API
         SampleTime();
+
+        TS_API
         SampleTime(double time);
+
+        TS_API
         SampleTime(double time, bool pre);
-        SampleTime(const SampleTime &other);
-        SampleTime& operator=(const SampleTime &other);
+
+        TS_API
         SampleTime& operator=(double time);
+
+        TS_API
         bool operator<(const SampleTime &other) const;
+
+        TS_API
         bool operator==(const SampleTime &other) const;
+
+        TS_API
         bool operator!=(const SampleTime &other) const;
     };
 
@@ -100,15 +95,23 @@ public:
     // extrapolationFactor on each end, and adds one pre-extrapolating and one
     // post-extrapolating sample.  For example, with a time range of 10, and an
     // extrapolationFactor of 0.25, samples will be added 2.5 time units before
-    // the first knot and 2.5 time units after the last.
+    // the first knot and 2.5 time units after the last.  For looping
+    // extrapolation regions, this method does nothing; call
+    // AddExtrapolatingLoopTimes instead or in addition.
     TS_API
     void AddExtrapolationTimes(
         double extrapolationFactor);
 
+    // Adds times to handle extrapolating loops, if there are any.
+    TS_API
+    void AddExtrapolatingLoopTimes(
+        int numIterations,
+        int numSamplesPerIteration);
+
     // MACRO
 
-    // Calls AddKnotTimes(), AddUniformInterpolationTimes(200), and
-    // AddExtrapolationTimes(0.2).
+    // Calls AddKnotTimes(), AddUniformInterpolationTimes(200),
+    // AddExtrapolationTimes(0.2), and AddExtrapolatingLoopTimes(3, 200).
     TS_API
     void AddStandardTimes();
 

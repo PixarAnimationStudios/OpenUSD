@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_VT_ARRAY_H
 #define PXR_BASE_VT_ARRAY_H
@@ -224,8 +207,11 @@ protected:
 /// determine where unintended copy-on-write detaches come from.  When set,
 /// VtArray will log a stack trace for every copy-on-write detach that occurs.
 ///
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_NON_EXPORTED_BASE_CLASS
 template<typename ELEM>
 class VtArray : public Vt_ArrayBase {
+ARCH_PRAGMA_POP
   public:
 
     /// Type this array holds.
@@ -505,10 +491,12 @@ class VtArray : public Vt_ArrayBase {
     /// this size is unachievable due to the amount of available memory or other
     /// system limitations.
     constexpr size_t max_size() const {
-        // The number of value_type elements that can be fit into maximum size_t
-        // bytes minus the size of _ControlBlock.
-        return (std::numeric_limits<size_t>::max() - sizeof(_ControlBlock))
-            / sizeof(value_type);
+        // Popular compilers limit object sizes to half the address space, so we
+        // follow suit, taking max bytes as one less than the maximum value of a
+        // difference between pointers.  This is unobtainable in practice: on a
+        // 64-bit machine this is more than 8 million terabytes.
+        return (std::numeric_limits<ptrdiff_t>::max() - 1 -
+                sizeof(_ControlBlock)) / sizeof(value_type);
     }
 
     /// Return true if this array contains no elements, false otherwise.

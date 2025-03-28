@@ -1,25 +1,8 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -38,6 +21,7 @@
 #include "pxr/usd/ndr/property.h"
 #include "pxr/usd/ndr/registry.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/base/tf/diagnostic.h"
 
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/envSetting.h"
@@ -46,17 +30,35 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
     PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY, 0,
+    "Legacy - deprecated in favor of PXR_SDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY. "
     "The auto-discovery of discovery plugins in ndr can be skipped. "
     "This is used mostly for testing purposes.");
 
 TF_DEFINE_ENV_SETTING(
     PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY, 0,
+    "Legacy - deprecated in favor of PXR_SDR_SKIP_PARSER_PLUGIN_DISCOVERY. "
     "The auto-discovery of parser plugins in ndr can be skipped. "
     "This is used mostly for testing purposes.");
 
 TF_DEFINE_ENV_SETTING(
     PXR_NDR_DISABLE_PLUGINS, "",
-    "Comma separated list of Ndr plugins to disable.  Note that disabling plugins may cause "
+    "Legacy - deprecated in favor of PXR_SDR_DISABLE_PLUGINS. "
+    "Comma separated list of Ndr plugins to disable.  Note that disabling "
+    "plugins may cause shaders in your scenes to malfunction.");
+
+TF_DEFINE_ENV_SETTING(
+    PXR_SDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY, 0,
+    "The auto-discovery of discovery plugins in sdr can be skipped. "
+    "This is used mostly for testing purposes.");
+
+TF_DEFINE_ENV_SETTING(
+    PXR_SDR_SKIP_PARSER_PLUGIN_DISCOVERY, 0,
+    "The auto-discovery of parser plugins in sdr can be skipped. "
+    "This is used mostly for testing purposes.");
+
+TF_DEFINE_ENV_SETTING(
+    PXR_SDR_DISABLE_PLUGINS, "",
+    "Comma separated list of Sdr plugins to disable.  Note that disabling plugins may cause "
     "shaders in your scenes to malfunction.");
 
 // This function is used for property validation. It explictly is validating 
@@ -80,7 +82,7 @@ NdrRegistry_ValidateProperty(
 {
     const VtValue& defaultValue = property->GetDefaultValueAsSdfType();
     const NdrSdfTypeIndicator sdfTypeIndicator = property->GetTypeAsSdfType();
-    const SdfValueTypeName sdfType = sdfTypeIndicator.first;
+    const SdfValueTypeName sdfType = sdfTypeIndicator.GetSdfType();
 
     // We allow default values to be unspecified, but if they aren't empty, then
     // we want to error if the value's type is different from the specified type
@@ -895,7 +897,8 @@ NdrRegistry::_FindAndInstantiateDiscoveryPlugins()
 {
     // The auto-discovery of discovery plugins can be skipped. This is mostly
     // for testing purposes.
-    if (TfGetEnvSetting(PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY)) {
+    if (TfGetEnvSetting(PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY) ||
+            TfGetEnvSetting(PXR_SDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY)) {
         return;
     }
 
@@ -904,9 +907,25 @@ NdrRegistry::_FindAndInstantiateDiscoveryPlugins()
     PlugRegistry::GetInstance().GetAllDerivedTypes<NdrDiscoveryPlugin>(
         &discoveryPluginTypes);
 
+    // SdrDiscoveryPlugin is derived from NdrDiscoveryPlugin but is virtual.
+    // We want to run SdrDiscoveryPlugin subclasses but not SdrDiscoveryPlugin
+    // itself. We also want to run _SdrFilesystemDiscoveryPlugin but not
+    // the deprecated _NdrFilesystemDiscoveryPlugin.
+    discoveryPluginTypes.erase(TfType::FindByName("SdrDiscoveryPlugin"));
+    discoveryPluginTypes.erase(TfType::FindByName(
+        "_NdrFilesystemDiscoveryPlugin"));
+
     // Allow plugins to be disabled.
-    const std::string disabledPluginsStr = TfGetEnvSetting(PXR_NDR_DISABLE_PLUGINS);
-    const std::set<std::string> disabledPlugins = TfStringTokenizeToSet(disabledPluginsStr, ",");
+    const std::string disabledPluginsStr =
+        TfGetEnvSetting(PXR_SDR_DISABLE_PLUGINS);
+    std::set<std::string> disabledPlugins =
+        TfStringTokenizeToSet(disabledPluginsStr, ",");
+    const std::string legacyDisabledPluginsStr =
+        TfGetEnvSetting(PXR_NDR_DISABLE_PLUGINS);
+    const std::set<std::string> legacyDisabledPlugins =
+        TfStringTokenizeToSet(legacyDisabledPluginsStr, ",");
+    disabledPlugins.insert(legacyDisabledPlugins.begin(),
+                           legacyDisabledPlugins.end());
 
     // Instantiate any discovery plugins that were found
     for (const TfType& discoveryPluginType : discoveryPluginTypes) {
@@ -936,7 +955,8 @@ NdrRegistry::_FindAndInstantiateParserPlugins()
 {
     // The auto-discovery of parser plugins can be skipped. This is mostly
     // for testing purposes.
-    if (TfGetEnvSetting(PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY)) {
+    if (TfGetEnvSetting(PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY) ||
+            TfGetEnvSetting(PXR_SDR_SKIP_PARSER_PLUGIN_DISCOVERY)) {
         return;
     }
 
@@ -944,6 +964,14 @@ NdrRegistry::_FindAndInstantiateParserPlugins()
     std::set<TfType> parserPluginTypes;
     PlugRegistry::GetInstance().GetAllDerivedTypes<NdrParserPlugin>(
         &parserPluginTypes);
+
+    // XXX: This type erasure is effective only for the Ndr/Sdr transition
+    // and will be removed once Ndr is fully removed.
+    // 
+    // SdrParserPlugin is derived from NdrParserPlugin but is virtual.
+    // We want to run SdrParserPlugin subclasses but not SdrParserPlugin
+    // itself.
+    parserPluginTypes.erase(TfType::FindByName("SdrParserPlugin"));
 
     _InstantiateParserPlugins(parserPluginTypes);
 }
@@ -1007,11 +1035,32 @@ NdrRegistry::_InstantiateParserPlugins(
 void
 NdrRegistry::_RunDiscoveryPlugins(const DiscoveryPluginRefPtrVec& discoveryPlugins)
 {
-    std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+    size_t num_plugins = discoveryPlugins.size();
+    std::vector<NdrNodeDiscoveryResultVec> results_vec(num_plugins);
 
-    for (const NdrDiscoveryPluginRefPtr& dp : discoveryPlugins) {
-        NdrNodeDiscoveryResultVec results =
-            dp->DiscoverNodes(_DiscoveryContext(*this));
+    // Discover nodes in parallel. Following the pattern in GetNodesByFamily,
+    // pre-emptively release the Python GIL here to avoid
+    // deadlocks since the code running in the worker threads may call into
+    // Python and try to take the GIL when discovering nodes. We also need
+    // to use scoped parallelism to ensure we don't pick up other tasks
+    // during the call to WorkParallelForN that may reenter this function
+    // and also deadlock.
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+
+    WorkWithScopedParallelism([&]() {
+        WorkParallelForN(
+            num_plugins,
+            [&](size_t start, size_t end) {
+                for (size_t i = start; i < end; i++) {
+                    results_vec[i] = discoveryPlugins[i]->DiscoverNodes(
+                        _DiscoveryContext(*this));
+                }
+            });
+        }
+    );
+
+    std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+    for (NdrNodeDiscoveryResultVec &results : results_vec) {
         for (NdrNodeDiscoveryResult &dr : results) {
             _AddDiscoveryResultNoLock(std::move(dr));
         }

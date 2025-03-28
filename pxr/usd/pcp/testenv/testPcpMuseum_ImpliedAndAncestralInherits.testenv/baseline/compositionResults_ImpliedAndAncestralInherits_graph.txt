@@ -20,6 +20,7 @@ Node 0:
         / -> /
     Namespace depth:          0
     Depth below introduction: 0
+    Is due to ancestor:       FALSE
     Permission:               Public
     Is restricted:            FALSE
     Is inert:                 FALSE
@@ -41,6 +42,7 @@ Node 1:
         /CharGroup -> /World/CharGroup
     Namespace depth:          2
     Depth below introduction: 4
+    Is due to ancestor:       TRUE
     Permission:               Public
     Is restricted:            FALSE
     Is inert:                 FALSE
@@ -62,6 +64,7 @@ Node 2:
         /CHARGROUP -> /World/CharGroup
     Namespace depth:          1
     Depth below introduction: 4
+    Is due to ancestor:       TRUE
     Permission:               Public
     Is restricted:            FALSE
     Is inert:                 FALSE
@@ -85,6 +88,7 @@ Node 3:
         /_class_SimHand -> /World/CharGroup/Sim/includes/Hand
     Namespace depth:          4
     Depth below introduction: 1
+    Is due to ancestor:       TRUE
     Permission:               Public
     Is restricted:            FALSE
     Is inert:                 FALSE

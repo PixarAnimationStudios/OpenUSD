@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/base/tf/diagnosticLite.h"
@@ -32,9 +15,16 @@
 #include <vector>
 #include <sstream>
 #include <stdio.h>
+#include <locale>
 
 using namespace std;
 PXR_NAMESPACE_USING_DIRECTIVE
+
+struct separate_thousands : std::numpunct<char>
+{
+    std::string do_grouping() const override { return "\003"; }
+    char do_thousands_sep() const override { return ','; }
+};
 
 static bool
 TestNumbers()
@@ -281,6 +271,16 @@ DoPrintfStr(const char *fmt, ...)
     return ret;
 }
 
+template <typename T>
+bool
+_RoundtripStringifyLimits()
+{
+    return (TfUnstringify<T>(TfStringify(
+        std::numeric_limits<T>::min())) == std::numeric_limits<T>::min()) &&
+        (TfUnstringify<T>(TfStringify(
+            std::numeric_limits<T>::max())) == std::numeric_limits<T>::max());
+}
+
 static bool
 TestStrings()
 {
@@ -403,6 +403,36 @@ TestStrings()
     TF_AXIOM(TfUnstringify<char>("a") == 'a');
     TF_AXIOM(TfStringify("string") == "string");
     TF_AXIOM(TfUnstringify<string>("string") == "string");
+    TF_AXIOM(TfStringify(1000) == "1000");
+    
+    // make sure we can represent the min and max of each type
+    TF_AXIOM(_RoundtripStringifyLimits<short>());
+    TF_AXIOM(_RoundtripStringifyLimits<int>());
+    TF_AXIOM(_RoundtripStringifyLimits<long>());
+    TF_AXIOM(_RoundtripStringifyLimits<long long>());
+    TF_AXIOM(_RoundtripStringifyLimits<unsigned short>());
+    TF_AXIOM(_RoundtripStringifyLimits<unsigned int>());
+    TF_AXIOM(_RoundtripStringifyLimits<unsigned long>());
+    TF_AXIOM(_RoundtripStringifyLimits<unsigned long long>());
+    
+    // verify that TfStringify is agnostic to locale for
+    // numerical values - note that the locale system
+    // takes over responsibility for deleting the separate_thousands instance
+    std::locale originalLocale;
+    std::locale::global(std::locale(std::locale(""), new separate_thousands));
+    try
+    {
+        TF_AXIOM(TfStringify(1000.56) == "1000.56");
+        TF_AXIOM(TfStringify(1000) == "1000");
+        std::locale::global(originalLocale);
+    }
+    catch(...)
+    {
+        std::locale::global(originalLocale);
+        throw;
+    }
+    TF_AXIOM(TfStringify(1000) == "1000");
+    TF_AXIOM(TfStringify(1000.56) == "1000.56");
 
     bool unstringRet = true;
     TfUnstringify<int>("this ain't no int", &unstringRet);

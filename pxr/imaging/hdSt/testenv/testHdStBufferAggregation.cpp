@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/imaging/hdSt/bufferResource.h"
@@ -504,23 +487,37 @@ UniformAggregationTest(bool aggregation, bool ssbo,
     // color vec3      : 12 byte
     // total           : 140 byte
     //                 : 160 byte, round up to 32 byte align (due to dmat4)
-    //                   or, 256 byte (GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT)
-
+    //
+    // For an uniform buffer offset alignment of 256 (the value of
+    // GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT on Pixar workstations), this would 
+    // align to 256 bytes.
+    // For an uniform buffer offset alignment of 64 (the value of
+    // VkPhysicalDeviceLimit's minUniformBufferOffsetAlignment on Pixar 
+    // workstations), this would align to 192 bytes.
     {
         HdStBufferArrayRangeSharedPtr range1GL = 
             std::static_pointer_cast<HdStBufferArrayRange>(range1);
 
         if (aggregation) {
+            constexpr int alignedStride = 160;
+
             if (ssbo) {
                 TF_VERIFY(range1GL->GetResource(HdTokens->transform)->GetOffset() == 0);
                 TF_VERIFY(range1GL->GetResource(HdTokens->displayColor)->GetOffset() == 128);
-                TF_VERIFY(range1GL->GetResource(HdTokens->transform)->GetStride() == 160);
-                TF_VERIFY(range1GL->GetResource(HdTokens->displayColor)->GetStride() == 160);
+                TF_VERIFY(range1GL->GetResource(HdTokens->transform)->GetStride() == alignedStride);
+                TF_VERIFY(range1GL->GetResource(HdTokens->displayColor)->GetStride() == alignedStride);
             } else {
+                const int uniformBufferOffsetAlignment = 
+                    registry->GetHgi()->GetCapabilities()->
+                        GetUniformBufferOffsetAlignment();
+                const int uniformAlignedStride = uniformBufferOffsetAlignment *
+                    ((alignedStride + uniformBufferOffsetAlignment - 1) / 
+                        uniformBufferOffsetAlignment);
+
                 TF_VERIFY(range1GL->GetResource(HdTokens->transform)->GetOffset() == 0);
                 TF_VERIFY(range1GL->GetResource(HdTokens->displayColor)->GetOffset() == 128);
-                TF_VERIFY(range1GL->GetResource(HdTokens->transform)->GetStride() == 256);
-                TF_VERIFY(range1GL->GetResource(HdTokens->displayColor)->GetStride() == 256);
+                TF_VERIFY(range1GL->GetResource(HdTokens->transform)->GetStride() == uniformAlignedStride);
+                TF_VERIFY(range1GL->GetResource(HdTokens->displayColor)->GetStride() == uniformAlignedStride);
             }
         } else {
             TF_VERIFY(range1GL->GetResource(HdTokens->transform)->GetOffset() == 0);
@@ -835,9 +832,10 @@ OverAggregationTest(HdStResourceRegistry *registry)
     // * 50
     //   8 entries = 915MB
     //   split into 7 buffers.
-    int count = 50;
+    static constexpr size_t count = 50;
+    static constexpr size_t countPerCommit = count / 2;
     std::vector<HdBufferArrayRangeSharedPtr> ranges;
-    for (int i = 0; i < count/2; ++i) {
+    for (size_t i = 0; i < countPerCommit; ++i) {
         HdBufferSourceSharedPtrVector sources;
         sources.push_back(
             std::make_shared<HdVtBufferSource>(
@@ -857,9 +855,9 @@ OverAggregationTest(HdStResourceRegistry *registry)
 
     registry->Commit();
 
-    // Schedule some more resources which will aggregate with the 
+    // Schedule some more resources which will aggregate with the
     // previously committed resources.
-    for (int i = count/2; i < count; ++i) {
+    for (size_t i = countPerCommit; i < count; ++i) {
         HdBufferSourceSharedPtrVector sources;
         sources.push_back(
             std::make_shared<HdVtBufferSource>(
@@ -880,24 +878,34 @@ OverAggregationTest(HdStResourceRegistry *registry)
     registry->Commit();
 
     // read
-    for (int i = 0; i < count; ++i) {
+    for (size_t i = 0; i < count; ++i) {
         VtValue const& rangeData = ranges[i]->ReadData(HdTokens->points);
         if (points != rangeData) {
             // XXX The below code is added for debugging why this test
             // sometimes fails. We suspect a floating-point compare issue where
             // we may need to have a small epsilon for comparing floats?
             TF_VERIFY(rangeData.IsHolding<VtArray<GfVec3f>>());
-            VtArray<GfVec3f> const& vec3fArray = 
+            VtArray<GfVec3f> const& vec3fArray =
                 rangeData.UncheckedGet<VtArray<GfVec3f>>();
 
             std::cerr << "point size: " << points.size() << std::endl;
             std::cerr << "rangeData size: " << vec3fArray.size() << std::endl;
 
-            for (size_t x=0; x<points.size(); x++) {
+            static constexpr size_t maxFailureCountPrint = 300;
+            size_t failureCount = 0;
+            for (size_t x = 0; x < points.size(); x++) {
                 if (points[x] != vec3fArray[x]) {
-                    std::cerr << "Compare failed index: " << x << std::endl;
-                    std::cerr << points[x] << " " << vec3fArray[x] << std::endl;
+                    if (failureCount++ < maxFailureCountPrint) {
+                        std::cerr << "Compare failed index: " << x << std::endl;
+                        std::cerr << points[x] << " " << vec3fArray[x] << std::endl;
+                    }
                 }
+            }
+
+            if (failureCount > maxFailureCountPrint) {
+                std::cerr << "And " << (failureCount - maxFailureCountPrint) <<
+                    " more failures omitted (" << (static_cast<float>(failureCount) /
+                    points.size() * 100) << "% failed)" << std::endl;
             }
 
             TF_VERIFY(false);
@@ -908,8 +916,24 @@ OverAggregationTest(HdStResourceRegistry *registry)
     std::cerr << perfLog.GetCounter(HdStPerfTokens->copyBufferCpuToGpu) << "\n";
     std::cerr << perfLog.GetCounter(HdStPerfTokens->copyBufferGpuToGpu) << "\n";
 
+    // Relocation count depends on the VBO max size. Smaller size means more relocations.
+    // If it's the default 2^30, there will be 9 relocations. But smaller can have much more:
+    // For example Lavapipe limits the size to 2^27 and has 51 relocations.
+    static constexpr size_t vboMaxSize = 1 << 30; // default for HD_MAX_VBO_SIZE
+    const size_t storageMaxSize =
+        registry->GetHgi()->GetCapabilities()->GetMaxShaderStorageBlockSize();
+    const size_t rangesPerBuffer = std::min(storageMaxSize, vboMaxSize) /
+        (points.size() * sizeof(GfVec3f));
+    const size_t relocationsFirstCommit =
+        (countPerCommit - 1) / rangesPerBuffer + 1;
+    const size_t relocationsSecondCommit =
+        (countPerCommit - 1 + rangesPerBuffer) / rangesPerBuffer + 1;
+    const size_t totalRelocations =
+        relocationsFirstCommit + relocationsSecondCommit;
+
     // check perf counters
-    TF_VERIFY(perfLog.GetCounter(HdPerfTokens->vboRelocated) == 9);
+    TF_VERIFY(perfLog.GetCounter(
+        HdPerfTokens->vboRelocated) == totalRelocations);
     TF_VERIFY(perfLog.GetCounter(HdStPerfTokens->copyBufferCpuToGpu) == 50);
     TF_VERIFY(perfLog.GetCounter(HdStPerfTokens->copyBufferGpuToGpu) == 1);
 
@@ -985,12 +1009,6 @@ int main(int argc, char *argv[])
     // Initialize the resource registry we will test
 
     std::unique_ptr<Hgi> hgi = Hgi::CreatePlatformDefaultHgi();
-
-    const int uniformBufferOffsetAlignment = 
-        hgi->GetCapabilities()->GetUniformBufferOffsetAlignment();
-
-    // Test verification relies on known GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT
-    TF_VERIFY(uniformBufferOffsetAlignment == 256);
 
     HdStResourceRegistry resourceRegistry(hgi.get());
 
@@ -1073,4 +1091,3 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 }
-

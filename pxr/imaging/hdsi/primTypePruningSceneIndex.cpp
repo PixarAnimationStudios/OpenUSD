@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 #include "pxr/imaging/hdsi/primTypePruningSceneIndex.h"
 
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
@@ -99,7 +82,7 @@ T _Get(HdContainerDataSourceHandle const &container,
     return ds->GetTypedValue(0.0f);
 }
 
-};
+}
 
 // static
 HdsiPrimTypePruningSceneIndexRefPtr
@@ -153,13 +136,7 @@ HdsiPrimTypePruningSceneIndex::SetEnabled(const bool enabled)
     _enabled = enabled;
 
     HdSceneIndexObserver::DirtiedPrimEntries dirtiedEntries;
-
-    // Invalidate all data source locators.  Even though the prim
-    // data source we use here will double-check whether the scene index
-    // has been enabled, we only insert those sparsely,
-    // and only when needed, at the cost of making the required
-    // invalidation more extensive.
-    const HdDataSourceLocatorSet locators{ HdDataSourceLocator() };
+    HdSceneIndexObserver::AddedPrimEntries addedEntries;
 
     for (const SdfPath &primPath: HdSceneIndexPrimView(inputSceneIndex)) {
         // Note that we make the assumption here that a material and the prim
@@ -176,21 +153,27 @@ HdsiPrimTypePruningSceneIndex::SetEnabled(const bool enabled)
             if (_enabled) {
                 // Prune this primType.
                 _pruneMap[primPath] = true;
-                dirtiedEntries.emplace_back(primPath, locators);
+                // Add prim with an empty prim type to trigger the 
+                // prim to be removed.
+                addedEntries.emplace_back(primPath, TfToken());
             } else {
                 const _PruneMap::iterator i = _pruneMap.find(primPath);
                 if (i != _pruneMap.end() && i->second) {
                     // Add back this previously-pruned prim.
-                    //addedEntries.emplace_back(primPath, prim.primType);
-                    // Don't bother erasing the _pruneMap entry;
-                    // will clear below.
-                    dirtiedEntries.emplace_back(primPath, locators);
+                    addedEntries.emplace_back(primPath, prim.primType);
                 }
             }
         } else if (!_bindingToken.IsEmpty()) {
             if (prim.dataSource && prim.dataSource->Get(_bindingToken)) {
                 // Dirty this prim's binding.
-                dirtiedEntries.emplace_back(primPath, locators);
+
+                // Invalidate all data source locators.
+                // Even though the prim data source we use here will
+                // double-check whether the scene index has been enabled, we
+                // only insert those sparsely, and only when needed, at the
+                // cost of making the required invalidation more extensive.
+                dirtiedEntries.emplace_back(
+                    primPath, HdDataSourceLocatorSet::UniversalSet());
             }
         }
     }
@@ -203,6 +186,9 @@ HdsiPrimTypePruningSceneIndex::SetEnabled(const bool enabled)
     // Notify observers
     if (!dirtiedEntries.empty()) {
         _SendPrimsDirtied(dirtiedEntries);
+    }
+    if (!addedEntries.empty()) {
+        _SendPrimsAdded(addedEntries);
     }
 }
 
@@ -236,11 +222,7 @@ SdfPathVector
 HdsiPrimTypePruningSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
-    SdfPathVector result;
-    if (auto const input = _GetInputSceneIndex()) {
-        result = input->GetChildPrimPaths(primPath);
-    }
-    return result;
+    return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
 }
 
 void

@@ -571,6 +571,10 @@ down the asset into meaningful groups) with other collections.
 
 We create and query Collections using :usdcpp:`UsdCollectionAPI`.
 
+For more details on Collections, including pattern-based collections that use
+a path expression to determine collection membership, 
+see :ref:`collections_and_patterns`.`
+
 .. _usdglossary-component:
 
 Component
@@ -850,7 +854,7 @@ Default Value
 Many assets consist entirely of a static (with respect to time) definition,
 which really exists "outside time". When encoding such assets in a format that
 only allows `timeSamples <#usdglossary-timesample>`_, one must choose a
-"sentinel" time ordinate at which to record static data, and hope that no other
+"sentinel" time coordinate at which to record static data, and hope that no other
 application uses that sentinel time for any other purpose. This can be fragile,
 and also lead to the "static" definition becoming overshadowed and not easily
 accessible when overridden in a stronger layer.
@@ -859,7 +863,7 @@ USD addresses this problem by providing a completely separate field for each
 attribute, called its *default*. This field can be authored and resolved in
 isolation of any authored timeSamples anywhere in an attribute's `index
 <#usdglossary-index>`_, by using the universal, reserved sentinel
-:usdcpp:`UsdTimeCode::Default` as the (implicit or explicit) time ordinate to
+:usdcpp:`UsdTimeCode::Default` as the (implicit or explicit) time coordinate to
 :usdcpp:`UsdAttribute::Get` and :usdcpp:`UsdAttribute::Set`.  When
 `resolving an attribute's value <#usdglossary-valueresolution>`_ at a
 non-Default time, defaults still participate, but within a given `primSpec
@@ -1190,7 +1194,7 @@ A good way to understand inherits is to start by understanding `references
 the results will be indistinguishable from each other! Within a `layerStack
 <#usdglossary-layerstack>`_ (and ignoring any interaction with `variantSets
 <#usdglossary-variantset>`_ since VariantSets come between Inherits and
-References in `LIVRPS <#usdglossary-livrpsstrengthordering>`_) inherits are
+References in `LIVERPS <#usdglossary-livrpsstrengthordering>`_) inherits are
 indistinguishable in effect from *local* references. **The key difference
 between references and inherits** is that references fully encapsulate their
 targets, and therefore "disappear" when composed through another layer of
@@ -1419,8 +1423,7 @@ Interpolation
   :usda:`Mesh` primitive, a primitive can contain a single value to be held across
   the entire mesh, one value per-face, one value per-point to be interpolated
   either linearly or with the mesh's subdivision basis function, or one value per
-  face-vertex. For more information, see `Interpolation of Primitive
-  Variables. <api/class_usd_geom_primvar.html#Usd_InterpolationVals>`_
+  face-vertex. For more information, see :ref:`primvars`.
 
 .. _usdglossary-isaschema:
 
@@ -1725,35 +1728,36 @@ applied to references. See also the FAQ on deleting items with list ops:
 
 .. _usdglossary-livrpsstrengthordering:
 
-LIVRPS Strength Ordering
-************************
+LIVERPS Strength Ordering
+*************************
 
-LIVRPS is an acronym for **Local, Inherits, VariantSets, References, Payload,
-Specializes**, and is the fundamental rubric for understanding how `opinions
-<#usdglossary-opinions>`_ and `namespace <#usdglossary-namespace>`_ compose in
-USD. **LIVRPS** describes the strength ordering in which the various composition
-arcs combine, **within each** `LayerStack <#usdglossary-layerstack>`_. For
-example, when we are trying to determine the value of an `attribute
-<#usdglossary-attribute>`_ or `metadatum <#usdglossary-metadata>`_ on a stage at
-*path* that subscribes to the `value resolution <#usdglossary-valueresolution>`_
-policy that "strongest opinion wins" (which is all attributes and most
-metadata), we iterate through `PrimSpecs <#usdglossary-primspec>`_ in the
-following order looking for an opinion for the requested datum:
+LIVERPS is an acronym for **Local, Inherits, VariantSets, Relocates, References, 
+Payload, Specializes**, and is the fundamental rubric for understanding how 
+:ref:`opinions <usdglossary-opinions>` and 
+:ref:`namespace <usdglossary-namespace>` compose in USD. **LIVERPS** describes 
+the strength ordering in which the various composition arcs combine, 
+**within each** :ref:`LayerStack <usdglossary-layerstack>`. For example, when we 
+are trying to determine the value of an :ref:`attribute <usdglossary-attribute>` 
+or :ref:`metadatum <usdglossary-metadata>` on a stage at *path* that subscribes 
+to the :ref:`value resolution <usdglossary-valueresolution>` policy that 
+"strongest opinion wins" (which is all attributes and most metadata), we iterate 
+through :ref:`PrimSpecs <usdglossary-primspec>` in the following order looking 
+for an opinion for the requested datum:
 
     #. **Local**: 
 
        Iterate through all the layers in the local LayerStack
        looking for opinions on the PrimSpec at *path* in each layer - recall
        that according to the definition of LayerStack, this is where the effect
-       of direct opinions in all `SubLayers <#usdglossary-sublayers>`_ of the
+       of direct opinions in all :ref:`SubLayers <usdglossary-sublayers>` of the
        root layer of the LayerStack will be consulted. If no opinion is found,
        then...
 
     #. **Inherits**: 
        
-       Resolve the `Inherits <#usdglossary-inherits>`_ affecting
+       Resolve the :ref:`Inherits <usdglossary-inherits>` affecting
        the prim at *path*, and iterate through the resulting targets. For
-       each target, **recursively apply** **LIVRP** **evaluation** on
+       each target, **recursively apply** **LIVERP** **evaluation** on
        the targeted LayerStack - **Note that the "S" is not present** - we
        ignore Specializes arcs while recursing . If no opinion is found,
        then...
@@ -1761,33 +1765,42 @@ following order looking for an opinion for the requested datum:
     #. **VariantSets**: 
 
        Apply the resolved variant selections to all
-       `VariantSets <#usdglossary-variantset>`_ that affect the PrimSpec at
-       *path* in the LayerStack, and iterate through the selected `Variants
-       <#usdglossary-variant>`_ on each VariantSet. For each target,
-       **recursively apply** **LIVRP** **evaluation** on the targeted
+       :ref:`VariantSets <usdglossary-variantset>` that affect the PrimSpec at
+       *path* in the LayerStack, and iterate through the selected 
+       :ref:`Variants <usdglossary-variant>` on each VariantSet. For each 
+       target, **recursively apply** **LIVERP** **evaluation** on the targeted
        LayerStack - **Note that the "S" is not present** - we ignore Specializes
        arcs while recursing. If no opinion is found, then...
 
+    #. **r(E)locates**:
+
+       Resolve any :ref:`Relocates <usdglossary-relocates>` target path 
+       affecting the prim at *path*, and iterate through the resulting relocates 
+       source. For each source, **recursively apply** **LIVERP** **evaluation** 
+       on the source's remote LayerStack - **Note that the "S" is not present** 
+       - we ignore Specializes arcs while recursing. If no opinion is found, 
+       then...
+
     #. **References**:
 
-       Resolve the `References <#usdglossary-references>`_
+       Resolve the :ref:`References <usdglossary-references>`
        affecting the prim at *path*, and iterate through the resulting
-       targets. For each target, **recursively apply** **LIVRP** **evaluation**
+       targets. For each target, **recursively apply** **LIVERP** **evaluation**
        on the targeted LayerStack - **Note that the "S" is not present** - we
        ignore Specializes arcs while recursing. If no opinion is found, then...
 
     #. **Payload**: 
 
-       Resolve the `Payload <#usdglossary-payload>`_
+       Resolve the :ref:`Payload <usdglossary-payload>`
        arcs affecting the prim at *path*; if *path* has been **loaded on
        the stage,** iterate through the resulting targets just as we would
        references from step 4. If no opinion is found, then...
 
     #. **Specializes**: 
 
-       Resolve the `Specializes <#usdglossary-specializes>`_
+       Resolve the :ref:`Specializes <usdglossary-specializes>`
        affecting the prim at *path*, and iterate through the resulting
-       targets, **recursively applying *full* LIVRPS evaluation** on each target
+       targets, **recursively applying *full* LIVERPS evaluation** on each target
        prim. If no opinion is found, then...
 
     #. Indicate that we could find no authored opinion
@@ -1795,21 +1808,18 @@ following order looking for an opinion for the requested datum:
 We have omitted some details, such as how, for any composition arc in the above
 recipe, we order arcs applied directly on the PrimSpec in relation to the same
 kind of arc authored on an *ancestral* PrimSpec in the LayerStack - the short
-answer is that `"ancestral arcs" are weaker than "direct arcs"
-<#usdglossary-directopinion>`_, and why we ignore the "S" when we recurse for
-the other arcs, which we discuss more in the entry for `Specializes
-<#usdglossary-specializes>`_. It may sound like a great deal of work to need
-to perform for every value lookup, and it absolutely would be if we followed all
-the steps as described above, during `value resolution
-<#usdglossary-valueresolution>`_. This is the reason that we compute and cache
-an `Index <#usdglossary-index>`_ for every prim on the Stage: the Index
-"pre-applies" the above algorithm to find all the PrimSpecs that contribute any
-opinions to the prim, and caches the list in a recursive data structure that can
-be very efficiently processed whenever we need to resolve some value on the
-prim.
+answer is that "ancestral arcs" are weaker than "direct arcs" (see 
+:ref:`usdglossary-directopinion`). Additionally, we skip over "S" during 
+recursion for other arcs, as explained further in the entry for 
+:ref:`Specializes <usdglossary-specializes>`. Performing every step as described 
+above for each value lookup would be very costly. This is why we compute and 
+cache an :ref:`Index <usdglossary-index>` for every prim on the Stage. The Index 
+"pre-applies" the full algorithm to gather all PrimSpecs contributing opinions 
+to a prim, caching the list in a recursive data structure that allows efficient 
+processing whenever a value on the prim needs to be resolved.
 
 The algorithm for computing the namespace of the stage (i.e. what prims are
-present and where) are slightly more involved, but still follows the LIVRPS
+present and where) are slightly more involved, but still follows the LIVERPS
 recipe.
 
 .. _usdglossary-load-unload:
@@ -1957,7 +1967,7 @@ Opinions
 Metadatum, Attribute, or Relationship, you are expressing an *opinion* for that
 object in a PrimSpec in a particular Layer. On a composed Stage, any object
 may be affected by multiple opinions from different layers; the ordering of
-these opinions is determined by the `LIVRPS strength ordering
+these opinions is determined by the `LIVERPS strength ordering
 <#usdglossary-livrpsstrengthordering>`_.
 
 .. _usdglossary-over:
@@ -2292,7 +2302,7 @@ surface/volume of the primitive. In USD, you create and retrieve primvars using
 the :usdcpp:`UsdGeomImageable` schema, and interact with the special primvar
 encoding using the :usdcpp:`UsdGeomPrimvar` schema.
 
-There are two key aspects of Primvar identity:
+There are two key aspects of Primvars:
 
     * Primvars define a value that can vary across the primitive on which they
       are defined, via `prescribed interpolation rules
@@ -2300,11 +2310,15 @@ There are two key aspects of Primvar identity:
 
        ..
 
-    * Taken collectively on a prim, its Primvars describe the "per-primitive
-      overrides" to the shader(s) to which the prim is bound. Different
-      renderers may communicate the variables to the shaders using different
-      mechanisms over which Usd has no control; Primvars simply provide the
-      classification that any renderer should use to locate potential overrides.
+    * Taken collectively on a prim, its Primvars describe "per-primitive 
+      overrides" used to communicate variables to consumers, such as providing
+      providing joint influences for UsdSkel schemas, or shader variables for
+      renderers. In the shader use-case, different renderers may communicate the 
+      variables to the shaders using different mechanisms over which USD has no 
+      control; Primvars simply provide the classification that any renderer 
+      should use to locate potential overrides.
+
+For examples of primvars and primvar interpolation modes, see :ref:`primvars`.
 
 .. _usdglossary-property:
 
@@ -2676,6 +2690,451 @@ we will get:
 
 as the result, even though that was not the authored value in :filename:`Marble.usd`.
 
+.. _usdglossary-relocates:
+
+Relocates
+*********
+
+*Relocates* is a :ref:`composition arc <usdglossary-compositionarcs>` that maps 
+a prim :ref:`path <usdglossary-path>` defined in a remote 
+:ref:`LayerStack <usdglossary-layerstack>` (i.e. across a composition arc) to a 
+new path location in the local namespace. 
+
+Relocates are defined in layer metadata, as a list of source path to target
+path mappings. Note that these paths can only be prim paths, not property paths.
+
+.. code-block:: usda
+    :caption: example relocates defined in layer metadata
+
+    #usda 1.0
+    (
+        relocates = {
+            </CharANewVersion/Clothing> : </CharACurrent/TestClothing>, 
+            </EnvA/Trees> : </AlternateEnv/ParkA/Trees>
+        }
+    )    
+
+Relocates let you rename or reparent prims in situations where you would not be 
+able to edit the prims directly. Normally, prims with underlying PrimSpecs from 
+composition arcs cannot be directly reparented. While it's possible to reparent 
+the underlying "composition source" prims directly, such a change would be a 
+destructive change that would affect all other instances that share that scene 
+description. Relocates provides a way to *non-destructively* reparent or rename 
+prims by specifying a mapping of source namespace paths to target namespace 
+paths in the local namespace, ensuring that the source of the composition arc is 
+not modified.
+
+As an example, if you had layer :filename:`refLayer.usda` with the following 
+prims:
+
+.. code-block:: usda
+    :caption: refLayer.usda
+
+    def "PrimA" ()
+    {
+        def "PrimAChild" ()
+        {
+            uniform string testString = "test"
+            float childValue = 3.5
+        }
+    }
+
+In another layer, :filename:`main.usda`, "PrimA" is referenced:
+
+.. code-block:: usda
+    :caption: main.usda
+
+    def "MainPrim" (
+        prepend references = @refLayer.usda@</PrimA>
+    )
+    {
+    }
+
+You cannot directly rename or reparent :sdfpath:`/MainPrim/PrimAChild`. However, 
+you can provide a relocates mapping (in :filename:`main.usda`) of 
+:sdfpath:`MainPrim/PrimAChild` to another path in the local namespace:
+
+.. code-block:: usda
+    :caption: relocates added to main.usda
+
+    #usda 1.0
+    (
+        relocates = {
+            </MainPrim/PrimAChild> : </MainPrim/RenamedPrimAChild>
+        }
+    )
+
+This renames :sdfpath:`/MainPrim/PrimAChild` to 
+:sdfpath:`/MainPrim/RenamedPrimAChild` without affecting the 
+:filename:`refLayer.usda` layer.
+
+You could then add an override for :sdfpath:`/MainPrim/RenamedPrimAChild` in 
+:filename:`main.usda`. Note that the override uses the *relocated path*:
+
+.. code-block:: usda
+    :caption: override added to main.usda
+
+    def "MainPrim" (
+        prepend references = @refLayer.usda@</PrimA>
+    )
+    {
+        over RenamedPrimAChild 
+        {
+            float childValue = 5.2
+        }
+    }
+
+The resulting stage composition will apply the override to the relocated prim
+reference:
+
+.. code-block:: usda
+    :caption: flattened main.usda
+ 
+    def "MainPrim"
+    {
+        def "RenamedPrimAChild"
+        {
+            float childValue = 5.2
+            uniform string testString = "test"
+        }
+    }
+
+**Things to note:**
+
+    * You cannot relocate a root prim. In other words, the source path for a 
+      relocates cannot be a root prim. This is because it's impossible for a 
+      root prim to be introduced by an ancestral composition arc, and relocates
+      can only used to map prims introduced via composition arcs. 
+
+    * When a source path is relocated, that original source path is considered 
+      *no longer valid in the current namespace*. Any local opinions authored
+      on a source path will generate a "invalid option at relocation source
+      path" error. See 
+      :ref:`local opinions not allowed at source paths <usdglossary-relocates-source-invalid>` 
+      below for more details.
+
+    * Source and target paths must be complete scene paths. Paths with variant 
+      selections (e.g. :sdfpath:`/Prim{var=sel}Child`) are not supported.  
+
+    * Relocates that would create invalid or conflicting namespace paths are not 
+      allowed, such as:
+
+        * Relocating a prim to an existing ancestor: 
+          :sdfpath:`Prim/Child/Grandchild` : :sdfpath:`Prim/Child` is not 
+          allowed.
+
+        * Relocating a prim to a descendant of the source path: 
+          :sdfpath:`/Prim/Child` : :sdfpath:`/Prim/Child/Grandchild` is not 
+          allowed.
+
+        * Relocating the same source path to multiple targets, or relocating 
+          multiple source paths to the same target.
+
+        * Relocating a prim to the source path of a different relocate in the
+          same namespace: 
+          :sdfpath:`/Prim/Prim1` : :sdfpath:`/Prim/Prim2`, 
+          :sdfpath:`/Prim/Prim2` : :sdfpath:`/Prim/Prim3` is not allowed. 
+          "Transitive" relocates must be collapsed into the smallest relocation,
+          e.g. for the previous example, 
+          :sdfpath:`/Prim/Prim1` : :sdfpath:`/Prim/Prim3` should be used instead.
+          This applies to relocates in the same LayerStack.
+
+    * If a relocate has "ancestral relocates" (e.g. an ancestor prim that has 
+      also been relocated), the relocate source path must use the ancestral 
+      relocated path. For example, if you have :sdfpath:`/Root` referencing 
+      :sdfpath:`/Ref`, and :sdfpath:`/Ref` also references :sdfpath:`/Ref2`, 
+      if :sdfpath:`/Root/Ref` is relocated to :sdfpath:`/Root/RefRelocated`, 
+      any additional relocate that would use :sdfpath:`/Root/Ref/Ref2` as a 
+      source path must use the relocated path 
+      :sdfpath:`/Root/RefRelocated/Ref2`.
+
+With respect to 
+:ref:`composition strength ordering <usdglossary-livrpsstrengthordering>`, 
+relocates is stronger than :ref:`usdglossary-references`, but weaker than 
+:ref:`usdglossary-variantset`. In the previous example, if we had an authored 
+opinion at a relocates target location that used the :ref:`usdglossary-inherits` 
+composition arc (which is stronger than relocates) we might have a 
+:filename:`main.usda` layer that looks like the following: 
+
+.. code-block:: usda
+    :caption: main.usda with added class and inherits
+
+    #usda 1.0
+    (
+        relocates = {
+            </MainPrim/PrimAChild> : </MainPrim/RenamedPrimAChild>
+        }
+    )
+
+    class "WorkClass"
+    {
+        float childValue = 20.5
+        uniform string testString = "from WorkClass"
+    }
+
+    def "MainPrim" (
+        prepend references = @refLayer.usda@</PrimA>
+    )
+    {
+        def "RenamedPrimAChild"
+        (
+            inherits = </WorkClass>
+        )
+        {
+        }
+    }
+
+When the stage is composed, the inherited opinions for 
+:sdfpath:`MainPrim/RenamedPrimAChild` will be stronger:
+
+.. code-block:: usda
+    :caption: flattened main.usda with inherits and relocates applied
+
+    def "MainPrim"
+    {
+        def "RenamedPrimAChild"
+        {
+            float childValue = 20.5
+            uniform string testString = "from WorkClass"
+        }
+    }
+
+**Relocates and inherits**
+
+A relocated prim will still inherit the same opinions it would have had it not 
+been relocated. This can result in some subtle composition behavior.
+
+For example, we have a layer :filename:`model.usda` that defines 
+:sdfpath:`/ClassA` and has prim :sdfpath:`/Model` that inherits from 
+:sdfpath:`/ClassA`. It also has a relocate for :sdfpath:`/Model/Rig/LRig` to 
+:sdfpath:`/Model/Anim/LAnim`:
+
+.. code-block:: usda
+    :caption: model.usda with ClassA and Model that inherits from ClassA
+
+    #usda 1.0
+    (
+        relocates = {
+            </Model/Rig/LRig>: </Model/Anim/LAnim>
+        }    
+    )
+
+    class "ClassA"
+    {
+        def "Rig"
+        {
+            def "LRig"
+            {
+                uniform token modelClassALRig = "test"          
+            }
+        }
+
+        def "Anim"
+        {
+            def "LAnim"
+            {
+                uniform token modelClassALAnim = "test"                     
+            }
+        }    
+    }
+
+    def "Model" (
+        inherits = </ClassA>
+    )
+    {
+    }
+
+We reference :sdfpath:`/Model` in another layer, :filename:`root.usda`, which
+also has a :sdfpath:`/ClassA` class:
+
+.. code-block:: usda
+    :caption: root.usda
+
+    def "Model_1" (
+        references = @./model.usda@</Model>
+    )
+    {
+    }
+
+    class "ClassA"
+    {
+        def "Rig"
+        {
+            def "LRig"
+            {
+                uniform token rootClassALRig = "test"
+            }
+        }
+
+        def "Anim"
+        {
+            def "LAnim"
+            {
+                uniform token rootClassALAnim = "test"
+            }
+        }
+    }  
+
+If we load :filename:`root.usda` and inspect the flattened stage,
+:sdfpath:`/Model/Rig/LRig` in :filename:`model.usda` has inherited from 
+:sdfpath:`/ClassA/Rig/LRig` even though it was relocated to 
+:sdfpath:`/Model/Anim/LAnim` in that layer, and does *not* inherit opinions from
+:sdfpath:`/ClassA/Anim/LAnim`. However, note that :sdfpath:`/Model_1/Anim/LAnim`
+in the :filename:`root.usda` layer does inherit from the layer's 
+:sdfpath:`/ClassA/Anim/LAnim`.
+
+.. code-block:: usda
+    :caption: flattened root.usda
+
+    def "Model_1"
+    {
+        def "Rig"
+        {
+        }
+
+        def "Anim"
+        {
+            def "LAnim"
+            {
+                uniform token modelClassALRig = "test"
+                uniform token rootClassALAnim = "test"
+                uniform token rootClassALRig = "test"
+            }
+        }
+    }
+
+
+**Relocates and ancestral arcs during composition**
+
+One aspect of relocates and composition is that relocates will *ignore* 
+all ancestral arcs *except variant arcs* when we build the 
+:ref:`PrimIndex <usdglossary-index>` for a prim. So, if you had a layer that
+relocates a prim to be the child of a prim with an ancestral inherits arc:
+
+.. code-block:: usda
+    :caption: layer with ancestral inherits and relocates
+
+    #usda 1.0
+    (
+        relocates = {
+            </PrimA/Child>: </PrimWithInherits/Child>
+        }    
+    )
+
+    def "ClassA"
+    (
+    )
+    {
+        def "Child"
+        {
+            uniform token testString = "from ClassA/Child"
+            uniform token classAChildString = "test"
+        }
+    }
+
+    def "RefPrim"
+    (
+    )
+    {
+        def "Child"
+        {
+            uniform token testString = "from RefPrim/Child"
+            uniform token refPrimChildString = "test"
+        }
+    }
+
+    def "PrimA"
+    (
+        prepend references = </RefPrim>
+    )
+    {
+    }
+
+
+    def "PrimWithInherits"
+    (
+        inherits = </ClassA>
+    )
+    {
+    }
+
+With the relocates for :sdfpath:`/PrimA/Child` to 
+:sdfpath:`/PrimWithInherits/Child`, the ancestral opinions from 
+:sdfpath:`/ClassA/Child` are ignored. 
+
+.. code-block:: usda
+    :caption: flattened PrimWithInherits
+
+    def "PrimWithInherits"
+    {
+        def "Child"
+        {
+            uniform token refPrimChildString = "test"
+            uniform token testString = "from RefPrim/Child"
+        }
+    }
+
+However, as mentioned earlier, ancestral *variant* arcs will still compose with
+relocates. If we introduce ancestral opinions from a variant in 
+:sdfpath:`/PrimWithInherits` instead of using inherits:
+
+.. code-block:: usda
+    :caption: replace inherits with variantset in PrimWithInherits
+
+    def "PrimWithInherits"
+    (
+        # Removed inherits of ClassA
+        # Added variantSet and selection with authored Child opinions
+        variants = {
+            string varSet = "Set1"
+        }
+        prepend variantSets = "varSet"    
+    )
+    {
+        variantSet "varSet" = {
+            "Set1" ()
+            {
+                def "Child"
+                {                
+                    uniform token testString = "from varSet Child"
+                    uniform token varChildString = "test"
+                }
+            }
+            "Set2" ()
+            {
+            }
+        }
+    }
+
+The ancestral opinions from the selected variant will be applied:
+
+.. code-block:: usda
+    :caption: flattened PrimWithInherits with ancestral variant opinions
+
+    def "PrimWithInherits"
+    {
+        def "Child"
+        {
+            uniform token refPrimChildString = "test"
+            uniform token testString = "from varSet Child"
+            uniform token varChildString = "test"
+        }
+    }
+
+See :ref:`composition strength ordering <usdglossary-livrpsstrengthordering>` 
+for more details on relocates and composition.
+
+**Local opinions not allowed at source paths**
+
+.. _usdglossary-relocates-source-invalid:
+
+When a source path is relocated, that original source path is considered 
+no longer valid in the current namespace. So, if you relocated 
+:sdfpath:`/PrimA/Child` to :sdfpath:`/PrimA/NewChild`, you cannot have any 
+local opinions authored at :sdfpath:`/PrimA/Child`. This avoids ambiguity and
+ensures there's exactly one location (the target path) in the namespace to 
+express opinions about a given object.
+
 .. _usdglossary-rootlayerstack:
 
 Root LayerStack
@@ -3045,17 +3504,110 @@ offset and scale time-varying data contained in the sub-layer(s)
 TimeCode
 ********
 
-*TimeCodes* are the unit-less time ordinate in USD. A :usdcpp:`UsdTimeCode` can
-encode the ordinate for a `TimeSample <#usdglossary-timesample>`_ in
-double-precision floating point, but can also encode the ordinate that maps to
+*TimeCodes* are the unit-less time coordinate in USD. A :usdcpp:`UsdTimeCode` 
+can encode the coordinate for a `TimeSample <#usdglossary-timesample>`_ in
+double-precision floating point, but can also encode the coordinate that maps to
 an attribute's `Default Value <#usdglossary-defaultvalue>`_. For any given
-composed scene, defined by its root layer, the TimeCode ordinates of the
-TimeSamples contained in the scene are scaled to seconds by the root layer's
+composed scene, defined by its root layer, the TimeCode coordinates of the
+TimeSamples contained in the scene are 
+:ref:`scaled to seconds <usdglossary-timecodes-scaled>` by the root layer's
 :usda:`timeCodesPerSecond` metadata, which can be retrieved with
 :usdcpp:`UsdStage::GetTimeCodesPerSecond`.  This allows clients great
 flexibility to encode their TimeSamples within the range and scale that makes
 the most sense for their application, while retaining a robust mapping to "real
 time" for decoding and playback.
+
+TimeCodes can also appear in USD scenes as the :usda:`timeCode` metadata or 
+attribute value type, and when they do, queried attribute *values* will receive 
+the same time-remapping that TimeSample coordinates do. Such timeCode-valued 
+attributes can serve as "timing curves" that maintain their accuracy through 
+composed layer offsets.
+
+.. _usdglossary-timecodes-scaled
+
+TimeCodes Scaled to Real Time
+*****************************
+
+For a composed scene, :ref:`TimeCode <usdglossary-timecode>` coordinate values 
+from :ref:`TimeSamples <usdglossary-timesample>` are scaled to real-time seconds 
+by the root layer's (or session layer's) :usda:`timeCodesPerSecond` metadata. 
+In the following example layer, the translation TimeSample on Sphere at TimeCode 
+240 corresponds to 10 seconds of real time, based on the layer's 
+:usda:`timeCodesPerSecond` of 24.
+
+.. code-block:: usda 
+
+  #usda 1.0
+  (
+      timeCodesPerSecond = 24
+      endTimeCode = 240
+      startTimeCode = 1
+  )
+
+  def Xform "Asset"
+  {
+      def Sphere "Sphere"
+      {
+          double3 xformOp:translate.timeSamples = {
+              1: (0, 5.0, 0),
+              240: (0, -5.0, 0),
+          }
+          uniform token[] xformOpOrder = ["xformOp:translate"]
+      }
+  }
+
+
+If a layer specifies :usda:`timeCodesPerSecond` and is sublayered or referenced 
+into another layer, the TimeCode values and TimeSample coordinates in the 
+sublayered/referenced layer are automatically scaled to map into the timing 
+defined by the root layer's :usda:`timeCodesPerSecond`. If the previous example 
+layer was referenced into another layer that specified a 
+:usda:`timeCodesPerSecond` value of 48, the TimeSamples on Sphere would be 
+scaled accordingly. For example, the TimeSample at TimeCode 240 would be scaled 
+to TimeCode 480 to ensure that the translation still occurs at 10 seconds of 
+real time.
+
+USD also provides the :usda:`framesPerSecond` layer metadata, however this is 
+not used to directly scale TimeCodes, but instead used as an indication of the 
+desired play-back rate when the animation is viewed in a playback device 
+(DCC tool, usdview, etc). If the previous example layer specified a 
+:usda:`framesPerSecond` of 12, this would *not* change the scaling of the 
+TimeSample at TimeCode 240, and instead change the playback rate in a playback 
+device to march forward by two TimeCodes for each consecutive rendered frame, 
+which will be held for 1/12 of a second.
+
+.. code-block:: usda
+
+  #usda 1.0
+  (
+      timeCodesPerSecond = 24
+      framesPerSecond = 12
+      endTimeCode = 240
+      startTimeCode = 1
+  )
+
+Note that :usda:`framesPerSecond` can be used indirectly to scale TimeCodes, 
+because it is used as a fallback value for :usda:`timeCodesPerSecond` if 
+:usda:`timeCodesPerSecond` is not set. The order of precedence USD uses for 
+determining the :usda:`timeCodesPerSecond` to use is: 
+
+* :usda:`timeCodesPerSecond` from session layer
+* :usda:`timeCodesPerSecond` from root layer
+* :usda:`framesPerSecond` from session layer
+* :usda:`framesPerSecond` from root layer
+* fallback value of 24 
+
+The general best practice is to use :usda:`timeCodesPerSecond` to specify how 
+TimeCodes are scaled to real time, and :usda:`framesPerSecond` if you need to 
+encode a specific playback rate on playback devices, regardless of how many 
+samples per second are recorded in the USD scene.
+
+.. note::
+
+    We provide the information about :usda:`framesPerSecond` as fallback for 
+    :usda:`timeCodesPerSecond` primarily as a debugging aid, should you observe 
+    unexpected time-scaling. The fallback behavior derives only from USD's 
+    relationship to Pixar's Presto animation system.
 
 .. _usdglossary-timesample:
 
@@ -3069,16 +3621,16 @@ The term *timeSample* is used in two related contexts in USD:
       
       Each `PropertySpec <#usdglossary-propertyspec>`_ for an `Attribute
       <#usdglossary-attribute>`_ can contain a collection called *timeSamples*
-      that maps `TimeCode <#usdglossary-timecode>`_ ordinates to values of the
+      that maps `TimeCode <#usdglossary-timecode>`_ coordinates to values of the
       Attribute's type.
 
-    * **The time-ordinate for an Attribute** 
+    * **The time-coordinate for an Attribute** 
 
-      USD API sometimes refers to just the ordinate of a time-varying value as a
-      TimeSample; for example, :usdcpp:`UsdAttribute::GetTimeSamples` and
+      USD API sometimes refers to just the coordinate of a time-varying value as 
+      a TimeSample; for example, :usdcpp:`UsdAttribute::GetTimeSamples` and
       :usdcpp:`UsdAttribute::GetTimeSamplesInInterval` return
-      a simple vector of time ordinates at which samples may be resolved on the
-      attribute.
+      a simple vector of time coordinates at which samples may be resolved on 
+      the attribute.
 
 .. _usdglossary-typedschema:
 
@@ -3254,7 +3806,7 @@ unique in three ways:
 
     #. **Interpolation** 
 
-       If the requested time ordinate falls between two samples, and the
+       If the requested time coordinate falls between two samples, and the
        :usdcpp:`stage is configured for linear interpolation
        <UsdStage::SetInterpolationType>` (which it
        is by default), then we will `attempt to apply linear interpolation of
@@ -3290,7 +3842,7 @@ unique in three ways:
    which will ensure that if there is *any* timeSample authored for the
    attribute, it will provide the value, rather than the *default*, which is all
    that is consulted when :cpp:`UsdTimeCode::Default()` is the given time
-   ordinate.
+   coordinate.
 
 .. _usdglossary-variability:
 

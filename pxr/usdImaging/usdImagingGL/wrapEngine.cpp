@@ -1,31 +1,14 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
-//
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python.hpp>
-#include <boost/python/converter/from_python.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/converter/from_python.hpp"
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
@@ -37,14 +20,14 @@
 #include "pxr/base/tf/pyResultConversions.h"
 
 using namespace std;
-using namespace boost::python;
-using namespace boost;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+using namespace pxr_boost::python;
+
 namespace {
 
-static boost::python::tuple
+static pxr_boost::python::tuple
 _TestIntersection(
     UsdImagingGLEngine & self, 
     const GfMatrix4d &viewMatrix,
@@ -78,7 +61,7 @@ _TestIntersection(
         topLevelInstanceIndex = hitInstancerContext[0].second;
     }
 
-    return boost::python::make_tuple(hitPoint, hitNormal, hitPrimPath,
+    return pxr_boost::python::make_tuple(hitPoint, hitNormal, hitPrimPath,
             hitInstanceIndex, topLevelPath, topLevelInstanceIndex);
 }
 
@@ -107,7 +90,7 @@ void wrapEngine()
     { 
         using Parameters = UsdImagingGLEngine::Parameters;
 
-        scope engineScope = class_<UsdImagingGLEngine, boost::noncopyable>(
+        scope engineScope = class_<UsdImagingGLEngine, noncopyable>(
                 "Engine", "UsdImaging Renderer class")
             .def( init<>() )
             .def( init<const SdfPath &, const SdfPathVector&,
@@ -131,6 +114,8 @@ void wrapEngine()
             .def("GetRendererDisplayName", 
                     &UsdImagingGLEngine::GetRendererDisplayName)
                 .staticmethod("GetRendererDisplayName")
+            .def("GetRendererHgiDisplayName",
+                    &UsdImagingGLEngine::GetRendererHgiDisplayName)
             .def("GetCurrentRendererId", 
                     &UsdImagingGLEngine::GetCurrentRendererId)
             .def("SetRendererPlugin", 
@@ -147,6 +132,8 @@ void wrapEngine()
                  return_value_policy< TfPySequenceToList >())
             .def("GetRendererSetting", &UsdImagingGLEngine::GetRendererSetting)
             .def("SetRendererSetting", &UsdImagingGLEngine::SetRendererSetting)
+            .def("SetActiveRenderPassPrimPath",
+                 &UsdImagingGLEngine::SetActiveRenderPassPrimPath)
             .def("SetActiveRenderSettingsPrimPath",
                  &UsdImagingGLEngine::SetActiveRenderSettingsPrimPath)
             .def("GetAvailableRenderSettingsPrimPaths",
@@ -163,8 +150,8 @@ void wrapEngine()
                 return_value_policy< TfPySequenceToList >() )
             .def("InvokeRendererCommand",
                 &UsdImagingGLEngine::InvokeRendererCommand,
-                (boost::python::arg("command"),
-                 boost::python::arg("args") = HdCommandArgs()))
+                (pxr_boost::python::arg("command"),
+                 pxr_boost::python::arg("args") = HdCommandArgs()))
             .def("IsPauseRendererSupported", 
                 &UsdImagingGLEngine::IsPauseRendererSupported)
             .def("PauseRenderer", &UsdImagingGLEngine::PauseRenderer)
@@ -191,6 +178,8 @@ void wrapEngine()
             .def_readwrite("driver", &Parameters::driver)
             .def_readwrite("rendererPluginId", &Parameters::rendererPluginId)
             .def_readwrite("gpuEnabled", &Parameters::gpuEnabled)
+            .def_readwrite("displayUnloadedPrimsWithBounds", 
+                &Parameters::displayUnloadedPrimsWithBounds)
             .def_readwrite("allowAsynchronousSceneProcessing",
                 &Parameters::allowAsynchronousSceneProcessing)
             

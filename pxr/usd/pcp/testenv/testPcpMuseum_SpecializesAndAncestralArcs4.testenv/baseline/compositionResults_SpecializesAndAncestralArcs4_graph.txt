@@ -1,0 +1,400 @@
+Loading @SpecializesAndAncestralArcs4/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Parent/Child>
+Node 0:
+    Parent node:              NONE
+    Type:                     root
+    DependencyType:           root
+    Source path:              </Parent/Child>
+    Source layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Target path:              <NONE>
+    Target layer stack:       NONE
+    Map to parent:
+        / -> /
+    Map to root:
+        / -> /
+    Namespace depth:          0
+    Depth below introduction: 0
+    Is due to ancestor:       FALSE
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 FALSE
+    Contribute specs:         TRUE
+        Restricted at depth:  0
+    Has specs:                TRUE
+    Has symmetry:             FALSE
+    Prim stack:
+      </Parent/Child> root.sdf - @SpecializesAndAncestralArcs4/root.sdf@
+Node 1:
+    Parent node:              0
+    Type:                     inherit
+    DependencyType:           non-virtual, purely-direct
+    Source path:              </Parent/Sibling>
+    Source layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Target path:              </Parent/Child>
+    Target layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Origin node:              9
+    Sibling # at origin:      0
+    Map to parent:
+        / -> /
+        /Parent/Sibling -> /Parent/Child
+    Map to root:
+        / -> /
+        /Parent/Sibling -> /Parent/Child
+    Namespace depth:          2
+    Depth below introduction: 0
+    Is due to ancestor:       FALSE
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 FALSE
+    Contribute specs:         TRUE
+        Restricted at depth:  0
+    Has specs:                TRUE
+    Has symmetry:             FALSE
+    Prim stack:
+      </Parent/Sibling> root.sdf - @SpecializesAndAncestralArcs4/root.sdf@
+Node 2:
+    Parent node:              1
+    Type:                     inherit
+    DependencyType:           non-virtual, partly-direct
+    Source path:              </PI/Sibling>
+    Source layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Target path:              </Parent/Sibling>
+    Target layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Map to parent:
+        / -> /
+        /PI -> /Parent
+    Map to root:
+        / -> /
+        /PI -> /Parent
+        /PI/Sibling -> /Parent/Child
+    Namespace depth:          1
+    Depth below introduction: 1
+    Is due to ancestor:       TRUE
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 FALSE
+    Contribute specs:         TRUE
+        Restricted at depth:  0
+    Has specs:                TRUE
+    Has symmetry:             FALSE
+    Prim stack:
+      </PI/Sibling> root.sdf - @SpecializesAndAncestralArcs4/root.sdf@
+Node 3:
+    Parent node:              2
+    Type:                     specialize
+    DependencyType:           none
+    Source path:              </PIS/Sibling>
+    Source layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Target path:              </PI/Sibling>
+    Target layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Map to parent:
+        / -> /
+        /PIS -> /PI
+    Map to root:
+        / -> /
+        /PIS -> /Parent
+        /PIS/Sibling -> /Parent/Child
+    Namespace depth:          1
+    Depth below introduction: 1
+    Is due to ancestor:       TRUE
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 TRUE
+    Contribute specs:         FALSE
+        Restricted at depth:  2
+    Has specs:                TRUE
+    Has symmetry:             FALSE
+Node 4:
+    Parent node:              3
+    Type:                     inherit
+    DependencyType:           partly-direct, virtual
+    Source path:              </PISI/Sibling>
+    Source layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Target path:              </PIS/Sibling>
+    Target layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Map to parent:
+        / -> /
+        /PISI -> /PIS
+    Map to root:
+        / -> /
+        /PISI -> /Parent
+        /PISI/Sibling -> /Parent/Child
+    Namespace depth:          1
+    Depth below introduction: 1
+    Is due to ancestor:       TRUE
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 TRUE
+    Contribute specs:         FALSE
+        Restricted at depth:  2
+    Has specs:                TRUE
+    Has symmetry:             FALSE
+
+
+
+
+Node 5:
+    Parent node:              0
+    Type:                     inherit
+    DependencyType:           ancestral, non-virtual
+    Source path:              </PI/Child>
+    Source layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Target path:              </Parent/Child>
+    Target layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Map to parent:
+        / -> /
+        /PI -> /Parent
+    Map to root:
+        / -> /
+        /PI -> /Parent
+    Namespace depth:          1
+    Depth below introduction: 1
+    Is due to ancestor:       TRUE
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 FALSE
+    Contribute specs:         TRUE
+        Restricted at depth:  0
+    Has specs:                TRUE
+    Has symmetry:             FALSE
+    Prim stack:
+      </PI/Child> root.sdf - @SpecializesAndAncestralArcs4/root.sdf@
+Node 6:
+    Parent node:              5
+    Type:                     specialize
+    DependencyType:           none
+    Source path:              </PIS/Child>
+    Source layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Target path:              </PI/Child>
+    Target layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Map to parent:
+        / -> /
+        /PIS -> /PI
+    Map to root:
+        / -> /
+        /PIS -> /Parent
+    Namespace depth:          1
+    Depth below introduction: 1
+    Is due to ancestor:       TRUE
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 TRUE
+    Contribute specs:         FALSE
+        Restricted at depth:  1
+    Has specs:                TRUE
+    Has symmetry:             FALSE
+Node 7:
+    Parent node:              6
+    Type:                     inherit
+    DependencyType:           ancestral, virtual
+    Source path:              </PISI/Child>
+    Source layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Target path:              </PIS/Child>
+    Target layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Map to parent:
+        / -> /
+        /PISI -> /PIS
+    Map to root:
+        / -> /
+        /PISI -> /Parent
+    Namespace depth:          1
+    Depth below introduction: 1
+    Is due to ancestor:       TRUE
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 TRUE
+    Contribute specs:         FALSE
+        Restricted at depth:  1
+    Has specs:                TRUE
+    Has symmetry:             FALSE
+
+
+
+Node 8:
+    Parent node:              0
+    Type:                     reference
+    DependencyType:           ancestral, non-virtual
+    Source path:              </PR/Child>
+    Source layer stack:       @SpecializesAndAncestralArcs4/ref.sdf@
+    Target path:              </Parent/Child>
+    Target layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Map to parent:
+        /PR -> /Parent
+    Map to root:
+        /PR -> /Parent
+    Namespace depth:          1
+    Depth below introduction: 1
+    Is due to ancestor:       TRUE
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 FALSE
+    Contribute specs:         TRUE
+        Restricted at depth:  0
+    Has specs:                TRUE
+    Has symmetry:             FALSE
+    Prim stack:
+      </PR/Child> ref.sdf - @SpecializesAndAncestralArcs4/ref.sdf@
+Node 9:
+    Parent node:              8
+    Type:                     inherit
+    DependencyType:           non-virtual, partly-direct
+    Source path:              </PR/Sibling>
+    Source layer stack:       @SpecializesAndAncestralArcs4/ref.sdf@
+    Target path:              </PR/Child>
+    Target layer stack:       @SpecializesAndAncestralArcs4/ref.sdf@
+    Map to parent:
+        / -> /
+        /PR/Sibling -> /PR/Child
+    Map to root:
+        /PR -> /Parent
+        /PR/Sibling -> /Parent/Child
+    Namespace depth:          2
+    Depth below introduction: 0
+    Is due to ancestor:       FALSE
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 FALSE
+    Contribute specs:         TRUE
+        Restricted at depth:  0
+    Has specs:                TRUE
+    Has symmetry:             FALSE
+    Prim stack:
+      </PR/Sibling> ref.sdf - @SpecializesAndAncestralArcs4/ref.sdf@
+
+
+Node 10:
+    Parent node:              0
+    Type:                     specialize
+    DependencyType:           non-virtual, partly-direct
+    Source path:              </PIS/Sibling>
+    Source layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Target path:              </Parent/Child>
+    Target layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Origin node:              3
+    Sibling # at origin:      0
+    Map to parent:
+        / -> /
+        /PIS -> /Parent
+        /PIS/Sibling -> /Parent/Child
+    Map to root:
+        / -> /
+        /PIS -> /Parent
+        /PIS/Sibling -> /Parent/Child
+    Namespace depth:          2
+    Depth below introduction: 0
+    Is due to ancestor:       TRUE
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 FALSE
+    Contribute specs:         TRUE
+        Restricted at depth:  0
+    Has specs:                TRUE
+    Has symmetry:             FALSE
+    Prim stack:
+      </PIS/Sibling> root.sdf - @SpecializesAndAncestralArcs4/root.sdf@
+Node 11:
+    Parent node:              10
+    Type:                     inherit
+    DependencyType:           non-virtual, partly-direct
+    Source path:              </PISI/Sibling>
+    Source layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Target path:              </PIS/Sibling>
+    Target layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Map to parent:
+        / -> /
+        /PISI -> /PIS
+    Map to root:
+        / -> /
+        /PISI -> /Parent
+        /PISI/Sibling -> /Parent/Child
+    Namespace depth:          1
+    Depth below introduction: 1
+    Is due to ancestor:       TRUE
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 FALSE
+    Contribute specs:         TRUE
+        Restricted at depth:  0
+    Has specs:                TRUE
+    Has symmetry:             FALSE
+    Prim stack:
+      </PISI/Sibling> root.sdf - @SpecializesAndAncestralArcs4/root.sdf@
+
+
+Node 12:
+    Parent node:              0
+    Type:                     specialize
+    DependencyType:           ancestral, non-virtual
+    Source path:              </PIS/Child>
+    Source layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Target path:              </Parent/Child>
+    Target layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Origin node:              6
+    Sibling # at origin:      0
+    Map to parent:
+        / -> /
+        /PIS -> /Parent
+    Map to root:
+        / -> /
+        /PIS -> /Parent
+    Namespace depth:          1
+    Depth below introduction: 1
+    Is due to ancestor:       TRUE
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 FALSE
+    Contribute specs:         TRUE
+        Restricted at depth:  0
+    Has specs:                TRUE
+    Has symmetry:             FALSE
+    Prim stack:
+      </PIS/Child> root.sdf - @SpecializesAndAncestralArcs4/root.sdf@
+Node 13:
+    Parent node:              12
+    Type:                     inherit
+    DependencyType:           ancestral, non-virtual
+    Source path:              </PISI/Child>
+    Source layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Target path:              </PIS/Child>
+    Target layer stack:       @SpecializesAndAncestralArcs4/root.sdf@
+    Map to parent:
+        / -> /
+        /PISI -> /PIS
+    Map to root:
+        / -> /
+        /PISI -> /Parent
+    Namespace depth:          1
+    Depth below introduction: 1
+    Is due to ancestor:       TRUE
+    Permission:               Public
+    Is restricted:            FALSE
+    Is inert:                 FALSE
+    Contribute specs:         TRUE
+        Restricted at depth:  0
+    Has specs:                TRUE
+    Has symmetry:             FALSE
+    Prim stack:
+      </PISI/Child> root.sdf - @SpecializesAndAncestralArcs4/root.sdf@
+
+
+
+
+
+Prim Stack:
+    root.sdf             /Parent/Child
+    root.sdf             /Parent/Sibling
+    root.sdf             /PI/Sibling
+    root.sdf             /PI/Child
+    ref.sdf              /PR/Child
+    ref.sdf              /PR/Sibling
+    root.sdf             /PIS/Sibling
+    root.sdf             /PISI/Sibling
+    root.sdf             /PIS/Child
+    root.sdf             /PISI/Child
+

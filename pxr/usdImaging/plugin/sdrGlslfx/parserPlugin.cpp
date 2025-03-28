@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usdImaging/plugin/sdrGlslfx/parserPlugin.h"
 
@@ -30,14 +13,14 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/ndr/nodeDiscoveryResult.h"
+#include "pxr/usd/sdr/shaderNodeDiscoveryResult.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 #include "pxr/imaging/hio/glslfx.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-NDR_REGISTER_PARSER_PLUGIN(SdrGlslfxParserPlugin);
+SDR_REGISTER_PARSER_PLUGIN(SdrGlslfxParserPlugin);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -47,10 +30,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sourceType, "glslfx"))
 );
 
-const NdrTokenVec& 
+const SdrTokenVec& 
 SdrGlslfxParserPlugin::GetDiscoveryTypes() const
 {
-    static const NdrTokenVec _DiscoveryTypes = {_tokens->discoveryType};
+    static const SdrTokenVec _DiscoveryTypes = {_tokens->discoveryType};
     return _DiscoveryTypes;
 }
 
@@ -188,8 +171,9 @@ ConvertToSdrCompatibleValueAndType(
     return any;
 }
 
-NdrNodeUniquePtr
-SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
+SdrShaderNodeUniquePtr
+SdrGlslfxParserPlugin::ParseShaderNode(
+    const SdrShaderNodeDiscoveryResult& discoveryResult)
 {
     std::unique_ptr<HioGlslfx> glslfx;
 
@@ -202,10 +186,10 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
         glslfx = std::make_unique<HioGlslfx>(sourceCodeStream);
 
     } else {
-        TF_WARN("Invalid NdrNodeDiscoveryResult with identifier %s: both uri "
-            "and sourceCode are empty.", nodeIdentifier.GetText());
+        TF_WARN("Invalid SdrShaderNodeDiscoveryResult with identifier %s: "
+            "both uri and sourceCode are empty.", nodeIdentifier.GetText());
 
-        return NdrParserPlugin::GetInvalidNode(discoveryResult);
+        return SdrParserPlugin::GetInvalidShaderNode(discoveryResult);
     }
 
     std::string errorString;
@@ -215,7 +199,7 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             errorString.c_str());
     }
 
-    NdrPropertyUniquePtrVec nodeProperties;
+    SdrShaderPropertyUniquePtrVec nodeProperties;
 
     HioGlslfxConfig::Parameters params = glslfx->GetParameters();
     for (HioGlslfxConfig::Parameter const & p : params) {
@@ -227,9 +211,9 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             &arraySize,
             &sdrType);
 
-        NdrTokenMap hints;
-        NdrOptionVec options;
-        NdrTokenMap localMetadata;
+        SdrTokenMap hints;
+        SdrOptionVec options;
+        SdrTokenMap localMetadata;
         nodeProperties.push_back(
             std::make_unique<SdrShaderProperty>(
                 TfToken(p.name),
@@ -259,9 +243,9 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             defaultValue = VtValue(GfVec3f(0.0,0.0,0.0));
         }
 
-        NdrTokenMap hints;
-        NdrOptionVec options;
-        NdrTokenMap localMetadata;
+        SdrTokenMap hints;
+        SdrOptionVec options;
+        SdrTokenMap localMetadata;
         nodeProperties.push_back(
             std::make_unique<SdrShaderProperty>(
                 TfToken(t.name),
@@ -275,7 +259,7 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
             ));
     }
 
-    NdrTokenMap metadata = discoveryResult.metadata;
+    SdrTokenMap metadata = discoveryResult.metadata;
     std::vector<std::string> primvarNames;
     if (metadata.count(SdrNodeMetadata->Primvars)) {
         primvarNames.push_back(metadata.at(SdrNodeMetadata->Primvars));
@@ -286,7 +270,9 @@ SdrGlslfxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
         primvarNames.push_back(a.name);
     }
 
-    metadata[SdrNodeMetadata->Primvars] = TfStringJoin(primvarNames, "|");
+    if (!primvarNames.empty()) {
+        metadata[SdrNodeMetadata->Primvars] = TfStringJoin(primvarNames, "|");
+    }
 
     // XXX: Add support for reading metadata from glslfx and converting
     //      to node metadata

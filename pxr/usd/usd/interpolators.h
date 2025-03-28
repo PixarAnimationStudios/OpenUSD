@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_USD_INTERPOLATORS_H
 #define PXR_USD_USD_INTERPOLATORS_H
@@ -61,16 +44,16 @@ class Usd_NullInterpolator
     : public Usd_InterpolatorBase
 {
 public:
-    virtual bool Interpolate(
+    bool Interpolate(
         const SdfLayerRefPtr& layer, const SdfPath& path,
         double time, double lower, double upper) final
     {
         return false;
     }
 
-    virtual bool Interpolate(
+    bool Interpolate(
         const Usd_ClipSetRefPtr& clipSet, const SdfPath& path,
-        double time, double lower, double upper)
+        double time, double lower, double upper) final
     {
         return false;
     }
@@ -94,11 +77,11 @@ public:
     {
     }
 
-    virtual bool Interpolate(
+    bool Interpolate(
         const SdfLayerRefPtr& layer, const SdfPath& path,
         double time, double lower, double upper) final;
 
-    virtual bool Interpolate(
+    bool Interpolate(
         const Usd_ClipSetRefPtr& clipSet, const SdfPath& path,
         double time, double lower, double upper) final;
 
@@ -132,17 +115,21 @@ public:
     {
     }
 
-    virtual bool Interpolate(
+    bool Interpolate(
         const SdfLayerRefPtr& layer, const SdfPath& path,
         double time, double lower, double upper) final
     {
+        // In case of held interpolation, lower sample's value will be held and
+        // hence directly returned.
         return layer->QueryTimeSample(path, lower, _result);
     }
 
-    virtual bool Interpolate(
+    bool Interpolate(
         const Usd_ClipSetRefPtr& clipSet, const SdfPath& path,
         double time, double lower, double upper) final
     {
+        // In case of held interpolation, lower sample's value will be held and
+        // hence directly returned.
         return clipSet->QueryTimeSample(path, lower, this, _result);
     }
 
@@ -192,14 +179,14 @@ public:
     {
     }
 
-    virtual bool Interpolate(
+    bool Interpolate(
         const SdfLayerRefPtr& layer, const SdfPath& path,
         double time, double lower, double upper) final
     {
         return _Interpolate(layer, path, time, lower, upper);
     }
 
-    virtual bool Interpolate(
+    bool Interpolate(
         const Usd_ClipSetRefPtr& clipSet, const SdfPath& path,
         double time, double lower, double upper) final
     {
@@ -224,13 +211,19 @@ private:
 
         if (!Usd_QueryTimeSample(
                 src, path, lower, &lowerInterpolator, &lowerValue)) {
+            // lower sample is a block, so we can't interpolate with the upper
+            // sample, we fallback to held and just return the lower sample.
             return false;
         } 
-        else if (!Usd_QueryTimeSample(
+        if (!Usd_QueryTimeSample(
                 src, path, upper, &upperInterpolator, &upperValue)) {
-            upperValue = lowerValue; 
+            // upper sample is a block, so we can't interpolate with the lower
+            // sample, we fallback to held and just return the lower sample.
+            *_result = lowerValue;
+            return true;
         }
 
+        // interpolate between lower and upper values for the parametric time.
         const double parametricTime = (time - lower) / (upper - lower);
         *_result = Usd_Lerp(parametricTime, lowerValue, upperValue);
         return true;
@@ -252,14 +245,14 @@ public:
     {
     }
 
-    virtual bool Interpolate(
+    bool Interpolate(
         const SdfLayerRefPtr& layer, const SdfPath& path,
         double time, double lower, double upper) final
     {
         return _Interpolate(layer, path, time, lower, upper);
     }
 
-    virtual bool Interpolate(
+    bool Interpolate(
         const Usd_ClipSetRefPtr& clipSet, const SdfPath& path,
         double time, double lower, double upper) final
     {
@@ -281,16 +274,20 @@ private:
         // which is the type of the contained value.
         Usd_LinearInterpolator<VtArray<T> > lowerInterpolator(&lowerValue);
         Usd_LinearInterpolator<VtArray<T> > upperInterpolator(&upperValue);
-        
+
         if (!Usd_QueryTimeSample(
                 src, path, lower, &lowerInterpolator, &lowerValue)) {
+            // lower sample is a block, so we can't interpolate with the upper
+            // sample, we fallback to held and just return the lower sample.
             return false;
         } 
-        else if (!Usd_QueryTimeSample(
+        if (!Usd_QueryTimeSample(
                 src, path, upper, &upperInterpolator, &upperValue)) {
-            upperValue = lowerValue;
+            // upper sample is a block, so we can't interpolate with the lower
+            // sample, we fallback to held and just return the lower sample.
+            _result->swap(lowerValue);
+            return true;
         }
-
 
         // Fall back to held interpolation (_result is set to lowerValue above)
         // if sizes don't match. We don't consider this an error because
@@ -302,6 +299,7 @@ private:
             return true;
         }
 
+        // interpolate between lower and upper values for the parametric time.
         const double parametricTime = (time - lower) / (upper - lower);
         if (parametricTime == 0.0) {
             // just swap the lower value in.
@@ -330,10 +328,12 @@ private:
     VtArray<T>* _result;
 };
 
-/// If \p lower == \p upper, sets \p result to the time sample at 
-/// that time in the given \p src clip or layer. Otherwise,
-/// interpolates the value at the given \p time between \p lower 
-/// and \p upper using the given \p interpolator.
+// If \p lower == \p upper, sets \p result to the time sample at 
+// that time in the given \p src clip or layer. 
+// Otherwise, interpolates the value at the given \p time between \p lower and 
+// \p upper using the given \p interpolator. 
+// Note that if querying for a prevalue, lower and upper represent the 
+// bracketing samples for the previous time samples segment.
 template <class Src, class T>
 inline bool
 Usd_GetOrInterpolateValue(

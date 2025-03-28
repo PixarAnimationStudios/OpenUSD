@@ -4,6 +4,10 @@
 )
 
 class Volume "Volume" (
+    customData = {
+        string userDocBrief = """A renderable volume containing one or more
+volumetric data fields, used to represent a volume effect such as smoke or fire."""
+    }
     doc = """A renderable volume primitive. A volume is made up of any number
              of FieldBase primitives bound together in this volume. Each
              FieldBase primitive is specified as a relationship with a
@@ -136,6 +140,9 @@ class Volume "Volume" (
 }
 
 class "FieldBase" (
+    customData = {
+        string userDocBrief = "The base schema class for volume field primitives."
+    }
     doc = "Base class for field primitives."
 )
 {
@@ -193,10 +200,18 @@ class "FieldBase" (
 }
 
 class "FieldAsset" (
+    customData = {
+        string userDocBrief = """The base schema class for volume field 
+primitives defined by an external file."""
+    }
     doc = "Base class for field primitives defined by an external file."
 )
 {
     token fieldDataType (
+        customData = {
+            string userDocBrief = """Token used to indicate the data type of an
+individual field"""
+        }
         doc = """Token which is used to indicate the data type of an
                  individual field. Authors use this to tell consumers more
                  about the field without opening the file on disk. The list of 
@@ -204,16 +219,27 @@ class "FieldAsset" (
                  A missing value is considered an error."""
     )
     int fieldIndex (
+        customData = {
+            string userDocBrief = """Optional attribute that stores an index used 
+to disambiguate between fields with the same name."""
+        }
         doc = """A file can contain multiple fields with the same
                  name. This optional attribute is an index used to
                  disambiguate between these multiple fields with the same
                  name."""
     )
     token fieldName (
+        customData = {
+            string userDocBrief = """Name of an individual field within the file 
+specified by the filePath attribute."""
+        }
         doc = """Name of an individual field within the file specified by
                  the filePath attribute."""
     )
     asset filePath (
+        customData = {
+            string userDocBrief = "An asset path attribute that points to a file on disk."
+        }
         doc = """An asset path attribute that points to a file on disk.
                  For each supported file format, a separate FieldAsset
                  subclass is required. 
@@ -256,6 +282,10 @@ class "FieldAsset" (
     )
     token vectorDataRoleHint = "None" (
         allowedTokens = ["None", "Point", "Normal", "Vector", "Color"]
+        customData = {
+            string userDocBrief = """Optional token used to indicate the role of 
+a vector valued field."""
+        }
         doc = """Optional token which is used to indicate the role of a vector
                  valued field. This can drive the data type in which fields
                  are made available in a renderer or whether the vector values 
@@ -284,12 +314,19 @@ class "FieldAsset" (
 }
 
 class Field3DAsset "Field3DAsset" (
+    customData = {
+        string userDocBrief = "Field3D field primitive."
+    }
     doc = """Field3D field primitive. The FieldAsset filePath attribute must
              specify a file in the Field3D format on disk."""
 )
 {
     token fieldDataType (
         allowedTokens = ["half", "float", "double", "half3", "float3", "double3"]
+        customData = {
+            string userDocBrief = """Token used to indicate the data type of an
+individual field."""
+        }
         doc = """Token which is used to indicate the data type of an
                  individual field. Authors use this to tell consumers more
                  about the field without opening the file on disk. The list of 
@@ -297,21 +334,36 @@ class Field3DAsset "Field3DAsset" (
                  volumes."""
     )
     int fieldIndex (
+        customData = {
+            string userDocBrief = """Optional attribute that stores an index used 
+to disambiguate between fields with the same name."""
+        }
         doc = """A file can contain multiple fields with the same
                  name. This optional attribute is an index used to
                  disambiguate between these multiple fields with the same
                  name."""
     )
     token fieldName (
+        customData = {
+            string userDocBrief = """Name of an individual field within the file 
+specified by the filePath attribute."""
+        }
         doc = """Name of an individual field within the file specified by
                  the filePath attribute."""
     )
     token fieldPurpose (
+        customData = {
+            string userDocBrief = """Optional token used to indicate the purpose or 
+grouping of an individual field."""
+        }
         doc = """Optional token which can be used to indicate the purpose or 
                  grouping of an individual field. Clients which consume Field3D 
                  files should treat this as the Field3D field name."""
     )
     asset filePath (
+        customData = {
+            string userDocBrief = "An asset path attribute that points to a file on disk."
+        }
         doc = """An asset path attribute that points to a file on disk.
                  For each supported file format, a separate FieldAsset
                  subclass is required. 
@@ -354,6 +406,10 @@ class Field3DAsset "Field3DAsset" (
     )
     token vectorDataRoleHint = "None" (
         allowedTokens = ["None", "Point", "Normal", "Vector", "Color"]
+        customData = {
+            string userDocBrief = """Optional token used to indicate the role of 
+a vector valued field."""
+        }
         doc = """Optional token which is used to indicate the role of a vector
                  valued field. This can drive the data type in which fields
                  are made available in a renderer or whether the vector values 
@@ -382,12 +438,19 @@ class Field3DAsset "Field3DAsset" (
 }
 
 class OpenVDBAsset "OpenVDBAsset" (
+    customData = {
+        string userDocBrief = "OpenVDB field primitive."
+    }
     doc = """OpenVDB field primitive. The FieldAsset filePath attribute must
              specify a file in the OpenVDB format on disk."""
 )
 {
     token fieldClass (
         allowedTokens = ["levelSet", "fogVolume", "staggered", "unknown"]
+        customData = {
+            string userDocBrief = """Optional token used to indicate the class of
+an individual grid."""
+        }
         doc = """Optional token which can be used to indicate the class of
                  an individual grid. This is a mapping to openvdb::GridClass
                  where the values are GRID_LEVEL_SET, GRID_FOG_VOLUME, 
@@ -395,6 +458,10 @@ class OpenVDBAsset "OpenVDBAsset" (
     )
     token fieldDataType (
         allowedTokens = ["half", "float", "double", "int", "uint", "int64", "half2", "float2", "double2", "int2", "half3", "float3", "double3", "int3", "matrix3d", "matrix4d", "quatd", "bool", "mask", "string"]
+        customData = {
+            string userDocBrief = """Token used to indicate the data type of an
+individual field."""
+        }
         doc = """Token which is used to indicate the data type of an
                  individual field. Authors use this to tell consumers more
                  about the field without opening the file on disk. The list of 
@@ -402,16 +469,27 @@ class OpenVDBAsset "OpenVDBAsset" (
                  volumes."""
     )
     int fieldIndex (
+        customData = {
+            string userDocBrief = """Optional attribute that stores an index used 
+to disambiguate between fields with the same name."""
+        }
         doc = """A file can contain multiple fields with the same
                  name. This optional attribute is an index used to
                  disambiguate between these multiple fields with the same
                  name."""
     )
     token fieldName (
+        customData = {
+            string userDocBrief = """Name of an individual field within the file 
+specified by the filePath attribute."""
+        }
         doc = """Name of an individual field within the file specified by
                  the filePath attribute."""
     )
     asset filePath (
+        customData = {
+            string userDocBrief = "An asset path attribute that points to a file on disk."
+        }
         doc = """An asset path attribute that points to a file on disk.
                  For each supported file format, a separate FieldAsset
                  subclass is required. 
@@ -454,6 +532,10 @@ class OpenVDBAsset "OpenVDBAsset" (
     )
     token vectorDataRoleHint = "None" (
         allowedTokens = ["None", "Point", "Normal", "Vector", "Color"]
+        customData = {
+            string userDocBrief = """Optional token used to indicate the role of 
+a vector valued field."""
+        }
         doc = """Optional token which is used to indicate the role of a vector
                  valued field. This can drive the data type in which fields
                  are made available in a renderer or whether the vector values 

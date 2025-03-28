@@ -1,25 +1,8 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdsi/extComputationPrimvarPruningSceneIndex.h"
 
@@ -29,6 +12,7 @@
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/dataSourceLegacyPrim.h"
 #include "pxr/imaging/hd/extComputationContextInternal.h"
+#include "pxr/imaging/hd/extComputationCpuCallback.h"
 #include "pxr/imaging/hd/extComputationSchema.h"
 #include "pxr/imaging/hd/extComputationInputComputationSchema.h"
 #include "pxr/imaging/hd/extComputationOutputSchema.h"
@@ -146,23 +130,17 @@ private:
     using TokenPairs = std::vector<TokenPair>;
 
     static SdfPathVector
-    _GetInputComputationPaths(HdVectorDataSourceHandle inputCompsDs)
+    _GetInputComputationPaths(
+        const HdExtComputationInputComputationContainerSchema &inputComps)
     {
-        if (!ARCH_UNLIKELY(inputCompsDs)) {
-            return SdfPathVector();
-        }
-
         SdfPathVector result;
 
-        for (size_t i = 0; i < inputCompsDs->GetNumElements(); i++) {
-
-            if (HdContainerDataSourceHandle c =
-                    HdContainerDataSource::Cast(inputCompsDs->GetElement(i))) {
-                
-                HdExtComputationInputComputationSchema inputCompSchema(c);
-                if (auto ds = inputCompSchema.GetSourceComputation()) {
-                    result.push_back(ds->GetTypedValue(0.0f));
-                }
+        for (const TfToken &name : inputComps.GetNames()) {
+            const HdExtComputationInputComputationSchema inputComp =
+                inputComps.Get(name);
+            if (HdPathDataSourceHandle const ds =
+                    inputComp.GetSourceComputation()) {
+                result.push_back(ds->GetTypedValue(0.0f));
             }
         }
 
@@ -183,7 +161,7 @@ private:
         _PathQueue compsQueue = { sourceCompId };
         
         while (!compsQueue.empty()) {
-            const SdfPath& curCompId = compsQueue.front();
+            const SdfPath curCompId = compsQueue.front();
             compsQueue.pop_front();
             
             // Nothing to do since we've already processed this computation
@@ -215,53 +193,16 @@ private:
 
     static TokenPairs
     _GetComputationInputAndSourceOutputNames(
-        HdVectorDataSourceHandle inputCompsDs)
+        const HdExtComputationInputComputationContainerSchema &inputComps)
     {
-        if (!ARCH_UNLIKELY(inputCompsDs)) {
-            return TokenPairs();
-        }
-
         TokenPairs result;
 
-        for (size_t i = 0; i < inputCompsDs->GetNumElements(); i++) {
-
-            if (HdContainerDataSourceHandle c =
-                    HdContainerDataSource::Cast(inputCompsDs->GetElement(i))) {
-                
-                HdExtComputationInputComputationSchema inputCompSchema(c);
-                auto h1 = inputCompSchema.GetName();
-                auto h2 = inputCompSchema.GetSourceComputationOutputName();
-
-                if (h1 && h2) {
-                    result.emplace_back(
-                        std::make_pair(h1->GetTypedValue(0.0f),
-                                       h2->GetTypedValue(0.0f)));
-                }
-            }
-        }
-
-        return result;
-    }
-
-    static TfTokenVector
-    _GetComputationOutputNames(HdVectorDataSourceHandle outputsDs)
-    {
-        if (!ARCH_UNLIKELY(outputsDs)) {
-            return TfTokenVector();
-        }
-
-        TfTokenVector result;
-
-        for (size_t i = 0; i < outputsDs->GetNumElements(); i++) {
-
-            if (HdContainerDataSourceHandle c =
-                HdContainerDataSource::Cast(
-                    outputsDs->GetElement(i))) {
-
-                HdExtComputationOutputSchema outputSchema(c);
-                if (auto ds = outputSchema.GetName()) {
-                    result.push_back(ds->GetTypedValue(0.0f));
-                }
+        for (const TfToken &name : inputComps.GetNames()) {
+            const HdExtComputationInputComputationSchema inputComp =
+                inputComps.Get(name);
+            if (HdTokenDataSourceHandle const ds =
+                    inputComp.GetSourceComputationOutputName()) {
+                result.emplace_back(name, ds->GetTypedValue(0.0f));
             }
         }
 
@@ -282,10 +223,11 @@ private:
         std::vector<HdSampledDataSourceHandle> sources;
         for (const auto& comp : compDsMap) {
             HdExtComputationSchema cs(comp.second);
-            HdContainerDataSourceHandle inputDs = cs.GetInputValues();
-            for (const TfToken& name : inputDs->GetNames()) {
-                if (auto sds = HdSampledDataSource::Cast(inputDs->Get(name))) {
-                    sources.push_back(sds);
+            const HdSampledDataSourceContainerSchema input =
+                cs.GetInputValues();
+            for (const TfToken& name : input.GetNames()) {
+                if (HdSampledDataSourceHandle const ds = input.Get(name)) {
+                    sources.push_back(ds);
                 }
             }
         }
@@ -381,21 +323,21 @@ private:
                 HdExtComputationSchema cs(compDsMap[compId]);
 
                 // Add (attribute) inputs to the value store.
-                HdContainerDataSourceHandle inputsDs =
+                const HdSampledDataSourceContainerSchema inputValues =
                     cs.GetInputValues();
-                for (TfToken const &name : inputsDs->GetNames()) {
+                for (TfToken const &name : inputValues.GetNames()) {
                     
-                    if (HdSampledDataSourceHandle sds =
-                            HdSampledDataSource::Cast(inputsDs->Get(name))) {
-
-                        valueStore[name] = sds->GetValue(shutterOffset);
+                    if (HdSampledDataSourceHandle const ds =
+                            inputValues.Get(name)) {
+                        valueStore[name] = ds->GetValue(shutterOffset);
                     }
                 }
 
                 // If the computation is an input aggregator (i.e., produces no
                 // outputs), there's nothing more to do.
-                HdVectorDataSourceHandle outputsDs = cs.GetOutputs();
-                if (!outputsDs || outputsDs->GetNumElements() == 0) {
+                const HdExtComputationOutputContainerSchema outputs =
+                    cs.GetOutputs();
+                if (outputs.GetNames().empty()) {
                     continue;
                 }
 
@@ -403,7 +345,7 @@ private:
 
                 // Update the execution context with ...
                 // ... (attribute) inputs
-                for (TfToken const &name : inputsDs->GetNames()) {
+                for (TfToken const &name : inputValues.GetNames()) {
                     if (ARCH_UNLIKELY(
                         valueStore.find(name) == valueStore.end())) {
                         TF_WARN("Couldn't find input %s for computation "
@@ -438,17 +380,22 @@ private:
                 // Execute computation ....
                 // Note: Handle only scene index emulated ext computations
                 //       via the cast below.
-                if (HdExtComputationCallbackDataSourceHandle callbackDs =
-                        HdExtComputationCallbackDataSource::Cast(
-                            cs.GetCpuCallback())) {
-                    
-                    callbackDs->Invoke(&executionContext);
-
-                } else {
+                HdExtComputationCpuCallbackDataSourceHandle const ds =
+                    cs.GetCpuCallback();
+                if (!ds) {
                     TF_WARN("Could not find CPU callback data source for %s",
                             compId.GetText());
                     continue;
                 }
+                HdExtComputationCpuCallbackSharedPtr const callback =
+                    ds->GetTypedValue(0.0f);
+                if (!callback) {
+                    TF_WARN("Invalid CPU callback for %s",
+                            compId.GetText());
+                    continue;
+                }
+
+                callback->Compute(&executionContext);
 
                 // ... and add outputs to the value store.
                 if (executionContext.HasComputationError()) {
@@ -459,8 +406,8 @@ private:
 
                 } else {
 
-                    TfTokenVector outputNames =
-                        _GetComputationOutputNames(outputsDs);
+                    const TfTokenVector outputNames =
+                        outputs.GetNames();
                     
                     const bool updateResult = (compId == sourceCompId);
 

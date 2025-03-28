@@ -1,0 +1,196 @@
+//
+// Copyright 2019 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+shader UsdPreviewSurfaceParameters
+(
+    // Inputs
+    color diffuseColor = color(0.18, 0.18, 0.18),
+    color emissiveColor = color(0.0, 0.0, 0.0),
+    int useSpecularWorkflow = 0,
+    color specularColor = color(0.0, 0.0, 0.0),
+    float metallic = 0.0,
+    float roughness = 0.5,
+    float clearcoat = 0.0,
+    float clearcoatRoughness = 0.01,
+    float opacity = 1.0,
+    float opacityThreshold = 0.0,
+    float ior = 1.5,
+    normal normalIn = normal(0.0, 0.0, 1.0),
+    float displacement = 0.0,
+    float occlusion = 1.0,
+
+    // Diffuse outputs
+    output float diffuseGainOut = 0.0
+        [[ string widget = "null" ]],
+    output color diffuseColorOut = color(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+
+    // Specular outputs
+    output color specularFaceColorOut = color(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+    output color specularEdgeColorOut = color(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+    output float specularRoughnessOut = 0.0
+        [[ string widget = "null" ]],
+    output color specularIorOut = color(0.0)
+        [[ string widget = "null" ]],
+
+    // Clearcoat outputs
+    output color clearcoatFaceColorOut = color(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+    output color clearcoatEdgeColorOut = color(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+    output float clearcoatRoughnessOut = 0.0
+        [[ string widget = "null" ]],
+
+    // Emissive outputs
+    output float glowGainOut = 0.0
+        [[ string widget = "null" ]],
+    output color glowColorOut = color(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+
+    // Normal outputs
+    output normal bumpNormalOut = normal(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+
+    // Opacity & Presence outputs
+    output float glassIorOut= 0.0
+        [[ string widget = "null" ]],
+    output float glassRoughnessOut = 0.0
+        [[ string widget = "null" ]],
+    output float refractionGainOut = 0.0
+        [[ string widget = "null" ]],
+    output float presenceOut = 1.0
+        [[ string widget = "null" ]],
+    
+    // Displacement outputs
+    output float dispAmountOut = 0.0
+        [[ string widget = "null" ]],
+    output float dispScalarOut = 0.0
+        [[ string widget = "null" ]],
+)
+{
+    // To achieve double-sided materials from a geometry-level property,
+    // we set a special user:hydra:doubleSided attribute during renderParam
+    // setup (see hdPrman/renderParam.cpp) and read that here. We also check 
+    // whether we are shading the front or back based on backfacing().
+    // 
+    // NB: We have to do this test in the shader because the *DoubleSided
+    // parameters of PxrSurface are NOT CONNECTABLE, so we cannot just switch
+    // them based on an output from this shader. We have to make the backface-
+    // shading decision here.
+    
+    int isDoubleSided = 0;
+    getattribute("user:hydra:doubleSided", isDoubleSided);
+    int isFrontSide = !backfacing();
+
+    if (isDoubleSided || isFrontSide) {
+
+        // Normal map
+        // Convert tangent space normalIn to bumpNormalOut
+        {
+            vector Tn = vector (1.0,0.0,0.0);
+            getattribute("builtin", "Tn", Tn);
+            vector Bn = normalize(cross(N, Tn));
+
+            // Convert from tangent-space normal to current space
+            bumpNormalOut = Tn * normalIn[0] +
+                            Bn * normalIn[1] + 
+                            N * normalIn[2];
+            bumpNormalOut = normalize(bumpNormalOut);
+
+            // Avoid artifacts along edges where bump normals might face away from camera.
+            if (isFrontSide) {
+                // Adjust bump normals that are facing away from the camera
+                vector Vn = normalize(-I);
+                float VdotN = dot(Vn, bumpNormalOut);
+                if (VdotN <= 0)
+                {
+                    // If the input normal faces away from camera, nudge it back
+                    // pad an extra 1% towards V
+                    bumpNormalOut -= 1.01 * VdotN * Vn;
+                    bumpNormalOut = normalize(bumpNormalOut);
+                }
+            }
+        }
+
+        // This check ensures that the permuted shading normal hasn't altered
+        // the surface's orientation relative to the incident ray. If it has,
+        // we skip shading (except for bumpNormalOut and displacement).
+        int isFrontFacing = (isFrontSide == (dot(bumpNormalOut, I) < 0.0));
+        if (isFrontFacing) {
+        
+            // Diffuse
+            if (diffuseColor[0] > 0.0 ||
+                diffuseColor[1] > 0.0 ||
+                diffuseColor[2] > 0.0)
+            {
+                diffuseGainOut = 1.0;
+                diffuseColorOut = diffuseColor;
+            }
+
+            // Opacity Threshold
+            float opacityAdjusted = opacity;
+            if (opacityThreshold > 0.0) {
+                if (opacity < opacityThreshold) {
+                    opacityAdjusted = 0.0;
+                } else {
+                    opacityAdjusted = 1.0;
+                }
+            }
+
+            // Opacity
+            if (opacityAdjusted < 1.0) {
+                glassIorOut = ior;
+                glassRoughnessOut = 0.0;
+                diffuseGainOut *= opacityAdjusted;
+                refractionGainOut = (1.0 - opacityAdjusted);
+                presenceOut = opacityAdjusted;
+            }
+
+            // Specular
+            // Assumes "Physical" for both Specular and Rough Specular
+            float r = (1.0 - ior) / (1.0 + ior);
+            if (useSpecularWorkflow) {
+                specularFaceColorOut = specularColor;
+                specularEdgeColorOut = color(1.0,1.0,1.0);
+            } else {
+                float metal = clamp(metallic, 0.0, 1.0); 
+                color spec = mix(color(1.0,1.0,1.0), diffuseColor, metal);
+                specularFaceColorOut = mix(r * r * spec, spec, metal);
+                specularEdgeColorOut = spec;
+
+                diffuseGainOut *= 1.0 - metal;
+            }
+            specularIorOut = color(ior);
+            specularRoughnessOut = roughness;
+
+            // Clearcoat
+            if (clearcoat > 0.0) {
+                color clearcoatColor = color(1.0, 1.0, 1.0);
+                clearcoatFaceColorOut = clearcoat * r * r * clearcoatColor;
+                clearcoatEdgeColorOut = clearcoat * clearcoatColor;
+                clearcoatRoughnessOut = clearcoatRoughness;
+            }
+
+            // Emissive
+            if (emissiveColor[0] > 0.0 ||
+                emissiveColor[1] > 0.0 ||
+                emissiveColor[2] > 0.0)
+            {
+                glowGainOut = 1.0;
+                glowColorOut = emissiveColor;
+            }
+        }
+
+        // Displacement
+        if (displacement != 0.0)
+        {
+            dispAmountOut = 0.1;
+            dispScalarOut = displacement;
+        }
+    }
+}

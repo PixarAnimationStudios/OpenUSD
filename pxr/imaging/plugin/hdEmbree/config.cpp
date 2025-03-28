@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/plugin/hdEmbree/config.h"
 
@@ -37,26 +20,49 @@ TF_INSTANTIATE_SINGLETON(HdEmbreeConfig);
 // Each configuration variable has an associated environment variable.
 // The environment variable macro takes the variable name, a default value,
 // and a description...
-TF_DEFINE_ENV_SETTING(HDEMBREE_SAMPLES_TO_CONVERGENCE, 100,
-        "Samples per pixel before we stop rendering (must be >= 1)");
+TF_DEFINE_ENV_SETTING(
+    HDEMBREE_SAMPLES_TO_CONVERGENCE,
+    HdEmbreeDefaultSamplesToConvergence,
+    "Samples per pixel before we stop rendering (must be >= 1)");
 
-TF_DEFINE_ENV_SETTING(HDEMBREE_TILE_SIZE, 8,
-        "Size (per axis) of threading work units (must be >= 1)");
+TF_DEFINE_ENV_SETTING(
+    HDEMBREE_TILE_SIZE,
+    HdEmbreeDefaultTileSize,
+    "Size (per axis) of threading work units (must be >= 1)");
 
-TF_DEFINE_ENV_SETTING(HDEMBREE_AMBIENT_OCCLUSION_SAMPLES, 16,
-        "Ambient occlusion samples per camera ray (must be >= 0; a value of 0 disables ambient occlusion)");
+TF_DEFINE_ENV_SETTING(
+    HDEMBREE_AMBIENT_OCCLUSION_SAMPLES,
+    HdEmbreeDefaultAmbientOcclusionSamples,
+    "Ambient occlusion samples per camera ray (must be >= 0;"
+    " a value of 0 disables ambient occlusion)");
 
-TF_DEFINE_ENV_SETTING(HDEMBREE_JITTER_CAMERA, 1,
-        "Should HdEmbree jitter camera rays while rendering? (values >0 are true)");
+TF_DEFINE_ENV_SETTING(
+    HDEMBREE_JITTER_CAMERA,
+    HdEmbreeDefaultJitterCamera,
+    "Should HdEmbree jitter camera rays while rendering?");
 
-TF_DEFINE_ENV_SETTING(HDEMBREE_USE_FACE_COLORS, 1,
-        "Should HdEmbree use face colors while rendering? (values > 0 are true)");
+TF_DEFINE_ENV_SETTING(
+    HDEMBREE_USE_FACE_COLORS,
+    HdEmbreeDefaultUseFaceColors,
+    "Should HdEmbree use face colors while rendering?");
 
-TF_DEFINE_ENV_SETTING(HDEMBREE_CAMERA_LIGHT_INTENSITY, 300,
-        "Intensity of the camera light, specified as a percentage of <1,1,1>.");
+TF_DEFINE_ENV_SETTING(
+    HDEMBREE_CAMERA_LIGHT_INTENSITY,
+    HdEmbreeDefaultCameraLightIntensity,
+    "Intensity of the camera light, specified as a percentage of <1,1,1>.");
 
-TF_DEFINE_ENV_SETTING(HDEMBREE_PRINT_CONFIGURATION, 0,
-        "Should HdEmbree print configuration on startup? (values > 0 are true)");
+TF_DEFINE_ENV_SETTING(
+    HDEMBREE_RANDOM_NUMBER_SEED,
+    HdEmbreeDefaultRandomNumberSeed,
+    "Seed to give to the random number generator. A value of anything other"
+        " than -1, combined with setting PXR_WORK_THREAD_LIMIT=1, should"
+        " give deterministic / repeatable results. A value of -1 (the"
+        " default) will allow the implementation to set a value that varies"
+        " from invocation to invocation and thread to thread.");
+
+TF_DEFINE_ENV_SETTING(HDEMBREE_PRINT_CONFIGURATION,
+    false,
+    "Should HdEmbree print configuration on startup?");
 
 HdEmbreeConfig::HdEmbreeConfig()
 {
@@ -67,12 +73,13 @@ HdEmbreeConfig::HdEmbreeConfig()
             TfGetEnvSetting(HDEMBREE_TILE_SIZE));
     ambientOcclusionSamples = std::max(0,
             TfGetEnvSetting(HDEMBREE_AMBIENT_OCCLUSION_SAMPLES));
-    jitterCamera = (TfGetEnvSetting(HDEMBREE_JITTER_CAMERA) > 0);
-    useFaceColors = (TfGetEnvSetting(HDEMBREE_USE_FACE_COLORS) > 0);
+    jitterCamera = (TfGetEnvSetting(HDEMBREE_JITTER_CAMERA));
+    useFaceColors = (TfGetEnvSetting(HDEMBREE_USE_FACE_COLORS));
     cameraLightIntensity = (std::max(100,
             TfGetEnvSetting(HDEMBREE_CAMERA_LIGHT_INTENSITY)) / 100.0f);
+    randomNumberSeed = TfGetEnvSetting(HDEMBREE_RANDOM_NUMBER_SEED);
 
-    if (TfGetEnvSetting(HDEMBREE_PRINT_CONFIGURATION) > 0) {
+    if (TfGetEnvSetting(HDEMBREE_PRINT_CONFIGURATION)) {
         std::cout
             << "HdEmbree Configuration: \n"
             << "  samplesToConvergence       = "
@@ -87,6 +94,8 @@ HdEmbreeConfig::HdEmbreeConfig()
             <<    useFaceColors           << "\n"
             << "  cameraLightIntensity      = "
             <<    cameraLightIntensity    << "\n"
+            << "  randomNumberSeed          = "
+            <<    randomNumberSeed        << "\n"
             ;
     }
 }

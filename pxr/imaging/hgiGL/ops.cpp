@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/garch/glApi.h"
 
@@ -115,6 +98,8 @@ HgiGLOps::CopyTextureGpuToCpu(HgiTextureGpuToCpuOp const& copyOp)
             return;
         }
 
+        glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
         glGetTextureSubImage(
             srcTexture->GetTextureId(),
             copyOp.mipLevel,
@@ -153,6 +138,8 @@ HgiGLOps::CopyTextureCpuToGpu(HgiTextureCpuToGpuOp const& copyOp)
 
         HgiGLTexture* dstTexture = static_cast<HgiGLTexture*>(
             copyOp.gpuDestinationTexture.Get());
+
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
         switch(desc.type) {
         case HgiTextureType2D:
@@ -757,6 +744,16 @@ HgiGLOps::Dispatch(int dimX, int dimY)
     };
 }
 
+static
+bool
+_IsInt32Format(HgiFormat format)
+{
+    return (format == HgiFormatInt32) ||
+           (format == HgiFormatInt32Vec2) ||
+           (format == HgiFormatInt32Vec3) ||
+           (format == HgiFormatInt32Vec4);
+}
+
 HgiGLOpsFn
 HgiGLOps::BindFramebufferOp(
     HgiGLDevice* device,
@@ -786,7 +783,19 @@ HgiGLOps::BindFramebufferOp(
             }
 
             if (colorAttachment.loadOp == HgiAttachmentLoadOpClear) {
-                glClearBufferfv(GL_COLOR, i, colorAttachment.clearValue.data());
+                // Special handling for int format used by id renders.
+                if (_IsInt32Format(colorAttachment.format)) {
+                    GLint clearValue[4] = {
+                        static_cast<GLint>(colorAttachment.clearValue[0]),
+                        static_cast<GLint>(colorAttachment.clearValue[1]),
+                        static_cast<GLint>(colorAttachment.clearValue[2]),
+                        static_cast<GLint>(colorAttachment.clearValue[3])
+                    };
+                    glClearBufferiv(GL_COLOR, i, clearValue);
+                } else {
+                    glClearBufferfv(
+                        GL_COLOR, i, colorAttachment.clearValue.data());
+                }
             }
 
             blendEnabled |= colorAttachment.blendEnabled;

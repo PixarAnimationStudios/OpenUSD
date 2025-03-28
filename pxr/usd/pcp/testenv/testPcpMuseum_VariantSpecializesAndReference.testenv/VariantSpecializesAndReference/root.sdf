@@ -1,0 +1,65 @@
+#sdf 1.4.32
+(
+    """
+    In this example, the prim /Model sets its 'shadingVariant' variantSet
+    selection to be 'New_Shading_Variant'.
+    The prim spec /New_Shading_Variant/Material_Child has a 'specializes' arc to
+    /New_Shading_Variant/Material.  
+
+    This example demonstrates the expected behavior. When
+    /Model/Material_Child is composed, the prim spec at
+    /New_Shading_Variant/Material is stronger than 
+    /Model_defaultShadingVariant/Material:
+
+    Results for composing </Model/Material_Child>
+
+    Prim Stack:
+        root.sdf             /New_Shading_Variant/Material_Child
+        root.sdf             /New_Shading_Variant/Material
+        root.sdf             /Model_defaultShadingVariant/Material
+    """
+)
+
+over "Model_defaultShadingVariant"
+{
+    def Material "Material"
+    {
+        int myInt = 0 
+    }
+    
+}
+
+def Xform "Model" (
+    variants = {
+        string shadingVariant = "New_Shading_Variant"
+    }
+    add variantSets = "shadingVariant"
+)
+{
+    variantSet "shadingVariant" = {
+        "New_Shading_Variant" (
+            add references = </New_Shading_Variant>
+        ) {
+
+        }
+        "default" {
+
+        }
+    }
+}
+
+over "New_Shading_Variant" (
+    prepend references = </Model_defaultShadingVariant>
+)
+{
+    def Material "Material_Child" (
+        specializes = </New_Shading_Variant/Material>
+    )
+    {
+    }
+
+    over "Material"
+    {
+        int myInt = 1
+    }
+}

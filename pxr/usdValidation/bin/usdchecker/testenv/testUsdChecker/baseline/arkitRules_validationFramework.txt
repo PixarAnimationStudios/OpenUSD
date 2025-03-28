@@ -1,0 +1,84 @@
+[usdGeomValidators:StageMetadataChecker]:
+	Doc: All stages must declare their 'upAxis' and 'metersPerUnit'.
+	Keywords: UsdGeomValidators
+	isSuite: False
+[usdGeomValidators:SubsetFamilies]:
+	Doc: Validates all of the geom subset families authored beneath an Imageable prim.
+	Keywords: UsdGeomValidators, UsdGeomSubset
+	SchemaTypes: UsdGeomImageable
+	isSuite: False
+[usdGeomValidators:SubsetParentIsImageable]:
+	Doc: Validates that GeomSubset prims are direct descendants of an Imageable prim.
+	Keywords: UsdGeomValidators, UsdGeomSubset
+	SchemaTypes: UsdGeomSubset
+	isSuite: False
+[usdShadeValidators:EncapsulationRulesValidator]:
+	Doc: Connectable prims (e.g. Shader, Material, etc) can only be nested inside other Container-like Connectable prims. Container-like prims include Material, NodeGraph, Light, LightFilter. Shader is not a Container-like prim.
+	Keywords: UsdShadeValidators
+	isSuite: False
+[usdShadeValidators:MaterialBindingApiAppliedValidator]:
+	Doc: Verify a prim has the MaterialBindingAPI applied if it has a material binding relationship.
+	Keywords: UsdShadeValidators
+	isSuite: False
+[usdShadeValidators:MaterialBindingCollectionValidator]:
+	Doc: Verify that a collection defining a material binding is well-formed
+	Keywords: UsdShadeValidators
+	SchemaTypes: MaterialBindingAPI
+	isSuite: False
+[usdShadeValidators:MaterialBindingRelationships]:
+	Doc: All properties named 'material:binding' or in that namespace should be relationships.
+	Keywords: UsdShadeValidators
+	isSuite: False
+[usdShadeValidators:NormalMapTextureValidator]:
+	Doc: UsdUVTexture nodes that feed the _inputs:normals_ of a UsdPreviewSurface must ensure that the data is encoded and scaled properly. Specifically, since normals are expected to be in the range [(-1,-1,-1), (1,1,1)], the Texture node must transform 8-bit textures from their [0..1] range by setting its _inputs:scale_ to (2, 2, 2, 1) and _inputs:bias_ to (-1, -1, -1, 0). Normal map data is commonly expected to be linearly encoded.  However, many image-writing tools automatically set the profile of three-channel, 8-bit images to SRGB.  To prevent an unwanted transformation, the UsdUVTexture's _inputs:sourceColorSpace_ must be set to raw.
+	Keywords: UsdShadeValidators
+	SchemaTypes: UsdShadeShader
+	isSuite: False
+[usdShadeValidators:ShaderSdrCompliance]:
+	Doc: Shader prim's input types must be conforming to their appropriate sdf types in the respective sdr shader.
+	Keywords: UsdShadeValidators
+	SchemaTypes: UsdShadeShader
+	isSuite: False
+[usdShadeValidators:SubsetMaterialBindFamilyName]:
+	Doc: Geom subsets with authored material bindings should have the 'materialBind' family name.
+	Keywords: UsdShadeValidators, UsdGeomSubset
+	SchemaTypes: UsdGeomSubset
+	isSuite: False
+[usdShadeValidators:SubsetsMaterialBindFamily]:
+	Doc: Geom subsets of the 'materialBind' family should have a restricted family type.
+	Keywords: UsdShadeValidators, UsdGeomSubset
+	SchemaTypes: UsdGeomImageable
+	isSuite: False
+[usdSkelValidators:SkelBindingApiAppliedValidator]:
+	Doc: Verify a prim has the SkelBindingAPI applied if it has a UsdSkelBinding property.
+	Keywords: UsdSkelValidators
+	isSuite: False
+[usdSkelValidators:SkelBindingApiValidator]:
+	Doc: Verify that a prim with SkelBindingAPI applied, is either of SkelRoot type or parented by a SkelRoot prim.
+	Keywords: UsdSkelValidators
+	SchemaTypes: UsdSkelBindingAPI
+	isSuite: False
+[usdUtilsValidators:FileExtensionValidator]:
+	Doc: Only valid core layer extensions (.usd, .usda, .usdc, .usdz), valid core texture extensions (.exr, .jpg, .jpeg, .png) and embedded audio files (.M4A, .MP3, .WAV) are allowed in a package.
+	Keywords: UsdUtilsValidators, UsdzValidators
+	isSuite: False
+[usdUtilsValidators:MissingReferenceValidator]:
+	Doc: The composed USD stage should not contain any unresolvable asset dependencies (in every possible variation of the asset), when using the default asset resolver.
+	Keywords: UsdUtilsValidators
+	isSuite: False
+[usdUtilsValidators:PackageEncapsulationValidator]:
+	Doc: If the root layer is a package, then its recommended for the composed stage to not contain references to files outside the package. The package should be self-contained, warn if not.
+	Keywords: UsdUtilsValidators, UsdzValidators
+	isSuite: False
+[usdUtilsValidators:UsdzPackageValidator]:
+	Doc: Files within all usdz packages within a stage should not be compressed or encrypted, and should be aligned to 64 bytes.
+	Keywords: UsdUtilsValidators, UsdzValidators
+	isSuite: False
+[usdValidation:CompositionErrorTest]:
+	Doc: Validator aims at providing all composition errors, which were generated while composing the stage.
+	Keywords: UsdCoreValidators
+	isSuite: False
+[usdValidation:StageMetadataChecker]:
+	Doc: Stages that can be consumed as referenceable assets must have a valid 'defaultPrim' specified.
+	Keywords: UsdCoreValidators
+	isSuite: False

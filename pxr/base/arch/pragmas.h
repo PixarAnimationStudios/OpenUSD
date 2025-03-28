@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_ARCH_PRAGMAS_H
 #define PXR_BASE_ARCH_PRAGMAS_H
@@ -64,6 +47,9 @@
 
     #define ARCH_PRAGMA_UNUSED_FUNCTION \
         _Pragma("GCC diagnostic ignored \"-Wunused-function\"")
+
+    #define ARCH_PRAGMA_STRINGOP_OVERFLOW \
+        _Pragma("GCC diagnostic ignored \"-Wstringop-overflow=\"")
 
 #elif defined(ARCH_COMPILER_CLANG)
 
@@ -160,6 +146,9 @@
     #define ARCH_PRAGMA_UNARY_MINUS_ON_UNSIGNED \
         __pragma(warning(disable:4146)) 
 
+    #define ARCH_PRAGMA_NON_EXPORTED_BASE_CLASS \
+        __pragma(warning(disable:4275))
+
 #endif
 
 #if !defined ARCH_PRAGMA_PUSH
@@ -196,6 +185,10 @@
 
 #if !defined ARCH_PRAGMA_UNUSED_FUNCTION
     #define ARCH_PRAGMA_UNUSED_FUNCTION
+#endif
+
+#if !defined ARCH_PRAGMA_STRINGOP_OVERFLOW
+    #define ARCH_PRAGMA_STRINGOP_OVERFLOW
 #endif
 
 #if !defined ARCH_PRAGMA_UNUSED_PRIVATE_FIELD
@@ -260,6 +253,10 @@
 
 #if !defined ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND
     #define ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND
+#endif
+
+#if !defined ARCH_PRAGMA_NON_EXPORTED_BASE_CLASS
+    #define ARCH_PRAGMA_NON_EXPORTED_BASE_CLASS
 #endif
 
 #endif // PXR_BASE_ARCH_PRAGMAS_H

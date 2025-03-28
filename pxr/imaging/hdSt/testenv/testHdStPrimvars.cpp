@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/imaging/hdSt/renderPass.h"
@@ -57,15 +40,26 @@ PrintPerfCounter(HdPerfLog &perfLog, TfToken const &token)
 static void
 Dump(std::string const &message, VtDictionary dict, HdPerfLog &perfLog)
 {
-    // Get the keys in sorted order.  This ensures consistent reporting
+    // These vary between platforms and runs, we don't want them in the diff.
+    static const std::unordered_set<std::string> skippedKeys = {
+        HdTokens->drawingShader,
+        HdTokens->computeShader,
+        HdPerfTokens->gpuMemoryUsed,
+        HdPerfTokens->uboSize,
+        HdPerfTokens->ssboSize,
+    };
+
+    // Get the keys in sorted order. This ensures consistent reporting
     // regardless of the sort order of dict.
     std::set<std::string> keys;
-    for (auto v: dict) {
-        keys.insert(v.first);
+    for (const auto& [key, _] : dict) {
+        if (!skippedKeys.count(key)) {
+            keys.insert(key);
+        }
     }
 
     std::cout << message;
-    for (auto key: keys) {
+    for (const auto& key: keys) {
         std::cout << key << ", ";
         const VtValue& value = dict[key];
         if (value.IsHolding<size_t>()) {
@@ -248,4 +242,3 @@ int main()
         return EXIT_FAILURE;
     }
 }
-

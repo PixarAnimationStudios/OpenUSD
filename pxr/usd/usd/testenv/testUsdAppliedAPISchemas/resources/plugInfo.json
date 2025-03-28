@@ -27,6 +27,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestNestedCycle1API", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasNestedCycle2API": {
@@ -37,6 +38,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestNestedCycle2API", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasNestedCycle3API": {
@@ -47,6 +49,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestNestedCycle3API", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasNestedInnerMultiApplyBaseAPI": {
@@ -57,6 +60,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestNestedInnerMultiApplyBaseAPI", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasNestedInnerMultiApplyDerivedAPI": {
@@ -67,6 +71,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestNestedInnerMultiApplyDerivedAPI", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasNestedInnerSingleApplyAPI": {
@@ -77,6 +82,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestNestedInnerSingleApplyAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasNestedMultiApplyCycle1API": {
@@ -87,6 +93,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestNestedMultiApplyCycle1API", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasNestedMultiApplyCycle2API": {
@@ -97,6 +104,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestNestedMultiApplyCycle2API", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasNestedMultiApplyCycle3API": {
@@ -107,6 +115,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestNestedMultiApplyCycle3API", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasNestedMultiApplyInSingleApplyAPI": {
@@ -117,6 +126,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestNestedMultiApplyInSingleApplyAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasNestedOuterMultiApplyAPI": {
@@ -127,6 +137,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestNestedOuterMultiApplyAPI", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasNestedOuterSingleApplyAPI": {
@@ -137,6 +148,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestNestedOuterSingleApplyAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasSingleApplyAPI": {
@@ -152,6 +164,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestSingleApplyAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasSingleCanApplyAPI": {
@@ -166,6 +179,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestSingleCanApplyAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasTestAutoAppliedToAPI": {
@@ -179,6 +193,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestAutoAppliedToAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasTestDerivedTypedSchemaForAutoApplyAbstractBase": {
@@ -189,6 +204,7 @@
                         "bases": [
                             "TestUsdAppliedAPISchemasTestTypedSchemaForAutoApplyAbstractBase"
                         ], 
+                        "schemaIdentifier": "TestDerivedTypedSchemaForAutoApplyAbstractBase", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdAppliedAPISchemasTestDerivedTypedSchemaForAutoApplyConcreteBase": {
@@ -199,6 +215,7 @@
                         "bases": [
                             "TestUsdAppliedAPISchemasTestTypedSchemaForAutoApplyConcreteBase"
                         ], 
+                        "schemaIdentifier": "TestDerivedTypedSchemaForAutoApplyConcreteBase", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdAppliedAPISchemasTestMultiApplyAPI": {
@@ -209,6 +226,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestMultiApplyAPI", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasTestMultiCanApplyAPI": {
@@ -242,6 +260,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestMultiCanApplyAPI", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasTestNestedAutoAppliedToAPI": {
@@ -255,6 +274,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestNestedAutoAppliedToAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasTestNestedAutoAppliedToAPIAppliedToPrim": {
@@ -265,6 +285,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "TestNestedAutoAppliedToAPIAppliedToPrim", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdAppliedAPISchemasTestPropCompNestedAPI": {
@@ -275,6 +296,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestPropCompNestedAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasTestPropCompOneAPI": {
@@ -285,6 +307,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestPropCompOneAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasTestPropCompTwoAPI": {
@@ -298,6 +321,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestPropCompTwoAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasTestPropCompsPrim": {
@@ -308,6 +332,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "TestPropCompsPrim", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdAppliedAPISchemasTestPropertyOversAutoApplyAPI": {
@@ -321,6 +346,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestPropertyOversAutoApplyAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasTestPropertyOversFourAPI": {
@@ -331,6 +357,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestPropertyOversFourAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasTestPropertyOversMultiOneAPI": {
@@ -341,6 +368,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestPropertyOversMultiOneAPI", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasTestPropertyOversMultiThreeAPI": {
@@ -351,6 +379,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestPropertyOversMultiThreeAPI", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasTestPropertyOversMultiTwoAPI": {
@@ -361,6 +390,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestPropertyOversMultiTwoAPI", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasTestPropertyOversOneAPI": {
@@ -371,6 +401,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestPropertyOversOneAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasTestPropertyOversThreeAPI": {
@@ -381,6 +412,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestPropertyOversThreeAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasTestPropertyOversTwoAPI": {
@@ -391,6 +423,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "TestPropertyOversTwoAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "TestUsdAppliedAPISchemasTestPropertyOversTypedPrimBase": {
@@ -401,6 +434,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "TestPropertyOversTypedPrimBase", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdAppliedAPISchemasTestPropertyOversTypedPrimDerived": {
@@ -411,6 +445,7 @@
                         "bases": [
                             "TestUsdAppliedAPISchemasTestPropertyOversTypedPrimBase"
                         ], 
+                        "schemaIdentifier": "TestPropertyOversTypedPrimDerived", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdAppliedAPISchemasTestTypedSchema": {
@@ -421,6 +456,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "TestTypedSchema", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdAppliedAPISchemasTestTypedSchemaForAutoApply": {
@@ -431,6 +467,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "TestTypedSchemaForAutoApply", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdAppliedAPISchemasTestTypedSchemaForAutoApplyAbstractBase": {
@@ -441,6 +478,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "TestTypedSchemaForAutoApplyAbstractBase", 
                         "schemaKind": "abstractTyped"
                     }, 
                     "TestUsdAppliedAPISchemasTestTypedSchemaForAutoApplyConcreteBase": {
@@ -451,6 +489,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "TestTypedSchemaForAutoApplyConcreteBase", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdAppliedAPISchemasTestWithBuiltinAppliedSchema": {
@@ -461,6 +500,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "TestWithBuiltinAppliedSchema", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "TestUsdAppliedAPISchemasTestWithBuiltinNestedAppliedSchema": {
@@ -471,6 +511,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "TestWithBuiltinNestedAppliedSchema", 
                         "schemaKind": "concreteTyped"
                     }
                 }

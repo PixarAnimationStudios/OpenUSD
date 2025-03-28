@@ -2,25 +2,8 @@
 #
 # Copyright 2019 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 
 from pxr import Usd
@@ -95,7 +78,33 @@ def _SetupOpenGLContext(width=100, height=100):
 
     return glWidget
 
-def main():
+def _DumpMallocTags(stage, contextStr):
+    if not Tf.MallocTag.IsInitialized():
+        _Msg("Unable to accumulate memory usage since the Pxr MallocTag "
+            "system was not initialized")
+        return
+
+    callTree = Tf.MallocTag.GetCallTree()
+    memInMb = Tf.MallocTag.GetTotalBytes() / (1024.0 * 1024.0)
+
+    import os.path as path
+    import tempfile
+    layerName = path.basename(stage.GetRootLayer().identifier)
+    # CallTree.Report() gives us the most informative (and processable)
+    # form of output, but it only accepts a fileName argument.  So we
+    # use NamedTemporaryFile just to get a filename.
+    statsFile = tempfile.NamedTemporaryFile(
+        prefix=layerName+'.',
+        suffix='.mallocTag',
+        delete=False)
+    statsFile.close()
+    reportName = statsFile.name
+    callTree.Report(reportName)
+    _Msg("Memory consumption of %s for %s is %d Mb" %
+        (contextStr, layerName, memInMb))
+    _Msg("For detailed analysis, see " + reportName)
+
+def main() -> int:
     programName = os.path.basename(sys.argv[0])
     parser = argparse.ArgumentParser(prog=programName,
         description='Generates images from a USD file')
@@ -163,6 +172,13 @@ def main():
             'Width of the output image. The height will be computed from this '
             'value and the camera\'s aspect ratio (default=%(default)s)'))
 
+    parser.add_argument('--enableDomeLightVisibility', action='store_true',
+        dest='domeLightVisibility',
+        help=('Show the dome light background in the rendered output.  '
+            'If this option is not included and there is a dome light in '
+            'the stage, the IBL from it will be used for lighting but not '
+            'drawn into the background.'))
+
     parser.add_argument('--renderPassPrimPath', '-rp', action='store', 
         type=str, dest='rpPrimPath', 
         help=(
@@ -183,14 +199,46 @@ def main():
             'Furthermore any properties authored on the RenderSettings will '
             'override other arguments (imageWidth, camera, outputImagePath)'))
 
-    args = parser.parse_args()
+    parser.add_argument('--traceToFile', action='store',
+        type=str, dest='traceToFile', default=None,
+        help=(
+            'Start tracing at application startup and '
+            'write --traceFormat specified format output to the '
+            'specified trace file when the application quits'))
 
-    UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args,
-        frameFormatArgName='outputImagePath')
+    parser.add_argument('--traceFormat', action='store',
+        type=str, dest='traceFormat', default='chrome',
+        choices=['chrome', 'trace'],
+        help=(
+            'Output format for trace file specified by '
+            '--traceToFile. \'chrome\' files can be read in '
+            'chrome, \'trace\' files are simple text reports. '
+            '(default=%(default)s)'))
+
+    parser.add_argument('--memstats', action='store_true',
+        default=False, dest='memstats',
+        help=(
+            'Use the Pxr MallocTags memory accounting system to profile '
+            'USD, saving results to a tmp file, with a summary to the console. '
+            'Will have no effect if MallocTags are not supported in the '
+            'USD installation.'))
+
+    args = parser.parse_args()
 
     args.imageWidth = max(args.imageWidth, 1)
 
     purposes = args.purposes.replace(',', ' ').split()
+
+    # Track allocations
+    if args.memstats:
+        Tf.MallocTag.Initialize()
+
+    # Begin tracing
+    traceCollector = None
+    if args.traceToFile:
+        from pxr import Trace
+        traceCollector = Trace.Collector()
+        traceCollector.enabled = True
 
     # Load the root layer.
     rootLayer = Sdf.Layer.FindOrOpen(args.usdFilePath)
@@ -222,6 +270,9 @@ def main():
     if not usdStage:
         _Err('Could not open USD stage: %s' % args.usdFilePath)
         return 1
+
+    UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args, usdStage,
+        frameFormatArgName='outputImagePath')
 
     # Get the camera at the given path (or with the given name).
     usdCamera = UsdAppUtils.GetCameraAtPath(usdStage, args.camera)
@@ -266,30 +317,52 @@ def main():
 
     # Initialize FrameRecorder 
     frameRecorder = UsdAppUtils.FrameRecorder(
-        rendererPluginId, args.gpuEnabled, args.rsPrimPath)
+        rendererPluginId, args.gpuEnabled)
+    if args.rpPrimPath:
+        frameRecorder.SetActiveRenderPassPrimPath(args.rpPrimPath)
+    if args.rsPrimPath:
+        frameRecorder.SetActiveRenderSettingsPrimPath(args.rsPrimPath)
     frameRecorder.SetImageWidth(args.imageWidth)
     frameRecorder.SetComplexity(args.complexity.value)
     frameRecorder.SetCameraLightEnabled(args.cameraLightEnabled)
     frameRecorder.SetColorCorrectionMode(args.colorCorrectionMode)
     frameRecorder.SetIncludedPurposes(purposes)
+    frameRecorder.SetDomeLightVisibility(args.domeLightVisibility)
 
     _Msg('Camera: %s' % usdCamera.GetPath().pathString)
     _Msg('Renderer plugin: %s' % frameRecorder.GetCurrentRendererId())
 
     for timeCode in args.frames:
-        _Msg('Recording time code: %s' % timeCode)
-        outputImagePath = args.outputImagePath.format(frame=timeCode.GetValue())
+        _Msg('Recording time code: %f' % timeCode)
+        outputImagePath = args.outputImagePath.format(frame=timeCode)
         try:
             frameRecorder.Record(usdStage, usdCamera, timeCode, outputImagePath)
         except Tf.ErrorException as e:
-
             _Err("Recording aborted due to the following failure at time code "
                  "{0}: {1}".format(timeCode, str(e)))
-            break
+            return 1
 
     # Release our reference to the frame recorder so it can be deleted before
     # the Qt stuff.
     frameRecorder = None
+
+    # End tracing and report results.
+    if traceCollector:
+        traceCollector.enabled = False
+        if args.traceFormat == 'trace':
+            Trace.Reporter.globalReporter.Report(
+                args.traceToFile)
+        elif args.traceFormat == 'chrome':
+            Trace.Reporter.globalReporter.ReportChromeTracingToFile(
+                args.traceToFile)
+        else:
+            Tf.RaiseCodingError("Invalid trace format option provided: %s -"
+                    "trace/chrome are the valid options" %
+                    args.traceFormat)
+    if args.memstats:
+        _DumpMallocTags(usdStage, programName)
+
+    return 0
 
 
 if __name__ == '__main__':

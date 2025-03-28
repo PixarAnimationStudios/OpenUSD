@@ -460,3 +460,116 @@ Results for composing </Model_5/Test/InstanceGrandChild>
 Prim Stack:
     model.sdf            /Model/Instance/InstanceChild/InstanceGrandChild
 
+------------------------------------------------------------------------
+Results for composing </OtherModel_1>
+
+Prim Stack:
+    root.sdf             /OtherModel_1
+    model.sdf            /OtherModel
+
+Child names:
+     ['W']
+
+Prohibited child names:
+     ['A']
+
+------------------------------------------------------------------------
+Results for composing </OtherModel_1/W>
+
+Prim Stack:
+    model.sdf            /OtherModel/A
+
+Child names:
+     ['X']
+
+Prohibited child names:
+     ['B']
+
+------------------------------------------------------------------------
+Results for composing </OtherModel_1/W/X>
+
+Prim Stack:
+    model.sdf            /OtherModel/A/B
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </OtherModel_1/W/X/C>
+
+Prim Stack:
+    model.sdf            /OtherModel/A/B/C
+
+Child names:
+     ['D']
+
+------------------------------------------------------------------------
+Results for composing </OtherModel_1/W/X/C/D>
+
+Prim Stack:
+    model.sdf            /OtherModel/A/B/C/D
+
+Child names:
+     ['E']
+
+------------------------------------------------------------------------
+Results for composing </OtherModel_1/W/X/C/D/E>
+
+Prim Stack:
+    model.sdf            /OtherModel/A/B/C/D/E
+
+------------------------------------------------------------------------
+Results for composing </OtherModel_2>
+
+Prim Stack:
+    root.sdf             /OtherModel_2
+    model.sdf            /OtherModel
+
+Child names:
+     ['W', 'J']
+
+Prohibited child names:
+     ['A']
+
+------------------------------------------------------------------------
+Results for composing </OtherModel_2/W>
+
+Prim Stack:
+    model.sdf            /OtherModel/A
+
+Prohibited child names:
+     ['B']
+
+------------------------------------------------------------------------
+Results for composing </OtherModel_2/J>
+
+Prim Stack:
+    model.sdf            /OtherModel/A/B
+
+Child names:
+     ['C']
+
+------------------------------------------------------------------------
+Results for composing </OtherModel_2/J/C>
+
+Prim Stack:
+    model.sdf            /OtherModel/A/B/C
+
+Child names:
+     ['D']
+
+------------------------------------------------------------------------
+Results for composing </OtherModel_2/J/C/D>
+
+Prim Stack:
+    model.sdf            /OtherModel/A/B/C/D
+
+Child names:
+     ['E']
+
+------------------------------------------------------------------------
+Results for composing </OtherModel_2/J/C/D/E>
+
+Prim Stack:
+    model.sdf            /OtherModel/A/B/C/D/E
+

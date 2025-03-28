@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hgiVulkan/commandBuffer.h"
 #include "pxr/imaging/hgiVulkan/commandQueue.h"
@@ -31,6 +14,8 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 
+#include <vulkan/vk_enum_string_helper.h>
+
 #include <cstring>
 
 
@@ -38,7 +23,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 TF_DEFINE_ENV_SETTING(HGIVULKAN_DEBUG, 0, "Enable debugging for HgiVulkan");
-TF_DEFINE_ENV_SETTING(HGIVULKAN_DEBUG_VERBOSE, 0, 
+TF_DEFINE_ENV_SETTING(HGIVULKAN_DEBUG_VERBOSE, 0,
     "Enable verbose debugging for HgiVulkan");
 
 bool
@@ -125,12 +110,12 @@ HgiVulkanCreateDebug(HgiVulkanInstance* instance)
     dbgMsgCreateInfo.pfnUserCallback = _VulkanDebugCallback;
     dbgMsgCreateInfo.pUserData = nullptr;
 
-    TF_VERIFY(
+    HGIVULKAN_VERIFY_VK_RESULT(
         instance->vkCreateDebugUtilsMessengerEXT(
             vkInstance,
             &dbgMsgCreateInfo,
             HgiVulkanAllocator(),
-            &instance->vkDebugMessenger) == VK_SUCCESS
+            &instance->vkDebugMessenger)
     );
 }
 
@@ -222,6 +207,10 @@ HgiVulkanBeginLabel(
         return;
     }
 
+    if (!TF_VERIFY(device && device->vkCmdBeginDebugUtilsLabelEXT)) {
+        return;
+    }
+
     VkCommandBuffer vkCmbuf = cb->GetVulkanCommandBuffer();
     VkDebugUtilsLabelEXT labelInfo = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
     labelInfo.pLabelName = label;
@@ -234,6 +223,10 @@ HgiVulkanEndLabel(
     HgiVulkanCommandBuffer* cb)
 {
     if (!HgiVulkanIsDebugEnabled()) {
+        return;
+    }
+
+    if (!TF_VERIFY(device && device->vkCmdEndDebugUtilsLabelEXT)) {
         return;
     }
 
@@ -250,6 +243,10 @@ HgiVulkanBeginQueueLabel(
         return;
     }
 
+    if (!TF_VERIFY(device && device->vkQueueBeginDebugUtilsLabelEXT)) {
+        return;
+    }
+
     VkQueue gfxQueue = device->GetCommandQueue()->GetVulkanGraphicsQueue();
     VkDebugUtilsLabelEXT labelInfo = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
     labelInfo.pLabelName = label;
@@ -263,8 +260,18 @@ HgiVulkanEndQueueLabel(HgiVulkanDevice* device)
         return;
     }
 
+    if (!TF_VERIFY(device && device->vkQueueEndDebugUtilsLabelEXT)) {
+        return;
+    }
+
     VkQueue gfxQueue = device->GetCommandQueue()->GetVulkanGraphicsQueue();
     device->vkQueueEndDebugUtilsLabelEXT(gfxQueue);
+}
+
+const char*
+HgiVulkanResultString(VkResult result)
+{
+    return string_VkResult(result);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

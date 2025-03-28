@@ -1,0 +1,35 @@
+#sdf 1.4.32
+(
+    relocates = {
+        </Char/PreRelo>: </Char/Relocated>, 
+    }
+)
+
+def "Char" (
+    references = @model.sdf@</Model>
+) 
+{
+    over "Relocated" 
+    (
+        doc = """Valid opinion at post-relocation path"""
+    )
+    {
+        def "RelocatedChild" 
+        {
+        }
+    }
+
+
+    over "PreRelo" 
+    (
+        doc = """Invalid opinion at pre-relocation path"""
+    )
+    {
+        def "PreReloChild" 
+        {
+        }
+    }
+    
+}
+
+

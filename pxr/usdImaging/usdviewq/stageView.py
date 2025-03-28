@@ -1,25 +1,8 @@
 #
 # Copyright 2016 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 
 # pylint: disable=dict-keys-not-iterating
@@ -396,7 +379,6 @@ class Prim2DDrawTask():
     def __init__(self):
         self._prims = []
         self._colors = []
-        self._pixelRatio = QtWidgets.QApplication.instance().devicePixelRatio()
 
 
     def Sync(self, ctx):
@@ -413,8 +395,10 @@ class Outline(Prim2DDrawTask):
         self._outlineColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(0.0, 0.0, 0.0, 1.0))
 
     def updatePrims(self, croppedViewport, qglwidget):
-        width = float(qglwidget.width()) * self._pixelRatio
-        height = float(qglwidget.height()) * self._pixelRatio
+        pixelRatio = qglwidget.devicePixelRatioF()
+        width = float(qglwidget.width()) * pixelRatio
+        height = float(qglwidget.height()) * pixelRatio
+
         prims = [ OutlineRect.fromXYWH(croppedViewport) ]
         self._prims = [p.scaledAndBiased((2.0 / width, 2.0 / height), (-1, -1))
                 for p in prims]
@@ -429,8 +413,10 @@ class Reticles(Prim2DDrawTask):
         self._outlineColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(*color))
 
     def updatePrims(self, croppedViewport, qglwidget, inside, outside):
-        width = float(qglwidget.width()) * self._pixelRatio
-        height = float(qglwidget.height()) * self._pixelRatio
+        pixelRatio = qglwidget.devicePixelRatioF()
+        width = float(qglwidget.width()) * pixelRatio
+        height = float(qglwidget.height()) * pixelRatio
+
         prims = [ ]
         ascenders = [0, 0]
         descenders = [0, 0]
@@ -470,8 +456,10 @@ class Mask(Prim2DDrawTask):
         self._maskColor = Gf.ConvertDisplayToLinear(Gf.Vec4f(*color))
 
     def updatePrims(self, croppedViewport, qglwidget):
-        width = float(qglwidget.width()) * self._pixelRatio
-        height = float(qglwidget.height()) * self._pixelRatio
+        pixelRatio = qglwidget.devicePixelRatioF()
+        width = float(qglwidget.width()) * pixelRatio
+        height = float(qglwidget.height()) * pixelRatio
+        
         rect = FilledRect.fromXYWH((0, 0, width, height))
         prims = rect.difference(croppedViewport)
         self._prims = [p.scaledAndBiased((2.0 / width, 2.0 / height), (-1, -1))
@@ -821,9 +809,20 @@ class StageView(QGLWidget):
         return self._rendererDisplayName
 
     @property
+    def rendererHgiDisplayName(self):
+        return self._rendererHgiDisplayName
+
+    @property
     def rendererAovName(self):
         return self._rendererAovName
 
+    @property
+    def bboxstandin(self):
+        return self._bboxstandin
+
+    @bboxstandin.setter
+    def bboxstandin(self, value):
+        self._bboxstandin = bool(value)
     
     @property
     def allowAsync(self):
@@ -877,7 +876,7 @@ class StageView(QGLWidget):
         # prep HUD regions
         self._hud = HUD()
         self._hud.addGroup("TopLeft",     250, 160)  # subtree
-        self._hud.addGroup("TopRight",    140, 32)   # Hydra: Enabled
+        self._hud.addGroup("TopRight",    140, 48)   # Hydra: Enabled
         self._hud.addGroup("BottomLeft",  250, 160)  # GPU stats
         self._hud.addGroup("BottomRight", 210, 32)   # Camera, Complexity
 
@@ -943,6 +942,15 @@ class StageView(QGLWidget):
         self._vao = 0
 
         self._allowAsync = False
+        self._bboxstandin = False
+
+        # The original window size before scaling.
+        # Due to rounding errors, this might be different
+        # from self.size() * self.devicePixelRatioF().
+        # If not set, then computed from the device-independent
+        # window size and device pixel ratio as shown above.
+        # Use GetPhysicalWindowSize() to get the correct value.
+        self._physicalWindowSize = None
 
         # Update all properties for the current stage.
         self._stageReplaced()
@@ -956,6 +964,7 @@ class StageView(QGLWidget):
                 if self.isContextInitialised():
                   params = UsdImagingGL.Engine.Parameters()
                   params.allowAsynchronousSceneProcessing = self._allowAsync
+                  params.displayUnloadedPrimsWithBounds = self._bboxstandin
                   self._renderer = UsdImagingGL.Engine(params)
                   self._handleRendererChanged(self.GetCurrentRendererId())
             elif not self._reportedContextError:
@@ -965,6 +974,8 @@ class StageView(QGLWidget):
 
     def _handleRendererChanged(self, rendererId):
         self._rendererDisplayName = self.GetRendererDisplayName(rendererId)
+        self._rendererHgiDisplayName = (
+            self.GetRendererHgiDisplayName())
         self._rendererAovName = "color"
         self._renderPauseState = False
         self._renderStopState = False
@@ -990,6 +1001,12 @@ class StageView(QGLWidget):
     def GetRendererDisplayName(self, plugId):
         if self._renderer:
             return self._renderer.GetRendererDisplayName(plugId)
+        else:
+            return ""
+
+    def GetRendererHgiDisplayName(self):
+        if self._renderer:
+            return self._renderer.GetRendererHgiDisplayName()
         else:
             return ""
 
@@ -1455,8 +1472,7 @@ class StageView(QGLWidget):
                if self._dataModel.viewSettings.cullBackfaces
                else UsdImagingGL.CullStyle.CULL_STYLE_NOTHING)
         self._renderParams.gammaCorrectColors = False
-        self._renderParams.enableIdRender = self._dataModel.viewSettings.displayPrimId
-        self._renderParams.enableSampleAlphaToCoverage = not self._dataModel.viewSettings.displayPrimId
+        self._renderParams.enableSamlpeAlphaToCoverage = True
         self._renderParams.highlight = renderSelHighlights
         self._renderParams.enableSceneMaterials = self._dataModel.viewSettings.enableSceneMaterials
         self._renderParams.domeLightCameraVisibility = self._dataModel.viewSettings.domeLightTexturesVisible
@@ -1534,9 +1550,7 @@ class StageView(QGLWidget):
         
         if self.hasLockedAspectRatio():
             if self._cropImageToCameraViewport:
-                targetAspect = (
-                    float(self.size().width()) / max(1.0, self.size().height()))
-
+                targetAspect = self.aspectRatio()
                 if targetAspect < cameraAspectRatio:
                     windowPolicy =  CameraUtil.MatchHorizontally
             else:
@@ -1544,13 +1558,27 @@ class StageView(QGLWidget):
                     windowPolicy =  CameraUtil.Fit
         
         return windowPolicy
-    
-    def computeWindowSize(self):
+
+    def SetPhysicalWindowSize(self, width, height):
+        self._physicalWindowSize = (width, height)
+        # Round up so we can always crop out a pixel in each dimension
+        # from the framebuffer to get the exact physical size.
+        ratio = self.devicePixelRatioF()
+        self.setFixedSize(ceil(width / ratio), ceil(height / ratio))
+
+    def GetPhysicalWindowSize(self):
+        if self._physicalWindowSize:
+            return self._physicalWindowSize
+
         size = self.size() * self.devicePixelRatioF()
-        return (int(size.width()), int(size.height()))
+        return size.width(), size.height()
+
+    def aspectRatio(self):
+        width, height = self.GetPhysicalWindowSize()
+        return float(width) / max(1.0, height)
 
     def computeWindowViewport(self):
-        return (0, 0) + self.computeWindowSize()
+        return (0, 0) + self.GetPhysicalWindowSize()
 
     def resolveCamera(self):
         """Returns a tuple of the camera to use for rendering (either a scene
@@ -1578,7 +1606,7 @@ class StageView(QGLWidget):
 
         # Conform the camera's frustum to the window viewport, if necessary.
         if not self._cropImageToCameraViewport:
-            targetAspect = float(self.size().width()) / max(1.0, self.size().height())
+            targetAspect = self.aspectRatio()
             if self._fitCameraInViewport:
                 CameraUtil.ConformWindow(gfCam, CameraUtil.Fit, targetAspect)
             else:
@@ -1597,13 +1625,12 @@ class StageView(QGLWidget):
         # Conform the camera viewport to the camera's aspect ratio,
         # and center the camera viewport in the window viewport.
         windowPolicy = CameraUtil.MatchVertically
-        targetAspect = (
-          float(self.size().width()) / max(1.0, self.size().height()))
+        targetAspect = self.aspectRatio()
         if targetAspect < cameraAspectRatio:
             windowPolicy = CameraUtil.MatchHorizontally
 
         viewport = Gf.Range2d(Gf.Vec2d(0, 0),
-                              Gf.Vec2d(self.computeWindowSize()))
+                              Gf.Vec2d(self.GetPhysicalWindowSize()))
         viewport = CameraUtil.ConformedWindow(viewport, windowPolicy, cameraAspectRatio)
 
         viewport = (viewport.GetMin()[0], viewport.GetMin()[1],
@@ -1687,7 +1714,7 @@ class StageView(QGLWidget):
             if self._cropImageToCameraViewport:
                 viewport = cameraViewport
 
-            renderBufferSize = Gf.Vec2i(self.computeWindowSize())
+            renderBufferSize = Gf.Vec2i(self.GetPhysicalWindowSize())
 
             renderer.SetRenderBufferSize(
                 renderBufferSize)
@@ -1709,6 +1736,9 @@ class StageView(QGLWidget):
 
             viewProjectionMatrix = Gf.Matrix4f(frustum.ComputeViewMatrix()
                                             * frustum.ComputeProjectionMatrix())
+
+            # Workaround an apparent bug in some recent versions of PySide6
+            GL.glDepthMask(GL.GL_TRUE)
 
             GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
 
@@ -1732,6 +1762,7 @@ class StageView(QGLWidget):
                         l = Glf.SimpleLight()
                         l.ambient = (0, 0, 0, 0)
                         l.position = (cam_pos[0], cam_pos[1], cam_pos[2], 1)
+                        l.transform = frustum.ComputeViewInverse()
                         lights.append(l)
 
                     # Default Dome Light
@@ -1906,7 +1937,10 @@ class StageView(QGLWidget):
             toPrint = {"Hydra": "(stopped)"}
         else:
             toPrint = {"Hydra": self._rendererDisplayName}
-            
+
+        if self._rendererHgiDisplayName:
+            toPrint["  Hgi"] = self._rendererHgiDisplayName
+
         if self._rendererAovName != "color":
             toPrint["  AOV"] = self._rendererAovName
         self._hud.updateGroup("TopRight", self.width()-160, 14, col,
@@ -2088,7 +2122,7 @@ class StageView(QGLWidget):
                     freeCam.AdjustDistance(1 + zoomDelta)
 
             elif self._cameraMode == "truck":
-                height = float(self.size().height())
+                height = float(self.GetPhysicalWindowSize()[1])
                 pixelsToWorld = freeCam.ComputePixelsToWorldFactor(height)
 
                 self._dataModel.viewSettings.freeCamera.Truck(
@@ -2182,6 +2216,9 @@ class StageView(QGLWidget):
         # Need a correct OpenGL Rendering context for FBOs
         self.makeCurrent()
 
+        # Workaround an apparent bug in some recent versions of PySide6
+        GL.glDepthMask(GL.GL_TRUE)
+
         # update rendering parameters
         self._renderParams.frame = self._dataModel.currentFrame
         self._renderParams.complexity = self._dataModel.viewSettings.complexity.value
@@ -2195,7 +2232,6 @@ class StageView(QGLWidget):
                    if self._dataModel.viewSettings.cullBackfaces
                    else UsdImagingGL.CullStyle.CULL_STYLE_NOTHING)
         self._renderParams.gammaCorrectColors = False
-        self._renderParams.enableIdRender = True
         self._renderParams.enableSampleAlphaToCoverage = False
         self._renderParams.enableSceneMaterials = self._dataModel.viewSettings.enableSceneMaterials
         self._renderParams.enableSceneLights = self._dataModel.viewSettings.enableSceneLights

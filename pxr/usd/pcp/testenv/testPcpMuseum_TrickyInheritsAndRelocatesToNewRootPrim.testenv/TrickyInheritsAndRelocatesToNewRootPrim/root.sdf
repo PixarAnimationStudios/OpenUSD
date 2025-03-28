@@ -1,0 +1,76 @@
+#sdf 1.4.32
+(
+    """
+    This museum case is a copy of testPcpMuseum_TrickyInheritsAndRelocates
+    changed to have the relocates move the prims to be new root level prims.
+    The composition results are almost identical the composition for
+    testPcpMuseum_TrickyInheritsAndRelocates.
+    """
+    relocates = {
+        </Group/Model>: </Model_Renamed>, 
+        </Rig/RigClass>: </RigClass>
+    }
+)
+
+reorder rootPrims = ["Group", "Model_Renamed", "Rig", "RigClass"]
+
+def Scope "Group" (
+    add references = @./group.sdf@</Group>
+)
+{
+    over "Model"
+    {
+        over "A"
+        {
+            custom string a_src = "bad"
+        }
+
+        over "B"
+        {
+            custom string b_src = "bad"
+        }
+    }
+}
+
+over "Model_Renamed"
+{
+    over "A"
+    {
+        custom string a_target = "good"
+    }
+
+    over "B"
+    {
+        custom string b_target = "good"
+    }
+}
+
+def Scope "Rig" (
+    add references = @./rig.sdf@</Rig>
+)
+{
+    over "RigClass"
+    {
+        custom string r_src = "bad"
+    }
+
+    def Scope "Anim"
+    {
+        def Scope "RigInstance" (
+            add inherits = </RigClass>
+        )
+        {
+        }
+
+        def Scope "BadRigInstance" (
+            add inherits = </Rig/RigClass>
+        )
+        {
+        }
+    }
+}
+
+over "RigClass"
+{
+    custom string r_target = "good"
+}

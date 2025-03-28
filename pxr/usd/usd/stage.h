@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_USD_STAGE_H
 #define PXR_USD_USD_STAGE_H
@@ -39,6 +22,7 @@
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/hashmap.h"
+#include "pxr/base/tf/type.h"
 #include "pxr/base/tf/weakBase.h"
 
 #include "pxr/usd/ar/ar.h"
@@ -68,6 +52,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class ArResolverContext;
 class GfInterval;
 class SdfAbstractDataValue;
+class TsSpline;
 class Usd_AssetPathContext;
 class Usd_ClipCache;
 class Usd_InstanceCache;
@@ -727,22 +712,27 @@ public:
     USD_API
     UsdPrim GetPseudoRoot() const;
 
-    /// Return the root UsdPrim on this stage whose name is the root layer's
+    /// Return the UsdPrim on this stage whose path is the root layer's
     /// defaultPrim metadata's value.  Return an invalid prim if there is no
     /// such prim or if the root layer's defaultPrim metadata is unset or is not
-    /// a valid prim name.  Note that this function only examines this stage's
-    /// rootLayer.  It does not consider sublayers of the rootLayer.  See also
-    /// SdfLayer::GetDefaultPrim().
+    /// a valid prim path.  Note that this function will return the prim on the 
+    /// stage whose path is the root layer's GetDefaultPrimAsPath() if that path
+    /// is not empty and a prim at that path exists on the stage. 
+    /// See also SdfLayer::GetDefaultPrimAsPath().
     USD_API
     UsdPrim GetDefaultPrim() const;
 
-    /// Set the default prim layer metadata in this stage's root layer.  This is
-    /// shorthand for:
+    /// Set the default prim layer metadata in this stage's root layer. This
+    /// is shorthand for:
     /// \code
     /// stage->GetRootLayer()->SetDefaultPrim(prim.GetName());
     /// \endcode
-    /// Note that this function always authors to the stage's root layer.  To
-    /// author to a different layer, use the SdfLayer::SetDefaultPrim() API.
+    /// If prim is a root prim, otherwise
+    /// \code
+    /// stage->GetRootLayer()->SetDefaultPrim(prim.GetPath().GetAsToken());
+    /// \endcode
+    /// Note that this function always authors to the stage's root layer.
+    /// To author to a different layer, use the SdfLayer::SetDefaultPrim() API.
     USD_API
     void SetDefaultPrim(const UsdPrim &prim);
     
@@ -1014,7 +1004,11 @@ public:
     std::string
     ResolveIdentifierToEditTarget(std::string const &identifier) const;
 
-    /// Return this stage's local layers in strong-to-weak order.  If
+    /// Return a PcpErrorVector containing all composition errors encountered 
+    /// when composing the prims and layer stacks on this stage.
+    USD_API
+    PcpErrorVector GetCompositionErrors() const;
+
     /// \a includeSessionLayers is true, return the linearized strong-to-weak
     /// sublayers rooted at the stage's session layer followed by the linearized
     /// strong-to-weak sublayers rooted at this stage's root layer.  If
@@ -1470,10 +1464,10 @@ public:
     /// \anchor Usd_ColorConfigurationAPI
     /// \name Color Configuration API
     ///
-    /// Methods for authoring and querying the color configuration to 
-    /// be used to interpret the per-attribute color-spaces. An external 
-    /// system (like OpenColorIO) is typically used for interpreting the
-    /// configuration.
+    /// Methods for authoring and querying the display color configuration 
+    /// encoded in layer metadata. This color configuration information is
+    /// stored as a convenience for use in pipeline tools and is unrelated
+    /// to color space information associated with Usd attributes or textures.
     /// 
     /// Site-wide fallback values for the colorConfiguration and
     /// colorManagementSystem metadata can be set in the plugInfo.json file of 
@@ -1481,49 +1475,23 @@ public:
     /// 
     /// \code{.json}
     ///         "UsdColorConfigFallbacks": {
-    ///             "colorConfiguration" = "https://github.com/imageworks/OpenColorIO-Configs/blob/master/aces_1.0.1/config.ocio",
+    ///             "colorConfiguration" = "https://path/to/color/config.ocio",
     ///             "colorManagementSystem" : "OpenColorIO"
     ///         }
     /// \endcode
     /// 
-    /// The color space in which a given color or texture attribute is authored 
-    /// is set as token-valued metadata 'colorSpace' on the attribute. For 
-    /// color or texture attributes that don't have an authored 'colorSpace'
-    /// value, the fallback color-space is gleaned from the color configuration 
-    /// oracle. This is usually the config's <b>scene_linear</b> role
-    /// color-space.
-    /// 
-    /// Here's the pseudo-code for determining an attribute's color-space.
-    /// 
-    /// \code{.cpp}
-    /// UsdStageRefPtr stage = UsdStage::Open(filePath);
-    /// UsdPrim prim = stage->GetPrimAtPath("/path/to/prim")
-    /// UsdAttribute attr = prim.GetAttribute("someColorAttr");
-    /// TfToken colorSpace = attr.GetColorSpace();
-    /// if (colorSpace.IsEmpty()) {
-    ///     // If colorSpace is empty, get the default from the stage's 
-    ///     // colorConfiguration, using external API (not provided by USD).
-    ///     colorSpace = ExternalAPI::GetDefaultColorSpace(
-    ///                         stage->GetColorConfiguration());
-    /// }
-    /// \endcode
-    ///
-    /// \sa \ref Usd_AttributeColorSpaceAPI "UsdAttribute ColorSpace API"
-    /// 
-    /// 
     /// @{
     // --------------------------------------------------------------------- //
 
-    /// Sets the default color configuration to be used to interpret the 
-    /// per-attribute color-spaces in the composed USD stage. This is specified
-    /// as asset path which can be resolved to the color spec file.
+    /// Sets the default color configuration to be used for querying color
+    /// configuration metadata stored in a layer. This data is informational
+    /// for use in pipeline tools.
     /// 
     /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
     USD_API
     void SetColorConfiguration(const SdfAssetPath &colorConfig) const;
 
-    /// Returns the default color configuration used to interpret the per-
-    /// attribute color-spaces in the composed USD stage.
+    /// Returns the default color configuration stored in layer metadata.
     /// 
     /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
     USD_API
@@ -1550,7 +1518,6 @@ public:
     /// 
     /// The python wrapping of this method returns a tuple containing 
     /// (colorConfiguration, colorManagementSystem).
-    /// 
     /// 
     /// \sa SetColorConfigFallbacks,
     /// \ref Usd_ColorConfigurationAPI "Color Configuration API"
@@ -1738,6 +1705,7 @@ private:
             std::is_same<T, SdfPathExpression>::value ||
             std::is_same<T, VtArray<SdfPathExpression>>::value ||
             std::is_same<T, SdfTimeSampleMap>::value ||
+            std::is_same<T, TsSpline>::value ||
             std::is_same<T, VtDictionary>::value;
     };
 
@@ -1761,6 +1729,9 @@ private:
     template <class T>
     bool _SetEditTargetMappedValue(
         UsdTimeCode time, const UsdAttribute &attr, const T &newValue);
+
+    TfType _GetAttributeValueType(
+        const UsdAttribute &attr) const;
 
     template <class T>
     bool _SetValueImpl(
@@ -1903,8 +1874,13 @@ private:
     // Returns the path of the Usd prim using the prim index at the given path.
     SdfPath _GetPrimPathUsingPrimIndexAtPath(const SdfPath& primIndexPath) const;
 
-    // Update stage contents in response to changes in scene description.
+    // Responds to LayersDidChangeSentPerLayer event and update stage contents 
+    // in response to changes in scene description.
     void _HandleLayersDidChange(const SdfNotice::LayersDidChangeSentPerLayer &);
+
+    // Pushes changes through PCP to determine invalidation based on 
+    // composition metadata.
+    void _ProcessChangeLists(const SdfLayerChangeListVec &);
 
     // Update stage contents in response to changes to the asset resolver.
     void _HandleResolverDidChange(const ArNotice::ResolverChanged &);
@@ -2023,6 +1999,7 @@ public:
             std::is_same<T, SdfPathExpression>::value ||
             std::is_same<T, VtArray<SdfPathExpression>>::value ||
             std::is_same<T, SdfTimeSampleMap>::value ||
+            std::is_same<T, TsSpline>::value ||
             std::is_same<T, VtDictionary>::value;
     };
 
@@ -2358,6 +2335,7 @@ private:
     friend class UsdAttributeQuery;
     friend class UsdEditTarget;
     friend class UsdInherits;
+    friend class UsdNamespaceEditor;
     friend class UsdObject;
     friend class UsdPrim;
     friend class UsdProperty;
@@ -2370,6 +2348,7 @@ private:
     friend class Usd_PcpCacheAccess;
     friend class Usd_PrimData;
     friend class Usd_StageOpenRequest;
+    friend class Usd_TypeQueryAccess;
     template <class T> friend struct Usd_AttrGetValueHelper;
     friend struct Usd_AttrGetUntypedValueHelper;
     template <class RefsOrPayloadsEditorType, class RefsOrPayloadsProxyType> 

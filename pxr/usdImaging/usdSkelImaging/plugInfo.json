@@ -16,6 +16,33 @@
                         ],
                         "isInternal": true,
                         "primTypeName": "SkelRoot"
+                    },
+                    "UsdSkelImagingAnimationAdapter": {
+                        "bases": [
+                            "UsdImagingSceneIndexPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "SkelAnimation"
+                    },
+                    "UsdSkelImagingBindingAPIAdapter": {
+                        "bases": [
+                            "UsdImagingAPISchemaAdapter"
+                        ],
+                        "isInternal": true,
+                        "apiSchemaName": "SkelBindingAPI"
+                    },
+                    "UsdSkelImagingBlendShapeAdapter": {
+                        "bases": [
+                            "UsdImagingSceneIndexPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "BlendShape"
+                    },
+                    "UsdSkelImagingResolvingSceneIndexPlugin": {
+                        "bases": [
+                            "UsdImagingSceneIndexPlugin"
+                        ],
+                        "isInternal": true
                     }
                 }
             },

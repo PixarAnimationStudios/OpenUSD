@@ -1,38 +1,21 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdAppUtils/frameRecorder.h"
 
-#include <boost/python.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/scope.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/scope.hpp"
 
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 
 void
@@ -40,16 +23,20 @@ wrapFrameRecorder()
 {
     using This = UsdAppUtilsFrameRecorder;
 
-    scope s = class_<This, boost::noncopyable>("FrameRecorder")
+    scope s = class_<This, noncopyable>("FrameRecorder")
         .def(init<>())
-        .def(init<const TfToken&, bool, const SdfPath&>(
+        .def(init<const TfToken&, bool>(
             (arg("rendererPluginId") = TfToken(), 
-             arg("gpuEnabled") = true,
-             arg("renderSettingsPrimPath") = SdfPath())))
+             arg("gpuEnabled") = true)))
         .def("GetCurrentRendererId", &This::GetCurrentRendererId)
+        .def("SetActiveRenderPassPrimPath",
+            &This::SetActiveRenderPassPrimPath)
+        .def("SetActiveRenderSettingsPrimPath",
+            &This::SetActiveRenderSettingsPrimPath)
         .def("SetRendererPlugin", &This::SetRendererPlugin)
         .def("SetImageWidth", &This::SetImageWidth)
         .def("SetCameraLightEnabled", &This::SetCameraLightEnabled)
+        .def("SetDomeLightVisibility", &This::SetDomeLightVisibility)
         .def("SetComplexity", &This::SetComplexity)
         .def("SetColorCorrectionMode", &This::SetColorCorrectionMode)
         .def("SetIncludedPurposes", &This::SetIncludedPurposes,

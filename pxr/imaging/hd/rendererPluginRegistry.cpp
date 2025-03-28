@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
 #include "pxr/imaging/hd/rendererPlugin.h"
@@ -69,12 +52,19 @@ HdRendererPluginRegistry::GetDefaultPluginId(bool gpuEnabled)
         // expensive.
         if (plugin && plugin->IsSupported(gpuEnabled)) {
             HdRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
+
+            TF_DEBUG(HD_RENDERER_PLUGIN).Msg(
+                "Default renderer plugin (gpu: %s): %s\n",
+                gpuEnabled ? "y" : "n", desc.id.GetText());
             return desc.id;
         }
 
         HdRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
     }
 
+    TF_DEBUG(HD_RENDERER_PLUGIN).Msg(
+        "Default renderer plugin (gpu: %s): none\n",
+        gpuEnabled ? "y" : "n");
     return TfToken();
 }
 
@@ -87,7 +77,8 @@ HdRendererPluginRegistry::GetRendererPlugin(const TfToken &pluginId)
 HdRendererPluginHandle
 HdRendererPluginRegistry::GetOrCreateRendererPlugin(const TfToken &pluginId)
 {
-    return HdRendererPluginHandle(GetRendererPlugin(pluginId));
+    return HdRendererPluginHandle(
+            static_cast<HdRendererPlugin*>(GetPlugin(pluginId)));
 }
 
 HdPluginRenderDelegateUniqueHandle
@@ -104,16 +95,16 @@ HdRendererPluginRegistry::CreateRenderDelegate(
     HdPluginRenderDelegateUniqueHandle result =
         plugin->CreateDelegate(settingsMap);
 
-    if (result) {
-        HfPluginDesc desc;
-        if (GetPluginDesc(pluginId, &desc)) {
-            // provide render delegate instance with display name to facilitate
-            // association of this renderer to other code and resources
-            result->_SetRendererDisplayName(desc.displayName);
-        }
-    }
-
     return result;
+}
+
+void
+HdRendererPluginRegistry::_CollectAdditionalMetadata(
+    const PlugRegistry &plugRegistry, const TfType &pluginType)
+{
+    TF_DEBUG(HD_RENDERER_PLUGIN).Msg(
+        "Renderer plugin discovery: %s\n",
+        pluginType.GetTypeName().c_str());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

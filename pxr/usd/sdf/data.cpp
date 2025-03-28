@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -425,6 +408,36 @@ SdfData::GetBracketingTimeSamplesForPath(
     if (fval && fval->IsHolding<SdfTimeSampleMap>()) {
         auto const &tsmap = fval->UncheckedGet<SdfTimeSampleMap>();
         return _GetBracketingTimeSamples(tsmap, time, tLower, tUpper);
+    }
+    return false;
+}
+
+bool
+SdfData::GetPreviousTimeSampleForPath(
+    const SdfPath &path, double time,
+    double* tPrevious) const
+{
+    auto getTime = [](SdfTimeSampleMap::value_type const &p) { return p.first; };
+    const VtValue *fval = _GetFieldValue(path, SdfDataTokens->TimeSamples);
+    if (fval && fval->IsHolding<SdfTimeSampleMap>()) {
+        auto const &tsmap = fval->UncheckedGet<SdfTimeSampleMap>();
+        if (tsmap.empty() || time <= getTime(*tsmap.begin())) {
+            // no samples, or 
+            // can't get previous sample for time before first sample.
+            return false;
+        } else if (time > getTime(*tsmap.rbegin())) {
+            // last sample is the previous time sample, as time is greater than
+            // the last sample time.
+            *tPrevious = getTime(*tsmap.rbegin());
+        } else {
+            auto iter = tsmap.lower_bound(time);
+            // We need to back up one sample to get the previous sample from
+            // the lower_bound. If the lower_bound is the first sample, we would
+            // have returned false above.
+            TF_VERIFY(iter != tsmap.begin());
+            *tPrevious = getTime(*std::prev(iter));
+        }
+        return true;
     }
     return false;
 }

@@ -3,25 +3,8 @@
 #
 # Copyright 2023 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 
 from pxr.Ts import TsTest_Museum as Museum
@@ -29,6 +12,7 @@ from pxr.Ts import TsTest_MayapyEvaluator as MayapyEvaluator
 from pxr.Ts import TsTest_AnimXEvaluator as AnimXEvaluator
 from pxr.Ts import TsTest_SampleTimes as STimes
 from pxr.Ts import TsTest_Comparator as Comparator
+from pxr.Ts import TsTest_SampleBezier as SampleBezier
 
 import sys, unittest
 
@@ -37,14 +21,14 @@ g_mayapyEvaluator = None
 
 class TsTest_MayapyVsAnimX(unittest.TestCase):
 
-    def test_Basic(self):
+    def _DoTest(self, case, dataId, tolerance, addRaw = False):
         """
-        Verify mayapy and AnimX evaluation are close in one simple case.
+        Verify mayapy and AnimX evaluation are close.
         To really be sure, inspect the graph image output.
 
         TODO: can these two backends match exactly?
         """
-        data = Museum.GetData(Museum.TwoKnotBezier)
+        data = Museum.GetData(dataId)
 
         times = STimes(data)
         times.AddStandardTimes()
@@ -52,13 +36,31 @@ class TsTest_MayapyVsAnimX(unittest.TestCase):
         mayapySamples = g_mayapyEvaluator.Eval(data, times)
         animXSamples = AnimXEvaluator().Eval(data, times)
 
-        comparator = Comparator("test_Basic")
+        comparator = Comparator(case)
         comparator.AddSpline("mayapy", data, mayapySamples)
         comparator.AddSpline("AnimX", data, animXSamples)
 
-        self.assertTrue(comparator.GetMaxDiff() < 1e-7)
+        if addRaw:
+            checkSamples = SampleBezier(data, numSamples = 200)
+            comparator.AddSpline("Raw Bezier", data, checkSamples)
+
         if Comparator.Init():
-            comparator.Write("test_Basic.png")
+            comparator.Write(f"{case}.png")
+
+        self.assertTrue(comparator.GetMaxDiff() < tolerance)
+
+    def test_Basic(self):
+        self._DoTest("test_Basic", Museum.TwoKnotBezier, 1e-7)
+
+    def test_RegressiveLoop(self):
+        self._DoTest("test_RegressiveLoop", Museum.RegressiveLoop,
+                     1e-5, addRaw = True)
+
+    def test_BoldS(self):
+        self._DoTest("test_BoldS", Museum.BoldS, 1e-5)
+
+    def test_Cusp(self):
+        self._DoTest("test_Cusp", Museum.Cusp, 1e-6)
 
     @classmethod
     def tearDownClass(cls):

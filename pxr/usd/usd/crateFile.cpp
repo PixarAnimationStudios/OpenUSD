@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -66,6 +49,8 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/ts/binary.h"
+#include "pxr/base/ts/spline.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
@@ -117,7 +102,7 @@ TF_REGISTRY_FUNCTION(TfType) {
     TfType::Define<Usd_CrateFile::TimeSamples>();
 }
 
-#define DEFAULT_NEW_VERSION "0.9.0"
+#define DEFAULT_NEW_VERSION "0.10.0"
 TF_DEFINE_ENV_SETTING(
     USD_WRITE_NEW_USDC_FILES_AS_VERSION, DEFAULT_NEW_VERSION,
     "When writing new Usd Crate files, write them as this version.  "
@@ -341,6 +326,7 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
+// 0.12.0: Added support for splines.
 // 0.11.0: Added support for relocates in layer metadata.
 // 0.10.0: Added support for the pathExpression value type.
 //  0.9.0: Added support for the timecode and timecode[] value types.
@@ -357,7 +343,7 @@ using std::vector;
 //         See _PathItemHeader_0_0_1.
 //  0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 11;
+constexpr uint8_t USDC_MINOR = 12;
 constexpr uint8_t USDC_PATCH = 0;
 
 CrateFile::Version
@@ -1314,6 +1300,14 @@ public:
 
             return ret;
         }
+        else if constexpr (std::is_same_v<T, TsSpline>) {
+            // Splines are a data blob plus a customData map.
+            vector<uint8_t> splineData = Read<vector<uint8_t>>();
+            std::unordered_map<double, VtDictionary> customData =
+                ReadMap<std::unordered_map<double, VtDictionary>>();
+            return Ts_BinaryDataAccess::CreateSplineFromBinaryData(
+                splineData, std::move(customData));
+        }
         else {
             // Otherwise read partial-specialized stuff.
             return this->_Read(static_cast<T *>(nullptr));
@@ -1530,6 +1524,24 @@ public:
         // Write size and contiguous reps.
         WriteAs<uint64_t>(reps.size());
         WriteContiguous(reps.data(), reps.size());
+    }
+
+    void Write(const TsSpline &spline) {
+        // Make sure our output format is compatible with splines.  If the
+        // spline binary format is updated, we must rev the required version
+        // here as well; the static_assert is here to remind us.
+        static_assert(Ts_BinaryDataAccess::GetBinaryFormatVersion() == 1);
+        crate->_packCtx->RequestWriteVersionUpgrade(
+            Version(0,12,0),
+            "A spline was detected which requires crate "
+            "version 0.12.0.");
+
+        // Splines are a data blob plus a customData map.
+        vector<uint8_t> splineData;
+        const std::unordered_map<double, VtDictionary> *customData = nullptr;
+        Ts_BinaryDataAccess::GetBinaryData(spline, &splineData, &customData);
+        Write(splineData);
+        WriteMap(*customData);
     }
 
     template <class T>
@@ -2601,7 +2613,7 @@ CrateFile::_AddDeferredSpecs()
 {
     // A map from sample time to VtValues within TimeSamples instances in
     // _deferredSpecs.
-    pxr_tsl::robin_map<double, vector<VtValue *>> allValuesAtAllTimes;
+    pxr_tsl::robin_map<double, vector<VtValue *>, TfHash> allValuesAtAllTimes;
 
     // Search for the TimeSamples, add to the allValuesAtAllTimes.
     for (auto &spec: _deferredSpecs) {
@@ -2751,6 +2763,10 @@ CrateFile::_AddSpec(const SdfPath &path, SdfSpecType type,
             // format instead of having a mix of formats depending on the order 
             // we wrote our payload values in.
             versionUpgradePendingFields.push_back(p);
+        } else if (p.second.IsHolding<TsSpline>()
+            && p.second.UncheckedGet<TsSpline>().IsEmpty()) {
+            // Don't serialize empty splines, because they don't affect
+            // anything.
         } else {
             ordinaryFields.push_back(_AddField(p));
         }
@@ -3647,13 +3663,14 @@ CrateFile::_ReadPathsImpl(Reader reader,
                 auto siblingOffset = reader.template Read<int64_t>();
                 dispatcher.Run(
                     [this, reader,
-                     siblingOffset, &dispatcher, parentPath]() mutable {
+                     siblingOffset, &dispatcher, parentPath]() {
                         // XXX Remove these tags when bug #132031 is addressed
                         TfAutoMallocTag tag(
                             "Usd", "Usd_CrateDataImpl::Open",
                             "Usd_CrateFile::CrateFile::Open", "_ReadPaths");
-                        reader.Seek(siblingOffset);
-                        _ReadPathsImpl<Header>(reader, dispatcher, parentPath);
+                        auto readerCopy = reader;
+                        readerCopy.Seek(siblingOffset);
+                        _ReadPathsImpl<Header>(readerCopy, dispatcher, parentPath);
                     });
             }
             // Have a child (may have also had a sibling). Reset parent path.
@@ -3783,7 +3800,7 @@ CrateFile::_BuildDecompressedPathsImpl(
 #endif
                 dispatcher.Run(
                     [this, &pathIndexes, &elementTokenIndexes, &jumps,
-                     siblingIndex, &dispatcher, parentPath]() mutable {
+                     siblingIndex, &dispatcher, parentPath]()  {
                         // XXX Remove these tags when bug #132031 is addressed
                         TfAutoMallocTag tag(
                             "Usd", "Usd_CrateDataImpl::Open",

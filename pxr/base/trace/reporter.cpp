@@ -1,25 +1,8 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/base/trace/reporter.h"
@@ -39,7 +22,10 @@
 #include <algorithm>
 #include <map>
 #include <ostream>
+#include <regex>
+#include <string>
 #include <vector>
+#include <stack>
 
 using std::ostream;
 using std::string;
@@ -234,6 +220,153 @@ TraceReporter::Report(
     _PrintNodeTimes(s, _aggregateTree->GetRoot(), 0, iterationCount);
 
     s << "\n";
+}
+
+/* static */ std::vector<TraceReporter::ParsedTree> 
+TraceReporter::LoadReport(
+    std::istream &stream)
+{
+    // Regular expression for the reported number of iterations.
+    static const std::regex itCountRE(R"(Number of iterations: (\d+))");
+
+    // Every report has this header.
+    static const std::string treeHeader("Tree view  ==============");
+
+    // Regular expression for each trace line in a report.
+    static const auto traceRowRE = std::invoke([]() -> std::regex {
+        // Note that the expression we build will have exactly 5 capture groups:
+        // 
+        // 1. The inclusive time entry (may be empty)
+        // 
+        // 2. The exclusive time entry (may also be empty)
+        //
+        // 3. The sample count (required)
+        //
+        // 4. The indentation string (e.g., "| | ", may be empty)
+        //
+        // 5. The tag
+
+        // Match time entries:
+        //
+        // - Time entries are in milliseconds and always rounded to 1000ths 
+        //   place, so expect exactly 3 digits after the decimal.
+        //
+        // - Trace Reporter will either output 0, 1, or 2 time entries.
+        //
+        // - The first entry, if present, is always the inclusive time entry.
+        //
+        // Note: This is structured this way to maintain compatibility with 
+        // Windows. For some reason, if we just have two optional time entry 
+        // patterns, and if only one has match, Linux and Windows will disagree
+        // on whether the matched entry belongs to the first or second capture
+        // group. To work around this, we nest the expression to match either:
+        //
+        // - Required time entry followed by an optional time entry
+        //
+        // - or an empty group.
+        //
+        const std::string msEntryPattern = R"((?:(\d+\.\d{3}) ms))";
+        const std::string msPattern = TfStringPrintf(R"(%s\s+%s?\s+)", 
+            msEntryPattern.c_str(), msEntryPattern.c_str());
+        const std::string msPatternOptional = TfStringPrintf(
+            R"((?:%s|(?:)\s+))", msPattern.c_str());
+
+        // Match sample entry
+        // - Can be either an integer or a floating point number (for traces
+        //   with iterations)
+        const std::string samplePattern = R"((\d+|\d+\.\d{3}) samples\s+)";
+
+        // Match indentation string
+        const std::string indentPattern = R"(([ |]+))";
+
+        // Match tag
+        const std::string tagPattern = R"((.*))";
+
+        return std::regex(R"(\s*)" + msPatternOptional + samplePattern 
+            + indentPattern + tagPattern);
+    });
+
+    // Current state of the parser. 
+    enum class State {
+        // Tree view header not yet found
+        FindingTree,
+        // Found Tree view header, searching for others
+        ReadingTree
+    } state = State::FindingTree;
+
+    std::cmatch match;
+
+    TraceAggregateTreeRefPtr currentTree;
+
+    // By default assume 1 iteration. Only trees with non-1 iteration counts
+    // have the the iteration count line.
+    int currentIters = 1;
+
+    std::vector<ParsedTree> result;
+    std::stack<TraceAggregateNodePtr> stack;
+    for (std::string line; std::getline(stream, line);) {
+        // When finding the tree, only parse for the tree header and the 
+        // iteration count.
+        if (state == State::FindingTree) {
+            if (line == treeHeader) {
+                state = State::ReadingTree;
+                currentTree = TraceAggregateTree::New();
+                stack.push(currentTree->GetRoot());
+
+                // By this point we've already seen the iteration count for this
+                // tree.
+                result.push_back({currentTree, currentIters});
+                continue;
+            }
+
+            if (std::regex_match(line.c_str(), match, itCountRE)) {
+                currentIters = std::stoi(match[1]);
+            }
+
+            continue;
+        }
+
+        if (!TF_VERIFY(state == State::ReadingTree)) {
+            // If we're not finding a tree, we should be reading a tree.
+            break;
+        }
+
+        // When we see an empty line, that means we've gotten a full tree. Clear
+        // the stack and switch back to tree finding.
+        if (TfStringTrim(line).empty()) {
+            state = State::FindingTree;
+            stack = {};
+            currentIters = 1;
+            continue;
+        }
+
+        if (!std::regex_match(line.c_str(), match, traceRowRE)) {
+            continue;
+        }
+
+        // The indentation string always has a size of 2x the depth.
+        //
+        // Determine the depth and then pop the stack until we have the parent
+        // node.
+        const size_t depth = match[4].length() / 2;
+        while (stack.size() > depth+1) {
+            stack.pop();
+        }
+        TraceAggregateNodePtr &parent = stack.top();
+
+        // Add a new node.
+        // Sample count may be a double if there's >1 iterations.
+        const int samples = std::round(currentIters*TfStringToDouble(match[3]));
+        stack.push(parent->Append(
+            TraceReporter::CreateValidEventId(),
+            /* key */ TfToken(match[5].str()),
+            /* timestamp */ ArchSecondsToTicks(
+                currentIters*TfStringToDouble(match[1])/1000.0),
+            /* count */ samples,
+            /* exclusiveCount */ samples));
+    }
+
+    return result;
 }
 
 void

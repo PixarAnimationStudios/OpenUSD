@@ -61,6 +61,11 @@ Child names:
      ['Anim']
 
 ------------------------------------------------------------------------
+Results for composing </PayloadedModel/Test/Anim>
+
+Prim Stack:
+
+------------------------------------------------------------------------
 Results for composing </InternalReferencePayloadedModel>
 
 Prim Stack:

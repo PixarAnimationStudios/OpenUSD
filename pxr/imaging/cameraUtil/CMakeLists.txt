@@ -10,9 +10,6 @@ pxr_library(cameraUtil
         conformWindow
         framing
         screenWindowParameters
-
-    PYTHON_CPPFILES
-        moduleDeps.cpp
         
     PUBLIC_HEADERS
         api.h

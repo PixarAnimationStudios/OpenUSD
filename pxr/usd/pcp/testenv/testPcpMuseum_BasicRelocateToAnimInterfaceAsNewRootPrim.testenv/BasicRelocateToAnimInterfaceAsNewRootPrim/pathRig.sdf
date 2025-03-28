@@ -1,0 +1,20 @@
+#sdf 1.4.32
+
+def Prim "PathRig"
+{
+    def Path "Path"
+    {
+        def Scope "Anim"
+        {
+            custom double track
+        }
+    }
+
+    rel relationshipToPathAvar = <Path/Anim.track> (
+        doc = """This relationship target will be mapped and relocated in
+            charRig to point to /Path/AnimScope.track. However this will
+            fail to map all the way up through the reference from 
+            root.sdf</Model> because it is outside of the reference prim
+            hierarchy precisely because of charRig's relocates."""
+    )
+}

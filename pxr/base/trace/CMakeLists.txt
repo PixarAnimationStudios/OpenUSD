@@ -6,11 +6,9 @@ pxr_library(trace
         arch
         js
         tf
-        ${Boost_PYTHON_LIBRARY}
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
@@ -50,12 +48,10 @@ pxr_library(trace
         stringHash.h
         trace.h
 
-    PYTHON_CPPFILES
-        moduleDeps.cpp
-
     PYMODULE_CPPFILES
         module.cpp
         wrapAggregateNode.cpp
+        wrapAggregateTree.cpp
         wrapCollector.cpp
         wrapReporter.cpp
         wrapTestTrace.cpp
@@ -151,6 +147,7 @@ pxr_test_scripts(
     testenv/testTraceRecursion.py
     testenv/testTraceReports.py
     testenv/testTraceReporter.py
+    testenv/testTraceReporterLoadTrace.py
 )
 
 pxr_install_test_dir(
@@ -263,6 +260,11 @@ pxr_register_test(testTraceReports
 pxr_register_test(testTraceReporter
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceReporter"
+)
+
+pxr_register_test(testTraceReporterLoadTrace
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTraceReporterLoadTrace"
 )
 
 pxr_register_test(testTraceSerialization

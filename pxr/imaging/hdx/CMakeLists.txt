@@ -1,8 +1,8 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hdx)
 
-# XXX We tmp check for PXR_ENABLE_GL_SUPPORT since Hdx currently still uses
-# OpenGL directly. Once Hdx uses only Hgi, remove GL_SUPPORT check.
+# XXX We check for PXR_ENABLE_GL_SUPPORT since Hdx currently still uses
+# GL via GarchGLApi. Once Hdx uses only Hgi, remove GL_SUPPORT check.
 if (NOT ${PXR_BUILD_GPU_SUPPORT} OR NOT ${PXR_ENABLE_GL_SUPPORT})
     message(STATUS
         "Skipping ${PXR_PACKAGE} because PXR_BUILD_GPU_SUPPORT is OFF")
@@ -45,6 +45,7 @@ pxr_library(hdx
         drawTargetTask
         effectsShader
         freeCameraSceneDelegate
+        freeCameraPrimDataSource
         fullscreenShader
         hgiConversions
         oitBufferAccessor
@@ -93,7 +94,6 @@ pxr_library(hdx
         shaders/renderPassColorShader.glslfx
         shaders/renderPassColorAndSelectionShader.glslfx
         shaders/renderPassColorWithOccludedSelectionShader.glslfx
-        shaders/renderPassIdShader.glslfx
         shaders/renderPassPickingShader.glslfx
         shaders/renderPassOitShader.glslfx
         shaders/renderPassOitOpaqueShader.glslfx

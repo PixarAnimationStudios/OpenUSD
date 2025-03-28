@@ -1,7 +1,13 @@
 #sdf 1.4.32
 
-def "Root" (
-    references = @./ref.sdf@</Ref>
+def "ReferenceToDef" (
+    references = @./ref.sdf@</Def>
+)
+{
+}
+
+def "ReferenceToOver" (
+    references = @./ref.sdf@</Over>
 )
 {
 }

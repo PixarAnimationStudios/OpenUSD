@@ -78,7 +78,8 @@ extensions = [
     'sphinx.ext.autosectionlabel',
     'sphinxcontrib.doxylink',
     'sphinx_panels',
-    'myst_parser'
+    'myst_parser',
+    'sphinxcontrib.datatemplates'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -135,7 +136,7 @@ html_theme_options = {
     'display_version': False,
     'collapse_navigation': False,
     'sticky_navigation': False,
-    'navigation_depth': 3,
+    'navigation_depth': 4,
     'style_nav_header_background': '#606060'
 }
 

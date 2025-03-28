@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -54,12 +37,44 @@ PXR_NAMESPACE_OPEN_SCOPE
     (nodes) \
     (terminals) \
     (interfaceMappings) \
+    (config) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdMaterialNetworkSchemaTokens, HD_API,
     HD_MATERIAL_NETWORK_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
 
+// The MaterialNetwork schema is a container schema that defines a material
+// for a specific render context. A network is composed of nodes, terminals,
+// and interface mappings.
+//
+// Interface mappings define the material's public UI. For example, the
+// following data sources define a public UI "globalVal" that maps to two
+// different node parameters:
+//
+// ds at: material/<renderContext>/interfaceMappings/globalVal/[0]/ nodePath =
+// Color_Manipulate
+//
+// ds at: material/<renderContext>/interfaceMappings/globalVal/[0]/ inputName
+// = adjustVal
+//
+// ds at: material/<renderContext>/interfaceMappings/globalVal/[1]/ nodePath =
+// Color_RetargetLayer
+//
+// ds at: material/<renderContext>/interfaceMappings/globalVal/[1]/ inputName
+// = valRemapAmount
+//
+// The above means that the "globalVal" public UI name maps to the following
+// parameter data sources at:
+//
+// ds at: material/<renderContext>/nodes/Color_Manipulate/parameters/
+// adjustVal
+//
+// ds at: material/<renderContext>/nodes/Color_RetargetLayer/
+// parameters/valRemapAmount
+//
+// See also the Material schema documentation for ASCII art diagram.
+//
 
 class HdMaterialNetworkSchema : public HdSchema
 {
@@ -78,14 +93,25 @@ public:
     /// \name Member accessor
     /// @{
 
+    /// Maps node names to material nodes. Each material node is a container
+    /// that is defined by the MaterialNode schema. The topology of the
+    /// network is expressed by the connections found on each material node.
     HD_API
     HdMaterialNodeContainerSchema GetNodes() const;
 
+    /// Maps terminal names to material connections. Each connection is a
+    /// container defined by the MaterialConnection schema.
     HD_API
     HdMaterialConnectionContainerSchema GetTerminals() const;
 
+    /// Maps interface names (public UI names) to vectors of material node
+    /// parameters. Each mapped material node parameter is a container defined
+    /// by the InterfaceMappings schema.
     HD_API
-    HdMaterialInterfaceMappingsContainerSchema GetInterfaceMappings() const; 
+    HdMaterialInterfaceMappingsContainerSchema GetInterfaceMappings() const;
+
+    HD_API
+    HdSampledDataSourceContainerSchema GetConfig() const; 
 
     /// @} 
 
@@ -104,7 +130,8 @@ public:
     BuildRetained(
         const HdContainerDataSourceHandle &nodes,
         const HdContainerDataSourceHandle &terminals,
-        const HdContainerDataSourceHandle &interfaceMappings
+        const HdContainerDataSourceHandle &interfaceMappings,
+        const HdContainerDataSourceHandle &config
     );
 
     /// \class HdMaterialNetworkSchema::Builder
@@ -125,6 +152,9 @@ public:
         HD_API
         Builder &SetInterfaceMappings(
             const HdContainerDataSourceHandle &interfaceMappings);
+        HD_API
+        Builder &SetConfig(
+            const HdContainerDataSourceHandle &config);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -134,6 +164,7 @@ public:
         HdContainerDataSourceHandle _nodes;
         HdContainerDataSourceHandle _terminals;
         HdContainerDataSourceHandle _interfaceMappings;
+        HdContainerDataSourceHandle _config;
 
     };
 

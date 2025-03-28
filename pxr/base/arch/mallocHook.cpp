@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -32,6 +15,7 @@
 #   include <dlfcn.h>
 #endif
 #include <cstring>
+#include <utility>
 
 #if defined(ARCH_OS_IPHONE)
 #elif defined(ARCH_OS_DARWIN)
@@ -42,10 +26,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// Malloc hooks were removed in glibc 2.34.
-#if defined(ARCH_OS_LINUX) && \
+// The old glibc malloc hooks were removed in glibc 2.34.  So we only
+// auto-enable support for the ArchMallocHook if we're compiling on that version
+// or older.  If you have a different allocator that supports the old hook
+// variables, you can -DPXR_ARCH_SUPPORT_MALLOC_HOOKS when compiling to manually
+// enable support.  This code will then try to dlsym() the hooks at runtime,
+// when initialized.
+#if !defined(PXR_ARCH_SUPPORT_MALLOC_HOOKS) &&                          \
+    defined(ARCH_OS_LINUX) &&                                           \
     defined(__GLIBC__) && __GLIBC__ <= 2 && __GLIBC_MINOR__ < 34
-#define MALLOC_HOOKS_AVAILABLE
+#define PXR_ARCH_SUPPORT_MALLOC_HOOKS
 #endif
 
 using std::string;
@@ -74,8 +64,7 @@ using std::string;
  * Note that support for non-linux and non-64 bit platforms is not provided.
  */
 
-
-#ifdef MALLOC_HOOKS_AVAILABLE
+#ifdef PXR_ARCH_SUPPORT_MALLOC_HOOKS
 
 /*
  * These are hook variables (they're not functions, so they don't need
@@ -87,22 +76,19 @@ using std::string;
 #   define __MALLOC_HOOK_VOLATILE
 #endif /* !defined(__MALLOC_HOOK_VOLATILE) */
 
-PXR_NAMESPACE_CLOSE_SCOPE
+#define _MHV __MALLOC_HOOK_VOLATILE
+using MallocHookPtr = void *(*_MHV)(size_t, const void*);
+using ReallocHookPtr = void *(*_MHV)(void*, size_t, const void*);
+using MemalignHookPtr = void *(*_MHV)(size_t, size_t, const void*);
+using FreeHookPtr = void (*_MHV)(void*, const void*);
+#undef _MHV
 
-extern void*
-(*__MALLOC_HOOK_VOLATILE __malloc_hook)(
-    size_t __size,  const void*);
-extern void*
-(*__MALLOC_HOOK_VOLATILE __realloc_hook)(
-    void* __ptr, size_t __size, const void*);
-extern void*
-(*__MALLOC_HOOK_VOLATILE __memalign_hook)(
-    size_t __alignment, size_t __size, const void*);
-extern void
-(*__MALLOC_HOOK_VOLATILE __free_hook)(
-    void* __ptr,  const void*);
-
-PXR_NAMESPACE_OPEN_SCOPE
+// These are pointers to the function pointer hook variables.  We look these up
+// via dlsym().
+static MallocHookPtr *mallocHookPtr;
+static ReallocHookPtr *reallocHookPtr;
+static MemalignHookPtr *memalignHookPtr;
+static FreeHookPtr *freeHookPtr;
 
 template <typename T>
 static bool _GetSymbol(T* addr, const char* name, string* errMsg) {
@@ -173,14 +159,6 @@ ArchIsJemallocActive()
     return _MallocProvidedBySameLibraryAs("__jemalloc_malloc", skipMallocCheck);
 }
 
-static bool
-_MallocHookAvailable()
-{
-    return (ArchIsPxmallocActive() ||
-            ArchIsPtmallocActive() ||
-            ArchIsJemallocActive());
-}
-
 struct Arch_MallocFunctionNames
 {
     const char* mallocFn;
@@ -215,12 +193,12 @@ _GetUnderlyingMallocFunctionNames()
     return names;
 }
 
-#endif // MALLOC_HOOKS_AVAILABLE
+#endif // PXR_ARCH_SUPPORT_MALLOC_HOOKS
 
 bool
 ArchIsPtmallocActive()
 {
-#ifdef MALLOC_HOOKS_AVAILABLE
+#ifdef PXR_ARCH_SUPPORT_MALLOC_HOOKS
     const std::string impl = ArchGetEnv("TF_MALLOC_TAG_IMPL");
     if (!_CheckMallocTagImpl(impl, "ptmalloc")) {
         return false;
@@ -272,8 +250,8 @@ ArchMallocHook::Initialize(
 #if !defined(ARCH_OS_LINUX)
     *errMsg = "ArchMallocHook only available for Linux/glibc systems";
     return false;
-#elif !defined(MALLOC_HOOKS_AVAILABLE)
-    *errMsg = "C library does not provide malloc hooks";
+#elif !defined(PXR_ARCH_SUPPORT_MALLOC_HOOKS)
+    *errMsg = "ArchMallocHook support disabled at compile time";
     return false;
 #else
     
@@ -282,9 +260,22 @@ ArchMallocHook::Initialize(
         return false;
     }
 
-    if (!_MallocHookAvailable()) {
-        *errMsg =
-            "ArchMallocHook functionality not available for current allocator";
+    const bool allocatorSupportsHooks =
+        (ArchIsPxmallocActive() ||
+         ArchIsPtmallocActive() ||
+         ArchIsJemallocActive()) &&
+        _GetSymbol(&mallocHookPtr, "__malloc_hook", errMsg) &&
+        _GetSymbol(&reallocHookPtr, "__realloc_hook", errMsg) &&
+        _GetSymbol(&memalignHookPtr, "__memalign_hook", errMsg) &&
+        _GetSymbol(&freeHookPtr, "__free_hook", errMsg);
+    
+    if (!allocatorSupportsHooks) {
+        std::string prevErr = std::exchange(
+            *errMsg, "ArchMallocHook functionality not available for "
+            "current allocator");
+        if (!prevErr.empty()) {
+            *errMsg += ": " + prevErr;
+        }
         return false;
     }
 
@@ -303,18 +294,16 @@ ArchMallocHook::Initialize(
     // the system (glibc) malloc symbols instead of the custom allocator's
     // (jemalloc's).  Pixar's pxmalloc wrapper does the same, for the same
     // reason.
-    if ((__malloc_hook &&
-         __malloc_hook != reinterpret_cast<void *>(malloc)) ||
-        (__realloc_hook &&
-         __realloc_hook != reinterpret_cast<void *>(realloc)) ||
-        (__memalign_hook &&
-         __memalign_hook != reinterpret_cast<void *>(memalign)) ||
-        (__free_hook &&
-         __free_hook != reinterpret_cast<void *>(free))) {
+    auto toVoidP = [](auto x) { return reinterpret_cast<void *>(x); };
+    
+    if ((mallocHookPtr && *mallocHookPtr != toVoidP(malloc)) ||
+        (reallocHookPtr && *reallocHookPtr != toVoidP(realloc)) ||
+        (memalignHookPtr && *memalignHookPtr != toVoidP(memalign)) ||
+        (freeHookPtr && *freeHookPtr != toVoidP(free))) {
         *errMsg =
-            "One or more malloc/realloc/free hook variables are already set.\n"
-            "This probably means another entity in the program is trying to\n"
-            "do its own profiling, pre-empting yours.";
+            "One or more malloc/realloc/free hook variables are already set. "
+            "This probably means another entity in the program is trying to "
+            "do its own profiling, preempting yours.";
         return false;
     }
 
@@ -331,17 +320,16 @@ ArchMallocHook::Initialize(
         return false;
     }
 
-    if (mallocWrapper)
-        __malloc_hook = mallocWrapper;
+    auto setIf = [](auto hookPtr, auto wrapper) {
+        if (wrapper) {
+            *hookPtr = wrapper;
+        }
+    };
 
-    if (reallocWrapper)
-        __realloc_hook = reallocWrapper;
-
-    if (memalignWrapper)
-        __memalign_hook = memalignWrapper;
-
-    if (freeWrapper)
-        __free_hook = freeWrapper;
+    setIf(mallocHookPtr, mallocWrapper);
+    setIf(reallocHookPtr, reallocWrapper);
+    setIf(memalignHookPtr, memalignWrapper);
+    setIf(freeHookPtr, freeWrapper);
 
     return true;
 #endif

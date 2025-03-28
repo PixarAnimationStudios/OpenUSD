@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "{{ libraryPath }}/{{ cls.GetHeaderFile() }}"
 #include "pxr/usd/usd/schemaBase.h"
@@ -35,16 +18,19 @@
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 #include <string>
-
-using namespace boost::python;
 
 {% if useExportAPI %}
 {{ namespaceUsing }}
 
+using namespace pxr_boost::python;
+
 namespace {
+
+{% else %}
+using namespace pxr_boost::python;
 
 {% endif %}
 #define WRAP_CUSTOM                                                     \
@@ -66,7 +52,7 @@ _Create{{ Proper(attr.apiName) }}Attr({{ cls.cppClassName }} &self,
 }
 {% endif %}
 {% endfor %}
-{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+{% if cls.isMultipleApply and cls.propertyNamespace %}
 
 static bool _WrapIs{{ cls.usdPrimTypeName }}Path(const SdfPath &path) {
     TfToken collectionName;
@@ -134,7 +120,7 @@ void wrap{{ cls.cppClassName }}()
 
 {% endif %}
 {% if cls.isAPISchemaBase %}
-    class_< This , bases<{{ cls.parentCppClassName }}>, boost::noncopyable> cls ("APISchemaBase", "", no_init);
+    class_< This , bases<{{ cls.parentCppClassName }}>, noncopyable> cls ("APISchemaBase", "", no_init);
 {% else %}
     class_<This, bases<{{ cls.parentCppClassName }}> >
         cls("{{ cls.className }}");
@@ -254,7 +240,7 @@ void wrap{{ cls.cppClassName }}()
              &This::Create{{ Proper(rel.apiName) }}Rel)
 {% endif %}
 {% endfor %}
-{% if cls.isMultipleApply and cls.propertyNamespacePrefix %}
+{% if cls.isMultipleApply and cls.propertyNamespace %}
         .def("Is{{ cls.usdPrimTypeName }}Path", _WrapIs{{ cls.usdPrimTypeName }}Path)
             .staticmethod("Is{{ cls.usdPrimTypeName }}Path")
 {% endif %}

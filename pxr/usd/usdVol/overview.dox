@@ -58,7 +58,7 @@ Learn about Field3D at [https://sites.google.com/site/field3d/](https://sites.go
 \section usdVol_example Example Usage
 
 Here is a simple example of a Volume prim, representing a static wisp of smoke:
-
+\code
     def Volume "wisp"
     {
         float3[] extent = [(-57, -91, -44), (57, 31, -23)]
@@ -71,10 +71,10 @@ Here is a simple example of a Volume prim, representing a static wisp of smoke:
             token fieldName = "density"
         }
     }
-
+\endcode
 Volumes are generally not static. For volumes with OpenVDBAsset fields, volume
 animation is represented by setting time samples on the filePath attribute:
-
+\code
     def Volume "wisp"
     {
         float3[] extent = [(-57, -91, -44), (57, 31, -23)]
@@ -92,7 +92,7 @@ animation is represented by setting time samples on the filePath attribute:
             token fieldName = "density"
         }
     }
-
+\endcode
 \section usdVol_usage Usage Notes
 
 \subsection usdVol_namespace_org Namespace Organization and Transformation

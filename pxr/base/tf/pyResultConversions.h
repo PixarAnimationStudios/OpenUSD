@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_TF_PY_RESULT_CONVERSIONS_H
 #define PXR_BASE_TF_PY_RESULT_CONVERSIONS_H
@@ -28,9 +11,9 @@
 
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/python/tuple.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/dict.hpp>
+#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/dict.hpp"
 
 #include <type_traits>
 
@@ -44,7 +27,7 @@ template <typename First, typename Second> struct Tf_PyPairToTupleConverter;
 
 /// \class TfPySequenceToList
 ///
-/// A \c boost::python result converter generator which converts standard
+/// A \c pxr_boost::python result converter generator which converts standard
 /// library sequences to lists.
 ///
 /// The way to use this is as a return value policy for a function which
@@ -73,7 +56,7 @@ struct TfPySequenceToList {
 
 /// \class TfPySequenceToSet
 ///
-/// A \c boost::python result converter generator which converts standard
+/// A \c pxr_boost::python result converter generator which converts standard
 /// library sequences to sets.
 ///
 /// The way to use this is as a return value policy for a function which
@@ -102,7 +85,7 @@ struct TfPySequenceToSet {
 
 /// \class TfPyMapToDictionary
 ///
-/// A \c boost::python result converter generator which converts standard
+/// A \c pxr_boost::python result converter generator which converts standard
 /// library maps to dictionaries.
 struct TfPyMapToDictionary {
     template <typename T>
@@ -113,7 +96,7 @@ struct TfPyMapToDictionary {
 
 /// \class TfPySequenceToTuple
 ///
-/// A \c boost::python result converter generator which converts standard
+/// A \c pxr_boost::python result converter generator which converts standard
 /// library sequences to tuples.
 /// \see TfPySequenceToList.
 struct TfPySequenceToTuple {
@@ -123,7 +106,7 @@ struct TfPySequenceToTuple {
     };
 };
 
-/// A \c boost::python result converter generator which converts standard
+/// A \c pxr_boost::python result converter generator which converts standard
 /// library pairs to tuples.
 struct TfPyPairToTuple {
     template <typename T>
@@ -140,7 +123,7 @@ struct Tf_PySequenceToListConverter {
         return true;
     }
     PyObject *operator()(T seq) const {
-        return boost::python::incref(TfPyCopySequenceToList(seq).ptr());
+        return pxr_boost::python::incref(TfPyCopySequenceToList(seq).ptr());
     }
     PyTypeObject *get_pytype() {
         return &PyList_Type;
@@ -154,7 +137,7 @@ struct Tf_PySequenceToSetConverter {
         return true;
     }
     PyObject *operator()(T seq) const {
-        return boost::python::incref(TfPyCopySequenceToSet(seq).ptr());
+        return pxr_boost::python::incref(TfPyCopySequenceToSet(seq).ptr());
     }
     PyTypeObject *get_pytype() {
         return &PySet_Type;
@@ -170,7 +153,7 @@ struct Tf_PyMapToDictionaryConverter {
         return true;
     }
     PyObject *operator()(T seq) const {
-        return boost::python::incref(TfPyCopyMapToDictionary(seq).ptr());
+        return pxr_boost::python::incref(TfPyCopyMapToDictionary(seq).ptr());
     }
     PyTypeObject *get_pytype() {
         return &PyDict_Type;
@@ -184,7 +167,7 @@ struct Tf_PySequenceToTupleConverter {
         return true;
     }
     PyObject *operator()(T seq) const {
-        return boost::python::incref(TfPyCopySequenceToTuple(seq).ptr());
+        return pxr_boost::python::incref(TfPyCopySequenceToTuple(seq).ptr());
     }
     PyTypeObject *get_pytype() {
         return &PyTuple_Type;
@@ -198,9 +181,9 @@ struct Tf_PyPairToTupleConverter {
         return true;
     }
     PyObject *operator()(PairType const& a) const {
-        boost::python::tuple result =
-            boost::python::make_tuple(a.first, a.second);
-        return boost::python::incref(result.ptr());
+        pxr_boost::python::tuple result =
+            pxr_boost::python::make_tuple(a.first, a.second);
+        return pxr_boost::python::incref(result.ptr());
     }
     PyTypeObject *get_pytype() {
         return &PyTuple_Type;

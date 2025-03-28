@@ -1,0 +1,4 @@
+udims/root.usda no sublayers
+udims/root.usda references[001]: ./test.1001.txt
+udims/root.usda references[002]: ./test.1002.txt
+udims/root.usda no payloads

@@ -33,7 +33,8 @@ text :filename:`.usda` outputs.
 The relevant scripts and data files reside in the USD distribution in
 :filename:`USD/extras/usd/tutorials/simpleShading`. Run
 :filename:`generate_simpleShading.py` in that directory to generate all of the
-snippets for each step shown below.
+snippets for each step shown below, or examine the pre-generated 
+`simpleShading.usda <https://github.com/PixarAnimationStudios/OpenUSD/tree/release/extras/usd/tutorials/simpleShading/simpleShading.usda>`__ file.
 
 Making a Model
 ==============
@@ -48,7 +49,7 @@ other scenes. In a python shell, execute the following:
 
    from pxr import Gf, Kind, Sdf, Usd, UsdGeom, UsdShade
    
-   stage = Usd.Stage.CreateNew("simpleShading.usd")
+   stage = Usd.Stage.CreateNew("simpleShading.usda")
    UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.y)
    
    modelRoot = UsdGeom.Xform.Define(stage, "/TexModel")
@@ -86,7 +87,7 @@ multiple times). In another command shell, try:
 
 .. code-block:: sh
 
-   > usdview simpleShading.usd
+   > usdview simpleShading.usda
 
 We should see something like:
 

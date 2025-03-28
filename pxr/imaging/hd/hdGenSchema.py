@@ -2,25 +2,8 @@
 #
 # Copyright 2023 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http:#www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 
 from jinja2 import Environment, FileSystemLoader, Template, pass_context
@@ -54,6 +37,8 @@ T_VEC2D = "HdVec2dDataSource"
 T_VEC2FARRAY = "HdVec2fArrayDataSource"
 T_VEC2DARRAY = "HdVec2dArrayDataSource"
 T_VEC3I = "HdVec3iDataSource"
+T_VEC3IARRAY = "HdVec3iArrayDataSource"
+T_VEC3HARRAY = "HdVec3hArrayDataSource"
 T_VEC3F = "HdVec3fDataSource"
 T_VEC3D = "HdVec3dDataSource"
 T_VEC3FARRAY = "HdVec3fArrayDataSource"
@@ -63,6 +48,9 @@ T_VEC4IARRAY = "HdVec4iArrayDataSource"
 T_VEC4F = "HdVec4fDataSource"
 T_VEC4D = "HdVec4dDataSource"
 T_VEC4DARRAY = "HdVec4dArrayDataSource"
+T_QUATFARRAY = "HdQuatfArrayDataSource"
+T_MATRIX4 = "HdMatrix4fDataSource"
+T_MATRIX4FARRAY = "HdMatrix4fArrayDataSource"
 T_MATRIX = "HdMatrixDataSource"
 T_MATRIXARRAY = "HdMatrixArrayDataSource"
 T_LOCATOR = "HdLocatorDataSource"

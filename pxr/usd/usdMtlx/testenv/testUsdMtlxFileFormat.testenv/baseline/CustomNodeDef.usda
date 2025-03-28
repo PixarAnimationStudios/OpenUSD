@@ -84,8 +84,11 @@ def "MaterialX"
 
     def "Materials"
     {
-        def Material "surface_material_node"
+        def Material "surface_material_node" (
+            prepend apiSchemas = ["MaterialXConfigAPI"]
+        )
         {
+            string config:mtlx:version = "1.39"
             float inputs:clearcoat
             float inputs:clearcoatRoughness
             color3f inputs:diffuseColor
@@ -96,14 +99,15 @@ def "MaterialX"
             float3 inputs:normal
             float inputs:occlusion
             float inputs:opacity
+            int inputs:opacityMode
             float inputs:opacityThreshold
             float inputs:roughness = 0.25
             color3f inputs:specularColor
             int inputs:useSpecularWorkflow = 1
-            token outputs:mtlx:surface.connect = </MaterialX/Materials/surface_material_node/ND_UsdPreviewSurface_surfaceshader.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/surface_material_node/surface_shader_node.outputs:surface>
 
-            def Shader "ND_UsdPreviewSurface_surfaceshader" (
-                prepend references = </MaterialX/Shaders/ND_UsdPreviewSurface_surfaceshader>
+            def Shader "surface_shader_node" (
+                prepend references = </MaterialX/Shaders/surface_shader_node>
             )
             {
                 float inputs:clearcoat.connect = </MaterialX/Materials/surface_material_node.inputs:clearcoat>
@@ -116,6 +120,7 @@ def "MaterialX"
                 float3 inputs:normal.connect = </MaterialX/Materials/surface_material_node.inputs:normal>
                 float inputs:occlusion.connect = </MaterialX/Materials/surface_material_node.inputs:occlusion>
                 float inputs:opacity.connect = </MaterialX/Materials/surface_material_node.inputs:opacity>
+                int inputs:opacityMode.connect = </MaterialX/Materials/surface_material_node.inputs:opacityMode>
                 float inputs:opacityThreshold.connect = </MaterialX/Materials/surface_material_node.inputs:opacityThreshold>
                 float inputs:roughness.connect = </MaterialX/Materials/surface_material_node.inputs:roughness>
                 color3f inputs:specularColor.connect = </MaterialX/Materials/surface_material_node/wrapper_nodegraph.outputs:specular_output>
@@ -132,7 +137,7 @@ def "MaterialX"
 
     def "Shaders"
     {
-        def Shader "ND_UsdPreviewSurface_surfaceshader"
+        def Shader "surface_shader_node"
         {
             uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
             token outputs:surface

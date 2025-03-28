@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_USD_UTILS_ASSET_LOCALIZATION_DELEGATE_H
 #define PXR_USD_USD_UTILS_ASSET_LOCALIZATION_DELEGATE_H
@@ -83,7 +66,9 @@ struct UsdUtils_LocalizationDelegate
         const SdfLayerRefPtr &layer,
         const std::string &keyPath,
         const std::string &authoredPath,
-        const std::vector<std::string> &dependencies) { return {}; }
+        const std::vector<std::string> &dependencies,
+        const bool processingMetadata = false,
+        const bool processingDictionary = false) { return {}; }
 
     virtual std::vector<std::string> ProcessValuePathArrayElement(
         const SdfLayerRefPtr &layer,
@@ -174,7 +159,9 @@ public:
         const SdfLayerRefPtr &layer,
         const std::string &keyPath,
         const std::string &authoredPath,
-        const std::vector<std::string> &dependencies) override;
+        const std::vector<std::string> &dependencies,
+        const bool processingMetadata = false,
+        const bool processingDictionary = false) override;
 
     virtual std::vector<std::string> ProcessValuePathArrayElement(
         const SdfLayerRefPtr &layer,
@@ -212,6 +199,16 @@ public:
     inline void SetEditLayersInPlace(bool editLayersInPlace)
     {
         _editLayersInPlace = editLayersInPlace;
+    }
+
+    // Controls whether empty asset paths are kept in arrays.
+    // If the value is false, paths that are empty after processing are
+    // removed from the layer.  Setting this to true will write empty asset
+    // paths into the array so that it's length remains unchanged after
+    // processing.
+    inline void SetKeepEmptyPathsInArrays(bool keep)
+    {
+        _keepEmptyPathsInArrays = keep;
     }
 
     // Returns the layer that was used for writing the passed in layer.
@@ -260,6 +257,8 @@ private:
 
     bool _editLayersInPlace = false;
 
+    bool _keepEmptyPathsInArrays = false;
+
     // Maps source layer identifiers to their anonymous writable copies.
     std::map<SdfLayerRefPtr, SdfLayerRefPtr> _layerCopyMap;
 };
@@ -278,7 +277,7 @@ public:
 
     virtual std::vector<std::string> ProcessPayloads(
         const SdfLayerRefPtr &layer,
-        const SdfPrimSpecHandle &primSpec);
+        const SdfPrimSpecHandle &primSpec) override;
 
     virtual std::vector<std::string> ProcessReferences(
         const SdfLayerRefPtr &layer,
@@ -288,7 +287,9 @@ public:
         const SdfLayerRefPtr &layer,
         const std::string &keyPath,
         const std::string &authoredPath,
-        const std::vector<std::string> &dependencies) override;
+        const std::vector<std::string> &dependencies,
+        const bool processingMetadata = false,
+        const bool processingDictionary = false) override;
 
     virtual std::vector<std::string> ProcessValuePathArrayElement(
         const SdfLayerRefPtr &layer,

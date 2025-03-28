@@ -8,11 +8,9 @@ pxr_library(plug
         js
         trace
         work
-        ${Boost_PYTHON_LIBRARY}
         ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
@@ -33,9 +31,6 @@ pxr_library(plug
 
     CPPFILES
         initConfig.cpp
-
-    PYTHON_CPPFILES
-        moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp

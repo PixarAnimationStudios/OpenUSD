@@ -1,25 +1,8 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/timeSampleArray.h"
@@ -123,6 +106,63 @@ HdResampleNeighbors(float alpha, const VtValue& v0, const VtValue& v1)
     VtValue result;
     _Resample(alpha, v0, v1, t0, &result, _InterpTypes());
     return result;
+}
+
+bool
+HdGetContributingSampleTimesForInterval(
+    const size_t count,
+    const float * const sampleTimes,
+    const float startTime,
+    const float endTime,
+    std::vector<float> * const outSampleTimes)
+{
+    size_t numOutSamples = 0;
+    
+    for (size_t i = 0; i < count; ++i) {
+        const float t = sampleTimes[i];
+        if (numOutSamples == 0) {
+            if (t > startTime && i > 0) {
+                numOutSamples++;
+                // Include sample just before the start time.
+                if (outSampleTimes) {
+                    outSampleTimes->push_back(sampleTimes[i - 1]);
+                }
+            }
+            if (t >= startTime) {
+                // Include sample at start time or the first sample
+                // after the start time.
+                numOutSamples++;
+                if (outSampleTimes) {
+                    outSampleTimes->push_back(t);
+                } else {
+                    if (numOutSamples >= 2) {
+                        return true;
+                    }
+                }
+            }
+        } else {
+            numOutSamples++;
+            if (outSampleTimes) {
+                outSampleTimes->push_back(t);
+            } else {
+                return true;
+            }
+        }
+        if (t >= endTime) {
+            // We have sound the sample at the end time or beyond
+            // the end time. We are done.
+            break;
+        }
+    }
+
+    if (numOutSamples == 0) {
+        if (outSampleTimes && count > 0) {
+            outSampleTimes->push_back(sampleTimes[0]);
+        }
+        return false;
+    }
+
+    return numOutSamples > 1;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

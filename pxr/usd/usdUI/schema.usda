@@ -1,6 +1,6 @@
 #usda 1.0
 (
-    "This file describes the USD Shader schemata for code generation."
+    "This file describes the USD User Interface schemata for code generation."
     subLayers = [
         @usd/schema.usda@
     ]
@@ -104,6 +104,20 @@ class "NodeGraphNodeAPI"(
         """
         customData = {
             string apiName = "size"
+        }
+    )
+
+    uniform string ui:nodegraph:node:docURI (
+        doc = """ 
+        A URI pointing to additional detailed documentation for this 
+        node or node type.
+        """
+        displayName = "Doc Link"
+
+        displayGroup = "Help"
+
+        customData = {
+            string apiName = "docURI"
         }
     )
 }

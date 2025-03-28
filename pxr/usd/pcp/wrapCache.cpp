@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -35,17 +18,18 @@
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 #include <memory>
 
-using namespace boost::python;
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+using namespace pxr_boost::python;
+
 namespace {
 
-static boost::python::tuple
+static pxr_boost::python::tuple
 _ComputeLayerStack( PcpCache &cache, 
                     const PcpLayerStackIdentifier &identifier ) 
 {
@@ -56,9 +40,9 @@ _ComputeLayerStack( PcpCache &cache,
     typedef Tf_MakePyConstructor::RefPtrFactory<>::
         apply<PcpLayerStackRefPtr>::type RefPtrFactory;
     
-    return boost::python::make_tuple(
-        boost::python::object(
-            boost::python::handle<>(RefPtrFactory()(result))), 
+    return pxr_boost::python::make_tuple(
+        pxr_boost::python::object(
+            pxr_boost::python::handle<>(RefPtrFactory()(result))), 
         errors);
 }
 
@@ -68,7 +52,7 @@ _WrapPrimIndex(PcpCache&, const PcpPrimIndex& primIndex)
     return primIndex;
 }
 
-static boost::python::tuple
+static pxr_boost::python::tuple
 _ComputePrimIndex( PcpCache& cache, const SdfPath & path )
 {
     // Compute the prim index.
@@ -78,43 +62,43 @@ _ComputePrimIndex( PcpCache& cache, const SdfPath & path )
     // Wrap the prim index to python as an internal reference on cache.
     // The return_internal_reference<> says that the result is owned
     // by the first argument, the PcpCache, and shouldn't be destroyed
-    // by Python.  The boost::ref() around the arguments ensure that
+    // by Python.  The ref() around the arguments ensure that
     // boost python will not make temporary copies of them.
     object pyWrapPrimIndex =
         make_function(_WrapPrimIndex, return_internal_reference<>());
-    object pyPrimIndex(pyWrapPrimIndex(boost::ref(cache),
-                                       boost::ref(primIndex)));
+    object pyPrimIndex(pyWrapPrimIndex(ref(cache),
+                                       ref(primIndex)));
 
     // Return the prim index and errors to python.
-    return boost::python::make_tuple(pyPrimIndex, errors);
+    return pxr_boost::python::make_tuple(pyPrimIndex, errors);
 }
 
-static boost::python::object
+static pxr_boost::python::object
 _FindPrimIndex( PcpCache& cache, const SdfPath & path )
 {
     if (const PcpPrimIndex* primIndex = cache.FindPrimIndex(path)) {
         // Wrap the prim index to python as an internal reference on cache.
         // The return_internal_reference<> says that the result is owned
         // by the first argument, the PcpCache, and shouldn't be destroyed
-        // by Python.  The boost::ref() around the arguments ensure that
+        // by Python.  The ref() around the arguments ensure that
         // boost python will not make temporary copies of them.
         object pyWrapPrimIndex =
             make_function(_WrapPrimIndex, return_internal_reference<>());
-        object pyPrimIndex(pyWrapPrimIndex(boost::ref(cache),
-                                           boost::ref(*primIndex)));
+        object pyPrimIndex(pyWrapPrimIndex(ref(cache),
+                                           ref(*primIndex)));
         return pyPrimIndex;
     }
-    return boost::python::object();
+    return pxr_boost::python::object();
 }
 
-static boost::python::tuple
+static pxr_boost::python::tuple
 _ComputePropertyIndex( PcpCache &cache, const SdfPath &path )
 {
     PcpErrorVector errors;
     const PcpPropertyIndex &result = cache.ComputePropertyIndex(path, &errors);
     return_by_value::apply<PcpPropertyIndex>::type converter;
-    return boost::python::make_tuple(
-        boost::python::object(boost::python::handle<>(converter(result))), 
+    return pxr_boost::python::make_tuple(
+        pxr_boost::python::object(pxr_boost::python::handle<>(converter(result))), 
         errors);
 }
 
@@ -124,25 +108,25 @@ _WrapPropertyIndex(PcpCache&, const PcpPropertyIndex& propertyIndex)
     return propertyIndex;
 }
 
-static boost::python::object
+static pxr_boost::python::object
 _FindPropertyIndex( PcpCache& cache, const SdfPath & path )
 {
     if (const PcpPropertyIndex* propIndex = cache.FindPropertyIndex(path)) {
         // Wrap the index to python as an internal reference on cache.
         // The return_internal_reference<> says that the result is owned
         // by the first argument, the PcpCache, and shouldn't be destroyed
-        // by Python.  The boost::ref() around the arguments ensure that
+        // by Python.  The ref() around the arguments ensure that
         // boost python will not make temporary copies of them.
         object pyWrapPropertyIndex =
             make_function(_WrapPropertyIndex, return_internal_reference<>());
-        object pyPropertyIndex(pyWrapPropertyIndex(boost::ref(cache),
-                                           boost::ref(*propIndex)));
+        object pyPropertyIndex(pyWrapPropertyIndex(ref(cache),
+                                           ref(*propIndex)));
         return pyPropertyIndex;
     }
-    return boost::python::object();
+    return pxr_boost::python::object();
 }
 
-static boost::python::tuple
+static pxr_boost::python::tuple
 _ComputeRelationshipTargetPaths( PcpCache &cache, const SdfPath & path, 
                                  bool localOnly,
                                   const SdfSpecHandle & stopProperty,
@@ -155,10 +139,10 @@ _ComputeRelationshipTargetPaths( PcpCache &cache, const SdfPath & path,
                                          stopProperty, includeStopProperty,
                                          &deletedPaths,
                                          &errors);
-    return boost::python::make_tuple(result, deletedPaths, errors);
+    return pxr_boost::python::make_tuple(result, deletedPaths, errors);
 }
 
-static boost::python::tuple
+static pxr_boost::python::tuple
 _ComputeAttributeConnectionPaths( PcpCache &cache, const SdfPath & path, 
                                   bool localOnly,
                                   const SdfSpecHandle & stopProperty,
@@ -171,7 +155,7 @@ _ComputeAttributeConnectionPaths( PcpCache &cache, const SdfPath & path,
                                           stopProperty, includeStopProperty,
                                           &deletedPaths,
                                           &errors);
-    return boost::python::make_tuple(result, deletedPaths, errors);
+    return pxr_boost::python::make_tuple(result, deletedPaths, errors);
 }
 
 static void
@@ -229,7 +213,7 @@ _Reload( PcpCache & cache )
 void 
 wrapCache()
 {
-    class_<PcpCache, boost::noncopyable> 
+    class_<PcpCache, noncopyable> 
         ("Cache", 
          init<const PcpLayerStackIdentifier&,
               const std::string&, 

@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 
 #ifndef PXR_USD_SDF_PY_SPEC_H
 #define PXR_USD_SDF_PY_SPEC_H
@@ -49,11 +32,11 @@
 /// to store a ref pointer in the Python object.  But we do still need
 /// conversion of spec types to yield the most-derived type in python.
 ///
-/// This file introduces a few boost::python::class_ def visitors to make
+/// This file introduces a few pxr_boost::python::class_ def visitors to make
 /// wrapping specs easy.  Spec wrapping should now look like:
 ///
 /// \code
-///   class_<MyClass, SdfHandle<MyClass>, bases<SdfSpec>, boost::noncopyable>
+///   class_<MyClass, SdfHandle<MyClass>, bases<SdfSpec>, noncopyable>
 ///       ("MyClass", no_init)
 ///       .def(SdfPySpec())  // or SdfPyAbstractSpec()
 ///       .def(SdfMakePySpecConstructor(&MyClass::New))
@@ -66,13 +49,13 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
 
-#include <boost/python/def_visitor.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/errors.hpp>
-#include <boost/python/raw_function.hpp>
-#include <boost/python/pointee.hpp>
-#include <boost/python/to_python_converter.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/def_visitor.hpp"
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/errors.hpp"
+#include "pxr/external/boost/python/raw_function.hpp"
+#include "pxr/external/boost/python/pointee.hpp"
+#include "pxr/external/boost/python/to_python_converter.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include "pxr/base/tf/pyError.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -86,13 +69,14 @@
 #include <string>
 #include <type_traits>
 
-namespace boost{
+namespace PXR_BOOST_NAMESPACE {
 namespace python {
 
 template <typename T>
 struct pointee<PXR_NS::SdfHandle<T> > {
     typedef T type;
 };
+
 }
 }
 
@@ -102,7 +86,7 @@ class SdfSpec;
 
 namespace Sdf_PySpecDetail {
 
-namespace bp = boost::python;
+namespace bp = pxr_boost::python;
 
 SDF_API bp::object _DummyInit(bp::tuple const & /* args */, bp::dict const & /* kw */);
 

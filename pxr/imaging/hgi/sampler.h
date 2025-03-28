@@ -1,30 +1,16 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HGI_SAMPLER_H
 #define PXR_IMAGING_HGI_SAMPLER_H
 
 #include "pxr/pxr.h"
+
+#include "pxr/base/tf/envSetting.h"
+
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/enums.h"
 #include "pxr/imaging/hgi/handle.h"
@@ -35,6 +21,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// Sets the maximum anisotropic filtering ratio for all samplers.
+/// By default this is 16x. The actual value used depends on the
+/// device limits. A value of 1 effectively disables anisotropic sampling.
+///
+HGI_API
+extern TfEnvSetting<int> HGI_MAX_ANISOTROPY;
 
 /// \struct HgiSamplerDesc
 ///
@@ -59,6 +51,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///    Enables sampler comparison against a reference value during lookups.</li>
 /// <li>compareFunction: 
 ///    The comparison function to apply if sampler compare is enabled.</li>
+/// <li>maxAnisotropy:
+///    Maximum anisotropic filtering ratio. The default value of 16 corresponds
+///    to the previously internal default value. The actual value used is subject
+///    to the device maximum supported anisotropy and the HGI_MAX_ANISOTROPY
+///    setting. A value of 1 effectively disables anisotropic sampling.</li>
 /// </ul>
 ///
 struct HgiSamplerDesc
@@ -73,6 +70,7 @@ struct HgiSamplerDesc
         , borderColor(HgiBorderColorTransparentBlack)
         , enableCompare(false)
         , compareFunction(HgiCompareFunctionNever)
+        , maxAnisotropy(16)
     {}
 
     std::string debugName;
@@ -85,6 +83,7 @@ struct HgiSamplerDesc
     HgiBorderColor borderColor;
     bool enableCompare;
     HgiCompareFunction compareFunction;
+    uint32_t maxAnisotropy;
 };
 
 HGI_API

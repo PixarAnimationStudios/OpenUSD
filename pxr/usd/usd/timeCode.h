@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_USD_TIME_CODE_H
 #define PXR_USD_USD_TIME_CODE_H
@@ -41,7 +24,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define USD_TIME_CODE_TOKENS \
     (DEFAULT) \
-    (EARLIEST)
+    (EARLIEST) \
+    (PRE_TIME)
 
 TF_DECLARE_PUBLIC_TOKENS(UsdTimeCodeTokens, USD_API, USD_TIME_CODE_TOKENS);
 
@@ -81,14 +65,28 @@ TF_DECLARE_PUBLIC_TOKENS(UsdTimeCodeTokens, USD_API, USD_TIME_CODE_TOKENS);
 /// UsdTimeCode::EarliestTime() is provided to aid clients who wish
 /// to retrieve the first authored timesample for any attribute.
 ///
+/// A UsdTimeCode can also represent a 'pre-time' value, which means the limit 
+/// as time approaches the value from the left.
+///
 class UsdTimeCode {
 public:
     /// Construct with optional time value.  Impilicitly convert from double.
     constexpr UsdTimeCode(double t = 0.0) noexcept : _value(t) {}
 
     /// Construct and implicitly cast from SdfTimeCode.
-    constexpr UsdTimeCode(const SdfTimeCode &timeCode) noexcept 
-        : _value(timeCode.GetValue()) {}
+    constexpr UsdTimeCode(const SdfTimeCode &sdfTimeCode) noexcept 
+        : _value(sdfTimeCode.GetValue()) {}
+
+    /// Produces a UsdTimeCode representing a pre-time at \p t.
+    static constexpr UsdTimeCode PreTime(double t) noexcept {
+        return UsdTimeCode(t, /*isPreTime=*/true);
+    }
+
+    /// Produces a UsdTimeCode representing a pre-time using SdfTimeCode \p 
+    /// timeCode.
+    static constexpr UsdTimeCode PreTime(const SdfTimeCode& timeCode) noexcept {
+        return UsdTimeCode(timeCode.GetValue(), /*isPreTime=*/true);
+    }
 
     /// Produce a UsdTimeCode representing the lowest/earliest possible
     /// timeCode.  Thus, for any given timeSample \em s, its time ordinate 
@@ -113,6 +111,7 @@ public:
         return UsdTimeCode(std::numeric_limits<double>::quiet_NaN());
     }
 
+public:
     /// Produce a safe step value such that for any numeric UsdTimeCode t in
     /// [-maxValue, maxValue], t +/- (step / maxCompression) != t with a safety
     /// factor of 2.  This is shorthand for
@@ -126,6 +125,11 @@ public:
     SafeStep(double maxValue=1e6, double maxCompression=10.0) {
         return std::numeric_limits<double>::epsilon() *
             maxValue * maxCompression * 2.0;
+    }
+
+    /// Return true if this timeCode represents a pre-value, false otherwise.
+    bool IsPreTime() const {
+        return _isPreTime;
     }
 
     /// Return true if this time represents the lowest/earliest possible
@@ -156,8 +160,11 @@ public:
 
     /// Equality comparison.
     friend bool operator==(const UsdTimeCode &lhs, const UsdTimeCode& rhs) {
-        return lhs.IsDefault() == rhs.IsDefault() &&
-            (lhs.IsDefault() || (lhs.GetValue() == rhs.GetValue()));
+        if (lhs.IsDefault() && rhs.IsDefault()) {
+            return true;
+        }
+        return lhs._value == rhs._value && 
+               lhs._isPreTime == rhs._isPreTime;
     }
 
     /// Inequality comparison.
@@ -165,12 +172,20 @@ public:
         return !(lhs == rhs);
     }
 
-    /// Less-than.  Default() times are less than all numeric times,
+    /// Less-than.  
+    ///
+    /// Default() times are less than all numeric times,
+    /// Numeric times are ordered by their value,
+    /// If numeric times are equal, pre-time times are less than non pre-time 
+    /// times.
     /// \em including EarliestTime()
     friend bool operator<(const UsdTimeCode &lhs, const UsdTimeCode &rhs) {
-        return (lhs.IsDefault() && rhs.IsNumeric()) ||
-            (lhs.IsNumeric() && rhs.IsNumeric() &&
-             lhs.GetValue() < rhs.GetValue());
+        if (lhs.IsDefault() || rhs.IsDefault()) {
+            return lhs.IsDefault() && !rhs.IsDefault();
+        }
+        return lhs._value < rhs._value ||
+               (lhs._value == rhs._value && 
+                lhs._isPreTime && !rhs._isPreTime);
     }
 
     /// Greater-equal.  Default() times are less than all numeric times,
@@ -179,11 +194,9 @@ public:
         return !(lhs < rhs);
     }
 
-    /// Less-equal.  Default() times are less than all numeric times,
-    /// \em including EarliestTime().
+    /// Less-equal.  
     friend bool operator<=(const UsdTimeCode &lhs, const UsdTimeCode &rhs) {
-        return lhs.IsDefault() || 
-            (rhs.IsNumeric() && lhs.GetValue() <= rhs.GetValue());
+        return !(rhs < lhs);
     }
 
     /// Greater-than.  Default() times are less than all numeric times,
@@ -194,14 +207,18 @@ public:
 
     /// Hash function.
     friend size_t hash_value(const UsdTimeCode &time) {
-        return TfHash()(time._value);
+        return TfHash::Combine(time._value, time._isPreTime);
     }
 
 private:
+    constexpr UsdTimeCode(double t, bool isPreTime) noexcept 
+        : _value(t), _isPreTime(isPreTime) {}
+
     USD_API
     void _IssueGetValueOnDefaultError() const;
 
     double _value;
+    bool _isPreTime = false;
 };
 
 // Stream I/O operators.

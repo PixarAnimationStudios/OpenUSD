@@ -1,0 +1,53 @@
+{
+    "Plugins": [
+        {
+            "Type": "library",
+            "Name": "testUsdValidationContextValidatorsPlugin",
+            "Root": "@TEST_PLUG_INFO_ROOT@",
+            "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@",
+            "LibraryPath": "@TEST_PLUG_INFO_LIBRARY_PATH@",
+            "Info": {
+                "Validators": {
+                    "Test1": {
+                        "doc": "Stage Validator",
+                        "keywords": ["Keyword1"]
+                    },
+                    "Test2": {
+                        "doc": "Layer Validator",
+                        "keywords": ["Keyword2"]
+                    },
+                    "Test3": {
+                        "doc": "A generic prim validator",
+                        "keywords": ["Keyword1"],
+                        "isTimeDependent": true
+                    },
+                    "Test4": {
+                        "doc": "validator for testBaseType",
+                        "keywords": ["Keyword2"],
+                        "schemaTypes": ["testBaseType"]
+                    },
+                    "Test5": {
+                        "doc": "validator for testDerivedType",
+                        "keywords": ["Keyword1"],
+                        "schemaTypes": ["testDerivedType"]
+                    },
+                    "Test6": {
+                        "doc": "validator for testNestedDerivedType",
+                        "keywords": ["Keyword2"],
+                        "schemaTypes": ["testNestedDerivedType"]
+                    },
+                    "Test7": {
+                        "doc": "validator for testAPISchema",
+                        "keywords": ["Keyword1"],
+                        "schemaTypes": ["testAPISchemaAPI"]
+                    },
+                    "TestSuite": {
+                        "doc": "A suite of validators for Test1, Test2 and Test3",
+                        "isSuite": true,
+                        "keywords": ["Keyword2"]
+                    }
+                }
+            }
+        }
+    ]
+}

@@ -2,25 +2,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 import os, unittest
 from pxr import Plug, Usd, Sdf, Vt, Tf
@@ -34,6 +17,16 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "Failed to load expected test plugin"
         assert testPlugins[0].name == "testUsdSchemaRegistry", \
             "Failed to load expected test plugin"
+    
+        # This checks an invalid case for test_SchemaIdentifier that throws a
+        # coding error on schema registry construction
+        try:
+            Usd.SchemaRegistry()
+            assert False, "Coding error expected on schema registry initialization."
+        except Tf.ErrorException as e:
+            assert 'Registration failed for schema type ' \
+                   'TestUsdSchemaRegistryNoIdentifierAndNoAlias.' in str(e)
+            assert len(str(e).strip().split('\n')) == 1
     
     def test_PrimMetadata(self):
         primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
@@ -59,7 +52,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "testDictionaryMetadata", "value"), 2)
 
         self.assertEqual(primDef.GetDocumentation(),
-                         "Testing documentation metadata")
+                         "Testing brief user doc for schema class")
 
     def test_AttributeMetadata(self):
         primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
@@ -114,9 +107,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(attrDef.GetMetadata("documentation"),
                          "Testing documentation metadata")
         self.assertEqual(attrDef.GetDocumentation(),
-                         "Testing documentation metadata")
+                         "Testing brief user doc for schema attr")
         self.assertEqual(primDef.GetPropertyDocumentation("testAttr"),
-                         "Testing documentation metadata")
+                         "Testing brief user doc for schema attr")
 
         # Dictionary metadata can be gotten by whole value as well as queried
         # for individual keys in the metadata value.
@@ -193,9 +186,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(relDef.GetMetadata("documentation"),
                          "Testing documentation metadata")
         self.assertEqual(relDef.GetDocumentation(),
-                         "Testing documentation metadata")
-        self.assertEqual(primDef.GetPropertyDocumentation("testAttr"),
-                         "Testing documentation metadata")
+                         "Testing brief user doc for schema rel")
+        self.assertEqual(primDef.GetPropertyDocumentation("testRel"),
+                         "Testing brief user doc for schema rel")
 
         # Dictionary metadata can be gotten by whole value as well as queried
         # for individual keys in the metadata value.
@@ -492,6 +485,32 @@ class TestUsdSchemaRegistry(unittest.TestCase):
 
         self.assertEqual(Usd.SchemaRegistry.GetSchemaKind("Bogus"),
                          Usd.SchemaKind.Invalid)
+        
+    def test_SchemaIdentifier(self):
+        # Schema identifier matches alias
+        matches = Tf.Type.FindByName("TestUsdSchemaRegistryIdentifierMatchesAlias")
+        self.assertEqual(Usd.SchemaRegistry.GetSchemaTypeName(matches), "IdentifierMatchesAlias")
+
+        # Schema identifier does not match alias
+        matches = Tf.Type.FindByName("TestUsdSchemaRegistryIdentifierDoesNotMatchAlias")
+        self.assertEqual(Usd.SchemaRegistry.GetSchemaTypeName(matches), "NotMatching")
+
+        # No schema identifier, but alias is present
+        matches = Tf.Type.FindByName("TestUsdSchemaRegistryNoIdentifier")
+        self.assertEqual(Usd.SchemaRegistry.GetSchemaTypeName(matches), "NoIdentifier")
+
+        # No alias, but schema identifier is present
+        matches = Tf.Type.FindByName("TestUsdSchemaRegistryNoAlias")
+        self.assertEqual(Usd.SchemaRegistry.GetSchemaTypeName(matches), "NoAlias")
+
+        # Invalid case: neither are present
+        matches = Tf.Type.FindByName("TestUsdSchemaRegistryNoIdentifierAndNoAlias")
+        self.assertEqual(Usd.SchemaRegistry.GetSchemaTypeName(matches), "")
+
+        # Schema identifier matches class name
+        matches = Tf.Type.FindByName("TestUsdSchemaRegistryIdentifierMatchesClassName")
+        self.assertEqual(Usd.SchemaRegistry.GetSchemaTypeName(matches), 
+                         "TestUsdSchemaRegistryIdentifierMatchesClassName")
 
     def test_IsConcrete(self):
         modelAPI = Tf.Type.FindByName("UsdModelAPI")
@@ -597,7 +616,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                 "hidden" : True,
                 "testCustomMetadata" : "garply",
                 "testDictionaryMetadata" : {"name" : "bar", "value" : 3},
-                "variability" : Sdf.VariabilityVarying
+                "variability" : Sdf.VariabilityVarying,
+                "customData" : 
+                {"userDocBrief" : "Testing brief user doc for schema attr"}
             },
             "testRel" : {
                 "custom" : False,
@@ -607,7 +628,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                 "hidden" : True,
                 "testCustomMetadata" : "garply",
                 "testDictionaryMetadata" : {"name" : "baz", "value" : 5},
-                "variability" : Sdf.VariabilityUniform
+                "variability" : Sdf.VariabilityUniform,
+                "customData" : 
+                {"userDocBrief" : "Testing brief user doc for schema rel"}
             }
         }
 

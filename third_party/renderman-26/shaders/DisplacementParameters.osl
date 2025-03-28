@@ -1,0 +1,26 @@
+//
+// Copyright 2022 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+shader DisplacementParameters
+(
+    // Inputs
+    float displacement = 0.0,
+    float scale = 1.0,
+
+    // Displacement output
+    output float dispAmountOut = 0.0
+        [[ string widget = "null" ]],
+    output float dispScalarOut = 0.0
+        [[ string widget = "null" ]],
+)
+{
+    // Displacement
+    if (displacement != 0.0)
+    {
+        dispAmountOut = scale;
+        dispScalarOut = displacement;
+    }
+}

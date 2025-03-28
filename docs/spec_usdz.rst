@@ -5,7 +5,7 @@ Usdz File Format Specification
 .. include:: rolesAndUtils.rst
 .. include:: <isonum.txt>
 
-Copyright |copy| 2018, Pixar Animation Studios,  *version 1.2*
+Copyright |copy| 2018, Pixar Animation Studios,  *version 1.3*
 
 .. contents:: :local:
 
@@ -60,15 +60,15 @@ Usdz Specification
 A usdz package is an uncompressed zip archive that is allowed to contain the
 following file types:
 
- +-------------+--------------------------------+
- | Kind        | Allowed File Types             |
- +=============+================================+
- | USD         | **usda**, **usdc**, **usd**    |
- +-------------+--------------------------------+
- | Image       | **png**, **jpeg**, **exr**     |
- +-------------+--------------------------------+
- | Audio       | **M4A**, **MP3**, **WAV**      |
- +-------------+--------------------------------+
+ +-------------+----------------------------------------+
+ | Kind        | Allowed File Types                     |
+ +=============+========================================+
+ | USD         | **usda**, **usdc**, **usd**            |
+ +-------------+----------------------------------------+
+ | Image       | **png**, **jpeg**, **exr**, **avif**   |
+ +-------------+----------------------------------------+
+ | Audio       | **M4A**, **MP3**, **WAV**              |
+ +-------------+----------------------------------------+
 
 The rest of the section goes into more detail about the specification.
 
@@ -198,6 +198,7 @@ Clients wishing to deliver "streamable content" `may wish to consider other layo
         * Otherwise, the packaging API will fail to run unless the Default
           Layer is manually specified.
 
+.. _spec_usdz_file_types:
 
 File Types
 ----------
@@ -211,8 +212,8 @@ currently. Allowable file types are currently:
       OS updates)  
 
     * **png**, **jpeg** (any of the multiple common extensions for 
-      jpeg), and **OpenEXR** files for images/textures. See 
-      :ref:`Working With Image File Formats<image_file_formats>` for more 
+      jpeg), **OpenEXR** and **AV1 Image (AVIF)** files for images/textures. 
+      See :ref:`Working With Image File Formats<image_file_formats>` for more 
       details on supported image file formats.
 
     * **M4A, MP3, WAV** files for embedded audio (given in order of preferred 
@@ -408,3 +409,13 @@ constraints. The toolset also includes:
       enforce stricter "web-compliant" rules that disallow certain advanced USD
       features that web-browsers do not yet support.
 
+Changes, by Version
+===================
+
+Version 1.3 - Current Head
+--------------------------
+
+From version 1.2:
+
+    * :ref:`Adds AV1 Image (AVIF) file support <spec_usdz_file_types>`. 
+      AVIF is now a supported file type for images/textures.

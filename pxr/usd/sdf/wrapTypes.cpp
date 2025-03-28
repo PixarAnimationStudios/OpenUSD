@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -46,12 +29,13 @@
 
 #include "pxr/base/vt/valueFromPython.h"
 
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
-using namespace boost::python;
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -59,8 +43,8 @@ struct Sdf_TimeSampleMapConverter {
 public:
     static PyObject* convert(SdfTimeSampleMap const &c)
     {
-        boost::python::dict result = TfPyCopyMapToDictionary(c);
-        return boost::python::incref(result.ptr());
+        pxr_boost::python::dict result = TfPyCopyMapToDictionary(c);
+        return pxr_boost::python::incref(result.ptr());
     }
 };
 
@@ -72,10 +56,10 @@ public:
 
     Sdf_MapTypeConverter()
     {
-        boost::python::converter::registry::push_back(
+        pxr_boost::python::converter::registry::push_back(
             &Sdf_MapTypeConverter::convertible,
             &Sdf_MapTypeConverter::construct,
-            boost::python::type_id<MapType>());
+            pxr_boost::python::type_id<MapType>());
         to_python_converter<MapType,
                             Sdf_MapTypeConverter>();
     }
@@ -87,7 +71,7 @@ public:
 
     static void construct(
       PyObject* obj_ptr,
-      boost::python::converter::rvalue_from_python_stage1_data* data)
+      pxr_boost::python::converter::rvalue_from_python_stage1_data* data)
     {
         void* storage = (
             (converter::rvalue_from_python_storage<MapType>*)
@@ -99,8 +83,8 @@ public:
 
     static PyObject* convert(const MapType& c)
     {
-        boost::python::dict result = TfPyCopyMapToDictionary(c);
-        return boost::python::incref(result.ptr());
+        pxr_boost::python::dict result = TfPyCopyMapToDictionary(c);
+        return pxr_boost::python::incref(result.ptr());
     }
 
 private:
@@ -189,12 +173,12 @@ public:
         }
     }
 
-    static void UpdateDict(Type& x, const boost::python::dict& d)
+    static void UpdateDict(Type& x, const pxr_boost::python::dict& d)
     {
         UpdateList(x, d.items());
     }
 
-    static void UpdateList(Type& x, const boost::python::list& pairs)
+    static void UpdateList(Type& x, const pxr_boost::python::list& pairs)
     {
         std::vector<pair_type> values;
         for (int i = 0, n = len(pairs); i != n; ++i) {
@@ -293,12 +277,12 @@ _FindType(const std::string& typeName)
     return SdfSchema::GetInstance().FindType(typeName);
 }
 
-boost::python::tuple
+pxr_boost::python::tuple
 _ConvertToValidMetadataDictionary(VtDictionary dict)
 {
     std::string errMsg;
     bool success = SdfConvertToValidMetadataDictionary(&dict, &errMsg);
-    return boost::python::make_tuple(success, dict, errMsg);
+    return pxr_boost::python::make_tuple(success, dict, errMsg);
 }
 
 } // anonymous namespace 
@@ -446,7 +430,7 @@ void wrapTypes()
 
     VtValueFromPython<SdfUnregisteredValue>();
 
-    class_<Sdf_ValueTypeNamesType, boost::noncopyable>(
+    class_<Sdf_ValueTypeNamesType, noncopyable>(
             "ValueTypeNames", no_init)
         .def( "Find", &_FindType )
         .staticmethod("Find")

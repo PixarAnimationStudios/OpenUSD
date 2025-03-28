@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_USD_NOTICE_H
 #define PXR_USD_USD_NOTICE_H
@@ -49,7 +32,7 @@ public:
         USD_API
         StageNotice(const UsdStageWeakPtr &stage);
         USD_API
-        virtual ~StageNotice();
+        ~StageNotice() override;
 
         /// Return the stage associated with this notice.
         const UsdStageWeakPtr &GetStage() const { return _stage; }
@@ -74,7 +57,7 @@ public:
     public:
         explicit StageContentsChanged(const UsdStageWeakPtr& stage)
             : StageNotice(stage) {}
-        USD_API virtual ~StageContentsChanged();
+        USD_API ~StageContentsChanged() override;
     };
 
     /// \class ObjectsChanged
@@ -145,7 +128,7 @@ public:
                        const _PathsToChangesMap *resyncChanges);
 
     public:
-        USD_API virtual ~ObjectsChanged();
+        USD_API ~ObjectsChanged() override;
 
         /// Return true if \p obj was possibly affected by the layer changes
         /// that generated this notice.  This is the case if either the object
@@ -394,7 +377,7 @@ public:
     public:
         explicit StageEditTargetChanged(const UsdStageWeakPtr &stage)
             : StageNotice(stage) {}
-        USD_API virtual ~StageEditTargetChanged();
+        USD_API ~StageEditTargetChanged() override;
     };
 
     /// \class LayerMutingChanged
@@ -420,7 +403,7 @@ public:
              _mutedLayers(mutedLayers),
              _unMutedLayers(unmutedLayers) {}
 
-        USD_API virtual ~LayerMutingChanged();
+        USD_API ~LayerMutingChanged() override;
 
         /// Returns the identifier of the layers that were muted.
         ///

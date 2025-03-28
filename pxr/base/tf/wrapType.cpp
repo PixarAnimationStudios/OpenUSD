@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -36,20 +19,21 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/weakBase.h"
 
-#include <boost/python/converter/registry.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/has_back_reference.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/overloads.hpp>
+#include "pxr/external/boost/python/converter/registry.hpp"
+#include "pxr/external/boost/python/make_constructor.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/has_back_reference.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/overloads.hpp"
 
 #include <string>
 
-using namespace boost::python;
 using namespace std;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -141,7 +125,7 @@ static void wrapTestCppBase()
     typedef Tf_TestCppBase This;
     typedef PolymorphicTestCppBase PolymorphicThis;
 
-    class_<PolymorphicThis, TfWeakPtr<PolymorphicThis>, boost::noncopyable>
+    class_<PolymorphicThis, TfWeakPtr<PolymorphicThis>, noncopyable>
         ("TestCppBase", no_init)
         .def( TfPyWeakPtr() )
         .def( TfMakePyConstructor(&PolymorphicThis::New))
@@ -215,7 +199,7 @@ _GetAllAncestorTypes( TfType & t )
 }
 
 static TfType
-_FindByPythonClass(const boost::python::object & classObj)
+_FindByPythonClass(const pxr_boost::python::object & classObj)
 {
     // Guard against the potentially common mistake of calling Find() with a
     // string typename.  Rather than returning the unknown type (assuming

@@ -1,0 +1,302 @@
+#usda 1.0
+(
+    subLayers = [
+        # Sublayer "parent" user doc to get user doc for inherited properties.
+        #@usdGeom/userDoc/schemaUserDoc.usda@        
+        # Sublayer domain schema.usda to get proper schema inheritance structure 
+        # and property fallback values. User doc is added as overs to schema 
+        # class metadata. 
+        @../schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName = "usdVol"
+        string userDocTitle = "Volumes"
+    }
+)
+{
+}
+ 
+over Volume "Volume" (
+    customData = {
+        string userDocBrief = """A renderable volume containing one or more
+volumetric data fields, used to represent a volume effect such as smoke or fire."""
+        string userDoc = """A renderable volume containing one or more
+volumetric data fields, used to represent a volume effect such as smoke or fire.
+
+Volume inherits from GPrim and inherits GPrim and Imageable schema properties,
+so volumes are transformable, renderable, can have a material binding, etc.
+
+Volume also contains any number of volumetric fields, specified via 
+relationships to FieldBase-derived primitives using a namespace prefix of 
+"field". The relationship names, such as "density", are used by the renderer to 
+associate individual fields with the named input parameters on a volume shader.
+
+For example, the following Volume defines a field relationship to an 
+OpenVDBField asset. The field relationship name specifies that the OpenVDB asset 
+contains data that the renderer and volume shader should use to render the 
+optical density ("extinction") of the volume.
+
+```{code-block} usda
+def Volume "Volume" (
+)
+{
+    custom rel field:extinction = </Volume/densityVDB>
+    uniform token purpose = "render"
+
+    def OpenVDBAsset "densityVDB"
+    {
+        token fieldName = "density"
+        asset filePath = @/vdbdata/smoke_plume.101.vdb@,
+        }
+    }
+}
+
+```
+
+See {ref}`usdVol_working_with_volumes` for best practices when working with
+Volumes.
+"""
+    }
+)
+{
+}
+
+over "FieldBase" (
+    customData = {
+        string userDocBrief = """The base schema class for volume field primitives."""
+        string userDoc = """FieldBase is an abstract schema that acts as the
+base class for all UsdVol field schemas. If you need to extend UsdVol with your
+own custom Field schemas, your Field schemas should directly or indirectly
+inherit from FieldBase.
+
+```{admonition} Don't Create FieldBase Prims Directly
+:class: note
+
+As FieldBase is an abstract schema, in practice you will most likely use one
+of the various derived field schemas when creating new field prims, such as 
+OpenVDBAsset or Field3DAsset.
+```
+"""
+    }    
+)
+{
+}
+
+over "FieldAsset" (
+    customData = {
+        string userDocBrief = """The base schema class for volume field 
+primitives defined by an external file."""
+        string userDoc = """FieldAsset is an abstract schema (that inherits
+from {ref}`FieldBase`) that represents a volumetric field
+where the volumetric data is stored outside the layer, e.g. in a file asset.
+It is used as a base class for schemas that reference specific volume data
+asset types, such as OpenVDB data. 
+
+If you need to extend UsdVol with your own custom file-based field schemas, 
+your custom schemas should inherit from FieldAsset.
+
+```{admonition} Create Prims Using FieldAsset-derived Schemas
+:class: note
+
+Like FieldBase, FieldAsset is an abstract schema. In practice you will most
+likely create prims using one of the field schemas that inherit from FieldAsset,
+such as OpenVDBAsset or Field3DAsset.
+```
+"""
+    }
+)
+{
+    asset filePath (
+        customData = {
+            string userDocBrief = """An asset path attribute that points to a file on disk."""
+            string userDoc = """An asset path attribute that points to a file on disk.
+
+The asset pointed to by filePath must be a file type that the FieldAsset-derived
+schema supports. For example, for OpenVDBAsset, the file type must be an 
+OpenVDB (.vdb) file. For Field3DAsset, the file type must be a Field3D (.f3d)
+file.
+
+This attribute's value can be animated over time, as most
+volume asset formats represent just a single timeSample of
+a volume. However, it does not, at this time, support
+any pattern substitutions like \"$F\". 
+
+See {ref}`usdVol_using_animated_field_data` for an example of using `filePath`
+to refer to animated volumetric data.
+"""
+            }
+    )
+    token fieldName (
+        customData = {
+            string userDocBrief = """Name of an individual field within the file 
+specified by the filePath attribute."""
+            string userDoc = """Represents the name of an individual field within
+a FieldAsset asset file. 
+
+A FieldAsset file asset may contain multiple fields in a single asset file. This 
+attribute specifies the name of field **within** the asset file. For example, an 
+OpenVDB file asset might have multiple named Grids, such as "density", 
+"temperature", etc. `fieldName` would specify one of the named Grids in the 
+OpenVDB file asset.
+
+Note that a Volume also provides a way to specify the "name" for a field, via 
+the field relationship. This name is not associated with asset data and is used 
+by the Volume for organizing fields for the rendering pipeline. See
+{ref}`usdVol_understanding_fieldname` for more details on how the field's 
+relationship name differs from `fieldName`.
+"""
+        }
+    )
+    int fieldIndex (
+        customData = {
+            string userDocBrief = """Optional attribute that stores an index used 
+to disambiguate between fields with the same name."""
+            string userDoc = """The index of a field within a FieldAsset asset
+file. This attribute is optional.
+
+An asset file can contain multiple fields with the same name. This optional 
+attribute is an index used to disambiguate between multiple fields with the same 
+name. For example, in an OpenVDB file asset, there might be two Grids named 
+"density". A `fieldIndex` of 0 would specify that this Field refers to the first 
+"density" Grid.
+"""
+        }
+    )
+    token fieldDataType (
+        customData = {
+            string userDocBrief = """Token used to indicate the data type of an
+individual field"""
+            string userDoc = """The data type of a field, such as "float".
+
+Use this attribute to tell consumers more about the field without requiring the 
+consumer access the asset file directly. The list of allowed tokens is specified 
+with the specific asset type. A missing value is considered an error."""
+        }
+    )
+    token vectorDataRoleHint (
+        customData = {
+            string userDocBrief = """Optional token used to indicate the role of 
+a vector valued field."""
+            string userDoc = """Specifies the role of a vector valued field,
+such as "Color". This can drive the data type in which fields are made available 
+in a renderer or whether the vector values are to be transformed. This attribute 
+is optional.
+
+This token can drive the data type in which fields are made available in a 
+renderer or whether the vector values are to be transformed. Allowed tokens 
+include `None`, `Point`, `Normal`, `Vector`, and `Color`.
+"""
+        }
+    )
+}
+ 
+over Field3DAsset "Field3DAsset" (
+    customData = {
+        string userDocBrief = """Field3D field primitive."""
+        string userDoc = """A Field representing a Field3D volume field. See
+the [Field3D github repo](https://github.com/imageworks/Field3D/tree/master)
+for more information on Field3D.
+
+An example Field3DAsset referencing a single density field in a .f3d file:
+
+```{code-block} usda
+def Field3DAsset "densityField3D"
+{
+    token fieldDataType = "float"
+    token fieldName = "density"
+    token fieldPurpose = "cluster_0"
+    asset filePath.timeSamples = {
+        1: @/f3ddata/Volumes_Cumulus01_Puff01M.1.f3d@,
+    }
+}
+```
+
+The FieldAsset `filePath` attribute must specify a file in the Field3D (.f3d) 
+format on disk.
+"""
+    }
+)
+{
+    token fieldDataType (
+        customData = {
+            string userDocBrief = """Token used to indicate the data type of an
+individual field."""
+            string userDoc = """The data type of a field, such as "float".
+
+Use this attribute to tell consumers more about the field without requiring the 
+consumer access the asset file directly. The list of allowed tokens reflects the 
+available choices for Field3D. 
+"""
+        }
+    )
+    token fieldPurpose (
+        customData = {
+            string userDocBrief = """Optional token used to indicate the purpose or 
+grouping of an individual field."""
+            string userDoc = """Specifies the purpose or grouping of an 
+individual field. Clients which consume Field3D files should treat this as the 
+Field3D field *name*. This attribute is optional.
+"""
+        }
+    )
+}
+ 
+over OpenVDBAsset "OpenVDBAsset" (
+    customData = {
+        string userDocBrief = """OpenVDB field primitive."""
+        string userDoc = """A Field representing an OpenVDB volume grid. See
+the [OpenVDB website](https://www.openvdb.org/documentation/doxygen/index.html)
+for more information on OpenVDB.
+
+An example OpenVDBAsset referencing a single density field in a .vdb file:
+
+```{code-block} usda
+def OpenVDBAsset "densityVDB"
+{
+    token fieldDataType = "float"
+    int fieldIndex.timeSamples = {
+        10: 0,
+    }
+    token fieldName = "density"
+    asset filePath.timeSamples = {
+        10: @/vdb_test_data/grids.vdb@,
+    }
+}
+
+```
+
+The FieldAsset `filePath` attribute must specify a file in the OpenVDB (.vdb) 
+format on disk.
+"""
+    }
+)
+{
+    token fieldDataType (
+        customData = {
+            string userDocBrief = """Token used to indicate the data type of an
+individual field."""
+            string userDoc = """The data type of a field, such as "float".
+
+Use this attribute to tell consumers more about the field without requiring the 
+consumer access the asset file directly. The list of allowed tokens reflects the 
+available choices for OpenVDB volumes. 
+"""
+        }
+    )
+    token fieldClass (
+        customData = {
+            string userDocBrief = """Optional token used to indicate the class of
+an individual grid."""
+            string userDoc = """Represents the class of an individual grid.
+This attribute is optional.
+
+This is a mapping to OpenVDB's openvdb::GridClass where the values are 
+`GRID_LEVEL_SET`, `GRID_FOG_VOLUME`, `GRID_STAGGERED`, and `GRID_UNKNOWN`.
+"""
+        }
+    )
+}
+

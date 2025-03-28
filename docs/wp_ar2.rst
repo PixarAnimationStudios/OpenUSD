@@ -51,10 +51,7 @@ used to override behavior.
 The API on :cpp:`ArResolver` will all be marked const to aid with writing
 const-correct code and as an indicator that these functions may be called
 concurrently and must be thread-safe (following the semantics used by the
-Standard Library, see
-`here
-<http://talesofcpp.fusionfenix.com/post-2/episode-one-to-be-or-not-to-be-const#%60const%60-implies-_thread-safe_>`__
-for more details)
+Standard Library).
 
 Add Documentation and Examples
 ******************************

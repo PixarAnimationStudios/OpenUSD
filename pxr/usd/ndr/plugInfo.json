@@ -4,10 +4,6 @@
             "Info": {
                 "Types": {
                     "NdrDiscoveryPlugin": {},
-                    "_NdrFilesystemDiscoveryPlugin" : {
-                        "bases": ["NdrDiscoveryPlugin"],
-                        "displayName": "Filesystem Discovery"
-                    },
                     "NdrParserPlugin": {}
                 }
             },

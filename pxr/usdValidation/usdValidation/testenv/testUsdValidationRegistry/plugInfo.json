@@ -1,0 +1,45 @@
+{
+    "Plugins": [
+        {
+            "Type": "resource",
+            "Name": "testValidationPlugin",
+            "Info": {
+                "Validators": {
+                    "keywords": ["IncludedInAll"],
+                    "FailedValidator": {
+                        "doc": "Won't get registered, as schemaType provided, but primTask not provided",
+                        "schemaTypes": ["SomePrimType"]
+                    },
+                    "FailedValidatorSuite": {
+                        "doc": "Won't get registered, as contained validators will not comply",
+                        "schemaTypes": ["SomePrimType", "SomeAPISchema"]
+                    },
+                    "FailedValidatorSuite2": {
+                        "doc": "Won't get registered, as contained validators will not comply",
+                        "schemaTypes": ["SomeOtherPrimType"]
+                    },
+                    "TestValidator1": {
+                        "doc": "TestValidator1 for keywords metadata parsing",
+                        "keywords": ["SomeKeyword1"],
+                        "isSuite": false
+                    },
+                    "TestValidator2": {
+                        "doc": "TestValidator2 for schemaType metadata parsing",
+                        "schemaTypes": ["SomePrimType", "SomeAPISchema"],
+                        "someBogusMetadta": "Doesn't get parsed"
+                    },
+                    "TestValidator3": {
+                        "doc": "TestValidator3 for schemaType metadata parsing",
+                        "schemaTypes": ["SomePrimType"],
+                        "keywords": ["SomeKeyword1"]
+                    },
+                    "TestValidatorSuite": {
+                        "doc": "Suite of TestValidator1 and TestValidator2",
+                        "keywords": ["SuiteValidator"],
+                        "isSuite": true
+                    }
+                }
+            }
+        }
+    ]
+}

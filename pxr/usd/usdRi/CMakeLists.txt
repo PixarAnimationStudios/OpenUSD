@@ -2,6 +2,8 @@ set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdRi)
 
 pxr_library(usdRi
+    INCLUDE_SCHEMA_FILES
+
     LIBRARIES
         tf
         vt
@@ -9,44 +11,21 @@ pxr_library(usdRi
         usd
         usdShade
         usdGeom
-        ${Boost_PYTHON_LIBRARY}
-
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
-        materialAPI
-        renderPassAPI
         rmanUtilities
-        splineAPI
-        statementsAPI
-        tokens
 
     PUBLIC_HEADERS
         api.h
-
-    PYTHON_CPPFILES
-        moduleDeps.cpp
 
     PRIVATE_CLASSES
         typeUtils
 
     PYMODULE_CPPFILES
-        module.cpp
-        wrapMaterialAPI.cpp
-        wrapRenderPassAPI.cpp
         wrapRmanUtilities.cpp
-        wrapSplineAPI.cpp
-        wrapStatementsAPI.cpp
-        wrapTokens.cpp
 
     PYMODULE_FILES
         __init__.py
-
-    RESOURCE_FILES
-        plugInfo.json
-        generatedSchema.usda
-        schema.usda:usdRi/schema.usda
 
     DOXYGEN_FILES
         overview.dox

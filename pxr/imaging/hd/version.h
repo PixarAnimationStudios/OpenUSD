@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_VERSION_H
 #define PXR_IMAGING_HD_VERSION_H
@@ -102,9 +85,29 @@
 //           hydra schemas const.
 // 66 -> 67: Removes legacy internal instancer primvar names and the
 //           TfEnvSetting for using them (see 56).
-//
+// 67 -> 68: Adds HdSceneDelegate::SampleFOO with startTime and endTime.
+// 68 -> 69: Removes HdGeomSubsetsSchema. Geom subsets are now represented
+//           in Hydra as child prims of their parent geometry.
+// 69 -> 70: Add dirty bit translation for light filter prims in backend
+//           emulation.
+// 70 -> 71: Add virtual HdRenderDelegate::IsParallelSyncEnabled.
+// 71 -> 72: Add render index API to batch notices sent by the merging scene
+//           index.
+// 72 -> 73: Adds HdExtComputationUtils::SampleComputedPrimvarValues with
+//           startTime and endTime
+// 73 -> 74: Extended HdMeshReprDesc to support optional generation of
+//           surface edge ids.
+// 74 -> 75: Added overload of HdSceneIndexPlugin::_AppendSceneIndex that
+//           passes the renderInstanceId to the plugin callback.
+// 75 -> 76: Added Scene State ID tunneling through the Hydra pipeline and
+//           arbitrary values Setter/Getter to HdRenderParam.
+// 76 -> 77: Added GetInputPrimType() to HdFlattenedDataSourceProvider::Context.
+//           The Context now stores an HdSceneIndexPrim containing the data
+//           source and prim type.
+// 77 -> 78: Removed the widget renderTag and added a displayInOverlay boolean
+//           attribute to serve the same purpose that widget signified.
 
-#define HD_API_VERSION 67
+#define HD_API_VERSION 78
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

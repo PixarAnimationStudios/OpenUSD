@@ -1,0 +1,86 @@
+Loading @ErrorInvalidReferenceToRelocationSource/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Bad_ReloOfPreRelo>
+
+Prim Stack:
+
+------------------------------------------------------------------------
+Results for composing </Good_ReloOfRelocated>
+
+Prim Stack:
+    char.sdf             /Char/Relocated
+    model.sdf            /Model/PreRelo
+
+Child names:
+     ['ModelChild', 'RelocatedChild']
+
+------------------------------------------------------------------------
+Results for composing </Good_ReloOfRelocated/ModelChild>
+
+Prim Stack:
+    model.sdf            /Model/PreRelo/ModelChild
+
+------------------------------------------------------------------------
+Results for composing </Good_ReloOfRelocated/RelocatedChild>
+
+Prim Stack:
+    char.sdf             /Char/Relocated/RelocatedChild
+
+------------------------------------------------------------------------
+Results for composing </Good_RefToRelocated>
+
+Prim Stack:
+    root.sdf             /Good_RefToRelocated
+    char.sdf             /Char/Relocated
+    model.sdf            /Model/PreRelo
+
+Child names:
+     ['ModelChild', 'RelocatedChild']
+
+------------------------------------------------------------------------
+Results for composing </Good_RefToRelocated/ModelChild>
+
+Prim Stack:
+    model.sdf            /Model/PreRelo/ModelChild
+
+------------------------------------------------------------------------
+Results for composing </Good_RefToRelocated/RelocatedChild>
+
+Prim Stack:
+    char.sdf             /Char/Relocated/RelocatedChild
+
+------------------------------------------------------------------------
+Results for composing </Good_RefToChildOfRelocated>
+
+Prim Stack:
+    root.sdf             /Good_RefToChildOfRelocated
+    model.sdf            /Model/PreRelo/ModelChild
+
+------------------------------------------------------------------------
+Results for composing </Bad_RefToPreRelo>
+
+Prim Stack:
+    root.sdf             /Bad_RefToPreRelo
+
+------------------------------------------------------------------------
+Results for composing </Bad_RefToChildOfPreRelo>
+
+Prim Stack:
+    root.sdf             /Bad_RefToChildOfPreRelo
+
+------------------------------------------------------------------------
+Results for composing </ReferencedChar>
+
+Prim Stack:
+    root.sdf             /ReferencedChar
+    char.sdf             /Char
+    model.sdf            /Model
+
+Prohibited child names:
+     ['PreRelo', 'Relocated']
+

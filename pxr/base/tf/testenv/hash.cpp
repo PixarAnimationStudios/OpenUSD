@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/base/tf/hash.h"
@@ -287,8 +270,21 @@ Test_TfHash()
     std::pair<int, float> intfloat = {1, 2.34};
     printf("hash(pair<int, float>): %zu\n", h(intfloat));
 
+    std::tuple<int, float> intfloat2 = {1, 2.34};
+    printf("hash(tuple<int, float>): %zu\n", h(intfloat2));
+
+    std::tuple<int, float, double> intfloatdouble = {1, 2.34, 5.678};
+    printf("hash(tuple<int, float, double>): %zu\n", h(intfloatdouble));
+
     std::vector<std::pair<int, float>> vp { intfloat, intfloat, intfloat };
     printf("hash(vector<pair<int, float>>): %zu\n", h(vp));
+
+    std::vector<std::tuple<int, float>> vp2 { intfloat2, intfloat2, intfloat2 };
+    printf("hash(vector<tuple<int, float>>): %zu\n", h(vp2));
+
+    std::vector<std::tuple<int, float, double>> vt { 
+        intfloatdouble, intfloatdouble, intfloatdouble };
+    printf("hash(vector<tuple<int, float, double>>): %zu\n", h(vt));
 
     MultipleThings mt;
     printf("hash(MultipleThings): %zu\n", h(mt));

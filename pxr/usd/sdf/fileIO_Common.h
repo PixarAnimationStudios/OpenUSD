@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_SDF_FILE_IO_COMMON_H
 #define PXR_USD_SDF_FILE_IO_COMMON_H
@@ -40,6 +23,9 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/variantSpec.h"
+
+#include "pxr/base/ts/spline.h"
+#include "pxr/base/ts/types.h"
 
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
@@ -99,6 +85,9 @@ public:
     static bool WriteTimeSamples(Sdf_TextOutput &out,
                 size_t indent, const SdfPropertySpec &);
 
+    static void WriteSpline(Sdf_TextOutput &out,
+                size_t indent, const TsSpline &spline);
+
     static bool WriteRelocates(Sdf_TextOutput &out,
                 size_t indent, bool multiLine,
                 const SdfRelocates &relocates);
@@ -140,6 +129,9 @@ public:
     static const char* Stringify( SdfPermission val );
     static const char* Stringify( SdfSpecifier val );
     static const char* Stringify( SdfVariability val );
+    static const char* Stringify( TsExtrapMode mode );
+    static const char* Stringify( TsCurveType curveType );
+    static const char* Stringify( TsInterpMode interp );
 
 private:
 
@@ -791,11 +783,20 @@ Sdf_WriteAttribute(
     if (!variabilityStr.empty())
         variabilityStr += ' ';
 
+    // Retrieve spline, if any.  If the attribute has a spline, but it's empty,
+    // treat that the same as not having a spline.  We don't serialize empty
+    // splines, because they don't affect anything.
+    const VtValue splineVal = attr.GetField(SdfFieldKeys->Spline);
+    const TsSpline spline =
+        (splineVal.IsHolding<TsSpline>() ?
+            splineVal.UncheckedGet<TsSpline>() : TsSpline());
+
     bool hasComment           = !attr.GetComment().empty();
     bool hasDefault           = attr.HasField(SdfFieldKeys->Default);
     bool hasCustomDeclaration = attr.IsCustom();
     bool hasConnections       = attr.HasField(SdfFieldKeys->ConnectionPaths);
     bool hasTimeSamples       = attr.HasField(SdfFieldKeys->TimeSamples);
+    bool hasSpline            = !spline.IsEmpty();
 
     std::string typeName =
         SdfValueTypeNames->GetSerializationName(attr.GetTypeName()).GetString();
@@ -816,7 +817,7 @@ Sdf_WriteAttribute(
     // Write the basic line if we have info or a default or if we
     // have nothing else to write.
     if (hasInfo || hasDefault || hasCustomDeclaration ||
-        (!hasConnections && !hasTimeSamples))
+        (!hasConnections && !hasTimeSamples && !hasSpline))
     {
         VtValue value;
 
@@ -887,6 +888,14 @@ Sdf_WriteAttribute(
                                  variabilityStr.c_str(),
                                  typeName.c_str(), attr.GetName().c_str() );
         Sdf_FileIOUtility::WriteTimeSamples(out, indent, attr);
+        Sdf_FileIOUtility::Puts(out, indent, "}\n");
+    }
+
+    if (hasSpline) {
+        Sdf_FileIOUtility::Write(out, indent, "%s%s %s.spline = {\n",
+                                 variabilityStr.c_str(),
+                                 typeName.c_str(), attr.GetName().c_str() );
+        Sdf_FileIOUtility::WriteSpline(out, indent, spline);
         Sdf_FileIOUtility::Puts(out, indent, "}\n");
     }
 
@@ -971,7 +980,6 @@ Sdf_WriteRelationship(
     bool hasComment           = !rel.GetComment().empty();
     bool hasTargets           = rel.HasField(SdfFieldKeys->TargetPaths);
     bool hasDefaultValue      = rel.HasField(SdfFieldKeys->Default);
-    bool hasTimeSamples       = rel.HasField(SdfFieldKeys->TimeSamples);
 
     bool hasCustom            = rel.IsCustom();
 
@@ -1121,14 +1129,6 @@ Sdf_WriteRelationship(
                 varyingStr.c_str(), rel.GetName().c_str());
             Sdf_WriteRelationshipTargetList(rel, targetPaths, out, indent, Sdf_WriteFlagDefault);
         }
-    }
-
-    if (hasTimeSamples) {
-        Sdf_FileIOUtility::Write(out, indent, "%srel %s.timeSamples = {\n",
-                                 varyingStr.c_str(),
-                                 rel.GetName().c_str());
-        Sdf_FileIOUtility::WriteTimeSamples(out, indent, rel);
-        Sdf_FileIOUtility::Puts(out, indent, "}\n");
     }
 
     // Write out the default value for the relationship if we have one...

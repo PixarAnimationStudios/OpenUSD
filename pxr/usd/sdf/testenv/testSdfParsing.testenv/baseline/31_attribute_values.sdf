@@ -170,6 +170,8 @@ def MfScope "float_tests"
     custom float[] f4 = [0, 1.2, 3.4, 5.6, 7800000000, 0]
     custom float[] f5 = [0, 1.2, 3.4, 5.6, 7800000000, 0]
     custom float[] f6 = [0, 1.2, 3.4, 5.6, 7800000000, 0]
+    custom float[] f7 = [0, 1.2, 3.4, 5.6, 7800000000, 1]
+    custom float f8 = 0
 }
 
 def MfScope "double_tests"

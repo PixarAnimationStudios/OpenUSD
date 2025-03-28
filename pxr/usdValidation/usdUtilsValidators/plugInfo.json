@@ -1,0 +1,45 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Validators": {
+                    "FileExtensionValidator": {
+                        "doc": "Only valid core layer extensions (.usd, .usda, .usdc, .usdz), valid core texture extensions (.exr, .jpg, .jpeg, .png) and embedded audio files (.M4A, .MP3, .WAV) are allowed in a package.",
+                        "keywords": [
+                            "UsdzValidators"
+                        ]
+                    },
+                    "MissingReferenceValidator": {
+                        "doc": "The composed USD stage should not contain any unresolvable asset dependencies (in every possible variation of the asset), when using the default asset resolver."
+                    },
+                    "PackageEncapsulationValidator": {
+                        "doc": "If the root layer is a package, then its recommended for the composed stage to not contain references to files outside the package. The package should be self-contained, warn if not.", 
+                        "keywords": [
+                            "UsdzValidators"
+                        ]
+                    },
+                    "RootPackageValidator": {
+                        "doc": "Files within the root layer of a usdz package should not be compressed or encrypted, and should be aligned to 64 bytes.",
+                        "keywords": [
+                            "UsdzValidators"
+                        ]
+                    },
+                    "UsdzPackageValidator": {
+                        "doc": "Files within all usdz packages within a stage should not be compressed or encrypted, and should be aligned to 64 bytes.",
+                        "keywords": [
+                            "UsdzValidators"
+                        ]
+                    },
+                    "keywords": [
+                        "UsdUtilsValidators"
+                    ]
+                }
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "usdUtilsValidators", 
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

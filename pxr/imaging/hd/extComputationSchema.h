@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -38,6 +21,7 @@
 /// \file
 
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/schemaTypeDefs.h"
 
 #include "pxr/imaging/hd/schema.h"
 
@@ -47,6 +31,14 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 // --(BEGIN CUSTOM CODE: Declares)--
+
+using HdExtComputationCpuCallbackSharedPtr =
+    std::shared_ptr<class HdExtComputationCpuCallback>;
+using HdExtComputationCpuCallbackDataSource =
+    HdTypedSampledDataSource<HdExtComputationCpuCallbackSharedPtr>;
+using HdExtComputationCpuCallbackDataSourceHandle =
+    HdExtComputationCpuCallbackDataSource::Handle;
+
 // --(END CUSTOM CODE: Declares)--
 
 #define HD_EXT_COMPUTATION_SCHEMA_TOKENS \
@@ -92,19 +84,19 @@ public:
     /// @{
 
     HD_API
-    HdContainerDataSourceHandle GetInputValues() const;
+    HdSampledDataSourceContainerSchema GetInputValues() const;
 
     HD_API
-    HdVectorDataSourceHandle GetInputComputations() const;
+    HdExtComputationInputComputationContainerSchema GetInputComputations() const;
 
     HD_API
-    HdVectorDataSourceHandle GetOutputs() const;
+    HdExtComputationOutputContainerSchema GetOutputs() const;
 
     HD_API
     HdStringDataSourceHandle GetGlslKernel() const;
 
     HD_API
-    HdDataSourceBaseHandle GetCpuCallback() const;
+    HdExtComputationCpuCallbackDataSourceHandle GetCpuCallback() const;
 
     HD_API
     HdSizetDataSourceHandle GetDispatchCount() const;
@@ -181,10 +173,10 @@ public:
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdContainerDataSourceHandle &inputValues,
-        const HdVectorDataSourceHandle &inputComputations,
-        const HdVectorDataSourceHandle &outputs,
+        const HdContainerDataSourceHandle &inputComputations,
+        const HdContainerDataSourceHandle &outputs,
         const HdStringDataSourceHandle &glslKernel,
-        const HdDataSourceBaseHandle &cpuCallback,
+        const HdExtComputationCpuCallbackDataSourceHandle &cpuCallback,
         const HdSizetDataSourceHandle &dispatchCount,
         const HdSizetDataSourceHandle &elementCount
     );
@@ -203,16 +195,16 @@ public:
             const HdContainerDataSourceHandle &inputValues);
         HD_API
         Builder &SetInputComputations(
-            const HdVectorDataSourceHandle &inputComputations);
+            const HdContainerDataSourceHandle &inputComputations);
         HD_API
         Builder &SetOutputs(
-            const HdVectorDataSourceHandle &outputs);
+            const HdContainerDataSourceHandle &outputs);
         HD_API
         Builder &SetGlslKernel(
             const HdStringDataSourceHandle &glslKernel);
         HD_API
         Builder &SetCpuCallback(
-            const HdDataSourceBaseHandle &cpuCallback);
+            const HdExtComputationCpuCallbackDataSourceHandle &cpuCallback);
         HD_API
         Builder &SetDispatchCount(
             const HdSizetDataSourceHandle &dispatchCount);
@@ -226,10 +218,10 @@ public:
 
     private:
         HdContainerDataSourceHandle _inputValues;
-        HdVectorDataSourceHandle _inputComputations;
-        HdVectorDataSourceHandle _outputs;
+        HdContainerDataSourceHandle _inputComputations;
+        HdContainerDataSourceHandle _outputs;
         HdStringDataSourceHandle _glslKernel;
-        HdDataSourceBaseHandle _cpuCallback;
+        HdExtComputationCpuCallbackDataSourceHandle _cpuCallback;
         HdSizetDataSourceHandle _dispatchCount;
         HdSizetDataSourceHandle _elementCount;
 

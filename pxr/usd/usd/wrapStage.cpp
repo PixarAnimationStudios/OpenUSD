@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/attribute.h"
@@ -41,14 +24,14 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/makePyConstructor.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 using std::string;
 
-using namespace boost::python;
-
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 class Usd_PcpCacheAccess
 {
@@ -65,7 +48,7 @@ namespace {
 
 static bool
 _Export(const UsdStagePtr &self, const std::string& filename, 
-        bool addSourceFileComment, const boost::python::dict& dict)
+        bool addSourceFileComment, const pxr_boost::python::dict& dict)
 {
     SdfLayer::FileFormatArguments args;
     std::string errMsg;
@@ -166,26 +149,26 @@ _GetEditTargetForLocalLayer(const UsdStagePtr &self,
 static void
 _ExpandPopulationMask(UsdStage &self,
                       Usd_PrimFlagsPredicate const &traversal,
-                      boost::python::object pyRelPred,
-                      boost::python::object pyAttrPred)
+                      pxr_boost::python::object pyRelPred,
+                      pxr_boost::python::object pyAttrPred)
 {
     using RelPredicate = std::function<bool (UsdRelationship const &)>;
     using AttrPredicate = std::function<bool (UsdAttribute const &)>;
     RelPredicate relPred;
     AttrPredicate attrPred;
     if (!pyRelPred.is_none()) {
-        relPred = boost::python::extract<RelPredicate>(pyRelPred);
+        relPred = pxr_boost::python::extract<RelPredicate>(pyRelPred);
     }
     if (!pyAttrPred.is_none()) {
-        attrPred = boost::python::extract<AttrPredicate>(pyAttrPred);
+        attrPred = pxr_boost::python::extract<AttrPredicate>(pyAttrPred);
     }
     return self.ExpandPopulationMask(traversal, relPred, attrPred);
 }
 
 static void
 _ExpandPopulationMaskDefault(UsdStage &self,
-                             boost::python::object pyRelPred,
-                             boost::python::object pyAttrPred)
+                             pxr_boost::python::object pyRelPred,
+                             pxr_boost::python::object pyAttrPred)
 {
     return _ExpandPopulationMask(
         self, UsdPrimDefaultPredicate, pyRelPred, pyAttrPred);
@@ -198,7 +181,7 @@ _GetColorConfigFallbacks()
     TfToken colorManagementSystem;
     UsdStage::GetColorConfigFallbacks(&colorConfiguration, 
                                       &colorManagementSystem);
-    return boost::python::make_tuple(colorConfiguration, colorManagementSystem);
+    return pxr_boost::python::make_tuple(colorConfiguration, colorManagementSystem);
 }
 
 } // anonymous namespace 
@@ -207,7 +190,7 @@ void wrapUsdStage()
 {
     typedef TfWeakPtr<UsdStage> StagePtr;
 
-    class_<UsdStage, StagePtr, boost::noncopyable>
+    class_<UsdStage, StagePtr, noncopyable>
         cls("Stage", no_init)
         ;
 
@@ -483,6 +466,8 @@ void wrapUsdStage()
         .def("GetPathResolverContext", &UsdStage::GetPathResolverContext)
         .def("ResolveIdentifierToEditTarget",
              &UsdStage::ResolveIdentifierToEditTarget, arg("identifier"))
+        .def("GetCompositionErrors", &UsdStage::GetCompositionErrors,
+             return_value_policy<TfPySequenceToList>())
         .def("GetLayerStack", &UsdStage::GetLayerStack,
              arg("includeSessionLayers")=true,
              return_value_policy<TfPySequenceToList>())
@@ -515,7 +500,7 @@ void wrapUsdStage()
         .def("Export", &_Export,
              (arg("filename"), 
               arg("addSourceFileComment")=true,
-              arg("args") = boost::python::dict()))
+              arg("args") = pxr_boost::python::dict()))
 
         .def("ExportToString", _ExportToString,
              arg("addSourceFileComment")=true)

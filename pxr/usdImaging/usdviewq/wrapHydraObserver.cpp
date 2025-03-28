@@ -1,25 +1,8 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdviewq/hydraObserver.h"
@@ -29,16 +12,16 @@
 #include "pxr/base/tf/token.h"
 
 
-#include <boost/python.hpp>
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/scope.hpp>
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/scope.hpp"
 
 #include <sstream>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 static
 object
@@ -105,21 +88,6 @@ _WrapLocatorSetAsString(const HdDataSourceLocatorSet &self)
     }
 
     return buffer.str();
-}
-
-static
-list
-_WrapContainerDataSourceGetNames(const HdContainerDataSourceHandle &self)
-{
-    list result;
-
-    if (self) {
-        for (const TfToken &name : self->GetNames()) {
-            result.append(name);
-        }
-    }
-
-    return result;
 }
 
 static
@@ -294,10 +262,14 @@ void wrapHydraObserver()
 
             .def("TargetToNamedSceneIndex", &This::TargetToNamedSceneIndex)
             .def("TargetToInputSceneIndex", &This::TargetToInputSceneIndex)
+            .def("TargetToNestedInputSceneIndex",
+                 &This::TargetToNestedInputSceneIndex)
 
             .def("GetDisplayName", &This::GetDisplayName)
 
             .def("GetInputDisplayNames", &This::GetInputDisplayNames)
+            .def("GetNestedInputDisplayNames",
+                 &This::GetNestedInputDisplayNames)
 
             .def("GetChildPrimPaths", &This::GetChildPrimPaths)
             .def("GetPrim", &_WrapGetPrim)
@@ -378,7 +350,9 @@ void wrapHydraObserver()
     {
         using ThisHandle = HdContainerDataSourceHandle;
         class_<ThisHandle> ("ContainerDataSource", no_init)
-            .def("GetNames", &_WrapContainerDataSourceGetNames)
+            .def("GetNames",
+                 +[](const ThisHandle &handle) {
+                     return handle->GetNames(); })
             .def("Get", &_WrapContainerDataSourceGet)
             .def("Get", &_WrapContainerDataSourceGetGetFromLocator)
             ;

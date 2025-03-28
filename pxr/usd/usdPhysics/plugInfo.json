@@ -24,6 +24,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PhysicsArticulationRootAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdPhysicsCollisionAPI": {
@@ -34,6 +35,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PhysicsCollisionAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdPhysicsCollisionGroup": {
@@ -44,6 +46,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "PhysicsCollisionGroup", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdPhysicsDistanceJoint": {
@@ -54,6 +57,7 @@
                         "bases": [
                             "UsdPhysicsJoint"
                         ], 
+                        "schemaIdentifier": "PhysicsDistanceJoint", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdPhysicsDriveAPI": {
@@ -64,6 +68,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PhysicsDriveAPI", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "UsdPhysicsFilteredPairsAPI": {
@@ -74,6 +79,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PhysicsFilteredPairsAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdPhysicsFixedJoint": {
@@ -84,6 +90,7 @@
                         "bases": [
                             "UsdPhysicsJoint"
                         ], 
+                        "schemaIdentifier": "PhysicsFixedJoint", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdPhysicsJoint": {
@@ -94,6 +101,7 @@
                         "bases": [
                             "UsdGeomImageable"
                         ], 
+                        "schemaIdentifier": "PhysicsJoint", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdPhysicsLimitAPI": {
@@ -104,6 +112,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PhysicsLimitAPI", 
                         "schemaKind": "multipleApplyAPI"
                     }, 
                     "UsdPhysicsMassAPI": {
@@ -114,6 +123,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PhysicsMassAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdPhysicsMaterialAPI": {
@@ -124,6 +134,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PhysicsMaterialAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdPhysicsMeshCollisionAPI": {
@@ -134,6 +145,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PhysicsMeshCollisionAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdPhysicsPrismaticJoint": {
@@ -144,6 +156,7 @@
                         "bases": [
                             "UsdPhysicsJoint"
                         ], 
+                        "schemaIdentifier": "PhysicsPrismaticJoint", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdPhysicsRevoluteJoint": {
@@ -154,6 +167,7 @@
                         "bases": [
                             "UsdPhysicsJoint"
                         ], 
+                        "schemaIdentifier": "PhysicsRevoluteJoint", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdPhysicsRigidBodyAPI": {
@@ -164,6 +178,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "PhysicsRigidBodyAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdPhysicsScene": {
@@ -174,6 +189,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "PhysicsScene", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdPhysicsSphericalJoint": {
@@ -184,6 +200,7 @@
                         "bases": [
                             "UsdPhysicsJoint"
                         ], 
+                        "schemaIdentifier": "PhysicsSphericalJoint", 
                         "schemaKind": "concreteTyped"
                     }
                 }

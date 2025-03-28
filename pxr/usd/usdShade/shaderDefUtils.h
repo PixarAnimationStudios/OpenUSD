@@ -1,25 +1,8 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_USD_SHADE_SHADER_DEF_UTILS_H
 #define PXR_USD_USD_SHADE_SHADER_DEF_UTILS_H
@@ -28,7 +11,8 @@
 #include "pxr/usd/usdShade/api.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 
-#include "pxr/usd/ndr/nodeDiscoveryResult.h"
+#include "pxr/usd/sdr/shaderProperty.h"
+#include "pxr/usd/sdr/shaderNodeDiscoveryResult.h"
 
 #include <string>
 
@@ -43,23 +27,50 @@ class UsdShadeShader;
 ///
 class UsdShadeShaderDefUtils {
 public:
-    /// Returns the list of NdrNodeDiscoveryResult objects that must be added 
-    /// to the shader registry for the given shader \p shaderDef, assuming it 
-    /// is found in a shader definition file found by an Ndr discovery plugin. 
+    /// Returns the list of SdrShaderNodeDiscoveryResult objects that must be 
+    /// added to the shader registry for the given shader \p shaderDef, 
+    /// assuming it is found in a shader definition file found by an Sdr 
+    /// discovery plugin. 
     /// 
     /// To enable the shaderDef parser to find and parse this shader, 
     /// \p sourceUri should have the resolved path to the usd file containing 
     /// this shader prim.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of GetDiscoveryResults
     USDSHADE_API
     static NdrNodeDiscoveryResultVec GetNodeDiscoveryResults(
         const UsdShadeShader &shaderDef,
         const std::string &sourceUri);
 
+    /// Returns the list of SdrShaderNodeDiscoveryResult objects that must be 
+    /// added to the shader registry for the given shader \p shaderDef, 
+    /// assuming it is found in a shader definition file found by an Sdr 
+    /// discovery plugin. 
+    /// 
+    /// To enable the shaderDef parser to find and parse this shader, 
+    /// \p sourceUri should have the resolved path to the usd file containing 
+    /// this shader prim.
+    USDSHADE_API
+    static SdrShaderNodeDiscoveryResultVec GetDiscoveryResults(
+        const UsdShadeShader &shaderDef,
+        const std::string &sourceUri);
+
     /// Gets all input and output properties of the given \p shaderDef and 
-    /// translates them into NdrProperties that can be used as the properties
-    /// for an SdrShaderNode.
+    /// translates them into SdrShaderProperties that can be used as the
+    /// properties for an SdrShaderNode.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of GetProperties
     USDSHADE_API
     static NdrPropertyUniquePtrVec GetShaderProperties(
+        const UsdShadeConnectableAPI &shaderDef);
+
+    /// Gets all input and output properties of the given \p shaderDef and 
+    /// translates them into SdrShaderProperties that can be used as the
+    /// properties for an SdrShaderNode.
+    USDSHADE_API
+    static SdrShaderPropertyUniquePtrVec GetProperties(
         const UsdShadeConnectableAPI &shaderDef);
 
     /// Collects all the names of valid primvar inputs of the given \p metadata
@@ -67,7 +78,7 @@ public:
     /// them in SdrShaderNode metadata.
     USDSHADE_API
     static std::string GetPrimvarNamesMetadataString(
-        const NdrTokenMap metadata,
+        const SdrTokenMap metadata,
         const UsdShadeConnectableAPI &shaderDef);
 };
 

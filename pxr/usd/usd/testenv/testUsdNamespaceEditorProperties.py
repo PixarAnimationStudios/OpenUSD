@@ -2,25 +2,8 @@
 #
 # Copyright 2023 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 import sys, os, unittest
 from pxr import Sdf, Usd, Tf, Plug
@@ -829,7 +812,7 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
             # identifier regardless of platform
             def getFormattedCwd():
                 drive, tail = os.path.splitdrive(os.getcwd())
-                return drive.lower() + tail.replace('\\', '/')
+                return drive + tail.replace('\\', '/')
 
             uneditableLayerMessage = (
                 "The spec @{cwd}/basic/sub_1.usda@<{propPath}> cannot be "
@@ -1198,19 +1181,14 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
         # necessitating relocates as opposed to any requirements related to
         # instancing.
         def _VerifyCannotEditPropertyWithoutRelocates(prop):
-            _VerifyCannotApplyDeleteProperty(prop, 
-                "The property to delete must be deactivated rather than "
-                "deleted since it composes opinions introduced by ancestral "
-                "composition arcs; deletion via deactivation is not yet "
-                "supported")
-            _VerifyCannotApplyRenameProperty(prop, "New_Attr", 
-                "The property to move requires authoring relocates since it "
-                "composes opinions introduced by ancestral composition arcs; "
-                "authoring relocates is not supported for properties")
+            expectedMessage = "The property to edit requires authoring " \
+                "relocates since it composes opinions introduced by " \
+                "ancestral composition arcs; authoring relocates is not " \
+                "supported for properties"
+            _VerifyCannotApplyDeleteProperty(prop, expectedMessage)
+            _VerifyCannotApplyRenameProperty(prop, "New_Attr", expectedMessage)
             _VerifyCannotApplyReparentProperty(prop, basicRootPrim, 
-                "The property to move requires authoring relocates since it "
-                "composes opinions introduced by ancestral composition arcs; "
-                "authoring relocates is not supported for properties")
+                                               expectedMessage)
 
         # Open the stage and get the prims to test.
         stage, instance1, instance2, nonInstancePrim, prototypePrim = \
@@ -1467,19 +1445,15 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
             reparentedPropPath = \
                 Sdf.Path("/BasicRootPrim").AppendProperty(propPath.name)
 
-            _VerifyCannotApplyDeletePropertyAtPath(propPath,
-                "The property to delete must be deactivated rather than "
-                "deleted since it composes opinions introduced by ancestral "
-                "composition arcs; deletion via deactivation is not yet "
-                "supported")
-            _VerifyCannotApplyMovePropertyAtPath(propPath, renamedPropPath,
-                "The property to move requires authoring relocates since it "
-                "composes opinions introduced by ancestral composition arcs; "
-                "authoring relocates is not supported for properties")
-            _VerifyCannotApplyMovePropertyAtPath(propPath, reparentedPropPath,
-                "The property to move requires authoring relocates since it "
-                "composes opinions introduced by ancestral composition arcs; "
-                "authoring relocates is not supported for properties")
+            expectedMessage = "The property to edit requires authoring " \
+                "relocates since it composes opinions introduced by " \
+                "ancestral composition arcs; authoring relocates is not " \
+                "supported for properties"
+            _VerifyCannotApplyDeletePropertyAtPath(propPath, expectedMessage)
+            _VerifyCannotApplyMovePropertyAtPath(propPath, renamedPropPath, 
+                                                 expectedMessage)
+            _VerifyCannotApplyMovePropertyAtPath(propPath, reparentedPropPath, 
+                                                 expectedMessage)
 
         # /PrimWithReference has a direct reference to @ref.usda@</ReferencePrim>
 

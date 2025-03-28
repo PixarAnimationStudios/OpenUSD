@@ -25,6 +25,7 @@ def Xform "lights"
 {
     def DomeLight "DomeLight"
     {
+        float inputs:intensity = 2.0
         asset inputs:texture:file = @./StinsonBeach.hdr@
         float xformOp:rotateX:Zup = 90
         uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]

@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_SDF_SCHEMA_H
 #define PXR_USD_SDF_SCHEMA_H
@@ -226,6 +209,14 @@ public:
     /// Returns the spec definition for the given spec type.
     /// Returns NULL if no definition exists for the given spec type.
     inline const SpecDefinition* GetSpecDefinition(SdfSpecType specType) const {
+    #ifdef PXR_PREFER_SAFETY_OVER_SPEED
+        if (ARCH_UNLIKELY(specType < SdfSpecTypeUnknown || 
+                          specType >= SdfNumSpecTypes))
+        {
+            return _IssueErrorForInvalidSpecType(specType);
+        }
+    #endif // PXR_PREFER_SAFETY_OVER_SPEED
+
         return _specDefinitions[specType].second ?
             &_specDefinitions[specType].first : nullptr;
     }
@@ -307,7 +298,9 @@ public:
     SDF_API 
     static SdfAllowed IsValidRelationshipTargetPath(const SdfPath& path);
     SDF_API 
-    static SdfAllowed IsValidRelocatesPath(const SdfPath& path);
+    static SdfAllowed IsValidRelocatesSourcePath(const SdfPath& path);
+    SDF_API 
+    static SdfAllowed IsValidRelocatesTargetPath(const SdfPath& path);
     SDF_API 
     static SdfAllowed IsValidRelocate(const SdfRelocate& relocate);
     SDF_API 
@@ -535,6 +528,9 @@ private:
 
     const SpecDefinition* _CheckAndGetSpecDefinition(SdfSpecType type) const;
 
+    SDF_API
+    const SpecDefinition* _IssueErrorForInvalidSpecType(SdfSpecType specType) const;
+
     friend struct Sdf_SchemaFieldTypeRegistrar;
     FieldDefinition& _CreateField(
         const TfToken &fieldKey, const VtValue &fallback, bool plugin = false);
@@ -628,6 +624,7 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
     ((SessionOwner, "sessionOwner"))                         \
     ((Specializes, "specializes"))                           \
     ((Specifier, "specifier"))                               \
+    ((Spline, "spline"))                                     \
     ((StartTimeCode, "startTimeCode"))                       \
     ((SubLayers, "subLayers"))                               \
     ((SubLayerOffsets, "subLayerOffsets"))                   \

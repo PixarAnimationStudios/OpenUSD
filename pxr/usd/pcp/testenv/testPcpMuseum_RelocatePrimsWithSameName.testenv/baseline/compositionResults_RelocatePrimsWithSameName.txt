@@ -109,7 +109,6 @@ Prim Stack:
 Results for composing </ChainedReferences/Child_1>
 
 Prim Stack:
-    root.sdf             /ChainedRef_1/Child
 
 ------------------------------------------------------------------------
 Results for composing </ChainedRef_1>

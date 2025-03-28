@@ -29,6 +29,7 @@ def Xform "World"{
             point3f[] points = [(0, 1, 0), (0, 4, 0), (0, 7, 0)]
             int[] curveVertexCounts = [3]
             int ri:attributes:dice:roundcurve = 1
+            float[] widths = [1] (interpolation = "constant")
         }
 
         def BasisCurves "Lines_Wire"(){
@@ -38,6 +39,7 @@ def Xform "World"{
             point3f[] points = [(0, 1, 0), (0, 4, 1), (0, 7, 0)]
             int[] curveVertexCounts = [3]
             int ri:attributes:dice:roundcurve = 1
+            float[] widths = [1] (interpolation = "constant")
         }
 
         def BasisCurves "Lines_Tube"(){
@@ -72,6 +74,7 @@ def Xform "World"{
             point3f[] points = [(0, 1, 0), (0, 2, 1), (0, 3, 1), (0, 4, 0), (0, 5, 1), (0, 6, 1), (0, 7, 0)]
             int[] curveVertexCounts = [7]
             int ri:attributes:dice:roundcurve = 1
+            float[] widths = [1] (interpolation = "constant")
         }
 
         def BasisCurves "Bezier_Tube_varying"(){
@@ -130,6 +133,7 @@ def Xform "World"{
             point3f[] points = [(0, 1, 0), (0, 1, 0), (0, 4, 1), (0, 7, 0), (0, 7, 0)]
             int[] curveVertexCounts = [5]
             int ri:attributes:dice:roundcurve = 1
+            float[] widths = [1] (interpolation = "constant")
         }
 
         def BasisCurves "Bspline_Tube_varying"(){
@@ -187,6 +191,7 @@ def Xform "World"{
             point3f[] points = [(0, 0, 0), (0, 1, 0), (0, 4, 1), (0, 7, 0), (0, 8, 0)]
             int[] curveVertexCounts = [5]
             int ri:attributes:dice:roundcurve = 1
+            float[] widths = [1] (interpolation = "constant")
         }
 
         def BasisCurves "CatmullRom_Tube_varying"(){

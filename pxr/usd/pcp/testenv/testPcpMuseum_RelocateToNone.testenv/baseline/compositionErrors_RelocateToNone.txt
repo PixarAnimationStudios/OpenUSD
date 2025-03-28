@@ -1,0 +1,30 @@
+------------------------------------------------------------------------
+Errors while composing </Char>
+
+The relationship target </Model/ToBeDeleted/Child> from </Model.relationship1> in layer @RelocateToNone/model.sdf@ is invalid.  This may be because the path is the pre-relocated source path of a relocated prim.  Ignoring.
+The relationship target </Model/ToBeRelocated/ToBeDeletedChild> from </Model.relationship3> in layer @RelocateToNone/model.sdf@ is invalid.  This may be because the path is the pre-relocated source path of a relocated prim.  Ignoring.
+
+------------------------------------------------------------------------
+Errors while composing </Bad_SubrootRefToDeleted>
+
+@RelocateToNone/root.sdf@</Bad_SubrootRefToDeleted>
+CANNOT reference:
+@RelocateToNone/root.sdf@</Char/ToBeDeleted>
+which is a prohibited child of its parent because it would require allowing opinions from the source of a relocation at @RelocateToNone/root.sdf@</Char/ToBeDeleted>.
+
+------------------------------------------------------------------------
+Errors while composing </Bad_SubrootRefToPreRelocated>
+
+@RelocateToNone/root.sdf@</Bad_SubrootRefToPreRelocated>
+CANNOT reference:
+@RelocateToNone/root.sdf@</Char/ToBeRelocated>
+which is a prohibited child of its parent because it would require allowing opinions from the source of a relocation at @RelocateToNone/root.sdf@</Char/ToBeRelocated>.
+
+------------------------------------------------------------------------
+Errors while composing </Bad_SubrootRefToDeletedRelocatedChild>
+
+@RelocateToNone/root.sdf@</Bad_SubrootRefToDeletedRelocatedChild>
+CANNOT reference:
+@RelocateToNone/root.sdf@</Char/Relocated/ToBeDeletedChild>
+which is a prohibited child of its parent because it would require allowing opinions from the source of a relocation at @RelocateToNone/root.sdf@</Char/Relocated/ToBeDeletedChild>.
+

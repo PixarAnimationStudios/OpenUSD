@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
@@ -31,6 +14,7 @@
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/arch/systemInfo.h"
 
+#include <atomic>
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
@@ -422,6 +406,118 @@ _TestNoticeBlock()
     TF_AXIOM(l.hits[1] == 20);
 }
 
+class TestRevokeAndWaitListener : public TfWeakBase {
+public:
+    TestRevokeAndWaitListener()
+    {
+        _key = TfNotice::Register(TfCreateWeakPtr(this),
+                                  &TestRevokeAndWaitListener::_Handler);
+    }
+
+    ~TestRevokeAndWaitListener()
+    {
+        // Wait for the handler to be revoked.
+        TfNotice::RevokeAndWait(_key);
+
+        // Cause _Handler() to assert if it gets called.
+        _alive = false;
+
+        // Let in-flight sends call _Handler if they're going to.  This
+        // makes potential race conditions more likely to trigger the
+        // assert.
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
+private:
+    void _Handler(const TestNotice&)
+    {
+        // If this assert fails then the most likely cause is that
+        // TfNotice::_DelivererBase::_WaitForSendsToFinish() doesn't
+        // wait for all sends to complete before returning.  It must
+        // not return until _SendToListenerImpl() for the listener
+        // is not being called and cannot later be called.
+        TF_AXIOM(_alive);
+    }
+
+private:
+    bool _alive{true};
+    TfNotice::Key _key;
+};
+
+static void
+_TestRevokeAndWait()
+{
+    // Test that RevokeAndWait() really waits like it's supposed to.  This
+    // is a stress test to check for race conditions.  We start a bunch of
+    // threads and register/send/revoke in each at different cadences.
+
+    // The number of threads to use.
+    static constexpr int numThreads = 20;
+
+    // The number of total sends across all threads.  The execution time of
+    // the test is directly proportional to this.
+    static constexpr int numSends = 60000;
+
+    // The number of sends remaining.  Threads wait to start until this is
+    // no longer zero.
+    std::atomic<int> sendsRemaining{0};
+
+    // Threads use this to get a unique id in the range [1,numThreads].
+    // We also use it to wait for all threads to have started.
+    std::atomic<int> id{0};
+
+    // The work for each thread.
+    auto task =
+        [&]()
+        {
+            // Increase the number of sends per loop below by this much.
+            // Each thread uses a different number to ensure they don't
+            // somehow go in lock step.
+            const int step = ++id;
+
+            // We can send the same notice each time, avoiding the overhead
+            // of making a string copy.
+            TestNotice notice(TfStringPrintf("step %d", step));
+
+            // Synchronize starting.
+            while (sendsRemaining == 0) {
+                std::this_thread::yield();
+            }
+
+            // Create a listener, send the notice a bunch of times, destroy
+            // the listener, and repeat until we've done enough sends.  We
+            // Increase the number of sends per loop just to mix things up.
+            int n = 10;
+            while (true) {
+                TestRevokeAndWaitListener listener;
+                for (int i = 0; i != n; ++i) {
+                    if (--sendsRemaining <= 0) {
+                        return;
+                    }
+                    notice.Send();
+                }
+                n += step;
+            }
+        };
+
+    // Start the threads.
+    std::vector<std::thread> threads(numThreads);
+    for (auto& thread: threads) {
+        thread = std::thread(task);
+    }
+
+    // Let the threads start up and synchronize then let them run.
+    while (id != numThreads) {
+        std::this_thread::yield();
+    }
+    sendsRemaining.store(numSends);
+
+    // Wait for threads to finish.
+    for (auto& thread: threads) {
+        thread.join();
+    }
+}
+
 static bool
 Test_TfNotice()
 {
@@ -495,6 +591,8 @@ Test_TfNotice()
     _TestSpoofedNotices();
 
     _TestNoticeBlock();
+
+    _TestRevokeAndWait();
     
     return true;
 }

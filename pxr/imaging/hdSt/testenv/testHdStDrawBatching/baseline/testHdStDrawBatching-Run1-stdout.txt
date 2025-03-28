@@ -1,88 +1,67 @@
 ==== IndirectDrawBatchTest:
 ----- begin -----
-gpuMemoryUsed, 0
 nonUniformSize, 0
 numberOfTextureHandles, 0
 numberOfTextureObjects, 0
 singleBufferSize, 0
-ssboSize, 0
 textureMemory, 0
-uboSize, 0
 garbageCollected = 0
 drawCalls = 0
 num batches: 5
 ----- batched -----
-gpuMemoryUsed, 4712
 nonUniformSize, 1512
 numberOfTextureHandles, 0
 numberOfTextureObjects, 0
 primvar, 4240
 singleBufferSize, 0
-ssboSize, 3200
 textureMemory, 0
 topology, 472
-uboSize, 0
 garbageCollected = 0
 drawCalls = 0
 ----- executed -----
 drawIndirect, 600
 drawIndirectCull, 600
 drawIndirectResult, 20
-drawingShader, 114898
-gpuMemoryUsed, 120830
 nonUniformSize, 1512
 numberOfTextureHandles, 0
 numberOfTextureObjects, 0
 primvar, 4240
 singleBufferSize, 0
-ssboSize, 3200
 textureMemory, 0
 topology, 472
-uboSize, 0
 garbageCollected = 0
 drawCalls = 5
 ----- clear all -----
-gpuMemoryUsed, 0
 nonUniformSize, 0
 numberOfTextureHandles, 0
 numberOfTextureObjects, 0
 singleBufferSize, 0
-ssboSize, 0
 textureMemory, 0
-uboSize, 0
 garbageCollected = 1
 drawCalls = 5
 
 ==== IndirectDrawBatchMigrationTest:
 ----- begin -----
-gpuMemoryUsed, 0
 nonUniformSize, 0
 numberOfTextureHandles, 0
 numberOfTextureObjects, 0
 singleBufferSize, 0
-ssboSize, 0
 textureMemory, 0
-uboSize, 0
 garbageCollected = 0
 drawCalls = 0
 rebuildBatches = 0
 bufferArrayRangeMigrated = 0
 ----- draw flat -----
-computeShader, 14308
 drawIndirect, 240
 drawIndirectCull, 240
 drawIndirectResult, 4
-drawingShader, 42470
-gpuMemoryUsed, 845934
 nonUniformSize, 960
 numberOfTextureHandles, 0
 numberOfTextureObjects, 2
 primvar, 1760
 singleBufferSize, 0
-ssboSize, 1280
 textureMemory, 786432
 topology, 480
-uboSize, 768
 garbageCollected = 0
 drawCalls = 1
 drawBatches = 1
@@ -94,17 +73,13 @@ bufferArrayRangeMigrated = 0
 drawIndirect, 480
 drawIndirectCull, 480
 drawIndirectResult, 12
-drawingShader, 105357
-gpuMemoryUsed, 895353
 nonUniformSize, 1312
 numberOfTextureHandles, 0
 numberOfTextureObjects, 2
 primvar, 1856
 singleBufferSize, 0
-ssboSize, 1280
 textureMemory, 786432
 topology, 736
-uboSize, 768
 garbageCollected = 1
 drawCalls = 2
 drawBatches = 2
@@ -116,17 +91,13 @@ bufferArrayRangeMigrated = 1
 drawIndirect, 720
 drawIndirectCull, 720
 drawIndirectResult, 20
-drawingShader, 133057
-gpuMemoryUsed, 923541
 nonUniformSize, 1312
 numberOfTextureHandles, 0
 numberOfTextureObjects, 2
 primvar, 1856
 singleBufferSize, 0
-ssboSize, 1280
 textureMemory, 786432
 topology, 736
-uboSize, 768
 garbageCollected = 1
 drawCalls = 2
 drawBatches = 2
@@ -138,17 +109,13 @@ bufferArrayRangeMigrated = 1
 drawIndirect, 480
 drawIndirectCull, 480
 drawIndirectResult, 20
-drawingShader, 133057
-gpuMemoryUsed, 923061
 nonUniformSize, 1312
 numberOfTextureHandles, 0
 numberOfTextureObjects, 2
 primvar, 1856
 singleBufferSize, 0
-ssboSize, 1280
 textureMemory, 786432
 topology, 736
-uboSize, 768
 garbageCollected = 1
 drawCalls = 2
 drawBatches = 2
@@ -158,61 +125,47 @@ rebuildBatches = 3
 bufferArrayRangeMigrated = 1
 ==== EmptyDrawBatchTest:
 ----- begin -----
-gpuMemoryUsed, 0
 nonUniformSize, 0
 numberOfTextureHandles, 0
 numberOfTextureObjects, 0
 singleBufferSize, 0
-ssboSize, 0
 textureMemory, 0
-uboSize, 0
 garbageCollected = 0
 drawCalls = 0
 ----- batched -----
-gpuMemoryUsed, 0
 nonUniformSize, 0
 numberOfTextureHandles, 0
 numberOfTextureObjects, 0
 primvar, 0
 singleBufferSize, 0
-ssboSize, 0
 textureMemory, 0
 topology, 0
-uboSize, 0
 garbageCollected = 0
 drawCalls = 0
 ----- executed -----
 drawIndirect, 72
 drawIndirectCull, 72
 drawIndirectResult, 4
-drawingShader, 28423
-gpuMemoryUsed, 28907
 nonUniformSize, 16
 numberOfTextureHandles, 0
 numberOfTextureObjects, 0
 primvar, 336
 singleBufferSize, 0
-ssboSize, 320
 textureMemory, 0
 topology, 0
-uboSize, 0
 garbageCollected = 0
 drawCalls = 1
 ----- clear all -----
 drawIndirect, 72
 drawIndirectCull, 72
 drawIndirectResult, 4
-drawingShader, 28423
-gpuMemoryUsed, 28907
 nonUniformSize, 16
 numberOfTextureHandles, 0
 numberOfTextureObjects, 0
 primvar, 336
 singleBufferSize, 0
-ssboSize, 320
 textureMemory, 0
 topology, 0
-uboSize, 0
 garbageCollected = 1
 drawCalls = 1
 

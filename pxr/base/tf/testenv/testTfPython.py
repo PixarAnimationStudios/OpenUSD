@@ -2,25 +2,8 @@
 #
 # Copyright 2016 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 
 from __future__ import print_function
@@ -151,13 +134,80 @@ class TestPython(unittest.TestCase):
             Tf._CallThrowTest(lambda : Tf._ThrowTest('py-to-cpp-to-py'))
         print(cm.exception)
 
-    def test_StaticMethodPosting(self):
-        with self.assertRaises(Tf.ErrorException):
-            Tf._TestStaticMethodError.Error()
-
+    def test_DiagnosticsFromPython(self):
         Tf.Warn("expected warning, for coverage")
-
         Tf.Status("expected status message, for coverage")
+
+    def test_InvokeWithErrorHandling(self):
+        """Verify that Tf errors emitted from Python-wrapped C++ functions
+        are converted to Python exceptions."""
+        def testClass(cls):
+            with self.assertRaises(Tf.ErrorException):
+                obj = cls()
+
+            with self.assertRaises(Tf.ErrorException):
+                obj = cls("overload")
+
+            with self.assertRaises(Tf.ErrorException):
+                cls.StaticMethod()
+
+            with self.assertRaises(Tf.ErrorException):
+                cls.StaticMethod("overload")
+
+            with self.assertRaises(Tf.ErrorException):
+                cls.ClassMethod()
+
+            with self.assertRaises(Tf.ErrorException):
+                cls.ClassMethod("overload")
+
+            obj = cls.Create()
+
+            with self.assertRaises(Tf.ErrorException):
+                obj.InstanceMethod()
+
+            with self.assertRaises(Tf.ErrorException):
+                obj.InstanceMethod("overload")
+
+            with self.assertRaises(Tf.ErrorException):
+                value = obj.property
+
+            with self.assertRaises(Tf.ErrorException):
+                obj.property = "Set value"
+
+            with self.assertRaises(Tf.ErrorException):
+                value = obj.property_2
+
+            with self.assertRaises(Tf.ErrorException):
+                obj.property_2 = "Set value"
+
+            # XXX: 
+            # Methods wrapped as static properties currently do not
+            # translate Tf errors to Python exceptions as expected.
+
+            # with self.assertRaises(Tf.ErrorException):
+            #     value = obj.static_property
+
+            # with self.assertRaises(Tf.ErrorException):
+            #     obj.static_property = "Set value"
+
+            # with self.assertRaises(Tf.ErrorException):
+            #     value = obj.static_property_2
+
+            # with self.assertRaises(Tf.ErrorException):
+            #     obj.static_property_2 = "Set value"
+
+        testClass(Tf._TestErrorClass1)
+        testClass(Tf._TestErrorClass1._TestErrorClass2)
+
+        def testFunction(fn):
+            with self.assertRaises(Tf.ErrorException):
+                fn()
+
+            with self.assertRaises(Tf.ErrorException):
+                fn("overload")
+
+        testFunction(Tf._TestErrorFunction)
+        testFunction(Tf._TestErrorClass1._TestErrorFunction)
 
     def test_NoticeListener(self):
         global noticesHandled

@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/garch/glApi.h"
 
@@ -31,7 +14,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static const char* _vertexFullscreen =
+static const char* _vertexFullscreen120 =
     "#version 120\n"
     "attribute vec4 position;\n"
     "attribute vec2 uvIn;\n"
@@ -42,7 +25,18 @@ static const char* _vertexFullscreen =
     "    uv = uvIn;\n"
     "}\n";
 
-static const char* _fragmentNoDepthFullscreen =
+static const char* _vertexFullscreen140 =
+    "#version 140\n"
+    "in vec4 position;\n"
+    "in vec2 uvIn;\n"
+    "out vec2 uv;\n"
+    "void main(void)\n"
+    "{\n"
+    "    gl_Position = position;\n"
+    "    uv = uvIn;\n"
+    "}\n";
+
+static const char* _fragmentNoDepthFullscreen120 =
     "#version 120\n"
     "varying vec2 uv;\n"
     "uniform sampler2D colorIn;\n"
@@ -51,7 +45,17 @@ static const char* _fragmentNoDepthFullscreen =
     "    gl_FragColor = texture2D(colorIn, uv);\n"
     "}\n";
 
-static const char* _fragmentDepthFullscreen =
+static const char* _fragmentNoDepthFullscreen140 =
+    "#version 140\n"
+    "in vec2 uv;\n"
+    "out vec4 colorOut;\n"
+    "uniform sampler2D colorIn;\n"
+    "void main(void)\n"
+    "{\n"
+    "    colorOut = texture(colorIn, uv);\n"
+    "}\n";
+
+static const char* _fragmentDepthFullscreen120 =
     "#version 120\n"
     "varying vec2 uv;\n"
     "uniform sampler2D colorIn;\n"
@@ -63,6 +67,30 @@ static const char* _fragmentDepthFullscreen =
     "    gl_FragDepth = depth;\n"
     "}\n";
 
+static const char* _fragmentDepthFullscreen140 =
+    "#version 140\n"
+    "in vec2 uv;\n"
+    "out vec4 colorOut;\n"
+    "uniform sampler2D colorIn;\n"
+    "uniform sampler2D depthIn;\n"
+    "void main(void)\n"
+    "{\n"
+    "    colorOut = texture(colorIn, uv);\n"
+    "    gl_FragDepth = texture(depthIn, uv).r;\n"
+    "}\n";
+
+
+static void
+_ProcessShaderCompilationErrors(uint32_t shaderId)
+{
+    int logSize = 0;
+    glGetShaderiv(shaderId, GL_INFO_LOG_LENGTH, &logSize);
+    std::string errors;
+    errors.resize(logSize + 1);
+    glGetShaderInfoLog(shaderId, logSize, nullptr, errors.data());
+    TF_VERIFY(false, "Failed to compile shader: %s", errors.c_str());
+}
+
 static uint32_t
 _CompileShader(const char* src, GLenum stage)
 {
@@ -71,7 +99,10 @@ _CompileShader(const char* src, GLenum stage)
     glCompileShader(shaderId);
     GLint status;
     glGetShaderiv(shaderId, GL_COMPILE_STATUS, &status);
-    TF_VERIFY(status == GL_TRUE);
+    if (status != GL_TRUE) {
+        _ProcessShaderCompilationErrors(shaderId);
+    }
+
     return shaderId;
 }
 
@@ -102,6 +133,14 @@ _CreateVertexBuffer()
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     return vertexBuffer;
+}
+
+static uint32_t
+_CreateVertexArray()
+{
+    uint32_t vertexArray = 0;
+    glGenVertexArrays(1, &vertexArray);
+    return vertexArray;
 }
 
 static void
@@ -172,17 +211,32 @@ HgiInteropVulkan::HgiInteropVulkan(Hgi* hgiVulkan)
     , _prgNoDepth(0)
     , _prgDepth(0)
     , _vertexBuffer(0)
+    , _vertexArray(0)
     , _glColorTex(0)
     , _glDepthTex(0)
 {
     GarchGLApiLoad();
-    _vs = _CompileShader(_vertexFullscreen, GL_VERTEX_SHADER);
-    _fsNoDepth = _CompileShader(_fragmentNoDepthFullscreen, GL_FRAGMENT_SHADER);
-    _fsDepth = _CompileShader(_fragmentDepthFullscreen, GL_FRAGMENT_SHADER);
+    _vs = _CompileShader(
+        GARCH_GL_VERSION_3_1 ? _vertexFullscreen140 :
+                               _vertexFullscreen120,
+        GL_VERTEX_SHADER);
+    _fsNoDepth = _CompileShader(
+        GARCH_GL_VERSION_3_1 ? _fragmentNoDepthFullscreen140 :
+                               _fragmentNoDepthFullscreen120,
+        GL_FRAGMENT_SHADER);
+    _fsDepth = _CompileShader(
+        GARCH_GL_VERSION_3_1 ? _fragmentDepthFullscreen140 :
+                               _fragmentDepthFullscreen120,
+        GL_FRAGMENT_SHADER);
     _prgNoDepth = _LinkProgram(_vs, _fsNoDepth);
     _prgDepth = _LinkProgram(_vs, _fsDepth);
     _vertexBuffer = _CreateVertexBuffer();
-    TF_VERIFY(glGetError() == GL_NO_ERROR);
+    if (GARCH_GL_VERSION_3_0) {
+        _vertexArray = _CreateVertexArray();
+    }
+
+    const GLenum error = glGetError();
+    TF_VERIFY(error == GL_NO_ERROR, "OpenGL error: 0x%04x", error);
 }
 
 HgiInteropVulkan::~HgiInteropVulkan()
@@ -193,13 +247,18 @@ HgiInteropVulkan::~HgiInteropVulkan()
     glDeleteProgram(_prgNoDepth);
     glDeleteProgram(_prgDepth);
     glDeleteBuffers(1, &_vertexBuffer);
+    if (_vertexArray) {
+        glDeleteVertexArrays(1, &_vertexArray);
+    }
     if (_glColorTex) {
         glDeleteTextures(1, &_glColorTex);
     }
     if (_glDepthTex) {
         glDeleteTextures(1, &_glDepthTex);
     }
-    TF_VERIFY(glGetError() == GL_NO_ERROR);
+
+    const GLenum error = glGetError();
+    TF_VERIFY(error == GL_NO_ERROR, "OpenGL error: 0x%04x", error);
 }
 
 void
@@ -215,7 +274,10 @@ HgiInteropVulkan::CompositeToInterop(
     }
 
     // Verify there were no gl errors coming in.
-    TF_VERIFY(glGetError() == GL_NO_ERROR);
+    {
+        const GLenum error = glGetError();
+        TF_VERIFY(error == GL_NO_ERROR, "OpenGL error: 0x%04x", error);
+    }
 
     GLint restoreDrawFramebuffer = 0;
     bool doRestoreDrawFramebuffer = false;
@@ -276,6 +338,10 @@ HgiInteropVulkan::CompositeToInterop(
     // Get the current array buffer binding state
     GLint restoreArrayBuffer = 0;
     glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &restoreArrayBuffer);
+
+    if (_vertexArray) {
+        glBindVertexArray(_vertexArray);
+    }
 
     // Vertex attributes
     const GLint locPosition = glGetAttribLocation(prg, "position");
@@ -342,6 +408,10 @@ HgiInteropVulkan::CompositeToInterop(
     // Restore state and verify gl errors
     glDisableVertexAttribArray(locPosition);
     glDisableVertexAttribArray(locUv);
+    if (_vertexArray) {
+        glBindVertexArray(0);
+    }
+
     glBindBuffer(GL_ARRAY_BUFFER, restoreArrayBuffer);
     
     if (!blendEnabled) {
@@ -384,7 +454,10 @@ HgiInteropVulkan::CompositeToInterop(
                           restoreDrawFramebuffer);
     }
 
-    TF_VERIFY(glGetError() == GL_NO_ERROR);
+    {
+        const GLenum error = glGetError();
+        TF_VERIFY(error == GL_NO_ERROR, "OpenGL error: 0x%04x", error);
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

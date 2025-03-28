@@ -1,0 +1,30 @@
+//
+// Copyright 2019 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+shader UsdPrimvarReader_float2
+[[
+    string category = "generator",
+    string role = "primvar",
+    string primvars = "$varname",
+]]
+(
+    string varname = "" [[
+        int connectable = 0,
+        string help = "Name of requested primvar."
+    ]],
+
+    float fallback[2] = {0.0, 0.0} [[
+        string help = "return value if primvar not found."
+    ]],
+
+    output float result[2] = {0.0, 0.0}
+        [[ string widget = "null" ]]
+)
+{
+    result[0] = fallback[0];
+    result[1] = fallback[1];
+    getattribute("primvar", varname, result);
+}

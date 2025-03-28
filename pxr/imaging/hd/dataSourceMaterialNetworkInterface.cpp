@@ -1,25 +1,8 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hd/dataSourceMaterialNetworkInterface.h"
 #include "pxr/imaging/hd/materialConnectionSchema.h"
@@ -36,6 +19,34 @@ TF_DEFINE_PRIVATE_TOKENS(
     (model)
     (assetName)
     );
+
+TfTokenVector
+HdDataSourceMaterialNetworkInterface::GetMaterialConfigKeys() const
+{
+    HdSampledDataSourceContainerSchema configDs = _networkSchema.GetConfig();
+    if (!configDs) {
+        return {};
+    }
+
+    return configDs.GetNames();
+}
+
+VtValue
+HdDataSourceMaterialNetworkInterface::GetMaterialConfigValue(
+    const TfToken& key) const
+{
+    HdSampledDataSourceContainerSchema configDs = _networkSchema.GetConfig();
+    if (!configDs) {
+        return {};
+    }
+    
+    HdSampledDataSourceHandle keyDs =
+        HdSampledDataSource::Cast(configDs.Get(key));
+    if (!keyDs) {
+        return {};
+    }
+    return keyDs->GetValue(0.0f);
+}
 
 std::string
 HdDataSourceMaterialNetworkInterface::GetModelAssetName() const
@@ -182,9 +193,31 @@ HdDataSourceMaterialNetworkInterface::GetNodeType(
 }
 
 HdContainerDataSourceHandle
-HdDataSourceMaterialNetworkInterface::_GetNodeTypeInfo(const TfToken& nodeName) const
+HdDataSourceMaterialNetworkInterface::_GetOriginalNodeTypeInfo(
+    const TfToken& nodeName) const
 {
     return _ResetIfNecessaryAndGetNode(nodeName).GetNodeTypeInfo();
+}
+
+HdContainerDataSourceHandle
+HdDataSourceMaterialNetworkInterface::_GetNodeTypeInfo(const TfToken& nodeName) const
+{
+    HdDataSourceLocator locator(
+        HdMaterialNetworkSchemaTokens->nodes,
+        nodeName,
+        HdMaterialNodeSchemaTokens->nodeTypeInfo);
+    
+    // Look for overridden NodeTypeInfo first.
+    
+    if (const auto it = _existingOverrides.find(locator); 
+        it != _existingOverrides.end()) 
+    {
+        // Found an override, return it.
+        return HdContainerDataSource::Cast(it->second);
+    }
+    
+    // No override, return the original, if any.
+    return _GetOriginalNodeTypeInfo(nodeName);
 }
 
 TfTokenVector
@@ -308,6 +341,10 @@ HdDataSourceMaterialNetworkInterface::GetNodeParameterData(
             if (colorSpaceDS) {
                 paramData.colorSpace = colorSpaceDS->GetTypedValue(0);
             }
+            HdTokenDataSourceHandle typeNameDS = pSchema.GetTypeName();
+            if (typeNameDS) {
+                paramData.typeName = typeNameDS->GetTypedValue(0);
+            }
             return paramData;
         }
         // overridden with nullptr data source means deletion
@@ -320,9 +357,13 @@ HdDataSourceMaterialNetworkInterface::GetNodeParameterData(
         if (HdSampledDataSourceHandle paramValueDS = pSchema.GetValue()) {
             paramData.value = paramValueDS->GetValue(0);
         }
-            // ColorSpace
+        // ColorSpace
         if (HdTokenDataSourceHandle colorSpaceDS = pSchema.GetColorSpace()) {
             paramData.colorSpace = colorSpaceDS->GetTypedValue(0);
+        }
+        // TypeName
+        if (HdTokenDataSourceHandle typeNameDS = pSchema.GetTypeName()) {
+            paramData.typeName = typeNameDS->GetTypedValue(0);
         }
     }
 
@@ -419,6 +460,7 @@ HdDataSourceMaterialNetworkInterface::DeleteNode(const TfToken &nodeName)
 
     _networkEditor.Set(locator, nullptr);
     _deletedNodes.insert(nodeName);
+    _nodeTypeInfoOverrides.erase(nodeName);
 }
 
 void
@@ -431,10 +473,53 @@ HdDataSourceMaterialNetworkInterface::SetNodeType(
         nodeName,
         HdMaterialNodeSchemaTokens->nodeIdentifier);
 
-    HdDataSourceBaseHandle ds =
-        HdRetainedTypedSampledDataSource<TfToken>::New(nodeType);
+    if (nodeType.IsEmpty()) {
+        // An empty TfToken removes the nodeType data entirely
+        _SetOverride(locator, nullptr);
+    } else {
+        HdDataSourceBaseHandle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(nodeType);
 
-    _SetOverride(locator, ds);
+        _SetOverride(locator, ds);
+    }
+}
+
+void
+HdDataSourceMaterialNetworkInterface::SetNodeTypeInfoValue(
+    const TfToken &nodeName,
+    const TfToken &key,
+    const VtValue &value
+)
+{
+    // Find an existing editor for this node's nodeTypeInfo data source
+    // or construct a new one.
+    _HdContainerDataSourceEditorSharedPtr ntEditor;
+    
+    if (auto ntIt = _nodeTypeInfoOverrides.find(nodeName); 
+        ntIt != _nodeTypeInfoOverrides.end()) 
+    {
+        ntEditor = ntIt->second;
+    } else {
+        HdContainerDataSourceHandle container = 
+            _GetOriginalNodeTypeInfo(nodeName);
+        if (!container) {
+            // The node never had a nodeTypeInfo data source. 
+            // Construct a new one to pass to the editor.
+            container = HdRetainedContainerDataSource::New();
+        }
+        // Construct and store a new nodeTypeInfo editor.
+        ntEditor = std::make_shared<HdContainerDataSourceEditor>(container); 
+        _nodeTypeInfoOverrides.insert({nodeName, ntEditor});
+    }
+
+    HdDataSourceLocator locator(
+        HdMaterialNetworkSchemaTokens->nodes,
+        nodeName,
+        HdMaterialNodeSchemaTokens->nodeTypeInfo);
+
+    ntEditor->Set(HdDataSourceLocator(key), 
+                         HdRetainedTypedSampledDataSource<VtValue>::New(value));
+    _SetOverride(locator, ntEditor->Finish());
 }
 
 void
@@ -477,6 +562,11 @@ HdDataSourceMaterialNetworkInterface::SetNodeParameterData(
                     ? nullptr /* colorSpace */
                     : HdRetainedTypedSampledDataSource<TfToken>::New(
                         paramData.colorSpace))
+            .SetTypeName(
+                paramData.typeName.IsEmpty()
+                    ? nullptr /* typeName */
+                    : HdRetainedTypedSampledDataSource<TfToken>::New(
+                        paramData.typeName))
             .Build();
     _SetOverride(locator, ds);
 }

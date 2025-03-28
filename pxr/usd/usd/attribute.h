@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_USD_ATTRIBUTE_H
 #define PXR_USD_USD_ATTRIBUTE_H
@@ -44,6 +27,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class UsdAttribute;
+class TsSpline;
 
 /// A std::vector of UsdAttributes.
 typedef std::vector<UsdAttribute> UsdAttributeVector;
@@ -51,7 +35,7 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// \class UsdAttribute
 ///
 /// Scenegraph object for authoring and retrieving numeric, string, and array
-/// valued data, sampled over time.
+/// valued data, sampled over time, or animated by a spline
 ///
 /// The allowed value types for UsdAttribute are dictated by the Sdf
 /// ("Scene Description Foundations") core's data model, which we summarize in
@@ -62,15 +46,15 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// In addition to its value type, an Attribute has two other defining
 /// qualities:
 /// \li <b>Variability</b> Expresses whether an attribute is intended to
-/// have time samples (GetVariability() == \c SdfVariabilityVarying), or only
-/// a default (GetVariability() == \c SdfVariabilityUniform).  For more on
-/// reasoning about time samples, 
+/// have time samples or a spline (GetVariability() == \c SdfVariabilityVarying), 
+/// or only a default (GetVariability() == \c SdfVariabilityUniform).  For more 
+/// on reasoning about time samples, 
 /// see \ref Usd_AttributeValueMethods "Value & Time-Sample Accessors".
 ///
 /// \li <b>Custom</b> Determines whether an attribute belongs to a
 /// schema (IsCustom() == \c false), or is a user-defined, custom attribute.
 /// schema attributes will always be defined on a prim of the schema type,
-/// ans may possess fallback values from the schema, whereas custom 
+/// and may possess fallback values from the schema, whereas custom 
 /// attributes must always first be authored in order to be defined.  Note
 /// that \em custom is actually an aspect of UsdProperty, as UsdRelationship
 /// can also be custom or provided by a schema.
@@ -105,6 +89,10 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// attribute values at times where no value is explicitly authored.
 /// The desired behavior may be specified via UsdStage::SetInterpolationType.
 /// That behavior will be used for all calls to UsdAttribute::Get.
+///
+/// Note that for attributes with spline value sources, the interpolation
+/// behavior is determined by the spline itself, and the interpolation type
+/// set on the stage is ignored.
 ///
 /// The supported interpolation types are:
 ///
@@ -163,11 +151,14 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// \section Usd_AssetPathValuedAttributes Attributes of type SdfAssetPath and UsdAttribute::Get()
 ///
 /// If an attribute's value type is SdfAssetPath or SdfAssetPathArray, Get()
-/// performs extra work to compute the resolved asset paths, using the layer
-/// that has the strongest value opinion as the anchor for "relative" asset
-/// paths.  Both the unresolved and resolved results are available through
-/// SdfAssetPath::GetAssetPath() and SdfAssetPath::GetResolvedPath(),
-/// respectively.
+/// does extra work to perform variable expression evaluation and compute
+/// resolved asset paths. The layer that has the strongest value opinion is 
+/// used as the anchor for "relative" asset paths.  The unresolved results are
+/// available through SdfAssetPath::GetAssetPath. The fully resolved path
+/// (including any substitutions) can be retrieved with
+/// SdfAssetPath::GetResolvedPath. The authored or evaluated paths may
+/// be explicitly retrieved through SdfAssetPath::GetAuthoredPath and 
+/// SdfAssetPath::GetEvaluatedPath respectively.
 ///
 /// Clients that call Get() on many asset-path-valued attributes may wish to
 /// employ an ArResolverScopedCache to improve asset path resolution
@@ -185,8 +176,8 @@ public:
     /// @{
 
     /// An attribute's variability expresses whether it is intended to have
-    /// time-samples (\c SdfVariabilityVarying), or only a single default 
-    /// value (\c SdfVariabilityUniform).
+    /// time-samples or splines (\c SdfVariabilityVarying), or only a single 
+    /// default value (\c SdfVariabilityUniform).
     ///
     /// Variability is required meta-data of all attributes, and its fallback
     /// value is SdfVariabilityVarying.
@@ -390,9 +381,10 @@ public:
     /// If this function returns false, it is certain that this attribute's
     /// value remains constant over time.
     ///
-    /// This function is equivalent to checking if GetNumTimeSamples() > 1,
-    /// but may be more efficient since it does not actually need to get a
-    /// full count of all time samples.
+    /// This function checks if the attribute either has more than 1 time
+    /// samples or is spline valued. Which is more efficient than actually
+    /// counting the time samples or evaluating the spline, both of which
+    /// are potentially expensive operations.
     USD_API
     bool ValueMightBeTimeVarying() const;
 
@@ -472,7 +464,9 @@ public:
     ///
     /// \return false and generate an error if type \c T does not match
     /// this attribute's defined scene description type <b>exactly</b>,
-    /// or if there is no existing definition for the attribute.
+    /// or if there is no existing definition for the attribute, or if the
+    /// \p time is pre-time, which is only used to for querying for values at 
+    /// the limit when the time is approached from the left.
     template <typename T>
     bool Set(const T& value, UsdTimeCode time = UsdTimeCode::Default()) const {
         static_assert(!std::is_pointer<T>::value, "");
@@ -491,7 +485,25 @@ public:
     USD_API
     bool Set(const VtValue& value, UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    /// Clears the authored default value and all time samples for this
+    /// Returns true if the attribute has a spline as a value source.
+    ///
+    /// That is if a stronger default value is authored over weaker spline
+    /// value, the default value will hide the spline value and return false.
+    USD_API
+    bool HasSpline() const;
+
+    /// Returns a copy of the spline.
+    ///
+    /// If a stronger default value is authored over weaker spline value, the
+    /// default value will hide the spline value.
+    USD_API
+    TsSpline GetSpline() const;
+
+    /// Set the spline using the current edit target.
+    USD_API
+    bool SetSpline(const TsSpline &spline);
+
+    /// Clears the authored default value, all time samples and spline for this
     /// attribute at the current EditTarget and returns true on success.
     ///
     /// Calling clear when either no value is authored or no spec is present,
@@ -507,6 +519,10 @@ public:
     ///
     /// Calling clear when either no value is authored or no spec is present,
     /// is a silent no-op returning true. 
+    ///
+    /// Issue a coding error if \p time is a pre-time, which is only used to
+    /// for querying for values at the limit when the time is approached from
+    /// the left.
     USD_API
     bool ClearAtTime(UsdTimeCode time) const;
 
@@ -596,32 +612,49 @@ public:
     /// \name ColorSpace API
     /// 
     /// The color space in which a given color or texture valued attribute is 
-    /// authored is set as token-valued metadata 'colorSpace' on the attribute. 
+    /// authored is set as token-valued metadata 'colorSpace' on the attribute.
+    /// Please refer to GfColorSpaceNames for a list of built in color space
+    /// token values.
+    ///
     /// For color or texture attributes that don't have an authored 'colorSpace'
-    /// value, the fallback color-space is gleaned from whatever color 
-    /// management system is specified by UsdStage::GetColorManagementSystem().
-    /// 
+    /// value, the fallback color space may be authored on the owning prim,
+    /// and determined using the UsdColorSpaceAPI applied schema.
+    ///
+    /// \ref GfColorSpaceNames "Standard color space names"
+    ///
     /// @{
     // ---------------------------------------------------------------------- //
 
-    /// Gets the color space in which the attribute is authored.
+    /// Gets the color space in which the attribute is authored if it has been
+    /// explicitly set. If the color space is not authored, any color space
+    /// set on the attribute's prim definiton will be returned.
+    /// Use \ref UsdColorSpaceAPI in order to compute the color space taking
+    /// into account any inherited color spaces.
+    ///
     /// \sa SetColorSpace()
-    /// \ref Usd_ColorConfigurationAPI "UsdStage Color Configuration API"
+    /// \ref GfColorSpaceNames "Standard color space names"
+    /// \ref UsdColorSpaceAPI "Usd Prim Color Space API"
     USD_API
     TfToken GetColorSpace() const;
 
     /// Sets the color space of the attribute to \p colorSpace.
+    /// \param colorSpace The target color space for this attribute.
+    ///
+    /// \ref UsdColorSpaceAPI "Usd Prim Color Space API" provides methods 
+    /// to compute an attribute's resolved color, considering any inherited 
+    /// colorspaces. Standard color space names are listed in 
+    /// \ref GfColorSpaceNames.
+    ///
     /// \sa GetColorSpace()
-    /// \ref Usd_ColorConfigurationAPI "UsdStage Color Configuration API"
     USD_API
     void SetColorSpace(const TfToken &colorSpace) const;
 
-    /// Returns whether color-space is authored on the attribute.
+    /// Returns whether color space is authored on the attribute.
     /// \sa GetColorSpace()
     USD_API
     bool HasColorSpace() const;
 
-    /// Clears authored color-space value on the attribute.
+    /// Clears authored color space value on the attribute.
     /// \sa SetColorSpace()
     USD_API
     bool ClearColorSpace() const;

@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ///
 /// \file sdf/layerUtils.cpp
@@ -97,6 +80,14 @@ SdfComputeAssetPathRelativeToLayer(
 
     ArResolver& resolver = ArGetResolver();
 
+    // Strip file format arguments, if present
+    string strippedAssetPath = assetPath;
+    string layerArgs;
+    if (!Sdf_SplitIdentifier(assetPath, &strippedAssetPath, &layerArgs) ||
+        strippedAssetPath.empty()) {
+        return string();
+    }
+
     // XXX:
     // This logic possibly wants to move into Ar so that other code
     // that doesn't use Sdf can take advantage of it.
@@ -122,7 +113,8 @@ SdfComputeAssetPathRelativeToLayer(
     //   layer. If that does not resolve the path is not anchored and is 
     //   resolved as-is.
     // 
-    if (Sdf_IsPackageOrPackagedLayer(anchor) && TfIsRelativePath(assetPath)) {
+    
+    if (Sdf_IsPackageOrPackagedLayer(anchor) && TfIsRelativePath(strippedAssetPath)) {
         // XXX: The use of repository path or real path is the same as in
         // SdfLayer::ComputeAbsolutePath. This logic might want to move
         // somewhere common.
@@ -145,7 +137,7 @@ SdfComputeAssetPathRelativeToLayer(
             packagePath = ArSplitPackageRelativePathInner(anchorPackagePath);
         }
 
-        const string normAssetPath = TfNormPath(assetPath);
+        const string normAssetPath = TfNormPath(strippedAssetPath);
         packagePath.second = _AnchorRelativePath(
             packagePath.second, normAssetPath);
 
@@ -153,15 +145,15 @@ SdfComputeAssetPathRelativeToLayer(
 
         // If assetPath is not a search-relative path, we're done. Otherwise,
         // we need to search in the locations described above.
-        const bool isSearchRelativePath = assetPath.front() != '.';
+        const bool isSearchRelativePath = strippedAssetPath.front() != '.';
         if (!isSearchRelativePath) {
-            return finalLayerPath;
+            return Sdf_CreateIdentifier(finalLayerPath, layerArgs);
         }
 
         // If anchoring the asset path to the anchor layer resolves to a
         // valid layer, we're done.
         if (!resolver.Resolve(finalLayerPath).empty()) {
-            return finalLayerPath;
+            return Sdf_CreateIdentifier(finalLayerPath, layerArgs);
         }
 
         // Try anchoring the layer to the owning package's root layer
@@ -183,22 +175,22 @@ SdfComputeAssetPathRelativeToLayer(
 
         finalLayerPath = ArJoinPackageRelativePath(packagePath);
         if (!resolver.Resolve(finalLayerPath).empty()) {
-            return finalLayerPath;
+            return Sdf_CreateIdentifier(finalLayerPath, layerArgs);
         }
 
         // If we were unable to resolve this search-relative path within
         // the package, fall through to normal path resolution.
     }
 
-    if (SdfLayer::IsAnonymousLayerIdentifier(assetPath)) {
-        return assetPath;
+    if (SdfLayer::IsAnonymousLayerIdentifier(strippedAssetPath)) {
+        return Sdf_CreateIdentifier(strippedAssetPath, layerArgs);
     }
 
     if (anchor->IsAnonymous()) {
-        return resolver.CreateIdentifier(assetPath);
+        return Sdf_CreateIdentifier(resolver.CreateIdentifier(strippedAssetPath), layerArgs);
     }
 
-    return resolver.CreateIdentifier(assetPath, anchor->GetResolvedPath());
+    return Sdf_CreateIdentifier(resolver.CreateIdentifier(strippedAssetPath, anchor->GetResolvedPath()), layerArgs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -5,6 +5,16 @@
 )
 
 def "Root" (
+    references = </Params>
+    # Payload to the dynamic file. This can be an anonymous file because 
+    # its contents are completely generated from parameters above and 
+    # the file format allows the reading of anonymous files.
+    payload = @anon:dummy:cubes.usddancingcubesexample@
+)
+{
+}
+
+def "Params" (
     # Dictionary value metadata field that provides all the parameters to
     # generate the layer in the payload. Change these values to change the 
     # contents of the file.
@@ -14,12 +24,23 @@ def "Root" (
         int numFrames = 200
         double distance = 6.0
         double moveScale = 1.5
-        token geomType = "Cube"
     }
-    # Payload to the dynamic file. This can be an anonymous file because 
-    # its contents are completely generated from parameters above and 
-    # the file format allows the reading of anonymous files.
-    payload = @anon:dummy:cubes.usddancingcubesexample@
-)
+
+    variants = {
+        string geomTypeVariant = "cube"
+    }
+    prepend variantSets = "geomTypeVariant"
+) 
 {
+    variantSet "geomTypeVariant" = {
+    "cube" {
+      token geomType = "Cube"
+    }
+    "sphere" {
+      token geomType = "Sphere"
+    }
+    "cone" {
+      token geomType = "Cone"
+    }
+  }
 }

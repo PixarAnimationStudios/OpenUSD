@@ -1,39 +1,29 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #ifndef PXR_USD_SDR_SHADER_PROPERTY_H
 #define PXR_USD_SDR_SHADER_PROPERTY_H
 
 /// \file sdr/shaderProperty.h
+///
+/// \note
+/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
+/// in this file. All existing pxr/usd/ndr implementations will be moved to
+/// pxr/usd/sdr.
 
 #include "pxr/pxr.h"
-#include "pxr/usd/sdr/api.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/usd/ndr/property.h"
+#include "pxr/usd/sdr/api.h"
+#include "pxr/usd/sdr/declare.h"
+#include "pxr/usd/sdr/sdfTypeIndicator.h"
 #include "pxr/usd/sdr/shaderNode.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -98,7 +88,12 @@ TF_DECLARE_PUBLIC_TOKENS(SdrPropertyTokens, SDR_API, SDR_PROPERTY_TOKENS);
 
 /// \class SdrShaderProperty
 ///
-/// A specialized version of `NdrProperty` which holds shading information.
+/// Represents a property (input or output) that is part of a `SdrShaderNode`
+/// instance.
+///
+/// A property must have a name and type, but may also specify a host of
+/// additional metadata. Instances can also be queried to determine if another
+/// `SdrShaderProperty` instance can be connected to it.
 ///
 class SdrShaderProperty : public NdrProperty
 {
@@ -111,9 +106,9 @@ public:
         const VtValue& defaultValue,
         bool isOutput,
         size_t arraySize,
-        const NdrTokenMap& metadata,
-        const NdrTokenMap& hints,
-        const NdrOptionVec& options
+        const SdrTokenMap& metadata,
+        const SdrTokenMap& hints,
+        const SdrOptionVec& options
     );
 
     /// \name Metadata
@@ -148,13 +143,13 @@ public:
     /// Any UI "hints" that are associated with this property. "Hints" are
     /// simple key/value pairs.
     SDR_API
-    const NdrTokenMap& GetHints() const { return _hints; }
+    const SdrTokenMap& GetHints() const { return _hints; }
 
     /// If the property has a set of valid values that are pre-determined, this
     /// will return the valid option names and corresponding string values (if
     /// the option was specified with a value).
     SDR_API
-    const NdrOptionVec& GetOptions() const { return _options; }
+    const SdrOptionVec& GetOptions() const { return _options; }
 
     /// Returns the implementation name of this property.  The name of the
     /// property is how to refer to the property in shader networks.  The
@@ -213,16 +208,24 @@ public:
 
     /// Gets the list of valid connection types for this property. This value
     /// comes from shader metadata, and may not be specified. The value from
-    /// `NdrProperty::GetType()` can be used as a fallback, or you can use the
-    /// connectability test in `CanConnectTo()`.
+    /// `SdrShaderProperty::GetType()` can be used as a fallback, or you can
+    /// use the connectability test in `CanConnectTo()`.
     SDR_API
-    const NdrTokenVec& GetValidConnectionTypes() const {
+    const SdrTokenVec& GetValidConnectionTypes() const {
         return _validConnectionTypes;
     }
 
     /// Determines if this property can be connected to the specified property.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of
+    /// SdrShaderProperty::CanConnectTo(SdrShaderProperty)
     SDR_API
     bool CanConnectTo(const NdrProperty& other) const override;
+
+    /// Determines if this property can be connected to the specified property.
+    SDR_API
+    bool CanConnectTo(const SdrShaderProperty& other) const;
 
     /// @}
 
@@ -230,18 +233,18 @@ public:
     /// \name Utilities
     /// @{
 
-    /// Converts the property's type from `GetType()` into a `SdfValueTypeName`.
+    /// Converts the property's type from `GetType()` into a
+    /// `SdrSdfTypeIndicator`.
     ///
     /// Two scenarios can result: an exact mapping from property type to Sdf
-    /// type, and an inexact mapping. In the first scenario, the first element
-    /// in the pair will be the cleanly-mapped Sdf type, and the second element,
-    /// a TfToken, will be empty. In the second scenario, the Sdf type will be
-    /// set to `Token` to indicate an unclean mapping, and the second element
-    /// will be set to the original type returned by `GetType()`.
-    ///
-    /// \sa GetDefaultValueAsSdfType
+    /// type, and an inexact mapping. In the first scenario,
+    /// SdrSdfTypeIndicator will contain a cleanly-mapped Sdf type. In the
+    /// second scenario, the SdrSdfTypeIndicator will contain an Sdf type
+    /// set to `Token` to indicate an unclean mapping, and
+    /// SdrSdfTypeIndicator::GetSdrType will be set to the original type
+    /// returned by `GetType()`.
     SDR_API
-    const NdrSdfTypeIndicator GetTypeAsSdfType() const override;
+    SdrSdfTypeIndicator GetTypeAsSdfType() const override;
 
     /// Accessor for default value corresponding to the SdfValueTypeName
     /// returned by GetTypeAsSdfType. Note that this is different than 
@@ -295,11 +298,11 @@ protected:
 
     // Some metadata values cannot be returned by reference from the main
     // metadata dictionary because they need additional parsing.
-    const NdrTokenMap _hints;
-    const NdrOptionVec _options;
+    const SdrTokenMap _hints;
+    const SdrOptionVec _options;
 
     // Tokenized metadata
-    NdrTokenVec _validConnectionTypes;
+    SdrTokenVec _validConnectionTypes;
     TfToken _label;
     TfToken _page;
     TfToken _widget;

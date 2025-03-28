@@ -4,9 +4,20 @@
 Downloads and Videos
 ====================
 
-SIGGRAPH 2023 Notes
-===================
+.. contents:: Table of Contents
+    :local:
+    :depth: 2
+    
+Presentations
+=============
 
+| `The State and Future of USD Animation Characters, Sept 2024 <https://openusd.org/files/USDAnimatedCharactersMSF.pdf>`__ (`Recording also available <https://tools.metaverse-standards.org/documents/f/44069>`__, must be a member of the Metaverse Standards Forum to access)
+| `OpenExec, Oct 2024 <https://openusd.org/files/OpenExecASWF.pdf>`__ (`Recording also available <https://lf-aswf.atlassian.net/wiki/spaces/WGUSD/pages/11274066/Presentations#OpenExec-Update-2024-(October-23%2C-2024>`__)
+
+SIGGRAPH Birds of a Feather Notes
+=================================
+
+| `SIGGRAPH 2024 USD, Hydra, and OpenSubdiv Birds of a Feather Notes <https://openusd.org/files/BOFSiggraph2024.pdf>`__ 
 | `SIGGRAPH 2023 USD, Hydra, and OpenSubdiv Birds of a Feather Notes <https://openusd.org/files/BOFSiggraph2023.pdf>`__ 
 
 SIGGRAPH 2019 Course Notes

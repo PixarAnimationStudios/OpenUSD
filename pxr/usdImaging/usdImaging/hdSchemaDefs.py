@@ -1,25 +1,8 @@
 #
 # Copyright 2023 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http:#www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 [
     dict(
@@ -34,11 +17,18 @@
         SCHEMA_TOKEN = '__usdPrimInfo',
         ADD_DEFAULT_LOCATOR = True,
         MEMBERS = [
+            ('specifier', T_TOKEN, {}),
+            ('typeName', T_TOKEN, {}),
+            ('isLoaded', T_BOOL, {}),
+            # Skipping isModel and isGroup, which can be inferred from 'kind'.
+            ('apiSchemas', T_TOKENARRAY, {}),
+            ('kind', T_TOKEN, {}),
+            # XXX Add variantSets. Is it a token array, or a container of token
+            #     to token array?
             ('niPrototypePath', T_PATH, dict(ADD_LOCATOR=True)),
             ('isNiPrototype', T_BOOL, {}),
-            ('specifier', T_TOKEN, {}),
             ('piPropagatedPrototypes', T_CONTAINER, {}),
-            ('isLoaded', T_BOOL, {}),
+
         ],
         STATIC_TOKEN_DATASOURCE_BUILDERS = [
             ('specifier', ['def', 'over', '(class_, "class")']),
@@ -104,18 +94,6 @@
     ),
 
     #--------------------------------------------------------------------------
-    # usdImaging/DirectMaterialBindings - corresponds to UsdShadeMaterialBindingAPI::DirectBinding
-    dict(
-        SCHEMA_NAME = 'DirectMaterialBindings',
-        SCHEMA_TOKEN = 'directMaterialBindings',
-        EXTRA_TOKENS = [
-            '(allPurpose, "")',
-        ],
-        ADD_DEFAULT_LOCATOR = True,
-        GENERIC_BUILD_RETAINED = True,
-    ),
-
-    #--------------------------------------------------------------------------
     # usdImaging/collectionMaterialBinding - corresponds to UsdShadeMaterialBindingAPI::CollectionBinding
     dict(
         SCHEMA_NAME = 'CollectionMaterialBinding',
@@ -129,10 +107,41 @@
     ),
 
     #--------------------------------------------------------------------------
-    # usdImaging/collectionMaterialBindings - corresponds to UsdShadeMaterialBindingAPI::CollectionBinding
+    # usdImaging/materialBinding
     dict(
-        SCHEMA_NAME = 'CollectionMaterialBindings',
-        SCHEMA_TOKEN = 'collectionMaterialBindings',
+        SCHEMA_NAME = 'MaterialBinding',
+        # HdMaterialBinding schema uses the 'materialBinding' token
+        # (locator), so we use a different token here.
+        SCHEMA_TOKEN = 'usdMaterialBinding',
+        DOC = '''The {{ SCHEMA_CLASS_NAME }} specifies a container for a prim's
+        material bindings for a particular purpose. Note that only one direct
+        binding but any number of collection-based bindings may be declared
+        for a given purpose.
+        See UsdImagingMaterialBindingsSchema which specifies the purposes and
+        their associated bindings.''',
+        SCHEMA_INCLUDES =
+            ['{{LIBRARY_PATH}}/directMaterialBindingSchema'],
+        ADD_DEFAULT_LOCATOR = True,
+        MEMBERS = [
+            ('directMaterialBinding', 'UsdImagingDirectMaterialBindingSchema', {}),
+            ('collectionMaterialBindings', 'UsdImagingCollectionMaterialBindingVectorSchema', {}),
+        ],
+    ),
+
+    #--------------------------------------------------------------------------
+    # usdImaging/materialBindings - corresponds to UsdShadeMaterialBindingAPI
+    dict(
+        SCHEMA_NAME = 'MaterialBindings',
+        # Note: HdMaterialBindings schema uses the 'materialBindings' token
+        # (locator), so we use a different token here.
+        SCHEMA_TOKEN = 'usdMaterialBindings',
+        DOC = '''The {{ SCHEMA_CLASS_NAME }} specifies a container for all the
+        material bindings declared on a prim. The material binding purpose
+        serves as the key, with the value being a vector of
+        UsdImagingMaterialBindingSchema. While one entry (element) would suffice
+        for a prim's material bindings opinion, we use a vector for aggregating
+        ancestor material bindings to model the inheritance semantics of
+        UsdShadeMaterialBindingAPI.''',
         ADD_DEFAULT_LOCATOR = True,
         EXTRA_TOKENS = [
             '(allPurpose, "")',
@@ -140,7 +149,7 @@
     ),
 
     #--------------------------------------------------------------------------
-    # usdImaging/usdImagingRenderSettings
+    # usdImaging/usdRenderSettings
     dict(
         SCHEMA_NAME = 'UsdRenderSettings',
         SCHEMA_TOKEN = '__usdRenderSettings',
@@ -170,7 +179,7 @@
     ),
 
     #--------------------------------------------------------------------------
-    # usdImaging/usdImagingRenderProduct
+    # usdImaging/usdRenderProduct
     dict(
         SCHEMA_NAME = 'UsdRenderProduct',
         SCHEMA_TOKEN = '__usdRenderProduct',
@@ -198,7 +207,7 @@
     ),
 
     #--------------------------------------------------------------------------
-    # usdImaging/usdImagingRenderVar
+    # usdImaging/usdRenderVar
     dict(
         SCHEMA_NAME = 'UsdRenderVar',
         SCHEMA_TOKEN = '__usdRenderVar',
@@ -213,4 +222,4 @@
             ('namespacedSettings', T_CONTAINER, dict(ADD_LOCATOR=True)),
         ],
     ),
-]
+] 

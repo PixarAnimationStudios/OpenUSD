@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_TF_NOTICE_H
 #define PXR_BASE_TF_NOTICE_H
@@ -36,6 +19,7 @@
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/hints.h"
 
+#include <atomic>
 #include <list>
 #include <typeinfo>
 
@@ -394,6 +378,27 @@ public:
     TF_API
     static void Revoke(TfNotice::Keys* keys);
 
+    /// Revoke interest by a listener.
+    ///
+    /// This revokes interest by the listener for the particular notice type
+    /// and call-back method for which this key was created.
+    ///
+    /// \c Revoke will return a bool value indicating whether or not the key
+    /// was successfully revoked.  Subsequent calls to \c Revoke with the same
+    /// key will return false.  This will not return while any threads are
+    /// invoking the handler.
+    TF_API
+    static bool RevokeAndWait(TfNotice::Key& key);
+    
+    /// Revoke interest by listeners.
+    ///
+    /// This revokes interest by the listeners for the particular
+    /// notice types and call-back methods for which the keys were
+    /// created.  It then clears the keys container.  This will not return
+    /// while any threads are invoking any handlers.
+    TF_API
+    static void RevokeAndWait(TfNotice::Keys* keys);
+
     /// Deliver the notice to interested listeners, returning the number
     /// of interested listeners.  
     ///
@@ -486,12 +491,12 @@ private:
         // TfNotice::Revoke()), in which case the method call is skipped and
         // \c false is returned.
         virtual bool
-        _SendToListener(const TfNotice &n,
-                        const TfType &type,
-                        const TfWeakBase *s,
-                        const void *senderUniqueId,
-                        const std::type_info &senderType,
-                        const std::vector<TfNotice::WeakProbePtr> &probes) = 0;
+        _SendToListenerImpl(const TfNotice &n,
+                            const TfType &type,
+                            const TfWeakBase *s,
+                            const void *senderUniqueId,
+                            const std::type_info &senderType,
+                            const std::vector<TfNotice::WeakProbePtr> &) = 0;
 
         void _Deactivate() {
             _active = false;
@@ -519,6 +524,45 @@ private:
         virtual TfWeakBase const *GetSenderWeakBase() const = 0;
 
         virtual _DelivererBase *Clone() const = 0;
+
+        // Increment the busy count around the actual delivery.
+        bool _SendToListener(const TfNotice &n,
+                             const TfType &type,
+                             const TfWeakBase *s,
+                             const void *senderUniqueId,
+                             const std::type_info &senderType,
+                             const std::vector<TfNotice::WeakProbePtr> &probes)
+        {
+            // Increment the number of sends in progress.
+            if (_busy.fetch_add(1, std::memory_order_release) & _waitBit) {
+                // We're waiting to revoke this listener and we haven't
+                // started the real send yet so act like we already revoked.
+                // If we didn't check if we were waiting then it's possible
+                // to enter this function but not yet increment, have wait
+                // see the count is zero and return, then have this function
+                // increment and do the real send after having supposedly
+                // waited for all sends to complete.
+                _busy.fetch_add(-1, std::memory_order_release);
+                return false;
+            }
+            const auto result =
+                _SendToListenerImpl(n, type,
+                                    s, senderUniqueId, senderType, probes);
+            _busy.fetch_add(-1, std::memory_order_release);
+            return result;
+        }
+
+        // Spin wait until no deliveries are in progress.  This is used when
+        // revoking a listener so we set the _waitBit in _busy permanently.
+        void _WaitForSendsToFinish()
+        {
+            // Mark this listener as waiting for sends to finish and check if
+            // any send is in progress.
+            if (_busy.fetch_or(_waitBit, std::memory_order_release)) {
+                // At least one send was in progress.
+                _WaitUntilNotSending();
+            }
+        }
         
     protected:
         
@@ -541,13 +585,20 @@ private:
         }
         
     private:
+        // Wait until there are no sends in progress.
+        void _WaitUntilNotSending();
+
+    private:
         // Linkage to the containing _DelivererList in the Tf_NoticeRegistry
         _DelivererList *_list;
         _DelivererList::iterator _listIter;
         
         bool _active;
         bool _markedForRemoval;
+        std::atomic<int> _busy{0};
         
+        static constexpr int _waitBit = 0x80000000;
+
         friend class Tf_NoticeRegistry;
     };
 
@@ -587,12 +638,12 @@ private:
         }
         
         virtual bool
-        _SendToListener(const TfNotice &notice,
-                        const TfType &noticeType,
-                        const TfWeakBase *sender,
-                        const void *senderUniqueId,
-                        const std::type_info &senderType,
-                        const std::vector<TfNotice::WeakProbePtr> &probes)
+        _SendToListenerImpl(const TfNotice &notice,
+                            const TfType &noticeType,
+                            const TfWeakBase *sender,
+                            const void *senderUniqueId,
+                            const std::type_info &senderType,
+                            const std::vector<TfNotice::WeakProbePtr> &probes)
         {
             Derived *derived = this->AsDerived();
             typedef typename Derived::ListenerType ListenerType;

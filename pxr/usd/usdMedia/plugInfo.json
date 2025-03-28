@@ -14,6 +14,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "AssetPreviewsAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdMediaSpatialAudio": {
@@ -24,6 +25,7 @@
                         "bases": [
                             "UsdGeomXformable"
                         ], 
+                        "schemaIdentifier": "SpatialAudio", 
                         "schemaKind": "concreteTyped"
                     }
                 }

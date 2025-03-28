@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -28,18 +11,18 @@
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_arg.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/copy_const_reference.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
 
 #include <string>
-
-using namespace boost::python;
 
 using std::string;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -92,16 +75,16 @@ _DecomposeRotation(const GfMatrix4d &rot,
 {
     double angle[4] = {
         thetaTwHint.ptr() != Py_None ? 
-            boost::python::extract<double>(thetaTwHint) : 0.0,
+            pxr_boost::python::extract<double>(thetaTwHint) : 0.0,
         thetaFBHint.ptr() != Py_None ? 
-            boost::python::extract<double>(thetaFBHint) : 0.0,
+            pxr_boost::python::extract<double>(thetaFBHint) : 0.0,
         thetaLRHint.ptr() != Py_None ? 
-            boost::python::extract<double>(thetaLRHint) : 0.0,
+            pxr_boost::python::extract<double>(thetaLRHint) : 0.0,
         thetaSwHint.ptr() != Py_None ? 
-            boost::python::extract<double>(thetaSwHint) : 0.0
+            pxr_boost::python::extract<double>(thetaSwHint) : 0.0
         };
     double swShift = swShiftIn.ptr() != Py_None ? 
-        boost::python::extract<double>(swShiftIn) : 0.0;
+        pxr_boost::python::extract<double>(swShiftIn) : 0.0;
 
     GfRotation::DecomposeRotation(
         rot, TwAxis, FBAxis, LRAxis, handedness,
@@ -128,13 +111,13 @@ _MatchClosestEulerRotation(
 {
     double angle[4] = {
         thetaTw.ptr() != Py_None ?
-            boost::python::extract<double>(thetaTw) : 0.0,
+            pxr_boost::python::extract<double>(thetaTw) : 0.0,
         thetaFB.ptr() != Py_None ?
-            boost::python::extract<double>(thetaFB) : 0.0,
+            pxr_boost::python::extract<double>(thetaFB) : 0.0,
         thetaLR.ptr() != Py_None ?
-            boost::python::extract<double>(thetaLR) : 0.0,
+            pxr_boost::python::extract<double>(thetaLR) : 0.0,
         thetaSw.ptr() != Py_None ?
-            boost::python::extract<double>(thetaSw) : 0.0
+            pxr_boost::python::extract<double>(thetaSw) : 0.0
         };
 
     GfRotation::MatchClosestEulerRotation(
@@ -229,8 +212,15 @@ void wrapRotation()
         .def("RotateOntoProjected", &This::RotateOntoProjected)
         .staticmethod("RotateOntoProjected")
 
-        .def("TransformDir", (GfVec3f (This::*)( const GfVec3f & ) const)&This::TransformDir )
-        .def("TransformDir", (GfVec3d (This::*)( const GfVec3d & ) const)&This::TransformDir )
+        .def("TransformDir", &This::TransformDir)
+
+        // Provide wrapping that makes up for the fact that, in Python, we
+        // don't allow implicit conversion from GfVec3f to GfVec3d (which we
+        // do in C++).
+        .def("TransformDir",
+	     +[](const This &self, const GfVec3f &p) -> GfVec3d {
+                 return self.TransformDir(p);
+             })
 
         .def( str(self) )
         .def( self == self )

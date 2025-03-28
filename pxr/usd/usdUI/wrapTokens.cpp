@@ -1,82 +1,36 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 // GENERATED FILE.  DO NOT EDIT.
-#include <boost/python/class.hpp>
+#include "pxr/external/boost/python/class.hpp"
 #include "pxr/usd/usdUI/tokens.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
-
-// Helper to return a static token as a string.  We wrap tokens as Python
-// strings and for some reason simply wrapping the token using def_readonly
-// bypasses to-Python conversion, leading to the error that there's no
-// Python type for the C++ TfToken type.  So we wrap this functor instead.
-class _WrapStaticToken {
-public:
-    _WrapStaticToken(const TfToken* token) : _token(token) { }
-
-    std::string operator()() const
-    {
-        return _token->GetString();
-    }
-
-private:
-    const TfToken* _token;
-};
-
-template <typename T>
-void
-_AddToken(T& cls, const char* name, const TfToken& token)
-{
-    cls.add_static_property(name,
-                            boost::python::make_function(
-                                _WrapStaticToken(&token),
-                                boost::python::return_value_policy<
-                                    boost::python::return_by_value>(),
-                                boost::mpl::vector1<std::string>()));
-}
-
-} // anonymous
+#define _ADD_TOKEN(cls, name) \
+    cls.add_static_property(#name, +[]() { return UsdUITokens->name.GetString(); });
 
 void wrapUsdUITokens()
 {
-    boost::python::class_<UsdUITokensType, boost::noncopyable>
-        cls("Tokens", boost::python::no_init);
-    _AddToken(cls, "closed", UsdUITokens->closed);
-    _AddToken(cls, "minimized", UsdUITokens->minimized);
-    _AddToken(cls, "open", UsdUITokens->open);
-    _AddToken(cls, "uiDescription", UsdUITokens->uiDescription);
-    _AddToken(cls, "uiDisplayGroup", UsdUITokens->uiDisplayGroup);
-    _AddToken(cls, "uiDisplayName", UsdUITokens->uiDisplayName);
-    _AddToken(cls, "uiNodegraphNodeDisplayColor", UsdUITokens->uiNodegraphNodeDisplayColor);
-    _AddToken(cls, "uiNodegraphNodeExpansionState", UsdUITokens->uiNodegraphNodeExpansionState);
-    _AddToken(cls, "uiNodegraphNodeIcon", UsdUITokens->uiNodegraphNodeIcon);
-    _AddToken(cls, "uiNodegraphNodePos", UsdUITokens->uiNodegraphNodePos);
-    _AddToken(cls, "uiNodegraphNodeSize", UsdUITokens->uiNodegraphNodeSize);
-    _AddToken(cls, "uiNodegraphNodeStackingOrder", UsdUITokens->uiNodegraphNodeStackingOrder);
-    _AddToken(cls, "Backdrop", UsdUITokens->Backdrop);
-    _AddToken(cls, "NodeGraphNodeAPI", UsdUITokens->NodeGraphNodeAPI);
-    _AddToken(cls, "SceneGraphPrimAPI", UsdUITokens->SceneGraphPrimAPI);
+    pxr_boost::python::class_<UsdUITokensType, pxr_boost::python::noncopyable>
+        cls("Tokens", pxr_boost::python::no_init);
+    _ADD_TOKEN(cls, closed);
+    _ADD_TOKEN(cls, minimized);
+    _ADD_TOKEN(cls, open);
+    _ADD_TOKEN(cls, uiDescription);
+    _ADD_TOKEN(cls, uiDisplayGroup);
+    _ADD_TOKEN(cls, uiDisplayName);
+    _ADD_TOKEN(cls, uiNodegraphNodeDisplayColor);
+    _ADD_TOKEN(cls, uiNodegraphNodeDocURI);
+    _ADD_TOKEN(cls, uiNodegraphNodeExpansionState);
+    _ADD_TOKEN(cls, uiNodegraphNodeIcon);
+    _ADD_TOKEN(cls, uiNodegraphNodePos);
+    _ADD_TOKEN(cls, uiNodegraphNodeSize);
+    _ADD_TOKEN(cls, uiNodegraphNodeStackingOrder);
+    _ADD_TOKEN(cls, Backdrop);
+    _ADD_TOKEN(cls, NodeGraphNodeAPI);
+    _ADD_TOKEN(cls, SceneGraphPrimAPI);
 }

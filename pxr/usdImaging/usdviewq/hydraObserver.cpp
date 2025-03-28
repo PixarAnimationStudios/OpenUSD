@@ -1,31 +1,15 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdviewq/hydraObserver.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
 #include "pxr/base/tf/stringUtils.h"
 
+#include <deque>
 #include <typeinfo>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -75,7 +59,6 @@ UsdviewqHydraObserver::TargetToInputSceneIndex(const IndexList &inputIndices)
     return false;
 }
 
-
 bool
 UsdviewqHydraObserver::TargetToNamedSceneIndex(const std::string &name)
 {
@@ -86,6 +69,8 @@ UsdviewqHydraObserver::TargetToNamedSceneIndex(const std::string &name)
 bool
 UsdviewqHydraObserver::_Target(const HdSceneIndexBaseRefPtr &sceneIndex)
 {
+    _nestedInputSceneIndices.reset();
+    
     if (_sceneIndex) {
         _sceneIndex->RemoveObserver(HdSceneIndexObserverPtr(&_observer));
     }
@@ -151,6 +136,63 @@ UsdviewqHydraObserver::GetInputDisplayNames(const IndexList &inputIndices)
     }
 
     return result;
+}
+
+std::vector<std::string>
+UsdviewqHydraObserver::GetNestedInputDisplayNames()
+{
+    _ComputeNestedInputSceneIndices();
+
+    std::vector<std::string> result;
+    result.reserve(_nestedInputSceneIndices->size());
+    for (const HdSceneIndexBaseRefPtr &inputScene : *_nestedInputSceneIndices) {
+        result.push_back(_GetDisplayName(inputScene));
+    }
+    return result;
+}
+
+bool
+UsdviewqHydraObserver::TargetToNestedInputSceneIndex(
+    const size_t nestedInputIndex)
+{
+    _ComputeNestedInputSceneIndices();
+
+    if (!(nestedInputIndex < _nestedInputSceneIndices->size())) {
+        return false;
+    }
+
+    return _Target((*_nestedInputSceneIndices)[nestedInputIndex]);
+}
+
+void
+UsdviewqHydraObserver::_ComputeNestedInputSceneIndices()
+{
+    if (_nestedInputSceneIndices) {
+        return;
+    }
+
+    _nestedInputSceneIndices = HdSceneIndexBaseRefPtrVector();
+
+    std::set<HdSceneIndexBaseRefPtr> visited = { };
+    std::deque<HdSceneIndexBaseRefPtr> pending = { _sceneIndex };
+
+    while (!pending.empty()) {
+        HdSceneIndexBaseRefPtr const sceneIndex = pending.front();
+        pending.pop_front();
+        if (!visited.insert(sceneIndex).second) {
+            continue;
+        }
+        _nestedInputSceneIndices->push_back(sceneIndex);
+        auto const filteringSceneIndex =
+            TfDynamic_cast<HdFilteringSceneIndexBaseRefPtr>(sceneIndex);
+        if (!filteringSceneIndex) {
+            continue;
+        }
+        for (HdSceneIndexBaseRefPtr const &inputScene :
+                 filteringSceneIndex->GetInputScenes()) {
+            pending.push_back(inputScene);
+        }
+    }
 }
 
 SdfPathVector

@@ -10,10 +10,10 @@ pxr_library(usdUtils
         usd
         usdGeom
         usdShade
-        ${Boost_PYTHON_LIBRARY}
+        ${TBB_tbb_LIBRARY}
 
     INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
+        ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
         authoring
@@ -41,9 +41,6 @@ pxr_library(usdUtils
     PUBLIC_HEADERS
         api.h
         userProcessingFunc.h
-
-    PYTHON_CPPFILES
-        moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp
@@ -225,6 +222,16 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsDependencyExtractor
     DEST testUsdUtilsDependencyExtractor5
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsDependencyExtractor
+    DEST testUsdUtilsDependencyExtractor6
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsDependencyExtractor
+    DEST testUsdUtilsDependencyExtractor7
 )
 
 pxr_install_test_dir(
@@ -566,6 +573,20 @@ pxr_register_test(testUsdUtilsDependencyExtractor5
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdUtilsDependencyExtractor6
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor udims/root.usda udims.txt"
+    DIFF_COMPARE udims.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsDependencyExtractor7
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor --resolve-udim-paths udims/root.usda udims-resolved.txt"
+    DIFF_COMPARE udims-resolved.txt
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdUtilsFlattenLayerStack
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsFlattenLayerStack"
@@ -595,7 +616,9 @@ pxr_register_test(testUsdUtilsLocalizeAssetUdims
 pxr_register_test(testUsdUtilsModifyAssetPaths
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsModifyAssetPaths layer.usda modified.usda"
-    DIFF_COMPARE modified.usda duplicates.usda removal.usda ref_layer_mod.usda ref_unmodified.usda
+    DIFF_COMPARE
+        modified.usda duplicates.usda removal.usda removal_preserve_length.usda
+        ref_layer_mod.usda ref_unmodified.usda preserve_metadata.usda
     EXPECTED_RETURN_CODE 0
 )
 

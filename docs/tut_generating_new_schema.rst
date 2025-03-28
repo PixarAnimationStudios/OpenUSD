@@ -365,8 +365,10 @@ To rebuild the plugin, simply go to the root of your build directory and run.
 
 Using the Schema Classes
 ########################
-.. note:: Because this schema is an external plugin, the USD build must be told
-   where to find it before it can be used. This can be done by either:
+.. note:: 
+
+    Because this schema is an external plugin, the USD build must be told
+    where to find it before it can be used. This can be done by either:
       
     * Setting the :filename:`PXR_PLUGINPATH_NAME` environment variable to 
       the location of the plugin's :filename:`resources` directory. For 
@@ -376,7 +378,13 @@ Using the Schema Classes
    
     * Copying :filename:`usdSchemaExamples.so` (on Windows, 
       :filename:`usdSchemaExamples.dll` and :filename:`.lib`) and the 
-      :filename:`usdSchemaExamples` directory to :filename`<prefix>/plugin/usd`
+      :filename:`usdSchemaExamples` directory to :filename:`<prefix>/plugin/usd`
+
+    You may encounter "ImportError DLL load failed" when running from
+    Python 3.8+ on Windows. This is due to the DLL directory not being added to
+    trusted locations and can be resolved by manually adding the 
+    :filename:`resources` directory before import via 
+    :mono:`os.add_dll_directory("/path/to/plugin/resources/directory")`.
    
 Create a usd file named Test.usda with the following content:
 

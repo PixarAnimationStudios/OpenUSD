@@ -1,0 +1,230 @@
+set(PXR_PREFIX pxr/imaging)
+set(PXR_PACKAGE hioAvif)
+
+pxr_plugin(hioAvif
+    LIBRARIES
+        ar
+        arch
+        gf
+        hio
+        tf
+
+    PRIVATE_HEADERS
+        aom/aom.h
+        aom/aom_codec.h
+        aom/aom_decoder.h
+        aom/aom_encoder.h
+        aom/aom_frame_buffer.h
+        aom/aom_image.h
+        aom/aom_integer.h
+        aom/aomdx.h
+        aom/aom_dsp/binary_codes_reader.h
+        aom/aom_dsp/bitreader.h
+        aom/aom_dsp/aom_dsp_common.h
+        aom/aom_dsp/bitreader_buffer.h
+        aom/aom_dsp/blend.h
+        aom/aom_dsp/entcode.h
+        aom/aom_dsp/entdec.h
+        aom/aom_dsp/grain_table.h
+        aom/aom_dsp/aom_filter.h
+        aom/aom_dsp/grain_synthesis.h
+        aom/aom_dsp/intrapred_common.h
+        aom/aom_dsp/prob.h
+        aom/aom_dsp/recenter.h
+        aom/aom_dsp/txfm_common.h
+        aom/aom_mem/aom_mem.h
+        aom/aom_mem/include/aom_mem_intrnl.h
+        aom/aom_ports/bitops.h
+        aom/aom_ports/aom_once.h
+        aom/aom_ports/mem.h
+        aom/aom_ports/mem_ops.h
+        aom/aom_ports/mem_ops_aligned.h
+        aom/aom_ports/msvc.h
+        aom/aom_ports/system_state.h
+        aom/aom_ports/aom_timer.h
+        aom/aom_scale/aom_scale.h
+        aom/aom_scale/yv12config.h
+        aom/aom_util/aom_thread.h
+        aom/av1/av1_iface_common.h
+        aom/av1/common/av1_common_int.h
+        aom/av1/common/alloccommon.h
+        aom/av1/common/av1_inv_txfm1d.h
+        aom/av1/common/av1_inv_txfm1d_cfg.h
+        aom/av1/common/av1_loopfilter.h
+        aom/av1/common/av1_txfm.h
+        aom/av1/common/blockd.h
+        aom/av1/common/cdef.h
+        aom/av1/common/cdef_block.h
+        aom/av1/common/cfl.h
+        aom/av1/common/common.h
+        aom/av1/common/common_data.h
+        aom/av1/common/convolve.h
+        aom/av1/common/entropy.h
+        aom/av1/common/entropymode.h
+        aom/av1/common/entropymv.h
+        aom/av1/common/enums.h
+        aom/av1/common/filter.h
+        aom/av1/common/frame_buffers.h
+        aom/av1/common/mv.h
+        aom/av1/common/mvref_common.h
+        aom/av1/common/idct.h
+        aom/av1/common/obmc.h
+        aom/av1/common/obu_util.h
+        aom/av1/common/odintrin.h
+        aom/av1/common/pred_common.h
+        aom/av1/common/quant_common.h
+        aom/av1/common/reconinter.h
+        aom/av1/common/reconintra.h
+        aom/av1/common/resize.h
+        aom/av1/common/restoration.h
+        aom/av1/common/scale.h
+        aom/av1/common/scan.h
+        aom/av1/common/seg_common.h
+        aom/av1/common/thread_common.h
+        aom/av1/common/tile_common.h
+        aom/av1/common/timing.h
+        aom/av1/common/token_cdfs.h
+        aom/av1/common/txb_common.h
+        aom/av1/common/warped_motion.h
+        aom/av1/decoder/decodeframe.h
+        aom/av1/decoder/decoder.h
+        aom/av1/decoder/decodemv.h
+        aom/av1/decoder/decodetxb.h
+        aom/av1/decoder/detokenize.h
+        aom/av1/decoder/dthread.h
+        aom/av1/decoder/obu.h
+        aom/config/aom_config.h
+        aom/config/aom_dsp_rtcd.h
+        aom/config/aom_scale_rtcd.h
+        aom/config/aom_version.h
+        aom/config/av1_rtcd.h
+        aom/internal/aom_codec_internal.h
+        aom/internal/aom_image_internal.h
+        aom/internal/common/args_helper.h
+        AVIF/src/avif/avif.h
+        AVIF/src/avif/internal.h
+        AVIF/src/src-libyuv/libyuv/basic_types.h
+        AVIF/src/src-libyuv/libyuv.h
+        AVIF/src/src-libyuv/libyuv/planar_functions.h
+        AVIF/src/src-libyuv/libyuv/row.h
+        AVIF/src/src-libyuv/libyuv/scale.h
+        AVIF/src/src-libyuv/libyuv/scale_row.h
+        AVIF/src/src-libyuv/libyuv/version.h
+        
+    CPPFILES
+        aom/aom_codec.c
+        aom/aom_decoder.c
+        aom/aom_image.c
+        aom/aom_integer.c
+        aom/aom_dsp/aom_convolve.c
+        aom/aom_dsp/aom_dsp_rtcd.c
+        aom/aom_dsp/binary_codes_reader.c
+        aom/aom_dsp/bitreader.c
+        aom/aom_dsp/bitreader_buffer.c
+        aom/aom_dsp/blend_a64_hmask.c
+        aom/aom_dsp/blend_a64_vmask.c
+        aom/aom_dsp/blend_a64_mask.c
+        aom/aom_dsp/entcode.c
+        aom/aom_dsp/entdec.c
+        aom/aom_dsp/grain_synthesis.c
+        aom/aom_dsp/intrapred.c
+        aom/aom_dsp/loopfilter.c
+        aom/aom_mem/aom_mem.c
+        aom/aom_scale/aom_scale_rtcd.c
+        aom/aom_scale/generic/aom_scale.c
+        aom/aom_scale/generic/gen_scalers.c
+        aom/aom_scale/generic/yv12config.c
+        aom/aom_scale/generic/yv12extend.c
+        aom/aom_util/aom_thread.c
+        aom/av1/av1_dx_iface.c
+        aom/av1/common/alloccommon.c
+        aom/av1/common/av1_inv_txfm1d.c
+        aom/av1/common/av1_inv_txfm2d.c
+        aom/av1/common/av1_loopfilter.c
+        aom/av1/common/av1_txfm.c
+        aom/av1/common/av1_rtcd.c
+        aom/av1/common/blockd.c
+        aom/av1/common/cdef.c
+        aom/av1/common/cdef_block.c
+        aom/av1/common/cfl.c
+        aom/av1/common/convolve.c
+        aom/av1/common/entropymode.c 
+        aom/av1/common/entropy.c
+        aom/av1/common/entropymv.c
+        aom/av1/common/frame_buffers.c
+        aom/av1/common/idct.c
+        aom/av1/common/mvref_common.c
+        aom/av1/common/obu_util.c
+        aom/av1/common/pred_common.c
+        aom/av1/common/quant_common.c        
+        aom/av1/common/reconinter.c
+        aom/av1/common/reconintra.c
+        aom/av1/common/resize.c
+        aom/av1/common/restoration.c
+        aom/av1/common/av1_scale.c
+        aom/av1/common/scan.c
+        aom/av1/common/seg_common.c
+        aom/av1/common/thread_common.c
+        aom/av1/common/timing.c
+        aom/av1/common/txb_common.c
+        aom/av1/common/tile_common.c
+        aom/av1/common/warped_motion.c
+        aom/av1/decoder/decodeframe.c
+        aom/av1/decoder/decodemv.c
+        aom/av1/decoder/decoder.c
+        aom/av1/decoder/decodetxb.c
+        aom/av1/decoder/detokenize.c
+        aom/av1/decoder/obu.c
+        AVIF/src/alpha.c
+        AVIF/src/avif.c
+        AVIF/src/codec_aom.c
+        AVIF/src/colr.c
+        AVIF/src/diag.c
+        AVIF/src/exif.c
+        AVIF/src/io.c
+        AVIF/src/mem.c
+        AVIF/src/avif_obu.c
+        AVIF/src/rawdata.c
+        AVIF/src/read.c
+        AVIF/src/reformat.c
+        AVIF/src/reformat_libsharpyuv.c
+        AVIF/src/reformat_libyuv.c
+        AVIF/src/avif-scale.c
+        AVIF/src/stream.c
+        AVIF/src/utils.c
+        AVIF/src/write.c
+        AVIF/src/src-libyuv/planar_functions.c
+        AVIF/src/src-libyuv/row_common.c
+        AVIF/src/src-libyuv/yuv_scale.c
+        AVIF/src/src-libyuv/scale_any.c
+        AVIF/src/src-libyuv/scale_common.c
+        AVIFImage.cpp
+
+    RESOURCE_FILES
+        plugInfo.json
+)
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    if (TARGET hioAvif)
+        # Hide symbols and inlines in the C code
+        target_compile_options(hioAvif PRIVATE
+             $<$<COMPILE_LANGUAGE:C>:-fvisibility=hidden>)
+    endif()
+endif()
+
+pxr_install_test_dir(
+    SRC testenv/testHioAvif
+    DEST testHioAvif
+)
+
+pxr_build_test(testHioAvif
+    LIBRARIES
+        hio
+    CPPFILES
+        testenv/testHioAvif.cpp
+)
+
+pxr_register_test(testHioAvif
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHioAvif"
+    EXPECTED_RETURN_CODE 0
+)

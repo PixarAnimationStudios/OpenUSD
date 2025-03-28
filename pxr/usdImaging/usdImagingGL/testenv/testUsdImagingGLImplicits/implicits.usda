@@ -96,6 +96,30 @@ def Xform "Fallback"
             color3f[] primvars:displayColor = [(0.1, 0.1, 0.8)]
         }
     }
+
+    def Xform "Capsule_1"
+    {
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (7, 0, -2.5, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Capsule_1 "XAxis"
+        {
+            uniform token axis = "X"
+            color3f[] primvars:displayColor = [(0.8, 0.1, 0.1)]
+        }
+    }
+
+    def Xform "Cylinder_1"
+    {
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (10, 0, -2.5, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Cylinder_1 "XAxis"
+        {
+            uniform token axis = "X"
+            color3f[] primvars:displayColor = [(0.8, 0.1, 0.1)]
+        }
+    }
 }
 
 def Xform "Custom"
@@ -211,6 +235,34 @@ def Xform "Custom"
             double radius = 0.25
         }
     }
+
+    def Xform "Capsule_1"
+    {
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (7, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Capsule_1 "ZAxis"
+        {
+            double radiusBottom = 0.8
+            double radiusTop = 0.2
+            double height = 1.0
+            color3f[] primvars:displayColor = [(0.1, 0.1, 0.8)]
+        }
+    }
+
+    def Xform "Cylinder_1"
+    {
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (10, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Cylinder_1 "ZAxis"
+        {
+            double radiusBottom = 0.8
+            double radiusTop = 0.2
+            double height = 1.0
+            color3f[] primvars:displayColor = [(0.1, 0.1, 0.8)]
+        }
+    }
 }
 
 def Xform "Animated"
@@ -306,6 +358,57 @@ def Xform "Animated"
                 1: 0.5,
                 10: 1,
                 20: 0.5,
+            }
+        }
+    }
+
+
+    def Xform "Capsule_1s"
+    {
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (7, 0, 2.5, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Capsule_1 "XAxis"
+        {
+            double height.timeSamples = {
+                1: 1,
+                10: 0.5,
+                20: 1,
+            }
+            double bottomRadius.timeSamples = {
+                1: 0.25,
+                10: 0.5,
+                20: 0.25,
+            }
+            double topRadius.timeSamples = {
+                1: 1.5,
+                10: 0.25,
+                20: 1.5,
+            }
+        }
+    }
+
+    def Xform "Cylinder_1s"
+    {
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (10, 0, 2.5, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+
+        def Cylinder_1 "XAxis"
+        {
+            double height.timeSamples = {
+                1: 1,
+                10: 0.5,
+                20: 1,
+            }
+            double bottomRadius.timeSamples = {
+                1: 0.5,
+                10: 1,
+                20: 0.5,
+            }
+            double topRadius.timeSamples = {
+                1: 1.5,
+                10: 0.25,
+                20: 1.5,
             }
         }
     }

@@ -1,35 +1,21 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 
 #include "pxr/imaging/hdSt/dependencySceneIndexPlugin.h"
 
 #include "pxr/imaging/hd/containerDataSourceEditor.h"
 #include "pxr/imaging/hd/dependenciesSchema.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
-#include "pxr/imaging/hd/mapContainerDataSource.h"
 #include "pxr/imaging/hd/lazyContainerDataSource.h"
+#include "pxr/imaging/hd/mapContainerDataSource.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
+#include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/perfLog.h"
+
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -41,6 +27,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((sceneIndexPluginName, "HdSt_DependencySceneIndexPlugin"))
+
+    (storm_volumeFieldBindingToDependency)
+
+    (storm_materialToMaterialBindings)
+    (storm_materialBindingsToDependency)
 );
 
 static const char * const _pluginDisplayName = "GL";
@@ -68,74 +59,203 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 namespace
 {
 
+void _AddIfNecessary(const TfToken &name, TfTokenVector * const names)
+{
+    if (std::find(names->begin(), names->end(), name) == names->end()) {
+        names->push_back(name);
+    }
+}
+
+HdContainerDataSourceHandle
+_ComputeMaterialBindingsDependency(
+    HdContainerDataSourceHandle const &inputDs)
+{
+    const HdMaterialBindingsSchema materialBindings =
+        HdMaterialBindingsSchema::GetFromParent(inputDs);
+    
+    TfToken names[2];
+    HdDataSourceBaseHandle dataSources[2];
+    size_t count = 0;
+
+    static HdLocatorDataSourceHandle const materialLocDs =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            HdMaterialSchema::GetDefaultLocator());
+    static HdLocatorDataSourceHandle const materialBindingsLocDs =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            HdMaterialBindingsSchema::GetDefaultLocator());
+
+    // HdsiMaterialBindingResolvingSceneIndex already ran, so we can just
+    // call GetMaterialBinding here (which uses the allPurpose binding).
+    if (HdPathDataSourceHandle const pathDs =
+            materialBindings.GetMaterialBinding().GetPath()) {
+        if (!pathDs->GetTypedValue(0.0f).IsEmpty()) {
+            HdDataSourceBaseHandle const dependencyDs =
+                HdDependencySchema::Builder()
+                     .SetDependedOnPrimPath(pathDs)
+                     .SetDependedOnDataSourceLocator(materialLocDs)
+                     .SetAffectedDataSourceLocator(materialBindingsLocDs)
+                     .Build();
+            names[count] = _tokens->storm_materialToMaterialBindings;
+            dataSources[count] = dependencyDs;
+            count++;
+        }
+    }
+
+    {
+        static const HdLocatorDataSourceHandle dependencyLocDs =
+            HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+                HdDependenciesSchema::GetDefaultLocator().Append(
+                    _tokens->storm_materialToMaterialBindings));
+        static HdDataSourceBaseHandle const dependencyDs =
+            HdDependencySchema::Builder()
+                // Prim depends on itself.
+                .SetDependedOnDataSourceLocator(materialBindingsLocDs)
+                .SetAffectedDataSourceLocator(dependencyLocDs)
+                .Build();
+        names[count] = _tokens->storm_materialBindingsToDependency;
+        dataSources[count] = dependencyDs;
+        count++;
+    }
+    
+    return HdRetainedContainerDataSource::New(
+        count, names, dataSources);
+}
+    
 /// Given a prim path data source, returns a dependency of volumeFieldBinding
 /// on volumeField of that given prim.
 HdDataSourceBaseHandle
-_ComputeVolumeFieldDependency(const HdDataSourceBaseHandle &src)
+_ComputeVolumeFieldDependency(const HdDataSourceBaseHandle &pathDs)
 {
-    HdDependencySchema::Builder builder;
-
-    builder.SetDependedOnPrimPath(HdPathDataSource::Cast(src));
-
     static HdLocatorDataSourceHandle dependedOnLocatorDataSource =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdVolumeFieldSchema::GetDefaultLocator());
-    builder.SetDependedOnDataSourceLocator(dependedOnLocatorDataSource);
-
     static HdLocatorDataSourceHandle affectedLocatorDataSource =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdVolumeFieldBindingSchema::GetDefaultLocator());
-    builder.SetAffectedDataSourceLocator(affectedLocatorDataSource);
-    return builder.Build();
+
+    return 
+        HdDependencySchema::Builder()
+            .SetDependedOnPrimPath(HdPathDataSource::Cast(pathDs))
+            .SetDependedOnDataSourceLocator(dependedOnLocatorDataSource)
+            .SetAffectedDataSourceLocator(affectedLocatorDataSource)
+            .Build();
+}
+
+HdContainerDataSourceHandle
+_ComputeVolumeFieldBindingDependencies(
+    const HdContainerDataSourceHandle &primSource)
+{
+    return
+        HdMapContainerDataSource::New(
+            _ComputeVolumeFieldDependency,
+            HdVolumeFieldBindingSchema::GetFromParent(primSource)
+                .GetContainer());
 }
 
 /// Given a prim path, returns a dependency of __dependencies
 /// on volumeFieldBinding of the given prim.
 
 HdContainerDataSourceHandle
-_ComputeVolumeFieldBindingDependency(const SdfPath &primPath)
+_ComputeVolumeFieldBindingDependencyDependencies()
 {
-    HdDependencySchema::Builder builder;
-
-    builder.SetDependedOnPrimPath(
-        HdRetainedTypedSampledDataSource<SdfPath>::New(
-            primPath));
-
     static HdLocatorDataSourceHandle dependedOnLocatorDataSource =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdVolumeFieldBindingSchema::GetDefaultLocator());
-    builder.SetDependedOnDataSourceLocator(dependedOnLocatorDataSource);
-
     static HdLocatorDataSourceHandle affectedLocatorDataSource =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdDependenciesSchema::GetDefaultLocator());
-    builder.SetAffectedDataSourceLocator(affectedLocatorDataSource);
 
     return
         HdRetainedContainerDataSource::New(
-            HdVolumeFieldBindingSchemaTokens->volumeFieldBinding,
-            builder.Build());
+            _tokens->storm_volumeFieldBindingToDependency,
+            HdDependencySchema::Builder()
+                .SetDependedOnDataSourceLocator(dependedOnLocatorDataSource)
+                .SetAffectedDataSourceLocator(affectedLocatorDataSource)
+                .Build());
 }
-
-HdContainerDataSourceHandle
-_ComputeVolumeFieldBindingDependencies(
-    const SdfPath &primPath,
-    const HdContainerDataSourceHandle &primSource)
+    
+class _PrimDataSource : public HdContainerDataSource
 {
-    return HdOverlayContainerDataSource::New(
-        HdMapContainerDataSource::New(
-            _ComputeVolumeFieldDependency,
-            HdContainerDataSource::Cast(
-                HdContainerDataSource::Get(
-                    primSource,
-                    HdVolumeFieldBindingSchema::GetDefaultLocator()))),
-        _ComputeVolumeFieldBindingDependency(primPath));
-}
+public:
+    HD_DECLARE_DATASOURCE(_PrimDataSource)
+
+    TfTokenVector GetNames() override
+    {
+        TfTokenVector result = _inputPrim.dataSource->GetNames();
+        if ( _inputPrim.primType == HdPrimTypeTokens->volume
+             || HdMaterialBindingsSchema::GetFromParent(
+                 _inputPrim.dataSource)) {
+            _AddIfNecessary(HdDependenciesSchema::GetSchemaToken(), &result);
+        }
+        return result;
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        if (name == HdDependenciesSchema::GetSchemaToken()) {
+            return _GetDependencies();
+        }
+        return _inputPrim.dataSource->Get(name);
+    }
+
+private:
+    _PrimDataSource(
+        const HdSceneIndexPrim &inputPrim)
+    : _inputPrim(inputPrim)
+    {
+    }
+
+    HdContainerDataSourceHandle _GetDependencies() const {
+        HdContainerDataSourceHandle dataSources[10];
+        size_t count = 0;
+
+        if (HdContainerDataSourceHandle const ds =
+                HdDependenciesSchema::GetFromParent(_inputPrim.dataSource)
+                    .GetContainer()) {
+            dataSources[count] =
+                ds;
+            count++;
+        }
+
+        if (_inputPrim.primType == HdPrimTypeTokens->mesh) {
+            // TODO: We need to add dependencies on the material's
+            // bound by geomSubset's since geomSubset's could bind a
+            // material with a ptex.
+            // Note that, along similar lines, adding or removing a geomSubset
+            // can also mean we need to trigger the prim.
+            // Unfortunately, the dependencies schema does not allow us to
+            // say that we want to dirty a locator in response to child prims
+            // being added or removed.
+            dataSources[count] =
+                _ComputeMaterialBindingsDependency(
+                    _inputPrim.dataSource);
+            count++;
+        }
+        
+        if (_inputPrim.primType == HdPrimTypeTokens->volume) {
+            dataSources[count] =
+                _ComputeVolumeFieldBindingDependencies(
+                    _inputPrim.dataSource);
+            count++;
+            dataSources[count] =
+                _ComputeVolumeFieldBindingDependencyDependencies();
+            count++;
+        }
+
+        switch(count) {
+        case 0:  return nullptr;
+        case 1:  return dataSources[0];
+        default: return HdOverlayContainerDataSource::New(count, dataSources);
+        }
+    }
+    
+    const HdSceneIndexPrim _inputPrim;
+};
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 TF_DECLARE_REF_PTRS(_SceneIndex);
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 
 /// \class _SceneIndex
 ///
@@ -152,17 +272,9 @@ public:
 
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override
     {
-        const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
-        if (prim.primType == HdPrimTypeTokens->volume) {
-            return
-                { prim.primType,
-                  HdContainerDataSourceEditor(prim.dataSource)
-                      .Overlay(
-                          HdDependenciesSchema::GetDefaultLocator(),
-                          HdLazyContainerDataSource::New(
-                              std::bind(_ComputeVolumeFieldBindingDependencies,
-                                        primPath, prim.dataSource)))
-                      .Finish() };
+        HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
+        if (prim.dataSource) {
+            prim.dataSource = _PrimDataSource::New(prim);
         }
         return prim;
     }
@@ -184,10 +296,6 @@ protected:
         const HdSceneIndexBase &sender,
         const HdSceneIndexObserver::AddedPrimEntries &entries) override
     {
-        if (!_IsObserved()) {
-            return;
-        }
-
         _SendPrimsAdded(entries);
     }
 
@@ -195,10 +303,6 @@ protected:
         const HdSceneIndexBase &sender,
         const HdSceneIndexObserver::RemovedPrimEntries &entries) override
     {
-        if (!_IsObserved()) {
-            return;
-        }
-
         _SendPrimsRemoved(entries);
     }
 
@@ -206,12 +310,6 @@ protected:
         const HdSceneIndexBase &sender,
         const HdSceneIndexObserver::DirtiedPrimEntries &entries) override
     {
-        HD_TRACE_FUNCTION();
-
-        if (!_IsObserved()) {
-            return;
-        }
-
         _SendPrimsDirtied(entries);
     }
 };

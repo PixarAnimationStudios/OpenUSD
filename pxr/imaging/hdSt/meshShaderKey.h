@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_ST_MESH_SHADER_KEY_H
 #define PXR_IMAGING_HD_ST_MESH_SHADER_KEY_H
@@ -46,6 +29,7 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
         NormalSourceFlatScreenSpace,
     };
 
+    HDST_API
     HdSt_MeshShaderKey(HdSt_GeometricShader::PrimitiveType primType,
                        TfToken shadingTerminal,
                        NormalSource normalsSource,
@@ -65,13 +49,16 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
                        bool hasInstancer,
                        bool enableScalarOverride,
                        bool pointsShadingEnabled,
-                       bool forceOpaqueEdges);
+                       bool forceOpaqueEdges,
+                       bool surfaceEdgeIds,
+                       bool nativeRoundPoints);
 
     // Note: it looks like gcc 4.8 has a problem issuing
     // a wrong warning as "array subscript is above array bounds"
     // when the default destructor is automatically generated at callers.
     // Having an empty destructor explicitly within this linkage apparently
     // avoids the issue.
+    HDST_API
     ~HdSt_MeshShaderKey();
 
     HdCullStyle GetCullStyle() const override { return cullStyle; }
@@ -117,13 +104,13 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     TfToken const *GetFS()  const override { return FS; }
 
     TfToken glslfx;
-    TfToken VS[7];
-    TfToken TCS[3];
+    TfToken VS[8];
+    TfToken TCS[4];
     TfToken TES[4];
-    TfToken PTCS[5];
-    TfToken PTVS[12];
+    TfToken PTCS[4];
+    TfToken PTVS[13];
     TfToken GS[10];
-    TfToken FS[22];
+    TfToken FS[23];
 };
 
 

@@ -2,25 +2,8 @@
 #
 # Copyright 2018 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 from __future__ import print_function
 
 from pxr import Plug
@@ -64,7 +47,7 @@ class TestShaderNode(unittest.TestCase):
         cls.tpp2Type = Tf.Type.FindByName('_NdrOslTestParserPlugin')
 
         # We don't check for all the derived types of NdrDiscoveryPlugin
-        # because this test only uses the discovery and parser plugins 
+        # because this test only uses the discovery and parser plugins
         # that are defined in this testenv
         assert {cls.tdpType, cls.tdp2Type}.issubset(
             set(cls.pr.GetAllDerivedTypes('NdrDiscoveryPlugin')))
@@ -72,9 +55,9 @@ class TestShaderNode(unittest.TestCase):
             set(cls.pr.GetAllDerivedTypes('NdrParserPlugin')))
 
             # Instantiating the registry will kick off the discovery process.
-        # This test assumes the PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY 
-        # and PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY has been set prior to 
-        # being run to ensure built-in plugins are not found. Instead 
+        # This test assumes the PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY
+        # and PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY has been set prior to
+        # being run to ensure built-in plugins are not found. Instead
         # we'll list the plugins we want explicitly.
 
         # Setting this from within the script does not work on Windows.
@@ -216,7 +199,7 @@ class TestShaderNode(unittest.TestCase):
             for inputName in node.GetInputNames():
                 prop = node.GetInput(inputName)
                 sdrType = prop.GetType()
-                sdfType, sdfHint = prop.GetTypeAsSdfType()
+                sdfType = prop.GetTypeAsSdfType().GetSdfType()
                 expectedSdrType, expectedSdfType = expectedTypes[prop.GetName()]
                 print("  ", prop.GetName(), sdrType, str(sdfType), 'vs expected', \
                       expectedSdrType, str(expectedSdfType))

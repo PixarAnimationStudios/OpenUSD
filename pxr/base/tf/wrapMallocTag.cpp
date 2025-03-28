@@ -1,29 +1,13 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/base/tf/mallocTag.h"
 
+#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/pyResultConversions.h"
@@ -32,8 +16,8 @@
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/symbols.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/scope.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/scope.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -44,9 +28,9 @@
 using std::string;
 using std::vector;
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -154,15 +138,36 @@ _ReportToFile(
     self.Report(os, rootName);
 }
 
+static bool
+_LoadReport(
+    TfMallocTag::CallTree  &self,
+    std::string const &fileName)
+{
+    std::ifstream in(fileName.c_str());
+    if (!in.good()) {
+        TF_RUNTIME_ERROR(
+            "Failed to open file '%s'.", fileName.c_str());
+        return false;
+    }
+
+    return self.LoadReport(in);
+}
+
 static std::string
 _LogReport(
     TfMallocTag::CallTree const &self,
     std::string const &rootName)
 {
     string tmpFile;
-    ArchMakeTmpFile(std::string("callSiteReport") +
+    int fd = ArchMakeTmpFile(std::string("callSiteReport") +
         (rootName.empty() ? "" : "_") + rootName, &tmpFile);
+    if (fd == -1) {
+        TF_RUNTIME_ERROR(
+            "Failed to make temporary file '%s'.", tmpFile.c_str());
+        return std::string();
+    }
 
+    ArchCloseFile(fd);
     _ReportToFile(self, tmpFile, rootName);
     return tmpFile;
 }
@@ -202,6 +207,8 @@ void wrapMallocTag()
             (arg("rootName")=std::string()))
         .def("Report", _ReportToFile,
              (arg("fileName"), arg("rootName")=std::string()))
+        .def("LoadReport", _LoadReport,
+             (arg("fileName")))
         .def("LogReport", _LogReport,
              (arg("rootName")=std::string()))
         ;

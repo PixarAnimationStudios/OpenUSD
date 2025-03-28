@@ -2,25 +2,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #}
 
@@ -38,24 +21,25 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/detail/api_placeholder.hpp>
-#include <boost/python/errors.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/detail/api_placeholder.hpp"
+#include "pxr/external/boost/python/errors.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/make_constructor.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include <string>
 #include <vector>
 
-using namespace boost::python;
 using std::string;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -137,7 +121,7 @@ static void
 throwIndexErr( const char *msg )
 {
     PyErr_SetString(PyExc_IndexError, msg);
-    boost::python::throw_error_already_set();
+    pxr_boost::python::throw_error_already_set();
 }    
 
 static int
@@ -213,18 +197,18 @@ static {{ MAT }} *__init__() {
 // This adds support for python's builtin pickling library
 // This is used by our Shake plugins which need to pickle entire classes
 // (including code), which we don't support in pxml.
-struct {{ MAT }}_Pickle_Suite : boost::python::pickle_suite
+struct {{ MAT }}_Pickle_Suite : pxr_boost::python::pickle_suite
 {
-    static boost::python::tuple getinitargs(const {{ MAT }} &m)
+    static pxr_boost::python::tuple getinitargs(const {{ MAT }} &m)
     {
-        return boost::python::make_tuple(
+        return pxr_boost::python::make_tuple(
             {{ MATRIX("m[%(i)s][%(j)s]", indent=12) }});
     }
 };
 
 static size_t __hash__({{ MAT }} const &m) { return TfHash{}(m); }
 
-static boost::python::tuple get_dimension()
+static pxr_boost::python::tuple get_dimension()
 {
     // At one time this was a constant static tuple we returned for
     // dimension. With boost building for python 3 that results in
@@ -329,6 +313,10 @@ void wrapMatrix{{ SUFFIX }}()
         .def( self * GfVec{{ SUFFIX }}() )
         .def( GfVec{{ SUFFIX }}() * self )
 {% if SCL == 'double' %}
+
+        // Provide wrapping that makes up for the fact that, in Python, we
+        // don't allow implicit conversion from GfVec3f to GfVec3d (which we
+        // do in C++).
         .def( self * GfVec{{ DIM }}f() )
         .def( GfVec{{ DIM }}f() * self )
 {% endif %}

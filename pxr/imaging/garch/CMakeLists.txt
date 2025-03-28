@@ -11,27 +11,30 @@ if(APPLE)
     set(GARCH_GLPLATFORMCONTEXT       glPlatformContextDarwin)
     set(GARCH_GLPLATFORMDEBUGWINDOW   glPlatformDebugWindowDarwin)
     set(GARCH_SOURCE_EXTENSION        mm)
-    set(GARCH_PLATFORM_LIBRARIES      "-framework AppKit")
+    set(GARCH_PLATFORM_LIBRARIES      "-framework Foundation")
+    if (PXR_APPLE_EMBEDDED)
+        list(APPEND GARCH_PLATFORM_LIBRARIES "-framework UIKit")
+    else()
+        list(APPEND GARCH_PLATFORM_LIBRARIES "-framework AppKit")
+        list(APPEND GARCH_PLATFORM_LIBRARIES OpenGL::GL)
+    endif()
 elseif(X11_FOUND)
     set(GARCH_GLPLATFORMCONTEXT       glPlatformContextGLX)
     set(GARCH_GLPLATFORMDEBUGWINDOW   glPlatformDebugWindowGLX)
     set(GARCH_SOURCE_EXTENSION        cpp)
+    set(GARCH_PLATFORM_LIBRARIES      ${X11_LIBRARIES} OpenGL::GL)
 elseif(WIN32)
     set(GARCH_GLPLATFORMCONTEXT       glPlatformContextWindows)
     set(GARCH_GLPLATFORMDEBUGWINDOW   glPlatformDebugWindowWindows)
     set(GARCH_SOURCE_EXTENSION        cpp)
+    set(GARCH_PLATFORM_LIBRARIES      OpenGL::GL)
 endif()
 
 pxr_library(garch
     LIBRARIES
         arch
         tf
-        ${X11_LIBRARIES}
-        ${OPENGL_gl_LIBRARY}
         ${GARCH_PLATFORM_LIBRARIES}
-
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
         glApi
@@ -47,9 +50,6 @@ pxr_library(garch
 
     PRIVATE_HEADERS
         ${GARCH_GLPLATFORMDEBUGWINDOW}.h
-
-    PYTHON_CPPFILES
-        moduleDeps.cpp
 
     CPPFILES
         ${GARCH_GLPLATFORMCONTEXT}.${GARCH_SOURCE_EXTENSION}

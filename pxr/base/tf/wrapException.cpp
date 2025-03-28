@@ -1,25 +1,8 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -31,12 +14,12 @@
 #include "pxr/base/tf/pyCall.h"
 #include "pxr/base/tf/pyErrorInternal.h"
 
-#include <boost/python/def.hpp>
-#include <boost/python/exception_translator.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/exception_translator.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 // This is created below, in the wrap function.
 static PyObject *tfExceptionClass;
@@ -86,7 +69,7 @@ static void Translate(TfBaseException const &exc)
     std::exception_ptr cppExc = std::current_exception();
     if (TF_VERIFY(cppExc)) {
         TfPyExceptionStateScope pyExcState;
-        boost::python::object pyErr(pyExcState.Get().GetValue());
+        pxr_boost::python::object pyErr(pyExcState.Get().GetValue());
         uintptr_t cppExcAddr;
         std::unique_ptr<std::exception_ptr>
             cppExecPtrPtr(new std::exception_ptr(cppExc));
@@ -116,7 +99,7 @@ static void _ThrowTest(std::string message)
     TF_THROW(_TestExceptionToPython, message);
 }
 
-static void _CallThrowTest(boost::python::object fn)
+static void _CallThrowTest(pxr_boost::python::object fn)
 {
     TfPyCall<void> callFn(fn);
     callFn();
@@ -128,12 +111,12 @@ void wrapException()
     tfExceptionClass = PyErr_NewException(excClassName, NULL, NULL);
 
     // Expose the exception class to python.
-    scope().attr("CppException") = boost::python::handle<>(tfExceptionClass);
+    scope().attr("CppException") = pxr_boost::python::handle<>(tfExceptionClass);
     
-    // Register the exception translator with boost::python.
+    // Register the exception translator with pxr_boost::python.
     register_exception_translator<TfBaseException>(Translate);
 
     // Test support.
-    boost::python::def("_ThrowTest", _ThrowTest);
-    boost::python::def("_CallThrowTest", _CallThrowTest);
+    pxr_boost::python::def("_ThrowTest", _ThrowTest);
+    pxr_boost::python::def("_CallThrowTest", _CallThrowTest);
 }

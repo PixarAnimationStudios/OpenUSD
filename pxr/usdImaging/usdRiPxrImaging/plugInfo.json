@@ -3,6 +3,13 @@
         {
             "Info": {
                 "Types": {
+                    "UsdRiPxrImagingAovLightAdapter": {
+                        "bases": [
+                            "UsdImagingLightAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "PxrAovLight"
+                    },
                     "UsdRiPxrImagingDisplayFilterAdapter": {
                         "bases": [
                             "UsdImagingPrimAdapter"
@@ -26,6 +33,13 @@
                         "isInternal": true,
                         "primTypeName": "PxrSampleFilterPluginBase",
                         "includeDerivedPrimTypes" : true 
+                    },
+                    "UsdRiPxrImagingCameraAPIAdapter": {
+                        "bases": [
+                            "UsdImagingAPISchemaAdapter"
+                        ],
+                        "isInternal": true,
+                        "apiSchemaName": "PxrCameraAPI"
                     }
                 }
             },

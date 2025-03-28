@@ -137,7 +137,7 @@ class "NodeDefAPI" (
 
     This schema provides properties that allow a prim to identify an external
     node definition, either by a direct identifier key into the SdrRegistry
-    (info:id), an asset to be parsed by a suitable NdrParserPlugin
+    (info:id), an asset to be parsed by a suitable SdrParserPlugin
     (info:sourceAsset), or an inline source code that must also be parsed
     (info:sourceCode); as well as a selector attribute to determine which
     specifier is active (info:implementationSource).

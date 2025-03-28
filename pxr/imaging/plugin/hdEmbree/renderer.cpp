@@ -1,25 +1,8 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/plugin/hdEmbree/renderer.h"
 
@@ -38,6 +21,24 @@
 
 #include <chrono>
 #include <thread>
+
+namespace {
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+// -------------------------------------------------------------------------
+// General Ray Utilities
+// -------------------------------------------------------------------------
+
+inline GfVec3f
+_CalculateHitPosition(RTCRayHit const& rayHit)
+{
+    return GfVec3f(rayHit.ray.org_x + rayHit.ray.tfar * rayHit.ray.dir_x,
+                   rayHit.ray.org_y + rayHit.ray.tfar * rayHit.ray.dir_y,
+                   rayHit.ray.org_z + rayHit.ray.tfar * rayHit.ray.dir_z);
+}
+
+}  // anonymous namespace
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -84,6 +85,12 @@ void
 HdEmbreeRenderer::SetEnableSceneColors(bool enableSceneColors)
 {
     _enableSceneColors = enableSceneColors;
+}
+
+void
+HdEmbreeRenderer::SetRandomNumberSeed(int randomNumberSeed)
+{
+    _randomNumberSeed = randomNumberSeed;
 }
 
 void
@@ -449,8 +456,8 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
         // Always pass the renderThread to _RenderTiles to allow the first frame
         // to be interrupted.
         WorkParallelForN(numTilesX*numTilesY,
-            std::bind(&HdEmbreeRenderer::_RenderTiles, this, renderThread,
-                std::placeholders::_1, std::placeholders::_2));
+            std::bind(&HdEmbreeRenderer::_RenderTiles, this,
+                renderThread, i, std::placeholders::_1, std::placeholders::_2));
 
         // After the first pass, mark the single-sampled attachments as
         // converged and unmap them. If there are no multisampled attachments,
@@ -489,7 +496,7 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 }
 
 void
-HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
+HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread, int sampleNum,
                                size_t tileStart, size_t tileEnd)
 {
     const unsigned int minX = _dataWindow.GetMinX();
@@ -514,13 +521,19 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
 
     // Initialize the RNG for this tile (each tile creates one as
     // a lazy way to do thread-local RNGs).
-    size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
+    size_t seed;
+    if (_randomNumberSeed == -1) {
+        seed = std::chrono::system_clock::now().time_since_epoch().count();
+    } else {
+        seed = static_cast<size_t>(_randomNumberSeed);
+    }
     seed = TfHash::Combine(seed, tileStart);
+    seed = TfHash::Combine(seed, sampleNum);
     std::default_random_engine random(seed);
 
     // Create a uniform distribution for jitter calculations.
     std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
-    std::function<float()> uniform_float = std::bind(uniform_dist, random);
+    auto uniform_float = [&random, &uniform_dist]() { return uniform_dist(random); };
 
     // _RenderTiles gets a range of tiles; iterate through them.
     for (unsigned int tile = tileStart; tile < tileEnd; ++tile) {
@@ -561,7 +574,7 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
                     2 * ((x + jitter[0] - minX) / w) - 1,
                     2 * ((y + jitter[1] - minY) / h) - 1,
                     -1);
-                const GfVec3f nearPlaneTrace = _inverseProjMatrix.Transform(ndc);
+                const GfVec3f nearPlaneTrace(_inverseProjMatrix.Transform(ndc));
 
                 GfVec3f origin;
                 GfVec3f dir;
@@ -580,8 +593,9 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
                     dir = nearPlaneTrace;
                 }
                 // Transform camera rays to world space.
-                origin = _inverseViewMatrix.Transform(origin);
-                dir = _inverseViewMatrix.TransformDir(dir).GetNormalized();
+                origin = GfVec3f(_inverseViewMatrix.Transform(origin));
+                dir = GfVec3f(
+                    _inverseViewMatrix.TransformDir(dir)).GetNormalized();
 
                 // Trace the ray.
                 _TraceRay(x, y, origin, dir, random);
@@ -766,12 +780,10 @@ HdEmbreeRenderer::_ComputeDepth(RTCRayHit const& rayHit,
     }
 
     if (clip) {
-        GfVec3f hitPos = GfVec3f(rayHit.ray.org_x + rayHit.ray.tfar * rayHit.ray.dir_x,
-            rayHit.ray.org_y + rayHit.ray.tfar * rayHit.ray.dir_y,
-            rayHit.ray.org_z + rayHit.ray.tfar * rayHit.ray.dir_z);
+        GfVec3f hitPos = _CalculateHitPosition(rayHit);
 
-        hitPos = _viewMatrix.Transform(hitPos);
-        hitPos = _projMatrix.Transform(hitPos);
+        hitPos = GfVec3f(_viewMatrix.Transform(hitPos));
+        hitPos = GfVec3f(_projMatrix.Transform(hitPos));
 
         // For the depth range transform, we assume [0,1].
         *depth = (hitPos[2] + 1.0f) / 2.0f;
@@ -808,7 +820,7 @@ HdEmbreeRenderer::_ComputeNormal(RTCRayHit const& rayHit,
 
     n = instanceContext->objectToWorldMatrix.TransformDir(n);
     if (eye) {
-        n = _viewMatrix.TransformDir(n);
+        n = GfVec3f(_viewMatrix.TransformDir(n));
     }
     n.Normalize();
 
@@ -878,9 +890,7 @@ HdEmbreeRenderer::_ComputeColor(RTCRayHit const& rayHit,
                 rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,rayHit.hit.geomID)));
 
     // Compute the worldspace location of the rayHit hit.
-    GfVec3f hitPos = GfVec3f(rayHit.ray.org_x + rayHit.ray.tfar * rayHit.ray.dir_x,
-            rayHit.ray.org_y + rayHit.ray.tfar * rayHit.ray.dir_y,
-            rayHit.ray.org_z + rayHit.ray.tfar * rayHit.ray.dir_z);
+    GfVec3f hitPos = _CalculateHitPosition(rayHit);
 
     // If a normal primvar is present (e.g. from smooth shading), use that
     // for shading; otherwise use the flat face normal.
@@ -939,7 +949,7 @@ HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
 {
     // Create a uniform random distribution for AO calculations.
     std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
-    std::function<float()> uniform_float = std::bind(uniform_dist, random);
+    auto uniform_float = [&random, &uniform_dist]() { return uniform_dist(random); };
 
     // 0 ambient occlusion samples means disable the ambient occlusion term.
     if (_ambientOcclusionSamples < 1) {

@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_RENDER_PASS_STATE_H
 #define PXR_IMAGING_HD_RENDER_PASS_STATE_H
@@ -161,26 +144,31 @@ public:
 
     /// Set an override color for rendering where the R, G and B components
     /// are the color and the alpha component is the blend value
+    /// The color is specified in the render color space
     HD_API
     void SetOverrideColor(GfVec4f const &color);
     const GfVec4f& GetOverrideColor() const { return _overrideColor; }
 
     /// Set a wireframe color for rendering where the R, G and B components
     /// are the color and the alpha component is the blend value
+    /// The color is specified in the render color space
     HD_API
     void SetWireframeColor(GfVec4f const &color);
     const GfVec4f& GetWireframeColor() const { return _wireframeColor; }
 
+    /// The color is specified in the render color space
     HD_API
     void SetMaskColor(GfVec4f const &color);
     const GfVec4f& GetMaskColor() const { return _maskColor; }
 
+    /// The color is specified in the render color space
     HD_API
     void SetIndicatorColor(GfVec4f const &color);
     const GfVec4f& GetIndicatorColor() const { return _indicatorColor; }
 
     /// Set a point color for rendering where the R, G and B components
     /// are the color and the alpha component is the blend value
+    /// The color is specified in the render color space
     HD_API
     void SetPointColor(GfVec4f const &color);
     const GfVec4f& GetPointColor() const { return _pointColor; }
@@ -312,6 +300,8 @@ public:
     HdBlendOp GetBlendAlphaOp() { return _blendAlphaOp; }
     HdBlendFactor GetBlendAlphaSrcFactor() { return _blendAlphaSrcFactor; }
     HdBlendFactor GetBlendAlphaDstFactor() { return _blendAlphaDstFactor; }
+
+    // Blend constant color is specified in the render color space
     HD_API
     void SetBlendConstantColor(GfVec4f const & color);
     const GfVec4f& GetBlendConstantColor() const { return _blendConstantColor; }

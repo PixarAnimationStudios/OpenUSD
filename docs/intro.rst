@@ -33,9 +33,8 @@ In addition, because USD's core scenegraph and :ref:`composition engine
 extended in a maintainable way to encode and compose data in other domains.
 
 Concretely, USD is an `open source project
-<https://github.com/PixarAnimationStudios/OpenUSD>`_ released under a `modified
-Apache license
-<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/LICENSE.txt>`_.
+<https://github.com/PixarAnimationStudios/OpenUSD>`_ released under the 
+`TOST license <https://openusd.org/license>`_.
 
 Why use USD?
 ============
@@ -71,8 +70,8 @@ following ongoing production concerns:
       departments, or within the same department, to simultaneously work on
       the same asset or scene, by allowing each artist to work in their own
       file (called a :ref:`glossary:Layer`), all of which will be combined
-      and resolved in a :ref:`strength ordering <glossary:LIVRPS Strength
-      Ordering>` clearly specified in the USD files themselves. This ability
+      and resolved in a :ref:`strength ordering <usdglossary-livrpsstrengthordering>` 
+      clearly specified in the USD files themselves. This ability
       is not a magic bullet that can automatically adjust shading data in a
       stronger layer when the modeling artist changes the topology of
       geometry defined in a weaker layer, but it allows each artist to work
@@ -201,7 +200,7 @@ refinement of "base" in all views of your scene.
 The most powerful and unifying aspect of USD's composition semantics is that all
 of the above operators can be applied to any prim, in any combination, and the
 composition engine will :ref:`resolve the resulting graph in a predictable way
-<glossary:LIVRPS Strength Ordering>`. The other desirable
+<usdglossary-livrpsstrengthordering>`. The other desirable
 property that falls out of this uniform treatment of composition arcs is that
 stronger layers in a composition can override the scene description in weaker
 layers *uniformly*, regardless of whether the weaker layers were subLayered,

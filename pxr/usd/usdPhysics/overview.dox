@@ -482,7 +482,7 @@ with which collisions are explicitly disabled. This pairwise filtering has
 precedence over group based filtering. 
 
 The FilteringPairsAPI can be applied to objects with a UsdPhysicsRigidBodyAPI, 
-UsdPhysicsCollisionAPI, or UsdPhysicsArticulationAPI.
+UsdPhysicsCollisionAPI, or UsdPhysicsArticulationRootAPI.
 
 It is sufficient to have a rel from an object A to an object B, to get the 
 filtering behavior. In this case the backwards rel from B to A is 

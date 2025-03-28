@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/imaging/hgiVulkan/shaderGenerator.h"
@@ -116,14 +99,16 @@ HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
             _shaderLayoutAttributes.emplace_back(
                 "layout (fractional_odd_spacing) in;\n");
         }
+        // We flip the winding order in HgiVulkan. See
+        // HgiVulkanGraphicsCmds::SetViewport for details.
         if (descriptor.tessellationDescriptor.ordering ==
                 HgiShaderFunctionTessellationDesc::Ordering::CW) {
             _shaderLayoutAttributes.emplace_back(
-                "layout (cw) in;\n");
+                "layout (ccw) in;\n");
         } else if (descriptor.tessellationDescriptor.ordering ==
                 HgiShaderFunctionTessellationDesc::Ordering::CCW) {
             _shaderLayoutAttributes.emplace_back(
-                "layout (ccw) in;\n");
+                "layout (cw) in;\n");
         }
     } else if (descriptor.shaderStage == HgiShaderStageGeometry) {
         if (descriptor.geometryDescriptor.inPrimitiveType ==
@@ -243,7 +228,8 @@ HgiVulkanShaderGenerator::_WriteMacros(std::ostream &ss)
           "#define ATOMIC_COMP_SWAP(a, expected, desired) atomicCompSwap(a, "
           "expected, desired)\n"
           "#define atomic_int int\n"
-          "#define atomic_uint uint\n";
+          "#define atomic_uint uint\n"
+          "#define hd_SampleMask gl_SampleMask[0]\n";
 
     // Advertise to shader code that we support double precision math
     ss << "\n"
@@ -362,6 +348,7 @@ HgiVulkanShaderGenerator::_WriteInOuts(
         "gl_FragDepth",
         "gl_PointSize",
         "gl_CullDistance",
+        "hd_SampleMask",
     };
 
     // Some params are built-in, but we may want to declare them in the shader 
@@ -387,7 +374,8 @@ HgiVulkanShaderGenerator::_WriteInOuts(
         { HgiShaderKeywordTokens->hdLayer, "gl_Layer"},
         { HgiShaderKeywordTokens->hdViewportIndex, "gl_ViewportIndex"},
         { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"},
-        { HgiShaderKeywordTokens->hdBaryCoordNoPersp, "gl_BaryCoordNoPerspEXT"}
+        { HgiShaderKeywordTokens->hdBaryCoordNoPersp, "gl_BaryCoordNoPerspEXT"},
+        { HgiShaderKeywordTokens->hdSampleMaskIn, "gl_SampleMaskIn[0]"}
     };
 
     const bool in_qualifier = qualifier == "in";
@@ -417,11 +405,7 @@ HgiVulkanShaderGenerator::_WriteInOuts(
             const std::string &role = param.role;
             auto const& keyword = takenInParams.find(role);
             if (keyword != takenInParams.end()) {
-                if (role == HgiShaderKeywordTokens->hdGlobalInvocationID ||
-                    role == HgiShaderKeywordTokens->hdVertexID ||
-                    role == HgiShaderKeywordTokens->hdInstanceID ||
-                    role == HgiShaderKeywordTokens->hdBaseInstance ||
-                    role == HgiShaderKeywordTokens->hdBaryCoordNoPersp) {
+                if (paramName != keyword->second) {
                     CreateShaderSection<HgiVulkanKeywordShaderSection>(
                         paramName,
                         param.type,
@@ -431,16 +415,21 @@ HgiVulkanShaderGenerator::_WriteInOuts(
             }
         }
 
-        // If a location has been specified then add it to the attributes.
-        const int32_t locationIndex =
-            param.location >= 0
-            ? param.location
-            : (in_qualifier ? _inLocationIndex++ : _outLocationIndex++);
-
-        const HgiShaderSectionAttributeVector attrs {
-            HgiShaderSectionAttribute{
-                "location", std::to_string(locationIndex) }
-        };
+        // If a location or interstage slot has been specified then add it to 
+        // the attributes.
+        HgiShaderSectionAttributeVector attrs;
+        if (param.location != -1) {
+            // If a location has been specified then add it to the attributes.
+            attrs.push_back({"location", std::to_string(param.location)});
+        } else if (param.interstageSlot != -1) {
+            // For interstage parameters use the interstageSlot for location.
+            attrs.push_back({"location", std::to_string(param.interstageSlot)});
+        } else {
+            // Otherwise use shader generator's counter sytem.
+            const int32_t locationIndex =
+                in_qualifier ? _inLocationIndex++ : _outLocationIndex++;
+            attrs.push_back({"location", std::to_string(locationIndex)});
+        }
 
         CreateShaderSection<HgiVulkanMemberShaderSection>(
             paramName,
@@ -491,10 +480,15 @@ HgiVulkanShaderGenerator::_WriteInOutBlocks(
             }
         }
 
-        const HgiShaderSectionAttributeVector attrs {
-            HgiShaderSectionAttribute{
-                "location", std::to_string(locationIndex) }
-        };
+        // If interstage slot has been specified then add it to the attributes.
+        HgiShaderSectionAttributeVector attrs;
+        if (p.interstageSlot != -1) {
+            // For interstage parameters use the interstageSlot for location.
+            attrs.push_back({"location", std::to_string(p.interstageSlot)});
+        } else {
+            // Otherwise use shader generator's counter sytem.
+            attrs.push_back({"location", std::to_string(locationIndex)});
+        }
 
         CreateShaderSection<HgiVulkanInterstageBlockShaderSection>(
             p.blockName,

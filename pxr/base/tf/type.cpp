@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -112,9 +95,9 @@ struct TfType::_TypeInfo {
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     // Python class handle.
-    // We use handle<> rather than boost::python::object in case Python
+    // We use handle<> rather than pxr_boost::python::object in case Python
     // has not yet been initialized.
-    boost::python::handle<> pyClass;
+    pxr_boost::python::handle<> pyClass;
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
     // Direct base types.
@@ -205,11 +188,11 @@ struct TfType::_TypeInfo {
 };
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-// Comparison for boost::python::handle.
+// Comparison for pxr_boost::python::handle.
 struct Tf_PyHandleLess
 {
-    bool operator()(const boost::python::handle<> &lhs,
-                    const boost::python::handle<> &rhs) const {
+    bool operator()(const pxr_boost::python::handle<> &lhs,
+                    const pxr_boost::python::handle<> &rhs) const {
         return lhs.get() < rhs.get();
     }
 };
@@ -305,17 +288,17 @@ public:
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     void SetPythonClass(TfType::_TypeInfo *info,
-                        const boost::python::object & classObj) {
+                        const pxr_boost::python::object & classObj) {
         // Hold a reference to this PyObject in our map.
-        boost::python::handle<> handle(
-            boost::python::borrowed(classObj.ptr()));
+        pxr_boost::python::handle<> handle(
+            pxr_boost::python::borrowed(classObj.ptr()));
 
         info->pyClass = handle;
         _pyClassMap[handle] = info;
 
         // Do not overwrite the size of a C++ type.
         if (!info->sizeofType) {
-            info->sizeofType = TfSizeofType<boost::python::object>::value;
+            info->sizeofType = TfSizeofType<pxr_boost::python::object>::value;
         }
     }
 #endif // PXR_PYTHON_SUPPORT_ENABLED
@@ -338,9 +321,9 @@ public:
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     TfType::_TypeInfo *
-    FindByPythonClass(const boost::python::object &classObj) const {
-        boost::python::handle<> handle(
-            boost::python::borrowed(classObj.ptr()));
+    FindByPythonClass(const pxr_boost::python::object &classObj) const {
+        pxr_boost::python::handle<> handle(
+            pxr_boost::python::borrowed(classObj.ptr()));
         auto it = _pyClassMap.find(handle);
         return it != _pyClassMap.end() ? it->second : nullptr;
     }
@@ -366,7 +349,7 @@ private:
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
     // Map of python class handles to _TypeInfo*.
-    typedef map<boost::python::handle<>,
+    typedef map<pxr_boost::python::handle<>,
                 TfType::_TypeInfo *, Tf_PyHandleLess> PyClassMap;
     PyClassMap _pyClassMap;
 #endif // PXR_PYTHON_SUPPORT_ENABLED
@@ -586,7 +569,7 @@ TfType::GetPythonClass() const
     ScopedLock lock(GetRegistryMutex(), /*write=*/false);
     
     if (_info->pyClass.get()) {
-        return TfPyObjWrapper(boost::python::object(_info->pyClass));
+        return TfPyObjWrapper(pxr_boost::python::object(_info->pyClass));
     }
     return TfPyObjWrapper();
 }
@@ -761,7 +744,7 @@ TfType::GetAllAncestorTypes(vector<TfType> *result) const
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 TfType const &
 TfType::_FindImplPyPolymorphic(PyPolymorphicBase const *ptr) {
-    using namespace boost::python;
+    using namespace pxr_boost::python;
     TfType ret;
     if (TfPyIsInitialized()) {
         TfPyLock lock;
@@ -1124,7 +1107,7 @@ TfType::CastFromAncestor(TfType ancestor, void* addr) const
 }
 
 void
-TfType::SetFactory(std::unique_ptr<FactoryBase> factory) const
+TfType::SetFactory(std::unique_ptr<FactoryBase> &&factory) const
 {
     if (IsUnknown() || IsRoot()) {
         TF_CODING_ERROR("Cannot set factory of %s\n",
@@ -1236,7 +1219,50 @@ TfType::GetSizeof() const
     return _info->sizeofType;
 }
 
+TfType const &
+TfType::_DeclareImpl(
+    const std::type_info &thisTypeInfo,
+    const std::type_info **baseTypeInfos,
+    size_t numBaseTypes)
+{
+    TfAutoMallocTag2 tag2("Tf", "TfType::Declare");
 
+    // Declare base types.
+    std::vector<TfType> baseTfTypes;
+    baseTfTypes.reserve(numBaseTypes);
+    for (size_t i = 0; i != numBaseTypes; ++i) {
+        baseTfTypes.push_back(Declare(GetCanonicalTypeName(*baseTypeInfos[i])));
+    }
+    
+    // Declare this type.
+    return Declare(GetCanonicalTypeName(thisTypeInfo), baseTfTypes);
+}
+
+TfType const &
+TfType::_DefineImpl(
+    const std::type_info &thisTypeInfo,
+    const std::type_info **baseTypeInfos,
+    _CastFunction *castFunctions,
+    size_t numBaseTypes,
+    size_t sizeofThisType, bool isPod, bool isEnum)
+{
+    TfAutoMallocTag2 tag2("Tf", "TfType::Define");
+
+    // Declare this type.
+    TfType const &newType =
+        _DeclareImpl(thisTypeInfo, baseTypeInfos, numBaseTypes);
+
+    // Record traits information about T.
+    newType._DefineCppType(thisTypeInfo, sizeofThisType, isPod, isEnum);
+
+    // Register casts.
+    for (size_t i = 0; i != numBaseTypes; ++i) {
+        newType._AddCppCastFunc(*baseTypeInfos[i], castFunctions[i]);
+    }
+
+    return newType;
+}
+    
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<void>();

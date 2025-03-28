@@ -24,3 +24,22 @@ def Prim "Model"
     	}
     }
 }
+
+def Prim "OtherModel" 
+{
+    def Prim "A" 
+    {
+        def Prim "B"
+        {
+            def Prim "C" 
+            {
+                def Prim "D" 
+                {
+                    def Prim "E" 
+                    {
+                    }
+                }
+            }
+        }
+    }
+}

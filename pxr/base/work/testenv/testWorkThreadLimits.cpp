@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -37,6 +20,10 @@
 #include <mutex>
 #include <set>
 #include <thread>
+
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
+#include <tbb/global_control.h>
+#endif
 
 using namespace std::placeholders;
 
@@ -56,16 +43,41 @@ _CountThreads(size_t begin, size_t end)
     _uniqueThreads->insert(std::this_thread::get_id());
 }
 
+static unsigned
+_GetConcurrencyLimit()
+{
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
+    // For oneTBB, get limit in an arena with max concurrency as
+    // WorkSetConcurrencyLimit by itself no longer increases the concurrency
+    // beyond the number of cores by itself.
+    unsigned limit;
+    tbb::task_arena arena(tbb::global_control::active_value(tbb::global_control::max_allowed_parallelism));
+    arena.execute([&]() {
+        limit = WorkGetConcurrencyLimit();
+    });
+    return limit;
+#else
+    return WorkGetConcurrencyLimit();
+#endif
+}
+
 static size_t
 _ExpectedLimit(const int envVal, const size_t n)
 {
     // If envVal is non-zero, it wins over n!
     // envVal may also be a negative number, which means all but that many
     // cores.
-    return envVal ? 
+    const size_t val = envVal ? 
         (envVal < 0 ?
             std::max<int>(1, envVal+WorkGetPhysicalConcurrencyLimit()) : envVal)
         : n;
+
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
+    // oneTBB has an internal limit of 256 + 1 threads.
+    return std::min<size_t>(val, 257);
+#else
+    return val;
+#endif
 }
 
 static void
@@ -101,41 +113,41 @@ _TestArguments(const int envVal)
     // Set to maximum concurrency, which should remain within envVal.
     const int numCores = WorkGetPhysicalConcurrencyLimit();
     WorkSetConcurrencyLimitArgument(numCores);
-    TF_AXIOM(WorkGetConcurrencyLimit() == _ExpectedLimit(envVal, numCores));
+    TF_AXIOM(_GetConcurrencyLimit() == _ExpectedLimit(envVal, numCores));
 
     // n = 0, means "no change"
     WorkSetConcurrencyLimitArgument(0);
-    TF_AXIOM(WorkGetConcurrencyLimit() == _ExpectedLimit(envVal, numCores));
+    TF_AXIOM(_GetConcurrencyLimit() == _ExpectedLimit(envVal, numCores));
 
     // n = 1 means no threading
     WorkSetConcurrencyLimitArgument(1);
-    TF_AXIOM(WorkGetConcurrencyLimit() == _ExpectedLimit(envVal, 1));
+    TF_AXIOM(_GetConcurrencyLimit() == _ExpectedLimit(envVal, 1));
 
     // n = 3 means 3
     WorkSetConcurrencyLimitArgument(3);
-    TF_AXIOM(WorkGetConcurrencyLimit() == _ExpectedLimit(envVal, 3));
+    TF_AXIOM(_GetConcurrencyLimit() == _ExpectedLimit(envVal, 3));
 
     // n = 1000 means 1000
     WorkSetConcurrencyLimitArgument(1000);
-    TF_AXIOM(WorkGetConcurrencyLimit() == _ExpectedLimit(envVal, 1000));
+    TF_AXIOM(_GetConcurrencyLimit() == _ExpectedLimit(envVal, 1000));
 
     // n = -1 means numCores - 1, with a minimum of 1
     WorkSetConcurrencyLimitArgument(-1);
-    TF_AXIOM(WorkGetConcurrencyLimit() == 
+    TF_AXIOM(_GetConcurrencyLimit() == 
              _ExpectedLimit(envVal, std::max(1, numCores-1)));
 
     // n = -3 means numCores - 3, with a minimum of 1
     WorkSetConcurrencyLimitArgument(-3);
-    TF_AXIOM(WorkGetConcurrencyLimit() == 
+    TF_AXIOM(_GetConcurrencyLimit() == 
              _ExpectedLimit(envVal, std::max(1, numCores-3)));
 
     // n = -numCores means 1 (no threading)
     WorkSetConcurrencyLimitArgument(-numCores);
-    TF_AXIOM(WorkGetConcurrencyLimit() == _ExpectedLimit(envVal, 1));
+    TF_AXIOM(_GetConcurrencyLimit() == _ExpectedLimit(envVal, 1));
 
     // n = -numCores*10 means 1 (no threading)
     WorkSetConcurrencyLimitArgument(-numCores*10);
-    TF_AXIOM(WorkGetConcurrencyLimit() == _ExpectedLimit(envVal, 1));
+    TF_AXIOM(_GetConcurrencyLimit() == _ExpectedLimit(envVal, 1));
 }
 
 struct _RawTBBCounter
@@ -218,35 +230,35 @@ main(int argc, char **argv)
     // Test with full concurrency.
     std::cout << "Testing full concurrency...\n";
     WorkSetMaximumConcurrencyLimit();
-    TF_AXIOM(WorkGetConcurrencyLimit() == 
+    TF_AXIOM(_GetConcurrencyLimit() ==
         _ExpectedLimit(envVal, WorkGetPhysicalConcurrencyLimit()));
     _TestThreadLimit(envVal, WorkGetPhysicalConcurrencyLimit());
 
     // Test with no concurrency.
     std::cout << "Testing turning off concurrency...\n";
     WorkSetConcurrencyLimit(1);
-    TF_AXIOM(WorkGetConcurrencyLimit() == 
+    TF_AXIOM(_GetConcurrencyLimit() ==
         _ExpectedLimit(envVal, 1));
     _TestThreadLimit(envVal, 1);
 
     // Test with 2 threads.
     std::cout << "Testing with 2 threads...\n";
     WorkSetConcurrencyLimit(2);
-    TF_AXIOM(WorkGetConcurrencyLimit() == 
+    TF_AXIOM(_GetConcurrencyLimit() ==
         _ExpectedLimit(envVal, 2));
     _TestThreadLimit(envVal, 2);
 
     // Test with 4 threads.
     std::cout << "Testing with 4 threads...\n";
     WorkSetConcurrencyLimit(4);
-    TF_AXIOM(WorkGetConcurrencyLimit() ==
+    TF_AXIOM(_GetConcurrencyLimit() ==
         _ExpectedLimit(envVal, 4));
     _TestThreadLimit(envVal, 4);
 
     // Test with 1000 threads.
     std::cout << "Testing with 1000 threads...\n";
     WorkSetConcurrencyLimit(1000);
-    TF_AXIOM(WorkGetConcurrencyLimit() ==
+    TF_AXIOM(_GetConcurrencyLimit() ==
         _ExpectedLimit(envVal, 1000));
     _TestThreadLimit(envVal, 1000);
 

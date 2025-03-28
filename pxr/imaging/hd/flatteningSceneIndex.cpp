@@ -1,25 +1,8 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/flattenedDataSourceProvider.h"
@@ -69,10 +52,10 @@ private:
     _PrimLevelWrappingDataSource(
         const HdFlatteningSceneIndex &flatteningSceneIndex,
         const SdfPath &primPath,
-        const HdContainerDataSourceHandle &inputDataSource)
+        const HdSceneIndexPrim &inputPrim)
       : _flatteningSceneIndex(flatteningSceneIndex)
       , _primPath(primPath)
-      , _inputDataSource(inputDataSource)
+      , _inputPrim(inputPrim)
       , _computedDataSources(
           _flatteningSceneIndex.GetFlattenedDataSourceNames().size())
     {
@@ -80,7 +63,7 @@ private:
     
     const HdFlatteningSceneIndex &_flatteningSceneIndex;
     const SdfPath _primPath;
-    HdContainerDataSourceHandle const _inputDataSource;
+    const HdSceneIndexPrim _inputPrim;
 
     // Parallel to HdFlatteningSceneIndex::GetFlattenedDataSourceNames()
     TfSmallVector<HdDataSourceBaseAtomicHandle, _smallVectorSize>
@@ -161,11 +144,11 @@ _Insert(const TfTokenVector &vec,
 TfTokenVector
 _PrimLevelWrappingDataSource::GetNames()
 {
-    if (!_inputDataSource) {
+    if (!_inputPrim.dataSource) {
         return _flatteningSceneIndex.GetFlattenedDataSourceNames();
     }
 
-    TfTokenVector result = _inputDataSource->GetNames();
+    TfTokenVector result = _inputPrim.dataSource->GetNames();
     _Insert(_flatteningSceneIndex.GetFlattenedDataSourceNames(), &result);
     return result;
 };        
@@ -194,7 +177,7 @@ _PrimLevelWrappingDataSource::Get(
             _flatteningSceneIndex,
             _primPath,
             name,
-            _inputDataSource);
+            _inputPrim);
         HdDataSourceBaseHandle flattenedDs = 
             providers[i]->GetFlattenedDataSource(ctx);
         if (!flattenedDs) {
@@ -219,8 +202,8 @@ _PrimLevelWrappingDataSource::Get(
         }
     }
 
-    if (_inputDataSource) {
-        return _inputDataSource->Get(name);
+    if (_inputPrim.dataSource) {
+        return _inputPrim.dataSource->Get(name);
     }
     return nullptr;
 }
@@ -296,7 +279,7 @@ HdFlatteningSceneIndex::GetPrim(const SdfPath &primPath) const
     // Wrap the input datasource even when null, to support dirtying
     // down non-contiguous hierarchy
     prim.dataSource = _PrimLevelWrappingDataSource::New(
-        *this, primPath, prim.dataSource);
+        *this, primPath, prim);
 
     // Store in the recent prims cache
     if (!_recentPrims.insert(std::make_pair(primPath, prim))) {

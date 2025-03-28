@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef USD_TOKENS_H
 #define USD_TOKENS_H
@@ -102,6 +85,46 @@ struct UsdTokensType {
     /// 
     /// UsdCollectionAPI
     const TfToken collection_MultipleApplyTemplate_MembershipExpression;
+    /// \brief "colorSpaceDefinition"
+    /// 
+    /// Property namespace prefix for the UsdColorSpaceDefinitionAPI schema.
+    const TfToken colorSpaceDefinition;
+    /// \brief "colorSpaceDefinition:__INSTANCE_NAME__:blueChroma"
+    /// 
+    /// UsdColorSpaceDefinitionAPI
+    const TfToken colorSpaceDefinition_MultipleApplyTemplate_BlueChroma;
+    /// \brief "colorSpaceDefinition:__INSTANCE_NAME__:gamma"
+    /// 
+    /// UsdColorSpaceDefinitionAPI
+    const TfToken colorSpaceDefinition_MultipleApplyTemplate_Gamma;
+    /// \brief "colorSpaceDefinition:__INSTANCE_NAME__:greenChroma"
+    /// 
+    /// UsdColorSpaceDefinitionAPI
+    const TfToken colorSpaceDefinition_MultipleApplyTemplate_GreenChroma;
+    /// \brief "colorSpaceDefinition:__INSTANCE_NAME__:linearBias"
+    /// 
+    /// UsdColorSpaceDefinitionAPI
+    const TfToken colorSpaceDefinition_MultipleApplyTemplate_LinearBias;
+    /// \brief "colorSpaceDefinition:__INSTANCE_NAME__:name"
+    /// 
+    /// UsdColorSpaceDefinitionAPI
+    const TfToken colorSpaceDefinition_MultipleApplyTemplate_Name;
+    /// \brief "colorSpaceDefinition:__INSTANCE_NAME__:redChroma"
+    /// 
+    /// UsdColorSpaceDefinitionAPI
+    const TfToken colorSpaceDefinition_MultipleApplyTemplate_RedChroma;
+    /// \brief "colorSpaceDefinition:__INSTANCE_NAME__:whitePoint"
+    /// 
+    /// UsdColorSpaceDefinitionAPI
+    const TfToken colorSpaceDefinition_MultipleApplyTemplate_WhitePoint;
+    /// \brief "colorSpace:name"
+    /// 
+    /// UsdColorSpaceAPI
+    const TfToken colorSpaceName;
+    /// \brief "custom"
+    /// 
+    /// Fallback value for UsdColorSpaceDefinitionAPI::GetNameAttr()
+    const TfToken custom;
     /// \brief "exclude"
     /// 
     ///  This is the token used to exclude a path from a collection.  Although it is not a possible value for the "expansionRule" attribute, it is used as the expansionRule for excluded paths  in UsdCollectionAPI::MembershipQuery::IsPathIncluded. 
@@ -134,6 +157,14 @@ struct UsdTokensType {
     /// 
     /// Schema identifer and family for UsdCollectionAPI
     const TfToken CollectionAPI;
+    /// \brief "ColorSpaceAPI"
+    /// 
+    /// Schema identifer and family for UsdColorSpaceAPI
+    const TfToken ColorSpaceAPI;
+    /// \brief "ColorSpaceDefinitionAPI"
+    /// 
+    /// Schema identifer and family for UsdColorSpaceDefinitionAPI
+    const TfToken ColorSpaceDefinitionAPI;
     /// \brief "ModelAPI"
     /// 
     /// Schema identifer and family for UsdModelAPI

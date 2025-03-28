@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef USDGEOM_GENERATED_CAMERA_H
 #define USDGEOM_GENERATED_CAMERA_H
@@ -73,11 +56,10 @@ class SdfAssetPath;
 /// \endcode
 /// \note
 /// <b>Cameras in USD are always "Y up", regardless of the stage's orientation
-/// (i.e. UsdGeomGetStageUpAxis()).</b>  This means that the inverse of 
-/// 'camXform' (the VIEW half of the <A HREF="http://www.glprogramming.com/red/chapter03.html#name2">MODELVIEW transform in OpenGL parlance</A>) 
-/// will transform the world such that the camera is at the origin, looking 
-/// down the -Z axis, with +Y as the up axis, and +X pointing to the right.
-/// This describes a __right handed coordinate system__. 
+/// (i.e. UsdGeomGetStageUpAxis()).</b> 'camXform' positions the camera in the 
+/// world, and the inverse transforms the world such that the camera is at the 
+/// origin, looking down the -Z axis, with +Y as the up axis, and +X pointing to 
+/// the right. This describes a __right handed coordinate system__. 
 /// 
 /// \section UsdGeom_CameraUnits Units of Measure for Camera Properties
 /// 
@@ -99,6 +81,42 @@ class SdfAssetPath;
 /// However, it follows that if even one property is authored in the correct
 /// scene units, then they all must be.
 /// 
+/// \section UsdGeom_CameraExposure Camera Exposure Model
+/// 
+/// UsdGeomCamera models exposure by a camera in terms of exposure time, ISO,
+/// f-stop, and exposure compensation, mirroring the controls on a real camera.
+/// These parameters are provided by \ref UsdGeomCamera::GetExposureTimeAttr(),
+/// \ref UsdGeomCamera::GetExposureIsoAttr(),
+/// \ref UsdGeomCamera::GetExposureFStopAttr(), 
+/// and \ref UsdGeomCamera::GetExposureAttr(), respectively. 
+/// \ref UsdGeomCamera::GetExposureResponsivityAttr() provides an additional
+/// scaling factor to model the overall responsivity of the system,
+/// including response of the sensor and loss by the lens.
+/// 
+/// The calculated scaling factor can be obtained from 
+/// \ref UsdGeomCamera::ComputeLinearExposureScale(). It is computed as:
+/// \code
+/// linearExposureScale = exposureResponsivity * 
+/// (exposureTime * (exposureIso/100) * pow(2, exposure)) 
+/// / (exposureFStop * exposureFStop)
+/// \endcode
+/// 
+/// This scaling factor is combined from two parts: The first, known as the
+/// __imaging ratio__ (in _steradian-second_), converts from incident luminance
+/// at the front of the lens system, in _nit_ (_cd/m^2_), to photometric
+/// exposure at the sensor in _lux-second_. The second, `exposureResponsivity` 
+/// (in _inverse lux-second_), converts from photometric exposure at the sensor,
+/// in _lux-second_, to a unitless output signal.
+/// 
+/// For a thorough treatment of this topic, see
+/// https://github.com/wetadigital/physlight/blob/main/docs/physLight-v1.3-1bdb6ec3-20230805.pdf,
+/// Section 2.2. Note that we are essentially implementing Equation 2.7, but are 
+/// choosing C such that it exactly cancels with the factor of pi in the
+/// numerator, replacing it with a responsivity factor that defaults to 1.
+/// 
+/// Renderers should simply multiply the brightness of the image by the exposure 
+/// scale. The default values for the exposure-related attributes combine to
+/// give a scale of 1.0.
 /// 
 /// \sa \ref UsdGeom_LinAlgBasics
 /// 
@@ -394,7 +412,7 @@ public:
     // --------------------------------------------------------------------- //
     // FSTOP 
     // --------------------------------------------------------------------- //
-    /// Lens aperture. Defaults to 0.0, which turns off focusing.
+    /// Lens aperture. Defaults to 0.0, which turns off depth of field effects.
     ///
     /// | ||
     /// | -- | -- |
@@ -491,7 +509,7 @@ public:
     /// Frame relative shutter close time, analogous comments from
     /// shutter:open apply. A value greater or equal to shutter:open
     /// should be authored, otherwise there is no exposure and a
-    /// renderer should produce a black image.
+    /// renderer should produce a black image. Used for motion blur.
     ///
     /// | ||
     /// | -- | -- |
@@ -513,7 +531,7 @@ public:
     // --------------------------------------------------------------------- //
     // EXPOSURE 
     // --------------------------------------------------------------------- //
-    /// Exposure adjustment, as a log base-2 value.  The default
+    /// Exposure compensation, as a log base-2 value.  The default
     /// of 0.0 has no effect.  A value of 1.0 will double the
     /// image-plane intensities in a rendered image; a value of
     /// -1.0 will halve them.
@@ -533,6 +551,108 @@ public:
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
     UsdAttribute CreateExposureAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // EXPOSUREISO 
+    // --------------------------------------------------------------------- //
+    /// The speed rating of the sensor or film when calculating exposure.
+    /// Higher numbers give a brighter image, lower numbers darker.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float exposure:iso = 100` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
+    USDGEOM_API
+    UsdAttribute GetExposureIsoAttr() const;
+
+    /// See GetExposureIsoAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateExposureIsoAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // EXPOSURETIME 
+    // --------------------------------------------------------------------- //
+    /// Time in seconds that the sensor is exposed to light when calculating exposure.
+    /// Longer exposure times create a brighter image, shorter times darker.
+    /// Note that shutter:open and shutter:close model essentially the 
+    /// same property of a physical camera, but are for specifying the 
+    /// size of the motion blur streak which is for practical purposes
+    /// useful to keep separate.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float exposure:time = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
+    USDGEOM_API
+    UsdAttribute GetExposureTimeAttr() const;
+
+    /// See GetExposureTimeAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateExposureTimeAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // EXPOSUREFSTOP 
+    // --------------------------------------------------------------------- //
+    /// f-stop of the aperture when calculating exposure. Smaller numbers
+    /// create a brighter image, larger numbers darker.
+    /// Note that the `fStop` attribute also models the diameter of the camera
+    /// aperture, but for specifying depth of field.  For practical 
+    /// purposes it is useful to keep the exposure and the depth of field
+    /// controls separate.
+    /// 
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float exposure:fStop = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
+    USDGEOM_API
+    UsdAttribute GetExposureFStopAttr() const;
+
+    /// See GetExposureFStopAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateExposureFStopAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // EXPOSURERESPONSIVITY 
+    // --------------------------------------------------------------------- //
+    /// Scalar multiplier representing overall responsivity of the 
+    /// sensor system to light when calculating exposure. Intended to be
+    /// used as a per camera/lens system measured scaling value.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `float exposure:responsivity = 1` |
+    /// | C++ Type | float |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float |
+    USDGEOM_API
+    UsdAttribute GetExposureResponsivityAttr() const;
+
+    /// See GetExposureResponsivityAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateExposureResponsivityAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // ===================================================================== //
@@ -574,6 +694,19 @@ public:
     ///
     USDGEOM_API
     void SetFromCamera(const GfCamera &camera, const UsdTimeCode &time);
+
+    /// Computes the ratio between incident luminance and photometric exposure 
+    /// (in lux-seconds), given the <tt>exposure</tt>, <tt>exposure:iso</tt>, 
+    /// <tt>exposure:fStop</tt>, <tt>exposure:time</tt> and
+    /// <tt>exposure:responsivity</tt> attributes.
+    ///
+    /// This is expected to be applied as a multiplier to the brightness of the 
+    /// image generated by the renderer, and given physically meaningful
+    /// lighting values in the scene, allows the exposure controls on
+    /// UsdGeomCamera to behave like those of a real camera.
+    ///
+    USDGEOM_API
+    float ComputeLinearExposureScale(UsdTimeCode time=UsdTimeCode::Default()) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

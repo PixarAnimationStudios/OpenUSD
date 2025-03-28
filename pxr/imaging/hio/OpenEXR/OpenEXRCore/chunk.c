@@ -681,7 +681,7 @@ compute_chunk_unpack_size (
             chansz *= (uint64_t) width;
             if (curc->x_sampling > 1) chansz /= ((uint64_t) curc->x_sampling);
             chansz *=
-                (uint64_t) compute_sampled_lines (height, curc->y_sampling, y);
+                (uint64_t) compute_sampled_height (height, curc->y_sampling, y);
             unpacksize += chansz;
         }
     }
@@ -1723,7 +1723,7 @@ exr_write_scanline_chunk_info (
     cinfo->data_offset              = 0;
     cinfo->packed_size              = 0;
     cinfo->unpacked_size =
-        compute_chunk_unpack_size (y, cinfo->width, cinfo->height, lpc, part);
+        compute_chunk_unpack_size (dw.min.y, cinfo->width, cinfo->height, lpc, part);
 
     return EXR_UNLOCK_AND_RETURN_PCTXT (EXR_ERR_SUCCESS);
 }

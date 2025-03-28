@@ -1,25 +1,8 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -33,6 +16,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <iomanip>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -64,15 +48,6 @@ TF_REGISTRY_FUNCTION(TfEnum)
 
 ////////////////////////////////////////////////////////////////////////////////
 
-TsTest_SplineData::Knot::Knot() = default;
-
-TsTest_SplineData::Knot::Knot(
-    const Knot &other) = default;
-
-TsTest_SplineData::Knot&
-TsTest_SplineData::Knot::operator=(
-    const Knot &other) = default;
-
 bool TsTest_SplineData::Knot::operator==(
     const Knot &other) const
 {
@@ -101,24 +76,14 @@ bool TsTest_SplineData::Knot::operator<(
     return time < other.time;
 }
 
-TsTest_SplineData::InnerLoopParams::InnerLoopParams() = default;
-
-TsTest_SplineData::InnerLoopParams::InnerLoopParams(
-    const InnerLoopParams &other) = default;
-
-TsTest_SplineData::InnerLoopParams&
-TsTest_SplineData::InnerLoopParams::operator=(
-    const InnerLoopParams &other) = default;
-
 bool TsTest_SplineData::InnerLoopParams::operator==(
     const InnerLoopParams &other) const
 {
     return enabled == other.enabled
         && protoStart == other.protoStart
         && protoEnd == other.protoEnd
-        && preLoopStart == other.preLoopStart
-        && postLoopEnd == other.postLoopEnd
-        && closedEnd == other.closedEnd
+        && numPreLoops == other.numPreLoops
+        && numPostLoops == other.numPostLoops
         && valueOffset == other.valueOffset;
 }
 
@@ -130,13 +95,11 @@ bool TsTest_SplineData::InnerLoopParams::operator!=(
 
 bool TsTest_SplineData::InnerLoopParams::IsValid() const
 {
-    if (!enabled) return true;
-
-    if (protoEnd <= protoStart) return false;
-    if (preLoopStart > protoStart) return false;
-    if (postLoopEnd < protoEnd) return false;
-
-    return true;
+    return (
+        enabled
+        && protoEnd > protoStart
+        && numPreLoops >= 0
+        && numPostLoops >= 0);
 }
 
 TsTest_SplineData::Extrapolation::Extrapolation() = default;
@@ -144,13 +107,6 @@ TsTest_SplineData::Extrapolation::Extrapolation() = default;
 TsTest_SplineData::Extrapolation::Extrapolation(
     const TsTest_SplineData::ExtrapMethod methodIn)
     : method(methodIn) {}
-
-TsTest_SplineData::Extrapolation::Extrapolation(
-    const Extrapolation &other) = default;
-
-TsTest_SplineData::Extrapolation&
-TsTest_SplineData::Extrapolation::operator=(
-    const Extrapolation &other) = default;
 
 bool TsTest_SplineData::Extrapolation::operator==(
     const Extrapolation &other) const
@@ -169,15 +125,6 @@ bool TsTest_SplineData::Extrapolation::operator!=(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-TsTest_SplineData::TsTest_SplineData() = default;
-
-TsTest_SplineData::TsTest_SplineData(
-    const TsTest_SplineData &other) = default;
-
-TsTest_SplineData&
-TsTest_SplineData::operator=(
-    const TsTest_SplineData &other) = default;
 
 bool TsTest_SplineData::operator==(
     const TsTest_SplineData &other) const
@@ -278,14 +225,20 @@ TsTest_SplineData::GetRequiredFeatures() const
         }
 
         if (knot.isDualValued)
+        {
             result |= FeatureDualValuedKnots;
+        }
 
         if (knot.preAuto || knot.postAuto)
+        {
             result |= FeatureAutoTangents;
+        }
     }
 
     if (_innerLoopParams.enabled)
+    {
         result |= FeatureInnerLoops;
+    }
 
     if (_preExtrap.method == ExtrapSloped
         || _postExtrap.method == ExtrapSloped)
@@ -310,20 +263,27 @@ static std::string _GetExtrapDesc(
     ss << TfEnum::GetName(e.method).substr(6);
 
     if (e.method == TsTest_SplineData::ExtrapSloped)
+    {
         ss << " " << e.slope;
+    }
     else if (e.method == TsTest_SplineData::ExtrapLoop)
+    {
         ss << " " << TfEnum::GetName(e.loopMode).substr(4);
+    }
 
     return ss.str();
 }
 
 std::string
-TsTest_SplineData::GetDebugDescription() const
+TsTest_SplineData::GetDebugDescription(
+    int precision) const
 {
     std::ostringstream ss;
+    ss << std::fixed << std::setprecision(precision);
+    ss << std::boolalpha;
 
     ss << "Spline:" << std::endl
-       << "  hermite " << (_isHermite ? "true" : "false") << std::endl
+       << "  hermite " << _isHermite << std::endl
        << "  preExtrap " << _GetExtrapDesc(_preExtrap) << std::endl
        << "  postExtrap " << _GetExtrapDesc(_postExtrap) << std::endl;
 
@@ -332,9 +292,8 @@ TsTest_SplineData::GetDebugDescription() const
         ss << "Loop:" << std::endl
            << "  start " << _innerLoopParams.protoStart
            << ", end " << _innerLoopParams.protoEnd
-           << ", preStart " << _innerLoopParams.preLoopStart
-           << ", postEnd " << _innerLoopParams.postLoopEnd
-           << ", closed " << _innerLoopParams.closedEnd
+           << ", numPreLoops " << _innerLoopParams.numPreLoops
+           << ", numPostLoops " << _innerLoopParams.numPostLoops
            << ", offset " << _innerLoopParams.valueOffset
            << std::endl;
     }
@@ -357,8 +316,8 @@ TsTest_SplineData::GetDebugDescription() const
                    << ", postLen " << knot.postLen;
             }
 
-            ss << ", auto " << (knot.preAuto ? "true" : "false")
-               << " / " << (knot.postAuto ? "true" : "false");
+            ss << ", auto " << knot.preAuto
+               << " / " << knot.postAuto;
         }
 
         ss << std::endl;

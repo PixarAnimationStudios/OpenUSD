@@ -2,25 +2,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 from pxr import Sdf, Pcp, Tf
 import os, unittest
@@ -202,48 +185,52 @@ class TestPcpLayerMuting(unittest.TestCase):
         rootLayer = self._LoadLayer(os.path.join(os.getcwd(), 'refs/root.sdf'))
         refLayer = self._LoadLayer(os.path.join(os.getcwd(), 'refs/ref.sdf'))
 
-        pcp = self._LoadPcpCache(rootLayer.identifier)
-        pcp2 = self._LoadPcpCache(rootLayer.identifier)
+        def _Test(path):
+            pcp = self._LoadPcpCache(rootLayer.identifier)
+            pcp2 = self._LoadPcpCache(rootLayer.identifier)
 
-        (pi, err) = pcp.ComputePrimIndex('/Root')
-        self.assertTrue(not err)
-        self.assertEqual(pi.rootNode.children[0].arcType, Pcp.ArcTypeReference)
-        self.assertEqual(pi.rootNode.children[0].layerStack.layers[0], refLayer)
+            (pi, err) = pcp.ComputePrimIndex(path)
+            self.assertTrue(not err)
+            self.assertEqual(pi.rootNode.children[0].arcType, Pcp.ArcTypeReference)
+            self.assertEqual(pi.rootNode.children[0].layerStack.layers[0], refLayer)
 
-        (pi2, err2) = pcp2.ComputePrimIndex('/Root')
-        self.assertTrue(not err2)
-        self.assertEqual(pi2.rootNode.children[0].arcType, Pcp.ArcTypeReference)
-        self.assertEqual(pi2.rootNode.children[0].layerStack.layers[0], refLayer)
+            (pi2, err2) = pcp2.ComputePrimIndex(path)
+            self.assertTrue(not err2)
+            self.assertEqual(pi2.rootNode.children[0].arcType, Pcp.ArcTypeReference)
+            self.assertEqual(pi2.rootNode.children[0].layerStack.layers[0], refLayer)
 
-        # Mute the root layer of the referenced layer stack. This should
-        # result in change processing, a composition error when recomposing
-        # /Root, and no reference node on the prim index.
-        pcp.RequestLayerMuting([refLayer.identifier], [])
-        self.assertEqual(pcp.GetMutedLayers(), [refLayer.identifier])
+            # Mute the root layer of the referenced layer stack. This should
+            # result in change processing, a composition error when recomposing
+            # /Root, and no reference node on the prim index.
+            pcp.RequestLayerMuting([refLayer.identifier], [])
+            self.assertEqual(pcp.GetMutedLayers(), [refLayer.identifier])
 
-        (pi, err) = pcp.ComputePrimIndex('/Root')
-        self.assertTrue(err)
-        self.assertEqual(len(pi.rootNode.children), 0)
+            (pi, err) = pcp.ComputePrimIndex(path)
+            self.assertTrue(err)
+            self.assertEqual(len(pi.rootNode.children), 0)
 
-        (pi2, err2) = pcp2.ComputePrimIndex('/Root')
-        self.assertTrue(not err2)
-        self.assertEqual(pi2.rootNode.children[0].arcType, Pcp.ArcTypeReference)
-        self.assertEqual(pi2.rootNode.children[0].layerStack.layers[0], refLayer)
+            (pi2, err2) = pcp2.ComputePrimIndex(path)
+            self.assertTrue(not err2)
+            self.assertEqual(pi2.rootNode.children[0].arcType, Pcp.ArcTypeReference)
+            self.assertEqual(pi2.rootNode.children[0].layerStack.layers[0], refLayer)
 
-        # Unmute the layer and verify that the composition error is resolved
-        # and the reference is restored to the prim index.
-        pcp.RequestLayerMuting([], [refLayer.identifier])
-        self.assertEqual(pcp.GetMutedLayers(), [])
+            # Unmute the layer and verify that the composition error is resolved
+            # and the reference is restored to the prim index.
+            pcp.RequestLayerMuting([], [refLayer.identifier])
+            self.assertEqual(pcp.GetMutedLayers(), [])
 
-        (pi, err) = pcp.ComputePrimIndex('/Root')
-        self.assertTrue(not err)
-        self.assertEqual(pi.rootNode.children[0].arcType, Pcp.ArcTypeReference)
-        self.assertEqual(pi.rootNode.children[0].layerStack.layers[0], refLayer)
+            (pi, err) = pcp.ComputePrimIndex(path)
+            self.assertTrue(not err)
+            self.assertEqual(pi.rootNode.children[0].arcType, Pcp.ArcTypeReference)
+            self.assertEqual(pi.rootNode.children[0].layerStack.layers[0], refLayer)
 
-        (pi2, err2) = pcp2.ComputePrimIndex('/Root')
-        self.assertTrue(not err2)
-        self.assertEqual(pi2.rootNode.children[0].arcType, Pcp.ArcTypeReference)
-        self.assertEqual(pi2.rootNode.children[0].layerStack.layers[0], refLayer)
+            (pi2, err2) = pcp2.ComputePrimIndex(path)
+            self.assertTrue(not err2)
+            self.assertEqual(pi2.rootNode.children[0].arcType, Pcp.ArcTypeReference)
+            self.assertEqual(pi2.rootNode.children[0].layerStack.layers[0], refLayer)
+
+        _Test('/ReferenceToDef')
+        _Test('/ReferenceToOver')
 
     def test_MutingWithFileFormatTarget(self):
         """Tests layer muting for a Pcp.Cache with a file format target."""

@@ -1,31 +1,18 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #ifndef PXR_USD_NDR_PARSER_PLUGIN_H
 #define PXR_USD_NDR_PARSER_PLUGIN_H
 
 /// \file ndr/parserPlugin.h
+///
+/// \deprecated
+/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
+/// in sdr/parserPlugin.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ndr/api.h"
@@ -40,6 +27,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct NdrNodeDiscoveryResult;
 
 /// Register a parser plugin with the plugin system.
+///
+/// \deprecated
+/// Deprecated in favor of SDR_REGISTER_PARSER_PLUGIN
 #define NDR_REGISTER_PARSER_PLUGIN(ParserPluginClass)                   \
 TF_REGISTRY_FUNCTION(TfType)                                            \
 {                                                                       \
@@ -122,6 +112,9 @@ TF_REGISTRY_FUNCTION(TfType)                                            \
 ///         the documentation for the `plug` library (in pxr/base).
 ///     </li>
 /// </ul>
+///
+/// \deprecated
+/// Deprecated in favor of SdrParserPlugin
 class NdrParserPlugin : public TfWeakBase
 {
 public:
@@ -133,6 +126,9 @@ public:
     /// Takes the specified `NdrNodeDiscoveryResult` instance, which was a
     /// result of the discovery process, and generates a new `NdrNode`.
     /// The node's name, source type, and family must match.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of SdrParserPlugin::ParseShaderNode
     NDR_API
     virtual NdrNodeUniquePtr Parse(
         const NdrNodeDiscoveryResult& discoveryResult) = 0;
@@ -159,6 +155,9 @@ public:
     /// Gets an invalid node based on the discovery result provided. An invalid
     /// node is a node that has no properties, but may have basic data found
     /// during discovery.
+    ///
+    /// \deprecated
+    /// Deprecated in favor of SdrParserPlugin::GetInvalidShaderNode
     NDR_API
     static NdrNodeUniquePtr GetInvalidNode(const NdrNodeDiscoveryResult& dr);
 };
@@ -166,7 +165,10 @@ public:
 
 /// \cond
 /// Factory classes should be hidden from the documentation.
-
+///
+/// \deprecated
+/// Deprecated in favor of SdrParserPluginFactoryBase and
+/// SdrParserPluginFactoryBase
 class NdrParserPluginFactoryBase : public TfType::FactoryBase
 {
 public:

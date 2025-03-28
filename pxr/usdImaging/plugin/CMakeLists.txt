@@ -1,2 +1,1 @@
-add_subdirectory(usdShaders)
 add_subdirectory(sdrGlslfx)

@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_SDF_COPY_UTILS_H
 #define PXR_USD_SDF_COPY_UTILS_H
@@ -70,6 +53,12 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// and internal sub-root references that target an object beneath \p srcPath 
 /// will be remapped to target objects beneath \p dstPath.
 ///
+/// If \p srcLayer and \p dstLayer are the same, and either \p srcPath or \p
+/// dstPath is a prefix of the other (see SdfPath::HasPrefix()), then the source
+/// and destination overlap.  In this case, to avoid modifying the source during
+/// the copy operation, SdfCopySpec() first creates a temporary anonymous layer
+/// and copies the source to it.  Then it copies that temporary to the
+/// destination.
 SDF_API
 bool
 SdfCopySpec(
@@ -213,6 +202,15 @@ SdfShouldCopyChildren(
 /// made; client code should arrange for relationship targets and connections to
 /// be specified as prepended, appended, deleted, and/or ordered, as needed.
 ///
+/// If \p srcLayer and \p dstLayer are the same, and either \p srcPath or \p
+/// dstPath is a prefix of the other (see SdfPath::HasPrefix()), then the source
+/// and destination overlap.  In this case, to avoid modifying the source during
+/// the copy operation, SdfCopySpec() first creates a temporary anonymous layer
+/// and copies the source to it using the SdfCopySpec() overload that does not
+/// take "shouldCopy" functions.  Then it copies that temporary to the
+/// destination.  In this case the \p shouldCopyValueFn and \p
+/// shouldCopyChildrenFn will be called with the temporary source layer rather
+/// than the original source layer, but the source paths will be the same.
 SDF_API
 bool 
 SdfCopySpec(

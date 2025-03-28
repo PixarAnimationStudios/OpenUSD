@@ -14,6 +14,7 @@
                         "bases": [
                             "UsdSchemaExamplesSimple"
                         ], 
+                        "schemaIdentifier": "ComplexPrim", 
                         "schemaKind": "concreteTyped"
                     }, 
                     "UsdSchemaExamplesParamsAPI": {
@@ -24,6 +25,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
+                        "schemaIdentifier": "ParamsAPI", 
                         "schemaKind": "singleApplyAPI"
                     }, 
                     "UsdSchemaExamplesSimple": {
@@ -34,6 +36,7 @@
                         "bases": [
                             "UsdTyped"
                         ], 
+                        "schemaIdentifier": "SimplePrim", 
                         "schemaKind": "abstractTyped"
                     }
                 }

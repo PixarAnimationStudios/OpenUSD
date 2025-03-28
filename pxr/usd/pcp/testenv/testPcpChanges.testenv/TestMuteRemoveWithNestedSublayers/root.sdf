@@ -1,0 +1,17 @@
+#sdf 1.4.32
+(
+    subLayers = [
+        @./sub.sdf@
+    ]
+)
+
+def "Parent"
+{
+    over "OverInSublayerAndRoot"
+    {
+    }
+
+    over "OverInRootDefInSublayer"
+    {
+    }
+}

@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/sortedIds.h"
@@ -383,21 +366,110 @@ RemoveLastItemTest()
     return true;
 }
 
+static
+bool
+InsertRemoveDupesTest()
+{
+    std::cout << "\n\nInsertRemoveDupesTest():\n";
+    
+    using P = SdfPath;
+    Hd_SortedIds sortedIds;
+    SdfPathVector expected;
+
+    sortedIds.Insert(P("/B"));
+    sortedIds.Insert(P("/A"));
+
+    expected = {P("/A"),P("/B")};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+    
+    sortedIds.Insert(P("/B"));
+    sortedIds.Insert(P("/A"));
+    sortedIds.Insert(P("/B"));
+    sortedIds.Insert(P("/A"));
+
+    expected = {P("/A"),P("/A"),P("/A"),P("/B"),P("/B"),P("/B")};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+
+    sortedIds.Remove(P("/B"));
+
+    expected = {P("/A"),P("/A"),P("/A"),P("/B"),P("/B")};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+
+    sortedIds.Remove(P("/A"));
+    sortedIds.Remove(P("/B"));
+
+    expected = {P("/A"),P("/A"),P("/B")};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+
+    sortedIds.Remove(P("/A"));
+    sortedIds.Remove(P("/B"));
+
+    expected = {P("/A")};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+
+    sortedIds.Remove(P("/A"));
+
+    expected = {};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+
+    // Ensure that inserting and removing without calling GetIds() between works
+    // as expected.
+
+    sortedIds.Insert(P("B"));
+    sortedIds.Insert(P("B"));
+    sortedIds.Remove(P("B"));
+    sortedIds.Insert(P("A"));
+    sortedIds.Insert(P("B"));
+    sortedIds.Insert(P("A"));
+    sortedIds.Insert(P("A"));
+    sortedIds.Remove(P("B"));
+    sortedIds.Remove(P("A"));
+    sortedIds.Remove(P("A"));
+
+    expected = {P("A"),P("B")};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+
+    sortedIds.Insert(P("C"));
+    sortedIds.Remove(P("B"));
+    sortedIds.Remove(P("B"));
+    sortedIds.Insert(P("C"));
+    sortedIds.Insert(P("A"));
+    sortedIds.Insert(P("B"));
+    sortedIds.Remove(P("C"));
+    sortedIds.Insert(P("C"));
+    sortedIds.Remove(P("C"));
+    sortedIds.Remove(P("A"));
+
+    expected = {P("A"),P("B"),P("C")};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+
+    sortedIds.Insert(P("D"));
+    sortedIds.Remove(P("D"));
+    sortedIds.Remove(P("B"));
+
+    expected = {P("A"),P("C")};
+    TF_AXIOM(sortedIds.GetIds() == expected);
+
+    return true;
+}
+
 int main()
 {
     TfErrorMark mark;
 
-    bool success  = PopulateTest()
-                 && SingleInsertTest()
-                 && MultiInsertTest()
-                 && RemoveTest()
-                 && RemoveOnlyElementTest()
-                 && RemoveRangeTest()
-                 && RemoveBatchTest()
-                 && RemoveSortedTest()
-                 && RemoveUnsortedTest()
-                 && RemoveAfterInsertNoSync()
-                 && RemoveLastItemTest();
+    bool success = PopulateTest()
+        && SingleInsertTest()
+        && MultiInsertTest()
+        && RemoveTest()
+        && RemoveOnlyElementTest()
+        && RemoveRangeTest()
+        && RemoveBatchTest()
+        && RemoveSortedTest()
+        && RemoveUnsortedTest()
+        && RemoveAfterInsertNoSync()
+        && RemoveLastItemTest()
+        && InsertRemoveDupesTest()
+        ;
 
     TF_VERIFY(mark.IsClean());
 

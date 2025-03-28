@@ -12,24 +12,31 @@ class "TestSchemaAPI" (
     uniform token inputs:colorMapGamma (
         allowedTokens = ["texture"]
         connectability = "interfaceOnly"
-        displayGroup = "Basic"
-        displayName = "Map Gamma"
-        doc = """
+        customData = {
+            string userDoc = """
                 uniform color mapping for gamma.
                 """
+            string userDocBrief = """
+                uniform color mapping for gamma.
+                """
+        }
+        displayGroup = "Basic"
+        displayName = "Map Gamma"
     )
     float inputs:intensity = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Basic"
-        displayName = "Intensity"
-        doc = """
+        customData = {
+            string userDoc = """
                 intensity: Itensity of the flame thrower.
                 """
+            string userDocBrief = """
+                intensity: Itensity of the flame thrower.
+                """
+        }
+        displayGroup = "Basic"
+        displayName = "Intensity"
     )
     int inputs:intNotBool = 0
-    uniform token myRenderContext:usda:shaderId = "TestSchemaAPI" (
-        displayGroup = "Internal"
-    )
     color3f outputs:resultRGB
     float propNS:testShaderPropWithNS = 0
 }

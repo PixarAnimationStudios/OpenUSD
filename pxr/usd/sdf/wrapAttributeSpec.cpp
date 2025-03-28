@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 /// \file wrapAttributeSpec.cpp
 
@@ -34,12 +17,13 @@
 #include "pxr/usd/sdf/pySpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyResultConversions.h"
 
-#include <boost/python.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -62,10 +46,60 @@ _WrapSetAllowedTokens(
     spec.SetAllowedTokens(tokenArray);
 }
 
+static
+std::set<double>
+_ListTimeSamples(SdfAttributeSpec const &self)
+{
+    return self.ListTimeSamples();
+}
+
+static
+size_t
+_GetNumTimeSamples(SdfAttributeSpec const &self)
+{
+    return self.GetNumTimeSamples();
+}
+
+static
+VtValue
+_QueryTimeSample(SdfAttributeSpec const &self, double time)
+{
+    VtValue value;
+    self.QueryTimeSample(time, &value);
+    return value;
+}
+
+static
+tuple
+_GetBracketingTimeSamples(SdfAttributeSpec const &self, double time)
+{
+    double tLower = 0, tUpper = 0;
+    bool found = self.GetBracketingTimeSamples(time, &tLower, &tUpper);
+    return pxr_boost::python::make_tuple(found, tLower, tUpper);
+}
+
+static
+void
+_SetTimeSample(SdfAttributeSpec &self,
+               double time, const VtValue& value)
+{
+    self.SetTimeSample(time, value);
+}
+
+static
+void
+_EraseTimeSample(SdfAttributeSpec &self, double time)
+{
+    self.EraseTimeSample(time);
+}
+
 } // anonymous namespace 
 
 void wrapAttributeSpec()
 {
+    def("CreatePrimAttributeInLayer", SdfCreatePrimAttributeInLayer,
+        (arg("layer"), arg("attrPath"), arg("typeName"),
+         arg("variability")=SdfVariabilityVarying, arg("isCustom")=false));
     def("JustCreatePrimAttributeInLayer", SdfJustCreatePrimAttributeInLayer,
         (arg("layer"), arg("attrPath"), arg("typeName"),
          arg("variability")=SdfVariabilityVarying, arg("isCustom")=false));
@@ -85,14 +119,14 @@ void wrapAttributeSpec()
                                   bool) = &This::New;
                                 
     class_<This, SdfHandle<This>, 
-           bases<SdfPropertySpec>, boost::noncopyable>
+           bases<SdfPropertySpec>, noncopyable>
         ("AttributeSpec", no_init)
         
         .def(SdfPySpec())
         .def("__unused__",
             SdfMakePySpecConstructor(wrapNewPrimAttr,
                 "__init__(ownerPrimSpec, name, typeName, "
-                "variability = Sd.VariabilityVarying, "
+                "variability = Sdf.VariabilityVarying, "
                 "declaresCustom = False)\n"
                 "ownerPrimSpec : PrimSpec\n"
                 "name : string\n"
@@ -146,6 +180,16 @@ void wrapAttributeSpec()
 
         .def("HasColorSpace", &This::HasColorSpace)
         .def("ClearColorSpace", &This::ClearColorSpace)
+
+        .def("ListTimeSamples", &_ListTimeSamples,
+             return_value_policy<TfPySequenceToList>())
+        .def("GetNumTimeSamples", &_GetNumTimeSamples)
+        .def("GetBracketingTimeSamples",
+             &_GetBracketingTimeSamples)
+        .def("QueryTimeSample",
+             &_QueryTimeSample)
+        .def("SetTimeSample", &_SetTimeSample)
+        .def("EraseTimeSample", &_EraseTimeSample)
 
         // property keys
         // XXX DefaultValueKey are actually

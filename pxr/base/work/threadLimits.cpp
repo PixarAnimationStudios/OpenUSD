@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 // threadLimits.cpp
 //
@@ -29,8 +12,17 @@
 
 #include "pxr/base/tf/envSetting.h"
 
-#include <tbb/task_scheduler_init.h>
+// Blocked range is not used in this file, but this header happens to pull in
+// the TBB version header in a way that works in all TBB versions.
+#include <tbb/blocked_range.h>
 #include <tbb/task_arena.h>
+
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
+#include <tbb/global_control.h>
+#include <tbb/info.h>
+#else
+#include <tbb/task_scheduler_init.h>
+#endif
 
 #include <algorithm>
 #include <atomic>
@@ -58,16 +50,25 @@ TF_DEFINE_ENV_SETTING(
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// We create a task_scheduler_init instance at static initialization time if
-// PXR_WORK_THREAD_LIMIT is set to a nonzero value.  Otherwise this stays NULL.
-static tbb::task_scheduler_init *_tbbTaskSchedInit;
+// We create a global_control or task_scheduler_init instance at static
+// initialization time if PXR_WORK_THREAD_LIMIT is set to a nonzero value.
+// Otherwise this stays NULL.
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
+static tbb::global_control *_tbbGlobalControl = nullptr;
+#else
+static tbb::task_scheduler_init *_tbbTaskSchedInit = nullptr;
+#endif
 
 unsigned
 WorkGetPhysicalConcurrencyLimit()
 {
     // Use TBB here, since it pays attention to the affinity mask on Linux and
     // Windows.
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
+    return tbb::info::default_concurrency();
+#else
     return tbb::task_scheduler_init::default_num_threads();
+#endif
 }
 
 // This function always returns an actual thread count >= 1.
@@ -123,7 +124,12 @@ Work_InitializeThreading()
     // previously initialized by the hosting environment (e.g. if we are running
     // as a plugin to another application.)
     if (settingVal) {
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
+        _tbbGlobalControl = new tbb::global_control(
+            tbb::global_control::max_allowed_parallelism, threadLimit);
+#else
         _tbbTaskSchedInit = new tbb::task_scheduler_init(threadLimit);
+#endif
     }
 }
 static int _forceInitialization = (Work_InitializeThreading(), 0);
@@ -153,6 +159,12 @@ WorkSetConcurrencyLimit(unsigned n)
         threadLimit = WorkGetConcurrencyLimit();
     }
 
+    
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
+    delete _tbbGlobalControl;
+    _tbbGlobalControl = new tbb::global_control(
+        tbb::global_control::max_allowed_parallelism, threadLimit);
+#else
     // Note that we need to do some performance testing and decide if it's
     // better here to simply delete the task_scheduler_init object instead
     // of re-initializing it.  If we decide that it's better to re-initialize
@@ -168,6 +180,7 @@ WorkSetConcurrencyLimit(unsigned n)
     } else {
         _tbbTaskSchedInit = new tbb::task_scheduler_init(threadLimit);
     }
+#endif
 }
 
 void 
@@ -185,7 +198,17 @@ WorkSetConcurrencyLimitArgument(int n)
 unsigned
 WorkGetConcurrencyLimit()
 {
+#if TBB_INTERFACE_VERSION_MAJOR >= 12
+    // The effective concurrency requires taking into account both the
+    // task_arena and internal thread pool size set by global_control.
+    // https://github.com/oneapi-src/oneTBB/issues/405
+    return std::min<unsigned>(
+        tbb::global_control::active_value(
+            tbb::global_control::max_allowed_parallelism), 
+        tbb::this_task_arena::max_concurrency());
+#else
     return tbb::this_task_arena::max_concurrency();
+#endif
 }
 
 bool

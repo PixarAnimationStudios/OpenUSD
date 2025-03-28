@@ -38,6 +38,16 @@
 // Pixar modification, modify namespace for isolation.
 #include "pxr/pxr.h"
 
+// A change of the major version indicates an API and/or ABI break (change of
+// in-memory layout of the data structure)
+#define PXR_TSL_RH_VERSION_MAJOR 1
+// A change of the minor version indicates the addition of a feature without
+// impact on the API/ABI
+#define PXR_TSL_RH_VERSION_MINOR 3
+// A change of the patch version indicates a bugfix without additional
+// functionality
+#define PXR_TSL_RH_VERSION_PATCH 0
+
 #ifdef PXR_TSL_DEBUG
 #define pxr_tsl_rh_assert(expr) assert(expr)
 #else
@@ -54,15 +64,15 @@
 #define PXR_TSL_RH_THROW_OR_TERMINATE(ex, msg) throw ex(msg)
 #else
 #define PXR_TSL_RH_NO_EXCEPTIONS
-#ifdef NDEBUG
-#define PXR_TSL_RH_THROW_OR_TERMINATE(ex, msg) std::terminate()
-#else
+#ifdef PXR_TSL_DEBUG
 #include <iostream>
 #define PXR_TSL_RH_THROW_OR_TERMINATE(ex, msg) \
   do {                                     \
     std::cerr << msg << std::endl;         \
     std::terminate();                      \
   } while (0)
+#else
+#define PXR_TSL_RH_THROW_OR_TERMINATE(ex, msg) std::terminate()
 #endif
 #endif
 

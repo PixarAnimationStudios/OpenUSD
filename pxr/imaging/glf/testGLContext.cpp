@@ -1,36 +1,21 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/glf/testGLContext.h"
 
 #include "pxr/base/tf/diagnostic.h"
 
+#ifdef PXR_X11_SUPPORT_ENABLED
 #include <GL/glx.h>
+#endif
 
-#include <stdio.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#ifdef PXR_X11_SUPPORT_ENABLED
 
 class Glf_TestGLContextPrivate {
 public:
@@ -130,6 +115,77 @@ Glf_TestGLContextPrivate::areSharing( const Glf_TestGLContextPrivate * context1,
 
     return context1->_sharedContext==context2->_sharedContext;
 }
+#else // PXR_X11_SUPPORT_ENABLED
+
+class Glf_TestGLContextPrivate
+{
+public:
+    Glf_TestGLContextPrivate(Glf_TestGLContextPrivate const * other = nullptr);
+
+    void makeCurrent() const;
+
+    bool isValid();
+
+    bool operator==(const Glf_TestGLContextPrivate& rhs) const;
+
+    static const Glf_TestGLContextPrivate * currentContext();
+
+    static bool areSharing(const Glf_TestGLContextPrivate * context1,
+                           const Glf_TestGLContextPrivate * context2);
+
+private:
+    Glf_TestGLContextPrivate const * _sharedContext;
+
+    static Glf_TestGLContextPrivate const * _currenGLContext;
+};
+
+Glf_TestGLContextPrivate const * Glf_TestGLContextPrivate::_currenGLContext =
+    nullptr;
+
+Glf_TestGLContextPrivate::Glf_TestGLContextPrivate(
+    Glf_TestGLContextPrivate const * other)
+{
+    _sharedContext = other ? other : this;
+}
+
+void
+Glf_TestGLContextPrivate::makeCurrent() const
+{
+    _currenGLContext = this;
+}
+
+bool
+Glf_TestGLContextPrivate::isValid()
+{
+    return true;
+}
+
+bool
+Glf_TestGLContextPrivate::operator==(const Glf_TestGLContextPrivate& rhs) const
+{
+    return true;
+}
+
+const Glf_TestGLContextPrivate *
+Glf_TestGLContextPrivate::currentContext()
+{
+    return _currenGLContext;
+}
+
+bool
+Glf_TestGLContextPrivate::areSharing(
+    const Glf_TestGLContextPrivate * context1,
+    const Glf_TestGLContextPrivate * context2)
+{
+    if (!context1 || !context2) {
+        return false;
+    }
+
+    return context1->_sharedContext == context2->_sharedContext;
+}
+
+#endif // PXR_X11_SUPPORT_ENABLED
+
 
 Glf_TestGLContextPrivate *
 _GetSharedContext()
@@ -234,4 +290,3 @@ GlfTestGLContext::_IsEqual(GlfGLContextSharedPtr const &rhs) const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

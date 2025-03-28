@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifdef PXR_BASE_TF_PY_MODULE_H
 #error This file should only be included once in any given source (.cpp) file.
@@ -32,7 +15,7 @@
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 
-#include <boost/python/module.hpp>
+#include "pxr/external/boost/python/module.hpp"
 
 // Helper macros for module files.  If you implement your wrappers for classes
 // as functions named wrapClassName(), then you can create your module like
@@ -97,7 +80,7 @@ PyObject* TF_PP_CAT(PyInit__, MFB_PACKAGE_NAME)() {
     };
 
     PXR_NAMESPACE_USING_DIRECTIVE
-    return boost::python::detail::init_module(moduledef,
+    return pxr_boost::python::detail::init_module(moduledef,
                 TF_PP_CAT(init_module_, MFB_PACKAGE_NAME));
 }
 
@@ -130,7 +113,7 @@ PyObject* TF_PP_CAT(PyInit_lib, MFB_PACKAGE_NAME)() {
     };
 
     PXR_NAMESPACE_USING_DIRECTIVE
-    return boost::python::detail::init_module(moduledef, 
+    return pxr_boost::python::detail::init_module(moduledef, 
                 TF_PP_CAT(init_module_, MFB_PACKAGE_NAME));
 }
 

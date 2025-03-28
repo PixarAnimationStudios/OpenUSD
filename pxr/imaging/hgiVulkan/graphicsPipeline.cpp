@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/iterator.h"
@@ -139,9 +122,9 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     vertexInput.pVertexBindingDescriptions = vertBufs.data();
     vertexInput.vertexBindingDescriptionCount = (uint32_t) vertBufs.size();
 
+    VkPipelineVertexInputDivisorStateCreateInfoEXT vertexInputDivisor =
+        {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT};
     if (!vertBindingDivisors.empty()) {
-        VkPipelineVertexInputDivisorStateCreateInfoEXT vertexInputDivisor =
-            {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT};
         vertexInputDivisor.pVertexBindingDivisors = vertBindingDivisors.data();
         vertexInputDivisor.vertexBindingDivisorCount =
             (uint32_t) vertBindingDivisors.size();
@@ -228,7 +211,8 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     multisampleState.sampleShadingEnable = VK_FALSE;
     multisampleState.minSampleShading = 0.5f;
     multisampleState.alphaToCoverageEnable = ms.alphaToCoverageEnable;
-    multisampleState.alphaToOneEnable = ms.alphaToOneEnable;
+    multisampleState.alphaToOneEnable = ms.alphaToOneEnable &&
+        _device->GetDeviceCapabilities().vkDeviceFeatures.alphaToOne;
     pipeCreateInfo.pMultisampleState = &multisampleState;
 
     //
@@ -346,12 +330,12 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     pipeLayCreateInfo.setLayoutCount= (uint32_t) _vkDescriptorSetLayouts.size();
     pipeLayCreateInfo.pSetLayouts = _vkDescriptorSetLayouts.data();
 
-    TF_VERIFY(
+    HGIVULKAN_VERIFY_VK_RESULT(
         vkCreatePipelineLayout(
             _device->GetVulkanDevice(),
             &pipeLayCreateInfo,
             HgiVulkanAllocator(),
-            &_vkPipelineLayout) == VK_SUCCESS
+            &_vkPipelineLayout)
     );
 
     // Debug label
@@ -378,14 +362,14 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     //
     HgiVulkanPipelineCache* pCache = device->GetPipelineCache();
 
-    TF_VERIFY(
+    HGIVULKAN_VERIFY_VK_RESULT(
         vkCreateGraphicsPipelines(
             _device->GetVulkanDevice(),
             pCache->GetVulkanPipelineCache(),
             1,
             &pipeCreateInfo,
             HgiVulkanAllocator(),
-            &_vkPipeline) == VK_SUCCESS
+            &_vkPipeline)
     );
 
     // Debug label
@@ -519,12 +503,12 @@ HgiVulkanGraphicsPipeline::AcquireVulkanFramebuffer(
     fbCreateInfo.height = framebuffer.dimensions[1];
     fbCreateInfo.layers = 1;
 
-    TF_VERIFY(
+    HGIVULKAN_VERIFY_VK_RESULT(
         vkCreateFramebuffer(
             _device->GetVulkanDevice(),
             &fbCreateInfo,
             HgiVulkanAllocator(),
-            &framebuffer.vkFramebuffer) == VK_SUCCESS
+            &framebuffer.vkFramebuffer)
     );
 
     // Debug label
@@ -718,7 +702,7 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
     if (hasDepth && _descriptor.resolveAttachments) {
         depthResolve.pDepthStencilResolveAttachment = &vkDepthResolveReference;
         depthResolve.depthResolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
-        depthResolve.stencilResolveMode = VK_RESOLVE_MODE_NONE;
+        depthResolve.stencilResolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
         subpassDesc.pNext = &depthResolve;
     }
 
@@ -782,12 +766,12 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
     vkCreateRenderPass2KHR = (PFN_vkCreateRenderPass2KHR) vkGetDeviceProcAddr(
         _device->GetVulkanDevice(), "vkCreateRenderPass2KHR");
 
-    TF_VERIFY(
+    HGIVULKAN_VERIFY_VK_RESULT(
         vkCreateRenderPass2KHR(
             _device->GetVulkanDevice(),
             &renderPassInfo,
             HgiVulkanAllocator(),
-            &_vkRenderPass) == VK_SUCCESS
+            &_vkRenderPass)
     );
 
     // Debug label

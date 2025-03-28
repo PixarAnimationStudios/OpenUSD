@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 
@@ -1203,7 +1186,7 @@ HdSt_OsdIndexComputation::Resolve()
         _topology->RefinesToBoxSplineTrianglePatches()) {
 
         // Bundle groups of 12 or 16 patch control vertices.
-        int const arraySize = patchTable
+        int const arraySize = (ptableSize > 0)
             ? patchTable->GetPatchArrayDescriptor(0).GetNumControlVertices()
             : 0;
 
@@ -1453,15 +1436,12 @@ HdSt_OsdFvarIndexComputation::Resolve()
         return true;
     }
 
-    VtIntArray fvarIndices = subdivision->GetRefinedFvarIndices(_channel);
-    if (!TF_VERIFY(!fvarIndices.empty())) {
-        _SetResolved();
-        return true;
-    }
-
-    Far::Index const * firstIndex = fvarIndices.cdata();
     Far::PatchTable const * patchTable = subdivision->GetPatchTable();
-    size_t numPatches = patchTable ? patchTable->GetNumPatchesTotal() : 0;
+    size_t const numPatches = patchTable ? patchTable->GetNumPatchesTotal() : 0;
+
+    VtIntArray fvarIndices = subdivision->GetRefinedFvarIndices(_channel);
+    Far::Index const * firstIndex =
+        !fvarIndices.empty() ? fvarIndices.cdata() : nullptr;
 
     TfToken const & scheme = _topology->GetScheme();
 
@@ -1469,7 +1449,7 @@ HdSt_OsdFvarIndexComputation::Resolve()
         _topology->RefinesToBoxSplineTrianglePatches()) {
 
         // Bundle groups of 12 or 16 patch control vertices
-        int const arraySize = patchTable ?
+        int const arraySize = (numPatches > 0) ?
             patchTable->GetFVarPatchDescriptor(_channel).GetNumControlVertices()
             : 0;
 
@@ -1928,11 +1908,11 @@ _EvalStencilsGPU(
     // Generate hash for resource bindings and pipeline.
     // XXX Needs fingerprint hash to avoid collisions
     uint64_t const rbHash = (uint64_t) TfHash::Combine(
-        sizes->GetHandle().Get(),
-        offsets->GetHandle().Get(),
-        indices->GetHandle().Get(),
-        weights->GetHandle().Get(),
-        primvar->GetHandle().Get());
+        sizes->GetHandle().GetId(),
+        offsets->GetHandle().GetId(),
+        indices->GetHandle().GetId(),
+        weights->GetHandle().GetId(),
+        primvar->GetHandle().GetId());
 
     uint64_t const pHash = (uint64_t) TfHash::Combine(
         computeProgram->GetProgram().Get(),

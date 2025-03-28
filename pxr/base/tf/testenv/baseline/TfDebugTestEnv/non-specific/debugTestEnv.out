@@ -23,5 +23,7 @@ TF_LOG_STACK_TRACE_ON_WARNING:
 TF_PRINT_ALL_POSTED_ERRORS_TO_STDERR:
                            print all posted errors immediately, meaning that even errors that are expected and handled will be printed, producing possibly confusing output
 TF_SCRIPT_MODULE_LOADER  : show script module loading activity
+TF_SCRIPT_MODULE_LOADER_EXTRA:
+                           show more script module loading activity
 TF_TYPE_REGISTRY         : show changes to the TfType registry
 

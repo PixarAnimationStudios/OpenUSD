@@ -5,6 +5,15 @@
 )
 
 def "Root" (
+    references = </Params>
+    # Payload to the dynamic file. The file must exist but its contents are
+    # irrelevant as everything is generated from parameters above.
+    payload = @anon:dummy:e.usddancingcubesexample@
+)
+{
+}
+
+def "Params" (
     # Dictionary value metadata field that provides all the parameters to
     # generate the layer in the payload. Change these values to change the 
     # contents of the file.
@@ -16,9 +25,22 @@ def "Root" (
         double moveScale = 1.5
         token geomType = "Cube"
     }
-    # Payload to the dynamic file. The file must exist but its contents are
-    # irrelevant as everything is generated from parameters above.
-    payload = @anon:dummy:e.usddancingcubesexample@
-)
+
+    variants = {
+        string geomTypeVariant = "cube"
+    }
+    prepend variantSets = "geomTypeVariant"
+) 
 {
+    variantSet "geomTypeVariant" = {
+    "cube" {
+      token geomType = "Cube"
+    }
+    "sphere" {
+      token geomType = "Sphere"
+    }
+    "cone" {
+      token geomType = "Cone"
+    }
+  }
 }

@@ -2,25 +2,8 @@
 #
 # Copyright 2016 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 """
 This script generates C++ classes and supporting Python code for USD Schemata.
@@ -40,7 +23,7 @@ generated that will compile and work with USD Core successfully:
       direct subLayer.
 """
 
-from __future__ import print_function
+import dataclasses
 import sys, os, re, inspect
 import keyword
 from argparse import ArgumentParser
@@ -123,6 +106,10 @@ FALLBACK_TYPES = "fallbackTypes"
 # This has a special meaning if found in a schema.usda.
 INSTANCE_NAME_PLACEHOLDER = \
     Usd.SchemaRegistry.MakeMultipleApplyNameTemplate("", "")
+
+# Custom metadata tokens for user doc
+USERDOC_BRIEF = "userDocBrief"
+USERDOC_FULL = "userDoc"
 
 #------------------------------------------------------------------------------#
 # Parsed Objects                                                               #
@@ -293,14 +280,14 @@ def _CamelCase(aString):
 Token = namedtuple('Token', ['id', 'value', 'desc'])
 
 def _GetNameAndGeneratedSchemaPropNameForPropInfo(sdfPropName, classInfo):
-    if classInfo.propertyNamespacePrefix:
+    if classInfo.propertyNamespace:
         # A property namespace prefix will only exist for multiple apply API
         # schemas and is used to create the instanceable namespace prefix 
         # prepended to all its properties. We prepend this instanceable 
         # prefix to the raw name here.
         generatedSchemaPropName = \
             Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
-                classInfo.propertyNamespacePrefix, sdfPropName)
+                classInfo.propertyNamespace.prefix, sdfPropName)
         # Since the property info's name is used to create the identifier 
         # used for tokens and such, we make it from the instanced property 
         # name with the instance name placeholder replaced with 
@@ -480,6 +467,17 @@ def _InheritsOwnFamily(p):
         p.GetPath().name)
     return family in allInheritedFamilies
 
+@dataclasses.dataclass
+class MultiApplyPropertyNamespace:
+    prefix : str
+    token : str
+
+    @classmethod
+    def Create(cls, prefix, useLiteralIdentifier):
+        return cls(prefix, _MakeValidToken(prefix, useLiteralIdentifier)) \
+               if prefix else None
+
+
 class ClassInfo(object):
     def __init__(self, usdPrim, sdfPrim, useLiteralIdentifier=False):
         # First validate proper class naming...
@@ -601,8 +599,10 @@ class ClassInfo(object):
                 not self.isAPISchemaBase and not self.isTypedBase
         self.apiSchemaType = self.customData.get(API_SCHEMA_TYPE, 
                 SINGLE_APPLY if self.isApi else None)
-        self.propertyNamespacePrefix = \
-            self.customData.get(PROPERTY_NAMESPACE_PREFIX)
+        self.propertyNamespace = MultiApplyPropertyNamespace.Create(
+            self.customData.get(PROPERTY_NAMESPACE_PREFIX),
+            useLiteralIdentifier
+        )
         self.apiAutoApply = self.customData.get(API_AUTO_APPLY)
         self.apiCanOnlyApply = self.customData.get(API_CAN_ONLY_APPLY)
         self.apiAllowedInstanceNames = self.customData.get(
@@ -616,7 +616,7 @@ class ClassInfo(object):
                 sdfPrim.path)
 
         if self.apiSchemaType != MULTIPLE_APPLY:
-            if self.propertyNamespacePrefix:
+            if self.propertyNamespace:
                 raise _GetSchemaDefException(
                     "%s should only be used as a customData field on "
                     "multiple-apply API schemas." % PROPERTY_NAMESPACE_PREFIX,
@@ -795,7 +795,7 @@ def _MakeMultipleApplySchemaNameTemplate(apiSchemaName):
 # use the USD prim because we need to know all override properties for the 
 # flattened schema class, so this will include any overrides provided purely 
 # through inheritance.
-def _GetAPISchemaOverridePropertyNames(usdPrim, propertyNamespacePrefix):
+def _GetAPISchemaOverridePropertyNames(usdPrim, propertyNamespace):
     apiSchemaOverridePropertyNames = []
 
     for usdProp in usdPrim.GetProperties():
@@ -845,9 +845,9 @@ def _GetAPISchemaOverridePropertyNames(usdPrim, propertyNamespacePrefix):
         # schemas. If so, the property names need to be converted into their
         # template names to match the properties that will be in the 
         # generatedSchema.
-        if propertyNamespacePrefix:
+        if propertyNamespace:
             propName = Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
-                propertyNamespacePrefix, propName)
+                propertyNamespace.prefix, propName)
 
         # Add the property name to the list.
         apiSchemaOverridePropertyNames.append(propName)
@@ -880,13 +880,13 @@ def ParseUsd(usdFilePath):
         # make sure that if we have a multiple-apply schema with a property
         # namespace prefix that the prim actually has some properties
         if classInfo.apiSchemaType == MULTIPLE_APPLY:
-            if classInfo.propertyNamespacePrefix and \
+            if classInfo.propertyNamespace and \
                 len(sdfPrim.properties) == 0:
                     raise _GetSchemaDefException(
                         "Multiple-apply schemas that have the "
                         "propertyNamespacePrefix metadata fields must have at "
                         "least one property", sdfPrim.path)
-            if not classInfo.propertyNamespacePrefix and \
+            if not classInfo.propertyNamespace and \
                 not len(sdfPrim.properties) == 0:
                     raise _GetSchemaDefException(
                         "Multiple-apply schemas that do not"
@@ -967,7 +967,7 @@ def ParseUsd(usdFilePath):
         # schemas.
         classInfo.apiSchemaOverridePropertyNames = \
             _GetAPISchemaOverridePropertyNames(
-                usdPrim, classInfo.propertyNamespacePrefix)
+                usdPrim, classInfo.propertyNamespace)
     
     for classInfo in classes:
         # If this is an applied API schema that does not inherit from 
@@ -1265,9 +1265,9 @@ def GatherTokens(classes, libName, libTokens,
 
         # Add property namespace prefix token for multiple-apply API
         # schema to token set
-        if cls.propertyNamespacePrefix:
-            _AddToken(tokenDict, cls.tokens, cls.propertyNamespacePrefix,
-                      cls.propertyNamespacePrefix,
+        if cls.propertyNamespace:
+            _AddToken(tokenDict, cls.tokens, cls.propertyNamespace.token,
+                      cls.propertyNamespace.prefix,
                       "Property namespace prefix for the %s schema." \
                               % cls.cppClassName, True)
 
@@ -1507,8 +1507,13 @@ def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env,
             # for multiple apply schemas.
             _UpdatePlugInfoWithAPISchemaApplyInfo(clsDict, cls)
 
-            # Write out alias/primdefs for all schemas
-            clsDict['alias'] = {'UsdSchemaBase': cls.usdPrimTypeName}
+            # Write out aliases for schemas where the cpp class name and 
+            # prim type name do not match.
+            if cls.usdPrimTypeName != cls.cppClassName:
+                clsDict['alias'] = {'UsdSchemaBase': cls.usdPrimTypeName}
+
+            # Write out schema identifier
+            clsDict['schemaIdentifier'] = cls.usdPrimTypeName
 
             types[cls.cppClassName] = clsDict
         # write plugInfo file back out.
@@ -1607,6 +1612,57 @@ def _RenamePropertiesWithInstanceablePrefix(usdPrim):
     for name in originalPropNames:
         usdPrim.RemoveProperty(name)
 
+def _GetUserDocForSchemaObj(obj, userDocSchemaObj):
+    """
+    Find brief user doc for a schema object, in either the specifically authored
+    user doc info in userDocSchemaObj, or the schema obj itself.
+    Returns brief user doc string, or None if no reasonable brief user doc found
+    """
+    # Start by looking at userDocSchemaObj for USERDOC_BRIEF customData
+    if userDocSchemaObj is not None and USERDOC_BRIEF in userDocSchemaObj.GetCustomData():
+        return userDocSchemaObj.GetCustomData().get(USERDOC_BRIEF)
+    else:
+        # See if USERDOC_BRIEF exists on schema object's custom data
+        return obj.customData.get(USERDOC_BRIEF)
+
+def _UpdateUserDocForRegistry(filePath, flatLayer):
+    """
+    Find the best source for "brief" user doc for the schema and apply it
+    This is only done for the schema registry, and not for codegen
+    """
+    briefDict = {}
+    # Load <schema path>/userDoc/schemaUserDoc.usda if it exists
+    userDocSchemaFile = os.path.join(os.path.dirname(os.path.abspath(filePath)),
+     "userDoc", "schemaUserDoc.usda")
+    userDocStage = None
+    if (os.path.isfile(userDocSchemaFile) and os.access(userDocSchemaFile, os.R_OK)):
+        userDocStage = Usd.Stage.Open(userDocSchemaFile)        
+    # Walk through flattened schema stage and look for same-path classes in 
+    # userDocStage if available, to get the appropriate brief user doc
+    for cls in flatLayer.rootPrims:
+        # Ignore GLOBAL 
+        if cls.name == "GLOBAL":
+            continue
+        if userDocStage is not None:
+            userDocCls = userDocStage.GetPrimAtPath(cls.path)
+            if not userDocCls:
+                userDocCls = None
+        else:
+            userDocCls = None
+        briefUserDoc = _GetUserDocForSchemaObj(cls, userDocCls)
+        if briefUserDoc is not None:
+            briefDict[cls.path] = briefUserDoc
+        # Look for property user doc
+        for clsProp in cls.properties:
+            if userDocCls is not None:
+                userDocClsProp = userDocCls.GetPropertyAtPath(clsProp.path)
+            else:
+                userDocClsProp = None
+            briefUserDoc = _GetUserDocForSchemaObj(clsProp, userDocClsProp)
+            if briefUserDoc is not None:
+                briefDict[clsProp.path] = briefUserDoc
+    return briefDict
+
 def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
 
     # Get the flattened layer to work with.
@@ -1617,6 +1673,11 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
     # lower-level schema modules.  We hop back up to the UsdStage API to do
     # so because it is more convenient for these kinds of operations.
     flatStage = Usd.Stage.Open(flatLayer)
+
+    # Gather schema class and property brief user doc if found.
+    # Do this here, before we strip out customData.
+    briefDict = _UpdateUserDocForRegistry(filePath, flatLayer)
+
     pathsToDelete = []
     primsToKeep = {cls.usdPrimTypeName : cls for cls in classes}
     if not flatStage.RemovePrim('/GLOBAL'):
@@ -1690,6 +1751,19 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
             p.SetCustomDataByKey('apiSchemaOverridePropertyNames',
                                  Vt.TokenArray(apiSchemaOverridePropertyNames))
 
+        # Set user doc brief strings in class and property customData if
+        # authored, using the path-based dictionary we set in the call to 
+        # _UpdateUserDocForRegistry above. Note that we need to do this after 
+        # clearing other custom data.
+        workPathStr = p.GetPath()
+        if workPathStr in briefDict:
+            p.SetCustomDataByKey(USERDOC_BRIEF, briefDict[workPathStr])
+        for myproperty in p.GetAuthoredProperties():
+            workPathStr = myproperty.GetPath()
+            if workPathStr in briefDict:
+                myproperty.SetCustomDataByKey(USERDOC_BRIEF,
+                 briefDict[workPathStr])
+
     for p in pathsToDelete:
         flatStage.RemovePrim(p)
         
@@ -1716,6 +1790,81 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
 
     _WriteFile(os.path.join(codeGenPath, 'generatedSchema.usda'), layerSource,
                validate)
+
+def processChildren(parent, parentToChildren, ret):
+    # Add parent to list.
+    ret.append(parent)
+
+    # Add children and grandchildren.
+    for child in parentToChildren.get(parent.baseFileName, []):
+        processChildren(child, parentToChildren, ret)
+
+def getTopoSortedSchemas(classes):
+    classNames = [x.baseFileName for x in classes]
+    parentToChildren = dict()
+
+    # Identify schemas with no parents in the current file and
+    # map parent schema classes to a list of their children.
+    roots = []
+    for cls in classes:
+        if cls.parentBaseFileName not in classNames: 
+            roots.append(cls)
+        else:
+            children = parentToChildren.get(cls.parentBaseFileName, [])
+            children.append(cls)
+            parentToChildren[cls.parentBaseFileName] = children
+
+    # Add dependent schemas recursively.
+    ret = []
+    for root in roots:
+        processChildren(root, parentToChildren, ret)
+
+    return ret
+
+def GenerateBuildHelpers(templatePath, codeGenPath, tokenData, classList, 
+                         libName, validate, env):
+    Print('Generating Build Helper Files:')
+
+    #
+    # Load Templates
+    #
+    Print('Loading Templates from {0}'.format(templatePath))
+    try:
+        moduleTemplate = env.get_template('generatedSchema.module.h')
+        classesTemplate = env.get_template('generatedSchema.classes.txt')
+    except TemplateNotFound as tnf:
+        raise RuntimeError("Template not found: {0}".format(str(tnf)))
+    except TemplateSyntaxError as tse:
+        raise RuntimeError("Syntax error in template {0} at line {1}: {2}"
+                           .format(tse.filename, tse.lineno, tse))
+
+    classes = getTopoSortedSchemas(classList)
+
+    # Write out public classes, resource files, and python module files
+    baseFileNames = [classObj.baseFileName for classObj in classes]
+    wrapFileNames = [classObj.GetWrapFile() for classObj in classes]
+    if tokenData:
+        baseFileNames.append("tokens")
+        wrapFileNames.append("wrapTokens.cpp")
+    wrapFileNames.append("module.cpp")
+    
+    classesFilePath = os.path.join(codeGenPath, 'generatedSchema.classes.txt')
+    if not os.path.exists(classesFilePath):
+        open(classesFilePath, 'w+')
+    _WriteFile(classesFilePath, classesTemplate.render(
+               publicClasses=sorted(baseFileNames), 
+               pythonModules=sorted(wrapFileNames), 
+               libName=libName), validate)
+
+    # Write out generated module.cpp contents
+    cppClassNames = [classObj.cppClassName for classObj in classes]
+    cppClassNames.append(_ProperCase(libName + "Tokens"))
+
+    modulesFilePath = os.path.join(codeGenPath, 'generatedSchema.module.h')
+    if not os.path.exists(modulesFilePath):
+        open(modulesFilePath, 'w+')
+    _WriteFile(modulesFilePath, 
+               moduleTemplate.render(pythonModules=cppClassNames), validate)
 
 def InitializeResolver():
     """Initialize the resolver so that search paths pointing to schema.usda
@@ -1800,6 +1949,13 @@ if __name__ == '__main__':
     codeGenPath = os.path.abspath(args.codeGenPath)
     schemaPath = os.path.abspath(args.schemaPath)
 
+    # Check for expected library files
+    expectedFiles = ["__init__.py", "CMakeLists.txt", 'module.cpp']
+    for file in expectedFiles:
+        if not os.path.exists(os.path.join(codeGenPath, file)):
+            Print('WARNING: File {0} is missing. Run usdInitSchema to set up ' 
+                  'build necessities'.format(file))
+
     if args.templatePath:
         templatePath = os.path.abspath(args.templatePath)
     else:
@@ -1824,7 +1980,8 @@ if __name__ == '__main__':
     # Error Checking
     #
     if not os.path.isfile(schemaPath):
-        Print.Err('Usage Error: First positional argument must be a USD schema file.')
+        Print.Err('Usage Error: First positional argument must be a USD schema '
+                  'file. Use usdInitSchema.py to generate a template.')
         parser.print_help()
         sys.exit(1)
     if args.templatePath and not os.path.isdir(templatePath):
@@ -1849,7 +2006,7 @@ if __name__ == '__main__':
         libTokens, \
         skipCodeGen, \
         classes = ParseUsd(schemaPath)
-        
+
         if args.validate:
             Print('Validation on, any diffs found will cause failure.')
 
@@ -1886,6 +2043,10 @@ if __name__ == '__main__':
                          args.validate,
                          namespaceOpen, namespaceClose, namespaceUsing,
                          useExportAPI, j2_env, args.headerTerminatorString)
+            # Generate Build Helper Files
+            GenerateBuildHelpers(templatePath, codeGenPath, tokenData, classes, 
+                                 libName, args.validate, j2_env)
+
         # We always generate plugInfo and generateSchema.
         GeneratePlugInfo(templatePath, codeGenPath, classes, args.validate,
                          j2_env, skipCodeGen)

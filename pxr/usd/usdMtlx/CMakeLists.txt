@@ -6,10 +6,11 @@ if (MATERIALX_STDLIB_DIR)
 endif()
 
 pxr_library(usdMtlx
+    INCLUDE_SCHEMA_FILES
+
     LIBRARIES
         arch
         gf
-        ndr
         sdf
         sdr
         tf
@@ -23,7 +24,6 @@ pxr_library(usdMtlx
         MaterialXFormat
 
     CPPFILES
-        debugCodes.cpp
         discovery.cpp
         parser.cpp
 
@@ -32,27 +32,18 @@ pxr_library(usdMtlx
         fileFormat
 
     PUBLIC_CLASSES
+        debugCodes
         reader
         utils
-
-    PRIVATE_HEADERS
-        debugCodes.h
 
     PUBLIC_HEADERS
         api.h
 
-    PYTHON_CPPFILES
-        moduleDeps.cpp
-
     PYMODULE_CPPFILES
-        module.cpp
         wrapBackdoor.cpp
 
     PYMODULE_FILES
         __init__.py
-
-    RESOURCE_FILES
-        plugInfo.json
 
     DOXYGEN_FILES
         overview.dox

@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdx/shadowTask.h"
 #include "pxr/imaging/hdx/debugCodes.h"
@@ -209,6 +192,32 @@ HdxShadowTask::Sync(HdSceneDelegate* delegate,
                     std::make_shared<HdStRenderPassState>(
                         renderPassShadowShader);
 
+                //                
+                // The pipeline state below merits explanation.
+                // Hardcoded state:
+                // 1. Depth clamping is enabled, which disables clipping for the
+                //    clip-space Z coordinate. So, objects between the shadow
+                //    camera and the near plane, and those behind the far plane
+                //    may not be clipped.
+                // 2, The depth range is set to [0.0, 0.99999] and not [0,1].
+                //    This is done to clamps the depth of objects behind the far
+                //    plane of the shadow frustum to 1. Note that the hardware
+                //    always clamps depth values to [0,1], even when using float
+                //    depth buffer formats. See ARB_depth_buffer_float.
+                // 
+                // Configurable state:
+                // a. Depth function: This goes hand-in-hand with the shadow
+                //    sampler's compare function, the depth range and the clear
+                //    value used. All of these are currently hardcoded!
+                //    XXX The simple lighting shader hardcodes the compare to
+                //        LEQUAL and the clear value to 1.0.
+                //        See HdStSimpleLightingShader::AllocateTextureHandles.
+                //
+                // b. Slope-scale bias:
+                //    This offsets the fragment's interpolated depth using the
+                //    slope and constant factors.
+                //    XXX Do positive values push away or towards the eye?
+                //     
                 renderPassState->SetDepthFunc(_params.depthFunc);
                 renderPassState->SetDepthBiasUseDefault(
                     !_params.depthBiasEnable);
@@ -294,6 +303,19 @@ void
 HdxShadowTask::Prepare(HdTaskContext* ctx,
                        HdRenderIndex* renderIndex)
 {
+    GlfSimpleLightingContextRefPtr lightingContext;
+    if (!_GetTaskContextData(ctx,
+            HdxTokens->lightingContext, &lightingContext)) {
+        return;
+    }
+
+    GlfSimpleShadowArrayRefPtr const shadows = lightingContext->GetShadows();
+    if (shadows->GetNumShadowMapPasses() == 0) {
+        // Bail if we are not generating shadow maps. We don't want to call
+        // Prepare on outdated AOV bindings.
+        return;
+    }
+
     HdResourceRegistrySharedPtr resourceRegistry =
         renderIndex->GetResourceRegistry();
 
@@ -454,7 +476,6 @@ std::ostream& operator<<(std::ostream& out, const HdxShadowTaskParams& pv)
         << pv.overrideColor << " " 
         << pv.wireframeColor << " " 
         << pv.enableLighting << " "
-        << pv.enableIdRender << " "
         << pv.enableSceneMaterials << " "
         << pv.alphaThreshold << " "
         << pv.depthBiasEnable << " "
@@ -471,7 +492,6 @@ bool operator==(const HdxShadowTaskParams& lhs, const HdxShadowTaskParams& rhs)
     return  lhs.overrideColor == rhs.overrideColor                      && 
             lhs.wireframeColor == rhs.wireframeColor                    && 
             lhs.enableLighting == rhs.enableLighting                    &&
-            lhs.enableIdRender == rhs.enableIdRender                    &&
             lhs.enableSceneMaterials == rhs.enableSceneMaterials        &&
             lhs.alphaThreshold == rhs.alphaThreshold                    &&
             lhs.depthBiasEnable == rhs.depthBiasEnable                  && 

@@ -166,6 +166,11 @@ Child names:
      ['Object', 'Child']
 
 ------------------------------------------------------------------------
+Results for composing </RelocatedInheritOfChild/Object>
+
+Prim Stack:
+
+------------------------------------------------------------------------
 Results for composing </RelocatedInheritOfChild/Child>
 
 Prim Stack:

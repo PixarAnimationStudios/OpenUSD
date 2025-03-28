@@ -1,25 +1,8 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/imaging/hd/prefixingSceneIndex.h"
@@ -148,18 +131,43 @@ private:
 
 // ----------------------------------------------------------------------------
 
+HdDataSourceBaseHandle
+Hd_PrefixingSceneIndexCreateDataSource(
+    const SdfPath &prefix,
+    HdDataSourceBaseHandle const &inputDataSource);
+
+class Hd_PrefixingSceneIndexVectorDataSource : public HdVectorDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_PrefixingSceneIndexVectorDataSource)
+
+    size_t GetNumElements() {
+        return _inputDataSource->GetNumElements();
+    }
+
+    HdDataSourceBaseHandle GetElement(const size_t element) {
+        return Hd_PrefixingSceneIndexCreateDataSource(
+            _prefix,
+            _inputDataSource->GetElement(element));
+    }
+
+private:
+    Hd_PrefixingSceneIndexVectorDataSource(
+            const SdfPath &prefix,
+            HdVectorDataSourceHandle inputDataSource)
+        : _prefix(prefix)
+        , _inputDataSource(std::move(inputDataSource))
+    {
+    }
+
+    const SdfPath _prefix;
+    const HdVectorDataSourceHandle _inputDataSource;
+};
+
 class Hd_PrefixingSceneIndexContainerDataSource : public HdContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(Hd_PrefixingSceneIndexContainerDataSource)
-
-    Hd_PrefixingSceneIndexContainerDataSource(
-            const SdfPath &prefix,
-            HdContainerDataSourceHandle inputDataSource)
-        : _prefix(prefix)
-        , _inputDataSource(inputDataSource)
-    {
-    }
 
     TfTokenVector GetNames() override
     {
@@ -176,38 +184,58 @@ public:
         }
 
         // wrap child containers so that we can wrap their children
-        if (HdDataSourceBaseHandle childSource =
-                _inputDataSource->Get(name)) {
+        return Hd_PrefixingSceneIndexCreateDataSource(
+            _prefix,
+            _inputDataSource->Get(name));
+    }
 
-            if (auto childContainer =
-                    HdContainerDataSource::Cast(childSource)) {
-                return New(_prefix, std::move(childContainer));
-            }
-
-            if (auto childPathDataSource =
-                    HdTypedSampledDataSource<SdfPath>::Cast(childSource)) {
-
-                return Hd_PrefixingSceneIndexPathDataSource::New(
-                        _prefix, childPathDataSource);
-            }
-
-            if (auto childPathArrayDataSource =
-                    HdTypedSampledDataSource<VtArray<SdfPath>>::Cast(
-                        childSource)) {
-                return Hd_PrefixingSceneIndexPathArrayDataSource::New(
-                        _prefix, childPathArrayDataSource);
-            }
-
-            return childSource;
-        }
-
-        return nullptr;
+protected:
+    Hd_PrefixingSceneIndexContainerDataSource(
+            const SdfPath &prefix,
+            HdContainerDataSourceHandle inputDataSource)
+        : _prefix(prefix)
+        , _inputDataSource(std::move(inputDataSource))
+    {
     }
 
 private:
     const SdfPath _prefix;
     const HdContainerDataSourceHandle _inputDataSource;
 };
+
+HdDataSourceBaseHandle
+Hd_PrefixingSceneIndexCreateDataSource(
+    const SdfPath &prefix,
+    HdDataSourceBaseHandle const &inputDataSource)
+{
+    if (!inputDataSource) {
+        return nullptr;
+    }
+
+    if (auto containerDs = HdContainerDataSource::Cast(inputDataSource)) {
+        return Hd_PrefixingSceneIndexContainerDataSource::New(
+            prefix, std::move(containerDs));
+    }
+
+    if (auto vectorDs = HdVectorDataSource::Cast(inputDataSource)) {
+        return Hd_PrefixingSceneIndexVectorDataSource::New(
+            prefix, std::move(vectorDs));
+    }
+
+    if (auto pathDataSource =
+            HdTypedSampledDataSource<SdfPath>::Cast(inputDataSource)) {
+        return Hd_PrefixingSceneIndexPathDataSource::New(
+            prefix, pathDataSource);
+    }
+
+    if (auto pathArrayDataSource =
+            HdTypedSampledDataSource<VtArray<SdfPath>>::Cast(inputDataSource)) {
+        return Hd_PrefixingSceneIndexPathArrayDataSource::New(
+            prefix, pathArrayDataSource);
+    }
+
+    return inputDataSource;
+}
 
 // This class is a data source for the inputScene's absolute root prim's data
 // source.  It erases the "system" container, since that will instead be

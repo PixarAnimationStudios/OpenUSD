@@ -1,25 +1,8 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #ifndef PXR_BASE_TRACE_REPORTER_H
@@ -112,6 +95,28 @@ public:
     /// Generates a timeline trace report suitable for viewing in
     /// Chrome's trace viewer.
     TRACE_API void ReportChromeTracing(std::ostream &s);
+
+    /// @}
+
+    /// \name Report Loading.
+    /// @{
+
+    /// Aggregate tree and its iteration count, parsed from a report.
+    struct ParsedTree {
+        TraceAggregateTreeRefPtr tree;
+        int iterationCount;  
+    };
+
+    /// Load an aggregate tree report from the \p stream, as written by 
+    /// Report().
+    ///
+    /// Since multiple reports may be appended to a given trace file, this will
+    /// return a vector of each tree and their iteration count. 
+    ///
+    /// This will multiply the parsed values for each aggregate tree by their 
+    /// iteration count.
+    TRACE_API static std::vector<ParsedTree> LoadReport(
+        std::istream &stream);
 
     /// @}
 

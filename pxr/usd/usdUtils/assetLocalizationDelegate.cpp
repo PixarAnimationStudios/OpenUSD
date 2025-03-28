@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ///
 /// \file usdUtils/assetLocalizationDelegate.cpp
@@ -154,9 +137,7 @@ UsdUtils_WritableLocalizationDelegate::_ProcessReferencesOrPayloads(
             return 
                 _ProcessRefOrPayload <typename ListOpType::ItemType, DEP_TYPE>(
                     layer, item, &dependencies);
-        },
-        /*removeDuplicates*/ true
-    );
+        });
 
     if (!modified) {
         return dependencies;
@@ -233,15 +214,24 @@ UsdUtils_WritableLocalizationDelegate::ProcessValuePath(
     const SdfLayerRefPtr &layer,
     const std::string &keyPath,
     const std::string &authoredPath,
-    const std::vector<std::string> &dependencies)
+    const std::vector<std::string> &dependencies,
+    const bool processingMetadata,
+    const bool processingDictionary)
 {
+    if (authoredPath.empty()) {
+        return {};
+    }
+
     UsdUtilsDependencyInfo depInfo = {authoredPath, dependencies};
     UsdUtilsDependencyInfo info = _pathCache.GetProcessedInfo(
         layer, depInfo, UsdUtils_DependencyType::Reference);
 
     const std::string relativeKeyPath = _GetRelativeKeyPath(keyPath);
 
-    if (relativeKeyPath.empty()) {
+    if (relativeKeyPath.empty() || (
+            processingMetadata &&
+            !processingDictionary &&
+            !info.GetAssetPath().empty())) {
         _currentValuePath = SdfAssetPath(info.GetAssetPath());
     }
     else if (info.GetAssetPath().empty()){
@@ -271,9 +261,15 @@ UsdUtils_WritableLocalizationDelegate::ProcessValuePathArrayElement(
         return _AllDependenciesForInfo(info);
     }
     else {
+        // We don't want to remove empty paths from arrays. They may be
+        // meaningful, for example in primvar attributes that need to be
+        // a certain length.
+        if (_keepEmptyPathsInArrays) {
+            _currentPathArray.emplace_back(SdfAssetPath());
+        }
+
         return {};
     }
-    
 }
 
 void 
@@ -574,8 +570,14 @@ UsdUtils_ReadOnlyLocalizationDelegate::ProcessValuePath(
     const SdfLayerRefPtr &layer,
     const std::string &keyPath,
     const std::string &authoredPath,
-    const std::vector<std::string> &dependencies)
+    const std::vector<std::string> &dependencies,
+    const bool processingMetadata,
+    const bool processingDictionary)
 {
+    if (authoredPath.empty()) {
+        return {};
+    }
+
     return _AllDependenciesForInfo(_pathCache.GetProcessedInfo(layer, 
         {authoredPath, dependencies}, UsdUtils_DependencyType::Reference));
 }
@@ -587,6 +589,12 @@ UsdUtils_ReadOnlyLocalizationDelegate::ProcessValuePathArrayElement(
     const std::string &authoredPath,
     const std::vector<std::string> &dependencies)
 {    
+    // We may get passed an empty authored path if an array has some
+    // explicitly empty elements.
+    if (authoredPath.empty()) {
+        return {};
+    }
+
     return _AllDependenciesForInfo(_pathCache.GetProcessedInfo(layer, 
         {authoredPath, dependencies}, UsdUtils_DependencyType::Reference));
 }

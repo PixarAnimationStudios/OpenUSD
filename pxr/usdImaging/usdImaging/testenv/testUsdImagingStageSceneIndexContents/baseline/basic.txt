@@ -14,6 +14,8 @@
 			1
 		[specifier]
 			def
+		[typeName]
+			Xform
 	[primOrigin]
 		[scenePath]
 			HdPrimOriginSchema::OriginPath(/CoordSys)
@@ -24,6 +26,8 @@
 			1
 		[specifier]
 			def
+		[typeName]
+			Xform
 	[primOrigin]
 		[scenePath]
 			HdPrimOriginSchema::OriginPath(/CoordSys/modelSpace)
@@ -34,6 +38,8 @@
 			1
 		[specifier]
 			def
+		[typeName]
+			Xform
 	[primOrigin]
 		[scenePath]
 			HdPrimOriginSchema::OriginPath(/CoordSys/worldSpace)
@@ -49,27 +55,27 @@
 			1
 		[specifier]
 			def
+		[typeName]
+			Xform
 	[primOrigin]
 		[scenePath]
 			HdPrimOriginSchema::OriginPath(/Geom)
 	[primvars]
 </Geom/Subdiv> type = mesh
 	[__usdPrimInfo]
+		[apiSchemas]
+			[MaterialBindingAPI, CoordSysAPI:worldSpace, CoordSysAPI:modelSpace]
 		[isLoaded]
 			1
 		[specifier]
 			def
+		[typeName]
+			Mesh
 	[coordSysBinding]
 		[modelSpace]
 			/CoordSys/modelSpace
 		[worldSpace]
 			/CoordSys/worldSpace
-	[directMaterialBindings]
-		[preview]
-			[bindingStrength]
-				weakerThanDescendants
-			[materialPath]
-				/Materials/MyMaterial
 	[extent]
 		[max]
 			(2, 2, 2)
@@ -131,12 +137,22 @@
 				[(-2, -2, -2), (2, -2, -2), (-2, -2, 2), (2, -2, 2)]
 			[role]
 				point
+	[usdMaterialBindings]
+		[preview]
+			[0]
+				[directMaterialBinding]
+					[bindingStrength]
+						weakerThanDescendants
+					[materialPath]
+						/Materials/MyMaterial
 </Materials> type = 
 	[__usdPrimInfo]
 		[isLoaded]
 			1
 		[specifier]
 			def
+		[typeName]
+			Scope
 	[primOrigin]
 		[scenePath]
 			HdPrimOriginSchema::OriginPath(/Materials)
@@ -147,8 +163,11 @@
 			1
 		[specifier]
 			def
+		[typeName]
+			Material
 	[material]
 		[]
+			[config]
 			[interfaceMappings]
 			[nodes]
 				[MyPrimvar]
@@ -159,6 +178,8 @@
 						[varname]
 							[colorSpace]
 								
+							[typeName]
+								token
 							[value]
 								map1_uv
 				[MySurface]
@@ -193,6 +214,78 @@
 						[file]
 							[colorSpace]
 								
+							[typeName]
+								asset
+							[value]
+								@texture1.jpg@
+			[terminals]
+				[surface]
+					[upstreamNodeOutputName]
+						surface
+					[upstreamNodePath]
+						MySurface
+		[__all]
+			[config]
+			[interfaceMappings]
+			[nodes]
+				[DisconnectedNode]
+					[inputConnections]
+					[nodeIdentifier]
+						AbsFloat_1
+					[parameters]
+						[input]
+							[colorSpace]
+								
+							[typeName]
+								float
+							[value]
+								1.2
+				[MyPrimvar]
+					[inputConnections]
+					[nodeIdentifier]
+						HwPrimvar_1
+					[parameters]
+						[varname]
+							[colorSpace]
+								
+							[typeName]
+								token
+							[value]
+								map1_uv
+				[MySurface]
+					[inputConnections]
+						[diffuseColor]
+							[0]
+								[upstreamNodeOutputName]
+									color
+								[upstreamNodePath]
+									MyTexture
+					[nodeIdentifier]
+						
+					[nodeTypeInfo]
+						[glslfx:sourceAsset]
+							@shader1.glslfx@
+						[implementationSource]
+							sourceAsset
+						[sdrMetadata]
+							{}
+					[parameters]
+				[MyTexture]
+					[inputConnections]
+						[uv]
+							[0]
+								[upstreamNodeOutputName]
+									result
+								[upstreamNodePath]
+									MyPrimvar
+					[nodeIdentifier]
+						HwUvTexture_1
+					[parameters]
+						[file]
+							[colorSpace]
+								
+							[typeName]
+								asset
 							[value]
 								@texture1.jpg@
 			[terminals]

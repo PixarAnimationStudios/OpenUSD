@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -55,6 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (indices) \
     (interpolation) \
     (role) \
+    (elementSize) \
     (transform) \
     (constant) \
     (uniform) \
@@ -95,15 +79,15 @@ public:
     // does has indices, GetPrimvarValue() will return the flattened value,
     // while GetIndexedPrimvarValue() will return the unflattened value.
     HD_API
-    HdSampledDataSourceHandle GetPrimvarValue();
+    HdSampledDataSourceHandle GetPrimvarValue() const;
 
     HD_API
-    HdSampledDataSourceHandle GetIndexedPrimvarValue();
+    HdSampledDataSourceHandle GetIndexedPrimvarValue() const;
 
     // Returns true if it contains data sources for an indexed primvar value
     // and for indices.
     HD_API
-    bool IsIndexed();
+    bool IsIndexed() const;
 
     // If the primvar does not have indices, GetFlattenedPrimvarValue() will
     // just return the primvarValue data source which is also returned by
@@ -120,7 +104,7 @@ public:
     // behavior should explicitly call GetFlattenedPrimvarValue.
     //
     HD_API
-    HdSampledDataSourceHandle GetFlattenedPrimvarValue();
+    HdSampledDataSourceHandle GetFlattenedPrimvarValue() const;
 
 // --(END CUSTOM CODE: Schema Methods)--
 
@@ -134,7 +118,12 @@ public:
     HdTokenDataSourceHandle GetInterpolation() const;
 
     HD_API
-    HdTokenDataSourceHandle GetRole() const; 
+    HdTokenDataSourceHandle GetRole() const;
+
+    /// The number of values in the value array that must be aggregated for
+    /// each element on the the primitive (same as UsdGeomPrimvar).
+    HD_API
+    HdIntDataSourceHandle GetElementSize() const; 
 
     /// @} 
 
@@ -155,7 +144,8 @@ public:
         const HdSampledDataSourceHandle &indexedPrimvarValue,
         const HdIntArrayDataSourceHandle &indices,
         const HdTokenDataSourceHandle &interpolation,
-        const HdTokenDataSourceHandle &role
+        const HdTokenDataSourceHandle &role,
+        const HdIntDataSourceHandle &elementSize
     );
 
     /// \class HdPrimvarSchema::Builder
@@ -182,6 +172,9 @@ public:
         HD_API
         Builder &SetRole(
             const HdTokenDataSourceHandle &role);
+        HD_API
+        Builder &SetElementSize(
+            const HdIntDataSourceHandle &elementSize);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -193,6 +186,7 @@ public:
         HdIntArrayDataSourceHandle _indices;
         HdTokenDataSourceHandle _interpolation;
         HdTokenDataSourceHandle _role;
+        HdIntDataSourceHandle _elementSize;
 
     };
 

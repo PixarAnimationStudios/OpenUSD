@@ -1,0 +1,164 @@
+#usda 1.0
+(
+    doc = "This layer represents an example of using UsdSemantics"
+    upAxis = "Y"
+    startTimeCode = 0
+    endTimeCode = 200
+)
+
+def Xform "Bookshelf" (
+    apiSchemas = ["SemanticsLabelsAPI:category", "SemanticsLabelsAPI:style"]
+)
+{
+    token[] semantics:labels:category = ["furniture", "cabinet"]
+    token[] semantics:labels:style = ["modern", "chic"]
+    double3 xformOp:translate = (0, 100.87384788680441, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+    def Xform "Shelves" (
+        apiSchemas = ["SemanticsLabelsAPI:category"]
+    )
+    {
+        token[] semantics:labels:category = ["horizontal shelving"]
+        double3 xformOp:translate = (113, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+
+        def Cube "shelf_geo_01" (
+            apiSchemas = ["MaterialBindingAPI", "SemanticsLabelsAPI:state"]
+        )
+        {
+            token[] semantics:labels:state.timeSamples = {
+                0: ["empty"],
+                50: ["partially full"],
+                100: ["full"]
+            }
+            float3[] extent = [(-50, -50, -50), (50, 50, 50)]
+            rel material:binding = </looks/wood> (
+                bindMaterialAs = "weakerThanDescendants"
+            )
+            double size = 100
+            double3 xformOp:scale = (0.9999999999999999, 0.0773693394230031, 0.7625704657327257)
+            double3 xformOp:translate = (-113, 70.05470741643151, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        }
+
+        def Cube "shelf_geo_02" (
+            apiSchemas = ["MaterialBindingAPI", "SemanticsLabelsAPI:state"]
+        )
+        {
+            token[] semantics:labels:state = ["partially full"]
+            float3[] extent = [(-50, -50, -50), (50, 50, 50)]
+            rel material:binding = </looks/wood> (
+                bindMaterialAs = "weakerThanDescendants"
+            )
+            double size = 100
+            double3 xformOp:scale = (0.9999999999999999, 0.0773693394230031, 0.7625704657327257)
+            double3 xformOp:translate = (-113, 28.205436432969066, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        }
+
+        def Cube "shelf_geo_03" (
+            apiSchemas = ["MaterialBindingAPI", "SemanticsLabelsAPI:state"] 
+        )
+        {
+            token[] semantics:labels:state = ["full"]
+            float3[] extent = [(-50, -50, -50), (50, 50, 50)]
+            rel material:binding = </looks/wood> (
+                bindMaterialAs = "weakerThanDescendants"
+            )
+            double size = 100
+            double3 xformOp:scale = (0.9999999999999999, 0.0773693394230031, 0.7625704657327257)
+            double3 xformOp:translate = (-113, -14.418843141218574, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        }
+
+        def Cube "shelf_geo_04" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            float3[] extent = [(-50, -50, -50), (50, 50, 50)]
+            rel material:binding = </looks/wood> (
+                bindMaterialAs = "weakerThanDescendants"
+            )
+            double size = 100
+            double3 xformOp:scale = (0.9999999999999999, 0.0773693394230031, 0.7625704657327257)
+            double3 xformOp:translate = (-113, -57.934833429151425, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        }
+
+        def Cube "shelf_geo_05" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            float3[] extent = [(-50, -50, -50), (50, 50, 50)]
+            rel material:binding = </looks/wood> (
+                bindMaterialAs = "weakerThanDescendants"
+            )
+            double size = 100
+            double3 xformOp:scale = (0.9999999999999999, 0.0773693394230031, 0.7625704657327257)
+            double3 xformOp:translate = (-113, -99.27174085182759, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+        }
+    }
+
+    def Cube "bookshelf_geo" (
+        apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        float3[] extent = [(-50, -50, -50), (50, 50, 50)]
+        rel material:binding = </looks/wood> (
+            bindMaterialAs = "weakerThanDescendants"
+        )
+        double size = 100
+        double3 xformOp:scale = (1.0484495248498045, 1.991987664077115, 0.13958063483880567)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"]
+    }
+}
+
+def Scope "looks"
+{
+    def Material "wood" (
+        apiSchemas = ["SemanticsLabelsAPI:material"]
+    )
+    {
+        token[] semantics:labels:material = ["wood", "oak", "American White Oak"]
+        token outputs:displacement.connect = </looks/wood/Shader.outputs:displacement>
+        token outputs:surface.connect = </looks/wood/Shader.outputs:surface>
+
+        def Shader "Shader" 
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            float inputs:clearcoat = 0
+            float inputs:clearcoatRoughness = 0.01
+            color3f inputs:diffuseColor = (0.5145, 0.3639, 0.229) (
+                renderType = "color"
+            )
+            float inputs:displacement = 0
+            color3f inputs:emissiveColor = (0, 0, 0) (
+                renderType = "color"
+            )
+            float inputs:ior = 1.5
+            float inputs:metallic = 0
+            normal3f inputs:normal = (0, 0, 1)
+            float inputs:occlusion = 1
+            float inputs:opacity = 1
+            float inputs:opacityThreshold = 0 (
+                connectability = "interfaceOnly"
+            )
+            float inputs:roughness = 0.5
+            color3f inputs:specularColor = (0, 0, 0) (
+                renderType = "color"
+            )
+            int inputs:useSpecularWorkflow = 0 (
+                connectability = "interfaceOnly"
+            )
+            token outputs:displacement (
+                renderType = "material"
+            )
+            token outputs:surface (
+                renderType = "material"
+            )
+        }
+    }
+}
+

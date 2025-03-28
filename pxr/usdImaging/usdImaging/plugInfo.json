@@ -186,6 +186,13 @@
                         "isInternal": true,
                         "primTypeName": "Sphere"
                     },
+                    "UsdImagingRenderPassAdapter": {
+                        "bases": [
+                            "UsdImagingPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "RenderPass"
+                    },
                     "UsdImagingRenderSettingsAdapter": {
                         "bases": [
                             "UsdImagingPrimAdapter"

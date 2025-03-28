@@ -1,33 +1,25 @@
 ==== PrimvarsTest:
 ----- begin -----
-gpuMemoryUsed, 0
 nonUniformSize, 0
 numberOfTextureHandles, 0
 numberOfTextureObjects, 0
 singleBufferSize, 0
-ssboSize, 0
 textureMemory, 0
-uboSize, 0
 garbageCollected = 0
 drawCalls = 0
 rebuildBatches = 0
 bufferArrayRangeMigrated = 0
 
 ----- draw flat -----
-computeShader, 14551
 drawIndirect, 240
 drawIndirectCull, 240
-drawingShader, 41374
-gpuMemoryUsed, 844373
 nonUniformSize, 768
 numberOfTextureHandles, 0
 numberOfTextureObjects, 2
 primvar, 1056
 singleBufferSize, 0
-ssboSize, 768
 textureMemory, 786432
 topology, 480
-uboSize, 512
 garbageCollected = 0
 drawCalls = 1
 drawBatches = 1
@@ -39,17 +31,13 @@ bufferArrayRangeMigrated = 0
 ----- draw flat : primvars added -----
 drawIndirect, 480
 drawIndirectCull, 480
-drawingShader, 123273
-gpuMemoryUsed, 912441
 nonUniformSize, 992
 numberOfTextureHandles, 0
 numberOfTextureObjects, 2
 primvar, 1296
 singleBufferSize, 0
-ssboSize, 784
 textureMemory, 786432
 topology, 480
-uboSize, 512
 garbageCollected = 1
 drawCalls = 3
 drawBatches = 3
@@ -61,17 +49,13 @@ bufferArrayRangeMigrated = 3
 ----- draw smooth -----
 drawIndirect, 480
 drawIndirectCull, 480
-drawingShader, 245583
-gpuMemoryUsed, 1035071
 nonUniformSize, 1312
 numberOfTextureHandles, 0
 numberOfTextureObjects, 2
 primvar, 1360
 singleBufferSize, 0
-ssboSize, 784
 textureMemory, 786432
 topology, 736
-uboSize, 512
 garbageCollected = 2
 drawCalls = 4
 drawBatches = 4
@@ -83,17 +67,13 @@ bufferArrayRangeMigrated = 5
 ----- draw smooth : primvar resized -----
 drawIndirect, 540
 drawIndirectCull, 540
-drawingShader, 282570
-gpuMemoryUsed, 1072194
 nonUniformSize, 1312
 numberOfTextureHandles, 0
 numberOfTextureObjects, 2
 primvar, 1376
 singleBufferSize, 0
-ssboSize, 800
 textureMemory, 786432
 topology, 736
-uboSize, 512
 garbageCollected = 3
 drawCalls = 4
 drawBatches = 4
@@ -105,17 +85,13 @@ bufferArrayRangeMigrated = 6
 ----- draw smooth : primvar removed -----
 drawIndirect, 720
 drawIndirectCull, 720
-drawingShader, 245589
-gpuMemoryUsed, 1035541
 nonUniformSize, 1312
 numberOfTextureHandles, 0
 numberOfTextureObjects, 2
 primvar, 1344
 singleBufferSize, 0
-ssboSize, 768
 textureMemory, 786432
 topology, 736
-uboSize, 512
 garbageCollected = 4
 drawCalls = 4
 drawBatches = 4
@@ -127,17 +103,13 @@ bufferArrayRangeMigrated = 7
 ----- draw smooth : facevarying primvar added -----
 drawIndirect, 540
 drawIndirectCull, 540
-drawingShader, 246038
-gpuMemoryUsed, 1036062
 nonUniformSize, 1744
 numberOfTextureHandles, 0
 numberOfTextureObjects, 2
 primvar, 1776
 singleBufferSize, 0
-ssboSize, 768
 textureMemory, 786432
 topology, 736
-uboSize, 512
 garbageCollected = 5
 drawCalls = 4
 drawBatches = 4
@@ -149,17 +121,13 @@ bufferArrayRangeMigrated = 8
 ----- draw smooth : facevarying primvar removed -----
 drawIndirect, 540
 drawIndirectCull, 540
-drawingShader, 246038
-gpuMemoryUsed, 1035630
 nonUniformSize, 1312
 numberOfTextureHandles, 0
 numberOfTextureObjects, 2
 primvar, 1344
 singleBufferSize, 0
-ssboSize, 768
 textureMemory, 786432
 topology, 736
-uboSize, 512
 garbageCollected = 6
 drawCalls = 4
 drawBatches = 4

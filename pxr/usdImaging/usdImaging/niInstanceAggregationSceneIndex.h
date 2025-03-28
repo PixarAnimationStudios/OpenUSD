@@ -1,25 +1,8 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_IMAGING_NI_INSTANCE_AGGREGATION_SCENE_INDEX_H
 #define PXR_USD_IMAGING_NI_INSTANCE_AGGREGATION_SCENE_INDEX_H
@@ -154,14 +137,15 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 /// {
 ///     def Cube "MyCube"
 ///     {
-///          rel:material:binding = </MyMaterial>
 ///     }
 /// }
 ///
 /// def "Cube_1" (
 ///     instanceable = true
 ///     references = </MyPrototype>
+///     prepend apiSchemas = ["MaterialBindingAPI"]
 /// {
+///     rel:material:binding = </Cube_1/MyMaterial>
 /// }
 ///
 /// UsdImaging_NiInstanceAggregationSceneIndex (with empty prototype root)
@@ -174,7 +158,7 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///     primType: ""
 ///     dataSource:
 ///         materialBinding:
-///             "": /MyMaterial
+///             "": /UsdNiPropagatedPrototypes/Binding312...436/__Prototype_1/UsdNiInstancer/MyMaterial # Note that it was translated to point into the propagated prototype by the UsdImagingRerootingContainerDataSource.
 /// /UsdNiPropagatedPrototypes/Binding312...436/__Prototype_1
 ///     primType: ""
 /// /UsdNiPropagatedPrototypes/Binding312...436/__Prototype_1/UsdNiInstancer

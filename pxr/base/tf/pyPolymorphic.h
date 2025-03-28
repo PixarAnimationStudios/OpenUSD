@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_TF_PY_POLYMORPHIC_H
 #define PXR_BASE_TF_PY_POLYMORPHIC_H
@@ -37,9 +20,9 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/type.h"
 
-#include <boost/python/object/class_detail.hpp>
-#include <boost/python/wrapper.hpp>
-#include <boost/python/has_back_reference.hpp>
+#include "pxr/external/boost/python/object/class_detail.hpp"
+#include "pxr/external/boost/python/wrapper.hpp"
+#include "pxr/external/boost/python/has_back_reference.hpp"
 
 #include <functional>
 #include <type_traits>
@@ -51,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 template <typename Derived>
 struct TfPyPolymorphic :
     public TfType::PyPolymorphicBase,
-    public boost::python::wrapper<Derived>
+    public pxr_boost::python::wrapper<Derived>
 {
     typedef TfPyPolymorphic<Derived> This;
     typedef TfPyOverride Override;
@@ -59,9 +42,9 @@ struct TfPyPolymorphic :
     Override GetOverride(char const *func) const {
         TfPyLock pyLock;
 
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
-        // don't use boost::python::wrapper::get_override(), as it can return
+        // don't use pxr_boost::python::wrapper::get_override(), as it can return
         // the wrong result. instead, implement our own version which does
         // better
 
@@ -230,11 +213,11 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 // Specialize has_back_reference<> so that boost.python will pass
 // PyObject* as the 1st argument to TfPyPolymorphic's ctor.
-namespace boost { namespace python {
+namespace PXR_BOOST_NAMESPACE { namespace python {
     template <typename T>
     struct has_back_reference< PXR_NS::TfPyPolymorphic<T> >
-        : mpl::true_ {};
-}} // end namespace boost
+        : std::true_type {};
+}}
 
 PXR_NAMESPACE_OPEN_SCOPE
 

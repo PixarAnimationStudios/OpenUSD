@@ -4,8 +4,11 @@ def "MaterialX"
 {
     def "Materials"
     {
-        def Material "USD_Gold"
+        def Material "USD_Gold" (
+            prepend apiSchemas = ["MaterialXConfigAPI"]
+        )
         {
+            string config:mtlx:version = "1.39"
             float inputs:clearcoat
             float inputs:clearcoatRoughness
             color3f inputs:diffuseColor = (0.944, 0.776, 0.373)
@@ -16,14 +19,15 @@ def "MaterialX"
             float3 inputs:normal
             float inputs:occlusion
             float inputs:opacity
+            int inputs:opacityMode
             float inputs:opacityThreshold
             float inputs:roughness = 0.02
             color3f inputs:specularColor = (0, 0, 0)
             int inputs:useSpecularWorkflow = 0
-            token outputs:mtlx:surface.connect = </MaterialX/Materials/USD_Gold/ND_UsdPreviewSurface_surfaceshader.outputs:surface>
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/USD_Gold/SR_gold.outputs:surface>
 
-            def Shader "ND_UsdPreviewSurface_surfaceshader" (
-                prepend references = </MaterialX/Shaders/ND_UsdPreviewSurface_surfaceshader>
+            def Shader "SR_gold" (
+                prepend references = </MaterialX/Shaders/SR_gold>
             )
             {
                 float inputs:clearcoat.connect = </MaterialX/Materials/USD_Gold.inputs:clearcoat>
@@ -36,6 +40,7 @@ def "MaterialX"
                 float3 inputs:normal.connect = </MaterialX/Materials/USD_Gold.inputs:normal>
                 float inputs:occlusion.connect = </MaterialX/Materials/USD_Gold.inputs:occlusion>
                 float inputs:opacity.connect = </MaterialX/Materials/USD_Gold.inputs:opacity>
+                int inputs:opacityMode.connect = </MaterialX/Materials/USD_Gold.inputs:opacityMode>
                 float inputs:opacityThreshold.connect = </MaterialX/Materials/USD_Gold.inputs:opacityThreshold>
                 float inputs:roughness.connect = </MaterialX/Materials/USD_Gold.inputs:roughness>
                 color3f inputs:specularColor.connect = </MaterialX/Materials/USD_Gold.inputs:specularColor>
@@ -46,7 +51,7 @@ def "MaterialX"
 
     def "Shaders"
     {
-        def Shader "ND_UsdPreviewSurface_surfaceshader"
+        def Shader "SR_gold"
         {
             uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
             token outputs:surface

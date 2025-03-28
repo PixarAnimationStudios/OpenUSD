@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef USDSHADE_GENERATED_NODEDEFAPI_H
 #define USDSHADE_GENERATED_NODEDEFAPI_H
@@ -33,7 +16,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdShade/tokens.h"
 
-#include "pxr/usd/ndr/declare.h"
+#include "pxr/usd/sdr/declare.h"
 #include "pxr/usd/sdr/shaderNode.h"
     
 
@@ -70,7 +53,7 @@ class SdfAssetPath;
 /// 
 /// This schema provides properties that allow a prim to identify an external
 /// node definition, either by a direct identifier key into the SdrRegistry
-/// (info:id), an asset to be parsed by a suitable NdrParserPlugin
+/// (info:id), an asset to be parsed by a suitable SdrParserPlugin
 /// (info:sourceAsset), or an inline source code that must also be parsed
 /// (info:sourceCode); as well as a selector attribute to determine which
 /// specifier is active (info:implementationSource).
@@ -301,8 +284,8 @@ public:
     /// the type of shader source or its implementation. For example: osl, 
     /// glslfx, riCpp etc. This allows a shader to specify different sourceAsset
     /// (or sourceCode) values for different sourceTypes. The sourceType tokens 
-    /// usually correspond to the sourceType value of the NdrParserPlugin that's 
-    /// used to parse the shader source (\ref NdrParserPlugin::SourceType).
+    /// usually correspond to the sourceType value of the SdrParserPlugin that's 
+    /// used to parse the shader source (\ref SdrParserPlugin::SourceType).
     /// 
     /// When sourceType is empty, the corresponding sourceAsset or sourceCode is 
     /// considered to be "universal" (or fallback), which is represented by the 

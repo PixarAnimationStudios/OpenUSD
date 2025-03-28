@@ -2,6 +2,7 @@ set(DIRS
     arch
     tf
     gf
+    pegtl
     js
     trace
     work

@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -550,10 +533,7 @@ PcpComputeNamespaceEdits(
                 }
             }
 
-            // Special case for direct inherits.  An inherit can target a
-            // descendant of curPath and we must fix up those inherits.
-            // References and payloads can't target a non-root prim so we
-            // don't have to worry about those.
+            // Next, check for arcs that target a descendant of curPath.
             //
             // XXX: We only do this in this cache.  Inherits in this
             //      cache can definitely see the namespace edit so
@@ -561,7 +541,7 @@ PcpComputeNamespaceEdits(
             //      this cache also see the namespace edit?
             if (cache == primaryCache && curPath.IsPrimPath()) {
 
-                SdfPathSet descendentPrimPaths;
+                SdfPathSet descendantDepPrimPaths;
 
                 const PcpDependencyFlags depMask =
                    PcpDependencyTypeDirect | PcpDependencyTypeNonVirtual;
@@ -575,7 +555,7 @@ PcpComputeNamespaceEdits(
                         /* recurseOnIndex */ false,
                         /* filter */ true)) {
                     if (dep.indexPath.IsPrimPath()) {
-                        descendentPrimPaths.insert(dep.indexPath);
+                        descendantDepPrimPaths.insert(dep.indexPath);
                     }
                 }
 
@@ -586,29 +566,35 @@ PcpComputeNamespaceEdits(
                         /* recurseOnSite */ false,
                         /* recurseOnIndex */ false,
                         /* filter */ true)) {
-                    descendentPrimPaths.erase(dep.indexPath);
+                    descendantDepPrimPaths.erase(dep.indexPath);
                 }
 
-                // Check each direct dependent site for inherits pointing
-                // at this cache's layer stack. Make sure to skip ancestral
-                // nodes, since the code that handles direct inherits below
-                // needs to have the nodes where the inherits are introduced.
-                for (const SdfPath& descendentPrimPath : descendentPrimPaths) {
+                // Check each direct dependent site for dependencies on
+                // this cache's layer stack. Make sure to skip ancestral
+                // nodes, since the code that handles direct arcs below
+                // needs to have the nodes where the arcs are introduced.
+                for (const SdfPath& depPath : descendantDepPrimPaths) {
                     // We were just told this prim index is a dependency
                     // so it certainly should exist.
-                    const PcpPrimIndex *index =
-                        primaryCache->FindPrimIndex(descendentPrimPath);
-                    if (TF_VERIFY(index, "Reported descendent dependency "
+                    const PcpPrimIndex *depIndex =
+                        primaryCache->FindPrimIndex(depPath);
+                    if (!TF_VERIFY(depIndex, "Reported descendant dependency "
                                   "lacks a prim index")) {
-                        for (const PcpNodeRef &node:
-                             index->GetNodeRange(PcpRangeTypeInherit)) {
-                            if (node.GetLayerStack() == primaryLayerStack &&
-                                !node.GetPath().IsRootPrimPath() &&
-                                !node.IsDueToAncestor()) {
-                                // Found an inherit using a descendant.
-                                descendantNodes.insert(
-                                   std::make_pair(cacheIndex, node));
-                            }
+                        continue;
+                    }
+                    for (const PcpNodeRef &node: depIndex->GetNodeRange()) {
+                        // Look for nodes that originate from the root node,
+                        // representing a locally-expressed arc to adjust.
+                        if (node.GetParentNode() == depIndex->GetRootNode() &&
+                            node.GetOriginNode() == depIndex->GetRootNode() &&
+                            !node.IsDueToAncestor() &&
+                            (node.GetArcType() == PcpArcTypeInherit ||
+                             node.GetArcType() == PcpArcTypeSpecialize ||
+                             node.GetArcType() == PcpArcTypeReference ||
+                             node.GetArcType() == PcpArcTypePayload)) {
+                            // Found a direct arc to a descendant.
+                            descendantNodes.insert(
+                               std::make_pair(cacheIndex, node));
                         }
                     }
                 }
@@ -951,7 +937,7 @@ PcpComputeNamespaceEdits(
         }
     }
 
-    // Fix up all direct inherits to a descendant site.
+    // Fix up all direct arcs to a descendant site.
     if (!descendantNodes.empty()) {
         for (const auto& cacheAndNode : descendantNodes) {
             size_t cacheIndex   = cacheAndNode.first;

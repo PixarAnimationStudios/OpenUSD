@@ -1,37 +1,28 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_DATA_SOURCE_LEGACY_PRIM_H
 #define PXR_IMAGING_HD_DATA_SOURCE_LEGACY_PRIM_H
 
-#include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/dataSource.h"
+#include "pxr/imaging/hd/dataSourceLocator.h"
+
+#include "pxr/usd/sdf/path.h"
+
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/token.h"
+
+#include "pxr/pxr.h"
+
+#include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
-class HdExtComputationContext;
 
 #define HD_LEGACY_PRIMTYPE_TOKENS  \
     /* Bprims */                   \
@@ -41,31 +32,14 @@ class HdExtComputationContext;
 TF_DECLARE_PUBLIC_TOKENS(HdLegacyPrimTypeTokens, HD_API, 
                          HD_LEGACY_PRIMTYPE_TOKENS);
 
-/// \class HdExtComputationCallbackDataSource
-///
-/// This is a data source which holds a legacy ext computation. It is used
-/// only during emulation of legacy scene delegates but is exposed here as it
-/// is used by HdSceneIndexAdapterSceneDelegate for emulation of legacy
-/// render delegates.
-///
-class HdExtComputationCallbackDataSource : public HdDataSourceBase
-{
-public:
-    HD_DECLARE_DATASOURCE(HdExtComputationCallbackDataSource);
+/// Instancers from scene delegates ignore visibility.
+/// This fixes that usdImaging does not update the visibility of an instancer
+/// properly.
+#define HD_LEGACY_FLAG_TOKENS \
+    (isLegacyInstancer)
 
-    HdExtComputationCallbackDataSource(
-        const SdfPath &id, HdSceneDelegate *sceneDelegate)
-    : _id(id), _sceneDelegate(sceneDelegate) {}
-
-    HD_API
-    void Invoke(HdExtComputationContext *context);
-
-private:
-    SdfPath _id;
-    HdSceneDelegate *_sceneDelegate;
-};
-
-HD_DECLARE_DATASOURCE_HANDLES(HdExtComputationCallbackDataSource);
+TF_DECLARE_PUBLIC_TOKENS(HdLegacyFlagTokens, HD_API, 
+                         HD_LEGACY_FLAG_TOKENS);
 
 /// \class HdDataSourceLegacyPrim
 ///
@@ -88,12 +62,13 @@ public:
     /// Return which locators PrimDirtied will respond to...
     static const HdDataSourceLocatorSet &GetCachedLocators();
 
-private:
+protected:
     HdDataSourceLegacyPrim(
-        SdfPath id, 
-        TfToken type, 
+        const SdfPath& id, 
+        const TfToken& type, 
         HdSceneDelegate *sceneDelegate);
 
+private:
     HdDataSourceBaseHandle _GetPrimvarsDataSource();
     HdDataSourceBaseHandle _GetExtComputationPrimvarsDataSource();
     HdDataSourceBaseHandle _GetMaterialBindingsDataSource();
@@ -116,11 +91,12 @@ private:
     bool _IsLight();
     bool _IsInstanceable();
 
-private:
+protected:
     SdfPath _id;
     TfToken _type;
     HdSceneDelegate *_sceneDelegate;
 
+private:
     std::atomic_bool _primvarsBuilt;
     bool _extComputationPrimvarsBuilt : 1;
 

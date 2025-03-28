@@ -97,8 +97,17 @@ If you know that thread-safety is not a concern (that is, your listening object 
 
 First, if your listening object receives more than one notice at the same time and that is a problem, you will need to add locking behavior into your object's method calls.
 
-Second, if you are worried that your listener object might be deleted while in the middle of receiving a notice call, then you need to make your listening object support both TfRefPtr and TfWeakPtr.  That is, your object must derive from TfWeakBase \e and TfRefBase (one of the rarely allowed cases on concrete multiple inheritance) and should only be accessed through these smart pointers.  Additionally, you must register your listener using TfNotice::RegisterDeletionSafe().
+Second, if you are worried that your listener object might be deleted while in
+the middle of receiving a notice call, then you need to call
+TfNotice::RevokeAndWait() in the destructor. This function revokes a
+registration and waits for any running notifications to the registered method
+to return. Once called for all registrations that could get called during
+listener destruction, you're safe to delete the listener. Be sure to call the
+function before destroying any resources used by the registered methods
+otherwise those methods might access the destroyed resources. The safest
+approach is to call it first in your destructor.
 
-The above actions furnish a guarantee against untimely deletion, because the notification center prevents a listener from being destroyed while receiving a notice, by temporarily creating a TfRefPtr pointing to the object.  (In between notices, the notification center points to the listener only by a TfWeakPtr, which allows the listener to destruct when not in use).
+You can call TfNotice::RevokeAndWait() from anywhere but it's generally only
+needed in the destructor and then only in the above case.
 
 */

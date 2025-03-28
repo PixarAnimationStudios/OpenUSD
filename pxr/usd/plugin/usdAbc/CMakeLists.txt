@@ -58,9 +58,6 @@ pxr_plugin(usdAbc
     PRIVATE_HEADERS
         api.h
 
-    PYTHON_CPPFILES
-        moduleDeps.cpp
-
     PYMODULE_CPPFILES
         module.cpp
         wrapAlembicTest.cpp

@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/plugin/hdPrmanLoader/rendererPlugin.h"
 
@@ -28,6 +11,7 @@
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/setenv.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -54,6 +38,7 @@ static struct HdPrmanLoader
     CreateDelegateFunc createFunc = nullptr;
     DeleteDelegateFunc deleteFunc = nullptr;
     bool valid = false;
+    std::string errorMsg;
 } _hdPrman;
 
 void 
@@ -67,7 +52,7 @@ HdPrmanLoader::Load()
 
     const std::string rmantree = TfGetenv(k_RMANTREE);
     if (rmantree.empty()) {
-        TF_WARN("The hdPrmanLoader backend requires $RMANTREE to be set.");
+        _hdPrman.errorMsg = "The hdPrmanLoader backend requires $RMANTREE to be set.";
         return;
     }
 
@@ -79,7 +64,8 @@ HdPrmanLoader::Load()
         libprmanPath,
         ARCH_LIBRARY_NOW | ARCH_LIBRARY_GLOBAL);
     if (!_hdPrman.libprman) {
-        TF_WARN("Could not load libprman.");
+        _hdPrman.errorMsg = TfStringPrintf("Could not load libprman: %s",
+            ArchLibraryError().c_str());
         return;
     }
 
@@ -95,20 +81,19 @@ HdPrmanLoader::Load()
     PlugPluginPtr plugin =
         PlugRegistry::GetInstance().GetPluginWithName("hdPrman");
 
-    // Backwards compatibility for hdxPrman.
-    // hdxPrman is deprecated, since it's been merged into hdPrman now.
     if (!plugin) {
-        plugin = PlugRegistry::GetInstance().GetPluginWithName("hdxPrman");
+        _hdPrman.errorMsg =
+            TfStringPrintf("Could not find hdPrman plugin registration.");
+        return;
     }
 
-    if (plugin) {
-        _hdPrman.hdPrman = ArchLibraryOpen(
-            plugin->GetPath(),
-            ARCH_LIBRARY_NOW | ARCH_LIBRARY_LOCAL);
-    }
+    _hdPrman.hdPrman = ArchLibraryOpen(
+        plugin->GetPath(),
+        ARCH_LIBRARY_NOW | ARCH_LIBRARY_LOCAL);
 
     if (!_hdPrman.hdPrman) {
-        TF_WARN("Could not load versioned hdPrman backend: %s",
+        _hdPrman.errorMsg =
+            TfStringPrintf("Could not load versioned hdPrman backend: %s",
                 ArchLibraryError().c_str());
         return;
     }
@@ -121,7 +106,8 @@ HdPrmanLoader::Load()
                                     "HdPrmanLoaderDeleteDelegate"));
 
     if (!_hdPrman.createFunc || !_hdPrman.deleteFunc) {
-        TF_WARN("hdPrmanLoader factory methods could not be found.");
+        _hdPrman.errorMsg = "hdPrmanLoader factory methods could not be found "
+            "in hdPrman plugin.";
         return;
     }
 
@@ -164,8 +150,11 @@ HdPrmanLoaderRendererPlugin::CreateRenderDelegate()
     if (_hdPrman.valid) {
         HdRenderSettingsMap settingsMap;
         return _hdPrman.createFunc(settingsMap);
+    } else {
+        TF_WARN("Could not create hdPrman instance: %s",
+                _hdPrman.errorMsg.c_str());
+        return nullptr;
     }
-    return nullptr;
 }
 
 HdRenderDelegate*
@@ -174,8 +163,11 @@ HdPrmanLoaderRendererPlugin::CreateRenderDelegate(
 {
     if (_hdPrman.valid) {
         return _hdPrman.createFunc(settingsMap);
+    } else {
+        TF_WARN("Could not create hdPrman instance: %s",
+                _hdPrman.errorMsg.c_str());
+        return nullptr;
     }
-    return nullptr;
 }
 
 void
@@ -190,6 +182,12 @@ HdPrmanLoaderRendererPlugin::DeleteRenderDelegate(
 bool
 HdPrmanLoaderRendererPlugin::IsSupported(bool /* gpuEnabled */) const
 {
+    if (!_hdPrman.valid) {
+        TF_DEBUG(HD_RENDERER_PLUGIN).Msg(
+            "hdPrman renderer plugin unsupported: %s\n",
+            _hdPrman.errorMsg.c_str());
+    }
+
     // Eventually will need to make this deal with whether RIS or XPU is used.
     return _hdPrman.valid;
 }

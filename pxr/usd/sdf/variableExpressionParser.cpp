@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/variableExpressionParser.h"
@@ -27,12 +10,13 @@
 #include "pxr/usd/sdf/debugCodes.h"
 #include "pxr/usd/sdf/variableExpressionImpl.h"
 
-#include "pxr/base/tf/pxrPEGTL/pegtl.h"
+#include "pxr/base/pegtl/pegtl.hpp"
+#include "pxr/base/pegtl/pegtl/contrib/trace.hpp"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <tuple>
 
-using namespace tao::TAO_PEGTL_NAMESPACE;
+using namespace PXR_PEGTL_NAMESPACE;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -305,6 +289,7 @@ private:
 // Parser utilities -----------------------------------------------
 
 template <typename Input>
+[[noreturn]]
 void _ThrowParseError(const Input& in, const std::string& msg)
 {
     // XXX: 
@@ -316,8 +301,7 @@ void _ThrowParseError(const Input& in, const std::string& msg)
     // pegtl 3.x adds API to parse_error to decompose the error message,
     // so we could use that later.
 
-    // throw parse_error(errorMsg, in); 
-    throw parse_error(msg, std::vector<position>{ in.position() });
+    throw parse_error(msg, in); 
 }
 
 // Parser grammar -----------------------------------------------
@@ -444,15 +428,15 @@ struct Integer
 // for users working in those languages while writing expressions.
 struct BooleanTrue
     : sor<
-        TAO_PEGTL_KEYWORD("True"),
-        TAO_PEGTL_KEYWORD("true")
+        PXR_PEGTL_KEYWORD("True"),
+        PXR_PEGTL_KEYWORD("true")
     >
 {};
 
 struct BooleanFalse
     : sor<
-        TAO_PEGTL_KEYWORD("False"),
-        TAO_PEGTL_KEYWORD("false")
+        PXR_PEGTL_KEYWORD("False"),
+        PXR_PEGTL_KEYWORD("false")
     >
 {};
 
@@ -467,8 +451,8 @@ struct Boolean
 
 struct None
     : sor<
-        TAO_PEGTL_KEYWORD("None"),
-        TAO_PEGTL_KEYWORD("none")
+        PXR_PEGTL_KEYWORD("None"),
+        PXR_PEGTL_KEYWORD("none")
     >
 {};
 
@@ -761,7 +745,7 @@ struct Errors
     static const std::string errorMsg;
 
     template <typename Input, typename... States>
-    static void raise(const Input& in, States&&...)
+    [[noreturn]] static void raise(const Input& in, States&&...)
     {
         _ThrowParseError(in, errorMsg);
     }
@@ -797,7 +781,7 @@ MATCH_ERROR(SingleQuotedString::End, R"(Missing ending "'")");
 Sdf_VariableExpressionParserResult
 Sdf_ParseVariableExpression(const std::string& expr)
 {
-    namespace pegtl = tao::TAO_PEGTL_NAMESPACE;
+    namespace pegtl = PXR_PEGTL_NAMESPACE;
 
     ParserContext context;
 
@@ -806,8 +790,7 @@ Sdf_ParseVariableExpression(const std::string& expr)
     try {
         const bool parseSuccess =
             TfDebug::IsEnabled(SDF_VARIABLE_EXPRESSION_PARSING) ?
-            pegtl::parse<Expression, Action, 
-                         pegtl::trace<Errors>::control>(in, context) :
+            pegtl::standard_trace<Expression, Action, Errors>(in, context) :
             pegtl::parse<Expression, Action, Errors>(in, context);
         
         if (!parseSuccess) {
@@ -820,10 +803,10 @@ Sdf_ParseVariableExpression(const std::string& expr)
 
             // XXX: "at character" is probably incorrect if the expression
             // contains Unicode strings?
-            { TfStringPrintf("%s at character %zu", 
-                e.what(), 
-                e.positions.empty() ? 
-                    expr.size() : e.positions.front().byte_in_line) }
+            { TfStringPrintf("%s at character %zu",
+                             std::string(e.message()).c_str(),
+                             e.positions().empty()
+                             ? expr.size() : e.positions().front().column-1) }
         };
      }
 

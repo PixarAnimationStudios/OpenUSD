@@ -1,25 +1,8 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdx/fullscreenShader.h"
 #include "pxr/imaging/hdx/hgiConversions.h"
@@ -104,8 +87,8 @@ HdxFullscreenShader::~HdxFullscreenShader()
         _DestroyShaderProgram(&_shaderProgram);
     }
 
-    if (_sampler) {
-        hgi->DestroySampler(&_sampler);
+    if (_defaultSampler) {
+        hgi->DestroySampler(&_defaultSampler);
     }
 }
 
@@ -302,9 +285,26 @@ HdxFullscreenShader::_CreateBufferResources()
 
 void
 HdxFullscreenShader::BindTextures(
-    HgiTextureHandleVector const& textures)
+    HgiTextureHandleVector const& textures,
+    HgiSamplerHandleVector const& samplers)
 {
+    if (!samplers.empty() && textures.size() != samplers.size()) {
+        TF_CODING_ERROR("Samplers vector must be empty, or match the size of "
+                        "the provided textures vector.");
+        _textures.clear();
+        _samplers.clear();
+        return;
+    }
+
     _textures = textures;
+    if (samplers.empty()) {
+        _samplers.assign(_textures.size(), _GetDefaultSampler());
+    } else {
+        _samplers.resize(samplers.size());
+        for (size_t i = 0; i < samplers.size(); ++i) {
+            _samplers[i] = samplers[i] ? samplers[i] : _GetDefaultSampler();
+        }
+    }
 }
 
 void
@@ -312,30 +312,30 @@ HdxFullscreenShader::_SetResourceBindings()
 {
     HgiTextureBindDescVector textureBindings;
     textureBindings.reserve(_textures.size());
-    size_t bindSlots = 0;
-    for (auto const& texture : _textures) {
+    for (uint32_t index = 0; index < _textures.size(); ++index) {
+        const HgiTextureHandle& texture = _textures[index];
         if (!texture) {
             continue;
         }
         HgiTextureBindDesc texBind;
-        texBind.bindingIndex = bindSlots++;
+        texBind.bindingIndex = index;
         texBind.stageUsage = HgiShaderStageFragment;
         texBind.writable = false;
         texBind.textures.push_back(texture);
-        texBind.samplers.push_back(_sampler);
+        texBind.samplers.push_back(_samplers[index]);
         textureBindings.push_back(std::move(texBind));
     }
     _SetTextureBindings(textureBindings);
 
     HgiBufferBindDescVector bufferBindings;
     bufferBindings.reserve(_buffers.size());
-    bindSlots = 0;
-    for (auto const& buffer : _buffers) {
+    for (uint32_t index = 0; index < _buffers.size(); ++index) {
+        const HgiBufferHandle& buffer = _buffers[index];
         if (!buffer) {
             continue;
         }
         HgiBufferBindDesc bufBind;
-        bufBind.bindingIndex = bindSlots++;
+        bufBind.bindingIndex = index;
         bufBind.resourceType = HgiBindResourceTypeStorageBuffer;
         bufBind.stageUsage = HgiShaderStageFragment;
         bufBind.writable = false;
@@ -368,24 +368,19 @@ HdxFullscreenShader::_SetVertexBufferDescriptor()
     _SetVertexBufferDescs(vboDescs);
 }
 
-bool
-HdxFullscreenShader::_CreateSampler()
+HgiSamplerHandle
+HdxFullscreenShader::_GetDefaultSampler()
 {
-    if (_sampler) {
-        return true;
+    if (!_defaultSampler) {
+        HgiSamplerDesc sampDesc;
+        sampDesc.magFilter = HgiSamplerFilterLinear;
+        sampDesc.minFilter = HgiSamplerFilterLinear;
+        sampDesc.addressModeU = HgiSamplerAddressModeClampToEdge;
+        sampDesc.addressModeV = HgiSamplerAddressModeClampToEdge;
+        _defaultSampler = _GetHgi()->CreateSampler(sampDesc);
     }
 
-    HgiSamplerDesc sampDesc;
-    
-    sampDesc.magFilter = HgiSamplerFilterLinear;
-    sampDesc.minFilter = HgiSamplerFilterLinear;
-
-    sampDesc.addressModeU = HgiSamplerAddressModeClampToEdge;
-    sampDesc.addressModeV = HgiSamplerAddressModeClampToEdge;
-    
-    _sampler = _GetHgi()->CreateSampler(sampDesc);
-
-    return true;
+    return _defaultSampler;
 }
 
 void
@@ -461,9 +456,6 @@ HdxFullscreenShader::_Draw(
     if (!_vertexBuffer) {
         _CreateBufferResources();
     }
-
-    // Create a default texture sampler (first time)
-    _CreateSampler();
 
     // Set or update the resource bindings (textures may have changed)
     _SetResourceBindings();

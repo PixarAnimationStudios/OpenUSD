@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -40,7 +23,6 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/meshTopologySchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
-#include "pxr/imaging/hd/geomSubsetsSchema.h"
 
 #include "pxr/imaging/hd/schema.h"
 
@@ -57,7 +39,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (topology) \
     (subdivisionScheme) \
     (subdivisionTags) \
-    (geomSubsets) \
     (doubleSided) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdMeshSchemaTokens, HD_API,
@@ -102,9 +83,6 @@ public:
     HdSubdivisionTagsSchema GetSubdivisionTags() const;
 
     HD_API
-    HdGeomSubsetsSchema GetGeomSubsets() const;
-
-    HD_API
     HdBoolDataSourceHandle GetDoubleSided() const; 
 
     /// @}
@@ -145,10 +123,6 @@ public:
     HD_API
     static const HdDataSourceLocator &GetSubdivisionTagsLocator();
 
-    /// Prim-level relative data source locator to locate geomSubsets.
-    HD_API
-    static const HdDataSourceLocator &GetGeomSubsetsLocator();
-
     /// Prim-level relative data source locator to locate doubleSided.
     HD_API
     static const HdDataSourceLocator &GetDoubleSidedLocator();
@@ -170,7 +144,6 @@ public:
         const HdContainerDataSourceHandle &topology,
         const HdTokenDataSourceHandle &subdivisionScheme,
         const HdContainerDataSourceHandle &subdivisionTags,
-        const HdContainerDataSourceHandle &geomSubsets,
         const HdBoolDataSourceHandle &doubleSided
     );
 
@@ -193,9 +166,6 @@ public:
         Builder &SetSubdivisionTags(
             const HdContainerDataSourceHandle &subdivisionTags);
         HD_API
-        Builder &SetGeomSubsets(
-            const HdContainerDataSourceHandle &geomSubsets);
-        HD_API
         Builder &SetDoubleSided(
             const HdBoolDataSourceHandle &doubleSided);
 
@@ -207,7 +177,6 @@ public:
         HdContainerDataSourceHandle _topology;
         HdTokenDataSourceHandle _subdivisionScheme;
         HdContainerDataSourceHandle _subdivisionTags;
-        HdContainerDataSourceHandle _geomSubsets;
         HdBoolDataSourceHandle _doubleSided;
 
     };

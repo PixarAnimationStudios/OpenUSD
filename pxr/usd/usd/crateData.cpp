@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/crateData.h"
@@ -272,7 +255,7 @@ public:
         }
         _lastSet = _data.end();
         auto tmpFields(std::move(oldIter->second));
-        _data.erase(oldIter);
+        _data.erase_fast(oldIter);
         auto iresult = _data.emplace(newPath, std::move(tmpFields));
         TF_VERIFY(iresult.second);
     }
@@ -801,7 +784,7 @@ private:
                 liveFieldSets[FieldSetIndex(fsBegin-fieldSets.begin())];
                     
             dispatcher.Run(
-                [this, fsBegin, fsEnd, &fields, &fieldValuePairs]() mutable {
+                [this, fsBegin, fsEnd, &fields, &fieldValuePairs]()  {
                     try{
                         // XXX Won't need first two tags when bug #132031 is
                         // addressed
@@ -809,8 +792,8 @@ private:
                             "Usd", "Usd_CrateDataImpl::Open", "field data");
                         auto &pairs = fieldValuePairs.GetMutable();
                         pairs.resize(fsEnd-fsBegin);
-                        for (size_t i = 0; fsBegin != fsEnd; ++fsBegin, ++i) {
-                            auto const &field = fields[fsBegin->value];
+                        for (size_t i = 0; i < size_t(std::distance(fsBegin,fsEnd)); ++i) {
+                            auto const &field = fields[fsBegin[i].value];
                             pairs[i].first = 
                                 _crateFile->GetToken(field.tokenIndex);
                             pairs[i].second = _UnpackForField(field.valueRep);
@@ -1299,6 +1282,30 @@ Usd_CrateData::GetBracketingTimeSamplesForPath(
     double time, double* tLower, double* tUpper) const
 {
     return _impl->GetBracketingTimeSamplesForPath(path, time, tLower, tUpper);
+}
+
+bool
+Usd_CrateData::GetPreviousTimeSampleForPath(
+    const SdfPath& path, double time, double* tPrevious) const
+{
+    vector<double> const &times = _impl->_ListTimeSamplesForPath(path);
+    if (times.empty() || time <= times.front()) {
+        // no samples, or 
+        // can't get previous sample for time before first sample.
+        return false;
+    } else if (time > times.back()) {
+        // last sample is the previous time sample, as time is greater than
+        // the last sample time.
+        *tPrevious = times.back();
+    } else {
+        auto i = lower_bound(times.begin(), times.end(), time);
+        // We need to back up one sample to get the previous sample from
+        // the lower_bound. If the lower_bound is the first sample, we would
+        // have returned false above.
+        TF_VERIFY(i != times.begin());
+        *tPrevious = i[-1];
+    }
+    return true;
 }
 
 bool

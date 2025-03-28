@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -62,6 +45,20 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialNodeSchemaTokens, HD_API,
 
 //-----------------------------------------------------------------------------
 
+// The MaterialNode schema is a container schema that defines a particular
+// node in a material network.
+//
+// A material node defines its connections to other nodes via the
+// "inputConnections" member. For example, "albedo" would define that it
+// receives its value from its connection to the node "Color_UnPreMult" and
+// the output "resultRGB" with the following data sources:
+//
+// ds at: material/<renderContext>/nodes/MaterialLayer/inputConnections
+// /albedo/[0]/upstreamNodePath = Color_UnPreMult
+//
+// ds at: material/<renderContext>/nodes/MaterialLayer/inputConnections
+// /albedo/[0]/upstreamNodeOutputName = resultRGB
+//
 
 class HdMaterialNodeSchema : public HdSchema
 {
@@ -80,9 +77,15 @@ public:
     /// \name Member accessor
     /// @{
 
+    /// Maps parameter names to node parameters. Each node parameter is a
+    /// container that is defined by the MaterialNodeParameter schema. Note
+    /// that parameters are inputs that supply their value directly.
     HD_API
     HdMaterialNodeParameterContainerSchema GetParameters() const;
 
+    /// Maps input names to vectors of connections. Each connection is defined
+    /// by the MaterialConnection schema. Note that inputConnections are
+    /// inputs that get their value from data flow over the connection.
     HD_API
     HdMaterialConnectionVectorContainerSchema GetInputConnections() const;
 

@@ -76,3 +76,13 @@ def "PayloadWithNestedVariants" (
         }
     }
 }
+
+# Opinions from /Params1 should be used when opening the dynamic payload,
+# while those from /Params2 should not.
+def "PayloadSiblings" (
+payload = [@./params.sdf@</Params1>,
+           @sphere.testpcpdynamic@,
+           @./params.sdf@</Params2>]
+)
+{
+}

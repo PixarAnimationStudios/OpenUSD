@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_PCP_NODE_H
 #define PXR_USD_PCP_NODE_H
@@ -67,6 +50,8 @@ public:
     typedef PcpNodeRef_ChildrenReverseIterator child_const_reverse_iterator;
     typedef std::pair<child_const_iterator,
                       child_const_iterator> child_const_range;
+    typedef std::pair<child_const_reverse_iterator,
+                      child_const_reverse_iterator> child_const_reverse_range;
 
     PcpNodeRef() : _graph(0), _nodeIdx(PCP_INVALID_INDEX) {}
 
@@ -150,6 +135,11 @@ public:
     PCP_API
     child_const_range GetChildrenRange() const;
 
+    /// Returns an iterator range over the children nodes in weakest to
+    /// strongest order.
+    PCP_API
+    child_const_reverse_range GetChildrenReverseRange() const;
+
     /// Inserts a new child node for \p site, connected to this node via
     /// \p arc.
     PCP_API
@@ -217,6 +207,20 @@ public:
     /// See also GetDepthBelowIntroduction().
     PCP_API
     SdfPath GetIntroPath() const;
+
+    /// Returns the node's path at the same level of namespace as its origin
+    /// root node was when it was added as a child. 
+    ///
+    /// For most nodes, this will return the same result as 
+    /// GetPathAtIntroduction(). But for implied class nodes, 
+    /// GetPathAtIntroduction() returns the path at which the implied node was
+    /// added to the tree which could be at deeper level of namespace than its
+    /// origin was introduced if the origin node was already ancestral when it
+    /// was implied. In some cases, what you really need is the path that the
+    /// original authored class arc maps to at this node's implied site and this
+    /// function returns that.
+    PCP_API 
+    SdfPath GetPathAtOriginRootIntroduction() const;
 
     /// @} 
 
@@ -323,6 +327,9 @@ public:
     {
         return Pcp_CompressedSdSite(_nodeIdx, layerIndex);
     }
+
+    PCP_API
+    friend std::ostream & operator<<(std::ostream &out, const PcpNodeRef &node);
 
 private:
     friend class PcpPrimIndex_Graph;
@@ -564,6 +571,22 @@ begin(const PcpNodeRef::child_const_range& r)
 inline
 PcpNodeRef_ChildrenIterator
 end(const PcpNodeRef::child_const_range& r)
+{
+    return r.second;
+}
+
+/// Support for range-based for loops for PcpNodeRef children ranges.
+inline
+PcpNodeRef_ChildrenReverseIterator
+begin(const PcpNodeRef::child_const_reverse_range& r)
+{
+    return r.first;
+}
+
+/// Support for range-based for loops for PcpNodeRef children ranges.
+inline
+PcpNodeRef_ChildrenReverseIterator
+end(const PcpNodeRef::child_const_reverse_range& r)
 {
     return r.second;
 }

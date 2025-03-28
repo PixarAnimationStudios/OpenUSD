@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 // Do not include pyModule.h or we'd need an implementation of WrapModule().
 //#include "pxr/base/tf/pyModule.h"
@@ -41,23 +24,24 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/python/docstring_options.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/handle.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/object/function.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/raw_function.hpp>
-#include <boost/python/scope.hpp>
+#include "pxr/external/boost/python/docstring_options.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/object/function.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/raw_function.hpp"
+#include "pxr/external/boost/python/scope.hpp"
+#include "pxr/external/boost/python/type_list.hpp"
 
 #include <string>
 
 using std::string;
 
-using namespace boost::python;
-
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 class Tf_ModuleProcessor {
 public:
@@ -114,12 +98,12 @@ private:
     {
         if (PyObject_HasAttrString(obj.ptr(), "__dict__")) {
             // In python 3 dict.items() returns a proxy view object, not a list.
-            // boost::python::extract<list> fails on these views, and raises:
+            // pxr_boost::python::extract<list> fails on these views, and raises:
             // 
             // TypeError: Expecting an object of type list; got an object of type
             // dict_items instead
             //
-            // A workaround is to use the boost::python::list constructor
+            // A workaround is to use the pxr_boost::python::list constructor
             object items_view = obj.attr("__dict__").attr("items")();
             list items(items_view);
             size_t lenItems = len(items);
@@ -224,11 +208,11 @@ public:
                 fullNamePrefix = &localPrefix;
             }
 
-            ret = boost::python::detail::make_raw_function(
-                boost::python::objects::py_function(
+            ret = pxr_boost::python::detail::make_raw_function(
+                pxr_boost::python::objects::py_function(
                     _InvokeWithErrorHandling(
                         fn, *fullNamePrefix + "." + name, *fullNamePrefix),
-                    boost::mpl::vector1<PyObject *>(),
+                    pxr_boost::python::type_list<PyObject *>(),
                     /*min_args =*/ 0,
                     /*max_args =*/ ~0
                     )
@@ -276,12 +260,14 @@ public:
         } else if (IsProperty(obj)) {
             // Replace owner's name attribute with a new property, decorating the
             // get, set, and del functions.
-            if (owner.attr(name) != obj) {
-                // XXX If accessing the attribute by normal lookup does not produce
-                // the same object, descriptors are likely at play (even on the
-                // class) which at least for now means that this is likely a static
-                // property.  For now, just not wrapping static properties with
-                // error handling.
+
+            // XXX: In Python 3.9+ this is equivalent to
+            // if (!Py_IS_TYPE(obj.ptr(), &PyProperty_Type)) {
+            if (Py_TYPE(obj.ptr()) != &PyProperty_Type) {
+                // XXX If the type of this object is not Python's built-in
+                // property descriptor, this at least for now means that this 
+                // is likely a static property. For now, we just don't wrap
+                // static properties with error handling.
             } else {
                 object propType(handle<>(borrowed(&PyProperty_Type)));
                 object newfget =
@@ -425,10 +411,10 @@ void Tf_PyInitWrapModule(
     // Provide a way to find the full mfb name of the package.  Can't use the
     // TfToken, because when we get here in loading Tf, TfToken has not yet been
     // wrapped.
-    boost::python::scope().attr("__MFB_FULL_PACKAGE_NAME") = packageName;
+    pxr_boost::python::scope().attr("__MFB_FULL_PACKAGE_NAME") = packageName;
 
     // Disable docstring auto signatures.
-    boost::python::docstring_options docOpts(true /*show user-defined*/,
+    pxr_boost::python::docstring_options docOpts(true /*show user-defined*/,
                                              false /*show signatures*/);
 
     // Do the wrapping.

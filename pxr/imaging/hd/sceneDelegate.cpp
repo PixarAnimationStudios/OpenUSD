@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hd/sceneDelegate.h"
 
@@ -46,9 +29,7 @@ HdSceneDelegate::HdSceneDelegate(HdRenderIndex *parentIndex,
     }
 }
 
-HdSceneDelegate::~HdSceneDelegate()
-{
-}
+HdSceneDelegate::~HdSceneDelegate() = default;
 
 /*virtual*/
 void
@@ -135,6 +116,18 @@ HdSceneDelegate::SampleTransform(SdfPath const & id,
 }
 
 /*virtual*/
+size_t
+HdSceneDelegate::SampleTransform(SdfPath const & id,
+                                 float startTime,
+                                 float endTime,
+                                 size_t maxSampleCount,
+                                 float *sampleTimes,
+                                 GfMatrix4d *sampleValues)
+{
+    return SampleTransform(id, maxSampleCount, sampleTimes, sampleValues);
+}
+
+/*virtual*/
 bool
 HdSceneDelegate::GetVisible(SdfPath const & id)
 {
@@ -206,7 +199,20 @@ HdSceneDelegate::SamplePrimvar(SdfPath const& id,
 
 /*virtual*/
 size_t
-HdSceneDelegate::SampleIndexedPrimvar(SdfPath const& id, 
+HdSceneDelegate::SamplePrimvar(SdfPath const& id, 
+                               TfToken const& key,
+                               float startTime,
+                               float endTime,
+                               size_t maxSampleCount,
+                               float *sampleTimes,
+                               VtValue *sampleValues)
+{
+    return SamplePrimvar(id, key, maxSampleCount, sampleTimes, sampleValues);
+}
+
+/*virtual*/
+size_t
+HdSceneDelegate::SampleIndexedPrimvar(SdfPath const& id,
                                TfToken const& key,
                                size_t maxSampleCount,
                                float *sampleTimes,
@@ -219,6 +225,23 @@ HdSceneDelegate::SampleIndexedPrimvar(SdfPath const& id,
         return 1;
     }
     return 0;
+}
+
+/*virtual*/
+size_t
+HdSceneDelegate::SampleIndexedPrimvar(SdfPath const& id, 
+                               TfToken const& key,
+                               float startTime,
+                               float endTime,
+                               size_t maxSampleCount,
+                               float *sampleTimes,
+                               VtValue *sampleValues,
+                               VtIntArray *sampleIndices)
+{
+    return
+        SampleIndexedPrimvar(
+            id, key, maxSampleCount,
+            sampleTimes, sampleValues, sampleIndices);
 }
 
 /*virtual*/
@@ -299,6 +322,19 @@ HdSceneDelegate::SampleInstancerTransform(SdfPath const &instancerId,
         return 1;
     }
     return 0;
+}
+
+/*virtual*/
+size_t
+HdSceneDelegate::SampleInstancerTransform(SdfPath const &instancerId,
+                                          float startTime,
+                                          float endTime,
+                                          size_t maxSampleCount,
+                                          float *sampleTimes,
+                                          GfMatrix4d *sampleValues)
+{
+    return SampleInstancerTransform(
+        instancerId, maxSampleCount, sampleTimes, sampleValues);
 }
 
 /*virtual*/
@@ -463,6 +499,21 @@ HdSceneDelegate::SampleExtComputationInput(SdfPath const& computationId,
         return 1;
     }
     return 0;
+}
+
+/*virtual*/
+size_t
+HdSceneDelegate::SampleExtComputationInput(SdfPath const& computationId,
+                                           TfToken const& input,
+                                           float startTime,
+                                           float endTime,
+                                           size_t maxSampleCount,
+                                           float *sampleTimes,
+                                           VtValue *sampleValues)
+{
+    return
+        SampleExtComputationInput(
+            computationId, input, maxSampleCount, sampleTimes, sampleValues);
 }
 
 /*virtual*/

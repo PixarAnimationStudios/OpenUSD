@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -51,7 +34,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrimvarSchemaTokens,
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 
 bool
-HdPrimvarSchema::IsIndexed()
+HdPrimvarSchema::IsIndexed() const
 {
     if (_container) {
         return (_container->Get(HdPrimvarSchemaTokens->
@@ -116,55 +99,38 @@ public:
     _HdDataSourceFlattenedPrimvarValue(
         HdSampledDataSourceHandle indexedValue,
         HdIntArrayDataSourceHandle indices)
-    : _indexedValue(indexedValue)
-    , _indices(indices)
+    : _indexedValue(std::move(indexedValue))
+    , _indices(std::move(indices))
     {
     }
 
     VtValue GetValue(Time shutterOffset) override
     {
-        VtValue indexedValue = _indexedValue->GetValue(shutterOffset);
-        VtIntArray indices = _indices->GetTypedValue(shutterOffset);
+        const VtValue indexedValue = _indexedValue->GetValue(shutterOffset);
+        const VtIntArray indices = _indices->GetTypedValue(shutterOffset);
         return VtVisitValue(indexedValue, _ComputeFlattenedValue(indices));
     }
 
     bool GetContributingSampleTimesForInterval(
-            Time startTime, Time endTime,
-            std::vector<Time> * outSampleTimes) override
+        const Time startTime, const Time endTime,
+        std::vector<Time> * const outSampleTimes) override
     {
-        std::vector<Time> valueSampleTimes;
-        const bool valueVarying =
-            _indexedValue->GetContributingSampleTimesForInterval(
-                startTime, endTime, &valueSampleTimes);
-        std::vector<Time> indexSampleTimes;
-        const bool indexVarying =
-            _indices->GetContributingSampleTimesForInterval(
-                startTime, endTime, &indexSampleTimes);
-
-        if (outSampleTimes) {
-            if (valueVarying && indexVarying) {
-                std::set_union(
-                    valueSampleTimes.begin(), valueSampleTimes.end(),
-                    indexSampleTimes.begin(), indexSampleTimes.end(),
-                    std::back_inserter(*outSampleTimes));
-            } else if (valueVarying) {
-                *outSampleTimes = std::move(valueSampleTimes);
-            } else if (indexVarying) {
-                *outSampleTimes = std::move(indexSampleTimes);
-            }
-        }
-        return valueVarying || indexVarying;
+        HdSampledDataSourceHandle const ds[] = {
+            _indexedValue, _indices };
+        return HdGetMergedContributingSampleTimesForInterval(
+            std::size(ds), ds,
+            startTime, endTime, outSampleTimes);
     }
 
 private:
-    HdSampledDataSourceHandle _indexedValue;
-    HdIntArrayDataSourceHandle _indices;
+    HdSampledDataSourceHandle const _indexedValue;
+    HdIntArrayDataSourceHandle const _indices;
 };
 
 }
 
 HdSampledDataSourceHandle
-HdPrimvarSchema::GetPrimvarValue()
+HdPrimvarSchema::GetPrimvarValue() const
 {
     // overriden definition from primvarSchemaGetValue.template.cpp
     if (_container) {
@@ -190,7 +156,7 @@ HdPrimvarSchema::GetPrimvarValue()
 }
 
 HdSampledDataSourceHandle
-HdPrimvarSchema::GetIndexedPrimvarValue()
+HdPrimvarSchema::GetIndexedPrimvarValue() const
 {
     // overriden definition from primvarSchemaGetIndexedValue.template.cpp
     if (IsIndexed()) {
@@ -203,7 +169,7 @@ HdPrimvarSchema::GetIndexedPrimvarValue()
 }
 
 HdSampledDataSourceHandle
-HdPrimvarSchema::GetFlattenedPrimvarValue()
+HdPrimvarSchema::GetFlattenedPrimvarValue() const
 {
     if (!_container) {
         return nullptr;
@@ -258,6 +224,13 @@ HdPrimvarSchema::GetRole() const
         HdPrimvarSchemaTokens->role);
 }
 
+HdIntDataSourceHandle
+HdPrimvarSchema::GetElementSize() const
+{
+    return _GetTypedDataSource<HdIntDataSource>(
+        HdPrimvarSchemaTokens->elementSize);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdPrimvarSchema::BuildRetained(
@@ -265,11 +238,12 @@ HdPrimvarSchema::BuildRetained(
         const HdSampledDataSourceHandle &indexedPrimvarValue,
         const HdIntArrayDataSourceHandle &indices,
         const HdTokenDataSourceHandle &interpolation,
-        const HdTokenDataSourceHandle &role
+        const HdTokenDataSourceHandle &role,
+        const HdIntDataSourceHandle &elementSize
 )
 {
-    TfToken _names[5];
-    HdDataSourceBaseHandle _values[5];
+    TfToken _names[6];
+    HdDataSourceBaseHandle _values[6];
 
     size_t _count = 0;
 
@@ -296,6 +270,11 @@ HdPrimvarSchema::BuildRetained(
     if (role) {
         _names[_count] = HdPrimvarSchemaTokens->role;
         _values[_count++] = role;
+    }
+
+    if (elementSize) {
+        _names[_count] = HdPrimvarSchemaTokens->elementSize;
+        _values[_count++] = elementSize;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -340,6 +319,14 @@ HdPrimvarSchema::Builder::SetRole(
     return *this;
 }
 
+HdPrimvarSchema::Builder &
+HdPrimvarSchema::Builder::SetElementSize(
+    const HdIntDataSourceHandle &elementSize)
+{
+    _elementSize = elementSize;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdPrimvarSchema::Builder::Build()
 {
@@ -348,7 +335,8 @@ HdPrimvarSchema::Builder::Build()
         _indexedPrimvarValue,
         _indices,
         _interpolation,
-        _role
+        _role,
+        _elementSize
     );
 }
 

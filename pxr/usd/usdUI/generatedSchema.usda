@@ -14,6 +14,14 @@ class "NodeGraphNodeAPI" (
         This hint defines what tint the node should have in the node graph.
         """
     )
+    uniform string ui:nodegraph:node:docURI (
+        displayGroup = "Help"
+        displayName = "Doc Link"
+        doc = """ 
+        A URI pointing to additional detailed documentation for this 
+        node or node type.
+        """
+    )
     uniform token ui:nodegraph:node:expansionState (
         allowedTokens = ["open", "closed", "minimized"]
         doc = """ 

@@ -1,0 +1,13 @@
+#sdf 1.4.32
+
+def XForm "default"
+{
+    def Sphere "ball" (
+        customData = {
+            int """jkj
+    """ = 15
+        }
+    )
+    {
+    }
+}

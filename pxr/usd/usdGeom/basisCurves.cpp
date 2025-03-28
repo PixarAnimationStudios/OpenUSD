@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usd/usdGeom/basisCurves.h"
 #include "pxr/usd/usd/schemaRegistry.h"
@@ -347,6 +330,96 @@ UsdGeomBasisCurves::ComputeVertexDataSize(
     VtIntArray curveVertexCounts;
     GetCurveVertexCountsAttr().Get(&curveVertexCounts, timeCode);
     return _ComputeVertexDataSize(curveVertexCounts);
+}
+
+VtIntArray
+UsdGeomBasisCurves::ComputeSegmentCounts(
+        const UsdTimeCode& timeCode) const
+{
+    VtIntArray curveVertexCounts;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+    if (!GetCurveVertexCountsAttr().Get(&curveVertexCounts, timeCode)) {
+        TF_WARN("CurveVertexCounts could not be read from prim, " 
+            "cannot compute segment counts.");
+        return VtIntArray();
+    }
+
+    TfToken type;
+    if (!GetTypeAttr().Get(&type, timeCode)) {
+        TF_WARN("Curve type could not be read from prim, " 
+            "cannot compute segment counts.");
+        return VtIntArray();
+    }
+
+    TfToken wrap;
+    if (!GetWrapAttr().Get(&wrap, timeCode)) {
+        TF_WARN("Curve wrap could not be read from prim, " 
+            "cannot compute segment counts.");
+        return VtIntArray();
+    }
+
+    TfToken basis;
+    if (!GetBasisAttr().Get(&basis, timeCode)) {
+        TF_WARN("Curve basis could not be read from prim, " 
+            "cannot compute segment counts.");
+        return VtIntArray();
+    }
+
+    VtIntArray segmentCounts(curveVertexCounts.size());
+    bool isValid = false;
+
+    if (type == UsdGeomTokens->linear) {
+        if (wrap == UsdGeomTokens->periodic) {
+            // Linear and periodic
+            segmentCounts = curveVertexCounts;
+            isValid = true;
+        } else if (wrap == UsdGeomTokens->nonperiodic || 
+                wrap == UsdGeomTokens->pinned) {
+            // Linear and nonperiodic/pinned
+            std::transform(curveVertexCounts.cbegin(), curveVertexCounts.cend(), 
+                segmentCounts.begin(), [](int n) { return n - 1; });
+            isValid = true;
+        }
+    } else if (type == UsdGeomTokens->cubic) {
+        if (basis == UsdGeomTokens->bezier) {
+            constexpr int vstep = 3;
+            if (wrap == UsdGeomTokens->periodic) {
+                // Cubic, bezier, periodic
+                std::transform(curveVertexCounts.cbegin(), curveVertexCounts.cend(), 
+                    segmentCounts.begin(), [vstep](int n) { return n / vstep; });
+                isValid = true;
+            } else if (wrap == UsdGeomTokens->nonperiodic || 
+                    wrap == UsdGeomTokens->pinned) {
+                // Cubic, bezier, nonperiodic/pinned
+                std::transform(curveVertexCounts.cbegin(), curveVertexCounts.cend(), 
+                    segmentCounts.begin(), [vstep](int n) { return (n - 4) / vstep + 1; });
+                isValid = true;
+            }
+        } else if (basis == UsdGeomTokens->bspline ||
+                basis == UsdGeomTokens->catmullRom) {
+            if (wrap == UsdGeomTokens->periodic) {
+                // Cubic, bspline/catmullRom, periodic
+                segmentCounts = curveVertexCounts;
+                isValid = true;
+            } else if (wrap == UsdGeomTokens->nonperiodic) {
+                // Cubic, bspline/catmullRom, nonperiodic
+                std::transform(curveVertexCounts.cbegin(), curveVertexCounts.cend(), 
+                    segmentCounts.begin(), [](int n) { return n - 3; });
+                isValid = true;
+            } else if (wrap == UsdGeomTokens->pinned) {
+                // Cubic, bspline/catmullRom, pinned
+                std::transform(curveVertexCounts.cbegin(), curveVertexCounts.cend(), 
+                    segmentCounts.begin(), [](int n) { return n - 1; });
+                isValid = true;
+            }
+        }
+    }
+
+    if (!isValid) {
+        TF_WARN("Invalid type, wrap, or basis.");
+        return VtIntArray();
+    }
+
+    return segmentCounts;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

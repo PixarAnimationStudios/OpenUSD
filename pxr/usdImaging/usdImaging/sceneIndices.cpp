@@ -1,50 +1,53 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdImaging/sceneIndices.h"
 
 #include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/extentResolvingSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h"
 #include "pxr/usdImaging/usdImaging/materialBindingsResolvingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/renderSettingsFlatteningSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/sceneIndexPlugin.h"
 #include "pxr/usdImaging/usdImaging/selectionSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/unloadedDrawModeSceneIndex.h"
 
-#include "pxr/usdImaging/usdImaging/collectionMaterialBindingsSchema.h"
-#include "pxr/usdImaging/usdImaging/directMaterialBindingsSchema.h"
 #include "pxr/usdImaging/usdImaging/geomModelSchema.h"
+#include "pxr/usdImaging/usdImaging/materialBindingsSchema.h"
 
-#include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/purposeSchema.h"
+#include "pxr/imaging/hd/sceneIndexUtil.h"
+
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfRegistryManager::GetInstance().SubscribeTo<UsdImagingSceneIndexPlugin>();
+}
+
+static
+HdSceneIndexBaseRefPtr
+_AddPluginSceneIndices(HdSceneIndexBaseRefPtr sceneIndex)
+{
+    TRACE_FUNCTION();
+    
+    for (const UsdImagingSceneIndexPluginUniquePtr &sceneIndexPlugin :
+             UsdImagingSceneIndexPlugin::GetAllSceneIndexPlugins()) {
+        sceneIndex = sceneIndexPlugin->AppendSceneIndex(sceneIndex);
+    }
+    
+    return sceneIndex;
+}
 
 static
 HdContainerDataSourceHandle
@@ -77,6 +80,44 @@ _ExtentResolvingSceneIndexInputArgs()
                 TfArraySize(purposeDataSources),
                 purposeDataSources));
 }
+
+static
+std::string
+_GetStageName(UsdStageRefPtr const &stage)
+{
+    if (!stage) {
+        return {};
+    }
+    SdfLayerHandle const rootLayer = stage->GetRootLayer();
+    if (!rootLayer) {
+        return {};
+    }
+    return rootLayer->GetIdentifier();
+}
+
+static
+TfTokenVector
+_InstanceDataSourceNames()
+{
+    TRACE_FUNCTION();
+    
+    TfTokenVector result = {
+        UsdImagingMaterialBindingsSchema::GetSchemaToken(),
+        HdPurposeSchema::GetSchemaToken(),
+        // We include model to aggregate scene indices
+        // by draw mode.
+        UsdImagingGeomModelSchema::GetSchemaToken()
+    };
+
+    for (const UsdImagingSceneIndexPluginUniquePtr &plugin :
+             UsdImagingSceneIndexPlugin::GetAllSceneIndexPlugins()) {
+        for (const TfToken &name : plugin->InstanceDataSourceNames()) {
+            result.push_back(name);
+        }
+    }
+
+    return result;
+};
 
 UsdImagingSceneIndices
 UsdImagingCreateSceneIndices(
@@ -126,14 +167,8 @@ UsdImagingCreateSceneIndices(
         // Names of data sources that need to have the same values
         // across native instances for the instances be aggregated
         // together.
-        static const TfTokenVector instanceDataSourceNames = {
-            UsdImagingDirectMaterialBindingsSchema::GetSchemaToken(),
-            UsdImagingCollectionMaterialBindingsSchema::GetSchemaToken(),
-            HdPurposeSchema::GetSchemaToken(),
-            // We include model to aggregate scene indices
-            // by draw mode.
-            UsdImagingGeomModelSchema::GetSchemaToken()
-        };
+        static const TfTokenVector instanceDataSourceNames =
+            _InstanceDataSourceNames();
 
         using SceneIndexAppendCallback =
             UsdImagingNiPrototypePropagatingSceneIndex::
@@ -170,11 +205,20 @@ UsdImagingCreateSceneIndices(
     sceneIndex = UsdImagingMaterialBindingsResolvingSceneIndex::New(
                         sceneIndex, /* inputArgs = */ nullptr);
 
+    sceneIndex =
+        _AddPluginSceneIndices(sceneIndex);
+    
     sceneIndex = result.selectionSceneIndex =
         UsdImagingSelectionSceneIndex::New(sceneIndex);
     
     sceneIndex =
         UsdImagingRenderSettingsFlatteningSceneIndex::New(sceneIndex);
+
+    if (TfGetEnvSetting<bool>(HD_USE_ENCAPSULATING_SCENE_INDICES)) {
+        sceneIndex = HdMakeEncapsulatingSceneIndex({}, sceneIndex);
+        sceneIndex->SetDisplayName(
+            "UsdImaging " + _GetStageName(createInfo.stage));
+    }
 
     result.finalSceneIndex = sceneIndex;
 

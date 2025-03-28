@@ -1,6 +1,7 @@
 #usda 1.0
 (
     upAxis = "Y"
+    renderSettingsPrimPath = "/Render/Settings"
 )
 
 def Scope "World"
@@ -146,9 +147,10 @@ def Scope "Render"
             </Render/Product>,
         ]
         int2 resolution = (512, 512)
+        bool ri:hider:jitter = 0
         int ri:hider:maxsamples = 4
         int ri:hider:minsamples = 4
-        float ri:Ri:PixelVariance = 0.01
+        float ri:Ri:PixelVariance = 0.0
         int ri:trace:maxdepth = 1
     }
 
@@ -173,6 +175,24 @@ def Scope "Render"
             token dataType = "float"
             string sourceName = "a"
         }
+    }
+
+    def RenderSettings "SettingsMurk"
+    {
+        token outputs:ri:sampleFilters.connect = </Render/MurkFilter.outputs:result>
+        float ri:Ri:PixelVariance = 0.0
+        int ri:hider:minsamples = 32
+        int ri:hider:maxsamples = 32
+        int ri:hider:incremental = 0
+        bool ri:hider:jitter = 0
+    }
+
+    def PxrMurkFilter "MurkFilter"
+    {
+        float inputs:ri:tintFarDist = 50
+        float inputs:ri:tintNearDist = 3
+        color3f[] inputs:ri:tintRamp_Colors = [(0.42, 0, 1), (0.42, 0, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
+        token outputs:result
     }
 }
 

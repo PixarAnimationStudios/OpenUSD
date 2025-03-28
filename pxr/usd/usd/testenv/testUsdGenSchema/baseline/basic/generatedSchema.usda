@@ -6,11 +6,11 @@
     }
 )
 
-class "NonAppliedAPI"
+class "DerivedNonAppliedAPI"
 {
 }
 
-class "DerivedNonAppliedAPI"
+class "NonAppliedAPI"
 {
 }
 
@@ -413,5 +413,9 @@ class "MultipleApplyAPI_1"
 {
     int testNewVersion:__INSTANCE_NAME__:testAttrOne
     double testNewVersion:__INSTANCE_NAME__:testAttrTwo
+}
+
+class UsdContrivedNoAlias "UsdContrivedNoAlias"
+{
 }
 

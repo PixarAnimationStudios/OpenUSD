@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_PCP_LAYER_STACK_H
 #define PXR_USD_PCP_LAYER_STACK_H
@@ -355,6 +338,31 @@ std::ostream& operator<<(std::ostream&, const PcpLayerStackPtr&);
 PCP_API
 std::ostream& operator<<(std::ostream&, const PcpLayerStackRefPtr&);
 
+/// Returns true if negative layer offsets and scales are allowed.
+///
+/// Negative layer offset scales are deprecated and a warning will be issued
+/// when commulative scale during composition is negative with 
+/// PCP_ALLOW_NEGATIVE_LAYER_OFFSET_SCALE is set to true (default right now).
+/// If PCP_ALLOW_NEGATIVE_LAYER_OFFSET_SCALE is set to false, a coding error
+/// will be issued when a negative scale is encountered.
+PCP_API
+bool PcpNegativeLayerOffsetScaleAllowed();
+
+/// Checks if the source and target paths constitute a valid relocates. This
+/// validation is not context specific, i.e. if this returns false, the 
+/// combination of source and target paths is always invalid for any attempted
+/// relocation.
+bool
+Pcp_IsValidRelocatesEntry(
+    const SdfPath &source, const SdfPath &target, std::string *errorMessage);
+
+/// Builds a relocates map from a list of layer and SdfRelocates value pairs.
+void
+Pcp_BuildRelocateMap(
+    const std::vector<std::pair<SdfLayerHandle, SdfRelocates>> &layerRelocates,
+    SdfRelocatesMap *relocatesMap,
+    PcpErrorVector *errors);
+
 /// Compose the relocation arcs in the given stack of layers,
 /// putting the results into the given sourceToTarget and targetToSource
 /// maps.
@@ -382,14 +390,6 @@ Pcp_NeedToRecomputeDueToAssetPathChange(const PcpLayerStackPtr& layerStack);
 bool
 Pcp_NeedToRecomputeLayerStackTimeCodesPerSecond(
     const PcpLayerStackPtr& layerStack, const SdfLayerHandle &changedLayer);
-
-/// Returns true when the environment variable has been set to disable the 
-/// behavior where differing time codes per second metadata in layers sublayered
-/// or referenced by another layer are used to apply a layer offset scale to the
-/// map function.
-PCP_API
-bool
-PcpIsTimeScalingForLayerTimeCodesPerSecondDisabled();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

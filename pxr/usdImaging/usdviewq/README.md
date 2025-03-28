@@ -2,7 +2,7 @@
 
 ## Modifying GUI
 
-     **Please do not hand edit .ui files, as qt's xml formt is fragile and its
+     **Please do not hand edit .ui files, as qt's xml format is fragile and its
      tools are inconsistent across platforms on tolerance to bad constructs.**
      
      Instead prefer qdesigner5 to make edits to the .ui documents.  If you are 

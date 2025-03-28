@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -63,15 +46,23 @@ HdMaterialNodeParameterSchema::GetColorSpace() const
         HdMaterialNodeParameterSchemaTokens->colorSpace);
 }
 
+HdTokenDataSourceHandle
+HdMaterialNodeParameterSchema::GetTypeName() const
+{
+    return _GetTypedDataSource<HdTokenDataSource>(
+        HdMaterialNodeParameterSchemaTokens->typeName);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdMaterialNodeParameterSchema::BuildRetained(
         const HdSampledDataSourceHandle &value,
-        const HdTokenDataSourceHandle &colorSpace
+        const HdTokenDataSourceHandle &colorSpace,
+        const HdTokenDataSourceHandle &typeName
 )
 {
-    TfToken _names[2];
-    HdDataSourceBaseHandle _values[2];
+    TfToken _names[3];
+    HdDataSourceBaseHandle _values[3];
 
     size_t _count = 0;
 
@@ -83,6 +74,11 @@ HdMaterialNodeParameterSchema::BuildRetained(
     if (colorSpace) {
         _names[_count] = HdMaterialNodeParameterSchemaTokens->colorSpace;
         _values[_count++] = colorSpace;
+    }
+
+    if (typeName) {
+        _names[_count] = HdMaterialNodeParameterSchemaTokens->typeName;
+        _values[_count++] = typeName;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -103,12 +99,21 @@ HdMaterialNodeParameterSchema::Builder::SetColorSpace(
     return *this;
 }
 
+HdMaterialNodeParameterSchema::Builder &
+HdMaterialNodeParameterSchema::Builder::SetTypeName(
+    const HdTokenDataSourceHandle &typeName)
+{
+    _typeName = typeName;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdMaterialNodeParameterSchema::Builder::Build()
 {
     return HdMaterialNodeParameterSchema::BuildRetained(
         _value,
-        _colorSpace
+        _colorSpace,
+        _typeName
     );
 } 
 

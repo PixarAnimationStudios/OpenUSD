@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/tokens.h"
@@ -354,6 +337,35 @@ HdStLight::_PrepareDomeLight(
     return l;
 }
 
+static
+GfVec4f
+_ScaleColor(
+    const GfVec4f& color)
+{
+    return GfVec4f(M_PI * color[0], M_PI * color[1], M_PI * color[2], 1.0f);
+}
+
+GlfSimpleLight
+HdStLight::_PrepareSimpleLight(
+    SdfPath const &id,
+    HdSceneDelegate * const sceneDelegate)
+{
+    const VtValue v = sceneDelegate->Get(id, HdLightTokens->params);
+    if (!TF_VERIFY(v.IsHolding<GlfSimpleLight>())) {
+        return GlfSimpleLight();
+    }
+
+    // We assume that the color specified for these "simple" lights means that
+    // it is the expected color a white Lambertian surface would have if one of
+    // these colored "simple" lights was pointed directly at it.  To achieve
+    // this, the light color needs to be scaled appropriately.
+    GlfSimpleLight l = v.Get<GlfSimpleLight>();
+    l.SetDiffuse(_ScaleColor(l.GetDiffuse()));
+    l.SetSpecular(_ScaleColor(l.GetSpecular()));
+
+    return l;
+}
+
 /* virtual */
 void
 HdStLight::Sync(HdSceneDelegate *sceneDelegate,
@@ -400,7 +412,7 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
 
         if (_lightType == HdPrimTypeTokens->simpleLight) {
             _params[HdLightTokens->params] =
-                sceneDelegate->Get(id, HdLightTokens->params);
+                _PrepareSimpleLight(id, sceneDelegate);
         }
         else if (_lightType == HdPrimTypeTokens->domeLight) {
             _params[HdLightTokens->params] = 

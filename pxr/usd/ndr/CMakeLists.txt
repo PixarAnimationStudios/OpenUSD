@@ -9,10 +9,6 @@ pxr_library(ndr
         work
         ar
         sdf
-        ${Boost_PYTHON_LIBRARY}
-
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
         debugCodes
@@ -24,13 +20,11 @@ pxr_library(ndr
         parserPlugin
         property
         registry
+        sdfTypeIndicator
 
     PUBLIC_HEADERS
         api.h
         nodeDiscoveryResult.h
-
-    PYTHON_CPPFILES
-        moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp
@@ -42,6 +36,7 @@ pxr_library(ndr
         wrapNodeDiscoveryResult.cpp
         wrapProperty.cpp
         wrapRegistry.cpp
+        wrapSdfTypeIndicator.cpp
 
     PYMODULE_FILES
         __init__.py
@@ -51,26 +46,4 @@ pxr_library(ndr
 
     DOXYGEN_FILES
         overview.dox
-)
-
-pxr_test_scripts(
-    testenv/testNdrFilesystemDiscovery.py
-    testenv/testNdrVersion.py
-)
-
-pxr_install_test_dir(
-    SRC testenv/testNdrFilesystemDiscovery.testenv
-    DEST testNdrFilesystemDiscovery
-)
-
-pxr_register_test(testNdrFilesystemDiscovery
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testNdrFilesystemDiscovery"
-    EXPECTED_RETURN_CODE 0
-)
-
-pxr_register_test(testNdrVersion
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testNdrVersion"
-    EXPECTED_RETURN_CODE 0
 )

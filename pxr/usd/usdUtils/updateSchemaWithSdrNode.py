@@ -2,25 +2,8 @@
 #
 # Copyright 2021 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 
 from pxr import Tf, Sdf, Sdr, Usd, UsdShade, Vt
@@ -60,6 +43,10 @@ class PropertyDefiningKeys(ConstantsGroup):
     USD_VARIABILITY = "usdVariability"
     WIDGET = "widget"
 
+class UserDocConstants(ConstantsGroup):
+    USERDOC_FULL = "userDoc"
+    USERDOC_BRIEF = "userDocBrief"
+
 def _IsNSPrefixConnectableAPICompliant(nsPrefix):
     return (nsPrefix == UsdShade.Tokens.inputs[:1] or \
             nsPrefix == UsdShade.Tokens.outputs[:1])
@@ -90,7 +77,7 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, primDefForAttrPruning,
             "shader nodes' outputs to not have the \"outputs\" namespace " \
             "prefix." %(propName, propertyNSPrefixOverride))
 
-    attrType = prop.GetTypeAsSdfType()[0]
+    attrType = prop.GetTypeAsSdfType().GetSdfType()
     
     if not Sdf.Path.IsValidNamespacedIdentifier(propName):
         Tf.RaiseRuntimeError("Property name (%s) for schema (%s) is an " \
@@ -139,9 +126,9 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, primDefForAttrPruning,
             attrSpec.hidden = True
 
     if prop.GetHelp():
-        attrSpec.documentation = prop.GetHelp()
+        _SetSchemaUserDocFields(attrSpec, prop.GetHelp())
     elif prop.GetLabel(): # fallback documentation can be label
-        attrSpec.documentation = prop.GetLabel()
+        _SetSchemaUserDocFields(attrSpec, prop.GetLabel())
     if prop.GetPage():
         attrSpec.displayGroup = prop.GetPage()
     if prop.GetLabel():
@@ -168,13 +155,7 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, primDefForAttrPruning,
                 tokenList.append(option[1])
         attrSpec.allowedTokens = tokenList
 
-    defaultValue = prop.GetDefaultValueAsSdfType()
-    if (attrType == Sdf.ValueTypeNames.String or
-            attrType == Sdf.ValueTypeNames.Token) and defaultValue is not None:
-        attrSpec.default = defaultValue.replace('"', r'\"')
-    else:
-        attrSpec.default = defaultValue
-
+    attrSpec.default = prop.GetDefaultValueAsSdfType()
 
     # The input property should remain connectable (interfaceOnly)
     # even if sdrProperty marks the input as not connectable
@@ -183,6 +164,34 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, primDefForAttrPruning,
         attrSpec.SetInfo(PropertyDefiningKeys.CONNECTABILITY, 
                 UsdShade.Tokens.interfaceOnly)
 
+def _SetSchemaUserDocFields(spec, doc):
+    """
+    Sets the user doc custom metadata fields in the generated schema for prim 
+    and attribute specs. 
+    """
+    # Set the "brief" user doc, used for in-context help, e.g. in DCC tools.
+    # We currently want the full content, so we don't shorten userDocBrief.
+    spec.customData[UserDocConstants.USERDOC_BRIEF] = doc
+    # Set the "long-form" user doc, used when generating HTML schema docs
+    # (example: https://openusd.org/release/user_guides/schemas/index.html)
+    spec.customData[UserDocConstants.USERDOC_FULL] = doc
+
+
+def StringToBool(val):
+    """Convert a string representation of truth to True or False.
+    
+    True values are 'y', 'yes', 't', 'true', 'on', and '1';
+    False values are 'n', 'no', 'f', 'false', 'off', and '0'.
+    
+    Raises ValueError if `val` is anything else.
+    """
+    val = val.lower()
+    if val in ('y', 'yes', 't', 'true', 'on', '1'):
+        return True
+    elif val in ('n', 'no', 'f', 'false', 'off', '0'):
+        return False
+    else:
+        raise ValueError(f"Invalid truth value: {val}")
 
 def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
         overrideIdentifier=""):
@@ -260,8 +269,8 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
         - A "null" value for Widget sdrProperty metadata translates to 
           SdfPropertySpec Hidden metadata.
         - SdrProperty's Help metadata (Label metadata if Help metadata not 
-          provided) translates to SdfPropertySpec's Documentation string 
-          metadata.
+          provided) translates to SdfPropertySpec's userDocBrief and userDoc
+          custom metadata strings.  
         - SdrProperty's Page metadata translates to SdfPropertySpec's
           DisplayGroup metadata.
         - SdrProperty's Label metadata translates to SdfPropertySpec's
@@ -273,7 +282,6 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
           SdfPropertySpec's CONNECTABILITY.
     """
 
-    import distutils.util
     import os
 
     # Early exit on invalid parameters
@@ -352,7 +360,7 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
     if SchemaDefiningKeys.PROVIDES_USD_SHADE_CONNECTABLE_API_BEHAVIOR in \
             sdrNodeMetadata:
         providesUsdShadeConnectableAPIBehavior = \
-            distutils.util.strtobool(sdrNodeMetadata[SchemaDefiningKeys. \
+            StringToBool(sdrNodeMetadata[SchemaDefiningKeys. \
                 PROVIDES_USD_SHADE_CONNECTABLE_API_BEHAVIOR])
 
     apiSchemasForAttrPruning = None
@@ -390,14 +398,14 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
             HasConnectableAPI(usdSchemaReg.GetTypeFromName(schemaBase))
 
     emitSdrOutput = True
-    for outputName in sdrNode.GetOutputNames():
+    for outputName in sdrNode.GetShaderOutputNames():
         if PropertyDefiningKeys.USD_SUPPRESS_PROPERTY in \
-                sdrNode.GetOutput(outputName).GetMetadata():
+                sdrNode.GetShaderOutput(outputName).GetMetadata():
             emitSdrOutput = False
             break;
 
     if (emitSdrOutput and \
-        len(sdrNode.GetOutputNames()) > 0 and \
+        len(sdrNode.GetShaderOutputNames()) > 0 and \
         schemaPropertyNSPrefixOverride is not None and \
         not _IsNSPrefixConnectableAPICompliant( \
                 schemaPropertyNSPrefixOverride)):
@@ -405,7 +413,7 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
             "the presence of schemaPropertyNSPrefixOverride (\"%s\"), as it " \
             "is illegal for non-connectable nodes to contain output " \
             "parameters, or shader nodes' outputs to not have the \"outputs\"" \
-            "namespace prefix." %(len(sdrNode.GetOutputNames()), \
+            "namespace prefix." %(len(sdrNode.GetShaderOutputNames()), \
             schemaPropertyNSPrefixOverride))
 
     if (schemaBaseProvidesConnectability and \
@@ -462,7 +470,7 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
                 # Since we want to assign the types for these to bool and
                 # because in python boolean type is a subset of int, we need to
                 # do following instead of assign the propValue directly.
-                propValue = distutils.util.strtobool(sdrNodeMetadata[propKey])
+                propValue = StringToBool(sdrNodeMetadata[propKey])
                 extraPlugInfo[propKey] = bool(propValue)
 
         primSpecCustomData['extraPlugInfo'] = extraPlugInfo
@@ -471,7 +479,7 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
 
     doc = sdrNode.GetHelp()
     if doc != "":
-        primSpec.documentation = doc
+        _SetSchemaUserDocFields(primSpec, doc)
 
     # gather properties from a prim definition generated by composing apiSchemas
     # provided by apiSchemasForAttrPruning metadata.
@@ -484,37 +492,49 @@ def UpdateSchemaWithSdrNode(schemaLayer, sdrNode, renderContext="",
             usdSchemaReg.FindConcretePrimDefinition(typedSchemaForAttrPruning)
 
     # Create attrSpecs from input parameters
-    for propName in sdrNode.GetInputNames():
-        _CreateAttrSpecFromNodeAttribute(primSpec, sdrNode.GetInput(propName), 
+    for propName in sdrNode.GetShaderInputNames():
+        _CreateAttrSpecFromNodeAttribute(
+                primSpec, sdrNode.GetShaderInput(propName), 
                 primDefForAttrPruning, schemaPropertyNSPrefixOverride)
 
     # Create attrSpecs from output parameters
     # Note that we always want outputs: namespace prefix for output attributes.
-    for propName in sdrNode.GetOutputNames():
-        _CreateAttrSpecFromNodeAttribute(primSpec, sdrNode.GetOutput(propName), 
+    for propName in sdrNode.GetShaderOutputNames():
+        _CreateAttrSpecFromNodeAttribute(
+                primSpec, sdrNode.GetShaderOutput(propName), 
                 primDefForAttrPruning, UsdShade.Tokens.outputs[:-1], False)
 
     # Create token shaderId attrSpec -- only for shader nodes
     if (schemaBaseProvidesConnectability or \
             schemaPropertyNSPrefixOverride is None or \
             _IsNSPrefixConnectableAPICompliant(schemaPropertyNSPrefixOverride)):
-        shaderIdAttrName = Sdf.Path.JoinIdentifier( \
-                [renderContext, sdrNode.GetContext(), 
-                    PropertyDefiningKeys.SHADER_ID])
-        shaderIdAttrSpec = Sdf.AttributeSpec(primSpec, shaderIdAttrName,
-                Sdf.ValueTypeNames.Token, Sdf.VariabilityUniform)
+        # We must add shaderId for all shaderNodes with the same identifier
+        # across all sourceTypes, so that we get appropriate
+        # renderContext:sourceType:shaderId attribute.
+        sdrRegistry = Sdr.Registry()
+        shaderNodesForShaderIdAttrs = [
+            node for node in sdrRegistry.GetShaderNodesByIdentifier(
+                sdrNode.GetIdentifier())]
+        shaderIdAttrNames = set()
+        for node in shaderNodesForShaderIdAttrs:
 
-        # Since users shouldn't need to be aware of shaderId attribute, we put 
-        # this in "Internal" displayGroup.
-        shaderIdAttrSpec.displayGroup = \
-                PropertyDefiningKeys.INTERNAL_DISPLAY_GROUP
+            shaderIdAttrNames.add(Sdf.Path.JoinIdentifier( \
+                    [renderContext, node.GetContext(), 
+                        PropertyDefiningKeys.SHADER_ID]))
+        
+        for shaderIdAttrName in shaderIdAttrNames:
+            shaderIdAttrSpec = Sdf.AttributeSpec(primSpec, shaderIdAttrName,
+                    Sdf.ValueTypeNames.Token, Sdf.VariabilityUniform)
 
-        # Use the identifier if explicitly provided, (it could be a shader node
-        # queried using an explicit path), else use sdrNode's registered 
-        # identifier.
-        nodeIdentifier = overrideIdentifier if overrideIdentifier else \
-                sdrNode.GetIdentifier()
-        shaderIdAttrSpec.default = nodeIdentifier
+            # Since users shouldn't need to be aware of shaderId attribute, we 
+            # put this in "Internal" displayGroup.
+            shaderIdAttrSpec.displayGroup = \
+                    PropertyDefiningKeys.INTERNAL_DISPLAY_GROUP
+
+            # We are iterating on sdrNodes which are guaranteed to be registered
+            # with sdrRegistry and it only makes sense to add shaderId for these
+            # shader nodes, so directly get the identifier from the node itself.
+            shaderIdAttrSpec.default = sdrNode.GetIdentifier()
 
     # Extra attrSpec
     schemaBasePrimDefinition = \

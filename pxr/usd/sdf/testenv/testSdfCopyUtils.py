@@ -2,25 +2,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 from pxr import Sdf
 import textwrap, unittest
@@ -715,6 +698,77 @@ class TestSdfCopyUtils(unittest.TestCase):
                     "specifier" : Sdf.SpecifierOver
                 }
             })
+
+    def test_Overlapping(self):
+        """Tests cases where src & dst overlap in the same layer."""
+        initialState = textwrap.dedent("""\
+            #sdf 1.4.32
+            def "A"
+            {
+                def "B"
+                {
+                    def "C"
+                    {
+                        rel child = </A/B/C/D>
+                        rel parent = </A/B>
+                        def "D"
+                        {
+                        }
+                    }
+                }
+            }
+            """)
+        specDef = {'specifier': Sdf.SpecifierDef}
+        
+        # Copy /A to /A/B/A.
+        layer = Sdf.Layer.CreateAnonymous()
+        layer.ImportFromString(initialState)
+        self.assertTrue(Sdf.CopySpec(layer, '/A',
+                                     layer, '/A/B/A'))
+        self._VerifyExpectedData(layer, expected = {
+            '/A' : specDef,
+            '/A/B' : specDef,
+            '/A/B/C' : specDef,
+            '/A/B/C/D' : specDef,
+            '/A/B/A' : specDef,
+            '/A/B/A/B' : specDef,
+            '/A/B/A/B/C' : specDef,
+            '/A/B/A/B/C/D' : specDef
+        })
+
+        childListOp = Sdf.PathListOp()
+        childListOp.explicitItems = ['/A/B/A/B/C/D']
+        self.assertEqual(layer.GetRelationshipAtPath(
+            '/A/B/A/B/C.child').GetInfo('targetPaths'), childListOp)
+
+        parentListOp = Sdf.PathListOp()
+        parentListOp.explicitItems = ['/A/B/A/B']
+        self.assertEqual(layer.GetRelationshipAtPath(
+            '/A/B/A/B/C.parent').GetInfo('targetPaths'), parentListOp)
+
+        # Copy /A/B/C to /A.  Note that since Sdf.CopySpec replaces completely,
+        # the result is just /A/D.
+        layer.ImportFromString(initialState)
+        self.assertTrue(Sdf.CopySpec(layer, '/A/B/C',
+                                     layer, '/A'))
+
+        self._VerifyExpectedData(
+            layer, expected = {
+                '/A' : specDef,
+                '/A/D' : specDef,
+                })
+        self.assertFalse(layer.GetPrimAtPath('/A/B'))
+
+        # The 'child' rel gets fixed since it points within the src, but the
+        # 'parent' rel does not, because it points outside of src.
+        childListOp = Sdf.PathListOp()
+        childListOp.explicitItems = ['/A/D']
+        self.assertEqual(layer.GetRelationshipAtPath(
+            '/A.child').GetInfo('targetPaths'), childListOp)
+        parentListOp = Sdf.PathListOp()
+        parentListOp.explicitItems = ['/A/B']
+        self.assertEqual(layer.GetRelationshipAtPath(
+            '/A.parent').GetInfo('targetPaths'), parentListOp)
 
     def test_Advanced(self):
         """Test using callbacks to control spec copying via 

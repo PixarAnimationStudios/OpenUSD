@@ -1,0 +1,20 @@
+{
+    "Plugins": [
+        {
+            "Type": "library",
+            "Name": "testValidationRegistryPyPlugin",
+            "Root": "@TEST_PLUG_INFO_ROOT@",
+            "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@",
+            "LibraryPath": "@TEST_PLUG_INFO_LIBRARY_PATH@",
+            "Info": {
+                "Validators": {
+                    "PlaceholderValidator": {
+                        "doc": "Placeholder to initialize plugin.",
+                        "keywords": ["PlaceHolderValidator"],
+                        "isSuite": false
+                    }
+                }
+            }
+        }
+    ]
+}

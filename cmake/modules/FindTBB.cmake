@@ -197,7 +197,12 @@ if(NOT TBB_FOUND)
   ##################################
 
   if(TBB_INCLUDE_DIRS)
-    file(READ "${TBB_INCLUDE_DIRS}/tbb/tbb_stddef.h" _tbb_version_file)
+    # Use new oneTBB version header if it exists.
+    if(EXISTS "${TBB_INCLUDE_DIRS}/oneapi/tbb/version.h")
+      file(READ "${TBB_INCLUDE_DIRS}/oneapi/tbb/version.h" _tbb_version_file)
+    else()
+      file(READ "${TBB_INCLUDE_DIRS}/tbb/tbb_stddef.h" _tbb_version_file)
+    endif()
     string(REGEX REPLACE ".*#define TBB_VERSION_MAJOR ([0-9]+).*" "\\1"
         TBB_VERSION_MAJOR "${_tbb_version_file}")
     string(REGEX REPLACE ".*#define TBB_VERSION_MINOR ([0-9]+).*" "\\1"
@@ -211,6 +216,13 @@ if(NOT TBB_FOUND)
   # Find TBB components
   ##################################
 
+  # oneTBB on Windows has interface version in the name.
+  if(WIN32 AND TBB_INTERFACE_VERSION GREATER_EQUAL 12000)
+    set(_tbb_library_name tbb12)
+  else()
+    set(_tbb_library_name tbb)
+  endif()
+
   if(TBB_VERSION VERSION_LESS 4.3)
     set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc tbb)
   else()
@@ -219,15 +231,21 @@ if(NOT TBB_FOUND)
 
   # Find each component
   foreach(_comp ${TBB_SEARCH_COMPOMPONENTS})
-    if(";${TBB_FIND_COMPONENTS};tbb;" MATCHES ";${_comp};")
+    if(";${TBB_FIND_COMPONENTS};tbb" MATCHES ";${_comp};")
+
+      if(${_comp} STREQUAL tbb)
+        set(_lib_name ${_tbb_library_name})
+      else()
+        set(_lib_name ${_comp})
+      endif()
 
       # Search for the libraries
-      find_library(TBB_${_comp}_LIBRARY_RELEASE ${_comp}
+      find_library(TBB_${_comp}_LIBRARY_RELEASE ${_lib_name}
           HINTS ${TBB_LIBRARY} ${TBB_SEARCH_DIR}
           PATHS ${TBB_DEFAULT_SEARCH_DIR} ENV LIBRARY_PATH
           PATH_SUFFIXES ${TBB_LIB_PATH_SUFFIX})
 
-      find_library(TBB_${_comp}_LIBRARY_DEBUG ${_comp}_debug
+      find_library(TBB_${_comp}_LIBRARY_DEBUG ${_lib_name}_debug
           HINTS ${TBB_LIBRARY} ${TBB_SEARCH_DIR}
           PATHS ${TBB_DEFAULT_SEARCH_DIR} ENV LIBRARY_PATH
           PATH_SUFFIXES ${TBB_LIB_PATH_SUFFIX})

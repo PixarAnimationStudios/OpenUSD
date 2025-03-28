@@ -9,9 +9,6 @@ class TestNSPrefix "TestNSPrefix" (
 {
     float inputs:input1withNodeNS = 0
     float inputs:input2withNodeNS = 0
-    uniform token myRenderContext:usda:shaderId = "TestNamespacePrefix" (
-        displayGroup = "Internal"
-    )
     color3f outputs:out
 }
 

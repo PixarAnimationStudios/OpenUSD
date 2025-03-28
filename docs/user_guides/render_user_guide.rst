@@ -433,7 +433,7 @@ Using Light-linking to Filter Objects Affected by Lights
 You might need to control which geometry 
 is illuminated by a particular light. To support this, USD provides 
 *light-linking* which uses the 
-:usda:`collection:lightLink` :ref:`object collection <usdglossary-collection>`
+:usda:`collection:lightLink` :ref:`object collection<collections_and_patterns>`
 to specify which objects are illuminated by a light. 
 By default the collection has :usda:`includeRoot` set to true, indicating that 
 the light will potentially illuminate all objects. To illuminate only a specific 
@@ -494,7 +494,8 @@ Material bindings inherit down the prim namespace and come in two forms:
 - Direct bindings, in which a prim directly names (via relationship) the 
   Material it wants to bind, as shown in the previous example.
 
-- Collection-based bindings, in which a USD Collection identifies a set of prims, 
+- Collection-based bindings, in which a 
+  :ref:`USD Collection<collections_and_patterns>` identifies a set of prims, 
   and the binding (again, a relationship) names both the Collection and the 
   Material to which the collected prims should be bound. See 
   :ref:`material_collection_binding` for more information on collection-based 
@@ -625,7 +626,7 @@ from RenderMan. These are:
   interpolated over each face of the mesh. Bilinear interpolation is used for 
   interpolation between the four values.
 
-For a graphical illustration of these modes, see `Primvar Interpolation <https://github.com/usd-wg/assets/tree/main/test_assets/PrimvarInterpolation>`__
+For visual examples of these modes, see :ref:`primvars`.
 
 As :usda:`faceVarying` allows for per-vertex-per-face values, you can use this 
 interpolation to create discontinuous vertex UVs or normals. For example, with 
@@ -633,7 +634,7 @@ discontinuous vertex UVs, you could create a "seam" in your texture-coordinate
 mapping to emulate wrapping a label around a cylinder.
 
 Primvar interpolation for curves, such as :usda:`BasisCurves` interprets the 
-interpolation values differently, and is described in detail `here <https://openusd.org/release/api/class_usd_geom_basis_curves.html#UsdGeomBasisCurves_PrimvarInterpolation>`__
+interpolation values differently, and is described in detail `here <https://openusd.org/release/api/class_usd_geom_basis_curves.html#UsdGeomBasisCurves_PrimvarInterpolation>`__.
 
 Indexed Primvars
 ----------------
@@ -962,6 +963,8 @@ representing a building, and applies a material binding to those collections.
 Note that a fallback binding is provided in the above example, which is used if 
 no collection-based binding applies to Gprims in the model hierarchy. 
 
+For more details on collections, see :ref:`collections_and_patterns`.
+
 .. _material_collection_binding_strength:
 
 Setting Collection Binding Strength
@@ -1138,11 +1141,29 @@ compression is applied. It is expected that more complex treatment of OpenEXR
 files including the construction of multilayer files will be completed by 
 pipeline tools.
 
+AV1 Image File Format (AVIF)
+============================
+
+The AV1 Image Format is a royalty-free open-source picture format, with modern 
+compression, flexible color specification, high dynamic range values, depth 
+images and alpha channels, and support for layered and sequential images. 
+
+The supported feature set in Hydra's builtin texture manager is currently 
+restricted to single frame images, which are decoded to linear Rec709 RGB or 
+RGBA if an alpha channel is present.
+
+Reading is implemented through the use of libaom, and libavif. 
+YUV to RGB decoding is accomplished by libyuv. 
+
+libaom is the reference codec library created by the Alliance for Open Media. 
+libavif is a portable C implementation of the AV1 Image File Format.
+
 See also:
 
 - `OpenEXR reference <https://openexr.com/en/latest/index.html#openexr>`__
 - `Rec709 standard <https://www.itu.int/rec/R-REC-BT.709-6-201506-I/en>`__
 - `Wikipedia entry on Rec709 standard <https://en.wikipedia.org/wiki/Rec._709>`__
+- `AV1 Image File Format specification <https://aomediacodec.github.io/av1-avif/>`__
 
 .. _render_camera:
 
@@ -1406,7 +1427,8 @@ dependencies between passes. A single pass generally represents not just a
 single set of products, but a sequence of temporally varying frames of outputs 
 that depend on temporally varying inputs.
 
-RenderPass also lets you specify collections of prims that are visible to the 
+RenderPass also lets you specify 
+:ref:`collections of prims<collections_and_patterns>` that are visible to the 
 renderer for that pass, using the :usda:`collection:renderVisibility` collection. 
 Use this collection if you have separate passes for different sets of objects 
 in the stage (e.g., separate foreground and background passes), or passes that 

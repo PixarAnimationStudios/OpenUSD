@@ -1,13 +1,12 @@
 #usda 1.0
 (
-    defaultPrim = "Collection"
     endFrame = 10
     startFrame = 1
 )
 
 def "CollectionTest" (
-    kind = "prop"
-    prepend apiSchemas = ["CollectionAPI:leafGeom", "CollectionAPI:allGeom", "CollectionAPI:allGeomProperties", "CollectionAPI:hasRelationships", "CollectionAPI:hasInstanceProxy", "CollectionAPI:coneProperties", "CollectionAPI:includesCollection", "CollectionAPI:includesNestedCollection", "CollectionAPI:excludeInstanceGeom", "CollectionAPI:invalidExpansionRule", "CollectionAPI:invalidExcludesExplicitOnly", "CollectionAPI:invalidExcludesExpandPrims", "CollectionAPI:invalidTopLevelRules"]
+    kind = "component"
+    prepend apiSchemas = ["CollectionAPI:leafGeom", "CollectionAPI:allGeom", "CollectionAPI:allGeomProperties", "CollectionAPI:hasRelationships", "CollectionAPI:hasInstanceProxy", "CollectionAPI:coneProperties", "CollectionAPI:includesCollection", "CollectionAPI:includesNestedCollection", "CollectionAPI:excludeInstanceGeom", "CollectionAPI:invalidExpansionRule", "CollectionAPI:invalidExcludesExplicitOnly", "CollectionAPI:invalidExcludesExpandPrims", "CollectionAPI:invalidTopLevelRules", "CollectionAPI:withMembershipExpr", "CollectionAPI:expressionRef"]
 )
 {
     # simple explicit collection
@@ -16,11 +15,15 @@ def "CollectionTest" (
         </CollectionTest/Geom/Shapes/Cylinder>,
         </CollectionTest/Geom/Shapes/Cube>,
     ]
+    # (unused - just ensures that it's ignored in relationships-mode) 
+    pathExpression collection:leafGeom:membershipExpression = "//"
 
     token collection:allGeom:expansionRule = "expandPrims"
     rel collection:allGeom:includes  = [
         </CollectionTest/Geom>,
     ]
+    # (unused - just ensures that it's ignored in relationships-mode) 
+    pathExpression collection:allGeom:membershipExpression = "//"
 
     token collection:allGeomProperties:expansionRule = "expandPrimsAndProperties"
     rel collection:allGeomProperties:includes  = [
@@ -105,6 +108,12 @@ def "CollectionTest" (
     uniform token collection:explicitOnlyAndIncludeRoot:expansionRule = "explicitOnly"
     uniform bool collection:explicitOnlyAndIncludeRoot:includeRoot = true
 
+    # Ensure "explicitOnly" behaves the same as "expandPrims".
+    uniform token collection:withMembershipExpr:expansionRule = "explicitOnly"
+    pathExpression collection:withMembershipExpr:membershipExpression = "/CollectionTest/Geom//C* //{model} //Box %:expressionRef"
+
+    pathExpression collection:expressionRef:membershipExpression = "/CollectionTest/Geom/Shapes//H*"    
+    
     def "Geom" (
         prepend apiSchemas = ["CollectionAPI:allGeom"]
     )
@@ -181,3 +190,11 @@ def "CollectionTest" (
     }
 }
 
+def "CollectionExprTest" (
+    prepend apiSchemas = ["CollectionAPI:root", "CollectionAPI:ref1", "CollectionAPI:ref2"]
+)
+{
+    pathExpression collection:root:membershipExpression = "/root %:ref1 - %:ref2"
+    pathExpression collection:ref1:membershipExpression = "/ref1 %:ref2"
+    pathExpression collection:ref2:membershipExpression = "/ref2 %:root"
+}

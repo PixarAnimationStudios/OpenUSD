@@ -21,10 +21,8 @@ pxr_library(work
 
     PUBLIC_HEADERS
         api.h
+        sort.h
         withScopedParallelism.h
-        
-    PYTHON_CPPFILES
-        moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp
@@ -54,6 +52,12 @@ pxr_build_test(testWorkReduce
         work
     CPPFILES
         testenv/testWorkReduce.cpp
+)
+pxr_build_test(testWorkSort
+    LIBRARIES
+        work
+    CPPFILES
+        testenv/testWorkSort.cpp
 ) 
 pxr_build_test(testWorkThreadLimits
     LIBRARIES
@@ -69,6 +73,9 @@ pxr_register_test(testWorkLoops
 )
 pxr_register_test(testWorkReduce
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkReduce"
+)
+pxr_register_test(testWorkSort
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkSort"
 )
 pxr_register_test(testWorkThreadLimitsDefault
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testWorkThreadLimits"

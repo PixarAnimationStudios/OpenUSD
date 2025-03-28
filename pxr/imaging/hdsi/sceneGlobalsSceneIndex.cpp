@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/imaging/hdsi/sceneGlobalsSceneIndex.h"
@@ -28,8 +11,25 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/renderSettingsSchema.h"
 #include "pxr/imaging/hd/sceneGlobalsSchema.h"
+#include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// Checks whether t0 and t1 are equal when interpreted as time codes (similar
+// to UsdTimeCode), that is the default time is encoded as NaN.
+static
+bool _IsEqualTimeCode(const double t0, const double t1)
+{
+    // a == NaN is always false. So catch the case where both
+    // are NaN first.
+    if (std::isnan(t0) && std::isnan(t1)) {
+        return true;
+    }
+
+    // Normal comparison. Note that if only one is NaN, this still
+    // returns false.
+    return t0 == t1;
+}
 
 // -----------------------------------------------------------------------------
 // _SceneGlobalsDataSource
@@ -56,7 +56,11 @@ TfTokenVector
 _SceneGlobalsDataSource::GetNames()
 {
     static const TfTokenVector names = {
-        HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim };
+        HdSceneGlobalsSchemaTokens->activeRenderPassPrim,
+        HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim,
+        HdSceneGlobalsSchemaTokens->currentFrame,
+        HdSceneGlobalsSchemaTokens->sceneStateId
+    };
 
     return names;
 }
@@ -64,22 +68,26 @@ _SceneGlobalsDataSource::GetNames()
 HdDataSourceBaseHandle
 _SceneGlobalsDataSource::Get(const TfToken &name)
 {
+    if (name == HdSceneGlobalsSchemaTokens->activeRenderPassPrim) {
+        SdfPath const &path = _si->_activeRenderPassPrimPath;
+        return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
+    }
     if (name == HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim) {
-
-        SdfPath const &path = _si->_activeRenderSettingsPrimPath;
-
-        if (!path.IsEmpty()) {
-            // Validate that a render settings prim exists at the given path.
-            HdSceneIndexPrim prim = _si->GetPrim(path);
-            if (prim.primType == HdRenderSettingsSchemaTokens->renderSettings &&
-                prim.dataSource) {
-
-                return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
-            }
+        if (_si->_activeRenderSettingsPrimPath) {
+            SdfPath const &path = *_si->_activeRenderSettingsPrimPath;
+            return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
         }
+        return nullptr;
+    }
+    if (name == HdSceneGlobalsSchemaTokens->currentFrame) {
+        const double timeCode = _si->_time;
+        return HdRetainedTypedSampledDataSource<double>::New(timeCode);
+    }
+    if (name == HdSceneGlobalsSchemaTokens->sceneStateId) {
+        const int sceneStateId = _si->_sceneStateId;
+        return HdRetainedTypedSampledDataSource<int>::New(sceneStateId);
     }
 
-    // If a valid render settings prim was never set, return nullptr.
     return nullptr;
 }
 
@@ -95,6 +103,27 @@ HdsiSceneGlobalsSceneIndex::New(const HdSceneIndexBaseRefPtr &inputSceneIndex)
 }
 
 void
+HdsiSceneGlobalsSceneIndex::SetActiveRenderPassPrimPath(
+    const SdfPath &path)
+{
+    if (_activeRenderPassPrimPath == path) {
+        return;
+    }
+
+    // A scene index downstream will invalidate and update the
+    // sceneGlobals.activeRenderSettingsPrim locator (if the render pass points
+    // to a valid render settings prim).
+    // We keep things simple in this scene index.
+    _activeRenderPassPrimPath = path;
+
+    if (_IsObserved()) {
+        _SendPrimsDirtied({{
+            HdSceneGlobalsSchema::GetDefaultPrimPath(),
+            HdSceneGlobalsSchema::GetActiveRenderPassPrimLocator()}});
+    }
+}
+
+void
 HdsiSceneGlobalsSceneIndex::SetActiveRenderSettingsPrimPath(
     const SdfPath &path)
 {
@@ -102,8 +131,6 @@ HdsiSceneGlobalsSceneIndex::SetActiveRenderSettingsPrimPath(
         return;
     }
 
-    // Note: Don't validate here since this could be called before scene indices
-    //       are populated.
     _activeRenderSettingsPrimPath = path;
 
     if (_IsObserved()) {
@@ -113,6 +140,39 @@ HdsiSceneGlobalsSceneIndex::SetActiveRenderSettingsPrimPath(
     }
 }
 
+void
+HdsiSceneGlobalsSceneIndex::SetCurrentFrame(const double &time)
+{
+    // XXX We might need to add a flag to force dirtying of the Frame locator 
+    // even if the time has not changed 
+    if (_IsEqualTimeCode(_time, time)) {
+        return;
+    }
+
+    _time = time;
+
+    if (_IsObserved()) {
+        _SendPrimsDirtied({{
+            HdSceneGlobalsSchema::GetDefaultPrimPath(),
+            HdSceneGlobalsSchema::GetCurrentFrameLocator()}});
+    }
+}
+
+void
+HdsiSceneGlobalsSceneIndex::SetSceneStateId(const int &id)
+{
+    if (_sceneStateId == id) {
+        return;
+    }
+
+    _sceneStateId = id;
+
+    if (_IsObserved()) {
+        _SendPrimsDirtied({{
+            HdSceneGlobalsSchema::GetDefaultPrimPath(),
+            HdSceneGlobalsSchema::GetSceneStateIdLocator()}});
+    }
+}
 
 HdSceneIndexPrim
 HdsiSceneGlobalsSceneIndex::GetPrim(const SdfPath &primPath) const

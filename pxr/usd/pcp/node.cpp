@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -316,11 +299,11 @@ PcpNodeRef::GetDepthBelowIntroduction() const
         - GetNamespaceDepth();
 }
 
-SdfPath
-PcpNodeRef::GetPathAtIntroduction() const
+static SdfPath 
+_GetPathAtIntroDepth(const SdfPath &path, int depthBelowIntro)
 {
-    SdfPath pathAtIntroduction = GetPath();
-    for (int depth = GetDepthBelowIntroduction(); depth; --depth) {
+    SdfPath pathAtIntroduction = path;
+    for ( ; depthBelowIntro; --depthBelowIntro) {
         while (pathAtIntroduction.IsPrimVariantSelectionPath()) {
             // Skip over variant selections, since they do not
             // constitute levels of namespace depth. We do not simply
@@ -336,28 +319,28 @@ PcpNodeRef::GetPathAtIntroduction() const
 }
 
 SdfPath
+PcpNodeRef::GetPathAtIntroduction() const
+{
+    return _GetPathAtIntroDepth(GetPath(), GetDepthBelowIntroduction());
+}
+
+SdfPath
 PcpNodeRef::GetIntroPath() const
 {
     // Start with the parent node's current path.
     const PcpNodeRef parent = GetParentNode();
     if (!parent)
         return SdfPath::AbsoluteRootPath();
-    SdfPath introPath = parent.GetPath();
 
-    // Walk back up to the depth where this child was introduced.
-    for (int depth = GetDepthBelowIntroduction(); depth; --depth) {
-        while (introPath.IsPrimVariantSelectionPath()) {
-            // Skip over variant selections, since they do not
-            // constitute levels of namespace depth. We do not simply
-            // strip all variant selections here, because we want to
-            // retain variant selections ancestral to the path where
-            // this node was introduced.
-            introPath = introPath.GetParentPath();
-        }
-        introPath = introPath.GetParentPath();
-    }
+    return _GetPathAtIntroDepth(parent.GetPath(), GetDepthBelowIntroduction());
+}
 
-    return introPath;
+PCP_API 
+SdfPath
+PcpNodeRef::GetPathAtOriginRootIntroduction() const
+{
+    return _GetPathAtIntroDepth(GetPath(), 
+        GetOriginRootNode().GetDepthBelowIntroduction());
 }
 
 PcpNodeRef::child_const_range
@@ -366,6 +349,15 @@ PcpNodeRef::GetChildrenRange() const
     PcpNodeRef node(_graph, _nodeIdx);
     return child_const_range(child_const_iterator(node, /* end = */ false),
                              child_const_iterator(node, /* end = */ true));
+}
+
+PcpNodeRef::child_const_reverse_range
+PcpNodeRef::GetChildrenReverseRange() const
+{
+    PcpNodeRef node(_graph, _nodeIdx);
+    return child_const_reverse_range(
+        child_const_reverse_iterator(node, /* end = */ false),
+        child_const_reverse_iterator(node, /* end = */ true));
 }
 
 PcpNodeRef
@@ -473,5 +465,14 @@ _GetNonVariantPathElementCount(const SdfPath &path)
 
     return count;
 }
+
+std::ostream &
+operator<<(std::ostream &out, const PcpNodeRef &node) 
+{
+    out << "(" << node._GetNodeIndex() << ") " << 
+        TfEnum::GetDisplayName(node.GetArcType()) << " " << node.GetSite();
+    return out;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_SDF_PY_LIST_PROXY_H
 #define PXR_USD_SDF_PY_LIST_PROXY_H
@@ -35,8 +18,8 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/stringUtils.h"
 #include <stdexcept>
-#include <boost/python.hpp>
-#include <boost/python/slice.hpp>
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/slice.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -57,7 +40,7 @@ public:
 private:
     static void _Wrap()
     {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
         class_<Type>(_GetName().c_str(), no_init)
             .def("__str__", &This::_GetStr)
@@ -81,6 +64,7 @@ private:
             .def("ApplyList", &Type::ApplyList)
             .def("ApplyEditsToList", &This::_ApplyEditsToList)
             .add_property("expired", &This::_IsExpired)
+            .add_static_property("invalidIndex", &This::_GetInvalidIndex)
             .def(self == self)
             .def(self != self)
             .def(self <  self)
@@ -118,10 +102,10 @@ private:
         return x[TfPyNormalizeIndex(index, x._GetSize(), true)];
     }
 
-    static boost::python::list _GetItemSlice(const Type& x,
-                                             const boost::python::slice& index)
+    static pxr_boost::python::list _GetItemSlice(const Type& x,
+                                             const pxr_boost::python::slice& index)
     {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
         list result;
 
@@ -147,10 +131,10 @@ private:
         x[TfPyNormalizeIndex(index, x._GetSize(), true)] = value;
     }
 
-    static void _SetItemSlice(Type& x, const boost::python::slice& index,
+    static void _SetItemSlice(Type& x, const pxr_boost::python::slice& index,
                               const value_vector_type& values)
     {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
         if (! x._Validate()) {
             return;
@@ -203,9 +187,9 @@ private:
                 1, value_vector_type());
     }
 
-    static void _DelItemSlice(Type& x, const boost::python::slice& index)
+    static void _DelItemSlice(Type& x, const pxr_boost::python::slice& index)
     {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
         if (x._Validate()) {
             try {
@@ -234,13 +218,24 @@ private:
         }
     }
 
+    static int _GetInvalidIndex()
+    {
+        // Note that SdfListProxy::Find returns an unsigned value, however the 
+        // wrapped class returns -1 in the event that a value could not be found
+        // in the list of operations.
+        return -1;
+    }
+
     static int _FindIndex(const Type& x, const value_type& value)
     {
         if (x._Validate()) {
-            return static_cast<int>(x.Find(value));
+            const size_t index = x.Find(value);
+            return index == Type::invalidIndex 
+                ? _GetInvalidIndex() 
+                : static_cast<int>(index); 
         }
         else {
-            return -1;
+            return _GetInvalidIndex();
         }
     }
 

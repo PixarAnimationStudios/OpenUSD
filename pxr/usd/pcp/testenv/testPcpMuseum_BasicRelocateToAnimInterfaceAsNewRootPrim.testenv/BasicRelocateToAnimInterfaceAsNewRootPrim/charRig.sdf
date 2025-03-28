@@ -1,0 +1,42 @@
+#sdf 1.4.32
+(
+    relocates = {
+        </CharRig/Rig/PathRig/Path>: </Path>,
+        </Path/Anim>: </Path/AnimScope>,
+    }
+)
+
+over "Path" (
+    doc = """This path prim is relocated out from the PathRig into a new root prim
+        that is referenced separately."""
+)
+{
+    over "AnimScope"
+    {
+        custom double track
+    }
+}
+
+
+def Prim "CharRig"
+{
+    def Scope "Anim"
+    {
+    }
+
+    def Scope "Rig"
+    {
+        def Scope "PathRig" (
+            add references = @./pathRig.sdf@</PathRig>
+        )
+        {
+            rel relationshipToPathAvar2 = [<Path/Anim.track>] (
+                doc = """This relationship target will map across the reference from
+                    root.sdf</Model>, unlike the relationship in pathRig, because the
+                    relocates only affect target paths that are brought in from the 
+                    reference to pathRig, not paths that are authored locally in this
+                    layer."""
+            )
+        }
+    }
+}

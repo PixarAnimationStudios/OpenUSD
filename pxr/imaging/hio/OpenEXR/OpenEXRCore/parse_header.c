@@ -2552,9 +2552,9 @@ internal_exr_parse_header (struct _internal_exr_context* ctxt)
 {
     struct _internal_exr_seq_scratch scratch;
     struct _internal_exr_part*       curpart;
-    uint32_t                         flags;
+    uint32_t                         flags = 0;
     uint64_t                         initpos;
-    uint8_t                          next_byte;
+    uint8_t                          next_byte = 0;
     exr_result_t                     rv = EXR_ERR_UNKNOWN;
 
     if (ctxt->silent_header)

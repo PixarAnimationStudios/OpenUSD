@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_TF_SCRIPT_MODULE_LOADER_H
 #define PXR_BASE_TF_SCRIPT_MODULE_LOADER_H
@@ -29,18 +12,18 @@
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/singleton.h"
+#include "pxr/base/tf/spinRWMutex.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/weakBase.h"
 
 // XXX: This include is a hack to avoid build errors due to
 // incompatible macro definitions in pyport.h on macOS.
 #include <locale>
-#include <boost/python/dict.hpp>
+#include "pxr/external/boost/python/dict.hpp"
 
 #include <deque>
-#include "pxr/base/tf/hashmap.h"
-#include "pxr/base/tf/hashset.h"
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -84,61 +67,46 @@ class TfScriptModuleLoader : public TfWeakBase {
     /// RegisterLibrary that depend on library \a name.
     TF_API
     void LoadModulesForLibrary(TfToken const &name);
-
-    /// Return a list of all currently known modules in a valid dependency
-    /// order.
-    TF_API
-    std::vector<std::string> GetModuleNames() const;
-
+    
     /// Return a python dict containing all currently known modules under
     /// their canonical names.
     TF_API
-    boost::python::dict GetModulesDict() const;
+    pxr_boost::python::dict GetModulesDict() const;
     
-    /// Write a graphviz dot-file for the dependency graph of all. currently
-    /// known libraries/modules to \a file.
+    /// Write a graphviz dot-file for the dependency graph of all currently
+    /// registered libraries/modules to \a file.
     TF_API
     void WriteDotFile(std::string const &file) const;
     
   private:
+    friend class TfSingleton<This>;
 
     struct _LibInfo {
-        _LibInfo() {}
-        std::vector<TfToken> predecessors, successors;
+        _LibInfo() = default;
+        _LibInfo(TfToken const &moduleName,
+                 std::vector<TfToken> &&predecessors)
+            : moduleName(moduleName)
+            , predecessors(predecessors) { }
+        
+        TfToken moduleName;
+        std::vector<TfToken> predecessors;
+        mutable std::atomic<bool> isLoaded = false;
     };
 
-    typedef TfHashMap<TfToken, _LibInfo, TfToken::HashFunctor>
-    _TokenToInfoMap;
+    using _LibInfoMap =
+        std::unordered_map<TfToken, _LibInfo, TfToken::HashFunctor>;
 
-    typedef TfHashMap<TfToken, TfToken, TfToken::HashFunctor>
-    _TokenToTokenMap;
-    
-    typedef TfHashSet<TfToken, TfToken::HashFunctor>
-    _TokenSet;
-    
+    using _LibAndInfo = _LibInfoMap::value_type;
+
     TfScriptModuleLoader();
     virtual ~TfScriptModuleLoader();
-    friend class TfSingleton<This>;
+
+    _LibInfo const *_FindInfo(TfToken const &lib) const;
     
-    void _AddSuccessor(TfToken const &lib, TfToken const &successor);
-    void _LoadModulesFor(TfToken const &name);
-    void _LoadUpTo(TfToken const &name);
-    void _GetOrderedDependenciesRecursive(TfToken const &lib,
-                                          TfToken::HashSet *seenLibs,
-                                          std::vector<TfToken> *result) const;
-    void _GetOrderedDependencies(std::vector<TfToken> const &input,
-                                 std::vector<TfToken> *result) const;
-    void _TopologicalSort(std::vector<TfToken> *result) const;
-
-    bool _HasTransitiveSuccessor(TfToken const &predecessor,
-                                 TfToken const &successor) const;
-
-    _TokenToInfoMap _libInfo;
-    _TokenToTokenMap _libsToModules;
-    _TokenSet _loadedSet;
-
-    // This is only used to handle reentrant loading requests.
-    std::deque<TfToken> _remainingLoadWork;
+    void _LoadLibModules(std::vector<_LibAndInfo const *> const &toLoad) const;
+    
+    _LibInfoMap _libInfo;
+    mutable TfSpinRWMutex _mutex;
 };
 
 TF_API_TEMPLATE_CLASS(TfSingleton<TfScriptModuleLoader>);

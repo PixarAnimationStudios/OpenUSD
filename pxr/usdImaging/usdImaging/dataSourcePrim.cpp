@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/dataSourceAttribute.h"
@@ -534,6 +517,9 @@ public:
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
+    // Return true if this data source should be provided for the prim.
+    static bool HasData(const UsdPrim &prim);
+
 private:
     UsdImagingDataSourcePrim_ModelAPI(const UsdModelAPI &model);
     const UsdModelAPI _model;
@@ -545,6 +531,20 @@ UsdImagingDataSourcePrim_ModelAPI::UsdImagingDataSourcePrim_ModelAPI(
         const UsdModelAPI &model)
   : _model(model)
 {
+}
+
+bool
+UsdImagingDataSourcePrim_ModelAPI::HasData(const UsdPrim &prim)
+{
+    // UsdImagingModelSchema corresponds to UsdModelAPI, so provide
+    // it when the prim has the relevant data -- i.e., assetInfo.
+    //
+    // Note that this is not the same as querying IsModel():
+    // USD model hierarchy rules dictate that an embedded model reference
+    // that is not part of the model hierarchy will return IsModel()==false.
+    // Nonetheless, we still want to reflect UsdModelAPI to Hydra,
+    // since the assetInfo may be required for texture asset resolution.
+    return prim.HasAssetInfo();
 }
 
 TfTokenVector
@@ -725,7 +725,7 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         }
     } else if (name == UsdImagingModelSchema::GetSchemaToken()) {
         if (UsdModelAPI model = UsdModelAPI(_GetUsdPrim())) {
-            if (model.IsModel()) {
+            if (UsdImagingDataSourcePrim_ModelAPI::HasData(_usdPrim)) {
                 return UsdImagingDataSourcePrim_ModelAPI::New(model);
             }
         }

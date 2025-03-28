@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hd/flattenedXformDataSourceProvider.h"
 
@@ -39,48 +22,30 @@ public:
     _MatrixCombinerDataSource(
         HdMatrixDataSourceHandle parentMatrix,
         HdMatrixDataSourceHandle localMatrix)
-        : _parent(parentMatrix)
-        , _local(localMatrix)
+        : _parent(std::move(parentMatrix))
+        , _local(std::move(localMatrix))
+        , _cachedResultAt0(_local->GetTypedValue(0) * _parent->GetTypedValue(0))
     {
-        _cachedResultAt0 = _local->GetTypedValue(0) * _parent->GetTypedValue(0);
     }
 
     bool GetContributingSampleTimesForInterval(
-            HdSampledDataSource::Time startTime,
-            HdSampledDataSource::Time endTime,
-            std::vector<HdSampledDataSource::Time> *outSampleTimes) override
+        const HdSampledDataSource::Time startTime,
+        const HdSampledDataSource::Time endTime,
+        std::vector<HdSampledDataSource::Time> * const outSampleTimes) override
     {
-        std::vector<HdSampledDataSource::Time> parentTimes;
-        const bool parentVarying =
-            _parent->GetContributingSampleTimesForInterval(
-                    startTime, endTime, &parentTimes);
-
-        std::vector<HdSampledDataSource::Time> localTimes;
-        const bool localVarying =
-            _local->GetContributingSampleTimesForInterval(
-                    startTime, endTime, &localTimes);
-
-        if (outSampleTimes) {
-            if (parentVarying && localVarying) {
-                std::set_union(
-                    parentTimes.begin(), parentTimes.end(),
-                    localTimes.begin(), localTimes.end(),
-                    std::back_inserter(*outSampleTimes));
-            } else if (parentVarying) {
-                *outSampleTimes = std::move(parentTimes);
-            } else if (localVarying) {
-                *outSampleTimes = std::move(localTimes);
-            }
-        }
-        return parentVarying || localVarying;
+        HdSampledDataSourceHandle const ds[] = { _parent, _local };
+        return HdGetMergedContributingSampleTimesForInterval(
+            std::size(ds), ds,
+            startTime, endTime, outSampleTimes);
     }
 
-    VtValue GetValue(HdSampledDataSource::Time shutterOffset) override
+    VtValue GetValue(const HdSampledDataSource::Time shutterOffset) override
     {
         return VtValue(GetTypedValue(shutterOffset));
     }
 
-    GfMatrix4d GetTypedValue(HdSampledDataSource::Time shutterOffset) override
+    GfMatrix4d GetTypedValue(
+        const HdSampledDataSource::Time shutterOffset) override
     {
         if (shutterOffset == 0) {
             return _cachedResultAt0;
@@ -98,7 +63,7 @@ public:
 protected:
     const HdMatrixDataSourceHandle _parent;
     const HdMatrixDataSourceHandle _local;
-    GfMatrix4d _cachedResultAt0;
+    const GfMatrix4d _cachedResultAt0;
 };
 
 } // namespace
@@ -116,7 +81,7 @@ HdFlattenedXformDataSourceProvider::GetFlattenedDataSource(
                 HdRetainedTypedSampledDataSource<bool>::New(true))
             .Build();
 
-    HdXformSchema inputXform(ctx.GetInputDataSource());
+    const HdXformSchema inputXform(ctx.GetInputDataSource());
 
     // If the local xform is fully composed, early out.
     if (HdBoolDataSourceHandle const resetXformStack =
@@ -135,7 +100,7 @@ HdFlattenedXformDataSourceProvider::GetFlattenedDataSource(
     HdMatrixDataSourceHandle const inputMatrixDataSource =
         inputXform.GetMatrix();
 
-    HdXformSchema parentXform(ctx.GetFlattenedDataSourceFromParentPrim());
+    const HdXformSchema parentXform(ctx.GetFlattenedDataSourceFromParentPrim());
     HdMatrixDataSourceHandle const parentMatrixDataSource =
         parentXform.GetMatrix();
 

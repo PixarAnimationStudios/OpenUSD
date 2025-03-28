@@ -1,0 +1,87 @@
+Loading @BasicRelocateToAnimInterfaceAsNewRootPrim/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model>
+
+Prim Stack:
+    root.sdf             /Model
+    charRig.sdf          /CharRig
+
+Child names:
+     ['Anim', 'Rig']
+
+------------------------------------------------------------------------
+Results for composing </Model/Anim>
+
+Prim Stack:
+    root.sdf             /Model/Anim
+    charRig.sdf          /CharRig/Anim
+
+Child names:
+     ['Path']
+
+------------------------------------------------------------------------
+Results for composing </Model/Anim/Path>
+
+Prim Stack:
+    root.sdf             /Model/Anim/Path
+    charRig.sdf          /Path
+    pathRig.sdf          /PathRig/Path
+
+Child names:
+     ['AnimScope']
+
+Prohibited child names:
+     ['Anim']
+
+------------------------------------------------------------------------
+Results for composing </Model/Anim/Path/AnimScope>
+
+Prim Stack:
+    root.sdf             /Model/Anim/Path/AnimScope
+    charRig.sdf          /Path/AnimScope
+    pathRig.sdf          /PathRig/Path/Anim
+
+Property names:
+     ['track']
+
+Property stacks:
+/Model/Anim/Path/AnimScope.track:
+    root.sdf             /Model/Anim/Path/AnimScope.track
+    charRig.sdf          /Path/AnimScope.track
+    pathRig.sdf          /PathRig/Path/Anim.track
+
+------------------------------------------------------------------------
+Results for composing </Model/Rig>
+
+Prim Stack:
+    root.sdf             /Model/Rig
+    charRig.sdf          /CharRig/Rig
+
+Child names:
+     ['PathRig']
+
+------------------------------------------------------------------------
+Results for composing </Model/Rig/PathRig>
+
+Prim Stack:
+    root.sdf             /Model/Rig/PathRig
+    charRig.sdf          /CharRig/Rig/PathRig
+    pathRig.sdf          /PathRig
+
+Prohibited child names:
+     ['Path']
+
+Property names:
+     ['relationshipToPathAvar', 'relationshipToPathAvar2']
+
+Property stacks:
+/Model/Rig/PathRig.relationshipToPathAvar:
+    pathRig.sdf          /PathRig.relationshipToPathAvar
+/Model/Rig/PathRig.relationshipToPathAvar2:
+    charRig.sdf          /CharRig/Rig/PathRig.relationshipToPathAvar2
+

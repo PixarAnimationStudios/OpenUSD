@@ -1,25 +1,8 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/geomUtil/cuboidMeshGenerator.h"
 
@@ -90,6 +73,30 @@ template GEOMUTIL_API void GeomUtilCuboidMeshGenerator::_GeneratePointsImpl(
 
 template GEOMUTIL_API void GeomUtilCuboidMeshGenerator::_GeneratePointsImpl(
     const double, const double, const double,
+    const GeomUtilCuboidMeshGenerator::_PointWriter<GfVec3d>&);
+
+
+// static
+template<typename PointType>
+void
+GeomUtilCuboidMeshGenerator::_GenerateNormalsImpl(
+    const _PointWriter<PointType>& ptWriter)
+{
+    ptWriter.WriteDir(PointType( 0.0,  0.0,  1.0));
+    ptWriter.WriteDir(PointType( 0.0,  0.0, -1.0));
+    ptWriter.WriteDir(PointType( 0.0,  1.0,  0.0));
+    ptWriter.WriteDir(PointType( 0.0, -1.0,  0.0));
+    ptWriter.WriteDir(PointType( 1.0,  0.0,  0.0));
+    ptWriter.WriteDir(PointType(-1.0,  0.0,  0.0));
+}
+
+// Force-instantiate _GenerateNormalsImpl for the supported point types.
+// Only these instantiations will ever be needed due to the SFINAE machinery on
+// the calling method template (the public GeneratePoints, in the header).
+template GEOMUTIL_API void GeomUtilCuboidMeshGenerator::_GenerateNormalsImpl(
+    const GeomUtilCuboidMeshGenerator::_PointWriter<GfVec3f>&);
+
+template GEOMUTIL_API void GeomUtilCuboidMeshGenerator::_GenerateNormalsImpl(
     const GeomUtilCuboidMeshGenerator::_PointWriter<GfVec3d>&);
 
 

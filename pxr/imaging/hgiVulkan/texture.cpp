@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/imaging/hgiVulkan/buffer.h"
@@ -64,6 +47,7 @@ HgiVulkanTexture::HgiVulkanTexture(
 {
     GfVec3i const& dimensions = desc.dimensions;
     bool const isDepthBuffer = desc.usage & HgiTextureUsageBitsDepthTarget;
+    bool const isStencilBuffer = desc.usage & HgiTextureUsageBitsStencilTarget;
 
     //
     // Gather image create info
@@ -124,14 +108,14 @@ HgiVulkanTexture::HgiVulkanTexture(
     // Equivalent to: vkCreateImage, vkAllocateMemory, vkBindImageMemory
     VmaAllocationCreateInfo allocInfo = {};
     allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-    TF_VERIFY(
+    HGIVULKAN_VERIFY_VK_RESULT(
         vmaCreateImage(
             device->GetVulkanMemoryAllocator(),
             &imageCreateInfo,
             &allocInfo,
             &_vkImage,
             &_vmaImageAllocation,
-            nullptr) == VK_SUCCESS
+            nullptr)
     );
 
     TF_VERIFY(_vkImage, "Failed to create image");
@@ -169,11 +153,14 @@ HgiVulkanTexture::HgiVulkanTexture(
     // that can be accessed through this image view.
     // It's possible to create multiple image views for a single image
     // referring to different (and/or overlapping) ranges of the image.
-    // A 'view' must be either depth or stencil, not both, especially when used
-    // in a descriptor set. For now we assume we always want the 'depth' aspect.
-    view.subresourceRange.aspectMask = isDepthBuffer ?
-        VK_IMAGE_ASPECT_DEPTH_BIT /*| VK_IMAGE_ASPECT_STENCIL_BIT*/ :
-        VK_IMAGE_ASPECT_COLOR_BIT;
+    if (isDepthBuffer) {
+        view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        if (isStencilBuffer) {
+            view.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+    } else {
+        view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
 
     view.subresourceRange.baseMipLevel = 0;
     view.subresourceRange.baseArrayLayer = 0;
@@ -181,12 +168,12 @@ HgiVulkanTexture::HgiVulkanTexture(
     view.subresourceRange.levelCount = desc.mipLevels;
     view.image = _vkImage;
 
-    TF_VERIFY(
+    HGIVULKAN_VERIFY_VK_RESULT(
         vkCreateImageView(
             device->GetVulkanDevice(),
             &view,
             HgiVulkanAllocator(),
-            &_vkImageView) == VK_SUCCESS
+            &_vkImageView)
     );
 
     // Debug label
@@ -303,12 +290,12 @@ HgiVulkanTexture::HgiVulkanTexture(
     view.subresourceRange.levelCount = desc.mipLevels;
     view.image = srcTexture->GetImage();
 
-    TF_VERIFY(
+    HGIVULKAN_VERIFY_VK_RESULT(
         vkCreateImageView(
             device->GetVulkanDevice(),
             &view,
             HgiVulkanAllocator(),
-            &_vkImageView) == VK_SUCCESS
+            &_vkImageView)
     );
 
     // Debug label
@@ -375,11 +362,11 @@ HgiVulkanTexture::GetCPUStagingAddress()
     }
 
     if (!_cpuStagingAddress) {
-        TF_VERIFY(
+        HGIVULKAN_VERIFY_VK_RESULT(
             vmaMapMemory(
                 _device->GetVulkanMemoryAllocator(), 
                 _stagingBuffer->GetVulkanMemoryAllocation(), 
-                &_cpuStagingAddress) == VK_SUCCESS
+                &_cpuStagingAddress)
         );
     }
 
@@ -636,18 +623,15 @@ HgiVulkanTexture::GetDefaultImageLayout(HgiTextureUsage usage)
     if (usage & HgiTextureUsageBitsShaderWrite) {
         // Assume the ShaderWrite means its a storage image.
         return VK_IMAGE_LAYOUT_GENERAL;
-    } else if (usage & HgiTextureUsageBitsShaderRead) {
-        // Also check if image is going to be used as a color attachment as 
-        // well. If yes, then explicitly give it a color attachment layout.
-        if (usage & HgiTextureUsageBitsColorTarget) {
-            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        } else {
-            return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        }
-    } else if (usage & HgiTextureUsageBitsDepthTarget) {
-        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    // Prioritize attachment layouts over shader read layout. Some textures 
+    // might have both usages.
     } else if (usage & HgiTextureUsageBitsColorTarget) {
         return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    } else if (usage & HgiTextureUsageBitsDepthTarget ||
+               usage & HgiTextureUsageBitsStencilTarget) {
+        return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    } else if (usage & HgiTextureUsageBitsShaderRead) {
+        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     }
 
     return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

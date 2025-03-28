@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef USDRENDER_TOKENS_H
 #define USDRENDER_TOKENS_H
@@ -82,6 +65,10 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderSettingsBase
     const TfToken camera;
+    /// \brief "collection:cameraVisibility:includeRoot"
+    /// 
+    /// UsdRenderPass
+    const TfToken collectionCameraVisibilityIncludeRoot;
     /// \brief "collection:renderVisibility:includeRoot"
     /// 
     /// UsdRenderPass
@@ -106,14 +93,10 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderSettingsBase
     const TfToken dataWindowNDC;
-    /// \brief "denoise:enable"
+    /// \brief "deepRaster"
     /// 
-    /// UsdRenderPass
-    const TfToken denoiseEnable;
-    /// \brief "denoise:pass"
-    /// 
-    /// UsdRenderPass
-    const TfToken denoisePass;
+    /// Possible value for UsdRenderProduct::GetProductTypeAttr()
+    const TfToken deepRaster;
     /// \brief "disableDepthOfField"
     /// 
     /// UsdRenderSettingsBase
@@ -192,7 +175,7 @@ struct UsdRenderTokensType {
     const TfToken productType;
     /// \brief "raster"
     /// 
-    /// Fallback value for UsdRenderProduct::GetProductTypeAttr(), RenderProduct productType value that indicates a 2D raster image of pixels.
+    /// Fallback value for UsdRenderProduct::GetProductTypeAttr()
     const TfToken raster;
     /// \brief "raw"
     /// 
@@ -226,10 +209,6 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderVar
     const TfToken sourceType;
-    /// \brief "RenderDenoisePass"
-    /// 
-    /// Schema identifer and family for UsdRenderDenoisePass
-    const TfToken RenderDenoisePass;
     /// \brief "RenderPass"
     /// 
     /// Schema identifer and family for UsdRenderPass

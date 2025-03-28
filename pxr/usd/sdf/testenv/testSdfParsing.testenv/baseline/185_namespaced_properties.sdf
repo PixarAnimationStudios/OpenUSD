@@ -9,11 +9,6 @@
 def Scope "Prim"
 {
     reorder properties = ["bar:baz", "foo:baz", "foo:argle", "bar:argle"]
-    rel a:b:c
-    rel a:b:c.timeSamples = {
-        1: </Prim>,
-        2: </Prim/Child>,
-    }
     delete varying rel a:b:d = </Prim/Child>
     add varying rel a:b:d = [
         </Prim>,

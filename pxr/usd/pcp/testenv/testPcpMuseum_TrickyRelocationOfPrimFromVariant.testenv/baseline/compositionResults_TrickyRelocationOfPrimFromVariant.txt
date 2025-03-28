@@ -66,3 +66,8 @@ Prim Stack:
 Child names:
      ['Tail']
 
+------------------------------------------------------------------------
+Results for composing </Char2/Anim/Tail>
+
+Prim Stack:
+

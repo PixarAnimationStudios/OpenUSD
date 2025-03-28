@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/imaging/hdSt/materialNetwork.h"
@@ -55,7 +38,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (UsdPreviewSurface)
     (opacity)
+    (opacityMode)
+    (transparent)
     (opacityThreshold)
     (isPtex)
     (st)
@@ -239,7 +225,7 @@ _GetNodeFallbackValue(
 
         // If no default value was registered with Sdr for
         // the output, fallback to the type's default.
-        return output->GetTypeAsSdfType().first.GetDefaultValue();
+        return output->GetTypeAsSdfType().GetSdfType().GetDefaultValue();
     }
 
     return VtValue();
@@ -297,7 +283,7 @@ _GetParamFallbackValue(
             // If not default value was registered with Sdr for
             // the output, fallback to the type's default.
             if (out.IsEmpty()) {
-                out = input->GetTypeAsSdfType().first.GetDefaultValue();
+                out = input->GetTypeAsSdfType().GetSdfType().GetDefaultValue();
             }
 
             if (!out.IsEmpty()) return out;
@@ -575,21 +561,21 @@ _ResolveParameter(
 static
 std::unique_ptr<HdStSubtextureIdentifier>
 _GetSubtextureIdentifier(
-    const HdTextureType textureType,
+    const HdStTextureType textureType,
     const TfToken &nodeType,
     const bool premultiplyAlpha,
     const TfToken &sourceColorSpace)
 {
-    if (textureType == HdTextureType::Uv) {
+    if (textureType == HdStTextureType::Uv) {
         const bool flipVertically = (nodeType == _tokens->HwUvTexture_1);
         return std::make_unique<HdStAssetUvSubtextureIdentifier>(flipVertically, 
             premultiplyAlpha, sourceColorSpace);
     } 
-    if (textureType == HdTextureType::Udim) {
+    if (textureType == HdStTextureType::Udim) {
         return std::make_unique<HdStUdimSubtextureIdentifier>(premultiplyAlpha, 
             sourceColorSpace);
     }
-    if (textureType == HdTextureType::Ptex) {
+    if (textureType == HdStTextureType::Ptex) {
         return std::make_unique<HdStPtexSubtextureIdentifier>(premultiplyAlpha);
     }
     return nullptr;
@@ -621,7 +607,7 @@ _MakeMaterialParamsForTexture(
     // Get swizzle metadata if possible
     if (SdrShaderPropertyConstPtr sdrProperty = sdrNode->GetShaderOutput(
         outputName)) {
-        NdrTokenMap const& propMetadata = sdrProperty->GetMetadata();
+        SdrTokenMap const& propMetadata = sdrProperty->GetMetadata();
         auto const& it = propMetadata.find(HdStSdrMetadataTokens->swizzle);
         if (it != propMetadata.end()) {
             texParam.swizzle = it->second;
@@ -629,9 +615,9 @@ _MakeMaterialParamsForTexture(
     }
 
     // Determine the texture type
-    texParam.textureType = HdTextureType::Uv;
+    texParam.textureType = HdStTextureType::Uv;
     if (sdrNode && sdrNode->GetMetadata().count(_tokens->isPtex)) {
-        texParam.textureType = HdTextureType::Ptex;
+        texParam.textureType = HdStTextureType::Ptex;
     }
 
     // Determine if texture should be pre-multiplied on CPU
@@ -671,11 +657,24 @@ _MakeMaterialParamsForTexture(
 
     HdStTextureIdentifier textureId;
 
-    NdrTokenVec const& assetIdentifierPropertyNames = 
+    SdrTokenVec const& assetIdentifierPropertyNames = 
         sdrNode->GetAssetIdentifierInputNames();
 
-    if (assetIdentifierPropertyNames.size() == 1) {
-        TfToken const& fileProp = assetIdentifierPropertyNames[0];
+    if (!assetIdentifierPropertyNames.empty()) {
+        TfToken fileProp = assetIdentifierPropertyNames[0];
+
+        // Some MaterialX nodes can have multiple file inputs. Take the first
+        // one that matches the param name. If we lookup a <trilinear> texture
+        // against an output named "N42_fileY", we will find the right one.
+        if (assetIdentifierPropertyNames.size() > 1) {
+            for (auto const& propName: assetIdentifierPropertyNames) {
+                if (TfStringEndsWith(outputName.GetString(), propName)) {
+                    fileProp = propName;
+                    break;
+                }
+            }
+        }
+
         auto const& it = node.parameters.find(fileProp);
         if (it != node.parameters.end()){
             const VtValue &v = it->second;
@@ -711,7 +710,7 @@ _MakeMaterialParamsForTexture(
                 const std::string filePath = _ResolveAssetPath(v);
 
                 if (HdStIsSupportedUdimTexture(filePath)) {
-                    texParam.textureType = HdTextureType::Udim;
+                    texParam.textureType = HdStTextureType::Udim;
                 }
                 
                 useTexturePrimToFindTexture = false;
@@ -859,7 +858,7 @@ _MakeMaterialParamsForTexture(
         { paramName,
           textureId,
           texParam.textureType,
-          HdGetSamplerParameters(nodePath, node, sdrNode),
+          HdGetSamplerParameters(node, sdrNode, nodePath),
           memoryRequest,
           useTexturePrimToFindTexture,
           texturePrimPathForSceneDelegate });
@@ -1032,7 +1031,7 @@ _GatherMaterialParams(
 
     if (sdrNode) {
         SdfPathSet visitedNodes;
-        for (TfToken const& inputName : sdrNode->GetInputNames()) {
+        for (TfToken const& inputName : sdrNode->GetShaderInputNames()) {
             _MakeParamsForInputParameter(
                 network, node, inputName, &visitedNodes,
                 params, textureDescriptors, materialTag);
@@ -1047,6 +1046,22 @@ _GatherMaterialParams(
         if (p.paramType != HdSt_MaterialParam::ParamTypeAdditionalPrimvar &&
             p.fallbackValue.IsEmpty()) {
             p.fallbackValue = _GetParamFallbackValue(network, node, p.name);
+            // The opacityMode input on a PreviewSurface material is a token
+            // input, this needs to be updated to an int VtValue for codegen.
+            // The values are updated such that transparent = 1 and presence = 0. 
+            if (node.nodeTypeId == _tokens->UsdPreviewSurface &&
+                p.name == _tokens->opacityMode) {
+                int paramInt = 1;
+                if (p.fallbackValue.IsHolding<std::string>()) {
+                    const std::string param = p.fallbackValue.Get<std::string>();
+                    paramInt = param == _tokens->transparent;
+                }
+                else if (p.fallbackValue.IsHolding<TfToken>()) {
+                    const TfToken param = p.fallbackValue.Get<TfToken>();
+                    paramInt = param == _tokens->transparent;
+                }
+                p.fallbackValue = VtValue(paramInt);
+            }
         }
     }
 
@@ -1058,7 +1073,7 @@ _GatherMaterialParams(
         // so that these primvars survive 'primvar filtering' that discards any
         // unused primvars on the mesh.
         // If the network lists additional primvars, we add those too.
-        NdrTokenVec pv = sdrNode->GetPrimvars();
+        SdrTokenVec pv = sdrNode->GetPrimvars();
         pv.insert(pv.end(), network.primvars.begin(), network.primvars.end());
         std::sort(pv.begin(), pv.end());
         pv.erase(std::unique(pv.begin(), pv.end()), pv.end());
@@ -1086,7 +1101,6 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
     HD_TRACE_FUNCTION();
 
     _fragmentSource.clear();
-    _geometrySource.clear();
     _displacementSource.clear();
     _materialMetadata.clear();
     _materialParams.clear();
@@ -1107,7 +1121,7 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
         if (!isVolume) {
-            HdSt_ApplyMaterialXFilter(&surfaceNetwork, materialId,
+            _materialXGfx = HdSt_ApplyMaterialXFilter(&surfaceNetwork, materialId,
                                       *surfTerminal, surfTerminalPath,
                                       &_materialParams, resourceRegistry);
         }
@@ -1157,12 +1171,6 @@ std::string const&
 HdStMaterialNetwork::GetVolumeCode() const
 {
     return _volumeSource;
-}
-
-std::string const&
-HdStMaterialNetwork::GetGeometryCode() const
-{
-    return _geometrySource;
 }
 
 std::string const&

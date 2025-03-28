@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
@@ -95,7 +78,7 @@ _GetTextureIdentifier(
                 sceneDelegate->GetRenderIndex().GetBprim(
                     HdPrimTypeTokens->renderBuffer, desc.texturePrim))) {
 
-        if (desc.type == HdTextureType::Uv) {
+        if (desc.type == HdStTextureType::Uv) {
             return renderBuffer->GetTextureIdentifier(
                 /* multiSampled = */ false);
         }
@@ -123,7 +106,8 @@ _GetTextureHandleHash(
         samplerParams.magFilter,
         samplerParams.borderColor,
         samplerParams.enableCompare,
-        samplerParams.compareFunction);
+        samplerParams.compareFunction,
+        samplerParams.maxAnisotropy);
 }
 
 void
@@ -207,7 +191,6 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     bool markBatchesDirty = false;
 
     std::string fragmentSource;
-    std::string geometrySource;
     std::string displacementSource;
     std::string volumeSource;
     VtDictionary materialMetadata;
@@ -224,7 +207,6 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                                                     resourceRegistry.get());
             fragmentSource = _networkProcessor.GetFragmentCode();
             volumeSource = _networkProcessor.GetVolumeCode();
-            geometrySource = _networkProcessor.GetGeometryCode();
             displacementSource = _networkProcessor.GetDisplacementCode();
             materialMetadata = _networkProcessor.GetMetadata();
             materialTag = _networkProcessor.GetMaterialTag();
@@ -234,16 +216,12 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     // Use fallback shader when there is no source for
-    // fragment and geometry and displacement shader.
+    // fragment and displacement shader.
     if (fragmentSource.empty() &&
-        geometrySource.empty() &&
         displacementSource.empty()) {
 
         _InitFallbackShader();
         fragmentSource = _fallbackGlslfx->GetSurfaceSource();
-        // Note that we don't want displacement on purpose for the 
-        // fallback material.
-        geometrySource = std::string();
         materialMetadata = _fallbackGlslfx->GetMetadata();
     }
 
@@ -266,21 +244,17 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    // If we're updating the fragment or geometry source, we need to
+    // If we're updating the fragment or displacement source, we need to
     // rebatch anything that uses this material.
     std::string const& oldFragmentSource = 
         _materialNetworkShader->GetSource(HdShaderTokens->fragmentShader);
-    std::string const& oldGeometrySource = 
-        _materialNetworkShader->GetSource(HdShaderTokens->geometryShader);
     std::string const& oldDisplacementSource =
         _materialNetworkShader->GetSource(HdShaderTokens->displacementShader);
 
     markBatchesDirty |= (oldFragmentSource!=fragmentSource) || 
-                        (oldGeometrySource!=geometrySource) ||
                         (oldDisplacementSource!=displacementSource);
 
     _materialNetworkShader->SetFragmentSource(fragmentSource);
-    _materialNetworkShader->SetGeometrySource(geometrySource);
     _materialNetworkShader->SetDisplacementSource(displacementSource);
 
     bool hasDisplacement = !(displacementSource.empty());
@@ -326,7 +300,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         } else if (param.IsTexture()) {
             HdSt_MaterialNetworkShader::AddFallbackValueToSpecsAndSources(
                 param, &specs, &sources);
-            if (param.textureType == HdTextureType::Ptex) {
+            if (param.textureType == HdStTextureType::Ptex) {
                 hasPtex = true;
             }
         }

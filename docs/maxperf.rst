@@ -10,6 +10,12 @@ pipeline. We would like to help ensure that USD works as well and with as good
 performance for you as it does for us. Here are a few tips that can make a huge
 difference.
 
+.. note::
+
+    Starting with release 24.11, Pixar is publishing performance metrics 
+    measured using several different assets. See :ref:`performance_metrics` for 
+    details.
+
 Use an allocator optimized for multithreading
 ##############################################
 

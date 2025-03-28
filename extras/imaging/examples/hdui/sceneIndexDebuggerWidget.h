@@ -1,28 +1,15 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HDUI_SCENE_INDEX_DEBUGGING_WIDGET_H
 #define PXR_IMAGING_HDUI_SCENE_INDEX_DEBUGGING_WIDGET_H
+
+#include "pxr/pxr.h"
+
+#include "api.h"
 
 #include "pxr/imaging/hd/sceneIndex.h"
 
@@ -30,6 +17,7 @@
 #include <QPushButton>
 #include <QMenu>
 #include <QTreeWidgetItem>
+#include <QSplitter>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,15 +26,38 @@ class HduiDataSourceTreeWidget;
 class HduiDataSourceValueTreeView;
 class HduiRegisteredSceneIndexChooser;
 
-class HduiSceneIndexDebuggerWidget : public QWidget, public TfWeakBase
+class HDUI_API_CLASS HduiSceneIndexDebuggerWidget
+    : public QWidget, public TfWeakBase
 {
     Q_OBJECT;
 public:
+    struct Options
+    {
+        Options() {};
+        bool showInputsButton = true;
+    };
 
-    HduiSceneIndexDebuggerWidget(QWidget *parent = Q_NULLPTR);
+    // customSceneIndexGraphWidget: clients can pass their own custom
+    // widget. It will be added as first column in the debugger and is
+    // in charge of selecting the scene index to be inspected.
+    // Thus, we suppress the "Inputs" button to select a scene index if
+    // such a custom widget is given.
+    //
+    HduiSceneIndexDebuggerWidget(
+        QWidget *parent = Q_NULLPTR,
+        const Options &options = Options());
 
+    // Called when we select a registered (terminal) scene index.
+    virtual void SetRegisteredSceneIndex(
+        const std::string &registeredName,
+        HdSceneIndexBaseRefPtr sceneIndex);
+
+    // Sets which scene index we are inspecting.
     void SetSceneIndex(const std::string &displayName,
-        HdSceneIndexBaseRefPtr sceneIndex, bool pullRoot);
+                       HdSceneIndexBaseRefPtr sceneIndex, bool pullRoot);
+
+protected:
+    QSplitter *_splitter;
 
 private Q_SLOTS:
     void _FillGoToInputMenu();

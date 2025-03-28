@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hd/meshUtil.h"
 
@@ -1006,7 +989,9 @@ HdMeshUtil::ComputeQuadrangulatedFaceVaryingPrimvar(
 }
 
 void
-HdMeshUtil::EnumerateEdges(std::vector<GfVec2i> * edgeVerticesOut) const
+HdMeshUtil::EnumerateEdges(
+    std::vector<GfVec2i> * edgeVerticesOut,
+    std::vector<int> * firstEdgeIndexForFacesOut) const
 {
     HD_TRACE_FUNCTION();
 
@@ -1023,6 +1008,10 @@ HdMeshUtil::EnumerateEdges(std::vector<GfVec2i> * edgeVerticesOut) const
     int const * vertsPtr = _topology->GetFaceVertexIndices().cdata();
     int const numFaces = _topology->GetFaceVertexCounts().size();
 
+    if (firstEdgeIndexForFacesOut) {
+        firstEdgeIndexForFacesOut->resize(numFaces);
+    }
+
     int numEdges = 0;
     for (int i=0; i<numFaces; ++i) {
         int nv = numVertsPtr[i];
@@ -1034,6 +1023,9 @@ HdMeshUtil::EnumerateEdges(std::vector<GfVec2i> * edgeVerticesOut) const
 
     for (int i=0, v=0, ev=0; i<numFaces; ++i) {
         int nv = numVertsPtr[i];
+        if (firstEdgeIndexForFacesOut) {
+            (*firstEdgeIndexForFacesOut)[i] = ev;
+        }
         if (flip) {
             for (int j=nv; j>0; --j) {
                 int v0 = vertsPtr[v+j%nv];
@@ -1058,9 +1050,11 @@ HdMeshUtil::EnumerateEdges(std::vector<GfVec2i> * edgeVerticesOut) const
 }
 
 HdMeshEdgeIndexTable::HdMeshEdgeIndexTable(HdMeshTopology const * topology)
+    : _topology(topology)
 {
-    HdMeshUtil meshUtil(topology, SdfPath());
-    meshUtil.EnumerateEdges(&_edgeVertices);
+    HdMeshUtil meshUtil(_topology, SdfPath());
+
+    meshUtil.EnumerateEdges(&_edgeVertices, &_firstEdgeIndexForFaces);
 
     _edgesByIndex.resize(_edgeVertices.size());
     for (size_t i=0; i<_edgeVertices.size(); ++i) {
@@ -1127,6 +1121,44 @@ HdMeshEdgeIndexTable::GetEdgeIndices(GfVec2i const & edgeVertices,
     }
 
     return !edgeIndicesOut->empty();
+}
+
+VtIntArray
+HdMeshEdgeIndexTable::CollectFaceEdgeIndices(
+    VtIntArray const &faceIndices) const
+{
+    size_t const numMeshFaces = _topology->GetFaceVertexCounts().size();
+
+    if (!TF_VERIFY(numMeshFaces == _firstEdgeIndexForFaces.size())) {
+        return VtIntArray();
+    }
+
+    std::vector<int> result;
+
+    for (int const face : faceIndices) {
+
+        // Skip invalid face indices.
+        if ((face < 0) || (static_cast<size_t>(face) >= numMeshFaces)) {
+            continue;
+        }
+
+        int const firstEdgeIndex = _firstEdgeIndexForFaces[face];
+        int const numEdges = _topology->GetFaceVertexCounts()[face];
+
+        for (int e=0; e<numEdges; ++e) {
+
+            // Edges are identified by their vertex indices.
+            GfVec2i const &edgeVertices = _edgeVertices[firstEdgeIndex+e];
+
+            std::vector<int> edgeIndices;
+            GetEdgeIndices(edgeVertices, &edgeIndices);
+
+            result.insert(result.end(),
+                          edgeIndices.begin(), edgeIndices.end());
+        }
+    }
+
+    return VtIntArray(result.begin(), result.end());
 }
 
 

@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -38,6 +21,7 @@
 /// \file
 
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/schemaTypeDefs.h"
 #include "pxr/imaging/hd/splitDiopterSchema.h"
 #include "pxr/imaging/hd/lensDistortionSchema.h"
 
@@ -66,10 +50,16 @@ PXR_NAMESPACE_OPEN_SCOPE
     (shutterOpen) \
     (shutterClose) \
     (exposure) \
+    (exposureTime) \
+    (exposureIso) \
+    (exposureFStop) \
+    (exposureResponsivity) \
+    (linearExposureScale) \
     (focusOn) \
     (dofAspect) \
     (splitDiopter) \
     (lensDistortion) \
+    (namespacedProperties) \
     (perspective) \
     (orthographic) \
 
@@ -145,6 +135,21 @@ public:
     HdFloatDataSourceHandle GetExposure() const;
 
     HD_API
+    HdFloatDataSourceHandle GetExposureTime() const;
+
+    HD_API
+    HdFloatDataSourceHandle GetExposureIso() const;
+
+    HD_API
+    HdFloatDataSourceHandle GetExposureFStop() const;
+
+    HD_API
+    HdFloatDataSourceHandle GetExposureResponsivity() const;
+
+    HD_API
+    HdFloatDataSourceHandle GetLinearExposureScale() const;
+
+    HD_API
     HdBoolDataSourceHandle GetFocusOn() const;
 
     HD_API
@@ -154,7 +159,10 @@ public:
     HdSplitDiopterSchema GetSplitDiopter() const;
 
     HD_API
-    HdLensDistortionSchema GetLensDistortion() const; 
+    HdLensDistortionSchema GetLensDistortion() const;
+
+    HD_API
+    HdSampledDataSourceContainerContainerSchema GetNamespacedProperties() const; 
 
     /// @}
 
@@ -189,6 +197,34 @@ public:
     /// Prim-level relative data source locator to locate shutterClose.
     HD_API
     static const HdDataSourceLocator &GetShutterCloseLocator();
+
+    /// Prim-level relative data source locator to locate exposure.
+    HD_API
+    static const HdDataSourceLocator &GetExposureLocator();
+
+    /// Prim-level relative data source locator to locate exposureTime.
+    HD_API
+    static const HdDataSourceLocator &GetExposureTimeLocator();
+
+    /// Prim-level relative data source locator to locate exposureIso.
+    HD_API
+    static const HdDataSourceLocator &GetExposureIsoLocator();
+
+    /// Prim-level relative data source locator to locate exposureFStop.
+    HD_API
+    static const HdDataSourceLocator &GetExposureFStopLocator();
+
+    /// Prim-level relative data source locator to locate exposureResponsivity.
+    HD_API
+    static const HdDataSourceLocator &GetExposureResponsivityLocator();
+
+    /// Prim-level relative data source locator to locate linearExposureScale.
+    HD_API
+    static const HdDataSourceLocator &GetLinearExposureScaleLocator();
+
+    /// Prim-level relative data source locator to locate namespacedProperties.
+    HD_API
+    static const HdDataSourceLocator &GetNamespacedPropertiesLocator();
     /// @} 
 
     /// \name Schema construction
@@ -217,10 +253,16 @@ public:
         const HdDoubleDataSourceHandle &shutterOpen,
         const HdDoubleDataSourceHandle &shutterClose,
         const HdFloatDataSourceHandle &exposure,
+        const HdFloatDataSourceHandle &exposureTime,
+        const HdFloatDataSourceHandle &exposureIso,
+        const HdFloatDataSourceHandle &exposureFStop,
+        const HdFloatDataSourceHandle &exposureResponsivity,
+        const HdFloatDataSourceHandle &linearExposureScale,
         const HdBoolDataSourceHandle &focusOn,
         const HdFloatDataSourceHandle &dofAspect,
         const HdContainerDataSourceHandle &splitDiopter,
-        const HdContainerDataSourceHandle &lensDistortion
+        const HdContainerDataSourceHandle &lensDistortion,
+        const HdContainerDataSourceHandle &namespacedProperties
     );
 
     /// \class HdCameraSchema::Builder
@@ -272,6 +314,21 @@ public:
         Builder &SetExposure(
             const HdFloatDataSourceHandle &exposure);
         HD_API
+        Builder &SetExposureTime(
+            const HdFloatDataSourceHandle &exposureTime);
+        HD_API
+        Builder &SetExposureIso(
+            const HdFloatDataSourceHandle &exposureIso);
+        HD_API
+        Builder &SetExposureFStop(
+            const HdFloatDataSourceHandle &exposureFStop);
+        HD_API
+        Builder &SetExposureResponsivity(
+            const HdFloatDataSourceHandle &exposureResponsivity);
+        HD_API
+        Builder &SetLinearExposureScale(
+            const HdFloatDataSourceHandle &linearExposureScale);
+        HD_API
         Builder &SetFocusOn(
             const HdBoolDataSourceHandle &focusOn);
         HD_API
@@ -283,6 +340,9 @@ public:
         HD_API
         Builder &SetLensDistortion(
             const HdContainerDataSourceHandle &lensDistortion);
+        HD_API
+        Builder &SetNamespacedProperties(
+            const HdContainerDataSourceHandle &namespacedProperties);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -302,10 +362,16 @@ public:
         HdDoubleDataSourceHandle _shutterOpen;
         HdDoubleDataSourceHandle _shutterClose;
         HdFloatDataSourceHandle _exposure;
+        HdFloatDataSourceHandle _exposureTime;
+        HdFloatDataSourceHandle _exposureIso;
+        HdFloatDataSourceHandle _exposureFStop;
+        HdFloatDataSourceHandle _exposureResponsivity;
+        HdFloatDataSourceHandle _linearExposureScale;
         HdBoolDataSourceHandle _focusOn;
         HdFloatDataSourceHandle _dofAspect;
         HdContainerDataSourceHandle _splitDiopter;
         HdContainerDataSourceHandle _lensDistortion;
+        HdContainerDataSourceHandle _namespacedProperties;
 
     };
 
