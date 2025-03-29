@@ -263,6 +263,13 @@ public:
     void SetBBoxParams(const HdxBoundingBoxTaskParams& params);
 
     /// -------------------------------------------------------
+    /// Visualization API
+
+    /// Configure visualization passes.
+    HDX_API
+    void SetEnableVisualization(bool status);
+    
+    /// -------------------------------------------------------
     /// Present API
 
     /// Enable / disable presenting the render to bound framebuffer.
@@ -430,6 +437,8 @@ private:
     std::optional<CameraUtilConformWindowPolicy> _overrideWindowPolicy;
 
     GfVec4d _viewport;
+
+    bool _enableVisualization;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
