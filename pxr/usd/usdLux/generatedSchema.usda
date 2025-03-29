@@ -34,6 +34,7 @@ class "LightAPI" (
     """
 )
 {
+    reorder properties = ["inputs:intensity", "inputs:exposure", "inputs:diffuse", "inputs:specular", "inputs:normalize", "inputs:color", "inputs:enableColorTemperature", "inputs:colorTemperature"]
     uniform bool collection:lightLink:includeRoot = 1
     uniform bool collection:shadowLink:includeRoot = 1
     color3f inputs:color = (1, 1, 1) (
@@ -363,6 +364,7 @@ class "ShapingAPI" (
     doc = "Controls for shaping a light's emission."
 )
 {
+    reorder properties = ["inputs:shaping:focus", "inputs:shaping:focusTint", "inputs:shaping:cone:angle", "inputs:shaping:cone:softness", "inputs:shaping:ies:file", "inputs:shaping:ies:angleScale", "inputs:shaping:ies:normalize"]
     float inputs:shaping:cone:angle = 90 (
         displayGroup = "Shaping"
         displayName = "Cone Angle"
@@ -415,6 +417,7 @@ class "ShadowAPI" (
     non-physical controls that are valuable for visual lighting work."""
 )
 {
+    reorder properties = ["inputs:shadow:enable", "inputs:shadow:color", "inputs:shadow:distance", "inputs:shadow:falloff", "inputs:shadow:falloffGamma"]
     color3f inputs:shadow:color = (0, 0, 0) (
         displayGroup = "Shadows"
         displayName = "Shadow Color"
@@ -694,6 +697,7 @@ class DistantLight "DistantLight" (
     Also known as a directional light."""
 )
 {
+    reorder properties = ["inputs:angle", "inputs:intensity"]
     float inputs:angle = 0.53 (
         displayGroup = "Basic"
         displayName = "Angle Extent"
@@ -858,6 +862,7 @@ class RectLight "RectLight" (
     max coordinates at (-X, -Y)."""
 )
 {
+    reorder properties = ["inputs:width", "inputs:height", "inputs:texture:file"]
     float3[] extent (
         doc = """Extent is a three dimensional range measuring the geometric
         extent of the authored gprim in its own local space (i.e. its own
@@ -1049,6 +1054,7 @@ class CylinderLight "CylinderLight" (
     """
 )
 {
+    reorder properties = ["inputs:length", "inputs:radius"]
     float3[] extent (
         doc = """Extent is a three dimensional range measuring the geometric
         extent of the authored gprim in its own local space (i.e. its own
@@ -1240,6 +1246,7 @@ class DomeLight "DomeLight" (
 """
 )
 {
+    reorder properties = ["inputs:texture:file", "inputs:texture:format"]
     float guideRadius = 100000 (
         displayGroup = "Guides"
         displayName = "Radius"
