@@ -108,11 +108,18 @@ HdxRenderSetupTask::Execute(HdTaskContext* ctx)
 
 static
 bool
-_AovHasIdSemantic(TfToken const &name)
+_AovHasIdSemantic(HdRenderPassAovBinding const &binding)
 {
     // For now id render only means primId or instanceId.
-    return name == HdAovTokens->primId ||
-           name == HdAovTokens->instanceId;
+    return binding.aovName == HdAovTokens->primId ||
+        binding.aovName == HdAovTokens->instanceId;
+}
+
+static
+bool
+_AovHasColorSemantic(HdRenderPassAovBinding const &binding)
+{
+    return binding.aovName == HdAovTokens->color;
 }
 
 void
@@ -147,14 +154,13 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
     _aovBindings = params.aovBindings;
     _aovInputBindings = params.aovInputBindings;
 
-    // Inspect aovs to see if we're doing an id render.
-    bool usingIdAov = false;
-    for (size_t i = 0; i < _aovBindings.size(); ++i) {
-        if (_AovHasIdSemantic(_aovBindings[i].aovName)) {
-            usingIdAov = true;
-            break;
-        }
-    }
+    // Inspect AOVs to see if we're doing color or id rendering.
+    const bool usingIdAov = std::find_if(params.aovBindings.begin(),
+        params.aovBindings.end(), &_AovHasIdSemantic) !=
+        params.aovBindings.end();
+    const bool usingColorAov = std::find_if(params.aovBindings.begin(),
+        params.aovBindings.end(), &_AovHasColorSemantic) !=
+        params.aovBindings.end();
 
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
     HdRenderPassStateSharedPtr &renderPassState =
@@ -194,16 +200,16 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
                 params.blendAlphaOp,
                 params.blendAlphaSrcFactor, params.blendAlphaDstFactor);
         renderPassState->SetBlendConstantColor(params.blendConstantColor);
-        
-        // Don't enable alpha to coverage for id renders.
-        // XXX: If the list of aovs includes both color and an id aov (such as 
-        // primdId), we still disable alpha to coverage for the render pass, 
-        // which may result in different behavior for the color output compared 
+
+        // Don't enable alpha to coverage for id or non-color renders.
+        // XXX: If the list of aovs includes both color and an id aov (such as
+        // primdId), we still disable alpha to coverage for the render pass,
+        // which may result in different behavior for the color output compared
         // to if the user didn't request an id aov at the same time.
         // If this becomes an issue, we'll need to reconsider this approach.
         renderPassState->SetAlphaToCoverageEnabled(
             params.enableAlphaToCoverage &&
-            !usingIdAov &&
+            usingColorAov && !usingIdAov &&
             !TfDebug::IsEnabled(HDX_DISABLE_ALPHA_TO_COVERAGE));
 
         // For id renders that use an id aov (which use an int format), it's ok
