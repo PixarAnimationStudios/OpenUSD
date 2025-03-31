@@ -440,10 +440,10 @@ HgiGLTexture::GetBindlessHandle()
     return _bindlessHandle;
 }
 
-void 
+HgiTextureUsage
 HgiGLTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
 {
-    return;
+    return 0;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -30,6 +30,29 @@ _CheckFormatSupport(
     return (props.optimalTilingFeatures & flags) == flags;
 }
 
+static HgiTextureUsage
+_VkImageLayoutToHgiTextureUsage(VkImageLayout usage)
+{
+    switch (usage) {
+    case VK_IMAGE_LAYOUT_GENERAL:
+        return HgiTextureUsageBitsShaderWrite;
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+        return HgiTextureUsageBitsColorTarget;
+    case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL:
+        return HgiTextureUsageBitsDepthTarget;
+    case VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL:
+        return HgiTextureUsageBitsStencilTarget;
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+        return HgiTextureUsageBitsDepthTarget |
+            HgiTextureUsageBitsStencilTarget;
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+        return HgiTextureUsageBitsShaderRead;
+    default:
+        TF_CODING_ERROR("Unsupported VkImageLayout %d", usage);
+        return 0;
+    }
+}
+
 HgiVulkanTexture::HgiVulkanTexture(
     HgiVulkan* hgi,
     HgiVulkanDevice* device,
@@ -497,10 +520,11 @@ HgiVulkanTexture::CopyBufferToTexture(
         VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT); // Consumer stage
 }
 
-void 
+HgiTextureUsage
 HgiVulkanTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
 {
-    VkImageLayout newVkLayout = 
+    const VkImageLayout oldVkLayout = GetImageLayout();
+    const VkImageLayout newVkLayout =
         HgiVulkanTexture::GetDefaultImageLayout(newLayout);
 
     HgiVulkanCommandQueue* queue = _device->GetCommandQueue();
@@ -511,7 +535,7 @@ HgiVulkanTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
     // The following cases are based on few initial assumptions to provide
     // an infrastructure for access mask selection based on layouts.
     // Feel free to update depending on need and use cases.
-    switch (GetImageLayout()) {
+    switch (oldVkLayout) {
     case VK_IMAGE_LAYOUT_PREINITIALIZED:
         srcAccessMask =
             VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -560,12 +584,14 @@ HgiVulkanTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
     TransitionImageBarrier(
         cb,
         this,
-        GetImageLayout(),
+        oldVkLayout,
         newVkLayout,
         srcAccessMask, 
         dstAccessMask,
         VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
         VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+
+    return _VkImageLayoutToHgiTextureUsage(oldVkLayout);
 }
 
 void

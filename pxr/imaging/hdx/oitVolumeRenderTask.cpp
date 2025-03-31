@@ -139,9 +139,10 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
     HgiTextureHandle depthTexture;
     _GetTaskContextData(ctx, HdAovTokens->depth, &depthTexture);
 
-    depthTexture->SubmitLayoutChange(HgiTextureUsageBitsShaderRead);
+    const auto oldLayout =
+        depthTexture->SubmitLayoutChange(HgiTextureUsageBitsShaderRead);
     HdxRenderTask::Execute(ctx);
-    depthTexture->SubmitLayoutChange(HgiTextureUsageBitsDepthTarget);
+    depthTexture->SubmitLayoutChange(oldLayout);
 }
 
 

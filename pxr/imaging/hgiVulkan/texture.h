@@ -87,7 +87,7 @@ public:
     /// transition isn't immediately executed. The command buffer simply 
     /// records the request and executes when in the next submission cycle.
     HGIVULKAN_API
-    void SubmitLayoutChange(HgiTextureUsage newLayout) override;
+    HgiTextureUsage SubmitLayoutChange(HgiTextureUsage newLayout) override;
 
     /// Transition image from oldLayout to newLayout.
     /// `producerAccess` of 0 means:
