@@ -515,12 +515,12 @@ std::ostream &
 VtStreamOut(vector<VtValue> const &val, std::ostream &stream) {
     bool first = true;
     stream << '[';
-    TF_FOR_ALL(i, val) {
+    for(const VtValue &i: val) {
         if (first)
             first = false;
         else
             stream << ", ";
-        stream << *i;
+        stream << i;
     }
     stream << ']';
     return stream;

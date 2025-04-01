@@ -40,8 +40,8 @@ struct VtValueArrayToPython
     {
         // TODO Use result converter. TfPySequenceToList.
         list result;
-        TF_FOR_ALL(i, v) {
-            object o = TfPyObject(*i);
+        for(const VtValue &i: v) {
+            object o = TfPyObject(i);
             result.append(o);
         }
         return incref(result.ptr());
@@ -55,8 +55,8 @@ struct VtDictionaryArrayToPython
     {
         // TODO Use result converter. TfPySequenceToList.
         list result;
-        TF_FOR_ALL(i, v) {
-            object o = TfPyObject(*i);
+        for(const VtDictionary &i: v) {
+            object o = TfPyObject(i);
             result.append(o);
         }
         return incref(result.ptr());
@@ -72,9 +72,9 @@ struct VtDictionaryToPython
 
         // TODO Use result converter TfPyMapToDictionary??
         dict result;
-        TF_FOR_ALL(i, v) {
-            object o = TfPyObject(i->second);
-            result.setdefault(i->first, o);
+        for(const auto &i: v) {
+            object o = TfPyObject(i.second);
+            result.setdefault(i.first, o);
         }
         return incref(result.ptr());
     }
