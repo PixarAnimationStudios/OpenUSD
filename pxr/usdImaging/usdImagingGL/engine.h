@@ -33,7 +33,7 @@
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
 
-#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgiPresent/present.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/timeCode.h"
@@ -507,9 +507,28 @@ public:
     /// @{
     // ---------------------------------------------------------------------
     
+    /// Disable the presentation task. An application may choose to manage the
+    /// AOVs that are rendered into itself and skip the task controller's
+    /// presentation.
+    USDIMAGINGGL_API
+    void DisablePresentation();
+
+    /// Enable the presentation task, and configure it to present to a window.
+    USDIMAGINGGL_API
+    void EnableWindowPresentation(HgiPresentWindowHandle const &window,
+        bool vsync = true);
+
+    /// Enable the presentation task, and configure it to "present" to an
+    /// externally managed framebuffer. See \struct HgiInteropPresentParams.
+    USDIMAGINGGL_API
+    void EnableInteropPresentation(HgiPresentInteropHandle const &destination,
+        HgiPresentCompositionParams const &composition = {});
+
     /// Enable / disable presenting the render to bound framebuffer.
     /// An application may choose to manage the AOVs that are rendered into
     /// itself and skip the engine's presentation.
+    /// \deprecated Use DisablePresentation(), EnableWindowPresentation() or
+    // EnableInteropPresentation() instead.
     USDIMAGINGGL_API
     void SetEnablePresentation(bool enabled);
 
@@ -518,6 +537,8 @@ public:
     /// is a VtValue that encoding a framebuffer in a destination API
     /// specific way.
     /// E.g., a uint32_t (aka GLuint) for framebuffer object for OpenGL.
+    /// \deprecated Use EnableWindowPresentation() or
+    // EnableInteropPresentation() instead.
     USDIMAGINGGL_API
     void SetPresentationOutput(TfToken const &api, VtValue const &framebuffer);
 
@@ -761,8 +782,6 @@ protected:
     HgiUniquePtr _hgi;
     // Similar for HdDriver.
     HdDriver _hgiDriver;
-
-    VtValue _userFramebuffer;
 
 protected:
     bool _displayUnloadedPrimsWithBounds;

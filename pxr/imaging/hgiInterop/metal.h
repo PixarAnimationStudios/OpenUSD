@@ -13,9 +13,10 @@
 #include <AppKit/AppKit.h>
 
 #include "pxr/pxr.h"
-#include "pxr/base/gf/vec4i.h"
+#include "pxr/base/gf/rect2i.h"
 #include "pxr/imaging/hgi/texture.h"
 #include "pxr/imaging/hgiInterop/api.h"
+#include "pxr/imaging/hgiInterop/hgiInterop.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -41,10 +42,10 @@ public:
     /// Copy/Present provided color (and optional depth) textures to app.
     HGIINTEROP_API
     void CompositeToInterop(
-        HgiTextureHandle const &color,
-        HgiTextureHandle const &depth,
-        VtValue const &framebuffer,
-        GfVec4i const &compRegion);
+        HgiTextureHandle const &srcColor,
+        HgiTextureHandle const &srcDepth,
+        HgiInteropCompositionParams const &compositionParams,
+        uint32_t dstFramebuffer);
 
 private:
     HgiInteropMetal() = delete;
@@ -77,8 +78,9 @@ private:
         void* pointer;
     };
 
-    void _BlitToOpenGL(VtValue const &framebuffer, GfVec4i const& compRegion,
-                       int shaderIndex);
+    void _BlitToOpenGL(uint32_t framebuffer,
+        int shaderIndex,
+        HgiInteropCompositionParams const &compositionParams);
     void _FreeTransientTextureCacheRefs();
     void _CaptureOpenGlState();
     void _RestoreOpenGlState();

@@ -1494,9 +1494,42 @@ UsdImagingGLEngine::GetAvailableRenderSettingsPrimPaths(UsdPrim const& root)
 }
 
 void
+UsdImagingGLEngine::DisablePresentation()
+{
+    if (ARCH_UNLIKELY(!_taskController)) {
+        return;
+    }
+
+    _taskController->DisablePresentation();
+}
+
+void
+UsdImagingGLEngine::EnableWindowPresentation(
+    const HgiPresentWindowHandle &window, bool vsync)
+{
+    if (ARCH_UNLIKELY(!_taskController)) {
+        return;
+    }
+
+    _taskController->EnableWindowPresentation(window, vsync);
+}
+
+void
+UsdImagingGLEngine::EnableInteropPresentation(
+    HgiPresentInteropHandle const &destination,
+    HgiPresentCompositionParams const &composition)
+{
+    if (ARCH_UNLIKELY(!_taskController)) {
+        return;
+    }
+
+    _taskController->EnableInteropPresentation(destination, composition);
+}
+
+void
 UsdImagingGLEngine::SetEnablePresentation(bool enabled)
 {
-    if (ARCH_UNLIKELY(!_renderDelegate)) {
+    if (ARCH_UNLIKELY(!_taskController)) {
         return;
     }
 
@@ -1508,11 +1541,10 @@ UsdImagingGLEngine::SetPresentationOutput(
     TfToken const &api,
     VtValue const &framebuffer)
 {
-    if (ARCH_UNLIKELY(!_renderDelegate)) {
+    if (ARCH_UNLIKELY(!_taskController)) {
         return;
     }
 
-    _userFramebuffer = framebuffer;
     _taskController->SetPresentationOutput(api, framebuffer);
 }
 

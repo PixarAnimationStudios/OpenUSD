@@ -82,7 +82,23 @@ void _SetOverrideWindowPolicy(UsdImagingGLEngine & self,
         self.SetOverrideWindowPolicy(std::nullopt);
     }
 }
-    
+
+void _SetInteropGLPresentation(UsdImagingGLEngine &self, bool enable)
+{
+    if (enable) {
+        HgiPresentCompositionParams compParams;
+        compParams.colorSrcBlendFactor = HgiBlendFactorOne;
+        compParams.colorDstBlendFactor = HgiBlendFactorOneMinusSrcAlpha;
+        compParams.colorBlendOp = HgiBlendOpAdd;
+        compParams.alphaSrcBlendFactor = HgiBlendFactorOne;
+        compParams.alphaDstBlendFactor = HgiBlendFactorOneMinusSrcAlpha;
+        compParams.alphaBlendOp = HgiBlendOpAdd;
+        compParams.depthFunc = HgiCompareFunctionLEqual;
+        self.EnableInteropPresentation(HgiPresentGLInteropHandle{}, compParams);
+    } else {
+        self.DisablePresentation();
+    }
+}
 } // anonymous namespace 
 
 void wrapEngine()
@@ -165,6 +181,7 @@ void wrapEngine()
             .def("SetOverrideWindowPolicy", _SetOverrideWindowPolicy)
             .def("PollForAsynchronousUpdates",
                 &UsdImagingGLEngine::PollForAsynchronousUpdates)
+            .def("SetInteropGLPresentation", _SetInteropGLPresentation)
             
         ;
 

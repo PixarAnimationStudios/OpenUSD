@@ -9,7 +9,9 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/texture.h"
+#include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiInterop/opengl.h"
+
 #include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -119,8 +121,8 @@ void
 HgiInteropOpenGL::CompositeToInterop(
     HgiTextureHandle const &color,
     HgiTextureHandle const &depth,
-    VtValue const &framebuffer,
-    GfVec4i const &compRegion)
+    HgiInteropCompositionParams const &compParams,
+    uint32_t framebuffer)
 {
     if (!ARCH_UNLIKELY(color)) {
         TF_WARN("No valid color texture provided");
@@ -151,14 +153,8 @@ HgiInteropOpenGL::CompositeToInterop(
     
     // When no destination framebuffer is specified, composite into
     // the currently bound framebuffer.
-    if (!framebuffer.IsEmpty()) {
-        if (framebuffer.IsHolding<uint32_t>()) {
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER,
-                              framebuffer.UncheckedGet<uint32_t>());
-        } else {
-            TF_CODING_ERROR(
-                "dstFramebuffer must hold uint32_t when targeting OpenGL");
-        }
+    if (framebuffer) {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
     }
 
     GLint restoreActiveTexture = 0;
@@ -210,9 +206,8 @@ HgiInteropOpenGL::CompositeToInterop(
     if (depth) {
         glEnable(GL_DEPTH_TEST);
         glDepthMask(GL_TRUE);
-        // Note: Use LEQUAL and not LESS to ensure that fragments with only
-        // translucent contribution (that don't update depth) are composited.
-        glDepthFunc(GL_LEQUAL);
+        glDepthFunc(HgiGLConversions::GetCompareFunction(
+            compParams.depthFunc));
     } else {
         glDisable(GL_DEPTH_TEST);
         glDepthMask(GL_FALSE);
@@ -229,14 +224,17 @@ HgiInteropOpenGL::CompositeToInterop(
     glGetIntegerv(GL_BLEND_SRC_ALPHA, &restoreAlphaSrcFnOp);
     glGetIntegerv(GL_BLEND_DST_RGB, &restoreColorDstFnOp);
     glGetIntegerv(GL_BLEND_DST_ALPHA, &restoreAlphaDstFnOp);
-    glBlendFuncSeparate(/*srcColor*/GL_ONE,
-                        /*dstColor*/GL_ONE_MINUS_SRC_ALPHA,
-                        /*srcAlpha*/GL_ONE,
-                        /*dstAlpha*/GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFuncSeparate(
+        HgiGLConversions::GetBlendFactor(compParams.colorSrcBlendFactor),
+        HgiGLConversions::GetBlendFactor(compParams.colorDstBlendFactor),
+        HgiGLConversions::GetBlendFactor(compParams.alphaSrcBlendFactor),
+        HgiGLConversions::GetBlendFactor(compParams.alphaDstBlendFactor));
     GLint restoreColorOp, restoreAlphaOp;
     glGetIntegerv(GL_BLEND_EQUATION_RGB, &restoreColorOp);
     glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &restoreAlphaOp);
-    glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+    glBlendEquationSeparate(
+        HgiGLConversions::GetBlendEquation(compParams.colorBlendOp),
+        HgiGLConversions::GetBlendEquation(compParams.alphaBlendOp));
 
     // Disable alpha to coverage (we want to composite the pixels as-is)
     GLboolean restoreAlphaToCoverage;
@@ -245,7 +243,8 @@ HgiInteropOpenGL::CompositeToInterop(
 
     int32_t restoreVp[4];
     glGetIntegerv(GL_VIEWPORT, restoreVp);
-    glViewport(compRegion[0], compRegion[1], compRegion[2], compRegion[3]);
+    glViewport(compParams.dstRegion.GetMinX(), compParams.dstRegion.GetMinY(),
+        compParams.dstRegion.GetWidth(), compParams.dstRegion.GetHeight());
 
     // Draw fullscreen triangle
     glDrawArrays(GL_TRIANGLES, 0, 3);

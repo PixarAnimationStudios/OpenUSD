@@ -403,7 +403,7 @@ HgiVulkanConversions::GetFormat(VkFormat inFormat)
         if (f[1] == inFormat) return HgiFormat(f[0]);
     }
 
-    TF_CODING_ERROR("Missing format table entry");
+    TF_CODING_ERROR("Missing format table entry: %d", inFormat);
     return HgiFormatInvalid;
 }
 

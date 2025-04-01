@@ -70,7 +70,14 @@ public:
     void WaitForIdle();
 
     /// Returns true if the provided extension is supported by the device
+    HGIVULKAN_API
     bool IsSupportedExtension(const char* extensionName) const;
+
+    HGIVULKAN_API
+    bool SupportsPresentation() const
+    {
+        return _supportsPresentation;
+    }
 
     /// Device extension function pointers
     PFN_vkCreateRenderPass2KHR vkCreateRenderPass2KHR = 0;
@@ -92,6 +99,8 @@ private:
     std::vector<VkExtensionProperties> _vkExtensions;
     VmaAllocator _vmaAllocator;
     uint32_t _vkGfxsQueueFamilyIndex;
+    bool _supportsPresentation;
+
     HgiVulkanCommandQueue* _commandQueue;
     HgiVulkanCapabilities* _capabilities;
     HgiVulkanPipelineCache* _pipelineCache;

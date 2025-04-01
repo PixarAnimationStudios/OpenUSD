@@ -64,7 +64,7 @@ public:
     /// this UsdAppUtilsFrameRecorder instance has disabled the GPU.
     bool SetRendererPlugin(const TfToken& id) {
         const bool succeeded = _imagingEngine.SetRendererPlugin(id);
-        _imagingEngine.SetEnablePresentation(false);
+        _imagingEngine.DisablePresentation();
 
         return succeeded;
     }

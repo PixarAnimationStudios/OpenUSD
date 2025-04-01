@@ -9,6 +9,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/gf/rect2i.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgiInterop/api.h"
 #include "pxr/imaging/hgi/texture.h"
@@ -16,11 +17,46 @@
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 class Hgi;
 class VtValue;
 
 struct HgiInteropImpl;
+
+/// Composition parameters. Provides a way to "merge"
+/// the rendered content into existing framebuffer contents.
+/// Default values disable composition and overwrite the framebuffer contents.
+struct HgiInteropCompositionParams
+{
+    /// Alpha blending options if the destination supports alpha.
+    HgiBlendFactor colorSrcBlendFactor{HgiBlendFactorOne};
+    HgiBlendFactor colorDstBlendFactor{HgiBlendFactorZero};
+    HgiBlendOp colorBlendOp{HgiBlendOpAdd};
+    HgiBlendFactor alphaSrcBlendFactor{HgiBlendFactorOne};
+    HgiBlendFactor alphaDstBlendFactor{HgiBlendFactorZero};
+    HgiBlendOp alphaBlendOp{HgiBlendOpAdd};
+    /// If a depth buffer is available in the destination,
+    /// only copy pixels that pass the depth comparison.
+    HgiCompareFunction depthFunc{HgiCompareFunctionAlways};
+    /// Copy into a subregion of the destination framebuffer.
+    GfRect2i dstRegion{};
+
+    bool operator==(const HgiInteropCompositionParams& other) const
+    {
+        return colorSrcBlendFactor == other.colorSrcBlendFactor &&
+            colorDstBlendFactor == other.colorDstBlendFactor &&
+            colorBlendOp == other.colorBlendOp &&
+            alphaSrcBlendFactor == other.alphaSrcBlendFactor &&
+            alphaDstBlendFactor == other.alphaDstBlendFactor &&
+            alphaBlendOp == other.alphaBlendOp &&
+            depthFunc == other.depthFunc &&
+            dstRegion == other.dstRegion;
+    }
+
+    bool operator!=(const HgiInteropCompositionParams& other) const
+    {
+        return !(*this == other);
+    }
+};
 
 /// \class HgiInterop
 ///
@@ -45,38 +81,19 @@ public:
     ///     Eg. if hgi is of type HgiMetal, the textures are HgiMetalTexture.
     /// `srcColor`: is the source color aov texture to composite to screen.
     /// `srcDepth`: (optional) is the depth aov texture to composite to screen.
-    /// `dstApi`: 
-    ///     Determines what target format/platform the application is using.
-    ///     E.g. If hgi==HgiMetal and dstApi==OpenGL then TransferToApp
-    ///     will present the metal textures to the gl application.
+    /// `compositionParams`:
+    ///     Parameters for compositing into the destination framebuffer.
     /// `dstFramebuffer`:
-    ///     The framebuffer that the source textures are presented into. This
-    ///     is a VtValue that encoding a framebuffer in a dstApi specific way.
-    ///     E.g., a uint32_t (aka GLuint) for framebuffer object for
-    ///     dstApi==OpenGL. For backwards compatibility, the currently bound
-    ///     framebuffer is used when the VtValue is empty.
-    ///     
-    /// `dstRegion`:
-    ///     Subrect region of the framebuffer over which to composite.
-    ///     Coordinates are (left, BOTTOM, width, height) which is the same
-    ///     convention as OpenGL viewport coordinates.
-    ///
-    /// Note:
-    /// To composite correctly, blending is enabled. 
-    /// If `srcDepth` is provided, depth testing is enabled.
-    /// As a result, the contents of the application framebuffer matter.
-    /// In order to use the contents of `srcColor` and `srcDepth` as-is
-    /// (i.e., blit), the color attachment should be cleared to (0,0,0,0) and
-    /// the depth attachment needs to be cleared to 1.
-    /// 
+    ///     The framebuffer that the source textures are presented into.
+    ///     An uint32_t (aka GLuint) FBO name. For backwards compatibility,
+    ///     the currently bound framebuffer is used when the value is 0.
     HGIINTEROP_API
     void TransferToApp(
         Hgi *srcHgi,
         HgiTextureHandle const &srcColor,
         HgiTextureHandle const &srcDepth,
-        TfToken const &dstApi,
-        VtValue const &dstFramebuffer,
-        GfVec4i const &dstRegion);
+        HgiInteropCompositionParams const &compositionParams,
+        uint32_t dstFramebuffer);
 
 private:
     HgiInterop & operator=(const HgiInterop&) = delete;

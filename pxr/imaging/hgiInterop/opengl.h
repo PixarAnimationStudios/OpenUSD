@@ -8,9 +8,10 @@
 #define PXR_IMAGING_HGIINTEROP_HGIINTEROPOPENGL_H
 
 #include "pxr/pxr.h"
-#include "pxr/base/gf/vec4i.h"
+#include "pxr/base/gf/rect2i.h"
 #include "pxr/imaging/hgi/texture.h"
 #include "pxr/imaging/hgiInterop/api.h"
+#include "pxr/imaging/hgiInterop/hgiInterop.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -34,10 +35,10 @@ public:
     /// framebuffer contents.
     HGIINTEROP_API
     void CompositeToInterop(
-        HgiTextureHandle const &color,
-        HgiTextureHandle const &depth,
-        VtValue const &framebuffer,
-        GfVec4i const& viewport);
+        HgiTextureHandle const &srcColor,
+        HgiTextureHandle const &srcDepth,
+        HgiInteropCompositionParams const &compositionParams,
+        uint32_t dstFramebuffer);
 
 private:
     uint32_t _vs;

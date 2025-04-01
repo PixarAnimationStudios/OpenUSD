@@ -48,17 +48,10 @@ void HgiInterop::TransferToApp(
     Hgi *srcHgi,
     HgiTextureHandle const &srcColor,
     HgiTextureHandle const &srcDepth,
-    TfToken const &dstApi,
-    VtValue const &dstFramebuffer,
-    GfVec4i const &dstRegion)
+    HgiInteropCompositionParams const &compositionParams,
+    uint32_t dstFramebuffer)
 {
     TfToken const& srcApi = srcHgi->GetAPIName();
-
-    if (dstApi != HgiTokens->OpenGL) {
-        TF_CODING_ERROR("Unsupported destination Hgi backend: %s",
-                        dstApi.GetText());
-        return;
-    }
 
 #if defined(PXR_GL_SUPPORT_ENABLED) && !defined(ARCH_OS_IPHONE)
     if (srcApi == HgiTokens->OpenGL) {
@@ -68,7 +61,7 @@ void HgiInterop::TransferToApp(
                 std::make_unique<HgiInteropOpenGL>();
         }
         return _hgiInteropImpl->_openGLToOpenGL->CompositeToInterop(
-            srcColor, srcDepth, dstFramebuffer, dstRegion);
+            srcColor, srcDepth, compositionParams, dstFramebuffer);
     }
 #endif
 
@@ -84,7 +77,7 @@ void HgiInterop::TransferToApp(
                 std::make_unique<HgiInteropVulkan>(srcHgi);
         }
         return _hgiInteropImpl->_vulkanToOpenGL->CompositeToInterop(
-            srcColor, srcDepth, dstFramebuffer, dstRegion);
+            srcColor, srcDepth, compositionParams, dstFramebuffer);
     }
 #endif
 
@@ -100,7 +93,7 @@ void HgiInterop::TransferToApp(
                 std::make_unique<HgiInteropMetal>(srcHgi);
         }
         return _hgiInteropImpl->_metalToOpenGL->CompositeToInterop(
-            srcColor, srcDepth, dstFramebuffer, dstRegion);
+            srcColor, srcDepth, compositionParams, dstFramebuffer);
     }
 #endif
 

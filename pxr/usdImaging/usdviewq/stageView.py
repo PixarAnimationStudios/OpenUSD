@@ -966,6 +966,7 @@ class StageView(QGLWidget):
                   params.allowAsynchronousSceneProcessing = self._allowAsync
                   params.displayUnloadedPrimsWithBounds = self._bboxstandin
                   self._renderer = UsdImagingGL.Engine(params)
+                  self._renderer.SetInteropGLPresentation(True)
                   self._handleRendererChanged(self.GetCurrentRendererId())
             elif not self._reportedContextError:
                 self._reportedContextError = True

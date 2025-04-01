@@ -1,9 +1,9 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hgiInterop)
 
-if (NOT ${PXR_BUILD_GPU_SUPPORT})
+if (NOT PXR_ENABLE_GL_SUPPORT)
     message(STATUS
-        "Skipping ${PXR_PACKAGE} because PXR_BUILD_GPU_SUPPORT is OFF")
+        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
     return()
 endif()
 
@@ -11,13 +11,12 @@ set(optionalLibraries "")
 set(optionalCppFiles "")
 set(optionalPrivateHeaders "")
 
-# Destination of hgiInterop is always OpenGL, so always include garch
+# Destination of hgiInterop is always OpenGL, so always include it
 list(APPEND optionalLibraries garch)
 
-if (PXR_ENABLE_GL_SUPPORT)
-    list(APPEND optionalCppFiles opengl.cpp)
-    list(APPEND optionalPrivateHeaders opengl.h)
-endif()
+list(APPEND optionalLibraries hgiGL)
+list(APPEND optionalCppFiles opengl.cpp)
+list(APPEND optionalPrivateHeaders opengl.h)
 
 if (PXR_ENABLE_VULKAN_SUPPORT)
     list(APPEND optionalLibraries hgiVulkan)
@@ -28,13 +27,12 @@ endif()
 if (PXR_ENABLE_METAL_SUPPORT)
     add_compile_options(-x objective-c++)
     list(APPEND optionalLibraries hgiMetal)
-endif()
-
-if (PXR_ENABLE_METAL_SUPPORT AND NOT PXR_APPLE_EMBEDDED)
-    list(APPEND optionalLibraries "-framework Foundation")
-    list(APPEND optionalLibraries "-framework CoreVideo")
-    list(APPEND optionalCppFiles metal.mm)
-    list(APPEND optionalPrivateHeaders metal.h)
+    if (NOT PXR_APPLE_EMBEDDED)
+        list(APPEND optionalLibraries "-framework Foundation")
+        list(APPEND optionalLibraries "-framework CoreVideo")
+        list(APPEND optionalCppFiles metal.mm)
+        list(APPEND optionalPrivateHeaders metal.h)
+    endif()
 endif()
 
 pxr_library(hgiInterop

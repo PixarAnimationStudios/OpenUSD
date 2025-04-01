@@ -46,7 +46,7 @@ UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
 {
     // Disable presentation to avoid the need to create an OpenGL context when
     // using other graphics APIs such as Metal and Vulkan.
-    _imagingEngine.SetEnablePresentation(false);
+    _imagingEngine.DisablePresentation();
 
     // Set the interactive to be false on the HdRenderSettingsMap 
     _imagingEngine.SetRendererSetting(

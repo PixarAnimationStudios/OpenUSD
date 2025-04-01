@@ -246,7 +246,6 @@ HgiIsFloatFormat(
     case HgiFormatSNorm8:
     case HgiFormatFloat16:
     case HgiFormatFloat32:
-    case HgiFormatFloat32UInt8: // Unclear
     case HgiFormatBC6FloatVec3:
     case HgiFormatBC6UFloatVec3:
     case HgiFormatPackedInt1010102:
@@ -254,6 +253,11 @@ HgiIsFloatFormat(
     case HgiFormatInt16:
     case HgiFormatUInt16:
     case HgiFormatInt32:
+    // While this looks like a float with packed integer format,
+    // it's actually a depth with stencil (as converted to the native
+    // API formats). Because stencil is a bitfield this type is not
+    // normally convertible to float.
+    case HgiFormatFloat32UInt8:
         return false;
     case HgiFormatInvalid:
         TF_CODING_ERROR("Invalid Format");

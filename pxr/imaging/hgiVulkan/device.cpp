@@ -56,8 +56,10 @@ _SupportsPresentation(
         Display* dsp = XOpenDisplay(nullptr);
         VisualID visualID = XVisualIDFromVisual(
             DefaultVisual(dsp, DefaultScreen(dsp)));
-        return vkGetPhysicalDeviceXlibPresentationSupportKHR(
+        const auto supported = vkGetPhysicalDeviceXlibPresentationSupportKHR(
                     physicalDevice, familyIndex, dsp, visualID);
+        XCloseDisplay(dsp);
+        return supported;
     #elif defined(VK_USE_PLATFORM_METAL_EXT)
         // Presentation currently always supported on Metal / MoltenVk
         return true;
@@ -101,9 +103,13 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         if (familyIndex == VK_QUEUE_FAMILY_IGNORED) continue;
 
         // Assume we always want a presentation capable device for now.
-        if (instance->HasPresentation() &&
-            !_SupportsPresentation(physicalDevices[i], familyIndex)) {
-            continue;
+        bool supportsPresentation = false;
+        if (instance->HasPresentation()) {
+            supportsPresentation = _SupportsPresentation(physicalDevices[i],
+                familyIndex);
+            if (!supportsPresentation) {
+                continue;
+            }
         }
 
         if (props.apiVersion < VK_API_VERSION_1_0) continue;
@@ -114,11 +120,13 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         if (props.deviceType == preferredDeviceType) {
             _vkPhysicalDevice = physicalDevices[i];
             _vkGfxsQueueFamilyIndex = familyIndex;
+            _supportsPresentation = supportsPresentation;
             break;
         }
         if (!_vkPhysicalDevice) {
             _vkPhysicalDevice = physicalDevices[i];
             _vkGfxsQueueFamilyIndex = familyIndex;
+            _supportsPresentation = supportsPresentation;
         }
     }
 

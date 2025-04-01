@@ -134,6 +134,20 @@ My_TestGLDrawing::InitTest()
         _translate[1] = -1000.0;
         _translate[2] = -2500.0;
     }
+
+    if (PresentDisabled()) {
+        _engine->DisablePresentation();
+    } else {
+        HgiPresentCompositionParams compParams;
+        compParams.colorSrcBlendFactor = HgiBlendFactorOne;
+        compParams.colorDstBlendFactor = HgiBlendFactorOneMinusSrcAlpha;
+        compParams.colorBlendOp = HgiBlendOpAdd;
+        compParams.alphaSrcBlendFactor = HgiBlendFactorOne;
+        compParams.alphaDstBlendFactor = HgiBlendFactorOneMinusSrcAlpha;
+        compParams.alphaBlendOp = HgiBlendOpAdd;
+        compParams.depthFunc = HgiCompareFunctionLEqual;
+        _engine->EnableInteropPresentation(HgiPresentGLInteropHandle{}, compParams);
+    }
 }
 
 void

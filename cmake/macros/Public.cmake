@@ -630,12 +630,25 @@ function(pxr_build_test TEST_NAME)
 
     cmake_parse_arguments(bt
         "" ""
-        "LIBRARIES;CPPFILES"
+        "LIBRARIES;CLASSES;HEADERS;CPPFILES"
         ${ARGN}
     )
 
+    # Expand classes and merge into headers and cpp files.
+    _classes(${TEST_NAME} ${bt_CLASSES} PRIVATE)
+    list(APPEND bt_HEADERS ${${TEST_NAME}_PRIVATE_HEADERS})
+    list(APPEND bt_CPPFILES ${${TEST_NAME}_CPPFILES})
+
     add_executable(${TEST_NAME}
         ${bt_CPPFILES}
+        ${bt_HEADERS}
+    )
+
+    _copy_headers(${TEST_NAME}
+        FILES
+            ${bt_HEADERS}
+        PREFIX
+            ${PXR_PREFIX}
     )
 
     # Turn PIC ON otherwise ArchGetAddressInfo() on Linux may yield
@@ -646,9 +659,13 @@ function(pxr_build_test TEST_NAME)
             FOLDER "${folder}"
         	POSITION_INDEPENDENT_CODE ON
     )
+
+    # Same idea as in pxr_build_test_shared_lib
+    add_dependencies(${TEST_NAME} ${PXR_PACKAGE})
     target_include_directories(${TEST_NAME}
         PRIVATE $<TARGET_PROPERTY:${PXR_PACKAGE},INCLUDE_DIRECTORIES>
     )
+
     _pxr_target_link_libraries(${TEST_NAME}
         ${bt_LIBRARIES}
     )

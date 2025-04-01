@@ -8,6 +8,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
+#include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiVulkan/hgi.h"
 #include "pxr/imaging/hgiInterop/vulkan.h"
 #include "pxr/base/vt/value.h"
@@ -265,8 +266,8 @@ void
 HgiInteropVulkan::CompositeToInterop(
     HgiTextureHandle const &color,
     HgiTextureHandle const &depth,
-    VtValue const &framebuffer,
-    GfVec4i const &compRegion)
+    HgiInteropCompositionParams const &compParams,
+    uint32_t framebuffer)
 {
     if (!ARCH_UNLIKELY(color)) {
         TF_WARN("No valid color texture provided");
@@ -282,17 +283,11 @@ HgiInteropVulkan::CompositeToInterop(
     GLint restoreDrawFramebuffer = 0;
     bool doRestoreDrawFramebuffer = false;
 
-    if (!framebuffer.IsEmpty()) {
-        if (framebuffer.IsHolding<uint32_t>()) {
-            glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,
-                          &restoreDrawFramebuffer);
-            doRestoreDrawFramebuffer = true;
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER,
-                              framebuffer.UncheckedGet<uint32_t>());
-        } else {
-            TF_CODING_ERROR(
-                "dstFramebuffer must hold uint32_t when targeting OpenGL");
-        }
+    if (framebuffer) {
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,
+                      &restoreDrawFramebuffer);
+        doRestoreDrawFramebuffer = true;
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer);
     }
 
     // Convert textures from Vulkan to GL
@@ -365,9 +360,8 @@ HgiInteropVulkan::CompositeToInterop(
     if (_glDepthTex) {
         glEnable(GL_DEPTH_TEST);
         glDepthMask(GL_TRUE);
-        // Note: Use LEQUAL and not LESS to ensure that fragments with only
-        // translucent contribution (that don't update depth) are composited.
-        glDepthFunc(GL_LEQUAL);
+        glDepthFunc(HgiGLConversions::GetCompareFunction(
+            compParams.depthFunc));
     } else {
         glDisable(GL_DEPTH_TEST);
         glDepthMask(GL_FALSE);
@@ -384,14 +378,17 @@ HgiInteropVulkan::CompositeToInterop(
     glGetIntegerv(GL_BLEND_SRC_ALPHA, &restoreAlphaSrcFnOp);
     glGetIntegerv(GL_BLEND_DST_RGB, &restoreColorDstFnOp);
     glGetIntegerv(GL_BLEND_DST_ALPHA, &restoreAlphaDstFnOp);
-    glBlendFuncSeparate(/*srcColor*/GL_ONE,
-                        /*dstColor*/GL_ONE_MINUS_SRC_ALPHA,
-                        /*srcAlpha*/GL_ONE,
-                        /*dstAlpha*/GL_ONE_MINUS_SRC_ALPHA);
+    glBlendFuncSeparate(
+        HgiGLConversions::GetBlendFactor(compParams.colorSrcBlendFactor),
+        HgiGLConversions::GetBlendFactor(compParams.colorDstBlendFactor),
+        HgiGLConversions::GetBlendFactor(compParams.alphaSrcBlendFactor),
+        HgiGLConversions::GetBlendFactor(compParams.alphaDstBlendFactor));
     GLint restoreColorOp, restoreAlphaOp;
     glGetIntegerv(GL_BLEND_EQUATION_RGB, &restoreColorOp);
     glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &restoreAlphaOp);
-    glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+    glBlendEquationSeparate(
+        HgiGLConversions::GetBlendEquation(compParams.colorBlendOp),
+        HgiGLConversions::GetBlendEquation(compParams.alphaBlendOp));
 
     // Disable alpha to coverage (we want to composite the pixels as-is)
     GLboolean restoreAlphaToCoverage;
@@ -400,7 +397,8 @@ HgiInteropVulkan::CompositeToInterop(
 
     int32_t restoreVp[4];
     glGetIntegerv(GL_VIEWPORT, restoreVp);
-    glViewport(compRegion[0], compRegion[1], compRegion[2], compRegion[3]);
+    glViewport(compParams.dstRegion.GetMinX(), compParams.dstRegion.GetMinY(),
+        compParams.dstRegion.GetWidth(), compParams.dstRegion.GetHeight());
 
     // Draw fullscreen triangle
     glDrawArrays(GL_TRIANGLES, 0, 3);

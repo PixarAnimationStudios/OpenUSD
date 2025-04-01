@@ -172,6 +172,20 @@ My_TestGLDrawing::InitTest()
         _lightingContext->SetMaterial(material);
         _lightingContext->SetSceneAmbient(GfVec4f(0.2,0.2,0.2,1.0));
     }
+
+    if (PresentDisabled()) {
+        _engine->DisablePresentation();
+    } else {
+        HgiPresentCompositionParams compParams;
+        compParams.colorSrcBlendFactor = HgiBlendFactorOne;
+        compParams.colorDstBlendFactor = HgiBlendFactorOneMinusSrcAlpha;
+        compParams.colorBlendOp = HgiBlendOpAdd;
+        compParams.alphaSrcBlendFactor = HgiBlendFactorOne;
+        compParams.alphaDstBlendFactor = HgiBlendFactorOneMinusSrcAlpha;
+        compParams.alphaBlendOp = HgiBlendOpAdd;
+        compParams.depthFunc = HgiCompareFunctionLEqual;
+        _engine->EnableInteropPresentation(HgiPresentGLInteropHandle{}, compParams);
+    }
 }
 
 void
@@ -251,10 +265,6 @@ My_TestGLDrawing::DrawTest(bool offscreen)
 
     if(IsEnabledTestLighting()) {
         _engine->SetLightingState(_lightingContext);
-    }
-
-    if (PresentDisabled()) {
-        _engine->SetEnablePresentation(false);
     }
 
     params.clipPlanes = GetClipPlanes();

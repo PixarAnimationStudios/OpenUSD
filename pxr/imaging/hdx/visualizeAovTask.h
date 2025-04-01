@@ -60,6 +60,12 @@ public:
     HDX_API
     void Execute(HdTaskContext* ctx) override;
 
+    HDX_API
+    void SetPresentTaskId(SdfPath const& id)
+    {
+        _presentTaskId = id;
+    }
+
 protected:
     HDX_API
     void _Sync(HdSceneDelegate* delegate,
@@ -121,6 +127,9 @@ private:
 
     // Execute the appropriate kernel and update the task context 'color' entry.
     void _ApplyVisualizationKernel(HgiTextureHandle const& outputTexture);
+
+    SdfPath _presentTaskId;
+    bool _canUseIntermediateAovTexture;
 
     // Kernel dependent resources
     HgiTextureHandle _outputTexture;

@@ -48,6 +48,7 @@ HdxVisualizeAovTask::HdxVisualizeAovTask(
     HdSceneDelegate* delegate,
     SdfPath const& id)
   : HdxTask(id)
+  , _canUseIntermediateAovTexture(false)
   , _outputTextureDimensions(0)
   , _screenSize{}
   , _minMaxDepth{}
@@ -567,8 +568,26 @@ HdxVisualizeAovTask::_Sync(HdSceneDelegate* delegate,
 
 void
 HdxVisualizeAovTask::Prepare(HdTaskContext* ctx,
-                                HdRenderIndex* renderIndex)
+                            HdRenderIndex* renderIndex)
 {
+    if (!_presentTaskId.IsEmpty()) {
+        return;
+    }
+
+    // Normal AOV typically uses a 3 channel float format in which case we can
+    // reuse the intermediate AOV to write the colorized results into.
+    // For single channel AOVs like id or depth, colorize such that all color
+    // components (R,G,B) are used.
+    if (const auto presentTask =
+        std::dynamic_pointer_cast<HdxPresentTask>(
+            renderIndex->GetTask(_presentTaskId))) {
+        HgiTextureHandle aovTexture;
+        _GetTaskContextData(ctx, HdAovTokens->color, &aovTexture);
+        HgiTextureDesc const& aovTexDesc = aovTexture->GetDescriptor();
+        _canUseIntermediateAovTexture =
+            presentTask->IsFormatSupported(aovTexDesc.format) &&
+            HgiGetComponentCount(aovTexDesc.format) >= 3;
+    }
 }
 
 void
@@ -612,21 +631,12 @@ HdxVisualizeAovTask::Execute(HdTaskContext* ctx)
         return;
     }
 
-    bool canUseIntermediateAovTexture = false;
-    // Normal AOV typically uses a 3 channel float format in which case we can
-    // reuse the intermediate AOV to write the colorized results into.
-    // For single channel AOVs like id or depth, colorize such that all color
-    // components (R,G,B) are used.
-    canUseIntermediateAovTexture =
-        HdxPresentTask::IsFormatSupported(aovTexDesc.format) &&
-        HgiGetComponentCount(aovTexDesc.format) >= 3;
-
-    if (!canUseIntermediateAovTexture &&
+    if (!_canUseIntermediateAovTexture &&
         !TF_VERIFY(_CreateOutputTexture(aovTexDesc.dimensions))) {
         return;
     }
 
-    HgiTextureHandle const &outputTexture = canUseIntermediateAovTexture?
+    HgiTextureHandle const &outputTexture = _canUseIntermediateAovTexture ?
         aovTextureIntermediate : _outputTexture;
     if (!TF_VERIFY(_CreatePipeline(outputTexture->GetDescriptor()))) {
         return;
@@ -641,7 +651,7 @@ HdxVisualizeAovTask::Execute(HdTaskContext* ctx)
     // Restore the original color target layout
     aovTexture->SubmitLayoutChange(HgiTextureUsageBitsColorTarget);
 
-    if (canUseIntermediateAovTexture) {
+    if (_canUseIntermediateAovTexture) {
         // Swap the handles on the task context so that future downstream tasks
         // can use HdxAovTokens->color to get the output of this task.
         _ToggleRenderTarget(ctx); 
