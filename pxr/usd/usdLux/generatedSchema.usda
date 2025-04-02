@@ -167,7 +167,7 @@ class "LightAPI" (
         displayName = "Normalize Power"
         doc = """Normalizes the emission such that the power of the light
         remains constant while altering the size of the light, by dividing the
-        luminance by the world-space surface area of the light.
+        luminance by the world-space surface area of the light, in meters².
 
         This makes it easier to independently adjust the brightness and size
         of the light, by causing the total illumination provided by a light to
@@ -196,18 +196,34 @@ class "LightAPI" (
         ### Area Lights:
 
         For an area light, the `sizeFactor` is the surface area (in world
-        space) of the shape of the light, including any scaling applied to the
-        light by its transform stack. This includes the boundable light types
+        space, expressed in meters²) of the shape of the light, including any
+        scaling applied to the light by its transform stack. The area should
+        then be multiplied by the scene's `metersPerUnit^2` to convert the
+        surface area into meters². Area lights include the boundable light types
         which have a calculable surface area:
 
         - MeshLightAPI
         - DiskLight
         - RectLight
         - SphereLight
-        - CylinderLight
+        - CylinderLight with treatAsLine == false
 
         <center><b>
-                        sizeFactor<sub>area</sub> = worldSpaceSurfaceArea(light)
+                sizeFactor<sub>area</sub> = worldSpaceSurfaceArea(light) * metersPerUnit²
+        </b></center>
+
+        ### Line Lights:
+
+        Lights that simulate 1-dimensional emissive \"lines\" have a `sizeFactor`
+        equal to the length (in world space, expressed in meters) of the shape
+        of the light, including any scaling applied to the light by its
+        transform stack. The length should then be multiplied by the scene's
+        `metersPerUnit` to convert the length into meters. Line lights include:
+
+        - CylinderLight with length != 0 and treatAsLine == True
+
+        <center><b>
+                sizeFactor<sub>line</sub> = worldSpaceLength(light) * metersPerUnit
         </b></center>
 
         ### DistantLight:
