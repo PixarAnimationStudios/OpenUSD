@@ -79,6 +79,9 @@ public:
 
     bool Write(StorageSpec const & storage,
                VtDictionary const & metadata) override;
+    
+    const std::shared_ptr<ArAsset> Asset() const { return _asset; }
+    void Cleanup();
 
 protected:
     bool _OpenForReading(std::string const & filename, int subimage,
@@ -97,16 +100,18 @@ private:
     };
     
     std::string _GetFilenameExtension() const;
-    bool _OpenImageSource(std::string const& filename);
+    bool _OpenImageSource();
     VtValue _FindAttribute(std::string const & metadataKey) const;
     void _SetAttribute(std::string const & metadataKey, VtValue const & value,
                        NSMutableDictionary* properties);
     HioFormat _GetHioFormatFromImageData() const;
     size_t _GetNumChannels() const;
     _ImagePixelFormat _GetImagePixelFormat() const;
+    std::shared_ptr<ArAsset> _asset;
     std::string _filename;
     int _subimage;
     int _miplevel;
+    CFDataRef _assetData; // Loaded data for the image
     CGImageSourceRef _imageSourceRef; // source for the TIFF
     CGImageRef _imageRef;             // the subimage selected
     HioImage::SourceColorSpace _sourceColorSpace;
@@ -481,10 +486,17 @@ HioImageIO_Image::HioImageIO_Image()
 
 /* virtual */
 HioImageIO_Image::~HioImageIO_Image() {
-    if (_imageRef != NULL)
+    Cleanup();
+}
+
+void HioImageIO_Image::Cleanup() {
+    if (_imageRef != NULL) {
         CGImageRelease(_imageRef);
-    if (_imageSourceRef != NULL)
+    }
+        
+    if (_imageSourceRef != NULL) {
         CFRelease(_imageSourceRef);
+    }
 }
 
 /* virtual */
@@ -627,22 +639,25 @@ HioImageIO_Image::_GetFilenameExtension() const
     return TfStringToLower(fileExtension);
 }
 
-bool HioImageIO_Image::_OpenImageSource(std::string const& filename) {
-    NSURL* fileURL = [NSURL fileURLWithPath:[NSString stringWithCString:filename.c_str() encoding:NSUTF8StringEncoding]];
-    [fileURL retain];
-    if (_imageSourceRef) {
-        CFRelease(_imageSourceRef);
-        _imageSourceRef = NULL;
-    }
+bool HioImageIO_Image::_OpenImageSource() {
+    size_t sz = _asset->GetSize();
+    uint8_t* data = (uint8_t*) malloc(sz);
+    size_t offset = 0;
+    size_t readSize = _asset->Read(data, sz, offset);
     
-    CFURLRef fileCFURL = (CFURLRef)fileURL;
-    if (!fileCFURL) {
-        [fileURL release];
+    _assetData = NULL;
+    if (!readSize) {
         return false;
     }
+        
     
-    _imageSourceRef = CGImageSourceCreateWithURL(fileCFURL, NULL);
-    CFRelease(fileCFURL);
+    _assetData = CFDataCreate(kCFAllocatorDefault, data, sz);
+    if (!_assetData) {
+        CFRelease(_assetData);
+        _assetData = NULL;
+    }
+    
+    _imageSourceRef = CGImageSourceCreateWithData(_assetData, NULL);
     if (_imageSourceRef == NULL) {
         return false;
     }
@@ -667,6 +682,7 @@ HioImageIO_Image::_OpenForReading(std::string const & filename, int subimage,
                                HioImage::SourceColorSpace sourceColorSpace,
                                bool suppressErrors)
 {
+    Cleanup();
     // This implementation currently only supports TIFF
     // TIFF doesn't explicitly supports mips, but it can contain multiple images
     // Currently in OpenImageIO implementation it emulates mip levels when a Pixar attribute is specified on the TIFF itself
@@ -680,7 +696,13 @@ HioImageIO_Image::_OpenForReading(std::string const & filename, int subimage,
     _subimage = subimage;
     _sourceColorSpace = sourceColorSpace;
 
-    if(!_OpenImageSource(filename)) {
+    _asset = ArGetResolver().OpenAsset(ArResolvedPath(filename));
+    if (!_asset) {
+        return false;
+    }
+
+    if (!_OpenImageSource()) {
+        Cleanup();
         return false;
     }
 
@@ -704,9 +726,7 @@ HioImageIO_Image::ReadCropped(int const cropTop,
 {
 
     if(_imageSourceRef == NULL || _imageRef == NULL) {
-        if(!_OpenImageSource(_filename)) {
-            return false;
-        }
+        return false;
     }
     
     int width = GetWidth();
@@ -865,13 +885,12 @@ HioImageIO_Image::Write(StorageSpec const & storage,
             _SetAttribute(m.first, m.second, imageProperties);
         }
         
-        CFDictionaryRef properties = (CFDictionaryRef)imageProperties;
+        CFDictionaryRef properties = (__bridge CFDictionaryRef)imageProperties;
         CGImageDestinationAddImage(destination, destinationImage, properties);
         CGImageDestinationFinalize(destination);
     }
     @finally {
         if (destination) CFRelease(destination);
-        if (imageProperties) [imageProperties release];
         if (cfurl) CFRelease(cfurl);
         if (destinationImage) CGImageRelease(destinationImage);
         if (context) CFRelease(context);
