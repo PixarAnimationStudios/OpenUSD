@@ -996,12 +996,6 @@ ONETBB = Dependency("oneTBB", InstallOneTBB, "include/oneapi/tbb.h")
 if Windows():
     TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/v2020.3/tbb-2020.3-win.zip"
     TBB_ROOT_DIR_NAME = "tbb"
-elif MacOS():
-    # On MacOS Intel systems we experience various crashes in tests during
-    # teardown starting with 2018 Update 2. Until we figure that out, we use
-    # 2018 Update 1 on this platform.
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2020.3.zip"
-    TBB_INTEL_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2018_U1.zip"
 else:
     # Use point release with fix https://github.com/oneapi-src/oneTBB/pull/833
     TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2020.3.1.zip"
@@ -1030,7 +1024,7 @@ def InstallTBB_Windows(context, force, buildArgs):
         CopyDirectory(context, "include\\tbb", "include\\tbb")
 
 def InstallTBB_MacOS(context, force, buildArgs):
-    tbb_url = TBB_URL if apple_utils.IsTargetArm(context) else TBB_INTEL_URL
+    tbb_url = TBB_URL
     with CurrentWorkingDirectory(DownloadURL(tbb_url, context, force)):
         # Ensure that the tbb build system picks the proper architecture.
         PatchFile("build/macos.clang.inc",
@@ -1282,11 +1276,24 @@ PTEX = Dependency("Ptex", InstallPtex, "include/PtexVersion.h")
 # Using blosc v1.20.1 to avoid build errors on macOS Catalina (10.15)
 # related to implicit declaration of functions in zlib. See:
 # https://github.com/Blosc/python-blosc/issues/229
-BLOSC_URL = "https://github.com/Blosc/c-blosc/archive/v1.20.1.zip"
+BLOSC_URL = "https://github.com/Blosc/c-blosc/archive/refs/tags/v1.21.6.zip"
 
 def InstallBLOSC(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(BLOSC_URL, context, force)):
-        macArgs = []
+        # Blosc hasn't cut a release since they added support for CMake 4
+        # https://github.com/Blosc/c-blosc/commit/051b9d2cb9437e375dead8574f66d80ebce47bee
+        PatchFile("CMakeLists.txt",
+                  [
+                      ("cmake_minimum_required(VERSION 2.8.12)\n"+
+                       "if(NOT CMAKE_VERSION VERSION_LESS 3.3)\n"+
+                       "    cmake_policy(SET CMP0063 NEW)\n"+
+                       "endif()",
+                       "cmake_minimum_required(VERSION 3.5)"
+                       )
+                  ], multiLineMatches=True)
+        # MacOS we can use the built in Zlib instead of the external one.
+        # I think we can do this on Linux too?
+        macArgs = ["-DPREFER_EXTERNAL_ZLIB=ON"]
         if MacOS() and apple_utils.IsTargetArm(context):
             # Need to disable SSE for macOS ARM targets.
             macArgs = ["-DDEACTIVATE_SSE2=ON"]
@@ -1297,27 +1304,12 @@ BLOSC = Dependency("Blosc", InstallBLOSC, "include/blosc.h")
 ############################################################
 # OpenVDB
 
-OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v9.1.0.zip"
-
-# OpenVDB v9.1.0 requires TBB 2019.0 or above, but this script installs
-# TBB 2018 on macOS Intel systems for reasons documented above. So we
-# keep OpenVDB at the version specified for the VFX Reference Platform
-# CY2021, which is the last version that supported 2018.
-OPENVDB_INTEL_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v8.2.0.zip"
+OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v12.0.1.zip"
 
 def InstallOpenVDB(context, force, buildArgs):
     openvdb_url = OPENVDB_URL
-    if MacOS() and not apple_utils.IsTargetArm(context):
-        openvdb_url = OPENVDB_INTEL_URL
 
     with CurrentWorkingDirectory(DownloadURL(openvdb_url, context, force)):
-        # Back-port patch from OpenVDB PR #1977 to avoid errors when building
-        # with Xcode 16.3+. This fix is anticipated to be part of an OpenVDB
-        # 12.x release, which is in the VFX Reference Platform CY2025 and is
-        # several major versions ahead of what we currently use.
-        PatchFile("openvdb/openvdb/tree/NodeManager.h",
-                  [("OpT::template eval", "OpT::eval")])
-
         extraArgs = [
             '-DOPENVDB_BUILD_PYTHON_MODULE=OFF',
             '-DOPENVDB_BUILD_BINARIES=OFF',
@@ -2470,7 +2462,7 @@ if context.buildAnimXTests:
 # Building zlib is the default when a dependency requires it, although OpenUSD
 # itself does not require it. The --no-zlib flag can be passed to the build
 # script to allow the dependency to find zlib in the build environment.
-if (Linux() or not context.buildZlib) and ZLIB in requiredDependencies:
+if (Linux() or MacOS() or not context.buildZlib) and ZLIB in requiredDependencies:
     requiredDependencies = [r for r in requiredDependencies if r != ZLIB]
 
 # Error out if user is building monolithic library on windows with draco plugin
