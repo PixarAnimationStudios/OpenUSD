@@ -2168,8 +2168,11 @@ subgroup.add_argument("--no-openimageio", dest="build_oiio", action="store_false
                       help="Do not build OpenImageIO plugin for USD (default)")
 if MacOS():
     group.add_argument("--imageio", dest="build_imageio", action="store_true", 
-                      default=False,
-                      help="Build ImageIO plugin for USD (Uses ImageIO.framework). Overrides OpenImageIO")
+                      default=True,
+                      help="Build the ImageIO.framework plugin for USD (default). "
+                           "Will be turned off if the OpenImageIO plugin is enabled")
+    group.add_argument("--no-imageio", dest="build_imageio", action="store_false",
+                       help="Do not build build the ImageIO.framework plugin for USD.")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--opencolorio", dest="build_ocio", action="store_true", 
                       default=False,
@@ -2384,8 +2387,7 @@ class InstallContext:
                                                and self.buildTests))
                           and not embedded)
         if MacOS():
-            self.buildImageIO = args.build_imageio
-            if self.buildImageIO: self.buildOIIO = False
+            self.buildImageIO = args.build_imageio and not self.buildOIIO
         self.buildOCIO = args.build_ocio and not embedded
 
         # - Alembic Plugin
@@ -2756,7 +2758,7 @@ summaryMsg = summaryMsg.format(
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     enableOpenVDB=("On" if context.enableOpenVDB else "Off"),
-    buildImageIO=("On" if (hasattr(context, 'buildImageIO') and context.buildImageIO) else "Off"),
+    buildImageIO=("On" if (MacOS() and context.buildImageIO) else "Off"),
     buildOIIO=("On" if context.buildOIIO else "Off"),
     buildOCIO=("On" if context.buildOCIO else "Off"),
     buildPrman=("On" if context.buildPrman else "Off"),
