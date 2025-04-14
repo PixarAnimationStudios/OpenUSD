@@ -348,8 +348,11 @@ bool Sdf_ChildrenUtils<ChildPolicy>::InsertChild(
         layer->SetField(oldParentPath, oldChildrenKey, oldSiblingNames);
     }
 
-    // Move the actual spec data
-    layer->_MoveSpec(value->GetPath(), newPath);
+    // Move the actual spec data only if necessary, to avoid triggering a coding error
+    // when we don't want to and actually cannot move the spec for a reorder
+    if (value->GetPath() != newPath) {
+        layer->_MoveSpec(value->GetPath(), newPath);
+    }
 
     // Update and set the _childNames vector.
     childNames.insert(childNames.begin()+index, key);
