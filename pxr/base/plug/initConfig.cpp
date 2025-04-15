@@ -24,6 +24,7 @@ namespace {
 const char* pathEnvVarName      = TF_PP_STRINGIZE(PXR_PLUGINPATH_NAME);
 const char* buildLocation       = TF_PP_STRINGIZE(PXR_BUILD_LOCATION);
 const char* pluginBuildLocation = TF_PP_STRINGIZE(PXR_PLUGIN_BUILD_LOCATION);
+const char* sharedLibraryLocation = TF_PP_STRINGIZE(PXR_SHARED_LIBRARY_LOCATION);
 
 #ifdef PXR_INSTALL_LOCATION
 const char* installLocation     = TF_PP_STRINGIZE(PXR_INSTALL_LOCATION); 
@@ -62,24 +63,33 @@ ARCH_CONSTRUCTOR(Plug_InitConfig, 2, void)
     // is built as a static library.  In that case, fall back to using
     // ArchGetExecutablePath().  Also provide some diagnostic output if the
     // PLUG_INFO_SEARCH debug flag is enabled.
-    std::string binaryPath;
-    if (!ArchGetAddressInfo(
-        reinterpret_cast<void*>(&Plug_InitConfig), &binaryPath,
-            nullptr, nullptr, nullptr)) {
-        debugMessages.emplace_back(
-            "Failed to determine absolute path for Plug search "
-            "using using ArchGetAddressInfo().  This is expected "
-            "if pxr is linked as a static library.\n");
-    }
+
+    // Xcode builds into a different tree than that of the command line, so when
+    // debugging it is necessary to set the PXR_SHARED_LIBRARY_LOCATION env
+    // variable to the lib path in the build folder.
+
+    std::string binaryPath = TfGetenv(sharedLibraryLocation);
 
     if (binaryPath.empty()) {
-        debugMessages.emplace_back(
-            "Using ArchGetExecutablePath() to determine absolute "
-            "path for Plug search location.\n");
-        binaryPath = ArchGetExecutablePath();
+        if (!ArchGetAddressInfo(
+            reinterpret_cast<void*>(&Plug_InitConfig), &binaryPath,
+                nullptr, nullptr, nullptr)) {
+            debugMessages.emplace_back(
+                "Failed to determine absolute path for Plug search "
+                "using using ArchGetAddressInfo().  This is expected "
+                "if pxr is linked as a static library.\n");
+        }
+
+        if (binaryPath.empty()) {
+            debugMessages.emplace_back(
+                "Using ArchGetExecutablePath() to determine absolute "
+                "path for Plug search location.\n");
+            binaryPath = ArchGetExecutablePath();
+        }
+
+        binaryPath = TfGetPathName(binaryPath);
     }
 
-    binaryPath = TfGetPathName(binaryPath);
 
     debugMessages.emplace_back(
         TfStringPrintf(
