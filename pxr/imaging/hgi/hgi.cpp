@@ -24,6 +24,8 @@ TF_REGISTRY_FUNCTION(TfType)
     TfType::Define<Hgi>();
 }
 
+TfToken Hgi::_defaultHgiToken;
+
 Hgi::Hgi()
     : _uniqueIdCounter(1)
 {
@@ -42,8 +44,56 @@ Hgi::SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
     }
 }
 
+static TfToken
+_PlatformDefaultHgiToken()
+{
+    TfToken hgiToken =
+        #if defined(ARCH_OS_LINUX)
+            HgiTokens->OpenGL;
+        #elif defined(ARCH_OS_DARWIN)
+            HgiTokens->Metal;
+        #elif defined(ARCH_OS_WINDOWS)
+            HgiTokens->OpenGL;
+        #else
+            TfToken();
+            #error Unknown Platform
+            return nullptr;
+        #endif
+
+    if (TfGetEnvSetting(HGI_ENABLE_VULKAN)) {
+        #if defined(PXR_VULKAN_SUPPORT_ENABLED)
+            hgiToken = HgiTokens->Vulkan;
+        #else
+            TF_CODING_ERROR(
+                "Build requires PXR_VULKAN_SUPPORT_ENABLED=true to use Vulkan");
+        #endif
+    }
+
+    return hgiToken;
+}
+
+static std::string
+_HgiTokenToType(const TfToken& hgiToken)
+{
+    if (hgiToken == HgiTokens->OpenGL) {
+#if defined(PXR_GL_SUPPORT_ENABLED)
+        return "HgiGL";
+#endif
+    } else if (hgiToken == HgiTokens->Vulkan) {
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+        return "HgiVulkan";
+#endif
+    } else if (hgiToken == HgiTokens->Metal) {
+#if defined(PXR_METAL_SUPPORT_ENABLED)
+        return "HgiMetal";
+    }
+#endif
+
+    return "";
+}
+
 static Hgi*
-_MakeNewPlatformDefaultHgi()
+_MakeNewPlatformDefaultHgi(const TfToken& defaultHgiToken)
 {
     TF_DEBUG(HGI_DEBUG_INSTANCE_CREATION).Msg("Attempting to create platform "
         "default Hgi\n");
@@ -53,30 +103,12 @@ _MakeNewPlatformDefaultHgi()
 
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
 
-    const char* hgiType = 
-        #if defined(ARCH_OS_LINUX)
-            "HgiGL";
-        #elif defined(ARCH_OS_DARWIN)
-            "HgiMetal";
-        #elif defined(ARCH_OS_WINDOWS)
-            "HgiGL";
-        #else
-            ""; 
-            #error Unknown Platform
-            return nullptr;
-        #endif
-
-    if (TfGetEnvSetting(HGI_ENABLE_VULKAN)) {
-        #if defined(PXR_VULKAN_SUPPORT_ENABLED)
-            hgiType = "HgiVulkan";
-        #else
-            TF_CODING_ERROR(
-                "Build requires PXR_VULKAN_SUPPORT_ENABLED=true to use Vulkan");
-        #endif
-    }
+    const TfToken hgiToken = defaultHgiToken.IsEmpty() ?
+        _PlatformDefaultHgiToken() : defaultHgiToken;
+    const std::string hgiType = _HgiTokenToType(hgiToken);
 
     TF_DEBUG(HGI_DEBUG_INSTANCE_CREATION).Msg("Platform default Hgi: "
-        "%s\n", hgiType);
+        "%s\n", hgiType.c_str());
 
     const TfType plugType = plugReg.FindDerivedTypeByName<Hgi>(hgiType);
 
@@ -104,7 +136,7 @@ _MakeNewPlatformDefaultHgi()
 
     if (!instance->IsBackendSupported()) {
         TF_DEBUG(HGI_DEBUG_INSTANCE_CREATION).Msg("Hgi %s is not supported\n",
-            hgiType);
+            hgiType.c_str());
         // XXX Currently, returning nullptr (rather than a non-supported hgi 
         // instance) causes a crash in one of our studio tests. We disable the
         // desired behavior until we can fix the test. 
@@ -114,34 +146,23 @@ _MakeNewPlatformDefaultHgi()
     }
 
     TF_DEBUG(HGI_DEBUG_INSTANCE_CREATION).Msg("Successfully created platform "
-        "default Hgi %s\n", hgiType);
+        "default Hgi %s\n", hgiType.c_str());
 
     return instance;
 }
 
 static Hgi*
-_MakeNamedHgi(const TfToken& hgiToken)
+_MakeNamedHgi(const TfToken& hgiToken, const TfToken& defaultHgiToken)
 {
     TF_DEBUG(HGI_DEBUG_INSTANCE_CREATION).Msg("Attempting to create named Hgi "
         "%s\n", hgiToken.GetText());
     
-    std::string hgiType;
+    if (hgiToken.IsEmpty()) {
+        return _MakeNewPlatformDefaultHgi(defaultHgiToken);
+    }
 
-    if (hgiToken == HgiTokens->OpenGL) {
-#if defined(PXR_GL_SUPPORT_ENABLED)
-        hgiType = "HgiGL";
-#endif
-    } else if (hgiToken == HgiTokens->Vulkan) {
-#if defined(PXR_VULKAN_SUPPORT_ENABLED)
-        hgiType = "HgiVulkan";
-#endif
-    } else if (hgiToken == HgiTokens->Metal) {
-#if defined(PXR_METAL_SUPPORT_ENABLED)
-        hgiType = "HgiMetal";
-#endif
-    } else if (hgiToken.IsEmpty()) {
-        return _MakeNewPlatformDefaultHgi();
-    } else {
+    const std::string hgiType = _HgiTokenToType(hgiToken);
+    if (hgiType.empty()) {
         // If an invalid token is provided, return nullptr.
         TF_CODING_ERROR("Unsupported token %s was provided.",
                         hgiToken.GetText());
@@ -201,19 +222,19 @@ Hgi::GetPlatformDefaultHgi()
     TF_WARN("GetPlatformDefaultHgi is deprecated. "
             "Please use CreatePlatformDefaultHgi");
 
-    return _MakeNewPlatformDefaultHgi();
+    return _MakeNewPlatformDefaultHgi(_defaultHgiToken);
 }
 
 HgiUniquePtr
 Hgi::CreatePlatformDefaultHgi()
 {
-    return HgiUniquePtr(_MakeNewPlatformDefaultHgi());
+    return HgiUniquePtr(_MakeNewPlatformDefaultHgi(_defaultHgiToken));
 }
 
 HgiUniquePtr 
 Hgi::CreateNamedHgi(const TfToken& hgiToken)
 {
-    return HgiUniquePtr(_MakeNamedHgi(hgiToken));
+    return HgiUniquePtr(_MakeNamedHgi(hgiToken, _defaultHgiToken));
 }
 
 bool
@@ -237,6 +258,24 @@ Hgi::IsSupported(const TfToken& hgiToken)
     }
 
     return false;
+}
+
+bool
+Hgi::SetPlatformDefaultBackend(const TfToken& hgiToken)
+{
+    if (_HgiTokenToType(hgiToken).empty()) {
+      return false;
+    }
+
+    _defaultHgiToken = hgiToken;
+    return true;
+}
+
+TfToken
+Hgi::GetPlatformDefaultBackend()
+{
+    return _defaultHgiToken.IsEmpty() ? _PlatformDefaultHgiToken() :
+      _defaultHgiToken;
 }
 
 uint64_t

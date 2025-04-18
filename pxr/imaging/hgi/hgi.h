@@ -157,6 +157,20 @@ public:
     HGI_API
     static bool IsSupported(const TfToken& hgiToken = TfToken());
 
+    /// Set the default backend that will be created by CreatePlatformDefaultHgi.
+    /// This may be set by the host application on startup, to communicate its
+    /// preferred backend to plugins.
+    /// If the OpenUSD was built without supported for the specified backend,
+    /// this returns false and the default backend is unchanged.
+    /// Thread safety: Not thread safe.
+    HGI_API
+    static bool SetPlatformDefaultBackend(const TfToken& hgiToken);
+
+    /// Get the default backend that will be created by CreatePlatformDefaultHgi.
+    /// Thread safety: This call is thread safe.
+    HGI_API
+    static TfToken GetPlatformDefaultBackend();
+
     /// Returns a GraphicsCmds object (for temporary use) that is ready to
     /// record draw commands. GraphicsCmds is a lightweight object that
     /// should be re-acquired each frame (don't hold onto it after EndEncoding).
@@ -342,6 +356,7 @@ private:
     Hgi(const Hgi&) = delete;
 
     std::atomic<uint64_t> _uniqueIdCounter;
+    static TfToken _defaultHgiToken;
 };
 
 
