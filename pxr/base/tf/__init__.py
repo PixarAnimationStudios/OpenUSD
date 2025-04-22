@@ -190,7 +190,7 @@ def Status(msg, verbose=True):
         codeInfo = GetCodeLocation(framesUp=1)
         _Status(msg, codeInfo[0], codeInfo[1], codeInfo[2], codeInfo[3])
     else:
-        _Status(msg, "", "", "", 0)
+        _Status(msg)
 
 def RaiseCodingError(msg):
     """Raise a coding error to the Tf Diagnostic system."""
