@@ -384,9 +384,9 @@ int main()
     FILE *statsFile = fopen("perfstats.raw", "w");
     for (const auto &[metricName, ns]: metrics) {
         fprintf(statsFile,
-                "{'profile':'%s','metric':'time','value':%zd,'samples':1}\n",
+                "{'profile':'%s','metric':'time','value':%lld,'samples':1}\n",
                 metricName.c_str(), ns);
-        printf("%s : %zd ns\n", metricName.c_str(), ns);
+        printf("%s : %lld ns\n", metricName.c_str(), ns);
     }
     fclose(statsFile);
     

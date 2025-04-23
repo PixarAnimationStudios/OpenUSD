@@ -100,7 +100,7 @@ _TestStatsOne(Hasher const &h, char const *label)
         TestOne(h, num, counts);
     }
 
-    printf("%s One: %zu tests.\n", label, NTESTS * 64);
+    printf("%s One: %llu tests.\n", label, NTESTS * 64);
     for (int i = 0; i != 64; ++i) {
         printf("bit %d flipped %d times (%.2f%%)\n", i, counts[i],
                100.0 * double(counts[i]) / (double(NTESTS) * 64.0));
@@ -128,7 +128,7 @@ _TestStatsTwo(Hasher const &h, char const *label)
         TestTwo(h, t, counts);
     }
 
-    printf("%s Two: %zu tests.\n", label, NTESTS * 64);
+    printf("%s Two: %llu tests.\n", label, NTESTS * 64);
     for (int i = 0; i != 64; ++i) {
         printf("bit %d flipped %d times (%.2f%%)\n", i, counts[i],
                100.0 * double(counts[i]) / (double(NTESTS) * 64.0));
