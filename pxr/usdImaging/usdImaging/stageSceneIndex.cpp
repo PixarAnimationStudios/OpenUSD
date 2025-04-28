@@ -227,7 +227,7 @@ UsdImagingStageSceneIndex::GetPrim(const SdfPath &path) const
 
     static const HdSceneIndexPrim s_emptyPrim = {TfToken(), nullptr};
 
-    if (!_stage) {
+    if (!_stage || path == _usdPrimBeingRemoved) {
         return s_emptyPrim;
     }
 
@@ -278,7 +278,7 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
     }
 
     UsdPrim prim = _stage->GetPrimAtPath(path);
-    if (!prim) {
+    if (!prim || prim.GetPath() == _usdPrimBeingRemoved) {
         return {};
     }
 
@@ -645,7 +645,9 @@ UsdImagingStageSceneIndex::_ApplyPendingResyncs()
 
         TF_DEBUG(USDIMAGING_CHANGES).Msg("[Population] Repopulating <%s>\n",
                                          primPath.GetText());
+        _usdPrimBeingRemoved = primPath;
         _SendPrimsRemoved({primPath});
+        _usdPrimBeingRemoved = SdfPath::EmptyPath();
         _PopulateSubtree(prim);
 
         // Prune property updates of resynced prims, which are redundant.
