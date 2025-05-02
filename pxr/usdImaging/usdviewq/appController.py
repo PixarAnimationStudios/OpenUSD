@@ -1223,13 +1223,15 @@ class AppController(QtCore.QObject):
             popMask = (None if populationMaskPaths is None else
                        Usd.StagePopulationMask())
 
-            # Open as a layer first to make sure its a valid file format
-            try:
-                layer = Sdf.Layer.FindOrOpen(usdFilePath)
-            except Tf.ErrorException as e:
-                sys.stderr.write(_GetFormattedError(
-                    [err.commentary.strip() for err in e.args]))
-                sys.exit(1)
+            ctx = self._resolverContextFn(usdFilePath)
+            with Ar.ResolverContextBinder(ctx):
+                # Open as a layer first to make sure its a valid file format
+                try:
+                    layer = Sdf.Layer.FindOrOpen(usdFilePath)
+                except Tf.ErrorException as e:
+                    sys.stderr.write(_GetFormattedError(
+                        [err.commentary.strip() for err in e.args]))
+                    sys.exit(1)
 
             if sessionFilePath:
                 try:
@@ -1250,12 +1252,12 @@ class AppController(QtCore.QObject):
                     popMask.Add(p)
                 stage = Usd.Stage.OpenMasked(layer,
                                              sessionLayer,
-                                             self._resolverContextFn(usdFilePath),
+                                             ctx,
                                              popMask, loadSet)
             else:
                 stage = Usd.Stage.Open(layer,
                                        sessionLayer,
-                                       self._resolverContextFn(usdFilePath), 
+                                       ctx, 
                                        loadSet)
 
             self._applyStageOpenLayerMutes(stage, muteLayersRe)
