@@ -6,11 +6,14 @@
 # https://openusd.org/license.
 
 from __future__ import print_function
-from pxr import Ar, Tf, Sdf, Usd, UsdMtlx, UsdShade
+from pxr import Ar, Tf, Sdf, Usd, UsdGeom, UsdMtlx, UsdShade
 import unittest
 
 def _EmptyLayer():
     stage = Usd.Stage.CreateInMemory()
+    UsdGeom.SetStageUpAxis(stage, UsdGeom.GetFallbackUpAxis())
+    UsdGeom.SetStageMetersPerUnit(stage, UsdGeom.LinearUnits.centimeters)
+    stage.SetDefaultPrim(Usd.Prim())
     return stage.GetRootLayer().ExportToString()
 
 class TestFileFormat(unittest.TestCase):
