@@ -1196,9 +1196,10 @@ public:
         // the session layer or it matches, and we either don't care about the
         // path resolverContext or it matches.
         return _rootLayer == req->_rootLayer &&
-            (!_sessionLayer || (_sessionLayer == req->_sessionLayer)) &&
-            (!_pathResolverContext || (_pathResolverContext ==
-                                       req->_pathResolverContext));
+            (!_sessionLayer || 
+             (req->_sessionLayer && *_sessionLayer == *req->_sessionLayer)) &&
+            (!_pathResolverContext || 
+             (req->_pathResolverContext && *_pathResolverContext == *req->_pathResolverContext));
     }
     virtual UsdStageRefPtr Manufacture() {
         return UsdStage::_InstantiateStage(
