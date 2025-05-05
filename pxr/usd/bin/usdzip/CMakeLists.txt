@@ -8,9 +8,6 @@ pxr_cpp_bin(usdzip
         sdf
         usd
         usdUtils
-        ${Boost_PYTHON_LIBRARY}
-        INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
 )
 
 pxr_install_test_dir(

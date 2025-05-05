@@ -1,44 +1,27 @@
 //
-// Copyright 2023 Apple
+// Copyright 2025 Apple
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
-//
-
 
 #include <pxr/pxr.h>
-#include "pxr/base/tf/pxrCLI11/CLI11.h"
+
+#include <pxr/base/tf/pxrCLI11/CLI11.h>
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/ar/resolverContextBinder.h>
 #include <pxr/base/arch/fileSystem.h>
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/fileUtils.h>
-#include "pxr/base/tf/stringUtils.h"
-#include <pxr/usd/usd/zipFile.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/usd/sdf/zipFile.h>
 #include <pxr/base/tf/debug.h>
 #include <pxr/usd/usdUtils/dependencies.h>
-
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
-#include <Python.h>
-#endif // PXR_PYTHON_SUPPORT_ENABLED
+#include "pxr/usdValidation/usdValidation/context.h"
+#include "pxr/usdValidation/usdValidation/registry.h"
+#include "pxr/usdValidation/usdValidation/validatorTokens.h"
+#include "pxr/usdValidation/usdUtilsValidators/validatorTokens.h"
 
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -64,22 +47,14 @@ void Configure(CLI::App *app, Args &args) {
     app->add_flag("-r,--recurse", args.recurse,
                   "If specified, files in sub-directories are recursively added to the package");
     app->add_option("-a,--asset", args.asset,
-                    "Resolvable asset path pointing to the root layer" \
-                  "of the asset to be isolated and copied into the package.");
+                    "Resolvable asset path pointing to the root layer"
+                    "of the asset to be isolated and copied into the package.");
     app->add_option("--arkitAsset", args.arkitAsset,
                     "Similar to the --asset option, the --arkitAsset "\
-                  "option packages all of the dependencies of the named scene file.\n"\
-                  "Assets targeted at the initial usdz " \
-                  "implementation in ARKit operate under greater " \
-                  "constraints than usdz files for more general 'in " \
-                  "house' uses, and this option attempts to ensure that " \
-                  "these constraints are honored; this may involve more " \
-                  "transformations to the data, which may cause loss of " \
-                  "features such as VariantSets."
+                    "option packages all of the dependencies of the named scene file.\n"\
+                    "This mode flattens composition arcs, consolidates resources and may transform data to adhere to RealityKit requirements."
     );
-
     app->add_flag("-c,--checkCompliance", args.checkCompliance,
-                  "(Currently does nothing)"
                   "Perform compliance checking of the input files."
                   "If the input asset or \"root\" layer fails any of the compliance checks,"
                   "the package is not created and the program fails."
@@ -104,77 +79,75 @@ void Configure(CLI::App *app, Args &args) {
                   " output to stdout");
 }
 
-/// CheckCompliance has to use the Python checker functions currently.
-/// So we call out to Python if USD has been built with Python, otherwise we print an error and fail
-/// Return true if successful or false if not
+static
+void
+_PrintMessage(std::ostream &output, const std::string &msg,
+              char const *color = "") {
+    // use ArchFileIsaTTY to check if the output stream is a terminal
+    // and if so, color the message. color for cout and cerr.
+    if ((color && color[0] != '\0') &&
+        ((&output == &std::cout && ArchFileIsaTTY(fileno(stdout))) ||
+         (&output == &std::cerr && ArchFileIsaTTY(fileno(stderr))))) {
+        output << color << msg << "\033[0m\n";
+    } else {
+        output << msg << '\n';
+    }
+};
+// Ported over from _ReportValidationErrors in usdchecker.cpp
 bool CheckCompliance(const std::string &rootLayer, bool arkit = false) {
-#ifdef PXR_PYTHON_SUPPORT_ENABLED
-    auto cmd = TfStringPrintf(
-            "import sys\n"
-            "from pxr import Ar, Sdf, Tf, Usd, UsdUtils\n"
-            "def _Err(msg):\n"
-            "    sys.stderr.write(msg + '\\n')\n"
-            "\n\n"
-            "def _CheckUsdzCompliance():\n"
-            "    checker = UsdUtils.ComplianceChecker(arkit=%d, skipARKitRootLayerCheck=True)\n"
-            "    checker.CheckCompliance('%s')\n"
-            "    errors = checker.GetErrors()\n"
-            "    failedChecks = checker.GetFailedChecks()\n"
-            "    warnings = checker.GetWarnings()\n"
-            "    for msg in errors + failedChecks:\n"
-            "        _Err(msg)\n"
-            "    if len(warnings) > 0:\n"
-            "        _Err(\"*********************************************\\n\"\n"
-            "             \"Possible correctness problems to investigate:\\n\"\n"
-            "             \"*********************************************\\n\")\n"
-            "        for msg in warnings:\n"
-            "            _Err(msg)\n"
-            "    return len(errors) == 0 and len(failedChecks) == 0\n", arkit, rootLayer.c_str());
+    const char *_ErrorColor = "\033[91m";
+    const char *_WarningColor = "\033[93m";
+    const char *_InfoColor = "\033[94m";
+    const char *_SuccessColor = "\033[92m";
 
-    // Using regular Py_Initialize because TfPyInitialize was causing random segfaults
-    Py_Initialize();
-    PyObject * pymodule = PyImport_AddModule("__main__");
-    if (!pymodule) {
-        TF_CODING_ERROR("Failed to initialize __main__ module");
-        return false;
+    UsdValidationRegistry &validationReg = UsdValidationRegistry::GetInstance();
+    UsdValidationValidatorMetadataVector metadata = validationReg.GetAllValidatorMetadata();
+    UsdValidationContext ctx(metadata);
+
+    auto layer = SdfLayer::FindOrOpen(rootLayer);
+    UsdValidationErrorVector errors = ctx.Validate(layer);
+    if (!errors.size()) {
+        return true;
     }
-    auto localDict = PyDict_Copy(PyModule_GetDict(pymodule));
-    if (!localDict) {
-        TF_CODING_ERROR("Failed to initialize __main__ module dictionary");
-        return false;
+
+    std::ofstream output;
+
+    bool reportFailure = false;
+    bool reportWarning = false;
+
+    for (const UsdValidationError &error: errors) {
+        switch (error.GetType()) {
+            case UsdValidationErrorType::Error:
+                reportFailure = true;
+                _PrintMessage(output, error.GetErrorAsString(), _ErrorColor);
+                break;
+            case UsdValidationErrorType::Warn:
+                reportWarning = true;
+                _PrintMessage(output, error.GetErrorAsString(), _WarningColor);
+                break;
+            case UsdValidationErrorType::Info:
+            case UsdValidationErrorType::None:
+                _PrintMessage(output, error.GetErrorAsString(), _InfoColor);
+                break;
+            default:
+                std::cerr << "Error: Unknown error type." << '\n';
+                break;
+        }
     }
-    PyObject * code = Py_CompileString(cmd.c_str(), "__main__", Py_file_input);
-    if (!code) {
-        TF_CODING_ERROR("Failed to compile checker Python code");
-        return false;
-    }
-    auto evaluated = PyEval_EvalCode(code, localDict, localDict);
-    if (!evaluated) {
-        TF_CODING_ERROR("Failed to evaluate checker Python code");
-        return false;
-    }
-    auto func = PyDict_GetItemString(localDict, "_CheckUsdzCompliance");
-    if (!func) {
-        TF_CODING_ERROR("Failed to find _CheckUsdzCompliance function.");
+
+    if (reportFailure) {
+        _PrintMessage(output, "Failed!", _ErrorColor);
         return false;
     }
 
-    PyObject * args = PyTuple_New(0);
-    auto called = PyObject_Call(func, args, NULL);
-    if (!called) {
-        TF_CODING_ERROR("Failed to run checker python code.");
-        return false;
+    if (reportWarning) {
+        _PrintMessage(output, "Success with warnings...", _WarningColor);
+    } else {
+        _PrintMessage(output, "Success!", _SuccessColor);
     }
-    bool value = PyObject_IsTrue(called);
-    Py_Finalize();
-    if (!value) {
-        std::cerr << "Failed USD Checker." << std::endl;
-    }
-    return value;
-#else
-    std::cerr << "Compliance checking requires a build with Python." << std::endl;
+
+
     return false;
-#endif // PXR_PYTHON_SUPPORT_ENABLED
 }
 
 bool CreateUsdzPackage(const std::string &usdzFile, const std::vector<std::string> &filesToAdd, bool recurse,
@@ -212,7 +185,7 @@ bool CreateUsdzPackage(const std::string &usdzFile, const std::vector<std::strin
         }
     }
 
-    auto writer = UsdZipFileWriter::CreateNew(usdzFile);
+    auto writer = SdfZipFileWriter::CreateNew(usdzFile);
     for (auto &f: fileList) {
         if (writer.AddFile(f).empty()) {
             std::cerr << "Failed to add file " << f << " to package. Discarding package" << std::endl;
@@ -224,7 +197,7 @@ bool CreateUsdzPackage(const std::string &usdzFile, const std::vector<std::strin
     return true;
 }
 
-void ListContents(const std::string &path, UsdZipFile &zipfile) {
+void ListContents(const std::string &path, SdfZipFile &zipfile) {
     std::ostream *out = &std::cout;
     bool closeAfterUse = false;
     if (path != "-") {
@@ -241,7 +214,6 @@ void ListContents(const std::string &path, UsdZipFile &zipfile) {
         static_cast<std::ofstream *>(out)->close();
         delete out;
     }
-
 }
 
 std::string padded(const size_t data, const size_t padding, const char spacer = ' ') {
@@ -252,7 +224,7 @@ std::string padded(const size_t data, const size_t padding, const char spacer = 
     return str;
 }
 
-void DumpContents(const std::string &path, UsdZipFile &zipfile) {
+void DumpContents(const std::string &path, SdfZipFile &zipfile) {
     std::ostream *out = &std::cout;
     bool closeAfterUse = false;
     if (path != "-") {
@@ -268,10 +240,9 @@ void DumpContents(const std::string &path, UsdZipFile &zipfile) {
         // Copying the logic from Python, instead of trying to be fast
         auto info = zipfile.Find(fn).GetFileInfo();
         *out << padded(info.dataOffset, 10) << "\t"
-             << padded(info.size, 10) << "\t"
-             << padded(info.uncompressedSize, 10) << "\t"
-             << fn << std::endl;
-
+                << padded(info.size, 10) << "\t"
+                << padded(info.uncompressedSize, 10) << "\t"
+                << fn << std::endl;
     }
 
     *out << "----------\n" << std::to_string(filenames.size()) << " files total" << std::endl;
@@ -282,6 +253,42 @@ void DumpContents(const std::string &path, UsdZipFile &zipfile) {
     }
 }
 
+
+/// Deal with symlinks in case AssetResolver doesn't know how to anchor it properly given the current context.
+std::string ResolveAllInputs(Args &args) {
+    std::string error;
+    if (args.inputFiles.size() > 0) {
+        std::vector<std::string> inputFiles;
+        inputFiles.reserve(args.inputFiles.size());
+        std::string path;
+        for (size_t i = 0; i < args.inputFiles.size(); ++i) {
+            path = args.inputFiles[i];
+            if (TfIsLink(path)) {
+                path = TfRealPath(args.inputFiles[i], false, &error);
+                if (!error.empty()) {
+                    return error;
+                }
+            }
+            inputFiles.emplace_back(path);
+        }
+
+        args.inputFiles = inputFiles;
+    }
+
+    if (!args.asset.empty() && TfIsLink(args.asset)) {
+        args.asset = TfRealPath(args.asset, false, &error);
+        if (!error.empty()) {
+            return error;
+        }
+    }
+
+    if (!args.arkitAsset.empty() && TfIsLink(args.arkitAsset)) {
+        args.arkitAsset = TfRealPath(args.arkitAsset, false, &error);
+    }
+
+    return error;
+}
+
 int USDZip(Args &args) {
     if (!args.asset.empty() && !args.arkitAsset.empty()) {
         std::cerr << "Specify either --asset or --arkitAsset, not both." << std::endl;
@@ -290,7 +297,13 @@ int USDZip(Args &args) {
 
     if (args.inputFiles.size() > 0 && (!args.asset.empty() || !args.arkitAsset.empty())) {
         std::cerr << "Specify either inputFiles or an asset (via --asset or "
-                  << "--arKitAsset, not both" << std::endl;
+                << "--arKitAsset, not both" << std::endl;
+        return 1;
+    }
+
+    auto resolveError = ResolveAllInputs(args);
+    if (!resolveError.empty()) {
+        std::cerr << "Failed to find real paths for input files: " << resolveError << std::endl;
         return 1;
     }
 
@@ -315,7 +328,6 @@ int USDZip(Args &args) {
             std::cerr << "No usdz file specified." << std::endl;
             return 1;
         }
-
     }
 
     // Check if we're in package creation mode and verbose mode is enabled
@@ -328,7 +340,7 @@ int USDZip(Args &args) {
         if (args.verbose) {
             if (TfPathExists(usdzFile)) {
                 std::cout << "File at path " << usdzFile << " already exists. "
-                          << "Overwriting file." << std::endl;
+                        << "Overwriting file." << std::endl;
             }
 
             if (args.inputFiles.size() > 0) {
@@ -350,8 +362,8 @@ int USDZip(Args &args) {
     } else {
         if (args.checkCompliance) {
             std::cerr << "--checkCompliance should only be specified when "
-                      << "creating a usdz package. Please use 'usdchecker' to check "
-                      << "compliance of an existing .usdz file." << std::endl;
+                    << "creating a usdz package. Please use 'usdchecker' to check "
+                    << "compliance of an existing .usdz file." << std::endl;
             return 1;
         }
     }
@@ -392,12 +404,12 @@ int USDZip(Args &args) {
 
     if (!listTarget.empty() || !dumpTarget.empty()) {
         if (TfPathExists(usdzFile)) {
-            auto zipfile = UsdZipFile::Open(usdzFile);
+            auto zipfile = SdfZipFile::Open(usdzFile);
             if (zipfile) {
                 if (!dumpTarget.empty()) {
                     if (dumpTarget == usdzFile) {
                         std::cerr << "The file into which the contents will be dumped "
-                                  << usdzFile << " must be different from the file itself." << std::endl;
+                                << usdzFile << " must be different from the file itself." << std::endl;
                         return 1;
                     }
                     DumpContents(dumpTarget, zipfile);
@@ -405,7 +417,7 @@ int USDZip(Args &args) {
                 if (!listTarget.empty()) {
                     if (listTarget == usdzFile) {
                         std::cerr << "The file into which the contents will be listed "
-                                  << usdzFile << " must be different from the file itself." << std::endl;
+                                << usdzFile << " must be different from the file itself." << std::endl;
                         return 1;
                     }
                     ListContents(listTarget, zipfile);
@@ -429,6 +441,5 @@ int main(int argc, char const *argv[]) {
     Args args;
     Configure(&app, args);
     CLI11_PARSE(app, argc, argv);
-
     return USDZip(args);
 }
