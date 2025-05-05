@@ -957,6 +957,12 @@ SdfZipFileWriter::AddFile(
     }
 
     _OutputStream outStream(_impl->outputFile.Get());
+    if (outStream.Tell() > UINT32_MAX) {
+        TF_RUNTIME_ERROR(
+            "Cannot add %s because zipfile is larger than allowed by Zip32 (%d)", filePath.c_str(), UINT32_MAX
+        );
+         return {};
+    }
 
     std::string err;
     ArchConstFileMapping mapping = ArchMapFileReadOnly(filePath, &err);
@@ -964,6 +970,14 @@ SdfZipFileWriter::AddFile(
         TF_RUNTIME_ERROR(
             "Failed to map '%s': %s", filePath.c_str(), err.c_str());
         return std::string();
+    }
+
+    auto fileSize = ArchGetFileMappingLength(mapping);
+    if (fileSize > UINT32_MAX) {
+        TF_RUNTIME_ERROR(
+            "Cannot add %s because it is larger than allowed by Zip32  (%d)", filePath.c_str(), UINT32_MAX
+        );
+        return {};
     }
 
     // Set up local file header
@@ -974,8 +988,8 @@ SdfZipFileWriter::AddFile(
     h.f.compressionMethod = 0; // No compression
     std::tie(h.f.lastModTime, h.f.lastModDate) = _ModTimeAndDate(filePath);
     h.f.crc32 = _Crc32(mapping);
-    h.f.compressedSize = ArchGetFileMappingLength(mapping);
-    h.f.uncompressedSize = ArchGetFileMappingLength(mapping);
+    h.f.compressedSize = fileSize;
+    h.f.uncompressedSize = fileSize;
     h.f.filenameLength = zipFilePath.length();
     
     const uint32_t offset = outStream.Tell();
@@ -1060,6 +1074,13 @@ SdfZipFileWriter::Save()
         r.commentStart = nullptr;
 
         _WriteEndOfCentralDirectoryRecord(outStream, r);
+    }
+
+    if (outStream.Tell() > UINT32_MAX) {
+        TF_RUNTIME_ERROR(
+            "Zipfile is larger than allowed by Zip32 (%d)", UINT32_MAX
+        );
+        return false;
     }
 
     _impl->outputFile.Close();
