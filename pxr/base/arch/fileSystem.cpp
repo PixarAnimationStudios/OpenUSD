@@ -1219,8 +1219,9 @@ std::string ArchReadLink(const char* path)
                                unsigned char[MAX_REPARSE_DATA_SIZE]);
     REPARSE_DATA_BUFFER* reparse = (REPARSE_DATA_BUFFER*)buffer.get();
 
+    DWORD bytesReturned = 0;
     if (!DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, NULL, 0, reparse,
-                         MAX_REPARSE_DATA_SIZE, NULL, NULL)) {
+                         MAX_REPARSE_DATA_SIZE, &bytesReturned, NULL)) {
         CloseHandle(handle);
         return std::string();
     }
