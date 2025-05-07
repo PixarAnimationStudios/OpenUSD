@@ -7,6 +7,8 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/pxrCLI11/CLI11.h"
@@ -184,21 +186,35 @@ static int UsdCat(const Args &args) {
         // Capture errors that are emitted so we can do error handling below.
         TfErrorMark errMark;
 
+        // create and bind a context for opening layers
+        ArResolver &resolver = ArGetResolver();
+        const ArResolverContext context =
+            resolver.CreateDefaultContextForAsset(input);
+        const ArResolverContextBinder binder(context);
+
         // Either open a layer or compose a stage, depending on whether or not
         // --flatten was specified.
         if (args.flatten) {
+            // create context layer for stage opening
+            SdfLayerRefPtr ctxLayer;
+            ctxLayer = SdfLayer::FindOrOpen(input);
+
             if (args.mask.empty()) {
-                stage = UsdStage::Open(input);
+                stage = UsdStage::Open(ctxLayer, context);
             } else {
                 // Mask can be provided as a comma or space delimited string
                 auto mask = UsdStagePopulationMask();
                 for (const auto &path : TfStringTokenize(args.mask, ", ")) {
                     mask.Add(SdfPath(path));
                 }
-                stage = UsdStage::OpenMasked(input, mask);
+                stage = UsdStage::OpenMasked(ctxLayer, context, mask);
             }
         } else if (args.flattenLayerStack) {
-            stage = UsdStage::Open(input, UsdStage::LoadNone);
+            // create context layer for stage opening
+            SdfLayerRefPtr ctxLayer;
+            ctxLayer = SdfLayer::FindOrOpen(input);
+
+            stage = UsdStage::Open(ctxLayer, context, UsdStage::LoadNone);
             if (stage) {
                 layer = UsdUtilsFlattenLayerStack(stage);
             }
