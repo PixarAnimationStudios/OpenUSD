@@ -151,6 +151,10 @@ UsdSkelImagingSkeletonAdapter::Populate(
             
             // Insert two computations ...
             UsdPrim const& skinnedPrim = query.GetPrim();
+            if (!skinnedPrim) {
+                continue;
+            }
+
             SdfPath skinnedPrimPath = ResolveCachePath(
                 skinnedPrim.GetPath(), instancerContext);
 

@@ -47,3 +47,32 @@ pxr_library(usdSkelImaging
         plugInfo.json
         shaders/skinning.glslfx
 )
+
+# Build tests
+pxr_build_test(testUsdSkelImagingSkeletonAdapter
+    LIBRARIES
+        usdImaging
+        usdShade
+        usdGeom
+        usdSkel
+        usd
+        sdf
+        hd
+        tf
+        gf
+        arch
+    CPPFILES
+        testenv/testUsdSkelImagingSkeletonAdapter.cpp
+)
+
+# Install (copy test assets and baselines)
+pxr_install_test_dir(
+    SRC testenv/testUsdSkelImagingSkeletonAdapter
+    DEST testUsdSkelImagingSkeletonAdapter
+)
+
+# Register tests
+pxr_register_test(testUsdSkelImagingSkeletonAdapter
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSkelImagingSkeletonAdapter"
+    EXPECTED_RETURN_CODE 0
+)
