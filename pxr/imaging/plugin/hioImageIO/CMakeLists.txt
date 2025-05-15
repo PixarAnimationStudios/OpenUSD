@@ -9,13 +9,9 @@ endif()
 
 if(APPLE)
     find_library(FOUNDATION Foundation ${CMAKE_SYSTEM_FRAMEWORK_PATH} REQUIRED)
-    message("Foundation framework is: ${FOUNDATION}")
-
     find_library(IMAGEIO ImageIO ${CMAKE_SYSTEM_FRAMEWORK_PATH} REQUIRED)
-    message("ImageIO framework is: ${IMAGEIO}")
     set(PLATFORM_LIBS ${FOUNDATION} ${IMAGEIO} ${PLATFORM_LIBS})
     find_library(COREGRAPHICS CoreGraphics ${CMAKE_SYSTEM_FRAMEWORK_PATH} REQUIRED)
-    message("CoreGraphics framework is: ${COREGRAPHICS}")
     set(PLATFORM_LIBS ${FOUNDATION} ${COREGRAPHICS} ${PLATFORM_LIBS})
 endif()
 
