@@ -2169,8 +2169,7 @@ subgroup.add_argument("--no-openimageio", dest="build_oiio", action="store_false
 if MacOS():
     group.add_argument("--imageio", dest="build_imageio", action="store_true", 
                       default=True,
-                      help="Build the ImageIO.framework plugin for USD (default). "
-                           "Will be turned off if the OpenImageIO plugin is enabled")
+                      help="Build the ImageIO.framework plugin for USD (default).")
     group.add_argument("--no-imageio", dest="build_imageio", action="store_false",
                        help="Do not build build the ImageIO.framework plugin for USD.")
 subgroup = group.add_mutually_exclusive_group()
@@ -2387,7 +2386,7 @@ class InstallContext:
                                                and self.buildTests))
                           and not embedded)
         if MacOS():
-            self.buildImageIO = args.build_imageio and not self.buildOIIO
+            self.buildImageIO = args.build_imageio
         self.buildOCIO = args.build_ocio and not embedded
 
         # - Alembic Plugin
