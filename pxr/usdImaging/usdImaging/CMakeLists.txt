@@ -360,7 +360,7 @@ pxr_register_test(testUsdImagingStageSceneIndexContents
 # This test requires MaterialX support and is not currently supported on static 
 # builds as it uses a plugin mechanism which is not supported for static build 
 # configurations. 
-if (BUILD_SHARED_LIBS AND $PXR_ENABLE_MATERIALX_SUPPORT)
+if (BUILD_SHARED_LIBS AND ${PXR_ENABLE_MATERIALX_SUPPORT})
 
 pxr_build_test(testUsdImagingHdMtlx
     LIBRARIES
