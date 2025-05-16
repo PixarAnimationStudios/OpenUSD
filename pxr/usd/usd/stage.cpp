@@ -9439,15 +9439,19 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
                 // Map the interval (expressed in stage time) to layer time.
                 const SdfLayerOffset stageToLayer =
                     info._layerToStageOffset.GetInverse();
-                if (std::isfinite(stageToLayer.GetScale()) && std::isfinite(stageToLayer.GetOffset())) {
-                    const GfInterval layerInterval =
-                        interval * stageToLayer.GetScale()
-                        + stageToLayer.GetOffset();
-                    Usd_CopyTimeSamplesInInterval(samples, layerInterval, times);
-                    // Map the layer sample times to stage times.
-                    for (auto &time : *times) {
-                        time = info._layerToStageOffset * time;
-                    }
+                // If we encounter an invalid offset, we issue a warning but don't stop processing.
+                // This effectively makes the stage static on failure but still allows it to process.
+                if (!stageToLayer.IsValid()) {
+                    TF_WARN("SdfLayerOffset has unsupported values. Stage will be treated as static.");
+                    return true;
+                }
+                const GfInterval layerInterval =
+                    interval * stageToLayer.GetScale()
+                    + stageToLayer.GetOffset();
+                Usd_CopyTimeSamplesInInterval(samples, layerInterval, times);
+                // Map the layer sample times to stage times.
+                for (auto &time : *times) {
+                    time = info._layerToStageOffset * time;
                 }
             }
         }
