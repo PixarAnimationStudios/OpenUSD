@@ -1,0 +1,9 @@
+#usda 1.0
+(
+    timeCodesPerSecond = 0
+    endTimeCode = 100
+    startTimeCode = 0
+    subLayers = [
+        @_animation.usda@
+    ]
+)

@@ -90,6 +90,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -8088,7 +8089,7 @@ _HasTimeSamples(const SdfLayerRefPtr& source,
                 const double* time = nullptr, 
                 double* lower = nullptr, double* upper = nullptr)
 {
-    if (time) {
+    if (time && std::isfinite(*time)) {
         // If caller wants bracketing time samples as well, we can just use
         // GetBracketingTimeSamplesForPath. If no samples exist, this should
         // return false.
@@ -9441,10 +9442,12 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
                 const GfInterval layerInterval =
                     interval * stageToLayer.GetScale()
                     + stageToLayer.GetOffset();
-                Usd_CopyTimeSamplesInInterval(samples, layerInterval, times);
-                // Map the layer sample times to stage times.
-                for (auto &time : *times) {
-                    time = info._layerToStageOffset * time;
+                if (std::isfinite(interval.GetMin()) && std::isfinite(interval.GetMax())) {
+                    Usd_CopyTimeSamplesInInterval(samples, layerInterval, times);
+                    // Map the layer sample times to stage times.
+                    for (auto &time : *times) {
+                        time = info._layerToStageOffset * time;
+                    }
                 }
             }
         }
