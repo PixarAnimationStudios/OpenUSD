@@ -9439,10 +9439,10 @@ UsdStage::_GetTimeSamplesInIntervalFromResolveInfo(
                 // Map the interval (expressed in stage time) to layer time.
                 const SdfLayerOffset stageToLayer =
                     info._layerToStageOffset.GetInverse();
-                const GfInterval layerInterval =
-                    interval * stageToLayer.GetScale()
-                    + stageToLayer.GetOffset();
-                if (std::isfinite(interval.GetMin()) && std::isfinite(interval.GetMax())) {
+                if (std::isfinite(stageToLayer.GetScale()) && std::isfinite(stageToLayer.GetOffset())) {
+                    const GfInterval layerInterval =
+                        interval * stageToLayer.GetScale()
+                        + stageToLayer.GetOffset();
                     Usd_CopyTimeSamplesInInterval(samples, layerInterval, times);
                     // Map the layer sample times to stage times.
                     for (auto &time : *times) {
