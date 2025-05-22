@@ -729,8 +729,6 @@ HioImageIO_Image::ReadCropped(int const cropTop,
     CGBitmapInfo bitmapInfo;
     if (IsColorSpaceSRGB()) {
         // if this is recognized as sRGB then set the colorSpace and bitmapInfo accordingly
-        // this is for cases in which the input format may be CMYK,
-        // which OpenImageIO converts to rgb when ImageSpec's attribute oiio:RawColor is false (default)
         colorSpace = CGColorSpaceCreateWithName(kCGColorSpaceSRGB);
         if (colorSpace == NULL) {
             return false;
