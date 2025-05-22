@@ -337,7 +337,7 @@ _GetNumChannelsFromHIOFormat(HioFormat hioFormat)
     }
 }
 
-// For compatability with Ice/Imr we transmogrify some matrix metadata
+// For compatability with legacy metadata keys we transmogrify some matrix metadata
 static NSString*
 _TranslateMetadataKey(std::string const & metadataKey)
 {
