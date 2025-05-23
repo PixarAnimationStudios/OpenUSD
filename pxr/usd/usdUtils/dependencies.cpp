@@ -17,6 +17,7 @@
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layerUtils.h"
 
+#include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/trace/trace.h"
 
 #include <functional>
@@ -126,7 +127,12 @@ struct UsdUtils_ComputeAllDependenciesClient
             }
         }
         else if (UsdStage::IsSupportedFile(anchoredPath)) {
-            layers.insert(SdfLayer::FindOrOpen(anchoredPath));
+            SdfLayerRefPtr dependencyLayer = SdfLayer::FindOrOpen(anchoredPath);
+            if (dependencyLayer) {
+                layers.insert(dependencyLayer);
+            } else {
+                TF_WARN("Failed to open dependency layer: %s (%s)", dependency.c_str(), anchoredPath.c_str());
+            }
         }
         else {
             assets.insert(resolvedPath);
