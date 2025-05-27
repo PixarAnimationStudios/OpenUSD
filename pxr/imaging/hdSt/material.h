@@ -100,6 +100,7 @@ private:
         HdSceneDelegate * sceneDelegate,
         HdStResourceRegistrySharedPtr const& resourceRegistry,
         std::weak_ptr<HdStShaderCode> const &shaderCode,
+        HdStMaterialNetwork::TextureDescriptorVector const& oldDescs,
         HdStMaterialNetwork::TextureDescriptorVector const &descs,
         HdStShaderCode::NamedTextureHandleVector * texturesFromStorm,
         HdBufferSpecVector * specs,

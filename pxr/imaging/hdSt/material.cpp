@@ -115,6 +115,7 @@ HdStMaterial::_ProcessTextureDescriptors(
     HdSceneDelegate * const sceneDelegate,
     HdStResourceRegistrySharedPtr const& resourceRegistry,
     std::weak_ptr<HdStShaderCode> const &shaderCode,
+    HdStMaterialNetwork::TextureDescriptorVector const& oldDescs,
     HdStMaterialNetwork::TextureDescriptorVector const &descs,
     HdStShaderCode::NamedTextureHandleVector * const texturesFromStorm,
     HdBufferSpecVector * const specs,
@@ -150,12 +151,25 @@ HdStMaterial::_ProcessTextureDescriptors(
         // Better batch invalidation (i.e., not global) would really help
         // us here, as would hints from the scene about how likely the
         // textures are to change.  Maybe in the future...
-        
+
+        bool useTexturePrimHash = _isInitialized;
+        // On our 2nd+ sync, if the texture prim path is changed (i.e., disconnect and reconnect texture input node),
+        // the hash can't be re-used as it might be collide with others.
+        if (useTexturePrimHash) {
+            const auto it = std::find_if(oldDescs.begin(), oldDescs.end(),
+                [&desc](const HdStMaterialNetwork::TextureDescriptor& oldDesc) {
+                    return oldDesc.name == desc.name && oldDesc.texturePrim == desc.texturePrim;
+                });
+            if (it == oldDescs.end()) {
+                useTexturePrimHash = false;
+            }
+        }
+
         texturesFromStorm->push_back(
             { desc.name,
               desc.type,
               textureHandle,
-              _isInitialized
+              useTexturePrimHash
                   ? hash_value(desc.texturePrim)
                   : _GetTextureHandleHash(textureHandle) });
     }
@@ -196,6 +210,8 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     TfToken materialTag = _materialTag;
     HdSt_MaterialParamVector params;
     HdStMaterialNetwork::TextureDescriptorVector textureDescriptors;
+    // Cache the old descriptors before they are reset
+    HdStMaterialNetwork::TextureDescriptorVector oldTextureDescriptors = _networkProcessor.GetTextureDescriptors();
 
     VtValue vtMat = sceneDelegate->GetMaterialResource(GetId());
     if (vtMat.IsHolding<HdMaterialNetworkMap>()) {
@@ -301,6 +317,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         sceneDelegate,
         resourceRegistry,
         _materialNetworkShader,
+        oldTextureDescriptors,
         textureDescriptors,
         &textures,
         &specs,
