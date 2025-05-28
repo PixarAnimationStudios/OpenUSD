@@ -456,7 +456,7 @@ HdxColorCorrectionTask::_CreateOpenColorIOResourcesImpl(
 
         std::vector<float> lutVector = std::vector<float>(
             lutValues,
-            lutValues + (valueCount * sizeof(float))
+            lutValues + valueCount
         );
 
         result->luts.emplace_back(
