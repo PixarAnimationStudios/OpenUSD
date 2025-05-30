@@ -8,10 +8,7 @@
 #define PXR_IMAGING_HD_ST_MATERIALX_SHADER_GEN_H
 
 #include "pxr/pxr.h"
-
-#include <MaterialXGenGlsl/GlslShaderGenerator.h>
-#include <MaterialXGenMsl/MslShaderGenerator.h>
-#include <MaterialXGenGlsl/VkShaderGenerator.h>
+#include <MaterialXCore/Library.h>
 
 // The macro and defines MATERIALX_GENERATE_INDEX and MATERIALX_VERSION_INDEX
 // added in MaterialX 1.39.2 and revised in 1.39.4 in MaterialXCore/Library.h,
@@ -22,6 +19,10 @@
 #define MATERIALX_VERSION_INDEX \
     MATERIALX_GENERATE_INDEX(MATERIALX_MAJOR_VERSION, MATERIALX_MINOR_VERSION, MATERIALX_BUILD_VERSION)
 #endif
+
+#include <MaterialXGenGlsl/GlslShaderGenerator.h>
+#include <MaterialXGenGlsl/VkShaderGenerator.h>
+#include <MaterialXGenMsl/MslShaderGenerator.h>
     
 PXR_NAMESPACE_OPEN_SCOPE
 
