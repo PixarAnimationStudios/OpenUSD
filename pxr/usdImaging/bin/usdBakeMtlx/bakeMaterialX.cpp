@@ -20,7 +20,6 @@
 #include "pxr/usd/usdShade/shader.h"
 
 #include <MaterialXCore/Document.h>
-#include <MaterialXCore/Generated.h>
 #include <MaterialXCore/Node.h>
 #include <MaterialXFormat/Util.h>
 #include <MaterialXFormat/XmlIo.h>
@@ -128,8 +127,7 @@ void _BakeMtlxDocument(
         : mx::Image::BaseType::UINT8;
 
     // Construct a Texture Baker.
-#if MATERIALX_MAJOR_VERSION <= 1 && MATERIALX_MINOR_VERSION <= 38 && \
-    MATERIALX_BUILD_VERSION <= 6
+#if MATERIALX_VERSION_INDEX <= MATERIALX_GENERATE_INDEX(1, 38, 6)
     mx::TextureBakerPtr baker = mx::TextureBaker::create(
         textureWidth, textureHeight, baseType);
 #else

@@ -13,6 +13,16 @@
 #include <MaterialXGenMsl/MslShaderGenerator.h>
 #include <MaterialXGenGlsl/VkShaderGenerator.h>
 
+// The macro and defines MATERIALX_GENERATE_INDEX and MATERIALX_VERSION_INDEX
+// added in MaterialX 1.39.2 and revised in 1.39.4 in MaterialXCore/Library.h,
+// Defined here for versions up to 1.39.4.
+#if (MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION < 39) || \
+    (MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 39 && MATERIALX_BUILD_VERSION < 4)
+#define MATERIALX_GENERATE_INDEX(major, minor, build) (((major) << 22U) | ((minor) << 12U) | (build))
+#define MATERIALX_VERSION_INDEX \
+    MATERIALX_GENERATE_INDEX(MATERIALX_MAJOR_VERSION, MATERIALX_MINOR_VERSION, MATERIALX_BUILD_VERSION)
+#endif
+    
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdSt_MxShaderGenInfo;

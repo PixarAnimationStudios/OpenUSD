@@ -400,9 +400,7 @@ _CompileOslSource(
     // Include the filepath to the MaterialX OSL directory containing mx_funcs.h
     std::vector<std::string> oslArgs;
     oslArgs.reserve(searchPaths.size());
-#if MATERIALX_MAJOR_VERSION == 1 && \
-    MATERIALX_MINOR_VERSION == 38 && \
-    MATERIALX_BUILD_VERSION == 3
+#if MATERIALX_VERSION_INDEX == MATERIALX_GENERATE_INDEX(1, 38, 3)
     static const mx::FilePath stdlibOslPath = "stdlib/osl";
 #else 
     // MaterialX v1.38.4 restructured the OSL files and moved mx_funcs.h
@@ -414,11 +412,7 @@ _CompileOslSource(
                                             : "-I" + path.asString());
     }
 
-#if MATERIALX_MAJOR_VERSION == 1 && \
-    MATERIALX_MINOR_VERSION == 38 && \
-    MATERIALX_BUILD_VERSION == 3
-    // Nothing
-#else
+#if MATERIALX_VERSION_INDEX > MATERIALX_GENERATE_INDEX(1, 38, 3)
     // MaterialX 1.38.4 removed its copy of stdosl.h and other OSL headers
     // and requires it to be included from the OSL installation itself.
     oslArgs.push_back(std::string("-I") + TfGetenv("RMANTREE") + "lib/osl");
@@ -842,7 +836,7 @@ _NodeHasTextureCoordPrimvar(
         // for texture coordinates. 
         auto geompropvalueNodes = nodegraph->getNodes(_tokens->geompropvalue);
         for (const mx::NodePtr& mxGeomPropNode : geompropvalueNodes) {
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+#if MATERIALX_VERSION_INDEX < MATERIALX_GENERATE_INDEX(1, 39, 0)
             if (mxGeomPropNode->getType() == mx::Type::VECTOR2->getName()) {
 #else
             if (mxGeomPropNode->getType() == mx::Type::VECTOR2.getName()) {

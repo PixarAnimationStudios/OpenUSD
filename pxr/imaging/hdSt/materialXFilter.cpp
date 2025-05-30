@@ -637,7 +637,7 @@ _GetGlTFSurfaceMaterialTag(HdMaterialNode2 const& terminal)
 static const mx::TypeDesc
 _GetMxTypeDescription(std::string const& typeName)
 {
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+#if MATERIALX_VERSION_INDEX < MATERIALX_GENERATE_INDEX(1, 39, 0)
     using MxTypeDesc = const mx::TypeDesc*;
 #else
     using MxTypeDesc = const mx::TypeDesc;
@@ -657,14 +657,14 @@ _GetMxTypeDescription(std::string const& typeName)
 
     const auto typeDescIt = _typeLibrary.find(typeName);
     if (typeDescIt != _typeLibrary.end()) {
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+#if MATERIALX_VERSION_INDEX < MATERIALX_GENERATE_INDEX(1, 39, 0)
       return *typeDescIt->second;
 #else
       return typeDescIt->second;
 #endif
     }
 
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
+#if MATERIALX_VERSION_INDEX < MATERIALX_GENERATE_INDEX(1, 39, 0)
     return *mx::Type::NONE;
 #else
     return mx::Type::NONE;

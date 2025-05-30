@@ -311,7 +311,7 @@ _GetNodeDef(const mx::DocumentPtr& mxDoc, std::string const& prevMxNodeDefName)
     // For nodeDef name changes or node removals between MaterialX v1.38 and 
     // the current version
     std::string mxNodeDefName = prevMxNodeDefName;
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION >= 39
+#if MATERIALX_VERSION_INDEX >= MATERIALX_GENERATE_INDEX(1, 39, 0)
     // The normalmap nodeDef name changed in v1.39
     if (prevMxNodeDefName == "ND_normalmap") {
         mxNodeDefName = "ND_normalmap_float";
