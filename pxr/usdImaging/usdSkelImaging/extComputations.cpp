@@ -53,6 +53,17 @@ _TransformPoints(TfSpan<GfVec3f> points, const GfMatrix4d& xform)
 
 static
 void
+_TransformNormals(TfSpan<GfVec3f> normals, const GfMatrix3d& xformInvTranspose)
+{
+    WorkParallelForN(normals.size(), [&](size_t start, size_t end) {
+        for (size_t i = start; i < end; ++i) {
+            normals[i] = GfVec3f(normals[i] * xformInvTranspose);
+        }
+    }, /*grainSize*/ 1000);
+}
+
+static
+void
 _ApplyPackedBlendShapes(const TfSpan<const GfVec4f>& offsets,
                         const TfSpan<const GfVec2i>& ranges,
                         const TfSpan<const float>& weights,
@@ -73,13 +84,12 @@ _ApplyPackedBlendShapes(const TfSpan<const GfVec4f>& offsets,
     }
 }
 
+static
 void
-UsdSkelImagingInvokeExtComputation(
+_InvokeSkinningComputationPoints(
     const TfToken &skinningMethod,
     HdExtComputationContext * const ctx)
 {
-    TRACE_FUNCTION();
-
     const VtValue restPointsValue =
         ctx->GetInputValue(
             UsdSkelImagingExtAggregatorComputationInputNameTokens
@@ -212,6 +222,205 @@ UsdSkelImagingInvokeExtComputation(
     ctx->SetOutputValue(
         UsdSkelImagingExtComputationOutputNameTokens->skinnedPoints,
         VtValue(skinnedPoints));
+}
+
+static
+void
+_DeformNormalsWithSkinning(
+    const TfToken& skinningMethod,
+    const GfMatrix4f& geomBindXform,
+    const VtMatrix4fArray& skinningXforms,
+    const VtVec2fArray& influences,
+    bool hasConstantInfluences,
+    const int numInfluencesPerComponent,
+    const VtIntArray& faceVertexIndices,
+    const GfMatrix4d& seklToPrimLocalXform,
+    const bool hasFaceVaryingNormals,
+    VtVec3fArray& skinnedNormals)
+{
+    if (hasConstantInfluences) {
+        // Have constant influences. Compute a rigid deformation.
+        GfMatrix4f skinnedTransform;
+        if (UsdSkelSkinTransform(
+                skinningMethod,
+                geomBindXform,
+                skinningXforms,
+                influences,
+                &skinnedTransform)) {
+
+            // The computed skinnedTransform is the transform which, when
+            // applied to the normals of the skinned prim, results in skinned
+            // normals in *skel* space, and need to be xformed to prim
+            // local space.
+
+            const GfMatrix4d restToPrimLocalSkinnedXf =
+                GfMatrix4d(skinnedTransform) * seklToPrimLocalXform;
+            const GfMatrix3d restToPrimLocalSkinnedXfInvTranspose =
+                restToPrimLocalSkinnedXf.ExtractRotationMatrix().GetInverse().GetTranspose();
+
+            _TransformNormals(skinnedNormals, restToPrimLocalSkinnedXfInvTranspose);
+        }
+    } else {
+        // Get geomBindInvTransposeXform
+        const GfMatrix3d& geomBindInvTransposeXform = GfMatrix4d(geomBindXform)
+            .ExtractRotationMatrix().GetInverse().GetTranspose();
+
+        // Get skinningInvTransposeXforms in parallel
+        VtMatrix3dArray skinningInvTransposeXforms(skinningXforms.size());
+        {
+            auto skinningDst = TfMakeSpan(skinningInvTransposeXforms);
+            WorkParallelForN(
+                skinningXforms.size(),
+                [&](size_t start, size_t end) {
+                    for (size_t i = start; i < end; ++i) {
+                        skinningDst[i] = GfMatrix4d(skinningXforms[i]).ExtractRotationMatrix()
+                            .GetInverse().GetTranspose();
+                    }
+                });
+        }
+
+        if (hasFaceVaryingNormals) {
+            UsdSkelSkinFaceVaryingNormals(skinningMethod, geomBindInvTransposeXform,
+                                      skinningInvTransposeXforms, influences,
+                                      numInfluencesPerComponent,
+                                      faceVertexIndices, skinnedNormals);
+        } else {
+            UsdSkelSkinNormals(skinningMethod, geomBindInvTransposeXform,
+                            skinningInvTransposeXforms, influences,
+                            numInfluencesPerComponent,
+                            skinnedNormals);
+        }
+
+        // Output of skinning is in *skel* space.
+        // Transform the result into gprim space.
+        const GfMatrix3d& skelToGprimInvTransposeXform =
+            seklToPrimLocalXform.ExtractRotationMatrix().GetInverse().GetTranspose();
+        _TransformNormals(skinnedNormals, skelToGprimInvTransposeXform);
+    }
+}
+
+static
+void
+_InvokeSkinningComputationNormals(
+    const TfToken &skinningMethod,
+    HdExtComputationContext * const ctx)
+{
+    const VtValue restNormalsValue =
+        ctx->GetInputValue(
+            UsdSkelImagingExtAggregatorComputationInputNameTokens
+                ->restNormals);
+    const VtValue geomBindXformValue =
+        ctx->GetInputValue(
+            UsdSkelImagingExtAggregatorComputationInputNameTokens
+                ->geomBindXform);
+    const VtValue influencesValue =
+        ctx->GetInputValue(
+            UsdSkelImagingExtAggregatorComputationInputNameTokens
+                ->influences);
+    const VtValue numInfluencesPerComponentValue =
+        ctx->GetInputValue(
+            UsdSkelImagingExtAggregatorComputationInputNameTokens
+                ->numInfluencesPerComponent);
+    const VtValue hasConstantInfluencesValue =
+        ctx->GetInputValue(
+            UsdSkelImagingExtAggregatorComputationInputNameTokens
+                ->hasConstantInfluences);
+    const VtValue primWorldToLocalValue =
+        ctx->GetInputValue(
+            UsdSkelImagingExtComputationInputNameTokens
+                ->primWorldToLocal);
+    const VtValue skinningXformsValue =
+        ctx->GetInputValue(
+            UsdSkelImagingExtComputationInputNameTokens
+                ->skinningXforms);
+    const VtValue skelLocalToWorldValue =
+        ctx->GetInputValue(
+            UsdSkelImagingExtComputationInputNameTokens
+                ->skelLocalToWorld);
+    const VtValue faceVertexIndicesValue =
+        ctx->GetInputValue(
+            UsdSkelImagingExtAggregatorComputationInputNameTokens
+                ->faceVertexIndices);
+    const VtValue hasFaceVaryingNormalsValue =
+        ctx->GetInputValue(
+            UsdSkelImagingExtAggregatorComputationInputNameTokens
+                ->hasFaceVaryingNormals);
+
+    // Ensure inputs are holding the right value types.
+    if (!restNormalsValue.IsHolding<VtVec3fArray>() ||
+        !geomBindXformValue.IsHolding<GfMatrix4f>() ||
+        !influencesValue.IsHolding<VtVec2fArray>() ||
+        !numInfluencesPerComponentValue.IsHolding<int>() ||
+        !hasConstantInfluencesValue.IsHolding<bool>() ||
+        !primWorldToLocalValue.IsHolding<GfMatrix4d>() ||
+        !skinningXformsValue.IsHolding<VtMatrix4fArray>() ||
+        !skelLocalToWorldValue.IsHolding<GfMatrix4d>() ||
+        !faceVertexIndicesValue.IsHolding<VtIntArray>() ||
+        !hasFaceVaryingNormalsValue.IsHolding<bool>()) {
+        ctx->RaiseComputationError();
+        return;
+    }
+
+    VtVec3fArray skinnedNormals =
+        restNormalsValue.UncheckedGet<VtVec3fArray>();
+
+    const int numInfluencesPerComponent =
+        numInfluencesPerComponentValue.UncheckedGet<int>();
+
+    if (numInfluencesPerComponent <= 0) {
+        ctx->SetOutputValue(
+            UsdSkelImagingExtComputationOutputNameTokens->skinnedNormals,
+            VtValue(skinnedNormals));
+        return;
+    }
+
+    // The points returned above are in skel space, and need to be
+    // transformed to prim local space.
+    const GfMatrix4d skelToPrimLocal =
+        skelLocalToWorldValue.UncheckedGet<GfMatrix4d>() *
+        primWorldToLocalValue.UncheckedGet<GfMatrix4d>();
+    _DeformNormalsWithSkinning(
+        skinningMethod,
+        geomBindXformValue.UncheckedGet<GfMatrix4f>(),
+        skinningXformsValue.UncheckedGet<VtMatrix4fArray>(),
+        influencesValue.UncheckedGet<VtVec2fArray>(),
+        hasConstantInfluencesValue.UncheckedGet<bool>(),
+        numInfluencesPerComponent,
+        faceVertexIndicesValue.UncheckedGet<VtIntArray>(),
+        skelToPrimLocal,
+        hasFaceVaryingNormalsValue.UncheckedGet<bool>(),
+        skinnedNormals);
+
+    ctx->SetOutputValue(
+        UsdSkelImagingExtComputationOutputNameTokens->skinnedNormals,
+        VtValue(skinnedNormals));
+}
+
+void
+UsdSkelImagingInvokeExtComputation(
+    const TfToken &skinningMethod,
+    HdExtComputationContext * const ctx)
+{
+    TRACE_FUNCTION();
+
+    const VtValue* restPointsValuePtr =
+        ctx->GetOptionalInputValuePtr(
+            UsdSkelImagingExtAggregatorComputationInputNameTokens->restPoints);
+    const VtValue* restNormalsValuePtr =
+        ctx->GetOptionalInputValuePtr(
+            UsdSkelImagingExtAggregatorComputationInputNameTokens->restNormals);
+    if(!restPointsValuePtr && !restNormalsValuePtr) {
+        TF_CODING_ERROR("No rest points or normals provided");
+        ctx->RaiseComputationError();
+        return;
+    }
+
+    bool computePoints = restPointsValuePtr != nullptr;
+    if(computePoints) {
+        _InvokeSkinningComputationPoints(skinningMethod, ctx);
+    } else {
+        _InvokeSkinningComputationNormals(skinningMethod, ctx);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -164,11 +164,6 @@ UsdSkelImagingSkeletonAdapter::Populate(
             _skinnedPrimDataCache[skinnedPrimPath] = skinnedPrimData;
 
             for (ComputationType computationType : {ComputationType::Points, ComputationType::Normals}) {
-                // Skip computing normals if CPU compute is forced.
-                if(computationType == ComputationType::Normals && TfGetEnvSetting(USDSKELIMAGING_FORCE_CPU_COMPUTE)) {
-                    continue;
-                }
-
                 // 1. A skinning computation that computes the skinned points or skinned normals.
                 SdfPath compPath = _GetSkinningComputationPath(skinnedPrimPath, computationType);
 
@@ -837,12 +832,6 @@ UsdSkelImagingSkeletonAdapter::InvokeComputation(
 {
     HD_TRACE_FUNCTION();
 
-    // Only invoke the computation if it's a points computation.
-    // Normals computations are not supported yet for CPU .
-    if(!_IsSkinningPointsComputationPath(cachePath)) {
-        return;
-    }
-
     TfToken skinningMethod = UsdSkelTokens->classicLinear;
     if (const _SkinnedPrimData* const skinnedPrimData =
             _GetSkinnedPrimData(cachePath.GetParentPath())) {
@@ -1086,7 +1075,7 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationSceneInputNames(
         // Scene inputs
         if (skinningMethod == UsdSkelTokens->classicLinear) {
 
-            static TfTokenVector sceneInputNames({
+            static const TfTokenVector sceneInputNames({
                     // From the skinned prim
                     UsdSkelImagingExtComputationInputNameTokens
                         ->primWorldToLocal,
@@ -1114,7 +1103,7 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationSceneInputNames(
             // This will result in additional data being uploaded to the GPU
             // for the DQS case on every time step since these are scene inputs.
             // This should be revisited if/when this becomes a performance issue.
-            static TfTokenVector sceneInputNames({
+            static const TfTokenVector sceneInputNames({
                     // From the skinned prim
                     UsdSkelImagingExtComputationInputNameTokens
                         ->primWorldToLocal,
@@ -1145,7 +1134,7 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationSceneInputNames(
         // ExtComputation inputs
         // Scene inputs for the aggregator computation.
         if (isPointsInputAggregator) {
-            static TfTokenVector pointsInputNames({
+            static const TfTokenVector pointsInputNames({
                 // Data authored on the skinned prim as primvars.
                 UsdSkelImagingExtAggregatorComputationInputNameTokens->restPoints,
                 UsdSkelImagingExtAggregatorComputationInputNameTokens->geomBindXform,
@@ -1158,7 +1147,7 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationSceneInputNames(
             });
             return pointsInputNames;
         } else {
-            static TfTokenVector normalsInputNames({
+            static const TfTokenVector normalsInputNames({
                 UsdSkelImagingExtAggregatorComputationInputNameTokens->restNormals,
                 UsdSkelImagingExtAggregatorComputationInputNameTokens->geomBindXform,
                 UsdSkelImagingExtAggregatorComputationInputNameTokens->influences,
@@ -2391,7 +2380,6 @@ UsdSkelImagingSkeletonAdapter::GetExtComputationKernel(
 
     return BaseAdapter::GetExtComputationKernel(prim, cachePath, 
                 instancerContext);
-
 }
 
 void
