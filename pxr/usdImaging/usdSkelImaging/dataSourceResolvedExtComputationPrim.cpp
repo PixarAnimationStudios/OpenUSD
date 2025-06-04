@@ -666,7 +666,7 @@ _ExtComputationInputComputations(const SdfPath &primPath)
     HdPathDataSourceHandle const pathSrc =
         HdRetainedTypedSampledDataSource<SdfPath>::New(
             primPath.AppendChild(
-                UsdSkelImagingExtComputationNameTokens->aggregatorComputation));
+                UsdSkelImagingExtComputationNameTokens->pointsAggregatorComputation));
 
     std::vector<HdDataSourceBaseHandle> values;
     values.reserve(names.size());
@@ -754,13 +754,13 @@ UsdSkelImagingDataSourceResolvedExtComputationPrim(
     TRACE_FUNCTION();
 
     if (computationName == UsdSkelImagingExtComputationNameTokens
-                                ->computation) {
+                                ->pointsComputation) {
         return
             _ExtComputationPrimDataSource(
                 std::move(resolvedPrimSource));
     }
     if (computationName == UsdSkelImagingExtComputationNameTokens
-                                ->aggregatorComputation) {
+                                ->pointsAggregatorComputation) {
         return
             _ExtAggregatorComputationPrimDataSource(
                 std::move(resolvedPrimSource));

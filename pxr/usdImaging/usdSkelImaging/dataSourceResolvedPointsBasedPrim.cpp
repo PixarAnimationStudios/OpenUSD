@@ -204,7 +204,7 @@ _ExtComputationPrimvars(const SdfPath &primPath)
             .SetSourceComputation(
                 HdRetainedTypedSampledDataSource<SdfPath>::New(
                     primPath.AppendChild(
-                        UsdSkelImagingExtComputationNameTokens->computation)))
+                        UsdSkelImagingExtComputationNameTokens->pointsComputation)))
             .SetSourceComputationOutputName(
                 HdRetainedTypedSampledDataSource<TfToken>::New(
                     UsdSkelImagingExtComputationOutputNameTokens->skinnedPoints))
@@ -610,14 +610,14 @@ UsdSkelImagingDataSourceResolvedPointsBasedPrim::ProcessDirtyLocators(
             entries->push_back({
                 _primPath.AppendChild(
                     UsdSkelImagingExtComputationNameTokens
-                    ->aggregatorComputation),
+                    ->pointsAggregatorComputation),
                 std::move(dirtyLocatorsForAggregatorComputation)});
             sendPointsPrimvarValueDirty = true;
         }
         if (!dirtyLocatorsForComputation.IsEmpty()) {
             entries->push_back({
                 _primPath.AppendChild(
-                    UsdSkelImagingExtComputationNameTokens->computation),
+                    UsdSkelImagingExtComputationNameTokens->pointsComputation),
                 std::move(dirtyLocatorsForComputation)});
             sendPointsPrimvarValueDirty = true;
         }

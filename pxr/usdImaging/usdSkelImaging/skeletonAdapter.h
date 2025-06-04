@@ -273,6 +273,11 @@ protected:
                      UsdImagingIndexProxy* index) override;
 
 private:
+    enum class ComputationType : int{
+        Points,
+        Normals
+    };
+
     // ---------------------------------------------------------------------- //
     /// Handlers for the Bone Mesh
     // ---------------------------------------------------------------------- //
@@ -314,10 +319,15 @@ private:
     // ---------------------------------------------------------------------- //
     /// Handlers for the skinning computations
     // ---------------------------------------------------------------------- //
-    bool _IsSkinningComputationPath(const SdfPath& cachePath) const;
-    
-    bool
-    _IsSkinningInputAggregatorComputationPath(const SdfPath& cachePath)const;
+    bool _IsSkinningPointsComputationPath(const SdfPath& cachePath) const;
+
+    bool _IsSkinningNormalsComputationPath(const SdfPath& cachePath) const;
+
+    ComputationType _GetSkinningComputationType(const SdfPath& cachePath) const;
+
+    bool _IsSkinningPointsInputAggregatorComputationPath(const SdfPath& cachePath) const;
+
+    bool _IsSkinningNormalsInputAggregatorComputationPath(const SdfPath& cachePath) const;
 
     void _TrackSkinningComputationVariability(
             const UsdPrim& skinnedPrim,
@@ -330,21 +340,28 @@ private:
                                        const SdfPath& skinnedPrimCachePath,
                                        UsdTimeCode time) const;
     
-    SdfPath _GetSkinningComputationPath(const SdfPath& skinnedPrimPath) const;
+    VtVec3fArray _GetSkinnedPrimNormals(const UsdPrim& skinnedPrim,
+                                       const SdfPath& skinnedPrimCachePath,
+                                       UsdTimeCode time) const;
 
-    SdfPath _GetSkinningInputAggregatorComputationPath(
-        const SdfPath& skinnedPrimPath) const;
+    VtIntArray _GetSkinnedPrimFaceVertexIndices(const UsdPrim& skinnedPrim,
+                                       const SdfPath& skinnedPrimCachePath,
+                                       UsdTimeCode time) const;
+
+    SdfPath _GetSkinningComputationPath(const SdfPath& skinnedPrimPath, ComputationType computationType) const;
+
+    SdfPath _GetSkinningInputAggregatorComputationPath(const SdfPath& skinnedPrimPath, ComputationType computationType) const;
 
     // Static helper methods
     static
     std::string _LoadSkinningComputeKernel(const TfToken& kernelKey);
 
     static
-    const std::string& _GetLBSSkinningComputeKernel();
+    const std::string& _GetLBSSkinningComputeKernel(ComputationType computationType);
 
     static
-    const std::string& _GetDQSSkinningComputeKernel();
-
+    const std::string& _GetDQSSkinningComputeKernel(ComputationType computationType);
+    
     // ---------------------------------------------------------------------- //
     /// Handlers for the skinned prim
     // ---------------------------------------------------------------------- //
@@ -374,7 +391,8 @@ private:
             SdfPath const& cachePath,
             TfToken const& name,
             UsdTimeCode time,
-            const UsdImagingInstancerContext* instancerContext) const;
+            const UsdImagingInstancerContext* instancerContext,
+            ComputationType computationType) const;
 
     VtValue 
     _GetExtComputationInputForInputAggregator(
@@ -382,7 +400,8 @@ private:
             SdfPath const& cachePath,
             TfToken const& name,
             UsdTimeCode time,
-            const UsdImagingInstancerContext* instancerContext) const;
+            const UsdImagingInstancerContext* instancerContext,
+            ComputationType computationType) const;
 
     size_t
     _SampleExtComputationInputForSkinningComputation(
@@ -392,6 +411,7 @@ private:
             UsdTimeCode time,
             const UsdImagingInstancerContext* instancerContext,
             size_t maxSampleCount,
+            ComputationType computationType,
             float *sampleTimes,
             VtValue *sampleValues);
 
@@ -403,9 +423,23 @@ private:
             UsdTimeCode time,
             const UsdImagingInstancerContext* instancerContext,
             size_t maxSampleCount,
+            ComputationType computationType,
             float *sampleTimes,
             VtValue *sampleValues);
 
+    // ---------------------------------------------------------------------- //
+    /// Matrix helpers
+    static
+    bool
+    _ExtractSkinningScaleXforms(const VtMatrix4fArray& skinningXforms,
+                                VtMatrix3fArray* skinningScaleXforms,
+                                ComputationType computationType);
+
+    static
+    bool
+    _ExtractSkinningDualQuats(const VtMatrix4fArray& skinningXforms,
+                              VtVec4fArray* skinningDualQuats,
+                              ComputationType computationType);
 
     // ---------------------------------------------------------------------- //
     /// Populated skeleton state
@@ -452,13 +486,15 @@ private:
         _SkinnedPrimData(const SdfPath& skelPath,
                          const UsdSkelSkeletonQuery& skelQuery,
                          const UsdSkelSkinningQuery& skinningQuery,
-                         const SdfPath& skelRootPath);
+                         const SdfPath& skelRootPath,
+                         UsdSkelImagingSkeletonAdapter* adapter);
 
         std::shared_ptr<UsdSkelBlendShapeQuery> blendShapeQuery;
         UsdSkelSkinningQuery skinningQuery;
         UsdSkelAnimQuery animQuery;
         SdfPath skelPath, skelRootPath;
         bool hasJointInfluences = false;
+        TfToken normalsInterpolation;
     };
 
     const _SkinnedPrimData* _GetSkinnedPrimData(const SdfPath& cachePath) const;
