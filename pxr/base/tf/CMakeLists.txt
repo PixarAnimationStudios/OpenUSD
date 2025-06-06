@@ -110,6 +110,21 @@ function(add_py_dll_link_test)
 
 endfunction()
 
+set(pyModuleTestFiles "")
+if (PXR_BUILD_TESTS)
+    set(pyModuleTestFiles
+        testenv/__init__.py
+        testenv/testTfScriptModuleLoader_AAA_RaisesError.py
+        testenv/testTfScriptModuleLoader_DepLoadsAll.py
+        testenv/testTfScriptModuleLoader_LoadsAll.py
+        testenv/testTfScriptModuleLoader_LoadsUnknown.py
+        testenv/testTfScriptModuleLoader_Other.py
+        testenv/testTfScriptModuleLoader_Test.py
+        testenv/testTfScriptModuleLoader_Unknown.py
+        testenv/testTfPyInvoke_callees.py
+    )
+endif()
+
 pxr_library(tf
     LIBRARIES
         arch
@@ -333,15 +348,7 @@ pxr_library(tf
 
     PYMODULE_FILES 
         __init__.py
-        testenv/__init__.py
-        testenv/testTfScriptModuleLoader_AAA_RaisesError.py
-        testenv/testTfScriptModuleLoader_DepLoadsAll.py
-        testenv/testTfScriptModuleLoader_LoadsAll.py
-        testenv/testTfScriptModuleLoader_LoadsUnknown.py
-        testenv/testTfScriptModuleLoader_Other.py
-        testenv/testTfScriptModuleLoader_Test.py
-        testenv/testTfScriptModuleLoader_Unknown.py
-        testenv/testTfPyInvoke_callees.py
+        ${pyModuleTestFiles}
 
     DOXYGEN_FILES
         diagnosticOverview.dox
