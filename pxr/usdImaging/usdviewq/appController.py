@@ -1209,11 +1209,7 @@ class AppController(QtCore.QObject):
             if reasons:
                 err += "\n".join(reasons) + "\n"
             return err
-
-        if not Ar.GetResolver().Resolve(usdFilePath):
-            sys.stderr.write(_GetFormattedError(["File not found"]))
-            sys.exit(1)
-
+        
         if self._mallocTags != 'none':
             Tf.MallocTag.Initialize()
 
@@ -1232,6 +1228,11 @@ class AppController(QtCore.QObject):
                     sys.stderr.write(_GetFormattedError(
                         [err.commentary.strip() for err in e.args]))
                     sys.exit(1)
+
+                if not layer:
+                    if not Ar.GetResolver().Resolve(usdFilePath):
+                        sys.stderr.write(_GetFormattedError(["File not found"]))
+                        sys.exit(1)
 
             if sessionFilePath:
                 try:
