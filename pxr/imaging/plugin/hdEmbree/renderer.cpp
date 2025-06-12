@@ -28,8 +28,13 @@
 // oneTBB as a min spec. This applies the "Work" thread limit to the
 // render thread if "Work" is using old TBB, but won't affect other "Work"
 // implementations.  Note that it may affect Embree TBB usage as well.
+//
+// The header that provides version definitions moved between TBB
+// (tbb_stddef.h) and oneTBB (version.h), so we use the lowest level header
+// that is available at the same path in both and let it bring in the
+// definitions.
 // -------------------------------------------------------------------------
-#include <tbb/tbb_stddef.h>
+#include <tbb/blocked_range.h>
 
 #if TBB_INTERFACE_VERSION_MAJOR < 12
 
