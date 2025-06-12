@@ -119,10 +119,11 @@ HgiVulkanComputeCmds::Dispatch(int dimX, int dimY)
     // Determine device's num compute work group limits
     const VkPhysicalDeviceLimits limits = 
         _hgi->GetCapabilities()->vkDeviceProperties2.properties.limits;
+    const uint32_t maxAllowedLimit = (1 << 31) - 1;
     const GfVec3i maxNumWorkGroups = GfVec3i(
-        limits.maxComputeWorkGroupCount[0],
-        limits.maxComputeWorkGroupCount[1],
-        limits.maxComputeWorkGroupCount[2]);
+        std::min<uint32_t>(maxAllowedLimit, limits.maxComputeWorkGroupCount[0]),
+        std::min<uint32_t>(maxAllowedLimit, limits.maxComputeWorkGroupCount[1]),
+        std::min<uint32_t>(maxAllowedLimit, limits.maxComputeWorkGroupCount[2]));
 
     if (numWorkGroupsX > maxNumWorkGroups[0]) {
         TF_WARN("Max number of work group available from device is %i, larger "
