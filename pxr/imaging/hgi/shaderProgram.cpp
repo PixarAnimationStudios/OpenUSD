@@ -26,19 +26,4 @@ HgiShaderProgramDesc::HgiShaderProgramDesc()
 {
 }
 
-bool operator==(
-    const HgiShaderProgramDesc& lhs,
-    const HgiShaderProgramDesc& rhs)
-{
-    return lhs.debugName == rhs.debugName &&
-           lhs.shaderFunctions == rhs.shaderFunctions;
-}
-
-bool operator!=(
-    const HgiShaderProgramDesc& lhs,
-    const HgiShaderProgramDesc& rhs)
-{
-    return !(lhs == rhs);
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE

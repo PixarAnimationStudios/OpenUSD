@@ -41,14 +41,17 @@ struct HgiShaderProgramDesc
 };
 
 HGI_API
-inline bool operator==(
-    const HgiShaderProgramDesc& lhs,
-    const HgiShaderProgramDesc& rhs);
+inline bool operator==(const HgiShaderProgramDesc& lhs,
+                       const HgiShaderProgramDesc& rhs) {
+    return lhs.debugName == rhs.debugName &&
+           lhs.shaderFunctions == rhs.shaderFunctions;
+}
 
 HGI_API
-inline bool operator!=(
-    const HgiShaderProgramDesc& lhs,
-    const HgiShaderProgramDesc& rhs);
+inline bool operator!=(const HgiShaderProgramDesc& lhs,
+                       const HgiShaderProgramDesc& rhs) {
+    return !(lhs == rhs);
+}
 
 
 ///
