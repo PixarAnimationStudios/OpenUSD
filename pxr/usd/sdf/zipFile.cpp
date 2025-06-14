@@ -858,7 +858,7 @@ _ZipFilePath(const std::string& filePath)
     // TfNormPath will flip all backslashes to forward slashes and
     // strip drive letters.
     std::string result = 
-        TfNormPath(filePath, /* stripDriveSpecifier = */ true);
+        TfNormPath(filePath, TF_NORM_PATH_STRIP_DRIVE);
 
     // Strip off any initial slashes.
     result = TfStringTrimLeft(result, "/");

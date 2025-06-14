@@ -473,6 +473,12 @@ TestStrings()
     TF_AXIOM(TfStringCatPaths("foo", "../bar") == "bar");
     TF_AXIOM(TfStringCatPaths("/foo", "../bar") == "/bar");
     TF_AXIOM(TfStringCatPaths("foo/crud/crap", "../bar") == "foo/crud/bar");
+    TF_AXIOM(TfStringCatPaths(
+            "foo", "bar/",
+            TF_NORM_PATH_KEEP_TRAILING_SLASH) == "foo/bar/");
+    TF_AXIOM(TfStringCatPaths(
+            "/foo", "../bar/",
+            TF_NORM_PATH_KEEP_TRAILING_SLASH) == "/bar/");
 #if defined(ARCH_OS_WINDOWS)
     // Same on Windows but with backslashes.
     TF_AXIOM(TfStringCatPaths("foo", "bar") == "foo/bar");
@@ -480,6 +486,12 @@ TestStrings()
     TF_AXIOM(TfStringCatPaths("foo", "..\\bar") == "bar");
     TF_AXIOM(TfStringCatPaths("\\foo", "..\\bar") == "/bar");
     TF_AXIOM(TfStringCatPaths("foo\\crud\\crap", "..\\bar") == "foo/crud/bar");
+    TF_AXIOM(TfStringCatPaths(
+            "foo", "bar/",
+            TF_NORM_PATH_KEEP_TRAILING_SLASH) == "foo/bar/");
+    TF_AXIOM(TfStringCatPaths(
+            "foo\\crud", "..\\bar\\",
+            TF_NORM_PATH_KEEP_TRAILING_SLASH) == "foo/bar/");
 #endif
 
     return true;

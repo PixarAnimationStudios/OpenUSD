@@ -35,6 +35,13 @@ TestArchNormPath()
     ARCH_AXIOM(ArchNormPath("///..//./foo/.//bar") == "/foo/bar");
     ARCH_AXIOM(ArchNormPath(
             "foo/bar/../../../../../../baz") == "../../../../baz");
+    ARCH_AXIOM(ArchNormPath("/", ARCH_NORM_PATH_KEEP_TRAILING_SLASH) == "/");
+    ARCH_AXIOM(ArchNormPath(
+            "foobar/../barbaz",
+            ARCH_NORM_PATH_KEEP_TRAILING_SLASH) == "barbaz/");
+    ARCH_AXIOM(ArchNormPath(
+            "///foo/.//bar//",
+            ARCH_NORM_PATH_KEEP_TRAILING_SLASH) == "/foo/bar/");
 
 #if defined(ARCH_OS_WINDOWS)
     ARCH_AXIOM(ArchNormPath("C:\\foo\\bar") == "C:/foo/bar");
@@ -42,9 +49,25 @@ TestArchNormPath()
     ARCH_AXIOM(ArchNormPath("c:\\foo\\bar") == "c:/foo/bar");
     ARCH_AXIOM(ArchNormPath("c:foo\\bar") == "c:foo/bar");
     ARCH_AXIOM(ArchNormPath(
-            "C:\\foo\\bar", /* stripDriveSpecifier = */ true) == "/foo/bar");
+            "C:\\foo\\bar",
+            ARCH_NORM_PATH_STRIP_DRIVE) == "/foo/bar");
     ARCH_AXIOM(ArchNormPath(
-            "C:foo\\bar", /* stripDriveSpecifier = */ true) == "foo/bar");
+            "C:foo\\bar",
+            ARCH_NORM_PATH_STRIP_DRIVE) == "foo/bar");
+    ARCH_AXIOM(ArchNormPath(
+            "c:\\foo\\bar\\",
+            ARCH_NORM_PATH_KEEP_TRAILING_SLASH) == "c:/foo/bar/");
+    ARCH_AXIOM(ArchNormPath(
+            "c:foo\\bar\\",
+            ARCH_NORM_PATH_KEEP_TRAILING_SLASH) == "c:foo/bar/");
+    ARCH_AXIOM(ArchNormPath(
+            "c:\\foo\\bar\\",
+            ARCH_NORM_PATH_KEEP_TRAILING_SLASH |
+            ARCH_NORM_PATH_STRIP_DRIVE) == "/foo/bar/");
+    ARCH_AXIOM(ArchNormPath(
+            "c:foo\\bar\\",
+            ARCH_NORM_PATH_KEEP_TRAILING_SLASH |
+            ARCH_NORM_PATH_STRIP_DRIVE) == "foo/bar/");
 #endif
 
     return true;

@@ -197,17 +197,27 @@ ARCH_API bool ArchGetModificationTime(const char* pathname, double* time);
 /// available in the stat structure for the current platform.
 ARCH_API double ArchGetModificationTime(const ArchStatType& st);
 
+enum ArchNormPathFlags {
+    ARCH_NORM_PATH_NONE                = 0u,
+    ARCH_NORM_PATH_STRIP_DRIVE         = 1u << 0,
+    ARCH_NORM_PATH_KEEP_TRAILING_SLASH = 1u << 1
+};
+
 /// Normalizes the specified path, eliminating double slashes, etc.
 ///
-/// This canonicalizes paths, removing any double slashes, and eliminiating
+/// This canonicalizes paths, removing any double slashes, and eliminating
 /// '.', and '..' components of the path.  This emulates the behavior of
 /// os.path.normpath in Python.
 ///
 /// On Windows, all backslashes are converted to forward slashes and drive
-/// specifiers (e.g., "C:") are lower-cased. If \p stripDriveSpecifier
-/// is \c true, these drive specifiers are removed from the path.
+/// specifiers (e.g., "C:") are lower-cased.
+///
+/// Behavior can be customized using \p flags:
+/// \li If ARCH_NORM_PATH_STRIP_DRIVE is set, drive specifiers are removed.
+/// \li If ARCH_NORM_PATH_KEEP_TRAILING_SLASH is set, any trailing slash is
+///     preserved.
 ARCH_API std::string ArchNormPath(const std::string& path,
-                                  bool stripDriveSpecifier = false);
+                                  unsigned int flags = ARCH_NORM_PATH_NONE);
 
 /// Returns the canonical absolute path of the specified filename.
 ///

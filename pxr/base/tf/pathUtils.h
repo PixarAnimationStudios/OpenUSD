@@ -42,18 +42,28 @@ std::string TfRealPath(std::string const& path,
                        bool allowInaccessibleSuffix = false,
                        std::string* error = 0);
 
+enum TfNormPathFlags {
+    TF_NORM_PATH_NONE                = 0u,
+    TF_NORM_PATH_STRIP_DRIVE         = 1u << 0,
+    TF_NORM_PATH_KEEP_TRAILING_SLASH = 1u << 1
+};
+
 /// Normalizes the specified path, eliminating double slashes, etc.
 ///
-/// This canonicalizes paths, removing any double slashes, and eliminiating
+/// This canonicalizes paths, removing any double slashes, and eliminating
 /// '.', and '..' components of the path.  This emulates the behavior of
 /// os.path.normpath in Python.
 ///
 /// On Windows, all backslashes are converted to forward slashes and drive
-/// specifiers (e.g., "C:") are lower-cased. If \p stripDriveSpecifier
-/// is \c true, these drive specifiers are removed from the path.
+/// specifiers (e.g., "C:") are lower-cased.
+///
+/// Behavior can be customized using \p flags:
+/// \li If TF_NORM_PATH_STRIP_DRIVE is set, drive specifiers are removed.
+/// \li If TF_NORM_PATH_KEEP_TRAILING_SLASH is set, any trailing slash is
+///     preserved.
 TF_API
-std::string TfNormPath(std::string const& path, 
-                       bool stripDriveSpecifier = false);
+std::string TfNormPath(std::string const& path,
+                       unsigned int flags = TF_NORM_PATH_NONE);
 
 /// Return the index delimiting the longest accessible prefix of \a path.
 ///

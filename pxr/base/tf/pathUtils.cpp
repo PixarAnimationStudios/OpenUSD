@@ -216,9 +216,14 @@ TfFindLongestAccessiblePrefix(string const &path, string* error)
 }
 
 string
-TfNormPath(string const &inPath, bool stripDriveSpecifier)
+TfNormPath(string const &inPath, unsigned int flags)
 {
-    return ArchNormPath(inPath, stripDriveSpecifier);
+    unsigned int archFlags = ARCH_NORM_PATH_NONE;
+    if (flags & TF_NORM_PATH_STRIP_DRIVE)
+        archFlags |= ARCH_NORM_PATH_STRIP_DRIVE;
+    if (flags & TF_NORM_PATH_KEEP_TRAILING_SLASH)
+        archFlags |= ARCH_NORM_PATH_KEEP_TRAILING_SLASH;
+    return ArchNormPath(inPath, archFlags);
 }
 
 string

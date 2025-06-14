@@ -160,7 +160,13 @@ TestTfNormPath()
     TF_AXIOM(TfNormPath("///foo/.//bar//.//..//.//baz") == "/foo/baz");
     TF_AXIOM(TfNormPath("///..//./foo/.//bar") == "/foo/bar");
     TF_AXIOM(TfNormPath("foo/bar/../../../../../../baz") == "../../../../baz");
-
+    TF_AXIOM(TfNormPath("/", TF_NORM_PATH_KEEP_TRAILING_SLASH) == "/");
+    TF_AXIOM(TfNormPath(
+            "foobar/../barbaz",
+            TF_NORM_PATH_KEEP_TRAILING_SLASH) == "barbaz/");
+    TF_AXIOM(TfNormPath(
+            "///foo/.//bar//",
+            TF_NORM_PATH_KEEP_TRAILING_SLASH) == "/foo/bar/");
     return true;
 }
 

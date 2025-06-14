@@ -42,7 +42,9 @@ _AppendPathList(
         // Anchor all relative paths to the shared library path.
         const bool isLibraryRelativePath = TfIsRelativePath(path);
         if (isLibraryRelativePath) {
-            result->push_back(TfStringCatPaths(sharedLibPath, path));
+            result->push_back(
+                TfStringCatPaths(sharedLibPath, path,
+                                 TF_NORM_PATH_KEEP_TRAILING_SLASH));
         }
         else {
             result->push_back(path);

@@ -18,6 +18,7 @@
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/pathUtils.h"
 
 #include <cstdarg>
 #include <cstring>
@@ -680,13 +681,13 @@ TF_API void TfEscapeStringReplaceChar(const char** in, char** out);
 /// Tokenize the input strings using a '/' delimiter. Look for '..' tokens in
 /// the suffix and construct the appropriate result.
 ///
-/// Examples:
-/// 
-/// \li TfStringCatPaths( "foo/bar", "jive" ) => "foo/bar/jive"
-/// \li TfStringCatPaths( "foo/bar", "../jive" ) => "foo/jive"
+/// Behavior can be customized using \p TfNormPathFlags passed via \p flags.
+/// For example, setting TF_NORM_PATH_KEEP_TRAILING_SLASH will preserve a
+/// trailing slash in the result.
 TF_API
 std::string TfStringCatPaths( const std::string &prefix, 
-                              const std::string &suffix );
+                              const std::string &suffix,
+                              unsigned int flags = TF_NORM_PATH_NONE );
 
 /// Test whether \a identifier is valid.
 ///

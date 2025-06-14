@@ -1133,9 +1133,10 @@ TfEscapeString(const std::string &in)
 }
 
 string 
-TfStringCatPaths( const string &prefix, const string &suffix )
+TfStringCatPaths(
+    const string &prefix, const string &suffix, unsigned int flags)
 {
-    return TfNormPath(prefix + "/" + suffix);
+    return TfNormPath(prefix + "/" + suffix, flags);
 }
 
 std::string

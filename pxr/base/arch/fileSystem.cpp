@@ -224,7 +224,7 @@ _GetTokenType(pair<Iter, Iter> t) {
 }
 
 string
-_NormPath(string const &inPath)
+_NormPath(string const &inPath, unsigned int flags)
 {
     // We take one pass through the string, transforming it into a normalized
     // path in-place.  This works since the normalized path never grows, except
@@ -335,10 +335,11 @@ _NormPath(string const &inPath)
         };
     }
     
-    // Remove a trailing slash if we wrote one.  We're careful to use const
+    // Remove a trailing slash if necessary.  We're careful to use const
     // iterators here to avoid incurring a string copy if it's not necessary (in
     // the case of libstdc++'s copy-on-write basic_string)
-    if (writeIdx > firstWriteIdx && path.cbegin()[writeIdx-1] == '/')
+    if (!(flags & ARCH_NORM_PATH_KEEP_TRAILING_SLASH) &&
+        writeIdx > firstWriteIdx && path.cbegin()[writeIdx-1] == '/')
         --writeIdx;
 
     // Trim the string to length if necessary.
@@ -355,7 +356,7 @@ _NormPath(string const &inPath)
 
 #if defined(ARCH_OS_WINDOWS)
 string
-ArchNormPath(const string& inPath, bool stripDriveSpecifier)
+ArchNormPath(const string& inPath, unsigned int flags)
 {
     // Convert backslashes to forward slashes.
     string path = inPath;
@@ -365,20 +366,20 @@ ArchNormPath(const string& inPath, bool stripDriveSpecifier)
     // UNC paths or paths that start with \\? (which allow longer paths).
     string prefix;
     if (path.size() >= 2 && path[1] == ':') {
-        if (!stripDriveSpecifier) {
+        if (!(flags & ARCH_NORM_PATH_STRIP_DRIVE)) {
             prefix = path.substr(0,2);
         }
         path.erase(0, 2);
     }
 
     // Normalize and prepend drive specifier, if any.
-    return prefix + _NormPath(path);
+    return prefix + _NormPath(path, flags);
 }
 #else
 string
-ArchNormPath(const string& inPath, bool /*stripDriveSpecifier*/)
+ArchNormPath(const string& inPath, unsigned int flags)
 {
-    return _NormPath(inPath);
+    return _NormPath(inPath, flags);
 }
 #endif // defined(ARCH_OS_WINDOWS)
 
