@@ -18,6 +18,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdSt_MaterialXCodegenResult;
+
+using HdSt_MaterialXCodegenResultPtr =
+    std::shared_ptr<class HdSt_MaterialXCodegenResult>;
+
 // Storing MaterialX-Hydra counterparts and other Hydra specific information
 struct HdSt_MxShaderGenInfo {
     HdSt_MxShaderGenInfo() 
@@ -27,6 +32,7 @@ struct HdSt_MxShaderGenInfo {
           defaultTexcoordName("st"),
           materialTag(HdStMaterialTagTokens->defaultMaterialTag.GetString()),
           bindlessTexturesEnabled(false) {}
+
     MaterialX::StringMap textureMap;
     MaterialX::StringMap primvarMap;
     MaterialX::StringMap primvarDefaultValueMap;
@@ -38,7 +44,7 @@ struct HdSt_MxShaderGenInfo {
 /// MaterialX Filter
 /// Converting a MaterialX node to one with a generated MaterialX glslfx file
 HDST_API
-MaterialX::ShaderPtr HdSt_ApplyMaterialXFilter(
+HdSt_MaterialXCodegenResultPtr HdSt_ApplyMaterialXFilter(
     HdMaterialNetwork2* hdNetwork,
     SdfPath const& materialPath,
     HdMaterialNode2 const& terminalNode,

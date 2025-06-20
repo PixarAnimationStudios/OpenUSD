@@ -28,14 +28,11 @@
 #include <map>
 #include <memory>
 
-#ifdef PXR_MATERIALX_SUPPORT_ENABLED
-#include <MaterialXCore/Library.h>
-MATERIALX_NAMESPACE_BEGIN
-    using ShaderPtr = std::shared_ptr<class Shader>;
-MATERIALX_NAMESPACE_END
-#endif
-
 PXR_NAMESPACE_OPEN_SCOPE
+
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+class HdSt_MaterialXShaderRegistry;
+#endif
 
 using HdStComputationSharedPtr = std::shared_ptr<class HdStComputation>;
 using HdStDispatchBufferSharedPtr = std::shared_ptr<class HdStDispatchBuffer>;
@@ -109,7 +106,12 @@ public:
     HF_MALLOC_TAG_NEW("new HdStResourceRegistry");
 
     HDST_API
-    explicit HdStResourceRegistry(Hgi* hgi);
+    explicit HdStResourceRegistry(
+        Hgi* const hgi
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+        , const char* mtlxCacheDirPath = nullptr
+#endif
+    );
 
     HDST_API
     ~HdStResourceRegistry() override;
@@ -414,10 +416,15 @@ public:
     RegisterGLSLFXFile(HdInstance<HioGlslfxSharedPtr>::ID id);
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
-    /// Register MaterialX GLSLFX Shader.
     HDST_API
-    HdInstance<MaterialX::ShaderPtr>
-    RegisterMaterialXShader(HdInstance<MaterialX::ShaderPtr>::ID id);
+    HdSt_MaterialXShaderRegistry* GetMaterialXShaderRegistry() {
+        return _materialXShaderRegistry.get();
+    }
+
+    HDST_API
+    HdSt_MaterialXShaderRegistry* const GetMaterialXShaderRegistry() const {
+        return _materialXShaderRegistry.get();
+    }
 #endif
 
     /// Register a Hgi resource bindings into the registry.
@@ -682,8 +689,9 @@ private:
         _glslfxFileRegistry;
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
-    // MaterialX glslfx shader registry
-    HdInstanceRegistry<MaterialX::ShaderPtr> _materialXShaderRegistry;
+    // MaterialX codegen result registry
+    std::unique_ptr<class HdSt_MaterialXShaderRegistry>
+        _materialXShaderRegistry;
 #endif
 
     // texture handle registry

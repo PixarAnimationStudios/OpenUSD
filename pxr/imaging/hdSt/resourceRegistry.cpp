@@ -30,6 +30,7 @@
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include <MaterialXGenShader/Shader.h>
+#include "pxr/imaging/hdSt/materialXShaderRegistry.h"
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -105,7 +106,12 @@ _Register(ID id, HdInstanceRegistry<T> &registry, TfToken const &perfToken)
     }
 }
 
-HdStResourceRegistry::HdStResourceRegistry(Hgi * const hgi)
+HdStResourceRegistry::HdStResourceRegistry(
+    Hgi * const hgi
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+    , const char* mtlxCacheDirPath
+#endif
+)
     : _hgi(hgi)
     , _numBufferSourcesToResolve(0)
     // default aggregation strategies for varying (vertex, varying) primvars
@@ -122,6 +128,10 @@ HdStResourceRegistry::HdStResourceRegistry(Hgi * const hgi)
     // default aggregation strategy for single buffers (for nested instancer)
     , _singleAggregationStrategy(
         std::make_unique<HdStVBOSimpleMemoryManager>(this))
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+    , _materialXShaderRegistry(
+        std::make_unique<HdSt_MaterialXShaderRegistry>(mtlxCacheDirPath))
+#endif
     , _textureHandleRegistry(std::make_unique<HdSt_TextureHandleRegistry>(this))
     , _stagingBuffer(std::make_unique<HdStStagingBuffer>(this))
 {
@@ -142,10 +152,9 @@ void HdStResourceRegistry::InvalidateShaderRegistry()
     _renderPassShaderRegistry.Invalidate();
     _glslfxFileRegistry.Invalidate();
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
-    _materialXShaderRegistry.Invalidate();
+    _materialXShaderRegistry->Invalidate();
 #endif
 }
-
 
 void HdStResourceRegistry::ReloadResource(TfToken const& resourceType,
                                           std::string const& path) 
@@ -647,26 +656,17 @@ HdStResourceRegistry::RegisterRenderPassShader(
 
 HdInstance<HdStGLSLProgramSharedPtr>
 HdStResourceRegistry::RegisterGLSLProgram(
-        HdInstance<HdStGLSLProgramSharedPtr>::ID id)
+    HdInstance<HdStGLSLProgramSharedPtr>::ID id)
 {
     return _glslProgramRegistry.GetInstance(id);
 }
 
 HdInstance<HioGlslfxSharedPtr>
 HdStResourceRegistry::RegisterGLSLFXFile(
-        HdInstance<HioGlslfxSharedPtr>::ID id)
+    HdInstance<HioGlslfxSharedPtr>::ID id)
 {
     return _glslfxFileRegistry.GetInstance(id);
 }
-
-#ifdef PXR_MATERIALX_SUPPORT_ENABLED
-HdInstance<MaterialX::ShaderPtr>
-HdStResourceRegistry::RegisterMaterialXShader(
-        HdInstance<MaterialX::ShaderPtr>::ID id)
-{
-    return _materialXShaderRegistry.GetInstance(id);
-}
-#endif
 
 HdInstance<HgiResourceBindingsSharedPtr>
 HdStResourceRegistry::RegisterResourceBindings(
@@ -1113,7 +1113,7 @@ HdStResourceRegistry::_GarbageCollect()
     _glslProgramRegistry.GarbageCollect();
     _glslfxFileRegistry.GarbageCollect();
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
-    _materialXShaderRegistry.GarbageCollect();
+    _materialXShaderRegistry->GarbageCollect();
 #endif
 
     _textureHandleRegistry->GarbageCollect();

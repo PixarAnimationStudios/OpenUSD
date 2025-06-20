@@ -7,8 +7,10 @@
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/materialXFilter.h"
 #include "pxr/imaging/hdSt/materialXShaderGen.h"
+#include "pxr/imaging/hdSt/materialXShaderRegistry.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
+
 #include "pxr/imaging/hdMtlx/hdMtlx.h"
 #include "pxr/imaging/hgi/tokens.h"
 
@@ -1061,16 +1063,13 @@ _ReplaceFilenameInput(
 // Gather the Material Params from the glslfx ShaderPtr
 void
 _AddMaterialXParams(
-    mx::ShaderPtr const& glslfxShader,
+    HdSt_MaterialXCodegenResult const& mxCodegenResult,
     HdMaterialNetwork2* hdNetwork,
     SdfPath const& terminalNodePath,
     HdAnnonNodePathMap const& hdToAnnonNodePathMap,
     HdSt_MaterialParamVector* materialParams)
 {
     TRACE_FUNCTION_SCOPE("Collect Mtlx params from glslfx shader.")
-    if (!glslfxShader) {
-        return;
-    }
 
     // Storm can only find primvar nodes when they are connected to the terminal
     _ConnectPrimvarNodesToTerminalNode(terminalNodePath, hdNetwork);
@@ -1109,126 +1108,56 @@ _AddMaterialXParams(
         }
     }
 
-    const mx::ShaderStage& pxlStage = glslfxShader->getStage(mx::Stage::PIXEL);
-    const auto& paramsBlock = pxlStage.getUniformBlock(mx::HW::PUBLIC_UNIFORMS);
-    for (size_t i = 0; i < paramsBlock.size(); ++i) {
+    HdSt_MaterialParamVector const& fallbackParams =
+        mxCodegenResult.GetFallbackParams();
 
-        // MaterialX parameter Information
-        const auto* variable = paramsBlock[i];
-        const auto varType = HdStMaterialXHelpers::GetMxTypeDesc(variable);
+    for (HdSt_MaterialParam const& fallbackParam : fallbackParams) {
 
-        // Create a corresponding HdSt_MaterialParam
-        HdSt_MaterialParam param;
-        param.paramType = HdSt_MaterialParam::ParamTypeFallback;
-        param.name = TfToken(variable->getVariable());
+        materialParams->push_back(fallbackParam);
 
-        // Get the parameter value from the map created above
-        const auto paramValueIt =
-            mxParamNameToValue.find(variable->getVariable());
+        // Look up the parameter value in the map created above
+        const auto paramValueIt = mxParamNameToValue.find(fallbackParam.name);
         if (paramValueIt != mxParamNameToValue.end()) {
-            if (varType.getBaseType() == mx::TypeDesc::BASETYPE_BOOLEAN ||
-                varType.getBaseType() == mx::TypeDesc::BASETYPE_FLOAT ||
-                varType.getBaseType() == mx::TypeDesc::BASETYPE_INTEGER) {
-                param.fallbackValue = paramValueIt->second;
-            }
+            materialParams->back().fallbackValue = paramValueIt->second;
         }
+
         // If it was not found in the mapping use the value from the MaterialX
         // variable to get the value. 
-        // Note that if the network was upgraded in Hdmtlx, and the node's 
+        // Note that if the network was upgraded in HdMtlx, and the node's 
         // parameter names changed they will not be found through the above 
         // mapping and instead need to be found from the variables in the 
-        // MaterialX glslfxShader. 
-        else {
-            std::string separator;
-            const auto varValue = variable->getValue();
-            std::istringstream valueStream(varValue
-                ? varValue->getValueString() : std::string());
-            if (varType.getBaseType() == mx::TypeDesc::BASETYPE_BOOLEAN) {
-                const bool val = valueStream.str() == "true";
-                param.fallbackValue = VtValue(val);
-            }
-            else if (varType.getBaseType() == mx::TypeDesc::BASETYPE_FLOAT) {
-                if (varType.getSize() == 1) {
-                    float val;
-                    valueStream >> val;
-                    param.fallbackValue = VtValue(val);
-                }
-                else if (varType.getSize() == 2) {
-                    GfVec2f val;
-                    valueStream >> val[0] >> separator >> val[1];
-                    param.fallbackValue = VtValue(val);
-                }
-                else if (varType.getSize() == 3) {
-                    GfVec3f val;
-                    valueStream >> val[0] >> separator >> val[1] >> separator 
-                                >> val[2];
-                    param.fallbackValue = VtValue(val);
-                }
-                else if (varType.getSize() == 4) {
-                    GfVec4f val;
-                    valueStream >> val[0] >> separator >> val[1] >> separator
-                                >> val[2] >> separator >> val[3];
-                    param.fallbackValue = VtValue(val);
-                }
-            }
-            else if (varType.getBaseType() == mx::TypeDesc::BASETYPE_INTEGER) {
-                if (varType.getSize() == 1) {
-                    int val;
-                    valueStream >> val;
-                    param.fallbackValue = VtValue(val);
-                }
-                else if (varType.getSize() == 2) {
-                    GfVec2i val;
-                    valueStream >> val[0] >> separator >> val[1];
-                    param.fallbackValue = VtValue(val);
-                }
-                else if (varType.getSize() == 3) {
-                    GfVec3i val;
-                    valueStream >> val[0] >> separator >> val[1] >> separator 
-                                >> val[2];
-                    param.fallbackValue = VtValue(val);
-                }
-                else if (varType.getSize() == 4) {
-                    GfVec4i val;
-                    valueStream >> val[0] >> separator >> val[1] >> separator
-                        >> val[2] >> separator >> val[3];
-                    param.fallbackValue = VtValue(val);
-                }
-            }
-        }
+        // MaterialX shader.
+    }
 
-        if (!param.fallbackValue.IsEmpty()) {
-            materialParams->push_back(std::move(param));
-        }
+    for (TfToken textureParamName : mxCodegenResult.GetTextureParams()) {
 
         // For filename inputs, manage the associated texture node
-        if (varType.getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME) {
-            // Get the anonymized MaterialX node name from the param name
-            // annonNodeName_paramName -> annonNodeName
-            std::string mxNodeName = variable->getVariable();
-            const auto underscorePos = mxNodeName.find('_');
-            if (underscorePos != std::string_view::npos) {
-                mxNodeName = mxNodeName.substr(0, underscorePos);
-            }
+        
+        // Get the anonymized MaterialX node name from the param name
+        // anonNodeName_paramName -> anonNodeName
+        std::string mxNodeName = textureParamName;
+        const auto underscorePos = mxNodeName.find('_');
+        if (underscorePos != std::string_view::npos) {
+            mxNodeName = mxNodeName.substr(0, underscorePos);
+        }
 
-            // Get the original hdNodeName from the MaterialX node name
-            const auto hdNodePathIt = annonToHdNodePathMap.find(mxNodeName);
-            if (hdNodePathIt != annonToHdNodePathMap.end()) {
-                _UpdateTextureNode(
-                    param.name, hdNetwork, 
-                    terminalNodePath, hdNodePathIt->second);
-            } else {
-                // Storm does not expect textures/filename to be direct inputs 
-                // on materials, replace this filename input with a connection
-                // to an image node
-                _ReplaceFilenameInput(
-                    hdNetwork, terminalNodePath, variable->getVariable());
-            }
+        // Get the original hdNodeName from the MaterialX node name
+        const auto origNodePathIt = annonToHdNodePathMap.find(mxNodeName);
+        if (origNodePathIt != annonToHdNodePathMap.end()) {
+            _UpdateTextureNode(
+                textureParamName, hdNetwork,
+                terminalNodePath, origNodePathIt->second);
+        } else {
+            // Storm does not expect textures/filename to be direct inputs 
+            // on materials, replace this filename input with a connection
+            // to an image node
+            _ReplaceFilenameInput(
+                hdNetwork, terminalNodePath, textureParamName);
         }
     }
 }
 
-static mx::ShaderPtr
+static HdSt_MaterialXCodegenResultPtr
 _GenerateMaterialXShader(
     HdMaterialNetwork2 const& hdNetwork,
     SdfPath const& materialPath,
@@ -1264,8 +1193,10 @@ _GenerateMaterialXShader(
     mxHdInfo.bindlessTexturesEnabled = bindlessTexturesEnabled;
 
     // Generate the glslfx source code from the mtlxDoc
-    return HdSt_GenMaterialXShader(
+    mx::ShaderPtr mxShader = HdSt_GenMaterialXShader(
         mtlxDoc, stdLibraries, searchPaths, mxHdInfo, apiName);
+
+    return std::make_shared<HdSt_MaterialXCodegenResult>(*mxShader);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1296,8 +1227,37 @@ _IsTopologicalShader(TfToken const& nodeId)
     return TfStringStartsWith(nodeId.GetString(), "ND_swizzle_");
 }
 
-// Build the topoNetwork, equivalent to the given hdNetwork but anonymized and 
-// stripped of non-topological parameters to better re-use the generated shader.  
+// Helper functions generating hashes which are stable from one run of the
+// application to another
+namespace
+{
+    // The default implementation
+    template <typename T>
+    void _AppendPersistentHash(Tf_HashState& hashState, T const& value)
+    {
+        TfHashAppend(hashState, value);
+    }
+
+    // TfHashAppend hashes TfTokens not as strings, but as pointers to interned
+    // strings which are not stable from run to run
+    void _AppendPersistentHash(
+        Tf_HashState& hashState, TfToken const& token)
+    {
+        TfHashAppend(hashState, token.GetString());
+    }
+
+    // A VtValue may store a TfToken, in which case we need to convert it to a
+    // string in order to avoid the same pitfall as above
+    void _AppendPersistentHash(Tf_HashState& hashState, VtValue const& vtValue)
+    {
+        if (vtValue.IsHolding<TfToken>()) {
+            TfHashAppend(hashState, vtValue.Get<TfToken>().GetString());
+        } else {
+            TfHashAppend(hashState, vtValue.GetHash());
+        }
+    }
+}
+
 size_t _BuildEquivalentMaterialNetwork(
     HdMaterialNetwork2 const& hdNetwork,
     HdMaterialNetwork2* topoNetwork,
@@ -1409,22 +1369,38 @@ size_t _BuildEquivalentMaterialNetwork(
 
     // Build the topo hash from the topo network
     Tf_HashState topoHash;
-    for (const auto& terminal : topoNetwork->terminals) {
-        TfHashAppend(topoHash, terminal.first);
-        TfHashAppend(topoHash, terminal.second.upstreamNode.GetName());
+
+    TRACE_FUNCTION_SCOPE("Hashing the network")
+
+    for (std::pair<TfToken, HdMaterialConnection2> const& terminal
+        : topoNetwork->terminals) {
+
+        _AppendPersistentHash(topoHash, terminal.first);
+        _AppendPersistentHash(topoHash, terminal.second.upstreamNode.GetName());
     }
-    for (const auto& node : topoNetwork->nodes) {
-        TfHashAppend(topoHash, node.first.GetName());
-        TfHashAppend(topoHash, node.second.nodeTypeId);
-        for (const auto& param : node.second.parameters) {
-            TfHashAppend(topoHash, param.first);
-            TfHashAppend(topoHash, param.second.GetHash());
+    for (std::pair<SdfPath, HdMaterialNode2> const& node
+        : topoNetwork->nodes) {
+
+        _AppendPersistentHash(topoHash, node.first.GetName());
+        _AppendPersistentHash(topoHash, node.second.nodeTypeId);
+
+        for (std::pair<TfToken, VtValue> const& param
+            : node.second.parameters) {
+
+            _AppendPersistentHash(topoHash, param.first);
+            _AppendPersistentHash(topoHash, param.second);
         }
-        for (const auto& connection : node.second.inputConnections) {
-            TfHashAppend(topoHash, connection.first);
-            for (const auto& source : connection.second) {
-                TfHashAppend(topoHash, source.upstreamNode.GetName());
-                TfHashAppend(topoHash, source.upstreamOutputName);
+
+        for (std::pair<
+                TfToken, std::vector<HdMaterialConnection2>
+            > const& connection
+            : node.second.inputConnections) {
+
+            _AppendPersistentHash(topoHash, connection.first);
+
+            for (HdMaterialConnection2 const& source : connection.second) {
+                _AppendPersistentHash(topoHash, source.upstreamNode.GetName());
+                _AppendPersistentHash(topoHash, source.upstreamOutputName);
             }
         }
     }
@@ -1433,7 +1409,7 @@ size_t _BuildEquivalentMaterialNetwork(
 }
 
 
-mx::ShaderPtr
+HdSt_MaterialXCodegenResultPtr
 HdSt_ApplyMaterialXFilter(
     HdMaterialNetwork2* hdNetwork,
     SdfPath const& materialPath,
@@ -1453,6 +1429,13 @@ HdSt_ApplyMaterialXFilter(
 
     TRACE_FUNCTION_SCOPE("ApplyMaterialXFilter: Found Mtlx Node.")
 
+    HdSt_MaterialXShaderRegistry* const materialXShaderRegistry =
+        resourceRegistry->GetMaterialXShaderRegistry();
+
+    if (!TF_VERIFY(materialXShaderRegistry)) {
+        return nullptr;
+    }
+
     // Anonymize the network to make sure shader code does not depend
     // on node names
     HdAnnonNodePathMap annonNodePathMap;
@@ -1461,7 +1444,6 @@ HdSt_ApplyMaterialXFilter(
         *hdNetwork, &annonNetwork, &annonNodePathMap);
     SdfPath anonTerminalNodePath = annonNodePathMap[terminalNodePath];
 
-    mx::ShaderPtr glslfxShader;
     const TfToken materialTag(_GetMaterialTag(*hdNetwork, terminalNode));
     const bool bindlessTexturesEnabled = 
         resourceRegistry->GetHgi()->GetCapabilities()->IsSet(
@@ -1471,16 +1453,19 @@ HdSt_ApplyMaterialXFilter(
     // Use the Resource Registry to cache the generated MaterialX 
     // glslfx Shader
     Tf_HashState shaderHash;
-    TfHashAppend(shaderHash, topoHash);
-    TfHashAppend(shaderHash, materialTag);
-    HdInstance<mx::ShaderPtr> glslfxInstance =
-        resourceRegistry->RegisterMaterialXShader(shaderHash.GetCode());
+    _AppendPersistentHash(shaderHash, topoHash);
+    _AppendPersistentHash(shaderHash, materialTag);
+    
+    HdSt_MaterialXShaderRegistry::InstanceType instance =
+        materialXShaderRegistry->GetInstance(
+            shaderHash.GetCode());
 
-    if (glslfxInstance.IsFirstInstance()) {
+    HdSt_MaterialXCodegenResultPtr codegenResult;
+    if (instance.IsFirstInstance()) {
         try {
-            glslfxShader = _GenerateMaterialXShader(
-                annonNetwork, materialPath, terminalNode, 
-                anonTerminalNodePath, materialTag, apiName, 
+            codegenResult = _GenerateMaterialXShader(
+                annonNetwork, materialPath, terminalNode,
+                anonTerminalNodePath, materialTag, apiName,
                 bindlessTexturesEnabled);
         } catch (mx::Exception& exception) {
             TF_CODING_ERROR("Unable to create the Glslfx Shader.\n"
@@ -1488,11 +1473,10 @@ HdSt_ApplyMaterialXFilter(
         }
 
         // Store the mx::ShaderPtr
-        glslfxInstance.SetValue(glslfxShader);
+        instance.SetValue(codegenResult);
     }
     else {
-        // Get the mx::ShaderPtr from the resource registry
-        glslfxShader = glslfxInstance.GetValue();
+        codegenResult = instance.GetValue();
     }
 
     // Add a Fallback DomeLight texture node to the network
@@ -1500,16 +1484,14 @@ HdSt_ApplyMaterialXFilter(
 
     // Add material parameters from the original network
     _AddMaterialXParams(
-        glslfxShader, hdNetwork, terminalNodePath,
+        *codegenResult, hdNetwork, terminalNodePath,
         annonNodePathMap, materialParams);
 
     // Create a new terminal node with the glslfxShader
-    if (glslfxShader) {
-        const std::string glslfxSourceCode =
-            glslfxShader->getSourceCode(mx::Stage::PIXEL);
+    if (codegenResult) {
         SdrShaderNodeConstPtr sdrNode =
             sdrRegistry.GetShaderNodeFromSourceCode(
-                glslfxSourceCode,
+                codegenResult->GetPixelShaderSource(),
                 HioGlslfxTokens->glslfx,
                 SdrTokenMap()); // metadata
         HdMaterialNode2 newTerminalNode;
@@ -1521,7 +1503,7 @@ HdSt_ApplyMaterialXFilter(
         hdNetwork->nodes[terminalNodePath] = newTerminalNode;
     }
 
-    return glslfxShader;
+    return codegenResult;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

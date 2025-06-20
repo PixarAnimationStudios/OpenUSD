@@ -26,6 +26,7 @@ if (${PXR_ENABLE_MATERIALX_SUPPORT})
     list(APPEND optionalPrivateClasses
          materialXFilter
          materialXShaderGen
+         materialXShaderRegistry
     )
 endif()
 if (PXR_ENABLE_PTEX_SUPPORT)
@@ -460,16 +461,6 @@ pxr_build_test(testHdStInstancingUnbalanced
     CPPFILES
         testenv/testHdStInstancingUnbalanced.cpp
 )
-if (${PXR_ENABLE_MATERIALX_SUPPORT})
-pxr_build_test(testHdStMaterialXShaderGen
-    LIBRARIES
-        hdSt
-        hdMtlx
-        tf
-    CPPFILES
-        testenv/testHdStMaterialXShaderGen.cpp
-)
-endif()
 pxr_build_test(testHdStMeshTopology
     LIBRARIES
         hdSt
@@ -626,6 +617,28 @@ pxr_register_test(testHdStQualifiers
         TF_DEBUG=HD_SAFE_MODE
 )
 
+if (${PXR_ENABLE_MATERIALX_SUPPORT})
+pxr_build_test(testHdStMaterialXShaderGen
+    LIBRARIES
+        hdSt
+        hdMtlx
+        tf
+    CPPFILES
+        testenv/testHdStMaterialXShaderGen.cpp
+)
+pxr_install_test_dir(
+    SRC testenv/testHdStMaterialXShaderGen
+    DEST testHdStMaterialXShaderGen
+)
+pxr_register_test(testHdStMaterialXShaderGen_testCacheSerialization
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --testCacheSerialization"
+    EXPECTED_RETURN_CODE 0
+    STDOUT_REDIRECT shadergen_testCacheSerialization.out
+    DIFF_COMPARE shadergen_testCacheSerialization.out
+    TESTENV testHdStMaterialXShaderGen
+)
+endif()
+
 if (APPLE)
     message(STATUS "Skipping rest of ${PXR_PACKAGE} tests because they are currently unsupported on macOS")
     return()
@@ -723,12 +736,6 @@ pxr_install_test_dir(
     SRC testenv/testHdStInstancingUnbalancedNoBindless
     DEST testHdStInstancingUnbalancedNoBindless
 )
-if (${PXR_ENABLE_MATERIALX_SUPPORT})
-pxr_install_test_dir(
-    SRC testenv/testHdStMaterialXShaderGen
-    DEST testHdStMaterialXShaderGen
-)
-endif()
 pxr_install_test_dir(
     SRC testenv/testHdStMultipleFvarTopologies
     DEST testHdStMultipleFvarTopologies

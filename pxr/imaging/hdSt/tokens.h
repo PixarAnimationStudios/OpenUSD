@@ -82,12 +82,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDST_RENDER_BUFFER_TOKENS                       \
     ((stormMsaaSampleCount, "storm:msaaSampleCount"))
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+#define HDST_MTLX_CODEGEN_CACHE_DIR_PATH_TOKEN (hdstMtlxCodegenCacheDirPath)
+#else
+#define HDST_MTLX_CODEGEN_CACHE_DIR_PATH_TOKEN
+#endif
+
 #define HDST_RENDER_SETTINGS_TOKENS             \
     (enableTinyPrimCulling)                     \
     (volumeRaymarchingStepSize)                 \
     (volumeRaymarchingStepSizeLighting)         \
     (volumeMaxTextureMemoryPerField)            \
-    (maxLights)
+    (maxLights)                                 \
+    HDST_MTLX_CODEGEN_CACHE_DIR_PATH_TOKEN
 
 // Material tags help bucket prims into different queues for draw submission.
 // The tags supported by Storm are:

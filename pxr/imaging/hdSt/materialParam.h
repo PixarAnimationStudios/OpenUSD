@@ -30,7 +30,7 @@ public:
 
     // Indicates the kind of material parameter.
     enum ParamType {
-        // This is a shader specified fallback value that is
+        // This is a shader-specified fallback value that is
         // not connected to either a primvar or texture.
         ParamTypeFallback,
         // This is a parameter that is connected to a texture.

@@ -45,6 +45,11 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/staticTokens.h"
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+#include "pxr/imaging/hdSt/materialXShaderRegistry.h"
+#include "pxr/imaging/hdSt/materialXSyncDispatcher.h"
+#endif
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -108,7 +113,12 @@ public:
 
     // Look-up resource registry by Hgi instance, create resource
     // registry for the instance if it didn't exist.
-    HdStResourceRegistrySharedPtr GetOrCreateRegistry(Hgi * const hgi)
+    HdStResourceRegistrySharedPtr GetOrCreateRegistry(
+        Hgi * const hgi
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+        , std::string const& mtlxCacheDirPath
+#endif
+    )
     {
         std::lock_guard<std::mutex> guard(_mutex);
 
@@ -121,7 +131,11 @@ public:
         // Create resource registry, custom deleter to remove corresponding
         // entry from map.
         HdStResourceRegistrySharedPtr result{
-            new HdStResourceRegistry(hgi),
+            new HdStResourceRegistry(hgi
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+                , mtlxCacheDirPath.c_str()
+#endif
+            ),
             [maybeSelf = weak_from_this()](
                 HdStResourceRegistry * const registry) {
                 // If a resource registry has a static lifetime object as its
@@ -205,7 +219,13 @@ HdStRenderDelegate::HdStRenderDelegate(HdRenderSettingsMap const& settingsMap)
         HdRenderSettingDescriptor{
             "Dome light camera visibility",
             HdRenderSettingsTokens->domeLightCameraVisibility,
-            VtValue(true) }
+            VtValue(true) },
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+        HdRenderSettingDescriptor{
+            "Path to the directory of the persistent MaterialX codegen cache",
+            HdStRenderSettingsTokens->hdstMtlxCodegenCacheDirPath,
+            VtValue(HdSt_MaterialXShaderRegistry::GetCacheDirPathEnvSetting()) }
+#endif
     };
 
     _PopulateDefaultSettings(_settingDescriptors);
@@ -258,8 +278,19 @@ HdStRenderDelegate::SetDrivers(HdDriverVector const& drivers)
     
     TF_VERIFY(_hgi, "HdSt requires Hgi HdDriver");
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+    const std::string cacheDirPath = GetRenderSetting<std::string>(
+        HdStRenderSettingsTokens->hdstMtlxCodegenCacheDirPath,
+        HdSt_MaterialXShaderRegistry::GetCacheDirPathEnvSetting());
+#endif
+
     _resourceRegistry =
-        _HgiToResourceRegistryMap::GetInstance().GetOrCreateRegistry(_hgi);
+        _HgiToResourceRegistryMap::GetInstance().GetOrCreateRegistry(
+            _hgi
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+            , cacheDirPath.c_str()
+#endif
+        );
 }
 
 const TfTokenVector &

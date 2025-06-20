@@ -6,12 +6,18 @@
 //
 #include "pxr/imaging/hdSt/materialXFilter.h"
 #include "pxr/imaging/hdSt/materialXShaderGen.h"
+#include "pxr/imaging/hdSt/materialXShaderRegistry.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdMtlx/hdMtlx.h"
 #include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/js/json.h"
 #include "pxr/base/tf/errorMark.h"
+
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec4f.h"
 
 #include <MaterialXGenShader/Util.h>
 
@@ -104,7 +110,7 @@ _GetMaterialTag(mx::DocumentPtr const& mxDoc)
     return HdStMaterialTagTokens->defaultMaterialTag;
 }
 
-void TestShaderGen(
+void _TestShaderGen(
     const mx::FilePath& mtlxFilename, 
     HdSt_MxShaderGenInfo* mxHdInfo)
 {
@@ -141,6 +147,102 @@ void TestShaderGen(
     std::cout << glslfx->getSourceCode(mx::Stage::PIXEL);
 }
 
+void _TestCacheSerialization()
+{
+    HdSt_MaterialParamVector    fallbackParams;
+    TfTokenVector               textureParams;
+
+    auto addFallbackParam = [&fallbackParams](
+        const char* name, VtValue value) -> void
+    {
+        fallbackParams.emplace_back(
+            HdSt_MaterialParam::ParamTypeFallback,
+            TfToken(name), value);
+    };
+
+    addFallbackParam("BoolParamTrue", VtValue(true));
+    addFallbackParam("BoolParamFalse", VtValue(false));
+
+    addFallbackParam("FloatParam0", VtValue(0.0f));
+    addFallbackParam("FloatParam1", VtValue(1.0f));
+    addFallbackParam("FloatParam2", VtValue(-1.0f));
+    addFallbackParam("FloatParam3", VtValue(3.14159f));
+    addFallbackParam("FloatParam4", VtValue(1e6f));
+    addFallbackParam("FloatParam5",
+        VtValue(std::numeric_limits<float>::min()));
+    addFallbackParam("FloatParam6",
+        VtValue(std::numeric_limits<float>::max()));
+
+    addFallbackParam("GfVec2fParam", VtValue(GfVec2f(3.14159f, 1e6f)));
+    addFallbackParam("GfVec3fParam",
+        VtValue(GfVec3f(3.14159f, 1e6f,
+            std::numeric_limits<float>::min())));
+    addFallbackParam("GfVec4fParam",
+        VtValue(GfVec4f(3.14159f, 1e6f,
+            std::numeric_limits<float>::min(),
+            std::numeric_limits<float>::max())));
+
+    addFallbackParam("IntParam0", VtValue(0));
+    addFallbackParam("IntParam1", VtValue(1));
+    addFallbackParam("IntParam2",
+        VtValue(std::numeric_limits<int>::min()));
+    addFallbackParam("IntParam2",
+        VtValue(std::numeric_limits<int>::max()));
+
+    addFallbackParam("GfVec2iParam", VtValue(GfVec2i(0, 1)));
+    addFallbackParam("GfVec3iParam",
+        VtValue(GfVec3i(0,
+            std::numeric_limits<int>::min(),
+            std::numeric_limits<int>::max())));
+    addFallbackParam("GfVec4iParam",
+        VtValue(GfVec4i(0, 1,
+            std::numeric_limits<int>::min(),
+            std::numeric_limits<int>::max())));
+
+    HdSt_MaterialXCodegenResult codegenResult0(
+        "",
+        std::move(fallbackParams),
+        std::move(textureParams));
+
+    std::stringstream ss;
+    codegenResult0.SaveMetadata(ss);
+    ss.seekg(0);
+
+    JsValue jsMetadata = JsParseStream(ss);
+
+    HdSt_MaterialXCodegenResult codegenResult1(
+        "",
+        jsMetadata);
+
+    HdSt_MaterialParamVector const
+        &params0 = codegenResult0.GetFallbackParams(),
+        &params1 = codegenResult1.GetFallbackParams();
+
+    auto fail = []() {
+        throw std::runtime_error(
+            "Fallback parameters not serialized correctly");
+        };
+
+    if (params0.size() != params1.size()) {
+        fail();
+    }
+
+    for (size_t iParam = 0;
+        iParam < params0.size(); ++iParam) {
+
+        HdSt_MaterialParam const
+            & param0 = params0[iParam],
+            & param1 = params1[iParam];
+
+        if (param0.paramType != param1.paramType
+            || param0.name != param1.name
+            || param0.fallbackValue != param1.fallbackValue) {
+
+            fail();
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
     TfErrorMark mark;
@@ -148,9 +250,20 @@ int main(int argc, char *argv[])
     HdSt_MxShaderGenInfo mxHdInfo;
     mx::FilePath mtlxFile = "standard_surface_default.mtlx";
 
-    for (int i=0; i<argc; ++i) {
+    for (int i = 0; i < argc; ++i) {
         const std::string arg(argv[i]);
 
+        if (arg == "--testCacheSerialization")
+        {
+            try {
+                _TestCacheSerialization();
+            }
+            catch (std::exception error) {
+                std::cerr << error.what() << '\n';
+                return EXIT_FAILURE;
+            }
+            return EXIT_SUCCESS;
+        }
         if (arg == "--filename") {
             mtlxFile = mx::FilePath(argv[++i]);
         }
@@ -186,7 +299,7 @@ int main(int argc, char *argv[])
             mxHdInfo.bindlessTexturesEnabled = true;
         }
     }
-    TestShaderGen(mtlxFile, &mxHdInfo);
+    _TestShaderGen(mtlxFile, &mxHdInfo);
 
     if (mark.IsClean()) {
         return EXIT_SUCCESS;

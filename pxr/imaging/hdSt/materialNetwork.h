@@ -23,6 +23,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdStResourceRegistry;
 using HioGlslfxSharedPtr = std::shared_ptr<class HioGlslfx>;
 using HdSt_MaterialParamVector = std::vector<class HdSt_MaterialParam>;
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+class HdSt_MaterialXCodegenResult;
+using HdSt_MaterialXCodegenResultPtr =
+    std::shared_ptr<class HdSt_MaterialXCodegenResult>;
+#endif
 
 /// \class HdStMaterialNetwork
 ///
@@ -103,7 +108,7 @@ private:
     HioGlslfxSharedPtr _surfaceGfx;
     size_t _surfaceGfxHash;
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
-    MaterialX::ShaderPtr _materialXGfx;
+    HdSt_MaterialXCodegenResultPtr _materialXCodegenResult;
 #endif
 };
 
