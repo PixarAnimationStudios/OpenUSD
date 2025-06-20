@@ -123,10 +123,17 @@ _IsConnectionDirty(
     const UsdPrim& dirtyPrim,
     const TfTokenVector& dirtyProperties,
     const UsdShadeMaterial& material,
-    const UsdShadeConnectionSourceInfo& connection)
+    const UsdShadeConnectionSourceInfo& connection,
+    TfHashMap<UsdShadeConnectionSourceInfo, bool, TfHash>& seenConnections)
 {
+    if (bool seen; TfMapLookup(seenConnections, connection, &seen))
+        return seen;
+
     if (!connection.IsValid())
+    {
+        seenConnections.insert({connection, false});
         return false;
+    }
 
     // If we reach the root material only dirty if we are connected to the
     // specific property which is dirty and don't recurse further.
@@ -141,15 +148,18 @@ _IsConnectionDirty(
                         && dirtyProperty
                             == connection.source.GetInput(connection.sourceName)
                                    .GetFullName())) {
+                    seenConnections.insert({connection, true});
                     return true;
                 }
             }
         }
+        seenConnections.insert({connection, false});
         return false;
     }
 
     // We are connected to the dirty prim
     if (connection.source.GetPrim() == dirtyPrim) {
+        seenConnections.insert({connection, true});
         return true;
     }
 
@@ -162,7 +172,8 @@ _IsConnectionDirty(
                  output.GetConnectedSources()) {
                 if (_IsConnectionDirty(
                         dirtyPrim, dirtyProperties, material,
-                        outputConnection)) {
+                        outputConnection, seenConnections)) {
+                    seenConnections.insert({connection, true});
                     return true;
                 }
             }
@@ -174,12 +185,14 @@ _IsConnectionDirty(
         for (UsdShadeConnectionSourceInfo& inputConnection :
              input.GetConnectedSources()) {
             if (_IsConnectionDirty(
-                    dirtyPrim, dirtyProperties, material, inputConnection)) {
+                    dirtyPrim, dirtyProperties, material, inputConnection, seenConnections)) {
+                seenConnections.insert({connection, true});
                 return true;
             }
         }
     }
 
+    seenConnections.insert({connection, false});
     return false;
 }
 
@@ -201,7 +214,8 @@ UsdImagingMaterialAdapter::InvalidateImagingSubprim(
     for (UsdShadeOutput& output : material.GetOutputs()) {
         for (UsdShadeConnectionSourceInfo& connection :
              output.GetConnectedSources()) {
-            if (_IsConnectionDirty(prim, properties, material, connection)) {
+            TfHashMap<UsdShadeConnectionSourceInfo, bool, TfHash> seenConnections;
+            if (_IsConnectionDirty(prim, properties, material, connection, seenConnections)) {
                 result.insert(_CreateTerminalLocator(output.GetBaseName()));
             }
         }
@@ -235,8 +249,9 @@ UsdImagingMaterialAdapter::InvalidateImagingSubprimFromDescendent(
     for (UsdShadeOutput& output : material.GetOutputs()) {
         for (UsdShadeConnectionSourceInfo& connection :
              output.GetConnectedSources()) {
+            TfHashMap<UsdShadeConnectionSourceInfo, bool, TfHash> seenConnections;
             if (_IsConnectionDirty(
-                    descendentPrim, properties, material, connection)) {
+                    descendentPrim, properties, material, connection, seenConnections)) {
                 result.insert(_CreateTerminalLocator(output.GetBaseName()));
             }
         }
