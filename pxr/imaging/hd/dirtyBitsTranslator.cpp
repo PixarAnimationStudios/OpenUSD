@@ -80,6 +80,9 @@ using _BToSMap = std::unordered_map<TfToken,
 
 static TfStaticData<_SToBMap> Hd_SPrimSToBFncs;
 static TfStaticData<_BToSMap> Hd_SPrimBToSFncs;
+static TfStaticData<_SToBMap> Hd_RPrimSToBFncs;
+static TfStaticData<_BToSMap> Hd_RPrimBToSFncs;
+
 
 /*static*/
 void
@@ -217,6 +220,14 @@ HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(TfToken const& primType,
 
     if (bits & HdChangeTracker::DirtyTransform) {
         set->append(HdXformSchema::GetDefaultLocator());
+    }
+
+    if (!Hd_RPrimBToSFncs->empty()) {
+        const auto fncIt = Hd_RPrimBToSFncs->find(primType);
+        if (fncIt != Hd_RPrimBToSFncs->end()) {
+            // call custom handler registered for this type
+            fncIt->second(bits, set);
+        }
     }
 }
 
@@ -794,7 +805,15 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
     if (_FindLocator(HdXformSchema::GetDefaultLocator(), end, &it)) {
         bits |= HdChangeTracker::DirtyTransform;
     }
-
+    
+    if (!Hd_RPrimSToBFncs->empty())
+    {
+        const auto fncIt = Hd_RPrimSToBFncs->find(primType);
+        if (fncIt != Hd_RPrimSToBFncs->end()) {
+            // call custom handler registered for this type
+            fncIt->second(set, &bits);
+        }
+    }
     return bits;
 }
 
@@ -1175,6 +1194,16 @@ HdDirtyBitsTranslator::RegisterTranslatorsForCustomSprimType(
 {
     Hd_SPrimSToBFncs->insert({primType, sToBFnc});
     Hd_SPrimBToSFncs->insert({primType, bToSFnc});
+}
+
+void
+HdDirtyBitsTranslator::RegisterTranslatorsForCustomRprimType(
+    TfToken const& primType,
+    LocatorSetToDirtyBitsFnc sToBFnc,
+    DirtyBitsToLocatorSetFnc bToSFnc)
+{
+    Hd_RPrimSToBFncs->insert({primType, sToBFnc});
+    Hd_RPrimBToSFncs->insert({primType, bToSFnc});
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
