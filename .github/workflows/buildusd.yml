@@ -60,7 +60,7 @@ jobs:
           sudo apt-get -qq update
           sudo apt-get install -y python3-setuptools libglew-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev
           pip install --upgrade pip
-          pip install PySide2 PyOpenGL
+          pip install PySide6 PyOpenGL
       - name: Build USD
         run: |
           # Not using '--tests' to avoid building extra dependencies that are unneeded for headless tests
@@ -81,6 +81,57 @@ jobs:
         working-directory: ./USDgen/build/OpenUSD
         run: |
           ctest -V -C Release --exclude-regex "testExecGeomXformable_Perf_Large"
+
+  Linux-ARM:
+    needs:
+      - Validation
+    if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/AzurePipelines run') && needs.GetUser.outputs.require-result == 'true' ) || github.event_name == 'push' }}
+    runs-on: ubuntu-22.04-arm
+    env:
+      PYTHON_VERSION: "3.9"
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{needs.GetGitRef.outputs.ref}}
+      - name: Restore cached artifacts
+        id: cache-usd-build-dependency
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            USDinst
+          key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION }}-${{ hashFiles('build_scripts/**/*') }}
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          check-latest: false
+      - name: Install dependencies
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get install -y python3-setuptools libglew-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev
+          pip install --upgrade pip
+          pip install PySide6 PyOpenGL
+      - name: Build USD
+        run: |
+          python3 build_scripts/build_usd.py --no-materialx --build USDgen/build --src USDgen/src USDinst -v
+      - name: Save build artifacts to cache
+        if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            USDinst
+          key: ${{ steps.cache-usd-build-dependency.outputs.cache-primary-key }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: usd-linux-aarch64
+          path: USDinst
+      - name: Test USD
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          ctest -V -C Release
 
   macOS:
     needs:
