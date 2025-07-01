@@ -55,7 +55,7 @@ jobs:
           check-latest: false
       - name: Setting up docker
         run: |
-          docker build -t build_scripts/pypi/docker/Dockerfile.x86 build_scripts/pypi/docker
+          docker build -t manylinuxwithcmake -f build_scripts/pypi/docker/Dockerfile.x86 build_scripts/pypi/docker
           docker run --name usdmanylinux --rm -id -v ./:/opt/USD -v /home/vsts/dist:/opt/USD-dist manylinuxwithcmake
       - name: Install Dependencies
         run: |
@@ -137,7 +137,7 @@ jobs:
           check-latest: false
       - name: Setting up docker
         run: |
-          docker build -t build_scripts/pypi/docker/Dockerfile.arm build_scripts/pypi/docker
+          docker build -t manylinuxwithcmake -f build_scripts/pypi/docker/Dockerfile.arm build_scripts/pypi/docker
           docker run --name usdmanylinux --rm -id -v ./:/opt/USD -v /home/vsts/dist:/opt/USD-dist manylinuxwithcmake
       - name: Building USD
         run: |
