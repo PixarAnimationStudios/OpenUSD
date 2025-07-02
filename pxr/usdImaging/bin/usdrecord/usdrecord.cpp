@@ -276,11 +276,11 @@ private:
     std::vector<UsdUtilsTimeCodeRange> timeCodeRanges;
 };
 
-std::ostream &operator<<(std::ostream &o, const FrameNumberFormatterPtr &a) {
+std::ostream &operator<<(std::ostream &o, const FrameNumberFormatter &a) {
     // Frame numbers are zero-padded up to the field width.
     o.fill('0');
-    o.width(a->width);
-    o.precision(a->precision);
+    o.width(a.width);
+    o.precision(a.precision);
     return o;
 }
 
@@ -299,7 +299,7 @@ bool framesArgs_SplitAroundFramePlaceholder(const std::string &frameFormat, std:
         return false;
     }
 
-    auto const PLACEHOLDER_PATTERN = std::regex("([^#]*)(#+\\.?#*)([^#\n]*)");
+    auto const PLACEHOLDER_PATTERN = std::regex("([^#]*)(#*\\.?#*#)([^#\n]*)");
 
     std::smatch m;
     if (!std::regex_search(frameFormat, m, PLACEHOLDER_PATTERN)) {
@@ -340,14 +340,14 @@ FrameNumberFormatterPtr framesArgs_ConvertFramePlaceholderToFloatSpec(const std:
     //format string cannot be used when operating with a frame range.
 
     // The full width of the placeholder determines the minimum field width.
-    uint32_t specWidth = framePlaceholder.size();
+    uint32_t specWidth = (uint32_t)framePlaceholder.size();
 
     // The hashes after the dot, if any, determine the precision. If there are
     // none, integer frame numbers are used.
     uint32_t specPrecision = 0;
     auto parts = TfStringSplit(framePlaceholder, ".");
     if (parts.size() > 1) {
-        specPrecision = parts[1].size();
+        specPrecision = (uint32_t)parts[1].size();
     }
 
     return std::make_unique<FrameNumberFormatter>(specWidth, specPrecision);
@@ -612,7 +612,7 @@ static int32_t UsdRecord(const Args &args) {
     std::string outputImagePathSuffix = "";
     framesArgs_SplitAroundFramePlaceholder(args.outputImagePath, outputImagePathPrefix, framePlaceholder, outputImagePathSuffix);
 
-    FrameNumberFormatterPtr frameNumberFormater = nullptr;
+    FrameNumberFormatterPtr frameNumberFormatter = nullptr;
     if (!args.framesStr.empty()) {
 
       if (framePlaceholder.empty()) {
@@ -622,7 +622,7 @@ static int32_t UsdRecord(const Args &args) {
         return 1;
       }
 
-      frameNumberFormater = framesArgs_ConvertFramePlaceholderToFloatSpec(framePlaceholder);
+      frameNumberFormatter = framesArgs_ConvertFramePlaceholderToFloatSpec(framePlaceholder);
 
       auto frameSpec = FrameSpecIterator(args.framesStr);
       frames = frameSpec.getTimeCodes();
@@ -734,12 +734,12 @@ static int32_t UsdRecord(const Args &args) {
         std::cout << "Recording time code: " << timeCode << std::endl;
 
         std::string outputImagePath = outputImagePathPrefix;
-        if (frameNumberFormater != nullptr) {
+        if (frameNumberFormatter != nullptr) {
             // if we have a frame number formatter - then that means we successfully parsed a frame number place holder
             // otherwise the entire original filename is in the prefix string.
             std::stringstream ss;
-            ss << frameNumberFormater;
-            ss << timeCode << "." << outputImagePathSuffix;
+            ss << *frameNumberFormatter;
+            ss << timeCode << outputImagePathSuffix;
             outputImagePath += ss.str();
         }
 
