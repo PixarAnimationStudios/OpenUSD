@@ -221,12 +221,14 @@ _ExtComputationPrimvars(const SdfPath &primPath)
 
 static
 HdContainerDataSourceHandle
-_BlockPointsPrimvars()
+_BlockPointsAndNormalsPrimvars()
 {
     const TfToken names[] = {
-        HdPrimvarsSchemaTokens->points
+        HdPrimvarsSchemaTokens->points,
+        HdPrimvarsSchemaTokens->normals
     };
     HdDataSourceBaseHandle const values[] = {
+        HdBlockDataSource::New(),
         HdBlockDataSource::New()
     };
 
@@ -251,7 +253,9 @@ UsdSkelImagingDataSourceResolvedPointsBasedPrim::Get(const TfToken &name)
 
     if (name == HdPrimvarsSchema::GetSchemaToken()) {
         // Block points primvar.
-        static HdContainerDataSourceHandle ds = _BlockPointsPrimvars();
+        // The normals are also blocked so they are recomputed after skinning,
+        // since normals currently aren't deformed by the computation.
+        static HdContainerDataSourceHandle ds = _BlockPointsAndNormalsPrimvars();
         return ds;
     }
 
