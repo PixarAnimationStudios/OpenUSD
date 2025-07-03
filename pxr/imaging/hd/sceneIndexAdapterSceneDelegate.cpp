@@ -2736,19 +2736,32 @@ HdSceneIndexAdapterSceneDelegate::SampleExtComputationInput(
         valueDs->GetContributingSampleTimesForInterval(
                 std::numeric_limits<float>::lowest(),
                 std::numeric_limits<float>::max(), &times);
+
+        // XXX fallback to include a single sample
+        if (times.empty()) {
+            times.push_back(0.0f);
+        }
     } else {
-        valueDs->GetContributingSampleTimesForInterval(
+        const bool isVarying =
+            valueDs->GetContributingSampleTimesForInterval(
                 startTime, endTime, &times);
+        if (isVarying) {
+            if (times.empty()) {
+                TF_CODING_ERROR("No contributing sample times returned for "
+                                "%s %s even though "
+                                "GetContributingSampleTimesForInterval "
+                                "indicated otherwise.",
+                                computationId.GetText(), input.GetText());
+                times.push_back(0.0f);
+            }
+        } else {
+            times = { 0.0f };
+        }
     }
 
-    size_t authoredSamples = times.size();
+    const size_t authoredSamples = times.size();
     if (authoredSamples > maxSampleCount) {
         times.resize(maxSampleCount);
-    }
-
-    // XXX fallback to include a single sample
-    if (times.empty()) {
-        times.push_back(0.0f);
     }
 
     for (size_t i = 0; i < times.size(); ++i) {
