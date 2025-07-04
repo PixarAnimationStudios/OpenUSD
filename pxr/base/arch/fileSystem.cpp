@@ -41,6 +41,10 @@
 #include <unistd.h>
 #endif
 
+#if defined(ARCH_OS_DARWIN)
+#include "pxr/base/arch/darwin.h"
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using std::pair;
@@ -730,6 +734,9 @@ Arch_InitTmpDir()
     // Strip the trailing slash
     tmpPath[sizeOfPath-1] = 0;
     _TmpDir = _strdup(ArchWindowsUtf16ToUtf8(tmpPath).c_str());
+#elif defined(ARCH_OS_DARWIN)
+    // On Apple platforms, we use the system APIs to get the designated temp directory
+    _TmpDir = Arch_DarwinGetTemporaryDirectory();
 #else
     const std::string tmpdir = ArchGetEnv("TMPDIR");
     if (!tmpdir.empty()) {
@@ -738,9 +745,7 @@ Arch_InitTmpDir()
         // set, the following call will leak a string.
         _TmpDir = strdup(tmpdir.c_str());
     } else {
-#if defined(ARCH_OS_DARWIN)
-        _TmpDir = "/tmp";
-#elif defined(ARCH_OS_WASM_VM)
+#if defined(ARCH_OS_WASM_VM)
         // Note: WASM will always mount the in memory filesystem to this path.
         // All data will be lost when the VM is shut down.
         _TmpDir = "/";

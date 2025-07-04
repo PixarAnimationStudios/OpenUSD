@@ -5,16 +5,23 @@ set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE arch)
 
 if(NOT EMSCRIPTEN)
-    set(PLATFORM_LIBS ${M_LIB})
+    set(ARCH_PLATFORM_LIBS ${M_LIB})
+    set(ARCH_PLATFORM_HEADERS "")
+    set(ARCH_PLATFORM_CPPFILES "")
 endif()
+
 if(WIN32)
-    set(PLATFORM_LIBS Ws2_32.lib Dbghelp.lib ${PLATFORM_LIBS})
+    set(ARCH_PLATFORM_LIBS Ws2_32.lib Dbghelp.lib ${ARCH_PLATFORM_LIBS})
+elseif (APPLE)
+    set(ARCH_PLATFORM_HEADERS darwin.h)
+    set(ARCH_PLATFORM_CPPFILES darwin.mm)
+    set(ARCH_PLATFORM_LIBS "-framework Foundation" ${ARCH_PLATFORM_LIBS})
 endif()
 
 pxr_library(arch
     LIBRARIES
         ${CMAKE_DL_LIBS}
-        ${PLATFORM_LIBS}
+        ${ARCH_PLATFORM_LIBS}
 
     PUBLIC_CLASSES
         align
@@ -53,10 +60,12 @@ pxr_library(arch
     PRIVATE_HEADERS
         testArchAbi.h
         testArchUtil.h
+        ${ARCH_PLATFORM_HEADERS}
 
     CPPFILES
         assumptions.cpp
         initConfig.cpp
+        ${ARCH_PLATFORM_CPPFILES}
 
     DOXYGEN_FILES
         overview.dox
