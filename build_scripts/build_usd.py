@@ -1661,6 +1661,7 @@ def InstallUSD(context, force, buildArgs):
 
         extraArgs.append('-DPXR_PREFER_SAFETY_OVER_SPEED={}'
                          .format('ON' if context.safetyFirst else 'OFF'))
+        extraArgs.append(f"-DPXR_ENABLE_COMPILER_CACHE={'ON' if context.useCompilerCache else 'OFF'}")
 
         if context.buildPython:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=ON')
@@ -1996,6 +1997,12 @@ group.add_argument("--generator", type=str,
 group.add_argument("--toolset", type=str,
                    help=("CMake toolset to use when building libraries with "
                          "cmake"))
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--compiler-cache", dest="use_compiler_cache", action="store_true",
+                      default=not Windows(),
+                      help="Use ccache to enable faster iterative builds. (default on macOS and Linux)")
+subgroup.add_argument("--no-compiler-cache", dest="use_compiler_cache", action="store_false",
+                      help="Do not use ccache. (default on Windows)")
 if MacOS():
     codesignDefault = True if apple_utils.IsHostArm() else False
     group.add_argument("--codesign", dest="macos_codesign",
@@ -2267,6 +2274,7 @@ class InstallContext:
         self.cmakeGenerator = args.generator
         self.cmakeToolset = args.toolset
         self.cmakeBuildArgs = args.cmake_build_args
+        self.useCompilerCache = args.use_compiler_cache
 
         # Number of jobs
         self.numJobs = args.jobs
