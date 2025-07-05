@@ -120,29 +120,19 @@ def SupportsMacOSUniversalBinaries():
     XcodeVersion = XcodeOutput[XcodeFind:].split(' ')[1]
     return (XcodeVersion > '11.0')
 
-
-def GetSDKName(context) -> str:
+def GetSDKRoot(context) -> Optional[str]:
     sdk = "macosx"
     if context.buildTarget == TARGET_IOS:
-        sdk = "iPhoneOS"
+        sdk = "iphoneos"
     elif context.buildTarget == TARGET_VISIONOS:
-        sdk = "xrOS"
-
-    return sdk
-
-def GetSDKRoot(context) -> Optional[str]:
-    sdk = GetSDKName(context).lower()
+        sdk = "xros"
 
     for arg in (context.cmakeBuildArgs or '').split():
         if "CMAKE_OSX_SYSROOT" in arg:
             override = arg.split('=')[1].strip('"').strip()
             if override:
                 sdk = override
-
-    sdkroot = GetCommandOutput(["xcrun", "--sdk", sdk, "--show-sdk-path"])
-    if not sdkroot:
-        raise RuntimeError(f"Could not find an sdk path. Make sure you have the {sdk} sdk installed.")
-    return sdkroot
+    return GetCommandOutput(["xcrun", "--sdk", sdk, "--show-sdk-path"])
 
 def SetTarget(context, targetName):
     context.targetNative = (targetName == TARGET_NATIVE)
@@ -260,30 +250,3 @@ def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
         args.append(f"-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH")
 
     return args
-
-def GetTBBPatches(context):
-    if context.buildTarget not in EMBEDDED_PLATFORMS or context.buildTarget == TARGET_IOS:
-        # TBB already handles these so we don't patch them out
-        return [], []
-
-    sdk_name = GetSDKName(context)
-
-    # Standard Target based names
-    target_config_patches = [("ios", context.buildTarget.lower()),
-                             ("iOS", context.buildTarget),
-                             ("IPHONEOS", sdk_name.upper())]
-
-    clang_config_patches = [("ios",context.buildTarget.lower()),
-                            ("iOS", context.buildTarget),
-                            ("IPHONEOS",sdk_name.upper())]
-
-    if context.buildTarget == TARGET_VISIONOS:
-        target_config_patches.extend([("iPhone", "XR"),
-                                      ("?= 8.0", "?= 1.0")])
-
-        clang_config_patches.append(("iPhone", "XR"),)
-
-    if context.buildTarget == TARGET_VISIONOS:
-        clang_config_patches.append(("-miphoneos-version-min=", "-target arm64-apple-xros"))
-
-    return target_config_patches, clang_config_patches
