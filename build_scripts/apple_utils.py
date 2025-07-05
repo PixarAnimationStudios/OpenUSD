@@ -25,9 +25,12 @@ TARGET_X86 = "x86_64"
 TARGET_ARM64 = "arm64"
 TARGET_UNIVERSAL = "universal"
 TARGET_IOS = "iOS"
+TARGET_IOS_SIMULATOR = "iOSSimulator"
 TARGET_VISIONOS = "visionOS"
+TARGET_VISIONOS_SIMULATOR = "visionOSSimulator"
 
-EMBEDDED_PLATFORMS = [TARGET_IOS, TARGET_VISIONOS]
+EMBEDDED_PLATFORMS = [TARGET_IOS, TARGET_IOS_SIMULATOR,
+                      TARGET_VISIONOS, TARGET_VISIONOS_SIMULATOR]
 
 def GetBuildTargets():
     return [TARGET_NATIVE,
@@ -35,7 +38,9 @@ def GetBuildTargets():
             TARGET_ARM64,
             TARGET_UNIVERSAL,
             TARGET_IOS,
-            TARGET_VISIONOS]
+            TARGET_IOS_SIMULATOR,
+            TARGET_VISIONOS,
+            TARGET_VISIONOS_SIMULATOR]
 
 def GetBuildTargetDefault():
     return TARGET_NATIVE
@@ -124,8 +129,12 @@ def GetSDKName(context) -> str:
     sdk = "macosx"
     if context.buildTarget == TARGET_IOS:
         sdk = "iPhoneOS"
+    elif context.buildTarget == TARGET_IOS_SIMULATOR:
+        sdk = "iPhoneSimulator"
     elif context.buildTarget == TARGET_VISIONOS:
         sdk = "xrOS"
+    elif context.buildTarget == TARGET_VISIONOS_SIMULATOR:
+        sdk = "xrSimulator"
 
     return sdk
 
@@ -148,8 +157,9 @@ def SetTarget(context, targetName):
     context.targetX86 = (targetName == TARGET_X86)
     context.targetARM64 = (targetName == GetTargetArmArch())
     context.targetUniversal = (targetName == TARGET_UNIVERSAL)
-    context.targetIOS = (targetName == TARGET_IOS)
-    context.targetVisionOS = (targetName == TARGET_VISIONOS)
+    context.targetIOS = (targetName in (TARGET_IOS, TARGET_IOS_SIMULATOR))
+    context.targetVisionOS = (targetName in (TARGET_VISIONOS, TARGET_VISIONOS_SIMULATOR))
+    context.targetSimulator = (targetName in (TARGET_IOS_SIMULATOR, TARGET_VISIONOS_SIMULATOR))
     if context.targetUniversal and not SupportsMacOSUniversalBinaries():
         context.targetUniversal = False
         raise ValueError(
@@ -161,6 +171,9 @@ def GetTargetName(context):
             GetTargetArmArch() if context.targetARM64 else
             TARGET_UNIVERSAL if context.targetUniversal else
             context.buildTarget)
+
+def GetTargetPlatform(context):
+    return GetTargetName(context).replace("Simulator", "")
 
 devout = open(os.devnull, 'w')
 
@@ -247,7 +260,7 @@ def CreateUniversalBinaries(context, libNames, x86Dir, armDir):
 def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
     system_name = None
     if TargetEmbeddedOS(context):
-        system_name = context.buildTarget
+        system_name = GetTargetPlatform(context)
 
     if system_name:
         args.append(f"-DCMAKE_SYSTEM_NAME={system_name}")
@@ -276,7 +289,7 @@ def GetTBBPatches(context):
                             ("iOS", context.buildTarget),
                             ("IPHONEOS",sdk_name.upper())]
 
-    if context.buildTarget == TARGET_VISIONOS:
+    if context.buildTarget in (TARGET_VISIONOS, TARGET_VISIONOS_SIMULATOR):
         target_config_patches.extend([("iPhone", "XR"),
                                       ("?= 8.0", "?= 1.0")])
 
@@ -284,5 +297,13 @@ def GetTBBPatches(context):
 
     if context.buildTarget == TARGET_VISIONOS:
         clang_config_patches.append(("-miphoneos-version-min=", "-target arm64-apple-xros"))
+    else:
+        sdk_root = GetSDKRoot(context)
+        version=os.path.basename(sdk_root).split("Simulator")[-1].replace(".sdk","")
+
+        if context.buildTarget == TARGET_VISIONOS_SIMULATOR:
+            clang_config_patches.append(("-miphoneos-version-min=", f"-target arm64-apple-xros{version}-simulator"))
+        elif context.buildTarget == TARGET_IOS_SIMULATOR:
+            clang_config_patches.append(("-miphoneos-version-min=", f"-target arm64-apple-ios{version}-simulator"))
 
     return target_config_patches, clang_config_patches
