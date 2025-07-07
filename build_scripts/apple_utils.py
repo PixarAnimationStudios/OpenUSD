@@ -181,11 +181,8 @@ def GetCodeSigningIdentifiers() -> Dict[str, str]:
     XcodeVersion = GetXcodeVersion()[0]
     codeSignIDs = _GetCodeSignStringFromTerminal()
 
-    if not codeSignIDs:
-        return {"-": None}
-
     identifiers = {}
-    for codeSignID in codeSignIDs.splitlines():
+    for codeSignID in (codeSignIDs or "").splitlines():
         if "CSSMERR_TP_CERT_REVOKED" in codeSignID:
             continue
         if ")" not in codeSignID:
@@ -200,9 +197,7 @@ def GetCodeSigningIdentifiers() -> Dict[str, str]:
 
             identifiers[identifier] = identifier_hash
 
-    if not identifiers:
-        raise RuntimeError("Could not find a valid codesigning ID. Try re-logging into your Xcode developer account.")
-
+    identifiers["-"] = None
     return identifiers
 
 
@@ -225,6 +220,8 @@ def GetDevelopmentTeamID(identifier=None):
 
     if not identifier:
         identifier = GetCodeSignID()
+    if identifier == "-":
+        return None
 
     identifier_hash = GetCodeSigningIdentifiers().get(identifier)
     if not identifier_hash:
