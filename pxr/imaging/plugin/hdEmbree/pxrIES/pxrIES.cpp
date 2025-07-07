@@ -127,14 +127,18 @@ PxrIESFile::eval(float theta, float phi, float angleScale) const
         }
     }
 
-    // This formula matches Renderman's behavior
+    // Bimodal formula:
+    // - if angleScale < 0, scale with origin at "top"
+    //   (ie, 180 degrees / pi radians), similar to Renderman
+    // - if angleScale > 0, scale with origin at "bottom"
+    //   (ie, 0 degrees / radians), similar to Karma
+    // - if angleScale == 0, don't alter theta
 
-    // Scale with origin at "top" (ie, 180 degress / pi), by a factor
-    // of 1 / (1 + angleScale), offset so that angleScale = 0 yields the
-    // identity function.
-    const float profileScale = 1.0f + angleScale;
-    theta = (theta - _pi<float>) / profileScale + _pi<float>;
-    theta = GfClamp(theta, 0.0f, _pi<float>);
+    if (angleScale > 0) {
+        theta = theta / angleScale;
+    } else if (angleScale < 0) {
+        theta = (_pi<float> - theta) / angleScale + _pi<float>;
+    }
 
     if (theta < 0) {
         // vi = 0;
