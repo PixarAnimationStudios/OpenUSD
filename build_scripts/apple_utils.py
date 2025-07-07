@@ -365,6 +365,9 @@ def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
     if TargetEmbeddedOS(context):
         system_name = context.buildTarget
 
+    if context.macOSCodesign:
+        args.append(f"-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY={context.macOSCodesign}")
+
     if system_name:
         args.append(f"-DCMAKE_SYSTEM_NAME={system_name}")
         args.append(f"-DCMAKE_OSX_SYSROOT={GetSDKRoot(context)}")
