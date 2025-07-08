@@ -18,6 +18,7 @@ import os
 import platform
 import shlex
 import subprocess
+import shutil
 from typing import Optional, List
 
 TARGET_NATIVE = "native"
@@ -250,3 +251,115 @@ def ConfigureCMakeExtraArgs(context, args:List[str]) -> List[str]:
         args.append(f"-DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=BOTH")
 
     return args
+
+
+def BuildXCFramework(root, targets, args):
+    if TARGET_UNIVERSAL in targets:
+        targets.extend([TARGET_ARM64, TARGET_X86])
+        targets.remove(TARGET_UNIVERSAL)
+    if TARGET_NATIVE in targets:
+        targets.remove(TARGET_NATIVE)
+        targets.append(GetHostArch())
+
+    targets = set(targets)
+    print(f"Building {len(targets)} targets...")
+    shared_sources = os.path.join(root, "shared_sources")
+    os.makedirs(shared_sources, exist_ok=True)
+
+    do_lipo = TARGET_ARM64 in targets and TARGET_X86 in targets
+
+    build_command = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_usd.py")
+    frameworks = []
+    to_lipo = []
+    for target in targets:
+        print(f"Building {target}...")
+        install_dir = os.path.join(root, "builds", target)
+        target_src_dir = os.path.join(install_dir, "src")
+        os.makedirs(target_src_dir, exist_ok=True)
+        framework = os.path.join(install_dir, "frameworks/OpenUSD.framework")
+        if do_lipo and target in (TARGET_X86, TARGET_ARM64):
+            to_lipo.append(framework)
+        else:
+            frameworks.append(framework)
+
+        # Copy the shared sources over to save time
+        for src in os.listdir(shared_sources):
+            shared_src = os.path.join(shared_sources, src)
+            target_src = os.path.join(target_src_dir, src)
+            shutil.copy2(shared_src, target_src)
+
+        target_args = [sys.executable, build_command, install_dir, "--build-target", target, "--build-apple-framework"]
+        target_args.extend(args)
+        try:
+            subprocess.check_call(target_args)
+        except:
+            raise RuntimeError(f"Failed to build {target} using {' '.join(target_args)}")
+
+        # Copy the unshared sources back as needed
+        # We copy the zips in case there are any patches involved
+        for src in os.listdir(target_src_dir):
+            target_src_path = os.path.join(target_src_dir, src)
+            shared_src_path = os.path.join(shared_sources, src)
+            if not os.path.exists(shared_src_path) and os.path.isfile(target_src_path):
+                shutil.copy2(target_src_path, shared_src_path)
+
+        assert os.path.exists(framework)
+
+    if do_lipo:
+        print("Combining Mac framework architectures")
+        assert (len(to_lipo) == 2)
+
+        fat_dir = os.path.join(root, "builds/fat")
+        if os.path.exists(fat_dir):
+            shutil.rmtree(fat_dir)
+
+        fat_framework = os.path.join(fat_dir, "OpenUSD.framework")
+        subprocess.check_call(["ditto", to_lipo[0], fat_framework])  # Ditto copies more metadata than shutil does
+
+        dylib_a = os.path.join(to_lipo[0], "Versions/A/OpenUSD")
+        dylib_b = os.path.join(to_lipo[1], "Versions/A/OpenUSD")
+        dylib_dest = os.path.join(fat_framework, "Versions/A/OpenUSD")
+        subprocess.check_call(["lipo", dylib_a, dylib_b, "-create", "-output", dylib_dest])
+        frameworks.append(fat_framework)
+
+    print("Creating XCFramework")
+    xcframework_dir = os.path.join(root, "xcframework")
+    if os.path.exists(xcframework_dir):
+        shutil.rmtree(xcframework_dir)
+    os.makedirs(xcframework_dir, exist_ok=True)
+    xcframework_path = os.path.join(xcframework_dir, "OpenUSD.xcframework")
+    command = ["xcodebuild", "-create-xcframework", "-output", xcframework_path]
+    for framework in frameworks:
+        command.extend(["-framework", framework])
+
+    try:
+        subprocess.check_call(command)
+    except:
+        raise RuntimeError(f"Failed to create XCFramework using {' '.join(command)}")
+
+    print("""Success! Add the OpenUSD.xcframework to your Xcode Project.""")
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="A set of command line utilities for building on Apple Platforms")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    xcframework = subparsers.add_parser("xcframework",
+                                        description="Build multiple framework targets together as a single xcframework")
+    xcframework.add_argument("install_dir", type=str,
+                             help="Directory where the XCFramework will be installed")
+    xcframework.add_argument("--build-targets", nargs="+", help="The list of targets to build.",
+                             choices=GetBuildTargets(),
+                             default=GetBuildTargets())
+
+    args, unknown = parser.parse_known_args()
+    command = args.command
+    if command == "xcframework":
+        BuildXCFramework(args.install_dir, args.build_targets, unknown)
+    else:
+        raise RuntimeError(f"Unknown command: {command}")
+
+
+if __name__ == '__main__':
+    main()
