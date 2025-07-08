@@ -16,6 +16,8 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 #include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/arch/symbols.h"
+#include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/gf/matrix3d.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2f.h"
@@ -194,6 +196,22 @@ _ComputeStdlibSearchPaths()
         stdlibSearchPaths =
             _MergeSearchPaths(stdlibSearchPaths, { resourceMtlxLibrary });
     }
+
+#ifdef PXR_EXTRA_BINARY_RELATIVE_RESOURCES
+    std::string relativeResourcePath = "../" + std::string(TF_PP_STRINGIZE(PXR_EXTRA_BINARY_RELATIVE_RESOURCES)) + "/libraries";
+    std::string binaryPath;
+    if (!ArchGetAddressInfo(
+        reinterpret_cast<void*>(&_ComputeStdlibSearchPaths), &binaryPath,
+            nullptr, nullptr, nullptr)
+            && binaryPath.empty())
+    {
+        binaryPath = ArchGetExecutablePath();
+        binaryPath = TfGetPathName(binaryPath);
+    }
+    stdlibSearchPaths =_MergeSearchPaths(stdlibSearchPaths, { TfStringCatPaths(binaryPath, relativeResourcePath) });
+
+#endif
+
     return stdlibSearchPaths;
 }
 

@@ -61,7 +61,7 @@ ditto "${PROJECT_BINARY_DIR}/Info.plist" "${FRAMEWORK_PLIST_LOCATION}"
 
 # Copy the MaterialX libraries if they exist
 if [ -d "${MATERIALX_SOURCE_LIBRARIES}" ]; then
-  ditto ${MATERIALX_SOURCE_LIBRARIES} "${FRAMEWORK_RESOURCES_DIR}/materialx/"
+  ditto ${MATERIALX_SOURCE_LIBRARIES} "${FRAMEWORK_RESOURCES_DIR}/libraries/"
 fi
 
 
