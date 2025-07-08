@@ -1847,6 +1847,7 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DCMAKE_CXX_FLAGS="/Zm150"')
         if MacOS():
             extraArgs.append(f"-DPXR_BUILD_APPLE_FRAMEWORK={'ON' if context.buildAppleFramework else 'OFF'}")
+            extraArgs.append(f"-DPXR_APPLE_PREFIX_FRAMEWORK_HEADERS={'ON' if context.prefixFrameworkHeaders else 'OFF'}")
 
         # Make sure to use boost installed by the build script and not any
         # system installed boost
@@ -1979,6 +1980,8 @@ if MacOS():
                           help="Build USD as an Apple Framework (Default if using embedded platforms)")
     subgroup.add_argument("--no-build-apple-framework", dest="no_build_apple_framework", action="store_true",
                           help="Do not build USD as an Apple Framework (Default if macOS)")
+    group.add_argument("--prefix-framework-headers", dest="prefix_framework_headers", action="store_true",
+                          help="Add the Framework as a prefix to header includes so that they can automatically be included.")
 
     if apple_utils.IsHostArm():
         # Intel Homebrew stores packages in /usr/local which unfortunately can
@@ -2331,7 +2334,8 @@ class InstallContext:
 
             self.buildAppleFramework = ((args.build_apple_framework or MacOSTargetEmbedded(self))
                                         and not args.no_build_apple_framework)
-            if self.buildAppleFramework:
+            self.prefixFrameworkHeaders = args.prefix_framework_headers and self.buildAppleFramework
+            if self.buildAppleFramework and not args.build_type:
                     self.buildShared = False
                     self.buildMonolithic = True
         else:
@@ -2893,6 +2897,10 @@ if context.buildPrman:
 
 if MacOS() and context.buildAppleFramework:
     Print("""
-        Add the following framework to your Xcode Project, and add the headers folder within to your search path:
+        Add the following framework to your Xcode Project:
         OpenUSD.framework
     """)
+    if not context.prefixFrameworkHeaders:
+        Print("""
+        Configure the SYSTEM_HEADER_SEARCH_PATHS in your Xcode Build Settings to point to the header files within your framework.
+        """)

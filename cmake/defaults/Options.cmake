@@ -72,6 +72,7 @@ if(APPLE)
     endif ()
 
     option(PXR_BUILD_APPLE_FRAMEWORK "Builds an Apple Framework." ${PXR_APPLE_EMBEDDED})
+    option(PXR_APPLE_PREFIX_FRAMEWORK_HEADERS "Prefix the headers in framework builds" OFF )
     set(PXR_APPLE_FRAMEWORK_NAME "OpenUSD" CACHE STRING "Name to provide Apple Framework build")
     set(PXR_APPLE_IDENTIFIER_DOMAIN "org.openusd" CACHE STRING "Name to provide Apple Framework build")
     if (${PXR_BUILD_APPLE_FRAMEWORK})

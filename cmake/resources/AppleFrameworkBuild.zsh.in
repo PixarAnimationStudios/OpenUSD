@@ -84,4 +84,18 @@ fi
 install_name_tool -id "${FRAMEWORK_LINKER_PATH}" "${FRAMEWORK_DIR}/${FRAMEWORK_NAME}"
 install_name_tool -change "@rpath/libusd_ms.dylib" "${FRAMEWORK_LINKER_PATH}" "${FRAMEWORK_DIR}/${FRAMEWORK_NAME}"
 
+if [ "$APPLY_HEADER_PREFIX" = true ];then
+# Frameworks require all includes to use the framework name as the prefix for automatic discovery
+# e.g #include "pxr/pxr.h" must be #include <OpenUSD/pxr/pxr.h>
+echo "Modifying headers..."
+HEADER_SET=""
+for i in $(cd $FRAMEWORK_HEADERS_DIR && ls -d */ | cut -f1 -d'/');do
+  HEADER_SET+="${i}|"
+done;
+# Sed on macOS is POSIX compliant and so uses different args than GNU
+# Things to be aware of are [[:<:]] and [[:>:]] are for word boundaries and spaces are explicit literals
+INCLUDE_PATTERN="^# *include [\"|<]([[:<:]](${HEADER_SET::-1})[[:>:]].*)[\"|>].*$"
+find ${FRAMEWORK_HEADERS_DIR} -type f -name "*.h*" -print0 | xargs -0 sed -i "" -E "s,${INCLUDE_PATTERN},#include <${FRAMEWORK_NAME}/\1>,g"
+fi
+
 echo "✅ Finished creating framework at ${FRAMEWORK_DIR}"

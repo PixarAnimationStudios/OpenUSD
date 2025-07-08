@@ -185,8 +185,17 @@ Builds for Apple platforms may optionally build as a framework using the `--buil
 To add the Framework to your application, add `OpenUSD.framework` to your Xcode project.
 It is recommended to set it to `Embed and Sign`.
 
-To setup headers, configure the Xcode `SYSTEM_HEADER_SEARCH_PATHS` to add the path to your headers. e.g
-`$(SRCROOT)/OpenUSD.framework/Headers` if the framework exists in your projects root. 
+To setup headers, you may then choose one of two routes:
+
+1. Configure the Xcode `SYSTEM_HEADER_SEARCH_PATHS` to add the path to your headers. e.g
+`$(SRCROOT)/OpenUSD.framework/Headers` if the framework exists in your projects root. This is recommended
+if you intend to share source files with other platforms.
+
+2. Build with `--prefix-framework-headers` (or `-DPXR_APPLE_PREFIX_FRAMEWORK_HEADERS=ON` if using CMake)
+to automatically process the frameworks headers. This requires no extra configuration in Xcode, but does require
+that all includes be prefixed with the name of the framework. e.g `#include <OpenUSD/pxr/pxr.h>` .
+However, code that use these headers will not be portable with builds of USD without it.
+
 
 
 ##### Windows:

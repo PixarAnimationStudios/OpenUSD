@@ -1559,6 +1559,12 @@ function(pxr_create_apple_framework)
         set(EMBEDDED_BUILD "false")
     endif()
 
+    if (PXR_APPLE_PREFIX_FRAMEWORK_HEADERS)
+        set(APPLY_HEADER_PREFIX "true")
+    else()
+        set(APPLY_HEADER_PREFIX "false")
+    endif()
+
     _get_library_prefix(LIB_PREFIX)
     if(TARGET usd_ms)
         set(FRAMEWORK_ROOT_LIBRARY_NAME "${LIB_PREFIX}usd_ms.dylib")
