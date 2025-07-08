@@ -188,6 +188,12 @@ It is recommended to set it to `Embed and Sign`.
 To setup headers, configure the Xcode `SYSTEM_HEADER_SEARCH_PATHS` to add the path to your headers. e.g
 `$(SRCROOT)/OpenUSD.framework/Headers` if the framework exists in your projects root. 
 
+OpenUSD also supports building a combined XCFramework as well of multiple targets.
+This command takes an optional list of targets to build, but will otherwise build all supported platforms.
+
+```
+> python OpenUSD/build_scripts/apple_utils.py xcframework /path/to/my_usd_install_dir
+```
 
 ##### Windows:
 
