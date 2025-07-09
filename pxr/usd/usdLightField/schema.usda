@@ -34,13 +34,13 @@ class "GaussiansAPI" (
         token[] apiSchemaCanOnlyApplyTo = ["UsdGeomPoints"]
     }
 )  {
-    uniform token gaussianShape = "elipsoid" (
-        allowedTokens = ["elipsoid", "triangle", "plane"]
+    uniform token gaussianShape = "ellipsoid" (
+        allowedTokens = ["ellipsoid", "triangle", "plane"]
         doc = """The shape of the gaussian to render.
         Gaussians may be available in a range of shapes, therefore this list of allowedTokens is not strictly
         comprehensive. A renderer may support a subset or superset of the allowed tokens.
 
-        An elipsoid is what many people will colloquially refer to as a splat.
+        An ellipsoid is what many people will colloquially refer to as a splat.
         """
     )
 
@@ -53,10 +53,10 @@ class "GaussiansAPI" (
         This attribute is a hint for the metric used to sort the gaussians with respect to the camera.
 
         'zDepth' sorts the gaussians using the z component of the position of the gaussians once
-        transformed in to camera space.
+        transformed in to the cameras projection space.
 
         'cameraDistance' sorts the gaussians using the euclidean distance between the gaussians
-        and the camera."""
+        and the camera in world space."""
     )
 
     uniform token projectionModeHint = "perspective" (
@@ -98,21 +98,24 @@ class "GaussiansAPI" (
 class "SphericalHarmonicsAPI" (
     doc = """AppliedAPI schema to extend UsdGeomPoints to describe Spherical Harmonic data.
     Spherical harmonics data must be interpreted in context of the point types it is applied to, for example
-    with elipsoid gaussians using the GaussianAPI above.
+    with ellipsoid gaussians using the GaussianAPI above.
 
     The spherical harmonic coefficients can be provided as either half or float based data.
     If floats are present, then renderers should prefer the higher precision data if they are able.
 
-    The spherical harmonic data is provided as an array of half3 or float3 data. Each point must have the
-    same number of spherical harmonic coefficients, and therefore the array size must be equal to the number
-    of points multiplied by the number of spherical harmonic coefficients.  This allows the number of coefficients
-    present for each point can be inferred by the array size.
+    The spherical harmonic data is provided as an array of half3 or float3 data.  They are represented by 3 component values
+    as they are constructed to be the eigenfunctions of the angular part of the Laplacian in three dimensions.
+
+    Each point must have the same number of spherical harmonic coefficients, and therefore the array size must be equal
+    to the number of points multiplied by the number of spherical harmonic coefficients.
+    This allows the number of coefficients present for each point can be inferred by the array size.
 
     Spherical Harmoics contain all but the 0th degree spherical harmonic, which is already encoded in the UsdGeomPoints.displayColor attribute.
     Each point must have the same number of spherical harmonic coefficients, and therefore the array size must be
     equal to the number of points multiplied by the number of spherical harmonic coefficients (minus one due to the 0th degree being used for color).
     This allows the number of coefficients present for each point can be inferred by the array size.
 
+    Authors are responsible for authoring the correct color space metadata for their spherical harmonics data.
     """
     inherits = </APISchemaBase>
 
@@ -121,10 +124,6 @@ class "SphericalHarmonicsAPI" (
         token[] apiSchemaCanOnlyApplyTo = ["UsdGeomPoints"]
     }
 )  {
-
-    uniform token sphericalHarmonicsColorSpace = "sRGB" (
-        doc = """Defines the source color space of the spherical harmonic data."""
-    )
 
     half3[] primvars:sphericalHarmonics (
         doc = """Half buffer containing spherical harmonics data.

@@ -18,7 +18,7 @@ void wrapUsdLightFieldTokens()
     pxr_boost::python::class_<UsdLightFieldTokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
     _ADD_TOKEN(cls, cameraDistance);
-    _ADD_TOKEN(cls, elipsoid);
+    _ADD_TOKEN(cls, ellipsoid);
     _ADD_TOKEN(cls, gaussianShape);
     _ADD_TOKEN(cls, orientations);
     _ADD_TOKEN(cls, orientationsf);
@@ -30,8 +30,6 @@ void wrapUsdLightFieldTokens()
     _ADD_TOKEN(cls, scales);
     _ADD_TOKEN(cls, scalesf);
     _ADD_TOKEN(cls, sortingModeHint);
-    _ADD_TOKEN(cls, sphericalHarmonicsColorSpace);
-    _ADD_TOKEN(cls, sRGB);
     _ADD_TOKEN(cls, tangential);
     _ADD_TOKEN(cls, triangle);
     _ADD_TOKEN(cls, zDepth);

@@ -10,7 +10,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 UsdLightFieldTokensType::UsdLightFieldTokensType() :
     cameraDistance("cameraDistance", TfToken::Immortal),
-    elipsoid("elipsoid", TfToken::Immortal),
+    ellipsoid("ellipsoid", TfToken::Immortal),
     gaussianShape("gaussianShape", TfToken::Immortal),
     orientations("orientations", TfToken::Immortal),
     orientationsf("orientationsf", TfToken::Immortal),
@@ -22,8 +22,6 @@ UsdLightFieldTokensType::UsdLightFieldTokensType() :
     scales("scales", TfToken::Immortal),
     scalesf("scalesf", TfToken::Immortal),
     sortingModeHint("sortingModeHint", TfToken::Immortal),
-    sphericalHarmonicsColorSpace("sphericalHarmonicsColorSpace", TfToken::Immortal),
-    sRGB("sRGB", TfToken::Immortal),
     tangential("tangential", TfToken::Immortal),
     triangle("triangle", TfToken::Immortal),
     zDepth("zDepth", TfToken::Immortal),
@@ -31,7 +29,7 @@ UsdLightFieldTokensType::UsdLightFieldTokensType() :
     SphericalHarmonicsAPI("SphericalHarmonicsAPI", TfToken::Immortal),
     allTokens({
         cameraDistance,
-        elipsoid,
+        ellipsoid,
         gaussianShape,
         orientations,
         orientationsf,
@@ -43,8 +41,6 @@ UsdLightFieldTokensType::UsdLightFieldTokensType() :
         scales,
         scalesf,
         sortingModeHint,
-        sphericalHarmonicsColorSpace,
-        sRGB,
         tangential,
         triangle,
         zDepth,

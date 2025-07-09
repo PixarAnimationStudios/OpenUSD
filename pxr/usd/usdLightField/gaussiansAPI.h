@@ -167,16 +167,16 @@ public:
     /// Gaussians may be available in a range of shapes, therefore this list of allowedTokens is not strictly
     /// comprehensive. A renderer may support a subset or superset of the allowed tokens.
     /// 
-    /// An elipsoid is what many people will colloquially refer to as a splat.
+    /// An ellipsoid is what many people will colloquially refer to as a splat.
     /// 
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `uniform token gaussianShape = "elipsoid"` |
+    /// | Declaration | `uniform token gaussianShape = "ellipsoid"` |
     /// | C++ Type | TfToken |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    /// | \ref UsdLightFieldTokens "Allowed Values" | elipsoid, triangle, plane |
+    /// | \ref UsdLightFieldTokens "Allowed Values" | ellipsoid, triangle, plane |
     USDLIGHTFIELD_API
     UsdAttribute GetGaussianShapeAttr() const;
 
@@ -199,10 +199,10 @@ public:
     /// This attribute is a hint for the metric used to sort the gaussians with respect to the camera.
     /// 
     /// 'zDepth' sorts the gaussians using the z component of the position of the gaussians once
-    /// transformed in to camera space.
+    /// transformed in to the cameras projection space.
     /// 
     /// 'cameraDistance' sorts the gaussians using the euclidean distance between the gaussians
-    /// and the camera.
+    /// and the camera in world space.
     ///
     /// | ||
     /// | -- | -- |

@@ -86,23 +86,6 @@ UsdLightFieldSphericalHarmonicsAPI::_GetTfType() const
 }
 
 UsdAttribute
-UsdLightFieldSphericalHarmonicsAPI::GetSphericalHarmonicsColorSpaceAttr() const
-{
-    return GetPrim().GetAttribute(UsdLightFieldTokens->sphericalHarmonicsColorSpace);
-}
-
-UsdAttribute
-UsdLightFieldSphericalHarmonicsAPI::CreateSphericalHarmonicsColorSpaceAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdLightFieldTokens->sphericalHarmonicsColorSpace,
-                       SdfValueTypeNames->Token,
-                       /* custom = */ false,
-                       SdfVariabilityUniform,
-                       defaultValue,
-                       writeSparsely);
-}
-
-UsdAttribute
 UsdLightFieldSphericalHarmonicsAPI::GetPrimvarsSphericalHarmonicsAttr() const
 {
     return GetPrim().GetAttribute(UsdLightFieldTokens->primvarsSphericalHarmonics);
@@ -153,7 +136,6 @@ const TfTokenVector&
 UsdLightFieldSphericalHarmonicsAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLightFieldTokens->sphericalHarmonicsColorSpace,
         UsdLightFieldTokens->primvarsSphericalHarmonics,
         UsdLightFieldTokens->primvarsSphericalHarmonicsf,
     };

@@ -34,13 +34,6 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
-_CreateSphericalHarmonicsColorSpaceAttr(UsdLightFieldSphericalHarmonicsAPI &self,
-                                      object defaultVal, bool writeSparsely) {
-    return self.CreateSphericalHarmonicsColorSpaceAttr(
-        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
-}
-        
-static UsdAttribute
 _CreatePrimvarsSphericalHarmonicsAttr(UsdLightFieldSphericalHarmonicsAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreatePrimvarsSphericalHarmonicsAttr(
@@ -116,13 +109,6 @@ void wrapUsdLightFieldSphericalHarmonicsAPI()
 
         .def(!self)
 
-        
-        .def("GetSphericalHarmonicsColorSpaceAttr",
-             &This::GetSphericalHarmonicsColorSpaceAttr)
-        .def("CreateSphericalHarmonicsColorSpaceAttr",
-             &_CreateSphericalHarmonicsColorSpaceAttr,
-             (arg("defaultValue")=object(),
-              arg("writeSparsely")=false))
         
         .def("GetPrimvarsSphericalHarmonicsAttr",
              &This::GetPrimvarsSphericalHarmonicsAttr)

@@ -37,27 +37,25 @@ class SdfAssetPath;
 ///
 /// AppliedAPI schema to extend UsdGeomPoints to describe Spherical Harmonic data.
 /// Spherical harmonics data must be interpreted in context of the point types it is applied to, for example
-/// with elipsoid gaussians using the GaussianAPI above.
+/// with ellipsoid gaussians using the GaussianAPI above.
 /// 
 /// The spherical harmonic coefficients can be provided as either half or float based data.
 /// If floats are present, then renderers should prefer the higher precision data if they are able.
 /// 
-/// The spherical harmonic data is provided as an array of half3 or float3 data. Each point must have the
-/// same number of spherical harmonic coefficients, and therefore the array size must be equal to the number
-/// of points multiplied by the number of spherical harmonic coefficients.  This allows the number of coefficients
-/// present for each point can be inferred by the array size.
+/// The spherical harmonic data is provided as an array of half3 or float3 data.  They are represented by 3 component values
+/// as they are constructed to be the eigenfunctions of the angular part of the Laplacian in three dimensions.
+/// 
+/// Each point must have the same number of spherical harmonic coefficients, and therefore the array size must be equal
+/// to the number of points multiplied by the number of spherical harmonic coefficients.
+/// This allows the number of coefficients present for each point can be inferred by the array size.
 /// 
 /// Spherical Harmoics contain all but the 0th degree spherical harmonic, which is already encoded in the UsdGeomPoints.displayColor attribute.
 /// Each point must have the same number of spherical harmonic coefficients, and therefore the array size must be
 /// equal to the number of points multiplied by the number of spherical harmonic coefficients (minus one due to the 0th degree being used for color).
 /// This allows the number of coefficients present for each point can be inferred by the array size.
 /// 
+/// Authors are responsible for authoring the correct color space metadata for their spherical harmonics data.
 /// 
-///
-/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
-/// that are text/tokens, the actual token is published and defined in \ref UsdLightFieldTokens.
-/// So to set an attribute to the value "rightHanded", use UsdLightFieldTokens->rightHanded
-/// as the value.
 ///
 class UsdLightFieldSphericalHarmonicsAPI : public UsdAPISchemaBase
 {
@@ -166,29 +164,6 @@ private:
     // override SchemaBase virtuals.
     USDLIGHTFIELD_API
     const TfType &_GetTfType() const override;
-
-public:
-    // --------------------------------------------------------------------- //
-    // SPHERICALHARMONICSCOLORSPACE 
-    // --------------------------------------------------------------------- //
-    /// Defines the source color space of the spherical harmonic data.
-    ///
-    /// | ||
-    /// | -- | -- |
-    /// | Declaration | `uniform token sphericalHarmonicsColorSpace = "sRGB"` |
-    /// | C++ Type | TfToken |
-    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
-    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    USDLIGHTFIELD_API
-    UsdAttribute GetSphericalHarmonicsColorSpaceAttr() const;
-
-    /// See GetSphericalHarmonicsColorSpaceAttr(), and also 
-    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
-    /// If specified, author \p defaultValue as the attribute's default,
-    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
-    /// the default for \p writeSparsely is \c false.
-    USDLIGHTFIELD_API
-    UsdAttribute CreateSphericalHarmonicsColorSpaceAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //

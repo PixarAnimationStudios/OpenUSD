@@ -49,10 +49,10 @@ struct UsdLightFieldTokensType {
     /// 
     /// Possible value for UsdLightFieldGaussiansAPI::GetSortingModeHintAttr()
     const TfToken cameraDistance;
-    /// \brief "elipsoid"
+    /// \brief "ellipsoid"
     /// 
     /// Fallback value for UsdLightFieldGaussiansAPI::GetGaussianShapeAttr()
-    const TfToken elipsoid;
+    const TfToken ellipsoid;
     /// \brief "gaussianShape"
     /// 
     /// UsdLightFieldGaussiansAPI
@@ -97,14 +97,6 @@ struct UsdLightFieldTokensType {
     /// 
     /// UsdLightFieldGaussiansAPI
     const TfToken sortingModeHint;
-    /// \brief "sphericalHarmonicsColorSpace"
-    /// 
-    /// UsdLightFieldSphericalHarmonicsAPI
-    const TfToken sphericalHarmonicsColorSpace;
-    /// \brief "sRGB"
-    /// 
-    /// Fallback value for UsdLightFieldSphericalHarmonicsAPI::GetSphericalHarmonicsColorSpaceAttr()
-    const TfToken sRGB;
     /// \brief "tangential"
     /// 
     /// Possible value for UsdLightFieldGaussiansAPI::GetProjectionModeHintAttr()
