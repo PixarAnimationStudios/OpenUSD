@@ -13,6 +13,8 @@
 #include <MaterialXGenMsl/MslShaderGenerator.h>
 #include <MaterialXGenGlsl/VkShaderGenerator.h>
 
+#include <map>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdSt_MxShaderGenInfo;
@@ -88,7 +90,7 @@ protected:
     // Store MaterialX and Hydra counterparts and other Hydra specific info
     // to generate an appropriate glslfx header and properly initialize 
     // MaterialX values.
-    MaterialX::StringMap _mxHdTextureMap;
+    std::map<std::string, std::string> _mxHdTextureMap;
     MaterialX::StringMap _mxHdPrimvarMap;
     MaterialX::StringMap _mxHdPrimvarDefaultValueMap;
     std::string _defaultTexcoordName;

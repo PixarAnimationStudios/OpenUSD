@@ -15,9 +15,9 @@
         }
     }, 
     "textures": {
-        "roughness": {
-        },
         "diffuseColor": {
+        },
+        "roughness": {
         }
     }, 
     "techniques": {
@@ -157,8 +157,8 @@ int u_numActiveLightSources = 0;
 #endif
 
 // Define MaterialX to Hydra Sampler mappings
-#define image_roughness_file HdGetSampler_roughness()
 #define image_color_file HdGetSampler_diffuseColor()
+#define image_roughness_file HdGetSampler_roughness()
 
 struct LightData
 {

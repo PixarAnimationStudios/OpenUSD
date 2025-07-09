@@ -887,9 +887,9 @@ HdStMaterialXShaderGen<mx::GlslShaderGenerator>::HdStMaterialXShaderGen(
 #else
     : mx::GlslShaderGenerator(mx::TypeSystem::create()),
 #endif
-      _mxHdTextureMap(mxHdInfo.textureMap),
-      _mxHdPrimvarMap(mxHdInfo.primvarMap),
-      _mxHdPrimvarDefaultValueMap(mxHdInfo.primvarDefaultValueMap),
+      _mxHdTextureMap(mxHdInfo.mxHdTextureMap),
+      _mxHdPrimvarMap(mxHdInfo.mxHdPrimvarMap),
+      _mxHdPrimvarDefaultValueMap(mxHdInfo.mxHdPrimvarDefaultValueMap),
       _materialTag(mxHdInfo.materialTag),
       _bindlessTexturesEnabled(mxHdInfo.bindlessTexturesEnabled),
       _emittingSurfaceNode(false)
@@ -1046,9 +1046,9 @@ HdStMaterialXShaderGen<mx::VkShaderGenerator>::HdStMaterialXShaderGen(
 #else
     : mx::VkShaderGenerator(mx::TypeSystem::create()),
 #endif
-      _mxHdTextureMap(mxHdInfo.textureMap),
-      _mxHdPrimvarMap(mxHdInfo.primvarMap),
-      _mxHdPrimvarDefaultValueMap(mxHdInfo.primvarDefaultValueMap),
+      _mxHdTextureMap(mxHdInfo.mxHdTextureMap),
+      _mxHdPrimvarMap(mxHdInfo.mxHdPrimvarMap),
+      _mxHdPrimvarDefaultValueMap(mxHdInfo.mxHdPrimvarDefaultValueMap),
       _materialTag(mxHdInfo.materialTag),
       _bindlessTexturesEnabled(mxHdInfo.bindlessTexturesEnabled),
       _emittingSurfaceNode(false)
@@ -1204,9 +1204,9 @@ HdStMaterialXShaderGen<mx::MslShaderGenerator>::HdStMaterialXShaderGen(
 #else
     : mx::MslShaderGenerator(mx::TypeSystem::create()),
 #endif
-      _mxHdTextureMap(mxHdInfo.textureMap),
-      _mxHdPrimvarMap(mxHdInfo.primvarMap),
-      _mxHdPrimvarDefaultValueMap(mxHdInfo.primvarDefaultValueMap),
+      _mxHdTextureMap(mxHdInfo.mxHdTextureMap),
+      _mxHdPrimvarMap(mxHdInfo.mxHdPrimvarMap),
+      _mxHdPrimvarDefaultValueMap(mxHdInfo.mxHdPrimvarDefaultValueMap),
       _materialTag(mxHdInfo.materialTag),
       _bindlessTexturesEnabled(mxHdInfo.bindlessTexturesEnabled),
       _emittingSurfaceNode(false)

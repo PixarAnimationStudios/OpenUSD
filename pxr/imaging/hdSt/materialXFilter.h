@@ -21,15 +21,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Storing MaterialX-Hydra counterparts and other Hydra specific information
 struct HdSt_MxShaderGenInfo {
     HdSt_MxShaderGenInfo() 
-        : textureMap(MaterialX::StringMap()), 
-          primvarMap(MaterialX::StringMap()), 
-          primvarDefaultValueMap(MaterialX::StringMap()), 
-          defaultTexcoordName("st"),
+        : defaultTexcoordName("st"),
           materialTag(HdStMaterialTagTokens->defaultMaterialTag.GetString()),
           bindlessTexturesEnabled(false) {}
-    MaterialX::StringMap textureMap;
-    MaterialX::StringMap primvarMap;
-    MaterialX::StringMap primvarDefaultValueMap;
+
+    std::map<std::string, std::string> mxHdTextureMap;
+    MaterialX::StringMap mxHdPrimvarMap;
+    MaterialX::StringMap mxHdPrimvarDefaultValueMap;
     std::string defaultTexcoordName;
     std::string materialTag;
     bool bindlessTexturesEnabled;

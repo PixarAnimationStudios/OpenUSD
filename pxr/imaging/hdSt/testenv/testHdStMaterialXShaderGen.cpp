@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
             if (npos != std::string::npos) {
                 const std::string mx = textureMap.substr(0, npos);
                 const std::string hd = textureMap.substr(npos + 1);
-                mxHdInfo.textureMap[mx] = hd;
+                mxHdInfo.mxHdTextureMap[mx] = hd;
             }
             else {
                 std::cerr << "textureMap input not formatted correctly.\n";
@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
             if (npos != std::string::npos) {
                 const std::string name = primvarMap.substr(0, npos);
                 const std::string type = primvarMap.substr(npos + 1);
-                mxHdInfo.primvarMap[name] = type;
+                mxHdInfo.mxHdPrimvarMap[name] = type;
             }
             else {
                 std::cerr << "primvarMap input not formatted correctly.\n";

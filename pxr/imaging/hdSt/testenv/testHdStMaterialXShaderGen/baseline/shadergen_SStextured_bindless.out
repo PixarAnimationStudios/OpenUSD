@@ -15,9 +15,9 @@
         }
     }, 
     "textures": {
-        "roughness": {
-        },
         "diffuseColor": {
+        },
+        "roughness": {
         }
     }, 
     "techniques": {
@@ -273,8 +273,8 @@ void mxInit(vec4 Peye, vec3 Neye)
     u_envRadianceMips = textureQueryLevels(u_envRadiance);
 
     // Initialize Material Textures
-    image_roughness_file = HdGetSampler_roughness();
     image_color_file = HdGetSampler_diffuseColor();
+    image_roughness_file = HdGetSampler_roughness();
 
     mat4 hdTransformationMatrix = mat4(1.0);
 #if NUM_LIGHTS > 0

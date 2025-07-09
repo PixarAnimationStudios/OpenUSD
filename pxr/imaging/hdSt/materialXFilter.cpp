@@ -426,14 +426,14 @@ _AddFallbackDomeLightTextureNode(
 }
 
 // Store texture node connections, default dome light texture path and any
-// filename inputs from the terminal nodeto the mxHdTextureMap
+// filename inputs from the terminal node to the mxHdTextureMap
 static void 
 _UpdateMxHdTextureMap(
     std::set<SdfPath> const& hdTextureNodes,
     HdMtlxTexturePrimvarData::TextureMap const& hdMtlxTextureInfo,
     HdMaterialNode2 const& hdTerminalNode,
     SdfPath const& hdTerminalNodePath,
-    mx::StringMap* mxHdTextureMap)
+    std::map<std::string, std::string>* mxHdTextureMap)
 {
     // Store the added connection to the terminal node for MaterialXShaderGen
     for (SdfPath const& texturePath : hdTextureNodes) {
@@ -1267,11 +1267,11 @@ _GenerateMaterialXShader(
     // get generated in MaterialXShaderGen
     _UpdateMxHdTextureMap(
         hdMtlxData.hdTextureNodes, hdMtlxData.mxHdTextureMap,
-        terminalNode, terminalNodePath, &mxHdInfo.textureMap);
+        terminalNode, terminalNodePath, &mxHdInfo.mxHdTextureMap);
 
     _UpdatePrimvarNodes(
         mtlxDoc, hdNetwork, hdMtlxData.hdPrimvarNodes, 
-        &mxHdInfo.primvarMap, &mxHdInfo.primvarDefaultValueMap);
+        &mxHdInfo.mxHdPrimvarMap, &mxHdInfo.mxHdPrimvarDefaultValueMap);
 
     mxHdInfo.materialTag = materialTagToken.GetString();
     mxHdInfo.bindlessTexturesEnabled = bindlessTexturesEnabled;
