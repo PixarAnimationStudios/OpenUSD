@@ -1,0 +1,139 @@
+#usda 1.0
+(
+    subLayers = [
+        @usd/schema.usda@,
+        @usdGeom/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName       = "usdLightField"
+        string libraryPath       = "pxr/usd/usdLightField"
+        string libraryPrefix     = "UsdLightField"
+        string tokensPrefix      = "UsdLightField"
+    }
+) {
+}
+
+class "GaussiansAPI" (
+    doc = """AppliedAPI schema to extend UsdGeomPoints to describe Gaussians.
+
+    Orientations and Scales are provided in both half and float precision data to allow flexibility
+    in storage. Renderers should prefer the float precision data if present, and they are capable.
+
+    UsdGeomPoints already provides a Widths attribute that represents the size of the point.  In order
+    to allow renderers that do not support rendering Gaussians we suggest setting Widths to the length
+    of the Scales attribute, and then normalizing the Scales attribute.  Renderers reconstruct the
+    original Scales attribute value by multiplying by the UsdGeomPoints Widths attribute.
+    """
+    inherits = </APISchemaBase>
+
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["UsdGeomPoints"]
+    }
+)  {
+    uniform token gaussianShape = "elipsoid" (
+        allowedTokens = ["elipsoid", "triangle", "plane"]
+        doc = """The shape of the gaussian to render.
+        Gaussians may be available in a range of shapes, therefore this list of allowedTokens is not strictly
+        comprehensive. A renderer may support a subset or superset of the allowed tokens.
+
+        An elipsoid is what many people will colloquially refer to as a splat.
+        """
+    )
+
+    uniform token sortingModeHint = "zDepth" (
+        allowedTokens = ["zDepth", "cameraDistance"]
+        doc = """A hint for the renderer on how to sort the gaussians while drawing.
+        Renderers are free to ignore this, but the hint is often valuable to tune the rendering of the scene.
+
+        Rasterizers usually sort gaussians from back to front.
+        This attribute is a hint for the metric used to sort the gaussians with respect to the camera.
+
+        'zDepth' sorts the gaussians using the z component of the position of the gaussians once
+        transformed in to camera space.
+
+        'cameraDistance' sorts the gaussians using the euclidean distance between the gaussians
+        and the camera."""
+    )
+
+    uniform token projectionModeHint = "perspective" (
+        allowedTokens = ["perspective", "tangential"]
+        doc = """A hint for the renderer on how to project the gaussian to achieve a perspective correct view.
+        Renderers are free to ignore this, but the hint is often valuable to tune the rendering of the scene.
+
+        'Perspective' projection is similar to standard object rendering from a camera view.
+        Gaussians are projected with scaling and distortion based on depth.
+
+        'Tangential' projection treats the image plane as a tangent to the viewing sphere.
+        Gaussians are projected orthogonally, preserving shape and scale better, which helps reduce
+        distortion for certain rendering applications like novel view synthesis
+        """
+    )
+
+    quath[] orientations (
+        doc = """Orientation of the gaussians coordinate frame for scale to be applied in (quaternion).
+        Half precision data."""
+    )
+
+    quatf[] orientationsf (
+        doc = """Orientation of the gaussians coordinate frame for scale to be applied in (quaternion).
+        Float precision data, renderers should prefer float data over half if present."""
+    )
+
+    half3[] scales (
+        doc = """Scale of each point in an XYZ coordinate frame defined by orientation.
+        Half precision data."""
+    )
+
+    float3[] scalesf (
+        doc = """Scale of each point in an XYZ coordinate frame defined by orientation.
+        Float precision data, renderers should prefer float data over half if present."""
+    )
+
+}
+
+class "SphericalHarmonicsAPI" (
+    doc = """AppliedAPI schema to extend UsdGeomPoints to describe Spherical Harmonic data.
+    Spherical harmonics data must be interpreted in context of the point types it is applied to, for example
+    with elipsoid gaussians using the GaussianAPI above.
+
+    The spherical harmonic coefficients can be provided as either half or float based data.
+    If floats are present, then renderers should prefer the higher precision data if they are able.
+
+    The spherical harmonic data is provided as an array of half3 or float3 data. Each point must have the
+    same number of spherical harmonic coefficients, and therefore the array size must be equal to the number
+    of points multiplied by the number of spherical harmonic coefficients.  This allows the number of coefficients
+    present for each point can be inferred by the array size.
+
+    Spherical Harmoics contain all but the 0th degree spherical harmonic, which is already encoded in the UsdGeomPoints.displayColor attribute.
+    Each point must have the same number of spherical harmonic coefficients, and therefore the array size must be
+    equal to the number of points multiplied by the number of spherical harmonic coefficients (minus one due to the 0th degree being used for color).
+    This allows the number of coefficients present for each point can be inferred by the array size.
+
+    """
+    inherits = </APISchemaBase>
+
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["UsdGeomPoints"]
+    }
+)  {
+
+    uniform token sphericalHarmonicsColorSpace = "sRGB" (
+        doc = """Defines the source color space of the spherical harmonic data."""
+    )
+
+    half3[] primvars:sphericalHarmonics (
+        doc = """Half buffer containing spherical harmonics data.
+        See the description of the API for more information on interpreting the data."""
+    )
+
+    float3[] primvars:sphericalHarmonicsf (
+        doc = """Float buffer containing SH data.
+        See the description of the API for more information on interpreting the data."""
+    )
+
+}
