@@ -104,7 +104,8 @@ class "SphericalHarmonicsAPI" (
     If floats are present, then renderers should prefer the higher precision data if they are able.
 
     The spherical harmonic data is provided as an array of half3 or float3 data.  They are represented by 3 component values
-    as they are constructed to be the eigenfunctions of the angular part of the Laplacian in three dimensions.
+    as they are constructed to be the eigenfunctions of the angular part of the Laplacian in three dimensions. The 3
+    component values being represeted as a RGB float3 triplet.
 
     Each point must have the same number of spherical harmonic coefficients, and therefore the array size must be equal
     to the number of points multiplied by the number of spherical harmonic coefficients.
