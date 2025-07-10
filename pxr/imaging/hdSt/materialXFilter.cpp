@@ -246,8 +246,10 @@ HdSt_GenMaterialXShader(
 
     // Should have exactly one renderable element (material).
     if (renderableElements.size() != 1) {
-        TF_CODING_ERROR("Generated MaterialX Document does not "
-                        "have 1 material");
+        TF_CODING_ERROR(
+            "Generated MaterialX Document has %lu materials, should only have "
+            "1.\nMake sure mtlx files containing custom node definitions do "
+            "not contain multiple materials.", renderableElements.size());
         return nullptr;
     }
 

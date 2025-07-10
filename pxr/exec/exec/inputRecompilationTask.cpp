@@ -40,46 +40,64 @@ Exec_InputRecompilationTask::_Compile(
 
         // Fetch recompilation info specific to this input.
         const EsfObject &originObject = nodeRecompilationInfo->GetProvider();
-        const Exec_InputKey *const inputKey =
-            nodeRecompilationInfo->GetInputKey(*_input);
+        const TfSmallVector<const Exec_InputKey *, 1> inputKeys =
+            nodeRecompilationInfo->GetInputKeys(*_input);
         if (!TF_VERIFY(
-            inputKey,
-            "Unable to recompile input '%s' because no input key was found.",
+            !inputKeys.empty(),
+            "Unable to recompile input '%s' because no input keys were found.",
             _input->GetDebugName().c_str())) {
             return;
         }
 
+        // Each input key needs its own output vector and journal for
+        // input resolution.
+        const size_t numInputKeys = inputKeys.size();
+        _resultOutputsPerInputKey.resize(numInputKeys);
+        _journalPerInputKey.resize(numInputKeys);
+
         // Re-resolve and recompile the input's dependencies.
-        taskDeps.NewSubtask<Exec_InputResolvingCompilationTask>(
-            compilationState,
-            *inputKey,
-            originObject,
-            nodeRecompilationInfo->GetDispatchingSchemaKey(),
-            &_resultOutputs,
-            &_journal);
+        for (size_t i = 0; i < numInputKeys; ++i) {
+            taskDeps.NewSubtask<Exec_InputResolvingCompilationTask>(
+                compilationState,
+                *inputKeys[i],
+                originObject,
+                nodeRecompilationInfo->GetDispatchingSchemaKey(),
+                &_resultOutputsPerInputKey[i],
+                &_journalPerInputKey[i]);
+        }
     },
 
     [this, &compilationState](TaskDependencies &taskDeps) {
         TRACE_FUNCTION_SCOPE("reconnect input");
 
+        size_t totalOutputs = 0;
+        for (const auto &sourceOutputs : _resultOutputsPerInputKey) {
+            totalOutputs += sourceOutputs.size();
+        }
+
         // If the input belonged to a leaf node, then we require exactly one
         // source output.
         if (!TF_VERIFY(
-            _resultOutputs.size() == 1 ||
+            (_resultOutputsPerInputKey.size() == 1 &&
+             _resultOutputsPerInputKey[0].size() == 1) ||
             !EfLeafNode::IsALeafNode(_input->GetNode()),
-            "Recompilation of leaf node input '%s' expected exactly 1 output; "
-            "got %zu.",
+            "Recompilation of leaf node input '%s' expected exactly 1 output "
+            "from 1 input key; got %zu outputs from %zu input keys.",
             _input->GetDebugName().c_str(),
-            _resultOutputs.size())) {
+            totalOutputs,
+            _resultOutputsPerInputKey.size())) {
             return;
         }
 
         // Connect the recompiled outputs to this input.
-        compilationState.GetProgram()->Connect(
-            _journal, 
-            _resultOutputs, 
-            &_input->GetNode(),
-            _input->GetName());
+        const size_t numInputKeys = _resultOutputsPerInputKey.size();
+        for (size_t i = 0; i < numInputKeys; ++i) {
+            compilationState.GetProgram()->Connect(
+                _journalPerInputKey[i], 
+                _resultOutputsPerInputKey[i], 
+                &_input->GetNode(),
+                _input->GetName());
+        }
     }
     );
 }

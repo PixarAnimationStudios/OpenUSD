@@ -5646,21 +5646,35 @@ _CopyProperty(const UsdProperty &prop,
 
         _CopyAuthoredMetadata(attr, sdfAttr);
 
-        // Copy the default & time samples, if present. We get the
-        // correct timeSamples/default value resolution here because
-        // GetBracketingTimeSamples sets hasSamples=false when the
-        // default value is stronger.
+        // Following composition strength order, if the resolve info value
+        // source is samples or clips, we write out samples.  Otherwise if the
+        // source is a spline, we write out the spline.  We always write out the
+        // default if one is authored, to handle calls to Get() with the default
+        // time.
 
-        double lower = 0.0, upper = 0.0;
-        bool hasSamples = false;
-        if (attr.GetBracketingTimeSamples(
-            0.0, &lower, &upper, &hasSamples) && hasSamples) {
+        UsdResolveInfo resolveInfo = attr.GetResolveInfo();
+
+        if (resolveInfo.GetSource() == UsdResolveInfoSourceTimeSamples ||
+            resolveInfo.GetSource() == UsdResolveInfoSourceValueClips) {
             SdfTimeSampleMap ts;
             if (Usd_FlattenAccess::MakeTimeSampleMapForFlatten(
                     attr, timeOffset, &ts)) {
                 sdfAttr->SetInfo(SdfFieldKeys->TimeSamples, VtValue::Take(ts));
             }
         }
+        else if (resolveInfo.GetSource() == UsdResolveInfoSourceSpline) {
+            TsSpline spline = attr.GetSpline();
+
+            if (!timeOffset.IsIdentity()) {
+                TsSpline mappedSpline = spline;
+                // Apply layer offset.
+                Usd_ApplyLayerOffsetToValue(&mappedSpline, timeOffset);
+                spline = std::move(mappedSpline);
+            }
+            sdfAttr->SetInfo(SdfFieldKeys->Spline, VtValue::Take(spline));
+        }
+
+        // Always write default if we have one.
         if (attr.HasAuthoredMetadata(SdfFieldKeys->Default)) {
             VtValue defaultValue;
             if (attr.Get(&defaultValue)) {

@@ -57,6 +57,7 @@ HgiVulkanTexture::HgiVulkanTexture(
     HgiVulkan* hgi,
     HgiVulkanDevice* device,
     HgiTextureDesc const & desc,
+    bool optimalTiling,
     bool interop)
     : HgiTexture(desc)
     , _isTextureView(false)
@@ -86,7 +87,8 @@ HgiVulkanTexture::HgiVulkanTexture(
     imageCreateInfo.arrayLayers = desc.layerCount;
     imageCreateInfo.samples = 
         HgiVulkanConversions::GetSampleCount(desc.sampleCount);
-    imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.tiling = optimalTiling ?
+        VK_IMAGE_TILING_OPTIMAL : VK_IMAGE_TILING_LINEAR;
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageCreateInfo.extent = { (uint32_t) dimensions[0],

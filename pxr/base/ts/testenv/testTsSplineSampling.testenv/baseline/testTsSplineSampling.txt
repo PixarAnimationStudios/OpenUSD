@@ -87,14 +87,14 @@ Knot:
   next interp Curve
   pre-tan width 0
   pre-tan slope 0
-  post-tan width 0.5
+  post-tan width 1.3333333333333333
   post-tan slope 1
 Knot:
   value type double
   time 5
   value 2
   next interp Curve
-  pre-tan width 0.5
+  pre-tan width 1.3333333333333333
   pre-tan slope 0
   post-tan width 0
   post-tan slope 0
@@ -363,32 +363,32 @@ Knot:
   next interp Curve
   pre-tan width 0
   pre-tan slope 0
-  post-tan width 0.25
+  post-tan width 0.3333333333333333
   post-tan slope -0.25
 Knot:
   value type double
   time 2
   value 2
   next interp Curve
-  pre-tan width 0.25
+  pre-tan width 0.3333333333333333
   pre-tan slope 0.25
-  post-tan width 0.25
+  post-tan width 0.3333333333333333
   post-tan slope 0.25
 Knot:
   value type double
   time 3
   value 1
   next interp Curve
-  pre-tan width 0.25
+  pre-tan width 0.3333333333333333
   pre-tan slope -0.25
-  post-tan width 0.25
+  post-tan width 0.3333333333333333
   post-tan slope -0.25
 Knot:
   value type double
   time 4
   value 2
   next interp Curve
-  pre-tan width 0.25
+  pre-tan width 0.3333333333333333
   pre-tan slope 0.25
   post-tan width 0
   post-tan slope 0
@@ -4656,14 +4656,14 @@ Knot:
   next interp Curve
   pre-tan width 0
   pre-tan slope 0
-  post-tan width 0.5
+  post-tan width 1.3333333333333333
   post-tan slope 1
 Knot:
   value type double
   time 5
   value 2
   next interp Curve
-  pre-tan width 0.5
+  pre-tan width 1.3333333333333333
   pre-tan slope 0
   post-tan width 0
   post-tan slope 0
@@ -4944,32 +4944,32 @@ Knot:
   next interp Curve
   pre-tan width 0
   pre-tan slope 0
-  post-tan width 0.25
+  post-tan width 0.3333333333333333
   post-tan slope -0.25
 Knot:
   value type double
   time 2
   value 2
   next interp Curve
-  pre-tan width 0.25
+  pre-tan width 0.3333333333333333
   pre-tan slope 0.25
-  post-tan width 0.25
+  post-tan width 0.3333333333333333
   post-tan slope 0.25
 Knot:
   value type double
   time 3
   value 1
   next interp Curve
-  pre-tan width 0.25
+  pre-tan width 0.3333333333333333
   pre-tan slope -0.25
-  post-tan width 0.25
+  post-tan width 0.3333333333333333
   post-tan slope -0.25
 Knot:
   value type double
   time 4
   value 2
   next interp Curve
-  pre-tan width 0.25
+  pre-tan width 0.3333333333333333
   pre-tan slope 0.25
   post-tan width 0
   post-tan slope 0

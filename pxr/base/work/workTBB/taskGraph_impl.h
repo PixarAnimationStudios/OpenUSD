@@ -22,12 +22,13 @@
 #error "TBB version macro TBB_INTERFACE_VERSION_MAJOR not found"
 #endif
 
+#if TBB_INTERFACE_VERSION_MAJOR < 12
+
 // Under legacy TBB we implement the task graph using tbb::task.
 //
 // tbb::task does not exist in oneTBB, so we fall back to WorkTaskGraph's
 // default implementation by not defining the WorkImpl_TaskGraph customization. 
-
-#if TBB_INTERFACE_VERSION_MAJOR < 12
+#define WORK_IMPL_HAS_TASK_GRAPH
 
 #include <tbb/task.h>
 
@@ -82,28 +83,11 @@ public:
             F{std::forward<Args>(args)...};
     }
 
-    template <typename F, typename... Args>
-    F * AllocateContinuingChild(Args &&...args) {
-        return new (allocate_child()) F{std::forward<Args>(args)...};
-    }
-
 protected:
-    template <typename C, typename... Args>
-    C * _AllocateContinuation(int ref, Args&&... args) {
-        C* continuation = new (tbb::task::allocate_continuation()) 
-            C{std::forward<Args>(args)...};
-        continuation->set_ref_count(ref);
-        return continuation;
-    }
-
     void _RecycleAsContinuation() {
         recycle_as_safe_continuation();
     }
 
-    template <typename C>
-    void _RecycleAsChildOf(C &c) {
-        tbb::task::recycle_as_child_of(c);
-    }
 };
 
 template <typename F, typename ... Args>

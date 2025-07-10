@@ -29,7 +29,20 @@
 #include "pxr/usd/usd/relationship.h"
 #include "pxr/usd/usd/stage.h"
 
+#include <string>
+
 PXR_NAMESPACE_USING_DIRECTIVE;
+
+#define ASSERT_EQ(expr, expected)                                       \
+    [&] {                                                               \
+        auto&& expr_ = expr;                                            \
+        if (expr_ != expected) {                                        \
+            TF_FATAL_ERROR(                                             \
+                "Expected " TF_PP_STRINGIZE(expr) " == '%s'; got '%s'", \
+                TfStringify(expected).c_str(),                          \
+                TfStringify(expr_).c_str());                            \
+        }                                                               \
+     }()
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -37,8 +50,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (computeOnNamespaceAncestor)
     (computeUsingCustomAttr)
     (computeUsingCustomRel)
+    (computeUsingDuplicateInputNames)
     (customAttr)
     (customRel)
+    (customRel2)
 );
 
 static void
@@ -89,6 +104,25 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(TestExecUsdRecompilationCustomSchema)
         .Callback(CommonComputationCallback)
         .Inputs(
             NamespaceAncestor<int>(_tokens->computeOnNamespaceAncestor));
+
+    // A computation that uses two inputs of the same name and type.
+    self.PrimComputation(_tokens->computeUsingDuplicateInputNames)
+        .Callback<std::string>(+[](const VdfContext &context) {
+            std::string result;
+            VdfReadIterator<std::string> it(context,
+                ExecBuiltinComputations->computeValue);
+            for (; !it.IsAtEnd(); ++it) {
+                result += *it;
+            }
+            return result;
+        })
+        .Inputs(
+            // Both inputs are named 'computeValue'
+            Relationship(_tokens->customRel).TargetedObjects<std::string>(
+                ExecBuiltinComputations->computeValue),
+            Relationship(_tokens->customRel2).TargetedObjects<std::string>(
+                ExecBuiltinComputations->computeValue)
+        );
 }
 
 class Fixture
@@ -495,6 +529,66 @@ TestRecompileResyncedPrim(Fixture &fixture)
     }
 }
 
+static void
+TestRecompileDuplicateInputNames(Fixture &fixture)
+{
+    ExecUsdSystem &system = fixture.NewSystemFromLayer(R"usd(#usda 1.0
+        def CustomSchema "Prim" {
+            add rel customRel = [</Targets.a>]
+            add rel customRel2 = [</Targets.x>]
+        }
+        def Scope "Targets" {
+            custom string a = "a"
+            custom string b = "b"
+            custom string x = "x"
+            custom string y = "y"
+        }
+    )usd");
+
+    ExecUsdRequest request = fixture.BuildRequest({
+        {fixture.GetPrimAtPath("/Prim"),
+         _tokens->computeUsingDuplicateInputNames}
+    });
+
+    // Compile and compute the request.
+    system.PrepareRequest(request);
+    fixture.GraphNetwork("TestRecompileDuplicateInputNames-1.dot");
+    {
+        ExecUsdCacheView view = system.Compute(request);
+        VtValue v = view.Get(0);
+        TF_AXIOM(!v.IsEmpty());
+        ASSERT_EQ(v.Get<std::string>(), "ax");
+    }
+
+    // Add a target to customRel. This affects the journal of the first input
+    // registered as 'computeValue'. After recompilation, the computed value
+    // should be greater to account for the new target.
+    fixture.GetRelationshipAtPath("/Prim.customRel")
+        .AddTarget(SdfPath("/Targets.b"), UsdListPositionBackOfAppendList);
+    system.PrepareRequest(request);
+    fixture.GraphNetwork("TestRecompileDuplicateInputNames-2.dot");
+    {
+        ExecUsdCacheView view = system.Compute(request);
+        VtValue v = view.Get(0);
+        TF_AXIOM(!v.IsEmpty());
+        ASSERT_EQ(v.Get<std::string>(), "abx");
+    }
+
+    // Add a target to customRel2. This affects the journal of the second input
+    // registered as 'computeValue'. After recompilation, the computed value
+    // should be greater to account for the new target.
+    fixture.GetRelationshipAtPath("/Prim.customRel2")
+        .AddTarget(SdfPath("/Targets.y"), UsdListPositionBackOfAppendList);
+    system.PrepareRequest(request);
+    fixture.GraphNetwork("TestRecompileDuplicateInputNames-3.dot");
+    {
+        ExecUsdCacheView view = system.Compute(request);
+        VtValue v = view.Get(0);
+        TF_AXIOM(!v.IsEmpty());
+        ASSERT_EQ(v.Get<std::string>(), "abxy");
+    }
+}
+
 int main()
 {
     ConfigureTestPlugin();
@@ -506,6 +600,7 @@ int main()
         TestRecompileAfterChangingOldRelationshipTarget,
         TestRecompileDeletedPrim,
         TestRecompileResyncedPrim,
+        TestRecompileDuplicateInputNames,
     };
     for (const auto &test : tests) {
         Fixture fixture;

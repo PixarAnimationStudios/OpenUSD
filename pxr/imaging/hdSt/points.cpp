@@ -281,15 +281,16 @@ HdStPoints::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         }
 
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
+        if (!HdStIsPrimvarValidForDrawItem(drawItem, primvar.name, value)) {
+            continue;
+        }
 
-        if (!value.IsEmpty()) {
-            HdBufferSourceSharedPtr source =
-                std::make_shared<HdVtBufferSource>(primvar.name, value);
-            sources.push_back(source);
+        HdBufferSourceSharedPtr source =
+            std::make_shared<HdVtBufferSource>(primvar.name, value);
+        sources.push_back(source);
 
-            if (primvar.name == HdTokens->displayOpacity) {
-                _displayOpacity = true;
-            }
+        if (primvar.name == HdTokens->displayOpacity) {
+            _displayOpacity = true;
         }
     }
 

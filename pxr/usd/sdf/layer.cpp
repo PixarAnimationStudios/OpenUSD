@@ -2640,18 +2640,25 @@ SdfLayer::SetIdentifier(const string &identifier)
         _InitializeFromIdentifier(absIdentifier);
     }
 
-    // If this layer has changed where it's stored, reset the modification
-    // time. Note that the new identifier may not resolve to an existing
-    // location, and we get an empty timestamp from the resolver. 
-    // This is OK -- this means the layer hasn't been serialized to this 
-    // new location yet.
     const ArResolvedPath newResolvedPath = GetResolvedPath();
     if (oldResolvedPath != newResolvedPath) {
+        // If this layer has changed where it's stored, reset the modification
+        // time. Note that the new identifier may not resolve to an existing
+        // location, and we get an empty timestamp from the resolver. 
+        // This is OK -- this means the layer hasn't been serialized to this 
+        // new location yet.
         const ArTimestamp timestamp = ArGetResolver().GetModificationTimestamp(
             newLayerPath, newResolvedPath);
         _assetModificationTime =
             (timestamp.IsValid() || Sdf_ResolvePath(newLayerPath)) ?
             VtValue(timestamp) : VtValue();
+
+        // We can't tell whether the contents of this layer differ from the
+        // contents (if any) of the layer at the new resolved path without
+        // reading it in entirely, which is too expensive to do. So we
+        // conservatively mark this layer as dirty, which ensures that the
+        // layer will be written out if there's a subsequent call to Save().
+        _stateDelegate->_MarkCurrentStateAsDirty();
     }
 }
 

@@ -54,11 +54,4 @@ pxr_library(garch
     CPPFILES
         ${GARCH_GLPLATFORMCONTEXT}.${GARCH_SOURCE_EXTENSION}
         ${GARCH_GLPLATFORMDEBUGWINDOW}.${GARCH_SOURCE_EXTENSION}
-
-    PYMODULE_CPPFILES
-        module.cpp
-        wrapPlatformDebugContext.cpp
-
-    PYMODULE_FILES
-        __init__.py
 )

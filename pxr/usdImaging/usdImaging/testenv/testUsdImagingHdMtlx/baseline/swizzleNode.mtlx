@@ -21,7 +21,7 @@
     <separate3 name="separate" type="multioutput">
       <input name="in" type="color3" nodename="dot" />
     </separate3>
-    <combine3 name="swizzle" type="color3">
+    <combine3 name="swizzle" type="color3" nodedef="ND_swizzle_color3_color3">
       <input name="in1" type="float" nodename="separate" output="outb" />
       <input name="in2" type="float" nodename="separate" output="outg" />
       <input name="in3" type="float" nodename="separate" output="outr" />

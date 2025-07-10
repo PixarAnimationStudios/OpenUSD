@@ -9,10 +9,9 @@
 
 /// \file work/reduce.h
 #include "pxr/pxr.h"
-#include "pxr/base/work/threadLimits.h"
 #include "pxr/base/work/api.h"
-#include "pxr/base/work/workTBB/impl.h"
-
+#include "pxr/base/work/impl.h"
+#include "pxr/base/work/threadLimits.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -90,7 +89,7 @@ WorkParallelReduceN(
 
     // Don't bother with parallel_reduce, if concurrency is limited to 1.
     if (WorkHasConcurrency()) {
-
+        PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
         return WorkImpl_ParallelReduceN(
             identity,
             n,

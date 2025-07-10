@@ -491,6 +491,10 @@ private:
             return layer->HasFieldDictKey(path, fieldName, keyPath, value);
         }
 
+        VtValue GetField(const TfToken& fieldName) const {
+            return layer->GetField(path, fieldName);
+        }
+
         explicit operator bool() const noexcept {
             return layer;
         }

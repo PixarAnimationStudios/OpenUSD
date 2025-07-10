@@ -216,8 +216,9 @@ public:
     TsKnot splineKnot;
     Sdf_ParserHelpers::Value splineKnotValue;
     Sdf_ParserHelpers::Value splineKnotPreValue;
-    Sdf_ParserHelpers::Value splineTangentValue;
+    Sdf_ParserHelpers::Value splineTangentSlopeValue;
     Sdf_ParserHelpers::Value splineTangentWidthValue;
+    TsTangentAlgorithm splineTangentAlgorithm;
     std::string splineTangentIdentifier;
     bool splineTanIsPre;
     TsInterpMode splineInterp;

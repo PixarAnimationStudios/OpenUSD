@@ -74,6 +74,7 @@ namespace
     {
         void operator()(
             const Ts_SplineData &dataIn,
+            const uint8_t dataVersion,
             const bool isHermite,
             std::vector<uint8_t>* const buf)
         {
@@ -120,9 +121,42 @@ namespace
                 // Tangent slopes.
                 _WriteBytes<T>(buf, knot.preTanSlope);
                 _WriteBytes<T>(buf, knot.postTanSlope);
+
+                if (dataVersion > 1) {
+                    // Tangent algorithms
+                    uint8_t algorithmByte =
+                        (static_cast<uint8_t>(knot.preTanAlgorithm)
+                         | (static_cast<uint8_t>(knot.postTanAlgorithm) << 4));
+                    _WriteBytes<uint8_t>(buf, algorithmByte);
+                }
             }
         }
     };
+}
+
+// static
+uint8_t Ts_BinaryDataAccess::GetBinaryFormatVersion(
+    const TsSpline& spline)
+{
+    // Version 1: initial spline implementation
+    // Version 2: addition of tangent algorithm AutoEase
+
+    uint8_t version = 1;
+
+    // Scan the knots for a tangent algorithm != None
+    const Ts_SplineData &data = *(spline._data.get());
+    const size_t knotCount = data.times.size();
+    for (size_t i = 0; i < knotCount; ++i) {
+        const Ts_KnotData* knotData = data.GetKnotPtrAtIndex(i);
+        if (knotData->preTanAlgorithm != TsTangentAlgorithmNone ||
+            knotData->postTanAlgorithm != TsTangentAlgorithmNone)
+        {
+            version = 2;
+            break;
+        }
+    }
+
+    return version;
 }
 
 // static
@@ -133,7 +167,7 @@ void Ts_BinaryDataAccess::GetBinaryData(
 {
     // If spline is empty, output trivial data: empty blob, empty customData.
     // In practice this won't be hit because our caller will inline empty
-    // splines.
+     // splines.
     if (!spline._data)
     {
         static const std::unordered_map<TsTime, VtDictionary> emptyCustomData;
@@ -172,19 +206,20 @@ void Ts_BinaryDataAccess::GetBinaryData(
     // Bits 4-5: value type.
     // Bit 6: whether time-valued.
     // Bit 7: curve type.
-    uint8_t headerByte = GetBinaryFormatVersion();
-    headerByte |= typeDescriptor << 4;
-    headerByte |= data.timeValued << 6;
-    headerByte |= static_cast<uint8_t>(data.curveType) << 7;
+    const uint8_t dataVersion = GetBinaryFormatVersion(spline);
+    uint8_t headerByte = (dataVersion
+                          | (typeDescriptor << 4)
+                          | (data.timeValued << 6)
+                          | (static_cast<uint8_t>(data.curveType) << 7));
     _WriteBytes<uint8_t>(buf, headerByte);
 
     // Header byte 2:
     // Bits 0-2: pre-extrapolation mode.
     // Bits 3-5: post-extrapolation mode.
     // Bit 6: whether inner loops enabled.
-    headerByte = static_cast<uint8_t>(data.preExtrapolation.mode);
-    headerByte |= static_cast<uint8_t>(data.postExtrapolation.mode) << 3;
-    headerByte |= hasLoops << 6;
+    headerByte = (static_cast<uint8_t>(data.preExtrapolation.mode)
+                  | (static_cast<uint8_t>(data.postExtrapolation.mode) << 3)
+                  | (hasLoops << 6));
     _WriteBytes<uint8_t>(buf, headerByte);
 
     // For each sloped extrapolation, write slope.
@@ -212,7 +247,7 @@ void Ts_BinaryDataAccess::GetBinaryData(
     if (valueType)
     {
         TsDispatchToValueTypeTemplate<_BinaryDataWriter>(
-            valueType, data, isHermite, buf);
+            valueType, data, dataVersion, isHermite, buf);
     }
 
     // Provide a diagnostic if we under-reserved.
@@ -236,9 +271,10 @@ void Ts_BinaryDataAccess::GetBinaryData(
 namespace
 {
     template <typename T>
-    struct _BinaryDataReaderV1
+    struct _BinaryDataReaderV1_2
     {
         void operator()(
+            uint8_t version,
             Ts_SplineData* const dataIn,
             const bool isHermite,
             const uint8_t** const readPtr,
@@ -290,6 +326,16 @@ namespace
                 READ(&knot.preTanSlope);
                 READ(&knot.postTanSlope);
 
+                if (version > 1) {
+                    // Read the tangent algorithms.
+                    uint8_t algorithmByte;
+                    READ(&algorithmByte);
+                    knot.preTanAlgorithm =
+                        static_cast<TsTangentAlgorithm>(algorithmByte & 0x0f);
+                    knot.postTanAlgorithm =
+                        static_cast<TsTangentAlgorithm>(algorithmByte >> 4);
+                }
+
                 data->times.push_back(knot.time);
                 data->knots.push_back(knot);
             }
@@ -305,7 +351,8 @@ namespace
     }
 
 // static
-TsSpline Ts_BinaryDataAccess::_ParseV1(
+TsSpline Ts_BinaryDataAccess::_ParseV1_2(
+    uint8_t version,
     const std::vector<uint8_t> &buf,
     std::unordered_map<TsTime, VtDictionary> &&customData)
 {
@@ -373,8 +420,8 @@ TsSpline Ts_BinaryDataAccess::_ParseV1(
     if (valueType)
     {
         bool ok = false;
-        TsDispatchToValueTypeTemplate<_BinaryDataReaderV1>(
-            valueType, data.get(), isHermite, &readPtr, &remain, &ok);
+        TsDispatchToValueTypeTemplate<_BinaryDataReaderV1_2>(
+            valueType, version, data.get(), isHermite, &readPtr, &remain, &ok);
         if (!ok)
         {
             return {};
@@ -390,6 +437,7 @@ TsSpline Ts_BinaryDataAccess::_ParseV1(
     // Wrap SplineData in Spline.
     TsSpline spline;
     spline._data.reset(data.release());
+    spline._UpdateAllTangents();
     return spline;
 }
 
@@ -400,26 +448,30 @@ TsSpline Ts_BinaryDataAccess::CreateSplineFromBinaryData(
     const std::vector<uint8_t> &buf,
     std::unordered_map<TsTime, VtDictionary> &&customData)
 {
+    TsSpline spline;
+
     // Check for trivial data.
     if (buf.empty())
     {
-        return TsSpline();
+        return spline;
     }
 
     // Check version and parse.
     const uint8_t version = buf[0] & 0x0F;
-    if (version == 1)
-    {
-        return _ParseV1(buf, std::move(customData));
-    }
-    else
-    {
+    switch (version) {
+      case 1:
+      case 2:
+        spline = _ParseV1_2(version, buf, std::move(customData));
+        break;
+
+      default:
         // Bad version, or future version.  For a future version, caller should
         // have detected at a higher level that this data isn't something that
         // this software version is forward-compatible with.
         TF_CODING_ERROR("Unknown spline data version %u", version);
-        return TsSpline();
     }
+
+    return spline;
 }
 
 

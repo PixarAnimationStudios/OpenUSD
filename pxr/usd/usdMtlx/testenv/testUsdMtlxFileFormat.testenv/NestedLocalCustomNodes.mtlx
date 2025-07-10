@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<materialx version="1.39" colorspace="lin_rec709">
+
+    <nodedef name="ND_addColor" node="addColor">
+        <input name="inColor" type="color3" default="0,0,0" />
+        <input name="blue" type="color3" default="0,0,1" />
+        <output name="out" type="color3" />
+    </nodedef>
+	<nodegraph name="NG_addColor" nodedef="ND_addColor">
+        <add name="add" type="color3" >
+            <input name="in1" type="color3" interfacename="inColor" />
+            <input name="in2" type="color3" interfacename="blue" />
+        </add>
+        <output name="out" type="color3" nodename="add" />
+    </nodegraph>
+
+    <!-- Custom Node to visualize texture coordintates -->
+    <nodedef name="ND_vis_texcoords" node="visTexcoords">
+        <input name="blueColor" type="color3" default="0,0,1" />
+        <output name="out" type="color3" />
+    </nodedef>
+	<nodegraph name="NG_vis_texcoords" nodedef="ND_vis_texcoords">
+        <texcoord name="texcoord" type="vector2">
+            <input name="index" type="integer" value="0" />
+        </texcoord>
+        <convert name="toColor3" type="color3" >
+            <input name="in" type="vector2" nodename="texcoord" />
+        </convert>
+        <!-- Nested Custom node with input coming from this node's input (blueColor) -->
+        <addColor name="addColor" type="color3" >
+            <input name="inColor" type="color3" nodename="toColor3" />
+            <input name="blue" type="color3" interfacename="blueColor" />
+        </addColor>
+        <output name="out" type="color3" nodename="addColor" />
+    </nodegraph>
+
+
+    <!-- Material using the above custom nested nodes  -->
+    <nodegraph name="NG_simple">
+        <visTexcoords name="texcoords" type="color3" >
+            <input name="blueColor" type="color3" value="0,0,1" />
+        </visTexcoords>
+        <output name="out_color" type="color3" nodename="texcoords" />
+    </nodegraph>
+
+    <UsdPreviewSurface name="ps_material" type="surfaceshader">
+        <input name="diffuseColor" type="color3" nodegraph="NG_simple" output="out_color" />
+    </UsdPreviewSurface>
+
+
+</materialx>

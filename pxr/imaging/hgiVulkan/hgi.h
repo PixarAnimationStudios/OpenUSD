@@ -57,7 +57,9 @@ public:
     HgiTextureHandle CreateTexture(HgiTextureDesc const & desc) override;
 
     HGIVULKAN_API
-    HgiTextureHandle CreateTextureForInterop(HgiTextureDesc const & desc);
+    HgiTextureHandle CreateTextureForInterop(
+        HgiTextureDesc const & desc,
+        bool optimalTiling);
 
     HGIVULKAN_API
     void DestroyTexture(HgiTextureHandle* texHandle) override;

@@ -53,6 +53,8 @@ public:
     VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR
         vkBarycentricFeatures {};
     VkPhysicalDeviceLineRasterizationFeaturesKHR vkLineRasterizationFeatures {};
+
+    VkPhysicalDeviceIDProperties vkPhysicalDeviceIdProperties {};
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

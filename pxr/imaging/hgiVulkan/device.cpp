@@ -190,7 +190,6 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
 
     // Allow OpenGL interop
     // Note requires four extensions in HgiVulkanInstance.
-    _capabilities->supportsNativeInterop = false;
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
     if (IsSupportedExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME) &&
         IsSupportedExtension(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME) &&
@@ -200,7 +199,6 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         extensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
         extensions.push_back(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME);
         extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);
-        _capabilities->supportsNativeInterop = true;
     }
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
     if (IsSupportedExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME) &&
@@ -211,7 +209,6 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         extensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
         extensions.push_back(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
         extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
-        _capabilities->supportsNativeInterop = true;
     }
 #elif defined(VK_USE_PLATFORM_METAL_EXT)
     // To be added, either through MoltenVK adding GL interop,

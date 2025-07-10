@@ -5268,18 +5268,6 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         TESTENV testUsdImagingGLMaterialXTextured
     )
 
-    pxr_register_test(testUsdImagingGLMaterialXTextured_mxCustomNodeDef
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage mxCustomNodeDef.usda -write mxCustomNodeDef.png"
-        IMAGE_DIFF_COMPARE
-            mxCustomNodeDef.png
-        FAIL 0.5
-        FAIL_PERCENT 0.005
-        WARN 0.05
-        WARN_PERCENT 0.02
-        EXPECTED_RETURN_CODE 0
-        TESTENV testUsdImagingGLMaterialXTextured
-    )
-
     pxr_register_test(testUsdImagingGLMaterialXTextured_mxTexColorspaces
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -frameAll -stage mxTexColorspaces.usda -write mxTexColorspaces.png"
         IMAGE_DIFF_COMPARE
@@ -5486,6 +5474,18 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage simpleNodes.usda -write simpleNodes.png"
         IMAGE_DIFF_COMPARE
             simpleNodes.png
+        FAIL 0.1
+        FAIL_PERCENT 0.005
+        WARN 0.05
+        WARN_PERCENT 0.2
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLMaterialXLocalCustomNodes
+    )
+
+    pxr_register_test(testUsdImagingGLMaterialXLocalCustomNodes_nestedNodes
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage nestedNodes.usda -write nestedNodes.png"
+        IMAGE_DIFF_COMPARE
+            nestedNodes.png
         FAIL 0.1
         FAIL_PERCENT 0.005
         WARN 0.05

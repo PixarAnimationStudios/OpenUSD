@@ -12,3 +12,88 @@ over "Foo" {
 def "Payload" (payload = @./payload.usd@</Payload>)
 {
 }
+
+
+# Test all permutations of splines, samples, & defaults.
+
+def "Top" (
+    references = </Middle>
+)
+{
+    def "Samples_Spline_Default" {
+        double attr.timeSamples = {
+            0: 100,
+            1: 101,
+        }
+    }
+
+    def "Samples_Default_Spline" {
+        double attr.timeSamples = {
+            0: 100,
+            1: 101,
+        }
+    }
+
+    def "Spline_Samples_Default" {
+        double attr.spline = {
+            1: 1; pre (0, 0); post held,
+            4: 4; post held,
+        }
+    }
+
+    def "Spline_Default_Samples" {
+        double attr.spline = {
+            1: 1; pre (0, 0); post held,
+            4: 4; post held,
+        }
+    }
+    
+    def "Default_Samples_Spline" {
+        double attr = 1.0
+    }
+    
+    def "Default_Spline_Samples" {
+        double attr = 1.0
+    }
+}
+
+def "Middle" (
+    references = </Bottom>
+)
+{
+    def "Samples_Spline_Default" {
+        double attr.spline = {
+            1: 1; pre (0, 0); post held,
+            4: 4; post held,
+        }
+    }
+
+    def "Samples_Default_Spline" {
+        double attr = 1.0
+    }
+
+    def "Spline_Samples_Default" {
+        double attr.timeSamples = {
+            0: 100,
+            1: 101,
+        }
+    }
+
+    def "Spline_Default_Samples" {
+        double attr = 1.0
+    }
+    
+    def "Default_Samples_Spline" {
+        double attr.timeSamples = {
+            0: 100,
+            1: 101,
+        }
+    }
+    
+    def "Default_Spline_Samples" {
+        double attr.spline = {
+            1: 1; pre (0, 0); post held,
+            4: 4; post held,
+        }
+    }
+}

@@ -460,6 +460,8 @@ public:
 
 private:
     friend class TsRegressionPreventer;
+
+    // Direct access method used by TsRegressionPreventer.
     void _SetKnotUnchecked(const TsKnot & knot);
 
     template <typename SampleHolder>
@@ -493,6 +495,18 @@ private:
         T *valueOut,
         Ts_EvalAspect aspect,
         Ts_EvalLocation location) const;
+
+    // Update all the tangents based on the tangent algorithms in the knots and
+    // follow that with a call to AdjustRegressiveTangents() to remove any
+    // remaining regressive spline segments.  Return true if any changes were
+    // made.
+    TS_API
+    bool _UpdateAllTangents();
+
+    // Update the tangents of a single knot based on its tangent algorithms and
+    // the regression prevention settings.
+    TS_API
+    bool _UpdateKnotTangents(const size_t knotIndex);
 
 private:
     // Our parameter data.  Copy-on-write.  Null only if we are in the default

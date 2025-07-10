@@ -9,9 +9,11 @@
 
 /// \file work/loops.h
 #include "pxr/pxr.h"
-#include "pxr/base/work/threadLimits.h"
 #include "pxr/base/work/api.h"
-#include "pxr/base/work/workTBB/impl.h"
+#include "pxr/base/work/impl.h"
+#include "pxr/base/work/threadLimits.h"
+
+#include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -58,6 +60,7 @@ WorkParallelForN(size_t n, Fn &&callback, size_t grainSize)
 
     // Don't bother with parallel_for, if concurrency is limited to 1.
     if (WorkHasConcurrency()) {
+        PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
         WorkImpl_ParallelForN(n, std::forward<Fn>(callback), grainSize);
     } else {
 
@@ -103,7 +106,12 @@ inline void
 WorkParallelForEach(
     InputIterator first, InputIterator last, Fn &&fn)
 {
-    WorkImpl_ParallelForEach(first, last, std::forward<Fn>(fn));
+    if (WorkHasConcurrency()) {
+        PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
+        WorkImpl_ParallelForEach(first, last, std::forward<Fn>(fn));
+    } else {
+        std::for_each(first, last, std::forward<Fn>(fn));
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

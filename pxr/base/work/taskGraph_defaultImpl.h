@@ -37,6 +37,7 @@ public:
 
     template <typename F>
     inline void RunTask(F * task) {
+        task->_SetTaskGraph(this);
         _dispatcher.Run(std::ref(*task));
     }
 
@@ -54,7 +55,8 @@ public:
 
     /// Callable operator that implements continuation passing, recycling, and 
     /// scheduler bypass. 
-    WORK_API void operator()() const;
+    WORK_API void operator()(const int depth = 0, 
+        WorkTaskGraph_DefaultImpl * const taskGraph = nullptr) const;
 
     virtual BaseTask * execute() = 0;
 
@@ -69,48 +71,28 @@ public:
     template <typename F, typename ... Args>
     F * AllocateChild(Args&&... args) {
         AddChildReference();
-        return _AllocateChildImpl<F>(std::forward<Args>(args)...);
-    }
-
-    template <typename C, typename ... Args>
-    C * AllocateContinuingChild(Args&&... args) {
-        return _AllocateChildImpl<C>(std::forward<Args>(args)...);
+        F* obj = new F{std::forward<Args>(args)...};
+        obj->_parent = this;
+        return obj;
     }
 
 protected:
-    template <typename C, typename... Args>
-    C * _AllocateContinuation(int ref, Args&&... args) {
-        C* continuation = new C{std::forward<Args>(args)...};
-        continuation->_ResetParent(_ResetParent());
-        continuation->_childCount = ref;
-        return continuation;
-    }
-
     void _RecycleAsContinuation() {
         _recycle = true;
     }
 
-    template <typename C>
-    void _RecycleAsChildOf(C &c) {
-        _recycle = true;
-        _ResetParent(&c);
+private:
+    // Befriend the task graph that owns instances of this class. 
+    friend class WorkTaskGraph_DefaultImpl;
+
+    // Set the back-pointer to this task's owning task graph. 
+    void _SetTaskGraph(WorkTaskGraph_DefaultImpl * const taskGraph) {
+        _taskGraph = taskGraph;
     }
 
 private:
-    // Allocates a child of this task. 
-    template <typename F, typename... Args>
-    F* _AllocateChildImpl(Args&&... args) {
-        F* obj = new F{std::forward<Args>(args)...};
-        obj->_ResetParent(this);
-        return obj;
-    }
-
-    // Reparent this task under \p ptr
-    BaseTask * _ResetParent(BaseTask *ptr = nullptr) {
-        BaseTask * p = _parent;
-        _parent = ptr;
-        return p;
-    }
+    // The task graph that owns this task. 
+    WorkTaskGraph_DefaultImpl * _taskGraph = nullptr;
 
     // The parent/successor of this task. 
     BaseTask * _parent = nullptr;

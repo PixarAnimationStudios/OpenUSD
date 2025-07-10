@@ -47,6 +47,7 @@ class TestSdfParsing(unittest.TestCase):
         # This will mean that your new test runs first and you can spot
         # failures much quicker.
         testFiles = '''
+        226_version_1.1.usda
         225_multiline_with_SplineKnotParamList.usda
         224_spline_post_shaping_with_comment.usda
         223_bad_spline_post_shaping_spacing.usda
@@ -387,6 +388,11 @@ class TestSdfParsing(unittest.TestCase):
                         # the first line of the baseline with the #usda cookie.
                         expectedLayerData = [expectedLayerData[0], "\n"]
 
+                    # The exported metadata is always version 1.0 because
+                    # it never encounters any advanced features that would
+                    # require a higher version. This will need to be changed
+                    # if we ever default to a usda version > 1.0.
+                    expectedLayerData[0] = "#usda 1.0\n"
                 diff = list(difflib.unified_diff(
                     layerData, expectedLayerData,
                     testFile, expectedFile))

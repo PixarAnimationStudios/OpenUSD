@@ -427,7 +427,9 @@ My_TestGLDrawing::OffscreenTest()
             HdxPickTokens->pickPrimsAndInstances,
             HdxPickTokens->resolveAll,
             &allHits);
-        constexpr size_t expectedHitCount = 22438;
+        const size_t expectedHitCount = 
+            _driver->GetHgi()->GetAPIName() == HgiTokens->Vulkan ?  22440 :
+            22438;
         std::cout << "allHits: " << allHits.size()
                   << " expectedHitCount:  " << expectedHitCount
                   << std::endl;

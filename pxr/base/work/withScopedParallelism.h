@@ -12,7 +12,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/work/api.h"
 #include "pxr/base/work/dispatcher.h"
-#include "pxr/base/work/workTBB/impl.h"
+#include "pxr/base/work/impl.h"
 #include "pxr/base/tf/pyLock.h"
 
 
@@ -99,6 +99,8 @@ template <class Fn>
 auto
 WorkWithScopedParallelism(Fn &&fn, bool dropPythonGIL=true)
 {
+    PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
+
     if (dropPythonGIL) {
         TF_PY_ALLOW_THREADS_IN_SCOPE();
         return WorkImpl_WithScopedParallelism(std::forward<Fn>(fn));

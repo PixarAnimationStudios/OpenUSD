@@ -64,7 +64,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 // Version history
-// 1.1: As yet unused version for testing that version updates work.
+// 1.1: Support for splines with tangent algorithms None, Custom, or AutoEase.
 // 1.0: Initial release of usda format (plus numerous unfortunately unversioned
 //      updates).
 

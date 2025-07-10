@@ -81,6 +81,7 @@ void wrapTypes()
     TfPyWrapEnum<TsExtrapMode>();
     TfPyWrapEnum<TsAntiRegressionMode>();
     TfPyWrapEnum<TsSplineSampleSource>();
+    TfPyWrapEnum<TsTangentAlgorithm>();
 
     class_<TsLoopParams>("LoopParams")
 

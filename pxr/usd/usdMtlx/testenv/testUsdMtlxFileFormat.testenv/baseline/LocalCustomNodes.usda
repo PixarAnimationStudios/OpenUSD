@@ -126,6 +126,15 @@ def "MaterialX"
             color3f outputs:diffuse_output.connect = </MaterialX/NodeGraphs/wrapper_nodegraph/add.outputs:out>
             color3f outputs:specular_output.connect = </MaterialX/NodeGraphs/wrapper_nodegraph/mySpecColor.outputs:out>
 
+            def Shader "myColor"
+            {
+                uniform token info:id = "ND_myColor"
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mtlx:sourceAsset = @LocalCustomNodes.mtlx@
+                uniform token info:mtlx:sourceAsset:subIdentifier = "ND_myColor"
+                color3f outputs:out
+            }
+
             def Shader "green"
             {
                 uniform token info:id = "ND_constant_color3"
@@ -136,7 +145,7 @@ def "MaterialX"
             def Shader "multi"
             {
                 uniform token info:id = "ND_multiply_color3FA"
-                color3f inputs:in1.connect = </MaterialX/NodeGraphs/wrapper_nodegraph/ND_myColor.outputs:out>
+                color3f inputs:in1.connect = </MaterialX/NodeGraphs/wrapper_nodegraph/myColor.outputs:out>
                 float inputs:in2 = 0.75
                 color3f outputs:out
             }
@@ -154,12 +163,6 @@ def "MaterialX"
                 uniform token info:id = "ND_constant_color3"
                 color3f inputs:value = (0, 1, 0)
                 color3f outputs:out
-            }
-
-            def "ND_myColor" (
-                prepend references = </MaterialX/NodeGraphs/ND_myColor>
-            )
-            {
             }
         }
     }

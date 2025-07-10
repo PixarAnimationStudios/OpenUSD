@@ -1,0 +1,779 @@
+#usda 1.0
+(
+    subLayers = [
+        # Sublayer "parent" user doc to get user doc for inherited properties.
+        #@../../usd/userDoc/schemaUserDoc.usda@,     
+        # Sublayer domain schema.usda to get proper schema inheritance structure 
+        # and property fallback values. User doc is added as overs to schema 
+        # class metadata. 
+        @../schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "usdRender"
+        string userDocTitle     = "Render"
+    }
+)
+{
+}
+
+over "RenderSettingsBase" (
+    customData = {
+        string userDocBrief = """An abstract base class schema that defines
+settings common to both RenderSettings and RenderProduct."""
+        string userDoc = """Abstract base class that defines render 
+settings that can be specified on either a RenderSettings prim or a 
+RenderProduct prim."""
+    }
+)
+{
+    rel camera (
+        customData = {
+            string userDocBrief = """A relationship that specifies the primary 
+camera to use for a render. Must target a Camera prim."""
+            string userDoc = """This relationship specifies the primary camera
+to use for a render. The relationship must target a {ref}`Camera`. The targeted 
+camera prim determines the visual composition of the scene as an image.
+
+See {ref}`render_camera` for more details on Camera prims used for renders.
+"""
+        }
+    )
+    uniform int2 resolution (
+        customData = {
+            string userDocBrief = """The image pixel resolution, corresponding 
+to the camera's screen window."""
+            string userDoc = """The image resolution in pixels. The 
+{ref}`render camera's <RenderSettingsBase_camera>` screen window (projection
+of the camera aperture bounds to screen coordinates) is sampled by the 
+renderer to a raster image of this resolution.
+
+The resolution and {ref}`pixel aspect ratio <RenderSettingsBase_pixelAspectRatio>`
+together determine the total aspect ratio of the rendered image.
+"""
+        }
+    )
+    uniform float pixelAspectRatio (
+        customData = {
+            string userDocBrief = """The aspect ratio (width/height) of the 
+image pixels."""
+            string userDoc = """The aspect ratio (width/height) of the 
+rendered image pixels. The default value of 1.0 specifies square pixels, but
+non-square pixels are also supported. The 
+{ref}`resolution <RenderSettingsBase_resolution>` and pixel aspect ratio 
+together determine the total aspect ratio of the rendered image.
+
+Note that because the camera aperture and image dimensions are specified
+independently, there may be a mismatch in overall aspect ratios. Use the
+{ref}`aspectRatioConformPolicy <RenderSettingsBase_aspectRatioConformPolicy>` 
+attribute to communicate to the renderer how to resolve the mismatch.
+"""
+        }
+    )
+    uniform token aspectRatioConformPolicy (
+        customData = {
+            string userDocBrief = """Indicates the policy to use to resolve an 
+aspect ratio mismatch between the camera aperture and image aspect ratio
+(derived from the resolution and pixelAspectRatio).
+"""
+            string userDoc = """The policy used to resolve an aspect ratio 
+mismatch between the camera aperture and image aspect ratio. Because the camera 
+aperture and image dimensions are specified independently, mismatches between
+aspect ratios can occur. For example, an interactive viewport may be resized to 
+a ratio that does not match the camera, or a pipeline may be configured with a 
+standard resolution that may not match a particular camera.
+
+The camera aperture aspect ratio is determined by the aperture attributes on 
+{ref}`Camera`. The image aspect ratio is determined by the 
+{ref}`resolution <RenderSettingsBase_resolution>` and
+{ref}`pixelAspectRatio <RenderSettingsBase_pixelAspectRatio>` attributes.
+
+The policy values and how they resolve mismatches are as follows:
+
+- "expandAperture": if necessary, expand the aperture to fit the image, 
+exposing additional scene content. This is the fallback value.
+- "cropAperture": if necessary, crop the aperture to fit the image, cropping 
+scene content.
+- "adjustApertureWidth": if necessary, adjust aperture width to make its aspect 
+ratio match the image.
+- "adjustApertureHeight": if necessary, adjust aperture height to make its 
+aspect ratio match the image.
+- "adjustPixelAspectRatio": compute pixelAspectRatio to make the image 
+exactly cover the aperture. This disregards any existing authored 
+pixelAspectRatio value.
+"""
+        }
+    )
+    uniform float4 dataWindowNDC (
+        customData = {
+            string userDocBrief = """Specifies the axis-aligned rectangular
+region in the adjusted aperture window within which the renderer should produce 
+data. Specified as (xmin, ymin, xmax, ymax) in normalized device coordinates, 
+where the range 0 to 1 corresponds to the aperture."""
+            string userDoc = """The axis-aligned rectangular region in the 
+adjusted aperture window within which the renderer should produce data.
+Specified as (xmin, ymin, xmax, ymax) in normalized device coordinates (NDC), 
+where the range 0 to 1 corresponds to the aperture.
+
+Specifying a window outside the unit square will produce overscan data. 
+Specifying a window that does not cover the unit square will produce a cropped 
+render.
+
+A pixel is included in the rendered result if the pixel center is contained by 
+the data window. This is consistent with standard rules used by polygon 
+rasterization engines.
+
+The data window is expressed in normalized device coordinates so that cropping 
+and overscan may be resolution independent. In interactive workflows, 
+incremental cropping and resolution adjustment may be intermixed to isolate and 
+examine parts of the scene. In compositing workflows, overscan may be used to 
+support image post-processing kernels, and reduced-resolution proxy renders may 
+be used for faster iteration.
+"""
+        }
+    )
+    uniform bool instantaneousShutter (
+        customData = {
+            string userDocBrief = """Deprecated, use disableMotionBlur instead."""
+            string userDoc = """Deprecated, use disableMotionBlur instead."""
+        }
+    )
+    uniform bool disableMotionBlur (
+        customData = {
+            string userDocBrief = """Disable all motion blur by setting the 
+shutter interval of the render camera to [0,0] (take only one sample at the 
+current time code)."""
+            string userDoc = """Use to disable all motion blur by setting the 
+shutter interval of the render camera to [0,0]. This will ensure the render
+only takes one sample at the current time code.
+
+The following example disables motion blur.
+
+```{code-block} usda
+def RenderSettings "NoBlurRenderSettings"
+{
+    uniform bool disableMotionBlur = 1
+    ...
+}
+```
+"""
+        }
+    )
+    uniform bool disableDepthOfField (
+        customData = {
+            string userDocBrief = """Disable all depth of field by setting 
+F-stop of the targeted camera to infinity."""
+            string userDoc = """Use to disable all depth of field by setting 
+F-stop of the targeted camera to infinity."""
+        }
+    )
+}
+ 
+over RenderSettings "RenderSettings" (
+    customData = {
+        string userDocBrief = """All the global settings for a 
+single invocation of a rendering of a scene. Includes configuration of what
+render products should be produced, and what imageable purposes should be 
+rendered."""
+        string userDoc = """Encapsulates all the global settings that 
+tell a renderer what render settings to use, and what render output to produce, 
+for a single invocation of rendering the scene. 
+
+Note that renderers are expected to apply or auto-apply API schemas to 
+RenderSettings that codify any renderer-specific global configuration, such 
+as Renderer options for RenderMan.
+
+RenderSettings provides the
+following attributes (in addition to attributes inherited from 
+{ref}`RenderSettingsBase`):
+
+- `products`: Relationship targets for one or more 
+{ref}`RenderProducts <RenderProduct>` that specify what render artifacts should 
+be produced by the renderer. If no products are provided, renderers should 
+render a default RGB image. If products are provided, the products should be 
+explicit about which {ref}`RenderVars <RenderVar>` are needed.
+- `includedPurposes`: The {ref}`imageable purposes <render_purpose>` to be 
+rendered. Imageable prims with this renderPurpose set will be rendered. Note 
+that prims that have no authored or inherited purpose (i.e. the prim has the 
+fallback "default" purpose) are always rendered. See 
+{ref}`usdRender_using_imageable_purpose` for an example.
+- `materialBindingPurposes`: The 
+{ref}`material binding purposes <material_binding_purpose>` to be rendered. 
+Gprims with material binding purpose set to a purpose in this list will be
+rendered using that binding purpose. See 
+{ref}`usdRender_using_materialbindingpurposes` for an example.
+- `renderingColorSpace`: The renderer *working* color space. This is the 
+(linear) color space a renderer should use to do internal calculations for the 
+given render invocation. If this is not set, a renderer is expected to use 
+whatever default color space it normally uses. Regardless of what this is set 
+to (or not set), the renderer may still need to convert scene-referred color 
+spaces on scene content into its working color space.
+
+The following simple example RenderSettings prim includes opinions for 
+properties from RenderSettings as well as inherited properties from 
+RenderSettingsBase.
+
+```{code-block} usda
+def RenderSettings "RenderSettings" {
+
+    # Properties inherited from RenderSettingsBase 
+    rel camera = </Cameras/main_cam>
+    uniform int2 resolution = (1024, 1024) 
+    uniform float pixelAspectRatio = 1.0 
+    uniform token aspectRatioConformPolicy = "adjustApertureHeight" 
+    uniform float4 dataWindowNDC = (0,0,1,1)
+    uniform bool disableMotionBlur = false
+    uniform bool disableDepthOfField = false
+
+    # RenderSettings properties 
+    rel products = </Render/PrimaryProduct>
+    uniform token[] includedPurposes = ["render", "default"]
+    uniform token[] materialBindingPurposes = ["full"]
+    uniform token renderingColorSpace = "srgb_rec709_scene"
+}
+```
+"""
+    }
+)
+{
+    rel products (
+        customData = {
+            string userDocBrief = """Specifies the RenderProducts that a 
+render of this scene should produce. If no products are specified, renderers 
+are expected to produce a default RGB image."""
+            string userDoc = """The set of relationships to 
+{ref}`RenderProducts <RenderProduct>` that rendering this scene should 
+produce. If no products are specified, renderers are expected to produce a 
+default RGB image. If products are provided, the products should be 
+explicit about which {ref}`RenderVars <RenderVar>` are needed."""
+        }
+    )
+    uniform token[] includedPurposes (
+        customData = {
+            string userDocBrief = """Imageable purpose values (e.g. default,
+render, proxy, guide) that should be included in the render. Only imageable 
+prims with purpose set to one of the includedPurposes values will be rendered."""
+            string userDoc = """The list of 
+{ref}`imageable purpose <render_purpose>` values that should be included in the
+render. Imageable prims with purpose set to one of the includedPurposes 
+values will be rendered. Note that prims that have no authored or inherited 
+purpose (i.e. the prim has the fallback "default" purpose) are always rendered.
+
+The following example RenderSettings prim has includedPurposes set to
+`["proxy", "default"]`, so only prims with purpose set to "proxy" or prims 
+with no authored/inherited purpose will be rendered.
+
+```{code-block} usda
+def RenderSettings "ViewportSettings" {
+    uniform token[] includedPurposes = ["proxy", "default"]
+}
+```
+"""           
+        }
+    )
+    uniform token[] materialBindingPurposes (
+        customData = {
+            string userDocBrief = """Ordered list of material binding purposes
+that will be used in the render."""
+            string userDoc = """The ordered list of material binding purposes
+used in the render. 
+
+This is used to control which material binding purpose to use if a prim has 
+multiple binding purposes. For example, if we use a RenderSettings with 
+materialBindingPurposes set to ["full"]:
+
+```{code-block} usda
+def RenderSettings "PrimarySettings" {
+    uniform token[] materialBindingPurposes = ["full"]
+}
+```
+
+The renderer will look for and use `material:binding:full` material 
+bindings, and if not found, use the "all purpose" `material:binding`
+material binding if present.
+
+See {ref}`material_binding_purpose` for more information on material binding
+purposes with imageable Gprims, and 
+{ref}`usdRender_using_materialbindingpurposes` for more information on setting 
+materialBindingPurposes.
+"""
+        }
+    )
+    uniform token renderingColorSpace (
+        customData = {
+            string userDocBrief = """The 'rendering color space' the renderer
+should use for internal color calculations. If this is not set, a renderer 
+is expected to use its own default color space. Not to be confused with setting
+specific 'source' color spaces for scene assets."""
+            string userDoc = """Specifies the rendering color space, sometimes
+referred to as the "working" color space. This is the (linear) color space a 
+renderer should use to do internal calculations for the given render
+invocation. If this is not set, a renderer is expected to use whatever default
+color space it normally uses.
+
+Note that this color space should not be confused with specific color spaces for 
+scene objects. If you need to specify particular color spaces for objects
+(say, a texture asset that was created with a particular color space), or 
+transform between color spaces, you should use the ColorSpaceAPI and
+ColorSpaceDefinitionAPI schemas on prims that need to specify color
+space information. USD has specific rules on how color spaces specified on 
+objects are propagated and resolved. These rules are applied by a combination 
+of the Hydra rendering framework and the renderer's own texture readers.
+
+See {ref}`color_users_guide` for more details on working with color spaces with
+USD objects.
+"""
+        }
+    )
+}
+
+over RenderVar "RenderVar" (
+    customData = {
+        string userDocBrief = """Describes a quantity or 'channel' of computed
+data, produced by a renderer. Examples include camera-space depth channels, 
+material shader quantities such as color or alpha channels, light path 
+expressions (LPEs), and renderer intrinsic quantities such as computation time
+per pixel.
+"""
+        string userDoc = """A quantity or 'channel' of computed data, produced
+by a renderer. These are sometimes referred to as arbitrary output variables 
+(AOVs). Examples of render variables include geometric 
+measurements such as camera-space depth, quantities emitted by material shaders
+such as color or alpha channels, light path expressions (LPE's), and quantities 
+intrinsic to the renderer such as computation time per pixel.
+
+The name of the RenderVar prim drives the name of the data variable that the
+renderer will produce. For example, a RenderVar named "alpha" typically would
+indicate the renderer should produce alpha channel data, named "alpha", in the 
+render output. Note that USD does not yet enforce a set of universal RenderVar 
+names and formats, so renderer-specific RenderVars are expected.
+
+RenderVars can also specify "source" information for the data, such as output
+from a shader, renderer outputs such as depth or normals, or a light path 
+expression (LPE).
+
+The following are a few example RenderVars. The "color" RenderVar specifies
+a color output channel, using the "Ci" source. The "alpha" RenderVar 
+specifies an alpha output channel using the "a" source. The "directDiffuse"
+RenderVar specifies a output channel named "directDiffuse" that uses a 
+light path expression to define the source data, with a sourceType of "lpe"
+indicating that the expression will need to be parsed accordingly. Finally, 
+the "id" RenderVar specifies an "id" output channel that uses a non-standard
+data source, such as a custom identifier of the rendered object(s).
+
+```{code-block} usda
+def RenderVar "color" {
+    string sourceName = "Ci"
+}
+def RenderVar "alpha" {
+    token dataType = "float"
+    string sourceName = "a"
+}
+def RenderVar "directDiffuse" {
+    string sourceName = "C<RD>[<L.>O]"
+    token sourceType = "lpe"
+}
+def RenderVar "id" {
+    token dataType = "int"
+    string sourceName = "id"
+}
+```
+
+RenderVars are communicated to a renderer or rendering pipeline via 
+{ref}`RenderProduct`. A RenderProduct will specify (via 
+{ref}`orderedVars relationships <RenderProduct_orderedVars>`) one or more 
+RenderVars that the renderer will combine to produce the output artifact. See
+{ref}`usdRender_understanding_rendervars` for an example RenderProduct that
+includes the RenderVars defined above.
+"""
+    }
+) {
+    uniform token dataType (
+        customData = {
+            string userDocBrief = """The type of this quantity, as a USD 
+attribute type (color3f, float, etc.)."""
+            string userDoc = """The type of this quantity, as a USD 
+attribute type (color3f, float, etc.)."""
+        }
+    )
+    uniform string sourceName (
+        customData = {
+            string userDocBrief = """The name of the data source that contains 
+the computed value(s) for the RenderVar."""
+            string userDoc = """The name of the data source that contains the 
+computed value(s) for the RenderVar. For example, the sourceName 'a' might be 
+used for an 'alpha' RenderVar to denote that the computed alpha values are 
+available in the 'a' channel of a data source.
+"""
+        }
+    )
+    uniform token sourceType (
+        customData = {
+            string userDocBrief = """Describes the type of the quantity
+data source."""
+            string userDoc = """The type of the quantity data source. The
+types provided by USD are:
+
+- "raw": The name should be passed directly to the
+renderer. This is the default behavior.
+- "primvar":  This source represents the name of a primvar.
+Some renderers may use this to ensure that the primvar
+is provided; other renderers may require that a suitable
+material network be provided, in which case this is simply
+an advisory setting.
+- "lpe":  Specifies a Light Path Expression in the
+[OSL Light Path Expressions language](https://github.com/imageworks/OpenShadingLanguage/wiki/OSL-Light-Path-Expressions) as the source for
+this RenderVar.  Some renderers may use extensions to
+the OSL LPE syntax, which will necessarily be non-portable.
+- "intrinsic":  This setting is currently unimplemented,
+but represents a future namespace for UsdRender to provide
+portable baseline RenderVars, such as camera depth, that
+may have varying implementations for each renderer.
+"""
+        }
+    )
+}
+ 
+over RenderProduct "RenderProduct" (
+    customData = {
+        string userDocBrief = """A single render output artifact,
+such as a rendered image or other file-like artifact. Specifies one or more 
+RenderVars combined into the output artifact. RenderProduct can also override
+some of the configuration specified in a RenderSetting, and has product-specific
+configuration attributes, such as the output productName."""
+        string userDoc = """Represents a single render output artifact, such as 
+a rendered image file, output depth buffer, or other file-like artifact. A
+RenderProduct combines one or more {ref}`RenderVars <RenderVar>` into the 
+output artifact. 
+
+```{code-block} usda
+def RenderProduct "PrimaryProduct" {
+    token productName = "/output/render000009.png"
+    rel orderedVars = [
+        </Render/Vars/color>,
+        </Render/Vars/alpha>,
+        </Render/Vars/directDiffuse>
+    ]
+}
+```
+
+RenderProduct also provides many of the same configuration attributes present
+in {ref}`RenderSettings`, which allows for configuration overrides per product.
+Additionally, RenderProduct provides product-specific attributes, such as 
+`productName`, which for a rendered image artifact is used for the image 
+filename.
+
+```{code-block} usda
+def RenderProduct "PrimaryProduct" {
+
+    # --- product-specific ---
+    uniform token productType = "deepRaster"
+    uniform token productName = "/output/render000009.png"
+
+    # --- overrides ---
+
+    # For this product, override our RenderSettings camera and resolution 
+    rel camera = </Cameras/stereo_cam>
+    uniform int2 resolution = (3840, 2160)
+
+    # ...other settings...
+}
+```
+
+Renderers may also support additional renderer-specific configuration, such as 
+compression settings, filetype metadata, and more. Such settings can be 
+encoded using renderer-specific API schemas applied to the RenderProduct prim.
+"""
+    }
+) {
+    uniform token productType (
+        customData = {
+            string userDocBrief = """Specifies the type of output to produce. 
+Values are output types most renderers should be able to support, such as 
+'raster' or 'deepRaster'."""
+            string userDoc = """The type of output to produce. USD provides
+common output types that most renderers should be able to produce:
+
+- "raster": This is the default type and indicates a 2D raster image of
+pixels.
+- "deepRaster": Indicates a deep image that contains multiple samples
+per pixel at varying depths.            
+
+Renderers can also support custom output types by providing an API schema that 
+adds additional productType tokens. For example, the following snippet uses
+a (mocked) renderer-specific applied API schema that adds the 
+"newRenderer:productType" attribute that this specific renderer will use in 
+place of productType.
+
+```{code-block} usda
+def RenderProduct "NewRendererProduct" 
+(
+    apiSchemas = ["NewRendererAPI"]
+)
+{
+    # For this product, apply renderer-specific productType
+    uniform token newRenderer:productType = "rasterNoBackground"
+    
+    #...opinions for remaining RenderProduct attributes as needed...
+}
+```        
+"""
+        }
+    )
+    token productName (
+        customData = {
+            string userDocBrief = """Specifies the name for the output product.
+Used by render executables and pipeline tools to name the product, for 
+example, using the productName as the filename (and path) for an output image
+artifact."""
+            string userDoc = """The name for the output product. 
+The value is provided as-is to render executables and pipeline tools, which in 
+turn are responsible for using the value as needed, e.g. using the productName 
+for the filename (and path) for an output image artifact.
+"""
+        }
+    )
+    rel orderedVars (
+        customData = {
+            string userDocBrief = """Specifies the RenderVars that should be
+used and combined into the final output product. The order is provided to 
+the render executable and pipeline tools."""
+            string userDoc = """The set of relationships to 
+{ref}`RenderVars <RenderVar>` that are used and combined into the final output
+product. The order of the relationship targets is passed to the output tools in 
+case the order is needed to produce the artifact properly.
+"""
+        }
+    )
+}
+
+
+over RenderPass "RenderPass" (
+    customData = {
+        string userDocBrief = """Represents the renderer and scene 
+configuration for a single render pass in a multi-pass rendering workflow. 
+For example, a render pipeline might use separate render passes to 
+render the foreground and background portions of a scene, and a third pass that 
+composites the foreground and background render output into the final frame."""
+        string userDoc = """A RenderPass represents the renderer and scene 
+configuration for a single render pass in a multi-pass rendering workflow. 
+For example, you might have a workflow that uses separate render passes to 
+render the foreground and background portions of a scene, and a third pass that 
+composites the foreground and background render output into the final frame. 
+
+A RenderPass lets you:
+
+- Specify renderer configuration for the render pass. This can be either a 
+relationship to a {ref}`RenderSettings` prim, or a file specifying render
+configuration, e.g. Houdini passes might point to a Rop, Nuke passes would point 
+to a write node.
+- Specify scene configuration for the render pass by setting a USD 
+{ref}`collection <collections_and_patterns>` that describes the prims that will 
+be visible to the renderer. 
+- Specify any renderer-specific configuration for the render pass that isn't 
+covered by {ref}`RenderSettings`, including custom render commands. 
+- Define the dependencies *between* render passes, which is used by renderers 
+to describe the workflow for a sequence of render passes. In the 
+foreground/background example given previously, the "composite" pass has a 
+dependency on the foreground/background passes, as it needs the render output 
+from the foreground/background passes as input to the composite render pass.
+
+The following example shows three RenderPasses. A "foreground" pass and a 
+"background" pass are specified that use RenderMan and the "PrimarySettings" 
+RenderSettings configuration, but specify different parts of the stage to render 
+using the RenderPass renderVisibility collection. A final "composite" 
+pass is also specified that uses Nuke and takes the results from the other two 
+passes as inputPasses. Note that the nuke:writeNode attribute 
+and Nuke renderSource are hypothetical examples that would be associated 
+with a Nuke-supplied API schema applied to the "composite" RenderPass prim -- 
+USD does not provide any default Nuke render configuration support. 
+
+```{code-block} usda
+def Scope "Render"
+{
+    ...settings and products...
+
+    def Scope "Passes"
+    {
+        def RenderPass "foreground" 
+        {
+            token passType = "prman"
+            rel renderSource = <Render/PrimarySettings>
+            string[] command = ["prman"]
+            uniform bool collection:renderVisibility:includeRoot = false
+            prepend rel collection:renderVisibility:includes = [
+                </World/characters>,
+                </World/sets/Kitchen/Table_grp>,
+            ]
+        }
+        def RenderPass "background" 
+        {
+            token passType = "prman"
+            rel renderSource = <Render/PrimarySettings>
+            string[] command = ["prman"]
+            uniform bool collection:renderVisibility:includeRoot = true
+            prepend rel collection:renderVisibility:excludes = [
+                </World/characters>,
+                </World/sets/Kitchen/Table_grp>,
+            ]
+        }
+        def RenderPass "composite"
+        {
+            token passType = "nuke"
+            asset fileName = @composite.nk@
+            # this nuke-namespaced property might come from a hypothetical Nuke-supplied API schema
+            string nuke:writeNode = "WriteFinalComposite"
+            rel renderSource = </Render/Passes/composite.nuke:writeNode>
+           string[] command = ["nuke", "-x", "-c", "32G"]
+            rel inputPasses = [
+                </Render/Passes/foreground>,
+                </Render/Passes/background>
+            ]
+        }
+    }
+}
+```
+
+RenderPasses are typically consumed by runtime executables that generate 
+images based on information from the RenderPass prim. Additionally, RenderPasses
+are consumed by render pipeline code that translates between RenderPass 
+information and the pipeline's render job/task scheduling software. Typically 
+the name of the RenderPass prim is used as the pass's name in pipeline tools.
+
+RenderPass also lets you use 
+{ref}`collections of prims <collections_and_patterns>` to control prim 
+visibility or behavior for the given pass. These collections are:
+
+- renderVisibility: This collection describes which prims are visible to the 
+renderer for this pass. 
+- cameraVisibility: This collection describes
+which prims are visible to the main camera for this pass, with the camera
+specified in the pass's renderSource. 
+- prune: This collection describes which prims are *removed* from the scene 
+prior to rendering this pass.
+- matte: This collection describes which prims should act as 'matte objects' 
+during this render pass. Matte objects render with zero alpha.
+
+See {ref}`usdRender_using_renderpass_collections` for more details on these 
+collections.
+"""
+    }
+) {
+    uniform token passType (
+        customData = {
+            string userDocBrief = """Used to categorize different types of
+passes within a render pipeline."""
+            string userDoc = """A string used to categorize differently 
+structured or executed types of passes within a customized render pipeline.
+
+For example, when multiple DCC's (e.g. Houdini, Katana, Nuke) each compute and 
+contribute different Products to a final result, it may be clearest and most 
+flexible to create a separate RenderPass for each.
+"""
+        }
+    )
+
+    uniform string[] command (
+        customData = {
+            string userDocBrief = """Command to run in order to generate
+renders for this pass. Used by render pipelines to send jobs to scheduling
+components that will generate renders."""
+            string userDoc = """The command to run in order to generate
+renders for this pass. Used by render pipelines to send jobs to scheduling
+components that will generate renders. 
+
+The strings in the command array can be used to specify a process and its 
+arguments. The strings also can contain variables, contained in {} braces,
+that will be substituted when the command is submitted. The following example
+command runs the RenderMan `prman` command with a set of arguments and a
+variable argument that will be substituted with the `fileName` value.
+
+```{code-block} usda
+def RenderPass "PrimaryRenderManPass"
+{
+    token passType = "prman"
+    asset fileName = @extraConfig.arg@
+    rel renderSource = </Render/PrimarySettings>
+    string[] command = ["prman", "-progress", "-pixelvariance", "-0.15", "{fileName}"]
+}
+```
+"""         
+        }
+    )
+ 
+    rel renderSource (
+        customData = {
+            string userDocBrief = """Points to render configuration for this
+pass. Targets a relationship to a RenderSettings, or if fileName is set, 
+points to configuration within that file."""
+            string userDoc = """The source for render configuration for this
+pass. If {ref}`RenderPass_fileName` is not authored, the source is assumed to 
+be a {ref}`RenderSettings` prim present in the current stage. If fileName is 
+present, the source should be found in that file. In this case, the 
+`renderSource` relationship might target a string attribute on this or another 
+prim that identifies the appropriate object in the external container."""
+        }
+    )
+ 
+    rel inputPasses (
+        customData = {
+            string userDocBrief = """The RenderPasses that this pass depends on.
+For example, this pass might depend on the output from a 'Render Texture' pass,
+which gets used as input for this pass."""
+            string userDoc = """The set of other RenderPasses that this pass 
+depends on in order to be constructed properly. For example, 'Pass A' might
+generate a texture, which is then used as input to 'Pass B', so 'Pass B' would
+specify the 'Pass A' RenderPass prim as a relationship target for inputPasses.
+ 
+USD provides this dependency information for render harnesses to use in 
+properly computing dependency passes, and assumes that the harnesses will 
+traverse and account for the transitive dependencies. 
+
+USD additionally makes the following assumption about per-frame tasks:
+        
+When per-frame tasks are generated from RenderPass prims that have inputPasses
+dependencies, USD will assume a one-to-one relationship between tasks
+that share the same frame number. Consider a pass named 'composite'
+whose `inputPasses` targets a RenderPass prim named 'beauty'.  
+By default, each frame for 'composite' will depend on the same frame from 
+'beauty':
+
+beauty.1 -> composite.1
+beauty.2 -> composite.2
+etc.
+
+The consumer of the RenderPass dependency graph of inputs will need to resolve
+any transitive dependencies.
+"""
+        }
+    )
+ 
+    uniform asset fileName (
+        customData = {
+            string userDocBrief = """Asset that contains the render 
+configuration prims or other information needed to render this pass."""
+            string userDoc = """The asset that contains the render configuration
+prims or other information needed to render this pass. Used by 
+{ref}`RenderPass_renderSource`."""
+        }
+    )
+
+    uniform bool collection:renderVisibility:includeRoot (
+        customData = {
+            string userDocBrief = """This property is instantiated in the schema 
+to override the fallback value from the CollectionAPI to true."""
+            string userDoc = """This property is instantiated in the schema 
+to override the fallback value from the CollectionAPI to true."""
+        }
+    )
+    uniform bool collection:cameraVisibility:includeRoot (
+        customData = {
+            string userDocBrief = """This property is instantiated in the schema 
+to override the fallback value from the CollectionAPI to true."""
+            string userDoc = """This property is instantiated in the schema 
+to override the fallback value from the CollectionAPI to true."""
+        }
+    )       
+}

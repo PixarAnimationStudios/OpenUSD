@@ -354,7 +354,7 @@ def AppendCXX11ABIArg(buildFlag, context, buildArgs):
     buildArgs.append('{flag}="{flags}"'.format(
         flag=buildFlag, flags=" ".join(cxxFlags)))
 
-def RunCMake(context, force, extraArgs = None):
+def RunCMake(context, force, extraArgs = None, installDir = None):
     """Invoke CMake to configure, build, and install a library whose 
     source code is located in the current working directory."""
     # Create a directory for out-of-source builds in the build directory
@@ -365,11 +365,11 @@ def RunCMake(context, force, extraArgs = None):
         # ensure we can freely modify our extraArgs without affecting caller
         extraArgs = list(extraArgs)
 
+    instDir = installDir if installDir else context.instDir
+
     if context.cmakeBuildArgs:
         extraArgs.insert(0, context.cmakeBuildArgs)
     srcDir = os.getcwd()
-    instDir = (context.usdInstDir if srcDir == context.usdSrcDir
-               else context.instDir)
     buildDir = os.path.join(context.buildDir, os.path.split(srcDir)[1])
     if force and os.path.isdir(buildDir):
         shutil.rmtree(buildDir)
@@ -758,13 +758,13 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 # this script.
 BOOST_VERSION_FILES = [
     "include/boost/version.hpp",
-    "include/boost-1_76/boost/version.hpp",
+    "include/boost-1_80/boost/version.hpp",
     "include/boost-1_82/boost/version.hpp",
     "include/boost-1_86/boost/version.hpp"
 ]
 
 def InstallBoost_Helper(context, force, buildArgs):
-    # In general we use boost 1.76.0 to adhere to VFX Reference Platform CY2022.
+    # In general we use boost 1.80.0 to adhere to VFX Reference Platform CY2023.
     # However, there are some cases where a newer version is required.
     # - Building with Visual Studio 2022 with the 14.4x toolchain requires boost
     #   1.86.0 or newer, we choose it for all Visual Studio 2022 versions for
@@ -778,8 +778,8 @@ def InstallBoost_Helper(context, force, buildArgs):
         BOOST_VERSION = (1, 82, 0)
         BOOST_SHA256 = "f7c9e28d242abcd7a2c1b962039fcdd463ca149d1883c3a950bbcc0ce6f7c6d9"
     else:
-        BOOST_VERSION = (1, 76, 0)
-        BOOST_SHA256 = "0fd43bb53580ca54afc7221683dfe8c6e3855b351cd6dce53b1a24a7d7fbeedd"
+        BOOST_VERSION = (1, 80, 0)
+        BOOST_SHA256 = "e34756f63abe8ac34b35352743f17d061fcc825969a2dd8458264edb38781782"
 
     # Documentation files in the boost archive can have exceptionally
     # long paths. This can lead to errors when extracting boost on Windows,
@@ -1295,26 +1295,23 @@ BLOSC = Dependency("Blosc", InstallBLOSC, "include/blosc.h")
 ############################################################
 # OpenVDB
 
-OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v9.1.0.zip"
-
-# OpenVDB v9.1.0 requires TBB 2019.0 or above, but this script installs
-# TBB 2018 on macOS Intel systems for reasons documented above. So we
-# keep OpenVDB at the version specified for the VFX Reference Platform
-# CY2021, which is the last version that supported 2018.
-OPENVDB_INTEL_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v8.2.0.zip"
+OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v10.1.0.zip"
 
 def InstallOpenVDB(context, force, buildArgs):
-    openvdb_url = OPENVDB_URL
-    if MacOS() and not apple_utils.IsTargetArm(context):
-        openvdb_url = OPENVDB_INTEL_URL
-
-    with CurrentWorkingDirectory(DownloadURL(openvdb_url, context, force)):
+    with CurrentWorkingDirectory(DownloadURL(OPENVDB_URL, context, force)):
         # Back-port patch from OpenVDB PR #1977 to avoid errors when building
         # with Xcode 16.3+. This fix is anticipated to be part of an OpenVDB
         # 12.x release, which is in the VFX Reference Platform CY2025 and is
         # several major versions ahead of what we currently use.
         PatchFile("openvdb/openvdb/tree/NodeManager.h",
                   [("OpT::template eval", "OpT::eval")])
+
+        # Replace BOOST_STATIC_ASSERT to workaround an "identifier not found"
+        # build failure on Windows with Visual Studio 2022. This change already
+        # exists upstream in OpenVDB 11.0.0+.
+        PatchFile("openvdb/openvdb/tools/VelocityFields.h",
+                  [("BOOST_STATIC_ASSERT(OrderRK <= 4);",
+                    "static_assert(OrderRK <= 4);")])
 
         extraArgs = [
             '-DOPENVDB_BUILD_PYTHON_MODULE=OFF',
@@ -1399,12 +1396,11 @@ OPENIMAGEIO = Dependency("OpenImageIO", InstallOpenImageIO,
 ############################################################
 # OpenColorIO
 
-OCIO_URL = "https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/refs/tags/v2.1.3.zip"
+OCIO_URL = "https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/refs/tags/v2.2.1.zip"
 
 def InstallOpenColorIO(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OCIO_URL, context, force)):
         extraArgs = ['-DOCIO_BUILD_APPS=OFF',
-                     '-DOCIO_BUILD_NUKE=OFF',
                      '-DOCIO_BUILD_DOCS=OFF',
                      '-DOCIO_BUILD_TESTS=OFF',
                      '-DOCIO_BUILD_GPU_TESTS=OFF',
@@ -1528,12 +1524,12 @@ ALEMBIC = Dependency("Alembic", InstallAlembic, "include/Alembic/Abc/Base.h")
 ############################################################
 # Draco
 
-DRACO_URL = "https://github.com/google/draco/archive/refs/tags/1.3.6.zip"
+DRACO_URL = "https://github.com/google/draco/archive/refs/tags/1.5.6.zip"
 
 def InstallDraco(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(DRACO_URL, context, force)):
         cmakeOptions = [
-            '-DBUILD_USD_PLUGIN=ON',
+            '-DBUILD_SHARED_LIBS=ON',
         ]
         cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
@@ -1847,7 +1843,7 @@ def InstallUSD(context, force, buildArgs):
 
         extraArgs += buildArgs
 
-        RunCMake(context, force, extraArgs)
+        RunCMake(context, force, extraArgs, context.usdInstDir)
 
 USD = Dependency("USD", InstallUSD, "include/pxr/pxr.h")
 

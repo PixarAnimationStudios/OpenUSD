@@ -559,6 +559,7 @@ _UpdateNetwork(
                          upstreamNodeName.GetText());
                 continue;
             }
+
             bool newNode = visitedNodeNames.count(upstreamNodeName) == 0;
             if (!newNode) {
                 // Re-using a node or node output, get the corresponding sdrNode
@@ -567,7 +568,7 @@ _UpdateNetwork(
                     sdrRegistry.GetShaderNodeByIdentifier(
                         netInterface->GetNodeType(upstreamNodeName));
 
-                if(!sdrNode) {
+                if (!sdrNode) {
                     continue;
                 }
 
@@ -590,7 +591,7 @@ _UpdateNetwork(
                 }
                 continue;
             }
-            
+
             visitedNodeNames.insert(upstreamNodeName);
 
             // Recursively look upstream for the first mtlx pattern.
@@ -615,9 +616,17 @@ _UpdateNetwork(
                     ? TfToken(mxNode->getNodeDefString())
                     : netInterface->GetNodeType(upstreamNodeName);
 
-            const SdrShaderNodeConstPtr sdrMtlxNode =
+            SdrShaderNodeConstPtr sdrMtlxNode =
                 sdrRegistry.GetShaderNodeByIdentifierAndType(
                     nodeType, _tokens->mtlx);
+            
+            // Custom nodes do not use the nodeDefString as the identifier
+            // make sure to look to the type indicated in the HdNetwork
+            if (!sdrMtlxNode) {
+                sdrMtlxNode = sdrRegistry.GetShaderNodeByIdentifierAndType(
+                    netInterface->GetNodeType(upstreamNodeName), _tokens->mtlx);
+            }
+
             if (!sdrMtlxNode ||
                TfStringEndsWith(nodeType.GetText(), "_bsdf")) {
                 _UpdateNetwork(netInterface, upstreamNodeName, mxDoc,
@@ -850,7 +859,7 @@ _NodeHasTextureCoordPrimvar(
     // Custom nodes may have a <texcoord> or <geompropvalue> node as
     // a part of the defining nodegraph
     const mx::NodeDefPtr mxNodeDef =
-        mxDoc->getNodeDef(mtlxSdrNode->GetIdentifier().GetString());
+        HdMtlxGetNodeDef(TfToken(mtlxSdrNode->GetIdentifier()), mxDoc);
     mx::InterfaceElementPtr impl = mxNodeDef->getImplementation();
     if (impl && impl->isA<mx::NodeGraph>()) {
         const mx::NodeGraphPtr nodegraph = impl->asA<mx::NodeGraph>();
@@ -943,7 +952,7 @@ _UpdateTextureNodes(
         // MaterialX stdlib nodes use 'file' however, this could be different
         // for custom nodes that use textures.
         std::vector<TfToken> fileParamNames;
-        const mx::NodeDefPtr nodeDef = mxDoc->getNodeDef(nodeType);
+        const mx::NodeDefPtr nodeDef = HdMtlxGetNodeDef(nodeType, mxDoc);
         if (nodeDef) {
             for (auto const& mxInput : nodeDef->getActiveInputs()) {
                 if (mxInput->getType() == _tokens->filename) {
@@ -1247,8 +1256,8 @@ _UpdatePrimvarNodes(
         if (!mxNode || mxNode->getCategory() != _tokens->texcoord) {
             continue;
         }
-        mx::NodeDefPtr mxNodeDef = mxDoc->getNodeDef(
-            _tokens->ND_geompropvalue_vector2.GetText());
+        const mx::NodeDefPtr mxNodeDef =
+            HdMtlxGetNodeDef(_tokens->ND_geompropvalue_vector2, mxDoc);
         if (!mxNodeDef) {
             continue;
         }
@@ -1309,7 +1318,7 @@ MatfiltMaterialX(
         // Check if the network uses any Mtlx nodes, and return early if not.
         // The terminal node may be Mtlx, but we also want to support
         // using mtlx patterns with Usd, Pxr or Lama materials.
-        if(!_NetworkHasMtlxNodes(netInterface)) {
+        if (!_NetworkHasMtlxNodes(netInterface)) {
             return;
         }
 

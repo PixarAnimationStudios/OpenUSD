@@ -174,7 +174,7 @@ Hdx_TestDriver::ReadAovBuffer(TfToken const &aovName)
         if (texture) {
             size_t bufferSize = 0;
             return HdStTextureUtils::HgiTextureReadback<T>(
-                                        _GetHgi(), texture, &bufferSize);
+                GetHgi(), texture, &bufferSize);
         }
     }
 

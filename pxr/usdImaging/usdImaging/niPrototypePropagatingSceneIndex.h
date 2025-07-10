@@ -329,10 +329,8 @@ private:
     using _SceneIndexCacheSharedPtr =
         std::shared_ptr<_SceneIndexCache>;
 
-    class _MergingSceneIndexEntry;
-    using _MergingSceneIndexEntryUniquePtr =
-        std::unique_ptr<_MergingSceneIndexEntry>;
-
+    class _MergingSceneIndexOperations;
+    
     friend class _InstanceAggregationSceneIndexObserver;
     class _InstanceAggregationSceneIndexObserver : public HdSceneIndexObserver
     {
@@ -393,8 +391,15 @@ private:
         _SceneIndexCacheSharedPtr const &cache);
 
     void _Populate(HdSceneIndexBaseRefPtr const &instanceAggregationSceneIndex);
-    void _AddPrim(const SdfPath &primPath);
-    void _RemovePrim(const SdfPath &primPath);
+    void _PrimsAdded(
+        const HdSceneIndexObserver::AddedPrimEntries &entries);
+    void _AddPrim(
+        const SdfPath &primPath,
+        _MergingSceneIndexOperations * mergingSceneIndexOperations);
+    void _PrimsRemoved(
+        const HdSceneIndexObserver::RemovedPrimEntries &entries);
+    void _RemovePrim(const SdfPath &primPath,
+        _MergingSceneIndexOperations * mergingSceneIndexOperations);
 
     const TfToken _prototypeName;
     const HdDataSourceHashType _prototypeRootOverlayDsHash;
@@ -402,8 +407,12 @@ private:
 
     HdMergingSceneIndexRefPtr _mergingSceneIndex;
 
-    std::map<SdfPath, _MergingSceneIndexEntryUniquePtr>
-        _instancersToMergingSceneIndexEntry;
+    // Propagated prototypes in the _mergingSceneIndex.
+    //
+    // This map needs to be kept in sync with the HdMergingSceneIndex.
+    // There might be a way to avoid the redundant representation.
+    std::map<SdfPath, HdSceneIndexBaseRefPtr>
+        _instancersToPropagatedPrototypeSceneIndex;
 
     HdSceneIndexBaseRefPtr _instanceAggregationSceneIndex;
 

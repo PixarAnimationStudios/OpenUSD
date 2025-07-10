@@ -301,6 +301,10 @@ HdStMesh::_GatherFaceVaryingTopologies(HdSceneDelegate *sceneDelegate,
                 }
             } else {
                 value = GetPrimvar(sceneDelegate, primvar.name);
+                if (!HdStIsPrimvarValidForDrawItem(
+                    drawItem, primvar.name, value)) {
+                    continue;
+                }
                 for (int i = 0; i < numFaceVaryings; ++i) {
                     indices.push_back(i);
                 }
@@ -1379,92 +1383,94 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         // TODO: We don't need to pull primvar metadata every time a
         // value changes, but we need support from the delegate.
 
-        VtValue value =  GetPrimvar(sceneDelegate, primvar.name);
-
-        if (!value.IsEmpty()) {
-            HdBufferSourceSharedPtr source =
-                std::make_shared<HdVtBufferSource>(primvar.name, value, 1,
-                                                   doublesSupported);
-
-            if (source->GetNumElements() == 0 &&
-                source->GetName() != HdTokens->points) {
-                // zero elements for primvars other than points will be treated
-                // as if the primvar doesn't exist, so no warning is necessary
-                zeroElementPrimvars.push_back(primvar);
-                continue;
-            }
-
-            // verify primvar length -- it is alright to have more data than we
-            // index into; the inverse is when we issue a warning and skip
-            // update.
-            if ((int)source->GetNumElements() < numPoints) {
-                HF_VALIDATION_WARN(id, 
-                    "Vertex primvar %s has only %d elements, while"
-                    " its topology expects at least %d elements. Skipping "
-                    " primvar update.",
-                    primvar.name.GetText(),
-                    (int)source->GetNumElements(), numPoints);
-
-                if (primvar.name == HdTokens->points) {
-                    // If points data is invalid, it pretty much invalidates
-                    // the whole prim.  Drop the Bar, to invalidate the prim and
-                    // stop further processing.
-                    _sharedData.barContainer.Set(
-                           drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(),
-                           HdBufferArrayRangeSharedPtr());
-
-                    HF_VALIDATION_WARN(id, 
-                      "Skipping prim because its points data is insufficient.");
-
-                    return;
-                }
-
-                continue;
-
-            } else if ((int)source->GetNumElements() > numPoints) {
-                HF_VALIDATION_WARN(id,
-                    "Vertex primvar %s has %d elements, while"
-                    " its topology references only upto element index %d.",
-                    primvar.name.GetText(),
-                    (int)source->GetNumElements(), numPoints);
-
-                // If the primvar has more data than needed, we issue a warning,
-                // but don't skip the primvar update. Truncate the buffer to
-                // the expected length.
-                std::static_pointer_cast<HdVtBufferSource>(source)
-                    ->Truncate(numPoints);
-            }
-
-            if (source->GetName() == HdTokens->normals) {
-                _sceneNormalsInterpolation =
-                    isVarying ? HdInterpolationVarying : HdInterpolationVertex;
-                _sceneNormals = true;
-            } else if (source->GetName() == HdTokens->displayOpacity) {
-                _displayOpacity = true;
-            }
-
-            // Special handling of points primvar.
-            // We need to capture state about the points primvar
-            // for use with smooth normal computation.
-            if (primvar.name == HdTokens->points) {
-                if (!TF_VERIFY(!isPointsComputedPrimvar)) {
-                    HF_VALIDATION_WARN(id, 
-                        "'points' specified as both computed and authored "
-                        "primvar. Skipping authored value.");
-                    continue;
-                }
-                _pointsDataType = source->GetTupleType().type;
-            }
-
-            _RefineOrQuadrangulateVertexAndVaryingPrimvar(
-                source, _topology, id,  doRefine, doQuadrangulate,
-                resourceRegistry,
-                &computations, isVarying ? 
-                    HdSt_MeshTopology::INTERPOLATE_VARYING : 
-                    HdSt_MeshTopology::INTERPOLATE_VERTEX);
-
-            sources.push_back(source);
+        VtValue value = GetPrimvar(sceneDelegate, primvar.name);
+        if (!HdStIsPrimvarValidForDrawItem(drawItem, primvar.name, value)) {
+            zeroElementPrimvars.push_back(primvar);
+            continue;
         }
+
+        HdBufferSourceSharedPtr source =
+            std::make_shared<HdVtBufferSource>(primvar.name, value, 1,
+                                                doublesSupported);
+
+        if (source->GetNumElements() == 0 &&
+            source->GetName() != HdTokens->points) {
+            // zero elements for primvars other than points will be treated
+            // as if the primvar doesn't exist, so no warning is necessary
+            zeroElementPrimvars.push_back(primvar);
+            continue;
+        }
+
+        // verify primvar length -- it is alright to have more data than we
+        // index into; the inverse is when we issue a warning and skip
+        // update.
+        if ((int)source->GetNumElements() < numPoints) {
+            HF_VALIDATION_WARN(id, 
+                "Vertex primvar %s has only %d elements, while"
+                " its topology expects at least %d elements. Skipping "
+                " primvar update.",
+                primvar.name.GetText(),
+                (int)source->GetNumElements(), numPoints);
+
+            if (primvar.name == HdTokens->points) {
+                // If points data is invalid, it pretty much invalidates
+                // the whole prim.  Drop the Bar, to invalidate the prim and
+                // stop further processing.
+                _sharedData.barContainer.Set(
+                        drawItem->GetDrawingCoord()->GetVertexPrimvarIndex(),
+                        HdBufferArrayRangeSharedPtr());
+
+                HF_VALIDATION_WARN(id, 
+                    "Skipping prim because its points data is insufficient.");
+
+                return;
+            }
+
+            continue;
+
+        } else if ((int)source->GetNumElements() > numPoints) {
+            HF_VALIDATION_WARN(id,
+                "Vertex primvar %s has %d elements, while"
+                " its topology references only upto element index %d.",
+                primvar.name.GetText(),
+                (int)source->GetNumElements(), numPoints);
+
+            // If the primvar has more data than needed, we issue a warning,
+            // but don't skip the primvar update. Truncate the buffer to
+            // the expected length.
+            std::static_pointer_cast<HdVtBufferSource>(source)
+                ->Truncate(numPoints);
+        }
+
+        if (source->GetName() == HdTokens->normals) {
+            _sceneNormalsInterpolation =
+                isVarying ? HdInterpolationVarying : HdInterpolationVertex;
+            _sceneNormals = true;
+        } else if (source->GetName() == HdTokens->displayOpacity) {
+            _displayOpacity = true;
+        }
+
+        // Special handling of points primvar.
+        // We need to capture state about the points primvar
+        // for use with smooth normal computation.
+        if (primvar.name == HdTokens->points) {
+            if (!TF_VERIFY(!isPointsComputedPrimvar)) {
+                HF_VALIDATION_WARN(id, 
+                    "'points' specified as both computed and authored "
+                    "primvar. Skipping authored value.");
+                continue;
+            }
+            _pointsDataType = source->GetTupleType().type;
+        }
+
+        _RefineOrQuadrangulateVertexAndVaryingPrimvar(
+            source, _topology, id,  doRefine, doQuadrangulate,
+            resourceRegistry,
+            &computations, isVarying ? 
+                HdSt_MeshTopology::INTERPOLATE_VARYING : 
+                HdSt_MeshTopology::INTERPOLATE_VERTEX);
+
+        sources.push_back(source);
     }
 
     // remove the primvars with zero elements from further processing
@@ -1821,57 +1827,60 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
         } else {
             value = GetPrimvar(sceneDelegate, primvar.name);
         }
-        
-        if (!value.IsEmpty()) {
-            HdBufferSourceSharedPtr source =
-                std::make_shared<HdVtBufferSource>(primvar.name, value, 1,
-                                                   doublesSupported);
 
-            if (!useUnflattendPrimvar && source->GetNumElements() == 0) {
-                // zero elements for primvars will be treated as if the primvar
-                // doesn't exist, so no warning is necessary
-                zeroElementPrimvars.push_back(primvar);
-                continue;
-            }
-
-            // verify primvar length
-            if ((int)source->GetNumElements() != numFaceVaryings && 
-                !useUnflattendPrimvar) {
-                HF_VALIDATION_WARN(id, 
-                    "# of facevaryings mismatch (%d != %d)"
-                    " for primvar %s",
-                    (int)source->GetNumElements(), numFaceVaryings,
-                    primvar.name.GetText());
-                continue;
-            }
-
-            if (source->GetName() == HdTokens->normals) {
-                _sceneNormalsInterpolation = HdInterpolationFaceVarying;
-                _sceneNormals = true;
-            } else if (source->GetName() == HdTokens->displayOpacity) {
-                _displayOpacity = true;
-            }
-
-            int channel = 0;
-            if (doRefine) {
-                channel = 
-                    _fvarTopologyTracker->GetChannelFromPrimvar(primvar.name);
-
-                // Invalid fvar topologies may have been skipped when
-                // processed by _GatherFaceVaryingTopologies() in which
-                // case a validation warning will have been posted already
-                // and we should skip further refinement here.
-                if (channel < 0) {
-                    continue;
-                }
-            }
-
-            source = _RefineOrQuadrangulateOrTriangulateFaceVaryingPrimvar(
-                source, _topology, id,  doRefine, doQuadrangulate, 
-                resourceRegistry, &computations, channel);
-            
-            sources.push_back(source);
+        if (!HdStIsPrimvarValidForDrawItem(drawItem, primvar.name, value)) {
+            zeroElementPrimvars.push_back(primvar);
+            continue;
         }
+        
+        HdBufferSourceSharedPtr source =
+            std::make_shared<HdVtBufferSource>(primvar.name, value, 1,
+                                                doublesSupported);
+
+        if (!useUnflattendPrimvar && source->GetNumElements() == 0) {
+            // zero elements for primvars will be treated as if the primvar
+            // doesn't exist, so no warning is necessary
+            zeroElementPrimvars.push_back(primvar);
+            continue;
+        }
+
+        // verify primvar length
+        if ((int)source->GetNumElements() != numFaceVaryings && 
+            !useUnflattendPrimvar) {
+            HF_VALIDATION_WARN(id, 
+                "# of facevaryings mismatch (%d != %d)"
+                " for primvar %s",
+                (int)source->GetNumElements(), numFaceVaryings,
+                primvar.name.GetText());
+            continue;
+        }
+
+        if (source->GetName() == HdTokens->normals) {
+            _sceneNormalsInterpolation = HdInterpolationFaceVarying;
+            _sceneNormals = true;
+        } else if (source->GetName() == HdTokens->displayOpacity) {
+            _displayOpacity = true;
+        }
+
+        int channel = 0;
+        if (doRefine) {
+            channel = 
+                _fvarTopologyTracker->GetChannelFromPrimvar(primvar.name);
+
+            // Invalid fvar topologies may have been skipped when
+            // processed by _GatherFaceVaryingTopologies() in which
+            // case a validation warning will have been posted already
+            // and we should skip further refinement here.
+            if (channel < 0) {
+                continue;
+            }
+        }
+
+        source = _RefineOrQuadrangulateOrTriangulateFaceVaryingPrimvar(
+            source, _topology, id,  doRefine, doQuadrangulate, 
+            resourceRegistry, &computations, channel);
+        
+        sources.push_back(source);
     }
 
     // remove the primvars with zero elements from further processing
@@ -1977,35 +1986,38 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
             continue;
 
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
-        if (!value.IsEmpty()) {
-            HdBufferSourceSharedPtr source =
-                std::make_shared<HdVtBufferSource>(primvar.name, value, 1,
-                                                   doublesSupported);
-
-            if (source->GetNumElements() == 0) {
-                // zero elements for primvars other will be treated as if the
-                // primvar doesn't exist, so no warning is necessary
-                zeroElementPrimvars.push_back(primvar);
-                continue;
-            }
-
-            // verify primvar length
-            if ((int)source->GetNumElements() != numFaces) {
-                HF_VALIDATION_WARN(id,
-                    "# of faces mismatch (%d != %d) for uniform primvar %s",
-                    (int)source->GetNumElements(), numFaces, 
-                    primvar.name.GetText());
-                continue;
-            }
-
-            if (source->GetName() == HdTokens->normals) {
-                _sceneNormalsInterpolation = HdInterpolationUniform;
-                _sceneNormals = true;
-            } else if (source->GetName() == HdTokens->displayOpacity) {
-                _displayOpacity = true;
-            }
-            sources.push_back(source);
+        if (!HdStIsPrimvarValidForDrawItem(drawItem, primvar.name, value)) {
+            zeroElementPrimvars.push_back(primvar);
+            continue;
         }
+
+        HdBufferSourceSharedPtr source =
+            std::make_shared<HdVtBufferSource>(primvar.name, value, 1,
+                                                doublesSupported);
+
+        if (source->GetNumElements() == 0) {
+            // zero elements for primvars other will be treated as if the
+            // primvar doesn't exist, so no warning is necessary
+            zeroElementPrimvars.push_back(primvar);
+            continue;
+        }
+
+        // verify primvar length
+        if ((int)source->GetNumElements() != numFaces) {
+            HF_VALIDATION_WARN(id,
+                "# of faces mismatch (%d != %d) for uniform primvar %s",
+                (int)source->GetNumElements(), numFaces, 
+                primvar.name.GetText());
+            continue;
+        }
+
+        if (source->GetName() == HdTokens->normals) {
+            _sceneNormalsInterpolation = HdInterpolationUniform;
+            _sceneNormals = true;
+        } else if (source->GetName() == HdTokens->displayOpacity) {
+            _displayOpacity = true;
+        }
+        sources.push_back(source);
     }
 
     // remove the primvars with zero elements from further processing

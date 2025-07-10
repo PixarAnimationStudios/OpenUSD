@@ -127,6 +127,36 @@ enum TsSplineSampleSource
     TsSourcePostExtrapLoop,     //< Looped extrapolation after the last knot
 };
 
+/// Automatic tangent calculation algorithms.
+///
+/// Which automatic tangent algorithm to use.
+///
+/// \li None - Tangents are not automatically calculated, the provided values
+/// are used. Note that the tangent values are still subject to modification
+/// by the spline's anti-regression setting.
+///
+/// \li Custom - The tangent algorithm is determined by the "preTanAlgorithm"
+/// and "postTanAlgorithm" keys in the knot's custom data. These custom
+/// data keys are reserved for this purpose. If the custom data values do not
+/// exist or if their value cannot be understood, then Custom behaves as if
+/// the None algorithm was used. Note that the Custom algorithm is not yet
+/// implemented so it currently always behaves like None.
+///
+/// \li AutoEase - Use the "Auto Ease" algorithm from Maya/animX. This is a
+/// cubic controlled blending algorithm that computes a slope between the slopes
+/// to the knots on either side of this knot. If there is a discontinuity in the
+/// spline at this knot (this knot has no previous or next knot, is dual valued,
+/// or is adjacent to a value blocked segment of the spline) then the slope will
+/// be 0 (flat).
+///
+/// \see \ref TsKnot::SetPreTanAlgorithm, \ref TsKnot::SetPostTanAlgorithm
+enum TsTangentAlgorithm
+{
+    TsTangentAlgorithmNone,
+    TsTangentAlgorithmCustom,
+    TsTangentAlgorithmAutoEase
+};
+
 /// Inner-loop parameters.
 ///
 /// At most one inner-loop region can be specified per spline.  Only whole

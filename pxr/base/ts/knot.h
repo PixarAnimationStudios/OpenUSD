@@ -20,9 +20,10 @@
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/type.h"
 
-#include <string>
-#include <memory>
 #include <iosfwd>
+#include <memory>
+#include <optional>
+#include <string>
 #include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -211,6 +212,21 @@ public:
     template <typename T>
     bool GetPreTanSlope(T *slopeOut) const;
 
+    /// Set the pre-tangent algorithm.
+    ///
+    /// When this knot is part of a spline, the tangent algorithm will
+    /// be used to compute updated tangent values, potentially
+    /// overriding explicit values set by SetPreTanWidth and
+    /// SetPreTanSlope. The algorithm TsTangentAlgorithmNone is used
+    /// by default meaning the explicitly set values will be used unless
+    /// a different algorithm is set.
+    TS_API
+    bool SetPreTanAlgorithm(TsTangentAlgorithm algorithm);
+
+    /// Get the pre-tangent algorithm
+    TS_API
+    TsTangentAlgorithm GetPreTanAlgorithm() const;
+
     /// @}
     /// \name Post-tangent
     /// @{
@@ -232,6 +248,52 @@ public:
 
     template <typename T>
     bool GetPostTanSlope(T *slopeOut) const;
+
+    /// Set the post-tangent algorithm.
+    ///
+    /// When this knot is part of a spline, the tangent algorithm will
+    /// be used to compute updated tangent values, potentially
+    /// overriding explicit values set by SetPostTanWidth and
+    /// SetPostTanSlope. The algorithm TsTangentAlgorithmNone is used
+    /// by default meaning the explicitly set values will be used unless
+    /// a different algorithm is set.
+    TS_API
+    bool SetPostTanAlgorithm(TsTangentAlgorithm algorithm);
+
+    /// Get the post-tangent algorithm
+    TS_API
+    TsTangentAlgorithm GetPostTanAlgorithm() const;
+
+    /// @}
+    /// \name Computed Tangents
+    /// @{
+
+    /// \brief Update tangent values algorithmically.
+    ///
+    /// Update the pre- and post-tangent values exactly the way a TsSpline
+    /// would update them if this knot were added to the spline between
+    /// prevKnot and nextKnot. If there is no previous and/or next knot,
+    /// you can pass \c std::nullopt to indicate that the optional value
+    /// is empty.
+    ///
+    /// If prevKnot is not empty, its time must be before this knot. Similarly
+    /// if nextKnot is not empty, its time must be after this knot. If either
+    /// condition is not met, a coding error will be emitted and no changes to
+    /// the tangent values will be made.
+    ///
+    /// The curveType argument should be TsCurveTypeHermite if the knot is
+    /// intended to be added to a Hermite spline. The curve type may affect the
+    /// tangent calculations. Specifically, tangent widths in Hermite splines
+    /// are always 1/3 of the width of the segment they are in, even if the
+    /// tangent algorithm is \c TsTangentAlgorithmNone.
+    ///
+    /// True will be returned if either of the algorithms in this knot run
+    /// successfully, even if no values change. False will be returned
+    /// otherwise.
+    TS_API
+    bool UpdateTangents(const std::optional<TsKnot> prevKnot,
+                        const std::optional<TsKnot> nextKnot,
+                        TsCurveType curveType = TsCurveTypeBezier);
 
     /// @}
     /// \name Custom data

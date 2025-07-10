@@ -21,7 +21,8 @@ TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT, true,
                       "Use Vulkan multi draw indirect");
 TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_BUILTIN_BARYCENTRICS, false,
                       "Use Vulkan built in barycentric coordinates");
-
+TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_NATIVE_INTEROP, true,
+                      "Enable native interop with OpenGL (if device supports)");
 static void _DumpDeviceDeviceMemoryProperties(
     const VkPhysicalDeviceMemoryProperties& vkMemoryProperties)
 {
@@ -118,6 +119,11 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
       VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT;
     vkDeviceProperties2.pNext = &vkVertexAttributeDivisorProperties;
 
+    vkPhysicalDeviceIdProperties.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES_KHR;
+    vkPhysicalDeviceIdProperties.pNext = vkDeviceProperties2.pNext;
+    vkDeviceProperties2.pNext =  &vkPhysicalDeviceIdProperties;
+
     // Query device properties
     vkGetPhysicalDeviceProperties2(physicalDevice, &vkDeviceProperties2);
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &vkMemoryProperties);
@@ -131,6 +137,28 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     vkVulkan11Features.sType =
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
     vkDeviceFeatures2.pNext = &vkVulkan11Features;
+
+    // Interop features
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    if (TfGetEnvSetting(HGIVULKAN_ENABLE_NATIVE_INTEROP) &&
+        device->IsSupportedExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME) &&
+        device->IsSupportedExtension(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME) &&
+        device->IsSupportedExtension(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME) &&
+        device->IsSupportedExtension(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME)) {
+        supportsNativeInterop = true;
+    }
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
+    if (TfGetEnvSetting(HGIVULKAN_ENABLE_NATIVE_INTEROP) &&
+        device->IsSupportedExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME) &&
+        device->IsSupportedExtension(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME) &&
+        device->IsSupportedExtension(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME) &&
+        device->IsSupportedExtension(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME)) {
+        supportsNativeInterop = true;
+    }
+#elif defined(VK_USE_PLATFORM_METAL_EXT)
+    // To be added, either through MoltenVK adding GL interop,
+    // or a later change if necessary
+#endif
 
     // Vertex attribute divisor features ext
     vkVertexAttributeDivisorFeatures.sType =

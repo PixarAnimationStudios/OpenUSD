@@ -2609,19 +2609,18 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             default = (1.0, 1.0, 1.0), 
             hidden = False)
 
-        # This attribute is to verify that only default value and hidden 
-        # metadata is composed from a weaker property definition. With OneAPI 
-        # and TwoAPI both applied in that order, the default value and value
-        # for hidden come through from TwoAPI since OneAPI. TwoAPI DOES define
-        # additional metadata, like displayName, documentation, allowedTokens, 
-        # etc., that OneAPI does not define, however this metadata will not be 
-        # composed.
+        # This attribute is to verify that all property metadata except 
+        # explicitly disallowed fields like 'custom' and 'documentation' are 
+        # composed from a weaker property definition. With OneAPI 
+        # and TwoAPI both applied in that order, the values for default, 
+        # hidden, displayGroup, displayName, and allowedTokens come through 
+        # from TwoAPI since OneAPI does not define values for any of these.
         _VerifyAttribute(prim, "otherMetadataAttr", "token",
             default = "two",
             hidden = False,
-            displayGroup = None,
-            displayName = None,
-            allowedTokens = None)
+            displayGroup = "Two Group",
+            displayName = "OtherTwoAttr",
+            allowedTokens = ["two", "2"])
 
         # Test 3: New prim with no type name; apply only the TwoAPI schema.
         prim = stage.DefinePrim("/UntypedPrim2")

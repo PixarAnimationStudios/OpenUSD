@@ -80,6 +80,7 @@ struct Utf8NoEolf : PEGTL_NS::minus<Utf8, Eol> {};
 struct KeywordAdd : PXR_PEGTL_KEYWORD("add") {};
 struct KeywordAnimationBlock : PXR_PEGTL_KEYWORD("AnimationBlock") {};
 struct KeywordAppend : PXR_PEGTL_KEYWORD("append") {};
+struct KeywordAutoEase : PXR_PEGTL_KEYWORD("autoEase") {};
 struct KeywordBezier: PXR_PEGTL_KEYWORD("bezier") {};
 struct KeywordClass : PXR_PEGTL_KEYWORD("class") {};
 struct KeywordConfig : PXR_PEGTL_KEYWORD("config") {};
@@ -752,33 +753,54 @@ struct SplineLoopItem : PEGTL_NS::seq<
     PEGTL_NS::pad<SplineLoopItemValueOffset, InlinePadding>,
     RightParen> {};
 
-struct SplineTangentValue : Number {};
 struct SplineTangentWidth : Number {};
-// Helper rule to parse SplineTangentWithWidth
-// SplineTangentWithWidthValue = Number (TokenSeparator)? ListSeparator 
-// (TokenSeparator)? Number
-struct SplineTangentWithWidthValue : PEGTL_NS::seq<
+struct SplineTangentSlope : Number {};
+struct SplineTangentAlgorithm : PEGTL_NS::sor<
+    KeywordCustom,
+    KeywordAutoEase> {};
+// Helper rule to parse SplineTangent
+// SplineTangentWidthSlopeAlgorithmItem = SplineTangentWidth (InlinePadding)?
+//                                        ListSeparator (InlinePadding)?
+//                                        SplineTangentSlope (InlinePadding)?
+//                                        ListSeparator (InlinePadding)?
+//                                        AlgorithmName
+struct SplineTangentWidthSlopeAlgorithmItem : PEGTL_NS::seq<
     SplineTangentWidth,
     PEGTL_NS::pad<ListSeparator, InlinePadding>,
-    SplineTangentValue> {};
-// SplineTangentWithoutWidthValue = Number (TokenSeparator)? 
-// (not at SplineKnotPreValueSeparator)
-struct SplineTangentWithoutWidthValue : PEGTL_NS::seq<
-    PEGTL_NS::pad<SplineTangentValue, InlinePadding>,
-    PEGTL_NS::not_at<ListSeparator>> {};
+    SplineTangentSlope,
+    PEGTL_NS::pad<ListSeparator, InlinePadding>,
+    SplineTangentAlgorithm> {};
+// SplineTangentWidthSlopeItem = SplineTangentWidth (InlinePadding)?
+//                               ListSeparator (InlinePadding)?
+//                               SplineTangentSlope
+struct SplineTangentWidthSlopeItem : PEGTL_NS::seq<
+    SplineTangentWidth,
+    PEGTL_NS::pad<ListSeparator, InlinePadding>,
+    SplineTangentSlope> {};
+// SplineTangentSlopeAlgorithmItem = SplineTangentSlope (InlinePadding)?
+//                                   ListSeparator (InlinePadding)?
+//                                   AlgorithmName
+struct SplineTangentSlopeAlgorithmItem : PEGTL_NS::seq<
+    SplineTangentSlope,
+    PEGTL_NS::pad<ListSeparator, InlinePadding>,
+    SplineTangentAlgorithm> {};
+// SplineTangentSlopeItem = SplineTangentSlope
+struct SplineTangentSlopeItem : SplineTangentSlope {};
 
-// SplineTangent = ( (TokenSeparator)?
-//                   SplineTangentWithoutWidthValue
-//                   (TokenSeparator)? ) /
-//                 ( (TokenSeparator)? 
-//                   SplineTangentWithWidthValue
-//                   (TokenSeparator)? )
-struct SplineTangent : PEGTL_NS::sor<
+// SplineTangent = ( (InlinePadding)?
+//                   (SplineTangentWidthSlopeAlgorithmItem /
+//                    SplineTangentWidthSlopeItem /
+//                    SplineTangentSlopeAlgorithmItem /
+//                    SplineTangentSlopeItem)
+//                   (InlinePadding)? )
+struct SplineTangent : PEGTL_NS::seq<
     PEGTL_NS::seq<PEGTL_NS::pad<LeftParen, InlinePadding>,
-                  PEGTL_NS::pad<SplineTangentWithoutWidthValue, InlinePadding>,
-                  RightParen>,
-    PEGTL_NS::seq<PEGTL_NS::pad<LeftParen, InlinePadding>,
-                  PEGTL_NS::pad<SplineTangentWithWidthValue, InlinePadding>,
+                  PEGTL_NS::pad<
+                      PEGTL_NS::sor<SplineTangentWidthSlopeAlgorithmItem,
+                                    SplineTangentWidthSlopeItem,
+                                    SplineTangentSlopeAlgorithmItem,
+                                    SplineTangentSlopeItem>,
+                      InlinePadding>,
                   RightParen>> {};
 
 // SplineInterpMode = NONE / HELD / LINEAR / CURVE

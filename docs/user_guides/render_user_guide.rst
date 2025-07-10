@@ -75,6 +75,8 @@ Note that for Camera prims used by renderers, the *Camera* always views the
 scene in a right-handed coordinate system where up is +Y, right is +X, and the 
 forward viewing direction is -Z. 
 
+.. _render_visibility:
+
 Understanding Render Visibility
 ===============================
 
@@ -97,8 +99,8 @@ As this method depends on a specific production model workflow, it isn't
 discussed in this document. 
 
 Additionally, you can specify a collection of prims that are visible to a 
-renderer for a specific render pass. This is discussed in the 
-:ref:`Render Settings <configuring_render_settings>` section.
+renderer for a specific render pass. This is discussed in  
+:ref:`usdRender_using_renderpass_collections`.
 
 .. _visibility_attribute:
 
@@ -202,11 +204,15 @@ to render. For example, a DCC tool might want to filter out :usda:`render`
 purpose and possibly :usda:`guide` purpose prims, to provide the right user
 experience in a viewport. Or, an offline renderer might traverse the scene and 
 filter out :usda:`proxy` and :usda:`guide` prims for final render pass output.
+See :ref:`usdRender_using_imageable_purpose` for how to configure which 
+purposes to use at render-time.
 
 If you just need to unconditionally control whether a specific imageable prim 
 and its child prims are visible in a render or not, 
 the :ref:`visibility attribute <visibility_attribute>` should be used instead of 
 imageable purpose.
+
+.. _render_purpose_inheritance:
 
 Purpose Inheritance
 ^^^^^^^^^^^^^^^^^^^
@@ -862,35 +868,9 @@ Material for preview renders, and a "MaterialFinal" Material for final renders.
         }  
     }
 
-Specifying Material Binding Purpose in Render Settings
-------------------------------------------------------
-
-USD provides prims for configuring global render settings, as described in 
-:ref:`Configuring Render Settings <configuring_render_settings>`. You can 
-specify a per-render material binding purpose setting via the RenderSettings 
-prim. For example, you might have separate RenderSettings for final render, 
-using the "full" purpose, and for your DCC tool, using the "preview" purpose.
-
-.. code-block:: usda
-
-    def RenderSettings "FinalRenderSettings"
-    {
-        uniform token[] materialBindingPurposes = ["full", ""]
-        ...
-    }
-    def RenderSettings "DefaultRenderSettings"
-    {
-        uniform token[] materialBindingPurposes = ["preview"]
-        ...
-    }
-
-Note that in the material binding purpose list for "FinalRenderSettings" we
-specify both "full" and "" (indicating no specific purpose, or "all purpose")
-bindings should be used. This ensures the full render renders prims with 
-no material binding purpose specified, in case the scene is inconsistent with
-applying the "full" purpose. For "DefaultRenderSettings" you only want to 
-render prims with a "preview" binding purpose set, so only "preview" is 
-specified in the render settings purpose list.
+To specify which material binding purposes to use for a render, use the 
+:usda:`materialBindingPurposes` attribute in a RenderSettings prim. See 
+{ref}`usdRender_using_materialbindingpurposes` for more details.
 
 .. _material_collection_binding:
 
@@ -1050,9 +1030,9 @@ You can use render contexts in combination with
 finer-grain control over what shaders are used for which renderer in a "full" or 
 "preview" render.
 
-Note that, unlike material binding purpose, there's no way to specify at a global 
-level in RenderSettings which material render context to use. The context is 
-chosen by the renderer at render-time.
+Note that, unlike material binding purpose, there's no way to specify at a 
+global level (in a :ref:`RenderSettings` prim) which material render context to 
+use. The context is chosen by the renderer at render-time.
 
 .. _image_file_formats:
 
@@ -1232,13 +1212,17 @@ The ratio of the focal length to the fstop determines the size of the lens
 aperture (and therefore the amount of blur), while the relation between the 
 focus distance and the focal length determines the depth of field. 
 
+For details on how to specify which camera a renderer should use for a given 
+render or render pass, see :ref:`usdRender_designate_camera`.
+
 Configuring Motion Blur
 =======================
 
 Motion blur in USD is controlled by setting the Camera shutter open and close 
 times, along with refining how some objects participate in motion blurring using 
-the MotionAPI schema. Additionally, there are :ref:`Render Settings <configuring_render_settings>` 
-to control the overall application of motion blur.
+the MotionAPI schema. Additionally, there are 
+:ref:`Render Settings <usdRender_overview>` to control the overall application 
+of motion blur.
 
 For renderers that support motion blur, set the Camera :usda:`shutter:open` and 
 :usda:`shutter:close` attributes to control the sampling frames used for motion 
@@ -1286,16 +1270,9 @@ impact but provides an easy way to achieve some artistic looks.
 See `Modulating Motion and Motion Blur <https://openusd.org/release/api/usd_geom_page_front.html#UsdGeom_MotionAPI>`__ 
 for more details on using the MotionAPI schema for applying motion blur.
 
-You can disable all motion blur for a particular render pass by using the 
-:usda:`disableMotionBlur` attribute of the RenderSettings prim. 
-
-.. code-block:: usda
-
-    def RenderSettings "NoBlurRenderSettings"
-    {
-        uniform bool disableMotionBlur = 1
-        ...
-    }
+To disable all motion blur when rendering the scene, use the 
+:ref:`disableMotionBlur <RenderSettingsBase_disableMotionBlur>` attribute of 
+RenderSettings.
 
 .. _configuring_render_settings:
 
@@ -1303,224 +1280,11 @@ You can disable all motion blur for a particular render pass by using the
 Configuring Render Settings
 ***************************
 
-USD provides a set of *render settings* prims to configure how your scene will 
-be rendered. When you define these prims in your USD scene, the renderer is 
-responsible for applying these settings (as best as possible) when rendering 
-the scene. Note that renderers that support USD should have reasonable defaults 
-that will be applied if render configuration isn't available in the USD data.
+OpenUSD provides UsdRender domain schemas used to configure how your scene will 
+be rendered. These schemas are used to communicate global configuration settings
+to the renderer (and rendering pipeline), which is then responsible for applying 
+these settings to the final render to the best of their ability. Renderers that
+support OpenUSD should have reasonable defaults that will be applied if render 
+configuration isn't authored in your scene.
 
-As a best practice, group all your render settings prims (RenderSettings, 
-RenderProduct, RenderVar, RenderPass) in a scene under a common root prim named 
-"Render". This encapsulates render-related specifications from the rest of your 
-scene data so that, even in large scenes, render specifications can be accessed 
-efficiently using features like UsdStage masking. The following example has two 
-RenderSettings and a RenderProduct grouped under a Scope "Render" prim.
-
-.. code-block:: usda
-
-    def Scope "Render"
-    {
-        def RenderSettings "PrimarySettings" {
-            rel products = </Render/PrimaryProduct>
-            int2 resolution = (512, 512)
-        }
-        def RenderSettings "PrimarySettingsRaw" {
-            rel products = </Render/PrimaryProduct>
-            int2 resolution = (1024, 1024)
-            uniform token renderingColorSpace = "raw"
-        }
-        def RenderProduct "PrimaryProduct" {
-            rel camera = </World/main_cam>
-            token productName = "/scratch/tmp/render000009.exr"
-        }
-    }
-
-A USD stage may contain one or more *RenderSettings* prims. The stage metadata can 
-specify the default RenderSettings to be used via the :usda:`renderSettingsPrimPath`
-layer metadata field.
-
-.. code-block:: usda
-
-    #usda 1.0
-    (
-        renderSettingsPrimPath = "/Render/PrimarySettings"
-    )
-
-Each RenderSettings prim encapsulates all the settings and components that tell 
-a renderer what render settings to use, and what render output to produce, for 
-a single invocation of rendering the scene. A RenderSettings prim will contain 
-global renderer settings, such as working colorspace, and the prim that 
-represents the camera for the render. RenderSettings also may contain one or 
-more RenderProducts, although to get a default RGB color image render, you can 
-omit the products specification. 
-
-A *RenderProduct* represents a single render output artifact, such as a rendered 
-image file or an output depth buffer. RenderProducts can override some of the 
-configuration in a RenderSetting (such as the camera), but also have 
-product-specific settings, such as the output "product name" (for a rendered 
-image, the image filename).
-
-RenderSettings and RenderProduct can designate the :ref:`render camera <render_camera>` 
-used for rendering via setting the :usda:`camera` relationship to a Camera prim. The 
-Camera prim determines the visual composition of the scene as an 
-image, and represents creative choices distinct from the technical render 
-settings used to configure image generation. This is why some attributes 
-originate from the camera and others (such as pixel resolution) are expressed 
-separately as render settings, and may vary per RenderProduct.
-
-A RenderProduct can specify one or more *RenderVars*. Each RenderVar represents 
-a quantity or "channel" of computed output data that can vary across an output 
-artifact. A product may contain multiple channels of data representing related 
-values or variables sampled by a render process. The RenderVar prim specifies 
-what values the renderer should output and how the renderer should produce them. 
-Examples of render variables include geometric measurements such as 
-camera-space depth, quantities emitted by material shaders, light path 
-expressions (LPE's), and quantities intrinsic to the renderer such as 
-computation time per pixel. Note that USD does not yet enforce a set of 
-universal RenderVar names and formats, so renderer-specific RenderVars are 
-expected. In the following example, the "PrimaryProduct" RenderProduct 
-specifies four RenderVars representing channels for color, alpha, directDiffuse, 
-and a general ID value.
-
-.. code-block:: usda
-
-    def RenderProduct "PrimaryProduct" {
-        rel camera = </World/main_cam>
-        token productName = "/scratch/tmp/render000009.exr"
-        rel orderedVars = [
-            </Render/Vars/color>,
-            </Render/Vars/alpha>,
-            </Render/Vars/directDiffuse>,
-            </Render/Vars/id>
-        ]
-    }
-    def Scope "Vars"
-    {
-        def RenderVar "color" {
-            string sourceName = "Ci"
-        }
-        def RenderVar "alpha" {
-            token dataType = "float"
-            string sourceName = "a"
-        }
-        def RenderVar "directDiffuse" {
-            string sourceName = "C<RD>[<L.>O]"
-            token sourceType = "lpe"
-        }
-        def RenderVar "id" {
-            token dataType = "int"
-            string sourceName = "id"
-        }
-    }
-
-*RenderPass* encapsulates multi-pass rendering workflows, letting you specify a 
-different RenderSetting for each render pass. For example, you might have a 
-workflow that uses separate render passes and settings to render the foreground 
-and background portions of a scene, and a third pass that composites the 
-foreground and background render output into the final frame. RenderPass can 
-point to a RenderSettings for render configuration for the pass, or point to 
-product-specific configuration for external renderers that may not describe a 
-render in terms of RenderSettings (e.g., compositing applications). In addition 
-to organizing the different renders and processes (such as denoising and 
-compositing) that collectively produce a "final frame", RenderPass codifies the 
-dependencies between passes. A single pass generally represents not just a 
-single set of products, but a sequence of temporally varying frames of outputs 
-that depend on temporally varying inputs.
-
-RenderPass also lets you specify 
-:ref:`collections of prims<collections_and_patterns>` that are visible to the 
-renderer for that pass, using the :usda:`collection:renderVisibility` collection. 
-Use this collection if you have separate passes for different sets of objects 
-in the stage (e.g., separate foreground and background passes), or passes that 
-only apply to specific types of objects.
-
-The following example shows three RenderPasses. A "foreground" pass and a 
-"background" pass are specified that use RenderMan and the "PrimarySettings" 
-RenderSettings configuration, but specify different parts of the stage to render 
-using the RenderPass :usda:`renderVisibility` collection. A final "composite" pass 
-is also specified that uses Nuke and takes the results from the other two passes 
-as :usda:`inputPasses`. Note that the :usda:`nuke:writeNode` attribute and Nuke 
-:usda:`renderSource` are hypothetical examples that would be associated with a 
-Nuke-supplied API schema applied to the "composite" RenderPass prim -- USD does 
-not provide any default Nuke render configuration support. 
-
-.. code-block:: usda
-
-    def Scope "Render"
-    {
-        ...settings and products...
-
-        def Scope "Passes"
-        {
-            def RenderPass "foreground" 
-            {
-                token passType = "prman"
-                rel renderSource = <Render/PrimarySettings>
-                string[] command = ["prman"]
-                uniform bool collection:renderVisibility:includeRoot = false
-                prepend rel collection:renderVisibility:includes = [
-                    </World/characters>,
-                    </World/sets/Kitchen/Table_grp>,
-                ]
-            }
-            def RenderPass "background" 
-            {
-                token passType = "prman"
-                rel renderSource = <Render/PrimarySettings>
-                string[] command = ["prman"]
-                uniform bool collection:renderVisibility:includeRoot = true
-                prepend rel collection:renderVisibility:excludes = [
-                    </World/characters>,
-                    </World/sets/Kitchen/Table_grp>,
-                ]
-            }
-            def RenderPass "composite"
-            {
-                token passType = "nuke"
-                asset fileName = @composite.nk@
-                # this nuke-namespaced property might come from a hypothetical Nuke-supplied API schema
-                string nuke:writeNode = "WriteFinalComposite"
-                rel renderSource = </Render/Passes/composite.nuke:writeNode>
-                string[] command = ["nuke", "-x", "-c", "32G"]
-                rel inputPasses = [
-                    </Render/Passes/foreground>,
-                    </Render/Passes/background>
-                ]
-            }
-        }
-    }
-
-For more details on the standard USD attributes for the render settings prims, 
-see:
-
-- `RenderSettingsBase <https://openusd.org/release/api/class_usd_render_settings_base.html>`__
-- `RenderSettings <https://openusd.org/release/api/class_usd_render_settings.html>`__
-- `RenderProduct <https://openusd.org/release/api/class_usd_render_product.html>`__
-- `RenderVar <https://openusd.org/release/api/class_usd_render_var.html>`__
-- `RenderPass <https://openusd.org/release/api/class_usd_render_pass.html>`__
-
-Note that renderers are expected to add renderer-specific properties to the 
-USD render schemas via auto applied API schemas, and document those settings in 
-the renderer documentation. 
-
-.. _understanding_render_settings_colorspaces:
-
-Understanding Renderer Settings Colorspaces
-===========================================
-
-RenderSettings provides a way to set the renderer *working* color space via the
-:usda:`renderingColorSpace` attribute. This is the (linear) color space a 
-renderer should use to do internal calculations for the given render
-invocation. If this is not set, a renderer is expected to use whatever default
-color space it normally uses.
-
-Note that this color space should not be confused with specific color spaces for 
-scene objects. If you need to specify particular color spaces for objects
-(say, a texture asset that was created with a particular color space), or 
-transform between color spaces, you should use the :usda:`ColorSpaceAPI` and
-:usda:`ColorSpaceDefinitionAPI` schemas on prims that need to specify color
-space information. USD has specific rules on how color spaces specified on 
-objects are propagated and resolved.
-
-See :ref:`color_users_guide` for more details on working with color spaces with
-USD objects.
+For full details and examples, see :ref:`UsdRender Overview <usdRender_overview>`.

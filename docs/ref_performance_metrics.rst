@@ -92,7 +92,9 @@ USD Build
 For each of the operating systems and hardware platforms listed previously, we
 build USD with the same build configuration. We use a stock invocation of 
 ``build_usd.py`` with the default options (release build, Python components,
-imaging and USD imaging components, usdview, etc).
+imaging and USD imaging components, usdview, etc). Note that this build uses
+the default system memory allocator, and does not use an alternate allocator 
+(as described in :ref:`maxperf_optimized_allocator`).
 
 *******
 Metrics

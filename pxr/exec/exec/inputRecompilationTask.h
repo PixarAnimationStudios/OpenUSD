@@ -45,11 +45,13 @@ private:
     // The input to be recompiled.
     VdfInput *const _input;
 
-    // The task uses this journal to resolve the input.
-    EsfJournal _journal;
+    // The task uses these journals to resolve the input, one for each input
+    // key.
+    TfSmallVector<EsfJournal, 1> _journalPerInputKey;
 
-    // The new source outputs for the input.
-    TfSmallVector<VdfMaskedOutput, 1> _resultOutputs;
+    // The new source outputs for the input, one set for each input key.
+    using _SourceOutputs = TfSmallVector<VdfMaskedOutput, 1>;
+    TfSmallVector<_SourceOutputs, 1> _resultOutputsPerInputKey;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

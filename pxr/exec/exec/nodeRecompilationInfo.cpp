@@ -14,24 +14,27 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-const Exec_InputKey *
-Exec_NodeRecompilationInfo::GetInputKey(const VdfInput &input) const
+TfSmallVector<const Exec_InputKey *, 1>
+Exec_NodeRecompilationInfo::GetInputKeys(const VdfInput &input) const
 {
-    const Exec_InputKey *const it = std::find_if(
-        _inputKeys->Get().begin(),
-        _inputKeys->Get().end(),
-        [&inputName = input.GetName()](const Exec_InputKey &inputKey) {
-            return inputKey.inputName == inputName;
-        });
+    TfSmallVector<const Exec_InputKey *, 1> matchingInputKeys;
+    const TfToken &inputName = input.GetName();
+    const TfType inputType = input.GetSpec().GetType();
+
+    for (const Exec_InputKey &inputKey : _inputKeys->Get()) {
+        if (inputKey.inputName == inputName &&
+            inputKey.resultType == inputType) {
+            matchingInputKeys.push_back(&inputKey);
+        }
+    }
     
-    if (!TF_VERIFY(it != _inputKeys->Get().end(),
-        "Recompilation could not obtain input key for '%s' on node '%s'",
+    if (!TF_VERIFY(!matchingInputKeys.empty(),
+        "Recompilation could not obtain input keys for '%s' on node '%s'",
         input.GetName().GetText(),
         input.GetNode().GetDebugName().c_str())) {
-        return nullptr;
     }
 
-    return it;
+    return matchingInputKeys;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

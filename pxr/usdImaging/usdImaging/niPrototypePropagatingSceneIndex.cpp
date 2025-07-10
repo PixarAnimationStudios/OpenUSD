@@ -250,39 +250,43 @@ private:
     std::map<TfToken, _SceneIndices2> _prototypeToBindingHashToSceneIndices;
 };
 
-// An RAII helper that inserts the given scene index followed by a
-// re-rooting scene index into the given merging scene index upon
-// constructions and removes it from the merging scene index on
-// destruction.
+// An RAII-helper that batches operations to HdMergingSceneIndex.
 class
-UsdImagingNiPrototypePropagatingSceneIndex::_MergingSceneIndexEntry
+UsdImagingNiPrototypePropagatingSceneIndex::_MergingSceneIndexOperations
 {
 public:
-    _MergingSceneIndexEntry(
-        const SdfPath &prefix,
-        HdSceneIndexBaseRefPtr const &sceneIndex,
+    _MergingSceneIndexOperations(
         HdMergingSceneIndexRefPtr const &mergingSceneIndex)
-      : _rerootingSceneIndex(
-          UsdImagingRerootingSceneIndex::New(
-              sceneIndex,
-              // Re-root, but only prims under the instancer,
-              // i.e., the instancer and the prototype.
-              // This way paths inside the prototype pointing to
-              // stuff outside the prototype will not be changed.
-              UsdImaging_NiPrototypeSceneIndex::GetInstancerPath(), prefix))
-      , _mergingSceneIndex(mergingSceneIndex)
+     : _mergingSceneIndex(mergingSceneIndex)
+    { }
+
+    ~_MergingSceneIndexOperations()
     {
-        _mergingSceneIndex->AddInputScene(_rerootingSceneIndex, prefix);
+        _mergingSceneIndex->RemoveInputScenes(_scenesToRemove);
+        _mergingSceneIndex->InsertInputScenes(_scenesToInsert);
     }
 
-    ~_MergingSceneIndexEntry()
+    void AddInputScene(
+        HdSceneIndexBaseRefPtr const &inputScene,
+        const SdfPath &activeInputSceneRoot)
     {
-        _mergingSceneIndex->RemoveInputScene(_rerootingSceneIndex);
+        _scenesToInsert.push_back({inputScene, activeInputSceneRoot});
+    }
+
+    /// Do not call with a scene that was given to AddInputScene
+    /// earlier - as the scene given to AddInputScene will always
+    /// be added.
+    void RemoveInputScene(
+        HdSceneIndexBaseRefPtr const &inputScene)
+    {
+        _scenesToRemove.push_back(inputScene);
     }
 
 private:
-    HdSceneIndexBaseRefPtr const _rerootingSceneIndex;
     HdMergingSceneIndexRefPtr const _mergingSceneIndex;
+
+    std::vector<HdMergingSceneIndex::InputScene> _scenesToInsert;
+    std::vector<HdSceneIndexBaseRefPtr> _scenesToRemove;
 };
 
 UsdImagingNiPrototypePropagatingSceneIndexRefPtr
@@ -359,14 +363,19 @@ UsdImagingNiPrototypePropagatingSceneIndex::
     TRACE_FUNCTION()
 
     // We need to release all references we have to the scene indices...
-    _instancersToMergingSceneIndexEntry.clear();
+
+    // Note that we are not updating the merging scene index here since we are
+    // deleting it anyway.
+    _instancersToPropagatedPrototypeSceneIndex.clear();
     _instanceAggregationSceneIndex = nullptr;
+    // Note that the Hydra Scene Browser could potentially delay the
+    // deletion of the merging scene index.
     _mergingSceneIndex = nullptr;
-    
+
     // ... before we can garbage collect.
     _cache->GarbageCollect(_prototypeName, _prototypeRootOverlayDsHash);
 }
-    
+
 
 void
 UsdImagingNiPrototypePropagatingSceneIndex::_Populate(
@@ -374,10 +383,13 @@ UsdImagingNiPrototypePropagatingSceneIndex::_Populate(
 {
     TRACE_FUNCTION();
 
+    _MergingSceneIndexOperations
+        mergingSceneIndexOperations(_mergingSceneIndex);
+
     for (const SdfPath &primPath
              : HdSceneIndexPrimView(instanceAggregationSceneIndex,
                                     SdfPath::AbsoluteRootPath())) {
-        _AddPrim(primPath);
+        _AddPrim(primPath, &mergingSceneIndexOperations);
     }
 }
 
@@ -394,7 +406,21 @@ _GetBindingScopeDataSource(HdSceneIndexBaseRefPtr const &sceneIndex,
 }
 
 void
-UsdImagingNiPrototypePropagatingSceneIndex::_AddPrim(const SdfPath &primPath)
+UsdImagingNiPrototypePropagatingSceneIndex::_PrimsAdded(
+    const HdSceneIndexObserver::AddedPrimEntries &entries)
+{
+    _MergingSceneIndexOperations
+        mergingSceneIndexOperations(_mergingSceneIndex);
+
+    for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
+        _AddPrim(entry.primPath, &mergingSceneIndexOperations);
+    }
+}
+
+void
+UsdImagingNiPrototypePropagatingSceneIndex::_AddPrim(
+    const SdfPath &primPath,
+    _MergingSceneIndexOperations * const mergingSceneIndexOperations)
 {
     const TfToken prototypeName =
         UsdImaging_NiInstanceAggregationSceneIndex::
@@ -403,59 +429,77 @@ UsdImagingNiPrototypePropagatingSceneIndex::_AddPrim(const SdfPath &primPath)
         return;
     }
 
-    _MergingSceneIndexEntryUniquePtr &entry =
-        _instancersToMergingSceneIndexEntry[primPath];
+    HdSceneIndexBaseRefPtr &propagatedPrototypeSceneIndex =
+        _instancersToPropagatedPrototypeSceneIndex[primPath];
 
     // First erase previous entry.
-    entry = nullptr;
+
+    if (propagatedPrototypeSceneIndex) {
+        mergingSceneIndexOperations->RemoveInputScene(
+            propagatedPrototypeSceneIndex);
+    }
+
+    propagatedPrototypeSceneIndex =
+        UsdImagingRerootingSceneIndex::New(
+            UsdImagingNiPrototypePropagatingSceneIndex::_New(
+                prototypeName,
+                // Apply the container data source from the binding scope
+                // to the prototype root.
+                // This data source contains opinions of the
+                // aggregated native instances about, e.g., purpose.
+                //
+                // Note that the flattening scene index will
+                // propagate these opinions to the descendants of
+                // the prototype root without stronger opinion.
+                //
+                // The bool data source model:applyDrawMode in the container
+                // data source has a special role. It will not be touched
+                // by the flattening scene index. However, the draw mode
+                // scene index will turn the prototype into a draw mode
+                // standin if model:applyDrawMode is true and model:drawMode
+                // is non-trivial. The draw mode scene index would be called
+                // through the AppendSceneIndexCallback.
+                
+                /* prototypeRootOverlayDs = */
+                _GetBindingScopeDataSource(
+                    _instanceAggregationSceneIndex, primPath),
+                _cache),
+            UsdImaging_NiPrototypeSceneIndex::GetInstancerPath(),
+            primPath);
 
     // Insert scene index for given instancer.
-    entry = std::make_unique<_MergingSceneIndexEntry>(
-        primPath,
-        UsdImagingNiPrototypePropagatingSceneIndex::_New(
-            prototypeName,
-            // Apply the container data source from the binding scope
-            // to the prototype root.
-            // This data source contains opinions of the
-            // aggregated native instances about, e.g., purpose.
-            //
-            // Note that the flattening scene index will
-            // propagate these opinions to the descendants of
-            // the prototype root without stronger opinion.
-            //
-            // The bool data source model:applyDrawMode in the container
-            // data source has a special role. It will not be touched
-            // by the flattening scene index. However, the draw mode
-            // scene index will turn the prototype into a draw mode
-            // standin if model:applyDrawMode is true and model:drawMode
-            // is non-trivial. The draw mode scene index would be called
-            // through the AppendSceneIndexCallback.
-
-            /* prototypeRootOverlayDs = */
-            _GetBindingScopeDataSource(
-                _instanceAggregationSceneIndex, primPath),
-            _cache),
-        _mergingSceneIndex);
+    mergingSceneIndexOperations->AddInputScene(
+        propagatedPrototypeSceneIndex, primPath);
 }
 
-template<typename Container>
-static
 void
-_ErasePrefix(Container * const c, const SdfPath &prefix)
+UsdImagingNiPrototypePropagatingSceneIndex::_PrimsRemoved(
+    const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
-    auto it = c->lower_bound(prefix);
-    while (it != c->end() && it->first.HasPrefix(prefix)) {
-        it = c->erase(it);
+    _MergingSceneIndexOperations
+        mergingSceneIndexOperations(_mergingSceneIndex);
+
+    for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
+        _RemovePrim(entry.primPath, &mergingSceneIndexOperations);
     }
+
 }
 
 void
-UsdImagingNiPrototypePropagatingSceneIndex::_RemovePrim(const SdfPath &primPath)
+UsdImagingNiPrototypePropagatingSceneIndex::_RemovePrim(
+    const SdfPath &primPath,
+    _MergingSceneIndexOperations * const mergingSceneIndexOperations)
 {
     TRACE_FUNCTION();
 
     // Erase all entries from map with given prefix.
-    _ErasePrefix(&_instancersToMergingSceneIndexEntry, primPath);
+
+    auto it = _instancersToPropagatedPrototypeSceneIndex.lower_bound(primPath);
+    while (it != _instancersToPropagatedPrototypeSceneIndex.end() &&
+           it->first.HasPrefix(primPath)) {
+        mergingSceneIndexOperations->RemoveInputScene(it->second);
+        it = _instancersToPropagatedPrototypeSceneIndex.erase(it);
+    }
 }
 
 std::vector<HdSceneIndexBaseRefPtr>
@@ -507,9 +551,7 @@ _InstanceAggregationSceneIndexObserver::PrimsAdded(
 {
     TRACE_FUNCTION();
 
-    for (const AddedPrimEntry &entry : entries) {
-        _owner->_AddPrim(entry.primPath);
-    }
+    _owner->_PrimsAdded(entries);
 }
 
 void
@@ -528,10 +570,8 @@ _InstanceAggregationSceneIndexObserver::PrimsRemoved(
     const RemovedPrimEntries &entries)
 {
     TRACE_FUNCTION();
-
-    for (const RemovedPrimEntry &entry : entries) {
-        _owner->_RemovePrim(entry.primPath);
-    }
+    
+    _owner->_PrimsRemoved(entries);
 }
 
 void

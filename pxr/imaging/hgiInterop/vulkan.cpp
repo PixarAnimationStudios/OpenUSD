@@ -112,10 +112,26 @@ _VKLayoutToGLLayout(VkImageLayout vkLayout)
             return GL_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_EXT;
         case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL_KHR:
             return GL_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_EXT;
-        default: 
+        default:
             TF_CODING_ERROR("Unknown VKLayout Supplied,"
                 "not compatible with GL: %u", vkLayout);
             return GL_NONE;
+    }
+}
+
+static GLenum
+_HgiFormatToInteropGLFormat(HgiFormat hgiFormat)
+{
+    // Using a seperate table to HgiGL's conversions to limit accepted interop
+    // types
+    switch (hgiFormat) {
+        case HgiFormatFloat32Vec4: return GL_RGBA32F;
+        case HgiFormatFloat16Vec4: return GL_RGBA16F;
+        case HgiFormatUNorm8Vec4: return GL_RGBA8;
+        case HgiFormatFloat32: return GL_R32F;
+        default: 
+            TF_CODING_ERROR("HgiFormat unable to interop: %i", hgiFormat);
+            return GL_RGBA32F;
     }
 }
 
@@ -194,7 +210,7 @@ HgiInteropVulkan::InteropTexNative::ConvertVulkanTextureToOpenGL(
     if (srcDims != interopDims) {
         _Reset(hgiVulkan,
             srcDims,
-            isDepth ? HgiFormatFloat32 : HgiFormatFloat32Vec4,
+            src->GetDescriptor().format,
             isDepth);
     }
 
@@ -223,6 +239,16 @@ HgiInteropVulkan::InteropTexNative::_Reset(
     _Clear();
     _hgiVulkan = hgiVulkan;
 
+    GLenum glFormat = _HgiFormatToInteropGLFormat(format);
+
+    GLint tilingCount = 0;
+    glGetInternalformativ(GL_TEXTURE_2D, glFormat,
+        GL_NUM_TILING_TYPES_EXT, 1, &tilingCount);
+    TF_VERIFY(tilingCount >= 1, "GL Tiling types is empty!");
+    std::vector<GLint> tilingTypes(tilingCount);
+    glGetInternalformativ(GL_TEXTURE_2D, glFormat,
+        GL_TILING_TYPES_EXT, tilingCount, tilingTypes.data());
+
     HgiTextureDesc desc;
     desc.format = format;
     desc.debugName = "InteropTexVK";
@@ -231,7 +257,9 @@ HgiInteropVulkan::InteropTexNative::_Reset(
         (isDepth ? HgiTextureUsageBitsDepthTarget : 0)
         | HgiTextureUsageBitsShaderRead;
 
-    _vkTex = _hgiVulkan->CreateTextureForInterop(desc);
+    // GL spec says returned array will always have optimal first if supported
+    _vkTex = _hgiVulkan->CreateTextureForInterop(desc,
+        tilingTypes[0] == GL_OPTIMAL_TILING_EXT);
 
     HgiVulkanTexture* vkDestCast = static_cast<HgiVulkanTexture*>(_vkTex.Get());
     VmaAllocationInfo2 allocInfo = vkDestCast->GetAllocationInfo();
@@ -251,13 +279,12 @@ HgiInteropVulkan::InteropTexNative::_Reset(
             &fd));
 #elif defined(VK_USE_PLATFORM_METAL_EXT)
 #endif
-    VkMemoryRequirements req;
-    vkGetImageMemoryRequirements(
-        _hgiVulkan->GetPrimaryDevice()->GetVulkanDevice(),
-        vkDestCast->GetImage(),
-        &req);
 
     glCreateMemoryObjectsEXT(1, &_glMemoryObject);
+
+    GLint isDedicated = allocInfo.dedicatedMemory;
+    glMemoryObjectParameterivEXT(_glMemoryObject,
+            GL_DEDICATED_MEMORY_OBJECT_EXT, &isDedicated);
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
     glImportMemoryWin32HandleEXT(
@@ -276,10 +303,12 @@ HgiInteropVulkan::InteropTexNative::_Reset(
     glGenTextures(1, &_glTex);
     glBindTexture(GL_TEXTURE_2D, _glTex);
 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_TILING_EXT, tilingTypes[0]);
+
     glTexStorageMem2DEXT(
         GL_TEXTURE_2D,
         desc.mipLevels,
-        isDepth ? GL_R32F : GL_RGBA32F,
+        glFormat,
         desc.dimensions[0],
         desc.dimensions[1],
         _glMemoryObject,
@@ -474,15 +503,38 @@ HgiInteropVulkan::HgiInteropVulkan(Hgi* hgiVulkan)
         _vertexArray = _CreateVertexArray();
     }
 
-    if (_hgiVulkan->GetCapabilities()->supportsNativeInterop
-        && GARCH_GL_EXT_memory_object
-        && GARCH_GL_EXT_semaphore
+    // Only supporting single and matching device interop between GL and VK to
+    // satisfy semaphore interop requirements in GL_EXT_external_objects.
+    bool onSameDevice = true;
+    GLint uuidSize = 0;
+    glGetIntegerv(GL_NUM_DEVICE_UUIDS_EXT, &uuidSize);
+    if (uuidSize != 1) {
+        onSameDevice = false;
+    } else if (_hgiVulkan->GetCapabilities()->supportsNativeInterop) {
+        GLubyte uuidDeviceGL[GL_UUID_SIZE_EXT];
+        glGetUnsignedBytei_vEXT(GL_DEVICE_UUID_EXT, 0, uuidDeviceGL);
+        GLubyte uuidDriverGL[GL_UUID_SIZE_EXT];
+        glGetUnsignedBytevEXT(GL_DRIVER_UUID_EXT, uuidDriverGL);
+
+        const VkPhysicalDeviceIDPropertiesKHR& vkPhysicalDeviceIdProperties =
+            _hgiVulkan->GetCapabilities()->vkPhysicalDeviceIdProperties;
+
+        onSameDevice = memcmp(uuidDeviceGL,
+            vkPhysicalDeviceIdProperties.deviceUUID, VK_UUID_SIZE) == 0
+            && memcmp(uuidDriverGL,
+            vkPhysicalDeviceIdProperties.driverUUID, VK_UUID_SIZE) == 0;
+    }
+
+    if (onSameDevice
+        && _hgiVulkan->GetCapabilities()->supportsNativeInterop
+        && GARCH_GLAPI_HAS(EXT_memory_object)
+        && GARCH_GLAPI_HAS(EXT_semaphore)
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
-        && GARCH_GL_EXT_memory_object_win32
-        && GARCH_GL_EXT_semaphore_win32) {
+        && GARCH_GLAPI_HAS(EXT_memory_object_win32)
+        && GARCH_GLAPI_HAS(EXT_semaphore_win32)) {
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
-        && GARCH_GL_EXT_memory_object_fd
-        && GARCH_GL_EXT_semaphore_fd) {
+        && GARCH_GLAPI_HAS(EXT_memory_object_fd)
+        && GARCH_GLAPI_HAS(EXT_semaphore_fd)) {
 #elif defined(VK_USE_PLATFORM_METAL_EXT)
         // To be added, either through MoltenVK adding GL interop,
         // or a later change if necessary

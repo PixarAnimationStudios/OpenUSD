@@ -877,6 +877,49 @@ def "Root"
         self.assertFalse(layer.Reload())
         self.assertTrue(prim)
 
+    def test_DirtinessAfterSetIdentifier(self):
+        for filename in ['TestDirtinessAfterSetIdentifier.usda',
+                         'TestDirtinessAfterSetIdentifier-renamed.usda']:
+            if os.path.isfile(filename):
+                os.remove(filename)
+
+        def _TestWithPrim(primPath):
+            # Create a new layer with the specified prim and verify that we
+            # can save it out to disk.
+            layer = Sdf.Layer.CreateNew('TestDirtinessAfterSetIdentifier.usda')
+            prim = Sdf.CreatePrimInLayer(layer, primPath)
+            self.assertTrue(layer.Save())
+            self.assertTrue(os.path.exists(
+                'TestDirtinessAfterSetIdentifier.usda'))
+            self.assertFalse(layer.dirty)
+
+            # Now change the layer's identifier and verify that we can
+            # save it out to its new location even though the contents have
+            # not changed.
+            layer.identifier = 'TestDirtinessAfterSetIdentifier-renamed.usda'
+            self.assertTrue(layer.dirty)
+            self.assertTrue(layer.Save())
+            self.assertTrue(os.path.exists(
+                'TestDirtinessAfterSetIdentifier-renamed.usda'))
+
+            self.assertEqual(
+                layer.ExportToString(),
+                Sdf.Layer.OpenAsAnonymous(
+                    'TestDirtinessAfterSetIdentifier-renamed.usda')
+                    .ExportToString())
+
+        # This function will create a layer with the specified prim, change
+        # its identifier, then write the layer out to the new location.
+        # The first time through, there will be no file on disk at the
+        # new location.
+        _TestWithPrim('/test')
+
+        # The layer written out at the new location now exists for the
+        # second time through. This verifies that saving the layer still
+        # works as expected even if a file already exists at intended
+        # location.
+        _TestWithPrim('/test_2')
+
     def test_VariantInertness(self):
         layer = Sdf.Layer.CreateAnonymous(".usda")
         layer.ImportFromString(

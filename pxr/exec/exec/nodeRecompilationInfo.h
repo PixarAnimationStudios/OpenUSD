@@ -11,6 +11,7 @@
 
 #include "pxr/exec/exec/inputKey.h"
 
+#include "pxr/base/tf/smallVector.h"
 #include "pxr/exec/esf/object.h"
 #include "pxr/exec/esf/schemaConfigKey.h"
 
@@ -49,11 +50,14 @@ public:
         return _dispatchingSchemaId;
     }
 
-    /// Gets the input key to re-resolve \p input on the node.
+    /// Gets the input keys to re-resolve \p input on the node.
     ///
-    /// Returns nullptr if an input key could not be found.
+    /// Returns a vector of pointers to each input key with the same name and
+    /// type as \p input. If there are no matching input keys, then the returned
+    /// vector is empty and an error is raised.
     ///
-    const Exec_InputKey *GetInputKey(const VdfInput &input) const;
+    TfSmallVector<const Exec_InputKey *, 1> GetInputKeys(
+        const VdfInput &input) const;
 
 private:
     // The node's provider.

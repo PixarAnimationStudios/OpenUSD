@@ -3,7 +3,7 @@
 
     <!-- Namespaces work when the namespaced file is included AND the containing
         folder is indicated with the PXR_MTLX_PLUGIN_SEARCH_PATHS env var -->
-    <xi:include href="./libraryNodes/myColorNodeDef.mtlx" />
+    <xi:include href="../libraryNodes/myColorNodeDef.mtlx" />
 
     <nodegraph name="wrapper_nodegraph">
         <myColor name="myColor" type="color3" namespace="TestNamespace"/>

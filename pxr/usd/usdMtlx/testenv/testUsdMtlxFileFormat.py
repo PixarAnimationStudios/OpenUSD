@@ -236,6 +236,8 @@ class TestFileFormat(unittest.TestCase):
         """
         stage = UsdMtlx._TestFile('LocalCustomNodes.mtlx')
         stage.GetRootLayer().Export('LocalCustomNodes.usda')
+        stage = UsdMtlx._TestFile('NestedLocalCustomNodes.mtlx')
+        stage.GetRootLayer().Export('NestedLocalCustomNodes.usda')
 
     @unittest.skipIf(not hasattr(Ar.Resolver, "CreateIdentifier"),
                      "Requires Ar 2.0")

@@ -7,12 +7,12 @@
 #ifndef PXR_BASE_WORK_DISPATCHER_H
 #define PXR_BASE_WORK_DISPATCHER_H
 
-/// \file work/dispatcher.h
+/// \file
 
 #include "pxr/pxr.h"
-#include "pxr/base/work/threadLimits.h"
 #include "pxr/base/work/api.h"
-#include "pxr/base/work/workTBB/impl.h"
+#include "pxr/base/work/impl.h"
+#include "pxr/base/work/threadLimits.h"
 
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/errorTransport.h"
@@ -23,47 +23,23 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class WorkDispatcher
-///
-/// A work dispatcher runs concurrent tasks.  The dispatcher supports adding
-/// new tasks from within running tasks.  This suits problems that exhibit
-/// hierarchical structured parallelism: tasks that discover additional tasks
-/// during their execution.
-///
-/// Typical use is to create a dispatcher and invoke Run() to begin doing
-/// work, then Wait() for the work to complete.  Tasks may invoke Run() during
-/// their execution as they discover additional tasks to perform.
-///
-/// For example,
-///
-/// \code
-/// WorkDispatcher dispatcher;
-/// for (i = 0; i != N; ++i) {
-///     dispatcher.Run(DoSomeWork, workItem[i]);
-/// }
-/// dispatcher.Wait();
-/// \endcode
-///
-/// Calls to Run() and Cancel() may be made concurrently.  Calls to Wait() may
-/// also be made concurrently.  However, once any calls to Wait() are in-flight,
-/// calls to Run() and Cancel() must only be made by tasks already added by
-/// Run().  This means that users of this class are responsible to synchronize
-/// concurrent calls to Wait() to ensure this requirement is met.
-///
-/// Additionally, Wait() must never be called by a task added by Run(), since
-/// that task could never complete.
-///
-class WorkDispatcher
+// The Work_Dispatcher interface, specialized with a dispatcher impl template
+// argument.
+// 
+// Clients expected to use the WorkDispatcher type instead.
+template <class Impl>
+class Work_Dispatcher
 {
+protected:
+    // Prevent construction of the work dispatcher base class.
+    WORK_API Work_Dispatcher();
+
 public:
-    /// Construct a new dispatcher.
-    WORK_API WorkDispatcher();
-
     /// Wait() for any pending tasks to complete, then destroy the dispatcher.
-    WORK_API ~WorkDispatcher() noexcept;
+    WORK_API ~Work_Dispatcher() noexcept;
 
-    WorkDispatcher(WorkDispatcher const &) = delete;
-    WorkDispatcher &operator=(WorkDispatcher const &) = delete;
+    Work_Dispatcher(Work_Dispatcher const &) = delete;
+    Work_Dispatcher &operator=(Work_Dispatcher const &) = delete;
 
 #ifdef doxygen
 
@@ -140,7 +116,7 @@ private:
             TfErrorMark m;
             _fn();
             if (!m.IsClean())
-                WorkDispatcher::_TransportErrors(m, _errors);
+                Work_Dispatcher::_TransportErrors(m, _errors);
         }
     private:
         Fn _fn;
@@ -153,7 +129,7 @@ private:
     _TransportErrors(const TfErrorMark &m, _ErrorTransports *errors);
 
     // WorkDispatcher implementation
-    WorkImpl_Dispatcher _dispatcher;
+    Impl _dispatcher;
     std::atomic<bool> _isCancelled;
 
     // The error transports we use to transmit errors in other threads back to
@@ -163,6 +139,41 @@ private:
     // Concurrent calls to Wait() have to serialize certain cleanup operations.
     std::atomic_flag _waitCleanupFlag;
 };
+
+/// \class WorkDispatcher
+/// \extends Work_Dispatcher
+///
+/// A work dispatcher runs concurrent tasks.  The dispatcher supports adding
+/// new tasks from within running tasks.  This suits problems that exhibit
+/// hierarchical structured parallelism: tasks that discover additional tasks
+/// during their execution.
+///
+/// Typical use is to create a dispatcher and invoke Run() to begin doing
+/// work, then Wait() for the work to complete.  Tasks may invoke Run() during
+/// their execution as they discover additional tasks to perform.
+///
+/// For example,
+///
+/// \code
+/// WorkDispatcher dispatcher;
+/// for (i = 0; i != N; ++i) {
+///     dispatcher.Run(DoSomeWork, workItem[i]);
+/// }
+/// dispatcher.Wait();
+/// \endcode
+///
+/// Calls to Run() and Cancel() may be made concurrently. Calls to Wait() may
+/// also be made concurrently.  However, once any calls to Wait() are in-flight,
+/// calls to Run() and Cancel() must only be made by tasks already added by
+/// Run().  This means that users of this class are responsible to synchronize
+/// concurrent calls to Wait() to ensure this requirement is met.
+///
+/// Additionally, Wait() must never be called by a task added by Run(), since
+/// that task could never complete.
+///
+class WorkDispatcher 
+    : public Work_Dispatcher<PXR_WORK_IMPL_NS::WorkImpl_Dispatcher>
+{};
 
 // Wrapper class for non-const tasks.
 template <class Fn>

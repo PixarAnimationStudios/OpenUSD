@@ -12,6 +12,8 @@
 #include "pxr/usd/sdf/pathTable.h"
 #include "pxr/base/tf/smallVector.h"
 
+#include <limits>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdMergingSceneIndex;
@@ -32,13 +34,38 @@ public:
         return TfCreateRefPtr(new HdMergingSceneIndex);
     }
 
+    /// Entry to add a scene to the merging scene index.
+    struct InputScene
+    {
+        /// The scene to add.
+        HdSceneIndexBaseRefPtr scene;
+        /// The shallowest path at which prims in the scene should be
+        /// considered. This is an optional optimization to avoid having to
+        /// query multiple inputs when it's known in advance which might be
+        /// relevant for a given prim.
+        SdfPath activeInputSceneRoot = SdfPath::AbsoluteRootPath();
+        /// The position where to insert the scene.
+        ///
+        /// By default (or when larger when current number of scenes in the
+        /// merging scene index), inserts new scene after the last scene in the
+        /// merging scene index.
+        size_t pos = std::numeric_limits<size_t>::max();
+    };
+
+    /// Adds given scenes.
+    HD_API
+    void InsertInputScenes(
+        const std::vector<InputScene> &inputScenes);
+
+    /// Removes given scenes.
+    HD_API
+    void RemoveInputScenes(
+        const std::vector<HdSceneIndexBaseRefPtr> &sceneIndices);
+
     /// Adds a scene with activeInputSceneRoot specifying the shallowest path
-    /// at which prims should be considered. This is an optional optimization
-    /// to avoid having to query multiple inputs when it's known in advance
-    /// which might be relevant for a given prim.
+    /// at which prims should be considered.
     ///
-    /// Equivalent to `InsertInputScene(inputScene, activeInputSceneRoot,
-    /// numInputScenes)`.
+    /// Equivalent to `InsertInputScenes({inputScene, activeInputSceneRoot})`.
     HD_API
     void AddInputScene(
         const HdSceneIndexBaseRefPtr &inputScene,
@@ -46,7 +73,7 @@ public:
 
     HD_API
     void InsertInputScene(
-        const size_t pos,
+        size_t pos,
         const HdSceneIndexBaseRefPtr &inputScene,
         const SdfPath &activeInputSceneRoot);
 

@@ -233,6 +233,11 @@ HdSt_MaterialNetworkShader::SetParams(const HdSt_MaterialParamVector &params)
 {
    _params = params;
     _primvarNames = _CollectPrimvarNames(_params);
+    for (const HdSt_MaterialParam& param : params) {
+        if (param.fallbackValue.GetTypeid() != typeid(void)) {
+            _paramToDefValue[param.name] = param.fallbackValue;
+        }
+    }
     _isValidComputedHash = false;
 }
 
@@ -327,6 +332,53 @@ TF_DEFINE_PRIVATE_TOKENS(
     (maskWeight)                // renderPass shader
     (wireframeColor)            // renderPass shader
 );
+
+static const std::unordered_map<TfToken, VtValue, TfToken::HashFunctor>
+    _primvarDefaults = {
+            { HdTokens->displayColor, VtValue(GfVec3f(1.0f)) },
+            { HdTokens->displayOpacity, VtValue(1.0f) },
+
+            { _tokens->ptexFaceOffset, VtValue(0) },
+
+            { _tokens->displayMetallic, VtValue(0.0f) },
+            { _tokens->displayRoughness, VtValue(1.0f) },
+
+            { _tokens->hullColor, VtValue(GfVec3f(1.0f)) },
+            { _tokens->hullOpacity, VtValue(1.0f) },
+            { _tokens->scalarOverride, VtValue(1.0f) },
+            { _tokens->scalarOverrideColorRamp, VtValue(VtArray<GfVec4f>()) },
+            { _tokens->selectedWeight, VtValue(0.0f) },
+
+            { _tokens->indicatorColor, VtValue(GfVec4f(1.0f)) },
+            { _tokens->indicatorWeight, VtValue(0.0f) },
+            { _tokens->overrideColor, VtValue(GfVec4f(1.0f)) },
+            { _tokens->maskColor, VtValue(GfVec4f(1.0f)) },
+            { _tokens->maskWeight, VtValue(0.0f) },
+            { _tokens->wireframeColor, VtValue(GfVec4f(1.0f)) }
+};
+
+static const VtValue*
+_GetFallbackValueForPrimvarName(TfToken const &input)
+{
+    auto iter = _primvarDefaults.find(input);
+    if (iter != _primvarDefaults.end()) {
+        return &iter->second;
+    } else {
+        return nullptr;
+    }
+}
+
+const VtValue*
+HdSt_MaterialNetworkShader::GetFallbackValueForParam(
+    TfToken const &paramName) const
+{
+    auto foundVal = _paramToDefValue.find(paramName);
+    if (foundVal != _paramToDefValue.end()) {
+        return &foundVal->second;
+    } else {
+        return _GetFallbackValueForPrimvarName(paramName);
+    }
+}
 
 static TfTokenVector const &
 _GetExtraIncludedShaderPrimvarNames()

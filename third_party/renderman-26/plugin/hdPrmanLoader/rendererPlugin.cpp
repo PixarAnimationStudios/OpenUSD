@@ -206,9 +206,9 @@ std::vector<int> HdPrmanLoaderRendererPlugin::_GetGpuConfig(
 
     // Check environment variable override
     if (ArchHasEnv("RMAN_XPU_GPUCONFIG")) {
+        xpuGpuConfig = std::vector<int>();
         std::string xpuGpuConfigEnv = TfGetenv("RMAN_XPU_GPUCONFIG", "");
         if(!xpuGpuConfigEnv.empty()) {
-            xpuGpuConfig = std::vector<int>();
             std::vector<std::string> gpus = TfStringSplit(xpuGpuConfigEnv, ",");
             for(const std::string& gpu : gpus) {
                 if (gpu.empty()) continue;

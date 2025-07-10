@@ -19,6 +19,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 // This struct exists just to keep Exec_InputKey private.
 struct Exec_ComputationBuilderValueSpecifierBase::_Data
 {
+    // TODO: Remove when compiler bug is fixed and affected versions
+    // are no longer supported.
+    //
+    // This helper only exists to avoid internal compiler errors
+    // on Visual Studio 2022 17.13 (possibly back to 17.10) when
+    // the _Data object is allocated in the member initializer
+    // in Exec_ComputationBuilderValueSpecifierBase's c'tor.
+    template <typename ...Args>
+    static _Data* Create(Args&&... args)
+    {
+        return new _Data{std::forward<Args>(args)...};
+    }
+
     Exec_InputKey inputKey;
 };
 
@@ -30,13 +43,13 @@ Exec_ComputationBuilderValueSpecifierBase(
     const TfToken &inputName,
     bool fallsBackToDispatched)
     : _data(
-        new _Data{
+        _Data::Create(
             inputName,
             computationName,
             resultType,
             std::move(providerResolution),
             fallsBackToDispatched,
-            /* optional */ true})
+            /* optional */ true))
 {}
 
 Exec_ComputationBuilderValueSpecifierBase::
@@ -175,18 +188,6 @@ Exec_ComputationBuilder::PrimComputation(
 {
     return Exec_PrimComputationBuilder(_schemaType, computationName);
 }
-
-// Exec_PrimComputationBuilder 
-// Exec_ComputationBuilder::DispatchedPrimComputation(
-//     const TfToken &computationName,
-//     const TfType &ontoSchema)
-// {
-//     return Exec_PrimComputationBuilder(
-//         _schemaType,
-//         computationName,
-//         /* dispatched */ true,
-//         {ontoSchema});
-// }
 
 Exec_PrimComputationBuilder 
 Exec_ComputationBuilder::DispatchedPrimComputation(

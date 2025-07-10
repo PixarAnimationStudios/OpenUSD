@@ -29,6 +29,8 @@
 
 #include "pxr/base/trace/trace.h"
 
+#include <variant>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -895,6 +897,114 @@ struct _InstanceInfo {
     }
 };
 
+// An RAII helper to batch operations to the HdRetainedSceneIndex.
+//
+class _RetainedSceneIndexOperations
+{
+public:
+    _RetainedSceneIndexOperations(
+        HdRetainedSceneIndexRefPtr const &retainedSceneIndex)
+     : _retainedSceneIndex(retainedSceneIndex)
+    {
+    }
+
+    ~_RetainedSceneIndexOperations()
+    {
+        // Convert batched operations to HdRetainedSceneIndex calls.
+        HdRetainedSceneIndex::AddedPrimEntries addedEntries;
+        HdSceneIndexObserver::RemovedPrimEntries removedEntries;
+        HdSceneIndexObserver::DirtiedPrimEntries dirtiedEntries;
+
+        for (auto &[path, operation] : _operations) {
+            switch(operation.index()) {
+            case 0:
+            {
+                const _DirtyPrim &dirtyOp = std::get<0>(operation);
+                dirtiedEntries.push_back(
+                    {path, std::move(dirtyOp.dirtyLocators)});
+                break;
+            }
+            case 1:
+            {
+                const _AddPrim &addOp = std::get<1>(operation);
+                addedEntries.push_back(
+                    { path, addOp.prim.primType, addOp.prim.dataSource });
+                break;
+            }
+            case 2:
+            {
+                const _RemovePrim &removeOp = std::get<2>(operation);
+                TF_UNUSED(removeOp);
+                removedEntries.push_back(
+                    {path});
+                break;
+            }
+            default:
+                TF_CODING_ERROR("Uncaught type");
+            }
+        }
+
+        if (!addedEntries.empty()) {
+            _retainedSceneIndex->AddPrims(addedEntries);
+        }
+
+        if (!removedEntries.empty()) {
+            _retainedSceneIndex->RemovePrims(removedEntries);
+        }
+
+        if (!dirtiedEntries.empty()) {
+            _retainedSceneIndex->DirtyPrims(dirtiedEntries);
+        }
+    }
+
+    void AddPrim(const SdfPath &primPath,
+                 HdSceneIndexPrim prim) {
+        // Force!
+        _operations[primPath] = _AddPrim{std::move(prim)};
+    }
+
+    /// Note that - unlike the retained scene index - this does not remove
+    /// the ancestors of primPath. You need to explicitly delete the
+    /// ancestor paths as well for correct operation!
+    void RemovePrim(const SdfPath &primPath) {
+        // Force!
+        _operations[primPath] = _RemovePrim{};
+    }
+
+    void DirtyPrim(const SdfPath &primPath,
+                   const HdDataSourceLocatorSet &dirtyLocators)
+    {
+        _Operation &operation = _operations[primPath];
+        // Do not force since add and remove is stronger than dirty!
+        if (auto const dirtyOp = std::get_if<_DirtyPrim>(&operation)) {
+            dirtyOp->dirtyLocators.insert(dirtyLocators);
+        }
+    }
+
+private:
+    HdRetainedSceneIndexRefPtr const _retainedSceneIndex;
+
+    struct _DirtyPrim
+    {
+        HdDataSourceLocatorSet dirtyLocators;
+    };
+
+    struct _AddPrim
+    {
+        HdSceneIndexPrim prim;
+    };
+
+    struct _RemovePrim
+    {
+    };
+
+    // Ensure that default c'tor gives _DirtyPrim by making
+    // it the first type in the std::variant.
+    using _Operation = std::variant<_DirtyPrim, _AddPrim, _RemovePrim>;
+
+    std::map<SdfPath, _Operation> _operations;
+};
+
 class _InstanceObserver : public HdSceneIndexObserver
 {
 public:
@@ -943,17 +1053,27 @@ private:
     _InstanceInfo _GetInfo(const SdfPath &primPath);
 
     void _Populate();
-    void _AddPrim(const SdfPath &primPath);
-    void _AddInstance(const SdfPath &primPath,
-                      const _InstanceInfo &info);
+    void _AddPrim(
+        const SdfPath &primPath,
+        _RetainedSceneIndexOperations * retainedSceneIndexOperations);
+    void _AddInstance(
+        const SdfPath &primPath,
+        const _InstanceInfo &info,
+        _RetainedSceneIndexOperations * retainedSceneIndexOperations);
     void _RemovePrim(
-        const SdfPath &primPath);
+        const SdfPath &primPath,
+        _RetainedSceneIndexOperations * retainedSceneIndexOperations);
     _PathToInstanceInfo::iterator _RemoveInstance(
         const SdfPath &primPath,
-        const _PathToInstanceInfo::iterator &it);
-    void _ResyncPrim(const SdfPath &primPath);
-    void _DirtyInstancerForInstance(const SdfPath &instance,
-                                    const HdDataSourceLocatorSet &locators);
+        const _PathToInstanceInfo::iterator &it,
+        _RetainedSceneIndexOperations * retainedSceneIndexOperations);
+    void _ResyncPrim(
+        const SdfPath &primPath,
+        _RetainedSceneIndexOperations * retainedSceneIndexOperations);
+    void _DirtyInstancerForInstance(
+        const SdfPath &instance,
+        const HdDataSourceLocatorSet &locators,
+        _RetainedSceneIndexOperations * retainedSceneIndexOperations);
 
     enum class _RemovalLevel : unsigned char {
         None = 0,
@@ -980,7 +1100,8 @@ private:
     // to instancers to account for the fact that the id
     // of potentially every instance might have changed.
     void _DirtyInstancesAndResetPointer(
-        _PathToIntSharedPtr * const instanceToIndex);
+        _PathToIntSharedPtr * const instanceToIndex,
+        _RetainedSceneIndexOperations * retainedSceneIndexOperations);
 
     // Get prim data source for the named USD instance.
     HdContainerDataSourceHandle _GetDataSourceForInstance(
@@ -1070,9 +1191,12 @@ void
 _InstanceObserver::PrimsAdded(const HdSceneIndexBase &sender,
                               const AddedPrimEntries &entries)
 {
+    _RetainedSceneIndexOperations
+        retainedSceneIndexOperations(_retainedSceneIndex);
+
     for (const AddedPrimEntry &entry : entries) {
         const SdfPath &path = entry.primPath;
-        _ResyncPrim(path);
+        _ResyncPrim(path, &retainedSceneIndexOperations);
     }
 }
 
@@ -1108,12 +1232,15 @@ _InstanceObserver::PrimsDirtied(const HdSceneIndexBase &sender,
         return;
     }
 
+    _RetainedSceneIndexOperations
+        retainedSceneIndexOperations(_retainedSceneIndex);
+
     for (const DirtiedPrimEntry &entry : entries) {
         const SdfPath &path = entry.primPath;
         const HdDataSourceLocatorSet &locators = entry.dirtyLocators;
 
         if (locators.Intersects(_resyncLocators)) {
-            _ResyncPrim(path);
+            _ResyncPrim(path, &retainedSceneIndexOperations);
             continue;
         }
 
@@ -1126,7 +1253,10 @@ _InstanceObserver::PrimsDirtied(const HdSceneIndexBase &sender,
                     HdPrimvarsSchema::GetDefaultLocator()
                         .Append(HdInstancerTokens->instanceTransforms)
                         .Append(HdPrimvarSchemaTokens->primvarValue)};
-                _DirtyInstancerForInstance(path, instanceTransformLocators);
+                _DirtyInstancerForInstance(
+                    path,
+                    instanceTransformLocators,
+                    &retainedSceneIndexOperations);
             }
         }
 
@@ -1140,10 +1270,13 @@ _InstanceObserver::PrimsDirtied(const HdSceneIndexBase &sender,
                 // (e.g., because the interpolation of a primvar has
                 // changed). We potentially need to put this instance
                 // into a different group.
-                _ResyncPrim(path);
+                _ResyncPrim(path, &retainedSceneIndexOperations);
             } else if (!primvarValueLocators.IsEmpty()) {
                 // Only the primvar values have changed. Update instancer.
-                _DirtyInstancerForInstance(path, primvarValueLocators);
+                _DirtyInstancerForInstance(
+                    path,
+                    primvarValueLocators,
+                    &retainedSceneIndexOperations);
             }
         }
 
@@ -1152,7 +1285,10 @@ _InstanceObserver::PrimsDirtied(const HdSceneIndexBase &sender,
                 static const HdDataSourceLocatorSet maskLocators{
                     HdInstancerTopologySchema::GetDefaultLocator()
                         .Append(HdInstancerTopologySchemaTokens->mask) };
-                _DirtyInstancerForInstance(path, maskLocators);
+                _DirtyInstancerForInstance(
+                    path,
+                    maskLocators,
+                    &retainedSceneIndexOperations);
             }
         }
     }
@@ -1162,6 +1298,9 @@ void
 _InstanceObserver::PrimsRemoved(const HdSceneIndexBase &sender,
                                 const RemovedPrimEntries &entries)
 {
+    _RetainedSceneIndexOperations
+        retainedSceneIndexOperations(_retainedSceneIndex);
+
     if (_instanceToInfo.empty()) {
         return;
     }
@@ -1171,7 +1310,7 @@ _InstanceObserver::PrimsRemoved(const HdSceneIndexBase &sender,
         auto it = _instanceToInfo.lower_bound(path);
         while (it != _instanceToInfo.end() &&
                it->first.HasPrefix(path)) {
-            it = _RemoveInstance(path, it);
+            it = _RemoveInstance(path, it, &retainedSceneIndexOperations);
         }
     }
 }
@@ -1189,10 +1328,13 @@ _InstanceObserver::PrimsRenamed(const HdSceneIndexBase &sender,
 void
 _InstanceObserver::_Populate()
 {
+    _RetainedSceneIndexOperations
+        retainedSceneIndexOperations(_retainedSceneIndex);
+
     for (const SdfPath &primPath
              : HdSceneIndexPrimView(_inputScene,
                                     SdfPath::AbsoluteRootPath())) {
-        _AddPrim(primPath);
+        _AddPrim(primPath, &retainedSceneIndexOperations);
     }
 }
 
@@ -1255,8 +1397,10 @@ _InstanceObserver::_GetInfo(const SdfPath &primPath)
 }
 
 void
-_InstanceObserver::_AddInstance(const SdfPath &primPath,
-                                const _InstanceInfo &info)
+_InstanceObserver::_AddInstance(
+    const SdfPath &primPath,
+    const _InstanceInfo &info,
+    _RetainedSceneIndexOperations * const retainedSceneIndexOperations)
 {
     _Map1 &bindingHashToPrototypeNameToInstances =
         _infoToInstance[info.enclosingPrototypeRoot];
@@ -1265,16 +1409,16 @@ _InstanceObserver::_AddInstance(const SdfPath &primPath,
         bindingHashToPrototypeNameToInstances[info.bindingHash];
 
     if (prototypeNameToInstances.empty()) {
-        _retainedSceneIndex->AddPrims(
-            { { info.GetBindingPrimPath(),
-                TfToken(),
-                _MakeBindingCopy(
-                    // See the comment in _GetInfo when computing the binding
-                    // hash.
-                    UsdImagingRerootingContainerDataSource::New(
-                        _inputScene->GetPrim(primPath).dataSource,
-                        primPath, info.GetPrototypePath()),
-                    _instanceDataSourceNames) } } );
+        retainedSceneIndexOperations->AddPrim(
+            info.GetBindingPrimPath(),
+            { TfToken(),
+              _MakeBindingCopy(
+                  // See the comment in _GetInfo when computing the binding
+                  // hash.
+                  UsdImagingRerootingContainerDataSource::New(
+                      _inputScene->GetPrim(primPath).dataSource,
+                      primPath, info.GetPrototypePath()),
+                  _instanceDataSourceNames) });
     }
 
     const SdfPath instancerPath =
@@ -1294,72 +1438,84 @@ _InstanceObserver::_AddInstance(const SdfPath &primPath,
         // Update instances list prior to sending notification.
         instances->insert(primPath);
 
-        _retainedSceneIndex->DirtyPrims(
-            { { instancerPath, locators } });
+        retainedSceneIndexOperations->DirtyPrim(
+            instancerPath, locators);
     } else {
         instances = std::make_shared<SdfPathSet>();
 
         // Update instances list prior to sending notification.
         instances->insert(primPath);
 
-        _retainedSceneIndex->AddPrims(
-            { // Add propagated prototype base prim
-              { info.GetPropagatedPrototypeBase(),
-                TfToken(),
-                HdRetainedContainerDataSource::New() },
-              // instancer which is child of base prim.
-              { instancerPath,
-                HdPrimTypeTokens->instancer,
-                _InstancerPrimSource::New(
-                    _inputScene,
-                    info.enclosingPrototypeRoot,
-                    info.GetPrototypePath(),
-                    instances,
-                    _forNativePrototype) } });
+        // Add propagated prototype base prim
+        retainedSceneIndexOperations->AddPrim(
+            info.GetPropagatedPrototypeBase(),
+            { TfToken(),
+              HdRetainedContainerDataSource::New()});
+
+        // instancer which is child of base prim.
+        retainedSceneIndexOperations->AddPrim(
+            instancerPath,
+            { HdPrimTypeTokens->instancer,
+              _InstancerPrimSource::New(
+                  _inputScene,
+                  info.enclosingPrototypeRoot,
+                  info.GetPrototypePath(),
+                  instances,
+                  _forNativePrototype)});
     }
 
     // Add (lazy) instance data source to instance.
-    _retainedSceneIndex->AddPrims(
-        { { primPath,
-            TfToken(),
-            _GetDataSourceForInstance(primPath) } });
+    retainedSceneIndexOperations->AddPrim(
+        primPath,
+        { TfToken(),
+          _GetDataSourceForInstance(primPath)});
 
     // Create entry for instancer if not already present.
     //
     // Dirty instances (if previous non-null entry existed)
     // since the indices of potentially every other instance realized
     // by this instancer might have changed.
-    _DirtyInstancesAndResetPointer(&_instancerToInstanceToIndex[instancerPath]);
+    _DirtyInstancesAndResetPointer(
+        &_instancerToInstanceToIndex[instancerPath],
+        retainedSceneIndexOperations);
 }
 
 void
-_InstanceObserver::_AddPrim(const SdfPath &primPath)
+_InstanceObserver::_AddPrim(
+    const SdfPath &primPath,
+    _RetainedSceneIndexOperations * const retainedSceneIndexOperations)
 {
     const _InstanceInfo info = _GetInfo(primPath);
     if (info.IsInstance()) {
-        _AddInstance(primPath, info);
+        _AddInstance(primPath, info, retainedSceneIndexOperations);
     }
 }
 
 void
-_InstanceObserver::_RemovePrim(const SdfPath &primPath)
+_InstanceObserver::_RemovePrim(
+    const SdfPath &primPath,
+    _RetainedSceneIndexOperations * const retainedSceneIndexOperations)
 {
     auto it = _instanceToInfo.find(primPath);
     if (it != _instanceToInfo.end()) {
-        _RemoveInstance(primPath, it);
+        _RemoveInstance(primPath, it, retainedSceneIndexOperations);
     }
 }
 
 void
-_InstanceObserver::_ResyncPrim(const SdfPath &primPath)
+_InstanceObserver::_ResyncPrim(
+    const SdfPath &primPath,
+    _RetainedSceneIndexOperations * const retainedSceneIndexOperations)
 {
-    _RemovePrim(primPath);
-    _AddPrim(primPath);
+    _RemovePrim(primPath, retainedSceneIndexOperations);
+    _AddPrim(primPath, retainedSceneIndexOperations);
 }
 
 _InstanceObserver::_PathToInstanceInfo::iterator
-_InstanceObserver::_RemoveInstance(const SdfPath &primPath,
-                                   const _PathToInstanceInfo::iterator &it)
+_InstanceObserver::_RemoveInstance(
+    const SdfPath &primPath,
+    const _PathToInstanceInfo::iterator &it,
+    _RetainedSceneIndexOperations * const retainedSceneIndexOperations)
 {
     const _InstanceInfo &info = it->second;
 
@@ -1370,8 +1526,8 @@ _InstanceObserver::_RemoveInstance(const SdfPath &primPath,
 
     if (level > _RemovalLevel::None) {
         // Remove instance data source we added in _AddInstance.
-        _retainedSceneIndex->RemovePrims(
-            { { primPath } });
+        retainedSceneIndexOperations->RemovePrim(
+            primPath);
     }
 
     if (level == _RemovalLevel::Instance) {
@@ -1381,22 +1537,27 @@ _InstanceObserver::_RemoveInstance(const SdfPath &primPath,
             HdInstancerTopologySchema::GetDefaultLocator().Append(
                 HdInstancerTopologySchemaTokens->instanceIndices),
             HdPrimvarsSchema::GetDefaultLocator()};
-        _retainedSceneIndex->DirtyPrims(
-            { { instancerPath, locators } });
+        retainedSceneIndexOperations->DirtyPrim(
+            instancerPath, locators);
 
         // The indices of potentially every other instance realized
         // by this instancer might have changed.
         auto it2 = _instancerToInstanceToIndex.find(instancerPath);
         if (it2 != _instancerToInstanceToIndex.end()) {
-            _DirtyInstancesAndResetPointer(&it2->second);
+            _DirtyInstancesAndResetPointer(
+                &it2->second,
+                retainedSceneIndexOperations);
         }
     }
 
     if (level >= _RemovalLevel::Instancer) {
         // Last instance for this instancer disappeared.
         // Remove instancer.
-        _retainedSceneIndex->RemovePrims(
-            { { instancerPath } });
+        retainedSceneIndexOperations->RemovePrim(
+            instancerPath);
+        // And its parent.
+        retainedSceneIndexOperations->RemovePrim(
+            info.GetPropagatedPrototypeBase());
         // And corresponding entry from map caching
         // instance indices.
         _instancerToInstanceToIndex.erase(instancerPath);
@@ -1406,8 +1567,8 @@ _InstanceObserver::_RemoveInstance(const SdfPath &primPath,
         // The last instancer under the prim grouping instancers
         // by material binding, ... has disappeared.
         // Remove grouping prim.
-        _retainedSceneIndex->RemovePrims(
-            { { info.GetBindingPrimPath() } });
+        retainedSceneIndexOperations->RemovePrim(
+            info.GetBindingPrimPath());
     }
 
     return _instanceToInfo.erase(it);
@@ -1462,7 +1623,8 @@ _InstanceObserver::_RemoveInstanceFromInfoToInstance(
 
 void
 _InstanceObserver::_DirtyInstancesAndResetPointer(
-    _PathToIntSharedPtr * const instanceToIndex)
+    _PathToIntSharedPtr * const instanceToIndex,
+    _RetainedSceneIndexOperations * const retainedSceneIndexOperations)
 {
     if (!*instanceToIndex) {
         return;
@@ -1471,21 +1633,21 @@ _InstanceObserver::_DirtyInstancesAndResetPointer(
     _PathToIntSharedPtr original = *instanceToIndex;
     // Invalidate pointer before sending clients a prim dirty so
     // that a prim dirty handler wouldn't pick up the stale data.
-    *instanceToIndex = nullptr;
+    std::atomic_store(instanceToIndex, _PathToIntSharedPtr());
 
     for (const auto &instanceAndIndex : *original) {
         static const HdDataSourceLocatorSet locators{
             HdInstanceSchema::GetDefaultLocator()};
-        _retainedSceneIndex->DirtyPrims(
-            { { instanceAndIndex.first, locators } });
+        retainedSceneIndexOperations->DirtyPrim(
+            instanceAndIndex.first, locators);
     }
-
 }
 
 void
 _InstanceObserver::_DirtyInstancerForInstance(
     const SdfPath &instance,
-    const HdDataSourceLocatorSet &locators)
+    const HdDataSourceLocatorSet &locators,
+    _RetainedSceneIndexOperations * const retainedSceneIndexOperations)
 {
     auto it = _instanceToInfo.find(instance);
     if (it == _instanceToInfo.end()) {
@@ -1494,7 +1656,7 @@ _InstanceObserver::_DirtyInstancerForInstance(
 
     const SdfPath &instancer = it->second.GetInstancerPath();
 
-    _retainedSceneIndex->DirtyPrims({{instancer, locators}});
+    retainedSceneIndexOperations->DirtyPrim(instancer, locators);
 }
 
 HdContainerDataSourceHandle

@@ -467,30 +467,24 @@ UsdPrimDefinition::_FindOrCreateSpecForComposition(
     return destSpec;
 }
 
-// We limit which fields are allowed to be composed in from a property defined
+// These fields are not allowed to be composed in from a property defined
 // in a weaker prim definition when a prim definition already has a property
 // with the same name. 
-static 
-const TfTokenVector &_GetAllowedComposeFromWeakerFields(const TfToken &propName)
+static const TfTokenVector &_GetDisallowedComposeFromWeakerFields(
+    const SdfSpecType specType)
 {
-    // Right now we only allow the "default" value (of attributes) and the 
-    // "hidden" field to be composed from a weaker property. We may selectively
-    // expand this set of fields if it becomes necessary.
     static const TfTokenVector propertyFields = {
-        SdfFieldKeys->Default, 
-        SdfFieldKeys->Hidden,
+        SdfFieldKeys->Custom, 
+        SdfFieldKeys->Documentation,
     };
 
-    // Right now we only allow the "propertyOrder" field from prim metadata 
-    // to be composed from a weaker API schema. We may selectively
-    // expand this set of fields if it becomes necessary.
     static const TfTokenVector primFields = {
-        SdfFieldKeys->PropertyOrder
+        SdfFieldKeys->Documentation
     };
-    
-    // If propName is empty, we are composing prim metadata. Otherwise,
-    // we are composing property metadata.
-    return propName.IsEmpty() ? primFields : propertyFields;
+
+    // If specType is SdfSpecTypePrim, we are composing prim metadata. 
+    // Otherwise, we are composing property metadata.
+    return specType == SdfSpecTypePrim ? primFields : propertyFields;
 }
 
 SdfSpecHandle 
@@ -507,22 +501,26 @@ UsdPrimDefinition::_CreateComposedPrimOrPropertyIfNeeded(
         return destSpec;
     }
 
-    for (const TfToken &field : _GetAllowedComposeFromWeakerFields(propName)) {
+    const TfTokenVector& blockedFields = _GetDisallowedComposeFromWeakerFields(
+        Property(&weakProp).GetSpecType());
+
+    for (const TfToken &field : Property(&weakProp).ListMetadataFields()) {
         // If the stronger property already has the field, skip it.
         if (strongProp && strongProp.HasField<VtValue>(field, nullptr)) {
             continue;
         }
 
-        // Get the field's value from the weaker property. If it doesn't have
-        // the field, we skip it too.
-        VtValue weakValue;
-        if (weakProp && !weakProp.HasField(field, &weakValue)) {
+        // If this field is not allowed to compose from a weaker API, skip it
+        if (std::find(blockedFields.begin(), blockedFields.end(), field) != 
+            blockedFields.end()) {
             continue;
         }
- 
+
         // If we get here we need to compose a property definition so create a
         // a copy of the stronger property if we haven't already and add the
-        // field.
+        // field from the weaker property.
+        const VtValue weakValue = weakProp.GetField(field);
+
         if (!destSpec) {
             destSpec = _FindOrCreateSpecForComposition(
                 propName, strongProp);

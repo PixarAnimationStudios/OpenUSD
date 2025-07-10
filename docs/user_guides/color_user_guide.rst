@@ -53,8 +53,9 @@ you may need to specify color space information:
    USD provides a way to configure which color space a renderer should use for 
    rendering/lighting calculations, via the 
    :usda:`RenderSettings.renderingColorSpace` attribute. See 
-   :ref:`understanding_render_settings_colorspaces` and 
-   :ref:`configuring_render_settings` for more details on using RenderSettings.
+   :ref:`RenderSettings_renderingColorSpace` and 
+   :ref:`the UsdRender schemas <usdRender_overview>` for more details on using 
+   RenderSettings.
 
 Color Spaces Supported by OpenUSD
 =================================

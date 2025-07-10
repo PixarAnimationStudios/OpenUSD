@@ -6,12 +6,45 @@
 //
 #include "pxr/base/work/taskGraph_defaultImpl.h"
 
+#include "pxr/base/arch/hints.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+// Invoking the parent task recursively is fast at the cost of growing the 
+// stack space. We mitigate this tradeoff by recursing until an empirically 
+// determined cutoff depth, at which point we submit subsequent tasks on the 
+// owning task graph's work dispatcher to truncate stack growth. 
+static inline void
+_RunOrInvoke(
+    WorkTaskGraph_DefaultImpl::BaseTask *const task, 
+    const int depth,
+    WorkTaskGraph_DefaultImpl * const taskGraph)
+{
+    // This cutoff depth was empirically determined to maximize speed gains 
+    // from recursively invoking tasks while limiting growth of the stack 
+    // space. 
+    if (ARCH_LIKELY(depth < 50)) {
+        task->operator()(depth + 1, taskGraph);
+    } else {
+        taskGraph->RunTask(task);
+    }
+}
 
 WorkTaskGraph_DefaultImpl::BaseTask::~BaseTask() = default;
 
 void
-WorkTaskGraph_DefaultImpl::BaseTask::operator()() const {
+WorkTaskGraph_DefaultImpl::BaseTask::operator()(
+    const int depth,
+    WorkTaskGraph_DefaultImpl * taskGraph) const 
+{
+    // Top-level tasks (i.e. tasks submitted via RunTask()) maintain a pointer 
+    // to their owning task graph. Capture it to pass to descendents of this 
+    // task. 
+    if (!taskGraph) {
+        taskGraph = _taskGraph;
+        TF_VERIFY(taskGraph);
+    }
+
     // Since oneTBB requires a const call operator, we must const_cast here. 
     WorkTaskGraph_DefaultImpl::BaseTask * const thisTask = 
         const_cast<WorkTaskGraph_DefaultImpl::BaseTask *>(this);
@@ -31,7 +64,7 @@ WorkTaskGraph_DefaultImpl::BaseTask::operator()() const {
         // If the reference count reaches zero, there are no more child tasks
         // running, and we are responsible for re-executing the task here.
         if (thisTask->RemoveChildReference() == 0) {
-            thisTask->operator()();
+            _RunOrInvoke(thisTask, depth, taskGraph);
         }
     }
         
@@ -47,16 +80,14 @@ WorkTaskGraph_DefaultImpl::BaseTask::operator()() const {
         // If this is the last child of a recycled parent task, execute the
         // parent task. 
         if (parentTask && parentTask->RemoveChildReference() == 0 && 
-                parentTask->_recycle) {
-            parentTask->operator()();
+                parentTask->_recycle) { 
+            _RunOrInvoke(parentTask, depth, taskGraph);
         }
     }
 
     // Run the next task, if one has been provided.
-    if (nextTask) {
-        // Note that directly invoking the next task grows the stack and can be
-        // mitigated by introducing a cutoff depth to truncate the recursion. 
-        nextTask->operator()();
+    if (nextTask) { 
+        _RunOrInvoke(nextTask, depth, taskGraph);
     }
 }
 

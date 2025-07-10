@@ -55,7 +55,8 @@ get mapped is still undecided.
 7. Custom nodes can be defined either locally or in a shared library. 
     + Locally defined nodes need to have their associated nodedef/nodegraph 
     either in the same mtlx file as the material, or included in the material 
-    mtlx file. 
+    mtlx file. Note that any mtlx file that contains a nodedef/nodegraph should
+    have no more than one material. 
     + Custom nodes defined in a shared library need to be defined in a separate 
     mtlx file such that the nodedef and material mtlx files are not siblings. 
     The path to the folder containing the custom node nodedefs should also be 

@@ -1,7 +1,8 @@
 <?xml version="1.0"?>
-<materialx version="1.38">
+<materialx version="1.39">
 
-    <!-- TestMaterial uses the colorMix custom node defined in the included colorMix.mtlx file -->
+    <!-- TestMaterial uses the colorMix custom node defined in the included 
+    colorMixNode.mtlx file -->
     <xi:include href="colorMixNode.mtlx" />
 
     <nodegraph name="TestNodegraph">
@@ -28,22 +29,9 @@
     </surfacematerial>
 
 
-    <!-- TexturedMaterial uses the following custom node that is just wrapping a stdlib texture node -->
-    <nodedef name="ND_wrapImage" node="wrapImage">
-        <input name="file_input" type="filename" />
-        <input name="tint" type="color3" default="1,1,1" />
-        <output name="out_color" type="color3" />
-    </nodedef>
-    <nodegraph name="NG_wrapImage" nodedef="ND_wrapImage">
-        <image name="imageNode" type="color3">
-            <input name="file" type="filename" colorspace="gamma22" interfacename="file_input" />
-        </image>
-        <multiply name="applyTint" type="color3" >
-            <input name="in1" type="color3" nodename="imageNode" />
-            <input name="in2" type="color3" interfacename="tint" />
-        </multiply>
-        <output name="out_color" type="color3" nodename="applyTint" />
-    </nodegraph>
+    <!-- TexturedMaterial uses the wrapImage custom node that is a wrapping a 
+    stdlib texture node and is defined in the included wrapImageNode.mtlx file-->
+    <xi:include href="wrapImageNode.mtlx" />
 
     <nodegraph name="NG_ImageNode" >
         <wrapImage name="diffColor" type="color3">

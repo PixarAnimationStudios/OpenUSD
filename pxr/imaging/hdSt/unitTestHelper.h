@@ -100,6 +100,8 @@ public:
         _clearDepth = clearDepth;
     }
 
+    Hgi * GetHgi() { return _hgi.get(); }
+
 protected:
     void _SetupSceneDelegate();
     virtual void _Init();
@@ -110,7 +112,6 @@ protected:
     const HdRprimCollection &_GetCollection() const { return _collection; }
     HdStRenderDelegate * _GetRenderDelegate() { return &_renderDelegate; }
     HdEngine * _GetEngine() { return &_engine; }
-    Hgi * _GetHgi() { return _hgi.get(); }
 
     std::vector<HdRenderPassSharedPtr> _renderPasses;
     std::vector<HdStRenderPassStateSharedPtr> _renderPassStates;
@@ -564,11 +565,6 @@ public:
     HDST_API
     const HdRenderPassSharedPtr &GetRenderPass();
     
-    HDST_API
-    Hgi* GetHgi() {
-        return _GetHgi();
-    }
-
 private:
     void _CreateRenderPassState();
 };

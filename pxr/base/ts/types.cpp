@@ -46,6 +46,10 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(TsSourceKnotInterp, "Knot Interpolation");
     TF_ADD_ENUM_NAME(TsSourcePostExtrap, "Post Extrapolation");
     TF_ADD_ENUM_NAME(TsSourcePostExtrapLoop, "Post Extrapolation Loop");
+
+    TF_ADD_ENUM_NAME(TsTangentAlgorithmNone, "None");
+    TF_ADD_ENUM_NAME(TsTangentAlgorithmCustom, "Custom");
+    TF_ADD_ENUM_NAME(TsTangentAlgorithmAutoEase, "Auto Ease");
 }
 
 bool TsLoopParams::operator==(const TsLoopParams &other) const

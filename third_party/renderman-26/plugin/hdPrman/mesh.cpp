@@ -175,7 +175,7 @@ HdPrman_Mesh::_ConvertGeometry(
         *primType = RixStr.k_Ri_SubdivisionMesh;
         primvars->SetString(RixStr.k_Ri_scheme, RixStr.k_bilinear);
     }
-  
+
     // Orientation, aka winding order.
     // Because PRMan uses a left-handed coordinate system, and USD/Hydra
     // use a right-handed coordinate system, the meaning of orientation
@@ -211,7 +211,7 @@ HdPrman_Mesh::_ConvertGeometry(
         const VtIntArray creaseIndices = osdTags.GetCreaseIndices();
         const VtFloatArray creaseWeights = osdTags.GetCreaseWeights();
         if (!creaseIndices.empty()) {
-            const bool weightPerCrease = 
+            const bool weightPerCrease =
                 creaseWeights.size() == creaseLengths.size();
             for (int creaseLength: creaseLengths) {
                 tagNames.push_back(RixStr.k_crease);
@@ -308,16 +308,22 @@ HdPrman_Mesh::_ConvertGeometry(
     // bound attribute to a geom subset that binds it.
     geomSubsetPrimvars->resize(geomSubsets->size());
     for (size_t i=0, n=geomSubsets->size(); i<n; ++i) {
-        // Carry over all primvars from the parent mesh.
-        (*geomSubsetPrimvars)[i] = *primvars;
-
-        // Add any overrides specific to this subset.
+        // Convert primvars specific to this subset.
         HdPrman_ConvertPrimvars(
             sceneDelegate,
             (*geomSubsets)[i].id,
             ((*geomSubsetPrimvars)[i]),
             nverts.size(), npoints, npoints, verts.size(),
             renderParam->GetShutterInterval());
+
+        // Resize details to match the parent mesh. Otherwise
+        // Inherit() will skip anything that isn't constant.
+        (*geomSubsetPrimvars)[i].SetDetail(
+            nverts.size(), npoints, npoints, verts.size());
+
+        // Inherit primvars from the parent mesh. Any already
+        // present on the subset are ignored.
+        (*geomSubsetPrimvars)[i].Inherit(*primvars);
     }
 
     return true;

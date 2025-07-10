@@ -6,9 +6,12 @@
 //
 
 #include "pxr/pxr.h"
+
 #include "pxr/base/ts/knot.h"
 #include "pxr/base/ts/knotData.h"
+#include "pxr/base/ts/typeHelpers.h"
 #include "pxr/base/ts/valueTypeDispatch.h"
+
 #include "pxr/base/tf/enum.h"
 
 #include <iostream>
@@ -289,6 +292,18 @@ bool TsKnot::GetPreTanSlope(VtValue* const slopeOut) const
     return true;
 }
 
+bool TsKnot::SetPreTanAlgorithm(const TsTangentAlgorithm algorithm)
+{
+    _data->preTanAlgorithm = algorithm;
+    return true;
+}
+
+TsTangentAlgorithm TsKnot::GetPreTanAlgorithm() const
+{
+    return _data->preTanAlgorithm;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Post-Tangent
 
@@ -330,6 +345,49 @@ bool TsKnot::GetPostTanSlope(VtValue* const slopeOut) const
     return true;
 }
 
+bool TsKnot::SetPostTanAlgorithm(const TsTangentAlgorithm algorithm)
+{
+    _data->postTanAlgorithm = algorithm;
+    return true;
+}
+
+TsTangentAlgorithm TsKnot::GetPostTanAlgorithm() const
+{
+    return _data->postTanAlgorithm;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Algorithmic Tangents
+
+bool TsKnot::UpdateTangents(
+    const std::optional<TsKnot> prevKnot,
+    const std::optional<TsKnot> nextKnot,
+    const TsCurveType curveType /* = TsCurveTypeBezier */)
+{
+    // Verify knot value types match.
+    if (prevKnot &&
+        !TF_VERIFY(prevKnot->GetValueType() == GetValueType(),
+                   "Invalid prevKnot value type: `%s` instead of `%s`",
+                   prevKnot->GetValueType().GetTypeName().c_str(),
+                   GetValueType().GetTypeName().c_str()))
+    {
+        return false;
+    }
+        
+    if (nextKnot &&
+        !TF_VERIFY(nextKnot->GetValueType() == GetValueType(),
+                   "Invalid nextKnot value type: `%s` instead of `%s`",
+                   nextKnot->GetValueType().GetTypeName().c_str(),
+                   GetValueType().GetTypeName().c_str()))
+    {
+        return false;
+    }
+
+    Ts_KnotDataProxy* prevProxy = (prevKnot ? prevKnot->_proxy.get() : nullptr);
+    Ts_KnotDataProxy* nextProxy = (nextKnot ? nextKnot->_proxy.get() : nullptr);
+    return _proxy->UpdateTangents(prevProxy, nextProxy, curveType);
+}
+    
 ////////////////////////////////////////////////////////////////////////////////
 // Custom Data
 

@@ -5,245 +5,271 @@
 
 class "RenderSettingsBase" (
     customData = {
-        string userDocBrief = """Abstract base class that defines render settings that
-    can be specified on either a RenderSettings prim or a RenderProduct 
-    prim."""
+        string userDocBrief = """An abstract base class schema that defines
+settings common to both RenderSettings and RenderProduct."""
     }
 )
 {
     uniform token aspectRatioConformPolicy = "expandAperture" (
         allowedTokens = ["expandAperture", "cropAperture", "adjustApertureWidth", "adjustApertureHeight", "adjustPixelAspectRatio"]
         customData = {
-            string userDocBrief = """Indicates the policy to use to resolve an aspect
-        ratio mismatch between the camera aperture and image settings."""
+            string userDocBrief = """Indicates the policy to use to resolve an 
+aspect ratio mismatch between the camera aperture and image aspect ratio
+(derived from the resolution and pixelAspectRatio)."""
         }
     )
     rel camera (
         customData = {
-            string userDocBrief = """The _camera_ relationship specifies the primary
-        camera to use in a render."""
+            string userDocBrief = """A relationship that specifies the primary 
+camera to use for a render. Must target a Camera prim."""
         }
     )
     uniform float4 dataWindowNDC = (0, 0, 1, 1) (
         customData = {
-            string userDocBrief = """dataWindowNDC specifies the axis-aligned rectangular
-        region in the adjusted aperture window within which the renderer
-        should produce data."""
+            string userDocBrief = """Specifies the axis-aligned rectangular
+region in the adjusted aperture window within which the renderer should produce 
+data. Specified as (xmin, ymin, xmax, ymax) in normalized device coordinates, 
+where the range 0 to 1 corresponds to the aperture."""
         }
     )
     uniform bool disableDepthOfField = 0 (
         customData = {
-            string userDocBrief = """Disable all depth of field by setting F-stop of the targeted
-        camera to infinity."""
+            string userDocBrief = """Disable all depth of field by setting 
+F-stop of the targeted camera to infinity."""
         }
     )
     uniform bool disableMotionBlur = 0 (
         customData = {
-            string userDocBrief = """Disable all motion blur by setting the shutter interval
-        of the targeted camera to [0,0] - that is, take only one sample,
-        namely at the current time code."""
+            string userDocBrief = """Disable all motion blur by setting the 
+shutter interval of the render camera to [0,0] (take only one sample at the 
+current time code)."""
         }
     )
     uniform bool instantaneousShutter = 0 (
         customData = {
-            string userDocBrief = "Deprecated - use disableMotionBlur instead."
+            string userDocBrief = "Deprecated, use disableMotionBlur instead."
         }
     )
     uniform float pixelAspectRatio = 1 (
         customData = {
-            string userDocBrief = "The aspect ratio (width/height) of image pixels."
+            string userDocBrief = """The aspect ratio (width/height) of the 
+image pixels."""
         }
     )
     uniform int2 resolution = (2048, 1080) (
         customData = {
-            string userDocBrief = """The image pixel resolution, corresponding to the
-        camera's screen window."""
+            string userDocBrief = """The image pixel resolution, corresponding 
+to the camera's screen window."""
         }
     )
 }
 
 class RenderSettings "RenderSettings" (
     customData = {
-        string userDocBrief = """A UsdRenderSettings prim specifies global settings for
-    a render process, including an enumeration of the RenderProducts
-    that should result, and the UsdGeomImageable purposes that should
-    be rendered."""
+        string userDocBrief = """All the global settings for a 
+single invocation of a rendering of a scene. Includes configuration of what
+render products should be produced, and what imageable purposes should be 
+rendered."""
     }
 )
 {
     uniform token aspectRatioConformPolicy = "expandAperture" (
         allowedTokens = ["expandAperture", "cropAperture", "adjustApertureWidth", "adjustApertureHeight", "adjustPixelAspectRatio"]
         customData = {
-            string userDocBrief = """Indicates the policy to use to resolve an aspect
-        ratio mismatch between the camera aperture and image settings."""
+            string userDocBrief = """Indicates the policy to use to resolve an 
+aspect ratio mismatch between the camera aperture and image aspect ratio
+(derived from the resolution and pixelAspectRatio)."""
         }
     )
     rel camera (
         customData = {
-            string userDocBrief = """The _camera_ relationship specifies the primary
-        camera to use in a render."""
+            string userDocBrief = """A relationship that specifies the primary 
+camera to use for a render. Must target a Camera prim."""
         }
     )
     uniform float4 dataWindowNDC = (0, 0, 1, 1) (
         customData = {
-            string userDocBrief = """dataWindowNDC specifies the axis-aligned rectangular
-        region in the adjusted aperture window within which the renderer
-        should produce data."""
+            string userDocBrief = """Specifies the axis-aligned rectangular
+region in the adjusted aperture window within which the renderer should produce 
+data. Specified as (xmin, ymin, xmax, ymax) in normalized device coordinates, 
+where the range 0 to 1 corresponds to the aperture."""
         }
     )
     uniform bool disableDepthOfField = 0 (
         customData = {
-            string userDocBrief = """Disable all depth of field by setting F-stop of the targeted
-        camera to infinity."""
+            string userDocBrief = """Disable all depth of field by setting 
+F-stop of the targeted camera to infinity."""
         }
     )
     uniform bool disableMotionBlur = 0 (
         customData = {
-            string userDocBrief = """Disable all motion blur by setting the shutter interval
-        of the targeted camera to [0,0] - that is, take only one sample,
-        namely at the current time code."""
+            string userDocBrief = """Disable all motion blur by setting the 
+shutter interval of the render camera to [0,0] (take only one sample at the 
+current time code)."""
         }
     )
     uniform token[] includedPurposes = ["default", "render"] (
         customData = {
-            string userDocBrief = """The list of UsdGeomImageable _purpose_ values that
-        should be included in the render."""
+            string userDocBrief = """Imageable purpose values (e.g. default,
+render, proxy, guide) that should be included in the render. Only imageable 
+prims with purpose set to one of the includedPurposes values will be rendered."""
         }
     )
     uniform bool instantaneousShutter = 0 (
         customData = {
-            string userDocBrief = "Deprecated - use disableMotionBlur instead."
+            string userDocBrief = "Deprecated, use disableMotionBlur instead."
         }
     )
     uniform token[] materialBindingPurposes = ["full", ""] (
         allowedTokens = ["full", "preview", ""]
         customData = {
-            string userDocBrief = """Ordered list of material purposes to consider when
-        resolving material bindings in the scene."""
+            string userDocBrief = """Ordered list of material binding purposes
+that will be used in the render."""
         }
     )
     uniform float pixelAspectRatio = 1 (
         customData = {
-            string userDocBrief = "The aspect ratio (width/height) of image pixels."
+            string userDocBrief = """The aspect ratio (width/height) of the 
+image pixels."""
         }
     )
     rel products (
         customData = {
-            string userDocBrief = "The set of RenderProducts the render should produce."
+            string userDocBrief = """Specifies the RenderProducts that a 
+render of this scene should produce. If no products are specified, renderers 
+are expected to produce a default RGB image."""
         }
     )
     uniform token renderingColorSpace (
         customData = {
-            string userDocBrief = """Describes a renderer's working (linear) colorSpace where all
-        the renderer/shader math is expected to happen."""
+            string userDocBrief = """The 'rendering color space' the renderer
+should use for internal color calculations. If this is not set, a renderer 
+is expected to use its own default color space. Not to be confused with setting
+specific 'source' color spaces for scene assets."""
         }
     )
     uniform int2 resolution = (2048, 1080) (
         customData = {
-            string userDocBrief = """The image pixel resolution, corresponding to the
-        camera's screen window."""
+            string userDocBrief = """The image pixel resolution, corresponding 
+to the camera's screen window."""
         }
     )
 }
 
 class RenderVar "RenderVar" (
     customData = {
-        string userDocBrief = """A UsdRenderVar describes a custom data variable for
-    a render to produce."""
+        string userDocBrief = """Describes a quantity or 'channel' of computed
+data, produced by a renderer. Examples include camera-space depth channels, 
+material shader quantities such as color or alpha channels, light path 
+expressions (LPEs), and renderer intrinsic quantities such as computation time
+per pixel."""
     }
 )
 {
     uniform token dataType = "color3f" (
         customData = {
-            string userDocBrief = "The type of this channel, as a USD attribute type."
+            string userDocBrief = """The type of this quantity, as a USD 
+attribute type (color3f, float, etc.)."""
         }
     )
     uniform string sourceName = "" (
         customData = {
-            string userDocBrief = """The renderer should look for an output of this name
-        as the computed value for the RenderVar."""
+            string userDocBrief = """The name of the data source that contains 
+the computed value(s) for the RenderVar."""
         }
     )
     uniform token sourceType = "raw" (
         allowedTokens = ["raw", "primvar", "lpe", "intrinsic"]
         customData = {
-            string userDocBrief = "Indicates the type of the source."
+            string userDocBrief = """Describes the type of the quantity
+data source."""
         }
     )
 }
 
 class RenderProduct "RenderProduct" (
     customData = {
-        string userDocBrief = """A UsdRenderProduct describes an image or other
-    file-like artifact produced by a render."""
+        string userDocBrief = """A single render output artifact,
+such as a rendered image or other file-like artifact. Specifies one or more 
+RenderVars combined into the output artifact. RenderProduct can also override
+some of the configuration specified in a RenderSetting, and has product-specific
+configuration attributes, such as the output productName."""
     }
 )
 {
     uniform token aspectRatioConformPolicy = "expandAperture" (
         allowedTokens = ["expandAperture", "cropAperture", "adjustApertureWidth", "adjustApertureHeight", "adjustPixelAspectRatio"]
         customData = {
-            string userDocBrief = """Indicates the policy to use to resolve an aspect
-        ratio mismatch between the camera aperture and image settings."""
+            string userDocBrief = """Indicates the policy to use to resolve an 
+aspect ratio mismatch between the camera aperture and image aspect ratio
+(derived from the resolution and pixelAspectRatio)."""
         }
     )
     rel camera (
         customData = {
-            string userDocBrief = """The _camera_ relationship specifies the primary
-        camera to use in a render."""
+            string userDocBrief = """A relationship that specifies the primary 
+camera to use for a render. Must target a Camera prim."""
         }
     )
     uniform float4 dataWindowNDC = (0, 0, 1, 1) (
         customData = {
-            string userDocBrief = """dataWindowNDC specifies the axis-aligned rectangular
-        region in the adjusted aperture window within which the renderer
-        should produce data."""
+            string userDocBrief = """Specifies the axis-aligned rectangular
+region in the adjusted aperture window within which the renderer should produce 
+data. Specified as (xmin, ymin, xmax, ymax) in normalized device coordinates, 
+where the range 0 to 1 corresponds to the aperture."""
         }
     )
     uniform bool disableDepthOfField = 0 (
         customData = {
-            string userDocBrief = """Disable all depth of field by setting F-stop of the targeted
-        camera to infinity."""
+            string userDocBrief = """Disable all depth of field by setting 
+F-stop of the targeted camera to infinity."""
         }
     )
     uniform bool disableMotionBlur = 0 (
         customData = {
-            string userDocBrief = """Disable all motion blur by setting the shutter interval
-        of the targeted camera to [0,0] - that is, take only one sample,
-        namely at the current time code."""
+            string userDocBrief = """Disable all motion blur by setting the 
+shutter interval of the render camera to [0,0] (take only one sample at the 
+current time code)."""
         }
     )
     uniform bool instantaneousShutter = 0 (
         customData = {
-            string userDocBrief = "Deprecated - use disableMotionBlur instead."
+            string userDocBrief = "Deprecated, use disableMotionBlur instead."
         }
     )
     rel orderedVars (
         customData = {
-            string userDocBrief = """Specifies the RenderVars that should be consumed and
-        combined into the final product."""
+            string userDocBrief = """Specifies the RenderVars that should be
+used and combined into the final output product. The order is provided to 
+the render executable and pipeline tools."""
         }
     )
     uniform float pixelAspectRatio = 1 (
         customData = {
-            string userDocBrief = "The aspect ratio (width/height) of image pixels."
+            string userDocBrief = """The aspect ratio (width/height) of the 
+image pixels."""
         }
     )
     token productName = "" (
         customData = {
-            string userDocBrief = """Specifies the name that the output/display driver
-        should give the product."""
+            string userDocBrief = """Specifies the name for the output product.
+Used by render executables and pipeline tools to name the product, for 
+example, using the productName as the filename (and path) for an output image
+artifact."""
         }
     )
     uniform token productType = "raster" (
         allowedTokens = ["raster", "deepRaster"]
         customData = {
-            string userDocBrief = "The type of output to produce."
+            string userDocBrief = """Specifies the type of output to produce. 
+Values are output types most renderers should be able to support, such as 
+'raster' or 'deepRaster'."""
         }
     )
     uniform int2 resolution = (2048, 1080) (
         customData = {
-            string userDocBrief = """The image pixel resolution, corresponding to the
-        camera's screen window."""
+            string userDocBrief = """The image pixel resolution, corresponding 
+to the camera's screen window."""
         }
     )
 }
@@ -252,40 +278,57 @@ class RenderPass "RenderPass" (
     apiSchemas = ["CollectionAPI:renderVisibility", "CollectionAPI:cameraVisibility", "CollectionAPI:prune", "CollectionAPI:matte"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["collection:cameraVisibility:includeRoot", "collection:renderVisibility:includeRoot"]
-        string userDocBrief = """A RenderPass prim encapsulates necessary information
-    to generate multi-pass renders."""
+        string userDocBrief = """Represents the renderer and scene 
+configuration for a single render pass in a multi-pass rendering workflow. 
+For example, a render pipeline might use separate render passes to 
+render the foreground and background portions of a scene, and a third pass that 
+composites the foreground and background render output into the final frame."""
     }
 )
 {
-    uniform bool collection:cameraVisibility:includeRoot = 1
-    uniform bool collection:renderVisibility:includeRoot = 1
+    uniform bool collection:cameraVisibility:includeRoot = 1 (
+        customData = {
+            string userDocBrief = """This property is instantiated in the schema 
+to override the fallback value from the CollectionAPI to true."""
+        }
+    )
+    uniform bool collection:renderVisibility:includeRoot = 1 (
+        customData = {
+            string userDocBrief = """This property is instantiated in the schema 
+to override the fallback value from the CollectionAPI to true."""
+        }
+    )
     uniform string[] command (
         customData = {
-            string userDocBrief = """The command to run in order to generate
-        renders for this pass."""
+            string userDocBrief = """Command to run in order to generate
+renders for this pass. Used by render pipelines to send jobs to scheduling
+components that will generate renders."""
         }
     )
     uniform asset fileName (
         customData = {
-            string userDocBrief = """The asset that contains the rendering prims or other 
-        information needed to render this pass."""
+            string userDocBrief = """Asset that contains the render 
+configuration prims or other information needed to render this pass."""
         }
     )
     rel inputPasses (
         customData = {
-            string userDocBrief = """The set of other Passes that this Pass depends on
-        in order to be constructed properly."""
+            string userDocBrief = """The RenderPasses that this pass depends on.
+For example, this pass might depend on the output from a 'Render Texture' pass,
+which gets used as input for this pass."""
         }
     )
     uniform token passType (
         customData = {
-            string userDocBrief = """A string used to categorize differently structured 
-        or executed types of passes within a customized pipeline."""
+            string userDocBrief = """Used to categorize different types of
+passes within a render pipeline."""
         }
     )
     rel renderSource (
         customData = {
-            string userDocBrief = "The source prim to render from."
+            string userDocBrief = """Points to render configuration for this
+pass. Targets a relationship to a RenderSettings, or if fileName is set, 
+points to configuration within that file."""
         }
     )
 }

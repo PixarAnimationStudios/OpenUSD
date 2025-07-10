@@ -3,10 +3,10 @@
 
     <!-- Custom Node - Outputting a mix of the input two colors  -->
     <nodedef name="ND_colorMix" node="colorMix">
-        <input name="color1" type="color3" default="1,0,0" />
-        <input name="color2" type="color3" default="0,0,1" />
-        <input name="color1_amt" type="float" default="1" />
-        <input name="color2_amt" type="float" default="1" />
+        <input name="color1" type="color3" value="1,0,0" />
+        <input name="color2" type="color3" value="0,0,1" />
+        <input name="color1_amt" type="float" value="1" />
+        <input name="color2_amt" type="float" value="1" />
         <output name="out" type="color3" />
     </nodedef>
 
@@ -26,5 +26,4 @@
         <output name="out" type="color3" nodename="add1" />
     </nodegraph>
 
-    
 </materialx>

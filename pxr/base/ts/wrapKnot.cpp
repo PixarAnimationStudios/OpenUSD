@@ -10,7 +10,9 @@
 #include "pxr/base/ts/types.h"
 #include "pxr/base/ts/typeHelpers.h"
 #include "pxr/base/ts/valueTypeDispatch.h"
+
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/pyUtils.h"
 
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/make_constructor.hpp"
@@ -31,7 +33,8 @@ using namespace pxr_boost::python;
         }                                                       \
         else                                                    \
         {                                                       \
-            TF_CODING_ERROR("Unexpected type for '%s'", #obj);  \
+            TfPyThrowTypeError(                                 \
+                TfStringPrintf("Invalid type for '%s'", #obj)); \
         }                                                       \
     }
 
@@ -66,16 +69,18 @@ static TsKnot* _WrapInit(
     const object &preTanWidth,
     const object &preTanSlope,
     const object &postTanWidth,
-    const object &postTanSlope)
+    const object &postTanSlope,
+    const object &preTanAlgorithm,
+    const object &postTanAlgorithm)
 {
     const TfType valueType = Ts_GetTypeFromTypeName(typeName);
     if (!valueType)
     {
-        TF_CODING_ERROR("Invalid knot type name '%s'", typeName.c_str());
+        TfPyThrowTypeError(
+            TfStringPrintf("Invalid knot type name '%s'", typeName.c_str()));
         return nullptr;
     }
 
-    // Python-owned knots are always double-typed.
     TsKnot *knot = new TsKnot(valueType);
 
     // Set fixed-type parameters.
@@ -85,6 +90,8 @@ static TsKnot* _WrapInit(
     SET(knot, SetCustomData, VtDictionary, customData);
     SET(knot, SetPreTanWidth, TsTime, preTanWidth);
     SET(knot, SetPostTanWidth, TsTime, postTanWidth);
+    SET(knot, SetPreTanAlgorithm, TsTangentAlgorithm, preTanAlgorithm);
+    SET(knot, SetPostTanAlgorithm, TsTangentAlgorithm, postTanAlgorithm);
 
     // Set T-typed parameters.
     TsDispatchToValueTypeTemplate<_Initter>(
@@ -92,6 +99,40 @@ static TsKnot* _WrapInit(
         preTanSlope, postTanSlope);
 
     return knot;
+}
+
+static bool _WrapUpdateTangents(
+    TsKnot& knot, object prevKnot, object nextKnot, TsCurveType curveType)
+{
+    std::optional<TsKnot> optPrevKnot, optNextKnot;
+
+    if (!prevKnot.is_none()) {
+        extract<TsKnot> extractor(prevKnot);
+        if (extractor.check())
+        {
+            optPrevKnot = extractor();
+        }
+        else
+        {
+            TfPyThrowTypeError("prevKnot must be a Ts.Knot or None");
+            return false;
+        }
+    }
+
+    if (!nextKnot.is_none()) {
+        extract<TsKnot> extractor(nextKnot);
+        if (extractor.check())
+        {
+            optNextKnot = extractor();
+        }
+        else
+        {
+            TfPyThrowTypeError("nextKnot must be a Ts.Knot or None");
+            return false;
+        }
+    }
+
+    return knot.UpdateTangents(optPrevKnot, optNextKnot, curveType);
 }
 
 static std::string _WrapGetValueTypeName(
@@ -160,7 +201,9 @@ void wrapKnot()
                  arg("preTanWidth") = object(),
                  arg("preTanSlope") = object(),
                  arg("postTanWidth") = object(),
-                 arg("postTanSlope") = object())))
+                 arg("postTanSlope") = object(),
+                 arg("preTanAlgorithm") = object(),
+                 arg("postTanAlgorithm") = object())))
 
         .def(init<const TsKnot &>())
 
@@ -189,16 +232,25 @@ void wrapKnot()
         .def("GetPreTanWidth", &This::GetPreTanWidth)
         .def("SetPreTanSlope", WRAP_SETTER(PreTanSlope))
         .def("GetPreTanSlope", WRAP_GETTER(PreTanSlope))
+        .def("SetPreTanAlgorithm", &This::SetPreTanAlgorithm)
+        .def("GetPreTanAlgorithm", &This::GetPreTanAlgorithm)
 
         .def("SetPostTanWidth", &This::SetPostTanWidth)
         .def("GetPostTanWidth", &This::GetPostTanWidth)
         .def("SetPostTanSlope", WRAP_SETTER(PostTanSlope))
         .def("GetPostTanSlope", WRAP_GETTER(PostTanSlope))
+        .def("SetPostTanAlgorithm", &This::SetPostTanAlgorithm)
+        .def("GetPostTanAlgorithm", &This::GetPostTanAlgorithm)
 
         .def("SetCustomData", &This::SetCustomData)
         .def("GetCustomData", &This::GetCustomData)
         .def("SetCustomDataByKey", &This::SetCustomDataByKey)
         .def("GetCustomDataByKey", &This::GetCustomDataByKey)
+
+        .def("UpdateTangents", &_WrapUpdateTangents,
+             (arg("prevKnot"),
+              arg("nextKnot"),
+              arg("curveType") = TsCurveTypeBezier))
 
         ;
 }

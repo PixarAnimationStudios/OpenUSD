@@ -7,6 +7,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/work/dispatcher.h"
+#include "pxr/base/work/isolatingDispatcher.h"
 
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stopwatch.h"
@@ -404,6 +405,19 @@ main(int argc, char **argv)
         }
 
         if (!_TestDispatcherCancellation<WorkDispatcher>(graph.get())) {
+            return 1;
+        }
+    }
+
+    // Test the isolating dispatcher.
+    {
+        std::cout << "Using the isolating dispatcher" << std::endl;
+        if (!_TestDispatcher<WorkIsolatingDispatcher>(graph.get())) {
+            return 1;
+        }
+
+        if (!_TestDispatcherCancellation<WorkIsolatingDispatcher>(
+                graph.get())) {
             return 1;
         }
     }

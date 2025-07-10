@@ -176,13 +176,17 @@ _AddNodeToNodeGraph(
     std::string const& mxNodeName, 
     std::string const& mxNodeCategory, 
     std::string const& mxNodeType, 
+    std::string const& mxNodeDefString, 
     mx::NodeGraphPtr const& mxNodeGraph,
     mx::StringSet * addedNodeNames)
 {
     // Add the node to the  mxNodeGraph if needed 
     if (addedNodeNames->find(mxNodeName) == addedNodeNames->end()) {
         addedNodeNames->insert(mxNodeName);
-        return mxNodeGraph->addNode(mxNodeCategory, mxNodeName, mxNodeType);
+        mx::NodePtr mxNode = mxNodeGraph->addNode(
+            mxNodeCategory, mxNodeName, mxNodeType);
+        mxNode->setNodeDefString(mxNodeDefString);
+        return mxNode;
     }
     // Otherwise get the existing node from the mxNodeGraph
     return mxNodeGraph->getNode(mxNodeName);
@@ -372,7 +376,7 @@ _GetNodeDef(mx::DocumentPtr const& mxDoc, std::string const& prevMxNodeDefName)
     }
 #endif
     const std::string mxNodeDefName = HdMtlxGetNodeDefName(prevMxNodeDefName);
-    return mxDoc->getNodeDef(mxNodeDefName);
+    return HdMtlxGetNodeDef(TfToken(mxNodeDefName), mxDoc);
 }
 
 // Add a MaterialX version of the hdNode to the mxDoc/mxNodeGraph
@@ -387,7 +391,7 @@ _AddMaterialXNode(
     HdMtlxTexturePrimvarData *mxHdData)
 {
     // Get the mxNode information
-    TfToken hdNodeType = netInterface->GetNodeType(hdNodeName);
+    const TfToken hdNodeType = netInterface->GetNodeType(hdNodeName);
     mx::NodeDefPtr mxNodeDef = _GetNodeDef(mxDoc, hdNodeType.GetString());
     if (!mxNodeDef) {
         TF_WARN("NodeDef not found for Node '%s'", hdNodeType.GetText());
@@ -403,21 +407,16 @@ _AddMaterialXNode(
     const std::string &mxNodeName = HdMtlxCreateNameFromPath(hdNodePath);
     const std::string &mxNodeCategory = _GetMxNodeString(mxNodeDef);
     const std::string &mxNodeType = mxNodeDef->getType();
+    const std::string &mxNodeDefString = 
+        (mxNodeDef->getName() == _tokens->ND_surface) 
+            ? hdNodeType.GetString()
+            : mxNodeDef->getName();
 
     // Add the mxNode to the mxNodeGraph
     mx::NodePtr mxNode =
-        _AddNodeToNodeGraph(mxNodeName, mxNodeCategory, 
-                            mxNodeType, mxNodeGraph, addedNodeNames);
-
-    if (mxNode->getNodeDef()) {
-        // Sometimes mxNode->getNodeDef() starts failing.
-        // It seems to happen when there are connections with mismatched types.
-        // Explicitly setting the node def string appparently fixes the problem.
-        // If we don't do this code gen may fail.
-        if (mxNode->getNodeDefString().empty()) {
-            mxNode->setNodeDefString(hdNodeType.GetText());
-        }
-    }
+        _AddNodeToNodeGraph(
+            mxNodeName, mxNodeCategory, mxNodeType, 
+            mxNodeDefString, mxNodeGraph, addedNodeNames);
 
     // For each of the HdNode parameters add the corresponding parameter/input 
     // to the mxNode
@@ -559,8 +558,7 @@ _GatherUpstreamNodes(
 {
     TfToken const &hdNodeName = hdConnection.upstreamNodeName;
     if (netInterface->GetNodeType(hdNodeName).IsEmpty()) {
-        TF_WARN("Could not find the connected Node '%s'", 
-                hdConnection.upstreamNodeName.GetText());
+        TF_WARN("Could not find the connected Node '%s'", hdNodeName.GetText());
         return;
     }
     

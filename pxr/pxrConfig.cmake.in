@@ -54,6 +54,20 @@ if (NOT DEFINED PXR_FIND_TBB_IN_CONFIG)
 endif()
 if (PXR_FIND_TBB_IN_CONFIG)
     find_dependency(TBB @TBB_VERSION@ CONFIG)
+else()
+    add_library(TBB::tbb SHARED IMPORTED)
+
+    macro(_add_property name value)
+        if (NOT "${value}" STREQUAL "")
+            set_target_properties(TBB::tbb PROPERTIES ${name} "${value}")
+        endif()
+    endmacro()
+
+    _add_property(INTERFACE_INCLUDE_DIRECTORIES "@tbb_INTERFACE_INCLUDE_DIRECTORIES@")
+    _add_property(INTERFACE_COMPILE_DEFINITIONS "@tbb_INTERFACE_COMPILE_DEFINITIONS@")
+    _add_property(INTERFACE_LINK_DIRECTORIES "@tbb_INTERFACE_LINK_DIRECTORIES@")
+    _add_property(IMPORTED_IMPLIB "@tbb_IMPORTED_IMPLIB@")
+    _add_property(IMPORTED_LOCATION "@tbb_IMPORTED_LOCATION@")
 endif()
 
 if (NOT DEFINED PXR_FIND_OPENSUBDIV_IN_CONFIG)
@@ -88,6 +102,17 @@ if(@Imath_FOUND@)
         endif()
     endif()
     find_dependency(Imath)
+endif()
+
+# If this build is using a custom work implementation, find the package
+# providing that implementation.
+if(NOT "@PXR_WORK_IMPL_PACKAGE@" STREQUAL "")
+    if (NOT DEFINED @PXR_WORK_IMPL_CONFIG_DIR_VAR@)
+        if (NOT [[@PXR_WORK_IMPL_CONFIG_DIR@]] STREQUAL "")
+            set(@PXR_WORK_IMPL_CONFIG_DIR_VAR@ [[@PXR_WORK_IMPL_CONFIG_DIR@]])
+        endif()
+    endif()
+    find_dependency(@PXR_WORK_IMPL_PACKAGE@)
 endif()
 
 include("${PXR_CMAKE_DIR}/cmake/pxrTargets.cmake")

@@ -302,7 +302,12 @@ struct TextParserAction<KeywordCustom>
     template <class Input>
     static void apply(const Input& in, Sdf_TextParserContext& context)
     {
-        context.custom = true;
+        if (context.parsingContext.back() ==
+            Sdf_TextParserCurrentParsingContext::SplineTangent) {
+            context.splineTangentAlgorithm = TsTangentAlgorithmCustom;
+        } else {
+            context.custom = true;
+        }
     }
 };
 
@@ -516,31 +521,22 @@ _BundleSplineValue(
 }
 
 static void
-_SetSplineTanWithWidth(
+_SetSplineTangent(
     Sdf_TextParserContext& context,
     const double width,
-    const VtValue &slope)
+    const VtValue &slope,
+    const TsTangentAlgorithm algorithm)
 {
     if (context.splineTanIsPre) {
         context.splineKnot.SetPreTanWidth(width);
         context.splineKnot.SetPreTanSlope(slope);
+        context.splineKnot.SetPreTanAlgorithm(algorithm);
     } else {
         context.splineKnot.SetPostTanWidth(width);
         context.splineKnot.SetPostTanSlope(slope);
+        context.splineKnot.SetPostTanAlgorithm(algorithm);
     }
-} 
-
-static void
-_SetSplineTanWithoutWidth(
-    Sdf_TextParserContext& context,
-    const VtValue &slope)
-{
-    if (context.splineTanIsPre) {
-        context.splineKnot.SetPreTanSlope(slope);
-    } else {
-        context.splineKnot.SetPostTanSlope(slope);
-    }
-} 
+}
 
 template <class Input>
 std::pair<bool, Sdf_ParserHelpers::Value>
@@ -2182,6 +2178,22 @@ struct TextParserAction<KeywordNone_LC>
             Sdf_TextParserCurrentParsingContext::SplineInterpMode) {
             context.splineKnot.SetNextInterpolation(TsInterpValueBlock);
             // SplineInterpMode context will be popped in its action
+        } else if (context.parsingContext.back() ==
+            Sdf_TextParserCurrentParsingContext::SplineTangent) {
+            context.splineTangentAlgorithm = TsTangentAlgorithmNone;
+        }
+    }
+};
+
+template <>
+struct TextParserAction<KeywordAutoEase>
+{
+    template <class Input>
+    static void apply(const Input& in, Sdf_TextParserContext& context)
+    {
+        if (context.parsingContext.back() == 
+            Sdf_TextParserCurrentParsingContext::SplineTangent) {
+            context.splineTangentAlgorithm = TsTangentAlgorithmAutoEase;
         }
     }
 };
@@ -2460,7 +2472,7 @@ struct TextParserAction<SplineKnotTime>
         context.splineKnot = TsKnot(
                 context.spline.GetValueType());
         context.splineKnot.SetTime(result.second.Get<double>());
-        // We should get SplineKnotValue next;
+        // Reset the spline knot context values.
         context.splineKnotValue = Sdf_ParserHelpers::Value();
         context.splineKnotPreValue = Sdf_ParserHelpers::Value();
     }
@@ -2536,41 +2548,74 @@ struct TextParserAction<SplineKnotParam>
 };
 
 template <>
-struct TextParserAction<SplineTangentWithoutWidthValue>
+struct TextParserAction<SplineTangentWidthSlopeAlgorithmItem>
 {
     template <class Input>
     static void apply(const Input& in, Sdf_TextParserContext& context)
     {
         // Set the parsed tangent value
-        _SetSplineTanWithoutWidth(
+        _SetSplineTangent(
             context,
-            _BundleSplineValue(context, context.splineTangentValue));
+            context.splineTangentWidthValue.Get<double>(),
+            _BundleSplineValue(context, context.splineTangentSlopeValue),
+            context.splineTangentAlgorithm);
     }
 };
 
 template <>
-struct TextParserAction<SplineTangentWithWidthValue>
+struct TextParserAction<SplineTangentWidthSlopeItem>
+{
+    template <class Input>
+    static void apply(const Input& in, Sdf_TextParserContext& context)
+    {
+        // Set the parsed tangent value
+        _SetSplineTangent(
+            context,
+            context.splineTangentWidthValue.Get<double>(),
+            _BundleSplineValue(context, context.splineTangentSlopeValue),
+            TsTangentAlgorithmNone);
+    }
+};
+
+template <>
+struct TextParserAction<SplineTangentSlopeAlgorithmItem>
+{
+    template <class Input>
+    static void apply(const Input& in, Sdf_TextParserContext& context)
+    {
+        // Set the parsed tangent value
+        _SetSplineTangent(
+            context,
+            0.0,  // width
+            _BundleSplineValue(context, context.splineTangentSlopeValue),
+            context.splineTangentAlgorithm);
+    }
+};
+
+template <>
+struct TextParserAction<SplineTangentSlopeItem>
 {
     template <class Input>
     static void apply(const Input& in, Sdf_TextParserContext& context)
     {
         // Set the parsed tangent width and value
-        _SetSplineTanWithWidth(
+        _SetSplineTangent(
             context,
-            context.splineTangentWidthValue.Get<double>(), 
-            _BundleSplineValue(context, context.splineTangentValue));
+            0.0,  // width
+            _BundleSplineValue(context, context.splineTangentSlopeValue),
+            TsTangentAlgorithmNone);
     }
 };
 
 template <>
-struct TextParserAction<SplineTangentValue>
+struct TextParserAction<SplineTangentSlope>
 {
     template <class Input>
     static void apply(const Input& in, Sdf_TextParserContext& context)
     {
         const std::pair<bool, Sdf_ParserHelpers::Value> result =
             _HelperGetNumericValueFromString(in, context);
-        context.splineTangentValue = result.second;
+        context.splineTangentSlopeValue = result.second;
     }
 };
 
@@ -2620,8 +2665,9 @@ struct TextParserAction<KeywordPre>
             Sdf_TextParserCurrentParsingContext::SplineKnotParam) {
             context.splineTanIsPre = true;
             // We should get a SplineTangent now
-            context.splineTangentValue = Sdf_ParserHelpers::Value();
+            context.splineTangentSlopeValue = Sdf_ParserHelpers::Value();
             context.splineTangentWidthValue = Sdf_ParserHelpers::Value();
+            context.splineTangentAlgorithm = TsTangentAlgorithmNone;
             _PushContext(context,
                          Sdf_TextParserCurrentParsingContext::SplineTangent);
         }
@@ -2694,8 +2740,9 @@ struct TextParserAction<SplineInterpMode>
         // Anticipate a SplineTangent, which could be empty, so we need to check
         // this in SplinePostShaping action, else SplineTangent will be popped
         // in its matching action.
-        context.splineTangentValue = Sdf_ParserHelpers::Value();
+        context.splineTangentSlopeValue = Sdf_ParserHelpers::Value();
         context.splineTangentWidthValue = Sdf_ParserHelpers::Value();
+        context.splineTangentAlgorithm = TsTangentAlgorithmNone;
         _PushContext(context,
                      Sdf_TextParserCurrentParsingContext::SplineTangent);
     }

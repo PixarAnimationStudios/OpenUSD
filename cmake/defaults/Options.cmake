@@ -95,6 +95,12 @@ set(PXR_PRECOMPILED_HEADER_NAME "pch.h"
     "Default name of precompiled header files"
 )
 
+set(PXR_WORK_IMPL ""
+    CACHE
+    STRING
+    "Name of CMake package containing custom implementation for libWork."
+)
+
 set(PXR_INSTALL_LOCATION ""
     CACHE
     STRING

@@ -332,6 +332,7 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
+// 0.13.0: Support for splines with tangent algorithms None, Custom, AutoEase.
 // 0.12.0: Added support for splines.
 // 0.11.0: Added support for relocates in layer metadata.
 // 0.10.0: Added support for the pathExpression value type.
@@ -349,7 +350,7 @@ using std::vector;
 //         See _PathItemHeader_0_0_1.
 //  0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 12;
+constexpr uint8_t USDC_MINOR = 13;
 constexpr uint8_t USDC_PATCH = 0;
 
 constexpr CrateFile::Version
@@ -1530,11 +1531,31 @@ public:
         // Make sure our output format is compatible with splines.  If the
         // spline binary format is updated, we must rev the required version
         // here as well; the static_assert is here to remind us.
-        static_assert(Ts_BinaryDataAccess::GetBinaryFormatVersion() == 1);
-        crate->_packCtx->RequestWriteVersionUpgrade(
-            Version(0,12,0),
-            "A spline was detected which requires crate "
-            "version 0.12.0.");
+        uint8_t splineVersion =
+            Ts_BinaryDataAccess::GetBinaryFormatVersion(spline);
+        switch (splineVersion)
+        {
+          case 1: // initial TsSpline implementation
+            crate->_packCtx->RequestWriteVersionUpgrade(
+                Version(0,12,0),
+                "A spline was detected which requires crate "
+                "version 0.12.0.");
+            break;
+
+          case 2: // tangent algorithms None and AutoEase
+            crate->_packCtx->RequestWriteVersionUpgrade(
+                Version(0,13,0),
+                "A spline tangent algorithm was detected which requires crate"
+                " version 0.13.0.");
+            break;
+
+          default:
+            // This is a coding error because GetBinaryFormatVersion returned
+            // an impossible spline version.
+            TF_CODING_ERROR("Unsupported spline version (%u) when writing"
+                            " crate file.", splineVersion);
+            return;
+        }
 
         // Splines are a data blob plus a customData map.
         vector<uint8_t> splineData;

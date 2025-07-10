@@ -5,7 +5,13 @@
 # https://openusd.org/license.
 #
 import setuptools
-import argparse, glob, os, platform, re, shutil, sys
+import argparse
+import glob
+import os
+import platform
+import re
+import shutil
+import sys
 
 # This setup.py script expects to be run from an inst directory in a typical
 # USD build run from build_usd.py.
@@ -88,12 +94,12 @@ with open("README.md", "r") as fh:
 # Get the library version number from the installed pxr.h header.
 with open(os.path.join(USD_BUILD_OUTPUT, "include/pxr/pxr.h"), "r") as fh:
     for line in fh:
-        m = re.match("#define PXR_MINOR_VERSION (\d+)", line)
+        m = re.match(r"#define PXR_MINOR_VERSION (\d+)", line)
         if m:
             minorVersion = m.groups(1)[0]
             continue
 
-        m = re.match("#define PXR_PATCH_VERSION (\d+)", line)
+        m = re.match(r"#define PXR_PATCH_VERSION (\d+)", line)
         if m:
             patchVersion = m.groups(1)[0]
             continue
@@ -112,6 +118,7 @@ setuptools.setup(
     description="Pixar's Universal Scene Description",
     long_description=long_description,
     long_description_content_type="text/markdown",
+    license="LicenseRef-TOST-1.0",
     url="https://openusd.org",
     project_urls={
         "Documentation": "https://openusd.org",
@@ -127,7 +134,6 @@ setuptools.setup(
     },
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: Other/Proprietary License",
         "Operating System :: POSIX :: Linux",
         "Operating System :: MacOS :: MacOS X",
         "Operating System :: Microsoft :: Windows :: Windows 10",

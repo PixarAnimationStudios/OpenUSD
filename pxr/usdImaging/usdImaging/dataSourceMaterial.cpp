@@ -442,7 +442,12 @@ public:
                 // Run this case after the more specialized API's above
                 // to avoid the warning in GetImplementationSource()
                 // for cases where info:implementationSource does not exist.
-                nodeDef.GetShaderId(&nodeId);
+                if (!nodeDef.GetShaderId(&nodeId)) {
+                    if (SdrShaderNodeConstPtr sdrNode =
+                        nodeDef.GetShaderNodeForSourceType(_renderContext)) {
+                        nodeId = sdrNode->GetIdentifier();
+                    }
+                }
             } else if (UsdLuxLightFilter lightFilter =
                        UsdLuxLightFilter(_shaderNode.GetPrim())) {
                 // Light filter

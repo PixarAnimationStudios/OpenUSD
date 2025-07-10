@@ -8,6 +8,7 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/work/impl.h"
 #include "pxr/base/work/threadLimits.h"
 
 #include "pxr/base/tf/envSetting.h"
@@ -16,6 +17,7 @@
 #include <atomic>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
 
 // The environment variable used to limit the number of threads the application
 // may spawn:
@@ -128,7 +130,7 @@ WorkSetConcurrencyLimit(unsigned n)
         // Use the current thread limit.
         threadLimit = WorkGetConcurrencyLimit();
     }
-     WorkImpl_SetConcurrencyLimit(threadLimit);
+    WorkImpl_SetConcurrencyLimit(threadLimit);
 }
 
 void 

@@ -818,9 +818,15 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
     // we only end up making one trip through the set. If you add to this
     // function, make sure you sort the addition by locator name, or
     // _FindLocator won't work.
-    // Also note, this should match SprimDirtyBitsToLocatorSet
+    // Also note, this should match SprimDirtyBitsToLocatorSet.
+    // Additionally, since Sprim's define their own dirty bit enum, we need to
+    // explicitly translate the empty locator to the appropriate value below.
 
     if (primType == HdPrimTypeTokens->material) {
+        if (*it == HdDataSourceLocator::EmptyLocator()) {
+            return HdMaterial::AllDirty;
+        }
+
         if (_FindLocator(HdMaterialSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdMaterial::DirtyParams | HdMaterial::DirtyResource;
             for (const auto& locator : set) {
@@ -844,6 +850,10 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
             }
         }
     } else if (primType == HdPrimTypeTokens->coordSys) {
+        if (*it == HdDataSourceLocator::EmptyLocator()) {
+            return HdCoordSys::AllDirty;
+        }
+
         static const HdDataSourceLocator nameLocator =
             HdCoordSysSchema::GetDefaultLocator()
             .Append(HdCoordSysSchemaTokens->name);
@@ -854,6 +864,10 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
             bits |= HdCoordSys::DirtyTransform;
         }
     } else if (primType == HdPrimTypeTokens->camera) {
+        if (*it == HdDataSourceLocator::EmptyLocator()) {
+            return HdCamera::AllDirty;
+        }
+
         if (_FindLocator(HdCameraSchema::GetDefaultLocator(), end, &it)) {
             bits |=
                 HdCamera::DirtyWindowPolicy |
@@ -866,6 +880,10 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
     } else if (HdPrimTypeIsLight(primType)
         // Lights and light filters are handled similarly in emulation.
         || primType == HdPrimTypeTokens->lightFilter) {
+
+        if (*it == HdDataSourceLocator::EmptyLocator()) {
+            return HdLight::AllDirty;
+        }
 
         if (_FindLocator(HdInstancedBySchema::GetDefaultLocator(), end, &it)) {
             bits |= HdLight::DirtyInstancer;
@@ -889,6 +907,8 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
             bits |= HdLight::DirtyTransform;
         }
     } else if (primType == HdPrimTypeTokens->drawTarget) {
+        // The clause below also handles the case where the locator is
+        // the empty locator.
         const static HdDataSourceLocator locator(
                 HdPrimTypeTokens->drawTarget);
         if (_FindLocator(locator, end, &it)) {
@@ -901,6 +921,8 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
             bits |= HdChangeTracker::AllSceneDirtyBits;
         }
     } else if (primType == HdPrimTypeTokens->extComputation) {
+        // The clause below also handles the case where the locator is
+        // the empty locator.
         if (_FindLocator(HdExtComputationSchema::GetDefaultLocator(),
                     end, &it, false)) {
             if (HdExtComputationSchema::GetDefaultLocator().HasPrefix(*it)) {
@@ -959,6 +981,8 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
             bits |= HdChangeTracker::DirtyVisibility;
         }
     } else if (primType == HdPrimTypeTokens->imageShader) {
+        // The clause below also handles the case where the locator is
+        // the empty locator.
         if (_FindLocator(HdImageShaderSchema::GetDefaultLocator(),
                 end, &it, false)) {
             if (HdImageShaderSchema::GetDefaultLocator().HasPrefix(*it)) {

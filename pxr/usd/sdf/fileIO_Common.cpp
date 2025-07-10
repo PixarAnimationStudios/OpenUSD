@@ -611,15 +611,13 @@ namespace
                 if (interp == TsInterpCurve) {
                     const bool isBez = (curveType == TsCurveTypeBezier);
 
-                    TsTime width = 0;
                     T slope = 0;
                     knot.GetPreTanSlope(&slope);
-                    if (isBez) {
-                        width = knot.GetPreTanWidth();
-                    }
+                    TsTime width = knot.GetPreTanWidth();
+                    TsTangentAlgorithm algo = knot.GetPreTanAlgorithm();
 
                     _WriteTangent(
-                        out, "pre", isBez, width, slope);
+                        out, "pre", isBez, width, slope, algo);
                 }
 
                 // Pre-segment finished.  Switch to post-segment.
@@ -629,15 +627,13 @@ namespace
                 if (interp == TsInterpCurve) {
                     const bool isBez = (curveType == TsCurveTypeBezier);
 
-                    TsTime width = 0;
                     T slope = 0;
                     knot.GetPostTanSlope(&slope);
-                    if (isBez) {
-                        width = knot.GetPostTanWidth();
-                    }
+                    TsTime width = knot.GetPostTanWidth();
+                    TsTangentAlgorithm algo = knot.GetPostTanAlgorithm();
 
                     _WriteTangent(
-                        out, "post curve", isBez, width, slope);
+                        out, "post curve", isBez, width, slope, algo);
                 }
 
                 // If no post-tangent, write next segment interp method.
@@ -664,21 +660,32 @@ namespace
             const char* const label,
             const bool isBez,
             const TsTime width,
-            const T slope)
+            const T slope,
+            const TsTangentAlgorithm algo)
         {
             if (isBez) {
                 // Bezier, standard form: width and slope.
                 Sdf_FileIOUtility::Write(
-                    out, 0, "; %s (%s, %s)",
+                    out, 0, "; %s (%s, %s",
                     label,
                     TfStringify(width).c_str(),
                     TfStringify(slope).c_str());
             } else {
                 // Hermite, standard form: slope.
                 Sdf_FileIOUtility::Write(
-                    out, 0, "; %s (%s)",
+                    out, 0, "; %s (%s",
                     label,
                     TfStringify(slope).c_str());
+            }
+            if (algo != TsTangentAlgorithmNone) {
+                out.RequestWriteVersionUpgrade(
+                    SdfFileVersion(1,1,0),
+                    "A tangent algorithm was detected which requires usda"
+                    " version 1.1.");
+                Sdf_FileIOUtility::Write(
+                    out, 0, ", %s)", Sdf_FileIOUtility::Stringify(algo));
+            } else {
+                Sdf_FileIOUtility::Write(out, 0, ")");
             }
         }
     };
@@ -703,7 +710,9 @@ Sdf_FileIOUtility::WriteSpline(
     const TsKnotMap knotMap = spline.GetKnots();
 
     // Spline type, if significant.
-    if (knotMap.HasCurveSegments()) {
+    if (knotMap.HasCurveSegments() ||
+        spline.GetCurveType() == TsCurveTypeHermite)
+    {
         Write(out, indent + 1, "%s,\n",
             Stringify(spline.GetCurveType()));
     }
@@ -1138,6 +1147,18 @@ const char* Sdf_FileIOUtility::Stringify(TsInterpMode interp)
     }
 
     TF_CODING_ERROR("unknown value");
+    return "";
+}
+
+const char* Sdf_FileIOUtility::Stringify(TsTangentAlgorithm algorithm)
+{
+    switch (algorithm) {
+      case TsTangentAlgorithmNone: return "none";
+      case TsTangentAlgorithmCustom: return "custom";
+      case TsTangentAlgorithmAutoEase: return "autoEase";
+    }
+
+    TF_CODING_ERROR("unknown tangent algorithm value");
     return "";
 }
 

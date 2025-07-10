@@ -127,6 +127,7 @@ protected:
         HgiVulkan* hgi,
         HgiVulkanDevice* device,
         HgiTextureDesc const & desc,
+        bool optimalTiling,
         bool interop);
 
     // Texture view constructor to alias another texture's data.
