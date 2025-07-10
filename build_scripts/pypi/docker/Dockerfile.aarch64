@@ -1,0 +1,8 @@
+FROM quay.io/pypa/manylinux2014_aarch64:2025.06.28-1
+
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+
+WORKDIR /opt/USD
+
+CMD bash
