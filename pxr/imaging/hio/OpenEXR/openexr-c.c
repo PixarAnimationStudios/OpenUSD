@@ -355,7 +355,8 @@ exr_result_t nanoexr_write_exr(
     exr_set_longname_support(exr, 1);
 
     /// XXX In the future Hio may be able to specify compression levels
-    result = exr_set_zip_compression_level(exr, 0, 4);
+    /// For now, we disable compression if less than 4 channels are written
+    result = exr_set_zip_compression_level(exr, 0, channelCount == 4 ? 4 : 0);
     if (result != EXR_ERR_SUCCESS) {
         return result;
     }
