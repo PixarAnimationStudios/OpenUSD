@@ -1310,7 +1310,7 @@ _InstanceObserver::PrimsRemoved(const HdSceneIndexBase &sender,
         auto it = _instanceToInfo.lower_bound(path);
         while (it != _instanceToInfo.end() &&
                it->first.HasPrefix(path)) {
-            it = _RemoveInstance(path, it, &retainedSceneIndexOperations);
+            it = _RemoveInstance(it->first, it, &retainedSceneIndexOperations);
         }
     }
 }
