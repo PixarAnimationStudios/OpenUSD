@@ -95,7 +95,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Macro to define public tokens. This declares a list of tokens that can be
 /// used globally.  Use in conjunction with TF_DEFINE_PUBLIC_TOKENS.
 /// \hideinitializer
-#ifdef __INTELLISENSE__
+#if defined(ARCH_PREPROCESSOR_MSVC_TRADITIONAL) && defined(__INTELLISENSE__)
 #define TF_DECLARE_PUBLIC_TOKENS(...)
 #else
 #define TF_DECLARE_PUBLIC_TOKENS(...) _TF_DECLARE_PUBLIC_TOKENS_EXPAND( _TF_DECLARE_PUBLIC_TOKENS_EVAL(_TF_DECLARE_PUBLIC_TOKENS_EXPAND( TF_PP_VARIADIC_SIZE(__VA_ARGS__) ))(__VA_ARGS__) )
