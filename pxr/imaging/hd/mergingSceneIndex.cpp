@@ -47,22 +47,6 @@ _FillAddedChildEntriesRecursively(
     }
 }
 
-static
-bool
-_Contains(const SdfPath &path, const SdfPathVector &v)
-{
-    return std::find(v.begin(), v.end(), path) != v.end();
-}
-
-static
-bool
-_HasPrim(HdSceneIndexBase * const sceneIndex, const SdfPath &path)
-{
-    TRACE_FUNCTION();
-    
-    return _Contains(path, sceneIndex->GetChildPrimPaths(path.GetParentPath()));
-}
-
 void
 HdMergingSceneIndex::AddInputScene(
     const HdSceneIndexBaseRefPtr &inputScene,
@@ -138,13 +122,16 @@ HdMergingSceneIndex::InsertInputScenes(
 
     HdSceneIndexObserver::AddedPrimEntries addedEntries;
     if (_IsObserved()) {
+        TRACE_SCOPE("Adding prefixes of input scene roots");
+
         // Add prefixes of activeInputSceneRoot.
         //
         // If adding a scene inde at, e.g., /A/B/C, make
         // AddedPrimEntries for /A and /A/B.
 
         // Set to prevent sending the same AddedPrimEntries for
-        // prefixes multiple times.
+        // prefixes multiple times, and to avoid repeated GetChildPrimPaths()
+        // queries.
         std::unordered_set<SdfPath, SdfPath::Hash> visited;
 
         for (const InputScene &inputScene : inputScenes) {
@@ -169,8 +156,22 @@ HdMergingSceneIndex::InsertInputScenes(
             size_t i = 0;
             // Add 1 to skip the activeInputSceneRoot itself.
             for ( ; i + 1 < prefixes.size(); i++) {
-                if (!(_HasPrim(this, prefixes[i]) ||
-                      visited.count(prefixes[i]))) {
+                const SdfPath &prefix = prefixes[i];
+
+                // Skip if we already know a prim exists here, or it has an
+                // AddedPrimEntry already.
+                if (visited.count(prefix)) {
+                    continue;
+                }
+
+                // Record the existence of the sibling paths to avoid n^2
+                // behavior with many siblings.
+                SdfPathVector siblingPaths = GetChildPrimPaths(
+                    prefix.GetParentPath());
+                visited.insert(siblingPaths.begin(), siblingPaths.end());
+
+                // Check whether we've found a prefix without an existing prim.
+                if (!visited.count(prefix)) {
                     break;
                 }
             }
