@@ -65,11 +65,11 @@ private:
 
     HdStResourceRegistry *_resourceRegistry;
     HgiBufferHandle _handles[MULTIBUFFERING];
+    std::vector<HgiBufferGpuToGpuOp> _gpuCopyOps;
     size_t _head;
     size_t _capacity;
     size_t _activeSlot;
-    bool _tripleBuffered;
-    std::vector<HgiBufferGpuToGpuOp> _gpuCopyOps;
+    bool _isUma;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

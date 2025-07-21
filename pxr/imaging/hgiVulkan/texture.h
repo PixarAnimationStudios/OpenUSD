@@ -8,8 +8,9 @@
 #define PXR_IMAGING_HGI_VULKAN_TEXTURE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgiVulkan/api.h"
 #include "pxr/imaging/hgi/texture.h"
+#include "pxr/imaging/hgiVulkan/api.h"
+#include "pxr/imaging/hgiVulkan/vulkan.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -142,15 +143,15 @@ private:
     HgiVulkanTexture & operator=(const HgiVulkanTexture&) = delete;
     HgiVulkanTexture(const HgiVulkanTexture&) = delete;
 
-    bool _isTextureView;
     VkImage _vkImage;
     VkImageView _vkImageView;
     VkImageLayout _vkImageLayout;
     VmaAllocation _vmaImageAllocation;
     HgiVulkanDevice* _device;
     uint64_t _inflightBits;
-    HgiVulkanBuffer* _stagingBuffer;
+    std::unique_ptr<HgiVulkanBuffer> _stagingBuffer;
     void* _cpuStagingAddress;
+    bool _isTextureView;
 };
 
 

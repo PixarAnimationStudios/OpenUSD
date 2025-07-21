@@ -19,6 +19,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 static bool
 _CheckFormatSupport(
     VkPhysicalDevice pDevice,
@@ -60,7 +61,6 @@ HgiVulkanTexture::HgiVulkanTexture(
     bool optimalTiling,
     bool interop)
     : HgiTexture(desc)
-    , _isTextureView(false)
     , _vkImage(nullptr)
     , _vkImageView(nullptr)
     , _vkImageLayout(VK_IMAGE_LAYOUT_UNDEFINED)
@@ -69,6 +69,7 @@ HgiVulkanTexture::HgiVulkanTexture(
     , _inflightBits(0)
     , _stagingBuffer(nullptr)
     , _cpuStagingAddress(nullptr)
+    , _isTextureView(false)
 {
     GfVec3i const& dimensions = desc.dimensions;
     bool const isDepthBuffer = desc.usage & HgiTextureUsageBitsDepthTarget;
@@ -235,18 +236,18 @@ HgiVulkanTexture::HgiVulkanTexture(
         stageDesc.byteSize = 
             std::min(GetByteSizeOfResource(), desc.pixelsByteSize);
         stageDesc.initialData = desc.initialData;
-        HgiVulkanBuffer* stagingBuffer = 
+        std::unique_ptr<HgiVulkanBuffer> stagingBuffer =
             HgiVulkanBuffer::CreateStagingBuffer(_device, stageDesc);
 
         // Schedule transfer from staging buffer to device-local texture
         HgiVulkanCommandQueue* queue = device->GetCommandQueue();
         HgiVulkanCommandBuffer* cb = queue->AcquireResourceCommandBuffer();
-        CopyBufferToTexture(cb, stagingBuffer);
+        CopyBufferToTexture(cb, stagingBuffer.get());
 
         // We don't know if this texture is a static (immutable) or
         // dynamic (animated) texture. We assume that most textures are
         // static and schedule garbage collection of staging resource.
-        HgiBufferHandle stagingHandle(stagingBuffer, 0);
+        HgiBufferHandle stagingHandle(stagingBuffer.release(), 0);
         hgi->TrashObject(
             &stagingHandle,
             hgi->GetGarbageCollector()->GetBufferList());
@@ -284,7 +285,6 @@ HgiVulkanTexture::HgiVulkanTexture(
     HgiVulkanDevice* device,
     HgiTextureViewDesc const & desc)
     : HgiTexture(desc.sourceTexture->GetDescriptor())
-    , _isTextureView(true)
     , _vkImage(nullptr)
     , _vkImageView(nullptr)
     , _vkImageLayout(VK_IMAGE_LAYOUT_UNDEFINED)
@@ -293,6 +293,7 @@ HgiVulkanTexture::HgiVulkanTexture(
     , _inflightBits(0)
     , _stagingBuffer(nullptr)
     , _cpuStagingAddress(nullptr)
+    , _isTextureView(true)
 {
     // Update the texture descriptor to reflect the view desc
     _descriptor.debugName = desc.debugName;
@@ -359,7 +360,6 @@ HgiVulkanTexture::~HgiVulkanTexture()
         _cpuStagingAddress = nullptr;
     }
 
-    delete _stagingBuffer;
     _stagingBuffer = nullptr;
 
     if (_vkImageView) {
@@ -426,7 +426,7 @@ HgiVulkanTexture::IsCPUStagingAddress(const void* address) const
 HgiVulkanBuffer*
 HgiVulkanTexture::GetStagingBuffer() const
 {
-    return _stagingBuffer;
+    return _stagingBuffer.get();
 }
 
 VkImage
@@ -488,12 +488,12 @@ HgiVulkanTexture::CopyBufferToTexture(
             _descriptor.layerCount,
             srcBuffer->GetDescriptor().byteSize);
 
-    const size_t mipLevels = std::min(
-        mipInfos.size(), size_t(_descriptor.mipLevels));
+    const int mipLevels = std::min(static_cast<int>(mipInfos.size()),
+        static_cast<int>(_descriptor.mipLevels));
 
-    for (size_t mip = 0; mip < mipLevels; mip++) {
+    for (int mip = 0; mip < mipLevels; mip++) {
         // Skip this mip if it isn't a mipLevel we want to copy
-        if (mipLevel > -1 && (int)mip != mipLevel) {
+        if (mipLevel > -1 && mip != mipLevel) {
             continue;
         }
 
@@ -501,7 +501,7 @@ HgiVulkanTexture::CopyBufferToTexture(
         VkBufferImageCopy bufferCopyRegion = {};
         bufferCopyRegion.imageSubresource.aspectMask =
             HgiVulkanConversions::GetImageAspectFlag(_descriptor.usage);
-        bufferCopyRegion.imageSubresource.mipLevel = (uint32_t) mip;
+        bufferCopyRegion.imageSubresource.mipLevel = static_cast<uint32_t>(mip);
         bufferCopyRegion.imageSubresource.baseArrayLayer = 0;
         bufferCopyRegion.imageSubresource.layerCount = _descriptor.layerCount;
         bufferCopyRegion.imageExtent.width = mipInfo.dimensions[0];

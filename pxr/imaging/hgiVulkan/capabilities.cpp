@@ -23,6 +23,11 @@ TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_BUILTIN_BARYCENTRICS, false,
                       "Use Vulkan built in barycentric coordinates");
 TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_NATIVE_INTEROP, true,
                       "Enable native interop with OpenGL (if device supports)");
+TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_UMA, true,
+                      "Use Vulkan with UMA (if device supports)");
+TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_REBAR, false,
+                      "Use Vulkan with ReBAR (if device supports)");
+
 static void _DumpDeviceDeviceMemoryProperties(
     const VkPhysicalDeviceMemoryProperties& vkMemoryProperties)
 {
@@ -78,6 +83,58 @@ static void _DumpDeviceDeviceMemoryProperties(
         }
     }
     std::cout << std::flush;
+}
+
+// Returns true if the device memory can be accessed from the host directly,
+// as-if it was local to the host. This is typically made available by UMA
+// (uniform memory access) or ReBAR (resizable base address register). This
+// should be true for integrated GPUs, dedicated GPUs on systems with ReBAR
+// enabled, and software renderers (like Lavapipe).
+static bool
+_SupportsHostAccessibleDeviceMemory(
+    const VkPhysicalDeviceMemoryProperties& memoryProperties)
+{
+    for (uint32_t heapIndex = 0;
+        heapIndex < memoryProperties.memoryHeapCount; heapIndex++) {
+        const auto& heap = memoryProperties.memoryHeaps[heapIndex];
+
+        // ReBAR has a more basic predecessor called simply BAR. It's limited
+        // to only 256MiB, but otherwise has the exact same flags. While it has
+        // its uses for small resources that change often like uniforms, it
+        // would be much more difficult to use with Hgi, so we'll ignore it.
+        static constexpr size_t barMaxSize = 256 * 1024 * 1024;
+        if (!(heap.flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) ||
+            heap.size <= barMaxSize) {
+            continue;
+        }
+
+         for (uint32_t typeIndex = 0;
+                typeIndex < memoryProperties.memoryTypeCount; typeIndex++) {
+            const auto& memoryType = memoryProperties.memoryTypes[typeIndex];
+            if (memoryType.heapIndex != heapIndex) {
+                continue;
+            }
+
+            // We're looking for a heap that's on the device, but is host
+            // visible. We also want host coherence so writes are automatically
+            // visible and available on the device. Heaps with these properties
+            // show up on UMA and ReBAR enabled GPUs. See:
+            // https://asawicki.info/news_1740_vulkan_memory_types_on_pc_and_how_to_use_them
+            // We don't strictly need HOST_COHERENT_BIT, but it'll make things
+            // simpler. It's really only on less recent mobile devices that
+            // it's not available (mostly before 2021).
+            static constexpr auto deviceLocalHostAccessibleFlags =
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+             if ((memoryType.propertyFlags & deviceLocalHostAccessibleFlags) ==
+                deviceLocalHostAccessibleFlags) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
@@ -198,8 +255,29 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     TF_VERIFY(
         vkVertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor);
 
+    const bool hostAccessibleDeviceMemory =
+        _SupportsHostAccessibleDeviceMemory(vkMemoryProperties);
+    // If the device is located on or near the host, then it's probably UMA,
+    // anything else is probably ReBAR.
+    const bool uma = hostAccessibleDeviceMemory &&
+        (vkDeviceProperties2.properties.deviceType ==
+            VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU ||
+        vkDeviceProperties2.properties.deviceType ==
+            VK_PHYSICAL_DEVICE_TYPE_CPU);
+    const bool rebar = hostAccessibleDeviceMemory && !uma;
+    // For simplicity we'll treat UMA and ReBAR as the same using the
+    // HgiDeviceCapabilitiesBitsUnifiedMemory flag.
+    const bool unifiedMemory =
+        (uma && TfGetEnvSetting(HGIVULKAN_ENABLE_UMA)) ||
+        (rebar && TfGetEnvSetting(HGIVULKAN_ENABLE_REBAR));
+
     if (HgiVulkanIsDebugEnabled()) {
-        TF_STATUS("Selected GPU %s", vkDeviceProperties2.properties.deviceName);
+        auto memoryAccessString = "";
+        if (unifiedMemory) {
+            memoryAccessString = rebar ? " (ReBAR)" : " (UMA)";
+        }
+        TF_STATUS("Selected GPU: \"%s\"%s",
+            vkDeviceProperties2.properties.deviceName, memoryAccessString);
     }
 
     _maxClipDistances = vkDeviceProperties2.properties.limits.maxClipDistances;
@@ -210,8 +288,8 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     _uniformBufferOffsetAlignment =
         vkDeviceProperties2.properties.limits.minUniformBufferOffsetAlignment;
 
-    const bool conservativeRasterEnabled = (device->IsSupportedExtension(
-        VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME));
+    const bool conservativeRasterEnabled = device->IsSupportedExtension(
+        VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
     const bool shaderDrawParametersEnabled =
         vkVulkan11Features.shaderDrawParameters;
     bool multiDrawIndirectEnabled = true;
@@ -227,6 +305,7 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         builtinBarycentricsEnabled = false;
     }
 
+    _SetFlag(HgiDeviceCapabilitiesBitsUnifiedMemory, unifiedMemory);
     _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne, false);
     _SetFlag(HgiDeviceCapabilitiesBitsStencilReadback, true);
     _SetFlag(HgiDeviceCapabilitiesBitsShaderDoublePrecision, true);

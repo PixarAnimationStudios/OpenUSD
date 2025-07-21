@@ -419,24 +419,24 @@ void HgiVulkanBlitCmds::CopyBufferCpuToGpu(
     if (!buffer->IsCPUStagingAddress(copyOp.cpuSourceBuffer) ||
         copyOp.sourceByteOffset != copyOp.destinationByteOffset) {
 
-        // Offset into the src buffer.
-        const uint8_t* const src =
-            static_cast<const uint8_t*>(copyOp.cpuSourceBuffer) +
-                copyOp.sourceByteOffset;
+        // Offset into the src buffer
+        const auto src =
+            static_cast<const std::byte*>(copyOp.cpuSourceBuffer) +
+            copyOp.sourceByteOffset;
 
         // Offset into the dst buffer.
-        uint8_t* const dst =
-            static_cast<uint8_t*>(buffer->GetCPUStagingAddress()) +
-                copyOp.destinationByteOffset;
+        const auto dst =
+            static_cast<std::byte*>(buffer->GetCPUStagingAddress()) +
+            copyOp.destinationByteOffset;
 
         memcpy(dst, src, copyOp.byteSize);
     }
 
-    // Schedule copy data from staging buffer to device-local buffer.
-    HgiVulkanBuffer* stagingBuffer = buffer->GetStagingBuffer();
-
-    if (TF_VERIFY(stagingBuffer)) {
-        VkBufferCopy copyRegion = {};
+    // Schedule copy data from staging buffer to device-local buffer if needed.
+    // With UMA/ReBAR, the staging address is already the device buffer, so no
+    // additional copy is necessary.
+    if (HgiVulkanBuffer* stagingBuffer = buffer->GetStagingBuffer()) {
+        VkBufferCopy copyRegion{};
         // Note we use the destinationByteOffset as the srcOffset here. The staging buffer
         // should be prepared with the same data layout of the destination buffer.
         copyRegion.srcOffset = copyOp.destinationByteOffset;
@@ -444,10 +444,10 @@ void HgiVulkanBlitCmds::CopyBufferCpuToGpu(
         copyRegion.size = copyOp.byteSize;
 
         vkCmdCopyBuffer(
-            _commandBuffer->GetVulkanCommandBuffer(), 
+            _commandBuffer->GetVulkanCommandBuffer(),
             stagingBuffer->GetVulkanBuffer(),
             buffer->GetVulkanBuffer(),
-            1, 
+            1,
             &copyRegion);
     }
 }
@@ -467,43 +467,44 @@ HgiVulkanBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
     HgiVulkanBuffer* buffer = static_cast<HgiVulkanBuffer*>(
         copyOp.gpuSourceBuffer.Get());
 
-    // Make sure there is a staging buffer in the buffer by asking for cpuAddr.
-    void* cpuAddress = buffer->GetCPUStagingAddress();
-    HgiVulkanBuffer* stagingBuffer = buffer->GetStagingBuffer();
-    if (!TF_VERIFY(stagingBuffer)) {
-        return;
+    // Schedule copy data from device-local buffer to staging buffer if needed.
+    // With UMA/ReBAR, the staging address is already the device buffer, so no
+    // additional copy is necessary.
+    size_t srcOffset = copyOp.sourceByteOffset;
+    if (HgiVulkanBuffer* stagingBuffer = buffer->GetStagingBuffer()) {
+        // Copy from device-local GPU buffer into CPU staging buffer
+        VkBufferCopy copyRegion = {};
+        copyRegion.srcOffset = srcOffset;
+        // No need to use dst offset during intermediate step of copying into 
+        // staging buffer.
+        copyRegion.dstOffset = 0;
+        copyRegion.size = copyOp.byteSize;
+        vkCmdCopyBuffer(
+            _commandBuffer->GetVulkanCommandBuffer(), 
+            buffer->GetVulkanBuffer(),
+            stagingBuffer->GetVulkanBuffer(),
+            1, 
+            &copyRegion);
+        // No need to offset into the staging buffer for the next copy.
+        srcOffset = 0;
     }
 
-    // Copy from device-local GPU buffer into GPU staging buffer
-    VkBufferCopy copyRegion = {};
-    copyRegion.srcOffset = copyOp.sourceByteOffset;
-    // No need to use dst offset during intermediate step of copying into 
-    // staging buffer.
-    copyRegion.dstOffset = 0;
-    copyRegion.size = copyOp.byteSize;
-    vkCmdCopyBuffer(
-        _commandBuffer->GetVulkanCommandBuffer(), 
-        buffer->GetVulkanBuffer(),
-        stagingBuffer->GetVulkanBuffer(),
-        1, 
-        &copyRegion);
-
-    // Next schedule a callback when the above GPU-GPU copy completes.
+    // Next schedule a callback when the above GPU-CPU copy completes.
 
     // Offset into the dst buffer
-    char* dst = ((char*) copyOp.cpuDestinationBuffer) +
+    const auto dst = static_cast<std::byte*>(copyOp.cpuDestinationBuffer) +
         copyOp.destinationByteOffset;
 
-    // No need to offset into src buffer since we copied into staging buffer
-    // without dst offset.
-    const char* src = ((const char*) cpuAddress);
+    const auto src =
+        static_cast<const std::byte*>(buffer->GetCPUStagingAddress()) +
+        srcOffset;
 
     // bytes to copy
-    size_t size = copyOp.byteSize;
+    const size_t size = copyOp.byteSize;
 
     // Copy to cpu buffer when cmd buffer has been executed
     _commandBuffer->AddCompletedHandler(
-        [dst, src, size]{ memcpy(dst, src, size);}
+        [dst, src, size]{ memcpy(dst, src, size); }
     );
 }
 
