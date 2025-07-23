@@ -76,6 +76,26 @@ _ComputeUnderlaySource(const SdfPath &instancer, const SdfPath &prototypeRoot)
 }
 
 HdContainerDataSourceHandle
+_ComputePrototypeRootUnderlaySource(const SdfPath &instancer)
+{
+    if (instancer.IsEmpty()) {
+        return nullptr;
+    }
+
+    static HdContainerDataSourceHandle const ds =
+        HdRetainedContainerDataSource::New(
+            // By underlaying this data, we do not override visibility explicitly authored on a prototype instanced
+            // by a point instancer in USD.
+            HdVisibilitySchema::GetSchemaToken(),
+            HdVisibilitySchema::Builder()
+                .SetVisibility(
+                    HdRetainedTypedSampledDataSource<bool>::New(
+                        true))
+                .Build());
+    return ds;
+}
+
+HdContainerDataSourceHandle
 _ComputePrototypeRootOverlaySource(const SdfPath &instancer)
 {
     if (instancer.IsEmpty()) {
@@ -87,14 +107,6 @@ _ComputePrototypeRootOverlaySource(const SdfPath &instancer)
             HdXformSchema::GetSchemaToken(),
             HdXformSchema::Builder()
                 .SetResetXformStack(
-                    HdRetainedTypedSampledDataSource<bool>::New(
-                        true))
-                .Build(),
-            // We ignore the visibility authored on a prototype instanced
-            // by a point instancer in USD.
-            HdVisibilitySchema::GetSchemaToken(),
-            HdVisibilitySchema::Builder()
-                .SetVisibility(
                     HdRetainedTypedSampledDataSource<bool>::New(
                         true))
                 .Build());
@@ -132,11 +144,8 @@ UsdImaging_PiPrototypeSceneIndex(
     const SdfPath &instancer,
     const SdfPath &prototypeRoot)
   : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
+  , _instancer(instancer)
   , _prototypeRoot(prototypeRoot)
-  , _underlaySource(
-      _ComputeUnderlaySource(instancer, prototypeRoot))
-  , _prototypeRootOverlaySource(
-      _ComputePrototypeRootOverlaySource(instancer))
 {
     _Populate();
 }
@@ -211,20 +220,28 @@ UsdImaging_PiPrototypeSceneIndex::GetPrim(const SdfPath &primPath) const
         return prim;
     }
 
-    if (_underlaySource) {
+    TfSmallVector<HdContainerDataSourceHandle, 4> dsVec;
+
+    if (HdContainerDataSourceHandle ds =
+            _ComputePrototypeRootOverlaySource(_instancer);
+            ds && primPath == _prototypeRoot)
+        dsVec.emplace_back(ds);
+    
+    dsVec.emplace_back(prim.dataSource);
+    
+    if (HdContainerDataSourceHandle ds =
+            _ComputePrototypeRootUnderlaySource(_instancer);
+            ds && primPath == _prototypeRoot)
+        dsVec.emplace_back(ds);
+
+    if (HdContainerDataSourceHandle ds =
+            _ComputeUnderlaySource(_instancer, _prototypeRoot))
+        dsVec.emplace_back(ds);
+
+    if (dsVec.size() > 1)
         prim.dataSource = HdOverlayContainerDataSource::New(
-            prim.dataSource,
-            _underlaySource);
-    }
-
-    if (_prototypeRootOverlaySource) {
-        if (primPath == _prototypeRoot) {
-            prim.dataSource = HdOverlayContainerDataSource::New(
-                _prototypeRootOverlaySource,
-                prim.dataSource);
-        }
-    }
-
+            dsVec.size(), dsVec.data());
+    
     return prim;
 }
 
