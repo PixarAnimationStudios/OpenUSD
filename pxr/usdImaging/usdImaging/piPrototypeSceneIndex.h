@@ -148,9 +148,8 @@ protected:
 
     void _Populate();
 
+    SdfPath _instancer;
     SdfPath _prototypeRoot;
-    HdContainerDataSourceHandle _underlaySource;
-    HdContainerDataSourceHandle _prototypeRootOverlaySource;
 
     // Instancers and overs within the prototype.
     // Note that this does not include instancers or overs nested
