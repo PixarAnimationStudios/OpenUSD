@@ -672,6 +672,12 @@ UsdImagingStageSceneIndex::_ApplyPendingResyncs()
         removedPrims.emplace_back(primPath);
         _PopulateSubtree(prim, &addedPrims);
 
+        if (primPath.IsAbsoluteRootPath()) {
+            for (const UsdPrim &protoPrim : _stage->GetPrototypes()) {
+                _PopulateSubtree(protoPrim, &addedPrims);
+            }
+        }
+
         // Prune property updates of resynced prims, which are redundant.
         _DeletePrefix(primPath, &_usdPropertiesToResync);
         _DeletePrefix(primPath, &_usdPropertiesToUpdate);
