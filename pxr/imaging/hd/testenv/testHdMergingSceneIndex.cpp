@@ -8,26 +8,14 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hd/mergingSceneIndex.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/retainedSceneIndex.h"
 
 #include "pxr/base/tf/declarePtrs.h"
 
 #include <iostream>
 
-template <typename T>
-bool
-_CompareValue(const char* msg, const T& v1, const T& v2)
-{
-    if (v1 == v2) {
-        std::cout << msg << " matches." << std::endl;
-    }
-    else {
-        std::cerr << msg << " doesn't match. Expecting " << v2 << " got " << v1
-                  << std::endl;
-        return false;
-    }
-    return true;
-}
+PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_DECLARE_REF_PTRS(_MySceneIndex);
 
@@ -51,6 +39,21 @@ operator<<(std::ostream& out, const std::vector<T>& v)
     }
     out << "]";
     return out;
+}
+
+template <typename T>
+bool
+_CompareValue(const char* msg, const T& v1, const T& v2)
+{
+    if (v1 == v2) {
+        std::cout << msg << " matches." << std::endl;
+    }
+    else {
+        std::cerr << msg << " doesn't match. Expecting " << v2 << " got " << v1
+                  << std::endl;
+        return false;
+    }
+    return true;
 }
 
 class _MySceneIndex final : public HdSingleInputFilteringSceneIndexBase
@@ -225,6 +228,47 @@ _TestNoticesAfterRemove()
         });
 }
 
+static bool
+_TestRemoveInputScenes()
+{
+    const TfToken primType("PrimType");
+    auto dataSource = HdRetainedContainerDataSource::New();
+
+    HdRetainedSceneIndexRefPtr siA = HdRetainedSceneIndex::New();
+    siA->AddPrims({ { SdfPath("/A/B/C/D/E/F"), primType, dataSource },
+                    { SdfPath("/A/B/C/D2"), primType, dataSource } });
+
+    HdRetainedSceneIndexRefPtr siB = HdRetainedSceneIndex::New();
+    siB->AddPrims({ { SdfPath("/A/B/C/D"), primType, dataSource } });
+
+    HdRetainedSceneIndexRefPtr siC = HdRetainedSceneIndex::New();
+    siC->AddPrims({ { SdfPath("/A/B/C"), primType, dataSource } });
+
+    HdMergingSceneIndexRefPtr mergingSceneIndex = HdMergingSceneIndex::New();
+    mergingSceneIndex->AddInputScene(siA, SdfPath("/A/B"));
+    mergingSceneIndex->AddInputScene(siB, SdfPath("/A/B/C"));
+    mergingSceneIndex->AddInputScene(siC, SdfPath::AbsoluteRootPath());
+
+    _Logger logger;
+    mergingSceneIndex->AddObserver(HdSceneIndexObserverPtr(&logger));
+
+    mergingSceneIndex->RemoveInputScenes({siA, siB});
+
+    auto logEntries = logger.GetLog();
+
+    return _CompareValue(
+        "NOTICES", logEntries,
+        {
+            _LogEntry("remove", "/A/B/C/D/E"),
+            _LogEntry("remove", "/A/B/C/D2"),
+            _LogEntry("add", "/A/B"),
+            _LogEntry("add", "/A/B/C"),
+            _LogEntry("add", "/A/B/C/D"),
+            _LogEntry("remove", "/A/B/C/D"),
+            _LogEntry("add", "/A/B/C"),
+        });
+}
+
 #define xstr(s) str(s)
 #define str(s) #s
 #define TEST(X)                                                                \
@@ -244,6 +288,7 @@ main(int argc, char** argv)
 
     int i = 0;
     TEST(_TestNoticesAfterRemove);
+    TEST(_TestRemoveInputScenes);
 
     //-------------------------------------------------------------------------
     std::cout << "DONE testHdMergingSceneIndex" << std::endl;
