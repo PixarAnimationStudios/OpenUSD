@@ -259,12 +259,9 @@ _TestRemoveInputScenes()
     return _CompareValue(
         "NOTICES", logEntries,
         {
-            _LogEntry("remove", "/A/B/C/D/E"),
+            _LogEntry("remove", "/A/B/C/D"),
             _LogEntry("remove", "/A/B/C/D2"),
             _LogEntry("add", "/A/B"),
-            _LogEntry("add", "/A/B/C"),
-            _LogEntry("add", "/A/B/C/D"),
-            _LogEntry("remove", "/A/B/C/D"),
             _LogEntry("add", "/A/B/C"),
         });
 }
