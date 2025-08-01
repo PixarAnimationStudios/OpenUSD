@@ -24,7 +24,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 static inline void
 Vdf_ExecutorDataVector_ValgrindMakeDefined(void *ptr, size_t size)
 {
-#if defined(ARCH_OS_LINUX)
+#if defined(ARCH_OS_LINUX) && defined(ARCH_CPU_INTEL)
     // Pass a result and a pointer to some arguments via registers
     volatile unsigned long long int result;
     volatile unsigned long long int args[6] = {
