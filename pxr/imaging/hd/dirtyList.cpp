@@ -40,8 +40,11 @@ _DirtyRprimIdsFilterPredicate(
     
     if (mask == HdChangeTracker::Clean || bits & mask) {
         // Update the render tag if needed.
+        TfToken oldRenderTag = renderIndex->GetRenderTag(rprimID);
+        // Why we don't clear the dirty bit of DirtyRenderTag?
+        // Because rprim sync needs to detect the change of render tag.
         const TfToken& primRenderTag =
-            renderIndex->UpdateRenderTag(rprimID, bits);
+            renderIndex->_UpdateRenderTagInternal(rprimID, bits, false);
 
         // XXX An empty render tag set means everything passes the filter
         //     We should use an explicit token to indicate all render tags.
@@ -50,6 +53,14 @@ _DirtyRprimIdsFilterPredicate(
         //     Primary user is tests, but some single task render delegates
         //     that don't support render tags yet also use it.
         if (filterParam->renderTags.empty()) {
+            return true;
+        }
+        
+        // If the render tag has changed, we need to give rprim a chance to 
+        // sync the render tag so rprim can be updated.
+        // This is a hack to get around the fact that hydra skips the sync of
+        // rprims when the render tags are not meant to be rendered below.
+        if (oldRenderTag != primRenderTag) {
             return true;
         }
 

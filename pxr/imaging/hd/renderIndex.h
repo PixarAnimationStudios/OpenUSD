@@ -233,6 +233,14 @@ public:
     TfToken UpdateRenderTag(SdfPath const& id,
                             HdDirtyBits bits);
 
+    // Like UpdateRenderTag, but can be called by the client to 
+    // update the render tag without clearing the dirty render tag bit.
+    // We keep this function since we don't want to break API compatibility
+    // of the public UpdateRenderTag.
+    TfToken _UpdateRenderTagInternal(SdfPath const& id,
+                                     HdDirtyBits bits,
+                                     bool clearDirtyRenderTag);
+
     /// Returns a sorted list of all Rprims in the render index.
     /// The list is sorted by std::less<SdfPath>
     HD_API

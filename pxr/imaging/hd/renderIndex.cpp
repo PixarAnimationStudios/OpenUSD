@@ -1152,6 +1152,14 @@ TfToken
 HdRenderIndex::UpdateRenderTag(SdfPath const& id,
                                HdDirtyBits bits)
 {
+    return _UpdateRenderTagInternal(id, bits, true);
+}
+
+TfToken
+HdRenderIndex::_UpdateRenderTagInternal(SdfPath const& id,
+                                        HdDirtyBits bits,
+                                        bool clearDirtyRenderTag)
+{
     _RprimInfo const* info = TfMapLookupPtr(_rprimMap, id);
     if (info == nullptr) {
         return HdRenderTagTokens->hidden;
@@ -1160,8 +1168,10 @@ HdRenderIndex::UpdateRenderTag(SdfPath const& id,
     if (bits & HdChangeTracker::DirtyRenderTag) {
         info->rprim->UpdateRenderTag(info->sceneDelegate,
                                     _renderDelegate->GetRenderParam());
-        _tracker.MarkRprimClean(id,
-                                bits & ~HdChangeTracker::DirtyRenderTag);
+        if (clearDirtyRenderTag) {
+            _tracker.MarkRprimClean(id,
+                                    bits & ~HdChangeTracker::DirtyRenderTag);
+        }
     }
     return info->rprim->GetRenderTag();
 }
