@@ -121,6 +121,7 @@ class UsdImaging_PiPrototypeSceneIndex final
 public:
     static UsdImaging_PiPrototypeSceneIndexRefPtr New(
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
+        HdSceneIndexBaseRefPtr const &instancerSceneIndex,
         const SdfPath &instancer,
         const SdfPath &prototypeRoot);
 
@@ -131,6 +132,7 @@ public:
 protected:
     UsdImaging_PiPrototypeSceneIndex(
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
+        HdSceneIndexBaseRefPtr const &instancerSceneIndex,
         const SdfPath &instancer,
         const SdfPath &prototypeRoot);
 
@@ -151,6 +153,10 @@ protected:
     SdfPath _instancer;
     SdfPath _prototypeRoot;
 
+    HdContainerDataSourceHandle _underlaySource;
+    HdContainerDataSourceHandle _prototypeRootUnderlaySource;
+    HdContainerDataSourceHandle _prototypeRootOverlaySource;
+    
     // Instancers and overs within the prototype.
     // Note that this does not include instancers or overs nested
     // under an instancer or over.

@@ -12,6 +12,7 @@
 
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
+#include "pxr/imaging/hd/dependenciesSchema.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
@@ -43,6 +44,45 @@ using namespace UsdImaging_PrototypeSceneIndexUtils;
 
 namespace
 {
+
+class _ReferencedVisibilityDataSource : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_ReferencedVisibilityDataSource);
+    
+    TfTokenVector GetNames() override
+    {
+        return { HdVisibilitySchema::GetSchemaToken() };
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        if (name != HdVisibilitySchema::GetSchemaToken()) {
+            return nullptr;
+        }
+        if (!_referencedSceneIndex || _referencedPrimPath.IsEmpty()) {
+            return nullptr;
+        }
+        HdSceneIndexPrim referencedPrim =
+            _referencedSceneIndex->GetPrim(_referencedPrimPath);
+        if (!referencedPrim.dataSource) {
+            return nullptr;
+        }
+        return referencedPrim.dataSource->Get(name);
+    }
+
+protected:
+    _ReferencedVisibilityDataSource(
+        HdSceneIndexBaseRefPtr const &referencedSceneIndex,
+        SdfPath const &referencedPrimPath)
+            : _referencedSceneIndex(referencedSceneIndex)
+            , _referencedPrimPath(referencedPrimPath)
+    {}
+    
+private:
+    HdSceneIndexBaseRefPtr _referencedSceneIndex;
+    SdfPath _referencedPrimPath;
+};
 
 bool
 _ContainsStrictPrefixOfPath(
@@ -76,23 +116,16 @@ _ComputeUnderlaySource(const SdfPath &instancer, const SdfPath &prototypeRoot)
 }
 
 HdContainerDataSourceHandle
-_ComputePrototypeRootUnderlaySource(const SdfPath &instancer)
+_ComputePrototypeRootUnderlaySource(
+    const HdSceneIndexBaseRefPtr &instancerSceneIndex,
+    const SdfPath &instancer)
 {
     if (instancer.IsEmpty()) {
         return nullptr;
     }
 
-    static HdContainerDataSourceHandle const ds =
-        HdRetainedContainerDataSource::New(
-            // By underlaying this data, we do not override visibility explicitly authored on a prototype instanced
-            // by a point instancer in USD.
-            HdVisibilitySchema::GetSchemaToken(),
-            HdVisibilitySchema::Builder()
-                .SetVisibility(
-                    HdRetainedTypedSampledDataSource<bool>::New(
-                        true))
-                .Build());
-    return ds;
+    // By underlaying this data, we do not override invisibility explicitly authored on a prototype.
+    return _ReferencedVisibilityDataSource::New(instancerSceneIndex, instancer);
 }
 
 HdContainerDataSourceHandle
@@ -109,7 +142,20 @@ _ComputePrototypeRootOverlaySource(const SdfPath &instancer)
                 .SetResetXformStack(
                     HdRetainedTypedSampledDataSource<bool>::New(
                         true))
-                .Build());
+                .Build(),
+            HdDependenciesSchema::GetSchemaToken(),
+            HdRetainedContainerDataSource::New(
+                TfToken(instancer.GetName()),
+                HdDependencySchema::Builder()
+                    .SetDependedOnPrimPath(
+                        HdRetainedTypedSampledDataSource<SdfPath>::New(instancer))
+                    .SetDependedOnDataSourceLocator(
+                        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+                            HdVisibilitySchema::GetDefaultLocator()))
+                    .SetAffectedDataSourceLocator(
+                        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+                            HdVisibilitySchema::GetDefaultLocator()))
+                    .Build()));
     return ds;
 }
 
@@ -130,22 +176,28 @@ _IsOver(const HdSceneIndexPrim &prim)
 UsdImaging_PiPrototypeSceneIndexRefPtr
 UsdImaging_PiPrototypeSceneIndex::New(
     HdSceneIndexBaseRefPtr const &inputSceneIndex,
+    HdSceneIndexBaseRefPtr const &instancerSceneIndex,
     const SdfPath &instancer,
     const SdfPath &prototypeRoot)
 {
     return TfCreateRefPtr(
         new UsdImaging_PiPrototypeSceneIndex(
-            inputSceneIndex, instancer, prototypeRoot));
+            inputSceneIndex, instancerSceneIndex, instancer, prototypeRoot));
 }
 
 UsdImaging_PiPrototypeSceneIndex::
 UsdImaging_PiPrototypeSceneIndex(
     HdSceneIndexBaseRefPtr const &inputSceneIndex,
+    HdSceneIndexBaseRefPtr const &instancerSceneIndex,
     const SdfPath &instancer,
     const SdfPath &prototypeRoot)
   : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
   , _instancer(instancer)
   , _prototypeRoot(prototypeRoot)
+  , _underlaySource(_ComputeUnderlaySource(instancer, prototypeRoot))
+  , _prototypeRootUnderlaySource(_ComputePrototypeRootUnderlaySource(
+      instancerSceneIndex, instancer))
+  , _prototypeRootOverlaySource(_ComputePrototypeRootOverlaySource(instancer))
 {
     _Populate();
 }
@@ -222,25 +274,23 @@ UsdImaging_PiPrototypeSceneIndex::GetPrim(const SdfPath &primPath) const
 
     TfSmallVector<HdContainerDataSourceHandle, 4> dsVec;
 
-    if (HdContainerDataSourceHandle ds =
-            _ComputePrototypeRootOverlaySource(_instancer);
-            ds && primPath == _prototypeRoot)
-        dsVec.emplace_back(ds);
-    
+    if (_prototypeRootOverlaySource) {
+        dsVec.emplace_back(_prototypeRootOverlaySource);
+    }
+
     dsVec.emplace_back(prim.dataSource);
-    
-    if (HdContainerDataSourceHandle ds =
-            _ComputePrototypeRootUnderlaySource(_instancer);
-            ds && primPath == _prototypeRoot)
-        dsVec.emplace_back(ds);
 
-    if (HdContainerDataSourceHandle ds =
-            _ComputeUnderlaySource(_instancer, _prototypeRoot))
-        dsVec.emplace_back(ds);
+    if (_prototypeRootUnderlaySource) {
+        dsVec.emplace_back(_prototypeRootUnderlaySource);
+    }
+    if (_underlaySource) {
+        dsVec.emplace_back(_underlaySource);
+    }
 
-    if (dsVec.size() > 1)
+    if (dsVec.size() > 1) {
         prim.dataSource = HdOverlayContainerDataSource::New(
             dsVec.size(), dsVec.data());
+    }
     
     return prim;
 }

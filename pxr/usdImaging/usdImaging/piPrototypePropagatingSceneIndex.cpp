@@ -340,6 +340,7 @@ _InstancerObserver::_InstancerObserver(
           _RerootingSceneIndex(
               context->inputSceneIndex,
               prototype, prototype),
+          context->inputSceneIndex,
           instancer,
           prototype))
   , _rerootingSceneIndex(
