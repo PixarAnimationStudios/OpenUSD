@@ -274,13 +274,13 @@ UsdImaging_PiPrototypeSceneIndex::GetPrim(const SdfPath &primPath) const
 
     TfSmallVector<HdContainerDataSourceHandle, 4> dsVec;
 
-    if (_prototypeRootOverlaySource) {
+    if (_prototypeRootOverlaySource && primPath == _prototypeRoot) {
         dsVec.emplace_back(_prototypeRootOverlaySource);
     }
 
     dsVec.emplace_back(prim.dataSource);
 
-    if (_prototypeRootUnderlaySource) {
+    if (_prototypeRootUnderlaySource && primPath == _prototypeRoot) {
         dsVec.emplace_back(_prototypeRootUnderlaySource);
     }
     if (_underlaySource) {
