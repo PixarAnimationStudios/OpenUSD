@@ -1196,9 +1196,10 @@ generic_unpack_deep_pointers (exr_decode_pipeline_t* decode)
                 if (outpix)
                 {
                     uint8_t* cdata = outpix;
+
                     UNPACK_SAMPLES (samps)
                 }
-                srcbuffer += bpc * samps;
+                srcbuffer += ((size_t) bpc) * ((size_t) samps);
             }
         }
         sampbuffer += w;
@@ -1242,12 +1243,14 @@ generic_unpack_deep (exr_decode_pipeline_t* decode)
                 }
                 else
                     prevsamps = sampbuffer[w - 1];
+
                 srcbuffer += ((size_t) bpc) * ((size_t) prevsamps);
 
                 if (incr_tot) totsamps += (size_t) prevsamps;
 
                 continue;
             }
+
             cdata += totsamps * ((size_t) ubpc);
 
             for (int x = 0; x < w; ++x)
@@ -1263,7 +1266,7 @@ generic_unpack_deep (exr_decode_pipeline_t* decode)
 
                 UNPACK_SAMPLES (samps)
 
-                srcbuffer += bpc * samps;
+                srcbuffer += ((size_t) bpc) * ((size_t) samps);
                 if (incr_tot) totsamps += (size_t) samps;
             }
         }
@@ -1301,7 +1304,7 @@ internal_exr_match_decode (
 
     if (isdeep)
     {
-        if ((decode->decode_flags & EXR_DECODE_SAMPLE_COUNTS_AS_INDIVIDUAL))
+        if ((decode->decode_flags & EXR_DECODE_NON_IMAGE_DATA_AS_POINTERS))
             return &generic_unpack_deep_pointers;
         return &generic_unpack_deep;
     }

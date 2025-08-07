@@ -288,6 +288,9 @@ default_decompress_chunk (exr_decode_pipeline_t* decode)
         uint64_t sampsize =
             (((uint64_t) decode->chunk.width) *
              ((uint64_t) decode->chunk.height));
+
+        if ((decode->decode_flags & EXR_DECODE_SAMPLE_COUNTS_AS_INDIVIDUAL))
+            sampsize += 1;
         sampsize *= sizeof (int32_t);
 
         rv = decompress_data (
@@ -340,7 +343,7 @@ unpack_sample_table (
     exr_result_t rv           = EXR_ERR_SUCCESS;
     int32_t      w            = decode->chunk.width;
     int32_t      h            = decode->chunk.height;
-    int32_t      totsamp      = 0;
+    uint64_t     totsamp      = 0;
     int32_t*     samptable    = decode->sample_count_table;
     size_t       combSampSize = 0;
 
@@ -351,38 +354,44 @@ unpack_sample_table (
     {
         for (int32_t y = 0; y < h; ++y)
         {
+            int32_t *cursampline = samptable + y * w;
             int32_t prevsamp = 0;
             for (int32_t x = 0; x < w; ++x)
             {
                 int32_t nsamps =
-                    (int32_t) one_to_native32 ((uint32_t) samptable[y * w + x]);
-                if (nsamps < 0) return EXR_ERR_INVALID_SAMPLE_DATA;
-                samptable[y * w + x] = nsamps - prevsamp;
-                prevsamp             = nsamps;
+                    (int32_t) one_to_native32 ((uint32_t) cursampline[x]);
+                if (nsamps < prevsamp) return EXR_ERR_INVALID_SAMPLE_DATA;
+
+                cursampline[x] = nsamps - prevsamp;
+                prevsamp       = nsamps;
             }
-            totsamp += prevsamp;
+            totsamp += (uint64_t)prevsamp;
         }
-        samptable[w * h] = totsamp;
+        if (totsamp >= (uint64_t)INT32_MAX)
+            return EXR_ERR_INVALID_SAMPLE_DATA;
+        samptable[w * h] = (int32_t)totsamp;
     }
     else
     {
         for (int32_t y = 0; y < h; ++y)
         {
+            int32_t *cursampline = samptable + y * w;
             int32_t prevsamp = 0;
             for (int32_t x = 0; x < w; ++x)
             {
                 int32_t nsamps =
-                    (int32_t) one_to_native32 ((uint32_t) samptable[y * w + x]);
-                if (nsamps < 0) return EXR_ERR_INVALID_SAMPLE_DATA;
-                samptable[y * w + x] = nsamps;
-                prevsamp             = nsamps;
+                    (int32_t) one_to_native32 ((uint32_t) cursampline[x]);
+                if (nsamps < prevsamp) return EXR_ERR_INVALID_SAMPLE_DATA;
+
+                cursampline[x] = nsamps;
+                prevsamp = nsamps;
             }
-            totsamp += prevsamp;
+
+            totsamp += (uint64_t)prevsamp;
         }
     }
 
-    if (totsamp < 0 ||
-        (((uint64_t) totsamp) * combSampSize) > decode->chunk.unpacked_size)
+    if ((totsamp * combSampSize) > decode->chunk.unpacked_size)
     {
         rv = pctxt->report_error (
             pctxt, EXR_ERR_INVALID_SAMPLE_DATA, "Corrupt sample count table");
