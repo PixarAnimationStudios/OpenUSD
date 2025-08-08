@@ -6,6 +6,7 @@
 //
 #include "pxr/pxr.h"
 
+#include "pxr/base/gf/vec3f.h"
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/utils.h"
 #include "pxr/base/tf/errorMark.h"
@@ -22,7 +23,7 @@ BasicTest()
 {
     // Create a representation of a material network
     HdMaterialNetwork materialNetwork;
-    materialNetwork.nodes.reserve(3);
+    materialNetwork.nodes.reserve(4);
 
     const SdfPath materialPath("/Asset/Looks/Material");
 
@@ -43,6 +44,16 @@ BasicTest()
     standInNode.identifier = TfToken("PbsNetworkMaterialStandIn_3");
     materialNetwork.nodes.push_back(standInNode);
 
+    const TfToken primvarToken("Primvar_0");
+    materialNetwork.primvars.push_back(primvarToken);
+
+    HdMaterialNode primvarNode;
+    primvarNode.path = SdfPath("/Asset/Looks/Material/Primvar_0Reader");
+    primvarNode.identifier = TfToken("PrimvarReader_float3");
+    primvarNode.parameters[TfToken("varname")] = primvarToken;
+    primvarNode.parameters[TfToken("fallback")] = VtValue(GfVec3f(1.0f, 1.0f, 1.0f));
+    materialNetwork.nodes.push_back(primvarNode);
+
     // Connect the nodes
     HdMaterialRelationship textureMaterialLayerRel;
     textureMaterialLayerRel.inputId = textureNode.path;
@@ -57,6 +68,13 @@ BasicTest()
     materialLayerStandInRel.outputId = standInNode.path;
     materialLayerStandInRel.outputName = TfToken("multiMaterialIn");
     materialNetwork.relationships.push_back(materialLayerStandInRel);
+
+    pxr::HdMaterialRelationship primvarRel;
+    primvarRel.inputId = primvarNode.path;
+    primvarRel.inputName = TfToken("result");
+    primvarRel.outputId = materialPath;
+    primvarRel.outputName = primvarToken;
+    materialNetwork.relationships.push_back(primvarRel);
 
     HdMaterialNetworkMap networkMap;
     networkMap.map[TfToken("surface")] = materialNetwork;

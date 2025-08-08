@@ -103,7 +103,10 @@ HdConvertToHdMaterialNetwork2(
         }
 
         // Transfer primvars:
-        result.primvars = hdNetwork.primvars;
+        result.primvars.insert(
+            result.primvars.end(),
+            hdNetwork.primvars.begin(),
+            hdNetwork.primvars.end());
     }
 
     // Transfer config dictionary

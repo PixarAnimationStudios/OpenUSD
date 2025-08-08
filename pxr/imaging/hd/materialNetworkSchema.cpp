@@ -60,17 +60,25 @@ HdMaterialNetworkSchema::GetConfig() const
         HdMaterialNetworkSchemaTokens->config));
 }
 
+HdTokenVectorMapDataSourceHandle
+HdMaterialNetworkSchema::GetPrimvars() const
+{
+    return _GetTypedDataSource<HdTokenVectorMapDataSource>(
+        HdMaterialNetworkSchemaTokens->primvars);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdMaterialNetworkSchema::BuildRetained(
         const HdContainerDataSourceHandle &nodes,
         const HdContainerDataSourceHandle &terminals,
         const HdContainerDataSourceHandle &interfaceMappings,
-        const HdContainerDataSourceHandle &config
+        const HdContainerDataSourceHandle &config,
+        const HdTokenVectorMapDataSourceHandle &primvarsMap
 )
 {
-    TfToken _names[4];
-    HdDataSourceBaseHandle _values[4];
+    TfToken _names[5];
+    HdDataSourceBaseHandle _values[5];
 
     size_t _count = 0;
 
@@ -92,6 +100,11 @@ HdMaterialNetworkSchema::BuildRetained(
     if (config) {
         _names[_count] = HdMaterialNetworkSchemaTokens->config;
         _values[_count++] = config;
+    }
+
+    if (primvarsMap) {
+        _names[_count] = HdMaterialNetworkSchemaTokens->primvars;
+        _values[_count++] = primvarsMap;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -128,6 +141,14 @@ HdMaterialNetworkSchema::Builder::SetConfig(
     return *this;
 }
 
+HdMaterialNetworkSchema::Builder &
+HdMaterialNetworkSchema::Builder::SetPrimvars(
+    const HdTokenVectorMapDataSourceHandle &primvarsMap)
+{
+    _primvarsMap = primvarsMap;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdMaterialNetworkSchema::Builder::Build()
 {
@@ -135,7 +156,8 @@ HdMaterialNetworkSchema::Builder::Build()
         _nodes,
         _terminals,
         _interfaceMappings,
-        _config
+        _config,
+        _primvarsMap
     );
 } 
 

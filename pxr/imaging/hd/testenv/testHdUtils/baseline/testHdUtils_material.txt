@@ -12,6 +12,17 @@
 			[nodeIdentifier]
 				MaterialLayer_3
 			[parameters]
+		[/Asset/Looks/Material/Primvar_0Reader]
+			[inputConnections]
+			[nodeIdentifier]
+				PrimvarReader_float3
+			[parameters]
+				[fallback]
+					[value]
+						(1, 1, 1)
+				[varname]
+					[value]
+						Primvar_0
 		[/Asset/Looks/Material/StandIn]
 			[inputConnections]
 				[multiMaterialIn]
@@ -31,6 +42,7 @@
 				[inputs:filename]
 					[value]
 						studio/patterns/checkerboard/checkerboard.tex
+	[primvars]
 	[terminals]
 		[surface]
 			[upstreamNodeOutputName]

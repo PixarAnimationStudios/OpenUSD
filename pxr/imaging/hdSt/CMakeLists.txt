@@ -3365,4 +3365,31 @@ pxr_register_test(testHdStShaders
     ENV
         TF_DEBUG=HD_SAFE_MODE
 )
+
+pxr_build_test(testHdStShaderPrimvars
+    LIBRARIES
+        hdSt
+        hd
+        sdr
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStShaderPrimvars.cpp
+)
+pxr_install_test_dir(
+    SRC testenv/testHdStShaderPrimvars
+    DEST testHdStShaderPrimvars
+)
+pxr_register_test(testHdStShaderPrimvars
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStShaderPrimvars --offscreen --outputFilePrefix testHdStShaderPrimvars"
+    EXPECTED_RETURN_CODE 0
+    IMAGE_DIFF_COMPARE
+        testHdStShaderPrimvars.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    TESTENV testHdStShaderPrimvars
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
 endif() # TARGET shared_libs

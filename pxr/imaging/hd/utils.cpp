@@ -144,6 +144,7 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
     std::vector<HdDataSourceBaseHandle> terminalsValues;
     std::vector<TfToken> nodeNames;
     std::vector<HdDataSourceBaseHandle> nodeValues;
+    HdTokenVectorMap primvarsMap;
 
     struct ParamData {
         VtValue value;
@@ -160,6 +161,7 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
         }
 
         terminalsNames.push_back(terminalName);
+        primvarsMap[terminalName] = hdNetwork.primvars;
 
         // Transfer over individual nodes.
         // Note that the same nodes may be shared by multiple terminals.
@@ -307,6 +309,8 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
         .SetNodes(nodesDefaultContext)
         .SetTerminals(terminalsDefaultContext)
         .SetConfig(configDefaultContext)
+        .SetPrimvars(
+            HdRetainedTypedSampledDataSource<HdTokenVectorMap>::New(primvarsMap))
         .Build();
 }
 

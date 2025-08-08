@@ -31,6 +31,11 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 // --(BEGIN CUSTOM CODE: Declares)--
+
+using HdTokenVectorMap = std::map<TfToken, TfTokenVector>;
+using HdTokenVectorMapDataSource = HdTypedSampledDataSource<HdTokenVectorMap>;
+using HdTokenVectorMapDataSourceHandle = HdTokenVectorMapDataSource::Handle;
+
 // --(END CUSTOM CODE: Declares)--
 
 #define HD_MATERIAL_NETWORK_SCHEMA_TOKENS \
@@ -38,6 +43,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (terminals) \
     (interfaceMappings) \
     (config) \
+    (primvars) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdMaterialNetworkSchemaTokens, HD_API,
     HD_MATERIAL_NETWORK_SCHEMA_TOKENS);
@@ -115,6 +121,9 @@ public:
     HD_API
     HdSampledDataSourceContainerSchema GetConfig() const; 
 
+    HD_API
+    HdTokenVectorMapDataSourceHandle GetPrimvars() const; 
+
     /// @} 
 
     /// \name Schema construction
@@ -133,7 +142,8 @@ public:
         const HdContainerDataSourceHandle &nodes,
         const HdContainerDataSourceHandle &terminals,
         const HdContainerDataSourceHandle &interfaceMappings,
-        const HdContainerDataSourceHandle &config
+        const HdContainerDataSourceHandle &config,
+        const HdTokenVectorMapDataSourceHandle &primvarsMap
     );
 
     /// \class HdMaterialNetworkSchema::Builder
@@ -157,6 +167,9 @@ public:
         HD_API
         Builder &SetConfig(
             const HdContainerDataSourceHandle &config);
+        HD_API
+        Builder &SetPrimvars(
+            const HdTokenVectorMapDataSourceHandle &primvarsMap);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -167,6 +180,7 @@ public:
         HdContainerDataSourceHandle _terminals;
         HdContainerDataSourceHandle _interfaceMappings;
         HdContainerDataSourceHandle _config;
+        HdTokenVectorMapDataSourceHandle _primvarsMap;
 
     };
 
