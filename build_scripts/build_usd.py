@@ -1276,8 +1276,8 @@ PTEX = Dependency("Ptex", InstallPtex, "include/PtexVersion.h")
 
 BLOSC_URL = "https://github.com/Blosc/c-blosc/archive/v1.20.1.zip"
 if MacOS():
-    # Using blosc v1.21.6 to avoid build errors with Xcode 16.3+ toolchain, 
-    # caused by incompatibility with internally used zlib v1.2.8 with blosc 
+    # Using blosc v1.21.6 to avoid build errors with Xcode 16.3+ toolchain,
+    # caused by incompatibility with internally used zlib v1.2.8 with blosc
     # v1.20.1
     BLOSC_URL = "https://github.com/Blosc/c-blosc/archive/v1.21.6.zip"
 
@@ -1464,7 +1464,7 @@ def GetJinja2Instructions():
             'update your PYTHONPATH to indicate where it is '
             'located.')
 
-JINJA2 = PythonDependency("Jinja2", GetJinja2Instructions, 
+JINJA2 = PythonDependency("Jinja2", GetJinja2Instructions,
                           moduleNames=["jinja2"])
 
 ############################################################
@@ -1629,6 +1629,23 @@ def InstallAnimX(context, force, buildArgs):
 
 ANIMX = Dependency("AnimX", InstallAnimX, "include/animx.h")
 
+############################################################
+# GLFW
+
+GLFW_URL = "https://github.com/glfw/glfw/releases/download/3.4/glfw-3.4.zip"
+
+def InstallGLFW(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(GLFW_URL, context, force)):
+        cmakeOptions = ['-DGLFW_LIBRARY_TYPE=STATIC',
+                        '-DGLFW_BUILD_EXAMPLES=OFF',
+                        '-DGLFW_BUILD_TESTS=OFF',
+                        '-DGLFW_BUILD_WAYLAND=OFF',
+                        '-DGLFW_BUILD_DOCS=OFF'
+                        ]
+        cmakeOptions += buildArgs
+        RunCMake(context, force, cmakeOptions)
+
+GLFW = Dependency("GLFW", InstallGLFW, "include/GLFW/glfw3.h")
 
 ############################################################
 # USD
@@ -1756,7 +1773,7 @@ def InstallUSD(context, force, buildArgs):
                     extraArgs.append('-DPXR_BUILD_IMAGEIO_PLUGIN=ON')
                 else:
                     extraArgs.append('-DPXR_BUILD_IMAGEIO_PLUGIN=OFF')
-            
+
             if context.buildOIIO:
                 extraArgs.append('-DPXR_BUILD_OPENIMAGEIO_PLUGIN=ON')
             else:
@@ -2138,7 +2155,7 @@ subgroup.add_argument("--openimageio", dest="build_oiio", action="store_true",
 subgroup.add_argument("--no-openimageio", dest="build_oiio", action="store_false",
                       help="Do not build OpenImageIO plugin for USD (default)")
 if MacOS():
-    group.add_argument("--imageio", dest="build_imageio", action="store_true", 
+    group.add_argument("--imageio", dest="build_imageio", action="store_true",
                       default=True,
                       help="Build the ImageIO.framework plugin for USD (default).")
     group.add_argument("--no-imageio", dest="build_imageio", action="store_false",
@@ -2447,7 +2464,10 @@ if context.buildUsdview:
 if context.buildAnimXTests:
     requiredDependencies += [ANIMX]
 
-# Linux and MacOS provide zlib. Skipping it here avoids issues where a host 
+if context.buildUsdImaging and not MacOS():
+    requiredDependencies += [GLFW]
+
+# Linux and MacOS provide zlib. Skipping it here avoids issues where a host
 # application loads a different version of zlib than the one we build against.
 # Building zlib is the default when a dependency requires it, although OpenUSD
 # itself does not require it. The --no-zlib flag can be passed to the build
