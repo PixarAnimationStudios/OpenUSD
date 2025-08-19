@@ -47,8 +47,8 @@ struct TfPySequenceToPython
     static PyObject* convert(ContainerType const &c)
     {
         pxr_boost::python::list result;
-        TF_FOR_ALL(i, c) {
-            result.append(*i);
+        for(const auto& i: c) {
+            result.append(i);
         }
         return pxr_boost::python::incref(result.ptr());
     }

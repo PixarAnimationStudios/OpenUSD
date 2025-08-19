@@ -152,9 +152,9 @@ void
 TfRefPtrTracker::ReportAllWatchedCounts(std::ostream& stream) const
 {
     stream << "TfRefPtrTracker watched counts:" << std::endl;
-    TF_FOR_ALL(i, _watched) {
-        stream << "  " << i->first << ": " << i->second
-               << " (type " << _GetDemangled(i->first) << ")"
+    for(const auto& i: _watched) {
+        stream << "  " << i.first << ": " << i.second
+               << " (type " << _GetDemangled(i.first) << ")"
                << std::endl;
     }
 }
@@ -164,9 +164,9 @@ TfRefPtrTracker::ReportAllTraces(std::ostream& stream) const
 {
     stream << "TfRefPtrTracker traces:" << std::endl;
     _Lock lock(_mutex);
-    TF_FOR_ALL(i, _traces) {
-        const Trace& trace = i->second;
-        stream << "  Owner: " << i->first
+    for(const auto& i: _traces) {
+        const Trace& trace = i.second;
+        stream << "  Owner: " << i.first
                << " " << _type[trace.type] << " " << trace.obj << ":"
                << std::endl;
         stream << "=============================================================="
@@ -195,10 +195,10 @@ TfRefPtrTracker::ReportTracesForWatched(
            << " (type " << _GetDemangled(watched) << ")" << std::endl;
 
     // Loop over all traces and report the ones that are watching watched.
-    TF_FOR_ALL(i, _traces) {
-        const Trace& trace = i->second;
+    for(const auto& i: _traces) {
+        const Trace& trace = i.second;
         if (trace.obj == watched) {
-            stream << "  Owner: " << i->first
+            stream << "  Owner: " << i.first
                    << " " << _type[trace.type] << ":"
                    << std::endl;
             stream << "=============================================================="

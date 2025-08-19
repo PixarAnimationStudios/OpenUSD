@@ -51,8 +51,8 @@ TfTemplateString::Substitute(const Mapping& mapping) const
     vector<string> evalErrors;
     string result = _Evaluate(mapping, &evalErrors);
 
-    TF_FOR_ALL(it, evalErrors)
-        TF_CODING_ERROR("%s", it->c_str());
+    for(const string& it: evalErrors)
+        TF_CODING_ERROR("%s", it.c_str());
 
     return result;
 }
@@ -69,8 +69,8 @@ void
 TfTemplateString::_EmitParseErrors() const
 {
     tbb::spin_mutex::scoped_lock lock(_data->mutex);
-    TF_FOR_ALL(it, _data->parseErrors)
-        TF_CODING_ERROR("%s", it->c_str());
+    for(const string& it: _data->parseErrors)
+        TF_CODING_ERROR("%s", it.c_str());
 }
 
 TfTemplateString::Mapping
@@ -79,8 +79,8 @@ TfTemplateString::GetEmptyMapping() const
     Mapping mapping;
     if (IsValid()) {
         tbb::spin_mutex::scoped_lock lock(_data->mutex);
-        TF_FOR_ALL(it, _data->placeholders)
-            mapping.insert(make_pair(it->name, std::string()));
+        for(const auto& it: _data->placeholders)
+            mapping.insert(make_pair(it.name, std::string()));
     }
     return mapping;
 }
@@ -188,17 +188,17 @@ _Evaluate(const Mapping& mapping, vector<string>* errors) const
 
     tbb::spin_mutex::scoped_lock lock(_data->mutex);
 
-    TF_FOR_ALL(it, _data->placeholders) {
+    for(const auto& it: _data->placeholders) {
         // Add template content between the end of the last placeholder (or
         // the start of the template) and the start of the next placeholder.
         result.insert(result.end(),
-            _data->template_.begin() + pos, _data->template_.begin() + it->pos);
+            _data->template_.begin() + pos, _data->template_.begin() + it.pos);
 
-        if (it->name[0] == _Sigil) {
+        if (it.name[0] == _Sigil) {
             result.insert(result.end(), _Sigil);
         }
         else {
-            Mapping::const_iterator mit = mapping.find(it->name);
+            Mapping::const_iterator mit = mapping.find(it.name);
             if (mit != mapping.end()) {
                 result.insert(result.end(),
                     mit->second.begin(),
@@ -206,14 +206,14 @@ _Evaluate(const Mapping& mapping, vector<string>* errors) const
             } else {
                 // Insert the placeholder into the result.
                 result.insert(result.end(),
-                    _data->template_.begin() + it->pos,
-                    _data->template_.begin() + it->pos + it->len);
+                    _data->template_.begin() + it.pos,
+                    _data->template_.begin() + it.pos + it.len);
                 _ERROR(errors, "No mapping found for placeholder '%s'",
-                    it->name.c_str());
+                    it.name.c_str());
             }
         }
 
-        pos = it->pos + it->len;
+        pos = it.pos + it.len;
     }
 
     // Add the remainder of the template string.

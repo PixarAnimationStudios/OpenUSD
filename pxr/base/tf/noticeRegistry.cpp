@@ -115,17 +115,17 @@ _BeginSend(const TfNotice &notice,
             const std::type_info &senderType,
             const std::vector<TfNotice::WeakProbePtr> &probes)
 {
-    TF_FOR_ALL(i, probes)
-        if (*i)
-            (*i)->BeginSend(notice, sender, senderType);
+    for(const TfNotice::WeakProbePtr& i: probes)
+        if (i)
+            i->BeginSend(notice, sender, senderType);
 }
 
 void
 Tf_NoticeRegistry::_EndSend(const std::vector<TfNotice::WeakProbePtr> &probes)
 {
-    TF_FOR_ALL(i, probes)
-        if (*i)
-            (*i)->EndSend();
+    for(const TfNotice::WeakProbePtr& i: probes)
+        if (i)
+            i->EndSend();
 }
 
 void
@@ -137,9 +137,9 @@ _BeginDelivery(const TfNotice &notice,
                const std::type_info &listenerType,
                const std::vector<TfNotice::WeakProbePtr> &probes)
 {
-    TF_FOR_ALL(i, probes)
-        if (*i)
-            (*i)->BeginDelivery(notice, sender,
+    for(const TfNotice::WeakProbePtr& i: probes)
+        if (i)
+            i->BeginDelivery(notice, sender,
                                 senderType, listener, listenerType);
 }
 
@@ -147,9 +147,9 @@ void
 Tf_NoticeRegistry::
 _EndDelivery(const std::vector<TfNotice::WeakProbePtr> &probes)
 {
-    TF_FOR_ALL(i, probes)
-        if (*i)
-            (*i)->EndDelivery();
+    for(const TfNotice::WeakProbePtr& i: probes)
+        if (i)
+            i->EndDelivery();
 }
 
 TfNotice::Key
@@ -231,9 +231,9 @@ Tf_NoticeRegistry::_Send(const TfNotice &n, const TfType & noticeType,
         // Copy off a list of the probes.
         _Lock lock(_probeMutex);
         probeList.reserve(_probes.size());
-        TF_FOR_ALL(i, _probes) {
-            if (*i) {
-                probeList.push_back(*i);
+        for(const TfNotice::WeakProbePtr& i: _probes) {
+            if (i) {
+                probeList.push_back(i);
             }
         }
         doProbing = !probeList.empty();

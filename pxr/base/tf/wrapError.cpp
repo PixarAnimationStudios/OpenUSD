@@ -137,8 +137,8 @@ _RepostErrors(pxr_boost::python::object exc)
                     printf("Tf.RepostErrors: exception contains no errors\n");
                 return false;
             }
-            TF_FOR_ALL(i, errs)
-                TfDiagnosticMgr::GetInstance().AppendError(*i);
+            for(const TfError& e: errs)
+                TfDiagnosticMgr::GetInstance().AppendError(e);
             return true;
         } else {
             if (TF_ERROR_MARK_TRACKING)

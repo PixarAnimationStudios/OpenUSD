@@ -380,7 +380,7 @@ public:
     /// notice types and call-back methods for which the keys were
     /// created.  It then clears the keys container.
     TF_API
-    static void Revoke(TfNotice::Keys* keys);
+    static void Revoke(TfNotice::Keys& keys);
 
     /// Revoke interest by a listener.
     ///
@@ -401,7 +401,7 @@ public:
     /// created.  It then clears the keys container.  This will not return
     /// while any threads are invoking any handlers.
     TF_API
-    static void RevokeAndWait(TfNotice::Keys* keys);
+    static void RevokeAndWait(TfNotice::Keys& keys);
 
     /// Deliver the notice to interested listeners, returning the number
     /// of interested listeners.  

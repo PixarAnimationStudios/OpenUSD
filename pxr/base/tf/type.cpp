@@ -629,7 +629,7 @@ TfType::GetAllDerivedTypes(std::set<TfType> *result) const
 
 // Helper for resolving ancestor order in the case of multiple inheritance.
 static bool
-_MergeAncestors(vector<TypeVector> *seqs, TypeVector *result)
+_MergeAncestors(vector<TypeVector> &seqs, TypeVector * result)
 {
     while(true)
     {
@@ -638,23 +638,23 @@ _MergeAncestors(vector<TypeVector> *seqs, TypeVector *result)
 
         // Try the first element of each non-empty sequence, in order.
         bool anyLeft = false;
-        TF_FOR_ALL(candSeq, *seqs)
+        for(const TypeVector& candSeq: seqs)
         {
-            if (candSeq->empty())
+            if (candSeq.empty())
                 continue;
                 
             anyLeft = true;
-            cand = candSeq->front();
+            cand = candSeq.front();
 
             // Check that the candidate does not occur in the tail
             // ("cdr", in lisp terms) of any of the sequences.
-            TF_FOR_ALL(checkSeq, *seqs)
+            for(const TypeVector& checkSeq: seqs)
             {
-                if (checkSeq->size() <= 1)
+                if (checkSeq.size() <= 1)
                     continue;
 
-                if (std::find( ++(checkSeq->begin()), checkSeq->end(), cand )
-                    != checkSeq->end())
+                if (std::find( ++(checkSeq.begin()), checkSeq.end(), cand )
+                    != checkSeq.end())
                 {
                     // Reject this candidate.
                     cand = TfType();
@@ -679,9 +679,9 @@ _MergeAncestors(vector<TypeVector> *seqs, TypeVector *result)
         result->push_back(cand);
 
         // Remove candidate from input sequences.
-        TF_FOR_ALL(seqIt, *seqs) {
-            if (!seqIt->empty() && seqIt->front() == cand)
-                seqIt->erase( seqIt->begin() );
+        for(TypeVector& seqIt: seqs) {
+            if (!seqIt.empty() && seqIt.front() == cand)
+                seqIt.erase( seqIt.begin() );
         }
     }
 }
@@ -720,16 +720,16 @@ TfType::GetAllAncestorTypes(vector<TfType> *result) const
     seqs.push_back( baseTypes );
 
     // Remaining sequences: Inherited types for each direct base.
-    TF_FOR_ALL(it, baseTypes) {
+    for(const auto& it: baseTypes) {
         // Populate the base's ancestor types directly into a new vector on
         // the back of seqs.
         seqs.push_back( TypeVector() );
         TypeVector &baseSeq = seqs.back();
-        it->GetAllAncestorTypes(&baseSeq);
+        it.GetAllAncestorTypes(&baseSeq);
     }
 
     // Merge the input sequences to resolve final inheritance order.
-    bool ok = _MergeAncestors( &seqs, result );
+    bool ok = _MergeAncestors(seqs, result );
 
     if (!ok) {
         TF_CODING_ERROR("Cannot resolve ancestor classes for '%s' "
@@ -1096,9 +1096,9 @@ TfType::CastFromAncestor(TfType ancestor, void* addr) const
         return addr;
 
     ScopedLock regLock(GetRegistryMutex(), /*write=*/false);
-    TF_FOR_ALL(it, _info->baseTypes) { 
-        if (void* tmp = it->CastFromAncestor(ancestor, addr)) {
-            if (_CastFunction *castFunc = _info->GetCastFunc(it->GetTypeid()))
+    for(const auto& it: _info->baseTypes) { 
+        if (void* tmp = it.CastFromAncestor(ancestor, addr)) {
+            if (_CastFunction *castFunc = _info->GetCastFunc(it.GetTypeid()))
                 return (*castFunc)(tmp, false);
         }
     }

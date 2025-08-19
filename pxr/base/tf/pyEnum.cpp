@@ -37,8 +37,8 @@ Tf_PyEnumRegistry::Tf_PyEnumRegistry()
 Tf_PyEnumRegistry::~Tf_PyEnumRegistry()
 {
     // release our references on all the objects we own.
-    TF_FOR_ALL(i, _objectsToEnums)
-        decref(i->first);
+    for(const auto& i: _objectsToEnums)
+        decref(i.first);
 }
 // CODE_COVERAGE_ON
 

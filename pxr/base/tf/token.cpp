@@ -123,8 +123,8 @@ struct Tf_TokenRegistry
         }
         std::sort(sizesWithSet.begin(), sizesWithSet.end());
         printf("Set # -- Size\n");
-        TF_FOR_ALL(i, sizesWithSet) {
-            printf("%zu -- %zu\n", i->second, i->first);
+        for(const auto& i: sizesWithSet) {
+            printf("%zu -- %zu\n", i.second, i.first);
         }
 
         // Uncomment to dump every token & refcount.
