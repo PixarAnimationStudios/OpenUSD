@@ -5,13 +5,12 @@
                 "Types": {
                    "Hio_OpenEXRImage" : {
                         "bases": ["HioImage"],
-                        "imageTypes": ["exr"],
-                        "precedence": 30
+                        "imageTypes": [<JSON_HIO_OPENEXR_FORMATS>],
+                        "precedence": <PXR_IMAGING_HIO_OPENEXR_PRECEDENCE>
                     },
                     "Hio_StbImage" : {
-                        "bases": ["HioImage"],
-                        "imageTypes": ["bmp", "jpg", "jpeg", "png", "tga", "hdr"],
-                        "precedence": 30
+                        "imageTypes": [<JSON_HIO_STB_FORMATS>],
+                        "precedence": <PXR_IMAGING_HIO_STB_PRECEDENCE>
                     }
                 }
             },
