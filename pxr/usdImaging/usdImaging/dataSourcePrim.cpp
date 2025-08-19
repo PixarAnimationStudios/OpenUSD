@@ -657,7 +657,8 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         }
 
         UsdGeomXformable::XformQuery xformQuery(xformable);
-        if (xformQuery.HasNonEmptyXformOpOrder()) {
+        if (xformQuery.HasNonEmptyXformOpOrder() ||
+            xformQuery.GetResetXformStack()) {
             return UsdImagingDataSourceXform::New(
                     xformQuery, _sceneIndexPath, _GetStageGlobals());
         } else {
