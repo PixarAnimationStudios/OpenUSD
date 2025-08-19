@@ -314,10 +314,10 @@ VtDictionaryOver(VtDictionary *strong, const VtDictionary &weak,
     strong->insert(weak.begin(), weak.end());
 
     if (coerceToWeakerOpinionType) {
-        TF_FOR_ALL(i, *strong) {
-            VtDictionary::const_iterator j = weak.find(i->first);
+        for(auto &i: *strong) {
+            VtDictionary::const_iterator j = weak.find(i.first);
             if (j != weak.end()) {
-                i->second.CastToTypeOf(j->second);
+                i.second.CastToTypeOf(j->second);
             }
         }
     }
@@ -332,21 +332,21 @@ VtDictionaryOver(const VtDictionary &strong, VtDictionary *weak,
         return;
     }
     if (coerceToWeakerOpinionType) {
-        TF_FOR_ALL(it, strong) {
-            VtDictionary::iterator j = weak->find(it->first);
+        for(const auto &i: strong) {
+            VtDictionary::iterator j = weak->find(i.first);
             if (j == weak->end()) {
-                weak->insert(*it);
+                weak->insert(i);
             }
             else {
-                j->second = VtValue::CastToTypeOf(it->second, j->second);
+                j->second = VtValue::CastToTypeOf(i.second, j->second);
             }
         }
     }
     else {
         // Can't use map::insert here, because that doesn't overwrite
         // values for keys in strong that are already in weak.
-        TF_FOR_ALL(it, strong) {
-            (*weak)[it->first] = it->second;
+        for(auto &it: strong) {
+            (*weak)[it.first] = it.second;
         }
     }
 }
@@ -369,19 +369,19 @@ VtDictionaryOverRecursive(VtDictionary *strong, const VtDictionary &weak,
         return;
     }
 
-    TF_FOR_ALL(it, weak) {
+    for(const auto &it: weak) {
         // If both dictionaries have values that are in turn dictionaries, 
         // recurse:
-        if (VtDictionaryIsHolding<VtDictionary>(*strong, it->first) &&
-            VtDictionaryIsHolding<VtDictionary>(weak, it->first)) {
+        if (VtDictionaryIsHolding<VtDictionary>(*strong, it.first) &&
+            VtDictionaryIsHolding<VtDictionary>(weak, it.first)) {
 
             const VtDictionary &weakSubDict =
-                VtDictionaryGet<VtDictionary>(weak, it->first);
+                VtDictionaryGet<VtDictionary>(weak, it.first);
 
             // Swap out the stored dictionary, mutate it, then swap it back in
             // place.  This avoids expensive copying.  There may still be a copy
             // if the VtValue storage is shared.
-            VtDictionary::iterator i = strong->find(it->first);
+            VtDictionary::iterator i = strong->find(it.first);
             VtDictionary strongSubDict;
             i->second.Swap(strongSubDict);
             // Modify the extracted dict.
@@ -392,9 +392,9 @@ VtDictionaryOverRecursive(VtDictionary *strong, const VtDictionary &weak,
         } else {
             // Insert will set strong with value from weak only if 
             // strong does not already have a value for that key.
-            std::pair<VtDictionary::iterator, bool> result =strong->insert(*it);
+            std::pair<VtDictionary::iterator, bool> result =strong->insert(it);
             if (!result.second && coerceToWeakerOpinionType) {
-                result.first->second.CastToTypeOf(it->second);
+                result.first->second.CastToTypeOf(it.second);
             }
         }
     }
@@ -409,19 +409,19 @@ VtDictionaryOverRecursive(const VtDictionary &strong, VtDictionary *weak,
         return;
     }
 
-    TF_FOR_ALL(it, strong) {
+    for(const auto &it: strong) {
         // If both dictionaries have values that are in turn dictionaries, 
         // recurse:
-        if (VtDictionaryIsHolding<VtDictionary>(strong, it->first) &&
-            VtDictionaryIsHolding<VtDictionary>(*weak, it->first)) {
+        if (VtDictionaryIsHolding<VtDictionary>(strong, it.first) &&
+            VtDictionaryIsHolding<VtDictionary>(*weak, it.first)) {
 
             VtDictionary const &strongSubDict =
-                VtDictionaryGet<VtDictionary>(strong, it->first);
+                VtDictionaryGet<VtDictionary>(strong, it.first);
 
             // Swap out the stored dictionary, mutate it, then swap it back in
             // place.  This avoids expensive copying.  There may still be a copy
             // if the VtValue storage is shared.
-            VtDictionary::iterator i = weak->find(it->first);
+            VtDictionary::iterator i = weak->find(it.first);
             VtDictionary weakSubDict;
             i->second.Swap(weakSubDict);
             // Modify the extracted dict.
@@ -431,15 +431,15 @@ VtDictionaryOverRecursive(const VtDictionary &strong, VtDictionary *weak,
 
         } else if (coerceToWeakerOpinionType) {
             // Else stomp over weak with strong but with type coersion.
-            VtDictionary::iterator j = weak->find(it->first);
+            VtDictionary::iterator j = weak->find(it.first);
             if (j == weak->end()) {
-                weak->insert(*it);
+                weak->insert(it);
             } else {
-                j->second = VtValue::CastToTypeOf(it->second, j->second);
+                j->second = VtValue::CastToTypeOf(it.second, j->second);
             }
         } else {
             // Else stomp over weak with strong
-            (*weak)[it->first] = it->second;
+            (*weak)[it.first] = it.second;
         }
     }
 }
@@ -454,12 +454,12 @@ bool operator==(VtDictionary const &lhs, VtDictionary const &rhs)
     // Iterate over all key-value pairs in the left-hand side dictionary
     // and check if they match up with the content of the right-hand
     // side dictionary.
-    TF_FOR_ALL(it, lhs){
-        VtDictionary::const_iterator it2 = rhs.find(it->first);
+    for(const auto &it: lhs){
+        VtDictionary::const_iterator it2 = rhs.find(it.first);
         if (it2 == rhs.end()) {
             return false;
         }
-        if (it->second != it2->second) {
+        if (it.second != it2->second) {
             return false;
         }
     }
@@ -476,12 +476,12 @@ operator<<(std::ostream &stream, VtDictionary const &dict)
 {
     bool first = true;
     stream << '{';
-    TF_FOR_ALL(i, dict) {
+    for(const auto &i: dict) {
         if (first)
             first = false;
         else
             stream << ", ";
-        stream << '\'' << i->first << "': " << i->second;
+        stream << '\'' << i.first << "': " << i.second;
     }
     stream << '}';
     return stream;

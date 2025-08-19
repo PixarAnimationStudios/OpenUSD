@@ -94,8 +94,8 @@ static void testArray() {
     VtDoubleArray da(60);
 
     double val = 1;
-    TF_FOR_ALL(elem, da)
-        *elem = val++;
+    for(auto& elem: da)
+        elem = val++;
 
     val = 1;
     for (VtDoubleArray::const_iterator i = da.begin(); i != da.end(); ++i)
