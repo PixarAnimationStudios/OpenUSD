@@ -9,11 +9,8 @@ pxr_library(vdf
         trace
         vt
         work
-        ${TBB_tbb_LIBRARY}
+        TBB::tbb
 
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
-        
     PUBLIC_HEADERS
         api.h
         boxedContainer.h

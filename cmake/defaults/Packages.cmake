@@ -106,13 +106,8 @@ if(WIN32)
 endif()
 
 # --TBB
+# this should be found in lib/cmake/TBB now
 find_package(TBB CONFIG COMPONENTS tbb)
-if(TBB_FOUND) 
-    set(PXR_FIND_TBB_IN_CONFIG ON)
-else()
-    find_package(TBB REQUIRED COMPONENTS tbb)
-    set(PXR_FIND_TBB_IN_CONFIG OFF)
-endif()
 
 # --math
 if(WIN32)

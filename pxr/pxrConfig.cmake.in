@@ -49,26 +49,9 @@ if(@PXR_ENABLE_PYTHON_SUPPORT@)
     endif()
 endif()
 
-if (NOT DEFINED PXR_FIND_TBB_IN_CONFIG)
-    set(PXR_FIND_TBB_IN_CONFIG "@PXR_FIND_TBB_IN_CONFIG@")
-endif()
-if (PXR_FIND_TBB_IN_CONFIG)
-    find_dependency(TBB @TBB_VERSION@ CONFIG)
-else()
-    add_library(TBB::tbb SHARED IMPORTED)
-
-    macro(_add_property name value)
-        if (NOT "${value}" STREQUAL "")
-            set_target_properties(TBB::tbb PROPERTIES ${name} "${value}")
-        endif()
-    endmacro()
-
-    _add_property(INTERFACE_INCLUDE_DIRECTORIES "@tbb_INTERFACE_INCLUDE_DIRECTORIES@")
-    _add_property(INTERFACE_COMPILE_DEFINITIONS "@tbb_INTERFACE_COMPILE_DEFINITIONS@")
-    _add_property(INTERFACE_LINK_DIRECTORIES "@tbb_INTERFACE_LINK_DIRECTORIES@")
-    _add_property(IMPORTED_IMPLIB "@tbb_IMPORTED_IMPLIB@")
-    _add_property(IMPORTED_LOCATION "@tbb_IMPORTED_LOCATION@")
-endif()
+# find TBB - cmake files for setting up TBB
+# are provided in lib/cmake/TBB
+find_dependency(TBB @TBB_VERSION@ CONFIG)
 
 if (NOT DEFINED PXR_FIND_OPENSUBDIV_IN_CONFIG)
     set(PXR_FIND_OPENSUBDIV_IN_CONFIG "@PXR_FIND_OPENSUBDIV_IN_CONFIG@")

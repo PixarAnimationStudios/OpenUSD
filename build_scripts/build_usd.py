@@ -302,7 +302,7 @@ def CopyFiles(context, src, dest):
     instDestDir = os.path.join(context.instDir, dest)
     if not os.path.isdir(instDestDir):
         try:
-            os.mkdir(instDestDir)
+            os.makedirs(instDestDir, exist_ok=True)
         except Exception as e:
             raise RuntimeError(
                 "Unable to create {destDir}".format(destDir=instDestDir)) from e
@@ -1024,6 +1024,41 @@ def InstallTBB_Windows(context, force, buildArgs):
         CopyFiles(context, "lib\\intel64\\vc14\\*.*", "lib")
         CopyDirectory(context, "include\\serial", "include\\serial")
         CopyDirectory(context, "include\\tbb", "include\\tbb")
+        CopyFiles(context, "cmake\\TBBConfig.cmake", "lib\\cmake\\TBB")
+        CopyFiles(context, "cmake\\TBBConfigVersion.cmake", "lib\\cmake\\TBB")
+
+        PatchFile(os.path.join(context.instDir, "lib\\cmake\\TBB\\TBBConfig.cmake"),
+                  [
+                      (
+                        "# TBBConfigVersion.cmake defines TBB_VERSION",
+                        "# TBBConfigVersion.cmake defines TBB_VERSION\n" +
+                        "#\n" +
+                        "# THIS FILE HAS BEEN MODIFIED FROM ITS ORIGINAL VERSION"      
+                      ),
+                      (
+                        "get_filename_component(_tbb_root \"${_tbb_root}\" PATH)",
+                        "get_filename_component(_tbb_root \"${_tbb_root}\" PATH)\n" +
+                        "get_filename_component(_tbb_root \"${_tbb_root}\" PATH)\n" +
+                        "get_filename_component(_tbb_root \"${_tbb_root}\" PATH)"
+                      ),
+                      (
+                        "get_filename_component(_tbb_lib_path \"${_tbb_root}/bin/${_tbb_arch_subdir}/${_tbb_compiler_subdir}\" ABSOLUTE)",
+                        "get_filename_component(_tbb_lib_path \"${_tbb_root}/bin\" ABSOLUTE)"
+                      ),
+                      (
+                        "${_tbb_root}/lib/${_tbb_arch_subdir}/${_tbb_compiler_subdir}/${_tbb_component}.lib",
+                        "${_tbb_root}/lib/${_tbb_component}.lib"
+                      ),
+                      (
+                        "${_tbb_root}/lib/${_tbb_arch_subdir}/${_tbb_compiler_subdir}/${_tbb_component}_debug.lib",
+                        "${_tbb_root}/lib/${_tbb_component}_debug.lib"
+                      ),
+                      (
+                        "if (EXISTS \"${_tbb_debug_lib}\")",
+                        "if (EXISTS \"${_tbb_debug_lib}\")\n" +
+                        "               set_property(TARGET TBB::${_tbb_component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS \"TBB_USE_DEBUG=1\")"
+                    )
+                  ])
 
 def InstallTBB_MacOS(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force)):
@@ -1157,6 +1192,47 @@ def InstallTBB_Linux(context, force, buildArgs):
         CopyFiles(context, "build/*_debug/libtbb*.*", "lib")
         CopyDirectory(context, "include/serial", "include/serial")
         CopyDirectory(context, "include/tbb", "include/tbb")
+
+        # generate TBBConfig.cmake so we have it available for
+        # the OpenUSD build - this also patches the generated
+        # configuration to adhere to the desired directory structure
+        # as well as adds TBB_DEBUG to the INTERFACE_INCLUDE_DEFINITIONS
+        cmakeInstallTBBCmd = 'cmake -DTBB_ROOT={root} -DTBB_OS=Linux -P cmake/tbb_config_generator.cmake'.format(
+            root=context.instDir)
+        Run(cmakeInstallTBBCmd)
+        CopyFiles(context, os.path.join(context.instDir, "cmake", "TBBConfig.cmake"),
+                  os.path.join(context.instDir, "lib", "cmake", "TBB"))
+        CopyFiles(context, os.path.join(context.instDir, "cmake", "TBBConfigVersion.cmake"),
+                  os.path.join(context.instDir, "lib", "cmake", "TBB"))
+        
+        PatchFile(os.path.join(context.instDir, "lib/cmake/TBB/TBBConfig.cmake"),
+            [
+                (
+                    "# TBBConfigVersion.cmake defines TBB_VERSION",
+                    "# TBBConfigVersion.cmake defines TBB_VERSION\n" +
+                    "#\n" +
+                    "# THIS FILE HAS BEEN MODIFIED FROM ITS ORIGINAL VERSION"      
+                ),
+                (
+                    "get_filename_component(_tbb_root \"${_tbb_root}\" PATH)",
+                    "get_filename_component(_tbb_root \"${_tbb_root}\" PATH)\n" +
+                    "get_filename_component(_tbb_root \"${_tbb_root}\" PATH)\n" +
+                    "get_filename_component(_tbb_root \"${_tbb_root}\" PATH)"
+                ),
+                (
+                    "get_filename_component(_tbb_lib_path \"${_tbb_root}/lib/${_tbb_arch_subdir}/${_tbb_compiler_subdir}\" ABSOLUTE)",
+                    "get_filename_component(_tbb_lib_path \"${_tbb_root}/lib\" ABSOLUTE)"
+                ),
+                (
+                    "if (EXISTS \"${_tbb_debug_lib}\")",
+                    "if (EXISTS \"${_tbb_debug_lib}\")\n" +
+                    "               set_property(TARGET TBB::${_tbb_component} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS \"TBB_USE_DEBUG=1\")"
+                )
+            ])
+        
+        # remove the one originally generated by TBB, as we've moved it
+        os.remove(os.path.join(context.instDir, "cmake", "TBBConfig.cmake"))
+        os.remove(os.path.join(context.instDir, "cmake", "TBBConfigVersion.cmake"))
 
 TBB = Dependency("TBB", InstallTBB, "include/tbb/tbb.h")
 

@@ -13,10 +13,7 @@ pxr_library(ef
         trace
         usd
         work
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
+        TBB::tbb
 
     PUBLIC_HEADERS
         api.h
