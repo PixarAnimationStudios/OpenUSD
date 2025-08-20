@@ -8,6 +8,8 @@
 
 #include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/extentResolvingSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/instanceProxyPathTranslationSceneIndex.h"
+// #include "pxr/usdImaging/usdImaging/instanceProxyPathTranslationSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/materialBindingsResolvingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
@@ -24,15 +26,37 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/purposeSchema.h"
+#include "pxr/imaging/hd/noticeBatchingSceneIndex.h"
 #include "pxr/imaging/hd/sceneIndexUtil.h"
 
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/getenv.h"
 #include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_ENV_SETTING(
+    USDIMAGING_SET_STAGE_AFTER_CHAINING_SCENE_INDICES, true,
+    "If true (default), set the stage on the scene index *after* creating the "
+    "usdImaging scene indices graph. This results in added notices flowing "
+    "through the graph."
+    "If false, scene indices downstream of the stage scene index won't receive "
+    "added notices, and may need to query the input scene index for prim "
+    "discovery and bookkeeping."
+    "Each of these options have different performance characteristics.");
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     TfRegistryManager::GetInstance().SubscribeTo<UsdImagingSceneIndexPlugin>();
+}
+
+static
+bool
+_ShouldSetStageAfterChainingSceneIndices()
+{
+    static const bool result =
+        TfGetEnvSetting(USDIMAGING_SET_STAGE_AFTER_CHAINING_SCENE_INDICES);
+    return result;
 }
 
 static
@@ -119,6 +143,28 @@ _InstanceDataSourceNames()
     return result;
 };
 
+static
+TfTokenVector
+_ProxyPathTranslationDataSourceNames()
+{
+    TRACE_FUNCTION();
+    
+    TfTokenVector result = {
+        // Translate material bindings to instance proxies.
+        UsdImagingMaterialBindingsSchema::GetSchemaToken(),
+    };
+
+    for (const UsdImagingSceneIndexPluginUniquePtr &plugin :
+             UsdImagingSceneIndexPlugin::GetAllSceneIndexPlugins()) {
+        for (const TfToken &name :
+             plugin->ProxyPathTranslationDataSourceNames()) {
+            result.push_back(name);
+        }
+    }
+
+    return result;
+};
+
 UsdImagingSceneIndices
 UsdImagingCreateSceneIndices(
     const UsdImagingCreateSceneIndicesInfo &createInfo)
@@ -136,7 +182,11 @@ UsdImagingCreateSceneIndices(
                     createInfo.displayUnloadedPrimsWithBounds),
                 createInfo.stageSceneIndexInputArgs));
 
-    result.stageSceneIndex->SetStage(createInfo.stage);
+    if (!_ShouldSetStageAfterChainingSceneIndices()) {
+        // Downstream scene indices will not receive added notices since they
+        // haven't been chained yet.
+        result.stageSceneIndex->SetStage(createInfo.stage);
+    }
     
     if (createInfo.overridesSceneIndexCallback) {
         sceneIndex =
@@ -202,6 +252,18 @@ UsdImagingCreateSceneIndices(
                 sceneIndex, instanceDataSourceNames, callback);
     }
 
+    sceneIndex = result.postInstancingNoticeBatchingSceneIndex =
+        HdNoticeBatchingSceneIndex::New(sceneIndex);
+
+    // Names of data sources that contain SdfPath-valued data
+    // sources that may target instance proxies, and which require
+    // translation to corresponding prototype paths.
+    static const TfTokenVector proxyPathTranslationDataSourceNames =
+        _ProxyPathTranslationDataSourceNames();
+
+    sceneIndex = UsdImaging_InstanceProxyPathTranslationSceneIndex::New(
+        sceneIndex, proxyPathTranslationDataSourceNames);
+
     sceneIndex = UsdImagingMaterialBindingsResolvingSceneIndex::New(
                         sceneIndex, /* inputArgs = */ nullptr);
 
@@ -221,6 +283,12 @@ UsdImagingCreateSceneIndices(
     }
 
     result.finalSceneIndex = sceneIndex;
+
+    if (_ShouldSetStageAfterChainingSceneIndices()) {
+        // Setting the stage populates the scene index and results in added
+        // notices flowing downstream.
+        result.stageSceneIndex->SetStage(createInfo.stage);
+    }
 
     return result;
 }

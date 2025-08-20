@@ -25,6 +25,12 @@ UsdImagingRerootingSceneIndex::UsdImagingRerootingSceneIndex(
   , _srcEqualsDst(srcPrefix == dstPrefix)
   , _srcPrefixIsRoot(srcPrefix.IsAbsoluteRootPath())
 {
+    // The paths are usually too long and don't display well at all.
+    if (false) {
+        SetDisplayName(
+            TfStringPrintf(
+                "Rerooting %s to %s", srcPrefix.GetText(), dstPrefix.GetText()));
+    }
 }
 
 UsdImagingRerootingSceneIndex::~UsdImagingRerootingSceneIndex() = default;

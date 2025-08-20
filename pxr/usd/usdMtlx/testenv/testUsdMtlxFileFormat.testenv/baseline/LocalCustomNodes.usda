@@ -1,0 +1,257 @@
+#usda 1.0
+
+def "MaterialX"
+{
+    def "NodeGraphs"
+    {
+        def NodeGraph "ND_checker_surface"
+        {
+            float2 inputs:scale = (8, 8)
+            token outputs:out.connect = </MaterialX/NodeGraphs/ND_checker_surface/surface.outputs:out>
+
+            def Shader "texcoord1"
+            {
+                uniform token info:id = "ND_texcoord_vector2"
+                int inputs:index = 0
+                float2 outputs:out
+            }
+
+            def Shader "mult1"
+            {
+                uniform token info:id = "ND_multiply_vector2"
+                float2 inputs:in1.connect = </MaterialX/NodeGraphs/ND_checker_surface/texcoord1.outputs:out>
+                float2 inputs:in2.connect = </MaterialX/NodeGraphs/ND_checker_surface.inputs:scale>
+                float2 outputs:out
+            }
+
+            def Shader "swizz_x"
+            {
+                uniform token info:id = "ND_extract_vector2"
+                float2 inputs:in.connect = </MaterialX/NodeGraphs/ND_checker_surface/mult1.outputs:out>
+                int inputs:index = 0
+                float outputs:out
+            }
+
+            def Shader "swizz_y"
+            {
+                uniform token info:id = "ND_extract_vector2"
+                float2 inputs:in.connect = </MaterialX/NodeGraphs/ND_checker_surface/mult1.outputs:out>
+                int inputs:index = 1
+                float outputs:out
+            }
+
+            def Shader "floor1"
+            {
+                uniform token info:id = "ND_floor_float"
+                float inputs:in.connect = </MaterialX/NodeGraphs/ND_checker_surface/swizz_x.outputs:out>
+                float outputs:out
+            }
+
+            def Shader "floor2"
+            {
+                uniform token info:id = "ND_floor_float"
+                float inputs:in.connect = </MaterialX/NodeGraphs/ND_checker_surface/swizz_y.outputs:out>
+                float outputs:out
+            }
+
+            def Shader "add1"
+            {
+                uniform token info:id = "ND_add_float"
+                float inputs:in1.connect = </MaterialX/NodeGraphs/ND_checker_surface/floor1.outputs:out>
+                float inputs:in2.connect = </MaterialX/NodeGraphs/ND_checker_surface/floor2.outputs:out>
+                float outputs:out
+            }
+
+            def Shader "mod1"
+            {
+                uniform token info:id = "ND_modulo_float"
+                float inputs:in1.connect = </MaterialX/NodeGraphs/ND_checker_surface/add1.outputs:out>
+                float inputs:in2 = 2
+                float outputs:out
+            }
+
+            def Shader "swizz_xxx"
+            {
+                uniform token info:id = "ND_convert_float_color3"
+                float inputs:in.connect = </MaterialX/NodeGraphs/ND_checker_surface/mod1.outputs:out>
+                color3f outputs:out
+            }
+
+            def Shader "surface"
+            {
+                uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+                color3f inputs:diffuseColor.connect = </MaterialX/NodeGraphs/ND_checker_surface/swizz_xxx.outputs:out>
+                float inputs:roughness = 1
+                token outputs:out
+            }
+        }
+
+        def NodeGraph "ND_myColor"
+        {
+            color3f outputs:out.connect = </MaterialX/NodeGraphs/ND_myColor/add1.outputs:out>
+
+            def Shader "redClorVal"
+            {
+                uniform token info:id = "ND_constant_color3"
+                color3f inputs:value = (1, 0, 0)
+                color3f outputs:out
+            }
+
+            def Shader "blueColorVal"
+            {
+                uniform token info:id = "ND_constant_color3"
+                color3f inputs:value = (0, 0, 1)
+                color3f outputs:out
+            }
+
+            def Shader "multi1"
+            {
+                uniform token info:id = "ND_multiply_color3FA"
+                color3f inputs:in1.connect = </MaterialX/NodeGraphs/ND_myColor/redClorVal.outputs:out>
+                float inputs:in2 = 0.5
+                color3f outputs:out
+            }
+
+            def Shader "add1"
+            {
+                uniform token info:id = "ND_add_color3"
+                color3f inputs:in1.connect = </MaterialX/NodeGraphs/ND_myColor/multi1.outputs:out>
+                color3f inputs:in2.connect = </MaterialX/NodeGraphs/ND_myColor/blueColorVal.outputs:out>
+                color3f outputs:out
+            }
+        }
+
+        def NodeGraph "wrapper_nodegraph"
+        {
+            color3f outputs:diffuse_output.connect = </MaterialX/NodeGraphs/wrapper_nodegraph/add.outputs:out>
+            color3f outputs:specular_output.connect = </MaterialX/NodeGraphs/wrapper_nodegraph/mySpecColor.outputs:out>
+
+            def Shader "myColor"
+            {
+                uniform token info:id = "ND_myColor"
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mtlx:sourceAsset = @LocalCustomNodes.mtlx@
+                uniform token info:mtlx:sourceAsset:subIdentifier = "ND_myColor"
+                color3f outputs:out
+            }
+
+            def Shader "green"
+            {
+                uniform token info:id = "ND_constant_color3"
+                color3f inputs:value = (0, 1, 0)
+                color3f outputs:out
+            }
+
+            def Shader "multi"
+            {
+                uniform token info:id = "ND_multiply_color3FA"
+                color3f inputs:in1.connect = </MaterialX/NodeGraphs/wrapper_nodegraph/myColor.outputs:out>
+                float inputs:in2 = 0.75
+                color3f outputs:out
+            }
+
+            def Shader "add"
+            {
+                uniform token info:id = "ND_add_color3"
+                color3f inputs:in1.connect = </MaterialX/NodeGraphs/wrapper_nodegraph/multi.outputs:out>
+                color3f inputs:in2.connect = </MaterialX/NodeGraphs/wrapper_nodegraph/green.outputs:out>
+                color3f outputs:out
+            }
+
+            def Shader "mySpecColor"
+            {
+                uniform token info:id = "ND_constant_color3"
+                color3f inputs:value = (0, 1, 0)
+                color3f outputs:out
+            }
+        }
+    }
+
+    def "Materials"
+    {
+        def Material "TexcoordMaterial" (
+            prepend apiSchemas = ["MaterialXConfigAPI"]
+        )
+        {
+            string config:mtlx:version = "1.39"
+            float2 inputs:scale = (6, 6)
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/TexcoordMaterial/texcoordSurface.outputs:surface>
+
+            def Shader "texcoordSurface" (
+                prepend references = </MaterialX/Shaders/texcoordSurface>
+            )
+            {
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mtlx:sourceAsset = @CheckerSurfaceShaderNodeDef.mtlx@
+                uniform token info:mtlx:sourceAsset:subIdentifier = "ND_checker_surface"
+                float2 inputs:scale.connect = </MaterialX/Materials/TexcoordMaterial.inputs:scale>
+            }
+        }
+
+        def Material "surface_material_node" (
+            prepend apiSchemas = ["MaterialXConfigAPI"]
+        )
+        {
+            string config:mtlx:version = "1.39"
+            float inputs:clearcoat
+            float inputs:clearcoatRoughness
+            color3f inputs:diffuseColor
+            float inputs:displacement
+            color3f inputs:emissiveColor
+            float inputs:ior = 0.9
+            float inputs:metallic
+            float3 inputs:normal
+            float inputs:occlusion
+            float inputs:opacity
+            int inputs:opacityMode
+            float inputs:opacityThreshold
+            float inputs:roughness = 0.25
+            color3f inputs:specularColor
+            int inputs:useSpecularWorkflow = 0
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/surface_material_node/surface_shader_node.outputs:surface>
+
+            def Shader "surface_shader_node" (
+                prepend references = </MaterialX/Shaders/surface_shader_node>
+            )
+            {
+                float inputs:clearcoat.connect = </MaterialX/Materials/surface_material_node.inputs:clearcoat>
+                float inputs:clearcoatRoughness.connect = </MaterialX/Materials/surface_material_node.inputs:clearcoatRoughness>
+                color3f inputs:diffuseColor.connect = </MaterialX/Materials/surface_material_node/wrapper_nodegraph.outputs:diffuse_output>
+                float inputs:displacement.connect = </MaterialX/Materials/surface_material_node.inputs:displacement>
+                color3f inputs:emissiveColor.connect = </MaterialX/Materials/surface_material_node.inputs:emissiveColor>
+                float inputs:ior.connect = </MaterialX/Materials/surface_material_node.inputs:ior>
+                float inputs:metallic.connect = </MaterialX/Materials/surface_material_node.inputs:metallic>
+                float3 inputs:normal.connect = </MaterialX/Materials/surface_material_node.inputs:normal>
+                float inputs:occlusion.connect = </MaterialX/Materials/surface_material_node.inputs:occlusion>
+                float inputs:opacity.connect = </MaterialX/Materials/surface_material_node.inputs:opacity>
+                int inputs:opacityMode.connect = </MaterialX/Materials/surface_material_node.inputs:opacityMode>
+                float inputs:opacityThreshold.connect = </MaterialX/Materials/surface_material_node.inputs:opacityThreshold>
+                float inputs:roughness.connect = </MaterialX/Materials/surface_material_node.inputs:roughness>
+                color3f inputs:specularColor.connect = </MaterialX/Materials/surface_material_node/wrapper_nodegraph.outputs:specular_output>
+                int inputs:useSpecularWorkflow.connect = </MaterialX/Materials/surface_material_node.inputs:useSpecularWorkflow>
+            }
+
+            def "wrapper_nodegraph" (
+                prepend references = </MaterialX/NodeGraphs/wrapper_nodegraph>
+            )
+            {
+            }
+        }
+    }
+
+    def "Shaders"
+    {
+        def Shader "texcoordSurface"
+        {
+            uniform token info:id = "ND_checker_surface"
+            token outputs:surface
+        }
+
+        def Shader "surface_shader_node"
+        {
+            uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+            token outputs:surface
+        }
+    }
+}
+

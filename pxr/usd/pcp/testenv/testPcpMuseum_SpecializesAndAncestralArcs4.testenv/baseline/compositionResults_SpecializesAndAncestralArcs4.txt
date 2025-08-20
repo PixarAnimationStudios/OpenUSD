@@ -1,18 +1,18 @@
-Loading @SpecializesAndAncestralArcs4/root.sdf@
+Loading @SpecializesAndAncestralArcs4/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Parent>
 
 Prim Stack:
-    root.sdf             /Parent
-    root.sdf             /PI
-    ref.sdf              /PR
-    root.sdf             /PIS
-    root.sdf             /PISI
+    root.usda            /Parent
+    root.usda            /PI
+    ref.usda             /PR
+    root.usda            /PIS
+    root.usda            /PISI
 
 Child names:
      ['Child', 'Sibling']
@@ -21,38 +21,38 @@ Child names:
 Results for composing </Parent/Child>
 
 Prim Stack:
-    root.sdf             /Parent/Child
-    root.sdf             /Parent/Sibling
-    root.sdf             /PI/Sibling
-    root.sdf             /PI/Child
-    ref.sdf              /PR/Child
-    ref.sdf              /PR/Sibling
-    root.sdf             /PIS/Sibling
-    root.sdf             /PISI/Sibling
-    root.sdf             /PIS/Child
-    root.sdf             /PISI/Child
+    root.usda            /Parent/Child
+    root.usda            /Parent/Sibling
+    root.usda            /PI/Sibling
+    root.usda            /PI/Child
+    ref.usda             /PR/Child
+    ref.usda             /PR/Sibling
+    root.usda            /PIS/Sibling
+    root.usda            /PISI/Sibling
+    root.usda            /PIS/Child
+    root.usda            /PISI/Child
 
 ------------------------------------------------------------------------
 Results for composing </Parent/Sibling>
 
 Prim Stack:
-    root.sdf             /Parent/Sibling
-    root.sdf             /PI/Sibling
-    ref.sdf              /PR/Sibling
-    root.sdf             /PIS/Sibling
-    root.sdf             /PISI/Sibling
+    root.usda            /Parent/Sibling
+    root.usda            /PI/Sibling
+    ref.usda             /PR/Sibling
+    root.usda            /PIS/Sibling
+    root.usda            /PISI/Sibling
 
 ------------------------------------------------------------------------
 Results for composing </Parent2>
 
 Prim Stack:
-    root.sdf             /Parent2
-    root.sdf             /PI
-    ref.sdf              /PR
-    root.sdf             /PIS
-    root.sdf             /PISI
-    root.sdf             /PS
-    root.sdf             /PSI
+    root.usda            /Parent2
+    root.usda            /PI
+    ref.usda             /PR
+    root.usda            /PIS
+    root.usda            /PISI
+    root.usda            /PS
+    root.usda            /PSI
 
 Child names:
      ['Child', 'Sibling']
@@ -61,39 +61,39 @@ Child names:
 Results for composing </Parent2/Child>
 
 Prim Stack:
-    root.sdf             /Parent2/Child
-    root.sdf             /Parent2/Sibling
-    root.sdf             /PI/Sibling
-    root.sdf             /PI/Child
-    ref.sdf              /PR/Child
-    ref.sdf              /PR/Sibling
-    root.sdf             /PIS/Sibling
-    root.sdf             /PISI/Sibling
-    root.sdf             /PS/Sibling
-    root.sdf             /PSI/Sibling
-    root.sdf             /PIS/Child
-    root.sdf             /PISI/Child
-    root.sdf             /PS/Child
-    root.sdf             /PSI/Child
+    root.usda            /Parent2/Child
+    root.usda            /Parent2/Sibling
+    root.usda            /PI/Sibling
+    root.usda            /PI/Child
+    ref.usda             /PR/Child
+    ref.usda             /PR/Sibling
+    root.usda            /PIS/Sibling
+    root.usda            /PISI/Sibling
+    root.usda            /PS/Sibling
+    root.usda            /PSI/Sibling
+    root.usda            /PIS/Child
+    root.usda            /PISI/Child
+    root.usda            /PS/Child
+    root.usda            /PSI/Child
 
 ------------------------------------------------------------------------
 Results for composing </Parent2/Sibling>
 
 Prim Stack:
-    root.sdf             /Parent2/Sibling
-    root.sdf             /PI/Sibling
-    ref.sdf              /PR/Sibling
-    root.sdf             /PIS/Sibling
-    root.sdf             /PISI/Sibling
-    root.sdf             /PS/Sibling
-    root.sdf             /PSI/Sibling
+    root.usda            /Parent2/Sibling
+    root.usda            /PI/Sibling
+    ref.usda             /PR/Sibling
+    root.usda            /PIS/Sibling
+    root.usda            /PISI/Sibling
+    root.usda            /PS/Sibling
+    root.usda            /PSI/Sibling
 
 ------------------------------------------------------------------------
 Results for composing </PS>
 
 Prim Stack:
-    root.sdf             /PS
-    root.sdf             /PSI
+    root.usda            /PS
+    root.usda            /PSI
 
 Child names:
      ['Child', 'Sibling']
@@ -102,21 +102,21 @@ Child names:
 Results for composing </PS/Child>
 
 Prim Stack:
-    root.sdf             /PS/Child
-    root.sdf             /PSI/Child
+    root.usda            /PS/Child
+    root.usda            /PSI/Child
 
 ------------------------------------------------------------------------
 Results for composing </PS/Sibling>
 
 Prim Stack:
-    root.sdf             /PS/Sibling
-    root.sdf             /PSI/Sibling
+    root.usda            /PS/Sibling
+    root.usda            /PSI/Sibling
 
 ------------------------------------------------------------------------
 Results for composing </PSI>
 
 Prim Stack:
-    root.sdf             /PSI
+    root.usda            /PSI
 
 Child names:
      ['Child', 'Sibling']
@@ -125,21 +125,21 @@ Child names:
 Results for composing </PSI/Child>
 
 Prim Stack:
-    root.sdf             /PSI/Child
+    root.usda            /PSI/Child
 
 ------------------------------------------------------------------------
 Results for composing </PSI/Sibling>
 
 Prim Stack:
-    root.sdf             /PSI/Sibling
+    root.usda            /PSI/Sibling
 
 ------------------------------------------------------------------------
 Results for composing </PI>
 
 Prim Stack:
-    root.sdf             /PI
-    root.sdf             /PIS
-    root.sdf             /PISI
+    root.usda            /PI
+    root.usda            /PIS
+    root.usda            /PISI
 
 Child names:
      ['Child', 'Sibling']
@@ -148,24 +148,24 @@ Child names:
 Results for composing </PI/Child>
 
 Prim Stack:
-    root.sdf             /PI/Child
-    root.sdf             /PIS/Child
-    root.sdf             /PISI/Child
+    root.usda            /PI/Child
+    root.usda            /PIS/Child
+    root.usda            /PISI/Child
 
 ------------------------------------------------------------------------
 Results for composing </PI/Sibling>
 
 Prim Stack:
-    root.sdf             /PI/Sibling
-    root.sdf             /PIS/Sibling
-    root.sdf             /PISI/Sibling
+    root.usda            /PI/Sibling
+    root.usda            /PIS/Sibling
+    root.usda            /PISI/Sibling
 
 ------------------------------------------------------------------------
 Results for composing </PIS>
 
 Prim Stack:
-    root.sdf             /PIS
-    root.sdf             /PISI
+    root.usda            /PIS
+    root.usda            /PISI
 
 Child names:
      ['Child', 'Sibling']
@@ -174,21 +174,21 @@ Child names:
 Results for composing </PIS/Child>
 
 Prim Stack:
-    root.sdf             /PIS/Child
-    root.sdf             /PISI/Child
+    root.usda            /PIS/Child
+    root.usda            /PISI/Child
 
 ------------------------------------------------------------------------
 Results for composing </PIS/Sibling>
 
 Prim Stack:
-    root.sdf             /PIS/Sibling
-    root.sdf             /PISI/Sibling
+    root.usda            /PIS/Sibling
+    root.usda            /PISI/Sibling
 
 ------------------------------------------------------------------------
 Results for composing </PISI>
 
 Prim Stack:
-    root.sdf             /PISI
+    root.usda            /PISI
 
 Child names:
      ['Child', 'Sibling']
@@ -197,11 +197,11 @@ Child names:
 Results for composing </PISI/Child>
 
 Prim Stack:
-    root.sdf             /PISI/Child
+    root.usda            /PISI/Child
 
 ------------------------------------------------------------------------
 Results for composing </PISI/Sibling>
 
 Prim Stack:
-    root.sdf             /PISI/Sibling
+    root.usda            /PISI/Sibling
 

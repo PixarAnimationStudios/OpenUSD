@@ -140,7 +140,7 @@ def Scope "Render"
 {
     def RenderSettings "RenderSettings"
     {
-        token outputs:ri:sampleFilters.connect = </Render/MurkFilter1.outputs:result>
+        rel ri:sampleFilters = </Render/MurkFilter1>
         float ri:Ri:PixelVariance = 0.0
         int ri:hider:minsamples = 32
         int ri:hider:maxsamples = 32

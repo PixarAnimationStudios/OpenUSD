@@ -531,20 +531,38 @@ files are edited by the script:
     Processed form of schema definitions that will be consumed at runtime by 
     USD core.
 
-\parblock
-\note usdGenSchema will update existing files in the current directory 
-if it detects any differences with the code it generates. Make sure these 
-files are editable before running usdGenSchema
-\endparblock
+  - <b>generatedSchema.classes.txt</b>:
+    List of generated schema files to be included in the module's CMakeLists.txt
+    build file.
 
-\parblock
-\note usdGenSchema does not update the CMakeLists.txt and module.cpp files, 
-even if they are editable.  If you have added a new class(es), you must 
-add them to these files yourself.  
-\endparblock
+  - <b>generatedSchema.modules.h</b>:
+    List of generated schema classes to be included in the module's module.cpp
+    file.
 
 Various command-line options are available for customizing the code generation 
 process. Run ```usdGenSchema --help``` for more details.
+
+### Creating and Maintaining a New Schema Module {#Usd_SchemaCreatingMaintainingNewModule}
+
+If you are creating a new schema module, use `usdInitSchema` to create 
+CMakeLists.txt, module.cpp, and other necessary files. Once these files have 
+been generated for you, they will be kept up to date as you add new schema 
+classes, except for any tests added for your schema domain, which must be 
+manually added to CMakeLists.txt.
+
+If you did not use `usdInitSchema` to create your schema module's 
+CMakeLists.txt, you will need to update CMakeLists.txt (and module.cpp) manually 
+when you add new schema classes.
+
+Use `usdGenSchema` whenever you make schema changes to your schema module.
+`usdGenSchema` will update existing files in the current directory 
+if it detects any differences with the code it generates. Make sure these 
+files are editable before running `usdGenSchema`.
+
+See the Toolset documentation page sections on 
+<a href="https://openusd.org/release/toolset.html#usdgenschema">usdGenSchema</a> and 
+<a href="https://openusd.org/release/toolset.html#usdinitschema">usdInitSchema</a>
+for more details.
 
 ## Namespaced Properties in Code Generation {#Usd_NameSpacedPropertiesInCodeGen}
 

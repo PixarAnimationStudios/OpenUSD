@@ -1,0 +1,91 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Material "material"
+{
+    token outputs:mtlx:surface.connect = </material/mtlxstandard_surface.outputs:out>
+
+    def Shader "mtlxstandard_surface"
+    {
+        uniform token info:id = "ND_standard_surface_surfaceshader"
+        color3f inputs:base_color = (1, 0, 0) 
+        token outputs:out
+    }
+}
+
+def PointInstancer "instancer"
+{
+    point3f[] positions = [(-2, 0, 0), (0, 0, 0), (2, 0, 0)]
+    int[] protoIndices = [0, 1, 2]
+    rel prototypes = [
+        </instancer/prototypes/globalMaterial>,                 # bound material is outside PointInstancer
+        </instancer/prototypes/prototypeLocalMaterial>,         # bound material is descendant of prototype root
+        </instancer/prototypes/prototypeSiblingMaterial>        # bound material is descendant of PointInstancer but not prototype root
+    ]
+    def Scope "prototypes"
+    {
+        def Xform "globalMaterial"
+        {
+            def Sphere "sphere" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                double radius = 1
+                rel material:binding = </material>
+            }
+        }
+        
+        def Xform "prototypeLocalMaterial"
+        {
+            def Sphere "sphere" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                double radius = 1
+                rel material:binding = </instancer/prototypes/prototypeLocalMaterial/material>
+            }
+            
+            def Material "material"
+            {
+                token outputs:mtlx:surface.connect = </instancer/prototypes/prototypeLocalMaterial/material/mtlxstandard_surface.outputs:out>
+
+                def Shader "mtlxstandard_surface"
+                {
+                    uniform token info:id = "ND_standard_surface_surfaceshader"
+                    color3f inputs:base_color = (0, 1, 0) 
+                    token outputs:out
+                }
+            }
+        }
+        
+        def Xform "prototypeSiblingMaterial"
+        {
+            def Sphere "sphere" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
+            {
+                double radius = 1
+                rel material:binding = </instancer/prototypes/material>
+            }
+        }
+        
+        def Material "material"
+        {
+            token outputs:mtlx:surface.connect = </instancer/prototypes/material/mtlxstandard_surface.outputs:out>
+
+            def Shader "mtlxstandard_surface"
+            {
+                uniform token info:id = "ND_standard_surface_surfaceshader"
+                color3f inputs:base_color = (0, 0, 1) 
+                token outputs:out
+            }
+        }
+    }
+}
+
+def DomeLight "Light"
+{
+    asset inputs:texture:file = @lightGray.png@
+}

@@ -144,6 +144,9 @@ HdEmbreeRenderDelegate::_Initialize()
     // the rtcSetGeometryBuildQuality function.
     rtcSetSceneBuildQuality(_rtcScene, RTC_BUILD_QUALITY_LOW);
 
+    // std::atomic does not default-initialize; do so here.
+    _sceneVersion.store(0);
+
     // Store top-level embree objects inside a render param that can be
     // passed to prims during Sync(). Also pass a handle to the render thread.
     _renderParam = std::make_shared<HdEmbreeRenderParam>(

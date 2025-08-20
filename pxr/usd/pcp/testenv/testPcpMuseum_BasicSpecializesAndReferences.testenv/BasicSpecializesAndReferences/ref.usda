@@ -1,0 +1,14 @@
+#usda 1.0
+
+def "Ref"
+{
+    def "Metal"
+    {
+    }
+
+    def "Brass" (
+        specializes = </Ref/Metal>
+    )
+    {
+    }
+}

@@ -143,7 +143,7 @@ private:
     NamedTextureHandleVector _namedTextureHandles;
 
     NamedTextureHandleVector _domeLightTextureHandles;
-    NamedTextureHandleVector _shadowTextureHandles;
+    NamedTextureHandle _shadowTextureHandle;
     
     HdSt_MaterialParamVector _lightTextureParams;
 

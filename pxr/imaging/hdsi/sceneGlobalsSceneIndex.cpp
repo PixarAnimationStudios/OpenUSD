@@ -58,7 +58,9 @@ _SceneGlobalsDataSource::GetNames()
     static const TfTokenVector names = {
         HdSceneGlobalsSchemaTokens->activeRenderPassPrim,
         HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim,
+        HdSceneGlobalsSchemaTokens->primaryCameraPrim,
         HdSceneGlobalsSchemaTokens->currentFrame,
+        HdSceneGlobalsSchemaTokens->timeCodesPerSecond,
         HdSceneGlobalsSchemaTokens->sceneStateId
     };
 
@@ -79,9 +81,20 @@ _SceneGlobalsDataSource::Get(const TfToken &name)
         }
         return nullptr;
     }
+    if (name == HdSceneGlobalsSchemaTokens->primaryCameraPrim) {
+        if (_si->_primaryCameraPrimPath) {
+            SdfPath const &path = *_si->_primaryCameraPrimPath;
+            return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
+        }
+        return nullptr;
+    }
     if (name == HdSceneGlobalsSchemaTokens->currentFrame) {
         const double timeCode = _si->_time;
         return HdRetainedTypedSampledDataSource<double>::New(timeCode);
+    }
+    if (name == HdSceneGlobalsSchemaTokens->timeCodesPerSecond) {
+        const double timeCodesPerSecond = _si->_timeCodesPerSecond;
+        return HdRetainedTypedSampledDataSource<double>::New(timeCodesPerSecond);
     }
     if (name == HdSceneGlobalsSchemaTokens->sceneStateId) {
         const int sceneStateId = _si->_sceneStateId;
@@ -99,7 +112,10 @@ _SceneGlobalsDataSource::Get(const TfToken &name)
 HdsiSceneGlobalsSceneIndexRefPtr
 HdsiSceneGlobalsSceneIndex::New(const HdSceneIndexBaseRefPtr &inputSceneIndex)
 {
-    return TfCreateRefPtr(new HdsiSceneGlobalsSceneIndex(inputSceneIndex));
+    HdsiSceneGlobalsSceneIndexRefPtr const result =
+        TfCreateRefPtr(new HdsiSceneGlobalsSceneIndex(inputSceneIndex));
+    result->SetDisplayName("Scene Globals Scene Index");
+    return result;
 }
 
 void
@@ -141,7 +157,24 @@ HdsiSceneGlobalsSceneIndex::SetActiveRenderSettingsPrimPath(
 }
 
 void
-HdsiSceneGlobalsSceneIndex::SetCurrentFrame(const double &time)
+HdsiSceneGlobalsSceneIndex::SetPrimaryCameraPrimPath(
+    const SdfPath &path)
+{
+    if (_primaryCameraPrimPath == path) {
+        return;
+    }
+
+    _primaryCameraPrimPath = path;
+
+    if (_IsObserved()) {
+        _SendPrimsDirtied({{
+            HdSceneGlobalsSchema::GetDefaultPrimPath(),
+            HdSceneGlobalsSchema::GetPrimaryCameraPrimLocator()}});
+    }
+}
+
+void
+HdsiSceneGlobalsSceneIndex::SetCurrentFrame(double time)
 {
     // XXX We might need to add a flag to force dirtying of the Frame locator 
     // even if the time has not changed 
@@ -159,7 +192,23 @@ HdsiSceneGlobalsSceneIndex::SetCurrentFrame(const double &time)
 }
 
 void
-HdsiSceneGlobalsSceneIndex::SetSceneStateId(const int &id)
+HdsiSceneGlobalsSceneIndex::SetTimeCodesPerSecond(double timeCodesPerSecond)
+{
+    if (_timeCodesPerSecond == timeCodesPerSecond) {
+        return;
+    }
+
+    _timeCodesPerSecond = timeCodesPerSecond;
+
+    if (_IsObserved()) {
+        _SendPrimsDirtied({{
+            HdSceneGlobalsSchema::GetDefaultPrimPath(),
+            HdSceneGlobalsSchema::GetTimeCodesPerSecondLocator()}});
+    }
+}
+
+void
+HdsiSceneGlobalsSceneIndex::SetSceneStateId(int id)
 {
     if (_sceneStateId == id) {
         return;

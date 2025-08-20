@@ -16,6 +16,8 @@ difference.
     measured using several different assets. See :ref:`performance_metrics` for 
     details.
 
+.. _maxperf_optimized_allocator:
+
 Use an allocator optimized for multithreading
 ##############################################
 

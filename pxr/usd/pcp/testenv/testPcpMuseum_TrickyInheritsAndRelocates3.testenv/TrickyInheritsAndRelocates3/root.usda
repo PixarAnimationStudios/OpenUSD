@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    """
+    This museum case demonstrates a combination of relocations
+    and inherits.
+
+    This is a stripped down case pulled from bug 112645.
+    """
+)
+
+def "GuitarRigX" (
+    references = @./rig.usda@</GuitarRig>
+)
+{
+}

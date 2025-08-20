@@ -1,0 +1,165 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Y"
+)
+
+def Xform "Scene" (
+    kind = "component"
+)
+{
+    def Scope "Looks" (
+        references = @opacityLooks.usda@</Looks>
+    )
+    {
+        over "Material_Opacity_Texture"
+        {
+            over "PreviewSurface"
+            {
+                token inputs:opacityMode = "transparent"
+            }
+        }
+
+        over "Material_Opacity"
+        {
+            over "PreviewSurface"
+            {
+                token inputs:opacityMode = "transparent"
+            }
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def "CloudSphere1" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( -3.125, 0.625, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_0_Opacity_Texture>
+        }
+
+        def "CloudSphere2" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( -1.875, 0.625, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_10_Opacity_Texture>
+        }
+
+        def "CloudSphere3" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( -0.625, 0.625, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_25_Opacity_Texture>
+        }
+
+        def "CloudSphere4" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( 0.625, 0.625, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_50_Opacity_Texture>
+        }
+
+        def "CloudSphere5" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( 1.875, 0.625, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_75_Opacity_Texture>
+        }
+
+        def "CloudSphere6" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( 3.125, 0.625, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_100_Opacity_Texture>
+        }
+
+        def "ColorSphere1" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( -3.125, -0.625, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_0_Opacity>
+        }
+
+        def "ColorSphere2" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( -1.875, -0.625, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_10_Opacity>
+        }
+
+        def "ColorSphere3" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( -0.625, -0.625, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_25_Opacity>
+        }
+
+        def "ColorSphere4" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( 0.625, -0.625, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_50_Opacity>
+        }
+
+        def "ColorSphere5" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( 1.875, -0.625, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_75_Opacity>
+        }
+
+        def "ColorSphere6" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( 3.125, -0.625, 0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_100_Opacity>
+        }
+    }
+
+    def Xform "Lights"
+    {
+        def DomeLight "DomeLight"
+        {
+            asset inputs:texture:file = @StinsonBeach.hdr@
+        }
+    }
+}
+

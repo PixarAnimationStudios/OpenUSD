@@ -25,6 +25,7 @@
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/texture.h"
 #include "pxr/imaging/hgi/types.h"
+#include "pxr/imaging/hgi/version.h"
 
 #include <atomic>
 #include <memory>
@@ -323,6 +324,14 @@ public:
     /// Thread safety: Not thread safe. Should be called on the main thread.
     HGI_API
     virtual void EndFrame() = 0;
+
+    /// Perform any necessary garbage collection, if applicable. This can be
+    /// used to flush pending deletes immediately after unloading assets, for
+    /// example. Note that as some clients may not call this, Hgi
+    /// implementations should find other opportunities to garbage collect as
+    /// well (e.g. EndFrame).
+    HGI_API
+    virtual void GarbageCollect() = 0;
 
 protected:
     // Returns a unique id for handle creation.

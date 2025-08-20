@@ -11,7 +11,7 @@ from pxr import Pcp, Sdf, Tf
 def _ComposeLayersWithNegativeOffsetScale():
     refLayer = Sdf.Layer.CreateAnonymous("ref")
     refLayer.ImportFromString('''
-    #sdf 1.4.32
+    #usda 1.0
 
     def "prim" {
         double attr.timeSamples = {
@@ -23,7 +23,7 @@ def _ComposeLayersWithNegativeOffsetScale():
 
     subLayer = Sdf.Layer.CreateAnonymous("sub")
     subLayer.ImportFromString(f'''
-    #sdf 1.4.32
+    #usda 1.0
     (
         subLayers = [
             @{refLayer.identifier}@ (scale = -1)
@@ -33,7 +33,7 @@ def _ComposeLayersWithNegativeOffsetScale():
 
     rootLayer = Sdf.Layer.CreateAnonymous()
     rootLayer.ImportFromString(f'''
-    #sdf 1.4.32
+    #usda 1.0
 
     def "prim" (
         references = @{subLayer.identifier}@</prim> (scale = -1)

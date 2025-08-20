@@ -14,8 +14,8 @@
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/usdaFileFormat.h"
 
 #include <draco/compression/decode.h>
 
@@ -144,7 +144,7 @@ bool UsdDracoFileFormat::WriteToString(
     // Draco format can only describe a subset of USD content, so falling back
     // to USDA file format instead.
     return SdfFileFormat::FindById(
-        UsdUsdaFileFormatTokens->Id)->WriteToString(layer, str, comment);
+        SdfUsdaFileFormatTokens->Id)->WriteToString(layer, str, comment);
 }
 
 bool UsdDracoFileFormat::WriteToStream(
@@ -153,7 +153,7 @@ bool UsdDracoFileFormat::WriteToStream(
     // Draco format can only describe a subset of USD content, so falling back
     // to USDA file format instead.
     return SdfFileFormat::FindById(
-        UsdUsdaFileFormatTokens->Id)->WriteToStream(spec, out, indent);
+        SdfUsdaFileFormatTokens->Id)->WriteToStream(spec, out, indent);
 }
 
 

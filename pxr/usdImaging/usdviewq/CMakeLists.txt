@@ -60,6 +60,7 @@ pxr_library(usdviewq
         qt.py
         rootDataModel.py
         selectionDataModel.py
+        splineViewer.py
         viewSettingsDataModel.py
         freeCamera.py
         debugFlagsWidget.py

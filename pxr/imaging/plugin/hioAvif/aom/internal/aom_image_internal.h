@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2019, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -17,7 +17,7 @@
 #ifndef AOM_AOM_INTERNAL_AOM_IMAGE_INTERNAL_H_
 #define AOM_AOM_INTERNAL_AOM_IMAGE_INTERNAL_H_
 
-#include "pxr/imaging/plugin/hioAvif/aom/aom_image.h"
+#include "aom/aom_image.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,6 +28,14 @@ struct aom_metadata_array {
   size_t sz;                       /* Number of metadata structs in the list */
   aom_metadata_t **metadata_array; /* Array of metadata structs */
 };
+
+/*! \brief Bit in aom_metadata_insert_flags marking metadata as layer-specific.
+ */
+#define AOM_MIF_LAYER_SPECIFIC 0x10
+/*! \brief Bits in aom_metadata_insert_flags used to signal which frames to
+ * add the metadata to (keyframes, non keyframes...).
+ */
+#define AOM_MIF_INSERT_LOCATION_MASK 0x0f
 
 /*!\brief Alloc memory for aom_metadata_array struct.
  *

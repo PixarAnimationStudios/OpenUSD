@@ -1,0 +1,7 @@
+#usda 1.0
+
+def MfScope "bad_shaped_dim"
+{
+    custom double3[] bad1 = [[]]
+}
+

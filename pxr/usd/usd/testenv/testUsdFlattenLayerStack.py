@@ -360,6 +360,28 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
             stage_from_flattened.GetAttributeAtPath('/Test.a').Get().resolvedPath,
             stage_from_layer_stack.GetAttributeAtPath('/Test.a').Get().resolvedPath)
 
+    def test_TimeSamplesAndSplineWithStrongDefaults(self):
+        src_stage = Usd.Stage.Open(
+            'timeSamplesSplinesWithStrongDefault_strong.usda')
+        src_layer_stack = src_stage._GetPcpCache().layerStack
+        layer = Usd.FlattenLayerStack(src_layer_stack, tag='timeSamples')
+        print(layer.ExportToString())
+        result_stage = Usd.Stage.Open(layer)
+
+        # verify that time samples and splines worked
+        prim = result_stage.GetPrimAtPath('/Prim')
+        a = prim.GetAttribute('a')
+        self.assertEqual(
+            a.GetResolveInfo().GetSource(), Usd.ResolveInfoSourceDefault)
+        self.assertEqual(a.Get(), 5)
+        self.assertEqual(a.Get(1), 5)
+
+        b = prim.GetAttribute('b')
+        self.assertEqual(
+            b.GetResolveInfo().GetSource(), Usd.ResolveInfoSourceDefault)
+        self.assertEqual(b.Get(), 5.0)
+        self.assertEqual(b.Get(1), 5.0)
+
     def test_ValueBlocks(self):
         src_stage = Usd.Stage.Open('valueBlocks_root.usda')
         src_layer_stack = src_stage._GetPcpCache().layerStack
@@ -385,6 +407,53 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
         d = prim.GetAttribute('d')
         self.assertEqual(d.Get(1), 789)
 
+    def test_AnimationBlocks(self):
+        src_stage = Usd.Stage.Open('animationBlocks_root.usda')
+        src_layer_stack = src_stage._GetPcpCache().layerStack
+        layer = Usd.FlattenLayerStack(src_layer_stack, tag='animationBlocks')
+        print(layer.ExportToString())
+        result_stage = Usd.Stage.Open(layer)
+
+        for stage in [src_stage, result_stage]:
+            # verify that animation blocks worked
+            prim = stage.GetPrimAtPath('/Human')
+            a = prim.GetAttribute('a')
+            self.assertEqual(a.GetResolveInfo().GetSource(), 
+                             Usd.ResolveInfoSourceTimeSamples)
+            # only default is animation block, which lets the weaker default
+            # shines through, but since no such weaker default, we get a None
+            self.assertEqual(a.Get(), None)
+            # nothing in stronger layer, coming through from weaker layer
+            self.assertEqual(a.Get(1), 5.0)
+
+            b = prim.GetAttribute('b')
+            self.assertEqual(b.GetResolveInfo().GetSource(),
+                             Usd.ResolveInfoSourceSpline)
+            # only default is animation block, which lets the weaker default
+            # shines through, but since no such weaker default, we get a None
+            self.assertEqual(b.Get(), None)
+            # stronger layer has a different spline, weaker layer has a spline 
+            # and default AnimationBlock
+            self.assertEqual(b.Get(1), 10.0)
+
+            c = prim.GetAttribute('c')
+            self.assertEqual(c.GetResolveInfo().GetSource(),
+                             Usd.ResolveInfoSourceDefault)
+            self.assertEqual(c.Get(), 1)
+            # stronger layer has an animation block, which blocks the time 
+            # sample from the weak layer and lets the default from the weaker 
+            # layer through.
+            self.assertEqual(c.Get(1), 1)
+
+            d = prim.GetAttribute('d')
+            self.assertEqual(d.GetResolveInfo().GetSource(),
+                             Usd.ResolveInfoSourceDefault)
+            self.assertEqual(d.Get(), 2.0)
+            # stronger layer has an animation block, which blocks the spline 
+            # from the weaker layer and lets the default from the weaker layer
+            # through.
+            self.assertEqual(d.Get(1), 2.0)
+
     def test_ValueTypeMismatch(self):
         src_stage = Usd.Stage.Open('valueTypeMismatch_root.usda')
         src_layer_stack = src_stage._GetPcpCache().layerStack
@@ -404,8 +473,7 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
         tagToExtension = {
             '': '.usda',
             'test.usda': '.usda',
-            'test.usdc': '.usdc',
-            'test.sdf': '.sdf'
+            'test.usdc': '.usdc'
         }
         for (tag, extension) in tagToExtension.items():
             layer = Usd.FlattenLayerStack(src_layer_stack, tag=tag)

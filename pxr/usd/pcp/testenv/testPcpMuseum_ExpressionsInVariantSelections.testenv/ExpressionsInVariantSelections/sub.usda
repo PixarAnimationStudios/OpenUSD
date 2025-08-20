@@ -1,0 +1,16 @@
+#usda 1.0
+
+def "BadExpressionInSelection" (
+    variantSets = ["v"]
+    variants = {
+        string v = "`'sel_${ROOT_VAR_SEL}'`"
+    }
+)
+{
+    variantSet "v" = {
+        "sel_x" {
+        }
+        "sel_y" {
+        }
+    }
+}

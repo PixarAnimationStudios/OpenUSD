@@ -133,20 +133,32 @@ def BuildReferenceOffsets(rootLyr, testLyr, makePayloads=False):
         ('/Scale_2', 0.0, 2.0),
         ('/Scale_1p5', 0.0, 1.5),
         ('/Scale_half', 0.0, 0.5),
-        ('/Scale_negHalf', 0.0, -0.5),
 
         #
         # Combined offset and scale tests:
         #
         ('/Scale_half_Offset_1', 1.0, 0.5),
         ('/Scale_half_Offset_neg1', -1.0, 0.5),
-        ('/Scale_negHalf_Offset_1', 1.0, -0.5),
-        ('/Scale_negHalf_Offset_neg1', -1.0, -0.5)
         ]
 
     adjPrims = [MakePrim(stage, testLyr, path=c[0], offset=c[1], scale=c[2],
                          makePayload=makePayloads)
                 for c in cases]
+
+    compositionErrors = stage.GetCompositionErrors()
+    assert compositionErrors == []
+    # Following cases should result in composition errors when applying layer
+    # offsets with negative scales.
+    cases = [
+        ('/Scale_negHalf', 0.0, -0.5),
+        ('/Scale_negHalf_Offset_1', 1.0, -0.5),
+        ('/Scale_negHalf_Offset_neg1', -1.0, -0.5)
+    ]
+    for c in cases:
+        MakePrim(stage, testLyr, path=c[0], offset=c[1], scale=c[2],
+                 makePayload=makePayloads)
+    compositionErrors = stage.GetCompositionErrors()
+    assert len(compositionErrors) == len(cases)
 
     # If the layers have different tcps values, this will be factored in as an
     # additional scale in the composed layer offset.

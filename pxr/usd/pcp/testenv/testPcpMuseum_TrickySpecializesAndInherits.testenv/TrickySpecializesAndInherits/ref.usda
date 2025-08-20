@@ -1,0 +1,26 @@
+#usda 1.0
+
+def "Ref"
+{
+    def "A" (
+        specializes = </Ref/B>
+    )
+    {
+    }
+
+    class "B" (
+        inherits = </Ref/C>
+    )
+    {
+    }
+
+    class "C" (
+        specializes = </Ref/D>
+    )
+    {
+    }
+
+    class "D"
+    {
+    }
+}

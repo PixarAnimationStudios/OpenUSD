@@ -28,7 +28,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((sceneIndexPluginName, "HdPrman_PreviewSurfacePrimvarsSceneIndexPlugin"))
     (UsdPreviewSurface)
-    ((displacementBoundSphere, "displacementbound:sphere"))
+    // See PxrPrimvarsAPI.
+    ((displacementBoundSphere, "ri:displacementbound:sphere"))
 );
 
 ////////////////////////////////////////////////////////////////////////////////

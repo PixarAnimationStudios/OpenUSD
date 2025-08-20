@@ -31,7 +31,7 @@ TF_DEFINE_ENV_SETTING(TF_TEST_POST_ENV_SETTING_X, false, "post-registry-manager 
 // to global dynamic initialization order.  In particular, getting an env
 // setting now should cause all of the TF_DEFINE_ENV_SETTING created env
 // settings to be defined but we shouldn't try to define one twice.
-ARCH_CONSTRUCTOR(_PostRegistryManager, 150, void)
+ARCH_CONSTRUCTOR(_PostRegistryManager, 150)
 {
     TF_AXIOM(TfGetEnvSetting(TF_TEST_POST_ENV_SETTING_X) == false);
 }

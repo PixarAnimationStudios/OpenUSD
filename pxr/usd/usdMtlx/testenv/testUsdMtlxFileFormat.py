@@ -115,17 +115,52 @@ class TestFileFormat(unittest.TestCase):
         # Make sure each input is connected as expected
         inputToSource = {
             'weight_1':
-            '/MaterialX/Materials/layered/NodeGraphs/layered_layer1_gradient',
+                ('/MaterialX/Materials/layered/NodeGraphs','o_layered_layer1_gradient'),
             'weight_2':
-            '/MaterialX/Materials/layered/NodeGraphs/layered_layer2_gradient',
+                ('/MaterialX/Materials/layered/NodeGraphs','o_layered_layer2_gradient'),
             'weight_3':
-            '/MaterialX/Materials/layered/NodeGraphs/layered_layer3_gradient'
+                ('/MaterialX/Materials/layered/NodeGraphs','o_layered_layer3_gradient')
         }
         for inputName, source in inputToSource.items():
             input = nodeGraph.GetInput(inputName)
             self.assertEqual(input.HasConnectedSource(), True)
             self.assertEqual(
-                input.GetConnectedSources()[0][0].source.GetPath(), source)
+                input.GetConnectedSources()[0][0].source.GetPath(), source[0])
+            self.assertEqual(
+                input.GetConnectedSources()[0][0].sourceName, source[1])
+
+    def test_OutputSources(self):
+        """
+        Test MaterialX conversion of shader inputs coming from a variety of
+        output sources.
+        """
+        stage = UsdMtlx._TestFile("OutputSources.mtlx")
+        path = Sdf.Path('/MaterialX/Materials/layered/layered_sr')
+        node = UsdShade.Shader.Get(stage, path)
+
+        # Make sure each input is connected as expected
+        inputToSource = {
+            'weight_1': (
+                '/MaterialX/Materials/layered/test_ng',
+                'o_layered_layer1_gradient'
+            ),
+            'weight_2': (
+                '/MaterialX/Materials/layered/NodeGraphs',
+                'o_layered_layer2_gradient'
+            ),
+            'weight_3': (
+                '/MaterialX/Materials/layered/NodeGraphs/layered_layer3_gradient',
+                'out'
+            )
+        }
+        stage.GetRootLayer().Export('OutputSources.usda')
+        for inputName, source in inputToSource.items():
+            input = node.GetInput(inputName)
+            self.assertEqual(input.HasConnectedSource(), True)
+            self.assertEqual(
+                input.GetConnectedSources()[0][0].source.GetPath(), source[0])
+            self.assertEqual(
+                input.GetConnectedSources()[0][0].sourceName, source[1])
 
     def test_MultiOutputNodes(self):
         """
@@ -193,13 +228,16 @@ class TestFileFormat(unittest.TestCase):
         self.assertTrue(input)
         self.assertEqual(input.GetFullName(),"inputs:specularColor")
     
-    def test_customNodeDefs(self):
+    def test_localCustomNodes(self):
         """
-        Test that custom nodedefs are flattend out and replaced with 
-        their associated nodegraph
+        Test that locally defined custom nodes are flattend out and replaced
+        with their associated nodegraph, or we add the appropriate sourceAsset 
+        information for custom surface shader nodes. 
         """
-        stage = UsdMtlx._TestFile('CustomNodeDef.mtlx')
-        stage.GetRootLayer().Export('CustomNodeDef.usda')
+        stage = UsdMtlx._TestFile('LocalCustomNodes.mtlx')
+        stage.GetRootLayer().Export('LocalCustomNodes.usda')
+        stage = UsdMtlx._TestFile('NestedLocalCustomNodes.mtlx')
+        stage.GetRootLayer().Export('NestedLocalCustomNodes.usda')
 
     @unittest.skipIf(not hasattr(Ar.Resolver, "CreateIdentifier"),
                      "Requires Ar 2.0")

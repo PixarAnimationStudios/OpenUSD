@@ -56,7 +56,7 @@ if (valueType == Ts_GetType<TS_SPLINE_VALUE_CPP_TYPE(tuple)>())             \
 TF_PP_SEQ_FOR_EACH(_MAKE_CLAUSE, ~, TS_SPLINE_SUPPORTED_VALUE_TYPES)
     TF_CODING_ERROR("Unsupported spline value type");
 }
-
+#undef _MAKE_CLAUSE
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

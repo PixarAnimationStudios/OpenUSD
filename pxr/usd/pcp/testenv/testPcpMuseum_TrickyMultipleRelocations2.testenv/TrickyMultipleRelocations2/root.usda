@@ -1,0 +1,25 @@
+#usda 1.0
+(
+    relocates = {
+        </ModelGroup/Model>: </ModelGroup/Model_2>, 
+        </ModelGroup/Model_2/Rig/Collider>: </ModelGroup/Model_2/Anim/Collider>
+    }
+)
+
+def "ModelGroup" (
+    references = @./group.usda@</Group>
+)
+{
+    rel groupRel = </ModelGroup/Model_2/Anim/Collider>
+
+    over "Model_2"
+    {
+        rel modelRel = </ModelGroup/Model_2/Anim/Collider>
+
+        def "Rig" (
+            references = @./rig.usda@</Rig>
+        )
+        {
+        }
+    }
+}

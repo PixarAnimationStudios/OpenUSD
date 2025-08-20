@@ -74,6 +74,13 @@ _ReadNamespacedSettings(
             (*namespacedSettings)[name] = val;
         }
     }
+
+    for (const UsdRelationship& rel: prim.GetAuthoredRelationships()) {
+        const TfToken name = rel.GetName();
+        SdfPathVector outputTargetPaths;
+        rel.GetTargets(&outputTargetPaths);
+        (*namespacedSettings)[name] = VtValue(outputTargetPaths);
+    }
 }
 
 template<typename T>

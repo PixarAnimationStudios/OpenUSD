@@ -733,6 +733,12 @@ void wrapLayer()
              &This::HasDefaultPrim)
         .def("ClearDefaultPrim",
              &This::ClearDefaultPrim)
+        .def("ConvertDefaultPrimTokenToPath",
+             &This::ConvertDefaultPrimTokenToPath)
+            .staticmethod("ConvertDefaultPrimTokenToPath")
+        .def("ConvertDefaultPrimPathToToken",
+             &This::ConvertDefaultPrimPathToToken)
+            .staticmethod("ConvertDefaultPrimPathToToken")
 
         .add_property("customLayerData",
            &This::GetCustomLayerData,

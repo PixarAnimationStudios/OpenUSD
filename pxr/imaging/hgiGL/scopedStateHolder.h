@@ -89,6 +89,7 @@ private:
     std::vector<bool> _restoreClipDistances;
     bool _restoreMultiSample;
     bool _restorePointSmooth;
+    bool _restorePointSprite;
     int32_t _restoreUnpackAlignment;
     int32_t _restorePackAlignment;
 };

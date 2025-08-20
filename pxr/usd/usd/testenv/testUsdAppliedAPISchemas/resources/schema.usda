@@ -53,6 +53,7 @@ class "TestSingleApplyAPI"
     doc = """Test single apply API schema"""
 )
 {
+    reorder properties = ['single:relationship', 'single:token_attr', 'single:bool_attr']
     uniform token single:token_attr = "bar" (
         allowedTokens = ["foo", "bar", "baz"]
         doc = """Token attribute"""
@@ -138,6 +139,7 @@ class TestTypedSchema "TestTypedSchema" (
     hidden = true
 )
 {
+    reorder properties = ['testRel', 'testAttr']
     string testAttr = "foo" (
         allowedTokens = ["bar", "baz"]
         doc = "Testing documentation metadata"

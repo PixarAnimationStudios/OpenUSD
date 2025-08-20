@@ -1,30 +1,30 @@
-Loading @TrickyInheritedVariantSelection/root.sdf@
+Loading @TrickyInheritedVariantSelection/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Sullivan>
 
 Prim Stack:
-    root.sdf             /Sullivan
-    root.sdf             /_extraclass_Sullivan
-    root.sdf             /_pinclass_Sullivan
-    root.sdf             /_shadeclass_Sullivan
-    sequence.sdf         /Sullivan
-    sequence.sdf         /_pinclass_Sullivan
-    sequence.sdf         /_shadeclass_Sullivan
-    sequence.sdf         /Sullivan{pin=ShotPin}
-    sequence.sdf         /_extraclass_Sullivan
-    model-pin.sdf        /SullivanShotPin
-    model-pin.sdf        /SullivanShotPin{shade=PhongShade}
-    model-shade.sdf      /SullivanShotPinPhongShade
-    model-shade.sdf      /SullivanShotPinNoShade
-    model-pin.sdf        /SullivanNoPin
-    model-pin.sdf        /SullivanNoPin{shade=PhongShade}
-    model-shade.sdf      /SullivanNoPinPhongShade
-    model-shade.sdf      /SullivanNoPinNoShade
+    root.usda            /Sullivan
+    root.usda            /_extraclass_Sullivan
+    root.usda            /_pinclass_Sullivan
+    root.usda            /_shadeclass_Sullivan
+    sequence.usda        /Sullivan
+    sequence.usda        /_pinclass_Sullivan
+    sequence.usda        /_shadeclass_Sullivan
+    sequence.usda        /Sullivan{pin=ShotPin}
+    sequence.usda        /_extraclass_Sullivan
+    model-pin.usda       /SullivanShotPin
+    model-pin.usda       /SullivanShotPin{shade=PhongShade}
+    model-shade.usda     /SullivanShotPinPhongShade
+    model-shade.usda     /SullivanShotPinNoShade
+    model-pin.usda       /SullivanNoPin
+    model-pin.usda       /SullivanNoPin{shade=PhongShade}
+    model-shade.usda     /SullivanNoPinPhongShade
+    model-shade.usda     /SullivanNoPinNoShade
 
 Variant Selections:
     {pin = ShotPin}
@@ -34,17 +34,17 @@ Variant Selections:
 Results for composing </_pinclass_Sullivan>
 
 Prim Stack:
-    root.sdf             /_pinclass_Sullivan
+    root.usda            /_pinclass_Sullivan
 
 ------------------------------------------------------------------------
 Results for composing </_shadeclass_Sullivan>
 
 Prim Stack:
-    root.sdf             /_shadeclass_Sullivan
+    root.usda            /_shadeclass_Sullivan
 
 ------------------------------------------------------------------------
 Results for composing </_extraclass_Sullivan>
 
 Prim Stack:
-    root.sdf             /_extraclass_Sullivan
+    root.usda            /_extraclass_Sullivan
 

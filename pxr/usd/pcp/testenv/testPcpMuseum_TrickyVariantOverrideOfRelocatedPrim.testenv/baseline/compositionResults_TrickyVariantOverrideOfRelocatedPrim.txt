@@ -1,16 +1,16 @@
-Loading @TrickyVariantOverrideOfRelocatedPrim/root.sdf@
+Loading @TrickyVariantOverrideOfRelocatedPrim/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Model>
 
 Prim Stack:
-    root.sdf             /Model
-    root.sdf             /Model{vset=vsel}
-    model.sdf            /Model
+    root.usda            /Model
+    root.usda            /Model{vset=vsel}
+    model.usda           /Model
 
 Variant Selections:
     {vset = vsel}
@@ -25,8 +25,8 @@ Prohibited child names:
 Results for composing </Model/RelocatedSphere>
 
 Prim Stack:
-    root.sdf             /Model{vset=vsel}RelocatedSphere
-    model.sdf            /Model/UnrelocatedSphere
+    root.usda            /Model{vset=vsel}RelocatedSphere
+    model.usda           /Model/UnrelocatedSphere
 
 Child names:
      ['Geom']
@@ -35,18 +35,18 @@ Child names:
 Results for composing </Model/RelocatedSphere/Geom>
 
 Prim Stack:
-    root.sdf             /Model{vset=vsel}RelocatedSphere/Geom
-    model.sdf            /Model/UnrelocatedSphere/Geom
+    root.usda            /Model{vset=vsel}RelocatedSphere/Geom
+    model.usda           /Model/UnrelocatedSphere/Geom
 
 Property names:
      ['x', 'r']
 
 Property stacks:
 /Model/RelocatedSphere/Geom.r:
-    root.sdf             /Model{vset=vsel}RelocatedSphere/Geom.r
+    root.usda            /Model{vset=vsel}RelocatedSphere/Geom.r
 /Model/RelocatedSphere/Geom.x:
-    root.sdf             /Model{vset=vsel}RelocatedSphere/Geom.x
-    model.sdf            /Model/UnrelocatedSphere/Geom.x
+    root.usda            /Model{vset=vsel}RelocatedSphere/Geom.x
+    model.usda           /Model/UnrelocatedSphere/Geom.x
 
 Relationship targets:
 /Model/RelocatedSphere/Geom.r:

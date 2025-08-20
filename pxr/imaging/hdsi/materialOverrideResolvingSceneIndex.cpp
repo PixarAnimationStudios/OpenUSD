@@ -646,8 +646,6 @@ HdsiMaterialOverrideResolvingSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
-    TRACE_FUNCTION();
-
     _SendPrimsAdded(entries);
 }
 
@@ -656,8 +654,6 @@ HdsiMaterialOverrideResolvingSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
-    TRACE_FUNCTION();
-
     // We implement the dependencies schema instead of implementing 
     // _PrimsDirtied()
     _SendPrimsDirtied(entries);
@@ -668,8 +664,6 @@ HdsiMaterialOverrideResolvingSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
-    TRACE_FUNCTION();
-
     _SendPrimsRemoved(entries);
 }
 

@@ -314,6 +314,24 @@ HdxFreeCameraPrimDataSource::SetViewAndProjectionMatrix(
         dirtyLocators);
 }
 
+void
+HdxFreeCameraPrimDataSource::SetClippingPlanes(
+    const std::vector<GfVec4f> &clippingPlanes,
+    HdDataSourceLocatorSet * dirtyLocators)
+{
+    if (_info->camera.GetClippingPlanes() == clippingPlanes) {
+        return;
+    }
+    _info->camera.SetClippingPlanes(clippingPlanes);
+    if (!dirtyLocators) {
+        return;
+    }
+    static const HdDataSourceLocator locator =
+        HdCameraSchema::GetDefaultLocator()
+            .Append(HdCameraSchemaTokens->clippingPlanes);
+    dirtyLocators->insert(locator);
+}
+
 HdDataSourceBaseHandle
 HdxFreeCameraPrimDataSource::Get(const TfToken &name) {
     if (name == HdCameraSchema::GetSchemaToken()) {

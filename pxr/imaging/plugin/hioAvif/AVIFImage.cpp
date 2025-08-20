@@ -582,7 +582,8 @@ bool Hio_AVIFImage::ReadCropped(
 
     // note that in the future, Hio will support more color spaces than Rec709,
     // but today, we need to conform AVIF files to Rec709.
-    bool removeSRGB = avif.SourceIsSRGB();
+    const bool readRawImageData = _sourceColorSpace == HioImage::Raw;
+    const bool removeSRGB = !readRawImageData && avif.SourceIsSRGB();
     float srcPrimaries[8];
     avifColorPrimariesGetValues(avif.Image()->colorPrimaries, srcPrimaries);
     GfColorSpace src(TfToken("from AVIF"),

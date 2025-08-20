@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<materialx version="1.39">
+  <standard_surface name="Surface" type="surfaceshader">
+    <input name="base_color" type="color3" output="base_color_out" nodegraph="_" />
+  </standard_surface>
+  <surfacematerial name="SwizzleExample" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="Surface" />
+  </surfacematerial>
+  <nodegraph name="_">
+    <ramplr name="ramplr" type="color3" nodedef="ND_ramplr_color3">
+      <input name="texcoord" type="vector2" nodename="geompropvalue" />
+      <input name="valuel" type="color3" nodename="dot" />
+      <input name="valuer" type="color3" nodename="swizzle" />
+    </ramplr>
+    <geompropvalue name="geompropvalue" type="vector2" nodedef="ND_geompropvalue_vector2">
+      <input name="geomprop" type="string" value="st" />
+    </geompropvalue>
+    <dot name="dot" type="color3" nodedef="ND_dot_color3">
+      <input name="in" type="color3" value="0, 0.5, 1" />
+    </dot>
+    <separate3 name="separate" type="multioutput">
+      <input name="in" type="color3" nodename="dot" />
+    </separate3>
+    <combine3 name="swizzle" type="color3">
+      <input name="in1" type="float" nodename="separate" output="outb" />
+      <input name="in2" type="float" nodename="separate" output="outg" />
+      <input name="in3" type="float" nodename="separate" output="outr" />
+    </combine3>
+    <output name="base_color_out" type="color3" nodename="ramplr" />
+  </nodegraph>
+</materialx>

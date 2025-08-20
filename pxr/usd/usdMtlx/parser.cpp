@@ -32,8 +32,8 @@ namespace {
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    ((discoveryType, "mtlx"))
-    ((sourceType, ""))
+    (mtlx)
+    ((defaultSourceType, ""))
 
     (defaultgeomprop)
     (defaultinput)
@@ -591,14 +591,31 @@ UsdMtlxParserPlugin::ParseShaderNode(const SdrShaderNodeDiscoveryResult& discove
         return GetInvalidShaderNode(discoveryResult);
     }
 
+    SdrShaderNodeDiscoveryResult newDiscovery = discoveryResult;
     auto nodeDef = document->getNodeDef(discoveryResult.identifier);
-    if (!nodeDef) {
+    if (!nodeDef && discoveryResult.subIdentifier.IsEmpty()) {
         TF_WARN("Invalid MaterialX NodeDef; unknown node name ' %s '",
             discoveryResult.identifier.GetText());
         return GetInvalidShaderNode(discoveryResult);
     }
 
-    ShaderBuilder builder(discoveryResult);
+    // If a custom node was defined locally it would have specified the nodeDef 
+    // name as the subIdentifier.
+    if (!discoveryResult.subIdentifier.IsEmpty()) {
+        nodeDef = document->getNodeDef(discoveryResult.subIdentifier);
+        if (!nodeDef) {
+            TF_WARN("Invalid MaterialX NodeDef; unknown node name ' %s '",
+                discoveryResult.subIdentifier.GetText());
+            return GetInvalidShaderNode(discoveryResult);
+        }
+        // Pass the nodeDef name (subIdentifier) through the metadata
+        SdrTokenMap metadataMap;
+        metadataMap[SdrNodeMetadata->ImplementationName] =
+            discoveryResult.subIdentifier;
+        newDiscovery.metadata = metadataMap;
+    }
+
+    ShaderBuilder builder(newDiscovery);
     ParseElement(&builder, nodeDef);
 
     return builder.Build();
@@ -610,7 +627,7 @@ UsdMtlxParserPlugin::GetDiscoveryTypes() const
     TRACE_FUNCTION();
 
     static const SdrTokenVec discoveryTypes = {
-        _tokens->discoveryType
+        _tokens->mtlx
     };
     return discoveryTypes;
 }
@@ -620,7 +637,7 @@ UsdMtlxParserPlugin::GetSourceType() const
 {
     TRACE_FUNCTION();
 
-    return _tokens->sourceType;
+    return _tokens->defaultSourceType;
 }
 
 SDR_REGISTER_PARSER_PLUGIN(UsdMtlxParserPlugin)

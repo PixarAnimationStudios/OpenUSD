@@ -1,0 +1,84 @@
+#usda 1.0
+
+over "AssetPathTest" (
+    customData = {
+        asset abs = @/usr/anim/menv30/global/unit_defs.usda@
+        asset allchars = @ !"#$%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~@
+        asset[] array = [@@, @sdf/Model.usda@, @//$STAGEDIR/sim/$MODELINSTANCE.usda@, @//menv30/global/unit_defs.sdf#20@]
+        asset empty = @@
+        asset looksLikeEscapes = @\x01\x03\x7f@
+        asset overlay = @///global/unit_defs.usda@
+        asset pathWithJapaneseCharacter = @path/to/響@
+        asset relative1 = @sdf/Model.usda@
+        asset relative2 = @../sdf/Model.usda@
+        asset repo = @//menv30/global/unit_defs.usda@
+        asset search = @Model/menv30/Model.usda@
+        asset token = @//$STAGEDIR/sim/$MODELINSTANCE.usda@
+        asset utf8 = @aɪ kæn iːt glɑːs ænd ɪt dɐz nɒt hɜːt miː Можам да јадам стакло, а не ме штета ನನಗೆ ಹಾನಿ ಆಗದೆ, ನಾನು ಗಜನ್ನು ತಿನಬಹುದು@
+        asset wversion = @//menv30/global/unit_defs.sdf#20@
+    }
+)
+{
+    asset abs = @/usr/anim/menv30/global/unit_defs.usda@
+    asset allchars = @ !"#$%&'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~@
+    asset[] array = [@@, @sdf/Model.usda@, @//$STAGEDIR/sim/$MODELINSTANCE.usda@, @//menv30/global/unit_defs.sdf#20@]
+    asset empty = @@
+    asset looksLikeEscapes = @\x01\x03\x7f@
+    asset overlay = @///global/unit_defs.usda@
+    asset pathWithJapaneseCharacter = @path/to/響@
+    asset relative1 = @sdf/Model.usda@
+    asset relative2 = @../sdf/Model.usda@
+    asset repo = @//menv30/global/unit_defs.usda@
+    asset search = @Model/menv30/Model.usda@
+    asset token = @//$STAGEDIR/sim/$MODELINSTANCE.usda@
+    asset utf8 = @aɪ kæn iːt glɑːs ænd ɪt dɐz nɒt hɜːt miː Можам да јадам стакло, а не ме штета ನನಗೆ ಹಾನಿ ಆಗದೆ, ನಾನು ಗಜನ್ನು ತಿನಬಹುದು@
+    asset wversion = @//menv30/global/unit_defs.sdf#20@
+}
+
+over "AssetPathTest2" (
+    customData = {
+        asset abs = @/usr/anim/menv30/global/unit_defs.usda@
+        asset allchars = @@@ !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~@@@
+        asset[] array = [@@, @sdf/Model.usda@, @@@//menv30/global/unit_defs.usda@stable-prepro_0.42@@@, @@@//menv30/global/unit_defs.usda@2012/06/20@@@]
+        asset beginandendwithextradelim = @@@@foo.usda@@@@
+        asset empty = @@
+        asset escapeddelimiter = @@@foo.sdf\@@@testing\\@@@@@@
+        asset looksLikeEscapes = @\x01\x03\x7f@
+        asset overlay = @///global/unit_defs.usda@
+        asset pathWithJapaneseCharacter = @path/to/響@
+        asset relative1 = @sdf/Model.usda@
+        asset relative2 = @../sdf/Model.usda@
+        asset repo = @//menv30/global/unit_defs.usda@
+        asset search = @Model/menv30/Model.usda@
+        asset token = @//$STAGEDIR/sim/$MODELINSTANCE.usda@
+        asset utf8 = @aɪ kæn iːt glɑːs ænd ɪt dɐz nɒt hɜːt miː Можам да јадам стакло, а не ме штета ನನಗೆ ಹಾನಿ ಆಗದೆ, ನಾನು ಗಜನ್ನು ತಿನಬಹುದು@
+        asset wchangeno = @@@//menv30/global/unit_defs.usda@12345@@@
+        asset wdate = @@@//menv30/global/unit_defs.usda@2012/06/20@@@
+        asset wdatetime = @@@//menv30/global/unit_defs.usda@2012/06/20:16:18:00@@@
+        asset wlabel = @@@//menv30/global/unit_defs.usda@stable-prepro_0.42@@@
+        asset wversion = @//menv30/global/unit_defs.sdf#20@
+    }
+)
+{
+    asset abs = @/usr/anim/menv30/global/unit_defs.usda@
+    asset allchars = @@@ !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~@@@
+    asset[] array = [@@, @sdf/Model.usda@, @@@//menv30/global/unit_defs.usda@stable-prepro_0.42@@@, @@@//menv30/global/unit_defs.usda@2012/06/20@@@]
+    asset beginandendwithextradelim = @@@@foo.usda@@@@
+    asset empty = @@
+    asset escapeddelimiter = @@@foo.sdf\@@@testing\\@@@@@@
+    asset looksLikeEscapes = @\x01\x03\x7f@
+    asset overlay = @///global/unit_defs.usda@
+    asset pathWithJapaneseCharacter = @path/to/響@
+    asset relative1 = @sdf/Model.usda@
+    asset relative2 = @../sdf/Model.usda@
+    asset repo = @//menv30/global/unit_defs.usda@
+    asset search = @Model/menv30/Model.usda@
+    asset token = @//$STAGEDIR/sim/$MODELINSTANCE.usda@
+    asset utf8 = @aɪ kæn iːt glɑːs ænd ɪt dɐz nɒt hɜːt miː Можам да јадам стакло, а не ме штета ನನಗೆ ಹಾನಿ ಆಗದೆ, ನಾನು ಗಜನ್ನು ತಿನಬಹುದು@
+    asset wchangeno = @@@//menv30/global/unit_defs.usda@12345@@@
+    asset wdate = @@@//menv30/global/unit_defs.usda@2012/06/20@@@
+    asset wdatetime = @@@//menv30/global/unit_defs.usda@2012/06/20:16:18:00@@@
+    asset wlabel = @@@//menv30/global/unit_defs.usda@stable-prepro_0.42@@@
+    asset wversion = @//menv30/global/unit_defs.sdf#20@
+}
+

@@ -1209,13 +1209,15 @@ class AppController(QtCore.QObject):
             if reasons:
                 err += "\n".join(reasons) + "\n"
             return err
-
-        if not Ar.GetResolver().Resolve(usdFilePath):
-            sys.stderr.write(_GetFormattedError(["File not found"]))
-            sys.exit(1)
-
+        
         if self._mallocTags != 'none':
             Tf.MallocTag.Initialize()
+
+        # Pull on the asset resolver here so that the "open stage" time does
+        # not include its initialization time for consistency with previous
+        # behavior. Otherwise, it would be instantiated when binding the
+        # resolver context prior to opening the root layer.
+        resolver = Ar.GetResolver()
 
         with self._makeTimer('open stage "%s"' % usdFilePath):
             loadSet = Usd.Stage.LoadNone if (self._unloaded or muteLayersRe) \
@@ -1223,13 +1225,20 @@ class AppController(QtCore.QObject):
             popMask = (None if populationMaskPaths is None else
                        Usd.StagePopulationMask())
 
-            # Open as a layer first to make sure its a valid file format
-            try:
-                layer = Sdf.Layer.FindOrOpen(usdFilePath)
-            except Tf.ErrorException as e:
-                sys.stderr.write(_GetFormattedError(
-                    [err.commentary.strip() for err in e.args]))
-                sys.exit(1)
+            ctx = self._resolverContextFn(usdFilePath)
+            with Ar.ResolverContextBinder(ctx):
+                # Open as a layer first to make sure its a valid file format
+                try:
+                    layer = Sdf.Layer.FindOrOpen(usdFilePath)
+                except Tf.ErrorException as e:
+                    sys.stderr.write(_GetFormattedError(
+                        [err.commentary.strip() for err in e.args]))
+                    sys.exit(1)
+
+                if not layer:
+                    if not Ar.GetResolver().Resolve(usdFilePath):
+                        sys.stderr.write(_GetFormattedError(["File not found"]))
+                        sys.exit(1)
 
             if sessionFilePath:
                 try:
@@ -1250,12 +1259,12 @@ class AppController(QtCore.QObject):
                     popMask.Add(p)
                 stage = Usd.Stage.OpenMasked(layer,
                                              sessionLayer,
-                                             self._resolverContextFn(usdFilePath),
+                                             ctx,
                                              popMask, loadSet)
             else:
                 stage = Usd.Stage.Open(layer,
                                        sessionLayer,
-                                       self._resolverContextFn(usdFilePath), 
+                                       ctx, 
                                        loadSet)
 
             self._applyStageOpenLayerMutes(stage, muteLayersRe)
@@ -1329,6 +1338,9 @@ class AppController(QtCore.QObject):
         elif self._dataModel.stage.HasAuthoredTimeCodeRange():
             self.realStartTimeCode = stageStartTimeCode
             self.realEndTimeCode = stageEndTimeCode
+
+        self._dataModel.frameRangeBegin = self.realStartTimeCode
+        self._dataModel.frameRangeEnd = self.realEndTimeCode
 
         self._ui.stageBegin.setText(str(stageStartTimeCode))
         self._ui.stageEnd.setText(str(stageEndTimeCode))
@@ -2143,6 +2155,7 @@ class AppController(QtCore.QObject):
         value = float(self._ui.rangeBegin.text())
         if value != self.realStartTimeCode:
             self.realStartTimeCode = value
+            self._dataModel.frameRangeBegin = value
             self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _stepSizeChanged(self):
@@ -2156,6 +2169,7 @@ class AppController(QtCore.QObject):
         value = float(self._ui.rangeEnd.text())
         if value != self.realEndTimeCode:
             self.realEndTimeCode = value
+            self._dataModel.frameRangeEnd = value
             self._UpdateTimeSamples(resetStageDataOnly=False)
 
     def _frameStringChanged(self):
@@ -2900,6 +2914,9 @@ class AppController(QtCore.QObject):
         if ext not in ('.jpg', '.png'):
             saveName += '.png'
 
+        self.SaveViewerImageToFile(saveName)
+
+    def SaveViewerImageToFile(self, saveName):
         with BusyContext():
             self.GrabViewportShot().save(saveName)
 

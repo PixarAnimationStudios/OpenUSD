@@ -144,17 +144,38 @@ VT_DUALQUATERNION_VALUE_TYPES
 #define VT_SCALAR_VALUE_TYPES \
 VT_SCALAR_CLASS_VALUE_TYPES VT_BUILTIN_VALUE_TYPES 
 
-
-// The following preprocessor code produces typedefs for VtArray holding
-// various scalar value types.  The produced typedefs are of the form:
+// The following preprocessor code produces type aliases for VtArray holding
+// various scalar value types.  The produced aliases are of the form:
 //
-// typedef VtArray<int> VtIntArray;
-// typedef VtArray<double> VtDoubleArray;
+// using VtIntArray = VtArray<int>;
+// using VtDoubleArray = VtArray<double>;
 template<typename T> class VtArray;
-#define VT_ARRAY_TYPEDEF(unused, elem) \
-typedef VtArray< VT_TYPE(elem) > \
-TF_PP_CAT(Vt, TF_PP_CAT(VT_TYPE_NAME(elem), Array)) ;
-TF_PP_SEQ_FOR_EACH(VT_ARRAY_TYPEDEF, ~, VT_SCALAR_VALUE_TYPES)
+#define VT_ARRAY_ALIAS(unused, elem) \
+using TF_PP_CAT( \
+   Vt, TF_PP_CAT(VT_TYPE_NAME(elem), Array)) = VtArray< VT_TYPE(elem) >;
+TF_PP_SEQ_FOR_EACH(VT_ARRAY_ALIAS, ~, VT_SCALAR_VALUE_TYPES)
+
+// The following preprocessor code produces type aliases for VtArrayEdit holding
+// various scalar value types.  The produced aliases are of the form:
+//
+// using VtIntArrayEdit = VtArrayEdit<int>;
+// using VtDoubleArrayEdit = VtArrayEdit<double>;
+template<typename T> class VtArrayEdit;
+#define VT_ARRAY_EDIT_ALIAS(unused, elem) \
+using TF_PP_CAT(Vt, TF_PP_CAT(VT_TYPE_NAME(elem), ArrayEdit)) \
+    = VtArrayEdit< VT_TYPE(elem) >;
+TF_PP_SEQ_FOR_EACH(VT_ARRAY_EDIT_ALIAS, ~, VT_SCALAR_VALUE_TYPES)
+
+// The following preprocessor code produces type aliases for VtArrayEditBuilder
+// holding various scalar value types.  The produced aliases are of the form:
+//
+// using VtIntArrayEditBuilder = VtArrayEditBuilder<int>;
+// using VtDoubleArrayEditBuilder = VtArrayEditBuilder<double>;
+template<typename T> class VtArrayEditBuilder;
+#define VT_ARRAY_EDIT_BUILDER_ALIAS(unused, elem) \
+using TF_PP_CAT(Vt, TF_PP_CAT(VT_TYPE_NAME(elem), ArrayEditBuilder)) \
+    = VtArrayEditBuilder< VT_TYPE(elem) >;
+TF_PP_SEQ_FOR_EACH(VT_ARRAY_EDIT_BUILDER_ALIAS, ~, VT_SCALAR_VALUE_TYPES)
 
 // The following preprocessor code generates the boost pp sequence for
 // all array value types (VT_ARRAY_VALUE_TYPES)

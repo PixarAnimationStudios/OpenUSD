@@ -11,6 +11,7 @@
 #include "pxr/base/tf/diagnostic.h"
 
 #include <algorithm>
+#include <limits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -302,6 +303,28 @@ const TsTest_SampleTimes::SampleTimeSet&
 TsTest_SampleTimes::GetTimes() const
 {
     return _times;
+}
+
+double
+TsTest_SampleTimes::GetMinTime() const
+{
+    if (_times.empty()) {
+        return std::numeric_limits<double>::quiet_NaN();
+    } else {
+        // SampleTimeSets are sorted
+        return _times.begin()->time;
+    }
+}
+
+double
+TsTest_SampleTimes::GetMaxTime() const
+{
+    if (_times.empty()) {
+        return std::numeric_limits<double>::quiet_NaN();
+    } else {
+        // SampleTimeSets are sorted
+        return _times.rbegin()->time;
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

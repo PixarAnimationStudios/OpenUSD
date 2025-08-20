@@ -222,6 +222,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 'RenamedChild' : stage1ChildContents
             },
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/Child" : self.PrimResyncType.RenameSource,
+            "/Ref/RenamedChild" : self.PrimResyncType.RenameDestination,
+        })
 
         # Stage2 was not added as a dependent stage, but layer2 is dependent on
         # layer1 edits via stage3 so stage2 reflects the rename in layer1 and
@@ -231,6 +235,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 '.' : ['refAttr', 'over2RefAttr'],
                 'RenamedChild' : stage2ChildContents
             },
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Ref/Child" : self.PrimResyncType.Delete,
+            "/Ref/RenamedChild" : self.PrimResyncType.Other,
         })
 
         # Stage3 is a dependent stage of the editor and depends on layer1 edits
@@ -243,6 +251,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                        'overSub3RefAttr'],
                 'RenamedChild' : stage3ChildContents
             },
+        })
+        self._VerifyStageResyncNotices(stage3, {
+            "/Ref/Child" : self.PrimResyncType.RenameSource,
+            "/Ref/RenamedChild" : self.PrimResyncType.RenameDestination,
         })
 
         # Stage4 is not a dependent stage so layer4 is not updated even though
@@ -264,6 +276,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 'RenamedChild' : stage3ChildContents
             },
         })
+        self._VerifyStageResyncNotices(stage4, {
+            "/Ref/Child" : self.PrimResyncType.Other,
+            "/Ref/RenamedChild" : self.PrimResyncType.Other,
+        })
 
         # Edit: Reparent and rename /Ref/RenamedChild to /MovedChild 
         with self.ApplyEdits(editor, "Move /Ref/RenamedChild -> /MovedChild"):
@@ -277,6 +293,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             },
             'MovedChild' : stage1ChildContents
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentDestination,
+        })
 
         # Like with the rename edit previously, RenamedChild is moved to 
         # /MovedChild in all layers and is reflected as a move in both stage2
@@ -287,12 +307,20 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             },
             'MovedChild' : stage2ChildContents
         })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Ref/RenamedChild" : self.PrimResyncType.Delete,
+            "/MovedChild" : self.PrimResyncType.Other,
+        })
 
         self._VerifyStageContents(stage3, {
             'Ref': {
                 '.' : ['refAttr', 'over2RefAttr', 'over3RefAttr', 'overSub3RefAttr'],
             },
             'MovedChild' : stage3ChildContents
+        })
+        self._VerifyStageResyncNotices(stage3, {
+            "/Ref/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentDestination,
         })
 
         # And RenamedChild is also fully moved to /MovedChild in stage4. But
@@ -307,6 +335,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             },
             'MovedChild' : stage3ChildContents
         })
+        self._VerifyStageResyncNotices(stage4, {
+            "/Ref/RenamedChild" : self.PrimResyncType.Delete,
+            "/MovedChild" : self.PrimResyncType.Other,
+        })
 
         # Edit: Reparent and rename /MovedChild back to its original path 
         # /Ref/Child 
@@ -320,12 +352,20 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 'Child' : stage1ChildContents
             },
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/Ref/Child" : self.PrimResyncType.RenameAndReparentDestination,
+        })
 
         self._VerifyStageContents(stage2, {
             'Ref': {
                 '.' : ['refAttr', 'over2RefAttr'],
                 'Child' : stage2ChildContents
             },
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/MovedChild" : self.PrimResyncType.Delete,
+            "/Ref/Child" : self.PrimResyncType.Other,
         })
 
         self._VerifyStageContents(stage3, {
@@ -334,6 +374,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                        'overSub3RefAttr'],
                 'Child' : stage3ChildContents
             },
+        })
+        self._VerifyStageResyncNotices(stage3, {
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/Ref/Child" : self.PrimResyncType.RenameAndReparentDestination,
         })
 
         # This includes stage4 where layer4's Child opinions are once again
@@ -344,6 +388,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                        'overSub3RefAttr', 'over4RefAttr'],
                 'Child' : stage4CombinedChildContents
             },
+        })
+        self._VerifyStageResyncNotices(stage4, {
+            "/MovedChild" : self.PrimResyncType.Delete,
+            "/Ref/Child" : self.PrimResyncType.Other,
         })
 
         # Edit: Delete the prim at /Ref/Child 
@@ -356,6 +404,9 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 '.' : ['refAttr'],
             },
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/Child" : self.PrimResyncType.Delete,
+        })
 
         # Stage2 was not added as a dependent stage, but layer2 is dependent on
         # layer1 edits via stage3 so stage2 reflects the delete of Child in 
@@ -364,6 +415,9 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             'Ref': {
                 '.' : ['refAttr', 'over2RefAttr'],
             },
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Ref/Child" : self.PrimResyncType.Delete,
         })
 
         # Stage3 is a dependent stage of the editor and depends on layer1 edits
@@ -376,6 +430,9 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                        'overSub3RefAttr'],
             },
         })
+        self._VerifyStageResyncNotices(stage3, {
+            "/Ref/Child" : self.PrimResyncType.Delete,
+        })
 
         # Stage4 is not a dependent stage so layer4 is not updated even though
         # all its other sublayers have been edited. Thus stage4 still has Child
@@ -387,6 +444,9 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                        'overSub3RefAttr', 'over4RefAttr'],
                 'Child' : layer4OnlyChildContents
             },
+        })
+        self._VerifyStageResyncNotices(stage4, {
+            "/Ref/Child" : self.PrimResyncType.Other,
         })
 
     def test_DependentSublayersAcrossArcs(self):
@@ -658,6 +718,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 'RenamedChild' : stage1ChildContents
             },
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/Child" : self.PrimResyncType.RenameSource,
+            "/Ref/RenamedChild" : self.PrimResyncType.RenameDestination,
+        })
 
         # On stage2, Child is also fully renamed because layer2's specs were
         # updated for the sublayer dependency on layer1. Note that stage4 is the
@@ -668,6 +732,13 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 '.' : ['refAttr', 'over2RefAttr'],
                 'RenamedChild' : stage2ChildContents
             },
+        })
+        # Note that since stage2 isn't a dependent stage of the namespace editor
+        # we don't do any analysis of the edits that cause resyncs on prims on
+        # the stage and can only classify the resyncs as Delete and Other.
+        self._VerifyStageResyncNotices(stage2, {
+            "/Ref/Child" : self.PrimResyncType.Delete,
+            "/Ref/RenamedChild" : self.PrimResyncType.Other,
         })
 
         # On stage3, the rename of Child is propagated across the reference for
@@ -683,6 +754,16 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             },
             'Prim2' : stage3Prim2Contents,
             'Prim3' : stage3Prim3Contents  
+        })
+        # Note that since stage3 is also not a dependent stage of the namespace
+        # editor we don't do any analysis of the edits that cause resyncs on
+        # prims on the stage and can only classify the resyncs as Delete and 
+        # Other.
+        self._VerifyStageResyncNotices(stage3, {
+            "/Prim1/Child" : self.PrimResyncType.Delete,
+            "/Prim1/RenamedChild" : self.PrimResyncType.Other,
+            "/Prim2" : self.PrimResyncType.Other,
+            "/Prim3" : self.PrimResyncType.Other,
         })
 
         # On stage4, the rename of Child is propagated across the reference for
@@ -700,6 +781,12 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             },
             'Prim2' : stage4Prim2Contents,
             'Prim3' : stage4Prim3Contents  
+        })
+        self._VerifyStageResyncNotices(stage4, {
+            "/Prim1/Child" : self.PrimResyncType.RenameSource,
+            "/Prim1/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim2" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # Edit: Reparent and rename /Ref/RenamedChild to /MovedChild 
@@ -731,12 +818,20 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             },
             'MovedChild' : stage1ChildContents
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentDestination,
+        })
 
         self._VerifyStageContents(stage2, {
             'Ref': {
                 '.' : ['refAttr', 'over2RefAttr'],
             },
             'MovedChild' : stage2ChildContents
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Ref/RenamedChild" : self.PrimResyncType.Delete,
+            "/MovedChild" : self.PrimResyncType.Other,
         })
 
         # On stage3 and stage4, RenamedChild has been moved out from under the
@@ -755,6 +850,11 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             'Prim2' : stage3Prim2Contents,
             'Prim3' : stage3Prim3Contents  
         })
+        self._VerifyStageResyncNotices(stage3, {
+            "/Prim1/RenamedChild" : self.PrimResyncType.Delete,
+            "/Prim2" : self.PrimResyncType.Other,
+            "/Prim3" : self.PrimResyncType.Other,
+        })
 
         self._VerifyStageContents(stage4, {
             'Prim1': {
@@ -762,6 +862,11 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             },
             'Prim2' : stage4Prim2Contents,
             'Prim3' : stage4Prim3Contents  
+        })
+        self._VerifyStageResyncNotices(stage4, {
+            "/Prim1/RenamedChild" : self.PrimResyncType.Delete,
+            "/Prim2" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # Edit: Reparent and rename /MovedChild back to its original path 
@@ -793,12 +898,20 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 'Child' : stage1ChildContents
             },
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/Ref/Child" : self.PrimResyncType.RenameAndReparentDestination,
+        })
 
         self._VerifyStageContents(stage2, {
             'Ref': {
                 '.' : ['refAttr', 'over2RefAttr'],
                 'Child' : stage2ChildContents
             },
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/MovedChild" : self.PrimResyncType.Delete,
+            "/Ref/Child" : self.PrimResyncType.Other,
         })
 
         # On stage3 and stage4, Child has returned under Prim1 but now only
@@ -817,6 +930,11 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             'Prim2' : stage3Prim2Contents,
             'Prim3' : stage3Prim3Contents  
         })
+        self._VerifyStageResyncNotices(stage3, {
+            "/Prim1/Child" : self.PrimResyncType.Other,
+            "/Prim2" : self.PrimResyncType.Other,
+            "/Prim3" : self.PrimResyncType.Other,
+        })
 
         self._VerifyStageContents(stage4, {
             'Prim1': {
@@ -825,6 +943,11 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             },
             'Prim2' : stage4Prim2Contents,
             'Prim3' : stage4Prim3Contents  
+        })
+        self._VerifyStageResyncNotices(stage4, {
+            "/Prim1/Child" : self.PrimResyncType.Other,
+            "/Prim2" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # Edit: Delete the prim at /Ref/Child 
@@ -852,11 +975,17 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 '.' : ['refAttr'],
             },
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/Child" : self.PrimResyncType.Delete,
+        })
 
         self._VerifyStageContents(stage2, {
             'Ref': {
                 '.' : ['refAttr', 'over2RefAttr'],
             },
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Ref/Child" : self.PrimResyncType.Delete,
         })
 
         # On stage3 and stage4, Child is fully deleted from under Prim1 again.
@@ -877,6 +1006,11 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 '.' : ['over3GrandChildAttr'],
             }           
         })
+        self._VerifyStageResyncNotices(stage3, {
+            "/Prim1/Child" : self.PrimResyncType.Delete,
+            "/Prim2" : self.PrimResyncType.Other,
+            "/Prim3" : self.PrimResyncType.Other,
+        })
 
         self._VerifyStageContents(stage4, {
             'Prim1': {
@@ -888,6 +1022,11 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             'Prim3' : {
                 '.' : ['over3GrandChildAttr', 'over4GrandChildAttr'],
             }           
+        })
+        self._VerifyStageResyncNotices(stage4, {
+            "/Prim1/Child" : self.PrimResyncType.Delete,
+            "/Prim2" : self.PrimResyncType.Other,
+            "/Prim3" : self.PrimResyncType.Other,
         })
 
 if __name__ == '__main__':

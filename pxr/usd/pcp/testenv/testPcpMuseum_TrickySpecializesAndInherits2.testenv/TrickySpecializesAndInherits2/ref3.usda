@@ -1,0 +1,11 @@
+#usda 1.0
+
+class "NestedClass"
+{
+}
+
+def "Ref3" (
+    inherits = </NestedClass>
+)
+{
+}

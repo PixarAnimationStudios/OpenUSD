@@ -273,7 +273,7 @@ class TestSdfTypes(unittest.TestCase):
         # correctly.
         layer = Sdf.Layer.CreateAnonymous()
         layer.ImportFromString(
-    '''#sdf 1.4.32
+    '''#usda 1.0
     over "Prim" {
         float attrf = 18446744073709551616
         double attrd = 340282366920938463463374607431768211456
@@ -290,7 +290,7 @@ class TestSdfTypes(unittest.TestCase):
     def test_ValueTypeNameBackwardsCompatibility(self):
         layer = Sdf.Layer.CreateAnonymous()
         layer.ImportFromString(\
-    """#sdf 1.4.32
+    """#usda 1.0
     
     def "OldAttrTest"
     {

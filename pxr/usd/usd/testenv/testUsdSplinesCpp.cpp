@@ -85,6 +85,7 @@ _TestSplineAndAttr(
     // Lets also try UsdAttributeQuery matching the spline value and the attr
     // value.
     UsdAttributeQuery attrQuery(attr);
+    TF_AXIOM(attrQuery.GetSpline() == spline);
     VtValue queryValue;
     bool querySuccess = attrQuery.Get(&queryValue, 1.0);
     if (!querySuccess || !splineSuccess) {
@@ -294,7 +295,6 @@ TestSerializationComplex()
         TsSpline spline = TsSpline();
         spline.SetCurveType(TsCurveTypeHermite);
         TsKnot knot1;
-        knot1.SetCurveType(TsCurveTypeHermite);
         knot1.SetTime(1);
         knot1.SetValue(8.0);
         knot1.SetNextInterpolation(TsInterpCurve);
@@ -302,7 +302,6 @@ TestSerializationComplex()
         spline.SetKnot(knot1);
 
         TsKnot knot2;
-        knot2.SetCurveType(TsCurveTypeHermite);
         knot2.SetTime(6);
         knot2.SetValue(20.0);
         knot2.SetNextInterpolation(TsInterpCurve);

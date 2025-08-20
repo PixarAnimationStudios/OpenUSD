@@ -45,6 +45,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (filename)
     (ND_surface)
     (typeName)
+    (mtlx)
     ((mtlxVersion, "mtlx:version"))
 );
 
@@ -122,13 +123,45 @@ _GetMxNodeString(mx::NodeDefPtr const& mxNodeDef)
         : mxNodeDef->getNodeString();
 }
 
+mx::NodeDefPtr
+HdMtlxGetNodeDef(TfToken const& hdNodeType, mx::DocumentPtr const& mxDoc)
+{
+    const mx::DocumentPtr& stdLibraries =
+        (mxDoc) ? mxDoc : HdMtlxStdLibraries();
+    const mx::NodeDefPtr mxNodeDef =
+        stdLibraries->getNodeDef(hdNodeType.GetString());
+    if (mxNodeDef) {
+        return mxNodeDef;
+    }
+
+    // If we were not able to find the nodeDef in the stdLibraries it
+    // may have been implemented within an asset, stored on the sdrNode.
+    const SdrShaderNodeConstPtr sdrNode =
+        SdrRegistry::GetInstance().GetShaderNodeByIdentifierAndType(
+            hdNodeType, _tokens->mtlx);
+    if (!sdrNode) {
+        return nullptr;
+    }
+
+    const std::string assetPath = sdrNode->GetResolvedImplementationURI();
+    if (assetPath.empty()) {
+        return nullptr;
+    }
+
+    // If we found an asset path load it to the stdLibraries and try and
+    // get the nodeDef again. 
+    mx::loadLibrary(assetPath, stdLibraries);
+    const std::string nodeDefName = sdrNode->GetImplementationName();
+    return stdLibraries->getNodeDef(nodeDefName);
+}
+
 // Return the MaterialX Node Type based on the corresponding NodeDef name, 
 // which is stored as the hdNodeType. 
 static TfToken
 _GetMxNodeType(mx::DocumentPtr const& mxDoc, TfToken const& hdNodeType)
 {
-    mx::NodeDefPtr mxNodeDef = mxDoc->getNodeDef(hdNodeType.GetString());
-    if (!mxNodeDef){
+    mx::NodeDefPtr mxNodeDef = HdMtlxGetNodeDef(hdNodeType, mxDoc);
+    if (!mxNodeDef) {
         TF_WARN("Unsupported node type '%s' cannot find the associated NodeDef.",
                 hdNodeType.GetText());
         return TfToken();
@@ -143,13 +176,19 @@ _AddNodeToNodeGraph(
     std::string const& mxNodeName, 
     std::string const& mxNodeCategory, 
     std::string const& mxNodeType, 
+    std::string const& mxNodeDefString, 
     mx::NodeGraphPtr const& mxNodeGraph,
     mx::StringSet * addedNodeNames)
 {
     // Add the node to the  mxNodeGraph if needed 
     if (addedNodeNames->find(mxNodeName) == addedNodeNames->end()) {
         addedNodeNames->insert(mxNodeName);
-        return mxNodeGraph->addNode(mxNodeCategory, mxNodeName, mxNodeType);
+        mx::NodePtr mxNode = mxNodeGraph->addNode(
+            mxNodeCategory, mxNodeName, mxNodeType);
+        if (mxNode->getNodeDef()) {
+            mxNode->setNodeDefString(mxNodeDefString);
+        }
+        return mxNode;
     }
     // Otherwise get the existing node from the mxNodeGraph
     return mxNodeGraph->getNode(mxNodeName);
@@ -301,21 +340,28 @@ _GetInputType(
     return mxInputType;
 }
 
-// Between MaterialX versions nodeDef names may change or nodes may be removed.
-// So given the prevMxNodeDefName return the corresponding nodeDef appropriate 
-// for the version of MaterialX being used, or a temporary nodeDef if the node 
-// was removed. 
-static mx::NodeDefPtr
-_GetNodeDef(const mx::DocumentPtr& mxDoc, std::string const& prevMxNodeDefName)
+std::string 
+HdMtlxGetNodeDefName(std::string const& prevMxNodeDefName)
 {
-    // For nodeDef name changes or node removals between MaterialX v1.38 and 
-    // the current version
     std::string mxNodeDefName = prevMxNodeDefName;
+    // For nodeDef name changes between MaterialX v1.38 and the current version
 #if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION >= 39
     // The normalmap nodeDef name changed in v1.39
     if (prevMxNodeDefName == "ND_normalmap") {
         mxNodeDefName = "ND_normalmap_float";
     }
+#endif
+    return mxNodeDefName;
+}
+
+// Between MaterialX versions nodeDef names may change or nodes may be removed.
+// This function calls the above HdMtlxGetNodeDefName() to get the correct 
+// nodeDef name and returns a temporary nodeDef for nodes that have been removed
+static mx::NodeDefPtr
+_GetNodeDef(mx::DocumentPtr const& mxDoc, std::string const& prevMxNodeDefName)
+{
+    // For node removals between MaterialX v1.38 and the current version
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION >= 39
     // Swizzle nodes were deleted in v1.39, return a temporary NodeDef
     std::smatch match;
     static const auto swizzleRegex = std::regex("ND_swizzle_([^_]+)_([^_]+)");
@@ -331,7 +377,8 @@ _GetNodeDef(const mx::DocumentPtr& mxDoc, std::string const& prevMxNodeDefName)
         return swizzleNodeDef;
     }
 #endif
-    return mxDoc->getNodeDef(mxNodeDefName);
+    const std::string mxNodeDefName = HdMtlxGetNodeDefName(prevMxNodeDefName);
+    return HdMtlxGetNodeDef(TfToken(mxNodeDefName), mxDoc);
 }
 
 // Add a MaterialX version of the hdNode to the mxDoc/mxNodeGraph
@@ -346,7 +393,7 @@ _AddMaterialXNode(
     HdMtlxTexturePrimvarData *mxHdData)
 {
     // Get the mxNode information
-    TfToken hdNodeType = netInterface->GetNodeType(hdNodeName);
+    const TfToken hdNodeType = netInterface->GetNodeType(hdNodeName);
     mx::NodeDefPtr mxNodeDef = _GetNodeDef(mxDoc, hdNodeType.GetString());
     if (!mxNodeDef) {
         TF_WARN("NodeDef not found for Node '%s'", hdNodeType.GetText());
@@ -362,21 +409,16 @@ _AddMaterialXNode(
     const std::string &mxNodeName = HdMtlxCreateNameFromPath(hdNodePath);
     const std::string &mxNodeCategory = _GetMxNodeString(mxNodeDef);
     const std::string &mxNodeType = mxNodeDef->getType();
+    const std::string &mxNodeDefString = 
+        (mxNodeDef->getName() == _tokens->ND_surface) 
+            ? hdNodeType.GetString()
+            : mxNodeDef->getName();
 
     // Add the mxNode to the mxNodeGraph
     mx::NodePtr mxNode =
-        _AddNodeToNodeGraph(mxNodeName, mxNodeCategory, 
-                            mxNodeType, mxNodeGraph, addedNodeNames);
-
-    if (mxNode->getNodeDef()) {
-        // Sometimes mxNode->getNodeDef() starts failing.
-        // It seems to happen when there are connections with mismatched types.
-        // Explicitly setting the node def string appparently fixes the problem.
-        // If we don't do this code gen may fail.
-        if (mxNode->getNodeDefString().empty()) {
-            mxNode->setNodeDefString(hdNodeType.GetText());
-        }
-    }
+        _AddNodeToNodeGraph(
+            mxNodeName, mxNodeCategory, mxNodeType, 
+            mxNodeDefString, mxNodeGraph, addedNodeNames);
 
     // For each of the HdNode parameters add the corresponding parameter/input 
     // to the mxNode
@@ -518,8 +560,7 @@ _GatherUpstreamNodes(
 {
     TfToken const &hdNodeName = hdConnection.upstreamNodeName;
     if (netInterface->GetNodeType(hdNodeName).IsEmpty()) {
-        TF_WARN("Could not find the connected Node '%s'", 
-                hdConnection.upstreamNodeName.GetText());
+        TF_WARN("Could not find the connected Node '%s'", hdNodeName.GetText());
         return;
     }
     

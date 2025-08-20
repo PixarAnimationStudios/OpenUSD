@@ -1,0 +1,27 @@
+#usda 1.0
+
+def Scope "LegsRig"
+{
+    def Scope "LLegRig" (
+        add inherits = </LegsRig/_Class_LegRig>
+    )
+    {
+        over "Toes"
+        {
+            over "Thumb"
+            {
+            }
+        }
+    }
+
+    def Scope "_Class_LegRig"
+    {
+        def Scope "Toes"
+        {
+            def Scope "Thumb"
+            {
+            }
+        }
+    }
+}
+

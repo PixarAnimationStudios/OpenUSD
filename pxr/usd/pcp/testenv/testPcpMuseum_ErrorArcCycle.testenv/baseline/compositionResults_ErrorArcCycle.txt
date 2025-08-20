@@ -1,16 +1,16 @@
-Loading @ErrorArcCycle/root.sdf@
+Loading @ErrorArcCycle/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </GroupRoot>
 
 Prim Stack:
-    root.sdf             /GroupRoot
-    A.sdf                /GroupA
-    B.sdf                /GroupB
+    root.usda            /GroupRoot
+    A.usda               /GroupA
+    B.usda               /GroupB
 
 Child names:
      ['ChildA']
@@ -20,28 +20,28 @@ Property names:
 
 Property stacks:
 /GroupRoot.A_attr:
-    A.sdf                /GroupA.A_attr
+    A.usda               /GroupA.A_attr
 /GroupRoot.B_attr:
-    B.sdf                /GroupB.B_attr
+    B.usda               /GroupB.B_attr
 
 ------------------------------------------------------------------------
 Results for composing </GroupRoot/ChildA>
 
 Prim Stack:
-    A.sdf                /GroupA/ChildA
+    A.usda               /GroupA/ChildA
 
 Property names:
      ['A_attr']
 
 Property stacks:
 /GroupRoot/ChildA.A_attr:
-    A.sdf                /GroupA/ChildA.A_attr
+    A.usda               /GroupA/ChildA.A_attr
 
 ------------------------------------------------------------------------
 Results for composing </Parent>
 
 Prim Stack:
-    root.sdf             /Parent
+    root.usda            /Parent
 
 Child names:
      ['Child1', 'Child2']
@@ -50,21 +50,21 @@ Child names:
 Results for composing </Parent/Child1>
 
 Prim Stack:
-    root.sdf             /Parent/Child1
-    root.sdf             /Parent/Child2
+    root.usda            /Parent/Child1
+    root.usda            /Parent/Child2
 
 ------------------------------------------------------------------------
 Results for composing </Parent/Child2>
 
 Prim Stack:
-    root.sdf             /Parent/Child2
-    root.sdf             /Parent/Child1
+    root.usda            /Parent/Child2
+    root.usda            /Parent/Child1
 
 ------------------------------------------------------------------------
 Results for composing </AnotherParent>
 
 Prim Stack:
-    root.sdf             /AnotherParent
+    root.usda            /AnotherParent
 
 Child names:
      ['AnotherChild']
@@ -73,14 +73,14 @@ Child names:
 Results for composing </AnotherParent/AnotherChild>
 
 Prim Stack:
-    root.sdf             /AnotherParent/AnotherChild
-    model.sdf            /Model
+    root.usda            /AnotherParent/AnotherChild
+    model.usda           /Model
 
 ------------------------------------------------------------------------
 Results for composing </YetAnotherParent>
 
 Prim Stack:
-    root.sdf             /YetAnotherParent
+    root.usda            /YetAnotherParent
 
 Child names:
      ['Child']
@@ -89,13 +89,13 @@ Child names:
 Results for composing </YetAnotherParent/Child>
 
 Prim Stack:
-    root.sdf             /YetAnotherParent/Child
+    root.usda            /YetAnotherParent/Child
 
 ------------------------------------------------------------------------
 Results for composing </CoRecursiveParent1>
 
 Prim Stack:
-    root.sdf             /CoRecursiveParent1
+    root.usda            /CoRecursiveParent1
 
 Child names:
      ['Child1']
@@ -104,8 +104,8 @@ Child names:
 Results for composing </CoRecursiveParent1/Child1>
 
 Prim Stack:
-    root.sdf             /CoRecursiveParent1/Child1
-    root.sdf             /CoRecursiveParent2
+    root.usda            /CoRecursiveParent1/Child1
+    root.usda            /CoRecursiveParent2
 
 Child names:
      ['Child2']
@@ -114,13 +114,13 @@ Child names:
 Results for composing </CoRecursiveParent1/Child1/Child2>
 
 Prim Stack:
-    root.sdf             /CoRecursiveParent2/Child2
+    root.usda            /CoRecursiveParent2/Child2
 
 ------------------------------------------------------------------------
 Results for composing </CoRecursiveParent2>
 
 Prim Stack:
-    root.sdf             /CoRecursiveParent2
+    root.usda            /CoRecursiveParent2
 
 Child names:
      ['Child2']
@@ -129,8 +129,8 @@ Child names:
 Results for composing </CoRecursiveParent2/Child2>
 
 Prim Stack:
-    root.sdf             /CoRecursiveParent2/Child2
-    root.sdf             /CoRecursiveParent1
+    root.usda            /CoRecursiveParent2/Child2
+    root.usda            /CoRecursiveParent1
 
 Child names:
      ['Child1']
@@ -139,13 +139,13 @@ Child names:
 Results for composing </CoRecursiveParent2/Child2/Child1>
 
 Prim Stack:
-    root.sdf             /CoRecursiveParent1/Child1
+    root.usda            /CoRecursiveParent1/Child1
 
 ------------------------------------------------------------------------
 Results for composing </InheritOfChild>
 
 Prim Stack:
-    root.sdf             /InheritOfChild
+    root.usda            /InheritOfChild
 
 Child names:
      ['Child']
@@ -154,13 +154,13 @@ Child names:
 Results for composing </InheritOfChild/Child>
 
 Prim Stack:
-    root.sdf             /InheritOfChild/Child
+    root.usda            /InheritOfChild/Child
 
 ------------------------------------------------------------------------
 Results for composing </RelocatedInheritOfChild>
 
 Prim Stack:
-    root.sdf             /RelocatedInheritOfChild
+    root.usda            /RelocatedInheritOfChild
 
 Child names:
      ['Object', 'Child']
@@ -174,7 +174,7 @@ Prim Stack:
 Results for composing </RelocatedInheritOfChild/Child>
 
 Prim Stack:
-    root.sdf             /RelocatedInheritOfChild/Child
+    root.usda            /RelocatedInheritOfChild/Child
 
 Child names:
      ['Class']
@@ -186,7 +186,7 @@ Prohibited child names:
 Results for composing </RelocatedInheritOfChild/Child/Class>
 
 Prim Stack:
-    root.sdf             /RelocatedInheritOfChild/Child/Class
+    root.usda            /RelocatedInheritOfChild/Child/Class
 
 Child names:
      ['Object']
@@ -195,5 +195,5 @@ Child names:
 Results for composing </RelocatedInheritOfChild/Child/Class/Object>
 
 Prim Stack:
-    root.sdf             /RelocatedInheritOfChild/Child/Class/Object
+    root.usda            /RelocatedInheritOfChild/Child/Class/Object
 

@@ -1,15 +1,15 @@
-Loading @TrickySpecializesAndInherits/root.sdf@
+Loading @TrickySpecializesAndInherits/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Model>
 
 Prim Stack:
-    root.sdf             /Model
-    ref.sdf              /Ref
+    root.usda            /Model
+    ref.usda             /Ref
 
 Child names:
      ['A', 'B', 'C', 'D']
@@ -18,39 +18,39 @@ Child names:
 Results for composing </Model/A>
 
 Prim Stack:
-    root.sdf             /Model/A
-    ref.sdf              /Ref/A
-    root.sdf             /Model/B
-    root.sdf             /Model/C
-    ref.sdf              /Ref/B
-    ref.sdf              /Ref/C
-    root.sdf             /Model/D
-    ref.sdf              /Ref/D
+    root.usda            /Model/A
+    ref.usda             /Ref/A
+    root.usda            /Model/B
+    root.usda            /Model/C
+    ref.usda             /Ref/B
+    ref.usda             /Ref/C
+    root.usda            /Model/D
+    ref.usda             /Ref/D
 
 ------------------------------------------------------------------------
 Results for composing </Model/B>
 
 Prim Stack:
-    root.sdf             /Model/B
-    root.sdf             /Model/C
-    ref.sdf              /Ref/B
-    ref.sdf              /Ref/C
-    root.sdf             /Model/D
-    ref.sdf              /Ref/D
+    root.usda            /Model/B
+    root.usda            /Model/C
+    ref.usda             /Ref/B
+    ref.usda             /Ref/C
+    root.usda            /Model/D
+    ref.usda             /Ref/D
 
 ------------------------------------------------------------------------
 Results for composing </Model/C>
 
 Prim Stack:
-    root.sdf             /Model/C
-    ref.sdf              /Ref/C
-    root.sdf             /Model/D
-    ref.sdf              /Ref/D
+    root.usda            /Model/C
+    ref.usda             /Ref/C
+    root.usda            /Model/D
+    ref.usda             /Ref/D
 
 ------------------------------------------------------------------------
 Results for composing </Model/D>
 
 Prim Stack:
-    root.sdf             /Model/D
-    ref.sdf              /Ref/D
+    root.usda            /Model/D
+    ref.usda             /Ref/D
 

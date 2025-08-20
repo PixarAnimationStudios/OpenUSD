@@ -33,11 +33,11 @@ struct TfSkipCallerFrames
 
 /// The base class for exceptions supported by the Tf exceptions facilities.
 /// Typical usage is to publically derive your own exception class from this
-/// one, and throw using the TF_THROW() macro.
+/// one, and throw using the PXR_TF_THROW() macro.
 ///
-/// Deriving this base class and throwing via TF_THROW() will record the throw
-/// point's call context (see GetThrowContext()) and will also capture a portion
-/// of the throwing thread's call stack (see GetThrowStack()).
+/// Deriving this base class and throwing via PXR_TF_THROW() will record the 
+/// throw point's call context (see GetThrowContext()) and will also capture a 
+/// portion of the throwing thread's call stack (see GetThrowStack()).
 ///
 /// Additionally, the Tf library registers an exception translator with
 /// boost.python to raise a Python exeption wrapping the thrown exception
@@ -56,7 +56,7 @@ public:
 
     /// Return the call context from the throw point associated with this
     /// exception.  Note that this context may be invalid if this exception was
-    /// not thrown with TF_THROW().
+    /// not thrown with PXR_TF_THROW().
     TfCallContext const &GetThrowContext() const {
         return _callContext;
     }
@@ -98,7 +98,7 @@ private:
     std::string _message;
 };
 
-// TF_THROW() support function.
+// PXR_TF_THROW() support function.
 template <class Exception, class ... Args>
 void
 Tf_Throw(TfCallContext const &cc,
@@ -109,7 +109,7 @@ Tf_Throw(TfCallContext const &cc,
     TfBaseException::_ThrowImpl(cc, exc, thrower, skipFrames.numToSkip);
 }        
 
-// TF_THROW() support function.
+// PXR_TF_THROW() support function.
 template <class Exception, class ... Args>
 void Tf_Throw(TfCallContext const &cc, Args && ... args) {
     Tf_Throw<Exception>(cc, TfSkipCallerFrames(), std::forward<Args>(args)...);
@@ -123,12 +123,12 @@ void Tf_Throw(TfCallContext const &cc, Args && ... args) {
 /// embed in the exception.  If the exception goes unhandled these will be
 /// reported in the crash report that Tf's terminate handler generates, or in
 /// the unhandled exception message in the python interpreter.
-#define TF_THROW(Exception, Exception-ctor-args...)
-#define TF_THROW(Exception, TfSkipCallerFrames, Exception-ctor-args...)
+#define PXR_TF_THROW(Exception, Exception-ctor-args...)
+#define PXR_TF_THROW(Exception, TfSkipCallerFrames, Exception-ctor-args...)
 
 #else 
 
-#define TF_THROW(Exception, ...)                        \
+#define PXR_TF_THROW(Exception, ...)                        \
     Tf_Throw<Exception>(TF_CALL_CONTEXT, __VA_ARGS__)
 
 #endif

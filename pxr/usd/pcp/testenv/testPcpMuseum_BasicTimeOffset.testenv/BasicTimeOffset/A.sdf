@@ -1,8 +1,0 @@
-#sdf 1.4.32
-(
-    subLayers = [ @./B.sdf@ (offset = 20) ]
-)
-
-def Prim "Model" 
-{
-}

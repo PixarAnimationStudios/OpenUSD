@@ -41,6 +41,16 @@ protected:
     void _PrimsDirtied(
         const HdSceneIndexBase &sender,
         const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;
+
+private:
+    void _AddMeshLight(
+        const SdfPath& primPath,
+        const HdSceneIndexPrim& prim,
+        HdSceneIndexObserver::AddedPrimEntries* added);
+
+    void _RemoveMeshLight(
+        const SdfPath& primPath,
+        HdSceneIndexObserver::RemovedPrimEntries* removed);
   
 private:
     std::unordered_map<SdfPath, bool, SdfPath::Hash> _meshLights;

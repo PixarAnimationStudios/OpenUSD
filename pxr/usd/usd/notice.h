@@ -109,20 +109,83 @@ public:
     /// return a PathRange, like GetResyncedPaths().
     /// 
     class ObjectsChanged : public StageNotice {
+
+    public:
+        /// A type for further classifying objects that have may have been
+        /// resynced because of namespace edits. 
+        enum class PrimResyncType {
+            /// These six types indicate that a resynced object was moved to
+            /// a new path, via a UsdNamespaceEditor, and that object at the
+            /// new path has the same computed prim stack as the objects at 
+            /// the original path did (i.e. the new object composes the 
+            /// exact same layer opinions in the exact same order as the 
+            /// original object). The old path resync will be classified as a
+            /// Source and the new path resync will be classified as a 
+            /// Destination.
+            RenameSource,
+            RenameDestination,
+            ReparentSource,
+            ReparentDestination,
+            RenameAndReparentSource,
+            RenameAndReparentDestination,
+
+            /// This Delete type indicates that an object has been removed
+            /// from the stage without an indication that it was the source of a
+            /// rename and/or a reparent operation.
+            Delete,
+
+            /// The UnchangedPrimStack type indicates that the resynced object 
+            /// still exists and is effectively unchanged in that it has the 
+            /// same composed prim stack as before it was resynced. This can 
+            /// occur when composition arcs are changed or dependent layer specs
+            /// are moved to maintain prims of dependent stages in a
+            /// UsdNamespaceEditor edit.
+            UnchangedPrimStack,
+
+            /// This type indicates all other resyncs that we cannot classify
+            /// based on namespace edit information. This other type does not 
+            /// necesarily imply that we don't have a rename, reparent, noop, 
+            /// etc. but rather that we cannot determine the type and need to 
+            /// treat it as a full resync.
+            Other,
+
+            /// Invalid indicates that the object has not been resynced.
+            Invalid
+        };
+
+        /// Value type holding a list of property paths that have been renamed
+        /// via the UsdNamespaceEditor paired with the new name of the property.
+        using RenamedProperties = std::vector<std::pair<SdfPath, TfToken>>;      
+
+    private:
         using _PathsToChangesMap = 
             std::map<SdfPath, std::vector<const SdfChangeList::Entry*>>;
 
+        struct _PrimResyncInfo {
+            PrimResyncType resyncType;
+            SdfPath associatePath;
+        };
+        using _PrimResyncInfoMap = std::map<SdfPath, _PrimResyncInfo>;
+
+        struct _NamespaceEditsInfo {
+            _PrimResyncInfoMap primResyncsInfo;
+            RenamedProperties renamedProperties;
+        };
+
         static const _PathsToChangesMap& _GetEmptyChangesMap();
+        static const _NamespaceEditsInfo& _GetEmptyNamespaceEditsInfo();
 
         friend class UsdStage;
         ObjectsChanged(const UsdStageWeakPtr &stage,
                        const _PathsToChangesMap *resyncChanges,
                        const _PathsToChangesMap *infoChanges,
-                       const _PathsToChangesMap *assetPathChanges)
+                       const _PathsToChangesMap *assetPathChanges,
+                       const _NamespaceEditsInfo *namespaceEditsInfo)
             : StageNotice(stage)
             , _resyncChanges(resyncChanges)
             , _infoChanges(infoChanges)
-            , _assetPathChanges(assetPathChanges) {}
+            , _assetPathChanges(assetPathChanges)
+            , _namespaceEditsInfo(namespaceEditsInfo) {}
 
         ObjectsChanged(const UsdStageWeakPtr &stage,
                        const _PathsToChangesMap *resyncChanges);
@@ -362,10 +425,43 @@ public:
         /// \overload
         USD_API bool HasChangedFields(const SdfPath &path) const;
 
+        /// Returns the type of resync that has occurred for the prim at 
+        /// \p primPath. 
+        ///
+        /// When prims are edited through the UsdNamespaceEditor we'll have
+        /// additional information about whether the prim resyncs that have 
+        /// occurred are for prims that have been renamed, reparented, or 
+        /// just adjusted to maintain composition without changing the prim 
+        /// path itself. These are all resyncs that are expected to have no net
+        /// effect on the prim's composed contents relative to the original 
+        /// prim. This function returns the the prim's resync type based on that
+        /// information.
+        /// 
+        /// If the prim path is the source of a rename and/or reparent operation
+        /// the returned type will be a "Source" type and the 
+        /// \p associatedPrimPath, if provided, will be set to the path of the 
+        /// corresponding destination prim. Likewise, if the prim path is the
+        /// destination of a rename and/or reparent operation the returned type
+        /// will be a "Destination" type and the \p associatedPrimPath, if 
+        /// provided, will be set to the path of the corresponding source prim. 
+        /// See PrimSyncType for more information about the other return types.
+        USD_API PrimResyncType GetPrimResyncType(
+            const SdfPath &primPath,
+            SdfPath *associatedPrimPath = nullptr) const;       
+
+        /// Return the list of property paths that have been renamed via a 
+        /// UsdNamespaceEditor ApplyEdits operation along with the new names of
+        /// those properties. When multiple properties have been edited, this
+        /// list will contain them in no particular order.
+        const RenamedProperties &GetRenamedProperties() const {
+            return _namespaceEditsInfo->renamedProperties;
+        }
+
     private:
         const _PathsToChangesMap *_resyncChanges;
         const _PathsToChangesMap *_infoChanges;
         const _PathsToChangesMap *_assetPathChanges;
+        const _NamespaceEditsInfo *_namespaceEditsInfo;
     };
 
     /// \class StageEditTargetChanged

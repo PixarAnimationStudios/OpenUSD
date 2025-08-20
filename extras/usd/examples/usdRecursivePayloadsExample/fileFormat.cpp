@@ -8,11 +8,11 @@
 #include "fileFormat.h"
 
 #include "pxr/usd/pcp/dynamicFileFormatContext.h"
-#include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/primSpec.h"
+#include "pxr/usd/sdf/usdaFileFormat.h"
 
 #include <fstream>
 #include <string>
@@ -408,7 +408,7 @@ UsdRecursivePayloadsExampleFileFormat::Read(
         // can just read in the contents the actual file as a usda file into 
         // the layer. 
         const SdfFileFormatConstPtr fileFormat = 
-            SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id);
+            SdfFileFormat::FindById(SdfUsdaFileFormatTokens->Id);
         return fileFormat->Read(layer, resolvedPath, metadataOnly);
     }
 
@@ -423,7 +423,7 @@ UsdRecursivePayloadsExampleFileFormat::WriteToString(
 {
     // Write the generated contents in usda text format.
     return SdfFileFormat::FindById(
-        UsdUsdaFileFormatTokens->Id)->WriteToString(layer, str, comment);
+        SdfUsdaFileFormatTokens->Id)->WriteToString(layer, str, comment);
 }
 
 bool
@@ -434,7 +434,7 @@ UsdRecursivePayloadsExampleFileFormat::WriteToStream(
 {
     // Write the generated contents in usda text format.
     return SdfFileFormat::FindById(
-        UsdUsdaFileFormatTokens->Id)->WriteToStream(spec, out, indent);
+        SdfUsdaFileFormatTokens->Id)->WriteToStream(spec, out, indent);
 }
 
 // Extracts a string valued payload ID from the file format arguments of the 

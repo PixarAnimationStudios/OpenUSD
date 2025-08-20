@@ -1,0 +1,47 @@
+#usda 1.0
+(
+    doc = """
+        /PrimVariants has a variantSet "primVariant" with two variants 
+        "one" and "two" but no variant selection set.
+         
+        /Prim1 references /PrimVariants and sets the primVariant variant
+        selection to "one"
+        
+        /Prim2 references /PrimVariants and sets the primVariant variant
+        selection to "two"
+        """
+)
+
+def "PrimVariants" (
+    variantSets = ["primVariant"]
+) {
+    variantSet "primVariant" = {
+        "one" {
+            def "VariantOneChild" {
+                int variantOneChildAttr
+            }
+        }
+        "two" {
+            def "VariantTwoChild" {
+                int variantTwoChildAttr
+            }
+        }
+    }
+}
+
+def "Prim1" (
+    references = </PrimVariants>
+    variants = {
+        string primVariant = "one"
+    }
+) {
+}
+
+def "Prim2" (
+    references = </PrimVariants>
+    variants = {
+        string primVariant = "two"
+    }
+) {
+}
+ 

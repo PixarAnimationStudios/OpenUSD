@@ -45,3 +45,42 @@ over "Qux" {}
 class Scope "Bright" { 
     int x = 1
 }
+
+def "Bottom"
+{
+    def "Samples_Spline_Default" {
+        double attr = 1.0
+    }
+
+    def "Samples_Default_Spline" {
+        double attr.spline = {
+            1: 1; pre (0, 0); post held,
+            4: 4; post held,
+        }
+    }
+
+    def "Spline_Samples_Default" {
+        double attr = 1.0
+    }
+
+    def "Spline_Default_Samples" {
+        double attr.timeSamples = {
+            0: 100,
+            1: 101,
+        }
+    }
+    
+    def "Default_Samples_Spline" {
+        double attr.spline = {
+            1: 1; pre (0, 0); post held,
+            4: 4; post held,
+        }
+    }
+    
+    def "Default_Spline_Samples" {
+        double attr.timeSamples = {
+            0: 100,
+            1: 101,
+        }
+    }
+}

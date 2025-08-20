@@ -10,6 +10,7 @@
 #include "pxr/base/ts/splineData.h"
 #include "pxr/base/ts/raii.h"
 #include "pxr/base/ts/regressionPreventer.h"
+#include "pxr/base/ts/sample.h"
 
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -41,6 +42,7 @@ bool TsSpline::IsSupportedValueType(const TfType valueType)
         false);
 #undef _CHECK_TYPE
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Construction and value semantics
@@ -108,8 +110,17 @@ bool TsSpline::IsTimeValued() const
 
 void TsSpline::SetCurveType(const TsCurveType curveType)
 {
-    _PrepareForWrite();
-    _data->curveType = curveType;
+    // Only do work if we're actually making a change.
+    if (!_data || _data->curveType != curveType) {
+        _PrepareForWrite();
+        _data->curveType = curveType;
+
+        // If we're switching to Hermite, we may need to recalculate tangent
+        // widths to ensure they're all 1/3 the segment width.
+        if (curveType == TsCurveTypeHermite) {
+            _UpdateAllTangents();
+        }
+    }
 }
 
 TsCurveType TsSpline::GetCurveType() const
@@ -196,11 +207,8 @@ void TsSpline::SetKnots(const TsKnotMap &knots)
     for (const TsKnot &knot : knots)
         _data->PushKnot(knot._GetData(), knot.GetCustomData());
 
-    // De-regress.
-    if (TsEditBehaviorBlock::GetStack().empty())
-    {
-        AdjustRegressiveTangents();
-    }
+    // Adjust auto tangents and de-regress as needed
+    _UpdateAllTangents();
 }
 
 bool TsSpline::CanSetKnot(
@@ -216,19 +224,6 @@ bool TsSpline::CanSetKnot(
                 "into spline of value type '%s'",
                 knot.GetValueType().GetTypeName().c_str(),
                 GetValueType().GetTypeName().c_str());
-        }
-        return false;
-    }
-
-    if (knot.GetCurveType() != GetCurveType())
-    {
-        if (reasonOut)
-        {
-            *reasonOut = TfStringPrintf(
-                "Cannot set knot of curve type '%s' "
-                "into spline of curve type '%s'",
-                TfEnum::GetName(knot.GetCurveType()).c_str(),
-                TfEnum::GetName(GetCurveType()).c_str());
         }
         return false;
     }
@@ -254,23 +249,8 @@ bool TsSpline::SetKnot(
     // Copy knot data.
     const size_t idx = _data->SetKnot(knot._GetData(), knot.GetCustomData());
 
-    // De-regress.
-    if (TsEditBehaviorBlock::GetStack().empty()
-        && _data->curveType == TsCurveTypeBezier)
-    {
-        // Find indices of knots bounding segments that the knot is part of.
-        const size_t first = (idx == 0 ? idx : idx - 1);
-        const size_t last = (idx == _data->times.size() - 1 ? idx : idx + 1);
-
-        // Process zero, one, or two segments.
-        for (size_t i = first; i < last; i++)
-        {
-            Ts_KnotData* const startKnot = _data->GetKnotPtrAtIndex(i);
-            Ts_KnotData* const endKnot = _data->GetKnotPtrAtIndex(i + 1);
-            Ts_RegressionPreventerBatchAccess::ProcessSegment(
-                startKnot, endKnot, GetAntiRegressionAuthoringMode());
-        }
-    }
+    // Update algorithmic tangents and deregress.
+    _UpdateKnotTangents(idx);
 
     return true;
 }
@@ -344,6 +324,7 @@ bool TsSpline::DoSidesDiffer(
     return (value == preValue);
 }
 
+
 template <>
 bool TsSpline::_Eval(
     const TsTime time,
@@ -374,6 +355,64 @@ bool TsSpline::_Eval(
 
     return false;
 }
+
+template <typename SampleHolder>
+bool
+TsSpline::_Sample(
+    const GfInterval& timeInterval,
+    const double timeScale,
+    const double valueScale,
+    const double tolerance,
+    SampleHolder* splineSamples) const
+{
+    if (timeInterval.IsEmpty() ||
+        timeScale <= 0.0 ||
+        valueScale <= 0.0 ||
+        tolerance <= 0.0)
+    {
+        TF_CODING_ERROR(
+            "The time interval must not be empty and the values of timeScale,"
+            " valueScale, and tolerance must all be greater than 0 when"
+            " sampling a spline.");
+        return false;
+    }
+
+    Ts_SampleData<SampleHolder> sampleData(splineSamples);
+
+    // Make sure that splineSamples is empty.
+    sampleData.Clear();
+
+    // Do not bother to sample empty data.
+    if (_data || !_data->times.empty()) {
+
+        Ts_Sample(_data.get(), timeInterval,
+                  timeScale, valueScale, tolerance,
+                  &sampleData);
+    }
+    return true;
+}
+
+// Instantiate Sample for both spline samples classes and for
+// each supported sample data type.
+#define _INSTANTIATE_SAMPLE_METHOD(sampleData, tuple)                   \
+    template                                                            \
+    TS_API                                                              \
+    bool                                                                \
+    TsSpline::_Sample(                                                  \
+        const GfInterval& timeInterval,                                 \
+        const double timeScale,                                         \
+        const double valueScale,                                        \
+        const double tolerance,                                         \
+        sampleData< TS_SPLINE_VALUE_CPP_TYPE(tuple) >* splineSamples) const;
+
+TF_PP_SEQ_FOR_EACH(_INSTANTIATE_SAMPLE_METHOD,
+                   TsSplineSamples,
+                   TS_SPLINE_SAMPLE_VERTEX_TYPES)
+TF_PP_SEQ_FOR_EACH(_INSTANTIATE_SAMPLE_METHOD,
+                   TsSplineSamplesWithSources,
+                   TS_SPLINE_SAMPLE_VERTEX_TYPES)
+
+#undef _INSTANTIATE_SAMPLE_METHOD
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -639,6 +678,50 @@ bool TsSpline::AdjustRegressiveTangents()
     }
 
     return splineChanged;
+}
+
+bool TsSpline::_UpdateAllTangents()
+{
+    bool result = false;
+
+    // _UpdateAllTangents should only be called as part of updating spline knots
+    // so we should already be editing the spline data, but just to be safe...
+    _PrepareForWrite();
+
+    for (size_t i = 0; i < _data->times.size(); ++i) {
+        result = _data->UpdateKnotTangentsAtIndex(i) || result;
+    }
+
+    result = AdjustRegressiveTangents() || result;
+
+    return result;
+}
+
+bool TsSpline::_UpdateKnotTangents(const size_t idx)
+{
+    bool result = false;
+
+    // Find indices of knots bounding segments that the knot is part of.
+    const size_t first = (idx > 0 ? idx - 1 : idx);
+    const size_t last = (idx < _data->times.size() - 1 ? idx + 1 : idx);
+
+    // Process 1, 2, or 3 knots
+    for (size_t i = first; i <= last; ++i) {
+        result = _data->UpdateKnotTangentsAtIndex(i) || result;
+    }
+        
+    if (_data->curveType == TsCurveTypeBezier) {
+        // Process 0, 1, or 2 segments.
+        for (size_t i = first; i < last; i++)
+        {
+            Ts_KnotData* const startKnot = _data->GetKnotPtrAtIndex(i);
+            Ts_KnotData* const endKnot = _data->GetKnotPtrAtIndex(i + 1);
+            result = Ts_RegressionPreventerBatchAccess::ProcessSegment(
+                startKnot, endKnot, GetAntiRegressionAuthoringMode()) || result;
+        }
+    }
+
+    return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -1,35 +1,35 @@
-Loading @BasicSpecializes/root.sdf@
+Loading @BasicSpecializes/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </BasicSpecializes1>
 
 Prim Stack:
-    root.sdf             /BasicSpecializes1
-    root.sdf             /BasicSpecializes2
+    root.usda            /BasicSpecializes1
+    root.usda            /BasicSpecializes2
 
 ------------------------------------------------------------------------
 Results for composing </BasicSpecializes2>
 
 Prim Stack:
-    root.sdf             /BasicSpecializes2
+    root.usda            /BasicSpecializes2
 
 ------------------------------------------------------------------------
 Results for composing </Basic>
 
 Prim Stack:
-    root.sdf             /Basic
-    root.sdf             /BasicSpecializes1
-    root.sdf             /BasicSpecializes2
+    root.usda            /Basic
+    root.usda            /BasicSpecializes1
+    root.usda            /BasicSpecializes2
 
 ------------------------------------------------------------------------
 Results for composing </BasicLocal>
 
 Prim Stack:
-    root.sdf             /BasicLocal
+    root.usda            /BasicLocal
 
 Child names:
      ['Specializes1', 'Specializes2', 'Local']
@@ -38,60 +38,60 @@ Child names:
 Results for composing </BasicLocal/Specializes1>
 
 Prim Stack:
-    root.sdf             /BasicLocal/Specializes1
-    root.sdf             /BasicLocal/Specializes2
+    root.usda            /BasicLocal/Specializes1
+    root.usda            /BasicLocal/Specializes2
 
 ------------------------------------------------------------------------
 Results for composing </BasicLocal/Specializes2>
 
 Prim Stack:
-    root.sdf             /BasicLocal/Specializes2
+    root.usda            /BasicLocal/Specializes2
 
 ------------------------------------------------------------------------
 Results for composing </BasicLocal/Local>
 
 Prim Stack:
-    root.sdf             /BasicLocal/Local
-    root.sdf             /BasicLocal/Specializes1
-    root.sdf             /BasicLocal/Specializes2
+    root.usda            /BasicLocal/Local
+    root.usda            /BasicLocal/Specializes1
+    root.usda            /BasicLocal/Specializes2
 
 ------------------------------------------------------------------------
 Results for composing </Base>
 
 Prim Stack:
-    root.sdf             /Base
+    root.usda            /Base
 
 ------------------------------------------------------------------------
 Results for composing </Specializes>
 
 Prim Stack:
-    root.sdf             /Specializes
+    root.usda            /Specializes
 
 ------------------------------------------------------------------------
 Results for composing </Root>
 
 Prim Stack:
-    root.sdf             /Root
-    ref.sdf              /Ref
-    ref2.sdf             /Ref
-    root.sdf             /Specializes
-    ref.sdf              /Specializes
-    ref2.sdf             /Specializes
-    root.sdf             /Base
-    ref.sdf              /Base
-    ref2.sdf             /Base
+    root.usda            /Root
+    ref.usda             /Ref
+    ref2.usda            /Ref
+    root.usda            /Specializes
+    ref.usda             /Specializes
+    ref2.usda            /Specializes
+    root.usda            /Base
+    ref.usda             /Base
+    ref2.usda            /Base
 
 ------------------------------------------------------------------------
 Results for composing </_class_Material>
 
 Prim Stack:
-    root.sdf             /_class_Material
+    root.usda            /_class_Material
 
 ------------------------------------------------------------------------
 Results for composing </Model>
 
 Prim Stack:
-    root.sdf             /Model
+    root.usda            /Model
 
 Child names:
      ['Looks']
@@ -100,8 +100,8 @@ Child names:
 Results for composing </Model/Looks>
 
 Prim Stack:
-    root.sdf             /Model/Looks
-    looks.sdf            /Looks
+    root.usda            /Model/Looks
+    looks.usda           /Looks
 
 Child names:
      ['Material', 'Metal', 'Brass']
@@ -110,64 +110,64 @@ Child names:
 Results for composing </Model/Looks/Material>
 
 Prim Stack:
-    root.sdf             /Model/Looks/Material
-    looks.sdf            /Looks/Material
-    root.sdf             /_class_Material
-    looks.sdf            /_class_Material
+    root.usda            /Model/Looks/Material
+    looks.usda           /Looks/Material
+    root.usda            /_class_Material
+    looks.usda           /_class_Material
 
 ------------------------------------------------------------------------
 Results for composing </Model/Looks/Metal>
 
 Prim Stack:
-    root.sdf             /Model/Looks/Metal
-    looks.sdf            /Looks/Metal
-    root.sdf             /Model/Looks/Material
-    looks.sdf            /Looks/Material
-    root.sdf             /_class_Material
-    looks.sdf            /_class_Material
+    root.usda            /Model/Looks/Metal
+    looks.usda           /Looks/Metal
+    root.usda            /Model/Looks/Material
+    looks.usda           /Looks/Material
+    root.usda            /_class_Material
+    looks.usda           /_class_Material
 
 ------------------------------------------------------------------------
 Results for composing </Model/Looks/Brass>
 
 Prim Stack:
-    root.sdf             /Model/Looks/Brass
-    looks.sdf            /Looks/Brass
-    root.sdf             /Model/Looks/Metal
-    looks.sdf            /Looks/Metal
-    root.sdf             /Model/Looks/Material
-    looks.sdf            /Looks/Material
-    root.sdf             /_class_Material
-    looks.sdf            /_class_Material
+    root.usda            /Model/Looks/Brass
+    looks.usda           /Looks/Brass
+    root.usda            /Model/Looks/Metal
+    looks.usda           /Looks/Metal
+    root.usda            /Model/Looks/Material
+    looks.usda           /Looks/Material
+    root.usda            /_class_Material
+    looks.usda           /_class_Material
 
 ------------------------------------------------------------------------
 Results for composing </Specializes_1>
 
 Prim Stack:
-    root.sdf             /Specializes_1
+    root.usda            /Specializes_1
 
 ------------------------------------------------------------------------
 Results for composing </Specializes_2>
 
 Prim Stack:
-    root.sdf             /Specializes_2
+    root.usda            /Specializes_2
 
 ------------------------------------------------------------------------
 Results for composing </MultipleSpecializes>
 
 Prim Stack:
-    root.sdf             /MultipleSpecializes
-    ref.sdf              /Multi
-    root.sdf             /Specializes_1
-    ref.sdf              /Specializes_1
-    root.sdf             /Specializes_2
-    ref.sdf              /Specializes_2
+    root.usda            /MultipleSpecializes
+    ref.usda             /Multi
+    root.usda            /Specializes_1
+    ref.usda             /Specializes_1
+    root.usda            /Specializes_2
+    ref.usda             /Specializes_2
 
 ------------------------------------------------------------------------
 Results for composing </NonExistentSpecializes>
 
 Prim Stack:
-    root.sdf             /NonExistentSpecializes
-    ref.sdf              /NonExistentSpecializes
+    root.usda            /NonExistentSpecializes
+    ref.usda             /NonExistentSpecializes
 
 Child names:
      ['Child']
@@ -176,18 +176,18 @@ Child names:
 Results for composing </NonExistentSpecializes/Child>
 
 Prim Stack:
-    ref.sdf              /NonExistentSpecializes/Child
+    ref.usda             /NonExistentSpecializes/Child
 
 ------------------------------------------------------------------------
 Results for composing </MultipleRefsAndSpecializes>
 
 Prim Stack:
-    root.sdf             /MultipleRefsAndSpecializes
-    ref.sdf              /Ref_1
-    ref2.sdf             /Ref_2
-    root.sdf             /Specializes_2
-    ref.sdf              /Specializes_2
-    ref2.sdf             /Specializes_2
-    root.sdf             /Specializes_1
-    ref.sdf              /Specializes_1
+    root.usda            /MultipleRefsAndSpecializes
+    ref.usda             /Ref_1
+    ref2.usda            /Ref_2
+    root.usda            /Specializes_2
+    ref.usda             /Specializes_2
+    ref2.usda            /Specializes_2
+    root.usda            /Specializes_1
+    ref.usda             /Specializes_1
 

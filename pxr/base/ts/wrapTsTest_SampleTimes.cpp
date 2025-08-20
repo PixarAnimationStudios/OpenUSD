@@ -154,5 +154,8 @@ void wrapTsTest_SampleTimes()
         .def("GetTimes", &This::GetTimes,
             return_value_policy<TfPySequenceToList>())
 
+        .def("GetMinTime", &This::GetMinTime)
+        .def("GetMaxTime", &This::GetMaxTime)
+
         ;
 }

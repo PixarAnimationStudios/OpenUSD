@@ -1,0 +1,17 @@
+#usda 1.0
+(
+    subLayers = [
+        @./sub.usda@
+    ]
+)
+
+def "Parent"
+{
+    over "OverInSublayerAndRoot"
+    {
+    }
+
+    over "OverInRootDefInSublayer"
+    {
+    }
+}

@@ -4,7 +4,9 @@
 )
 
 class "Base" (
-    doc = 'This doc should only exist on the "Base" class.'
+    customData = {
+        string userDocBrief = 'This doc should only exist on the "Base" class.'
+    }
 )
 {
     color3f myColorFloat = (1, 1, 1)
@@ -14,11 +16,15 @@ class "Base" (
     point3f[] myPoints
     token myVaryingToken = "VariableTokenDefault" (
         allowedTokens = ["VariableTokenAllowed1", "VariableTokenAllowed2", "VariableTokenAllowed<3>", ""]
-        doc = "VariableToken attribute docs."
+        customData = {
+            string userDocBrief = "VariableToken attribute docs."
+        }
     )
     uniform token[] myVaryingTokenArray = ["VariableTokenArrayAllowed1", ""] (
         allowedTokens = ["VariableTokenArrayAllowed1", "VariableTokenArrayAllowed2", "VariableTokenArrayAllowed<3>", ""]
-        doc = "VariableTokenArray attribute docs."
+        customData = {
+            string userDocBrief = "VariableTokenArray attribute docs."
+        }
     )
     vector3f[] myVelocities
     uchar unsignedChar

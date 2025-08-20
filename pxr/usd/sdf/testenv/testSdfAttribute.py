@@ -196,7 +196,7 @@ class TestSdfAttribute(unittest.TestCase):
     def test_ClearUnexpectedField(self):
         layer = Sdf.Layer.CreateAnonymous("ClearUnexpected")
         layer.ImportFromString(
-'''#sdf 1.4.32
+'''#usda 1.0
 def Sphere "Foo"
 {
     double radius (
@@ -416,7 +416,7 @@ def Sphere "Foo"
         # Test interaction with time samples on an attribute
         timeSamplesLayer = Sdf.Layer.CreateAnonymous()
         timeSamplesLayer.ImportFromString(
-'''#sdf 1.4.32
+'''#usda 1.0
 def Scope "Scope"
 {
     custom double empty = 0
@@ -454,6 +454,84 @@ def Scope "Scope"
         prim.attributes['desc'].EraseTimeSample(10)
         self.assertEqual(prim.attributes['desc'].GetNumTimeSamples(), 3)
         self.assertEqual(prim.attributes['desc'].GetBracketingTimeSamples(2.0), (True, 1.23, 3.23))
+
+    def test_Spline(self):
+        splineLayer = Sdf.Layer.CreateAnonymous()
+        splineLayer.ImportFromString(
+'''#usda 1.0
+def Xform "Prim"
+{
+    double a.spline = {
+        1: 5; post held,
+        2: 18; post held,
+    }
+    double a2
+    float b.spline = {
+        1: 10; post held,
+    }
+    double c.timeSamples = {
+        6: 5,
+    }
+    int e
+}
+''')
+        # Test GetSpline, SetSpline and ClearSpline works on compatible types
+        self.assertTrue(splineLayer)
+        a = splineLayer.GetAttributeAtPath('/Prim.a')
+        splineA = a.GetSpline()
+        self.assertTrue(splineA)
+        self.assertFalse(splineA.IsEmpty())
+        self.assertEqual(len(splineA.GetKnots()), 2)
+        self.assertEqual(splineA.GetValueTypeName(), "double")
+        self.assertEqual(a.typeName.cppTypeName, "double")
+        a2 = splineLayer.GetAttributeAtPath('/Prim.a2')
+        self.assertTrue(a2)
+        self.assertFalse(a2.HasInfo('spline'))
+        self.assertTrue(a2.GetSpline().IsEmpty())
+        a2.SetSpline(splineA)
+        splineA2 = a2.GetSpline()
+        self.assertTrue(splineA2)
+        self.assertTrue(a2.HasInfo('spline'))
+        self.assertFalse(splineA2.IsEmpty())
+        self.assertEqual(len(splineA2.GetKnots()), 2)
+        b = splineLayer.GetAttributeAtPath('/Prim.b')
+        splineB = b.GetSpline()
+        self.assertTrue(splineB)
+        self.assertTrue(b.HasInfo('spline'))
+        self.assertFalse(splineB.IsEmpty())
+        self.assertEqual(len(splineB.GetKnots()), 1)
+        self.assertEqual(splineB.GetValueTypeName(), "float")
+        self.assertEqual(b.typeName.cppTypeName, "float")
+        a.ClearSpline()
+        b.ClearSpline()
+        self.assertFalse(a.HasInfo('spline'))
+        self.assertFalse(b.HasInfo('spline'))
+
+        # Test that SetSpline results in a coding error when trying to set a 
+        # float spline on a double attribute.
+        self.assertEqual(a.typeName.cppTypeName, "double")
+        with self.assertRaises(Tf.ErrorException):
+            a.SetSpline(splineB)
+        # No spline gets set on a
+        self.assertFalse(a.HasInfo('spline'))
+
+        # Test that HasInfo returns false when spline is not set, yet GetSpline
+        # returns an empty spline.
+        c = splineLayer.GetAttributeAtPath('/Prim.c')
+        self.assertTrue(c)
+        self.assertFalse(c.HasInfo('spline'))
+        self.assertTrue(c.GetSpline().IsEmpty())
+
+        # Test that SetSpline results in a coding error when trying to set a
+        # spline on an attribute that doesn't support splines.
+        from pxr import Ts
+        e = splineLayer.GetAttributeAtPath('/Prim.e')
+        self.assertFalse(Ts.Spline.IsSupportedValueType(e.typeName.type))
+        self.assertFalse(e.HasInfo('spline'))
+        with self.assertRaises(RuntimeError):
+            e.SetSpline(splineA)
+        # No spline was set on e
+        self.assertFalse(e.HasInfo('spline'))
 
     def test_OpaqueNoAuthoredDefault(self):
         """

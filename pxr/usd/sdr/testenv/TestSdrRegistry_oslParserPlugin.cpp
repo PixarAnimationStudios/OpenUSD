@@ -10,7 +10,7 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/vt/array.h"
-#include "pxr/usd/ndr/parserPlugin.h"
+#include "pxr/usd/sdr/parserPlugin.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 
@@ -18,20 +18,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
     static TfToken _sourceType = TfToken("OSL");
-    static NdrTokenVec _discoveryTypes = {TfToken("oso")};
+    static SdrTokenVec _discoveryTypes = {TfToken("oso")};
 }
 
-class _NdrOslTestParserPlugin : public NdrParserPlugin
+class _SdrOslTestParserPlugin : public SdrParserPlugin
 {
 public:
-    _NdrOslTestParserPlugin() {};
-    ~_NdrOslTestParserPlugin() {};
+    _SdrOslTestParserPlugin() {};
+    ~_SdrOslTestParserPlugin() {};
 
-    NdrNodeUniquePtr Parse(
-        const NdrNodeDiscoveryResult& discoveryResult) override
+    SdrShaderNodeUniquePtr ParseShaderNode(
+        const SdrShaderNodeDiscoveryResult& discoveryResult) override
     {
         // Register some test properties
-        NdrPropertyUniquePtrVec properties;
+        SdrShaderPropertyUniquePtrVec properties;
 
         #define ADD_PROPERTY(type, suffix, arrayLen, value, metadata)   \
             properties.emplace_back(                                    \
@@ -46,7 +46,7 @@ public:
                         {},                                             \
                         {})));
 
-        NdrTokenMap arrayMetadatum = 
+        SdrTokenMap arrayMetadatum = 
             {{SdrPropertyMetadata->IsDynamicArray, "true" }};
 
         ADD_PROPERTY(Int,      , 0, 0               , {})
@@ -63,7 +63,7 @@ public:
         ADD_PROPERTY(Vstruct, _Array, 0,            , arrayMetadatum)
 
         // Force a float[] to act like a vstruct (e.g. multiMaterialIn)
-        NdrTokenMap vstructMetadata = 
+        SdrTokenMap vstructMetadata = 
             {{SdrPropertyMetadata->IsDynamicArray, "true" },
              {SdrPropertyMetadata->Tag, "vstruct" }};
         ADD_PROPERTY(Float, _Vstruct, 0,            , vstructMetadata)
@@ -77,13 +77,13 @@ public:
         ADD_PROPERTY(Float, _Vec4, 4, v4, {})
 
         // Add a String_Asset property
-        NdrTokenMap assetMetadata =
+        SdrTokenMap assetMetadata =
             {{SdrPropertyMetadata->IsAssetIdentifier, std::string()}};
         ADD_PROPERTY(String, _Asset, 0, std::string(), assetMetadata)
 
         #undef ADD_PROPERTY
 
-        return NdrNodeUniquePtr(
+        return SdrShaderNodeUniquePtr(
             new SdrShaderNode(
                 discoveryResult.identifier,
                 discoveryResult.version,
@@ -99,10 +99,10 @@ public:
         );
     }
 
-    static const NdrTokenVec& DiscoveryTypes;
+    static const SdrTokenVec& DiscoveryTypes;
     static const TfToken& SourceType;
 
-    const NdrTokenVec& GetDiscoveryTypes() const override {
+    const SdrTokenVec& GetDiscoveryTypes() const override {
         return _discoveryTypes;
     }
 
@@ -111,9 +111,9 @@ public:
     }
 };
 
-const NdrTokenVec& _NdrOslTestParserPlugin::DiscoveryTypes = _discoveryTypes;
-const TfToken& _NdrOslTestParserPlugin::SourceType = _sourceType;
+const SdrTokenVec& _SdrOslTestParserPlugin::DiscoveryTypes = _discoveryTypes;
+const TfToken& _SdrOslTestParserPlugin::SourceType = _sourceType;
 
-NDR_REGISTER_PARSER_PLUGIN(_NdrOslTestParserPlugin)
+SDR_REGISTER_PARSER_PLUGIN(_SdrOslTestParserPlugin)
 
 PXR_NAMESPACE_CLOSE_SCOPE

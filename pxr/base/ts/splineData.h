@@ -70,6 +70,7 @@ public:
     virtual Ts_KnotData* CloneKnotAtIndex(size_t index) const = 0;
     virtual Ts_KnotData* CloneKnotAtTime(TsTime time) const = 0;
     virtual Ts_KnotData* GetKnotPtrAtIndex(size_t index) = 0;
+    virtual const Ts_KnotData* GetKnotPtrAtIndex(size_t index) const = 0;
     virtual Ts_TypedKnotData<double>
         GetKnotDataAsDouble(size_t index) const = 0;
 
@@ -82,6 +83,8 @@ public:
 
     virtual bool HasValueBlocks() const = 0;
     virtual bool HasValueBlockAtTime(TsTime time) const = 0;
+
+    virtual bool UpdateKnotTangentsAtIndex(size_t index) = 0;
 
 public:
     // Returns whether there is a valid inner-loop configuration.  If
@@ -153,6 +156,7 @@ public:
     Ts_KnotData* CloneKnotAtIndex(size_t index) const override;
     Ts_KnotData* CloneKnotAtTime(TsTime time) const override;
     Ts_KnotData* GetKnotPtrAtIndex(size_t index) override;
+    const Ts_KnotData* GetKnotPtrAtIndex(size_t index) const override;
     Ts_TypedKnotData<double>
         GetKnotDataAsDouble(size_t index) const override;
 
@@ -172,6 +176,8 @@ public:
 
     bool HasValueBlocks() const override;
     bool HasValueBlockAtTime(TsTime time) const override;
+
+    bool UpdateKnotTangentsAtIndex(size_t index) override;
 
 public:
     // Per-knot data.
@@ -346,6 +352,14 @@ Ts_TypedSplineData<T>::GetKnotPtrAtIndex(
     return &(knots[index]);
 }
 
+template <typename T>
+const Ts_KnotData*
+Ts_TypedSplineData<T>::GetKnotPtrAtIndex(
+    const size_t index) const
+{
+    return &(knots[index]);
+}
+
 // Depending on T, this is either a verbatim copy or an increase in precision.
 template <typename T>
 Ts_TypedKnotData<double>
@@ -391,6 +405,14 @@ void Ts_TypedSplineData<T>::RemoveKnotAtTime(
     times.erase(it);
     customData.erase(time);
     knots.erase(knots.begin() + idx);
+
+    // Update the tangents on the knots either side of the one removed
+    if (idx > 0) {
+        UpdateKnotTangentsAtIndex(idx - 1);
+    }
+    if (idx < times.size()) {
+        UpdateKnotTangentsAtIndex(idx);
+    }
 }
 
 template <typename T>
@@ -555,6 +577,26 @@ bool Ts_TypedSplineData<T>::HasValueBlockAtTime(
     // interpolation.
     const auto knotIt = knots.begin() + (lbIt - times.begin());
     return (knotIt - 1)->nextInterp == TsInterpValueBlock;
+}
+
+template <typename T>
+bool Ts_TypedSplineData<T>::UpdateKnotTangentsAtIndex(size_t index)
+{
+    // XXX: Should we use PXR_PREFER_SAFETY_OVER_SPEED around this test?
+    if (!TF_VERIFY(index < knots.size(),
+                   "Knot index (%zd) out of range [0 .. %zd)",
+                   index, knots.size()))
+    {
+        return false;
+    }
+
+    Ts_TypedKnotData<T>* prevKnot = (index > 0 ? &knots[index - 1] : nullptr);
+    Ts_TypedKnotData<T>* knot = &knots[index];
+    Ts_TypedKnotData<T>* nextKnot = (index < knots.size() - 1
+                                     ? &knots[index + 1]
+                                     : nullptr);
+
+    return knot->UpdateTangents(prevKnot, nextKnot, curveType);
 }
 
 template <typename T>

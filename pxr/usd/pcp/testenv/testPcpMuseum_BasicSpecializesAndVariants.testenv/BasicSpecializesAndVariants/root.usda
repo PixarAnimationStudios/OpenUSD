@@ -1,0 +1,44 @@
+#usda 1.0
+(
+    """
+    Museum test case demonstrating how variants interact with
+    specializes arcs. In particular, because opinions from
+    specializes arcs come after all other opinions, variant
+    selections expressed in specialized classes will always
+    be weaker than all other selections.
+    """
+)
+
+class "Specializes" (
+    variants = {
+        string "v" = "spec_root"
+    }
+)
+{
+}
+
+def "Root" (
+    references = @./ref.usda@</Ref>
+)
+{
+}
+
+def "Model"
+{
+    def "Looks" (
+        references = @./looks.usda@</Looks>
+    )
+    {
+        over "Metal" (
+            variants = {
+                string "v" = "from_metal"
+            }
+        )
+        {
+        }
+
+        over "Brass"
+        {
+        }
+    }
+}

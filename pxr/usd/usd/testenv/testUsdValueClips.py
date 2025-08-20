@@ -388,6 +388,8 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr, time=5, expected=5.0)
         self.CheckValue(attr, time=10, expected=5.0)
         self.CheckValue(attr, time=15, expected=5.0)
+        # @20 we should get the jump discontinuity time sample as the pre-time.
+        self.CheckValue(attr, time=Usd.TimeCode.PreTime(20), expected=5.0)
         self.CheckValue(attr, time=20, expected=45.0)
         self.CheckValue(attr, time=25, expected=40.0)
         self.CheckValue(attr, time=30, expected=35.0)
@@ -405,6 +407,13 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr2, time=5, expected=Sdf.TimeCodeArray([5.0, 5.0]))
         self.CheckValue(attr2, time=10, expected=Sdf.TimeCodeArray([10.0, 5.0]))
         self.CheckValue(attr2, time=15, expected=Sdf.TimeCodeArray([15.0, 5.0]))
+        # @20 we should get the jump discontinuity time sample as the pre-time
+        # that means we should get first time mapping @20, with appropriate time
+        # offset (0 in this case as both external and internal times at
+        # this jump discontinuity are the same, so external-internal time zeros
+        # out) applied to the results.
+        self.CheckValue(attr2, time=Usd.TimeCode.PreTime(20),
+                        expected=Sdf.TimeCodeArray([20.0, 5.0]))
         self.CheckValue(attr2, time=20, expected=Sdf.TimeCodeArray([20.0, 45.0]))
         self.CheckValue(attr2, time=25, expected=Sdf.TimeCodeArray([25.0, 40.0]))
         self.CheckValue(attr2, time=30, expected=Sdf.TimeCodeArray([30.0, 35.0]))
@@ -425,6 +434,13 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr, time=5, expected=5.0)
         self.CheckValue(attr, time=10, expected=5.0)
         self.CheckValue(attr, time=15, expected=5.0)
+        # @20 we should get the jump discontinuity time sample as the pre-time,
+        # that means we should get first time mapping @20, with appropriate time
+        # offset (0 in this case as both external and internal times at
+        # this jump discontinuity are the same, so external-internal time zeros
+        # out) applied to the results.
+        self.CheckValue(attr, time=Usd.TimeCode.PreTime(20), 
+                        expected=5.0)
         self.CheckValue(attr, time=20, expected=45.0)
         self.CheckValue(attr, time=25, expected=40.0)
         self.CheckValue(attr, time=30, expected=35.0)
@@ -442,7 +458,15 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr2, time=5, expected=Sdf.TimeCodeArray([0.0, 5.0]))
         self.CheckValue(attr2, time=10, expected=Sdf.TimeCodeArray([10.0, 5.0]))
         self.CheckValue(attr2, time=15, expected=Sdf.TimeCodeArray([10.0, 5.0]))
-        self.CheckValue(attr2, time=20, expected=Sdf.TimeCodeArray([20.0, 45.0]))
+        # @20 we should get the jump discontinuity time sample as the pre-time,
+        # that means we should get first time mapping @20, with appropriate time
+        # offset (0 in this case as both external and internal times at
+        # this jump discontinuity are the same, so external-internal time zeros
+        # out) applied to the results.
+        self.CheckValue(attr2, time=Usd.TimeCode.PreTime(20), 
+                        expected=Sdf.TimeCodeArray([20.0, 5.0]))
+        self.CheckValue(attr2, time=20, 
+                        expected=Sdf.TimeCodeArray([20.0, 45.0]))
         self.CheckValue(attr2, time=25, expected=Sdf.TimeCodeArray([25.0, 40.0]))
         self.CheckValue(attr2, time=30, expected=Sdf.TimeCodeArray([30.0, 35.0]))
         self.CheckValue(attr2, time=35, expected=Sdf.TimeCodeArray([35.0, 30.0]))
@@ -769,6 +793,11 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckValue(attr, time=5, expected=-5)
         self.CheckValue(attr, time=10, expected=-10)
         self.CheckValue(attr, time=15, expected=-15)
+        # we are at clip boundary at time=16, for pre-time(16) we will be in 
+        # clip1 and for ordinary value we will be extrapolating from first
+        # sample of clip2, ie. our ordinary value will be -23 but our pre-time
+        # will come from clip1 which is -15
+        self.CheckValue(attr, time=Usd.TimeCode.PreTime(16), expected=-15)
         self.CheckValue(attr, time=16, expected=-23)
         self.CheckValue(attr, time=19, expected=-23)
         self.CheckValue(attr, time=22, expected=-26)
@@ -854,15 +883,27 @@ class TestUsdValueClips(unittest.TestCase):
         # The clip in the range [16, ...) has samples on frames 3, 6, 9 so
         # we expect time samples for this attribute at frames 19, 22, and 25.
         with InterpolationType(stage, Usd.InterpolationTypeHeld):
+            # We are at clip boundary at time=16, for pre-time(16) we will be in
+            # nosample_clip, and hence we will get None, which is same as a
+            # value block.
+            self.CheckValue(attr, time=Usd.TimeCode.PreTime(16), expected=None)
             self.CheckValue(attr, time=16, expected=-23.0)
             self.CheckValue(attr, time=17, expected=-23.0)
             self.CheckValue(attr, time=18, expected=-23.0)
             self.CheckValue(attr, time=19, expected=-23.0)
             self.CheckValue(attr, time=20, expected=-23.0)
             self.CheckValue(attr, time=21, expected=-23.0)
+            # We are at a sample boundary at time=22, with held interpolation,
+            # for pre-time(22), we will hold the value from previous sample,
+            # that is -23.0
+            self.CheckValue(attr, time=Usd.TimeCode.PreTime(22), expected=-23.0)
             self.CheckValue(attr, time=22, expected=-26.0)
             self.CheckValue(attr, time=23, expected=-26.0)
             self.CheckValue(attr, time=24, expected=-26.0)
+            # We are at a sample boundary at time=25, with held interpolation,
+            # for pre-time(25), we will hold the value from previous sample,
+            # that is -26.0
+            self.CheckValue(attr, time=Usd.TimeCode.PreTime(25), expected=-26.0)
             self.CheckValue(attr, time=25, expected=-29.0)
             self.CheckValue(attr, time=26, expected=-29.0)
             self.CheckValue(attr, time=27, expected=-29.0)
@@ -873,6 +914,10 @@ class TestUsdValueClips(unittest.TestCase):
 
         # Repeat test with linear interpolation
         with InterpolationType(stage, Usd.InterpolationTypeLinear):
+            # We are at clip boundary at time=16, for pre-time(16) we will be in
+            # nosample_clip, and hence we will get None, which is same as a
+            # value block.
+            self.CheckValue(attr, time=Usd.TimeCode.PreTime(16), expected=None)
             self.CheckValue(attr, time=16, expected=-23.0)
             self.CheckValue(attr, time=17, expected=-23.0)
             self.CheckValue(attr, time=18, expected=-23.0)
@@ -920,20 +965,36 @@ class TestUsdValueClips(unittest.TestCase):
             self.CheckValue(attr, time=0, expected=-23.0)
             self.CheckValue(attr, time=1, expected=-23.0)
             self.CheckValue(attr, time=2, expected=-23.0)
+            # We are at a sample boundary at time=3, with held interpolation,
+            # for pre-time(3), we will hold the value from previous sample,
+            # that is -23.0
+            self.CheckValue(attr, time=Usd.TimeCode.PreTime(3), expected=-23.0)
             self.CheckValue(attr, time=3, expected=-26.0)
 
+            # We are at clip boundary at time=4, for pre-time(4) we will be in 
+            # clip2, and its value will be held from the previous sample, that
+            # is -26.0
+            self.CheckValue(attr, time=Usd.TimeCode.PreTime(4), expected=-26.0)
+            self.CheckValue(attr, time=4, expected=None)
             # Middle clip with no samples. Since the middle clip has no 
             # time samples and there is no default value specified in the
             # manifest, we get a value of None.
-            self.CheckValue(attr, time=4, expected=None)
             self.CheckValue(attr, time=5, expected=None)
             self.CheckValue(attr, time=6, expected=None)
             self.CheckValue(attr, time=7, expected=None)
 
+            # We are at clip boundary at time=8, for pre-time(8) we will be in
+            # nosample_clip, and hence we will get None, which is same as a
+            # value block.
             # Last clip.
+            self.CheckValue(attr, time=Usd.TimeCode.PreTime(8), expected=None)
             self.CheckValue(attr, time=8, expected=-26.0)
             self.CheckValue(attr, time=9, expected=-26.0)
             self.CheckValue(attr, time=10, expected=-26.0)
+            # We are at a sample boundary at time=11, with held interpolation,
+            # for pre-time(11), we will hold the value from previous sample,
+            # that is -26.0
+            self.CheckValue(attr, time=Usd.TimeCode.PreTime(11), expected=-26.0)
             self.CheckValue(attr, time=11, expected=-29.0)
             self.CheckValue(attr, time=12, expected=-29.0)
 
@@ -946,6 +1007,10 @@ class TestUsdValueClips(unittest.TestCase):
             self.CheckValue(attr, time=2, expected=-25.0)
             self.CheckValue(attr, time=3, expected=-26.0)
 
+            # We are at clip boundary at time=4, for pre-time(4) we will be in
+            # clip2, and since clip times have 4 mapped to 7, we will get the
+            # value at 7, which is interpolated to -27.0
+            self.CheckValue(attr, time=Usd.TimeCode.PreTime(4), expected=-27.0)
             # Middle clip with no samples. Since the middle clip has no 
             # time samples and there is no default value specified in the
             # manifest, we get a value of None.
@@ -955,6 +1020,10 @@ class TestUsdValueClips(unittest.TestCase):
             self.CheckValue(attr, time=7, expected=None)
 
             # Last clip.
+            # We are at clip boundary at time=8, for pre-time(8) we will be in
+            # nosample_clip, and hence we will get None, which is same as a
+            # value block.
+            self.CheckValue(attr, time=Usd.TimeCode.PreTime(8), expected=None)
             self.CheckValue(attr, time=8, expected=-26.0)
             self.CheckValue(attr, time=9, expected=-27.0)
             self.CheckValue(attr, time=10, expected=-28.0)
@@ -986,7 +1055,11 @@ class TestUsdValueClips(unittest.TestCase):
         # start time.
         self.CheckValue(attr, time=1, expected=None)
         
+        # We are at clip boundary at time=2, for pre-time(2) we will be in
+        # nosample_clip, and hence we will get None, which is same as a
+        # value block.
         # Verify the time samples from the second clip.
+        self.CheckValue(attr, time=Usd.TimeCode.PreTime(2), expected=None)
         self.CheckValue(attr, time=2, expected=-23)
         self.CheckValue(attr, time=3, expected=-23)
         self.CheckValue(attr, time=6, expected=-26)
@@ -1011,8 +1084,11 @@ class TestUsdValueClips(unittest.TestCase):
         # independent of what clip is active. The active clip should then be
         # consulted at that clip time to retrieve the final value.
         self.CheckValue(attr, time=1, expected=100.0)
+        self.CheckValue(attr, time=1.5, expected=150.0)
         self.CheckValue(attr, time=2, expected=200.0)
+        self.CheckValue(attr, time=2.5, expected=250.0)
         self.CheckValue(attr, time=3, expected=300.0)
+        self.CheckValue(attr, time=3.5, expected=350.0)
         self.CheckValue(attr, time=4, expected=400.0)
 
         self.assertEqual(attr.GetTimeSamples(), [1.0, 2.0, 3.0, 4.0])
@@ -1793,6 +1869,11 @@ class TestUsdValueClips(unittest.TestCase):
 
         # Note that the clip at t=2 does not have a value for this attribute,
         # and the manifest has no default value specified, so we get None.
+
+        # time=2 is at clip boundary, at pre-time(2.0), we will be in clip1,
+        # which will evaluate to -1.0
+        self.CheckValue(inManifestAndInClip, time=Usd.TimeCode.PreTime(2), 
+                        expected=-1.0)
         self.CheckValue(inManifestAndInClip, time=2, expected=None)
 
         self.assertEqual(inManifestAndInClip.GetTimeSamples(), 
@@ -1839,7 +1920,19 @@ class TestUsdValueClips(unittest.TestCase):
         fallbackInManifest = \
             stage.GetAttributeAtPath('/Model.fallbackInManifest')
         self.CheckValue(fallbackInManifest, time=0.0, expected=10.0)
+        # we are at clip boundary at time=2.0, for pre-time(2.0), we will be in
+        # clip1 with a jump discontinuity as well, so first time mapping @2 will
+        # be used.
+        self.CheckValue(fallbackInManifest, time=Usd.TimeCode.PreTime(2.0), 
+                        expected=14.0)
         self.CheckValue(fallbackInManifest, time=2.0, expected=50.0)
+        # we are at clip boundary at time=4.0, for pre-time(4.0), we will be in
+        # nosample clip, which doesn't provide any samples, so instead of using 
+        # the first time mapping @4, i.e. (4.0, 2.0) because of jump
+        # discontinuity, we we will look for fallback value in manifest, 
+        # which is 50.
+        self.CheckValue(fallbackInManifest, time=Usd.TimeCode.PreTime(4.0), 
+                        expected=50.0)
         self.CheckValue(fallbackInManifest, time=4.0, expected=20.0)
         self.assertEqual(fallbackInManifest.GetTimeSamples(),
                          [0.0, 1.0, 2.0 - Usd.TimeCode.SafeStep(), 2.0,
@@ -1849,7 +1942,17 @@ class TestUsdValueClips(unittest.TestCase):
         fallbackBlockInManifest = \
             stage.GetAttributeAtPath('/Model.fallbackBlockInManifest')
         self.CheckValue(fallbackBlockInManifest, time=0.0, expected=10.0)
+        # we are at clip boundary at time=2.0, for pre-time(2.0), we will be in
+        # clip1 with a jump discontinuity as well, so first time mapping @2 will
+        # be used.
+        self.CheckValue(fallbackBlockInManifest, time=Usd.TimeCode.PreTime(2.0), 
+                        expected=14.0)
         self.CheckValue(fallbackBlockInManifest, time=2.0, expected=None)
+        # we are at clip boundary at time=4.0, for pre-time(4.0), we will be in
+        # nosample clip, so we will look for fallback value in manifest, which
+        # has a block.
+        self.CheckValue(fallbackBlockInManifest, time=Usd.TimeCode.PreTime(4.0), 
+                        expected=None)
         self.CheckValue(fallbackBlockInManifest, time=4.0, expected=20.0)
         self.assertEqual(fallbackBlockInManifest.GetTimeSamples(),
                          [0.0, 1.0, 2.0 - Usd.TimeCode.SafeStep(), 2.0,
@@ -1861,7 +1964,17 @@ class TestUsdValueClips(unittest.TestCase):
         noFallbackInManifest =  \
             stage.GetAttributeAtPath('/Model.noFallbackInManifest')
         self.CheckValue(noFallbackInManifest, time=0.0, expected=10.0)
+        # we are at clip boundary at time=2.0, for pre-time(2.0), we will be in
+        # clip1, which has a jump discontinuity as well, so first time mapping 
+        # @2 will be used.
+        self.CheckValue(noFallbackInManifest, time=Usd.TimeCode.PreTime(2.0), 
+                        expected=14.0)
         self.CheckValue(noFallbackInManifest, time=2.0, expected=None)
+        # we are at clip boundary at time=4.0, for pre-time(4.0), we will be in
+        # nosample clip, so we will look for fallback value in manifest, which
+        # doesn't have a fallback therefore None, which is same as a block.
+        self.CheckValue(noFallbackInManifest, time=Usd.TimeCode.PreTime(4.0), 
+                        expected=None)
         self.CheckValue(noFallbackInManifest, time=4.0, expected=20.0)
         self.assertEqual(noFallbackInManifest.GetTimeSamples(),
                          [0.0, 1.0, 2.0 - Usd.TimeCode.SafeStep(), 2.0,
@@ -2408,6 +2521,10 @@ class TestUsdValueClips(unittest.TestCase):
 
         attr = stage.GetAttributeAtPath('/ClipInterpolationTest2.attr')
         self.CheckValue(attr, time=0, expected=10.0)
+        # We are at clip boundary at time=1, so we look at clip1 for pre-time(1)
+        # with a jump discontinuity @1, so first time mapping will be used @1.
+        self.CheckValue(attr, time=Usd.TimeCode.PreTime(1), 
+                        expected=100.0)
         self.CheckValue(attr, time=1, expected=20.0)
 
         # At t=0.5, we're beyond the last (and only) time sample in the first
@@ -2453,30 +2570,60 @@ class TestUsdValueClips(unittest.TestCase):
 
         attr = stage.GetAttributeAtPath('/Model.assetPath')
         _CheckAssetPathValue(
+            attr, time=Usd.TimeCode.PreTime(0),
+            expected=os.path.abspath('assetPathValues/clip1/clip1.usda'))
+        _CheckAssetPathValue(
             attr, time=0, 
+            expected=os.path.abspath('assetPathValues/clip1/clip1.usda'))
+        _CheckAssetPathValue(
+            attr, time=Usd.TimeCode.PreTime(1), 
             expected=os.path.abspath('assetPathValues/clip1/clip1.usda'))
         _CheckAssetPathValue(
             attr, time=1, 
             expected=os.path.abspath('assetPathValues/manifest/manifest.usda'))
         _CheckAssetPathValue(
+            attr, time=Usd.TimeCode.PreTime(2),
+            expected=os.path.abspath('assetPathValues/manifest/manifest.usda'))
+        _CheckAssetPathValue(
             attr, time=2,
+            expected=os.path.abspath('assetPathValues/clip2/clip2.usda'))
+        _CheckAssetPathValue(
+            attr, time=Usd.TimeCode.PreTime(3),
             expected=os.path.abspath('assetPathValues/clip2/clip2.usda'))
         _CheckAssetPathValue(
             attr, time=3,
             expected=os.path.abspath('assetPathValues/clip3/clip3.usda'))
+        _CheckAssetPathValue(
+            attr, time=Usd.TimeCode.PreTime(4),
+            expected=os.path.abspath('assetPathValues/clip3/clip3.usda'))
 
         attr = stage.GetAttributeAtPath('/Model.assetPathArray')
         _CheckAssetPathArrayValue(
+            attr, time=Usd.TimeCode.PreTime(0),
+            expected=[os.path.abspath('assetPathValues/clip1/clip1.usda')])
+        _CheckAssetPathArrayValue(
             attr, time=0, 
+            expected=[os.path.abspath('assetPathValues/clip1/clip1.usda')])
+        _CheckAssetPathArrayValue(
+            attr, time=Usd.TimeCode.PreTime(1),
             expected=[os.path.abspath('assetPathValues/clip1/clip1.usda')])
         _CheckAssetPathArrayValue(
             attr, time=1, 
             expected=[os.path.abspath('assetPathValues/manifest/manifest.usda')])
         _CheckAssetPathArrayValue(
+            attr, time=Usd.TimeCode.PreTime(2),
+            expected=[os.path.abspath('assetPathValues/manifest/manifest.usda')])
+        _CheckAssetPathArrayValue(
             attr, time=2,
             expected=[os.path.abspath('assetPathValues/clip2/clip2.usda')])
         _CheckAssetPathArrayValue(
+            attr, time=Usd.TimeCode.PreTime(3),
+            expected=[os.path.abspath('assetPathValues/clip2/clip2.usda')])
+        _CheckAssetPathArrayValue(
             attr, time=3,
+            expected=[os.path.abspath('assetPathValues/clip3/clip3.usda')])
+        _CheckAssetPathArrayValue(
+            attr, time=Usd.TimeCode.PreTime(4),
             expected=[os.path.abspath('assetPathValues/clip3/clip3.usda')])
 
     def test_ComputeClipAssetPaths(self):

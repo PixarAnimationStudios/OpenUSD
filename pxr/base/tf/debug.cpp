@@ -15,13 +15,12 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/span.h"
+#include "pxr/base/tf/spinMutex.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/export.h"
-
-#include <tbb/spin_mutex.h>
 
 #include <atomic>
 #include <algorithm>
@@ -116,9 +115,9 @@ public:
         TF_DEBUG(TF_DEBUG_REGISTRY).Msg(
             "%s: %s\n", TF_FUNC_NAME().c_str(), name.c_str());
 
-        tbb::spin_mutex::scoped_lock lock(_tableMutex);
+        TfSpinMutex::ScopedLock lock(_tableMutex);
         if (!_registeredNames.emplace(name, description).second) {
-            lock.release();
+            lock.Release();
             TF_FATAL_ERROR(
                 "[TF_DEBUG_ENVIRONMENT_SYMBOL] multiple debug symbol "
                 "definitions for '%s'.  This is usually due to software "
@@ -132,7 +131,7 @@ public:
         bool inserted = _namesToNodes[name].insert(symbolAddr).second;
 
         if (inserted && _initialized) {
-            lock.release();
+            lock.Release();
             // Even if the debug registry is initialized, our notice type may
             // not yet be defined with TfType.  This happens when we're loading
             // tf itself.  In that case, just skip notifying about changed debug
@@ -148,7 +147,7 @@ public:
     void _InitializeNode(TfDebug::_Node &node, char const *name) {
         // Ensure that node is known.  Then determine its official enabled
         // state, and store that state in all known nodes.
-        tbb::spin_mutex::scoped_lock lock(_tableMutex);
+        TfSpinMutex::ScopedLock lock(_tableMutex);
         auto &nodesForName = _namesToNodes[name];
         nodesForName.insert(&node);
         bool enabled = _GetEnabledStateNoLock(name);
@@ -180,7 +179,7 @@ public:
         bool changed = false;
         TfSpan<std::string> patterns(&pattern, 1);
 
-        tbb::spin_mutex::scoped_lock lock(_tableMutex);
+        TfSpinMutex::ScopedLock lock(_tableMutex);
         // Go through all of _namesToNodes, looking for matches.  If we match
         // anything, set all the nodes accordingly, and also store the explicit
         // state into _namesToExplicitEnabledState.
@@ -206,14 +205,14 @@ public:
         }
         
         if (changed && _initialized) {
-            lock.release();
+            lock.Release();
             TfDebugSymbolEnableChangedNotice().Send();
         }
     }
 
     void _SetByName(TfDebug::_Node &node,
                     char const *name, bool enabled) {
-        tbb::spin_mutex::scoped_lock lock(_tableMutex);
+        TfSpinMutex::ScopedLock lock(_tableMutex);
         // Ensure node is known.  Then determine its official enabled state, and
         // store that state in all known nodes.
         auto &nodesForName = _namesToNodes[name];
@@ -227,19 +226,19 @@ public:
         _namesToExplicitEnabledState[name] = enabled;
 
         if (_initialized) {
-            lock.release();
+            lock.Release();
             TfDebugSymbolEnableChangedNotice().Send();
         }
     }
 
     bool _IsEnabled(const std::string& name) const {
-        tbb::spin_mutex::scoped_lock lock(_tableMutex);
+        TfSpinMutex::ScopedLock lock(_tableMutex);
         return _GetEnabledStateNoLock(name.c_str());
     }
 
     std::string _GetDescriptions() const {
         std::string result;
-        tbb::spin_mutex::scoped_lock lock(_tableMutex);
+        TfSpinMutex::ScopedLock lock(_tableMutex);
 
         for (auto const &nameAndDescr: _registeredNames) {
             if (nameAndDescr.first.size() < 25) {
@@ -258,7 +257,7 @@ public:
     }
 
     std::vector<std::string> _GetSymbolNames() const {
-        tbb::spin_mutex::scoped_lock lock(_tableMutex);
+        TfSpinMutex::ScopedLock lock(_tableMutex);
         std::vector<std::string> result;
         result.reserve(_namesToNodes.size());
         for (auto const &p: _namesToNodes) {
@@ -268,7 +267,7 @@ public:
     }
 
     std::string _GetDescription(const std::string& name) const {
-        tbb::spin_mutex::scoped_lock lock(_tableMutex);
+        TfSpinMutex::ScopedLock lock(_tableMutex);
         auto iter = _registeredNames.find(name);
         if (iter == _registeredNames.end()) {
             return std::string();
@@ -329,7 +328,7 @@ public:
     // code enabled states get propagated to all known instances.
     using _NamesToExplicitEnabledState = std::map<std::string, bool>;
 
-    mutable tbb::spin_mutex _tableMutex;
+    mutable TfSpinMutex _tableMutex;
     _NamesToExplicitEnabledState _namesToExplicitEnabledState;
     _NamesToNodes _namesToNodes;
     _RegisteredNames _registeredNames;
@@ -397,7 +396,12 @@ TfDebug::_InitializeNode(_Node &node, char const *name)
 void
 TfDebug::Helper::Msg(const std::string& msg)
 {
+    static TfSpinMutex outMutex;
     FILE *outputFile = _GetOutputFile().load();
+    // This mutex only protects message integrity wrt concurrent TF_DEBUG
+    // outputs.  Other concurrent writes to the same output stream can still
+    // interrupt/interleave.
+    TfSpinMutex::ScopedLock lock(outMutex);
     fprintf(outputFile, "%s", msg.c_str());
     fflush(outputFile);
 }

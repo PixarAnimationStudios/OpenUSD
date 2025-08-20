@@ -263,6 +263,7 @@ class TestUsdSplines(unittest.TestCase):
         self.assertEqual(spline2.Eval(1.0), attr2.Get(1.0))
         attrQuery = Usd.AttributeQuery(attr2)
         self.assertTrue(attrQuery)
+        self.assertEqual(attrQuery.GetSpline(), spline2)
         self.assertEqual(attrQuery.Get(1.0), attr2.Get(1.0))
 
         spline3 = attr2.GetMetadata("spline")

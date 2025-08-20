@@ -88,11 +88,42 @@ def UnmuteWithCycle():
     root.MuteLayer(b.GetRootLayer().identifier)
     _TestStageErrors([(root, 0)])
 
+def SublayerOperationProcessingApiSchema():
+    '''Tests that sublayer operation processing correctly updates changes to a
+    prim's api schema'''
+
+    entry = Usd.Stage.CreateNew("entry.usda")
+    foo = entry.DefinePrim("/foo")
+    assert not foo.HasAPI(Usd.ColorSpaceAPI)
+
+    model = Usd.Stage.CreateNew("model.usda")
+    prim = model.OverridePrim("/foo")
+    Usd.ColorSpaceAPI.Apply(prim)
+    assert prim.HasAPI(Usd.ColorSpaceAPI)
+
+    entry.GetRootLayer().subLayerPaths.append("model.usda")
+
+    assert foo.HasAPI(Usd.ColorSpaceAPI)
+
+def SublayerOperationProcessingActive():
+    entry = Usd.Stage.CreateNew("entry.usda")
+    foo = entry.DefinePrim("/foo")
+
+    model = Usd.Stage.CreateNew("model.usda")
+    prim = model.OverridePrim("/foo")
+    prim.SetActive(False)
+
+    assert foo.IsActive()
+    entry.GetRootLayer().subLayerPaths.append("model.usda")
+    assert not foo.IsActive()
+
 def Main(argv):
     RenamingSpec()
     ChangeInsignificantSublayer()
     AddSublayerWithCycle()
     UnmuteWithCycle()
+    SublayerOperationProcessingApiSchema()
+    SublayerOperationProcessingActive()
 
 if __name__ == "__main__":
     Main(sys.argv)

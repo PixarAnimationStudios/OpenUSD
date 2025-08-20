@@ -37,7 +37,8 @@ GfColorSpace::GfColorSpace(const TfToken& name)
         // this is to have a sentinel color space meant for comparison and
         // hashing.
         NcColorSpaceM33Descriptor identity;
-        identity.name = name.GetString().c_str();
+        identity.shortName = name.GetString().c_str();
+        identity.descriptiveName = identity.shortName;
         identity.rgbToXYZ = { 1.0f, 0.0f, 0.0f,
                               0.0f, 1.0f, 0.0f,
                               0.0f, 0.0f, 1.0f };
@@ -58,7 +59,8 @@ GfColorSpace::GfColorSpace(const TfToken& name,
 : _data(new _Data())
 {
     NcColorSpaceDescriptor desc;
-    desc.name = name.GetString().c_str();
+    desc.shortName = name.GetString().c_str();
+    desc.descriptiveName = name.GetString().c_str();
     desc.redPrimary.x = redChroma[0];
     desc.redPrimary.y = redChroma[1];
     desc.greenPrimary.x = greenChroma[0];
@@ -80,7 +82,8 @@ GfColorSpace::GfColorSpace(const TfToken& name,
 : _data(new _Data())
 {
     NcColorSpaceM33Descriptor desc;
-    desc.name = name.GetString().c_str();
+    desc.shortName = name.GetString().c_str();
+    desc.descriptiveName = desc.shortName;
     desc.rgbToXYZ.m[0] = rgbToXYZ[0][0];
     desc.rgbToXYZ.m[1] = rgbToXYZ[0][1];
     desc.rgbToXYZ.m[2] = rgbToXYZ[0][2];
@@ -123,7 +126,7 @@ void GfColorSpace::ConvertRGBASpan(const GfColorSpace& to, TfSpan<float> rgba) c
         return;
     }
     NcTransformColorsWithAlpha(to._data->colorSpace, _data->colorSpace, 
-                               rgba.data(), (int) count);
+                               (NcRGBA*) rgba.data(), (int) count);
 }
 
 GfColor GfColorSpace::Convert(const GfColorSpace& srcColorSpace, const GfVec3f& rgb) const
@@ -138,7 +141,7 @@ TfToken GfColorSpace::GetName() const
     if (!NcGetColorSpaceM33Descriptor(_data->colorSpace, &desc)) {
         return TfToken();
     }
-    return TfToken(desc.name);
+    return TfToken(desc.shortName);
 }
 
 GfMatrix3f GfColorSpace::GetRGBToXYZ() const
@@ -151,6 +154,13 @@ GfMatrix3f GfColorSpace::GetRGBToXYZ() const
     return GfMatrix3f(m[0], m[1], m[2],
                       m[3], m[4], m[5],
                       m[6], m[7], m[8]);
+}
+ 
+GfMatrix3f GfColorSpace::GetRGBToRGB(const GfColorSpace& srcColorSpace) const 
+{
+    const GfMatrix3f A = srcColorSpace.GetRGBToXYZ();
+    const GfMatrix3f B_inv = GetRGBToXYZ().GetInverse();
+    return B_inv * A;
 }
 
 float GfColorSpace::GetLinearBias() const

@@ -11,12 +11,12 @@ import unittest
 class TestSdfCustomLayer(unittest.TestCase):
     # Test the customLayerData API via Sdf's Layer API
     def test_BasicUsage(self):
-        filePath = 'testSdfCustomLayerData.testenv/layerAccess.sdf'
+        filePath = 'testSdfCustomLayerData.testenv/layerAccess.usda'
         layer = Sdf.Layer.FindOrOpen(filePath)
         self.assertTrue(layer is not None)
 
         expectedValue = { 'layerAccessId' : 'id',
-                          'layerAccessAssetPath' : Sdf.AssetPath('/layer/access.sdf'),
+                          'layerAccessAssetPath' : Sdf.AssetPath('/layer/access.usda'),
                           'layerAccessRandomNumber' : 5 }
         self.assertEqual(layer.customLayerData, expectedValue)
 
@@ -25,7 +25,7 @@ class TestSdfCustomLayer(unittest.TestCase):
         self.assertFalse(layer.HasCustomLayerData())
 
         newValue = { 'newLayerAccessId' : 'newId',
-                     'newLayerAccessAssetPath' : Sdf.AssetPath('/new/layer/access.sdf'),
+                     'newLayerAccessAssetPath' : Sdf.AssetPath('/new/layer/access.usda'),
                      'newLayerAccessRandomNumber' : 1 }
         layer.customLayerData = newValue
         self.assertEqual(layer.customLayerData, newValue)

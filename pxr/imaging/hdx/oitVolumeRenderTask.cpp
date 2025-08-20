@@ -110,7 +110,7 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
     }
 
     extendedState->SetUseSceneMaterials(true);
-    renderPassState->SetDepthFunc(HdCmpFuncAlways);
+    renderPassState->SetEnableDepthTest(false);
     // Setting cull style for consistency even though it is hard-coded in
     // shaders/volume.glslfx.
     renderPassState->SetCullStyle(HdCullStyleBack);
@@ -135,7 +135,22 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
     extendedState->SetRenderPassShader(_oitVolumeRenderPassShader);
     renderPassState->SetEnableDepthMask(false);
     renderPassState->SetColorMasks({HdRenderPassState::ColorMaskNone});
+
+    // Transition depth texture (if it exists) to shader read layout.
+    HgiTextureUsage oldLayout {};
+    HgiTextureHandle depthTexture {};
+    if (_HasTaskContextData(ctx, HdAovTokens->depth)) {
+        _GetTaskContextData(ctx, HdAovTokens->depth, &depthTexture);
+        oldLayout =
+            depthTexture->SubmitLayoutChange(HgiTextureUsageBitsShaderRead);
+    }
+    
     HdxRenderTask::Execute(ctx);
+
+    // Restore old layout.
+    if (oldLayout) {
+        depthTexture->SubmitLayoutChange(oldLayout);
+    }
 }
 
 

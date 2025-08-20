@@ -1,15 +1,15 @@
-Loading @TrickySpecializesAndRelocates/root.sdf@
+Loading @TrickySpecializesAndRelocates/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Model>
 
 Prim Stack:
-    root.sdf             /Model
-    ref.sdf              /Ref
+    root.usda            /Model
+    ref.usda             /Ref
 
 Child names:
      ['Brass_2', 'Metal']
@@ -21,15 +21,15 @@ Prohibited child names:
 Results for composing </Model/Brass_2>
 
 Prim Stack:
-    root.sdf             /Model/Brass_2
-    ref.sdf              /Ref/Brass
-    root.sdf             /Model/Metal
-    ref.sdf              /Ref/Metal
+    root.usda            /Model/Brass_2
+    ref.usda             /Ref/Brass
+    root.usda            /Model/Metal
+    ref.usda             /Ref/Metal
 
 ------------------------------------------------------------------------
 Results for composing </Model/Metal>
 
 Prim Stack:
-    root.sdf             /Model/Metal
-    ref.sdf              /Ref/Metal
+    root.usda            /Model/Metal
+    ref.usda             /Ref/Metal
 

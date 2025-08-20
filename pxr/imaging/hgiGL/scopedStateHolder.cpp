@@ -50,6 +50,7 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder(
     , _restoreConservativeRaster(false)
     , _restoreMultiSample(false)
     , _restorePointSmooth(false)
+    , _restorePointSprite(false)
     , _restoreUnpackAlignment(1)
     , _restorePackAlignment(1)
 {
@@ -131,6 +132,7 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder(
     glGetBooleanv(GL_MULTISAMPLE, (GLboolean*)&_restoreMultiSample);
     if (!_coreProfile) {
         glGetBooleanv(GL_POINT_SMOOTH, (GLboolean*)&_restorePointSmooth);
+        glGetBooleanv(GL_POINT_SPRITE, (GLboolean*)&_restorePointSprite);
     }
 
     glGetIntegerv(GL_UNPACK_ALIGNMENT, &_restoreUnpackAlignment);
@@ -288,6 +290,12 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
         } else {
             glDisable(GL_POINT_SMOOTH);
         }
+    }
+
+    if (_restorePointSprite) {
+        glEnable(GL_POINT_SPRITE);
+    } else {
+        glDisable(GL_POINT_SPRITE);
     }
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, _restoreUnpackAlignment);

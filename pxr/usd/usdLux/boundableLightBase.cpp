@@ -81,18 +81,39 @@ UsdLuxBoundableLightBase::GetSchemaAttributeNames(bool includeInherited)
         return localNames;
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+UsdLuxLightAPI
+UsdLuxBoundableLightBase::LightAPI() const
+{
+    return UsdLuxLightAPI(GetPrim());
+}
 
-// ===================================================================== //
-// Feel free to add custom code below this line. It will be preserved by
-// the code generator.
-//
-// Just remember to wrap code in the appropriate delimiters:
-// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
-// ===================================================================== //
-// --(BEGIN CUSTOM CODE)--
+UsdAttribute
+UsdLuxBoundableLightBase::GetShaderIdAttr() const
+{
+    return LightAPI().GetShaderIdAttr();
+}
 
-PXR_NAMESPACE_OPEN_SCOPE
+UsdAttribute
+UsdLuxBoundableLightBase::CreateShaderIdAttr(
+    VtValue const &defaultValue, bool writeSparsely) const
+{
+    return LightAPI().CreateShaderIdAttr(
+        defaultValue, writeSparsely);
+}
+
+UsdAttribute
+UsdLuxBoundableLightBase::GetMaterialSyncModeAttr() const
+{
+    return LightAPI().GetMaterialSyncModeAttr();
+}
+
+UsdAttribute
+UsdLuxBoundableLightBase::CreateMaterialSyncModeAttr(
+    VtValue const &defaultValue, bool writeSparsely) const
+{
+    return LightAPI().CreateMaterialSyncModeAttr(
+        defaultValue, writeSparsely);
+}
 
 UsdAttribute
 UsdLuxBoundableLightBase::GetIntensityAttr() const
@@ -218,10 +239,13 @@ UsdLuxBoundableLightBase::CreateFiltersRel() const
     return LightAPI().CreateFiltersRel();
 }
 
-UsdLuxLightAPI 
-UsdLuxBoundableLightBase::LightAPI() const
-{
-    return UsdLuxLightAPI(GetPrim());
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
+
+// ===================================================================== //
+// Feel free to add custom code below this line. It will be preserved by
+// the code generator.
+//
+// Just remember to wrap code in the appropriate delimiters:
+// 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
+// ===================================================================== //
+// --(BEGIN CUSTOM CODE)--

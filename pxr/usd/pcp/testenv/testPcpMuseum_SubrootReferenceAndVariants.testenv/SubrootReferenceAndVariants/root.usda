@@ -1,0 +1,39 @@
+#usda 1.0
+
+over "Group" (
+    variants = {
+        string v = "x"
+    }
+)
+{
+}
+
+def "SubrootRef" (
+    references = @./group.usda@</Group/Model>
+)
+{
+}
+
+# Tests a bug previously encountered with ancestral variant selections.
+# /RootRef's reference to /Model brings in a variant set 'v' with variant
+# selection 'x'.
+# /RootRef/Child's reference to /Group/Model has an ancestral variant in that
+# /Group also has a variant set 'v' but with a variant selection 'y'.
+# This case is verifying that /Group/Model is composed with the variant
+# selection of v=y, not v=x.
+def "RootRef" (
+    references = @./model.usda@</Model>
+)
+{
+    def "Child" (
+        references = @./group.usda@</Group/Model>
+    )
+    {
+    }
+}
+
+def "InvalidSubrootRefWithVariantSelection" (
+    references = @./group.usda@</Group{v=x}Model>
+)
+{
+}

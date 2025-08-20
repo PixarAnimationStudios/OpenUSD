@@ -56,7 +56,7 @@ auto UsdSkelImagingGetTypedValue(
     if (!ds) {
         return {};
     }
-    return ds->GetTypedValue(0.0f);
+    return ds->GetTypedValue(shutterOffset);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

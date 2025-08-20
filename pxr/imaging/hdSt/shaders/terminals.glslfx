@@ -100,6 +100,9 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
                                          Neye,
                                          shadingColor);
 #endif
+
+        // Modify the shaded color by camera exposure.
+        shadingColor.rgb *= GetLinearExposure();
     
         reprColor.rgb = reprStyle.useSurfaceShaderColor ? 
                         shadingColor.rgb :

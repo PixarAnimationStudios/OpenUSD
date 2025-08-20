@@ -1,17 +1,17 @@
-Loading @TrickyVariantOverrideOfFallback/root.sdf@
+Loading @TrickyVariantOverrideOfFallback/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </A>
 
 Prim Stack:
-    root.sdf             /A
-    root.sdf             /A{vset1=selection}
-    root.sdf             /B
-    root.sdf             /B{vset2=selection}
+    root.usda            /A
+    root.usda            /A{vset1=selection}
+    root.usda            /B
+    root.usda            /B{vset2=selection}
 
 Variant Selections:
     {vset1 = selection}
@@ -25,23 +25,23 @@ Property names:
 
 Property stacks:
 /A.result:
-    root.sdf             /A{vset1=selection}.result
+    root.usda            /A{vset1=selection}.result
 
 ------------------------------------------------------------------------
 Results for composing </A/Child>
 
 Prim Stack:
-    root.sdf             /A/Child
-    root.sdf             /A{vset1=selection}Child
-    root.sdf             /B/Child
-    root.sdf             /B{vset2=selection}Child
+    root.usda            /A/Child
+    root.usda            /A{vset1=selection}Child
+    root.usda            /B/Child
+    root.usda            /B{vset2=selection}Child
 
 ------------------------------------------------------------------------
 Results for composing </B>
 
 Prim Stack:
-    root.sdf             /B
-    root.sdf             /B{vset2=selection}
+    root.usda            /B
+    root.usda            /B{vset2=selection}
 
 Variant Selections:
     {vset2 = selection}
@@ -53,16 +53,16 @@ Child names:
 Results for composing </B/Child>
 
 Prim Stack:
-    root.sdf             /B/Child
-    root.sdf             /B{vset2=selection}Child
+    root.usda            /B/Child
+    root.usda            /B{vset2=selection}Child
 
 ------------------------------------------------------------------------
 Results for composing </C>
 
 Prim Stack:
-    root.sdf             /C
-    root.sdf             /A/Child
-    root.sdf             /A{vset1=selection}Child
-    root.sdf             /B/Child
-    root.sdf             /B{vset2=selection}Child
+    root.usda            /C
+    root.usda            /A/Child
+    root.usda            /A{vset1=selection}Child
+    root.usda            /B/Child
+    root.usda            /B{vset2=selection}Child
 

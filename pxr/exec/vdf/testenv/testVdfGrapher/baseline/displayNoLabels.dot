@@ -1,0 +1,43 @@
+digraph network {
+	rankdir=TB;
+	page="8.5, 11";
+
+	node [shape=plaintext];
+		"VdfTestUtils::DependencyCallbackNode gn1" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" BGCOLOR="blue">
+			<TR><TD> VdfTestUtils::DependencyCallbackNode gn1 </TD></TR>
+		</TABLE>>];
+	node [shape=plaintext];
+		"VdfTestUtils::DependencyCallbackNode gn2" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" BGCOLOR="blue">
+			<TR><TD> VdfTestUtils::DependencyCallbackNode gn2 </TD></TR>
+		</TABLE>>];
+	node [shape=plaintext];
+		"VdfTestUtils::DependencyCallbackNode mon" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" BGCOLOR="blue">
+			<TR><TD> VdfTestUtils::DependencyCallbackNode mon </TD></TR>
+		</TABLE>>];
+	node [shape=plaintext];
+		"VdfTestUtils::DependencyCallbackNode tn1" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" BGCOLOR="blue">
+			<TR><TD> VdfTestUtils::DependencyCallbackNode tn1 </TD></TR>
+		</TABLE>>];
+	node [shape=plaintext];
+		"VdfTestUtils::DependencyCallbackNode tn2" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" BGCOLOR="blue">
+			<TR><TD> VdfTestUtils::DependencyCallbackNode tn2 </TD></TR>
+		</TABLE>>];
+	node [shape=plaintext];
+		"VdfTestUtils::DependencyCallbackNode tn3" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" BGCOLOR="blue">
+			<TR><TD> VdfTestUtils::DependencyCallbackNode tn3 </TD></TR>
+		</TABLE>>];
+		"VdfTestUtils::DependencyCallbackNode gn1" -> "VdfTestUtils::DependencyCallbackNode mon";
+		"VdfTestUtils::DependencyCallbackNode gn2" -> "VdfTestUtils::DependencyCallbackNode mon";
+		"VdfTestUtils::DependencyCallbackNode gn1" -> "VdfTestUtils::DependencyCallbackNode tn1";
+		"VdfTestUtils::DependencyCallbackNode mon" -> "VdfTestUtils::DependencyCallbackNode tn1";
+		"VdfTestUtils::DependencyCallbackNode mon" -> "VdfTestUtils::DependencyCallbackNode tn2";
+		"VdfTestUtils::DependencyCallbackNode gn2" -> "VdfTestUtils::DependencyCallbackNode tn2";
+		"VdfTestUtils::DependencyCallbackNode tn1" -> "VdfTestUtils::DependencyCallbackNode tn3";
+		"VdfTestUtils::DependencyCallbackNode tn2" -> "VdfTestUtils::DependencyCallbackNode tn3";
+}

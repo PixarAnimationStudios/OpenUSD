@@ -34,7 +34,7 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdImagingLightFilterAdapter::~UsdImagingLightFilterAdapter() 
+UsdImagingLightFilterAdapter::~UsdImagingLightFilterAdapter()
 {
 }
 
@@ -46,7 +46,7 @@ UsdImagingLightFilterAdapter::IsSupported(UsdImagingIndexProxy const* index) con
 }
 
 SdfPath
-UsdImagingLightFilterAdapter::Populate(UsdPrim const& prim, 
+UsdImagingLightFilterAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
@@ -63,11 +63,11 @@ UsdImagingLightFilterAdapter::_RemovePrim(SdfPath const& cachePath,
     index->RemoveSprim(HdPrimTypeTokens->lightFilter, cachePath);
 }
 
-void 
+void
 UsdImagingLightFilterAdapter::TrackVariability(UsdPrim const& prim,
                                         SdfPath const& cachePath,
                                         HdDirtyBits* timeVaryingBits,
-                                        UsdImagingInstancerContext const* 
+                                        UsdImagingInstancerContext const*
                                             instancerContext) const
 {
     // Discover time-varying transforms.
@@ -81,7 +81,7 @@ UsdImagingLightFilterAdapter::TrackVariability(UsdPrim const& prim,
         *timeVaryingBits |= HdLight::DirtyBits::DirtyResource;
     }
 
-    // If any of the light attributes is time varying 
+    // If any of the light attributes is time varying
     // we will assume all light params are time-varying.
     const std::vector<UsdAttribute> &attrs = prim.GetAttributes();
     for (UsdAttribute const& attr : attrs) {
@@ -108,19 +108,19 @@ UsdImagingLightFilterAdapter::TrackVariability(UsdPrim const& prim,
 
 // Thread safe.
 //  * Populate dirty bits for the given \p time.
-void 
+void
 UsdImagingLightFilterAdapter::UpdateForTime(UsdPrim const& prim,
-                               SdfPath const& cachePath, 
+                               SdfPath const& cachePath,
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
-                               UsdImagingInstancerContext const* 
+                               UsdImagingInstancerContext const*
                                    instancerContext) const
 {
 }
 
 HdDirtyBits
 UsdImagingLightFilterAdapter::ProcessPropertyChange(UsdPrim const& prim,
-                                      SdfPath const& cachePath, 
+                                      SdfPath const& cachePath,
                                       TfToken const& propertyName)
 {
     if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(propertyName)) {
@@ -157,9 +157,9 @@ UsdImagingLightFilterAdapter::MarkVisibilityDirty(UsdPrim const& prim,
     index->MarkSprimDirty(cachePath, HdLight::DirtyBits::DirtyParams);
 }
 
-VtValue 
+VtValue
 UsdImagingLightFilterAdapter::GetMaterialResource(UsdPrim const &prim,
-                                                  SdfPath const& cachePath, 
+                                                  SdfPath const& cachePath,
                                                   UsdTimeCode time) const
 {
     if (!_GetSceneLightsEnabled()) {
@@ -182,7 +182,7 @@ UsdImagingLightFilterAdapter::GetMaterialResource(UsdPrim const &prim,
     HdMaterialNetworkMap networkMap;
 
     UsdImagingBuildHdMaterialNetworkFromTerminal(
-        prim, 
+        prim,
         HdMaterialTerminalTokens->lightFilter,
         _GetShaderSourceTypes(),
         _GetMaterialRenderContexts(),
@@ -241,12 +241,13 @@ UsdImagingLightFilterAdapter::InvalidateImagingSubprim(
         TfTokenVector const& properties,
         const UsdImagingPropertyInvalidationType invalidationType)
 {
-    if (subprim.IsEmpty()) {
-        return UsdImagingDataSourcePrim::Invalidate(
-            prim, subprim, properties, invalidationType);
+    HdDataSourceLocatorSet result = UsdImagingDataSourcePrim::Invalidate(
+        prim, subprim, properties, invalidationType);
+
+    if (!subprim.IsEmpty()) {
+        return result;
     }
 
-    HdDataSourceLocatorSet result;
     for (const TfToken &propertyName : properties) {
         if (TfStringStartsWith(propertyName.GetString(), "inputs:")) {
             // NOTE: since we don't have access to the prim itself and our

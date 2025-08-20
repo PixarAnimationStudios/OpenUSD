@@ -132,6 +132,9 @@ void TraversalTest()
         return;
     }
 
+    // The order below is important.  We need to add the observer before setting
+    // the stage, otherwise we won't get the initial PrimsAdded notices from
+    // population.
     PrimListener primListener;
     inputSceneIndex->AddObserver(HdSceneIndexObserverPtr(&primListener));
     inputSceneIndex->SetStage(stage);

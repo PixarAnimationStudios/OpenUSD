@@ -9,6 +9,7 @@
 
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -91,6 +92,8 @@ HdGpGenerativeProceduralFilteringSceneIndex::_PrimsAdded(
         _SendPrimsAdded(entries);
         return;
     }
+
+    TRACE_FUNCTION();
 
     // Apply filtering
     HdSceneIndexObserver::AddedPrimEntries filteredEntries = entries;

@@ -9,6 +9,7 @@
 #include "pxr/usd/ar/resolvedPath.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/arch/errno.h"
 #include "pxr/base/arch/fileSystem.h"
 
@@ -19,6 +20,13 @@ ArFilesystemAsset::Open(const ArResolvedPath& resolvedPath)
 {
     FILE* f = ArchOpenFile(resolvedPath.GetPathString().c_str(), "rb");
     if (!f) {
+        return nullptr;
+    }
+
+    // If the call to ArchOpenFile above succeeded, verify that the resolved 
+    // path was not a directory.
+    if (TfIsDir(resolvedPath.GetPathString())) {
+        fclose(f);
         return nullptr;
     }
 

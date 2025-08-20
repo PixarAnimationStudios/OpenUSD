@@ -7,6 +7,7 @@
 #include "pxr/imaging/hd/renderIndex.h"
 
 #include "pxr/imaging/hd/basisCurves.h"
+#include "pxr/imaging/hd/cachingSceneIndex.h"
 #include "pxr/imaging/hd/dataSourceLegacyPrim.h"
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/dirtyList.h"
@@ -52,6 +53,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HD_ENABLE_SCENE_INDEX_EMULATION, true,
                       "Enable scene index emulation in the render index.");
+TF_DEFINE_ENV_SETTING(HD_ENABLE_TERMINAL_CACHING_SCENE_INDEX, false,
+                  "Enable terminal HdCachingSceneIndex in the render index.");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _noticeBatchingTokens,
@@ -63,8 +66,15 @@ TF_DEFINE_PRIVATE_TOKENS(
 static bool
 _IsEnabledSceneIndexEmulation()
 {
-    static bool enabled = 
-        (TfGetEnvSetting(HD_ENABLE_SCENE_INDEX_EMULATION) == true);
+    static bool enabled = TfGetEnvSetting(HD_ENABLE_SCENE_INDEX_EMULATION);
+    return enabled;
+}
+
+static bool
+_IsEnabledTerminalCachingSceneIndex()
+{
+    static bool enabled =
+        TfGetEnvSetting(HD_ENABLE_TERMINAL_CACHING_SCENE_INDEX);
     return enabled;
 }
 
@@ -176,16 +186,22 @@ HdRenderIndex::HdRenderIndex(
     if (_IsEnabledSceneIndexEmulation()) {
         _emulationSceneIndex = HdLegacyPrimSceneIndex::New();
 
+        // The legacy prim scene index holds prims contributed from
+        // upstream scene delegates.  Convert any legacy subsets
+        // to HdGeomSubsetSchema.  Since legacy prims are typically
+        // populated iteratively, use notice batching upstream from
+        // scanning for geom subsets.
+        HdLegacyGeomSubsetSceneIndexRefPtr legacyGeomSubsetSceneIndex =
+            HdLegacyGeomSubsetSceneIndex::New(
+                _emulationBatchingCtx->Append(_emulationSceneIndex));
+
         _mergingSceneIndex = HdMergingSceneIndex::New();
         _mergingSceneIndex->AddInputScene(
-            _emulationBatchingCtx->Append(_emulationSceneIndex),
+            legacyGeomSubsetSceneIndex,
             SdfPath::AbsoluteRootPath());
 
         _terminalSceneIndex =
             _mergingBatchingCtx->Append(_mergingSceneIndex);
-        
-        _terminalSceneIndex = HdLegacyGeomSubsetSceneIndex::New(
-            _terminalSceneIndex);
 
         _terminalSceneIndex =
             HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(
@@ -200,6 +216,11 @@ HdRenderIndex::HdRenderIndex(
                     .AppendSceneIndicesForRenderer(
                         rendererDisplayName, _terminalSceneIndex,
                         instanceName, appName);
+        }
+
+        if (_IsEnabledTerminalCachingSceneIndex()) {
+            _terminalSceneIndex =
+                HdCachingSceneIndex::New(_terminalSceneIndex);
         }
 
         _siSd = std::make_unique<HdSceneIndexAdapterSceneDelegate>(
@@ -251,6 +272,8 @@ HdRenderIndex::InsertSceneIndex(
     SdfPath const& scenePathPrefix,
     bool needsPrefixing/* = true*/)
 {
+    TRACE_FUNCTION();
+
     if (!_IsEnabledSceneIndexEmulation()) {
         TF_WARN("Unable to add scene index at prefix %s because emulation is off.",
                 scenePathPrefix.GetText());
@@ -284,6 +307,8 @@ void
 HdRenderIndex::RemoveSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene)
 {
+    TRACE_FUNCTION();
+
     if (!_IsEnabledSceneIndexEmulation()) {
         return;
     }
@@ -937,6 +962,13 @@ HdRenderIndex::_ConfigureReprs()
                                          /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/true,
                                          /*forceOpaqueEdges=*/false));
+    HdMesh::ConfigureRepr(HdReprTokens->solidWireOnSurf,
+                          HdMeshReprDesc(HdMeshGeomStyleHullEdgeOnSurf,
+                                         HdCullStyleDontCare,
+                                         HdMeshReprDescTokens->surfaceShader,
+                                         /*flatShadingEnabled=*/false,
+                                         /*blendWireframeColor=*/true,
+                                         /*forceOpaqueEdges=*/true));
     HdMesh::ConfigureRepr(HdReprTokens->refined,
                           HdMeshReprDesc(HdMeshGeomStyleSurf,
                                          HdCullStyleDontCare,
@@ -956,6 +988,13 @@ HdRenderIndex::_ConfigureReprs()
                                          /*flatShadingEnabled=*/false,
                                          /*blendWireframeColor=*/true,
                                          /*forceOpaqueEdges=*/false));
+    HdMesh::ConfigureRepr(HdReprTokens->refinedSolidWireOnSurf,
+                          HdMeshReprDesc(HdMeshGeomStyleEdgeOnSurf,
+                                         HdCullStyleDontCare,
+                                         HdMeshReprDescTokens->surfaceShader,
+                                         /*flatShadingEnabled=*/false,
+                                         /*blendWireframeColor=*/true,
+                                         /*forceOpaqueEdges=*/true));
     HdMesh::ConfigureRepr(HdReprTokens->points,
                           HdMeshReprDesc(HdMeshGeomStylePoints,
                                          HdCullStyleNothing,
@@ -971,11 +1010,15 @@ HdRenderIndex::_ConfigureReprs()
                                  HdBasisCurvesGeomStyleWire);
     HdBasisCurves::ConfigureRepr(HdReprTokens->wireOnSurf,
                                  HdBasisCurvesGeomStylePatch);
+    HdBasisCurves::ConfigureRepr(HdReprTokens->solidWireOnSurf,
+                                 HdBasisCurvesGeomStylePatch);
     HdBasisCurves::ConfigureRepr(HdReprTokens->refined,
                                  HdBasisCurvesGeomStylePatch);
     HdBasisCurves::ConfigureRepr(HdReprTokens->refinedWire,
                                  HdBasisCurvesGeomStyleWire);
     HdBasisCurves::ConfigureRepr(HdReprTokens->refinedWireOnSurf,
+                                 HdBasisCurvesGeomStylePatch);
+    HdBasisCurves::ConfigureRepr(HdReprTokens->refinedSolidWireOnSurf,
                                  HdBasisCurvesGeomStylePatch);
     HdBasisCurves::ConfigureRepr(HdReprTokens->points,
                                  HdBasisCurvesGeomStylePoints);
@@ -988,11 +1031,15 @@ HdRenderIndex::_ConfigureReprs()
                             HdPointsGeomStylePoints);
     HdPoints::ConfigureRepr(HdReprTokens->wireOnSurf,
                             HdPointsGeomStylePoints);
+    HdPoints::ConfigureRepr(HdReprTokens->solidWireOnSurf,
+                            HdPointsGeomStylePoints);
     HdPoints::ConfigureRepr(HdReprTokens->refined,
                             HdPointsGeomStylePoints);
     HdPoints::ConfigureRepr(HdReprTokens->refinedWire,
                             HdPointsGeomStylePoints);
     HdPoints::ConfigureRepr(HdReprTokens->refinedWireOnSurf,
+                            HdPointsGeomStylePoints);
+    HdPoints::ConfigureRepr(HdReprTokens->refinedSolidWireOnSurf,
                             HdPointsGeomStylePoints);
     HdPoints::ConfigureRepr(HdReprTokens->points,
                             HdPointsGeomStylePoints);

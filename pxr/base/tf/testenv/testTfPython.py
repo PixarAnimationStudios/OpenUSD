@@ -125,6 +125,18 @@ class TestPython(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             Tf._doErrors()
 
+        # Check that we can catch errors, repost them, and reraise them.
+        with self.assertRaises(Tf.ErrorException):
+            m = Tf.Error.Mark()
+            with Tf.CatchAndRepostErrors():
+                Tf.RaiseRuntimeError('test error')
+
+            # The mark should contain the error.
+            self.assertFalse(m.IsClean())
+
+            # Re-raise as an exception.
+            m.RaiseIfNotClean()
+
     def test_CppException(self):
         with self.assertRaises(Tf.CppException) as cm:
             Tf._ThrowTest('hello')

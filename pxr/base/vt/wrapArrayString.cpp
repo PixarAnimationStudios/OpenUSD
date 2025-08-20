@@ -9,6 +9,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/wrapArray.h"
+#include "pxr/base/vt/wrapArrayEdit.h"
 
 #include <string>
 using std::string;
@@ -17,4 +18,5 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapArrayString() {
     VtWrapArray<VtArray<string> >();
+    VtWrapArrayEdit<VtArrayEdit<string> >();
 }

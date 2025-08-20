@@ -8,15 +8,9 @@
 #define PXR_USD_SDR_DECLARE_H
 
 /// \file sdr/declare.h
-///
-/// \note
-/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
-/// in this file. All existing pxr/usd/ndr implementations will be moved to
-/// pxr/usd/sdr.
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdr/api.h"
-#include "pxr/usd/ndr/declare.h"
 #include "pxr/base/tf/token.h"
 
 #include <memory>
@@ -192,31 +186,6 @@ enum SdrVersionFilter {
     SdrVersionFilterAllVersions,
     SdrNumVersionFilters
 };
-
-/// Helper function to translate SdrVersionFilter values to NdrVersionFilter
-/// values.
-///
-/// \deprecated
-/// This function is deprecated and will be removed with the removal of
-/// the Ndr library.
-SDR_API
-NdrVersionFilter SdrVersionFilterToNdr(SdrVersionFilter filter);
-
-/// Helper function to translate SdrVersion to NdrVersion
-///
-/// \deprecated
-/// This function is deprecated and will be removed with the removal of
-/// the Ndr library.
-SDR_API
-NdrVersion SdrToNdrVersion(SdrVersion version);
-
-/// Helper function to translate NdrVersion to SdrVersion
-///
-/// \deprecated
-/// This function is deprecated and will be removed with the removal of
-/// the Ndr library.
-SDR_API
-SdrVersion NdrToSdrVersion(NdrVersion version);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

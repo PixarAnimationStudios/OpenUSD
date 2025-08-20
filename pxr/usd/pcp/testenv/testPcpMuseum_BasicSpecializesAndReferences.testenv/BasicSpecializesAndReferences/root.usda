@@ -1,0 +1,71 @@
+#usda 1.0
+(
+    """
+    This museum case demonstrates behavior when mixing specializes and
+    reference arcs.
+    """
+)
+
+def "ShaderBindings" (
+    references = </ShaderBindings_defaultShadingVariant>
+)
+{
+}
+
+def "ShinyPlasticLook"
+{
+}
+
+def "ShaderBindings_defaultShadingVariant"
+{
+    def "ShinyPlastic" (
+        add references = </ShinyPlasticLook>
+    )
+    {
+    }
+
+    def "ShinyPlastic_BlueShinyPlastic" (
+        specializes = </ShaderBindings_defaultShadingVariant/ShinyPlastic>
+    )
+    {
+    }
+}
+
+def "InternalRef"
+{
+    def "Metal"
+    {
+    }
+
+    def "Brass" (
+        specializes = </InternalRef/Metal>
+    )
+    {
+    }
+}
+
+def "InternalRefAndSpecializes" (
+    references = </InternalRef>
+)
+{
+    over "Metal"
+    {
+    }
+
+    over "Brass"
+    {
+    }
+}
+
+def "RemoteRefAndSpecializes" (
+    references = @./ref.usda@</Ref>
+)
+{
+    over "Metal"
+    {
+    }
+
+    over "Brass"
+    {
+    }
+}

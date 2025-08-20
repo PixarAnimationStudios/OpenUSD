@@ -20,7 +20,7 @@ testPluginsDsoSearch = testRoot + '/lib/*/Resources/'
 
 class TestShaderNode(unittest.TestCase):
     # The following source types are what we expect to discover from
-    # _NdrTestDiscoveryPlugin and _NdrTestDiscoveryPlugin2.  Note that there
+    # _SdrTestDiscoveryPlugin and _SdrTestDiscoveryPlugin2.  Note that there
     # is no glslfx parser plugin provided in this test.
     argsType = "RmanCpp"
     oslType = "OSL"
@@ -40,29 +40,29 @@ class TestShaderNode(unittest.TestCase):
         # Verify the test plugins have been found.  When building monolithic
         # we should find at least these derived types.
         assert len(plugins) == 1
-        cls.tdpType  = Tf.Type.FindByName('_NdrTestDiscoveryPlugin')
-        cls.tdp2Type = Tf.Type.FindByName('_NdrTestDiscoveryPlugin2')
+        cls.tdpType  = Tf.Type.FindByName('_SdrTestDiscoveryPlugin')
+        cls.tdp2Type = Tf.Type.FindByName('_SdrTestDiscoveryPlugin2')
 
-        cls.tppType = Tf.Type.FindByName('_NdrArgsTestParserPlugin')
-        cls.tpp2Type = Tf.Type.FindByName('_NdrOslTestParserPlugin')
+        cls.tppType = Tf.Type.FindByName('_SdrArgsTestParserPlugin')
+        cls.tpp2Type = Tf.Type.FindByName('_SdrOslTestParserPlugin')
 
-        # We don't check for all the derived types of NdrDiscoveryPlugin
+        # We don't check for all the derived types of SdrDiscoveryPlugin
         # because this test only uses the discovery and parser plugins
         # that are defined in this testenv
         assert {cls.tdpType, cls.tdp2Type}.issubset(
-            set(cls.pr.GetAllDerivedTypes('NdrDiscoveryPlugin')))
+            set(cls.pr.GetAllDerivedTypes('SdrDiscoveryPlugin')))
         assert {cls.tppType, cls.tpp2Type}.issubset(
-            set(cls.pr.GetAllDerivedTypes('NdrParserPlugin')))
+            set(cls.pr.GetAllDerivedTypes('SdrParserPlugin')))
 
             # Instantiating the registry will kick off the discovery process.
-        # This test assumes the PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY
-        # and PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY has been set prior to
+        # This test assumes the PXR_SDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY
+        # and PXR_SDR_SKIP_PARSER_PLUGIN_DISCOVERY has been set prior to
         # being run to ensure built-in plugins are not found. Instead
         # we'll list the plugins we want explicitly.
 
         # Setting this from within the script does not work on Windows.
-        # os.environ["PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY"] = ""
-        # os.environ["PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY"] = ""
+        # os.environ["PXR_SDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY"] = ""
+        # os.environ["PXR_SDR_SKIP_PARSER_PLUGIN_DISCOVERY"] = ""
         cls.reg = Sdr.Registry()
 
         # Set up the test parser plugins.
@@ -72,13 +72,13 @@ class TestShaderNode(unittest.TestCase):
         # source types are not duplicated in the registry if we have plugins
         # that discover nodes of the same source type
 
-        # The _NdrTestDiscoveryPlugin should find discovery results that have
+        # The _SdrTestDiscoveryPlugin should find discovery results that have
         # source types of RmanCpp and OSL
         cls.reg.SetExtraDiscoveryPlugins([cls.tdpType])
-        assert sorted(cls.reg.GetAllNodeSourceTypes()) == \
+        assert sorted(cls.reg.GetAllShaderNodeSourceTypes()) == \
             [cls.oslType, cls.argsType]
 
-        # The _NdrTestDiscoveryPlugin2 should find discovery results that have
+        # The _SdrTestDiscoveryPlugin2 should find discovery results that have
         # source types of RmanCpp and glslfx
         cls.reg.SetExtraDiscoveryPlugins([cls.tdp2Type])
 
@@ -90,7 +90,7 @@ class TestShaderNode(unittest.TestCase):
 
         # Test that the registry does not see 'RmanCpp' twice as a source type,
         # and that it finds 'glslfx' as a source type
-        assert sorted(self.reg.GetAllNodeSourceTypes()) == \
+        assert sorted(self.reg.GetAllShaderNodeSourceTypes()) == \
             [self.oslType, self.argsType, self.glslfxType]
 
         # Calling SdrRegistry::GetShaderNodesByFamily() will actually parse the
@@ -112,24 +112,25 @@ class TestShaderNode(unittest.TestCase):
 
         assert self.reg.GetSearchURIs() == ["/TestSearchPath", "/TestSearchPath2"]
 
-        # Calling SdrRegistry::GetNodeNames only looks at discovery results
-        # without parsing them.
+        # Calling SdrRegistry::GetShaderNodeNames only looks at discovery
+        # results without parsing them.
         # Notice that we get 'TestNodeSameName' only once because we only show
         # unique names.
         # Notice that we see 'TestNodeGLSLFX' because it is in our discovery
         # results even though we do not have a parser plugin that supports its
         # source type.
-        assert set(self.reg.GetNodeNames()) == {
+        assert set(self.reg.GetShaderNodeNames()) == {
             "TestNodeARGS",
             "TestNodeARGS2",
             "TestNodeOSL",
             "TestNodeSameName",
             "TestNodeGLSLFX"
         }
-        # Verify that GetNodeIdentifiers follows the same rules as GetNodeNames.
+        # Verify that GetShaderNodeIdentifiers follows the same rules as
+        # GetShaderNodeNames.
         # Note that the names and identifiers do happen to be the same in this
         # test case which is common.
-        assert set(self.reg.GetNodeIdentifiers()) == {
+        assert set(self.reg.GetShaderNodeIdentifiers()) == {
             "TestNodeARGS",
             "TestNodeARGS2",
             "TestNodeOSL",
@@ -196,8 +197,8 @@ class TestShaderNode(unittest.TestCase):
         assert nodeOld.GetMetadata()['sdrUsdEncodingVersion'] == "0"
 
         def _CheckTypes(node, expectedTypes):
-            for inputName in node.GetInputNames():
-                prop = node.GetInput(inputName)
+            for inputName in node.GetShaderInputNames():
+                prop = node.GetShaderInput(inputName)
                 sdrType = prop.GetType()
                 sdfType = prop.GetTypeAsSdfType().GetSdfType()
                 expectedSdrType, expectedSdfType = expectedTypes[prop.GetName()]

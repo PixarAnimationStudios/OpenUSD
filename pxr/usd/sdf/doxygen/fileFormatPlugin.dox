@@ -71,7 +71,7 @@ Below is an example \c plugInfo.json file declaring a file format that does not 
                 "Types": {
                     "UnwritableFormat": {
                         "bases": [
-                            "SdfTextFileFormat"
+                            "SdfUsdaFileFormat"
                         ],
                         "displayName": "Format that does not support writing",
                         "extensions": [

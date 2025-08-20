@@ -73,6 +73,9 @@ public:
     
     /// Set cull style
     void SetCullStyle(HdCullStyle cullStyle);
+    
+    /// Set wireframe color
+    void SetWireframeColor(GfVec4f const &color);
 
     /// Returns the UnitTest delegate
     SceneDelegate& GetDelegate() { return *_sceneDelegate; }
@@ -80,7 +83,7 @@ public:
     /// Switch repr
     void SetRepr(HdReprSelector const &reprSelector);
 
-    void SetupAovs(int width, int height);
+    void SetupAovs(int width, int height, bool multisampled=false);
 
     void UpdateAovDimensions(int width, int height);
 
@@ -97,6 +100,8 @@ public:
         _clearDepth = clearDepth;
     }
 
+    Hgi * GetHgi() { return _hgi.get(); }
+
 protected:
     void _SetupSceneDelegate();
     virtual void _Init();
@@ -107,7 +112,6 @@ protected:
     const HdRprimCollection &_GetCollection() const { return _collection; }
     HdStRenderDelegate * _GetRenderDelegate() { return &_renderDelegate; }
     HdEngine * _GetEngine() { return &_engine; }
-    Hgi * _GetHgi() { return _hgi.get(); }
 
     std::vector<HdRenderPassSharedPtr> _renderPasses;
     std::vector<HdStRenderPassStateSharedPtr> _renderPassStates;
@@ -312,6 +316,15 @@ HdSt_TestDriverBase<SceneDelegate>::SetCullStyle(HdCullStyle cullStyle)
 
 template<typename SceneDelegate>
 void
+HdSt_TestDriverBase<SceneDelegate>::SetWireframeColor(GfVec4f const &color)
+{
+    for (const HdStRenderPassStateSharedPtr &renderPassState: _renderPassStates) {
+        renderPassState->SetWireframeColor(color);
+    }
+}
+
+template<typename SceneDelegate>
+void
 HdSt_TestDriverBase<SceneDelegate>::SetRepr(HdReprSelector const &reprSelector)
 {
     _collection.SetReprSelector(reprSelector);
@@ -341,7 +354,8 @@ HdSt_TestDriverBase<SceneDelegate>::_GetAovPath(TfToken const &aov) const
 
 template<typename SceneDelegate>
 void
-HdSt_TestDriverBase<SceneDelegate>::SetupAovs(int width, int height)
+HdSt_TestDriverBase<SceneDelegate>::SetupAovs(int width, int height, 
+    bool multisampled)
 {
     if (_aovBindings.empty()) {  
         // Delete old render buffers.
@@ -365,7 +379,7 @@ HdSt_TestDriverBase<SceneDelegate>::SetupAovs(int width, int height)
                 _aovOutputs[i]);
 
             HdRenderBufferDescriptor desc = { dimensions, aovDesc.format,
-                /*multiSampled*/false};
+                multisampled };
             GetDelegate().AddRenderBuffer(aovId, desc);
 
             HdRenderPassAovBinding &binding = _aovBindings[i];
@@ -551,11 +565,6 @@ public:
     HDST_API
     const HdRenderPassSharedPtr &GetRenderPass();
     
-    HDST_API
-    Hgi* GetHgi() {
-        return _GetHgi();
-    }
-
 private:
     void _CreateRenderPassState();
 };

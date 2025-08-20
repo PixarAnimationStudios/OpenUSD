@@ -122,6 +122,16 @@ public:
     const SampleTimeSet&
     GetTimes() const;
 
+    // Return the min time
+    TS_API
+    double
+    GetMinTime() const;
+
+    // Return the max time
+    TS_API
+    double
+    GetMaxTime() const;
+
 private:
     SampleTimeSet _GetKnotTimes() const;
 

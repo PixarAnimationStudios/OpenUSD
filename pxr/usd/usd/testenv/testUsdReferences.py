@@ -124,18 +124,22 @@ class TestUsdReferences(unittest.TestCase):
             stage = Usd.Stage.Open(srcLyr)
 
             prim = stage.GetPrimAtPath('/source')
+            self.assertTrue(prim.GetAttribute('attr'))
             self.assertEqual(prim.GetAttribute('attr').Get(), 1.234)
 
             # Clear defaultPrim.  This should issue a composition
             # error, and fail to pick up the attribute from the referenced prim.
             targLyr.ClearDefaultPrim()
+            prim = stage.GetPrimAtPath('/source')
             self.assertTrue(prim)
             self.assertFalse(prim.GetAttribute('attr'))
 
             # Change defaultPrim to other target.  This should pick up the reference
             # again, but to the new prim with the new attribute value.
             targLyr.defaultPrim = 'target2'
+            prim = stage.GetPrimAtPath('/source')
             self.assertTrue(prim)
+            self.assertTrue(prim.GetAttribute('attr'))
             self.assertEqual(prim.GetAttribute('attr').Get(), 2.345)
 
 

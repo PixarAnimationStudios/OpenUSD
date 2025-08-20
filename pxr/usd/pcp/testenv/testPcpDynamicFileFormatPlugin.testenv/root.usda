@@ -1,0 +1,216 @@
+#usda 1.0
+(
+    relocates = {</World/Sets/MySet/Group1/Model>: </World/Sets/MySet/Group1/Subgroup/Relocated>}
+)
+
+def "RootCone" (
+references = [@./params.usda@</Params>, @./payload.usda@</PayloadCone>]
+)
+{
+}
+
+def "RootSphere" (
+references = [@./params.usda@</Params>, @./payload.usda@</PayloadSphere>]
+)
+{
+    # Convenience overs for testing changes to procedurally generated subprim
+    # specs
+    over "geom"
+    {
+    }
+    over "Xform__3_0"
+    {
+    }
+}
+
+def "RootMulti" (
+references = [@./params.usda@</Params>, @./payload.usda@</PayloadMulti>]
+)
+{
+}
+
+def "Variant" (
+    TestPcp_depth = 5
+    variantSets = "x"
+    variants = {
+        string x = "a"
+    }
+)
+{
+    int TestPcp_depth = 5
+
+    variantSet "x" = {
+       "a" (
+           TestPcp_num = 4
+           references = [@./params.usda@</Params>, @./payload.usda@</PayloadCone>]
+       )
+       {
+           int TestPcp_num = 4
+       }
+    }
+}
+
+def "SubrootReference" (
+    TestPcp_depth = 1
+    TestPcp_num = 1
+    references = </RootCone/Xform__3_2>
+)
+{
+    int TestPcp_depth = 1
+    int TestPcp_num = 1
+}
+
+def "SubrootReferenceAndVariant" (
+    TestPcp_depth = 1
+    TestPcp_num = 1
+    references = </Variant/Xform__4_3>
+)
+{
+    int TestPcp_depth = 1
+    int TestPcp_num = 1
+}
+
+def "ReferenceAndNestedVariants" (
+    prepend references = @payload.usda@</PayloadWithNestedVariants>
+    variants = {
+        string resolution = "resSmall"
+        string preset = "PresetB"
+    }
+    TestPcp_height = 120.0
+)
+{
+    double TestPcp_height = 120.0
+}
+
+def "SiblingPayloads" (
+    references = [@./payload.usda@</PayloadSiblings>]){}
+
+def "VariantWithParams" (
+    TestPcp_radius = 20
+    references = [@./params.usda@</Params3>]
+    payload = @cone.testpcpdynamic@
+)
+{
+    double TestPcp_radius = 20
+}
+
+def "VariantWithParams2" (
+    references = [@./params.usda@</Params>]
+    payload = @cone.testpcpdynamic@
+    variants = {
+        string dynamicVariant = "even"
+        string dynamicRadius = "even"
+    }
+    prepend variantSets = ["dynamicVariant", "dynamicRadius"]
+)
+{
+    variantSet "dynamicVariant" = {
+    "odd" (TestPcp_depth = 3) {
+      int TestPcp_depth = 3
+    }
+    "even" (TestPcp_depth = 2) {
+      int TestPcp_depth = 2
+    }
+  }
+    variantSet "dynamicRadius" = {
+    "odd" (TestPcp_radius = 30) {
+      double TestPcp_radius = 30
+    }
+    "even" (TestPcp_radius = 20) {
+      double TestPcp_radius = 20
+    }
+  }
+}
+
+def "ParamRef" (
+    references = @./params.usda@</Params1>
+){}
+
+def "Specializes" (
+    specializes = </ParamRef>
+    references = [@./params.usda@</Params2>, @./payload.usda@</PayloadCone>]
+){}
+
+def "Inherits" (
+    inherits = </ParamRef>
+    references = [@./params.usda@</Params2>, @./payload.usda@</PayloadCone>]
+){}
+
+def "WeakerParentSibling" (
+    references = [@./params.usda@</Params1>,
+                  @./payload.usda@</PayloadCone>,
+                  @./params.usda@</Params2>]
+){}
+
+def "World" (
+)
+{
+    def "Sets"(
+    )
+    {
+        def "MySet"
+        (
+            references = </Set>
+            variants = {string x = "a"}
+        )
+        {
+            over "Group1" (
+            ) 
+            {
+                def "Subgroup"()
+                {
+
+                }
+            }
+
+        }
+    }
+}
+
+def "Set"
+(
+    variantSets = "x"
+)
+{
+    variantSet "x" = {
+       "a" (
+           TestPcp_num = 4
+           references = [@./params.usda@</Params>, @./payload.usda@</PayloadCone>]
+       )
+       {
+           int TestPcp_num = 4
+       }
+    }
+
+    def "Group1"
+    (
+        
+    )
+    {
+        def "Model"
+        () {
+
+        }
+
+    }
+}
+
+def "PayloadInVariant" (
+    variantSets = "x"
+    prepend references = @./params.usda@</Params>
+    variants = {
+        string x = "a"
+    }
+    TestPcp_num = 4
+)
+{
+    int TestPcp_num = 4
+
+    variantSet "x" = {
+       "a" (
+           references = [@./payload.usda@</PayloadCone>]
+       )
+       {
+       }
+    }
+}

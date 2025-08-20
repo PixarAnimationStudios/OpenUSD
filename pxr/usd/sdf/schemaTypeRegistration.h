@@ -161,6 +161,7 @@ SdfRegisterTypes(Registrar* reg)
     reg->template RegisterType<SdfStringListOp>();
     reg->template RegisterType<SdfTokenListOp>();
     reg->template RegisterType<SdfValueBlock>();
+    reg->template RegisterType<SdfAnimationBlock>();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

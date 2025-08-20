@@ -14,7 +14,7 @@ import unittest
 
 class testPcpRegressionBugs_bug90508(unittest.TestCase):
     def test_Basic(self):
-        rootLayer = Sdf.Layer.FindOrOpen('bug90508/root.sdf')
+        rootLayer = Sdf.Layer.FindOrOpen('bug90508/root.usda')
         pcpCache = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
 
         for p in [Sdf.Path('/Model'),
@@ -24,7 +24,7 @@ class testPcpRegressionBugs_bug90508(unittest.TestCase):
             self.assertTrue(pcpCache.FindPrimIndex(p))
 
         # The prim index at /Model/Child should have an an implied inherit arc to
-        # the site @root.sdf@</_class_Model/Child>; however, this node is culled 
+        # the site @root.usda@</_class_Model/Child>; however, this node is culled 
         # because there are no prim specs at that location. Adding a spec there
         # should cause the PcpCache to evict the prim index, since it needs to be
         # regenerated to accommodate the new node. However, this change doesn't

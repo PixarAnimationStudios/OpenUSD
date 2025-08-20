@@ -8,6 +8,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/ts/types.h"
 #include "pxr/base/tf/pyEnum.h"
+#include "pxr/base/tf/pyOptional.h"
 
 #include "pxr/external/boost/python/class.hpp"
 #include "pxr/external/boost/python/operators.hpp"
@@ -16,6 +17,62 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 using namespace pxr_boost::python;
 
+static
+object _WrapSplineSamplesPolylines(const TsSplineSamples<GfVec2d>& samples)
+{
+    TfPyLock lock;
+    pxr_boost::python::list pyPolylines;
+    for (const auto& polyline : samples.polylines) {
+        pxr_boost::python::list pyPolyline;
+        for (const auto& vertex : polyline) {
+            pyPolyline.append(vertex);
+        }
+        pyPolylines.append(pyPolyline);
+    }
+    return pyPolylines;
+}
+
+static
+object _WrapSplineSamplesWithSourcesPolylines(
+    const TsSplineSamplesWithSources<GfVec2d>& samples)
+{
+    TfPyLock lock;
+    pxr_boost::python::list pyPolylines;
+    for (const auto& polyline : samples.polylines) {
+        pxr_boost::python::list pyPolyline;
+        for (const auto& vertex : polyline) {
+            pyPolyline.append(vertex);
+        }
+        pyPolylines.append(pyPolyline);
+    }
+    return pyPolylines;
+}
+
+static
+object _WrapSplineSamplesWithSourcesSources(
+    const TsSplineSamplesWithSources<GfVec2d>& samples)
+{
+    return TfPyCopySequenceToList(samples.sources);
+}
+
+void wrapSplineSamples()
+{
+    class_<TsSplineSamples<GfVec2d>>("SplineSamples", no_init)
+
+        .add_property("polylines", &_WrapSplineSamplesPolylines)
+
+        ;
+}
+
+void wrapSplineSamplesWithSources()
+{
+    class_<TsSplineSamplesWithSources<GfVec2d>>("SplineSamplesWithSources", no_init)
+
+        .add_property("polylines", &_WrapSplineSamplesWithSourcesPolylines)
+        .add_property("sources", &_WrapSplineSamplesWithSourcesSources)
+
+        ;
+}
 
 void wrapTypes()
 {
@@ -23,6 +80,8 @@ void wrapTypes()
     TfPyWrapEnum<TsCurveType>();
     TfPyWrapEnum<TsExtrapMode>();
     TfPyWrapEnum<TsAntiRegressionMode>();
+    TfPyWrapEnum<TsSplineSampleSource>();
+    TfPyWrapEnum<TsTangentAlgorithm>();
 
     class_<TsLoopParams>("LoopParams")
 
@@ -58,4 +117,8 @@ void wrapTypes()
         .def("IsLooping", &TsExtrapolation::IsLooping)
 
         ;
+
+    wrapSplineSamples();
+    wrapSplineSamplesWithSources();
+
 }

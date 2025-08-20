@@ -95,19 +95,19 @@ SdfComputeAssetPathRelativeToLayer(
     // Relative asset paths have special behavior when anchoring to a
     // package or packaged layer: 
     // 
-    // - Anchored relative paths (e.g., "./foo/bar.sdf") are always anchored
+    // - Anchored relative paths (e.g., "./foo/bar.usda") are always anchored
     //   to the packaged layer in which they are authored. For example, if the
     //   above were authored in the following layers:
-    //       "test.package[inner.sdf]" ->  "test.package[foo/bar.sdf]"
-    //       "test.package[sub/inner.sdf]" -> "test.package[sub/foo/bar.sdf]"
-    //       "test.package" -> "/tmp/test.package[foo/bar.sdf]"
+    //       "test.usdz[inner.usda]" ->  "test.usdz[foo/bar.usda]"
+    //       "test.usdz[sub/inner.usda]" -> "test.usdz[sub/foo/bar.usda]"
+    //       "test.usdz" -> "/tmp/test.usdz[foo/bar.usda]"
     //
     //   The last case depends on the path of the root layer in the package.
-    //   If the package root layer were "inner.sdf", anchoring would give the
-    //   same result as the first case; if it were "sub/inner.sdf", it would
+    //   If the package root layer were "inner.usda", anchoring would give the
+    //   same result as the first case; if it were "sub/inner.usda", it would
     //   give the same result as the second case.
     //
-    // - Search relative paths (e.g., "foo/bar.sdf") are first anchored to the
+    // - Search relative paths (e.g., "foo/bar.usda") are first anchored to the
     //   packaged layer in which they are authored. If that does not resolve
     //   to a valid file, the path is then anchored to the package's root
     //   layer. If that does not resolve the path is not anchored and is 
@@ -191,6 +191,24 @@ SdfComputeAssetPathRelativeToLayer(
     }
 
     return Sdf_CreateIdentifier(resolver.CreateIdentifier(strippedAssetPath, anchor->GetResolvedPath()), layerArgs);
+}
+
+std::string
+SdfResolveAssetPathRelativeToLayer(
+    const SdfLayerHandle& anchor,
+    const std::string& assetPath)
+{
+    if (assetPath.empty() ||
+        SdfLayer::IsAnonymousLayerIdentifier(assetPath)) {
+        return assetPath;
+    }
+    const std::string computedAssetPath = 
+        SdfComputeAssetPathRelativeToLayer(anchor, assetPath);
+    if (computedAssetPath.empty()) {
+        return computedAssetPath;
+    }
+
+    return ArGetResolver().Resolve(computedAssetPath);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

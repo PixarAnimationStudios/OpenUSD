@@ -1,16 +1,16 @@
-Loading @ErrorRelocateWithVariantSelection/root.sdf@
+Loading @ErrorRelocateWithVariantSelection/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Model_1>
 
 Prim Stack:
-    root.sdf             /Model_1
-    model.sdf            /Model
-    model.sdf            /Model{vset=vsel}
+    root.usda            /Model_1
+    model.usda           /Model
+    model.usda           /Model{vset=vsel}
 
 Variant Selections:
     {vset = vsel}
@@ -22,13 +22,13 @@ Child names:
 Results for composing </Model_1/PrimOnlyInVariantSet>
 
 Prim Stack:
-    model.sdf            /Model{vset=vsel}PrimOnlyInVariantSet
+    model.usda           /Model{vset=vsel}PrimOnlyInVariantSet
 
 ------------------------------------------------------------------------
 Results for composing </Model_1/A>
 
 Prim Stack:
-    model.sdf            /Model/A
+    model.usda           /Model/A
 
 Child names:
      ['B']
@@ -37,5 +37,5 @@ Child names:
 Results for composing </Model_1/A/B>
 
 Prim Stack:
-    model.sdf            /Model/A/B
+    model.usda           /Model/A/B
 

@@ -5,7 +5,7 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 
-# This tests a set of sample sdf files that are either expected to load
+# This tests a set of sample usda files that are either expected to load
 # successfully, or to emit warnings.  Files with _bad_ in the name are
 # expected to emit warnings, but in no case should they cause a crash.
 #
@@ -47,185 +47,186 @@ class TestSdfParsing(unittest.TestCase):
         # This will mean that your new test runs first and you can spot
         # failures much quicker.
         testFiles = '''
-        225_multiline_with_SplineKnotParamList.sdf
-        224_spline_post_shaping_with_comment.sdf
-        223_bad_spline_post_shaping_spacing.sdf
-        222_dict_key_control_characters.sdf
-        221_bad_spline_type.sdf
-        220_splines.sdf
-        219_utf8_bad_type_name.sdf
-        218_utf8_bad_identifier.sdf
-        217_utf8_identifiers.sdf
-        216_bad_variant_in_relocates_path.sdf
-        215_bad_variant_in_specializes_path.sdf
-        214_bad_variant_in_inherits_path.sdf
-        213_bad_variant_in_payload_path.sdf
-        212_bad_variant_in_reference_path.sdf
-        211_bad_authored_opaque_attributes.sdf
-        210_opaque_attributes.sdf
-        209_bad_escaped_string4.sdf
-        208_bad_escaped_string3.sdf
-        207_bad_escaped_string2.sdf
-        206_bad_escaped_string1.sdf
-        205_bad_assetPaths.sdf
-        204_really_empty.sdf
-        203_newlines.sdf
-        202_displayGroups.sdf
-        201_format_specifiers_in_strings.sdf
-        200_bad_emptyFile.sdf
-        199_bad_colorSpace_metadata.sdf
-        198_colorSpace_metadata.sdf
-        197_bad_colorConfiguration_metadata.sdf
-        196_colorConfiguration_metadata.sdf
-        195_specializes.sdf
-        194_bad_customLayerData_metadata.sdf
-        193_customLayerData_metadata.sdf
-        192_listop_metadata.sdf
-        191_instanceable.sdf
-        190_property_assetInfo.sdf
-        189_prim_assetInfo.sdf
-        188_defaultRefTarget_metadata.sdf
-        187_displayName_metadata.sdf
-        186_bad_prefix_substitution_key.sdf
-        185_namespaced_properties.sdf
-        184_def_AnyType.sdf
-        183_unknown_type_and_metadata.sdf
-        183_time_samples.sdf
-        182_bad_variant_in_relationship.sdf
-        181_bad_variant_in_connection.sdf
-        180_asset_paths.sdf
-        179_bad_shaped_attr_dimensions1_oldtypes.sdf
-        179_bad_shaped_attr_dimensions1.sdf
-        178_invalid_typeName.sdf
-        177_bad_empty_lists.sdf
-        176_empty_lists.sdf
-        175_asset_path_with_colons.sdf
-        163_bad_variant_selection2.sdf
-        162_bad_variant_selection1.sdf
-        161_bad_variant_name2.sdf
-        160_bad_variant_name1.sdf
-        159_symmetryFunction_empty.sdf
-        155_bad_relationship_noLoadHint.sdf
-        154_relationship_noLoadHint.sdf
-        153_bad_payloads.sdf
-        152_payloads.sdf
-        150_bad_kind_metadata_1.sdf
-        149_kind_metadata.sdf
-        148_relocates_empty_map.sdf
-        147_bad_relocates_formatting_5.sdf
-        146_bad_relocates_formatting_4.sdf
-        145_bad_relocates_formatting_3.sdf
-        144_bad_relocates_formatting_2.sdf
-        143_bad_relocates_formatting_1.sdf
-        142_bad_relocates_paths_3.sdf
-        141_bad_relocates_paths_2.sdf
-        140_bad_relocates_paths_1.sdf
-        139_relocates_metadata.sdf
-        133_bad_reference.sdf
-        132_references.sdf
-        127_varyingRelationship.sdf
-        119_bad_permission_metadata_3.sdf
-        118_bad_permission_metadata_2.sdf
-        117_bad_permission_metadata.sdf
-        116_permission_metadata.sdf
-        115_symmetricPeer_metadata.sdf
-        114_bad_prefix_metadata.sdf
-        113_displayName_metadata.sdf
-        112_nested_dictionaries_oldtypes.sdf
-        112_nested_dictionaries.sdf
-        111_string_arrays.sdf
-        108_bad_inheritPath.sdf
-        104_uniformAttributes.sdf
-        103_bad_attributeVariability.sdf
-        100_bad_roleNameChange.sdf
-        99_bad_typeNameChange.sdf
-        98_bad_valueType.sdf
-        97_bad_valueType.sdf
-        96_bad_valueType_oldtypes.sdf
-        96_bad_valueType.sdf
-        95_bad_hiddenRel.sdf
-        94_bad_hiddenAttr.sdf
-        93_hidden.sdf
-        92_bad_variantSelectionType.sdf
-        91_bad_valueType.sdf
-        90_bad_dupePrim.sdf
-        89_bad_attribute_displayUnit.sdf
-        88_attribute_displayUnit.sdf
-        86_bad_tuple_dimensions5.sdf
-        85_bad_tuple_dimensions4_oldtypes.sdf
-        85_bad_tuple_dimensions4.sdf
-        84_bad_tuple_dimensions3_oldtypes.sdf
-        84_bad_tuple_dimensions3.sdf
-        83_bad_tuple_dimensions2_oldtypes.sdf
-        83_bad_tuple_dimensions2.sdf
-        82_bad_tuple_dimensions1_oldtypes.sdf
-        82_bad_tuple_dimensions1.sdf
-        81_namespace_reorder.sdf
-        80_bad_hidden.sdf
-        76_relationship_customData.sdf
-        75_attribute_customData.sdf
-        74_prim_customData.sdf
-        71_empty_shaped_attrs.sdf
-        70_bad_list.sdf
-        69_bad_list.sdf
-        66_bad_attrVariability.sdf
-        64_bad_boolPrimInstantiate.sdf
-        61_bad_primName.sdf
-        60_bad_groupListEditing.sdf
-        59_bad_connectListEditing.sdf
-        58_bad_relListEditing.sdf
-        57_bad_relListEditing.sdf
-        56_bad_value_oldtypes.sdf
-        56_bad_value.sdf
-        55_bad_value_oldtypes.sdf
-        55_bad_value.sdf
-        54_bad_value.sdf
-        53_bad_typeName.sdf
-        52_bad_attr.sdf
-        51_propPath.sdf
-        50_bad_primPath.sdf
-        49_bad_list.sdf
-        47_miscSceneInfo.sdf
-        46_weirdStringContent.sdf
-        45_rareValueTypes.sdf
-        42_bad_noNewlineBetweenComps.sdf
-        41_noEndingNewline.sdf
-        40_repeater.sdf
-        39_variants.sdf
-        38_attribute_connections.sdf
-        37_keyword_properties.sdf
-        36_tasks.sdf
-        33_bad_relationship_duplicate_target.sdf
-        32_relationship_syntax.sdf
-        31_attribute_values_oldtypes.sdf
-        31_attribute_values.sdf
-        30_bad_specifier.sdf
-        29_bad_newline9.sdf
-        28_bad_newline8.sdf
-        27_bad_newline7.sdf
-        26_bad_newline6.sdf
-        25_bad_newline5.sdf
-        24_bad_newline4.sdf
-        23_bad_newline3.sdf
-        22_bad_newline2.sdf
-        21_bad_newline1.sdf
-        20_optionalsemicolons.sdf
-        16_bad_list.sdf
-        15_bad_list.sdf
-        14_bad_value.sdf
-        13_bad_value.sdf
-        12_bad_value.sdf
-        11_debug.sdf
-        10_bad_value.sdf
-        09_bad_type.sdf
-        08_bad_file.sdf
-        06_largevalue.sdf
-        05_bad_file.sdf
-        04_general_oldtypes.sdf
-        04_general.sdf
-        03_bad_file.sdf
-        02_simple.sdf
-        01_empty.sdf
+        226_version_1.1.usda
+        225_multiline_with_SplineKnotParamList.usda
+        224_spline_post_shaping_with_comment.usda
+        223_bad_spline_post_shaping_spacing.usda
+        222_dict_key_control_characters.usda
+        221_bad_spline_type.usda
+        220_splines.usda
+        219_utf8_bad_type_name.usda
+        218_utf8_bad_identifier.usda
+        217_utf8_identifiers.usda
+        216_bad_variant_in_relocates_path.usda
+        215_bad_variant_in_specializes_path.usda
+        214_bad_variant_in_inherits_path.usda
+        213_bad_variant_in_payload_path.usda
+        212_bad_variant_in_reference_path.usda
+        211_bad_authored_opaque_attributes.usda
+        210_opaque_attributes.usda
+        209_bad_escaped_string4.usda
+        208_bad_escaped_string3.usda
+        207_bad_escaped_string2.usda
+        206_bad_escaped_string1.usda
+        205_bad_assetPaths.usda
+        204_really_empty.usda
+        203_newlines.usda
+        202_displayGroups.usda
+        201_format_specifiers_in_strings.usda
+        200_bad_emptyFile.usda
+        199_bad_colorSpace_metadata.usda
+        198_colorSpace_metadata.usda
+        197_bad_colorConfiguration_metadata.usda
+        196_colorConfiguration_metadata.usda
+        195_specializes.usda
+        194_bad_customLayerData_metadata.usda
+        193_customLayerData_metadata.usda
+        192_listop_metadata.usda
+        191_instanceable.usda
+        190_property_assetInfo.usda
+        189_prim_assetInfo.usda
+        188_defaultRefTarget_metadata.usda
+        187_displayName_metadata.usda
+        186_bad_prefix_substitution_key.usda
+        185_namespaced_properties.usda
+        184_def_AnyType.usda
+        183_unknown_type_and_metadata.usda
+        183_time_samples.usda
+        182_bad_variant_in_relationship.usda
+        181_bad_variant_in_connection.usda
+        180_asset_paths.usda
+        179_bad_shaped_attr_dimensions1_oldtypes.usda
+        179_bad_shaped_attr_dimensions1.usda
+        178_invalid_typeName.usda
+        177_bad_empty_lists.usda
+        176_empty_lists.usda
+        175_asset_path_with_colons.usda
+        163_bad_variant_selection2.usda
+        162_bad_variant_selection1.usda
+        161_bad_variant_name2.usda
+        160_bad_variant_name1.usda
+        159_symmetryFunction_empty.usda
+        155_bad_relationship_noLoadHint.usda
+        154_relationship_noLoadHint.usda
+        153_bad_payloads.usda
+        152_payloads.usda
+        150_bad_kind_metadata_1.usda
+        149_kind_metadata.usda
+        148_relocates_empty_map.usda
+        147_bad_relocates_formatting_5.usda
+        146_bad_relocates_formatting_4.usda
+        145_bad_relocates_formatting_3.usda
+        144_bad_relocates_formatting_2.usda
+        143_bad_relocates_formatting_1.usda
+        142_bad_relocates_paths_3.usda
+        141_bad_relocates_paths_2.usda
+        140_bad_relocates_paths_1.usda
+        139_relocates_metadata.usda
+        133_bad_reference.usda
+        132_references.usda
+        127_varyingRelationship.usda
+        119_bad_permission_metadata_3.usda
+        118_bad_permission_metadata_2.usda
+        117_bad_permission_metadata.usda
+        116_permission_metadata.usda
+        115_symmetricPeer_metadata.usda
+        114_bad_prefix_metadata.usda
+        113_displayName_metadata.usda
+        112_nested_dictionaries_oldtypes.usda
+        112_nested_dictionaries.usda
+        111_string_arrays.usda
+        108_bad_inheritPath.usda
+        104_uniformAttributes.usda
+        103_bad_attributeVariability.usda
+        100_bad_roleNameChange.usda
+        99_bad_typeNameChange.usda
+        98_bad_valueType.usda
+        97_bad_valueType.usda
+        96_bad_valueType_oldtypes.usda
+        96_bad_valueType.usda
+        95_bad_hiddenRel.usda
+        94_bad_hiddenAttr.usda
+        93_hidden.usda
+        92_bad_variantSelectionType.usda
+        91_bad_valueType.usda
+        90_bad_dupePrim.usda
+        89_bad_attribute_displayUnit.usda
+        88_attribute_displayUnit.usda
+        86_bad_tuple_dimensions5.usda
+        85_bad_tuple_dimensions4_oldtypes.usda
+        85_bad_tuple_dimensions4.usda
+        84_bad_tuple_dimensions3_oldtypes.usda
+        84_bad_tuple_dimensions3.usda
+        83_bad_tuple_dimensions2_oldtypes.usda
+        83_bad_tuple_dimensions2.usda
+        82_bad_tuple_dimensions1_oldtypes.usda
+        82_bad_tuple_dimensions1.usda
+        81_namespace_reorder.usda
+        80_bad_hidden.usda
+        76_relationship_customData.usda
+        75_attribute_customData.usda
+        74_prim_customData.usda
+        71_empty_shaped_attrs.usda
+        70_bad_list.usda
+        69_bad_list.usda
+        66_bad_attrVariability.usda
+        64_bad_boolPrimInstantiate.usda
+        61_bad_primName.usda
+        60_bad_groupListEditing.usda
+        59_bad_connectListEditing.usda
+        58_bad_relListEditing.usda
+        57_bad_relListEditing.usda
+        56_bad_value_oldtypes.usda
+        56_bad_value.usda
+        55_bad_value_oldtypes.usda
+        55_bad_value.usda
+        54_bad_value.usda
+        53_bad_typeName.usda
+        52_bad_attr.usda
+        51_propPath.usda
+        50_bad_primPath.usda
+        49_bad_list.usda
+        47_miscSceneInfo.usda
+        46_weirdStringContent.usda
+        45_rareValueTypes.usda
+        42_bad_noNewlineBetweenComps.usda
+        41_noEndingNewline.usda
+        40_repeater.usda
+        39_variants.usda
+        38_attribute_connections.usda
+        37_keyword_properties.usda
+        36_tasks.usda
+        33_bad_relationship_duplicate_target.usda
+        32_relationship_syntax.usda
+        31_attribute_values_oldtypes.usda
+        31_attribute_values.usda
+        30_bad_specifier.usda
+        29_bad_newline9.usda
+        28_bad_newline8.usda
+        27_bad_newline7.usda
+        26_bad_newline6.usda
+        25_bad_newline5.usda
+        24_bad_newline4.usda
+        23_bad_newline3.usda
+        22_bad_newline2.usda
+        21_bad_newline1.usda
+        20_optionalsemicolons.usda
+        16_bad_list.usda
+        15_bad_list.usda
+        14_bad_value.usda
+        13_bad_value.usda
+        12_bad_value.usda
+        11_debug.usda
+        10_bad_value.usda
+        09_bad_type.usda
+        08_bad_file.usda
+        06_largevalue.usda
+        05_bad_file.usda
+        04_general_oldtypes.usda
+        04_general.usda
+        03_bad_file.usda
+        02_simple.usda
+        01_empty.usda
         '''.split()
         # NOTE:  READ IF YOU ARE ADDING TEST FILES
         # This list is reverse sorted.  Add new tests at the top!
@@ -236,18 +237,18 @@ class TestSdfParsing(unittest.TestCase):
         # fields are stored as opaque text and passed through loading and saving
         # instead of causing parse errors
         #
-        # 19_bad_relationshipaccess.sdf
-        # 18_bad_primaccess.sdf
-        # 17_bad_attributeaccess.sdf
+        # 19_bad_relationshipaccess.usda
+        # 18_bad_primaccess.usda
+        # 17_bad_attributeaccess.usda
 
         # Disabled tests - this has not failed properly ever, but a bug in this script masked the problem
-        # 34_bad_relationship_duplicate_target_attr.sdf
+        # 34_bad_relationship_duplicate_target_attr.usda
 
         # Create a temporary file for diffs and choose where to get test data.
         def CreateTempFile(name):
             import tempfile
             layerFileOut = tempfile.NamedTemporaryFile(
-                suffix='_' + name + '_testSdfParsing1.sdf', delete=False)
+                suffix='_' + name + '_testSdfParsing1.usda', delete=False)
             # Close the temporary file.  We only wanted a temporary file name
             # and we'll open/close/remove this file once per test file.  On
             # Unix this isn't necessary because holding a file open doesn't
@@ -384,9 +385,14 @@ class TestSdfParsing(unittest.TestCase):
                         expectedLayerData = expectedLayerData[0:mdEnd+1]+["\n"]
                     except ValueError:
                         # If there's no layer metadata, we expect to just have
-                        # the first line of the baseline with the #sdf cookie.
+                        # the first line of the baseline with the #usda cookie.
                         expectedLayerData = [expectedLayerData[0], "\n"]
 
+                    # The exported metadata is always version 1.0 because
+                    # it never encounters any advanced features that would
+                    # require a higher version. This will need to be changed
+                    # if we ever default to a usda version > 1.0.
+                    expectedLayerData[0] = "#usda 1.0\n"
                 diff = list(difflib.unified_diff(
                     layerData, expectedLayerData,
                     testFile, expectedFile))

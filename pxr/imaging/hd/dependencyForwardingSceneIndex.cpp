@@ -20,17 +20,12 @@ HdDependencyForwardingSceneIndex::HdDependencyForwardingSceneIndex(
 HdSceneIndexPrim
 HdDependencyForwardingSceneIndex::GetPrim(const SdfPath &primPath) const
 {
-    if (_GetInputSceneIndex()) {
-
-        if (_affectedPrimToDependsOnPathsMap.find(primPath) == 
-                _affectedPrimToDependsOnPathsMap.end()) {
-            _UpdateDependencies(primPath);
-        }
-
-        return _GetInputSceneIndex()->GetPrim(primPath);
+    if (_affectedPrimToDependsOnPathsMap.find(primPath) == 
+            _affectedPrimToDependsOnPathsMap.end()) {
+        _UpdateDependencies(primPath);
     }
 
-    return {TfToken(), nullptr};
+    return _GetInputSceneIndex()->GetPrim(primPath);
 }
 
 SdfPathVector
@@ -38,11 +33,7 @@ HdDependencyForwardingSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
     // pass through without change
-    if (_GetInputSceneIndex()) {
-        return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
-    }
-
-    return {};
+    return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
 }
 
 void
@@ -254,10 +245,6 @@ void
 HdDependencyForwardingSceneIndex::_UpdateDependencies(
     const SdfPath &primPath) const
 {
-    if (!_GetInputSceneIndex()) {
-        return;
-    }
-
     HdContainerDataSourceHandle primDataSource =
         _GetInputSceneIndex()->GetPrim(primPath).dataSource;
 

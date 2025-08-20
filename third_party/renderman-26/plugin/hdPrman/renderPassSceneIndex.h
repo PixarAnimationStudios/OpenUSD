@@ -14,7 +14,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_REF_PTRS(HdPrman_RenderPassSceneIndex);
+TF_DECLARE_WEAK_AND_REF_PTRS(HdPrman_RenderPassSceneIndex);
 
 /// HdPrman_RenderPassSceneIndex applies the active render pass
 /// specified in the HdSceneGlobalsSchema, modifying the scene
@@ -46,6 +46,8 @@ protected:
         const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;
 
 private:
+    friend class HdPrman_RenderPass_PrimDataSource;
+
     // State specified by a render pass.
     // If renderPassPath is the empty path, no render pass is active.
     // Collection evaluators are set sparsely, corresponding to

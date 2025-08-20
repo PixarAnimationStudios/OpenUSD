@@ -258,6 +258,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 }
             }
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/World/Ref/Child" : self.PrimResyncType.RenameSource,
+            "/World/Ref/RenamedChild" : self.PrimResyncType.RenameDestination,
+        })
 
         # On stage2, none of the contents of the pre-relocation prims have 
         # changed but each for different reasons. 
@@ -291,6 +295,22 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             'Relocated1' : relocated1Contents,
             'Relocated2' : relocated2Contents,
             'Relocated3' : relocated3Contents
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Relocated1/Child" : self.PrimResyncType.RenameSource,
+            "/Relocated1/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Relocated2" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
+            "/Relocated3" : self.PrimResyncType.UnchangedPrimStack,
+            # XXX: The old and new relocation source will both show up as 
+            # resyncs that are interpreted as deletes even though neither prim
+            # existed before the edit. It would be nice to not have these 
+            # unchanged non-existemnt prims show up as a resync (or at least be
+            # understood to be a UnchangedPrimStack resync) but it's tricky to tease this 
+            # apart in the current change processing. This same effect will 
+            # apply to most of the other test cases in this test file.
+            "/Prim2/Child" : self.PrimResyncType.Delete,
+            "/Prim2/RenamedChild" : self.PrimResyncType.Delete,
         })
 
         # Edit: Reparent and rename /World/Ref/RenamedChild to /World/MovedChild
@@ -343,6 +363,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 }
             }
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/World/Ref/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/World/MovedChild" : self.PrimResyncType.RenameAndReparentDestination,
+        })
 
         # On stage2, the pre-relocation prim /Prim1 now has the child prim 
         # MovedChild (with its ancestral reference opinions) because MovedChild
@@ -389,6 +413,21 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             'Relocated1' : relocated1Contents,
             'Relocated2' : relocated2Contents,
             'Relocated3' : relocated3Contents
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Relocated1/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/Prim1/MovedChild" : self.PrimResyncType.RenameAndReparentDestination,
+            "/Relocated2" : self.PrimResyncType.Other,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
+            "/Relocated3" : self.PrimResyncType.UnchangedPrimStack,
+            # XXX: The old and new relocation source will both show up as 
+            # resyncs that are interpreted as deletes even though neither prim
+            # existed before the edit. It would be nice to not have these 
+            # unchanged non-existemnt prims show up as a resync (or at least be
+            # understood to be a UnchangedPrimStack resync) but it's tricky to tease this 
+            # apart in the current change processing. This same effect will 
+            # apply to most of the other test cases in this test file.
+            "/Prim2/RenamedChild" : self.PrimResyncType.Delete,
         })
 
         # Edit: Move /World/MovedChild back to its original path 
@@ -438,6 +477,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                     }
                 },
             }
+        })
+        self._VerifyStageResyncNotices(stage1, {
+            "/World/MovedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/World/Ref/Child" : self.PrimResyncType.RenameAndReparentDestination,
         })
 
         # On stage2, /Prim1 now again has its child contents relocated away 
@@ -492,6 +535,13 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             'Relocated1' : relocated1Contents,
             'Relocated2' : relocated2Contents,
             'Relocated3' : relocated3Contents
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/MovedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/Relocated1/Child" : self.PrimResyncType.RenameAndReparentDestination,
+            "/Prim2/Child" : self.PrimResyncType.Other,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
+            "/Relocated3" : self.PrimResyncType.UnchangedPrimStack,
         })
             
         # Reinitialize layer2 to reset /Prim2 and /Relocated2 for the next test
@@ -580,6 +630,9 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 },
             }
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/World/Ref/Child" : self.PrimResyncType.Delete,
+        })
 
         # On stage2, /Prim1's contents haven't changed because its child is
         # relocated, but /Relocated1 no longer has child prim "Child" as it was
@@ -619,6 +672,20 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             'Relocated1' : relocated1Contents,
             'Relocated2' : relocated2Contents,
             'Relocated3' : relocated3Contents
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Relocated1/Child" : self.PrimResyncType.Delete,
+            "/Relocated2" : self.PrimResyncType.Other,
+            "/Prim3" : self.PrimResyncType.Other,
+            "/Relocated3" : self.PrimResyncType.Other,
+            # XXX: The old and new relocation source will both show up as 
+            # resyncs that are interpreted as deletes even though neither prim
+            # existed before the edit. It would be nice to not have these 
+            # unchanged non-existemnt prims show up as a resync (or at least be
+            # understood to be a UnchangedPrimStack resync) but it's tricky to tease this 
+            # apart in the current change processing. This same effect will 
+            # apply to most of the other test cases in this test file.
+            "/Prim2/Child" : self.PrimResyncType.Delete,
         })
 
     def test_NestedRelocates(self):
@@ -822,6 +889,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 }
             }
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/World/Ref/Child" : self.PrimResyncType.RenameSource,
+            "/World/Ref/RenamedChild" : self.PrimResyncType.RenameDestination,
+        })
 
         # Verify the contents of stage2 have not changed as the update of the
         # relocates maintains the same composed prims.
@@ -830,6 +901,19 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             'Ref' : refContents,
             'Child' : childContents,
             'GrandChild' : grandChildContents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Child" : self.PrimResyncType.UnchangedPrimStack,
+            "/GrandChild" : self.PrimResyncType.UnchangedPrimStack,
+            # XXX: The old and new relocation source will both show up as 
+            # resyncs that are interpreted as deletes even though neither prim
+            # existed before the edit. It would be nice to not have these 
+            # unchanged non-existemnt prims show up as a resync (or at least be
+            # understood to be a UnchangedPrimStack resync) but it's tricky to tease this 
+            # apart in the current change processing. This same effect will 
+            # apply to most of the other test cases in this test file.
+            "/Ref/Child" : self.PrimResyncType.Delete,
+            "/Ref/RenamedChild" : self.PrimResyncType.Delete,
         })
 
         # Edit: Rename /World/Ref to /World/RenamedRef
@@ -874,6 +958,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 }
             }
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/World/Ref" : self.PrimResyncType.RenameSource,
+            "/World/RenamedRef" : self.PrimResyncType.RenameDestination,
+        })
 
         # Verify the contents of stage2 have again not changed as the update of 
         # the relocates maintains the same composed prims.
@@ -882,6 +970,20 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             'Ref' : refContents,
             'Child' : childContents,
             'GrandChild' : grandChildContents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Ref" : self.PrimResyncType.UnchangedPrimStack,
+            "/Child" : self.PrimResyncType.UnchangedPrimStack,
+            "/GrandChild" : self.PrimResyncType.UnchangedPrimStack,
+            # XXX: The old and new relocation source will both show up as 
+            # resyncs that are interpreted as deletes even though neither prim
+            # existed before the edit. It would be nice to not have these 
+            # unchanged non-existemnt prims show up as a resync (or at least be
+            # understood to be a UnchangedPrimStack resync) but it's tricky to tease this 
+            # apart in the current change processing. This same effect will 
+            # apply to most of the other test cases in this test file.
+            "/Prim/Ref" : self.PrimResyncType.Delete,
+            "/Prim/RenamedRef" : self.PrimResyncType.Delete,
         })
 
         # Edit: Reparent /World/RenamedRef/RenamedChild to be a child of 
@@ -931,6 +1033,12 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 }
             }
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/World/RenamedRef/RenamedChild" : 
+                self.PrimResyncType.ReparentSource,
+            "/World/RenamedRef/ChildSibling/RenamedChild" : 
+                self.PrimResyncType.ReparentDestination,
+        })
 
         # Verify the contents of stage2 have not changed as the update of the
         # relocates maintains the same composition.
@@ -939,6 +1047,19 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             'Ref' : refContents,
             'Child' : childContents,
             'GrandChild' : grandChildContents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Child" : self.PrimResyncType.UnchangedPrimStack,
+            "/GrandChild" : self.PrimResyncType.UnchangedPrimStack,
+            # XXX: The old and new relocation source will both show up as 
+            # resyncs that are interpreted as deletes even though neither prim
+            # existed before the edit. It would be nice to not have these 
+            # unchanged non-existemnt prims show up as a resync (or at least be
+            # understood to be a UnchangedPrimStack resync) but it's tricky to tease this 
+            # apart in the current change processing. This same effect will 
+            # apply to most of the other test cases in this test file.
+            "/Ref/RenamedChild" : self.PrimResyncType.Delete,
+            "/Ref/ChildSibling/RenamedChild" : self.PrimResyncType.Delete,
         })
 
         # Rename the leaf prim Foo to Bar
@@ -1004,6 +1125,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             'Child' : childContents,
             'GrandChild' : grandChildContents,
         })
+        self._VerifyStageResyncNotices(stage2, {
+            "/GrandChild/Foo" : self.PrimResyncType.RenameSource,
+            "/GrandChild/Bar" : self.PrimResyncType.RenameDestination,
+        })
 
         # Edit: Reparent ChildSibling to now be a child of /World instead of
         # /World/RenamedRef.
@@ -1054,6 +1179,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 }
             }
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/World/RenamedRef/ChildSibling" : self.PrimResyncType.ReparentSource,
+            "/World/ChildSibling" : self.PrimResyncType.ReparentDestination,
+        })
 
         # There are small changes to the contents of /Prim and /Ref as 
         # ChildSibling is now a child of /Prim instead of /Ref via ancestral
@@ -1076,6 +1205,12 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             'Ref' : refContents,
             'Child' : childContents,
             'GrandChild' : grandChildContents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Ref/ChildSibling" : self.PrimResyncType.ReparentSource,
+            "/Prim/ChildSibling" : self.PrimResyncType.ReparentDestination,
+            "/Child" : self.PrimResyncType.UnchangedPrimStack,
+            "/GrandChild" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # Edit: Delete the prim /World/ChildSibling
@@ -1105,6 +1240,9 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                     '.' : ['refAttr'],
                 },
             }
+        })
+        self._VerifyStageResyncNotices(stage1, {
+            "/World/ChildSibling" : self.PrimResyncType.Delete,
         })
 
         # On stage2 /Prim has changed to no longer have the deleted ChildSibling 
@@ -1140,6 +1278,11 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             'Ref' : refContents,
             'Child' : childContents,
             'GrandChild' : grandChildContents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim/ChildSibling" : self.PrimResyncType.Delete,
+            "/Child" : self.PrimResyncType.Other,
+            "/GrandChild" : self.PrimResyncType.Other,
         })
 
     def test_InheritsWithRelocate(self):
@@ -1455,9 +1598,16 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 },
             }
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Class/Child" : self.PrimResyncType.RenameSource,
+            "/Class/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/World/Ref/Child" : self.PrimResyncType.RenameSource,
+            "/World/Ref/RenamedChild" : self.PrimResyncType.RenameDestination,
+        })
 
-        # Verify the updated contents of stage2 where Prim1's Child is now named
-        # RenamedChild with the same composed contents as the original prim.
+        # Verify the updated contents of stage2 where /Prim1/RelocatedRef's 
+        # Child is now named RenamedChild with the same composed contents as the
+        # original prim.
         # Prim2 and Prim3 are unchanged because the composition field changes
         # keep their composed contents the same. The implied class specs reflect
         # the rename of /Class/Child to /Class/RenamedChild as well.
@@ -1481,6 +1631,30 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                     }           
                 },
             },
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Class/Child" : self.PrimResyncType.RenameSource,
+            "/Class/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim1/RelocatedRef/Child" : self.PrimResyncType.RenameSource,
+            "/Prim1/RelocatedRef/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim2/RelocatedChild" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
+            # XXX: The old and new relocation source will both show up as 
+            # resyncs that are interpreted as deletes even though neither prim
+            # existed before the edit. It would be nice to not have these 
+            # unchanged non-existemnt prims show up as a resync (or at least be
+            # understood to be a UnchangedPrimStack resync) but it's tricky to tease this 
+            # apart in the current change processing. This same effect will 
+            # apply to most of the other test cases in this test file.
+            "/Prim2/Child" : self.PrimResyncType.Delete,
+            "/Prim2/RenamedChild" : self.PrimResyncType.Delete,
+            # XXX: The presence of this resync notification is due to a separate
+            # bug related to implied ancestral inherits nodes having map 
+            # functions mapping ancestral paths to incorrect locations. This 
+            # bug subsequently impacts Pcp change processing causing this to
+            # come up as a resync even though there is no prim on the composed
+            # stage at this path neither before or after the edit
+            "/World/Ref/RenamedChild" : self.PrimResyncType.Delete,
         })
 
         # Edit: Rename /Class/RenamedChild to /Class/RelocatedChild
@@ -1549,6 +1723,12 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 },
             }
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Class/RenamedChild" : self.PrimResyncType.RenameSource,
+            "/Class/RelocatedChild" : self.PrimResyncType.RenameDestination,
+            "/World/Ref/RenamedChild" : self.PrimResyncType.RenameSource,
+            "/World/Ref/RelocatedChild" : self.PrimResyncType.RenameDestination,
+        })
 
         # Verify the updated contents of stage2 where Prim1's RenamedChild is 
         # now named RelocatedChild with the same composed contents as the
@@ -1576,6 +1756,29 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                     }           
                 },
             },
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Class/RenamedChild" : self.PrimResyncType.RenameSource,
+            "/Class/RelocatedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim1/RelocatedRef/RenamedChild" : self.PrimResyncType.RenameSource,
+            "/Prim1/RelocatedRef/RelocatedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim2/RelocatedChild" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
+            # XXX: The old and new relocation source will both show up as 
+            # resyncs that are interpreted as deletes even though neither prim
+            # existed before the edit. It would be nice to not have these 
+            # unchanged non-existemnt prims show up as a resync (or at least be
+            # understood to be a UnchangedPrimStack resync) but it's tricky to tease this 
+            # apart in the current change processing. This same effect will 
+            # apply to most of the other test cases in this test file.
+            "/Prim2/RenamedChild" : self.PrimResyncType.Delete,
+            # XXX: The presence of this resync notification is due to a separate
+            # bug related to implied ancestral inherits nodes having map 
+            # functions mapping ancestral paths to incorrect locations. This 
+            # bug subsequently impacts Pcp change processing causing this to
+            # come up as a resync even though there is no prim on the composed
+            # stage at this path neither before or after the edit
+            "/World/Ref/RelocatedChild" : self.PrimResyncType.Delete,
         })
 
         # Edit: Rename /Class/RelocatedChild to /Class/RenamedChild, effectively
@@ -1635,6 +1838,12 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 },
             }
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Class/RelocatedChild" : self.PrimResyncType.RenameSource,
+            "/Class/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/World/Ref/RelocatedChild" : self.PrimResyncType.RenameSource,
+            "/World/Ref/RenamedChild" : self.PrimResyncType.RenameDestination,
+        })
 
         # Verify the updated contents of stage2 where Prim1's RelocatedChild is
         # now named RenamedChild with the same composed contents as the original
@@ -1670,6 +1879,22 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                     }           
                 },
             },
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Class/RelocatedChild" : self.PrimResyncType.RenameSource,
+            "/Class/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim1/RelocatedRef/RelocatedChild" : self.PrimResyncType.RenameSource,
+            "/Prim1/RelocatedRef/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim2/RelocatedChild" : self.PrimResyncType.RenameSource,
+            "/Prim2/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
+            # XXX: The presence of this resync notification is due to a separate
+            # bug related to implied ancestral inherits nodes having map 
+            # functions mapping ancestral paths to incorrect locations. This 
+            # bug subsequently impacts Pcp change processing causing this to
+            # come up as a resync even though there is no prim on the composed
+            # stage at this path neither before or after the edit
+            "/World/Ref/RenamedChild" : self.PrimResyncType.Delete,
         })
 
     def test_PartiallyRelocatedNewPath(self):
@@ -1894,6 +2119,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
                 },
             }
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/World_2/Ref_2/Child_2" : self.PrimResyncType.RenameSource,
+            "/World_2/Ref_2/RenamedChild_2" : self.PrimResyncType.RenameDestination,
+        })
 
         # On stage2 the contents of RelocatedRef_2 have changed to reflect that
         # the entirety of composed specs for Child_2 have been renamed to 
@@ -1936,6 +2165,10 @@ class TestUsdNamespaceEditorDependentEditsBasicRelocates(
             'Prim' : primContents,
             'RelocatedRef_1' : ref1Contents,
             'RelocatedRef_2' : ref2Contents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/RelocatedRef_2/Child_2" : self.PrimResyncType.RenameSource,
+            "/RelocatedRef_2/RenamedChild_2" : self.PrimResyncType.RenameDestination,
         })
 
 if __name__ == '__main__':

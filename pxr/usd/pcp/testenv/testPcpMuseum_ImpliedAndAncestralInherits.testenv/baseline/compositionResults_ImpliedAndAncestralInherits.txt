@@ -1,14 +1,14 @@
-Loading @ImpliedAndAncestralInherits/root.sdf@
+Loading @ImpliedAndAncestralInherits/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </World>
 
 Prim Stack:
-    root.sdf             /World
+    root.usda            /World
 
 Child names:
      ['CharGroup']
@@ -17,10 +17,10 @@ Child names:
 Results for composing </World/CharGroup>
 
 Prim Stack:
-    root.sdf             /World/CharGroup
-    Group.sdf            /CharGroup
-    CharGroupRig.sdf     /CHARGROUP
-    CharGroupRig.sdf     /_class_CharGroupRig
+    root.usda            /World/CharGroup
+    Group.usda           /CharGroup
+    CharGroupRig.usda    /CHARGROUP
+    CharGroupRig.usda    /_class_CharGroupRig
 
 Child names:
      ['Sim']
@@ -29,8 +29,8 @@ Child names:
 Results for composing </World/CharGroup/Sim>
 
 Prim Stack:
-    CharGroupRig.sdf     /CHARGROUP/Sim
-    CharGroupRig.sdf     /_class_CharGroupRig/Sim
+    CharGroupRig.usda    /CHARGROUP/Sim
+    CharGroupRig.usda    /_class_CharGroupRig/Sim
 
 Child names:
      ['includes']
@@ -39,8 +39,8 @@ Child names:
 Results for composing </World/CharGroup/Sim/includes>
 
 Prim Stack:
-    CharGroupRig.sdf     /CHARGROUP/Sim/includes
-    CharGroupRig.sdf     /_class_CharGroupRig/Sim/includes
+    CharGroupRig.usda    /CHARGROUP/Sim/includes
+    CharGroupRig.usda    /_class_CharGroupRig/Sim/includes
 
 Child names:
      ['Hand']
@@ -49,8 +49,8 @@ Child names:
 Results for composing </World/CharGroup/Sim/includes/Hand>
 
 Prim Stack:
-    CharGroupRig.sdf     /CHARGROUP/Sim/includes/Hand
-    CharGroupRig.sdf     /_class_SimHand
+    CharGroupRig.usda    /CHARGROUP/Sim/includes/Hand
+    CharGroupRig.usda    /_class_SimHand
 
 Child names:
      ['Geom']
@@ -59,5 +59,5 @@ Child names:
 Results for composing </World/CharGroup/Sim/includes/Hand/Geom>
 
 Prim Stack:
-    CharGroupRig.sdf     /_class_SimHand/Geom
+    CharGroupRig.usda    /_class_SimHand/Geom
 

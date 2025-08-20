@@ -8,7 +8,6 @@
 #define PXR_USD_SDF_TEXT_PARSER_CONTEXT_H
 
 #include "pxr/pxr.h"
-#include "pxr/usd/sdf/data.h"
 #include "pxr/usd/sdf/layerHints.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/listOp.h"
@@ -16,6 +15,7 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/reference.h"
+#include "pxr/usd/sdf/usdaData.h"
 #include "pxr/usd/sdf/types.h"
 
 #include "pxr/base/ts/spline.h"
@@ -183,7 +183,7 @@ public:
 
     bool custom;
     SdfSpecifier specifier;
-    SdfDataRefPtr data;
+    SdfUsdaDataRefPtr data;
     SdfPath path;
     VtValue variability;
     VtValue assoc;
@@ -216,8 +216,9 @@ public:
     TsKnot splineKnot;
     Sdf_ParserHelpers::Value splineKnotValue;
     Sdf_ParserHelpers::Value splineKnotPreValue;
-    Sdf_ParserHelpers::Value splineTangentValue;
+    Sdf_ParserHelpers::Value splineTangentSlopeValue;
     Sdf_ParserHelpers::Value splineTangentWidthValue;
+    TsTangentAlgorithm splineTangentAlgorithm;
     std::string splineTangentIdentifier;
     bool splineTanIsPre;
     TsInterpMode splineInterp;

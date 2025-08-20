@@ -9,14 +9,8 @@
 #define PXR_USD_SDR_NODE_DISCOVERY_RESULT_H
 
 /// \file sdr/shaderNodeDiscoveryResult.h
-///
-/// \note
-/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
-/// in this file. All existing pxr/usd/ndr implementations will be moved to
-/// pxr/usd/sdr.
 
 #include "pxr/usd/sdr/declare.h"
-#include "pxr/usd/ndr/nodeDiscoveryResult.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -135,54 +129,6 @@ struct SdrShaderNodeDiscoveryResult {
     /// subIdentifier is only needed if the asset specifies multiple definitions
     /// rather than a single definition.
     TfToken subIdentifier;
-
-    /// Helper function to translate SdrShaderNodeDiscoveryResult to
-    /// NdrNodeDiscoveryResult values.
-    ///
-    /// \deprecated
-    /// This function is deprecated and will be removed with the removal of
-    /// the Ndr library.
-    NdrNodeDiscoveryResult ToNdrNodeDiscoveryResult() const {
-        return NdrNodeDiscoveryResult(
-            identifier,
-            SdrToNdrVersion(version),
-            name,
-            family,
-            discoveryType,
-            sourceType,
-            uri,
-            resolvedUri,
-            sourceCode,
-            metadata,
-            blindData,
-            subIdentifier
-        );
-    }
-
-    /// Helper function to translate NdrNodeDiscoveryResult to
-    /// SdrShaderNodeDiscoveryResult values.
-    ///
-    /// \deprecated
-    /// This function is deprecated and will be removed with the removal of
-    /// the Ndr library.
-    static SdrShaderNodeDiscoveryResult FromNdrNodeDiscoveryResult(
-        const NdrNodeDiscoveryResult& result
-    ) {
-        return SdrShaderNodeDiscoveryResult(
-            result.identifier,
-            NdrToSdrVersion(result.version),
-            result.name,
-            result.family,
-            result.discoveryType,
-            result.sourceType,
-            result.uri,
-            result.resolvedUri,
-            result.sourceCode,
-            result.metadata,
-            result.blindData,
-            result.subIdentifier
-        );
-    }
 };
 
 typedef std::vector<SdrShaderNodeDiscoveryResult> SdrShaderNodeDiscoveryResultVec;

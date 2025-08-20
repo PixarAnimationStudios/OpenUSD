@@ -130,6 +130,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (early_fragment_tests)
     (OsdPerPatchVertexBezier)
     (interstageDrawingCoord)
+    ((withoutScaleAndBias, "_withoutScaleAndBias"))
+    ((applyScaleAndBias, "_applyScaleAndBias"))
 );
 
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_HGI_RESOURCE_GENERATION, false,
@@ -3665,6 +3667,53 @@ static void _EmitAccessor(std::stringstream &str,
     _EmitScalarAccessor(str, name, type);
 }
 
+static void _EmitTextureScaleAndBiasDeclarations(
+    std::stringstream &accessors,
+    HdSt_ResourceBinder::MetaData::ShaderParameterAccessor const &acc)
+{
+    TfToken const &name = acc.name;
+
+    accessors 
+        << "#ifdef HD_HAS_" << name << "_" 
+        << HdStTokens->storm << "_" << HdStTokens->scale << "\n"
+        << "FORWARD_DECL(vec4 HdGet_" << name << "_" 
+        << HdStTokens->storm << "_" << HdStTokens->scale 
+        << "());\n"
+        << "#endif\n"
+        << "#ifdef HD_HAS_" << name << "_" << HdStTokens->storm 
+        << "_" << HdStTokens->bias  << "\n"
+        << "FORWARD_DECL(vec4 HdGet_" << name << "_" << HdStTokens->storm 
+        << "_" << HdStTokens->bias 
+        << "());\n"
+        << "#endif\n";
+}
+
+static void _EmitTextureApplyScaleAndBias(
+    std::stringstream &accessors,
+    HdSt_ResourceBinder::MetaData::ShaderParameterAccessor const &acc,
+    std::string const &swizzle)
+{
+    TfToken const &name = acc.name;
+    TfToken const &dataType = acc.dataType;
+
+    accessors
+        << _GetUnpackedType(dataType, false)
+        << " HdGet_" << name << _tokens->applyScaleAndBias << "("
+        << _GetUnpackedType(dataType, false) << " value) {\n"
+        << "#ifdef HD_HAS_" << name << "_" << HdStTokens->storm << "_"
+        << HdStTokens->scale << "\n"
+        << "  value *= HdGet_" << name << "_" << HdStTokens->storm
+        << "_" << HdStTokens->scale << "()" << swizzle << ";\n"
+        << "#endif\n"
+        << "#ifdef HD_HAS_" << name << "_" << HdStTokens->storm << "_"
+        << HdStTokens->bias << "\n"
+        << "  value += HdGet_" << name << "_" << HdStTokens->storm
+        << "_" << HdStTokens->bias << "()" << swizzle << ";\n"
+        << "#endif\n"
+        << "  return value;\n"
+        << "}\n";
+}
+
 static void _EmitTextureAccessors(
     std::stringstream &accessors,
     HdSt_ResourceBinder::MetaData::ShaderParameterAccessor const &acc,
@@ -3687,19 +3736,7 @@ static void _EmitTextureAccessors(
 
     // Forward declare texture scale and bias
     if (hasTextureScaleAndBias) {
-        accessors 
-            << "#ifdef HD_HAS_" << name << "_" 
-            << HdStTokens->storm << "_" << HdStTokens->scale << "\n"
-            << "FORWARD_DECL(vec4 HdGet_" << name << "_" 
-            << HdStTokens->storm << "_" << HdStTokens->scale 
-            << "());\n"
-            << "#endif\n"
-            << "#ifdef HD_HAS_" << name << "_" << HdStTokens->storm 
-            << "_" << HdStTokens->bias  << "\n"
-            << "FORWARD_DECL(vec4 HdGet_" << name << "_" << HdStTokens->storm 
-            << "_" << HdStTokens->bias 
-            << "());\n"
-            << "#endif\n";
+        _EmitTextureScaleAndBiasDeclarations(accessors, acc);
     }
 
     if (!isBindless) {
@@ -3804,15 +3841,24 @@ static void _EmitTextureAccessors(
         // bindless
     }
 
+    // If we have texture scale and bias, we want to define an accessor that
+    // does not include scale and bias.  We will define additional functions
+    // below to return the value with the scale and bias applied.
+    const std::string accessorSuffix =
+        hasTextureScaleAndBias ? _tokens->withoutScaleAndBias.GetText()
+                               : "";
+
     if (isArray) {
         accessors
         << _GetUnpackedType(dataType, false)
-        << " HdGet_" << name << "(int index, vec" << coordDim << " coord) {\n"
+        << " HdGet_" << name << accessorSuffix << "(int index, vec" << coordDim
+        << " coord) {\n"
         << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n";
     } else {
         accessors
             << _GetUnpackedType(dataType, false)
-            << " HdGet_" << name << "(vec" << coordDim << " coord) {\n"
+            << " HdGet_" << name << accessorSuffix << "(vec" << coordDim
+            << " coord) {\n"
             << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n";
     }
 
@@ -3829,68 +3875,30 @@ static void _EmitTextureAccessors(
             << "  vec" << coordDim << " sampleCoord = coord;\n";
     }
 
-    if (hasTextureScaleAndBias) {
-        if (!isBindless) {
-            accessors
-                << "  " << _GetUnpackedType(dataType, false)
-                << " result = "
-                << _GetPackedTypeAccessor(dataType, false)
-                << "((HgiGet_" << name;
-            if (isArray) {
-                accessors << "(index, sampleCoord)\n";
-            } else {
-                accessors << "(sampleCoord)\n";
-            }
-        } else {
-            accessors
-                << "  " << _GetUnpackedType(dataType, false)
-                << " result = "
-                << _GetPackedTypeAccessor(dataType, false)
-                << "((texture(HdGetSampler_" << name;
-            if (isArray) {
-                accessors << "(index), sampleCoord)\n";
-            } else {
-                accessors << "(), sampleCoord)\n";
-            }
-        }
+    if (!isBindless) {
         accessors
-            << "#ifdef HD_HAS_" << name << "_" << HdStTokens->storm << "_" 
-            << HdStTokens->scale << "\n"
-            << "    * HdGet_" << name << "_" << HdStTokens->storm << "_" 
-            << HdStTokens->scale << "()\n"
-            << "#endif\n" 
-            << "#ifdef HD_HAS_" << name << "_" << HdStTokens->storm << "_" 
-            << HdStTokens->bias << "\n"
-            << "    + HdGet_" << name << "_" << HdStTokens->storm << "_" 
-            << HdStTokens->bias  << "()\n"
-            << "#endif\n"
-            << ")" << swizzle << ");\n";
-    } else {
-        if (!isBindless) {
-            accessors
-                << "  " << _GetUnpackedType(dataType, false)
-                << " result = "
-                << _GetPackedTypeAccessor(dataType, false)
-                << "(HgiGet_" << name;
-            if (isArray) {
-                accessors << "(index, sampleCoord)";
-            } else {
-                accessors << "(sampleCoord)";
-            }
-            accessors << swizzle << ");\n";
+            << "  " << _GetUnpackedType(dataType, false)
+            << " result = "
+            << _GetPackedTypeAccessor(dataType, false)
+            << "(HgiGet_" << name;
+        if (isArray) {
+            accessors << "(index, sampleCoord)";
         } else {
-            accessors
-                << "  " << _GetUnpackedType(dataType, false)
-                << " result = "
-                << _GetPackedTypeAccessor(dataType, false)
-                << "(texture(HdGetSampler_" << name;
-            if (isArray) {
-                accessors << "(index), sampleCoord)";
-            } else {
-                accessors << "(), sampleCoord)";
-            }
-            accessors << swizzle << ");\n";
+            accessors << "(sampleCoord)";
         }
+        accessors << swizzle << ");\n";
+    } else {
+        accessors
+            << "  " << _GetUnpackedType(dataType, false)
+            << " result = "
+            << _GetPackedTypeAccessor(dataType, false)
+            << "(texture(HdGetSampler_" << name;
+        if (isArray) {
+            accessors << "(index), sampleCoord)";
+        } else {
+            accessors << "(), sampleCoord)";
+        }
+        accessors << swizzle << ");\n";
     }
 
     if (acc.processTextureFallbackValue) {
@@ -3905,45 +3913,15 @@ static void _EmitTextureAccessors(
         //
         accessors
             << "  if (bool(shaderData[shaderCoord]." << name
-            << HdSt_ResourceBindingSuffixTokens->valid
-            << ")) {\n";
-
-        if (hasTextureScaleAndBias) {
-            accessors
-                << "    return result;\n"
-                << "  } else {\n"
-                << "    return ("
-                << _GetPackedTypeAccessor(dataType, false)
-                << "(shaderData[shaderCoord]."
-                << name
-                << HdSt_ResourceBindingSuffixTokens->fallback
-                << fallbackSwizzle << ")\n"
-                << "#ifdef HD_HAS_" << name << "_" 
-                << HdStTokens->storm << "_" << HdStTokens->scale << "\n"
-                << "        * HdGet_" << name << "_" 
-                << HdStTokens->storm << "_" << HdStTokens->scale 
-                << "()" << swizzle << "\n"
-                << "#endif\n" 
-                << "#ifdef HD_HAS_" << name << "_" 
-                << HdStTokens->storm << "_" << HdStTokens->bias << "\n"
-                << "        + HdGet_" << name << "_" 
-                << HdStTokens->storm << "_" << HdStTokens->bias
-                << "()" << swizzle << "\n"
-                << "#endif\n"
-                << ");\n"
-                << "  }\n";
-        } else {
-            accessors
-                << "    return result;\n"
-                << "  } else {\n"
-                << "    return "
-                << _GetPackedTypeAccessor(dataType, false)
-                << "(shaderData[shaderCoord]."
-                << name
-                << HdSt_ResourceBindingSuffixTokens->fallback
-                << fallbackSwizzle << ");\n"
-                << "  }\n";
-        }
+            << HdSt_ResourceBindingSuffixTokens->valid << ")) {\n"
+            << "    return result;\n"
+            << "  } else {\n"
+            << "    return "
+            << _GetPackedTypeAccessor(dataType, false)
+            << "(shaderData[shaderCoord]."
+            << name << HdSt_ResourceBindingSuffixTokens->fallback
+            << fallbackSwizzle << ");\n"
+            << "  }\n";
     } else {
         accessors
             << "  return result;\n";
@@ -3951,7 +3929,35 @@ static void _EmitTextureAccessors(
     
     accessors
         << "}\n";
-    
+
+    if (hasTextureScaleAndBias) {
+        // HdGet_name_applyScaleAndBias
+        _EmitTextureApplyScaleAndBias(accessors, acc, swizzle);
+
+        // HdGet_name implemented using HdGet_name_withoutScaleAndBias and
+        // HdGet_name_applyScaleAndBias
+        if (isArray) {
+            accessors
+                << _GetUnpackedType(dataType, false)
+                << " HdGet_" << name << "(int index, vec" << coordDim
+                << " coord) {\n"
+                << "  " << _GetUnpackedType(dataType, false) << " value"
+                << " = HdGet_" << name << accessorSuffix << "(index, coord);\n";
+        } else {
+            accessors
+                << _GetUnpackedType(dataType, false)
+                << " HdGet_" << name << "(vec" << coordDim << " coord) {\n"
+                << "  " << _GetUnpackedType(dataType, false) << " value"
+                << " = HdGet_" << name << accessorSuffix << "(coord);\n";
+        }
+
+        accessors
+            << "  value = HdGet_" << name << _tokens->applyScaleAndBias
+            << "(value);\n"
+            << "  return value;\n"
+            << "}\n";
+    }
+
     TfTokenVector const &inPrimvars = acc.inPrimvars;
 
     // Forward declare getter for inPrimvars in case it's a transform2d
@@ -3979,33 +3985,42 @@ static void _EmitTextureAccessors(
         accessors
             << "  vec" << coordDim << "(0.0)";
     }
-    accessors << ";\n}\n"; 
+    accessors << ";\n}\n";
 
     // vec2 HdGetCoord_name()
     accessors
         << "vec" << coordDim << " HdGetCoord_" << name << "() {"
         << "  return HdGetCoord_" << name << "(0);\n }\n";
 
-    // vec4 HdGet_name(int localIndex)
-    if (isArray) {
-        accessors
-            << _GetUnpackedType(dataType, false)
-            << " HdGet_" << name
-            << "(int localIndex) { return HdGet_" << name << "(localIndex, "
-            << "HdGetCoord_" << name << "(localIndex));\n}\n";
-    } else {
-        accessors
-            << _GetUnpackedType(dataType, false)
-            << " HdGet_" << name
-            << "(int localIndex) { return HdGet_" << name << "("
-            << "HdGetCoord_" << name << "(localIndex));\n}\n";
+    // If accessorSuffix is not empty (i.e., hasTextureScaleAndBias is true),
+    // we need to ouput accessors with and without the accessorSuffix.
+    std::vector<std::string> accessorSuffixes = { accessorSuffix };
+    if (!accessorSuffix.empty()) {
+        accessorSuffixes.emplace_back();
     }
+    for (const std::string& suffix : accessorSuffixes) {
+        // vec4 HdGet_name[_suffix](int localIndex)
+        if (isArray) {
+            accessors
+                << _GetUnpackedType(dataType, false)
+                << " HdGet_" << name << suffix
+                << "(int localIndex) { return HdGet_" << name << suffix
+                << "(localIndex, " << "HdGetCoord_" << name
+                << "(localIndex));\n}\n";
+        } else {
+            accessors
+                << _GetUnpackedType(dataType, false)
+                << " HdGet_" << name << suffix
+                << "(int localIndex) { return HdGet_" << name << suffix << "("
+                << "HdGetCoord_" << name << "(localIndex));\n}\n";
+        }
 
-    // vec4 HdGet_name()
-    accessors
-        << _GetUnpackedType(dataType, false)
-        << " HdGet_" << name
-        << "() {\n  return HdGet_" << name << "(0);\n}\n";
+        // vec4 HdGet_name[_suffix]()
+        accessors
+            << _GetUnpackedType(dataType, false)
+            << " HdGet_" << name << suffix
+            << "() {\n  return HdGet_" << name << suffix << "(0);\n}\n";
+    }
 
     // float HdGetScalar_name()
     _EmitScalarAccessor(accessors, name, dataType);
@@ -4013,7 +4028,146 @@ static void _EmitTextureAccessors(
     // Emit pre-multiplication by alpha indicator
     if (acc.isPremultiplied) {
         accessors << "#define " << name << "_IS_PREMULTIPLIED 1\n";
-    }      
+    }
+}
+
+static void _EmitTextureUdimArrayAccessors(
+    std::stringstream &accessors,
+    HdSt_ResourceBinder::MetaData::ShaderParameterAccessor const &acc,
+    std::string const &swizzle,
+    std::string const &fallbackSwizzle,
+    bool const isBindless,
+    bool const bindlessTextureEnabled)
+{
+    // Always possible to have texture scale and bias.
+    _EmitTextureScaleAndBiasDeclarations(accessors, acc);
+
+    const TfToken& name = acc.name;
+
+    // a function returning sampler requires bindless_texture
+    if (isBindless && bindlessTextureEnabled) {
+        accessors
+            << "sampler2DArray\n"
+            << "HdGetSampler_" << name << "() {\n"
+            << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n"
+            << "  return sampler2DArray(shaderData[shaderCoord]."
+            << name << ");\n"
+            << "}\n";
+    }
+
+    const TfToken& dataType = acc.dataType;
+
+    // HdGet_name_withoutScaleAndBias
+    accessors
+        << dataType
+        << " HdGet_" << name << _tokens->withoutScaleAndBias << "(vec2 coord)"
+        << " {\n"
+        << "  int shaderCoord = GetDrawingCoord().shaderCoord;\n"
+        << "  vec3 c = hd_sample_udim(coord);\n";
+
+    if (isBindless) {
+        accessors
+            << "  uvec2 handle = shaderData[shaderCoord]."
+            << name << HdSt_ResourceBindingSuffixTokens->layout << ";\n"
+            << "  c.z = "
+            << "texelFetch(sampler1D(handle), int(c.z), 0).x - 1;\n"
+            << "  vec4 ret = vec4(0, 0, 0, 0);\n"
+            << "  if (c.z >= -0.5) {\n"
+            << "    uvec2 handleTexels = shaderData[shaderCoord]."
+            << name << ";\n"
+            << "    ret = texture(sampler2DArray(handleTexels), c);\n"
+            << "  }\n";
+    } else {
+        accessors
+            << "  c.z = HgiTexelFetch_"
+            << name << HdSt_ResourceBindingSuffixTokens->layout
+            << "(int(c.z)).x - 1;\n"
+            << "  vec4 ret = vec4(0, 0, 0, 0);\n"
+            << "  if (c.z >= -0.5) { ret = HgiGet_"
+            << name << "(c); }\n";
+    }
+
+    if (acc.processTextureFallbackValue) {
+        accessors
+            << "  if (!bool(shaderData[shaderCoord]." << name
+            << HdSt_ResourceBindingSuffixTokens->valid << ")) {\n"
+            << "    return "
+            << _GetPackedTypeAccessor(dataType, false)
+            << "(shaderData[shaderCoord]." << name
+            << HdSt_ResourceBindingSuffixTokens->fallback
+            << fallbackSwizzle << ");\n"
+            << "  }\n";
+    }
+
+    accessors
+        << "  return ret" << swizzle << ";\n}\n";
+
+    // HdGet_name_applyScaleAndBias
+    _EmitTextureApplyScaleAndBias(accessors, acc, swizzle);
+
+    // HdGet_name implemented using HdGet_name_withoutScaleAndBias and
+    // HdGet_name_applyScaleAndBias
+    accessors
+        << dataType
+        << " HdGet_" << name << "(vec2 coord) {\n"
+        << "  " << dataType << " value = HdGet_" << name
+        << _tokens->withoutScaleAndBias << "(coord);\n"
+        << "  value = HdGet_" << name << _tokens->applyScaleAndBias
+        << "(value);\n"
+        << "  return value;\n"
+        << "}\n";
+
+    const TfTokenVector& inPrimvars = acc.inPrimvars;
+
+    // Create accessor for texture coordinates based on param name
+    // vec2 HdGetCoord_name()
+    accessors
+        << "vec2 HdGetCoord_" << name << "() {\n"
+        << "  return \n";
+    if (!inPrimvars.empty()) {
+        accessors 
+            << "#if defined(HD_HAS_" << inPrimvars[0] <<")\n"
+            << "  HdGet_" << inPrimvars[0] << "().xy;\n"
+            << "#else\n"
+            << "  vec2(0.0, 0.0)\n"
+            << "#endif\n";
+    } else {
+        accessors
+            << "  vec2(0.0, 0.0)\n";
+    }
+    accessors << "; }\n";
+
+    const std::vector<std::string> accessorSuffixes = {
+        _tokens->withoutScaleAndBias.GetText(),
+        ""
+    };
+    for (const std::string& suffix : accessorSuffixes) {
+        // vec4 HdGet_name[_suffix]() {
+        //   return HdGet_name[_suffix](HdGetCoord_name());
+        // }
+        accessors
+            << dataType
+            << " HdGet_" << name << suffix << "() { return HdGet_"
+            << name << suffix << "(" << "HdGetCoord_" << name << "()); }\n";
+
+        // vec4 HdGet_name[_suffix](int localIndex) {
+        //   return HdGet_name[_suffix](HdGetCoord_name());
+        // }
+        accessors
+            << dataType
+            << " HdGet_" << name << suffix << "(int localIndex) { return HdGet_"
+            << name << suffix << "(" << "HdGetCoord_" << name << "());\n}\n";
+    }
+
+    // float HdGetScalar_name()
+    _EmitScalarAccessor(
+        accessors, name, dataType);
+
+    // Emit pre-multiplication by alpha indicator
+    if (acc.isPremultiplied) {
+        accessors 
+            << "#define " << name << "_IS_PREMULTIPLIED 1\n";
+    }
 }
 
 // Accessing face varying primvar data from the GS or FS requires special
@@ -5625,7 +5779,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
         _EmitAccessor(accessorsVS, name, dataType, binding);
 
         _EmitStructAccessor(accessorsTCS, _tokens->inPrimvars,
-                            name, dataType, /*arraySize=*/1, "gl_InvocationID");
+                            name, dataType, /*arraySize=*/1, "gl_InvocationID + localIndex");
         _EmitStructAccessor(accessorsTES, _tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1, "localIndex");
         _EmitStructAccessor(accessorsGS,  _tokens->inPrimvars,
@@ -5725,7 +5879,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
             "GetDrawingCoord().varyingCoord + int(hd_VertexID) - GetBaseVertexOffset()");
         
         _EmitStructAccessor(accessorsTCS, _tokens->inPrimvars,
-                            name, dataType, /*arraySize=*/1, "gl_InvocationID");
+                            name, dataType, /*arraySize=*/1, "gl_InvocationID + localIndex");
         _EmitStructAccessor(accessorsTES, _tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1, "localIndex");
         _EmitStructAccessor(accessorsGS,  _tokens->inPrimvars,
@@ -6235,263 +6389,23 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
 
         } else if (bindingType == HdStBinding::BINDLESS_TEXTURE_UDIM_ARRAY) {
 
-            accessors 
-                << "#ifdef HD_HAS_" << it->second.name << "_" 
-                << HdStTokens->storm << "_" 
-                << HdStTokens->scale << "\n"
-                << "vec4 HdGet_" << it->second.name << "_" 
-                << HdStTokens->storm << "_"
-                << HdStTokens->scale << "();\n"
-                << "#endif\n"
-                << "#ifdef HD_HAS_" << it->second.name << "_" 
-                << HdStTokens->storm << "_"
-                << HdStTokens->bias << "\n"
-                << "vec4 HdGet_" << it->second.name << "_" 
-                << HdStTokens->storm << "_"
-                << HdStTokens->bias << "();\n"
-                << "#endif\n";
-                
-            // a function returning sampler requires bindless_texture
-            if (bindlessTextureEnabled) {
-                accessors
-                    << "sampler2DArray\n"
-                    << "HdGetSampler_" << it->second.name << "() {\n"
-                    << "  int shaderCoord = GetDrawingCoord().shaderCoord; \n"
-                    << "  return sampler2DArray(shaderData[shaderCoord]."
-                    << it->second.name << ");\n"
-                    << "}\n";
-            }
-            accessors
-                << it->second.dataType
-                << " HdGet_" << it->second.name << "(vec2 coord)" << " {\n"
-                << "  int shaderCoord = GetDrawingCoord().shaderCoord;\n"
-                << "  uvec2 handle = shaderData[shaderCoord]."
-                << it->second.name
-                << HdSt_ResourceBindingSuffixTokens->layout << ";\n"
-                << "  vec3 c = hd_sample_udim(coord);\n"
-                << "  c.z = "
-                << "texelFetch(sampler1D(handle), int(c.z), 0).x - 1;\n"
-                << "  vec4 ret = vec4(0, 0, 0, 0);\n"
-                << "  if (c.z >= -0.5) {\n"
-                << "    uvec2 handleTexels = shaderData[shaderCoord]."
-                << it->second.name << ";\n"
-                << "    ret = texture(sampler2DArray(handleTexels), c);\n"
-                << "  }\n";
-                
-            if (it->second.processTextureFallbackValue) {
-                accessors
-                    << "  if (!bool(shaderData[shaderCoord]." << it->second.name
-                    << HdSt_ResourceBindingSuffixTokens->valid
-                    << ")) {\n"
-                    << "    return ("
-                    << _GetPackedTypeAccessor(it->second.dataType, false)
-                    << "(shaderData[shaderCoord]." << it->second.name
-                    << HdSt_ResourceBindingSuffixTokens->fallback
-                    << fallbackSwizzle << ")\n"
-                    << "#ifdef HD_HAS_" << it->second.name << "_"
-                    << HdStTokens->storm << "_"
-                    << HdStTokens->scale << "\n"
-                    << "    * HdGet_" << it->second.name << "_" 
-                    << HdStTokens->storm << "_"
-                    << HdStTokens->scale << "()" << swizzle << "\n"
-                    << "#endif\n" 
-                    << "#ifdef HD_HAS_" << it->second.name << "_" 
-                    << HdStTokens->storm << "_"
-                    << HdStTokens->bias << "\n"
-                    << "    + HdGet_" << it->second.name << "_" 
-                    << HdStTokens->storm << "_"
-                    << HdStTokens->bias  << "()" << swizzle << "\n"
-                    << "#endif\n"
-                    << "    );\n  }\n";
-            }
-            
-            accessors
-                << "  return (ret\n"
-                << "#ifdef HD_HAS_" << it->second.name << "_" 
-                << HdStTokens->storm << "_"
-                << HdStTokens->scale << "\n"
-                << "    * HdGet_" << it->second.name << "_" 
-                << HdStTokens->storm << "_"
-                << HdStTokens->scale << "()\n"
-                << "#endif\n" 
-                << "#ifdef HD_HAS_" << it->second.name << "_" 
-                << HdStTokens->storm << "_" 
-                << HdStTokens->bias << "\n"
-                << "    + HdGet_" << it->second.name << "_" 
-                << HdStTokens->storm << "_" 
-                << HdStTokens->bias  << "()\n"
-                << "#endif\n"
-                << "  )" << swizzle << ";\n}\n";
-
-            // Create accessor for texture coordinates based on param name
-            // vec2 HdGetCoord_name()
-            accessors
-                << "vec2 HdGetCoord_" << it->second.name << "() {\n"
-                << "  return \n";
-            if (!it->second.inPrimvars.empty()) {
-                accessors 
-                    << "#if defined(HD_HAS_" << it->second.inPrimvars[0] <<")\n"
-                    << "  HdGet_" << it->second.inPrimvars[0] << "().xy;\n"
-                    << "#else\n"
-                    << "  vec2(0.0, 0.0)\n"
-                    << "#endif\n";
-            } else {
-                accessors
-                    << "  vec2(0.0, 0.0)\n";
-            }
-            accessors << "; }\n";
-
-            // vec4 HdGet_name() { return HdGet_name(HdGetCoord_name()); }
-            accessors
-                << it->second.dataType
-                << " HdGet_" << it->second.name
-                << "() { return HdGet_" << it->second.name << "("
-                << "HdGetCoord_" << it->second.name << "()); }\n";
-
-            // vec4 HdGet_name(int localIndex) { return HdGet_name(HdGetCoord_name()); }
-            accessors
-                << it->second.dataType
-                << " HdGet_" << it->second.name
-                << "(int localIndex) { return HdGet_" << it->second.name << "("
-                << "HdGetCoord_" << it->second.name << "());\n}\n";
-
-            // float HdGetScalar_name()
-            _EmitScalarAccessor(
-                accessors, it->second.name, it->second.dataType);
-
-            // Emit pre-multiplication by alpha indicator
-            if (it->second.isPremultiplied) {
-                accessors 
-                    << "#define " << it->second.name << "_IS_PREMULTIPLIED 1\n";
-            }      
+            _EmitTextureUdimArrayAccessors(
+                accessors, it->second, swizzle, fallbackSwizzle,
+                /* isBindless = */ true,
+                bindlessTextureEnabled);
 
         } else if (bindingType == HdStBinding::TEXTURE_UDIM_ARRAY) {
 
-            accessors 
-                << "#ifdef HD_HAS_" << it->second.name << "_" 
-                << HdStTokens->storm << "_"
-                << HdStTokens->scale << "\n"
-                << "FORWARD_DECL(vec4 HdGet_" << it->second.name << "_" 
-                << HdStTokens->storm << "_"
-                << HdStTokens->scale << "());\n"
-                << "#endif\n"
-                << "#ifdef HD_HAS_" << it->second.name << "_" 
-                << HdStTokens->storm << "_"
-                << HdStTokens->bias << "\n"
-                << "FORWARD_DECL(vec4 HdGet_" << it->second.name << "_" 
-                << HdStTokens->storm << "_" 
-                << HdStTokens->bias << "());\n"
-                << "#endif\n";
-                
             _AddTextureElement(&_resTextures,
                                it->second.name, 2,
                                binding.GetTextureUnit(),
                                HioFormatFloat32Vec4,
                                TextureType::ARRAY_TEXTURE);
 
-            // vec4 HdGet_name(vec2 coord) { vec3 c = hd_sample_udim(coord);
-            // c.z = HgiTexelFetch_name(int(c.z), 0).x - 1;
-            // vec4 ret = vec4(0, 0, 0, 0);
-            // if (c.z >= -0.5) { ret = HgiGet_name(c); }
-            // return (ret
-            // #ifdef HD_HAS_name_scale
-            //   * HdGet_name_scale()
-            // #endif
-            // #ifdef HD_HAS_name_bias
-            //   + HdGet_name_bias()
-            // #endif // ).xyz; }
-            accessors
-                << it->second.dataType
-                << " HdGet_" << it->second.name
-                << "(vec2 coord) {\n vec3 c = hd_sample_udim(coord);\n"
-                << "  c.z = HgiTexelFetch_"
-                << it->second.name << HdSt_ResourceBindingSuffixTokens->layout
-                << "(int(c.z)).x - 1;\n"
-                << "  vec4 ret = vec4(0, 0, 0, 0);\n"
-                << "  if (c.z >= -0.5) { ret = HgiGet_"
-                << it->second.name << "(c); }\n";
-            
-            if (it->second.processTextureFallbackValue) {
-                accessors
-                    << "  int shaderCoord = GetDrawingCoord().shaderCoord;\n"
-                    << "  if (!bool(shaderData[shaderCoord]." << it->second.name
-                    << HdSt_ResourceBindingSuffixTokens->valid
-                    << ")) {\n"
-                    << "    return ("
-                    << _GetPackedTypeAccessor(it->second.dataType, false)
-                    << "(shaderData[shaderCoord]." << it->second.name
-                    << HdSt_ResourceBindingSuffixTokens->fallback
-                    << fallbackSwizzle << ")\n"
-                    << "#ifdef HD_HAS_" << it->second.name << "_"
-                    << HdStTokens->storm << "_" << HdStTokens->scale << "\n"
-                    << "    * HdGet_" << it->second.name << "_" 
-                    << HdStTokens->storm << "_" << HdStTokens->scale << "()" 
-                    << swizzle << "\n"
-                    << "#endif\n" 
-                    << "#ifdef HD_HAS_" << it->second.name << "_" 
-                    << HdStTokens->storm << "_" << HdStTokens->bias << "\n"
-                    << "    + HdGet_" << it->second.name << "_" 
-                    << HdStTokens->storm << "_" << HdStTokens->bias  << "()" 
-                    << swizzle << "\n"
-                    << "#endif\n"
-                    << "    );\n  }\n";
-            }
-
-            accessors
-                << "  return (ret\n"
-                << "#ifdef HD_HAS_" << it->second.name << "_"
-                << HdStTokens->storm << "_" << HdStTokens->scale << "\n"
-                << "    * HdGet_" << it->second.name << "_" 
-                << HdStTokens->storm << "_" << HdStTokens->scale << "()\n"
-                << "#endif\n" 
-                << "#ifdef HD_HAS_" << it->second.name << "_" 
-                << HdStTokens->storm << "_" << HdStTokens->bias << "\n"
-                << "    + HdGet_" << it->second.name << "_" 
-                << HdStTokens->storm << "_" << HdStTokens->bias  << "()\n"
-                << "#endif\n"
-                << "  )" << swizzle << ";\n}\n";
-
-            // Create accessor for texture coordinates based on param name
-            // vec2 HdGetCoord_name()
-            accessors
-                << "vec2 HdGetCoord_" << it->second.name << "() {\n"
-                << "  return \n";
-            if (!it->second.inPrimvars.empty()) {
-                accessors 
-                    << "#if defined(HD_HAS_" << it->second.inPrimvars[0] <<")\n"
-                    << "  HdGet_" << it->second.inPrimvars[0] << "().xy\n"
-                    << "#else\n"
-                    << "  vec2(0.0, 0.0)\n"
-                    << "#endif\n";
-            } else {
-                accessors
-                    << "  vec2(0.0, 0.0)\n";
-            }
-            accessors << "; }\n";
-
-            // vec4 HdGet_name() { return HdGet_name(HdGetCoord_name()); }
-            accessors
-                << it->second.dataType
-                << " HdGet_" << it->second.name
-                << "() { return HdGet_" << it->second.name << "("
-                << "HdGetCoord_" << it->second.name << "()); }\n";
-
-            // vec4 HdGet_name(int localIndex) { return HdGet_name(HdGetCoord_name()); }
-            accessors
-                << it->second.dataType
-                << " HdGet_" << it->second.name
-                << "(int localIndex) { return HdGet_" << it->second.name << "("
-                << "HdGetCoord_" << it->second.name << "());\n}\n";
-
-            // float HdGetScalar_name()
-            _EmitScalarAccessor(
-                accessors, it->second.name, it->second.dataType);
-
-            // Emit pre-multiplication by alpha indicator
-            if (it->second.isPremultiplied) {
-                accessors 
-                    << "#define " << it->second.name << "_IS_PREMULTIPLIED 1\n";
-            }
+            _EmitTextureUdimArrayAccessors(
+                accessors, it->second, swizzle, fallbackSwizzle,
+                /* isBindless = */ false,
+                bindlessTextureEnabled);
 
         } else if (bindingType == HdStBinding::TEXTURE_UDIM_LAYOUT) {
 

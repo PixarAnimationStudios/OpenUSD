@@ -11,6 +11,7 @@ pxr_library(hgiGL
     LIBRARIES
         arch
         garch
+        hf
         hgi
         tf
         trace

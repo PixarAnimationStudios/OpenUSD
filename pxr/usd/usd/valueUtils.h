@@ -22,46 +22,64 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class Usd_InterpolatorBase;
 
-/// Returns true if \p value contains an SdfValueBlock, false otherwise.
-template <class T>
+/// Returns true if \p value contains BlockType (SdfValueBlock or
+/// SdfAnimationBlock), false otherwise.
+template <typename BlockType, typename T>
 inline bool
-Usd_ValueContainsBlock(const T* value)
+Usd_ValueContainsBlock(const T* /*value*/)
 {
     return false;
 }
 
 /// \overload
-template <class T>
+template <typename BlockType, typename T>
 inline bool
-Usd_ValueContainsBlock(const SdfValueBlock* value)
+Usd_ValueContainsBlock(const BlockType* value)
 {
     return value;
 }
 
 /// \overload
+template <typename BlockType>
 inline bool 
 Usd_ValueContainsBlock(const VtValue* value) 
 {
-    return value && value->IsHolding<SdfValueBlock>();
+    return value && value->IsHolding<BlockType>();
 }
 
 /// \overload
+template <typename BlockType>
 inline bool
 Usd_ValueContainsBlock(const SdfAbstractDataValue* value) 
 {
-    return value && value->isValueBlock;
+    if constexpr (std::is_same_v<BlockType, SdfValueBlock>) {
+        return value && value->isValueBlock;
+    } else if constexpr (std::is_same_v<BlockType, SdfAnimationBlock>) {
+        return value && value->isAnimationBlock;
+    } else {
+        return false;
+    }
 }
 
 /// \overload
+template <typename BlockType>
 inline bool
 Usd_ValueContainsBlock(const SdfAbstractDataConstValue* value)
 {
-    return value && value->valueType == typeid(SdfValueBlock);
+    if constexpr (std::is_same_v<BlockType, SdfValueBlock>) {
+        return value && 
+            TfSafeTypeCompare(value->valueType, typeid(SdfValueBlock));
+    } else if constexpr (std::is_same_v<BlockType, SdfAnimationBlock>) {
+        return value && 
+            TfSafeTypeCompare(value->valueType ,typeid(SdfAnimationBlock));
+    } else {
+        return false;
+    }
 }
 
-/// If \p value contains an SdfValueBlock, clear the value and
-/// return true. Otherwise return false.
-template <class T>
+/// If \p value contains an SdfValueBlock or an SdfAnimationBlock, clear the 
+/// value and return true. Otherwise return false.
+template <typename BlockType, typename T>
 inline bool
 Usd_ClearValueIfBlocked(T* value)
 {
@@ -69,21 +87,21 @@ Usd_ClearValueIfBlocked(T* value)
     // no good API for doing so. If the value is holding a
     // block, we just return true and rely on the consumer
     // to act as if the value were cleared.
-    return Usd_ValueContainsBlock(value);
+    return Usd_ValueContainsBlock<BlockType>(value);
 }
 
 /// \overload
+template <typename BlockType>
 inline bool 
 Usd_ClearValueIfBlocked(VtValue* value) 
 {
-    if (Usd_ValueContainsBlock(value)) {
+    if (Usd_ValueContainsBlock<BlockType>(value)) {
         *value = VtValue();
         return true;
     }
 
     return false;
 }
-
 /// Helper function for setting a value into an SdfAbstractDataValue
 /// for generic programming.
 template <class T>
@@ -126,6 +144,7 @@ enum class Usd_DefaultValueResult
     None = 0,
     Found,
     Blocked,
+    BlockedAnimation,
 };
 
 template <class T, class Source>
@@ -137,11 +156,14 @@ Usd_HasDefault(const Source& source, const SdfPath& specPath, T* value)
         // Caller is not interested in the value, so avoid fetching it.
         std::type_info const &ti =
             source->GetFieldTypeid(specPath, SdfFieldKeys->Default);
-        if (ti == typeid(void)) {
+        if (TfSafeTypeCompare(ti, typeid(void))) {
             return Usd_DefaultValueResult::None;
         }
-        else if (ti == typeid(SdfValueBlock)) {
+        else if (TfSafeTypeCompare(ti, typeid(SdfValueBlock))) {
             return Usd_DefaultValueResult::Blocked;
+        }
+        else if (TfSafeTypeCompare(ti, typeid(SdfAnimationBlock))) {
+            return Usd_DefaultValueResult::BlockedAnimation;
         }
         else {
             return Usd_DefaultValueResult::Found;
@@ -150,8 +172,11 @@ Usd_HasDefault(const Source& source, const SdfPath& specPath, T* value)
     else {
         // Caller requests the value.
         if (source->HasField(specPath, SdfFieldKeys->Default, value)) {
-            if (Usd_ClearValueIfBlocked(value)) {
+            if (Usd_ClearValueIfBlocked<SdfValueBlock>(value)) {
                 return Usd_DefaultValueResult::Blocked;
+            }
+            if (Usd_ClearValueIfBlocked<SdfAnimationBlock>(value)) {
+                return Usd_DefaultValueResult::BlockedAnimation;
             }
             return Usd_DefaultValueResult::Found;
         }

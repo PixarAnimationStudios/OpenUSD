@@ -667,7 +667,6 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         return UsdImagingDataSourcePrimvars::New(
                 _GetSceneIndexPath(),
                 _GetUsdPrim(),
-                UsdGeomPrimvarsAPI(_GetUsdPrim()),
                 _GetStageGlobals());
     } else if (name == HdVisibilitySchema::GetSchemaToken()) {
         UsdGeomImageable imageable(_GetUsdPrim());

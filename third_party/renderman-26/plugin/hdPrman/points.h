@@ -27,12 +27,14 @@ public:
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 protected:
-    RtPrimVarList
-    _ConvertGeometry(HdPrman_RenderParam *renderParam,
-                     HdSceneDelegate *sceneDelegate,
-                     const SdfPath &id,
-                     RtUString *primType,
-                     std::vector<HdGeomSubset> *geomSubsets) override;
+    bool _ConvertGeometry(
+        HdPrman_RenderParam *renderParam,
+        HdSceneDelegate *sceneDelegate,
+        const SdfPath &id,
+        RtUString *primType,
+        RtPrimVarList *primvars,
+        std::vector<HdGeomSubset> *geomSubsets,
+        std::vector<RtPrimVarList> *geomSubsetPrimvars) override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

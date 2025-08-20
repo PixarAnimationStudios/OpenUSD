@@ -30,10 +30,35 @@ _CheckFormatSupport(
     return (props.optimalTilingFeatures & flags) == flags;
 }
 
+static HgiTextureUsage
+_VkImageLayoutToHgiTextureUsage(VkImageLayout usage)
+{
+    switch (usage) {
+    case VK_IMAGE_LAYOUT_GENERAL:
+        return HgiTextureUsageBitsShaderWrite;
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+        return HgiTextureUsageBitsColorTarget;
+    case VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL:
+        return HgiTextureUsageBitsDepthTarget;
+    case VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL:
+        return HgiTextureUsageBitsStencilTarget;
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+        return HgiTextureUsageBitsDepthTarget |
+            HgiTextureUsageBitsStencilTarget;
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+        return HgiTextureUsageBitsShaderRead;
+    default:
+        TF_CODING_ERROR("Unsupported VkImageLayout %d", usage);
+        return 0;
+    }
+}
+
 HgiVulkanTexture::HgiVulkanTexture(
     HgiVulkan* hgi,
     HgiVulkanDevice* device,
-    HgiTextureDesc const & desc)
+    HgiTextureDesc const & desc,
+    bool optimalTiling,
+    bool interop)
     : HgiTexture(desc)
     , _isTextureView(false)
     , _vkImage(nullptr)
@@ -62,7 +87,8 @@ HgiVulkanTexture::HgiVulkanTexture(
     imageCreateInfo.arrayLayers = desc.layerCount;
     imageCreateInfo.samples = 
         HgiVulkanConversions::GetSampleCount(desc.sampleCount);
-    imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageCreateInfo.tiling = optimalTiling ?
+        VK_IMAGE_TILING_OPTIMAL : VK_IMAGE_TILING_LINEAR;
     imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageCreateInfo.extent = { (uint32_t) dimensions[0],
@@ -82,6 +108,15 @@ HgiVulkanTexture::HgiVulkanTexture(
     // optimization, but Hgi doesn'tell us if a resource is transient.
     imageCreateInfo.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT | 
                              VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+    VkExternalMemoryImageCreateInfo exportInfo =
+        { VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO };
+    exportInfo.pNext = nullptr;
+    exportInfo.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_AUTO;
+    if (interop) {
+        exportInfo.pNext = imageCreateInfo.pNext;
+        imageCreateInfo.pNext = &exportInfo;
+    }
 
     // XXX STORAGE_IMAGE requires VK_IMAGE_USAGE_STORAGE_BIT, but Hgi
     // doesn't tell us if a texture will be used as image load/store.
@@ -108,6 +143,8 @@ HgiVulkanTexture::HgiVulkanTexture(
     // Equivalent to: vkCreateImage, vkAllocateMemory, vkBindImageMemory
     VmaAllocationCreateInfo allocInfo = {};
     allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    allocInfo.pool = interop ?
+        device->GetVMAPoolForInterop(imageCreateInfo) : VK_NULL_HANDLE;
     HGIVULKAN_VERIFY_VK_RESULT(
         vmaCreateImage(
             device->GetVulkanMemoryAllocator(),
@@ -406,6 +443,17 @@ HgiVulkanTexture::GetImageLayout() const
     return _vkImageLayout;
 }
 
+VmaAllocationInfo2
+HgiVulkanTexture::GetAllocationInfo() const
+{
+    VmaAllocationInfo2 info;
+    vmaGetAllocationInfo2(
+        _device->GetVulkanMemoryAllocator(),
+        _vmaImageAllocation,
+        &info);
+    return info;
+}
+
 HgiVulkanDevice*
 HgiVulkanTexture::GetDevice() const
 {
@@ -497,11 +545,16 @@ HgiVulkanTexture::CopyBufferToTexture(
         VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT); // Consumer stage
 }
 
-void 
+HgiTextureUsage
 HgiVulkanTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
 {
-    VkImageLayout newVkLayout = 
+    const VkImageLayout oldVkLayout = GetImageLayout();
+    const VkImageLayout newVkLayout =
         HgiVulkanTexture::GetDefaultImageLayout(newLayout);
+
+    if (oldVkLayout == newVkLayout) {
+        return _VkImageLayoutToHgiTextureUsage(oldVkLayout);
+    }
 
     HgiVulkanCommandQueue* queue = _device->GetCommandQueue();
     HgiVulkanCommandBuffer* cb = queue->AcquireResourceCommandBuffer();
@@ -511,7 +564,7 @@ HgiVulkanTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
     // The following cases are based on few initial assumptions to provide
     // an infrastructure for access mask selection based on layouts.
     // Feel free to update depending on need and use cases.
-    switch (GetImageLayout()) {
+    switch (oldVkLayout) {
     case VK_IMAGE_LAYOUT_PREINITIALIZED:
         srcAccessMask =
             VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -560,12 +613,14 @@ HgiVulkanTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
     TransitionImageBarrier(
         cb,
         this,
-        GetImageLayout(),
+        oldVkLayout,
         newVkLayout,
         srcAccessMask, 
         dstAccessMask,
         VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
         VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+
+    return _VkImageLayoutToHgiTextureUsage(oldVkLayout);
 }
 
 void

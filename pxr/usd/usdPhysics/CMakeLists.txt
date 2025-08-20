@@ -14,10 +14,6 @@ pxr_library(usdPhysics
         usdGeom
         usdShade
         work
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
         metrics

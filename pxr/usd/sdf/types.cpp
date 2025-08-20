@@ -53,6 +53,7 @@ TF_REGISTRY_FUNCTION(TfType)
         ;
     TfType::Define<SdfUnregisteredValue>();
     TfType::Define<SdfValueBlock>(); 
+    TfType::Define<SdfAnimationBlock>();
 }
 
 // Max units is computed by running `TF_PP_SEQ_SIZE`
@@ -838,6 +839,12 @@ std::ostream&
 operator<<(std::ostream& ostr, SdfValueBlock const& block)
 { 
     return ostr << "None"; 
+}
+
+std::ostream&
+operator<<(std::ostream& ostr, SdfAnimationBlock const& /*block*/)
+{
+    return ostr << "AnimationBlock";
 }
 
 std::ostream &

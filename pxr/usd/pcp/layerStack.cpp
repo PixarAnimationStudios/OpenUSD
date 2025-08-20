@@ -53,12 +53,12 @@ TF_DEFINE_ENV_SETTING(
     "mode");
 
 TF_DEFINE_ENV_SETTING(
-    PCP_ALLOW_NEGATIVE_LAYER_OFFSET_SCALE, true,
+    PCP_ALLOW_NEGATIVE_LAYER_OFFSET_SCALE, false,
     "Enables the use of negative layer offset scale. This behavior is "
     "deprecated and a warning will be issued if this setting is enabled, "
-    "otherwise a coding error will be issued. Negative layer offset scale on a "
-    "composed property doesn't make sense, as it reverses the direction of "
-    "time, and can lead to incorrect and non intuitive results.");
+    "otherwise a composition error will be issued. Negative layer offset scale "
+    "on a composed property doesn't make sense, as it reverses the direction "
+    "of time, and can lead to incorrect and non intuitive results.");
 
 
 struct Pcp_SublayerInfo {

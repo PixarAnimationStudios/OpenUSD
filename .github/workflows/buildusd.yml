@@ -5,49 +5,35 @@ on:
     branches:
       - dev
       - release
-  issue_comment:
-    types: [created]
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - '**'
+      - '!.github/workflows/**'
 
 jobs:
-  GetUser:
+  Validation:
     runs-on: ubuntu-22.04
-    timeout-minutes: 5
+    timeout-minutes: 30
     outputs:
-      require-result: ${{ steps.check.outputs.require-result }}
+      validation-failed: ${{ steps.changed-workflows.outputs.any_changed }}
     steps:
-      - uses: actions-cool/check-user-permission@v2
-        id: check
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          require: 'write'
-          username: ${{ github.event.comment.user.login }}
-
-  GetGitRef:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 5
-    outputs:
-      ref: ${{ steps.setter.outputs.ref }}
-    steps:
-      - name: Get push ref
-        if: ${{ github.event_name == 'push' }}
-        run: |
-          echo "REF=${{ github.ref }}" >> $GITHUB_ENV
-      - name: Get PR ref
-        if: ${{ github.event.issue.pull_request }}
-        run: |
-          echo "REF=refs/pull/${{ github.event.issue.number }}/merge" >> $GITHUB_ENV
-      - name: Print ENV_VAR
-        run: |
-          echo "The value of REF is $REF"
-      - name: Set ENV_VAR
-        id: setter
-        run: |
-          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          ref: ${{ github.ref }}
+      - name: Check workflows directory
+        id: changed-workflows
+        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c #v46
+        with:
+          files: |
+            .github/workflows/**
 
   Linux:
     needs:
-      - GetUser
-      - GetGitRef
-    if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/AzurePipelines run') && needs.GetUser.outputs.require-result == 'true' ) || github.event_name == 'push' }}
+      - Validation
+    if: ${{ (github.event_name == 'pull_request' && needs.Validation.outputs.validation-failed != 'true') || github.event_name == 'push' }}
     runs-on: ubuntu-22.04
     env:
       PYTHON_VERSION: "3.9"
@@ -56,7 +42,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{needs.GetGitRef.outputs.ref}}
+          ref: ${{ github.ref }}
       - name: Restore cached artifacts
         id: cache-usd-build-dependency
         uses: actions/cache/restore@v4
@@ -77,7 +63,8 @@ jobs:
           pip install PySide2 PyOpenGL
       - name: Build USD
         run: |
-          python3 build_scripts/build_usd.py --no-materialx --build USDgen/build --src USDgen/src USDinst -v
+          # Not using '--tests' to avoid building extra dependencies that are unneeded for headless tests
+          python3 build_scripts/build_usd.py --no-materialx --build USDgen/build --src USDgen/src USDinst --build-args USD,"-DPXR_HEADLESS_TEST_MODE=ON -DPXR_BUILD_TESTS=ON" -v
       - name: Save build artifacts to cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -90,13 +77,16 @@ jobs:
         with:
           name: usd-linux
           path: USDinst
+      - name: Test USD
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          ctest -V -C Release --exclude-regex "testExecGeomXformable_Perf_Large"
 
   macOS:
     needs:
-      - GetUser
-      - GetGitRef
-    if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/AzurePipelines run') && needs.GetUser.outputs.require-result == 'true' ) || github.event_name == 'push' }}
-    runs-on: macos-13
+      - Validation
+    if: ${{ (github.event_name == 'pull_request' && needs.Validation.outputs.validation-failed != 'true') || github.event_name == 'push' }}
+    runs-on: macos-15
     env:
       PYTHON_VERSION: "3.11"
     timeout-minutes: 120
@@ -104,7 +94,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{needs.GetGitRef.outputs.ref}}
+          ref: ${{ github.ref }}
       - name: Restore cached artifacts
         id: cache-usd-build-dependency
         uses: actions/cache/restore@v4
@@ -120,7 +110,7 @@ jobs:
       - name: Install dependencies
         run: |
           export PATH=/Applications/CMake.app/Contents/bin:$PATH
-          sudo xcode-select -s /Applications/Xcode_14.1.app/Contents/Developer
+          sudo xcode-select -s /Applications/Xcode_16.app/Contents/Developer
           # Set SYSTEM_VERSION_COMPAT while installing Python packages to
           # accommodate the macOS version numbering change from 10.x to 11
           export SYSTEM_VERSION_COMPAT=1
@@ -128,8 +118,9 @@ jobs:
           export -n SYSTEM_VERSION_COMPAT
       - name: Build USD
         run: |
+          # Not using '--tests' to avoid building extra dependencies that are unneeded for headless tests
           export PATH=/Applications/CMake.app/Contents/bin:$PATH
-          python3 build_scripts/build_usd.py --no-materialx --generator Xcode --build USDgen/build --src USDgen/src USDinst -v
+          python3 build_scripts/build_usd.py --no-materialx --generator Xcode --build USDgen/build --src USDgen/src USDinst --build-args USD,"-DPXR_HEADLESS_TEST_MODE=ON -DPXR_BUILD_TESTS=ON" -v
       - name: Save build artifacts to cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
@@ -142,13 +133,17 @@ jobs:
         with:
           name: usd-macOS
           path: USDinst
+      - name: Test USD
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          export PATH=/Applications/CMake.app/Contents/bin:$PATH
+          ctest -V -C Release --exclude-regex "testExecGeomXformable_Perf_Large"
 
   Windows:
     needs:
-      - GetUser
-      - GetGitRef
-    if: ${{ (github.event.issue.pull_request && contains(github.event.comment.body, '/AzurePipelines run') && needs.GetUser.outputs.require-result == 'true' ) || github.event_name == 'push' }}
-    runs-on: windows-2019
+      - Validation
+    if: ${{ (github.event_name == 'pull_request' && needs.Validation.outputs.validation-failed != 'true') || github.event_name == 'push' }}
+    runs-on: windows-2022
     env:
       PYTHON_VERSION: "3.9"
     timeout-minutes: 120
@@ -156,7 +151,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{needs.GetGitRef.outputs.ref}}
+          ref: ${{ github.ref }}
       - name: Restore cached artifacts
         id: cache-usd-build-dependency
         uses: actions/cache/restore@v4
@@ -175,7 +170,8 @@ jobs:
           python -m pip install PyOpenGL PySide2
       - name: Build USD
         run: |
-          python build_scripts/build_usd.py --no-materialx --generator "Visual Studio 16 2019" --build USDgen/build --src USDgen/src USDinst --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF" -v
+          # Not using '--tests' to avoid building extra dependencies that are unneeded for headless tests
+          python build_scripts/build_usd.py --no-materialx --generator "Visual Studio 17 2022" --build USDgen/build --src USDgen/src USDinst --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF -DPXR_HEADLESS_TEST_MODE=ON -DPXR_BUILD_TESTS=ON" -v
         shell: cmd
       - name: Save build artifacts to cache
         if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
@@ -189,4 +185,12 @@ jobs:
         with:
           name: usd-win64
           path: USDinst
+      - name: Test USD
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          call set PATH=${{ github.workspace }}\USDinst\bin;${{ github.workspace }}\USDinst\lib;${{ github.workspace }}\USDinst\share\usd\examples\plugin;${{ github.workspace }}\USDinst\plugin\usd;%PATH%
+          call set PYTHONPATH=${{ github.workspace }}\USDinst\lib\python;%PYTHONPATH%
+          # Internal ticket USD-8035
+          ctest -V -C Release --exclude-regex "TfPathUtils|testExecGeomXformable_Perf_Large"
+        shell: cmd
 

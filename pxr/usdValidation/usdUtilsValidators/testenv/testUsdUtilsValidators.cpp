@@ -26,7 +26,7 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
 );
 
 static void
-TestUsdUsdzValidators()
+TestSdfUsdzValidators()
 {
     // This should be updated with every new validator added with
     // UsdUtilsValidators keyword.
@@ -379,7 +379,7 @@ TestUsdzPackageValidator()
 int
 main()
 {
-    TestUsdUsdzValidators();
+    TestSdfUsdzValidators();
     TestPackageEncapsulationValidator();
     TestFileExtensionValidator();
     TestMissingReferenceValidator();

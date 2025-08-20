@@ -134,9 +134,9 @@ diagnostic and debugging facilities, and an interactive python interpreter.
       complexity of :code:`low` indicates no subdivision, for maximum
       performance and lowest fidelity.
 
-******************
+*********
 usdrecord
-******************
+*********
 
 :program:`usdrecord` is a command-line utility for generating images (or
 sequences of images) of a USD stage. Images output by this tool are generated
@@ -154,9 +154,9 @@ by Hydra and are equivalent to those displayed in the viewer in `usdview`_ .
       default camera framing all of the geometry on the stage (similar to the
       free camera in `usdview`_ ) will be used.
 
-******************
+**********
 usdresolve
-******************
+**********
 
 Command-line ArResolver resolution of asset paths.
 
@@ -165,9 +165,9 @@ Command-line ArResolver resolution of asset paths.
    :start-after: ==== usdresolve start ====
    :end-before: ==== usdresolve end ====
 
-******************
+*******
 usdtree
-******************
+*******
 
 Prints to terminal a unixtree-like summary of a USD layer or composition.
 
@@ -176,9 +176,9 @@ Prints to terminal a unixtree-like summary of a USD layer or composition.
    :start-after: ==== usdtree start ====
    :end-before: ==== usdtree end ====
 
-******************
+******
 usdzip
-******************
+******
 
 Utility for creating :doc:`USDZ packages <spec_usdz>` from USD compositions and
 the assets (images and others in future) they reference.
@@ -188,9 +188,9 @@ the assets (images and others in future) they reference.
    :start-after: ==== usdzip start ====
    :end-before: ==== usdzip end ====
 
-******************
+**********
 usdchecker
-******************
+**********
 
 :program:`usdchecker` attempts to validate a USD or usdz file using a series
 of rules and metrics that will evolve over time.  This tool currently
@@ -215,9 +215,9 @@ provide a fixing mechanism for all validation tests listed in `usdchecker`_.
    :start-after: ==== usdfixbrokenpixarschemas start ====
    :end-before: ==== usdfixbrokenpixarschemas end ====
 
-******************
+*********
 usdstitch
-******************
+*********
 
 :program:`usdstitch` aggregates any number of usd files into a single
 file. This process is different from :ref:`flattening a stage
@@ -251,9 +251,9 @@ with its :option:`--flattenLayerStack` option.
    :start-after: ==== usdstitch start ====
    :end-before: ==== usdstitch end ====
 
-******************
+**************
 usdstitchclips
-******************
+**************
 
 :program:`usdstitchclips` is a tool that produces an aggregate representation
 of a common prim (and all its descendant prims) shared across a set of USD
@@ -344,9 +344,9 @@ particular:
    :start-after: ==== usdstitchclips start ====
    :end-before: ==== usdstitchclips end ====
 
-******************
+************
 usddumpcrate
-******************
+************
 
 :program:`usddumpcrate` provides information on usd files encoded using
 :ref:`USD's Crate File Format <glossary:Crate File Format>`.  This can be
@@ -357,9 +357,9 @@ useful for very low-level debugging.
    :start-after: ==== usddumpcrate start ====
    :end-before: ==== usddumpcrate end ====
 
-******************
+*******
 sdfdump
-******************
+*******
 
 Provides information on :ref:`Sdf Layers <glossary:Layer>`, which are the
 containers for USD data.
@@ -369,9 +369,9 @@ containers for USD data.
    :start-after: ==== sdfdump start ====
    :end-before: ==== sdfdump end ====
 
-******************
+*********
 sdffilter
-******************
+*********
 
 Provides information in a variety of formats (including usda-like) about
 :ref:`Sdf Layers <glossary:Layer>` or specified (filtered) parts of a
@@ -388,16 +388,108 @@ large array data.
 usdmeasureperformance
 *********************
 
-Helper script to measure usdview asset performance. Recommended usage is
-`usdmeasureperformance <asset.usd> -i 10 --agg min -o <metrics.yaml>`.
-If there exists a file ending in `overrides.usda` in the same directory as the
-given asset file, the file will be supplied as `--sessionLayer` to usdview and
-testusdview invocations. This allows provision of specific variant selections,
-for example. The first file found by os.listdir will be used. Ensure there is
-only one file ending in `overrides.usda` in the asset directory to remove
-ambiguity.
+Helper script to measure :program:`usdview` asset performance. Recommended usage 
+is ``usdmeasureperformance <asset.usd> -i 10 --agg min -o <metrics.yaml>``.
+If there exists a file ending in :filename:`overrides.usda` in the same 
+directory as the given asset file, the file will be supplied as 
+``--sessionLayer`` to :program:`usdview` and :program:`testusdview` invocations. 
+This allows provision of specific variant selections, for example. The first 
+file found by os.listdir will be used. Ensure there is only one file ending in 
+:filename:`overrides.usda` in the asset directory to remove ambiguity.
 
 .. literalinclude:: toolset.help
    :language: none
    :start-after: ==== usdmeasureperformance start ====
    :end-before: ==== usdmeasureperformance end ====
+
+.. _toolset_usdgenschema:
+
+************
+usdGenSchema
+************
+
+USD provides a code generator script :program:`usdGenSchema` for creating new 
+schema classes. The script is driven by a USD layer (typically named 
+:filename:`schema.usda`) and generates the necessary C++ classes and supporting
+Python code for all the schema classes defined in it. 
+
+Run ``usdGenSchema`` to generate code in the current directory for the schema 
+classes defined in :filename:`schema.usda`. :program:`usdGenSchema` will update 
+any pre-existing files in the current directory if it detects any differences 
+with the code it generates. Make sure these files are editable before running 
+:program:`usdGenSchema`.
+
+If you used :ref:`toolset_usdinitschema` to create your schema module, schema
+:filename:`CMakeLists.txt` and :filename:`module.cpp` files will be kept up to 
+date as you add new schema classes and run :program:`usdGenSchema`, except for 
+any added tests, which must be manually added to CMakeLists.txt. If you created 
+:filename:`CMakeLists.txt` or :filename:`module.cpp` by hand and/or did *not* 
+originally use :program:`usdInitSchema`, :program:`usdGenSchema` will not update 
+these files, and you will need to manually update these files when you add new 
+schema classes.
+
+For more details on developing schemas, see 
+`Creating New Schema Classes with usdGenSchema <api/_usd__page__generating_schemas.html>`__.
+
+.. literalinclude:: toolset.help
+   :language: none
+   :start-after: ==== usdGenSchema start ====
+   :end-before: ==== usdGenSchema end ====
+
+*******************
+usdgenschemafromsdr
+*******************
+
+Use :program:`usdgenschemafromsdr` to generate :filename:`schema.usda`,
+:filename:`generatedSchema.usda`, and :filename:`plugInfo.json` files for 
+sdrNodes (shaders, etc.) provided in a JSON config file (by default 
+:filename:`schemaConfig.json`).
+
+:program:`usdgenschemafromsdr` generates codeless schemas by default, but the 
+option to generate schema API code can be enabled in the JSON config file.
+
+.. literalinclude:: toolset.help
+   :language: none
+   :start-after: ==== usdgenschemafromsdr start ====
+   :end-before: ==== usdgenschemafromsdr end ====
+
+.. _toolset_usdinitschema:
+
+*************
+usdInitSchema
+*************
+
+Use :program:`usdInitSchema` to set up schema modules for the first time. It
+generates templates for:
+
+- :filename:`CMakeLists.txt`
+- :filename:`_init_.py`
+- :filename:`module.cpp`
+- :filename:`schema.usda`
+- :filename:`schemaUserDoc.usda`
+
+Example usage for creating a new :filename:`pxr/usd/testModule` schema module:
+
+- Run ``usdInitSchema testModule pxr/usd/testModule pxr/usd``
+- Fill in the created :filename:`schema.usda` with schema classes. Update the 
+  :filename:`userDoc/schemaUserDoc.usda` with schema class user documentation
+  (see docs/README.md for more information on schema user documentation).
+- Run :ref:`usdGenSchema <toolset_usdgenschema>` in the new module directory to 
+  generate code as-needed for the new schema classes.
+- In :filename:`CMakeLists.txt`, list dependency libraries under "LIBRARIES". 
+  If there are any non-schema code classes, add them under "CPPFILES". Schema 
+  classes and generated files will be automatically built.
+- If there are non-schema classes, list them in :filename:`module.cpp` in the 
+  format ``TF_WRAP(CPP_class_name);``
+- If using the OpenUSD build system, add ``testModule`` to the list of DIRS in 
+  the parent directory.
+
+Note: If not using the OpenUSD build system, :filename:`moduleDeps.cpp` might be
+needed. If so, run :program:`usdInitSchema` with the ``--genModuleDeps`` flag. 
+The :filename:`moduleDeps.cpp` file will then need to be kept manually updated 
+with the module dependencies.
+
+.. literalinclude:: toolset.help
+   :language: none
+   :start-after: ==== usdInitSchema start ====
+   :end-before: ==== usdInitSchema end ====

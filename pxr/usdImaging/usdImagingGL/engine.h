@@ -10,6 +10,7 @@
 #ifndef PXR_USD_IMAGING_USD_IMAGING_GL_ENGINE_H
 #define PXR_USD_IMAGING_USD_IMAGING_GL_ENGINE_H
 
+#include "pxr/imaging/hd/noticeBatchingSceneIndex.h"
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImagingGL/api.h"
 #include "pxr/usdImaging/usdImagingGL/version.h"
@@ -56,6 +57,7 @@ class HdxTaskController;
 class UsdImagingDelegate;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
+TF_DECLARE_REF_PTRS(HdNoticeBatchingSceneIndex);
 TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndex);
 TF_DECLARE_REF_PTRS(UsdImagingRootOverridesSceneIndex);
 TF_DECLARE_REF_PTRS(UsdImagingSelectionSceneIndex);
@@ -63,6 +65,7 @@ TF_DECLARE_REF_PTRS(HdsiLegacyDisplayStyleOverrideSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiPrimTypePruningSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiSceneGlobalsSceneIndex);
 TF_DECLARE_REF_PTRS(HdSceneIndexBase);
+TF_DECLARE_REF_PTRS(HdxTaskControllerSceneIndex);
 
 using UsdStageWeakPtr = TfWeakPtr<class UsdStage>;
 
@@ -103,6 +106,9 @@ public:
         /// scene indices that asynchronous processing is allowow. Applications
         /// should perodically call PollForAsynchronousUpdates on the engine.
         bool allowAsynchronousSceneProcessing = false;
+        /// \p enableUsdDrawModes enables the UsdGeomModelAPI draw mode
+        /// feature.
+        bool enableUsdDrawModes = true;
     };
 
     // ---------------------------------------------------------------------
@@ -134,9 +140,10 @@ public:
                                         SdfPath::AbsoluteRootPath(),
                        const HdDriver& driver = HdDriver(),
                        const TfToken& rendererPluginId = TfToken(),
-                       bool gpuEnabled = true,
-                       bool displayUnloadedPrimsWithBounds = false,
-                       bool allowAsynchronousSceneProcessing = false);
+                       const bool gpuEnabled = true,
+                       const bool displayUnloadedPrimsWithBounds = false,
+                       const bool allowAsynchronousSceneProcessing = false,
+                       const bool enableUsdDrawModes = true);
 
     // Disallow copies
     UsdImagingGLEngine(const UsdImagingGLEngine&) = delete;
@@ -773,6 +780,7 @@ protected:
     SdfPath const _sceneDelegateId;
 
     std::unique_ptr<HdxTaskController> _taskController;
+    HdxTaskControllerSceneIndexRefPtr _taskControllerSceneIndex;
 
     HdxSelectionTrackerSharedPtr _selTracker;
     HdRprimCollection _renderCollection;
@@ -815,6 +823,7 @@ private:
     // Note that we'll only ever use one of _sceneIndex/_sceneDelegate
     // at a time.
     UsdImagingStageSceneIndexRefPtr _stageSceneIndex;
+    HdNoticeBatchingSceneIndexRefPtr _postInstancingNoticeBatchingSceneIndex;
     UsdImagingSelectionSceneIndexRefPtr _selectionSceneIndex;
     UsdImagingRootOverridesSceneIndexRefPtr _rootOverridesSceneIndex;
     HdsiLegacyDisplayStyleOverrideSceneIndexRefPtr _displayStyleSceneIndex;
@@ -827,6 +836,7 @@ private:
     std::unique_ptr<HdEngine> _engine;
 
     bool _allowAsynchronousSceneProcessing = false;
+    bool _enableUsdDrawModes = true;
 };
 
 

@@ -422,6 +422,7 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
         {
             TCS[tcsIndex++] = _tokens->curvesTessFactorsGLSL;
             TCS[tcsIndex++] = _tokens->curvesCommonControl;
+            TCS[tcsIndex++] = HdSt_BasisToShaderKey(basis);
             TCS[tcsIndex++] = _tokens->curvesTessCurveDataPatch;
             TCS[tcsIndex++] = _tokens->curvesTessControlCubicPatch;
             TCS[tcsIndex++] = _tokens->curvesCommonControlCubicHalfTube;

@@ -309,22 +309,29 @@ HdFlatteningSceneIndex::_PrimsAdded(
 
     _ConsolidateRecentPrims();
 
-    // Check the hierarchy for cached prims to dirty
     HdSceneIndexObserver::DirtiedPrimEntries dirtyEntries;
-    for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
-        _DirtyHierarchy(
-            entry.primPath,
-            _relativeDataSourceLocators,
-            _dataSourceLocatorSet,
-            &dirtyEntries);
+    // Check the hierarchy for cached prims to dirty
+    {
+        TRACE_SCOPE("Dirty hierarchy");
+
+        for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
+            _DirtyHierarchy(
+                entry.primPath,
+                _relativeDataSourceLocators,
+                _dataSourceLocatorSet,
+                &dirtyEntries);
+        }
     }
 
     // Clear out any cached dataSources for prims that have been re-added.
     // They will get updated dataSources in the next call to GetPrim().
-    for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
-        const _PrimTable::iterator i = _prims.find(entry.primPath);
-        if (i != _prims.end()) {
-            WorkSwapDestroyAsync(i->second.dataSource);
+    {
+        TRACE_SCOPE("Async destroy prim table entries");
+        for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
+            const _PrimTable::iterator i = _prims.find(entry.primPath);
+            if (i != _prims.end()) {
+                WorkSwapDestroyAsync(i->second.dataSource);
+            }
         }
     }
 
@@ -444,8 +451,12 @@ HdFlatteningSceneIndex::_PrimsDirtied(
     _ConsolidateRecentPrims();
 
     HdSceneIndexObserver::DirtiedPrimEntries dirtyEntries;
-    for (const HdSceneIndexObserver::DirtiedPrimEntry &entry : entries) {
-        _PrimDirtied(entry, &dirtyEntries);
+    {
+        TRACE_SCOPE("Dirty hierarchy");
+
+        for (const HdSceneIndexObserver::DirtiedPrimEntry &entry : entries) {
+            _PrimDirtied(entry, &dirtyEntries);
+        }
     }
 
     _SendPrimsDirtied(entries);
@@ -457,6 +468,8 @@ HdFlatteningSceneIndex::_PrimsDirtied(
 void
 HdFlatteningSceneIndex::_ConsolidateRecentPrims()
 {
+    TRACE_FUNCTION();
+
     for (auto &entry: _recentPrims) {
         std::swap(_prims[entry.first], entry.second);
     }

@@ -390,6 +390,13 @@ public:
                 HgiTextureHandle const & texelTexture) const;
 
     HDST_API
+    void GetTextureBindingDescs(
+                HgiResourceBindingsDesc * bindingsDesc,
+                TfToken const & name,
+                std::vector<HgiSamplerHandle> const & texelSamplers,
+                std::vector<HgiTextureHandle> const & texelTextures) const;
+
+    HDST_API
     void GetTextureWithLayoutBindingDesc(
                 HgiResourceBindingsDesc * bindingsDesc,
                 TfToken const & name,
@@ -397,6 +404,16 @@ public:
                 HgiTextureHandle const & texelTexture,
                 HgiSamplerHandle const & layoutSampler,
                 HgiTextureHandle const & layoutTexture) const;
+    
+    HDST_API
+    void
+    GetTextureWithLayoutBindingDescs(
+                HgiResourceBindingsDesc * bindingsDesc,
+                TfToken const & name,
+                std::vector<HgiSamplerHandle> const & texelSamplers,
+                std::vector<HgiTextureHandle> const & texelTextures,
+                std::vector<HgiSamplerHandle> const & layoutSamplers,
+                std::vector<HgiTextureHandle> const & layoutTextures) const; 
 
     ////////////////////////////////////////////////////////////
     // GL Binding
@@ -504,6 +521,11 @@ public:
                      HgiSamplerHandle const &samplerHandle,
                      HgiTextureHandle const &textureHandle,
                      const bool bind) const;
+    HDST_API
+    void BindTextures(const TfToken &name,
+                      std::vector<HgiSamplerHandle> const &samplerHandles,
+                      std::vector<HgiTextureHandle> const &textureHandles,
+                      const bool bind) const;
 
     /// Binds the sampler and texture for \p name along with an additional
     /// layout texture as needed for Ptex or UDIM textures.
@@ -515,6 +537,14 @@ public:
                                HgiSamplerHandle const &layoutSampler,
                                HgiTextureHandle const &layoutTexture,
                                const bool bind) const;
+    HDST_API
+    void BindTexturesWithLayout(
+        TfToken const &name,
+        std::vector<HgiSamplerHandle> const &texelSamplers,
+        std::vector<HgiTextureHandle> const &texelTextures,
+        std::vector<HgiSamplerHandle> const &layoutSamplers,
+        std::vector<HgiTextureHandle> const &layoutTextures,
+        const bool bind) const;
 
 private:
     // for batch execution

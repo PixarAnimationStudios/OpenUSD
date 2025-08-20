@@ -51,15 +51,16 @@ HdPrman_Cylinder::GetBuiltinPrimvarNames() const
     return result;
 }
 
-RtPrimVarList
-HdPrman_Cylinder::_ConvertGeometry(HdPrman_RenderParam *renderParam,
-                                   HdSceneDelegate *sceneDelegate,
-                                   const SdfPath &id,
-                                   RtUString *primType,
-                                   std::vector<HdGeomSubset> *geomSubsets)
+bool
+HdPrman_Cylinder::_ConvertGeometry(
+    HdPrman_RenderParam *renderParam,
+    HdSceneDelegate *sceneDelegate,
+    const SdfPath &id,
+    RtUString *primType,
+    RtPrimVarList *primvars,
+    std::vector<HdGeomSubset> *geomSubsets,
+    std::vector<RtPrimVarList> *geomSubsetPrimvars)
 {
-    RtPrimVarList primvars;
-
     *primType = RixStr.k_Ri_Cylinder;
 
     const float radius =
@@ -69,14 +70,14 @@ HdPrman_Cylinder::_ConvertGeometry(HdPrman_RenderParam *renderParam,
         sceneDelegate->Get(id, HdCylinderSchemaTokens->height)
             .GetWithDefault<double>(0.0);
 
-    primvars.SetFloat(RixStr.k_Ri_radius, radius);
-    primvars.SetFloat(RixStr.k_Ri_zmin, -0.5f * height);
-    primvars.SetFloat(RixStr.k_Ri_zmax,  0.5f * height);
+    primvars->SetFloat(RixStr.k_Ri_radius, radius);
+    primvars->SetFloat(RixStr.k_Ri_zmin, -0.5f * height);
+    primvars->SetFloat(RixStr.k_Ri_zmax,  0.5f * height);
 
     HdPrman_ConvertPrimvars(
-        sceneDelegate, id, primvars, 1, 0, 0, 0,
+        sceneDelegate, id, *primvars, 1, 0, 0, 0,
         renderParam->GetShutterInterval());
-    return primvars;
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

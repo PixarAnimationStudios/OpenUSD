@@ -29,6 +29,7 @@ class TestPcpDependencies(unittest.TestCase):
 
     # Wrapper to query deps on a given site.
     def _FindSiteDeps(self, rootLayerPath, siteLayerPath, sitePath,
+                      cacheInUsdMode = False,
                       depMask = Pcp.DependencyTypeAnyNonVirtual,
                       recurseOnSite = False,
                       recurseOnIndex = False):
@@ -38,7 +39,8 @@ class TestPcpDependencies(unittest.TestCase):
         self.assertTrue(rootLayer)
         siteLayer = Sdf.Layer.FindOrOpen(siteLayerPath)
         self.assertTrue(siteLayer)
-        cache = Pcp.Cache( Pcp.LayerStackIdentifier(rootLayer) )
+        cache = Pcp.Cache( Pcp.LayerStackIdentifier(rootLayer), 
+                          usd = cacheInUsdMode )
         siteLayerStack = cache.ComputeLayerStack(
             Pcp.LayerStackIdentifier(siteLayer))[0]
         self.assertTrue(siteLayerStack)
@@ -84,8 +86,8 @@ class TestPcpDependencies(unittest.TestCase):
         # A basic reference arc.
         #
         self._AssertDepsEqual( self._FindSiteDeps(
-             'BasicReference/root.sdf',
-             'BasicReference/ref.sdf',
+             'BasicReference/root.usda',
+             'BasicReference/ref.usda',
              '/PrimA'),
             [
             Pcp.Dependency(
@@ -99,8 +101,8 @@ class TestPcpDependencies(unittest.TestCase):
         # A reference to a defaultPrim.
         #
         self._AssertDepsEqual( self._FindSiteDeps(
-             'BasicReference/root.sdf',
-             'BasicReference/defaultRef.sdf',
+             'BasicReference/root.usda',
+             'BasicReference/defaultRef.usda',
              '/Default'),
             [
             Pcp.Dependency(
@@ -116,8 +118,8 @@ class TestPcpDependencies(unittest.TestCase):
         # direct dependencies.
         #
         self._AssertDepsEqual( self._FindSiteDeps(
-             'BasicAncestralReference/root.sdf',
-             'BasicAncestralReference/A.sdf',
+             'BasicAncestralReference/root.usda',
+             'BasicAncestralReference/A.usda',
              '/A'),
             [
             Pcp.Dependency(
@@ -128,8 +130,8 @@ class TestPcpDependencies(unittest.TestCase):
                 )
             ])
         self._AssertDepsEqual( self._FindSiteDeps(
-             'BasicAncestralReference/root.sdf',
-             'BasicAncestralReference/B.sdf',
+             'BasicAncestralReference/root.usda',
+             'BasicAncestralReference/B.usda',
              '/B',
              depMask = Pcp.DependencyTypeDirect | Pcp.DependencyTypeNonVirtual
              ),
@@ -142,8 +144,8 @@ class TestPcpDependencies(unittest.TestCase):
                 )
             ])
         self._AssertDepsEqual( self._FindSiteDeps(
-             'BasicAncestralReference/root.sdf',
-             'BasicAncestralReference/A.sdf',
+             'BasicAncestralReference/root.usda',
+             'BasicAncestralReference/A.usda',
              '/A/B',
              depMask = Pcp.DependencyTypeAncestral | Pcp.DependencyTypeNonVirtual
              ),
@@ -163,8 +165,8 @@ class TestPcpDependencies(unittest.TestCase):
         # child prim.
         #
         self._AssertDepsEqual( self._FindSiteDeps(
-             'BasicAncestralReference/root.sdf',
-             'BasicAncestralReference/A.sdf',
+             'BasicAncestralReference/root.usda',
+             'BasicAncestralReference/A.usda',
              '/A.HypotheticalProperty',
              ),
             [
@@ -176,8 +178,8 @@ class TestPcpDependencies(unittest.TestCase):
                 )
             ])
         self._AssertDepsEqual( self._FindSiteDeps(
-             'BasicAncestralReference/root.sdf',
-             'BasicAncestralReference/A.sdf',
+             'BasicAncestralReference/root.usda',
+             'BasicAncestralReference/A.usda',
              '/A.HypotheticalProperty',
              recurseOnSite = True, # This should have no effect on the results.
              ),
@@ -190,8 +192,8 @@ class TestPcpDependencies(unittest.TestCase):
                 )
             ])
         self._AssertDepsEqual( self._FindSiteDeps(
-             'BasicAncestralReference/root.sdf',
-             'BasicAncestralReference/A.sdf',
+             'BasicAncestralReference/root.usda',
+             'BasicAncestralReference/A.usda',
              '/A/B/HypotheticalChildPrim',
              depMask = Pcp.DependencyTypeAncestral | Pcp.DependencyTypeNonVirtual
              ),
@@ -209,8 +211,8 @@ class TestPcpDependencies(unittest.TestCase):
         # This is important for the case of making a significant change to
         # a prim that contains children inherited elsewhere.
         self._AssertDepsEqual( self._FindSiteDeps(
-            'BasicLocalAndGlobalClassCombination/root.sdf',
-            'BasicLocalAndGlobalClassCombination/model.sdf',
+            'BasicLocalAndGlobalClassCombination/root.usda',
+            'BasicLocalAndGlobalClassCombination/model.usda',
             '/_class_Model/_class_Nested',
             depMask = Pcp.DependencyTypeAnyIncludingVirtual,
             recurseOnSite = True
@@ -251,11 +253,125 @@ class TestPcpDependencies(unittest.TestCase):
             ])
 
         ########################################################################
+        # Only prim2 that select a variant depend on that particular variant's 
+        # site. Here /Prim1 selects primVariant=one.
+        self._AssertDepsEqual(self._FindSiteDeps(
+                'BasicVariant/root.usda',
+                'BasicVariant/root.usda',
+                '/PrimVariants{primVariant=one}',
+                recurseOnSite = True,
+                cacheInUsdMode = True
+            ),
+            [
+            Pcp.Dependency(
+                '/Prim1', 
+                '/PrimVariants{primVariant=one}', 
+                Pcp.MapFunction({
+                    '/': '/',
+                    '/PrimVariants': '/Prim1'})
+                ),
+            Pcp.Dependency(
+                '/Prim1', 
+                '/PrimVariants{primVariant=one}',
+                Pcp.MapFunction({
+                     '/': '/', 
+                     '/PrimVariants': '/Prim1'})
+                )
+            ])
+
+        # And /Prim2 selects primVariant=two.
+        self._AssertDepsEqual(self._FindSiteDeps(
+                'BasicVariant/root.usda',
+                'BasicVariant/root.usda',
+                '/PrimVariants{primVariant=two}',
+                recurseOnSite = True,
+                cacheInUsdMode = True
+            ),
+            [
+            Pcp.Dependency(
+                '/Prim2', 
+                '/PrimVariants{primVariant=two}', 
+                Pcp.MapFunction({
+                    '/': '/',
+                    '/PrimVariants': '/Prim2'})
+                ),
+            Pcp.Dependency(
+                '/Prim2', 
+                '/PrimVariants{primVariant=two}',
+                Pcp.MapFunction({
+                     '/': '/', 
+                     '/PrimVariants': '/Prim2'})
+                )
+            ])
+
+        ########################################################################
+        # XXX: In non-USD mode we still have the bug where prims can have 
+        # dependencies to unselected variants that they don't actually depend 
+        # on. This bug is in place until downstream dependencies can be updated
+        # to account for the fix to the bug.
+        self._AssertDepsEqual(self._FindSiteDeps(
+                'BasicVariant/root.usda',
+                'BasicVariant/root.usda',
+                '/PrimVariants{primVariant=one}',
+                recurseOnSite = True,
+                cacheInUsdMode = False
+            ),
+            [
+            Pcp.Dependency(
+                '/Prim1', 
+                '/PrimVariants{primVariant=one}', 
+                Pcp.MapFunction({
+                    '/': '/',
+                    '/PrimVariants': '/Prim1'})
+                ),
+            Pcp.Dependency(
+                '/Prim1', 
+                '/PrimVariants{primVariant=one}',
+                Pcp.MapFunction({
+                     '/': '/', 
+                     '/PrimVariants': '/Prim1'})
+                ), 
+            Pcp.Dependency(
+                '/Prim1', 
+                '/PrimVariants{primVariant=one}',
+                Pcp.MapFunction({
+                    '/': '/',
+                    '/PrimVariants': '/Prim1'})
+                ),
+            Pcp.Dependency(
+                '/Prim2',
+                '/PrimVariants{primVariant=one}',
+                Pcp.MapFunction({
+                    '/': '/', 
+                    '/PrimVariants': '/Prim2'})
+                )
+            ])
+
+        ########################################################################
         # Because deps are analyzed in terms of prim arcs, recurseOnSite needs
         # to be careful to work correctly when querying deps on a property path.
         self._AssertDepsEqual( self._FindSiteDeps(
-                'BasicVariantWithConnections/root.sdf',
-                'BasicVariantWithConnections/camera.sdf',
+                'BasicVariantWithConnections/root.usda',
+                'BasicVariantWithConnections/camera.usda',
+                '/camera.HypotheticalProperty',
+                recurseOnSite = True,
+            ),
+            [
+            Pcp.Dependency(
+                '/main_cam.HypotheticalProperty',
+                '/camera.HypotheticalProperty',
+                Pcp.MapFunction({
+                    '/camera': '/main_cam'})
+                )
+            ])
+
+
+        ########################################################################
+        # Because deps are analyzed in terms of prim arcs, recurseOnSite needs
+        # to be careful to work correctly when querying deps on a property path.
+        self._AssertDepsEqual( self._FindSiteDeps(
+                'BasicVariantWithConnections/root.usda',
+                'BasicVariantWithConnections/camera.usda',
                 '/camera.HypotheticalProperty',
                 recurseOnSite = True,
             ),
@@ -273,8 +389,8 @@ class TestPcpDependencies(unittest.TestCase):
         # that do not introduce any new deps.
         #
         self._AssertDepsEqual( self._FindSiteDeps(
-             'BasicReference/root.sdf',
-             'BasicReference/ref2.sdf',
+             'BasicReference/root.usda',
+             'BasicReference/ref2.usda',
              '/PrimB',
              recurseOnIndex = True),
             [
@@ -305,8 +421,8 @@ class TestPcpDependencies(unittest.TestCase):
         # This requires path translation below the dependency arc.
         #
         self._AssertDepsEqual( self._FindSiteDeps(
-             'TrickyConnectionToRelocatedAttribute/root.sdf',
-             'TrickyConnectionToRelocatedAttribute/eye_rig.sdf',
+             'TrickyConnectionToRelocatedAttribute/root.usda',
+             'TrickyConnectionToRelocatedAttribute/eye_rig.usda',
              '/EyeRig/rig/Mover.bar[/EyeRig/Anim.foo]'),
             [
             Pcp.Dependency(
@@ -339,8 +455,8 @@ class TestPcpDependencies(unittest.TestCase):
         #
         # Virtual deps are not returned when not requested:
         self._AssertDepsEqual( self._FindSiteDeps(
-            'TrickyConnectionToRelocatedAttribute/root.sdf',
-            'TrickyConnectionToRelocatedAttribute/root.sdf',
+            'TrickyConnectionToRelocatedAttribute/root.usda',
+            'TrickyConnectionToRelocatedAttribute/root.usda',
             '/HumanRig/rig/Face/rig/LEyeRig/Anim',
             depMask = (Pcp.DependencyTypeDirect | Pcp.DependencyTypeAncestral
                         | Pcp.DependencyTypeNonVirtual)
@@ -349,8 +465,8 @@ class TestPcpDependencies(unittest.TestCase):
 
         # Virtual deps are introduced by relocations:
         self._AssertDepsEqual( self._FindSiteDeps(
-            'TrickyConnectionToRelocatedAttribute/root.sdf',
-            'TrickyConnectionToRelocatedAttribute/root.sdf',
+            'TrickyConnectionToRelocatedAttribute/root.usda',
+            'TrickyConnectionToRelocatedAttribute/root.usda',
             '/HumanRig/rig/Face/rig/LEyeRig/Anim',
             depMask = (Pcp.DependencyTypeDirect | Pcp.DependencyTypeAncestral
                         | Pcp.DependencyTypeVirtual)

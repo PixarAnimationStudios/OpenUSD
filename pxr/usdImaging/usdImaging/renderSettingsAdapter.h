@@ -10,6 +10,7 @@
 /// \file usdImaging/renderSettingsAdapter.h
 
 #include "pxr/pxr.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
@@ -129,6 +130,19 @@ protected:
 
 };
 
+
+// XXX: This should be moved to renderman in an upcoming change.
+//
+// For PxrRenderTerminalsAPI schemas applied on RenderSettings that
+// allow specification of display filters, sample filters, and 
+// integrators: if the shema expects relationships, perform the
+// following actions for each value of the environment variable.
+// true : Produce a warning message if connections are used.
+// false : Disallow the use of attribute connections for the purposes of
+//         connecting display filters, sample filters, and integrators.
+USDIMAGING_API
+extern TfEnvSetting<bool>
+        LEGACY_PXR_RENDER_TERMINALS_API_ALLOWED_AND_WARN;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

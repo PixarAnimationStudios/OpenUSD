@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+
+    <!-- TexcoordMaterial uses the checkerSurf custom surface shader node 
+        defined in the included checkerSurf.mtlx file -->
+    <xi:include href="checkerSurfaceShaderNode.mtlx" />
+
+    <!-- custom SurfaceShader node using texture coordinates and no textures -->
+    <checkerSurf name="texcoordSurface" type="surfaceshader">
+        <input name="scale" type="vector2" value="6,6"/>
+    </checkerSurf>
+
+    <surfacematerial name="TexcoordMaterial" type="material">
+        <input name="surfaceshader" type="surfaceshader" nodename="texcoordSurface" />
+    </surfacematerial>
+
+
+    <!-- TexturedMaterial uses the the multiImageSurf custom surface shader node
+        defined in the included multiImageSurfaceShaderNode.mtlx file -->
+    <xi:include href="multiImageSurfaceShaderNode.mtlx" />
+
+    <!-- custom SurfaceShader node using multiple textures -->
+    <multiImageSurf name="texturedSurface" type="surfaceshader">
+        <input name="color_file" type="filename" value="images/testSquare.png"/>
+        <input name="roughness_file" type="filename" value="images/grid.png"/>
+    </multiImageSurf>
+
+    <surfacematerial name="TexturedMaterial" type="material">
+        <input name="surfaceshader" type="surfaceshader" nodename="texturedSurface" />
+    </surfacematerial>
+
+</materialx>

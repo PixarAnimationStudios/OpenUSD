@@ -6,12 +6,29 @@
 //
 #include "pxr/usdImaging/usdImaging/niPrototypeSceneIndex.h"
 
+#include "pxr/usdImaging/usdImaging/prototypeSceneIndexUtils.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
+#include "pxr/imaging/hd/dataSource.h"
+#include "pxr/imaging/hd/dataSourceTypeDefs.h"
+#include "pxr/imaging/hd/filteringSceneIndex.h"
+#include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
-#include "pxr/imaging/hd/instancedBySchema.h"
+#include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/sceneIndexObserver.h"
 #include "pxr/imaging/hd/xformSchema.h"
+
+#include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/tf/refPtr.h"
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/vt/array.h"
+
+#include "pxr/pxr.h"
+
+#include <cstddef>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -19,8 +36,10 @@ TF_DEFINE_PUBLIC_TOKENS(
     UsdImaging_NiPrototypeSceneIndexTokens,
     USDIMAGING_NI_PROTOTYPE_SCENE_INDEX_TOKENS);
 
+using namespace UsdImaging_PrototypeSceneIndexUtils;
+
 namespace {
- 
+
 bool
 _IsUsdInstance(HdContainerDataSourceHandle const &primSource)
 {
@@ -61,7 +80,7 @@ _UnderlaySource()
 HdContainerDataSourceHandle
 _PrototypeRootOverlaySource(const HdContainerDataSourceHandle &ds)
 {
-    static HdContainerDataSourceHandle const overlayDs = 
+    static HdContainerDataSourceHandle const overlayDs =
         HdRetainedContainerDataSource::New(
             HdInstancedBySchema::GetSchemaToken(),
             UsdImaging_NiPrototypeSceneIndex::GetInstancedByDataSource(),
@@ -149,7 +168,7 @@ UsdImaging_NiPrototypeSceneIndex::GetPrim(
     }
 
     if (_IsUsdInstance(prim.dataSource)) {
-        prim.primType = TfToken();
+        SetEmptyPrimType(prim);
         return prim;
     }
 

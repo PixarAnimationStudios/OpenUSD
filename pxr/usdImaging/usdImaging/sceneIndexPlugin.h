@@ -82,6 +82,15 @@ public:
     virtual TfTokenVector
     InstanceDataSourceNames();
 
+    /// Clients can register additional names of prim-level data sources
+    /// that should receive path-translation for any path-valued data
+    /// sources that point at instance proxies to point to corresponding
+    /// prototypes.
+    ///
+    USDIMAGING_API
+    virtual TfTokenVector
+    ProxyPathTranslationDataSourceNames();
+
     USDIMAGING_API
     virtual ~UsdImagingSceneIndexPlugin();
 

@@ -7,8 +7,11 @@
 
 #include "pxr/imaging/hgiVulkan/shaderGenerator.h"
 #include "pxr/imaging/hgiVulkan/conversions.h"
+#include "pxr/imaging/hgiVulkan/descriptorSetLayouts.h"
 #include "pxr/imaging/hgiVulkan/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
+
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,6 +50,7 @@ HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
   , _textureBindIndexStart(0)
   , _inLocationIndex(0)
   , _outLocationIndex(0)
+  , _descriptorSetLayoutsAdded(false)
 {
     // Write out all GL shaders and add to shader sections
 
@@ -266,15 +270,30 @@ HgiVulkanShaderGenerator::_WriteTextures(
                 ""});
         }
 
+        const uint32_t textureBindIndex =
+            _textureBindIndexStart + desc.bindIndex;
+
         CreateShaderSection<HgiVulkanTextureShaderSection>(
             desc.nameInShader,
-            _textureBindIndexStart + desc.bindIndex,
+            textureBindIndex,
             desc.dimensions,
             desc.format,
             desc.textureType,
             desc.arraySize,
             desc.writable,
             attrs);
+
+        const VkDescriptorType descriptorType =
+            desc.writable
+                ? VK_DESCRIPTOR_TYPE_STORAGE_IMAGE
+                : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        const uint32_t descriptorCount =
+            desc.arraySize > 0
+                ? desc.arraySize
+                : 1;
+
+        _AddDescriptorSetLayoutBinding(
+            textureBindIndex, descriptorType, descriptorCount);
     }
 }
 
@@ -326,12 +345,21 @@ HgiVulkanShaderGenerator::_WriteBuffers(
                 bufferDescription.writable,
                 attrs);
         }
-				
+
         // In Vulkan, buffers and textures cannot have the same binding index.
         // Start textures right after the last buffer. 
         // See HgiVulkanResourceBindings for details.
         _textureBindIndexStart =
             std::max(_textureBindIndexStart, bindIndex + 1);
+
+        const VkDescriptorType descriptorType =
+            isUniformBufferBinding
+                ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER
+                : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        const uint32_t descriptorCount = 1;
+
+        _AddDescriptorSetLayoutBinding(
+            bindIndex, descriptorType, descriptorCount);
     }
 }
 
@@ -565,5 +593,54 @@ HgiVulkanShaderGenerator::GetShaderSections()
 {
     return &_shaderSections;
 }
+
+HGIVULKAN_API
+HgiVulkanDescriptorSetInfoVector const &
+HgiVulkanShaderGenerator::GetDescriptorSetInfo()
+{
+    TRACE_FUNCTION();
+
+    if (_descriptorSetLayoutsAdded && !_descriptorSetInfo.empty()) {
+        _descriptorSetLayoutsAdded = false;
+
+        // This sorting isn't strictly necessary, but it can improve
+        // consistency of downstream code which creates descriptor tables.
+        using Binding = VkDescriptorSetLayoutBinding;
+        std::sort(_descriptorSetInfo[0].bindings.begin(),
+                  _descriptorSetInfo[0].bindings.end(),
+                  [](Binding const &a, Binding const &b){
+                      return a.binding < b.binding;
+                  });
+    }
+
+    return _descriptorSetInfo;
+}
+
+void
+HgiVulkanShaderGenerator::_AddDescriptorSetLayoutBinding(
+    uint32_t bindingIndex,
+    VkDescriptorType descriptorType,
+    uint32_t descriptorCount)
+{
+    if (_descriptorSetInfo.empty()) {
+        // For now, all bindings are part of a single descriptor set.
+        _descriptorSetInfo.resize(1);
+        _descriptorSetInfo.back().setNumber = 0;
+    }
+
+    const VkShaderStageFlags stageFlags =
+        HgiVulkanConversions::GetShaderStages(_GetShaderStage());
+
+    HgiVulkanDescriptorSetInfo &setInfo = _descriptorSetInfo.back();
+
+    VkDescriptorSetLayoutBinding &bindInfo = setInfo.bindings.emplace_back();
+    bindInfo.binding = bindingIndex;
+    bindInfo.descriptorType = descriptorType;
+    bindInfo.descriptorCount = descriptorCount;
+    bindInfo.stageFlags = stageFlags;
+    bindInfo.pImmutableSamplers = nullptr;
+
+    _descriptorSetLayoutsAdded = true;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE

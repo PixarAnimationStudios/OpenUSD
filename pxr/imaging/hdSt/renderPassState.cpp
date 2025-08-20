@@ -306,6 +306,9 @@ HdStRenderPassState::Prepare(
             HdShaderTokens->lightingBlendAmount,
             HdTupleType{HdTypeFloat, 1});
         bufferSpecs.emplace_back(
+            HdShaderTokens->linearExposure,
+            HdTupleType{HdTypeFloat, 1});
+        bufferSpecs.emplace_back(
             HdShaderTokens->stepSize,
             HdTupleType{HdTypeFloat, 1});
         bufferSpecs.emplace_back(
@@ -360,6 +363,11 @@ HdStRenderPassState::Prepare(
     // Lighting hack supports different blending amounts, but we are currently
     // only using the feature to turn lighting on and off.
     float lightingBlendAmount = (_lightingEnabled ? 1.0f : 0.0f);
+
+    // Camera exposure (linear-encoded)
+    float linearExposure =
+        ((_camera && _enableExposureCompensation)
+         ? _camera->GetLinearExposureScale() : 1.0f);
 
     GfMatrix4d const& worldToViewMatrix = GetWorldToViewMatrix();
     GfMatrix4d projMatrix = GetProjectionMatrix();
@@ -427,6 +435,9 @@ HdStRenderPassState::Prepare(
             HdShaderTokens->lightingBlendAmount,
             VtValue(lightingBlendAmount)),
         std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->linearExposure,
+            VtValue(linearExposure)),
+        std::make_shared<HdVtBufferSource>(
             HdShaderTokens->stepSize,
             VtValue(_stepSize)),
         std::make_shared<HdVtBufferSource>(
@@ -439,7 +450,8 @@ HdStRenderPassState::Prepare(
             !aovBindings.empty() && GetUseAovMultiSample()) {
         if (const auto* renderBuffer = dynamic_cast<HdStRenderBuffer*>(
                 aovBindings.front().renderBuffer)) {
-            multisampleCount = renderBuffer->GetMSAASampleCount();
+            multisampleCount = renderBuffer->IsMultiSampled() ?
+                renderBuffer->GetMSAASampleCount() : 1;
         }
     }
             
@@ -755,6 +767,10 @@ HdStRenderPassState::Bind(HgiCapabilities const &hgiCapabilities)
 
     if (_multiSampleEnabled) {
         glEnable(GL_MULTISAMPLE);
+        if (!hgiCapabilities.IsSet(HgiDeviceCapabilitiesBitsRoundPoints)) {
+            // Needed to get gl_pointCoord in FS.
+            glEnable(GL_POINT_SPRITE);
+        }
     } else {
         glDisable(GL_MULTISAMPLE);
         // If not using GL_MULTISAMPLE, use GL_POINT_SMOOTH to render points as 
@@ -808,6 +824,7 @@ HdStRenderPassState::Unbind(HgiCapabilities const &hgiCapabilities)
     glEnable(GL_MULTISAMPLE);
     if (!hgiCapabilities.GetCoreProfile()) {
         glDisable(GL_POINT_SMOOTH);
+        glDisable(GL_POINT_SPRITE);
     }
 }
 
@@ -1031,10 +1048,12 @@ HdStRenderPassState::MakeGraphicsCmdsDesc(
 
         if (HdAovHasDepthSemantic(aov.aovName) ||
             HdAovHasDepthStencilSemantic(aov.aovName)) {
-            desc.depthAttachmentDesc = std::move(attachmentDesc);
-            desc.depthTexture = hgiTexHandle;
-            if (hgiResolveHandle) {
-                desc.depthResolveTexture = hgiResolveHandle;
+            if (_depthTestEnabled || _depthMaskEnabled) {
+                desc.depthAttachmentDesc = std::move(attachmentDesc);
+                desc.depthTexture = hgiTexHandle;
+                if (hgiResolveHandle) {
+                    desc.depthResolveTexture = hgiResolveHandle;
+                }
             }
         } else if (TF_VERIFY(desc.colorAttachmentDescs.size() < maxColorTex,
                    "Too many aov bindings for color attachments"))
@@ -1133,7 +1152,9 @@ HdStRenderPassState::_InitAttachmentState(
 
         if (HdAovHasDepthSemantic(binding.aovName) ||
             HdAovHasDepthStencilSemantic(binding.aovName)) {
-            pipeDesc->depthAttachmentDesc = attachment;
+            if (_depthTestEnabled || _depthMaskEnabled) {
+                pipeDesc->depthAttachmentDesc = attachment;
+            }
         } else {
             pipeDesc->colorAttachmentDescs.push_back(attachment);
         }

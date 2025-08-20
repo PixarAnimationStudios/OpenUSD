@@ -9,7 +9,7 @@ import unittest
 from pxr import Sdf
 
 class TestSdfTimeSampleOrdering(unittest.TestCase):
-    layerText = '''#sdf 1.4.32
+    layerText = '''#usda 1.0
 def "Prim"{
     int i.timeSamples = {-1 : -10, 0 : 0, 1 : 10}
 }

@@ -217,7 +217,7 @@ class TestUsdTimeSamples(unittest.TestCase):
 
     def test_EmptyTimeSamplesMap(self):
         layer = Sdf.Layer.CreateAnonymous()
-        layer.ImportFromString('''#sdf 1.4.32
+        layer.ImportFromString('''#usda 1.0
 def "Foo" {
     int x = 123
     int x.timeSamples = {}

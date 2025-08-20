@@ -16,39 +16,39 @@ class TestSdfFileFormat(unittest.TestCase):
 
         # FindById
         # Note that the id and extension are the same in our case
-        sdfFileFormat = Sdf.FileFormat.FindById('sdf')
+        sdfFileFormat = Sdf.FileFormat.FindById('usda')
         self.assertTrue(sdfFileFormat)
-        self.assertEqual(sdfFileFormat.GetFileExtensions(), ['sdf'])
+        self.assertEqual(sdfFileFormat.GetFileExtensions(), ['usda'])
 
         # FindByExtension
-        sdfFileFormat = Sdf.FileFormat.FindByExtension('sdf')
+        sdfFileFormat = Sdf.FileFormat.FindByExtension('usda')
         self.assertTrue(sdfFileFormat)
-        self.assertEqual(sdfFileFormat.GetFileExtensions(), ['sdf'])
+        self.assertEqual(sdfFileFormat.GetFileExtensions(), ['usda'])
         sdfFileFormatWithArgs = Sdf.FileFormat.FindByExtension(
-            'foo.sdf', {'target': 'sdf', 'documentation': 'doc string'})
+            'foo.usda', {'target': 'usd', 'documentation': 'doc string'})
         self.assertTrue(sdfFileFormatWithArgs)
-        self.assertEqual(sdfFileFormatWithArgs.GetFileExtensions(), ['sdf'])
+        self.assertEqual(sdfFileFormatWithArgs.GetFileExtensions(), ['usda'])
 
-        self.assertEqual(Sdf.FileFormat.FindByExtension('SDF'), sdfFileFormat)
-        self.assertEqual(Sdf.FileFormat.FindByExtension('Sdf'), sdfFileFormat)
-        self.assertEqual(Sdf.FileFormat.FindByExtension('sDF'), sdfFileFormat)
+        self.assertEqual(Sdf.FileFormat.FindByExtension('USDA'), sdfFileFormat)
+        self.assertEqual(Sdf.FileFormat.FindByExtension('Usda'), sdfFileFormat)
+        self.assertEqual(Sdf.FileFormat.FindByExtension('uSDA'), sdfFileFormat)
 
         # GetFileExtension
-        self.assertEqual(Sdf.FileFormat.GetFileExtension('foo.sdf'), 'sdf')
-        self.assertEqual(Sdf.FileFormat.GetFileExtension('/something/bar/foo.sdf'), 'sdf')
-        self.assertEqual(Sdf.FileFormat.GetFileExtension('./bar/baz/foo.sdf'), 'sdf')
+        self.assertEqual(Sdf.FileFormat.GetFileExtension('foo.usda'), 'usda')
+        self.assertEqual(Sdf.FileFormat.GetFileExtension('/something/bar/foo.usda'), 'usda')
+        self.assertEqual(Sdf.FileFormat.GetFileExtension('./bar/baz/foo.usda'), 'usda')
         fileWithArgs = Sdf.Layer.CreateIdentifier(
-            'foo.sdf', {'documentation' : 'doc string'})
-        self.assertEqual(Sdf.FileFormat.GetFileExtension(fileWithArgs), 'sdf')
+            'foo.usda', {'documentation' : 'doc string'})
+        self.assertEqual(Sdf.FileFormat.GetFileExtension(fileWithArgs), 'usda')
          
         # FindAllFileFormatExtensions
         exts = Sdf.FileFormat.FindAllFileFormatExtensions()
-        self.assertTrue('sdf' in exts)
+        self.assertTrue('usda' in exts)
 
         # FindAllDerivedFileFormatExtensions
         exts = Sdf.FileFormat.FindAllDerivedFileFormatExtensions(
-            Tf.Type.FindByName('SdfTextFileFormat'))
-        self.assertTrue('sdf' in exts)
+            Tf.Type.FindByName('SdfUsdaFileFormat'))
+        self.assertTrue('usda' in exts)
         with self.assertRaises(Tf.ErrorException):
             Sdf.FileFormat.FindAllDerivedFileFormatExtensions(Tf.Type())
 

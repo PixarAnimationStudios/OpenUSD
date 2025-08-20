@@ -208,9 +208,10 @@ to reconstruct the attribute value from the time samples. Rotations are
 expressed in degrees, so this provides 4 revolutions over the course of the
 192-frame animation.
 
-We can use :program:`usdview` to play back the animation:
+In :program:`usdview`, you can use the Play button in the lower right or the 
+scrubber at the bottom of the window to play back the animation.
 
-.. image:: http://openusd.org/images/tut_xforms_spin.gif
+.. image:: http://openusd.org/images/tut_xforms_step3_usdview.png
 
 Chaining Multiple Transformations with :usda:`xformOpOrder`
 ***********************************************************

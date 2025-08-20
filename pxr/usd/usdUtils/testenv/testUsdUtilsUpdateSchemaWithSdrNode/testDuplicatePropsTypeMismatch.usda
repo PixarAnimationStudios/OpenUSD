@@ -1,8 +1,8 @@
 #usda 1.0
 
 # Input USD file to test type mis-match for duplicate properties between sdr and
-# base USD schema -- example, intensity is marked int here vs float in usdLux
-# schema
+# base USD schema -- example, `one` and `two` are marked int here vs float in
+# the BaseAPI schemas
 
 def Shader "TestDuplicatePropsAPI" (
     sdrMetadata = {

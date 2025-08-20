@@ -1,0 +1,30 @@
+#usda 1.0
+(
+    relocates = {
+        </TentacleRig/TentacleInterface/Knot03Rig/Anim>: </TentacleRig/Tentacle/Knot03>
+    }
+)
+
+def Scope "TentacleRig"
+{
+    def Scope "TentacleInterface"
+    {
+        class Scope "_Class_KnotRig"
+        {
+            def Scope "Anim"
+            {
+                custom string foo = "from TentacleRig"
+            }
+        }
+
+        def Scope "Knot03Rig" (
+             inherits = </TentacleRig/TentacleInterface/_Class_KnotRig>
+        )
+        {
+        }
+    }
+
+    def Scope "Tentacle"
+    {
+    }
+}

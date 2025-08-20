@@ -143,5 +143,4 @@ AppController._takeShot = _takeShot
 if __name__ == '__main__':
     errorMark = Tf.Error.Mark()
     TestUsdView().Run()
-    assert errorMark.IsClean()
-    
+    errorMark.RaiseIfNotClean()

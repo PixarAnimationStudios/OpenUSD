@@ -1,19 +1,19 @@
-Loading session @BasicReference/session.sdf@
+Loading session @BasicReference/session.usda@
 
-Loading @BasicReference/root.sdf@
+Loading @BasicReference/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     session.sdf
-     root.sdf
-     sublayer.sdf
+     session.usda
+     root.usda
+     sublayer.usda
 
 ------------------------------------------------------------------------
 Results for composing </InternalSublayerReference>
 
 Prim Stack:
-    root.sdf             /InternalSublayerReference
-    sublayer.sdf         /InternalSublayerReference
+    root.usda             /InternalSublayerReference
+    sublayer.usda         /InternalSublayerReference
 
 Child names:
      ['InternalSublayerReference_Child']
@@ -22,16 +22,16 @@ Child names:
 Results for composing </InternalSublayerReference/InternalSublayerReference_Child>
 
 Prim Stack:
-    root.sdf             /InternalSublayerReference/InternalSublayerReference_Child
-    sublayer.sdf         /InternalSublayerReference/InternalSublayerReference_Child
+    root.usda             /InternalSublayerReference/InternalSublayerReference_Child
+    sublayer.usda         /InternalSublayerReference/InternalSublayerReference_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimInSublayerWithInternalReference>
 
 Prim Stack:
-    sublayer.sdf         /PrimInSublayerWithInternalReference
-    root.sdf             /InternalSublayerReference
-    sublayer.sdf         /InternalSublayerReference
+    sublayer.usda         /PrimInSublayerWithInternalReference
+    root.usda             /InternalSublayerReference
+    sublayer.usda         /InternalSublayerReference
 
 Child names:
      ['InternalSublayerReference_Child']
@@ -40,30 +40,30 @@ Child names:
 Results for composing </PrimInSublayerWithInternalReference/InternalSublayerReference_Child>
 
 Prim Stack:
-    root.sdf             /InternalSublayerReference/InternalSublayerReference_Child
-    sublayer.sdf         /InternalSublayerReference/InternalSublayerReference_Child
+    root.usda             /InternalSublayerReference/InternalSublayerReference_Child
+    sublayer.usda         /InternalSublayerReference/InternalSublayerReference_Child
 
 ------------------------------------------------------------------------
 Results for composing </SublayerPrim>
 
 Prim Stack:
-    sublayer.sdf         /SublayerPrim
+    sublayer.usda         /SublayerPrim
 
 ------------------------------------------------------------------------
 Results for composing </PrimInSublayerWithInternalReference2>
 
 Prim Stack:
-    sublayer.sdf         /PrimInSublayerWithInternalReference2
-    sublayer.sdf         /SublayerPrim
+    sublayer.usda         /PrimInSublayerWithInternalReference2
+    sublayer.usda         /SublayerPrim
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithReferences>
 
 Prim Stack:
-    root.sdf             /PrimWithReferences
-    ref.sdf              /PrimA
-    ref2.sdf             /PrimC
-    ref2.sdf             /PrimB
+    root.usda             /PrimWithReferences
+    ref.usda              /PrimA
+    ref2.usda             /PrimC
+    ref2.usda             /PrimB
 
 Child names:
      ['PrimB_Child', 'PrimC_Child', 'PrimA_Child']
@@ -72,25 +72,25 @@ Child names:
 Results for composing </PrimWithReferences/PrimB_Child>
 
 Prim Stack:
-    ref2.sdf             /PrimB/PrimB_Child
+    ref2.usda             /PrimB/PrimB_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithReferences/PrimC_Child>
 
 Prim Stack:
-    ref2.sdf             /PrimC/PrimC_Child
+    ref2.usda             /PrimC/PrimC_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithReferences/PrimA_Child>
 
 Prim Stack:
-    ref.sdf              /PrimA/PrimA_Child
+    ref.usda              /PrimA/PrimA_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimB>
 
 Prim Stack:
-    root.sdf             /PrimB
+    root.usda             /PrimB
 
 Child names:
      ['PrimB_Child']
@@ -99,15 +99,15 @@ Child names:
 Results for composing </PrimB/PrimB_Child>
 
 Prim Stack:
-    root.sdf             /PrimB/PrimB_Child
+    root.usda             /PrimB/PrimB_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithSelfReference>
 
 Prim Stack:
-    root.sdf             /PrimWithSelfReference
-    root.sdf             /InternalReference
-    sublayer.sdf         /InternalSublayerReference
+    root.usda             /PrimWithSelfReference
+    root.usda             /InternalReference
+    sublayer.usda         /InternalSublayerReference
 
 Child names:
      ['InternalSublayerReference_Child', 'InternalReference_Child']
@@ -116,21 +116,21 @@ Child names:
 Results for composing </PrimWithSelfReference/InternalSublayerReference_Child>
 
 Prim Stack:
-    sublayer.sdf         /InternalSublayerReference/InternalSublayerReference_Child
+    sublayer.usda         /InternalSublayerReference/InternalSublayerReference_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithSelfReference/InternalReference_Child>
 
 Prim Stack:
-    root.sdf             /InternalReference/InternalReference_Child
+    root.usda             /InternalReference/InternalReference_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithInternalReference>
 
 Prim Stack:
-    root.sdf             /PrimWithInternalReference
-    root.sdf             /InternalReference
-    session.sdf          /InternalReference2
+    root.usda             /PrimWithInternalReference
+    root.usda             /InternalReference
+    session.usda          /InternalReference2
 
 Child names:
      ['InternalReference_Child']
@@ -139,13 +139,13 @@ Child names:
 Results for composing </PrimWithInternalReference/InternalReference_Child>
 
 Prim Stack:
-    root.sdf             /InternalReference/InternalReference_Child
+    root.usda             /InternalReference/InternalReference_Child
 
 ------------------------------------------------------------------------
 Results for composing </InternalReference>
 
 Prim Stack:
-    root.sdf             /InternalReference
+    root.usda             /InternalReference
 
 Child names:
      ['InternalReference_Child']
@@ -154,14 +154,14 @@ Child names:
 Results for composing </InternalReference/InternalReference_Child>
 
 Prim Stack:
-    root.sdf             /InternalReference/InternalReference_Child
+    root.usda             /InternalReference/InternalReference_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithDefaultReferenceTarget>
 
 Prim Stack:
-    root.sdf             /PrimWithDefaultReferenceTarget
-    defaultRef.sdf       /Default
+    root.usda             /PrimWithDefaultReferenceTarget
+    defaultRef.usda       /Default
 
 Child names:
      ['Default_Child']
@@ -170,14 +170,14 @@ Child names:
 Results for composing </PrimWithDefaultReferenceTarget/Default_Child>
 
 Prim Stack:
-    defaultRef.sdf       /Default/Default_Child
+    defaultRef.usda       /Default/Default_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithDefaultReferenceTarget2>
 
 Prim Stack:
-    root.sdf             /PrimWithDefaultReferenceTarget2
-    root.sdf             /InternalReference
+    root.usda             /PrimWithDefaultReferenceTarget2
+    root.usda             /InternalReference
 
 Child names:
      ['InternalReference_Child']
@@ -186,11 +186,11 @@ Child names:
 Results for composing </PrimWithDefaultReferenceTarget2/InternalReference_Child>
 
 Prim Stack:
-    root.sdf             /InternalReference/InternalReference_Child
+    root.usda             /InternalReference/InternalReference_Child
 
 ------------------------------------------------------------------------
 Results for composing </InternalReference2>
 
 Prim Stack:
-    session.sdf          /InternalReference2
+    session.usda          /InternalReference2
 

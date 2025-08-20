@@ -73,6 +73,10 @@ public:
     bool BlendShapeWeightsMightBeTimeVarying() const override;
 
 private:
+    bool _VerifyAnimation() const {
+        return TF_VERIFY(_anim, "PackedJointAnimation schema object is invalid.");
+    }
+
     template <typename Matrix4>
     bool _ComputeJointLocalTransforms(VtArray<Matrix4>* xforms,
                                       UsdTimeCode time) const;
@@ -170,6 +174,10 @@ UsdSkel_SkelAnimationQueryImpl::GetJointTransformTimeSamples(
     const GfInterval& interval,
     std::vector<double>* times) const
 {
+    if (!_VerifyAnimation()) {
+        return false;
+    }
+    
     return UsdAttribute::GetUnionedTimeSamplesInInterval(
         {_translations.GetAttribute(),
          _rotations.GetAttribute(),
@@ -180,6 +188,10 @@ bool
 UsdSkel_SkelAnimationQueryImpl::GetJointTransformAttributes(
     std::vector<UsdAttribute>* attrs) const
 {
+    if (!_VerifyAnimation()) {
+        return false;
+    }
+
     attrs->push_back(_translations.GetAttribute());
     attrs->push_back(_rotations.GetAttribute());
     attrs->push_back(_scales.GetAttribute());
@@ -190,6 +202,10 @@ UsdSkel_SkelAnimationQueryImpl::GetJointTransformAttributes(
 bool
 UsdSkel_SkelAnimationQueryImpl::JointTransformsMightBeTimeVarying() const
 {
+    if (!_VerifyAnimation()) {
+        return false;
+    }
+    
     return _translations.ValueMightBeTimeVarying() ||
            _rotations.ValueMightBeTimeVarying() ||
            _scales.ValueMightBeTimeVarying();
@@ -201,10 +217,10 @@ UsdSkel_SkelAnimationQueryImpl::ComputeBlendShapeWeights(
     VtFloatArray* weights,
     UsdTimeCode time) const
 {
-    if (TF_VERIFY(_anim, "PackedJointAnimation schema object is invalid.")) {
-        return _blendShapeWeights.Get(weights, time);
+    if (!_VerifyAnimation()) {
+        return false;
     }
-    return false;
+    return _blendShapeWeights.Get(weights, time);
 }
 
 
@@ -213,6 +229,9 @@ UsdSkel_SkelAnimationQueryImpl::GetBlendShapeWeightTimeSamples(
     const GfInterval& interval,
     std::vector<double>* times) const
 {
+    if (!_VerifyAnimation()) {
+        return false;
+    }
     return _blendShapeWeights.GetTimeSamplesInInterval(interval, times);
 }
 
@@ -221,6 +240,9 @@ bool
 UsdSkel_SkelAnimationQueryImpl::GetBlendShapeWeightAttributes(
     std::vector<UsdAttribute>* attrs) const
 {
+    if (!_VerifyAnimation()) {
+        return false;
+    }
     attrs->push_back(_blendShapeWeights.GetAttribute());
     return true;
 }
@@ -228,6 +250,9 @@ UsdSkel_SkelAnimationQueryImpl::GetBlendShapeWeightAttributes(
 bool
 UsdSkel_SkelAnimationQueryImpl::BlendShapeWeightsMightBeTimeVarying() const
 {
+    if (!_VerifyAnimation()) {
+        return false;
+    }
     return _blendShapeWeights.ValueMightBeTimeVarying();
 }
 

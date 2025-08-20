@@ -107,9 +107,15 @@ public:
 
     /// Add a cube
     HD_API
-    void AddCube(SdfPath const &id, GfMatrix4f const &transform, bool guide=false,
-                 SdfPath const &instancerId=SdfPath(),
+    void AddCube(SdfPath const &id, GfMatrix4f const &transform,
+                 bool guide=false, SdfPath const &instancerId=SdfPath(),
                  TfToken const &scheme=PxOsdOpenSubdivTokens->catmullClark);
+
+    HD_API
+    void AddCube(SdfPath const &id, GfMatrix4f const &transform, 
+                 bool guide, SdfPath const &instancerId, TfToken const &scheme,
+                 VtValue const &color, HdInterpolation colorInterpolation,
+                 VtValue const &opacity, HdInterpolation opacityInterpolation);
 
     /// Add a grid with division x*y
     HD_API

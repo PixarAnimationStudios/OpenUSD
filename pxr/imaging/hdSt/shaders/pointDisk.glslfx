@@ -19,6 +19,15 @@ float ApplyPointSizeBias(float pointSize)
         return 0;
     }
 
+#ifdef HD_HAS_multisampleCount
+    const uint multisampleCount = HdGet_multisampleCount();
+#else
+    const uint multisampleCount = 1;
+#endif
+    if (multisampleCount == 1) {
+        return pointSize;
+    }
+
     // Slightly enlarge the points as the input size reaches 1.
     // This improves MSAA and prevents tiny point from disappearing
     // when MSAA is disabled. Similar behaviour is observed when
@@ -51,6 +60,16 @@ float ApplyPointSizeBias(float pointSize)
 
 void ApplyDiskSampleMask()
 {
+#ifdef HD_HAS_multisampleCount
+    const uint multisampleCount = HdGet_multisampleCount();
+#else
+    const uint multisampleCount = 1;
+#endif
+    if (multisampleCount == 1) {
+        hd_SampleMask = int(hd_SampleMaskIn);
+        return;
+    }
+
     // By using the sample mask directly, don't depend on the
     // alpha-to-coverage or multisampling state.
 
@@ -69,13 +88,8 @@ void ApplyDiskSampleMask()
     } else {
         // On the disk edge
         const float edgeSdf = clamp(-pointSdfPx, 0.0, 1.0);
-#ifdef HD_HAS_multisampleCount
-        const int sampleCount = int(round(HdGet_multisampleCount() * edgeSdf));
-#else
-        const int sampleCount = int(round(edgeSdf));
-#endif
-        const int sampleMask = ((1 << sampleCount) - 1);
-        hd_SampleMask = int(hd_SampleMaskIn) & sampleMask;
+        const int sampleCount = int(round(multisampleCount * edgeSdf));
+        hd_SampleMask =  (1 << sampleCount) - 1;
     }
 }
 

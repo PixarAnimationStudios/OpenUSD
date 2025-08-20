@@ -56,8 +56,21 @@ void wrapShaderProperty()
     to_python_converter<SdrShaderPropertyConstPtr,
                         SdrShaderPropertyConstPtrToPythonConverter>();
 
-    class_<This, ThisPtr, bases<NdrProperty>,
-           noncopyable>("ShaderProperty", no_init)
+    class_<This, ThisPtr, noncopyable>("ShaderProperty", no_init)
+        .def("__repr__", &This::GetInfoString)
+        .def("GetName", &This::GetName, copyRefPolicy)
+        .def("GetType", &This::GetType, copyRefPolicy)
+        .def("GetDefaultValue", &This::GetDefaultValue, copyRefPolicy)
+        .def("IsOutput", &This::IsOutput)
+        .def("IsArray", &This::IsArray)
+        .def("IsDynamicArray", &This::IsDynamicArray)
+        .def("GetArraySize", &This::GetArraySize)
+        .def("GetInfoString", &This::GetInfoString)
+        .def("GetMetadata", &This::GetMetadata,
+            return_value_policy<TfPyMapToDictionary>())
+        .def("IsConnectable", &This::IsConnectable)
+        .def("CanConnectTo", &This::CanConnectTo)
+        .def("GetTypeAsSdfType", &This::GetTypeAsSdfType)
         .def("GetDefaultValueAsSdfType", &This::GetDefaultValueAsSdfType,
                 copyRefPolicy)
         .def("GetLabel", &This::GetLabel, copyRefPolicy)
@@ -77,8 +90,6 @@ void wrapShaderProperty()
         .def("IsVStruct", &This::IsVStruct)
         .def("GetValidConnectionTypes", &This::GetValidConnectionTypes,
             copyRefPolicy)
-        .def("CanConnectTo", (bool (SdrShaderProperty::*)(
-            const SdrShaderProperty&) const) &This::CanConnectTo)
         .def("IsAssetIdentifier", &This::IsAssetIdentifier)
         .def("IsDefaultInput", &This::IsDefaultInput)
         ;

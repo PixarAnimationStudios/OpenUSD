@@ -17,9 +17,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Array concept. By default, types are not arrays.
+/// A trait to detect instantiations of VtArray, specialized in array.h.
 template <typename T>
 struct VtIsArray : public std::false_type {};
+
+/// A trait to detect instantiations of VtArrayEdit, specialized in arrayEdit.h
+template <typename T>
+struct VtIsArrayEdit : public std::false_type {};
 
 // We attempt to use local storage if a given type will fit and if it has a
 // cheap copy operation.  By default we only treat types with trivial

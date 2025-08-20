@@ -17,6 +17,9 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         TS_DEBUG_LOOPS,
         "Diagnostic output for looping splines");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        TS_DEBUG_SAMPLE,
+        "Diagnostic output for sampling splines");
 }
 
 

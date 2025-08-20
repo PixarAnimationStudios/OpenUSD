@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def GprimSphere "mysphere"
+{
+    custom double3[] emptylist1 = []
+    custom double3[] emptylist2 = []
+}
+

@@ -54,7 +54,7 @@ struct Sdf_AssetInfo;
 ///
 /// The SdfLayer class provides a consistent API for accesing and serializing
 /// scene description, using any data store provided by Ar plugins.  Sdf
-/// itself provides a UTF-8 text format for layers identified by the ".sdf"
+/// itself provides a UTF-8 text format for layers identified by the ".usda"
 /// identifier extension, but via the SdfFileFormat abstraction, allows
 /// downstream modules and plugins to adapt arbitrary data formats to the
 /// SdfData/SdfLayer model.
@@ -453,8 +453,8 @@ public:
     /// to those functions, those arguments will be encoded in the identifier.
     /// 
     /// For example: 
-    ///     FindOrOpen('foo.sdf', args={'a':'b', 'c':'d'}).identifier
-    ///         => "foo.sdf:SDF_FORMAT_ARGS:a=b&c=d"
+    ///     FindOrOpen('foo.usda', args={'a':'b', 'c':'d'}).identifier
+    ///         => "foo.usda:SDF_FORMAT_ARGS:a=b&c=d"
     ///
     /// Note that this means the identifier may in general not be a path.
     ///
@@ -857,6 +857,27 @@ public:
     /// GetDefaultPrim() and SetDefaultPrim().
     SDF_API
     bool HasDefaultPrim();
+
+    /// Converts the given \p defaultPrim token into a prim path.
+    ///
+    /// If the input token is the string representation of an absolute prim,
+    /// that path is returned. If the token represents a relative prim path, the
+    /// returned path is coverted into a absolute path anchored to the absolute
+    /// root path. If the token does not represent a valid relative or absolute
+    /// prim path, an empty path is returned.
+    SDF_API
+    static SdfPath ConvertDefaultPrimTokenToPath(const TfToken &defaultPrim);
+
+    /// Converts the path \p primPath into a token value that can be used to 
+    /// set the default prim metadata for the layer to refer to the prim at that
+    /// path.
+    ///
+    /// If the given path is a root prim path, the returned token will just be
+    /// the name of the prim. For all other prim paths, this will return the 
+    /// absolute path as a string token. If the path is not a prim path, this
+    /// will return an empty token.
+    SDF_API
+    static TfToken ConvertDefaultPrimPathToToken(const SdfPath &primPath);
 
     /// Returns the documentation string for this layer.
     ///

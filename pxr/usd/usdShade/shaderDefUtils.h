@@ -35,36 +35,10 @@ public:
     /// To enable the shaderDef parser to find and parse this shader, 
     /// \p sourceUri should have the resolved path to the usd file containing 
     /// this shader prim.
-    ///
-    /// \deprecated
-    /// Deprecated in favor of GetDiscoveryResults
-    USDSHADE_API
-    static NdrNodeDiscoveryResultVec GetNodeDiscoveryResults(
-        const UsdShadeShader &shaderDef,
-        const std::string &sourceUri);
-
-    /// Returns the list of SdrShaderNodeDiscoveryResult objects that must be 
-    /// added to the shader registry for the given shader \p shaderDef, 
-    /// assuming it is found in a shader definition file found by an Sdr 
-    /// discovery plugin. 
-    /// 
-    /// To enable the shaderDef parser to find and parse this shader, 
-    /// \p sourceUri should have the resolved path to the usd file containing 
-    /// this shader prim.
     USDSHADE_API
     static SdrShaderNodeDiscoveryResultVec GetDiscoveryResults(
         const UsdShadeShader &shaderDef,
         const std::string &sourceUri);
-
-    /// Gets all input and output properties of the given \p shaderDef and 
-    /// translates them into SdrShaderProperties that can be used as the
-    /// properties for an SdrShaderNode.
-    ///
-    /// \deprecated
-    /// Deprecated in favor of GetProperties
-    USDSHADE_API
-    static NdrPropertyUniquePtrVec GetShaderProperties(
-        const UsdShadeConnectableAPI &shaderDef);
 
     /// Gets all input and output properties of the given \p shaderDef and 
     /// translates them into SdrShaderProperties that can be used as the

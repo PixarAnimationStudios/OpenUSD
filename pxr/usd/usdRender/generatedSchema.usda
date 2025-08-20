@@ -4,398 +4,273 @@
 )
 
 class "RenderSettingsBase" (
-    doc = """Abstract base class that defines render settings that
-    can be specified on either a RenderSettings prim or a RenderProduct 
-    prim."""
+    customData = {
+        string userDocBrief = """An abstract base class schema that defines
+settings common to both RenderSettings and RenderProduct."""
+    }
 )
 {
     uniform token aspectRatioConformPolicy = "expandAperture" (
         allowedTokens = ["expandAperture", "cropAperture", "adjustApertureWidth", "adjustApertureHeight", "adjustPixelAspectRatio"]
-        doc = '''
-        Indicates the policy to use to resolve an aspect
-        ratio mismatch between the camera aperture and image settings.
-
-        This policy allows a standard render setting to do something
-        reasonable given varying camera inputs.
-
-        The camera aperture aspect ratio is determined by the
-        aperture atributes on the UsdGeomCamera.
-
-        The image aspect ratio is determined by the resolution and
-        pixelAspectRatio attributes in the render settings.
-
-        - "expandAperture": if necessary, expand the aperture to
-          fit the image, exposing additional scene content
-        - "cropAperture": if necessary, crop the aperture to fit
-          the image, cropping scene content
-        - "adjustApertureWidth": if necessary, adjust aperture width
-          to make its aspect ratio match the image
-        - "adjustApertureHeight": if necessary, adjust aperture height
-          to make its aspect ratio match the image
-        - "adjustPixelAspectRatio": compute pixelAspectRatio to
-          make the image exactly cover the aperture; disregards
-          existing attribute value of pixelAspectRatio
-        '''
+        customData = {
+            string userDocBrief = """Indicates the policy to use to resolve an 
+aspect ratio mismatch between the camera aperture and image aspect ratio
+(derived from the resolution and pixelAspectRatio)."""
+        }
     )
     rel camera (
-        doc = """The _camera_ relationship specifies the primary
-        camera to use in a render.  It must target a UsdGeomCamera."""
+        customData = {
+            string userDocBrief = """A relationship that specifies the primary 
+camera to use for a render. Must target a Camera prim."""
+        }
     )
     uniform float4 dataWindowNDC = (0, 0, 1, 1) (
-        doc = """dataWindowNDC specifies the axis-aligned rectangular
-        region in the adjusted aperture window within which the renderer
-        should produce data.
-
-        It is specified as (xmin, ymin, xmax, ymax) in normalized
-        device coordinates, where the range 0 to 1 corresponds to the
-        aperture.  (0,0) corresponds to the bottom-left
-        corner and (1,1) corresponds to the upper-right corner.
-
-        Specifying a window outside the unit square will produce
-        overscan data. Specifying a window that does not cover the unit
-        square will produce a cropped render.
-
-        A pixel is included in the rendered result if the pixel
-        center is contained by the data window.  This is consistent
-        with standard rules used by polygon rasterization engines.
-        \\ref UsdRenderRasterization
-
-        The data window is expressed in NDC so that cropping and
-        overscan may be resolution independent.  In interactive
-        workflows, incremental cropping and resolution adjustment
-        may be intermixed to isolate and examine parts of the scene.
-        In compositing workflows, overscan may be used to support
-        image post-processing kernels, and reduced-resolution proxy
-        renders may be used for faster iteration.
-
-        The dataWindow:ndc coordinate system references the
-        aperture after any adjustments required by
-        aspectRatioConformPolicy.
-        """
+        customData = {
+            string userDocBrief = """Specifies the axis-aligned rectangular
+region in the adjusted aperture window within which the renderer should produce 
+data. Specified as (xmin, ymin, xmax, ymax) in normalized device coordinates, 
+where the range 0 to 1 corresponds to the aperture."""
+        }
     )
     uniform bool disableDepthOfField = 0 (
-        doc = """Disable all depth of field by setting F-stop of the targeted
-        camera to infinity."""
+        customData = {
+            string userDocBrief = """Disable all depth of field by setting 
+F-stop of the targeted camera to infinity."""
+        }
     )
     uniform bool disableMotionBlur = 0 (
-        doc = """Disable all motion blur by setting the shutter interval
-        of the targeted camera to [0,0] - that is, take only one sample,
-        namely at the current time code."""
+        customData = {
+            string userDocBrief = """Disable all motion blur by setting the 
+shutter interval of the render camera to [0,0] (take only one sample at the 
+current time code)."""
+        }
     )
     uniform bool instantaneousShutter = 0 (
-        doc = """Deprecated - use disableMotionBlur instead. Override
-        the targeted _camera_'s _shutterClose_ to be equal to the
-        value of its _shutterOpen_, to produce a zero-width shutter
-        interval.  This gives us a convenient way to disable motion
-        blur."""
+        customData = {
+            string userDocBrief = "Deprecated, use disableMotionBlur instead."
+        }
     )
     uniform float pixelAspectRatio = 1 (
-        doc = """The aspect ratio (width/height) of image pixels..
-        The default ratio 1.0 indicates square pixels."""
+        customData = {
+            string userDocBrief = """The aspect ratio (width/height) of the 
+image pixels."""
+        }
     )
     uniform int2 resolution = (2048, 1080) (
-        doc = """The image pixel resolution, corresponding to the
-        camera's screen window."""
+        customData = {
+            string userDocBrief = """The image pixel resolution, corresponding 
+to the camera's screen window."""
+        }
     )
 }
 
 class RenderSettings "RenderSettings" (
-    doc = """A UsdRenderSettings prim specifies global settings for
-    a render process, including an enumeration of the RenderProducts
-    that should result, and the UsdGeomImageable purposes that should
-    be rendered.  \\ref UsdRenderHowSettingsAffectRendering"""
+    customData = {
+        string userDocBrief = """All the global settings for a 
+single invocation of a rendering of a scene. Includes configuration of what
+render products should be produced, and what imageable purposes should be 
+rendered."""
+    }
 )
 {
     uniform token aspectRatioConformPolicy = "expandAperture" (
         allowedTokens = ["expandAperture", "cropAperture", "adjustApertureWidth", "adjustApertureHeight", "adjustPixelAspectRatio"]
-        doc = '''
-        Indicates the policy to use to resolve an aspect
-        ratio mismatch between the camera aperture and image settings.
-
-        This policy allows a standard render setting to do something
-        reasonable given varying camera inputs.
-
-        The camera aperture aspect ratio is determined by the
-        aperture atributes on the UsdGeomCamera.
-
-        The image aspect ratio is determined by the resolution and
-        pixelAspectRatio attributes in the render settings.
-
-        - "expandAperture": if necessary, expand the aperture to
-          fit the image, exposing additional scene content
-        - "cropAperture": if necessary, crop the aperture to fit
-          the image, cropping scene content
-        - "adjustApertureWidth": if necessary, adjust aperture width
-          to make its aspect ratio match the image
-        - "adjustApertureHeight": if necessary, adjust aperture height
-          to make its aspect ratio match the image
-        - "adjustPixelAspectRatio": compute pixelAspectRatio to
-          make the image exactly cover the aperture; disregards
-          existing attribute value of pixelAspectRatio
-        '''
+        customData = {
+            string userDocBrief = """Indicates the policy to use to resolve an 
+aspect ratio mismatch between the camera aperture and image aspect ratio
+(derived from the resolution and pixelAspectRatio)."""
+        }
     )
     rel camera (
-        doc = """The _camera_ relationship specifies the primary
-        camera to use in a render.  It must target a UsdGeomCamera."""
+        customData = {
+            string userDocBrief = """A relationship that specifies the primary 
+camera to use for a render. Must target a Camera prim."""
+        }
     )
     uniform float4 dataWindowNDC = (0, 0, 1, 1) (
-        doc = """dataWindowNDC specifies the axis-aligned rectangular
-        region in the adjusted aperture window within which the renderer
-        should produce data.
-
-        It is specified as (xmin, ymin, xmax, ymax) in normalized
-        device coordinates, where the range 0 to 1 corresponds to the
-        aperture.  (0,0) corresponds to the bottom-left
-        corner and (1,1) corresponds to the upper-right corner.
-
-        Specifying a window outside the unit square will produce
-        overscan data. Specifying a window that does not cover the unit
-        square will produce a cropped render.
-
-        A pixel is included in the rendered result if the pixel
-        center is contained by the data window.  This is consistent
-        with standard rules used by polygon rasterization engines.
-        \\ref UsdRenderRasterization
-
-        The data window is expressed in NDC so that cropping and
-        overscan may be resolution independent.  In interactive
-        workflows, incremental cropping and resolution adjustment
-        may be intermixed to isolate and examine parts of the scene.
-        In compositing workflows, overscan may be used to support
-        image post-processing kernels, and reduced-resolution proxy
-        renders may be used for faster iteration.
-
-        The dataWindow:ndc coordinate system references the
-        aperture after any adjustments required by
-        aspectRatioConformPolicy.
-        """
+        customData = {
+            string userDocBrief = """Specifies the axis-aligned rectangular
+region in the adjusted aperture window within which the renderer should produce 
+data. Specified as (xmin, ymin, xmax, ymax) in normalized device coordinates, 
+where the range 0 to 1 corresponds to the aperture."""
+        }
     )
     uniform bool disableDepthOfField = 0 (
-        doc = """Disable all depth of field by setting F-stop of the targeted
-        camera to infinity."""
+        customData = {
+            string userDocBrief = """Disable all depth of field by setting 
+F-stop of the targeted camera to infinity."""
+        }
     )
     uniform bool disableMotionBlur = 0 (
-        doc = """Disable all motion blur by setting the shutter interval
-        of the targeted camera to [0,0] - that is, take only one sample,
-        namely at the current time code."""
+        customData = {
+            string userDocBrief = """Disable all motion blur by setting the 
+shutter interval of the render camera to [0,0] (take only one sample at the 
+current time code)."""
+        }
     )
     uniform token[] includedPurposes = ["default", "render"] (
-        doc = """The list of UsdGeomImageable _purpose_ values that
-        should be included in the render.  Note this cannot be
-        specified per-RenderProduct because it is a statement of
-        which geometry is present."""
+        customData = {
+            string userDocBrief = """Imageable purpose values (e.g. default,
+render, proxy, guide) that should be included in the render. Only imageable 
+prims with purpose set to one of the includedPurposes values will be rendered."""
+        }
     )
     uniform bool instantaneousShutter = 0 (
-        doc = """Deprecated - use disableMotionBlur instead. Override
-        the targeted _camera_'s _shutterClose_ to be equal to the
-        value of its _shutterOpen_, to produce a zero-width shutter
-        interval.  This gives us a convenient way to disable motion
-        blur."""
+        customData = {
+            string userDocBrief = "Deprecated, use disableMotionBlur instead."
+        }
     )
     uniform token[] materialBindingPurposes = ["full", ""] (
         allowedTokens = ["full", "preview", ""]
-        doc = '''Ordered list of material purposes to consider when
-        resolving material bindings in the scene.  The empty string
-        indicates the "allPurpose" binding.'''
+        customData = {
+            string userDocBrief = """Ordered list of material binding purposes
+that will be used in the render."""
+        }
     )
     uniform float pixelAspectRatio = 1 (
-        doc = """The aspect ratio (width/height) of image pixels..
-        The default ratio 1.0 indicates square pixels."""
+        customData = {
+            string userDocBrief = """The aspect ratio (width/height) of the 
+image pixels."""
+        }
     )
     rel products (
-        doc = """The set of RenderProducts the render should produce.
-        This relationship should target UsdRenderProduct prims.
-        If no _products_ are specified, an application should produce
-        an rgb image according to the RenderSettings configuration,
-        to a default display or image name."""
+        customData = {
+            string userDocBrief = """Specifies the RenderProducts that a 
+render of this scene should produce. If no products are specified, renderers 
+are expected to produce a default RGB image."""
+        }
     )
     uniform token renderingColorSpace (
-        doc = """Describes a renderer's working (linear) colorSpace where all
-        the renderer/shader math is expected to happen. When no
-        renderingColorSpace is provided, renderer should use its own default."""
+        customData = {
+            string userDocBrief = """The 'rendering color space' the renderer
+should use for internal color calculations. If this is not set, a renderer 
+is expected to use its own default color space. Not to be confused with setting
+specific 'source' color spaces for scene assets."""
+        }
     )
     uniform int2 resolution = (2048, 1080) (
-        doc = """The image pixel resolution, corresponding to the
-        camera's screen window."""
+        customData = {
+            string userDocBrief = """The image pixel resolution, corresponding 
+to the camera's screen window."""
+        }
     )
 }
 
 class RenderVar "RenderVar" (
-    doc = """A UsdRenderVar describes a custom data variable for
-    a render to produce.  The prim describes the source of the data, which
-    can be a shader output or an LPE (Light Path Expression), and also
-    allows encoding of (generally renderer-specific) parameters that
-    configure the renderer for computing the variable.
-
-    \\note The name of the RenderVar prim drives the name of the data 
-    variable that the renderer will produce.
- 
-    \\note In the future, UsdRender may standardize RenderVar representation
-    for well-known variables under the sourceType `intrinsic`,
-    such as _r_, _g_, _b_, _a_, _z_, or _id_.
-    """
+    customData = {
+        string userDocBrief = """Describes a quantity or 'channel' of computed
+data, produced by a renderer. Examples include camera-space depth channels, 
+material shader quantities such as color or alpha channels, light path 
+expressions (LPEs), and renderer intrinsic quantities such as computation time
+per pixel."""
+    }
 )
 {
     uniform token dataType = "color3f" (
-        doc = "The type of this channel, as a USD attribute type."
+        customData = {
+            string userDocBrief = """The type of this quantity, as a USD 
+attribute type (color3f, float, etc.)."""
+        }
     )
     uniform string sourceName = "" (
-        doc = """The renderer should look for an output of this name
-        as the computed value for the RenderVar."""
+        customData = {
+            string userDocBrief = """The name of the data source that contains 
+the computed value(s) for the RenderVar."""
+        }
     )
     uniform token sourceType = "raw" (
         allowedTokens = ["raw", "primvar", "lpe", "intrinsic"]
-        doc = '''
-        Indicates the type of the source.
-
-        - "raw": The name should be passed directly to the
-          renderer.  This is the default behavior.
-        - "primvar":  This source represents the name of a primvar.
-          Some renderers may use this to ensure that the primvar
-          is provided; other renderers may require that a suitable
-          material network be provided, in which case this is simply
-          an advisory setting.
-        - "lpe":  Specifies a Light Path Expression in the
-          [OSL Light Path Expressions language](https://github.com/imageworks/OpenShadingLanguage/wiki/OSL-Light-Path-Expressions) as the source for
-          this RenderVar.  Some renderers may use extensions to
-          that syntax, which will necessarily be non-portable.
-        - "intrinsic":  This setting is currently unimplemented,
-          but represents a future namespace for UsdRender to provide
-          portable baseline RenderVars, such as camera depth, that
-          may have varying implementations for each renderer.
-        '''
+        customData = {
+            string userDocBrief = """Describes the type of the quantity
+data source."""
+        }
     )
 }
 
 class RenderProduct "RenderProduct" (
-    doc = """A UsdRenderProduct describes an image or other
-    file-like artifact produced by a render. A RenderProduct
-    combines one or more RenderVars into a file or interactive
-    buffer.  It also provides all the controls established in
-    UsdRenderSettingsBase as optional overrides to whatever the
-    owning UsdRenderSettings prim dictates.
-
-    Specific renderers may support additional settings, such
-    as a way to configure compression settings, filetype metadata,
-    and so forth.  Such settings can be encoded using
-    renderer-specific API schemas applied to the product prim.
-    """
+    customData = {
+        string userDocBrief = """A single render output artifact,
+such as a rendered image or other file-like artifact. Specifies one or more 
+RenderVars combined into the output artifact. RenderProduct can also override
+some of the configuration specified in a RenderSetting, and has product-specific
+configuration attributes, such as the output productName."""
+    }
 )
 {
     uniform token aspectRatioConformPolicy = "expandAperture" (
         allowedTokens = ["expandAperture", "cropAperture", "adjustApertureWidth", "adjustApertureHeight", "adjustPixelAspectRatio"]
-        doc = '''
-        Indicates the policy to use to resolve an aspect
-        ratio mismatch between the camera aperture and image settings.
-
-        This policy allows a standard render setting to do something
-        reasonable given varying camera inputs.
-
-        The camera aperture aspect ratio is determined by the
-        aperture atributes on the UsdGeomCamera.
-
-        The image aspect ratio is determined by the resolution and
-        pixelAspectRatio attributes in the render settings.
-
-        - "expandAperture": if necessary, expand the aperture to
-          fit the image, exposing additional scene content
-        - "cropAperture": if necessary, crop the aperture to fit
-          the image, cropping scene content
-        - "adjustApertureWidth": if necessary, adjust aperture width
-          to make its aspect ratio match the image
-        - "adjustApertureHeight": if necessary, adjust aperture height
-          to make its aspect ratio match the image
-        - "adjustPixelAspectRatio": compute pixelAspectRatio to
-          make the image exactly cover the aperture; disregards
-          existing attribute value of pixelAspectRatio
-        '''
+        customData = {
+            string userDocBrief = """Indicates the policy to use to resolve an 
+aspect ratio mismatch between the camera aperture and image aspect ratio
+(derived from the resolution and pixelAspectRatio)."""
+        }
     )
     rel camera (
-        doc = """The _camera_ relationship specifies the primary
-        camera to use in a render.  It must target a UsdGeomCamera."""
+        customData = {
+            string userDocBrief = """A relationship that specifies the primary 
+camera to use for a render. Must target a Camera prim."""
+        }
     )
     uniform float4 dataWindowNDC = (0, 0, 1, 1) (
-        doc = """dataWindowNDC specifies the axis-aligned rectangular
-        region in the adjusted aperture window within which the renderer
-        should produce data.
-
-        It is specified as (xmin, ymin, xmax, ymax) in normalized
-        device coordinates, where the range 0 to 1 corresponds to the
-        aperture.  (0,0) corresponds to the bottom-left
-        corner and (1,1) corresponds to the upper-right corner.
-
-        Specifying a window outside the unit square will produce
-        overscan data. Specifying a window that does not cover the unit
-        square will produce a cropped render.
-
-        A pixel is included in the rendered result if the pixel
-        center is contained by the data window.  This is consistent
-        with standard rules used by polygon rasterization engines.
-        \\ref UsdRenderRasterization
-
-        The data window is expressed in NDC so that cropping and
-        overscan may be resolution independent.  In interactive
-        workflows, incremental cropping and resolution adjustment
-        may be intermixed to isolate and examine parts of the scene.
-        In compositing workflows, overscan may be used to support
-        image post-processing kernels, and reduced-resolution proxy
-        renders may be used for faster iteration.
-
-        The dataWindow:ndc coordinate system references the
-        aperture after any adjustments required by
-        aspectRatioConformPolicy.
-        """
+        customData = {
+            string userDocBrief = """Specifies the axis-aligned rectangular
+region in the adjusted aperture window within which the renderer should produce 
+data. Specified as (xmin, ymin, xmax, ymax) in normalized device coordinates, 
+where the range 0 to 1 corresponds to the aperture."""
+        }
     )
     uniform bool disableDepthOfField = 0 (
-        doc = """Disable all depth of field by setting F-stop of the targeted
-        camera to infinity."""
+        customData = {
+            string userDocBrief = """Disable all depth of field by setting 
+F-stop of the targeted camera to infinity."""
+        }
     )
     uniform bool disableMotionBlur = 0 (
-        doc = """Disable all motion blur by setting the shutter interval
-        of the targeted camera to [0,0] - that is, take only one sample,
-        namely at the current time code."""
+        customData = {
+            string userDocBrief = """Disable all motion blur by setting the 
+shutter interval of the render camera to [0,0] (take only one sample at the 
+current time code)."""
+        }
     )
     uniform bool instantaneousShutter = 0 (
-        doc = """Deprecated - use disableMotionBlur instead. Override
-        the targeted _camera_'s _shutterClose_ to be equal to the
-        value of its _shutterOpen_, to produce a zero-width shutter
-        interval.  This gives us a convenient way to disable motion
-        blur."""
+        customData = {
+            string userDocBrief = "Deprecated, use disableMotionBlur instead."
+        }
     )
     rel orderedVars (
-        doc = """Specifies the RenderVars that should be consumed and
-        combined into the final product.  If ordering is relevant to the
-        output driver, then the ordering of targets in this relationship
-        provides the order to use."""
+        customData = {
+            string userDocBrief = """Specifies the RenderVars that should be
+used and combined into the final output product. The order is provided to 
+the render executable and pipeline tools."""
+        }
     )
     uniform float pixelAspectRatio = 1 (
-        doc = """The aspect ratio (width/height) of image pixels..
-        The default ratio 1.0 indicates square pixels."""
+        customData = {
+            string userDocBrief = """The aspect ratio (width/height) of the 
+image pixels."""
+        }
     )
     token productName = "" (
-        doc = """Specifies the name that the output/display driver
-        should give the product.  This is provided as-authored to the
-        driver, whose responsibility it is to situate the product on a
-        filesystem or other storage, in the desired location."""
+        customData = {
+            string userDocBrief = """Specifies the name for the output product.
+Used by render executables and pipeline tools to name the product, for 
+example, using the productName as the filename (and path) for an output image
+artifact."""
+        }
     )
     uniform token productType = "raster" (
         allowedTokens = ["raster", "deepRaster"]
-        doc = """
-        The type of output to produce. Allowed values are ones most 
-        renderers should be able to support.
-        Renderers that support custom output types are encouraged to supply an 
-        applied API schema that will add an `token myRenderContext:productType`
-        attribute (e.g. `token ri:productType`), which will override this
-        attribute's value for that renderer. 
-
-        - \"raster\": This is the default type and indicates a 2D raster image of
-          pixels.
-        - \"deepRaster\": Indicates a deep image that contains multiple samples
-          per pixel at varying depths."""
+        customData = {
+            string userDocBrief = """Specifies the type of output to produce. 
+Values are output types most renderers should be able to support, such as 
+'raster' or 'deepRaster'."""
+        }
     )
     uniform int2 resolution = (2048, 1080) (
-        doc = """The image pixel resolution, corresponding to the
-        camera's screen window."""
+        customData = {
+            string userDocBrief = """The image pixel resolution, corresponding 
+to the camera's screen window."""
+        }
     )
 }
 
@@ -403,156 +278,58 @@ class RenderPass "RenderPass" (
     apiSchemas = ["CollectionAPI:renderVisibility", "CollectionAPI:cameraVisibility", "CollectionAPI:prune", "CollectionAPI:matte"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["collection:cameraVisibility:includeRoot", "collection:renderVisibility:includeRoot"]
+        string userDocBrief = """Represents the renderer and scene 
+configuration for a single render pass in a multi-pass rendering workflow. 
+For example, a render pipeline might use separate render passes to 
+render the foreground and background portions of a scene, and a third pass that 
+composites the foreground and background render output into the final frame."""
     }
-    doc = """A RenderPass prim encapsulates necessary information
-    to generate multi-pass renders.  In a multi-pass render, multiple
-    invocations (\"passes\") of the rendering process are used to
-    generate products using potentially distinct configurations of the
-    stage and renderer.
-
-    UsdRenderPass houses properties for generating dependencies and
-    the necessary commands to run to generate renders, as well as
-    visibility and pruning controls for the scene.
-
-    Whereas UsdRenderSettings describes information about the rendering
-    process itself (such as path-tracing parameters), UsdRenderPass
-    describes information to configure the scene contents and to
-    invoke the renderer as part of a render job that produces a
-    time-varying sequence of images.
-
-    There are two consumers of RenderPass prims - a runtime executable that
-    generates images from usdRender prims, and pipeline specific code that
-    translates between usdRender prims and the pipeline's resource scheduling
-    software.  We'll refer to the latter as 'job submission code'.
-
-    The name of the prim is used as the pass's name.
-
-    \\anchor usdRender_renderVisibility
-    The set of objects visible in the render is specified via the 
-    renderVisibility collection (UsdCollectionAPI), which can be accessed via 
-    GetRenderVisibilityCollectionAPI(). This collection has includeRoot set to 
-    true so that all objects participate in the render by default. To render 
-    only a specific set of objects, there are two options. One is to modify the 
-    collection paths to explicitly exclude objects that don't participate in 
-    the render, assuming it is known; the other option is to set includeRoot to 
-    false and explicitly include the desired objects. These are complementary 
-    approaches that may each be preferable depending on the scenario.
-
-    In addition, UsdCollectionAPI offers a membershipExpression attribute
-    providing a pattern-based description of the collection.  To use
-    membershipExpression, includeRoot should be overridden to false.
-
-    Note that prims for which UsdGeomImageable::ComputeEffectiveVisibility()
-    returns \"invisible\" cannot be overridden back to a visible state
-    via renderVisibility.  Conceptually, render passes may be used to
-    partition scene contents across multiple images rendered from the
-    scene; they are not intended to restore parts of the scene that
-    had been marked invisible.
-
-    In addition, renderVisibility only applies to renderable contents
-    of the scene itself, such as geometry and lights; it does not apply
-    to objects associated with the render settings, such as image
-    post-processing filters, even when UsdGeomVisibilityAPI may apply.
-
-    \\anchor usd_cameraVisibility
-    The cameraVisibility collection defines which scene objects should
-    be directly visible in camera.  Objects that are not in this
-    collection should still participate in other light paths such
-    as shadowing, reflections, and refraction.  By default everything in
-    the scene should be visible to camera, so this collection sets
-    includeRoot to 1.
-
-    \\anchor usd_matte
-    The matte collection defines scene objects that should act as
-    matte objects.  Matte objects render with zero alpha.  By
-    default, everything in the scene should render normally, so
-    this collection sets includeRoot to 0.
-
-    \\anchor usdRender_pruning
-    The prune collection specifies a collection of objects to be removed
-    (\"pruned\") from the scene prior to rendering.  Whereas visibility
-    may be implemented by the renderer as a lightweight attribute
-    that is relatively cheap to toggle during interactive workflows,
-    pruning entirely removes the objects from the renderer's
-    extracted representation of the scene. This can provide a greater
-    runtime cost savings for batch rendering, with the tradeoff that
-    interactively modifying the prune collection is likely to be more
-    expensive than toggling visibility. In addition, some renderers
-    may not support visibility of certain kinds of scene objects or in
-    certain conditions; in these cases, pruning offers a guaranteed way
-    to remove such objects from the scene.
-    """
 )
 {
-    uniform bool collection:cameraVisibility:includeRoot = 1
-    uniform bool collection:renderVisibility:includeRoot = 1
+    uniform bool collection:cameraVisibility:includeRoot = 1 (
+        customData = {
+            string userDocBrief = """This property is instantiated in the schema 
+to override the fallback value from the CollectionAPI to true."""
+        }
+    )
+    uniform bool collection:renderVisibility:includeRoot = 1 (
+        customData = {
+            string userDocBrief = """This property is instantiated in the schema 
+to override the fallback value from the CollectionAPI to true."""
+        }
+    )
     uniform string[] command (
-        doc = '''The command to run in order to generate
-        renders for this pass.  The job submission code can use
-        this to properly send tasks to the job scheduling software
-        that will generate products.
-
-        The command can contain variables that will be substituted
-        appropriately during submission, as seen in the example below 
-        with {fileName}.
-
-        For example:
-        command[0] = "prman"
-        command[1] = "-progress"
-        command[2] = "-pixelvariance"
-        command[3] = "-0.15"
-        command[4] = "{fileName}" # the fileName property will be substituted
-        '''
+        customData = {
+            string userDocBrief = """Command to run in order to generate
+renders for this pass. Used by render pipelines to send jobs to scheduling
+components that will generate renders."""
+        }
     )
     uniform asset fileName (
-        doc = """The asset that contains the rendering prims or other 
-        information needed to render this pass.
-        """
+        customData = {
+            string userDocBrief = """Asset that contains the render 
+configuration prims or other information needed to render this pass."""
+        }
     )
     rel inputPasses (
-        doc = """The set of other Passes that this Pass depends on
-        in order to be constructed properly.  For example, a Pass A
-        may generate a texture, which is then used as an input to
-        Pass B.
- 
-        By default, usdRender makes some assumptions about the
-        relationship between this prim and the prims listed in inputPasses.
-        Namely, when per-frame tasks are generated from these pass prims,
-        usdRender will assume a one-to-one relationship between tasks
-        that share their frame number.  Consider a pass named 'composite'
-        whose _inputPasses_ targets a Pass prim named 'beauty`.  
-        By default, each frame for 'composite' will depend on the 
-        same frame from 'beauty':
-        beauty.1 -> composite.1
-        beauty.2 -> composite.2
-        etc
-
-        The consumer of this RenderPass graph of inputs will need to resolve
-        the transitive dependencies.
-        """
+        customData = {
+            string userDocBrief = """The RenderPasses that this pass depends on.
+For example, this pass might depend on the output from a 'Render Texture' pass,
+which gets used as input for this pass."""
+        }
     )
     uniform token passType (
-        doc = """A string used to categorize differently structured 
-        or executed types of passes within a customized pipeline.
-
-        For example, when multiple DCC's (e.g. Houdini, Katana, Nuke) 
-        each compute and contribute different Products to a final result, 
-        it may be clearest and most flexible to create a separate 
-        RenderPass for each.
-        """
+        customData = {
+            string userDocBrief = """Used to categorize different types of
+passes within a render pipeline."""
+        }
     )
     rel renderSource (
-        doc = """The source prim to render from.  If _fileName_ is not present,
-        the source is assumed to be a RenderSettings prim present in the current 
-        Usd stage. If fileName is present, the source should be found in the
-        file there. This relationship might target a string attribute on this 
-        or another prim that identifies the appropriate object in the external 
-        container.
- 
-        For example, for a Usd-backed pass, this would point to a RenderSettings
-        prim.  Houdini passes would point to a Rop.  Nuke passes would point to 
-        a write node.
-        """
+        customData = {
+            string userDocBrief = """Points to render configuration for this
+pass. Targets a relationship to a RenderSettings, or if fileName is set, 
+points to configuration within that file."""
+        }
     )
 }
 

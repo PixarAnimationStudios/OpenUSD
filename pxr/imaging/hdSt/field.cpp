@@ -27,7 +27,6 @@ HdStField::HdStField(SdfPath const& id, TfToken const & fieldType)
   : HdField(id)
   , _fieldType(fieldType)
   , _textureMemory(0)
-  , _isInitialized(false)
 {
 }
 
@@ -81,22 +80,7 @@ HdStField::Sync(HdSceneDelegate *sceneDelegate,
             GetId(), _tokens->textureMemory);
         _textureMemory =
             1048576 * textureMemoryValue.GetWithDefault<float>(0.0f);
-        
-        if (_isInitialized) {
-            // This code is no longer needed when using scene indices
-            // or scene index emulation since this dependency is now tracked
-            // by the HdSt_DependencySceneIndexPlugin.
-            //
-            // Force volume prim to pick up the new field resource and
-            // recompute bounding box.
-            //
-            HdChangeTracker& changeTracker =
-                sceneDelegate->GetRenderIndex().GetChangeTracker();
-            changeTracker.MarkAllRprimsDirty(HdChangeTracker::DirtyVolumeField);
-        }
     }
-
-    _isInitialized = true;
 
     *dirtyBits = Clean;
 }

@@ -41,6 +41,6 @@ void main(void)
     
     // Sample Skydome Texture with the sampleDirection
     vec2 sampleCoord = ProjectToLatLong(sampleDirection);
-    hd_FragColor = vec4(HgiGet_skydomeTexture(sampleCoord).xyz, 1.0);
+    hd_FragColor = vec4(HgiTextureLod_skydomeTexture(sampleCoord, 0.0).xyz, 1.0);
     gl_FragDepth = farPlane;
 }

@@ -32,3 +32,18 @@ class "Model" ()
 class "APISchemaBase"
 {
 }
+
+class "TestReflectedExternalAPI" (
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["BuiltinAPI"]
+    customData = {
+        token apiSchemaType = "singleApply"
+        string[] reflectedAPISchemas = []
+    }
+)
+{
+    int testAttrExternal
+    rel testRelExternal
+    int testAttrDuplicate 
+    rel testRelDuplicate
+}

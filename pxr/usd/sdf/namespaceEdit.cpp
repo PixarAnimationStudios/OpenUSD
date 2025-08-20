@@ -194,8 +194,14 @@ private:
 
         static _Key _GetKey(const SdfPath& path)
         {
-            return path.IsTargetPath() ? _Key(path.GetTargetPath())
-                                       : _Key(path.GetNameToken());
+            if (path.IsTargetPath()) {
+                return _Key(path.GetTargetPath());
+            } else if (path.IsPrimVariantSelectionPath()) {
+                auto variantSelection = path.GetVariantSelection();
+                return _Key(TfToken(variantSelection.first + "=" + 
+                    variantSelection.second));
+            }
+            return _Key(path.GetNameToken());
         }
 
     private:
@@ -297,7 +303,7 @@ SdfNamespaceEdit_Namespace::_Node::FindOrCreateChild(const SdfPath& path)
 {
     // Make a key node for the name.
     _VerifyPath(path.GetParentPath());
-    _Node keyNode(path.GetNameToken());
+    _Node keyNode(path);
 
     _Children::iterator i = _children->find(keyNode);
     if (i == _children->end()) {

@@ -1,15 +1,15 @@
-Loading @TrickyInheritsAndRelocatesToNewRootPrim/root.sdf@
+Loading @TrickyInheritsAndRelocatesToNewRootPrim/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Group>
 
 Prim Stack:
-    root.sdf             /Group
-    group.sdf            /Group
+    root.usda            /Group
+    group.usda           /Group
 
 Prohibited child names:
      ['Model']
@@ -18,9 +18,9 @@ Prohibited child names:
 Results for composing </Model_Renamed>
 
 Prim Stack:
-    root.sdf             /Model_Renamed
-    group.sdf            /Group/Model
-    model.sdf            /Model
+    root.usda            /Model_Renamed
+    group.usda           /Group/Model
+    model.usda           /Model
 
 Child names:
      ['A', 'B', 'Scope']
@@ -29,59 +29,59 @@ Child names:
 Results for composing </Model_Renamed/A>
 
 Prim Stack:
-    root.sdf             /Model_Renamed/A
-    model.sdf            /Model/A
+    root.usda            /Model_Renamed/A
+    model.usda           /Model/A
 
 Property names:
      ['a_target']
 
 Property stacks:
 /Model_Renamed/A.a_target:
-    root.sdf             /Model_Renamed/A.a_target
+    root.usda            /Model_Renamed/A.a_target
 
 ------------------------------------------------------------------------
 Results for composing </Model_Renamed/B>
 
 Prim Stack:
-    root.sdf             /Model_Renamed/B
-    root.sdf             /Model_Renamed/A
-    model.sdf            /Model/B
-    model.sdf            /Model/A
+    root.usda            /Model_Renamed/B
+    root.usda            /Model_Renamed/A
+    model.usda           /Model/B
+    model.usda           /Model/A
 
 Property names:
      ['a_target', 'b_target']
 
 Property stacks:
 /Model_Renamed/B.a_target:
-    root.sdf             /Model_Renamed/A.a_target
+    root.usda            /Model_Renamed/A.a_target
 /Model_Renamed/B.b_target:
-    root.sdf             /Model_Renamed/B.b_target
+    root.usda            /Model_Renamed/B.b_target
 
 ------------------------------------------------------------------------
 Results for composing </Model_Renamed/Scope>
 
 Prim Stack:
-    root.sdf             /Model_Renamed/B
-    root.sdf             /Model_Renamed/A
-    model.sdf            /Model/Scope
-    model.sdf            /Model/B
-    model.sdf            /Model/A
+    root.usda            /Model_Renamed/B
+    root.usda            /Model_Renamed/A
+    model.usda           /Model/Scope
+    model.usda           /Model/B
+    model.usda           /Model/A
 
 Property names:
      ['a_target', 'b_target']
 
 Property stacks:
 /Model_Renamed/Scope.a_target:
-    root.sdf             /Model_Renamed/A.a_target
+    root.usda            /Model_Renamed/A.a_target
 /Model_Renamed/Scope.b_target:
-    root.sdf             /Model_Renamed/B.b_target
+    root.usda            /Model_Renamed/B.b_target
 
 ------------------------------------------------------------------------
 Results for composing </Rig>
 
 Prim Stack:
-    root.sdf             /Rig
-    rig.sdf              /Rig
+    root.usda            /Rig
+    rig.usda             /Rig
 
 Child names:
      ['Anim']
@@ -93,7 +93,7 @@ Prohibited child names:
 Results for composing </Rig/Anim>
 
 Prim Stack:
-    root.sdf             /Rig/Anim
+    root.usda            /Rig/Anim
 
 Child names:
      ['RigInstance', 'BadRigInstance']
@@ -102,34 +102,34 @@ Child names:
 Results for composing </Rig/Anim/RigInstance>
 
 Prim Stack:
-    root.sdf             /Rig/Anim/RigInstance
-    root.sdf             /RigClass
-    rig.sdf              /Rig/RigClass
+    root.usda            /Rig/Anim/RigInstance
+    root.usda            /RigClass
+    rig.usda             /Rig/RigClass
 
 Property names:
      ['r_target']
 
 Property stacks:
 /Rig/Anim/RigInstance.r_target:
-    root.sdf             /RigClass.r_target
+    root.usda            /RigClass.r_target
 
 ------------------------------------------------------------------------
 Results for composing </Rig/Anim/BadRigInstance>
 
 Prim Stack:
-    root.sdf             /Rig/Anim/BadRigInstance
+    root.usda            /Rig/Anim/BadRigInstance
 
 ------------------------------------------------------------------------
 Results for composing </RigClass>
 
 Prim Stack:
-    root.sdf             /RigClass
-    rig.sdf              /Rig/RigClass
+    root.usda            /RigClass
+    rig.usda             /Rig/RigClass
 
 Property names:
      ['r_target']
 
 Property stacks:
 /RigClass.r_target:
-    root.sdf             /RigClass.r_target
+    root.usda            /RigClass.r_target
 

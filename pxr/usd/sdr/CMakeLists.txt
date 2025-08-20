@@ -8,13 +8,12 @@ pxr_library(sdr
         trace
         tf
         vt
+        work
         ar
-        ndr
         sdf
 
     PUBLIC_HEADERS
         api.h
-        sdfTypeIndicator.h
         shaderNodeDiscoveryResult.h
 
     PUBLIC_CLASSES
@@ -25,6 +24,7 @@ pxr_library(sdr
         filesystemDiscoveryHelpers
         parserPlugin
         registry
+        sdfTypeIndicator
         shaderMetadataHelpers
         shaderNode
         shaderProperty
@@ -73,7 +73,6 @@ pxr_build_test_shared_lib(TestSdrRegistry
     INSTALL_PREFIX SdrPlugins
     LIBRARIES
         tf
-        ndr
         sdr
     CPPFILES
         testenv/TestSdrRegistry_argsParserPlugin.cpp
@@ -85,8 +84,8 @@ pxr_register_test(testSdrRegistry
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdrRegistry"
     ENV
-        PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY=1
-        PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY=1
+        PXR_SDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY=1
+        PXR_SDR_SKIP_PARSER_PLUGIN_DISCOVERY=1
 )
 
 pxr_register_test(testSdrVersion

@@ -13,6 +13,7 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
+#include "pxr/base/ts/spline.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -167,6 +168,28 @@ UsdAttributeQuery::GetTimeSamples(std::vector<double>* times) const
         _resolveInfo, _attr, GfInterval::GetFullInterval(), times);
 }
 
+TsSpline
+UsdAttributeQuery::GetSpline() const
+{
+    if (_resolveInfo.GetSource() != UsdResolveInfoSourceSpline) {
+        return TsSpline();
+    }
+
+    if (!TF_VERIFY(_resolveInfo._spline, 
+        "Spline should be valid when source is Spline")) {
+        return TsSpline();
+    }
+
+    if (_resolveInfo._layerToStageOffset.IsIdentity()) {
+        return _resolveInfo._spline.value();
+    }
+
+    TsSpline mappedSpline = _resolveInfo._spline.value();
+    Usd_ApplyLayerOffsetToValue(
+        &mappedSpline, _resolveInfo._layerToStageOffset);
+    return mappedSpline;
+}
+
 bool
 UsdAttributeQuery::GetTimeSamplesInInterval(const GfInterval& interval,
                                             std::vector<double>* times) const
@@ -247,6 +270,12 @@ bool
 UsdAttributeQuery::HasValue() const
 {
     return _resolveInfo._source != UsdResolveInfoSourceNone;  
+}
+
+bool
+UsdAttributeQuery::HasSpline() const
+{
+    return _resolveInfo._source == UsdResolveInfoSourceSpline;
 }
 
 bool 

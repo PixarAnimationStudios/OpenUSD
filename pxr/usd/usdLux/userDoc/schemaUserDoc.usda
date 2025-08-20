@@ -1,0 +1,1799 @@
+#usda 1.0
+(
+    "This file describes the USD Lux light schemata for code generation."
+    subLayers = [    
+        # Sublayer "parent" user doc to get user doc for inherited properties.
+        #@../../usdGeom/userDoc/schemaUserDoc.usda@,        
+        # Sublayer domain schema.usda to get proper schema inheritance structure 
+        # and property fallback values. User doc is added as overs to schema 
+        # class metadata. 
+        @../schema.usda@    
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "usdLux"
+        string userDocTitle = "Lights"
+    }
+)
+{
+}
+
+over "LightAPI" (
+    customData = {
+        string userDocBrief = """This schema adds light capabilities to a prim."""
+        string userDoc = """When this schema is applied to a prim, that prim
+gains the capabilities of being a light. These capabilities include light 
+attributes such as light color, intensity, specular and diffuse multipliers, 
+etc. This schema also provides more advanced configuration such as specifying
+how geometry is associated with the light through 
+{ref}`light-linking <usdLux_light_linking>` or how 
+{ref}`light filters <usdLux_light_filters>` are applied.
+"""
+    }
+) {
+    uniform bool collection:lightLink:includeRoot (
+        customData = {
+            string userDocBrief = """The 'include root' setting for the
+lightLink collection for this light, used when configuring light-linking."""
+            string userDoc = """Use the lightLink collection to specify which
+geometry is associated with this light. This collection is used to control
+light behavior associated with the geometry collection, such as which geometry
+prims are illuminated by this light, via a feature called 
+{ref}`light-linking <usdLux_light_linking>`.
+
+The `includeRoot` attribute indicates whether the pseudo-root path `/` should 
+be counted as one of the included target paths. Note that the fallback value 
+is true, which means that lights will illuminate all objects.
+
+See {ref}`usdLux_light_linking` for more details on light-linking, and
+{ref}`collections_and_patterns` for more details on USD collections.
+"""
+        }
+    )
+    uniform bool collection:shadowLink:includeRoot (
+        customData = {
+            string userDocBrief = """The 'include root' setting for the
+shadowLink collection for this light, used when configuring light-linking."""
+            string userDoc = """Use the shadowLink collection to specify which
+geometry is associated with this light. This collection is used to control
+lighting shadow behavior associated with the geometry collection, such as 
+whether the associated geometry prims should cast shadows for this light, via a 
+feature called {ref}`light-linking <usdLux_light_linking>`.
+
+The `includeRoot` attribute indicates whether the pseudo-root path `/` should 
+be counted as one of the included target paths. Note that the fallback value 
+is true, which means that lights will cast shadows for all objects.
+
+See {ref}`usdLux_light_linking` for more details on light-linking, and
+{ref}`collections_and_patterns` for more details on USD collections."""
+        }
+    )
+    uniform token light:shaderId (
+        customData = {
+            string userDocBrief = """The shader ID for this light, if any."""
+            string userDoc = """
+This defines the shader ID for this light when a render context specific
+shader ID is not available.
+
+For intrinsic lights (RectLight, DistantLight, etc.), the shader ID is by
+default set to the light's type name. USD will also register a Sdr shader node
+with a matching identifier and the source type "USD" to correspond to the 
+light's inputs.
+."""
+        }
+    )
+    uniform token light:materialSyncMode (
+        customData = {
+            string userDocBrief = """Specifies the lighting response of a 
+material (if any) bound to the prim that has this schema applied."""
+            string userDoc = """When LightAPI is applied to geometry that has a 
+bound Material which is entirely or partly emissive, this attribute specifies
+the relationship of the Material response to the lighting response. Valid 
+values are:
+- `materialGlowTintsLight`: All primary and secondary rays see the 
+  emissive/glow response as dictated by the bound Material while the 
+  base color seen by light rays (which is then modulated by all of the 
+  other LightAPI controls) is the multiplication of the color feeding 
+  the emission/glow input of the Material with the scalar or pattern input 
+  to `inputs:color`. This allows the light's color to tint the geometry's glow 
+  color while preserving access to intensity and other light controls as ways to 
+  further modulate the illumination.
+- `independent`: All primary and secondary rays see the emissive/glow 
+  response as dictated by the bound Material, while the base color seen 
+  by light rays is determined solely by `inputs:color`. Note that for 
+  partially emissive geometry (in which some parts are reflective 
+  rather than emissive), a suitable pattern must be connected to the 
+  light's color input, or else the light will radiate uniformly from 
+  the geometry.
+- `noMaterialResponse`: The geometry behaves as if there is no Material
+  bound at all, i.e. there is no diffuse, specular, or transmissive 
+  response. The base color of light rays is entirely controlled by the
+  `inputs:color`. This is the fallback value.  
+
+See {ref}`usdLux_light_contributions` for an example using the different
+materialSyncMode values.
+"""
+        }
+    )
+    float inputs:intensity (
+        customData = {
+            string userDocBrief = """The base intensity of the light. Scales the
+brightness of the light linearly.""" 
+            string userDoc = """Scales the brightness of the light linearly, 
+using physical falloff. 
+
+Expresses the "base", unmultiplied luminance emitted (L) of the light,
+in nits (cd∕m²):
+
+```{math}
+L_{Scalar} = intensity
+```
+
+Normatively, the lights' emission is in units of spectral radiance normalized 
+such that a directly visible light with `intensity` 1 and`exposure` 0 normally 
+incident upon the sensor plane will generate a pixel value of [1, 1, 1] in an 
+RGB renderer, and thus have a luminance of 1 nit. A light with `intensity` 2 and 
+`exposure` 0 would therefore have a luminance of 2 nits.
+
+See {ref}`usdLux_light_contributions` for examples of how intensity contributes 
+to lighting calculations."""
+        }
+    )
+    float inputs:exposure (
+        customData = {
+            string userDocBrief = """Exposure setting of the light. Scales
+the brightness of the light exponentially."""
+            string userDoc = """Scales the brightness of the light exponentially 
+as a power of 2 (similar to an F-stop control over exposure). The result
+is multiplied against `intensity`:
+
+```{math}
+L_{Scalar} = L_{Scalar} \\cdot 2^{exposure} 
+```
+
+Normatively, the lights' emission is in units of spectral radiance
+normalized such that a directly visible light with `intensity` 1 and
+`exposure` 0 normally incident upon the sensor plane will generate a
+pixel value of [1, 1, 1] in an RGB renderer, and thus have a luminance
+of 1 nit (cd∕m²). A light with `intensity` 1 and `exposure` 2 would
+therefore have a luminance of 4 nits.
+
+Exposure is intended to behave similarly to photographic exposure measurements. 
+See {ref}`usdLux_light_contributions` for examples of how exposure contributes 
+to lighting calculations."""
+        }
+    )
+    float inputs:diffuse (
+        customData = {
+            string userDocBrief = """A multiplier for the effect of this light
+on the diffuse response of materials."""
+            string userDoc = """Controls the light's diffuse contribution. This 
+is a non-physical control."""
+        }
+    )
+    float inputs:specular (
+        customData = {
+            string userDocBrief = """A multiplier for the effect of this light 
+on the specular response of materials."""
+            string userDoc = """Controls the light's specular contribution. 
+This is a non-physical control."""
+        }
+    )
+    bool inputs:normalize (
+        customData = {
+            string userDocBrief = """Controls if the light power should be
+normalized by the surface area of the light. If enabled, the light power 
+remains constant if the light's area or angular size is changed."""
+            string userDoc = """Normalizes the emission of the light such that,
+if enabled, the power of the light remains constant while altering the size of 
+the light, by dividing the luminance by the world-space surface area of the 
+light.
+
+This makes it easier to independently adjust the brightness and size of the 
+light, by causing the total illumination provided by a light to not vary with 
+the area or angular size of the light.
+
+Mathematically, this means that the luminance of the light will be divided by a 
+"sizeFactor" representing the "size" of the light:
+
+```{math}
+L_{Scalar} = L_{Scalar} / sizeFactor 
+```
+
+where *sizeFactor* = 1 if `normalize` is off, and is calculated depending on the 
+family of the light as described below if `normalize` is on.
+
+**DomeLight / PortalLight**
+
+This attribute is ignored for DomeLights (all versions) and PortalLights, and 
+therefore sizeFactor is always treated as 1.
+
+**Area lights**
+
+sizeFactor is the surface area (in world space) of the shape of the light, 
+including any scaling applied to the light by its transform stack. The 
+boundable light types which have a calculable surface area are:
+
+- MeshLightAPI
+- DiskLight
+- RectLight
+- SphereLight
+- CylinderLight
+
+```{math}
+sizeFactor_{area} = worldSpaceSurfaceArea(light)
+```
+
+**Distant Lights**
+
+For DistantLights, we first define 𝛳<sub>max</sub> as:
+ 
+```{math}
+\\theta_{max} = clamp(toRadians(distantLightAngle) / 2, 0, \\pi)
+```
+
+Then we use the following formula:
+
+```{math}
+sizeFactor_{distant} =
+\\begin{cases}
+    1,                                & \\text{if} \\quad \\theta_{max} = 0              \\\\
+    sin(\\theta_{max})^2 * \\pi,        & \\text{if} \\quad 0<\\theta_{max} \\leq \\pi / 2   \\\\
+    ( 2 - sin(\\theta_{max})^2) * \\pi, & \\text{if} \\quad \\pi/2 < \\theta_{max} \\leq \\pi
+\\end{cases}
+```
+
+This formula is used because it satisfies the following two properties:
+
+1. When normalize is enabled, the received illuminance from this light on a 
+surface normal to the light's primary direction is held constant when the angle 
+changes, and the `intensity` property becomes a measure of the illuminance, 
+expressed in lux, for a light with 0 `exposure`.
+2. If we assume that our distant light is an approximation for a "very far" 
+sphere light (like the sun), then (for *0 < 𝛳<sub>max</sub> ≤ 𝜋/2*) this 
+definition agrees with the definition used for area lights -- i.e., the total 
+power of this distant sphere light is constant when the "size" (i.e., angle) 
+changes, and our sizeFactor is proportional to the total surface area of this 
+sphere.    
+
+**Other/custom lights**
+
+Lights from other third-party plugins / schemas must document their own expected 
+behavior with regards to normalize. 
+"""
+        }
+    )
+    color3f inputs:color (
+        customData = {
+            string userDocBrief = """The color of the emitted light, in the
+rendering color space."""
+            string userDoc = """Specifies the light color, in the rendering
+color space. This color is just multiplied with the emission:
+
+```{math}
+L_{Color} = L_{Scalar} \\cdot color
+```
+"""
+        }
+    )
+    bool inputs:enableColorTemperature (
+        customData = {
+            string userDocBrief = """Controls whether colorTemperature is
+used."""
+            string userDoc = """Used to enable or disable using 
+`colorTemperature` in lighting calculations."""
+        }
+    )
+    float inputs:colorTemperature (
+        customData = {
+            string userDocBrief = """The color temperature of the light, in
+degrees Kelvin."""
+            string userDoc = """Specifies the color temperature in degrees
+Kelvin, representing the white point. Lower values are warmer and higher values
+are cooler, with a valid range from 1000 to 10000. Setting color temperature
+allows the user to easily pick plausible light colors based on standard 
+temperature measurements. 
+
+Only takes effect when `enableColorTemperature` is true.
+
+The fallback value, 6500, matches the "D65" common standard white point.
+
+This is always calculated as an RGB color using a D65 white point, regardless of 
+the rendering color space, normalized such that the fallback value of 6500 will 
+always result in white, and then should be transformed to the rendering color 
+space.
+
+See {ref}`usdLux_light_contributions` for examples of different 
+colorTemperature values.
+"""
+        }
+    )
+    rel light:filters (
+        customData = {
+            string userDocBrief = """The set of light filters, if any, that 
+apply to this light."""
+            string userDoc = """Use filters to modulate the effects of the
+light. Light filters use shaders to create custom light effects.
+See {ref}`usdLux_light_filters` for more details on light filters.
+"""
+        }
+
+    )
+}
+
+over "MeshLightAPI" (
+    customData = {
+        string userDocBrief = """Applies light behavior to a mesh.""" 
+        string userDoc = """Use this schema to apply light behavior to a Mesh
+prim. This schema is preferred over applying a LightAPI to a Mesh, as 
+MeshLightAPI applies commonly needed built-in behavior, such as overriding
+the default `light:materialSyncMode` to "materialGlowTintsLight" to use the 
+Mesh's bound material, and defaults `light:shaderId` to "MeshLight", to 
+facilitate adding hooks for plugins to attach additional mesh light properties. 
+See {ref}`usdLux_mesh_lights` for more details and example of mesh lights."""
+    }
+) {
+}
+
+over "VolumeLightAPI" (
+    customData = {
+        string userDocBrief = """Applies light behavior to a volume.""" 
+        string userDoc = """Use this schema to apply light behavior to a Volume
+prim. This schema is preferred over applying a LightAPI to a Volume, as 
+VolumeLightAPI applies commonly needed built-in behavior, such as overriding
+the default `light:materialSyncMode` to "materialGlowTintsLight" to use the 
+Volume's bound material, and defaults `light:shaderId` to "VolumeLight", to 
+facilitate adding hooks for plugins to attach additional volume light properties. 
+"""
+    }
+) {
+}
+
+over "LightListAPI" (
+    customData = {
+        string userDocBrief = """Facilitates discovery and publishing of lights
+in a scene. Provides a mechanism to create and utilize a cache if needed.""" 
+        string userDoc = """Use this schema to discover lights in a scene 
+during traversal. LightListAPI provides the following capabilities:
+
+- Gather a list of lights in the scene. Use ComputeLightList()
+(with a ComputeModeIgnoreCache) to traverse and gather lights (e.g. prims with
+the LightAPI schema applied). The following Python example uses 
+ComputeLightList() to get all lights descendant from `</World>`.
+
+```{code} python
+listAPI = UsdLux.LightListAPI(stage.GetPrimAtPath("/World"))
+ignoreCache = UsdLux.LightListAPI.ComputeModeIgnoreCache
+computedLights = listAPI.ComputeLightList(ignoreCache)
+for lightPath in computedLights:
+    ...process light path...
+```
+
+- Creating and using a cached light list. You may want to get a list of lights
+but defer loading payloads and traversing the entire scene if possible. 
+LightListAPI allows for computing or specifying a cached light list, letting
+you pay an upfront cost of computing or authoring the cache in scenarios 
+where you want a faster traversal. 
+
+To compute and publish the cache, you first use ComputeLightList() with
+ComputeModeIgnoreCache as we did in the previous example, and then use
+StoreLightList() to cache the light list on a model hierarchy prim.
+
+```{code} python
+listAPI = UsdLux.LightListAPI(stage.GetPrimAtPath("/World"))
+ignoreCache = UsdLux.LightListAPI.ComputeModeIgnoreCache
+computedLights = listAPI.ComputeLightList(ignoreCache)
+# Cache computed list
+listAPI.StoreLightList(computedLights)
+```
+
+This adds a `lightList` relationship to the model hierarchy prim the
+LightListAPI was bound to. Alternatively, you can author this list in
+your model hierarchy prim directly:
+
+```{code}
+def Xform "LightModel"
+(
+    kind = "model"
+    prepend apiSchemas = ["LightListAPI"]
+)
+{
+    # cached list of lights
+    rel lightList = [
+        </Lights/Light1>,
+        </Lights/Light2>,
+    ]
+    token lightList:cacheBehavior = "consumeAndContinue"
+}
+```
+
+To enable efficient retrieval of the cache, it should be stored on a model 
+hierarchy prim. Furthermore, while you can use a LightListAPI bound to the 
+pseudo-root prim to query the lights you cannot store the cache back to the
+pseduo-root prim.
+
+`cacheBehavior` provides a way to add more fine-grained control to how the 
+cache is consulted. See {ref}`LightListAPI_lightList:cacheBehavior` for more 
+details.
+
+When instances are present, ComputeLightList() will return instance-unique 
+paths to any lights discovered within those instances. Lights within a 
+PointInstancer will not be returned, as they cannot be referred to solely
+via paths.
+"""
+    }
+) {
+    rel lightList (
+        customData = {
+            string userDocBrief = """A list of relationships to lights, that
+describe the light list for a model hierarchy prim with this schema applied.
+If empty and used as a cached list, this indicates no lights are present."""
+            string userDoc = """The cached light list, either computed and
+stored, or authored. Must be authored on a model hierarchy prim. A simple 
+example might look like the following.
+
+```{code}
+def Xform "LightModel"
+(
+    kind = "model"
+    prepend apiSchemas = ["LightListAPI"]
+)
+{
+    rel lightList = [
+        </Lights/Light1>,
+        </Lights/Light2>,
+    ]
+}
+```
+
+If lightList is empty, this represents a cached list that specifies that *no*
+lights are present.
+"""
+        }
+    )
+    token lightList:cacheBehavior (
+        customData = {
+            string userDocBrief = """Controls how the cached light list should
+be interpreted: consumeAndHalt, consumeAndContinue, or ignore."""
+            string userDoc = """When using a light list cache via 
+ComputeLightList(), this property controls how the light list should be 
+interpreted. Valid values and behaviors are:
+- "consumeAndHalt": The lightList should be consulted, and if it exists, treated 
+as a final authoritative statement of any lights that exist at or below this 
+prim, halting recursive discovery of lights. No descendant prims will be 
+examined.
+- "consumeAndContinue": The lightList cache should be consulted to contribute
+lights to the traversal, and recursion should continue down the model 
+hierarchy in case additional lights are added as descendants. This is the 
+default value established when StoreLightList() is invoked. This behavior allows 
+the lights within a large model to be published outside the payload, while also 
+allowing referencing and layering to add additional lights over that set.
+- "ignore": indicates that the lightList should be disregarded. This provides a 
+way to invalidate cache entries. Note that unless "ignore" is specified, a 
+lightList with an empty list of targets is considered a cache indicating that no 
+lights are present.
+"""
+        }
+    )
+}
+
+over "ListAPI" (
+    customData = {
+        string userDocBrief = """Facilitates discovery and publishing of lights
+in a scene. This schema is deprecated and LightListAPI should be used instead.""" 
+        string userDoc = """Provides the same functionality as LightListAPI,
+however this schema is deprecated, and LightListAPI should be used instead.
+See {ref}`LightListAPI` for more details.
+"""
+    }
+) {
+    rel lightList (
+        customData = {
+            string userDocBrief = """A list of relationships to lights, that
+describe the light list for a model hierarchy prim with this schema applied.
+If empty and used as a cached list, this indicates no lights are present."""
+            string userDoc = """See {ref}`LightListAPI_lightList` for more 
+details.
+"""
+        }
+    )
+    token lightList:cacheBehavior (
+        customData = {
+            string userDocBrief = """Controls how the cached light list should
+be interpreted: consumeAndHalt, consumeAndContinue, or ignore."""
+            string userDoc = """See {ref}`LightListAPI_lightList:cacheBehavior` 
+for more details.
+"""
+        }
+    )
+}
+
+over "ShapingAPI" (
+    customData = {
+        string userDocBrief = """Controls for shaping a light's emission, such
+as light cone angle and falloff. """ 
+        string userDoc = """Use this schema to control the shaping of a light's
+emission. This includes controlling the light spread, light cone settings, etc.
+
+See {ref}`usdLux_shaping` for more examples of using ShapingAPI.
+"""
+    }
+) {
+    float inputs:shaping:focus (
+        customData = {
+            string userDocBrief = """Controls the spread of the light. Higher 
+focus values pull light towards the center and narrow the spread.
+"""
+            string userDoc = """Use focus to shape the spread of the light. 
+A higher focus value pulls light towards the center, effectively narrowing the
+spread. Values < 0 are ignored.
+
+This is implemented as a multiplication with the absolute value of the dot 
+product between the light's surface normal and the emission direction, raised to 
+the power `focus`. See {ref}`inputs:shaping:focusTint <ShapingAPI_inputs:shaping:focusTint>`
+for the complete formula, but if we assume a default `focusTint` of pure black, 
+then that formula simplifies to:
+
+```{math}
+\\begin{aligned} 
+&focusFactor = ｜emissionDirection • lightNormal｜^{focus} \\\\
+&L_{Color} = focusFactor ⋅ L_{Color}
+\\end{aligned} 
+```
+"""
+        }
+    )
+    color3f inputs:shaping:focusTint (
+        customData = {
+            string userDocBrief = """Controls the tint of the emission in the
+falloff region.
+"""
+            string userDoc = """Use focusTint to set the color tint of the
+emission of the light in the falloff region. This tints the emission in the 
+falloff region starting from the off-angle direction of the light towards the 
+center.
+
+This is implemented as a linear interpolation between `focusTint` and
+white, by the factor computed from the focus attribute, in other words:
+
+```{math}
+\\begin{aligned} 
+&focusFactor = ｜emissionDirection • lightNormal｜^{focus} \\\\
+&focusColor = lerp(focusFactor, focusTint, [1, 1, 1]) \\\\
+&L_{Color} = componentwiseMultiply(focusColor, L_{Color}) 
+\\end{aligned}
+```
+
+Note that this implies that a focusTint of pure white will disable
+focus.
+"""
+        }
+    )
+    float inputs:shaping:cone:angle (
+        customData = {
+            string userDocBrief = """Specifies the angular limit off the primary 
+axis to restrict the light spread, in degrees.
+"""
+            string userDoc = """Angular limit off the primary axis to restrict 
+the light spread, in degrees. Smaller angles can create a light "cone" used to
+make the light behave as a spot light. 
+
+Light emissions at angles off the primary axis greater than this are
+guaranteed to be zero:
+
+```{math}
+\\begin{aligned} 
+&𝛳_{offAxis} = acos(lightAxis • emissionDir) \\\\
+&𝛳_{cutoff} = toRadians({coneAngle}) \\\\
+&𝛳_{offAxis} > 𝛳_{cutoff} ⟹ L_{Scalar} = 0
+\\end{aligned} 
+```
+For angles < coneAngle, behavior is determined by `shaping:cone:softness`.
+At the default of coneSoftness = 0, the luminance is unaltered if the 
+emissionOffAxisAngle <= coneAngle, so the coneAngle functions as a hard binary 
+"off" toggle for all angles > coneAngle.
+
+Note that this attribute does not affect IES profiles (if any are applied for 
+this light). 
+"""
+        }
+    )
+    float inputs:shaping:cone:softness (
+        customData = {
+            string userDocBrief = """Controls the cutoff softness for the cone 
+angle. Typical range is 0 (hard cut-off) to 1.0 (smooth)."""
+            string userDoc = """The cutoff softness for cone angle. In most 
+cases you'll use a value in the range from 0 (hard cut-off) to 1 (smooth 
+transition), but you can use values higher than 1 for additional gradation. 
+
+At the fallback value of coneSoftness = 0, the luminance is unaltered if the
+emissionOffAxisAngle <= coneAngle, and 0 if emissionOffAxisAngle > coneAngle, 
+so in this situation the coneAngle functions as a hard binary "off" toggle for 
+all angles > coneAngle.
+
+For coneSoftness in the range (0, 1], it defines the proportion of the
+non-cutoff angles over which the luminance is smoothly interpolated from
+0 to 1. Mathematically:
+
+```{math}
+\\begin{aligned} 
+&𝛳_{offAxis} = acos(lightAxis • emissionDir) \\\\
+&𝛳_{cutoff} = toRadians(coneAngle) \\\\
+&𝛳_{smoothStart} = lerp(coneSoftness, 𝛳_{cutoff}, 0) \\\\
+\\\\
+&L_{Scalar} = L_{Scalar} ⋅ (1 - smoothStep(𝛳_{offAxis},𝛳_{smoothStart},𝛳_{cutoff})
+\\end{aligned} 
+```
+
+Values outside of the [0, 1] range are clamped to the range.
+"""
+        }
+    )
+    asset inputs:shaping:ies:file (
+        customData = {
+            string userDocBrief = """Specifies the IES profile file."""
+            string userDoc = """An Illumination Engineering Society (IES) light
+profile describing the angular distribution of light.
+
+For full details on the .ies file format, see the full specification,
+[ANSI/IES LM-63-19](https://store.ies.org/product/lm-63-19-approved-method-ies-standard-file-format-for-the-electronic-transfer-of-photometric-data-and-related-information/)
+
+The luminous intensity values in the IES profile are sampled using the emission 
+direction in the light's local space (after a possible transformation by a 
+non-zero `shaping:ies:angleScale`, see below). The sampled value is then 
+potentially normalized by the overall power of the profile if 
+`shaping:ies:normalize` is enabled, and then used as a scaling factor on the 
+returned luminance:
+
+```{math}
+\\begin{aligned}
+&𝛳_{light}, 𝜙 = toPolarCoordinates(emissionDirectionInLightSpace) \\\\
+&𝛳_{ies} = applyAngleScale(𝛳_{light}, angleScale) \\\\
+&iesSample = sampleIES(iesFile, 𝛳_{ies}, 𝜙) \\\\
+&iesNormalize ⟹ iesSample = iesSample ⋅ iesProfilePower(iesFile) \\\\
+\\\\
+&L_{Color} = iesSample ⋅ L_{Color}
+\\end{aligned}
+```
+
+See {ref}`inputs:shaping:ies:angleScale <ShapingAPI_inputs:shaping:ies:angleScale>`
+for a description of `applyAngleScale`, and 
+{ref}`inputs:shaping:ies:normalize <ShapingAPI_inputs:shaping:ies:normalize>` 
+for how `iesProfilePower` is calculated.
+"""
+        }
+    )
+    float inputs:shaping:ies:angleScale (
+        customData = {
+            string userDocBrief = """Specifies a rescaling of the angular
+distribution of the IES profile."""
+            string userDoc = """Applies a scaling factor to the latitudinal 
+theta/vertical polar coordinate before sampling the IES profile, to shift the 
+samples more toward the "top" or "bottom" of the profile. The scaling origin 
+varies depending on whether `angleScale` is positive or negative.  If it is
+positive, the scaling origin is theta = 0; if it is negative, the scaling origin 
+is theta = pi (180 degrees).  Values where |angleScale| < 1 will "shrink" the 
+angular range in which the iesProfile is applied, while values where 
+|angleScale| > 1 will "grow" the angular range to which the iesProfile is mapped.
+
+If <i>𝛳<sub>light</sub></i> is the latitudinal theta polar coordinate of the 
+emission direction in the light's local space, and <em>𝛳<sub>ies</sub></em> is 
+the value that will be used when actually sampling the profile, then the exact 
+formula is:
+
+```{math}
+\\begin{aligned}
+&if \\quad angleScale > 0: \\\\
+& \\quad 𝛳_{ies} = 𝛳_{light} / angleScale \\\\
+&if \\quad angleScale = 0: \\\\
+& \\quad 𝛳_{ies} = 𝛳_{light} \\\\
+&if \\quad angleScale < 0: \\\\
+& \\quad 𝛳_{ies} = (𝛳_{light} - π) / -angleScale
+\\end{aligned}
+```
+
+See {ref}`usdLux_anglescale_best_practices` for best practices when using 
+angleScale.
+
+"""
+        }
+    )
+    bool inputs:shaping:ies:normalize (
+        customData = {
+            string userDocBrief = """Normalizes the IES profile to affect
+the shaping of the light while preserving the overall energy output."""
+            string userDoc = """Normalizes the IES profile to affect
+the shaping of the light while preserving the overall energy output.
+Used to prevent the IES profile amplitude from altering the energy of the light.
+
+The sampled luminous intensity is scaled by the overall power of the
+IES profile if this is on, where the total power is calculated by
+integrating the luminous intensity over all solid angle patches
+defined in the profile.
+"""
+        }
+    )
+}
+
+over "ShadowAPI" (
+    customData = {
+        string userDocBrief = """Controls to refine a light's shadow casting
+behavior. These are non-physical controls.
+""" 
+        string userDoc = """Use ShadowAPI to control shadow behavior, such as 
+shadow color, distance, and falloff. These are non-physical controls that
+ignore certain laws of physics used for lighting calculations. Use these 
+controls for scenarios where you need artistic control over how shadows are 
+rendered.
+
+See {ref}`usdLux_shadows` for more examples of using ShadowAPI.
+"""
+    }
+) {
+    bool inputs:shadow:enable (
+        customData = {
+            string userDocBrief = """Enables or disables whether the light
+casts shadows."""
+            string userDoc = """Controls whether the prim with this schema
+applied will cast shadows during lighting calculations. For more fine-grained 
+control on which geometry will have shadows for this light, use 
+{ref}`light-linking <usdLux_light_linking>`."""
+        }
+    )
+    color3f inputs:shadow:color (
+        customData = {
+            string userDocBrief = """Specifies the color of the shadows cast by 
+the light"""
+            string userDoc = """Sets the color of the shadows cast by the light.
+"""
+        }
+    )
+    float inputs:shadow:distance (
+        customData = {
+            string userDocBrief = """Specifies the maximum distance, measured
+between the occluder and the point on a surface, within which shadows are cast.
+"""
+            string userDoc = """Sets the maximum distance between occluder and
+shadow-receiving surface within which shadows will be cast. The fallback value 
+is -1, which indicates no limit.
+"""
+        }
+    )
+    float inputs:shadow:falloff (
+        customData = {
+            string userDocBrief = """Specifies the size of the shadow falloff
+zone, within the maximum shadow distance.
+"""
+            string userDoc = """Sets the size of the shadow falloff. This can
+be used to hide or adjust the hard cut-off for shadows at the maximum shadow 
+distance. The falloff zone is the area that fades from full shadow at the 
+beginning of the falloff zone, to no shadow at the maximum shadow distance.
+
+The falloff zone cannot exceed the maximum shadow distance. A falloff zone 
+value equal to or less than 0.0 indicates no falloff zone.
+"""
+        }
+    )
+    float inputs:shadow:falloffGamma (
+        customData = {
+            string userDocBrief = """Controls the rate of falloff within the
+shadow falloff zone specified with `shadow:falloff`.
+"""
+            string userDoc = """Use `falloffGamma` to control the rate of 
+shadow falloff within the shadow fallout zone. The value is treated as a 
+gamma (exponential) control of shadow strength with linear distance within
+the falloff zone. Proper use of falloffGamma requires appropriately setting
+`shadow:distance` and `shadow:falloff`.
+"""
+        }
+    )
+}
+
+over LightFilter "LightFilter" (
+    customData = {
+        string userDocBrief = """A light filter is used to modify the effect
+of a light."""
+        string userDoc = """Use filters to modulate the effects of a
+light. Light filters are associated with lights using the LightAPI 
+`light:filters` relationship. See {ref}`usdLux_light_filters` for more details 
+on light filters.
+"""
+    }
+) {
+    uniform bool collection:filterLink:includeRoot (
+        customData = {
+            string userDocBrief = """The 'include root' setting for the
+filterLink collection, used when configuring light-linking."""
+            string userDoc = """Use the filterLink collection to specify which
+geometry Prims to be included or excluded from this light filter. Prims 
+excluded or not included will not be affected by this light filter. 
+
+The `includeRoot` attribute indicates whether the pseudo-root path `/` should 
+be counted as one of the included target paths. Note that the fallback value 
+is true, which means that light filters will affect all objects illuminated
+by the light(s) the filter is associated with.
+
+See {ref}`collections_and_patterns` for more details on USD collections.
+"""
+        }
+
+    )
+    uniform token lightFilter:shaderId (
+        customData = {
+            string userDocBrief = """The shader ID for a LightFilter 
+(the fallback value is no shader ID)."""
+            string userDoc = """The shader ID for a LightFilter. The fallback
+value is no shader ID. 
+"""
+        }
+    )
+}
+
+over "BoundableLightBase" (
+    customData = {
+        string userDocBrief = """A base class used by intrinsic lights. Not
+intended to be used directly."""
+        string userDoc = """The base class for intrinsic lights that are 
+boundable (e.g. RectLight, SphereLight, etc.). Provides a direct API to the
+functionality provided by LightAPI for concrete derived lights.
+See {ref}`usdLux_boundable_lights` for more details and examples of 
+boundable intrinsic lights.
+"""
+    }
+) {
+}
+
+over "NonboundableLightBase" (
+    customData = {
+        string userDocBrief = """A base class used by intrinsic lights. Not
+intended to be used directly."""
+        string userDoc = """The base class for intrinsic lights that are 
+not boundable (e.g. DistantLight, DomeLight, etc.). As non-boundable lights 
+have no scene bounds, they typically do not use positional information for
+their lighting calculations. Provides a direct API to the
+functionality provided by LightAPI for concrete derived lights.
+See {ref}`usdLux_nonboundable_lights` for more details and examples of 
+non-boundable intrinsic lights.
+"""
+    }
+) {
+}
+
+over DistantLight "DistantLight" (
+    customData = {
+        string userDocBrief = """A light that provides light from
+a far distant source, along the -Z axis. Also known as a "directional light". 
+"""
+        string userDoc = """An intrinsic light that provides light from
+a distant source, along the -Z axis. Also known as a "directional light".
+Typically used for distant, broad sources of light, like sunlight, where light
+rays affect the entire scene and are roughly parallel (depending on 
+`inputs:angle`). 
+
+The following example uses a DistantLight with a increased `inputs:angle` of
+1.0 (noticeably broadening the light spread, but softening the shadow), and 
+reduces the intensity from the default 50000 to 10000.
+
+```{code-block} usda
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Scope "Lights"
+{
+    def DistantLight "Light1"
+    {
+        float inputs:angle = 1.0 
+        float inputs:intensity = 10000
+    }
+}
+
+def Xform "TestGeom"
+{
+    def Sphere "Sphere1"
+    {
+        color3f[] primvars:displayColor = [(1, 1, 1)] (
+            interpolation = "constant"
+        )    
+        double3 xformOp:translate = (0, 0, -2)
+        uniform token[] xformOpOrder = ["xformOp:translate"]          
+    }
+
+    def Cube "Cube"
+    {
+        color3f[] primvars:displayColor = [(1, 1, 1)] (
+            interpolation = "constant"
+        )    
+        double size = 8
+        double3 xformOp:translate = (0, 0, -8)
+        uniform token[] xformOpOrder = ["xformOp:translate"]          
+    }
+}
+```
+
+Example RenderMan output for this layer:
+
+```{image} lux_distant_light.png
+:alt: Example DistantLight
+:width: 600px
+```
+"""
+    }
+) {
+    uniform token light:shaderId (
+        customData = {
+            string userDocBrief = """The shader ID for a DistantLight 
+("DistantLight"). """
+            string userDoc = """The shader ID for a DistantLight. 
+USD will also register a Sdr shader node with a "DistantLight" identifier and 
+the source type "USD" to correspond to the light's inputs
+"""
+        }
+    )
+    float inputs:angle (
+        customData = {
+            string userDocBrief = """The angular diameter of the light in 
+degrees. The fallback value is 0.53. Higher values make the light rays less 
+parallel, thereby increasing shadow softness, but also increasing the overall 
+amount of light.""" 
+            string userDoc = """Sets the angular diameter of the DistantLight in
+degrees. The fallback value is 0.53, which approximates the 0.53 degree
+angular size of the Sun as seen from Earth. 
+
+Higher values soften the shadow edges (light rays become less parallel) while 
+lower values make it sharper. Larger values increase shadow softness by 
+increasing the angle of its light. 
+
+This value is assumed to be in the range `0 <= angle < 360`, and will be clipped 
+to this range. Note that this implies that we can have a distant light emitting 
+from more than a hemispherical area of light if angle > 180. While this is 
+valid, it is possible that for large angles a DomeLight may provide better 
+performance.
+
+Increasing this parameter also increases the amount of light in the scene and 
+you may need to reduce the light intensity/exposure to compensate.
+"""
+        }
+    )
+    float inputs:intensity (
+        customData = {
+            string userDocBrief = """Scales the brightness the DistantLight
+linearly, with a fallback value of 50000 to approximate sunlight."""
+            string userDoc = """Scales the brightness of the light 
+linearly. The fallback value of 50000 provides a high intensity to approximate
+sunlight.
+
+Expresses the "base", unmultiplied luminance emitted (L) of the light,
+in nits (cd∕m²):
+
+```{math}
+L_{Scalar} = intensity
+```
+
+Normatively, the lights' emission is in units of spectral radiance
+normalized such that a directly visible light with `intensity` 1 and
+`exposure` 0 normally incident upon the sensor plane will generate a
+pixel value of [1, 1, 1] in an RGB renderer, and thus have a luminance
+of 1 nit. A light with `intensity` 2 and `exposure` 0 would therefore
+have a luminance of 2 nits.
+"""
+        }
+       
+    )
+}
+
+over DiskLight "DiskLight" (
+    customData = {
+        string userDocBrief = """A light that emits from one side of a circular
+disk (along the -Z axis), centered in the XY plane.
+"""
+        string userDoc = """An intrinsic light that emits light from a circular
+disk centered in the XY plane. The light is emitted from one side of the disk
+along the -Z axis.
+
+Use DiskLights to illuminate objects, simulating soft boxes used in photography, 
+linear lights, fluorescent lights, and light panels. 
+
+The following simple example has a DiskLight positioned near a Sphere and Cube,
+with a radius of 0.8 and an intensity of 20.
+
+```{code-block} usda
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Scope "Lights"
+{
+    def DiskLight "Light1"
+    {
+
+        float inputs:radius = 0.8 
+
+        color3f inputs:color = (1, 1, 1)
+        float inputs:intensity = 20.0
+        double3 xformOp:translate = (4, 0, 1)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Xform "TestGeom"
+{
+    def Sphere "Sphere1"
+    {
+        token purpose = "render"
+        color3f[] primvars:displayColor = [(1, 1, 1)] (
+            interpolation = "constant"
+        )    
+        double3 xformOp:translate = (0, 0, -2)
+        uniform token[] xformOpOrder = ["xformOp:translate"]          
+    }
+
+    def Cube "Cube"
+    {
+        token purpose = "render"
+        color3f[] primvars:displayColor = [(1, 1, 1)] (
+            interpolation = "constant"
+        )    
+        double size = 8
+        double3 xformOp:translate = (0, 0, -8)
+        uniform token[] xformOpOrder = ["xformOp:translate"]          
+    }
+}
+```
+
+Example RenderMan output for this layer:
+
+```{image} lux_disk_light.png
+:alt: Example DiskLight
+:width: 600px
+```
+
+"""
+    }
+) {
+    uniform token light:shaderId (
+        customData = {
+            string userDocBrief = """The shader ID for a DiskLight 
+("DiskLight"). """
+            string userDoc = """The shader ID for a DiskLight. 
+USD will also register a Sdr shader node with a "DiskLight" identifier and 
+the source type "USD" to correspond to the light's inputs
+"""
+        }
+    )
+    float inputs:radius (
+        customData = {
+            string userDocBrief = """Specifies the radius of the disk."""
+            string userDoc = """Radius of the disk. A larger radius increases
+the overall reach of the light. 
+"""
+        }
+    )
+}
+
+over RectLight "RectLight" (
+    customData = {
+        string userDocBrief = """A light that emits from one side of a rectangle
+(along the -Z axis), centered in the XY plane.
+"""
+        string userDoc = """An intrinsic light that emits light from one side 
+of a rectangle.  The rectangle is centered in the XY plane and emits light
+along the -Z axis. The rectangle is 1 unit in length in the X and Y axis.
+
+Use RectLights to illuminate objects, simulating soft boxes used in photography, 
+linear lights, fluorescent lights, and light panels. 
+
+The following simple example has a RectLight positioned near a Sphere and Cube,
+with a width/height of 5x5, and using a colored checkerboard texture as a 
+color map (with additional adjustments to light shaping cone angle and focus to
+limit the light spread).
+
+```{code-block} usda
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Scope "Lights"
+{
+    def RectLight "Light1"
+    {
+        float inputs:width = 5
+        float inputs:height = 5
+        asset inputs:texture:file = @checkerboard.png@
+
+        color3f inputs:color = (1, 1, 1)
+        float inputs:intensity = 5.0
+        float3 xformOp:rotateXYZ = (0, 90, 0)
+        double3 xformOp:translate = (3.5, 0, -1)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]        
+    }
+}
+
+def Xform "TestGeom"
+{
+    def Sphere "Sphere1"
+    {
+        token purpose = "render"
+        color3f[] primvars:displayColor = [(1, 1, 1)] (
+            interpolation = "constant"
+        )    
+        double3 xformOp:translate = (0, 0, -2)
+        uniform token[] xformOpOrder = ["xformOp:translate"]          
+    }
+
+    def Cube "Cube"
+    {
+        token purpose = "render"
+        color3f[] primvars:displayColor = [(1, 1, 1)] (
+            interpolation = "constant"
+        )    
+        double size = 8
+        double3 xformOp:translate = (0, 0, -8)
+        uniform token[] xformOpOrder = ["xformOp:translate"]          
+    }
+}
+```
+
+Example RenderMan output for this layer:
+
+```{image} lux_rect_light.png
+:alt: Example RectLight
+:width: 600px
+```
+
+"""
+    }
+    doc = """Light emitted from one side of a rectangle.
+    The rectangle is centered in the XY plane and emits light along the -Z axis.
+    The rectangle is 1 unit in length in the X and Y axis.  In the default 
+    position, a texture file's min coordinates should be at (+X, +Y) and 
+    max coordinates at (-X, -Y)."""
+) {
+    uniform token light:shaderId (
+        customData = {
+            string userDocBrief = """The shader ID for a RectLight 
+("RectLight"). """
+            string userDoc = """The shader ID for a RectLight. 
+USD will also register a Sdr shader node with a "RectLight" identifier and 
+the source type "USD" to correspond to the light's inputs
+"""
+        }   
+    )
+    float inputs:width (
+        customData = {
+            string userDocBrief = """Specifies the width of the rectangle in the 
+local X axis."""
+            string userDoc = """The width of the rectangle in the local
+X axis.
+"""
+        }
+    )
+    float inputs:height (
+        customData = {
+            string userDocBrief = """Specifies the height of the rectangle in 
+the local Y axis."""
+            string userDoc = """The height of the rectangle in 
+the local Y axis.
+"""
+        }
+    )
+    asset inputs:texture:file (
+        customData = {
+            string userDocBrief = """An optional color texture set on the
+rectangle.
+"""
+            string userDoc = """A color texture set on the rectangle that can
+act as a color map for the emitted light. In the default position, a texture 
+file's min coordinates should be at (+X, +Y) and max coordinates at (-X, -Y).
+"""
+        }        
+    )
+}
+
+over SphereLight "SphereLight" (
+    customData = {
+        string userDocBrief = """A light that is emitted outwards from a sphere. 
+"""
+        string userDoc = """An intrinsic light that emits light outwards from
+a sphere. This light is one-sided, so no light is emitted "inside" the sphere.
+This light can be used as a zero-radius "point light" if `treatAsPoint` is 
+true, and the renderer being used supports zero-area lights.
+
+Use SphereLights to simulate point and spherical shaped light sources, like 
+light bulbs and headlamps. 
+
+The following simple example has a SphereLight positioned near a Sphere and 
+Cube, with a radius of 0.8.
+
+```{code-block} usda
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Scope "Lights"
+{
+    def SphereLight "Light1"
+    {
+        float inputs:radius = 0.8
+
+        color3f inputs:color = (1, 1, 1)
+        float inputs:intensity = 20.0
+        double3 xformOp:translate = (4, 0, 1)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Xform "TestGeom"
+{
+    def Sphere "Sphere1"
+    {
+        token purpose = "render"
+        color3f[] primvars:displayColor = [(1, 1, 1)] (
+            interpolation = "constant"
+        )    
+        double3 xformOp:translate = (0, 0, -2)
+        uniform token[] xformOpOrder = ["xformOp:translate"]          
+    }
+
+    def Cube "Cube"
+    {
+        token purpose = "render"
+        color3f[] primvars:displayColor = [(1, 1, 1)] (
+            interpolation = "constant"
+        )    
+        double size = 8
+        double3 xformOp:translate = (0, 0, -8)
+        uniform token[] xformOpOrder = ["xformOp:translate"]          
+    }
+}
+```
+
+Example RenderMan output for this layer (compare with the output for the
+{ref}`DiskLight` example, which has a similar configuration):
+
+```{image} lux_sphere_light.png
+:alt: Example SphereLight
+:width: 600px
+```
+
+"""
+    }
+) {
+    uniform token light:shaderId (
+        customData = {
+            string userDocBrief = """The shader ID for a SphereLight 
+("SphereLight"). """
+            string userDoc = """The shader ID for a SphereLight. 
+USD will also register a Sdr shader node with a "SphereLight" identifier and 
+the source type "USD" to correspond to the light's inputs
+"""
+        }
+    )
+    float inputs:radius (
+        customData = {
+            string userDocBrief = """Specifies the radius of the sphere."""
+            string userDoc = """Radius of the sphere.
+"""
+        }
+    )
+    bool treatAsPoint (
+        customData = {
+            string userDocBrief = """Specifies that renderers can treat this
+light as a zero-radius point light."""
+            string userDoc = """This is used as a hint to renderers that this
+light can be treated as a "point light", effectively a zero-radius sphere.
+This is useful for renderers that support non-area lighting. Renderers that
+only support area lights will ignore this attribute.
+"""
+        }
+    )
+}
+
+over CylinderLight "CylinderLight" (
+    customData = {
+        string userDocBrief = """A light that is emitted outwards from a 
+cylinder."""
+        string userDoc = """An intrinsic light that emits light outwards from
+a cylinder. The cylinder is centered at the origin and has its major axis on the 
+X axis. Note that the cylinder does not emit light from the flat end-caps.
+
+Use CylinderLights to simulate tube-shaped fluorescent lights or 
+similarly-shaped light sources, linear lights, light panels, and commercial
+lighting used in building interiors. 
+
+The following simple example has a CylinderLight positioned near a Sphere and 
+Cube, with a length of 3 and a radius of 0.25. The light has been rotated and
+the light cone angle adjusted to limit the light spread, resulting in a thin
+band of light. 
+
+```{code-block} usda
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Scope "Lights"
+{
+    def CylinderLight "Light1"
+    {
+        float inputs:length = 3
+        float inputs:radius = 0.25
+
+        float inputs:shaping:cone:angle = 45
+
+        color3f inputs:color = (1, 1, 1)
+        float inputs:intensity = 20.0
+        float3 xformOp:rotateXYZ = (0, 0, 45)
+        double3 xformOp:translate = (0, 0, 1)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    }
+}
+
+def Xform "TestGeom"
+{
+    def Sphere "Sphere1"
+    {
+        token purpose = "render"
+        color3f[] primvars:displayColor = [(1, 1, 1)] (
+            interpolation = "constant"
+        )    
+        double3 xformOp:translate = (0, 0, -2)
+        uniform token[] xformOpOrder = ["xformOp:translate"]          
+    }
+
+    def Cube "Cube"
+    {
+        token purpose = "render"
+        color3f[] primvars:displayColor = [(1, 1, 1)] (
+            interpolation = "constant"
+        )    
+        double size = 8
+        double3 xformOp:translate = (0, 0, -8)
+        uniform token[] xformOpOrder = ["xformOp:translate"]          
+    }
+}
+```
+
+Example RenderMan output for this layer:
+
+```{image} lux_cylinder_light.png
+:alt: Example CylinderLight
+:width: 600px
+```
+"""
+    }
+
+) {
+    uniform token light:shaderId (
+        customData = {
+            string userDocBrief = """The shader ID for a CylinderLight 
+("CylinderLight"). """
+            string userDoc = """The shader ID for a CylinderLight. 
+USD will also register a Sdr shader node with a "CylinderLight" identifier and 
+the source type "USD" to correspond to the light's inputs
+"""
+        }
+    )
+    float inputs:length (
+        customData = {
+            string userDocBrief = """Specifies the length of the cylinder in
+the local X axis."""
+            string userDoc = """The length of the cylinder in the local X axis.
+"""
+        }
+    )
+    float inputs:radius (
+        customData = {
+            string userDocBrief = """Specifies the radius of the cylinder."""
+            string userDoc = """The radius of the cylinder.
+"""
+        }
+    )
+    bool treatAsLine (
+        customData = {
+            string userDocBrief = """Specifies that renderers can treat this
+light as a zero-radius line."""
+            string userDoc = """This is used as a hint to renderers that this
+light can be treated as a "line light", effectively a zero-radius cylinder.
+This is useful for renderers that support non-area lighting. Renderers that
+only support area lights will ignore this attribute.
+"""
+        }
+    )
+}
+
+over GeometryLight "GeometryLight" (
+    customData = {
+        string userDocBrief = """A light that emits outwards from a geometric
+prim. Deprecated, use MeshLight instead."""
+        string userDoc = """Light emitted outward from a geometric prim, 
+typically a Mesh. This schema is deprecated, use {ref}`MeshLight` 
+applied to a Mesh instead.
+"""
+    }
+) {
+    rel geometry (
+        customData = {
+            string userDocBrief = """Relationship to the geometry to use as the 
+light source.
+"""
+            string userDoc = """Relationship to the geometry to use as the 
+light source.
+"""
+        }
+    )
+    uniform token light:shaderId = "GeometryLight"  (
+        customData = {
+            string userDocBrief = """The shader ID for a GeometryLight 
+("GeometryLight"). """
+            string userDoc = """The shader ID for a GeometryLight. 
+USD will also register a Sdr shader node with a "GeometryLight" identifier and 
+the source type "USD" to correspond to the light's inputs
+"""
+        }
+    )
+}
+
+over DomeLight "DomeLight" (
+    customData = {
+        string userDocBrief = """A light that is emitted inwards from a 
+distant external environment such as a sky or a light environment captured in
+an HDR image used for Image Based Lighting (IBL)."""
+        string userDoc = """An intrinsic light that emits light inwards from
+a very distant external environment, such as a sky, or a light environment
+captured in a High Dynamic Range (HDR) image used for Image Based Lighting 
+(IBL).
+
+Use DomeLights to simulate environment lighting. 
+
+The dome's default orientation is such that its top pole is aligned with the 
+world's +Y axis. This adheres to the 
+[OpenEXR specification](https://openexr.com/en/latest/index.html)
+for latitude-longitude maps. From the OpenEXR documentation:
+    
+> Latitude-Longitude Map:
+>
+> The environment is projected onto the image using polar coordinates
+> (latitude and longitude).  A pixel's x coordinate corresponds to
+> its longitude, and the y coordinate corresponds to its latitude.
+> Pixel (dataWindow.min.x, dataWindow.min.y) has latitude +pi/2 and
+> longitude +pi; pixel (dataWindow.max.x, dataWindow.max.y) has
+> latitude -pi/2 and longitude -pi.
+>
+> In 3D space, latitudes -pi/2 and +pi/2 correspond to the negative and
+> positive y direction.  Latitude 0, longitude 0 points into positive
+> z direction; and latitude 0, longitude pi/2 points into positive x
+> direction.
+> 
+> The size of the data window should be 2*N by N pixels (width by height),
+> where N can be any integer greater than 0.
+
+See also the alternative {ref}`DomeLight_1` version, which provides 
+additional control over the dome's orientation via the `poleAxis` property.
+
+The following simple example uses a DomeLight with an environment map texture
+used to illuminate a sphere with a basic Material applied.
+
+```{code-block} usda
+#usda 1.0
+(
+)
+
+def Scope "Lights"
+{
+    def DomeLight "Dome"
+    {
+        asset inputs:texture:file = @orientationLatLong.tex@
+    }
+}
+
+def Xform "TestGeom"
+{
+    def Sphere "Sphere1"
+    (
+       prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Material>
+    }
+
+}
+
+def Material "Material"
+{
+    token outputs:ri:surface.connect = </Material/Surface.outputs:out>
+
+    def Shader "Surface"
+    {
+        uniform token info:id = "PxrSurface"
+        float inputs:diffuseGain = 0.3
+        color3f inputs:specularEdgeColor = (1, 1, 1)
+        color3f inputs:specularFaceColor = (0.4, 0.4, 0.4)
+        float inputs:specularRoughness = 0.02
+        token outputs:out
+    }
+}
+```
+
+Example RenderMan output for this layer:
+
+```{image} lux_dome_light.png
+:alt: Example DomeLight
+:width: 600px
+```
+"""
+    }
+) {
+    uniform token light:shaderId (
+        customData = {
+            string userDocBrief = """The shader ID for a DomeLight 
+("DomeLight"). """
+            string userDoc = """The shader ID for a DomeLight. 
+USD will also register a Sdr shader node with a "DomeLight" identifier and 
+the source type "USD" to correspond to the light's inputs
+"""
+        }
+    )
+    asset inputs:texture:file (
+        customData = {
+            string userDocBrief = """Specifies the color texture (typically an 
+HDR image intended for IBL) used by the DomeLight."""
+            string userDoc = """The color texture (typically an 
+HDR image intended for IBL) used by the DomeLight.
+"""
+        }
+    )
+    token inputs:texture:format (
+        customData = {
+            string userDocBrief = """Specifies the parameterization of the color
+texture. Values include: automatic, latlong, mirroredBall, angular, and 
+cubeMapVerticalCross."""
+            string userDoc = """The parameterization of the color texture.
+Valid values are:
+- automatic: The renderer will try to determine the layout from the file itself.
+For example, RenderMan texture files embed an explicit parameterization.
+- latlong: The file will be parameterized with latitude as X, longitude as Y.
+- mirroredBall: The file will be parameterized as an image of the environment 
+reflected in a sphere, using an implicitly orthogonal projection.
+- angular: Similar to mirroredBall but the radial dimension is mapped linearly 
+to the angle, providing better sampling at the edges.
+- cubeMapVerticalCross: The file will be parameterized as a cube map with faces 
+laid out as a vertical cross.
+"""
+        }
+    )
+    rel portals (
+        customData = {
+            string userDocBrief = """Optional portals to guide light sampling."""
+            string userDoc = """Optional portals to guide light sampling.
+"""
+        }
+    )
+    float guideRadius (
+        customData = {
+            string userDocBrief = """Specifies the radius of guide geometry to 
+use to visualize the dome light."""
+            string userDoc = """Sets the radius of guide geometry used to 
+visualize the dome light, in USD units. The fallback value is 1.0e5, which 
+equates to 1 km for scenes whose `metersPerUnit` is the USD default of 0.01 
+(1 unit equals 1 cm).
+"""
+        }
+    )
+}
+
+over DomeLight_1 "DomeLight_1" (
+        customData = {
+        string userDocBrief = """A light that is emitted inwards from a 
+distant external environment such as a sky or a light environment captured in
+an HDR image used for Image Based Lighting (IBL). Provides additional control
+over the dome's orientation via the poleAxis property."""
+        string userDoc = """An intrinsic light that emits light inwards from
+a very distant external environment, such as a sky, or a light environment
+captured in a High Dynamic Range (HDR) image used for Image Based Lighting 
+(IBL).
+
+Use DomeLights to simulate environment lighting. 
+
+For DomeLight_1, the dome's default orientation is determined by its 
+`poleAxis` property. The fallback value, "scene", means that the dome starts 
+with its top pole aligned with the stage's up axis.
+    
+Note that the rotation necessary to align the dome light with its `poleAxis`
+is intended to be applied by a renderer to only the dome itself, and *not*
+to inherit down to any USD namespace children of the dome light prim.
+    
+If `poleAxis` is set to "Y" or "scene" and the stage's up axis is "Y", the
+dome's default orientation will adhere to the 
+[OpenEXR specification](https://openexr.com/en/latest/index.html) for
+latitude-longitude maps. From the OpenEXR documentation:
+
+> Latitude-Longitude Map:
+>
+> The environment is projected onto the image using polar coordinates
+> (latitude and longitude).  A pixel's x coordinate corresponds to
+> its longitude, and the y coordinate corresponds to its latitude.
+> Pixel (dataWindow.min.x, dataWindow.min.y) has latitude +pi/2 and
+> longitude +pi; pixel (dataWindow.max.x, dataWindow.max.y) has
+> latitude -pi/2 and longitude -pi.
+>
+> In 3D space, latitudes -pi/2 and +pi/2 correspond to the negative and
+> positive y direction.  Latitude 0, longitude 0 points into positive
+> z direction; and latitude 0, longitude pi/2 points into positive x
+> direction.
+> 
+> The size of the data window should be 2*N by N pixels (width by height),
+> where N can be any integer greater than 0.
+
+See also the alternative {ref}`DomeLight` version.
+
+"""
+        }
+) {
+    uniform token light:shaderId (
+        customData = {
+            string userDocBrief = """The shader ID for a DomeLight_1 
+("DomeLight"). """
+            string userDoc = """The shader ID for a DomeLight_1. 
+USD will also register a Sdr shader node with a "DomeLight" identifier and 
+the source type "USD" to correspond to the light's inputs
+"""
+        }
+    )
+
+    asset inputs:texture:file (
+        customData = {
+            string userDocBrief = """Specifies the color texture (typically an 
+HDR image intended for IBL) used by the DomeLight."""
+            string userDoc = """The color texture (typically an 
+HDR image intended for IBL) used by the DomeLight.
+"""
+        }
+    )
+    token inputs:texture:format (
+        customData = {
+            string userDocBrief = """Specifies the parameterization of the color
+texture. Values include: automatic, latlong, mirroredBall, angular, and 
+cubeMapVerticalCross."""
+            string userDoc = """The parameterization of the color texture.
+Valid values are:
+- automatic: The renderer will try to determine the layout from the file itself.
+For example, RenderMan texture files embed an explicit parameterization.
+- latlong: The file will be parameterized with latitude as X, longitude as Y.
+- mirroredBall: The file will be parameterized as an image of the environment 
+reflected in a sphere, using an implicitly orthogonal projection.
+- angular: Similar to mirroredBall but the radial dimension is mapped linearly 
+to the angle, providing better sampling at the edges.
+- cubeMapVerticalCross: The file will be parameterized as a cube map with faces 
+laid out as a vertical cross.
+"""
+        }
+    )
+    rel portals (
+        customData = {
+            string userDocBrief = """Optional portals to guide light sampling."""
+            string userDoc = """Optional portals to guide light sampling.
+"""
+        }
+    )
+    float guideRadius (
+        customData = {
+            string userDocBrief = """Specifies the radius of guide geometry to 
+use to visualize the dome light."""
+            string userDoc = """Sets the radius of guide geometry used to 
+visualize the dome light, in USD units. The fallback value is 1.0e5, which 
+equates to 1 km for scenes whose `metersPerUnit` is the USD default of 0.01 
+(1 unit equals 1 cm).
+"""
+        }
+    )
+
+    uniform token poleAxis (
+        customData = {
+            string userDocBrief = """Specifies the starting alignment of the
+dome's top pole."""
+            string userDoc = """The starting alignment of the dome's top pole.
+This alignment is for the dome itself and is *not* inherited by the namespace 
+children of the dome. Valid values are:
+
+- scene: The dome light's top pole is aligned with the stage's up axis.
+- Y: The dome light's top pole is aligned with the +Y axis. 
+- Z: The dome light's top pole is aligned with the +Z axis. 
+
+If `poleAxis` is set to "Y" or "scene" and the stage's up axis is "Y", the
+dome's default orientation will adhere to the 
+[OpenEXR specification](https://openexr.com/en/latest/index.html) for
+latitude-longitude maps.   
+"""
+        }
+    )
+}
+
+over PortalLight "PortalLight" (
+    customData = {
+        string userDocBrief = """A rectangular portal in the local XY plane that 
+guides sampling of a dome light (DomeLight, DomeLight_1)."""
+        string userDoc = """A rectangular portal in the local XY plane that 
+guides sampling of a dome light. Transmits light in the -Z direction.
+The rectangle is 1 unit in length.
+"""
+    }
+) {
+    uniform token light:shaderId (
+        customData = {
+            string userDocBrief = """The shader ID for a PortalLight 
+("PortalLight"). """
+            string userDoc = """The shader ID for a PortalLight. 
+USD will also register a Sdr shader node with a "PortalLight" identifier and 
+the source type "USD" to correspond to the light's inputs
+"""
+        }
+    )
+    float inputs:width (
+        customData = {
+            string userDocBrief = """Specifies the width of the portal rectangle 
+in the local X axis."""
+            string userDoc = """Width of the portal rectangle in the local X 
+axis.
+"""
+        }
+    )
+    float inputs:height (
+        customData = {
+            string userDocBrief = """Specifies the height of the portal 
+rectangle in the local Y axis."""
+            string userDoc = """Height of the portal rectangle in the local Y 
+axis.
+"""
+        }
+    )
+}
+
+over PluginLight "PluginLight" (
+    customData = {
+        string userDocBrief = """A light that provides properties to allow it
+to identify an external Sdr shader node."""
+        string userDoc = """A light that provides properties to allow it
+to identify an external Sdr shader node. The node can be provided to render
+delegates without the need to provide a schema definition for the light's
+type.
+"""
+    }
+    doc = """Light that provides properties that allow it to identify an 
+    external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
+    provided to render delegates without the need to provide a schema 
+    definition for the light's type.
+
+    \\see \\ref usdLux_PluginSchemas
+"""
+) {
+}
+
+over PluginLightFilter "PluginLightFilter" (
+    customData = {
+        string userDocBrief = """A Light filter that provides properties that allow it to identify an 
+    external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
+    provided to render delegates without the need to provide a schema 
+    definition for the light filter's type."""
+        string userDoc = """Light filter that provides properties that allow it to identify an 
+    external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
+    provided to render delegates without the need to provide a schema 
+    definition for the light filter's type.
+"""
+    }
+
+    doc = """Light filter that provides properties that allow it to identify an 
+    external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
+    provided to render delegates without the need to provide a schema 
+    definition for the light filter's type.
+
+    \\see \\ref usdLux_PluginSchemas
+"""
+) {
+}

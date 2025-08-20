@@ -27,6 +27,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (RenderSettings)
+    ((riIntegrator, "ri:integrator"))
+    ((riSampleFilters, "ri:sampleFilters"))
+    ((riDisplayFilters, "ri:displayFilters"))
+);
+
 inline TfTokenVector
 _Concat(const TfTokenVector &a, const TfTokenVector &b)
 {
@@ -37,14 +45,41 @@ _Concat(const TfTokenVector &a, const TfTokenVector &b)
     return result;
 }
 
+// XXX: We explicitly populate PxrRenderTerminalsAPI relationships
+// to RenderSettings, avoiding populating all relationships; this
+// should be moved to renderman-specific code in a future change.
+// https://jira.pixar.com/browse/HYD-3280
+void
+_StripRelsFromSettings(
+    UsdPrim const& prim,
+    VtDictionary *settings)
+{
+    std::vector<std::string> toErase;
+    for (const auto& it : *settings) {
+        const TfToken name = TfToken(it.first);
+        UsdRelationship rel = prim.GetRelationship(name);
+        if (rel && name != _tokens->riIntegrator
+                && name != _tokens->riSampleFilters
+                && name != _tokens->riDisplayFilters) {
+            toErase.push_back(it.first);
+        }
+    }
+
+    for (const std::string& name : toErase) {
+        settings->erase(name);
+    }
+}
+
 VtDictionary
 _ComputeNamespacedSettings(const UsdPrim &prim)
 {
     // Note that we don't filter by namespaces (as we do in the 1.0 API;
     // see UsdImagingRenderSettingsAdapter::Get). A downstream renderer-specific
     // scene index plugin will provide the necessary filtering instead.
-    return UsdRenderComputeNamespacedSettings(
+    VtDictionary settings = UsdRenderComputeNamespacedSettings(
             prim, /* namespaces */ TfTokenVector());
+    _StripRelsFromSettings(prim, &settings);
+    return settings;
 }
 
 }

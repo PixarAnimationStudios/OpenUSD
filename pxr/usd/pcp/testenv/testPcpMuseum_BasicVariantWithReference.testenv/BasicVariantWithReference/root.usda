@@ -1,0 +1,22 @@
+#usda 1.0
+(
+    """
+    This test exercises a sub-root, internal reference within
+    a variant to another prim within that variant.
+    """
+)
+
+def "ModelRef" (
+    prepend references = @./model.usda@</Model>
+)
+{
+}
+
+def "ModelRefWithChildren" (
+    prepend references = @./model.usda@</Model>
+    variants = {
+        string vset = "with_children"
+    }
+)
+{
+}

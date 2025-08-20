@@ -272,6 +272,14 @@ private:
     bool _sceneDelegatesBuilt;
     std::vector<HdSceneDelegate*> _sceneDelegates;
 
+    // Hint cache of all prim paths that have been populated with
+    // geomSubset children.  This is purely an optimization and
+    // not authoritative -- it may have false positioves, such as
+    // if subsets are removed later.  These hints provide a way
+    // to skip the expense of _GatherGeomSubsets() when no subsets
+    // have been populated.
+    std::unordered_set<SdfPath, SdfPath::Hash> _geomSubsetParents;
+
     // Cache for rprim locator set -> dirty bits translation.
     HdDataSourceLocatorSet _cachedLocatorSet;
     HdDirtyBits _cachedDirtyBits;

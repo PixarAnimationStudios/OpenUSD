@@ -4,15 +4,16 @@
 )
 
 class "SemanticsLabelsAPI" (
-    doc = """Application of labels for a prim for a taxonomy specified by the
-    schema's instance name.
-
-    See `UsdSemanticsLabelsQuery` for more information about computations and
-    inheritance of semantics."""
+    customData = {
+        string userDocBrief = """Application of labels for a prim for a taxonomy specified by the
+    schema's instance name."""
+    }
 )
 {
     token[] semantics:labels:__INSTANCE_NAME__ = [] (
-        doc = "Array of labels specified directly at this prim."
+        customData = {
+            string userDocBrief = "Array of labels specified directly at this prim."
+        }
     )
 }
 

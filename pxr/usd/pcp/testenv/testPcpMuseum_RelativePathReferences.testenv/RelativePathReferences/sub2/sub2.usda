@@ -1,0 +1,7 @@
+#usda 1.0
+
+over "Model" (
+    prepend references = @./ref.usda@</Ref>
+)
+{
+}

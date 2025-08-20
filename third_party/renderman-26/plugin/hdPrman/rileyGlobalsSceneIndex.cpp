@@ -29,6 +29,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 TF_DEFINE_PRIVATE_TOKENS(
     _renderTerminalTokens, // properties in PxrRenderTerminalsAPI
+    ((riIntegrator, "ri:integrator"))
+    ((riSampleFilters, "ri:sampleFilters"))
+    ((riDisplayFilters, "ri:displayFilters"))
+    // Legacy terminal connections. Remove in a future USD version.
     ((outputsRiIntegrator, "outputs:ri:integrator"))
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
     ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
@@ -215,7 +219,11 @@ _FillRileyParamsFromNamespacedSettings(
     std::vector<HdDataSourceBaseHandle> * const dataSources)
 {
     for (const TfToken &name : settingsDs->GetNames()) {
-        if (name == _renderTerminalTokens->outputsRiIntegrator    ||
+        if (name == _renderTerminalTokens->riIntegrator    ||
+            name == _renderTerminalTokens->riSampleFilters ||
+            name == _renderTerminalTokens->riDisplayFilters ||
+            // Legacy terminal connections. Remove in a future USD version.
+            name == _renderTerminalTokens->outputsRiIntegrator    ||
             name == _renderTerminalTokens->outputsRiSampleFilters ||
             name == _renderTerminalTokens->outputsRiDisplayFilters) {
             continue;

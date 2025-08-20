@@ -42,7 +42,7 @@ class TestPcpInstanceKey(unittest.TestCase):
     def test_Basic(self):
         """Test instance key functionality on simple
         asset structure including references and inherits"""
-        cache = self._LoadPcpCache('basic.sdf')
+        cache = self._LoadPcpCache('basic.usda')
 
         prop1Key = self._GetInstanceKey(cache, '/Set_1/Prop_1')
         prop2Key = self._GetInstanceKey(cache, '/Set_1/Prop_2')
@@ -60,7 +60,7 @@ class TestPcpInstanceKey(unittest.TestCase):
         self.assertEqual(notAnInstanceKey, Pcp.InstanceKey())
 
     def test_Hashing(self):
-        cache = self._LoadPcpCache("basic.sdf")
+        cache = self._LoadPcpCache("basic.usda")
 
         self.assertEqual(
             hash(self._GetInstanceKey(cache, "/Set_1")),
@@ -70,7 +70,7 @@ class TestPcpInstanceKey(unittest.TestCase):
     def test_Variants(self):
         """Test instance key functionality on asset
         structure involving references and variants."""
-        cache = self._LoadPcpCache('variants.sdf')
+        cache = self._LoadPcpCache('variants.usda')
 
         key1 = self._GetInstanceKey(cache, '/Model_1')
         key2 = self._GetInstanceKey(cache, '/Model_2')
@@ -100,7 +100,7 @@ class TestPcpInstanceKey(unittest.TestCase):
     def test_ImpliedArcsWithNoSpecs(self):
         """Test instance key functionality with implied inherits and
         specializes."""
-        cache = self._LoadPcpCache('implied_arcs/root.sdf')
+        cache = self._LoadPcpCache('implied_arcs/root.usda')
 
         # Both Model prims should share the same instance key even though
         # they are referenced from two different assets. This is because
@@ -117,7 +117,7 @@ class TestPcpInstanceKey(unittest.TestCase):
         "ancestral" but must be considered as they are brought in through 
         the subtree that is composed for direct subroot arc."""
 
-        cache = self._LoadPcpCache('subroot_arcs.sdf')
+        cache = self._LoadPcpCache('subroot_arcs.usda')
 
         # For each instance it's useful to know the basic prim index graph
         # ---> = direct reference

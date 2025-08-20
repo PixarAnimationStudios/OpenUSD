@@ -22,55 +22,75 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \enum GfColorSpace
 /// \ingroup group_gf_Color
 ///
-/// Color spaces natively supported by Gf to define scene referred color values.
-/// The token names correspond to the canonical names defined
-/// by the OpenColorIO Nanocolor project
+/// GfColorSpace defines color spaces natively supported by Gf to define scene
+/// referred color values. The descriptive names are those published by the 
+/// Color Interop Forum.
 ///
-/// The names have the form <Curve><Name> where <Curve> is the transfer curve, 
-/// and <Name> is the common name for the color space.
+/// The short names take the form of three components joined by underscores. 
+/// 
+/// The first component is the encoding of the RGB tuple; either `lin` for 
+/// linear encoding, `srgb` for IEC 61966-2-1:1999 encoding, or gNN where NN 
+/// indicates a gamma value. 
 ///
-/// The curves include:
+/// The second component designates the color primaries and white point, and
+/// are a short name of a corresponding CIF color space.
 ///
-/// Linear:     Linear transfer function.
-/// G18:        Gamma 1.8 transfer function.
-/// G22:        Gamma 2.2 transfer function.
-/// SRGB:       sRGB transfer function, comprised of a linear and gamma segment.
+/// Finally, the third component names the image state, as named in ISO 22028-1,
+/// drawing a distinction between scene-referred and display-referred color 
+/// spaces. Scene referenced color spaces are used to describe the color 
+/// appearance of objects in the real world, while display-referred color spaces
+/// are used to describe color as emitted by projectors or monitor screen.
 ///
-/// The named color spaces refer to a set of primaries and a white point.
+/// ACEScg: lin_ap1_scene
+/// ACES2065-1: lin_ap0_scene
+/// Linear Rec.709 (sRGB): lin_rec709_scene
+/// Linear P3-D65: lin_p3d65_scene
+/// Linear Rec.2020: lin_rec2020_scene
+/// Linear AdobeRGB: lin_adobergb_scene
+/// CIE XYZ-D65 - Scene-referred: lin_ciexyzd65_scene
+/// sRGB Encoded Rec.709 (sRGB): srgb_rec709_scene
+/// Gamma 2.2 Encoded Rec.709: g22_rec709_scene
+/// Gamma 1.8 Encoded Rec.709: g18_rec709_scene
+/// sRGB Encoded AP1: srgb_ap1_scene
+/// Gamma 2.2 Encoded AP1: g22_ap1_scene
+/// sRGB Encoded P3-D65: srgb_p3d65_scene
+/// Gamma 2.2 Encoded AdobeRGB: g22_adobergb_scene
+/// Data: data
+/// Unknown: unknown
 ///
-/// AP0:        The ACES2065-1 AP0 primaries and corresponding D60 white point.
-/// AP1:        The ACEScg AP1 primaries and corresponding D60 white point.
-/// Rec2020:    Rec2020 primaries and corresponding D65 white point.
-/// Rec709:     Rec7709 primaries and corresponding D65 white point.
-/// AdobeRGB:   A color space developed by Adobe Systems. It's primaries define
-///             a wider gamut than sRGB. It has a D65 white point.
-/// DisplayP3:  P3 primaries, a D65 whitepoint. Commonly used 
-///             by wide gamut HDR monitors.
-/// CIEXYZ:     The CIE 1931 XYZ color space.
-/// Data, Raw,
-/// Unknown:    No transformation occurs with these.
+/// `lin_ciexyzd65_scene` bears some additional explanation. The `d65` component
+/// in the name is meant to indicate that values transformed to this color space
+/// should be adapted to the D65 white point.
+///
+/// In addition the `data` and `unknown` color space names, `raw` and `identity`
+/// are provided for compatibility with existing production assets. The CIEXYZ
+/// and LinearDisplayP3 names are deprecated and will be removed in a future 
+/// release.
 ///
 /// User defined color spaces outside of this set may be defined through
 /// explicit construction.
 ///
 #define GF_COLORSPACE_NAME_TOKENS                \
-    ((CIEXYZ, "lin_ciexyzd65_scene"))            \
+    ((LinearAP1, "lin_ap1_scene"))               \
+    ((LinearAP0, "lin_ap0_scene"))               \
+    ((LinearRec709, "lin_rec709_scene"))         \
+    ((LinearP3D65, "lin_p3d65_scene"))           \
+    ((LinearRec2020, "lin_rec2020_scene"))       \
+    ((LinearAdobeRGB, "lin_adobergb_scene"))     \
+    ((LinearCIEXYZD65, "lin_ciexyzd65_scene"))   \
+    ((SRGBRec709, "srgb_rec709_scene"))          \
+    ((G22Rec709, "g22_rec709_scene"))            \
+    ((G18Rec709, "g18_rec709_scene"))            \
+    ((SRGBAP1, "srgb_ap1_scene"))                \
+    ((G22AP1, "g22_ap1_scene"))                  \
+    ((SRGBP3D65, "srgb_p3d65_scene"))            \
+    ((G22AdobeRGB, "g22_adobergb_scene"))        \
+    ((Identity, "identity"))                     \
     ((Data, "data"))                             \
     ((Raw, "raw"))                               \
     ((Unknown, "unknown"))                       \
-    ((LinearAdobeRGB, "lin_adobergb_scene"))     \
-    ((LinearAP0, "lin_ap0_scene"))               \
-    ((LinearAP1, "lin_ap1_scene"))               \
-    ((LinearDisplayP3, "lin_displayp3_scene"))   \
-    ((LinearRec2020, "lin_rec2020_scene"))       \
-    ((LinearRec709, "lin_rec709_scene"))         \
-    ((G18Rec709, "g18_rec709_scene"))            \
-    ((G22AdobeRGB, "g22_adobergb_scene"))        \
-    ((G22AP1, "g22_ap1_scene"))                  \
-    ((G22Rec709, "g22_rec709_scene"))            \
-    ((SRGBP3D65, "srgb_p3d65_scene"))            \
-    ((SRGBRec709, "srgb_rec709_scene"))          \
-    ((SRGBAP1, "srgb_ap1_scene"))
+    ((CIEXYZ, "lin_ciexyzd65_scene"))            \
+    ((LinearDisplayP3, "lin_p3d65_scene")) 
 
 TF_DECLARE_PUBLIC_TOKENS(GfColorSpaceNames, GF_API, 
                          GF_COLORSPACE_NAME_TOKENS);
@@ -178,6 +198,12 @@ public:
     /// \return The RGB to XYZ conversion matrix.
     GF_API 
     GfMatrix3f GetRGBToXYZ() const;
+
+    /// Get the RGB to RGB conversion matrix from srcColorSpace to "this" color space.
+    /// \param srcColorSpace The source color space.
+    /// \return The RGB to RGB conversion matrix.
+    GF_API 
+    GfMatrix3f GetRGBToRGB(const GfColorSpace& srcColorSpace) const;
 
     /// Get the gamma value of the color space.
     ///

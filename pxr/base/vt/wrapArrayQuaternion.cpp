@@ -13,10 +13,12 @@
 #include "pxr/pxr.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/wrapArray.h"
+#include "pxr/base/vt/wrapArrayEdit.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapArrayQuaternion() {
     TF_PP_SEQ_FOR_EACH(VT_WRAP_ARRAY, ~, VT_QUATERNION_VALUE_TYPES);
+    TF_PP_SEQ_FOR_EACH(VT_WRAP_ARRAY_EDIT, ~, VT_QUATERNION_VALUE_TYPES);
 }

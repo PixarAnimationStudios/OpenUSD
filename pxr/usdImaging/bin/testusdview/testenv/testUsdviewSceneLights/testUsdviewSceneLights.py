@@ -29,6 +29,7 @@ def _setSceneLights(appController, sceneLightsEnabled):
 
 def _getRendererAppendedImageName(appController, filename):
     rendererName = appController._stageView.rendererDisplayName
+    rendererName = "Prman" if rendererName.startswith("RenderMan") else rendererName
     imageName = filename + "_" + rendererName + ".png"
     print(" -", imageName)
     return imageName

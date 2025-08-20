@@ -16,7 +16,7 @@ class TestSdfPayload(unittest.TestCase):
 
         # Generate a bunch of unique payloads
         args = [
-            ['assetPath', ['', '//test/layer.sdf']],
+            ['assetPath', ['', '//test/layer.usda']],
             ['primPath', ['', '/rootPrim', '/rootPrim/child']],
             ['layerOffset', [Sdf.LayerOffset(),  Sdf.LayerOffset(48, -2)]]
         ]

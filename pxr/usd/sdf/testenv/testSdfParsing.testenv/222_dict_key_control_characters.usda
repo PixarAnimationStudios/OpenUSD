@@ -1,0 +1,13 @@
+#usda 1.0
+
+def XForm "default"
+{
+    def Sphere "ball" (
+        customData = {
+            int """jkj
+    """ = 15
+        }
+    )
+    {
+    }
+}

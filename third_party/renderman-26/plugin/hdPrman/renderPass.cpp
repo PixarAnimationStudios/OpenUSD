@@ -636,7 +636,7 @@ HdPrman_RenderPass::_Execute(
         return;
     }
 
-    if (resolutionChanged || camChanged) {
+    if (resolutionChanged) {
         rvCtx.SetResolution(resolution, _renderParam->AcquireRiley());
     }
     //

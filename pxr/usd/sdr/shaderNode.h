@@ -9,17 +9,11 @@
 #define PXR_USD_SDR_SHADER_NODE_H
 
 /// \file sdr/shaderNode.h
-///
-/// \note
-/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
-/// in this file. All existing pxr/usd/ndr implementations will be moved to
-/// pxr/usd/sdr.
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdr/api.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
-#include "pxr/usd/ndr/node.h"
 #include "pxr/usd/sdr/declare.h"
 #include "pxr/usd/sdr/shaderNodeDiscoveryResult.h"
 
@@ -43,11 +37,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((SdrUsdEncodingVersion, "sdrUsdEncodingVersion")) \
     ((SdrDefinitionNameFallbackPrefix, "sdrDefinitionNameFallbackPrefix"))
 
-// Note: The concept of context is defined on NdrNode and can be queried with
-// the GetContext() method. Sdr categorizes shaders by the context in which they
-// are used inside of a renderer. For instance during 'pattern' evaluation to
-// feed into a surface or volume shader. For BXDFs used in 'surface' and
-// 'volume' rendering situations.
+// Note: The concept of context can be queried with the GetContext() method.
+// Sdr categorizes shaders by the context in which they are used inside of a
+// renderer. For instance during 'pattern' evaluation to feed into a surface
+// or volume shader. For BXDFs used in 'surface' and 'volume'
+// rendering situations.
 #define SDR_NODE_CONTEXT_TOKENS         \
     ((Pattern, "pattern"))              \
     ((Surface, "surface"))              \
@@ -74,28 +68,9 @@ TF_DECLARE_PUBLIC_TOKENS(SdrNodeRole, SDR_API, SDR_NODE_ROLE_TOKENS);
 /// Represents a node that holds shading information. Describes information
 /// like the name of the node, what its inputs and outputs are, and any
 /// associated metadata.
-class SdrShaderNode : public NdrNode
+class SdrShaderNode
 {
 public:
-    /// Constructor.
-    ///
-    /// \deprecated
-    /// Deprecated in favor of the constructor below this constructor,
-    /// which takes `SdrVersion` and `SdrShaderPropertyUniquePtrVec` instead
-    /// of Ndr analogues
-    SDR_API
-    SdrShaderNode(const NdrIdentifier& identifier,
-                  const NdrVersion& version,
-                  const std::string& name,
-                  const TfToken& family,
-                  const TfToken& context,
-                  const TfToken& sourceType,
-                  const std::string& definitionURI,
-                  const std::string& implementationURI,
-                  NdrPropertyUniquePtrVec&& properties,
-                  const NdrTokenMap& metadata = NdrTokenMap(),
-                  const std::string &sourceCode = std::string());
-
     /// Constructor
     SDR_API
     SdrShaderNode(
@@ -111,8 +86,100 @@ public:
         const SdrTokenMap& metadata = SdrTokenMap(),
         const std::string &sourceCode = std::string());
 
+    /// Destructor.
+    SDR_API
+    virtual ~SdrShaderNode();
+
+    /// \name The Basics
+    /// @{
+
+    /// Return the identifier of the node.
+    const SdrIdentifier& GetIdentifier() const { return _identifier; }
+
     /// Return the version of the node
-    SdrVersion GetShaderVersion() const { return NdrToSdrVersion(_version); }
+    SdrVersion GetShaderVersion() const { return _version; }
+
+    /// Gets the name of the node.
+    const std::string& GetName() const { return _name; }
+
+    /// Gets the name of the family that the node belongs to. An empty token
+    /// will be returned if the node does not belong to a family.
+    const TfToken& GetFamily() const { return _family; }
+
+    /// Gets the context of the shader node.
+    ///
+    /// The context is the context that the node declares itself as having (or,
+    /// if a particular node does not declare a context, it will be assigned a
+    /// default context by the parser).
+    ///
+    /// As a concrete example from the `Sdr` library, a shader with a specific
+    /// source type may perform different duties vs. another shader with the
+    /// same source type. For example, one shader with a source type of
+    /// `SdrArgsParser::SourceType` may declare itself as having a context of
+    /// 'pattern', while another shader of the same source type may say it is
+    /// used for lighting, and thus has a context of 'light'.
+    const TfToken& GetContext() const { return _context; }
+
+    /// Gets the type of source that this shader node originated from.
+    ///
+    /// Note that this is distinct from `GetContext()`, which is the type that
+    /// the node declares itself as having.
+    ///
+    /// As a concrete example from the `Sdr` library, several shader parsers
+    /// exist and operate on different types of shaders. In this scenario, each
+    /// distinct type of shader (OSL, Args, etc) is considered a different
+    /// _source_, even though they are all shaders. In addition, the shaders
+    /// under each source type may declare themselves as having a specific
+    /// context (shaders can serve different roles). See `GetContext()` for
+    /// more information on this.
+    const TfToken& GetSourceType() const { return _sourceType; }
+
+    /// Gets the URI to the resource that provided this node's
+    /// definition. Could be a path to a file, or some other resource
+    /// identifier. This URI should be fully resolved.
+    ///
+    /// \sa SdrShaderNode::GetResolvedImplementationURI()
+    const std::string& GetResolvedDefinitionURI() const { return _definitionURI; }
+
+    /// Gets the URI to the resource that provides this node's
+    /// implementation. Could be a path to a file, or some other resource
+    /// identifier. This URI should be fully resolved.
+    ///
+    /// \sa SdrShaderNode::GetResolvedDefinitionURI()
+    const std::string& GetResolvedImplementationURI() const {
+        return _implementationURI;
+    }
+
+    /// Returns  the source code for this node. This will be empty for most 
+    /// nodes. It will be non-empty only for the nodes that are constructed 
+    /// using \ref SdrRegistry::GetShaderNodeFromSourceCode(), in which case, the 
+    /// source code has not been parsed (or even compiled) yet. 
+    /// 
+    /// An unparsed node with non-empty source-code but no properties is 
+    /// considered to be invalid. Once the node is parsed and the relevant 
+    /// properties and metadata are extracted from the source code, the node 
+    /// becomes valid.
+    /// 
+    /// \sa SdrShaderNode::IsValid
+    const std::string &GetSourceCode() const { return _sourceCode; }
+
+    /// Whether or not this node is valid. A node that is valid indicates that
+    /// the parser plugin was able to successfully parse the contents of this
+    /// node.
+    ///
+    /// Note that if a node is not valid, some data like its name, URI, source 
+    /// code etc. could still be available (data that was obtained during the 
+    /// discovery process). However, other data that must be gathered from the 
+    /// parsing process will NOT be available (eg, inputs and outputs).
+    SDR_API
+    bool IsValid() const { return _isValid; }
+
+    /// Gets a string with basic information about this node. Helpful for
+    /// things like adding this node to a log.
+    SDR_API
+    std::string GetInfoString() const;
+
+    /// @}
 
     /// \name Inputs and Outputs
     /// An input or output is also generically referred to as a "property".
@@ -157,6 +224,10 @@ public:
     /// specific parser plugin to get help on what the parser is looking for to
     /// populate these values.
     /// @{
+
+    /// All metadata that came from the parse process.
+    SDR_API
+    const SdrTokenMap& GetMetadata() const;
 
     /// The label assigned to this node, if any. Distinct from the name
     /// returned from `GetName()`. In the context of a UI, the label value
@@ -274,6 +345,26 @@ public:
     /// \endcond
 
 protected:
+    SdrShaderNode& operator=(const SdrShaderNode&) = delete;
+
+    bool _isValid;
+    SdrIdentifier _identifier;
+    SdrVersion _version;
+    std::string _name;
+    TfToken _family;
+    TfToken _context;
+    TfToken _sourceType;
+    std::string _definitionURI;
+    std::string _implementationURI;
+    SdrShaderPropertyUniquePtrVec _properties;
+    SdrTokenMap _metadata;
+    std::string _sourceCode;
+
+    SdrShaderPropertyMap _inputs;
+    SdrTokenVec _inputNames;
+    SdrShaderPropertyMap _outputs;
+    SdrTokenVec _outputNames;
+
     // Processed primvar metadata. `_primvars` contains the names of primvars
     // consumed by this node, whereas `_primvarNamingProperties` contains the
     // names of string input properties whose values provide the names of
@@ -286,9 +377,6 @@ protected:
     TfToken _category;
     SdrTokenVec _departments;
     SdrTokenVec _pages;
-
-    SdrPropertyMap _shaderInputs;
-    SdrPropertyMap _shaderOutputs;
 
 private:
     // Initializes `_primvars` and `_primvarNamingProperties`

@@ -98,7 +98,12 @@ vec3 ImportanceSample_GGX(vec2 Xi, float roughness, vec3 normal)
     // Maps a 2D point to a hemisphere with spread based on roughness
     float alpha = roughness * roughness;
     float phi = 2.0 * PI * Xi.x;
-    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (alpha*alpha - 1.0) * Xi.y));
+    
+    // Clamp cosTheta to at most 1. Values larger than 1 (arising from floating 
+    // point imprecision perhaps) can cause NaNs in the sinTheta term.
+    float cosTheta = min(
+        1.0, sqrt((1.0 - Xi.y) / (1.0 + (alpha*alpha - 1.0) * Xi.y)));
+    
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
     vec3 H = vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
 

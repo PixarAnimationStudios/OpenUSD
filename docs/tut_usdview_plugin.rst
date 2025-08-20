@@ -101,14 +101,16 @@ the "Name" field, to match our plugin's Python module name, change the
 "tutorialPlugin.TutorialPluginContainer" type to match our 
 :python:`PluginContainer` type name, and update the "displayName."
 
-Lastly, we need to configure the environment. libplug loads Python plugins by
-importing the module directly, so we need to make sure our plugins directory 
-(if trying the sendMail.py example in 
-:filename:`extras/usd/examples/usdviewPlugins/` it would be that directory, 
-NOT :filename:`tutorialPlugin/`) is listed in our PYTHONPATH environment 
-variable. If we want libplug to load our plugin, we also need to add the path 
-to the plugin directory (this time :filename:`tutorialPlugin/` in our example) 
-to the PXR_PLUGINPATH_NAME environment variable.
+Lastly, we need to configure the environment. libplug loads Python plugins by 
+importing the module directly, so we need to make sure our plugins directory is 
+listed in our `PYTHONPATH` environment variable. For this example, the path to 
+:filename:`usdviewPlugins/` created above would be added to the `PYTHONPATH`. If
+trying the sendMail.py example, :filename:`extras/usd/examples/usdviewPlugins` 
+would be the relevant plugins directory.
+
+If we want libplug to load our plugin, we also need to add the path to the 
+plugin directory to the `PXR_PLUGINPATH_NAME` environment variable. In this 
+example, that would be the path to :filename:`tutorialPlugin/`.
 
 At this point, if we open :program:`usdview` we should see a new "Tutorial" 
 menu. If we open this menu and select "Print Message," we should see "Hello, 

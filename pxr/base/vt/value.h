@@ -20,6 +20,7 @@
 #include "pxr/base/arch/pragmas.h"
 #include "pxr/base/tf/anyUniquePtr.h"
 #include "pxr/base/tf/delegatedCountPtr.h"
+#include "pxr/base/tf/meta.h"
 #include "pxr/base/tf/pointerAndBits.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/safeTypeCompare.h"
@@ -95,6 +96,11 @@ template <class T> struct Vt_ValueStoredType { typedef T Type; };
 VT_VALUE_SET_STORED_TYPE(char const *, std::string);
 VT_VALUE_SET_STORED_TYPE(char *, std::string);
 
+template <size_t N>
+struct Vt_ValueStoredType<char [N]> {
+    using Type = std::string;
+};
+
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 VT_VALUE_SET_STORED_TYPE(pxr_boost::python::object, TfPyObjWrapper);
 #endif // PXR_PYTHON_SUPPORT_ENABLED
@@ -103,8 +109,7 @@ VT_VALUE_SET_STORED_TYPE(pxr_boost::python::object, TfPyObjWrapper);
 
 // A metafunction that gives the type VtValue should store for a given type T.
 template <class T>
-struct Vt_ValueGetStored 
-    : Vt_ValueStoredType<std::decay_t<T>> {};
+using Vt_ValueGetStored = Vt_ValueStoredType<std::decay_t<T>>;
 
 /// Provides a container which may hold any type, and provides introspection
 /// and iteration over array types.  See \a VtIsArray for more info.
@@ -375,9 +380,10 @@ class VtValue
 
     // Type-dispatching overloads.
 
-    // Array type helper.
-    template <class T, class Enable=void>
-    struct _ArrayHelper
+    // Array type helpers.  Non-array types have no shape data, no elements and
+    // report `void` for their element types.
+    template <class T>
+    struct _NonArrayHelper
     {
         static const Vt_ShapeData* GetShapeData(T const &) { return NULL; }
         static size_t GetNumElements(T const &) { return 0; }
@@ -385,9 +391,9 @@ class VtValue
             return typeid(void);
         }
     };
+    // VtArray types report their qualities.
     template <class Array>
-    struct _ArrayHelper<
-        Array, typename std::enable_if<VtIsArray<Array>::value>::type>
+    struct _IsArrayHelper
     {
         static const Vt_ShapeData* GetShapeData(Array const &obj) {
             return obj._GetShapeData();
@@ -399,6 +405,25 @@ class VtValue
             return typeid(typename Array::ElementType);
         }
     };
+    // VtArrayEdit types are identical to non-array types except that they do
+    // report their underlying element type.
+    template <class ArrayEdit>
+    struct _IsArrayEditHelper : _NonArrayHelper<ArrayEdit>
+    {
+        constexpr static std::type_info const &GetElementTypeid() {
+            return typeid(typename ArrayEdit::ElementType);
+        }
+    };
+
+    // Select which flavor of array helper to use -- VtArray uses
+    // _IsArrayHelper, VtArrayEdit uses _IsArrayEditHelper, all other types use
+    // _NonArrayHelper.
+    template <class T>
+    using _ArrayHelper = TfConditionalType<
+        VtIsArray<T>::value, _IsArrayHelper<T>,
+        TfConditionalType<VtIsArrayEdit<T>::value,
+                          _IsArrayEditHelper<T>, _NonArrayHelper<T>>
+        >;
 
     // Function used in case T has equality comparison.
     template <class T>
@@ -425,9 +450,9 @@ class VtValue
         return *VtGetErasedProxiedVtValue(a) == *VtGetErasedProxiedVtValue(b);
     }
 
-    // Proxy type helper.  Base case handles non-proxies and typed proxies.
-    template <class T, class Enable = void>
-    struct _ProxyHelper
+    // Proxy type helper. This version handles non-proxies and typed proxies.
+    template <class T>
+    struct _TypedProxyHelper
     {
         using ProxiedType = typename VtGetProxiedType<T>::type;
 
@@ -485,10 +510,9 @@ class VtValue
         }
     };
 
+    // Proxy type helper. This version handles type-erased proxies.
     template <class ErasedProxy>
-    struct _ProxyHelper<
-        ErasedProxy, typename std::enable_if<
-                         VtIsErasedValueProxy<ErasedProxy>::value>::type>
+    struct _ErasedProxyHelper
     {
         static bool CanHash(ErasedProxy const &proxy) {
             return VtGetErasedProxiedVtValue(proxy)->CanHash();
@@ -557,7 +581,9 @@ class VtValue
         static const bool HasTrivialCopy = _IsTriviallyCopyable<T>::value;
         static const bool IsProxy = VtIsValueProxy<T>::value;
 
-        using ProxyHelper = _ProxyHelper<T>;
+        using ProxyHelper = TfConditionalType<
+            VtIsErasedValueProxy<T>::value,
+            _ErasedProxyHelper<T>, _TypedProxyHelper<T>>;
 
         using This = _TypeInfoImpl;
 
@@ -776,29 +802,9 @@ class VtValue
 
     // Metafunction that returns the specific _TypeInfo subclass for T.
     template <class T>
-    struct _TypeInfoFor {
-        // return _UsesLocalStore(T) ? _LocalTypeInfo<T> : _RemoteTypeInfo<T>;
-        typedef std::conditional_t<_UsesLocalStore<T>::value,
-                                   _LocalTypeInfo<T>,
-                                   _RemoteTypeInfo<T>> Type;
-    };
-
-    // Make sure char[N] is treated as a string.
-    template <size_t N>
-    struct _TypeInfoFor<char[N]> : _TypeInfoFor<std::string> {};
-
-    // Runtime function to return a _TypeInfo base pointer to a specific
-    // _TypeInfo subclass for type T.
-    template <class T>
-    static TfPointerAndBits<const _TypeInfo> GetTypeInfo() {
-        typedef typename _TypeInfoFor<T>::Type TI;
-        static const TI ti;
-        static constexpr unsigned int flags =
-                       (TI::IsLocal ? _LocalFlag : 0) |
-                       (TI::HasTrivialCopy ? _TrivialCopyFlag : 0) |
-                       (TI::IsProxy ? _ProxyFlag : 0);
-        return TfPointerAndBits<const _TypeInfo>(&ti, flags);
-    }
+    using _TypeInfoFor =
+        TfConditionalType<_UsesLocalStore<T>::value,
+                          _LocalTypeInfo<T>, _RemoteTypeInfo<T>>;
 
     // A helper that moves a held value to temporary storage, but keeps it alive
     // until the _HoldAside object is destroyed.  This is used when assigning
@@ -823,20 +829,29 @@ class VtValue
     };
 
     template <class T>
-    std::enable_if_t<
-        std::is_same<T, typename Vt_ValueGetStored<T>::Type>::value>
-    _Init(T const &obj) {
-        _info = GetTypeInfo<T>();
-        typedef typename _TypeInfoFor<T>::Type TypeInfo;
-        TypeInfo::CopyInitObj(obj, _storage);
-    }
+    struct _Init {
+        using StoredType = typename Vt_ValueGetStored<T>::Type;
+        using TypeInfo = _TypeInfoFor<StoredType>;
 
-    template <class T>
-    std::enable_if_t<
-        !std::is_same<T, typename Vt_ValueGetStored<T>::Type>::value>
-    _Init(T const &obj) {
-        _Init(typename Vt_ValueGetStored<T>::Type(obj));
-    }
+        static TfPointerAndBits<const _TypeInfo> _GetTypeInfo() {
+            static const TypeInfo ti;
+            static constexpr unsigned int flags =
+                (TypeInfo::IsLocal ? _LocalFlag : 0) |
+                (TypeInfo::HasTrivialCopy ? _TrivialCopyFlag : 0) |
+                (TypeInfo::IsProxy ? _ProxyFlag : 0);
+            return TfPointerAndBits<const _TypeInfo>(&ti, flags);
+        }
+
+        static void Init(VtValue *val, T const &obj) {
+            val->_info = _GetTypeInfo();
+            if constexpr (std::is_same_v<T, StoredType>) {
+                TypeInfo::CopyInitObj(obj, val->_storage);
+            }
+            else {
+                TypeInfo::CopyInitObj(StoredType {obj}, val->_storage);
+            }
+        }
+    };
 
 public:
 
@@ -860,7 +875,7 @@ public:
     /// a TfPyObjWrapper.
     template <class T>
     explicit VtValue(T const &obj) {
-        _Init(obj);
+        _Init<T>::Init(this, obj);
     }
 
     /// Create a new VtValue, taking its contents from \p obj.
@@ -906,49 +921,21 @@ public:
         return *this;
     }
 
-#ifndef doxygen
-    template <class T>
-    inline
-    std::enable_if_t<
-        _TypeInfoFor<T>::Type::IsLocal &&
-        _TypeInfoFor<T>::Type::HasTrivialCopy,
-    VtValue &>
-    operator=(T obj) {
-        _Clear();
-        _Init(obj);
-        return *this;
-    }
-#endif
-
     /// Assignment operator from any type.
-#ifdef doxygen
     template <class T>
-    VtValue&
-    operator=(T const &obj);
-#else
-    template <class T>
-    std::enable_if_t<
-        !_TypeInfoFor<T>::Type::IsLocal ||
-        !_TypeInfoFor<T>::Type::HasTrivialCopy,
-    VtValue &>
+    VtValue &
     operator=(T const &obj) {
-        _HoldAside tmp(this);
-        _Init(obj);
-        return *this;
-    }
-#endif
-
-    /// Assigning a char const * gives a VtValue holding a std::string.
-    VtValue &operator=(char const *cstr) {
-        std::string tmp(cstr);
-        _Clear();
-        _Init(tmp);
-        return *this;
-    }
-
-    /// Assigning a char * gives a VtValue holding a std::string.
-    VtValue &operator=(char *cstr) {
-        return *this = const_cast<char const *>(cstr);
+        if constexpr (_TypeInfoFor<T>::IsLocal &&
+                      _TypeInfoFor<T>::HasTrivialCopy) {
+            _Clear();
+            _Init<T>::Init(this, obj);
+            return *this;
+        }
+        else {
+            _HoldAside tmp(this);
+            _Init<T>::Init(this, obj);
+            return *this;
+        }
     }
 
     /// Swap this with \a rhs.
@@ -966,42 +953,32 @@ public:
     /// Overloaded swap() for generic code/stl/etc.
     friend void swap(VtValue &lhs, VtValue &rhs) { lhs.Swap(rhs); }
 
-    /// Swap the held value with \a rhs.  If this value is holding a T,
-    // make an unqualified call to swap(<held-value>, rhs).  If this value is
-    // not holding a T, replace the held value with a value-initialized T
-    // instance first, then swap.
-#ifdef doxygen
+    /// Swap the held value with \a rhs.  If this value is holding a T, make an
+    /// unqualified call to swap(<held-value>, rhs).  If this value is not
+    /// holding a T, replace the held value with a value-initialized T instance
+    /// first, then swap.
     template <class T>
     void
-    Swap(T &rhs);
-#else
-    template <class T>
-    std::enable_if_t<
-        std::is_same<T, typename Vt_ValueGetStored<T>::Type>::value>
     Swap(T &rhs) {
+        static_assert(std::is_same_v<T, typename Vt_ValueGetStored<T>::Type>,
+                      "Can only VtValue::Swap with a type T that stores as T");
         if (!IsHolding<T>())
             *this = T();
         UncheckedSwap(rhs);
     }
-#endif
 
     /// Swap the held value with \a rhs.  This VtValue must be holding an
     /// object of type \p T.  If it does not, this invokes undefined behavior.
     /// Use Swap() if this VtValue is not known to contain an object of type
     /// \p T.
-#ifdef doxygen
     template <class T>
     void
-    UncheckedSwap(T &rhs);
-#else
-    template <class T>
-    std::enable_if_t<
-        std::is_same<T, typename Vt_ValueGetStored<T>::Type>::value>
     UncheckedSwap(T &rhs) {
+        static_assert(std::is_same_v<T, typename Vt_ValueGetStored<T>::Type>,
+                      "Can only VtValue::Swap with a type T that stores as T");
         using std::swap;
         swap(_GetMutable<T>(), rhs);
     }
-#endif
 
     /// \overload
     void UncheckedSwap(VtValue &rhs) { Swap(rhs); }
@@ -1032,9 +1009,10 @@ public:
     /// it a non-const reference to the held object and return true.  Otherwise
     /// do nothing and return false.
     template <class T, class Fn>
-    std::enable_if_t<
-        std::is_same<T, typename Vt_ValueGetStored<T>::Type>::value, bool>
+    bool
     Mutate(Fn &&mutateFn) {
+        static_assert(std::is_same_v<T, typename Vt_ValueGetStored<T>::Type>,
+                      "Can only VtValue::Mutate a type T that stores as T");
         if (!IsHolding<T>()) {
             return false;
         }
@@ -1042,13 +1020,14 @@ public:
         return true;
     }
 
-    /// Invoke \p mutateFn, it a non-const reference to the held object which
-    /// must be of type \p T.  If the held object is not of type \p T, this
-    /// function invokes undefined behavior.
+    /// Invoke \p mutateFn, passing it a non-const reference to the held object
+    /// which must be of type \p T.  If the held object is not of type \p T,
+    /// this function invokes undefined behavior.
     template <class T, class Fn>
-    std::enable_if_t<
-        std::is_same<T, typename Vt_ValueGetStored<T>::Type>::value>
+    void
     UncheckedMutate(Fn &&mutateFn) {
+        static_assert(std::is_same_v<T, typename Vt_ValueGetStored<T>::Type>,
+                      "Can only VtValue::Mutate a type T that stores as T");
         // We move to a temporary, mutate the temporary, then move back.  This
         // prevents callers from escaping a mutable reference to the held object
         // via a side-effect of mutateFn.
@@ -1065,18 +1044,19 @@ public:
         return _info.GetLiteral() && _TypeIs<T>();
     }
 
-    /// Returns true iff this is holding an array type (see VtIsArray<>).
+    /// Return true if this holds a VtArray instance, false otherwise.
     VT_API bool IsArrayValued() const;
 
     /// Return the number of elements in the held value if IsArrayValued(),
     /// return 0 otherwise.
     size_t GetArraySize() const { return _GetNumElements(); }
 
-    /// Returns the typeid of the type held by this value.
+    /// Return the typeid of the type held by this value.
     VT_API std::type_info const &GetTypeid() const;
 
-    /// Return the typeid of elements in a array valued type.  If not
-    /// holding an array valued type, return typeid(void).
+    /// If this value holds a VtArray or VtArrayEdit instance, return the typeid
+    /// of its element type.  For example, if this value holds a VtIntArray or a
+    /// VtIntArrayEdit, return typeid(int).  Otherwise return typeid(void).
     VT_API std::type_info const &GetElementTypeid() const;
 
     /// Returns the TfType of the type held by this value.
@@ -1377,7 +1357,8 @@ private:
         if constexpr (VtIsKnownValueType_Workaround<T>::value) {
             return _info->knownTypeIndex == VtGetKnownValueTypeIndex<T>() ||
                 ARCH_UNLIKELY(_IsProxy() && _TypeIsImpl(typeid(T)));
-        } else {
+        }
+        else {
             std::type_info const &t = typeid(T);
             return TfSafeTypeCompare(_info->typeInfo, t) ||
                 ARCH_UNLIKELY(_IsProxy() && _TypeIsImpl(t));
@@ -1388,37 +1369,30 @@ private:
 
     VT_API bool _EqualityImpl(VtValue const &rhs) const;
 
-    template <class Proxy>
-    std::enable_if_t<VtIsValueProxy<Proxy>::value, Proxy &>
-    _GetMutable() {
-        typedef typename _TypeInfoFor<Proxy>::Type TypeInfo;
-        return TypeInfo::GetMutableObj(_storage);
-    }
-
     template <class T>
-    std::enable_if_t<!VtIsValueProxy<T>::value, T &>
+    T &
     _GetMutable() {
-        // If we are a proxy, collapse it out to the real value first.
-        if (ARCH_UNLIKELY(_IsProxy())) {
-            *this = _info->GetProxiedAsVtValue(_storage);
+        using TypeInfo = _TypeInfoFor<T>;
+        if constexpr (!VtIsValueProxy<T>::value) {
+            // The request is not for a proxy type, so if we are holding a
+            // proxy, collapse it out to the proxied value first.
+            if (ARCH_UNLIKELY(_IsProxy())) {
+                *this = _info->GetProxiedAsVtValue(_storage);
+            }
         }
-        typedef typename _TypeInfoFor<T>::Type TypeInfo;
         return TypeInfo::GetMutableObj(_storage);
     }
 
-    template <class Proxy>
-    std::enable_if_t<VtIsValueProxy<Proxy>::value, Proxy const &>
-    _Get() const {
-        typedef typename _TypeInfoFor<Proxy>::Type TypeInfo;
-        return TypeInfo::GetObj(_storage);
-    }
-
     template <class T>
-    std::enable_if_t<!VtIsValueProxy<T>::value, T const &>
+    T const &
     _Get() const {
-        typedef typename _TypeInfoFor<T>::Type TypeInfo;
-        if (ARCH_UNLIKELY(_IsProxy())) {
-            return *static_cast<T const *>(_GetProxiedObjPtr());
+        using TypeInfo = _TypeInfoFor<T>;
+        if constexpr (!VtIsValueProxy<T>::value) {
+            // The request is not for a proxy type, so if we are holding a
+            // proxy, fetch the underlying proxied object pointer.
+            if (ARCH_UNLIKELY(_IsProxy())) {
+                return *static_cast<T const *>(_GetProxiedObjPtr());
+            }
         }
         return TypeInfo::GetObj(_storage);
     }

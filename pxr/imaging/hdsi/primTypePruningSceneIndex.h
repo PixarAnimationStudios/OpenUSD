@@ -42,6 +42,9 @@ TF_DECLARE_WEAK_AND_REF_PTRS(HdsiPrimTypePruningSceneIndex);
 /// If an empty binding token is used, the scene index will not
 /// prune any binding.
 ///
+/// \deprecated Use HdsiSceneMaterialPruningSceneIndex or 
+/// HdPrimTypeAndPathPruningSceneIndex with tautological PathPredicate instead.
+///
 class HdsiPrimTypePruningSceneIndex final
     : public HdSingleInputFilteringSceneIndexBase
 {

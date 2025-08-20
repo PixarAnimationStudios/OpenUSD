@@ -1,0 +1,9 @@
+#usda 1.0
+#tagged-as-never-update
+
+def MfScope "foo"
+{
+    # test improper value (not a parseable double) for a simple value
+    double a1 = foo
+}
+

@@ -1,20 +1,20 @@
-Loading @TrickySpecializesAndInherits2/root.sdf@
+Loading @TrickySpecializesAndInherits2/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </NestedClass>
 
 Prim Stack:
-    root.sdf             /NestedClass
+    root.usda            /NestedClass
 
 ------------------------------------------------------------------------
 Results for composing </Specializes>
 
 Prim Stack:
-    root.sdf             /Specializes
+    root.usda            /Specializes
 
 Child names:
      ['Nested']
@@ -23,18 +23,18 @@ Child names:
 Results for composing </Specializes/Nested>
 
 Prim Stack:
-    root.sdf             /Specializes/Nested
+    root.usda            /Specializes/Nested
 
 ------------------------------------------------------------------------
 Results for composing </Root>
 
 Prim Stack:
-    root.sdf             /Root
-    ref.sdf              /Ref
-    ref2.sdf             /Ref2
-    root.sdf             /Specializes
-    ref.sdf              /Specializes
-    ref2.sdf             /Specializes
+    root.usda            /Root
+    ref.usda             /Ref
+    ref2.usda            /Ref2
+    root.usda            /Specializes
+    ref.usda             /Specializes
+    ref2.usda            /Specializes
 
 Child names:
      ['Nested']
@@ -43,15 +43,15 @@ Child names:
 Results for composing </Root/Nested>
 
 Prim Stack:
-    root.sdf             /Root/Nested
-    ref.sdf              /Ref/Nested
-    ref2.sdf             /Ref2/Nested
-    root.sdf             /Specializes/Nested
-    root.sdf             /NestedClass
-    ref.sdf              /Specializes/Nested
-    ref.sdf              /NestedClass
-    ref2.sdf             /Specializes/Nested
-    ref2.sdf             /NestedClass
-    ref3.sdf             /Ref3
-    ref3.sdf             /NestedClass
+    root.usda            /Root/Nested
+    ref.usda             /Ref/Nested
+    ref2.usda            /Ref2/Nested
+    root.usda            /Specializes/Nested
+    root.usda            /NestedClass
+    ref.usda             /Specializes/Nested
+    ref.usda             /NestedClass
+    ref2.usda            /Specializes/Nested
+    ref2.usda            /NestedClass
+    ref3.usda            /Ref3
+    ref3.usda            /NestedClass
 

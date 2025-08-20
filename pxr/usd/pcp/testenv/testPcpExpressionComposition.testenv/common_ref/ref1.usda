@@ -1,0 +1,7 @@
+#usda 1.0
+
+def "Ref1" (
+    references = @./base_ref.usda@</BaseRef>
+)
+{
+}

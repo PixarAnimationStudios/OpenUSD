@@ -24,6 +24,7 @@ pxr_library(hgiVulkan
         computeCmds
         computePipeline
         conversions
+        descriptorSetLayouts
         device
         diagnostic
         garbageCollector
@@ -47,7 +48,7 @@ pxr_library(hgiVulkan
         vulkan.h
 
     PRIVATE_CLASSES
-        spirv_reflect
+        debugCodes
 
     RESOURCE_FILES
         plugInfo.json

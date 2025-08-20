@@ -12,6 +12,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
 #include "pxr/base/tf/hash.h"
+#include "pxr/usd/sdf/declareHandles.h"
 
 #include <iosfwd>
 #include <string>
@@ -19,6 +20,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class SdfAssetPath;
+class VtDictionary;
+class VtValue;
+template<typename T> class TfSpan;
+SDF_DECLARE_HANDLES(SdfLayer);
 
 /// \struct SdfAssetPathParams
 /// Helper class for explicitly setting values when creating a SdfAssetPath
@@ -273,6 +278,23 @@ private:
 SDF_API std::ostream& operator<<(std::ostream& out, const SdfAssetPath& ap);
 
 /// @}
+
+/// Anchors all paths in \p assetPaths to the \p anchor layer. Evaluates any
+/// expression variables listed in \p exprVars.
+SDF_API
+void SdfAnchorAssetPaths(const SdfLayerHandle &anchor,
+                    const VtDictionary &exprVars,
+                    TfSpan<SdfAssetPath> assetPaths,
+                    std::vector<std::string> *errors);
+
+/// Anchors and resolves the given \p assetPaths with respect to the \p anchor 
+/// layer. Evaluates any expression variables listed in \p exprVars. Expects
+/// resolver context to be bound beforehand.
+SDF_API
+void SdfResolveAssetPaths(const SdfLayerHandle &anchor,
+                        const VtDictionary &exprVars,
+                        TfSpan<SdfAssetPath> assetPaths,
+                        std::vector<std::string> *errors);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

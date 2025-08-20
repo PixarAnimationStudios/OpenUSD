@@ -93,24 +93,24 @@ static void MainAtExit()
     TestAndSet(MainAtExitOp);
 }
 
-ARCH_CONSTRUCTOR(Ctor20, 20, void)
+ARCH_CONSTRUCTOR(Ctor20, 20)
 {
     TestAndSet(Ctor20Op);
     atexit(Ctor20AtExit);
 }
 
-ARCH_CONSTRUCTOR(Ctor30, 30, void)
+ARCH_CONSTRUCTOR(Ctor30, 30)
 {
     TestAndSet(Ctor30Op);
     atexit(Ctor30AtExit);
 }
 
-ARCH_DESTRUCTOR(Dtor20, 20, void)
+ARCH_DESTRUCTOR(Dtor20, 20)
 {
     TestAndSet(Dtor20Op);
 }
 
-ARCH_DESTRUCTOR(Dtor30, 30, void)
+ARCH_DESTRUCTOR(Dtor30, 30)
 {
     TestAndSet(Dtor30Op);
 }

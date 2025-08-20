@@ -12,6 +12,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/node.h"
+#include "pxr/usd/pcp/primIndex_Graph.h"
 #include "pxr/usd/sdf/layer.h"
 
 #include <string>
@@ -197,9 +198,14 @@ Pcp_TranslatePathFromNodeToRootOrClosestNode(
 // Returns true if the given node is a specializes node that
 // has been propagated to the root of the graph for strength
 // ordering purposes.
-bool
+inline bool
 Pcp_IsPropagatedSpecializesNode(
-    const PcpNodeRef& node);
+    const PcpNodeRef& node)
+{
+    return (PcpIsSpecializeArc(node._graph->GetArcType(node._nodeIdx)) &&
+            node.GetParentNode() == node.GetRootNode() &&
+            node.GetSite() == node.GetOriginNode().GetSite());
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

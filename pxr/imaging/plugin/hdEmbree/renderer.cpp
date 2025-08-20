@@ -16,11 +16,48 @@
 #include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/work/loops.h"
+#include "pxr/base/work/threadLimits.h"
 
 #include "pxr/base/tf/hash.h"
 
 #include <chrono>
 #include <thread>
+
+// -------------------------------------------------------------------------
+// Old TBB workaround - we plan to remove this once OpenUSD adopts
+// oneTBB as a min spec. This applies the "Work" thread limit to the
+// render thread if "Work" is using old TBB, but won't affect other "Work"
+// implementations.  Note that it may affect Embree TBB usage as well.
+// -------------------------------------------------------------------------
+#include <tbb/tbb_stddef.h>
+
+#if TBB_INTERFACE_VERSION_MAJOR < 12
+
+#include <optional>
+#include <tbb/task_scheduler_init.h>
+
+namespace {
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+// Make the calling context respect PXR_WORK_THREAD_LIMIT, if run from a thread
+// other than the main thread (ie, the renderThread)
+class _ScopedThreadScheduler {
+public:
+    _ScopedThreadScheduler() {
+        auto limit = WorkGetConcurrencyLimitSetting();
+        if (limit != 0) {
+            _tbbTaskSchedInit.emplace(limit);
+        }
+    }
+
+    std::optional<tbb::task_scheduler_init> _tbbTaskSchedInit;
+};
+
+} // anonymous namespace
+
+#endif  // TBB_INTERFACE_VERSION_MAJOR < 12
+
 
 namespace {
 
@@ -373,6 +410,11 @@ _IsContained(const GfRect2i &rect, int width, int height)
 void
 HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 {
+#if TBB_INTERFACE_VERSION_MAJOR < 12
+    // Old TBB workaround to enforce PXR_WORK_THREAD_LIMIT
+    _ScopedThreadScheduler scheduler;
+#endif
+
     _completedSamples.store(0);
 
     // Commit any pending changes to the scene.

@@ -426,8 +426,6 @@ UsdImagingMaterialBindingsResolvingSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
-    TRACE_FUNCTION();
-
     // For now, just forward the notices. We could suppress notices
     // for USD material bindings schemata locators since scene indices
     // downstream shouldn't be interested in these notices.
@@ -440,8 +438,6 @@ UsdImagingMaterialBindingsResolvingSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
-    TRACE_FUNCTION();
-
     // Comments above in _PrimsAdded are relevant here.
     _SendPrimsRemoved(entries);
 }

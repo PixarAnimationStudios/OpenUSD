@@ -7,6 +7,7 @@ class TestNSPrefix "TestNSPrefix" (
     inherits = </Typed>
 )
 {
+    reorder properties = ["input1withNONSPrefix", "input2withNONSPrefix", "propNSPrefix:input2withPropNS"]
     float input1withNONSPrefix = 0
     float input2withNONSPrefix = 0
     float propNSPrefix:input2withPropNS = 0

@@ -239,7 +239,9 @@ _MarkPrimAsNonExistingInNamespace(
     const SdfPath &primPath)
 {
     auto it = prims->insert({primPath, {}}).first;
-    it->second.existsInNamespace = std::optional<bool>(false);
+    // Prim at absolute root path always implicitly exists.
+    it->second.existsInNamespace =
+        std::optional<bool>(primPath.IsAbsoluteRootPath());
     it->second.allChildrenKnown = true;
     it->second.primType = std::nullopt;
     it->second.hasDataSource = std::nullopt;
@@ -284,12 +286,14 @@ HdsiDebuggingSceneIndex::HdsiDebuggingSceneIndex(
     HdSceneIndexBaseRefPtr const &inputSceneIndex,
     HdContainerDataSourceHandle const &inputArgs)
   : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
+  // Prim at absolute root path always implicitly exists.
   , _prims{{SdfPath::AbsoluteRootPath(), _PrimInfo{/*exists = */ true}}}
 {
     _EmitMessage(
         TfStringPrintf(
-            "Instantiated for %s.",
-            _GetInputSceneIndex()->GetDisplayName().c_str()));
+            "Instantiated for '%s' of type '%s'.",
+            _GetInputSceneIndex()->GetDisplayName().c_str(),
+            ArchGetDemangled(typeid(&(*_GetInputSceneIndex()))).c_str()));
 }
 
 HdsiDebuggingSceneIndex::~HdsiDebuggingSceneIndex() = default;

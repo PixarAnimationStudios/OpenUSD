@@ -1,16 +1,16 @@
-Loading @TrickyVariantSelectionInVariant2/root.sdf@
+Loading @TrickyVariantSelectionInVariant2/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Ref>
 
 Prim Stack:
-    root.sdf             /Ref
-    root.sdf             /Ref{v1=a}
-    root.sdf             /Ref{v2=b}
+    root.usda            /Ref
+    root.usda            /Ref{v1=a}
+    root.usda            /Ref{v2=b}
 
 Variant Selections:
     {v1 = a}
@@ -23,12 +23,12 @@ Child names:
 Results for composing </Ref/Model>
 
 Prim Stack:
-    root.sdf             /Ref{v2=b}Model
+    root.usda            /Ref{v2=b}Model
 
 ------------------------------------------------------------------------
 Results for composing </Root>
 
 Prim Stack:
-    root.sdf             /Root
-    root.sdf             /Ref{v2=b}Model
+    root.usda            /Root
+    root.usda            /Ref{v2=b}Model
 

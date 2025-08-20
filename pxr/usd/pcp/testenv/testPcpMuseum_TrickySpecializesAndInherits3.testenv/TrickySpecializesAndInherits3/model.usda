@@ -1,0 +1,15 @@
+#usda 1.0
+
+def "SetModel"
+{
+    def "Metal"
+    {
+    }
+
+    def "CorrodedMetal" (
+        specializes = </SetModel/Metal>
+    )
+    {
+    }
+}
+

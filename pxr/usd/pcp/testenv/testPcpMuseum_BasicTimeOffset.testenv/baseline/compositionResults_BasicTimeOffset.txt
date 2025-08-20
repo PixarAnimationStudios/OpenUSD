@@ -1,21 +1,21 @@
-Loading @BasicTimeOffset/root.sdf@
+Loading @BasicTimeOffset/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Root>
 
 Prim Stack:
-    root.sdf             /Root
-    A.sdf                /Model
-    B.sdf                /Model
+    root.usda            /Root
+    A.usda               /Model
+    B.usda               /Model
 
 Time Offsets:
-    root.sdf             /Root           root       (offset=0.00, scale=1.00)
-    A.sdf                /Model          reference  (offset=10.00, scale=1.00)
-        B.sdf                            sublayer   (offset=20.00, scale=1.00)
+    root.usda            /Root           root       (offset=0.00, scale=1.00)
+    A.usda               /Model          reference  (offset=10.00, scale=1.00)
+        B.usda                           sublayer   (offset=20.00, scale=1.00)
 
 Child names:
      ['Anim', 'Frame']
@@ -24,37 +24,37 @@ Child names:
 Results for composing </Root/Anim>
 
 Prim Stack:
-    B.sdf                /Model/Anim
+    B.usda               /Model/Anim
 
 Time Offsets:
-    root.sdf             /Root/Anim      root       (offset=0.00, scale=1.00)
-    A.sdf                /Model/Anim     reference  (offset=10.00, scale=1.00)
-        B.sdf                            sublayer   (offset=20.00, scale=1.00)
+    root.usda            /Root/Anim      root       (offset=0.00, scale=1.00)
+    A.usda               /Model/Anim     reference  (offset=10.00, scale=1.00)
+        B.usda                           sublayer   (offset=20.00, scale=1.00)
 
 ------------------------------------------------------------------------
 Results for composing </Root/Frame>
 
 Prim Stack:
-    B.sdf                /Model/Frame
+    B.usda               /Model/Frame
 
 Time Offsets:
-    root.sdf             /Root/Frame     root       (offset=0.00, scale=1.00)
-    A.sdf                /Model/Frame    reference  (offset=10.00, scale=1.00)
-        B.sdf                            sublayer   (offset=20.00, scale=1.00)
+    root.usda            /Root/Frame     root       (offset=0.00, scale=1.00)
+    A.usda               /Model/Frame    reference  (offset=10.00, scale=1.00)
+        B.usda                           sublayer   (offset=20.00, scale=1.00)
 
 ------------------------------------------------------------------------
 Results for composing </RefPayload>
 
 Prim Stack:
-    root.sdf             /RefPayload
-    ref_sub.sdf          /Ref
-    B.sdf                /Model
+    root.usda            /RefPayload
+    ref_sub.usda         /Ref
+    B.usda               /Model
 
 Time Offsets:
-    root.sdf             /RefPayload     root       (offset=0.00, scale=1.00)
-    ref.sdf              /Ref            reference  (offset=10.00, scale=1.00)
-        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
-    B.sdf                /Model          payload    (offset=30.00, scale=1.00)
+    root.usda            /RefPayload     root       (offset=0.00, scale=1.00)
+    ref.usda             /Ref            reference  (offset=10.00, scale=1.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model          payload    (offset=30.00, scale=1.00)
 
 Child names:
      ['Anim', 'Frame']
@@ -63,39 +63,39 @@ Child names:
 Results for composing </RefPayload/Anim>
 
 Prim Stack:
-    B.sdf                /Model/Anim
+    B.usda               /Model/Anim
 
 Time Offsets:
-    root.sdf             /RefPayload/Anim root       (offset=0.00, scale=1.00)
-    ref.sdf              /Ref/Anim       reference  (offset=10.00, scale=1.00)
-        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
-    B.sdf                /Model/Anim     payload    (offset=30.00, scale=1.00)
+    root.usda            /RefPayload/Anim root       (offset=0.00, scale=1.00)
+    ref.usda             /Ref/Anim       reference  (offset=10.00, scale=1.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model/Anim     payload    (offset=30.00, scale=1.00)
 
 ------------------------------------------------------------------------
 Results for composing </RefPayload/Frame>
 
 Prim Stack:
-    B.sdf                /Model/Frame
+    B.usda               /Model/Frame
 
 Time Offsets:
-    root.sdf             /RefPayload/Frame root       (offset=0.00, scale=1.00)
-    ref.sdf              /Ref/Frame      reference  (offset=10.00, scale=1.00)
-        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
-    B.sdf                /Model/Frame    payload    (offset=30.00, scale=1.00)
+    root.usda            /RefPayload/Frame root       (offset=0.00, scale=1.00)
+    ref.usda             /Ref/Frame      reference  (offset=10.00, scale=1.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model/Frame    payload    (offset=30.00, scale=1.00)
 
 ------------------------------------------------------------------------
 Results for composing </MultiRef>
 
 Prim Stack:
-    root.sdf             /MultiRef
-    ref_sub.sdf          /Ref2
-    B.sdf                /Model
+    root.usda            /MultiRef
+    ref_sub.usda         /Ref2
+    B.usda               /Model
 
 Time Offsets:
-    root.sdf             /MultiRef       root       (offset=0.00, scale=1.00)
-    ref.sdf              /Ref2           reference  (offset=10.00, scale=1.00)
-        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
-    B.sdf                /Model          reference  (offset=30.00, scale=1.00)
+    root.usda            /MultiRef       root       (offset=0.00, scale=1.00)
+    ref.usda             /Ref2           reference  (offset=10.00, scale=1.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model          reference  (offset=30.00, scale=1.00)
 
 Child names:
      ['Anim', 'Frame']
@@ -104,38 +104,38 @@ Child names:
 Results for composing </MultiRef/Anim>
 
 Prim Stack:
-    B.sdf                /Model/Anim
+    B.usda               /Model/Anim
 
 Time Offsets:
-    root.sdf             /MultiRef/Anim  root       (offset=0.00, scale=1.00)
-    ref.sdf              /Ref2/Anim      reference  (offset=10.00, scale=1.00)
-        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
-    B.sdf                /Model/Anim     reference  (offset=30.00, scale=1.00)
+    root.usda            /MultiRef/Anim  root       (offset=0.00, scale=1.00)
+    ref.usda             /Ref2/Anim      reference  (offset=10.00, scale=1.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model/Anim     reference  (offset=30.00, scale=1.00)
 
 ------------------------------------------------------------------------
 Results for composing </MultiRef/Frame>
 
 Prim Stack:
-    B.sdf                /Model/Frame
+    B.usda               /Model/Frame
 
 Time Offsets:
-    root.sdf             /MultiRef/Frame root       (offset=0.00, scale=1.00)
-    ref.sdf              /Ref2/Frame     reference  (offset=10.00, scale=1.00)
-        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
-    B.sdf                /Model/Frame    reference  (offset=30.00, scale=1.00)
+    root.usda            /MultiRef/Frame root       (offset=0.00, scale=1.00)
+    ref.usda             /Ref2/Frame     reference  (offset=10.00, scale=1.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model/Frame    reference  (offset=30.00, scale=1.00)
 
 ------------------------------------------------------------------------
 Results for composing </PayloadRoot>
 
 Prim Stack:
-    root.sdf             /PayloadRoot
-    A.sdf                /Model
-    B.sdf                /Model
+    root.usda            /PayloadRoot
+    A.usda               /Model
+    B.usda               /Model
 
 Time Offsets:
-    root.sdf             /PayloadRoot    root       (offset=0.00, scale=1.00)
-    A.sdf                /Model          payload    (offset=10.00, scale=2.00)
-        B.sdf                            sublayer   (offset=20.00, scale=1.00)
+    root.usda            /PayloadRoot    root       (offset=0.00, scale=1.00)
+    A.usda               /Model          payload    (offset=10.00, scale=2.00)
+        B.usda                           sublayer   (offset=20.00, scale=1.00)
 
 Child names:
      ['Anim', 'Frame']
@@ -144,37 +144,37 @@ Child names:
 Results for composing </PayloadRoot/Anim>
 
 Prim Stack:
-    B.sdf                /Model/Anim
+    B.usda               /Model/Anim
 
 Time Offsets:
-    root.sdf             /PayloadRoot/Anim root       (offset=0.00, scale=1.00)
-    A.sdf                /Model/Anim     payload    (offset=10.00, scale=2.00)
-        B.sdf                            sublayer   (offset=20.00, scale=1.00)
+    root.usda            /PayloadRoot/Anim root       (offset=0.00, scale=1.00)
+    A.usda               /Model/Anim     payload    (offset=10.00, scale=2.00)
+        B.usda                           sublayer   (offset=20.00, scale=1.00)
 
 ------------------------------------------------------------------------
 Results for composing </PayloadRoot/Frame>
 
 Prim Stack:
-    B.sdf                /Model/Frame
+    B.usda               /Model/Frame
 
 Time Offsets:
-    root.sdf             /PayloadRoot/Frame root       (offset=0.00, scale=1.00)
-    A.sdf                /Model/Frame    payload    (offset=10.00, scale=2.00)
-        B.sdf                            sublayer   (offset=20.00, scale=1.00)
+    root.usda            /PayloadRoot/Frame root       (offset=0.00, scale=1.00)
+    A.usda               /Model/Frame    payload    (offset=10.00, scale=2.00)
+        B.usda                           sublayer   (offset=20.00, scale=1.00)
 
 ------------------------------------------------------------------------
 Results for composing </PayloadRefPayload>
 
 Prim Stack:
-    root.sdf             /PayloadRefPayload
-    ref_sub.sdf          /Ref
-    B.sdf                /Model
+    root.usda            /PayloadRefPayload
+    ref_sub.usda         /Ref
+    B.usda               /Model
 
 Time Offsets:
-    root.sdf             /PayloadRefPayload root       (offset=0.00, scale=1.00)
-    ref.sdf              /Ref            payload    (offset=10.00, scale=2.00)
-        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
-    B.sdf                /Model          payload    (offset=50.00, scale=2.00)
+    root.usda            /PayloadRefPayload root       (offset=0.00, scale=1.00)
+    ref.usda             /Ref            payload    (offset=10.00, scale=2.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model          payload    (offset=50.00, scale=2.00)
 
 Child names:
      ['Anim', 'Frame']
@@ -183,39 +183,39 @@ Child names:
 Results for composing </PayloadRefPayload/Anim>
 
 Prim Stack:
-    B.sdf                /Model/Anim
+    B.usda               /Model/Anim
 
 Time Offsets:
-    root.sdf             /PayloadRefPayload/Anim root       (offset=0.00, scale=1.00)
-    ref.sdf              /Ref/Anim       payload    (offset=10.00, scale=2.00)
-        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
-    B.sdf                /Model/Anim     payload    (offset=50.00, scale=2.00)
+    root.usda            /PayloadRefPayload/Anim root       (offset=0.00, scale=1.00)
+    ref.usda             /Ref/Anim       payload    (offset=10.00, scale=2.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model/Anim     payload    (offset=50.00, scale=2.00)
 
 ------------------------------------------------------------------------
 Results for composing </PayloadRefPayload/Frame>
 
 Prim Stack:
-    B.sdf                /Model/Frame
+    B.usda               /Model/Frame
 
 Time Offsets:
-    root.sdf             /PayloadRefPayload/Frame root       (offset=0.00, scale=1.00)
-    ref.sdf              /Ref/Frame      payload    (offset=10.00, scale=2.00)
-        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
-    B.sdf                /Model/Frame    payload    (offset=50.00, scale=2.00)
+    root.usda            /PayloadRefPayload/Frame root       (offset=0.00, scale=1.00)
+    ref.usda             /Ref/Frame      payload    (offset=10.00, scale=2.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model/Frame    payload    (offset=50.00, scale=2.00)
 
 ------------------------------------------------------------------------
 Results for composing </PayloadMultiRef>
 
 Prim Stack:
-    root.sdf             /PayloadMultiRef
-    ref_sub.sdf          /Ref2
-    B.sdf                /Model
+    root.usda            /PayloadMultiRef
+    ref_sub.usda         /Ref2
+    B.usda               /Model
 
 Time Offsets:
-    root.sdf             /PayloadMultiRef root       (offset=0.00, scale=1.00)
-    ref.sdf              /Ref2           payload    (offset=10.00, scale=2.00)
-        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
-    B.sdf                /Model          reference  (offset=50.00, scale=2.00)
+    root.usda            /PayloadMultiRef root       (offset=0.00, scale=1.00)
+    ref.usda             /Ref2           payload    (offset=10.00, scale=2.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model          reference  (offset=50.00, scale=2.00)
 
 Child names:
      ['Anim', 'Frame']
@@ -224,23 +224,23 @@ Child names:
 Results for composing </PayloadMultiRef/Anim>
 
 Prim Stack:
-    B.sdf                /Model/Anim
+    B.usda               /Model/Anim
 
 Time Offsets:
-    root.sdf             /PayloadMultiRef/Anim root       (offset=0.00, scale=1.00)
-    ref.sdf              /Ref2/Anim      payload    (offset=10.00, scale=2.00)
-        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
-    B.sdf                /Model/Anim     reference  (offset=50.00, scale=2.00)
+    root.usda            /PayloadMultiRef/Anim root       (offset=0.00, scale=1.00)
+    ref.usda             /Ref2/Anim      payload    (offset=10.00, scale=2.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model/Anim     reference  (offset=50.00, scale=2.00)
 
 ------------------------------------------------------------------------
 Results for composing </PayloadMultiRef/Frame>
 
 Prim Stack:
-    B.sdf                /Model/Frame
+    B.usda               /Model/Frame
 
 Time Offsets:
-    root.sdf             /PayloadMultiRef/Frame root       (offset=0.00, scale=1.00)
-    ref.sdf              /Ref2/Frame     payload    (offset=10.00, scale=2.00)
-        ref_sub.sdf                      sublayer   (offset=20.00, scale=1.00)
-    B.sdf                /Model/Frame    reference  (offset=50.00, scale=2.00)
+    root.usda            /PayloadMultiRef/Frame root       (offset=0.00, scale=1.00)
+    ref.usda             /Ref2/Frame     payload    (offset=10.00, scale=2.00)
+        ref_sub.usda                     sublayer   (offset=20.00, scale=1.00)
+    B.usda               /Model/Frame    reference  (offset=50.00, scale=2.00)
 

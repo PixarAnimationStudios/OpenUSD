@@ -13,14 +13,14 @@ def _modifySettings(appController):
     appController._dataModel.viewSettings.showHUD = False
     appController._dataModel.viewSettings.autoComputeClippingPlanes = True
 
-def _updateIntegratorConnection(integratorPath, appController):
+def _updateIntegratorTarget(integratorPath, appController):
     stage = appController._dataModel.stage
     layer = stage.GetSessionLayer()
     stage.SetEditTarget(layer)
 
     renderSettings = stage.GetPrimAtPath('/Render/RenderSettings')
-    integratorAttr = renderSettings.GetAttribute('outputs:ri:integrator')
-    integratorAttr.SetConnections([integratorPath])
+    integratorRel = renderSettings.GetRelationship('ri:integrator')
+    integratorRel.SetTargets([integratorPath])
 
 def _updateIntegratorParam(integratorPath, attrName, attrValue, appController):
     stage = appController._dataModel.stage
@@ -36,13 +36,12 @@ def _updateIntegratorParam(integratorPath, attrName, attrValue, appController):
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)
 
-    pathTracerout = '/Render/PathTracerIntegrator.outputs:result'
     pathTracerIntegrator = '/Render/PathTracerIntegrator'
     allowCausticsAttrName = "inputs:ri:allowCaustics"
 
     appController._takeShot("directLighting.png", waitForConvergence=True)
 
-    _updateIntegratorConnection(pathTracerout, appController)
+    _updateIntegratorTarget(pathTracerIntegrator, appController)
     appController._takeShot("pathTracer.png", waitForConvergence=True)
 
     _updateIntegratorParam(pathTracerIntegrator, allowCausticsAttrName, False, appController)

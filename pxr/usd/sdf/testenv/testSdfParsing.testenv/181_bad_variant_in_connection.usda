@@ -1,0 +1,7 @@
+#usda 1.0
+
+over "Prim"
+{
+    custom double badConn
+    double badConn.connect = </Variant/Selection{vset=sel}Is/Invalid>
+}

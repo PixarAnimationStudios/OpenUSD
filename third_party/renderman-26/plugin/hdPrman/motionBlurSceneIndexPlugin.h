@@ -13,7 +13,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdPrman_MotionBlurSceneIndexPlugin
-/// 
+///
 /// Plugin provides a scene index that interprets and reshapes the upstream
 /// scene for motion blur according to Prman's capabilities. This scene index
 /// plugin handles all types of motion blur, including:

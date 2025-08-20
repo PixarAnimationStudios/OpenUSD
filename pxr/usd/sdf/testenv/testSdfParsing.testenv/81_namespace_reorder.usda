@@ -1,0 +1,17 @@
+#usda 1.0
+(
+    """Test of namespace reorder statements"""
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+reorder rootPrims = ["flanders", "wiggum", "skinner"]
+
+def MfScope "foo"
+{
+    reorder properties = ["destructive", "brilliant", "orally_fixated"]
+    reorder nameChildren = ["bart", "lisa", "maggie"]
+    custom rel rel1
+    rel rel1 = </Blah>
+}
+

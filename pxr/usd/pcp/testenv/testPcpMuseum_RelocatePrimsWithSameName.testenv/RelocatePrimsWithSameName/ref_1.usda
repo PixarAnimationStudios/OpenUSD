@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    relocates = {
+        </Ref1/Child>: </Ref1/Child_1>
+    }
+)
+
+def "Ref1" (
+    references = @./base.usda@</Base>
+)
+{
+    def "Ref1_Child"
+    {
+    }
+}

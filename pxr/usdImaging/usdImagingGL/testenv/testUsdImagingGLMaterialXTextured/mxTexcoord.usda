@@ -45,13 +45,14 @@ def Xform "lights"
     def DomeLight "DomeLight"
     {
         asset inputs:texture:file = @./StinsonBeach.hdr@
+        float inputs:intensity = 3
         float xformOp:rotateX:Zup = 90
         uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
     }
     def DistantLight "DistantLight"
     {
         float inputs:angle = 75
-        float inputs:intensity = 10
+        float inputs:intensity = 5
         float3 xformOp:rotateXYZ = (90, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
     }

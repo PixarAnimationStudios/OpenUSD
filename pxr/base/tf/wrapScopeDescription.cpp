@@ -27,15 +27,15 @@ using namespace pxr_boost::python;
 
 namespace {
 
-// This class lets us expose TfScopeDescription to python for use as a "context
-// manager" object.  That is, for use with the 'with'-statement.  For example:
-//
-// with Tf.ScopeDescription("Solving the halting problem"):
-//     # Code that solves the halting problem.
+// This class exposes TfScopeDescription to Python clients as a context
+// manager and a decorator.
 //
 // This class uses a small helper that holds a TfScopeDescription because
-// TfScopeDescription declares, but doesn't define the ordinary new/delete
+// TfScopeDescription declares, but doesn't define, the ordinary new/delete
 // operators to help prevent clients from creating them on the heap.
+//
+// It's wrapped as a private class because we extend it using the
+// ContextDecorator mixin on the Python side (see __init__.py).
 class Tf_PyScopeDescription
 {
     // This is used to avoid new/delete on TfScopeDescription directly, which is
@@ -84,8 +84,8 @@ void wrapScopeDescription()
         return_value_policy<TfPySequenceToList>());
 
     typedef Tf_PyScopeDescription This;
-    
-    class_<This, noncopyable>("ScopeDescription", init<string>())
+
+    class_<This, noncopyable>("_ScopeDescription", init<string>())
         .def("__enter__", &This::__enter__, return_self<>())
         .def("__exit__", &This::__exit__)
         .def("SetDescription", &This::SetDescription)

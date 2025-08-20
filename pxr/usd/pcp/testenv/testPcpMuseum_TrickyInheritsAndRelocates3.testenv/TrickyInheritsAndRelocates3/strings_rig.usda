@@ -1,0 +1,20 @@
+#usda 1.0
+
+def "StringsRig"
+{
+    class "_Class_StringRig"
+    {
+        def "String"
+        {
+        }
+
+        def "Vibrate"
+        {
+            double amount
+        }
+    }
+
+    def "Strings"
+    {
+    }
+}

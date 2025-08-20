@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    expressionVariables = {
+        string X = "B"
+    }
+)
+
+def "Ref_2" (
+    references = @./base_ref.usda@</BaseRef>
+)
+{
+}

@@ -227,6 +227,13 @@ TestFilePermissions()
     const mode_t mask = umask(testUmask);
 #endif
 
+#ifdef ARCH_OS_WASM_VM
+    // These defines are not present in sys/stat.h when building WASM, so we
+    // will define some reasonable values for this test.
+    #define ACCESSPERMS 0666
+    #define DEFFILEMODE 0666
+#endif
+
     {
         ArchUnlinkFile("testTf_NewFilePerm.txt");
         TfAtomicOfstreamWrapper wrapper("testTf_NewFilePerm.txt");

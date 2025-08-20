@@ -4,43 +4,60 @@
 )
 
 class "SimplePrim" (
-    doc = """An example of an untyped schema prim. Note that it does not 
-    specify a typeName"""
+    customData = {
+        string userDocBrief = "An example of an untyped schema prim."
+    }
 )
 {
     int intAttr = 0 (
-        doc = "An integer attribute with fallback value of 0."
+        customData = {
+            string userDocBrief = "An integer attribute with fallback value of 0."
+        }
     )
     rel target (
-        doc = """A relationship called target that could point to another prim
-        or a property"""
+        customData = {
+            string userDocBrief = """A relationship called target that could point to another prim
+        or a property."""
+        }
     )
 }
 
 class ComplexPrim "ComplexPrim" (
-    doc = "An example of a untyped IsA schema prim"
+    customData = {
+        string userDocBrief = "An example of a untyped IsA schema prim."
+    }
 )
 {
     string complexString = "somethingComplex"
     int intAttr = 0 (
-        doc = "An integer attribute with fallback value of 0."
+        customData = {
+            string userDocBrief = "An integer attribute with fallback value of 0."
+        }
     )
     rel target (
-        doc = """A relationship called target that could point to another prim
-        or a property"""
+        customData = {
+            string userDocBrief = """A relationship called target that could point to another prim
+        or a property."""
+        }
     )
 }
 
 class "ParamsAPI"
 {
     double params:mass (
-        doc = "Double value denoting mass"
+        customData = {
+            string userDocBrief = "Double value denoting mass."
+        }
     )
     double params:velocity (
-        doc = "Double value denoting velocity"
+        customData = {
+            string userDocBrief = "Double value denoting velocity."
+        }
     )
     double params:volume (
-        doc = "Double value denoting volume"
+        customData = {
+            string userDocBrief = "Double value denoting volume."
+        }
     )
 }
 

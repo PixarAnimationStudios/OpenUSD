@@ -307,19 +307,41 @@ _FindInvertedElements(const VtVec3fArray &tetMeshPoints,
     invertedElements.reserve(tetVertexIndices.size());
     GfVec3f elemPoints[4];
     
-    const float sign = (orientation == UsdGeomTokens->leftHanded) ? -1.0f : 1.0f;
+    // faceVerts represents a right handed/CCW ordering of the face vertices. 
+    // For a non-inverted element, all the face normals will point outward
+    // from the element center.
+    const uint_fast8_t faceVerts[4][3] = {{1,2,3},{0,3,2},{0,1,3},{0,2,1}};                                           
+    const float sign = (orientation == UsdGeomTokens->leftHanded) ? 1.0f: -1.0f;
 
+    GfVec3f faceNormal;
+    GfVec3f elemCenter;
+    GfVec3f elemCenterMinusFV0; 
     for (size_t t = 0; t < tetVertexIndices.size(); t++) {
+        
+        elemCenter.Set(0.0f, 0.0f, 0.0f);
+
         for (uint_fast8_t p = 0; p < 4; p++) {
             elemPoints[p] = tetMeshPoints[tetVertexIndices[t][p]];
+            elemCenter += elemPoints[p]; 
         }
+        
+        elemCenter *= .25f;
 
-        const float tripleProduct = sign * GfDot(elemPoints[3] - elemPoints[0], 
-                                    GfCross(elemPoints[1] - elemPoints[0], 
-                                            elemPoints[2] - elemPoints[0]));
+        for (uint_fast8_t f = 0; f < 4; f++)  {
+            const GfVec3f& fV0 = elemPoints[faceVerts[f][0]];
+            const GfVec3f& fV1 = elemPoints[faceVerts[f][1]];
+            const GfVec3f& fV2 = elemPoints[faceVerts[f][2]];
+            elemCenterMinusFV0 = elemCenter - fV0;
 
-        if (tripleProduct < 0.0f) {
-            invertedElements.push_back(t);
+            faceNormal = GfCross(fV1 - fV0, fV2 - fV0);
+            
+            // If any of the face normals are not consistent with the 
+            // orientation attribute of the tetmesh, we consider the element
+            // to be inverted.     
+            if (sign * GfDot(faceNormal, elemCenterMinusFV0) < 0.0f) {
+                invertedElements.push_back(t);
+                break;
+            }
         }
     }
 
@@ -357,7 +379,7 @@ bool UsdGeomTetMesh::FindInvertedElements(const UsdGeomTetMesh& tetMesh,
     *invertedElements = _FindInvertedElements(tetMeshPoints,
                                               tetVertexIndices, 
                                               orientation);
-    return true;
+    return invertedElements->empty();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE    

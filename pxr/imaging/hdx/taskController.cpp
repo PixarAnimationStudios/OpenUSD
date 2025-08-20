@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdx/simpleLightTask.h"
 #include "pxr/imaging/hdx/skydomeTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
+#include "pxr/imaging/hdx/taskControllerSceneIndex.h"
 #include "pxr/imaging/hdx/visualizeAovTask.h"
 
 #include "pxr/imaging/hdSt/renderDelegate.h"
@@ -72,9 +73,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (PxrDistantLight)
     (PxrDomeLight)
 );
-
-TF_DEFINE_ENV_SETTING(HDX_MSAA_SAMPLE_COUNT, 4,
-                      "MSAA sample count. Set to 1 to disable MSAA.");
 
 // Distant Light values
 static const float DISTANT_LIGHT_ANGLE = 0.53;
@@ -162,11 +160,7 @@ HdxTaskController::_Delegate::GetTaskRenderTags(SdfPath const& taskId)
 static bool
 _IsStormRenderingBackend(HdRenderIndex const *index)
 {
-    if(!dynamic_cast<HdStRenderDelegate*>(index->GetRenderDelegate())) {
-        return false;
-    }
-
-    return true;
+    return bool(dynamic_cast<HdStRenderDelegate*>(index->GetRenderDelegate()));
 }
 
 static GfVec2i
@@ -644,10 +638,7 @@ HdxTaskController::_SelectionEnabled() const
 bool
 HdxTaskController::_ColorizeSelectionEnabled() const
 {
-    if (_viewportAov == HdAovTokens->color) {
-        return true;
-    }
-    return false;
+    return _viewportAov == HdAovTokens->color;
 }
 
 bool
@@ -670,10 +661,7 @@ bool
 HdxTaskController::_VisualizeAovEnabled() const
 {
     // Only non-color AOVs need special colorization for viz.
-    if (_viewportAov != HdAovTokens->color) {
-        return true;
-    }
-    return false;
+    return _viewportAov != HdAovTokens->color;
 }
 
 bool

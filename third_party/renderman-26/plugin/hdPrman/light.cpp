@@ -30,6 +30,14 @@
 #include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/version.h"
 
+#if HD_API_VERSION >= 58
+#include "pxr/imaging/hdsi/version.h"
+#if HDSI_API_VERSION >= 16
+#include "pxr/imaging/hdsi/domeLightCameraVisibilitySceneIndex.h"
+#define HDPRMAN_HDSI_HAS_DOME_LIGHT_SCENE_INDEX
+#endif
+#endif
+
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
@@ -792,14 +800,30 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         // Check if the dome light should be camera visible
         if (_lightShaderType == us_PxrDomeLight ||
             _lightShaderType == us_PxrEnvDayLight) {
-            const bool domeLightCamVis = sceneDelegate->GetRenderIndex()
-                .GetRenderDelegate()->GetRenderSetting<bool>(
+
+            const bool domeLightCamVis =
+                sceneDelegate
+#ifdef HDPRMAN_HDSI_HAS_DOME_LIGHT_SCENE_INDEX
+                    ->GetLightParamValue(
+                        id,
+                        HdsiDomeLightCameraVisibilitySceneIndexTokens
+                            ->cameraVisibility)
+                    .GetWithDefault<bool>(true);
+#else            
+                    ->GetRenderIndex()
+                    .GetRenderDelegate()
+                    ->GetRenderSetting<bool>(
 #if HD_API_VERSION < 47
-                    TfToken("domeLightCameraVisibility"),
+                        TfToken("domeLightCameraVisibility"),
 #else
-                    HdRenderSettingsTokens->domeLightCameraVisibility,
+                        HdRenderSettingsTokens->domeLightCameraVisibility,
 #endif
-                    true);
+                        true);
+#endif
+            if (!domeLightCamVis) {
+                attrs.SetInteger(RixStr.k_visibility_camera, 0);
+            }
+            
             if (!domeLightCamVis) {
                 attrs.SetInteger(RixStr.k_visibility_camera, 0);
             }

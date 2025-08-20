@@ -28,7 +28,7 @@ static bool
 Test_TfException()
 {
     try {
-        TF_THROW(Tf_TestException, "test exception 1");
+        PXR_TF_THROW(Tf_TestException, "test exception 1");
     }
     catch (TfBaseException const &exc) {
         TF_AXIOM(std::string(exc.what()) == std::string("test exception 1"));
@@ -39,7 +39,7 @@ Test_TfException()
     }
 
     try {
-        TF_THROW(Tf_TestException, TfSkipCallerFrames(2), "test exception 2");
+        PXR_TF_THROW(Tf_TestException, TfSkipCallerFrames(2), "test exception 2");
     }
     catch (TfBaseException const &exc) {
         TF_AXIOM(std::string(exc.what()) == std::string("test exception 2"));

@@ -1880,14 +1880,18 @@ private:
 
     // Pushes changes through PCP to determine invalidation based on 
     // composition metadata.
-    void _ProcessChangeLists(const SdfLayerChangeListVec &);
+    // Note: This method will not perform any processing or notification
+    // Refer to _ProcessPendingChanges()
+    void _ComputePendingChanges(const SdfLayerChangeListVec &);
 
     // Update stage contents in response to changes to the asset resolver.
     void _HandleResolverDidChange(const ArNotice::ResolverChanged &);
 
     // Process stage change information stored in _pendingChanges.
     // _pendingChanges will be set to nullptr by the end of the function.
-    void _ProcessPendingChanges();
+    // This function will return true if UsdNotice::ObjectsChanged and 
+    // UsdNotice::StageContentsChanged notices were sent during execution.
+    bool _ProcessPendingChanges();
 
     // Remove scene description for the prim at \p fullPath in the current edit
     // target.
@@ -2167,7 +2171,7 @@ private:
     void _GetResolvedValueAtTimeImpl(
         const UsdProperty &prop,
         Resolver *resolver,
-        const double *time,
+        const UsdTimeCode *time,
         const MakeUsdResolverFn &makeUsdResolverFn) const;
 
     bool _GetValue(UsdTimeCode time, const UsdAttribute &attr, 
@@ -2262,6 +2266,37 @@ private:
     inline char const *_GetMallocTagId() const;
 
 private:
+    class _PendingChanges;
+
+    // Change block for use by the UsdNamespaceEditor to allow it to indicate
+    // to its dependent stages what the expected namespace edits are when the
+    // stages handles notices from the changes the namespace editor performs.
+    // The stage uses this provide additional information about prim resyncs
+    // related to namespace edits in the ObjectsChanged notice it sends.
+    class _NamespaceEditsChangeBlock {
+    public:
+        // Info about an expected namespace edit change from UsdNamespaceEditor.
+        // This includes the original pre-edit prim stack of the prim at the old
+        // path which is used to determine if the prim at the new path has the
+        // same composed contents after the edits as the prim had originally at
+        // the old path before the edits.
+        struct ExpectedNamespaceEditChange {
+            SdfPath oldPath;
+            SdfPath newPath;
+            SdfPrimSpecHandleVector oldPrimStack;
+        };
+        using ExpectedNamespaceEditChangeVector = 
+            std::vector<ExpectedNamespaceEditChange>;
+
+        _NamespaceEditsChangeBlock(const UsdStagePtr &stage,
+            ExpectedNamespaceEditChangeVector &&expectedChanges);
+        _NamespaceEditsChangeBlock(_NamespaceEditsChangeBlock &&);
+        ~_NamespaceEditsChangeBlock();
+
+    private:
+        UsdStagePtr _stage;
+        std::unique_ptr<_PendingChanges> _localPendingChanges;
+    };
 
     // The 'pseudo root' prim.
     Usd_PrimDataPtr _pseudoRoot;
@@ -2309,7 +2344,6 @@ private:
     TfNotice::Key _resolverChangeKey;
 
     // Data for pending change processing.
-    class _PendingChanges;
     _PendingChanges* _pendingChanges;
 
     std::optional<WorkDispatcher> _dispatcher;

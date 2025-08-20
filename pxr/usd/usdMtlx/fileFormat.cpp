@@ -5,11 +5,11 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/usdaFileFormat.h"
 #include "pxr/usd/usdMtlx/fileFormat.h"
 #include "pxr/usd/usdMtlx/reader.h"
 #include "pxr/usd/usdMtlx/utils.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/trace/trace.h"
 
@@ -148,7 +148,7 @@ UsdMtlxFileFormat::WriteToString(
     std::string* str,
     const std::string& comment) const
 {
-    return SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id)->
+    return SdfFileFormat::FindById(SdfUsdaFileFormatTokens->Id)->
         WriteToString(layer, str, comment);
 }
 
@@ -158,7 +158,7 @@ UsdMtlxFileFormat::WriteToStream(
     std::ostream& out,
     size_t indent) const
 {
-    return SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id)->
+    return SdfFileFormat::FindById(SdfUsdaFileFormatTokens->Id)->
         WriteToStream(spec, out, indent);
 }
 

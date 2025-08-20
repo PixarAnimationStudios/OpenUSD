@@ -48,9 +48,8 @@ HduiSceneIndexDebuggerWidget::HduiSceneIndexDebuggerWidget(
         _goToInputButton->setEnabled(false);
         _goToInputButtonMenu = new QMenu(this);
         _goToInputButton->setMenu(_goToInputButtonMenu);
+        toolbarLayout->addWidget(_goToInputButton);
     }
-
-    toolbarLayout->addWidget(_goToInputButton);
 
     _nameLabel = new QLabel;
     toolbarLayout->addWidget(_nameLabel, 10);

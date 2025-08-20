@@ -14,7 +14,7 @@ import unittest
 
 class TestPcpRegressionBugs_bug82180(unittest.TestCase):
     def test_Basic(self):
-        rootLayer = Sdf.Layer.FindOrOpen('bug82180/root.sdf')
+        rootLayer = Sdf.Layer.FindOrOpen('bug82180/root.usda')
         sessionLayer = Sdf.Layer.CreateAnonymous()
         
         pcpCache = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer, sessionLayer))
@@ -38,7 +38,7 @@ class TestPcpRegressionBugs_bug82180(unittest.TestCase):
         # Note that this bug isn't specific to the session layer; it occurred with 
         # any insignificant layer stack change. The test just uses the session layer
         # since that's the repro steps from the bug report.
-        emptyLayer = Sdf.Layer.FindOrOpen('bug82180/empty.sdf')
+        emptyLayer = Sdf.Layer.FindOrOpen('bug82180/empty.usda')
         
         with Pcp._TestChangeProcessor(pcpCache):
             sessionLayer.subLayerPaths.insert(0, emptyLayer.identifier)

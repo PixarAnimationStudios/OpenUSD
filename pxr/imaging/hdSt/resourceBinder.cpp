@@ -776,29 +776,29 @@ HdSt_ResourceBinder::ResolveBindings(
                 } else if (param.textureType == HdStTextureType::Uv) {
                     if (param.IsArrayOfTextures()) {
                         size_t const numTextures = param.arrayOfTexturesSize;
-                        
-                        // Create binding for each texture in array of textures.
-                        HdStBinding firstBinding;
-                        for (size_t i = 0; i < numTextures; i++) {
-                            HdStBinding textureBinding = bindless
-                                ? HdStBinding(
-                                    HdStBinding::BINDLESS_ARRAY_OF_TEXTURE_2D,
-                                    bindlessTextureLocation++)
-                                : HdStBinding(
-                                    HdStBinding::ARRAY_OF_TEXTURE_2D,
-                                    locator.uniformLocation++,
-                                    locator.textureUnit++);
-                            if (i == 0) {
-                                firstBinding = textureBinding;
-                            }            
-                            TfToken const indexedName(
-                                name.GetString() + std::to_string(i));
-                            // used for non-bindless
-                            _bindingMap[indexedName] = textureBinding;
-                        } 
+                        // Create one binding for all textures in an array of 
+                        // textures.
+                        HdStBinding textureBinding = bindless
+                            ? HdStBinding(
+                                HdStBinding::BINDLESS_ARRAY_OF_TEXTURE_2D,
+                                bindlessTextureLocation++)
+                            : HdStBinding(
+                                HdStBinding::ARRAY_OF_TEXTURE_2D,
+                                locator.uniformLocation++,
+                                locator.textureUnit++);
+                        // used for non-bindless
+                        _bindingMap[name] = textureBinding;
 
+                        // For APIs (like OpenGL) in which each texture in an 
+                        // array of textures takes up a slot, increment the 
+                        // used texture units by the number of textures.
+                        if (!bindless && !capabilities->IsSet(
+                            HgiDeviceCapabilitiesBitsSingleSlotResourceArrays)){
+                            locator.textureUnit += numTextures - 1;
+                        }
+ 
                         // Only fill metadata for the first binding.
-                        metaDataOut->shaderParameterBinding[firstBinding] =
+                        metaDataOut->shaderParameterBinding[textureBinding] =
                             MetaData::ShaderParameterAccessor(
                                 /*name=*/glName,
                                 /*type=*/glType,
@@ -1164,6 +1164,33 @@ HdSt_ResourceBinder::GetTextureBindingDesc(
 }
 
 void
+HdSt_ResourceBinder::GetTextureBindingDescs(
+    HgiResourceBindingsDesc * bindingsDesc,
+    TfToken const & name,
+    std::vector<HgiSamplerHandle> const & texelSamplers,
+    std::vector<HgiTextureHandle> const & texelTextures) const
+{
+    for (size_t i = 0; i < texelSamplers.size(); i++) {
+        if (!texelSamplers[i].Get() || !texelTextures[i].Get()) {
+            return;
+        }
+    }
+    HdStBinding const binding = GetBinding(name);
+
+    HgiTextureBindDesc texelDesc;
+    texelDesc.stageUsage =
+        HgiShaderStageGeometry | HgiShaderStageFragment |
+        HgiShaderStagePostTessellationVertex;
+    texelDesc.textures = texelTextures;
+    texelDesc.samplers = texelSamplers;
+    texelDesc.resourceType = HgiBindResourceTypeCombinedSamplerImage;
+    texelDesc.bindingIndex = binding.GetTextureUnit();
+    texelDesc.writable = false;
+    bindingsDesc->textures.push_back(std::move(texelDesc));
+}
+
+
+void
 HdSt_ResourceBinder::GetTextureWithLayoutBindingDesc(
     HgiResourceBindingsDesc * bindingsDesc,
     TfToken const & name,
@@ -1184,6 +1211,34 @@ HdSt_ResourceBinder::GetTextureWithLayoutBindingDesc(
     layoutDesc.stageUsage = HgiShaderStageGeometry | HgiShaderStageFragment;
     layoutDesc.textures = { layoutTexture };
     layoutDesc.samplers = { layoutSampler };
+    layoutDesc.resourceType = HgiBindResourceTypeCombinedSamplerImage;
+    layoutDesc.bindingIndex = layoutBinding.GetTextureUnit();
+    layoutDesc.writable = false;
+    bindingsDesc->textures.push_back(std::move(layoutDesc));
+}
+
+void
+HdSt_ResourceBinder::GetTextureWithLayoutBindingDescs(
+    HgiResourceBindingsDesc * bindingsDesc,
+    TfToken const & name,
+    std::vector<HgiSamplerHandle> const & texelSamplers,
+    std::vector<HgiTextureHandle> const & texelTextures,
+    std::vector<HgiSamplerHandle> const & layoutSamplers,
+    std::vector<HgiTextureHandle> const & layoutTextures) const
+{
+    for (size_t i = 0; i < texelSamplers.size(); i++) {
+        if (!texelSamplers[i].Get() || !texelTextures[i].Get() ||
+            !layoutSamplers[i].Get() || !layoutTextures[i].Get()) {
+            return;
+        }
+    }
+    GetTextureBindingDescs(bindingsDesc, name, texelSamplers, texelTextures);
+
+    HdStBinding const layoutBinding = GetBinding(_ConcatLayout(name));
+    HgiTextureBindDesc layoutDesc;
+    layoutDesc.stageUsage = HgiShaderStageGeometry | HgiShaderStageFragment;
+    layoutDesc.textures = layoutTextures;
+    layoutDesc.samplers = layoutSamplers;
     layoutDesc.resourceType = HgiBindResourceTypeCombinedSamplerImage;
     layoutDesc.bindingIndex = layoutBinding.GetTextureUnit();
     layoutDesc.writable = false;
@@ -1630,6 +1685,8 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     
     hash = TfHash::Combine(
         hash,
+        drawingCoordBufferBinding.offset,
+        drawingCoordBufferBinding.stride,
         drawingCoord0Binding.binding.GetValue(),
         drawingCoord0Binding.dataType,
         drawingCoord1Binding.binding.GetValue(),
@@ -1882,6 +1939,27 @@ HdSt_ResourceBinder::BindTexture(
 }
 
 void
+HdSt_ResourceBinder::BindTextures(
+        const TfToken &name,
+        std::vector<HgiSamplerHandle> const &samplerHandles,
+        std::vector<HgiTextureHandle> const &textureHandles,
+        const bool bind) const
+{
+    HdStBinding const binding = GetBinding(name);
+    if (_IsBindless(binding)) {
+        return;
+    }
+
+    int textureUnit = binding.GetTextureUnit();
+    for (size_t i = 0; i < textureHandles.size(); i++) {
+        _BindGLTextureAndSampler(
+            textureUnit++,
+            (bind && textureHandles[i]) ? textureHandles[i]->GetRawResource() : 0,
+            (bind && samplerHandles[i]) ? samplerHandles[i]->GetRawResource() : 0);
+    }
+}
+
+void
 HdSt_ResourceBinder::BindTextureWithLayout(
         TfToken const &name,
         HgiSamplerHandle const &texelSampler,
@@ -1908,5 +1986,35 @@ HdSt_ResourceBinder::BindTextureWithLayout(
         (bind && layoutSampler) ? layoutSampler->GetRawResource() : 0);
 }
 
+void
+HdSt_ResourceBinder::BindTexturesWithLayout(TfToken const &name,
+    std::vector<HgiSamplerHandle> const &texelSamplers,
+    std::vector<HgiTextureHandle> const &texelTextures,
+    std::vector<HgiSamplerHandle> const &layoutSamplers,
+    std::vector<HgiTextureHandle> const &layoutTextures,
+    const bool bind) const
+{
+    HdStBinding const texelBinding = GetBinding(name);
+    if (_IsBindless(texelBinding)) {
+        return;
+    }
+    
+    int textureUnit = texelBinding.GetTextureUnit();
+    for (size_t i = 0; i < texelTextures.size(); i++) {
+        _BindGLTextureAndSampler(
+            textureUnit++,
+            (bind && texelTextures[i]) ? texelTextures[i]->GetRawResource() : 0,
+            (bind && texelSamplers[i]) ? texelSamplers[i]->GetRawResource() : 0);
+    }
+
+    HdStBinding const layoutBinding = GetBinding(_ConcatLayout(name));
+    textureUnit = layoutBinding.GetTextureUnit();
+    for (size_t i = 0; i < layoutTextures.size(); i++) {
+        _BindGLTextureAndSampler(
+            textureUnit++,
+            (bind && layoutTextures[i]) ? layoutTextures[i]->GetRawResource() : 0,
+            (bind && layoutSamplers[i]) ? layoutSamplers[i]->GetRawResource() : 0);
+    }
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

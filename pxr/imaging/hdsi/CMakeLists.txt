@@ -14,12 +14,14 @@ pxr_library(hdsi
         hf
         hd
         pxOsd
+        TBB::tbb
 
     PUBLIC_CLASSES
         computeSceneIndexDiff
         coordSysPrimSceneIndex
         debuggingSceneIndex
         debuggingSceneIndexPlugin
+        domeLightCameraVisibilitySceneIndex
         extComputationDependencySceneIndex
         extComputationPrimvarPruningSceneIndex
         implicitSurfaceSceneIndex
@@ -30,6 +32,7 @@ pxr_library(hdsi
         materialPrimvarTransferSceneIndex
         nodeIdentifierResolvingSceneIndex
         nurbsApproximatingSceneIndex
+        prefixPathPruningSceneIndex
         pinnedCurveExpandingSceneIndex
         primManagingSceneIndexObserver
         primTypeAndPathPruningSceneIndex
@@ -39,6 +42,7 @@ pxr_library(hdsi
         sceneGlobalsSceneIndex
         switchingSceneIndex
         tetMeshConversionSceneIndex
+        unboundMaterialPruningSceneIndex
         utils
         velocityMotionResolvingSceneIndex
 
@@ -77,6 +81,15 @@ pxr_build_test(testHdsiSwitchingSceneIndex
    CPPFILES
        testenv/testHdsiSwitchingSceneIndex.cpp
 )
+pxr_build_test(testHdsiPrefixPathPruningSceneIndex
+   LIBRARIES
+       hd
+       hdsi
+       tf
+
+   CPPFILES
+       testenv/testHdsiPrefixPathPruningSceneIndex.cpp
+)
 
 pxr_register_test(testHdsiComputeSceneIndexDiff
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdsiComputeSceneIndexDiff"
@@ -86,4 +99,7 @@ pxr_register_test(testHdsiPinnedCurveExpandingSceneIndex
 )
 pxr_register_test(testHdsiSwitchingSceneIndex
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdsiSwitchingSceneIndex"
+)
+pxr_register_test(testHdsiPrefixPathPruningSceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdsiPrefixPathPruningSceneIndex"
 )

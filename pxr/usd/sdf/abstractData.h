@@ -427,9 +427,13 @@ public:
         }
         
         isValueBlock = false;
+        isAnimationBlock = false;
         typeMismatch = false;
         if constexpr (std::is_same_v<Type, SdfValueBlock>) {
             isValueBlock = true;
+            return true;
+        } else if constexpr (std::is_same_v<Type, SdfAnimationBlock>) {
+            isAnimationBlock = true;
             return true;
         }
         if (TfSafeTypeCompare(typeid(Type), valueType)) {
@@ -443,6 +447,7 @@ public:
     void* value;
     const std::type_info& valueType;
     bool isValueBlock;
+    bool isAnimationBlock;
     bool typeMismatch;
 
 protected:
@@ -450,6 +455,7 @@ protected:
         : value(value_)
         , valueType(valueType_)
         , isValueBlock(false)
+        , isAnimationBlock(false)
         , typeMismatch(false)
     { }
 
@@ -492,16 +498,24 @@ private:
     bool _StoreVtValueImpl(Value &&v) {
         typeMismatch = false;
         isValueBlock = false;
+        isAnimationBlock = false;
         if (ARCH_LIKELY(std::forward<Value>(v).template IsHolding<T>())) {
             *static_cast<T*>(value) = _Get(std::forward<Value>(v));
-            if (std::is_same_v<T, SdfValueBlock>) {
+            if constexpr (std::is_same_v<T, SdfValueBlock>) {
                 isValueBlock = true;
+            } else if constexpr (std::is_same_v<T, SdfAnimationBlock>) {
+                isAnimationBlock = true;
             }
             return true;
         }
         
         if (std::forward<Value>(v).template IsHolding<SdfValueBlock>()) {
             isValueBlock = true;
+            return true;
+        } 
+        else if (std::forward<Value>(v).template IsHolding<SdfAnimationBlock>()) 
+        {
+            isAnimationBlock = true;
             return true;
         }
 

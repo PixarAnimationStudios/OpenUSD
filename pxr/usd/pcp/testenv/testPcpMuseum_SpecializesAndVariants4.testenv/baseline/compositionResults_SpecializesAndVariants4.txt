@@ -1,0 +1,91 @@
+Loading @SpecializesAndVariants4/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </_class_>
+
+Prim Stack:
+    root.usda            /_class_
+
+Child names:
+     ['defaultImplementation', 'render']
+
+------------------------------------------------------------------------
+Results for composing </_class_/defaultImplementation>
+
+Prim Stack:
+    root.usda            /_class_/defaultImplementation
+
+Property names:
+     ['test']
+
+Property stacks:
+/_class_/defaultImplementation.test:
+    root.usda            /_class_/defaultImplementation.test
+
+------------------------------------------------------------------------
+Results for composing </_class_/render>
+
+Prim Stack:
+    root.usda            /_class_/render
+    root.usda            /_class_/render{implementation=default}
+    root.usda            /_class_/defaultImplementation
+
+Variant Selections:
+    {implementation = default}
+
+Property names:
+     ['test']
+
+Property stacks:
+/_class_/render.test:
+    root.usda            /_class_/defaultImplementation.test
+
+------------------------------------------------------------------------
+Results for composing </A>
+
+Prim Stack:
+    root.usda            /A
+    root.usda            /_class_
+
+Child names:
+     ['defaultImplementation', 'render']
+
+------------------------------------------------------------------------
+Results for composing </A/defaultImplementation>
+
+Prim Stack:
+    root.usda            /A/defaultImplementation
+    root.usda            /_class_/defaultImplementation
+
+Property names:
+     ['test']
+
+Property stacks:
+/A/defaultImplementation.test:
+    root.usda            /A/defaultImplementation.test
+    root.usda            /_class_/defaultImplementation.test
+
+------------------------------------------------------------------------
+Results for composing </A/render>
+
+Prim Stack:
+    root.usda            /_class_/render
+    root.usda            /_class_/render{implementation=default}
+    root.usda            /A/defaultImplementation
+    root.usda            /_class_/defaultImplementation
+
+Variant Selections:
+    {implementation = default}
+
+Property names:
+     ['test']
+
+Property stacks:
+/A/render.test:
+    root.usda            /A/defaultImplementation.test
+    root.usda            /_class_/defaultImplementation.test
+

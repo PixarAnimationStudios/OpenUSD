@@ -1,0 +1,10 @@
+#usda 1.0
+#tagged-as-never-update
+
+# Test supplying a bad type of data for the variant name
+over MfScope "RefComp"  (
+    reference = @/tmp/foo.usda@
+                </Comp> ( variants = { double brickstyle = 5 } )
+)
+{
+}

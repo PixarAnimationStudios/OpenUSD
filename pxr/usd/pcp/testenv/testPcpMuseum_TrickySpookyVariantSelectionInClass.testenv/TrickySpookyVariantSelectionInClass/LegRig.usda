@@ -1,0 +1,19 @@
+#usda 1.0
+
+def Scope "LegRig" (
+    variantSets = "LegRigStyle"
+)
+{
+    variantSet "LegRigStyle" = {
+        "1Leg" {
+            def Scope "Anim" {
+                custom double avarFor1LegStyle = 1
+            }
+        }
+        "2Leg" {
+            def Scope "Anim" {
+                custom double avarFor2LegStyle = 2
+            }
+        }
+    }
+}

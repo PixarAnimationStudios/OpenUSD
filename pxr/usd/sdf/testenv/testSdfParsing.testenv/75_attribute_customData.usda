@@ -1,0 +1,16 @@
+#usda 1.0
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "Root"
+{
+    custom double attr = 1 (
+        customData = {
+            bool attrBool = 1
+            string attrString = "test"
+        }
+    )
+}
+

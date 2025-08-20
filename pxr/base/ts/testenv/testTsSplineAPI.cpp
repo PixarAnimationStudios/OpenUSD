@@ -38,7 +38,6 @@ void TestKnotIO()
     TF_AXIOM(knot.GetTime() == 0);
     TF_AXIOM(knot.GetValueType() == Ts_GetType<T>());
     TF_AXIOM(knot.template IsHolding<T>());
-    TF_AXIOM(knot.GetCurveType() == TsCurveTypeBezier);
     TF_AXIOM(knot.GetNextInterpolation() == TsInterpHeld);
     VERIFY_GET(knot, GetValue, T, 0);
     TF_AXIOM(!knot.IsDualValued());

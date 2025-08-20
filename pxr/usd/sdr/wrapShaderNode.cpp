@@ -52,8 +52,24 @@ void wrapShaderNode()
     to_python_converter<SdrShaderNodeConstPtr,
                         SdrShaderNodeConstPtrToPythonConverter>();
 
-    class_<This, ThisPtr, bases<NdrNode>, noncopyable>("ShaderNode", no_init)
+    class_<This, ThisPtr, noncopyable>("ShaderNode", no_init)
+        .def("__repr__", &This::GetInfoString)
+        .def("__bool__", &This::IsValid)
+        .def("GetIdentifier", &This::GetIdentifier, copyRefPolicy)
         .def("GetShaderVersion", &This::GetShaderVersion)
+        .def("GetName", &This::GetName, copyRefPolicy)
+        .def("GetFamily", &This::GetFamily, copyRefPolicy)
+        .def("GetContext", &This::GetContext, copyRefPolicy)
+        .def("GetSourceType", &This::GetSourceType, copyRefPolicy)
+        .def("GetResolvedDefinitionURI", &This::GetResolvedDefinitionURI,
+            copyRefPolicy)
+        .def("GetResolvedImplementationURI",
+            &This::GetResolvedImplementationURI, copyRefPolicy)
+        .def("IsValid", &This::IsValid)
+        .def("GetInfoString", &This::GetInfoString)
+        .def("GetSourceCode", &This::GetSourceCode, copyRefPolicy)
+        .def("GetMetadata", &This::GetMetadata,
+            return_value_policy<TfPyMapToDictionary>())
         .def("GetShaderInput", &This::GetShaderInput,
             return_internal_reference<>())
         .def("GetShaderOutput", &This::GetShaderOutput,
@@ -62,7 +78,8 @@ void wrapShaderNode()
             copyRefPolicy)
         .def("GetShaderOutputNames", &This::GetShaderOutputNames,
             copyRefPolicy)
-        .def("GetAssetIdentifierInputNames", &This::GetAssetIdentifierInputNames,
+        .def("GetAssetIdentifierInputNames",
+            &This::GetAssetIdentifierInputNames,
             return_value_policy<TfPySequenceToList>())
         .def("GetDefaultInput", &This::GetDefaultInput,
             return_internal_reference<>())

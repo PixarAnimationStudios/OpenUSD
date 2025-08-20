@@ -51,10 +51,10 @@ _GetNodeTypeInfoForSourceType(
     return _GetNodeTypeInfo<T>(interface, nodeName, fullKey);
 }
 
-NdrTokenMap
-_ToNdrTokenMap(const VtDictionary &d)
+SdrTokenMap
+_ToSdrTokenMap(const VtDictionary &d)
 {
-    NdrTokenMap result;
+    SdrTokenMap result;
     for (const auto &it : d) {
         result[TfToken(it.first)] = TfStringify(it.second);
     }
@@ -71,8 +71,8 @@ _GetSdrShaderNodeFromSourceAsset(
         _GetNodeTypeInfoForSourceType<SdfAssetPath>(
             interface, nodeName, sourceType, _tokens->sourceAsset);
 
-    const NdrTokenMap metadata =
-        _ToNdrTokenMap(
+    const SdrTokenMap metadata =
+        _ToSdrTokenMap(
             _GetNodeTypeInfo<VtDictionary>(
                 interface, nodeName, _tokens->sdrMetadata));
     const TfToken subIdentifier =
@@ -96,8 +96,8 @@ _GetSdrShaderNodeFromSourceCode(
     if (sourceCode.empty()) {
         return nullptr;
     }
-    const NdrTokenMap metadata =
-        _ToNdrTokenMap(
+    const SdrTokenMap metadata =
+        _ToSdrTokenMap(
             _GetNodeTypeInfo<VtDictionary>(
                 interface, nodeName, _tokens->sdrMetadata));
     

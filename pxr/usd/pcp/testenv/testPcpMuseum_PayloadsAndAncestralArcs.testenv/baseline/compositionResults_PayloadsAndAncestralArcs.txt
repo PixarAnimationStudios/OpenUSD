@@ -1,14 +1,14 @@
-Loading @PayloadsAndAncestralArcs/root.sdf@
+Loading @PayloadsAndAncestralArcs/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Root>
 
 Prim Stack:
-    root.sdf             /Root
+    root.usda            /Root
 
 Child names:
      ['LocalClass', 'UnloadedInheritedPayload', 'LoadedInheritedPayload2', 'Payload', 'SubrootPayload']
@@ -17,36 +17,36 @@ Child names:
 Results for composing </Root/LocalClass>
 
 Prim Stack:
-    root.sdf             /Root/LocalClass
-    payload2.sdf         /Payload2
+    root.usda            /Root/LocalClass
+    payload2.usda        /Payload2
 
 ------------------------------------------------------------------------
 Results for composing </Root/UnloadedInheritedPayload>
 
 Prim Stack:
-    root.sdf             /Root/UnloadedInheritedPayload
-    root.sdf             /Root/LocalClass
+    root.usda            /Root/UnloadedInheritedPayload
+    root.usda            /Root/LocalClass
 
 ------------------------------------------------------------------------
 Results for composing </Root/LoadedInheritedPayload2>
 
 Prim Stack:
-    root.sdf             /Root/LoadedInheritedPayload2
-    root.sdf             /Root/LocalClass
-    payload2.sdf         /Payload2
+    root.usda            /Root/LoadedInheritedPayload2
+    root.usda            /Root/LocalClass
+    payload2.usda        /Payload2
 
 ------------------------------------------------------------------------
 Results for composing </Root/Payload>
 
 Prim Stack:
-    root.sdf             /Root/Payload
-    payload2.sdf         /Payload2
+    root.usda            /Root/Payload
+    payload2.usda        /Payload2
 
 ------------------------------------------------------------------------
 Results for composing </Root/SubrootPayload>
 
 Prim Stack:
-    root.sdf             /Root/SubrootPayload
-    payload.sdf          /Root/Payload
-    payload2.sdf         /Payload2
+    root.usda            /Root/SubrootPayload
+    payload.usda         /Root/Payload
+    payload2.usda        /Payload2
 

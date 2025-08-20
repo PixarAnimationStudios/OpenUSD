@@ -227,6 +227,7 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///
 class UsdImaging_NiInstanceAggregationSceneIndex final
                 : public HdFilteringSceneIndexBase
+                , public HdEncapsulatingSceneIndexBase
 {
 public:
     // forNativePrototype = false indicates that this scene index is
@@ -257,6 +258,8 @@ public:
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
     std::vector<HdSceneIndexBaseRefPtr> GetInputScenes() const override;
+
+    std::vector<HdSceneIndexBaseRefPtr> GetEncapsulatedScenes() const override;
 
     // If the given path is for an instancer in this scene index, returns the
     // name of the prototype that this instancer is meant to instance.

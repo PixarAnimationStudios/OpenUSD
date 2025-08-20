@@ -269,11 +269,25 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'InternalRef2' : refToChildContents,
             'InternalRef3' : refToGrandChildContents
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/Child" : self.PrimResyncType.RenameSource,
+            "/Ref/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/InternalRef1/Child" : self.PrimResyncType.RenameSource,
+            "/InternalRef1/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/InternalRef2": self.PrimResyncType.UnchangedPrimStack,
+            "/InternalRef3": self.PrimResyncType.UnchangedPrimStack
+        })
 
         self._VerifyStageContents(stage2, {
             'Prim1' : refToRefContents,
             'Prim2' : refToChildContents,
             'Prim3' : refToGrandChildContents
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/Child" : self.PrimResyncType.RenameSource,
+            "/Prim1/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim2": self.PrimResyncType.UnchangedPrimStack,
+            "/Prim3": self.PrimResyncType.UnchangedPrimStack
         })
 
         # Edit: Reparent and rename /Ref/RenamedChild to /MovedChild
@@ -343,11 +357,23 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'InternalRef2' : refToChildContents,
             'InternalRef3' : refToGrandChildContents
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentDestination,
+            "/InternalRef1/RenamedChild" : self.PrimResyncType.Delete,
+            "/InternalRef2": self.PrimResyncType.UnchangedPrimStack,
+            "/InternalRef3": self.PrimResyncType.UnchangedPrimStack
+        })
 
         self._VerifyStageContents(stage2, {
             'Prim1' : refToRefContents,
             'Prim2' : refToChildContents,
             'Prim3' : refToGrandChildContents
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/RenamedChild" : self.PrimResyncType.Delete,
+            "/Prim2": self.PrimResyncType.UnchangedPrimStack,
+            "/Prim3": self.PrimResyncType.UnchangedPrimStack
         })
 
         # Edit: Reparent and rename /MovedChild back to its original path
@@ -418,11 +444,23 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'InternalRef2' : refToChildContents,
             'InternalRef3' : refToGrandChildContents
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/Ref/Child" : self.PrimResyncType.RenameAndReparentDestination,
+            "/InternalRef1/Child" : self.PrimResyncType.Other,
+            "/InternalRef2": self.PrimResyncType.UnchangedPrimStack,
+            "/InternalRef3": self.PrimResyncType.UnchangedPrimStack
+        })
 
         self._VerifyStageContents(stage2, {
             'Prim1' : refToRefContents,
             'Prim2' : refToChildContents,
             'Prim3' : refToGrandChildContents
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/Child" : self.PrimResyncType.Other,
+            "/Prim2": self.PrimResyncType.UnchangedPrimStack,
+            "/Prim3": self.PrimResyncType.UnchangedPrimStack
         })
 
         # Reset both layers before the next operation to return the overs on the
@@ -541,11 +579,22 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'InternalRef2' : refToChildContents,
             'InternalRef3' : refToGrandChildContents
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/Child" : self.PrimResyncType.Delete,
+            "/InternalRef1/Child" : self.PrimResyncType.Delete,
+            "/InternalRef2": self.PrimResyncType.Other,
+            "/InternalRef3": self.PrimResyncType.Other
+        })
 
         self._VerifyStageContents(stage2, {
             'Prim1' : refToRefContents,
             'Prim2' : refToChildContents,
             'Prim3' : refToGrandChildContents
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/Child" : self.PrimResyncType.Delete,
+            "/Prim2": self.PrimResyncType.Other,
+            "/Prim3": self.PrimResyncType.Other
         })
 
     def test_BasicDependentPayloads(self):
@@ -711,6 +760,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
                 }
             },
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/Child" : self.PrimResyncType.RenameSource,
+            "/Ref/RenamedChild" : self.PrimResyncType.RenameDestination
+        })
 
         # Verify the updated contents for stage 2.
         #
@@ -737,6 +790,12 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
             'Prim3' : prim3Contents
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/Child" : self.PrimResyncType.RenameSource,
+            "/Prim1/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim2" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # Now unload /Prim1 and /Prim3 so that we can demonstrate the one way
@@ -775,6 +834,23 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             self.assertTrue(editor.MovePrimAtPath(
                 '/Ref/RenamedChild', '/Ref/Child'))
 
+        # Verify the expected simple rename back in stage 1.
+        self._VerifyStageContents(stage1, {
+            'Ref': {
+                '.' : ['refAttr'],
+                'Child' : {
+                    '.' : ['childAttr'],
+                    'GrandChild' : {
+                        '.' : ['grandChildAttr']
+                    }
+                }
+            },
+        })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/RenamedChild" : self.PrimResyncType.RenameSource,
+            "/Ref/Child" : self.PrimResyncType.RenameDestination
+        })
+
         # Verify the udpated composition fields in layer2. ONLY the payload for
         # the still loaded /Prim2 is updated. The payload for /Prim1 would've
         # been unaffected regardless of the load state, but /Prim3's payload
@@ -804,6 +880,9 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
             'Prim3' : prim3Contents
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim2" : self.PrimResyncType.UnchangedPrimStack
         })
 
         # Now load /Prim1 and /Prim3 again. Loading /Prim3 will emit warnings
@@ -1195,6 +1274,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
                 }
             },
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/Child" : self.PrimResyncType.RenameSource,
+            "/Ref/RenamedChild" : self.PrimResyncType.RenameDestination
+        })
 
         # Verify the udpated contents of stage 2.
         #
@@ -1221,6 +1304,15 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
             'Prim3' : prim3Contents
+        })
+        # Note that since stage2 isn't a dependent stage of the namespace editor
+        # we don't do any analysis of the edits that cause resyncs on prims on
+        # the stage.
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/Child" : self.PrimResyncType.Delete,
+            "/Prim1/RenamedChild" : self.PrimResyncType.Other,
+            "/Prim2" : self.PrimResyncType.Other,
+            "/Prim3" : self.PrimResyncType.Other,
         })
 
         # Verify the updated contents of stage 3.
@@ -1249,6 +1341,15 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim5' : prim5Contents,
             'Prim5_A' : prim5_AContents,
             'Prim6' : prim6Contents
+        })
+        self._VerifyStageResyncNotices(stage3, {
+            "/Prim4/Child" : self.PrimResyncType.RenameSource,
+            "/Prim4/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim4_A" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim4_B" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim5" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim5_A" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim6" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # Edit: Reparent and rename /Ref/RenamedChild to /MovedChild
@@ -1316,6 +1417,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
                 }
             }
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentDestination
+        })
 
         # Verify the udpated contents of stage 2.
         #
@@ -1337,6 +1442,14 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
             'Prim3' : prim3Contents
+        })
+        # Note that since stage2 isn't a dependent stage of the namespace editor
+        # we don't do any analysis of the edits that cause resyncs on prims on
+        # the stage.
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/RenamedChild" : self.PrimResyncType.Delete,
+            "/Prim2" : self.PrimResyncType.Other,
+            "/Prim3" : self.PrimResyncType.Other,
         })
 
         # Verify the updated contents of stage 3.
@@ -1370,6 +1483,14 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim5' : prim5Contents,
             'Prim5_A' : prim5_AContents,
             'Prim6' : prim6Contents
+        })
+        self._VerifyStageResyncNotices(stage3, {
+            "/Prim4/RenamedChild" : self.PrimResyncType.Delete,
+            "/Prim4_A" : self.PrimResyncType.Other,
+            "/Prim4_B" : self.PrimResyncType.Other,
+            "/Prim5" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim5_A" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim6" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # Edit: Reparent and rename /MovedChild back to its original path
@@ -1428,6 +1549,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
                 }
             },
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/Ref/Child" : self.PrimResyncType.RenameAndReparentDestination
+        })
 
         # Verify the udpated contents of stage 2.
         #
@@ -1451,6 +1576,14 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
             'Prim3' : prim3Contents
+        })
+        # Note that since stage2 isn't a dependent stage of the namespace editor
+        # we don't do any analysis of the edits that cause resyncs on prims on
+        # the stage.
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/Child" : self.PrimResyncType.Other,
+            "/Prim2" : self.PrimResyncType.Other,
+            "/Prim3" : self.PrimResyncType.Other,
         })
 
         # Verify the updated contents of stage 3.
@@ -1483,6 +1616,12 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim5' : prim5Contents,
             'Prim5_A' : prim5_AContents,
             'Prim6' : prim6Contents
+        })
+        self._VerifyStageResyncNotices(stage3, {
+            "/Prim4/Child" : self.PrimResyncType.Other,
+            "/Prim5" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim5_A" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim6" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # Edit: Delete /Ref/Child
@@ -1534,6 +1673,9 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
                 '.' : ['refAttr'],
             },
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/Child" : self.PrimResyncType.Delete,
+        })
 
         # Verify the udpated contents of stage 2.
         #
@@ -1560,6 +1702,14 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
             'Prim3' : prim3Contents
+        })
+        # Note that since stage2 isn't a dependent stage of the namespace editor
+        # we don't do any analysis of the edits that cause resyncs on prims on
+        # the stage.
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/Child" : self.PrimResyncType.Delete,
+            "/Prim2" : self.PrimResyncType.Other,
+            "/Prim3" : self.PrimResyncType.Other,
         })
 
         # Verify the updated contents of stage 3.
@@ -1605,6 +1755,12 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim5' : prim5Contents,
             'Prim5_A' : prim5_AContents,
             'Prim6' : prim6Contents
+        })
+        self._VerifyStageResyncNotices(stage3, {
+            "/Prim4/Child" : self.PrimResyncType.Delete,
+            "/Prim5" : self.PrimResyncType.Other,
+            "/Prim5_A" : self.PrimResyncType.Other,
+            "/Prim6" : self.PrimResyncType.Other
         })
 
     def test_LayerDefaultPrim(self):
@@ -1667,6 +1823,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'RenamedRef' : refContents,
             'World' : {}
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref" : self.PrimResyncType.RenameSource,
+            "/RenamedRef" : self.PrimResyncType.RenameDestination,
+        })
 
         # Edit: Reparent /RenamedRef to /World/RenamedRef.
         with self.ApplyEdits(editor, "Reparent /RenamedRef -> /World/RenamedRef",
@@ -1686,6 +1846,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
                 'RenamedRef' : refContents,
             }
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/RenamedRef" : self.PrimResyncType.ReparentSource,
+            "/World/RenamedRef" : self.PrimResyncType.ReparentDestination,
+        })
 
         # Edit: Rename /World to /NewWorld.
         with self.ApplyEdits(editor, "Reparent /World -> /NewWorld",
@@ -1696,11 +1860,15 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
         # because of the rename of its parent.
         self.assertEqual(layer1.defaultPrim, "/NewWorld/RenamedRef")
 
-        # Verify that RenamedRef was reparented in stage1.
+        # Verify that /World was renamed in stage1.
         self._VerifyStageContents(stage1, {
             'NewWorld' : {
                 'RenamedRef' : refContents,
             }
+        })
+        self._VerifyStageResyncNotices(stage1, {
+            "/World" : self.PrimResyncType.RenameSource,
+            "/NewWorld" : self.PrimResyncType.RenameDestination,
         })
 
         # Edit: Reparent and rename /NewWorld/RenamedRef back to /Ref
@@ -1720,6 +1888,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
         self._VerifyStageContents(stage1, {
             'Ref' : refContents,
             'NewWorld' : {}
+        })
+        self._VerifyStageResyncNotices(stage1, {
+            "/NewWorld/RenamedRef" : self.PrimResyncType.RenameAndReparentSource,
+            "/Ref" : self.PrimResyncType.RenameAndReparentDestination,
         })
 
         # XXX: Probably a case to rename Child to just prove that it doesn't 
@@ -1833,6 +2005,11 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'RenamedRef' : refContents,
             'NewWorld' : {}
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref" : self.PrimResyncType.RenameSource,
+            "/RenamedRef" : self.PrimResyncType.RenameDestination,
+        })
+
 
         # Verify in layer2 that the explicit reference and payload to /Ref
         # has been updated with the new path. The default using reference and 
@@ -1865,6 +2042,12 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'RefToExplicit' : refContents,
             'PayloadToExplicit' : refContents,
         })
+        self._VerifyStageResyncNotices(stage2, {
+            "/RefToDefault" : self.PrimResyncType.UnchangedPrimStack,
+            "/PayloadToDefault" : self.PrimResyncType.UnchangedPrimStack,
+            "/RefToExplicit" : self.PrimResyncType.UnchangedPrimStack,
+            "/PayloadToExplicit" : self.PrimResyncType.UnchangedPrimStack,
+        })
 
         # Verify stage3's contents. The default reference and payload prims have
         # their contents unchanged since the default prim is updated in layer1
@@ -1875,6 +2058,17 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'PayloadToDefault' : refContents,
             'RefToExplicit' : {},
             'PayloadToExplicit' : {},
+        })
+        # Note that even though the default prim allow /RefToDefault and 
+        # /PayloadToDefault to remain unchanged, we don't track the namespace
+        # edit effects for stage3 since it wasn't added as a dependent stage 
+        # and therefore we can't determine that their resyncs are no-ops in the
+        # ObjectsChanged notification.
+        self._VerifyStageResyncNotices(stage3, {
+            "/RefToDefault" : self.PrimResyncType.Other,
+            "/PayloadToDefault" : self.PrimResyncType.Other,
+            "/RefToExplicit" : self.PrimResyncType.Other,
+            "/PayloadToExplicit" : self.PrimResyncType.Other,
         })
 
         # Unload both payloads on both stages 2 and 3.
@@ -1915,6 +2109,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
                 'RenamedRef' : refContents,
             }
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/RenamedRef" : self.PrimResyncType.ReparentSource,
+            "/NewWorld/RenamedRef" : self.PrimResyncType.ReparentDestination,
+        })
 
         # Verify in layer2 that ONLY the explicit reference /RenamedRef
         # has been updated with the new path. Paths to unloaded payloads are not
@@ -1947,6 +2145,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'RefToExplicit' : refContents,
             'PayloadToExplicit' : {},
         })
+        self._VerifyStageResyncNotices(stage2, {
+            "/RefToDefault" : self.PrimResyncType.UnchangedPrimStack,
+            "/RefToExplicit" : self.PrimResyncType.UnchangedPrimStack,
+        })
 
         # Verify stage3's contents. The default reference has its contents 
         # unchanged since all the default prim is updated in layer1. The default
@@ -1956,6 +2158,9 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'PayloadToDefault' : {},
             'RefToExplicit' : {},
             'PayloadToExplicit' : {},
+        })
+        self._VerifyStageResyncNotices(stage3, {
+            "/RefToDefault" : self.PrimResyncType.Other,
         })
 
         # Load all payloads on both stages.
@@ -1999,6 +2204,9 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
         self._VerifyStageContents(stage1, {
             'NewWorld' : {}
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/NewWorld/RenamedRef" : self.PrimResyncType.Delete,
+        })
 
         # Verify in layer2 that ONLY the explicit reference to 
         # /NewWorld/RenamedRef in /RefToExplicit has been deleted. The 
@@ -2036,11 +2244,20 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'RefToExplicit' : {},
             'PayloadToExplicit' : {},
         })
+        self._VerifyStageResyncNotices(stage2, {
+            "/RefToDefault" : self.PrimResyncType.Other,
+            "/PayloadToDefault" : self.PrimResyncType.Other,
+            "/RefToExplicit" : self.PrimResyncType.Other,
+        })
         self._VerifyStageContents(stage3, {
             'RefToDefault' : {},
             'PayloadToDefault' : {},
             'RefToExplicit' : {},
             'PayloadToExplicit' : {},
+        })
+        self._VerifyStageResyncNotices(stage3, {
+            "/RefToDefault" : self.PrimResyncType.Other,
+            "/PayloadToDefault" : self.PrimResyncType.Other,
         })
 
 if __name__ == '__main__':

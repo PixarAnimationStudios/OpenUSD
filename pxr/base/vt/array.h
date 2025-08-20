@@ -259,9 +259,8 @@ ARCH_PRAGMA_POP
     /// VtArray(size_t n, value_type const &value = value_type())
     template <typename LegacyInputIterator>
     VtArray(LegacyInputIterator first, LegacyInputIterator last,
-            typename std::enable_if<
-                !std::is_integral<LegacyInputIterator>::value, 
-                void>::type* = nullptr)
+            std::enable_if_t<
+                !std::is_integral_v<LegacyInputIterator>> * = nullptr)
         : VtArray() {
         assign(first, last); 
     }
@@ -644,6 +643,162 @@ ARCH_PRAGMA_POP
         _shapeData.totalSize = 0;
     }
 
+    /// Insert a copy of a single element at \p pos into the array.  Return an
+    /// iterator pointing to the inserted element.
+    iterator insert(const_iterator pos, value_type const &value) {
+        // If value is an element of the array, we make a copy and move-insert
+        // it.  std::less (and friends) and the standard's guarantee of a strict
+        // pointer total order ensures this works.
+        const const_pointer valuePtr = std::addressof(value);
+        if (std::less_equal<const_pointer>{}(cdata(), valuePtr) &&
+            std::less<const_pointer>{}(valuePtr, cdata() + size())) {
+            value_type tmp { value };
+            return insert(pos,
+                          std::make_move_iterator(std::addressof(tmp)),
+                          std::make_move_iterator(std::addressof(tmp) + 1));
+        }
+        return insert(pos, valuePtr, valuePtr + 1);
+    }
+
+    /// Insert by moving a single element at \p pos into the array.  Return an
+    /// iterator pointing to the move-inserted element.
+    iterator insert(const_iterator pos, value_type &&value) {
+        // If value is an element of the array, we move it to a temp spot and
+        // move-insert that.  std::less (and friends) and the standard's
+        // guarantee of a strict pointer total order ensures this works.
+        const const_pointer valuePtr = std::addressof(value);
+        if (std::less_equal<const_pointer>{}(cdata(), valuePtr) &&
+            std::less<const_pointer>{}(valuePtr, cdata() + size())) {
+            value_type tmp { std::move(value) };
+            return insert(pos,
+                          std::make_move_iterator(std::addressof(tmp)),
+                          std::make_move_iterator(std::addressof(tmp) + 1));
+        }
+        return insert(pos,
+                      std::make_move_iterator(valuePtr),
+                      std::make_move_iterator(valuePtr + 1));
+    }
+
+    /// Insert \p count copies of \p fill starting at \p pos in the array.
+    /// Return an iterator pointing to the first inserted element, or \p pos if
+    /// no elements are inserted.
+    iterator insert(const_iterator pos, size_t count, value_type const &fill) {
+        // If fill is an element of the array, we copy it to a temporary and
+        // insert that.  std::less (and friends) and the standard's guarantee of
+        // a strict pointer total order ensures this works.
+        const const_pointer fillPtr = std::addressof(fill);
+        if (std::less_equal<const_pointer>{}(cdata(), fillPtr) &&
+            std::less<const_pointer>{}(fillPtr, cdata() + size())) {
+            value_type tmp { fill };
+            return insert(pos, count, [&tmp](pointer b, pointer e) {
+                std::uninitialized_fill(b, e, tmp);
+            });
+        }
+        return insert(pos, count, [&fill](pointer b, pointer e) {
+            std::uninitialized_fill(b, e, fill);
+        });
+    }
+
+    /// Insert the contents of \p ilist into the array at \p pos.  Return an
+    /// iterator pointing to the first inserted element, or \p pos if no
+    /// elements are inserted.
+    iterator insert(const_iterator pos, std::initializer_list<ELEM> ilist) {
+        return insert(pos, ilist.begin(), ilist.end());
+    }
+
+    /// Insert the elements from the range [first, last) into the array at \p
+    /// pos.  Return an iterator pointing to the first inserted element, or \p
+    /// pos if no elements are inserted.  The behavior is undefined if [first,
+    /// last) intersects [cbegin(), cend()).
+    template <class LegacyInputIterator>
+    std::enable_if_t<
+        !std::is_integral_v<LegacyInputIterator>, iterator>
+    insert(
+        const_iterator pos,
+        LegacyInputIterator first, LegacyInputIterator last) {
+        return insert(pos, std::distance(first, last),
+                      [&first, &last](pointer b, pointer e) {
+                          std::uninitialized_copy(first, last, b);
+                      });
+    }
+
+    /// Insert \p count elements into the array starting at \p pos, calling \p
+    /// fillElems(first, last) to construct the inserted elements in
+    /// uninitialized memory.  Note that since \p fillElems is passed pointers
+    /// to uninitialized memory, the elements must be constructed using
+    /// something like placement-new.  Return an iterator pointing to the first
+    /// inserted element, or \p pos if no elements are inserted.
+    template <class FillElemsFn>
+    std::enable_if_t<
+        !std::is_integral_v<std::decay_t<FillElemsFn>>,
+        iterator>
+    insert(const_iterator pos, size_t count, FillElemsFn &&fillElems) {
+        if (count == 0) {
+            return begin() + std::distance(cbegin(), pos);
+        }
+        if (empty()) {
+            resize(count, std::forward<FillElemsFn>(fillElems));
+            return begin();
+        }
+        // This array is not empty, and we will insert at least one element.
+        const size_t newSize = size() + count;
+        if (_IsUnique()) {
+            if (newSize <= capacity()) {
+                // We can avoid reallocation.
+                iterator ncpos = begin() + std::distance(cbegin(), pos);
+                iterator iend = end();
+                if (pos != cend()) {
+                    // The 'count' tail elements must be uninitialized_move'd
+                    // over.  The remainder must be move_backward'd.
+                    std::uninitialized_copy(
+                        std::make_move_iterator(iend-count),
+                        std::make_move_iterator(iend), iend);
+                    std::move_backward(ncpos, iend-count, iend);
+                }
+                // Fill new elements.
+                value_type *p = std::addressof(*ncpos);
+                std::forward<FillElemsFn>(fillElems)(p, p + count);
+                // Set new size.
+                _shapeData.totalSize = newSize;
+                return ncpos;
+            }
+            else {
+                // We need to allocate, but can move items.
+                value_type* newData = _AllocateNew(newSize);
+                size_t posOffset = std::distance(cbegin(), pos);
+                std::uninitialized_copy(
+                    std::make_move_iterator(begin()),
+                    std::make_move_iterator(begin() + posOffset), newData);
+                std::uninitialized_copy(
+                    std::make_move_iterator(begin() + posOffset),
+                    std::make_move_iterator(end()),
+                    newData + posOffset + count);
+                // Drop the old data and fill the new elements.
+                _DecRef();
+                _data = newData;
+                _shapeData.totalSize = newSize;
+                std::forward<FillElemsFn>(fillElems)(
+                    newData + posOffset, newData + posOffset + count);
+                return begin() + posOffset;
+            }
+        }
+        else {
+            // Allocate new space and copy.
+            value_type* newData = _AllocateNew(newSize);
+            size_t posOffset = std::distance(cbegin(), pos);
+            std::uninitialized_copy(cbegin(), pos, newData);
+            std::uninitialized_copy(pos, cend(), newData + posOffset + count);
+            // Drop the old data and fill the new elements.
+            _DecRef();
+            _data = newData;
+            _shapeData.totalSize = newSize;
+            std::forward<FillElemsFn>(fillElems)(
+                newData + posOffset, newData + posOffset + count);
+            return begin() + posOffset;
+        }
+        // unreachable.
+    }
+    
     /// Removes a single element at \p pos from the array
     /// 
     /// To match the behavior of std::vector, returns an iterator
@@ -677,21 +832,22 @@ ARCH_PRAGMA_POP
     ///
     /// \sa erase(const_iterator)
     iterator erase(const_iterator first, const_iterator last) {
-        if (first == last){
+        if (first == last) {
             return std::next(begin(), std::distance(cbegin(), last));
         }
-        if ((first == cbegin()) && (last == cend())){
+        if ((first == cbegin()) && (last == cend())) {
             clear();
             return end();
         }
         // Given the previous two conditions, we know that we are removing
         // at least one element and the result array will contain at least one
         // element.
-        value_type* removeStart = std::next(_data, std::distance(cbegin(), first));
+        value_type* removeStart =
+            std::next(_data, std::distance(cbegin(), first));
         value_type* removeEnd = std::next(_data, std::distance(cbegin(), last));
         value_type* endIt = std::next(_data, size());
         size_t newSize = size() - std::distance(first, last);
-        if (_IsUnique()){
+        if (_IsUnique()) {
             // If the array is unique, we can simply move the tail elements
             // and free to the end of the array.
             value_type* deleteIt = std::move(removeEnd, endIt, removeStart);
@@ -700,7 +856,7 @@ ARCH_PRAGMA_POP
             }
             _shapeData.totalSize = newSize;
             return iterator(removeStart);
-        } else{
+        } else {
             // If the array is not unique, we want to avoid copying the
             // elements in the range we are erasing. We allocate a
             // new buffer and copy the head and tail ranges, omitting

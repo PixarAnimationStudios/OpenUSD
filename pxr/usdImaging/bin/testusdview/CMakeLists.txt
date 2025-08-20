@@ -269,6 +269,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdviewSelectionHighlighting
+    DEST testUsdviewSelectionHighlighting_Delegate
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdviewRenderMode
     DEST testUsdviewRenderMode
 )
@@ -676,12 +681,30 @@ pxr_register_test(testUsdviewSelectionHighlighting
         sel_highlight.png
         sel_highlight_none.png
         sel_highlight_double.png
+        # UsdImaging 2.0 does not yet support selection highlighting of individual instances.
+        # sel_highlight_instance.png
+        sel_highlight_color.png
+    FAIL 0.05
+    FAIL_PERCENT 0.03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewSelectionHighlighting_Delegate
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewSelectionHighlighting.py test.usda"
+    IMAGE_DIFF_COMPARE
+        sel_highlight.png
+        sel_highlight_none.png
+        sel_highlight_double.png
         sel_highlight_instance.png
         sel_highlight_color.png
     FAIL 0.05
     FAIL_PERCENT 0.03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=0
 )
 
 pxr_register_test(testUsdviewRenderMode

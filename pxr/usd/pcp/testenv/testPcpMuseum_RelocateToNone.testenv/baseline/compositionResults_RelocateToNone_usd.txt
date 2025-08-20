@@ -1,15 +1,15 @@
-Loading @RelocateToNone/root.sdf@
+Loading @RelocateToNone/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Char>
 
 Prim Stack:
-    root.sdf             /Char
-    model.sdf            /Model
+    root.usda            /Char
+    model.usda           /Model
 
 Child names:
      ['Relocated']
@@ -22,11 +22,11 @@ Property names:
 
 Property stacks:
 /Char.relationship1:
-    model.sdf            /Model.relationship1
+    model.usda           /Model.relationship1
 /Char.relationship2:
-    model.sdf            /Model.relationship2
+    model.usda           /Model.relationship2
 /Char.relationship3:
-    model.sdf            /Model.relationship3
+    model.usda           /Model.relationship3
 
 Relationship targets:
 /Char.relationship1:
@@ -40,8 +40,8 @@ Relationship targets:
 Results for composing </Char/Relocated>
 
 Prim Stack:
-    root.sdf             /Char/Relocated
-    model.sdf            /Model/ToBeRelocated
+    root.usda            /Char/Relocated
+    model.usda           /Model/ToBeRelocated
 
 Child names:
      ['Child']
@@ -53,16 +53,16 @@ Prohibited child names:
 Results for composing </Char/Relocated/Child>
 
 Prim Stack:
-    root.sdf             /Char/Relocated/Child
-    model.sdf            /Model/ToBeRelocated/Child
+    root.usda            /Char/Relocated/Child
+    model.usda           /Model/ToBeRelocated/Child
 
 ------------------------------------------------------------------------
 Results for composing </Good_SubrootRefToRelocated>
 
 Prim Stack:
-    root.sdf             /Good_SubrootRefToRelocated
-    root.sdf             /Char/Relocated
-    model.sdf            /Model/ToBeRelocated
+    root.usda            /Good_SubrootRefToRelocated
+    root.usda            /Char/Relocated
+    model.usda           /Model/ToBeRelocated
 
 Child names:
      ['Child']
@@ -74,32 +74,32 @@ Prohibited child names:
 Results for composing </Good_SubrootRefToRelocated/Child>
 
 Prim Stack:
-    root.sdf             /Char/Relocated/Child
-    model.sdf            /Model/ToBeRelocated/Child
+    root.usda            /Char/Relocated/Child
+    model.usda           /Model/ToBeRelocated/Child
 
 ------------------------------------------------------------------------
 Results for composing </Good_SubrootRefToRelocatedChild>
 
 Prim Stack:
-    root.sdf             /Good_SubrootRefToRelocatedChild
-    root.sdf             /Char/Relocated/Child
-    model.sdf            /Model/ToBeRelocated/Child
+    root.usda            /Good_SubrootRefToRelocatedChild
+    root.usda            /Char/Relocated/Child
+    model.usda           /Model/ToBeRelocated/Child
 
 ------------------------------------------------------------------------
 Results for composing </Bad_SubrootRefToDeleted>
 
 Prim Stack:
-    root.sdf             /Bad_SubrootRefToDeleted
+    root.usda            /Bad_SubrootRefToDeleted
 
 ------------------------------------------------------------------------
 Results for composing </Bad_SubrootRefToPreRelocated>
 
 Prim Stack:
-    root.sdf             /Bad_SubrootRefToPreRelocated
+    root.usda            /Bad_SubrootRefToPreRelocated
 
 ------------------------------------------------------------------------
 Results for composing </Bad_SubrootRefToDeletedRelocatedChild>
 
 Prim Stack:
-    root.sdf             /Bad_SubrootRefToDeletedRelocatedChild
+    root.usda            /Bad_SubrootRefToDeletedRelocatedChild
 

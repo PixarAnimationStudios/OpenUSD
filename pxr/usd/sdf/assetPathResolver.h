@@ -116,8 +116,8 @@ bool Sdf_StripIdentifierArgumentsIfPresent(
     std::string *strippedIdentifier);
 
 /// Splits the given \p identifier into two portions: the layer path and the
-/// arguments. For example, given the identifier foo.sdf:SDF_FORMAT_ARGS:a=b,
-/// this function will set \p layerPath to "foo.sdf" and \p arguments to
+/// arguments. For example, given the identifier foo.usda:SDF_FORMAT_ARGS:a=b,
+/// this function will set \p layerPath to "foo.usda" and \p arguments to
 /// ":SDF_FORMAT_ARGS:a=b".
 bool Sdf_SplitIdentifier(
     const std::string& identifier,

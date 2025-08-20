@@ -189,7 +189,9 @@ HdPrmanMaterial::GetMaterialNetwork() const
 
 HdPrmanMaterial::HdPrmanMaterial(SdfPath const& id)
     : HdMaterial(id)
+    , _dirtyMaterial(true)
     , _materialId(riley::MaterialId::InvalidId())
+    , _dirtyDisplacement(true)
     , _displacementId(riley::DisplacementId::InvalidId())
     , _rileyIsInSync(false)
 {
@@ -870,102 +872,6 @@ HdPrman_DumpNetwork(HdMaterialNetwork2 const& network, SdfPath const& id)
                terminalEntry.second.upstreamNode.GetText());
     }
 }
-    
-// Convert given HdMaterialNetwork2 to Riley material and displacement
-// shader networks. If the Riley network exists, it will be modified;
-// otherwise it will be created as needed.
-static void
-_ConvertHdMaterialNetwork2ToRman(
-    HdSceneDelegate *sceneDelegate,
-    riley::Riley *riley,
-    SdfPath const& id,
-    const HdMaterialNetwork2 &network,
-    riley::MaterialId *materialId,
-    riley::DisplacementId *displacementId)
-{
-    HD_TRACE_FUNCTION();
-    std::vector<riley::ShadingNode> nodes;
-    nodes.reserve(network.nodes.size());
-    bool materialFound = false, displacementFound = false;
-
-    for (auto const& terminal: network.terminals) {
-        if (HdPrman_ConvertHdMaterialNetwork2ToRmanNodes(
-                id, network, terminal.second.upstreamNode, &nodes)) {
-            if (nodes.empty()) {
-                // Already emitted a specific warning.
-                continue;
-            }
-            // Compute a hash of the material network, and pass it as
-            // __materialid on the terminal shader node.  RenderMan uses
-            // this detect and re-use material netowrks, which is valuable
-            // in production scenes where upstream scene instancing did
-            // not already catch the reuse.
-            if (_enableMaterialID) {
-                static RtUString const materialid = RtUString("__materialid");
-                const size_t networkHash = _HashMaterial()(network);
-                nodes.back().params.SetString(
-                    materialid,
-                    RtUString(TfStringify(networkHash).c_str()));
-            }
-            if (terminal.first == HdMaterialTerminalTokens->surface ||
-                terminal.first == HdMaterialTerminalTokens->volume) {
-                // Create or modify Riley material.
-                materialFound = true;
-                TRACE_SCOPE("_ConvertHdMaterialNetwork2ToRman - Update Riley Material");
-                if (*materialId == riley::MaterialId::InvalidId()) {
-                    TRACE_SCOPE("riley::CreateMaterial");
-                    *materialId = riley->CreateMaterial(
-                        riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
-                        {static_cast<uint32_t>(nodes.size()), &nodes[0]},
-                        RtParamList());
-                } else {
-                    TRACE_SCOPE("riley::ModifyMaterial");
-                    riley::ShadingNetwork const material = {
-                        static_cast<uint32_t>(nodes.size()), &nodes[0]};
-                    riley->ModifyMaterial(*materialId, &material, nullptr);
-                }
-                if (*materialId == riley::MaterialId::InvalidId()) {
-                    TF_WARN("Failed to create material %s\n",
-                                     id.GetText());
-                }
-            } else if (terminal.first ==
-                       HdMaterialTerminalTokens->displacement) {
-                // Create or modify Riley displacement.
-                TRACE_SCOPE("_ConvertHdMaterialNetwork2ToRman - Update Riley Displacement");
-                displacementFound = true;
-                if (*displacementId == riley::DisplacementId::InvalidId()) {
-                    TRACE_SCOPE("riley::CreateDisplacement");
-                    *displacementId = riley->CreateDisplacement(
-                        riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
-                        {static_cast<uint32_t>(nodes.size()), &nodes[0]},
-                        RtParamList());
-                } else {
-                    TRACE_SCOPE("riley::ModifyDisplacement");
-                    riley::ShadingNetwork const displacement = {
-                        static_cast<uint32_t>(nodes.size()), &nodes[0]};
-                    riley->ModifyDisplacement(
-                        *displacementId, &displacement, nullptr);
-                }
-                if (*displacementId == riley::DisplacementId::InvalidId()) {
-                    TF_WARN("Failed to create displacement %s\n",
-                                     id.GetText());
-                }
-            }
-        } else {
-            TF_WARN("Failed to convert nodes for %s\n", id.GetText());
-        }
-        nodes.clear();
-    }
-    // Free dis-used networks.
-    if (!materialFound) {
-        riley->DeleteMaterial(*materialId);
-        *materialId = riley::MaterialId::InvalidId();
-    }
-    if (!displacementFound) {
-        riley->DeleteDisplacement(*displacementId);
-        *displacementId = riley::DisplacementId::InvalidId();
-    }
-}
 
 /* virtual */
 void
@@ -977,6 +883,14 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
 
     HdPrman_RenderParam *param =
         static_cast<HdPrman_RenderParam*>(renderParam);
+
+#if PXR_VERSION >= 2505
+    _dirtyMaterial = _dirtyMaterial || (*dirtyBits & (HdMaterial::DirtySurface | HdMaterial::DirtyVolume));
+    _dirtyDisplacement = _dirtyDisplacement || (*dirtyBits & HdMaterial::DirtyDisplacement);
+#else
+    _dirtyMaterial = true;
+    _dirtyDisplacement = true;
+#endif
 
     if ((*dirtyBits & HdMaterial::DirtyResource) ||
         (*dirtyBits & HdMaterial::DirtyParams)) {
@@ -1036,9 +950,96 @@ HdPrmanMaterial::_SyncToRileyWithLock(
         if (TfDebug::IsEnabled(HDPRMAN_MATERIALS)) {
             HdPrman_DumpNetwork(_materialNetwork, id);
         }
-        _ConvertHdMaterialNetwork2ToRman(sceneDelegate,
-                                         riley, id, _materialNetwork,
-                                         &_materialId, &_displacementId);
+
+        // Convert given HdMaterialNetwork2 to Riley material and displacement
+        // shader networks. If the Riley network exists, it will be modified;
+        // otherwise it will be created as needed.
+        std::vector<riley::ShadingNode> nodes;
+        nodes.reserve(_materialNetwork.nodes.size());
+        bool materialFound = false, displacementFound = false;
+        
+        for (auto const& terminal: _materialNetwork.terminals) {
+            if (HdPrman_ConvertHdMaterialNetwork2ToRmanNodes(
+                    id, _materialNetwork, terminal.second.upstreamNode, &nodes)) {
+                if (nodes.empty()) {
+                    // Already emitted a specific warning.
+                    continue;
+                }
+                // Compute a hash of the material network, and pass it as
+                // __materialid on the terminal shader node.  RenderMan uses
+                // this detect and re-use material netowrks, which is valuable
+                // in production scenes where upstream scene instancing did
+                // not already catch the reuse.
+                if (_enableMaterialID) {
+                    static RtUString const materialId = RtUString("__materialid");
+                    const size_t networkHash = _HashMaterial()(_materialNetwork);
+                    nodes.back().params.SetString(
+                        materialId,
+                        RtUString(TfStringify(networkHash).c_str()));
+                }
+                if (terminal.first == HdMaterialTerminalTokens->surface ||
+                    terminal.first == HdMaterialTerminalTokens->volume) {
+                    // Create or modify Riley material.
+                    materialFound = true;
+                    if (_dirtyMaterial) {
+                        TRACE_SCOPE("_ConvertHdMaterialNetwork2ToRman - Update Riley Material");
+                        if (_materialId == riley::MaterialId::InvalidId()) {
+                            TRACE_SCOPE("riley::CreateMaterial");
+                            _materialId = riley->CreateMaterial(
+                                riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
+                                {static_cast<uint32_t>(nodes.size()), &nodes[0]},
+                                RtParamList());
+                        } else {
+                            TRACE_SCOPE("riley::ModifyMaterial");
+                            riley::ShadingNetwork const material = {
+                                static_cast<uint32_t>(nodes.size()), &nodes[0]};
+                            riley->ModifyMaterial(_materialId, &material, nullptr);
+                        }
+                        if (_materialId == riley::MaterialId::InvalidId()) {
+                            TF_WARN("Failed to create material %s\n",
+                                            id.GetText());
+                        }
+                        _dirtyMaterial = false;
+                    }
+                } else if (terminal.first == HdMaterialTerminalTokens->displacement) {
+                    // Create or modify Riley displacement.
+                    TRACE_SCOPE("_ConvertHdMaterialNetwork2ToRman - Update Riley Displacement");
+                    displacementFound = true;
+                    if (_dirtyDisplacement) {
+                        if (_displacementId == riley::DisplacementId::InvalidId()) {
+                            TRACE_SCOPE("riley::CreateDisplacement");
+                            _displacementId = riley->CreateDisplacement(
+                                riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
+                                {static_cast<uint32_t>(nodes.size()), &nodes[0]},
+                                RtParamList());
+                        } else {
+                            TRACE_SCOPE("riley::ModifyDisplacement");
+                            riley::ShadingNetwork const displacement = {
+                                static_cast<uint32_t>(nodes.size()), &nodes[0]};
+                            riley->ModifyDisplacement(
+                                _displacementId, &displacement, nullptr);
+                        }
+                        if (_displacementId == riley::DisplacementId::InvalidId()) {
+                            TF_WARN("Failed to create displacement %s\n",
+                                            id.GetText());
+                        }
+                        _dirtyDisplacement = false;
+                    }
+                }
+            } else {
+                TF_WARN("Failed to convert nodes for %s\n", id.GetText());
+            }
+            nodes.clear();
+        }
+        // Free dis-used networks.
+        if (!materialFound) {
+            riley->DeleteMaterial(_materialId);
+            _materialId = riley::MaterialId::InvalidId();
+        }
+        if (!displacementFound) {
+            riley->DeleteDisplacement(_displacementId);
+            _displacementId = riley::DisplacementId::InvalidId();
+        }
     } else {
         TF_CODING_ERROR("HdPrmanMaterial: Expected material resource "
             "for <%s> to contain material, but found %s instead.",

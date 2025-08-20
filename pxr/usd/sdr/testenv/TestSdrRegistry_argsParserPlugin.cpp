@@ -5,26 +5,26 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
-#include "pxr/usd/ndr/parserPlugin.h"
+#include "pxr/usd/sdr/parserPlugin.h"
 #include "pxr/usd/sdr/shaderNode.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
     static TfToken _sourceType = TfToken("RmanCpp");
-    static NdrTokenVec _discoveryTypes = {TfToken("args")};
+    static SdrTokenVec _discoveryTypes = {TfToken("args")};
 }
 
-class _NdrArgsTestParserPlugin : public NdrParserPlugin
+class _SdrArgsTestParserPlugin : public SdrParserPlugin
 {
 public:
-    _NdrArgsTestParserPlugin() {};
-    ~_NdrArgsTestParserPlugin() {};
+    _SdrArgsTestParserPlugin() {};
+    ~_SdrArgsTestParserPlugin() {};
 
-    NdrNodeUniquePtr Parse(
-        const NdrNodeDiscoveryResult& discoveryResult) override
+    SdrShaderNodeUniquePtr ParseShaderNode(
+        const SdrShaderNodeDiscoveryResult& discoveryResult) override
     {
-        return NdrNodeUniquePtr(
+        return SdrShaderNodeUniquePtr(
             new SdrShaderNode(
                 discoveryResult.identifier,
                 discoveryResult.version,
@@ -34,15 +34,15 @@ public:
                 discoveryResult.sourceType,
                 discoveryResult.resolvedUri,
                 discoveryResult.resolvedUri,
-                NdrPropertyUniquePtrVec()
+                SdrShaderPropertyUniquePtrVec()
             )
         );
     }
 
-    static const NdrTokenVec& DiscoveryTypes;
+    static const SdrTokenVec& DiscoveryTypes;
     static const TfToken& SourceType;
 
-    const NdrTokenVec& GetDiscoveryTypes() const override {
+    const SdrTokenVec& GetDiscoveryTypes() const override {
         return _discoveryTypes;
     }
 
@@ -51,9 +51,9 @@ public:
     }
 };
 
-const NdrTokenVec& _NdrArgsTestParserPlugin::DiscoveryTypes = _discoveryTypes;
-const TfToken& _NdrArgsTestParserPlugin::SourceType = _sourceType;
+const SdrTokenVec& _SdrArgsTestParserPlugin::DiscoveryTypes = _discoveryTypes;
+const TfToken& _SdrArgsTestParserPlugin::SourceType = _sourceType;
 
-NDR_REGISTER_PARSER_PLUGIN(_NdrArgsTestParserPlugin)
+SDR_REGISTER_PARSER_PLUGIN(_SdrArgsTestParserPlugin)
 
 PXR_NAMESPACE_CLOSE_SCOPE

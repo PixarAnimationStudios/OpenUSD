@@ -115,13 +115,17 @@ protected:
         return renderParam->GetFallbackMaterialId();
     }
 
-    // Populate primType and primvars.
-    virtual RtPrimVarList
-    _ConvertGeometry(HdPrman_RenderParam *renderParam,
-                      HdSceneDelegate *sceneDelegate,
-                      const SdfPath &id,
-                      RtUString *primType,
-                      std::vector<HdGeomSubset> *geomSubsets) = 0;
+    // Populate primType, primvars, and geometry subsets.
+    // Returns true if successful.
+    virtual bool
+    _ConvertGeometry(
+        HdPrman_RenderParam *renderParam,
+        HdSceneDelegate *sceneDelegate,
+        const SdfPath &id,
+        RtUString *primType,
+        RtPrimVarList *primvars,
+        std::vector<HdGeomSubset> *geomSubsets,
+        std::vector<RtPrimVarList> *geomSubsetPrimvars) = 0;
 
     // This class does not support copying.
     HdPrman_Gprim(const HdPrman_Gprim&)             = delete;
@@ -249,13 +253,24 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     std::vector<SdfPath> subsetPaths;
     {
         RtUString primType;
+        RtPrimVarList primvars;
         HdGeomSubsets geomSubsets;
-        RtPrimVarList primvars = _ConvertGeometry(param, sceneDelegate, id,
-                         &primType, &geomSubsets);
+        std::vector<RtPrimVarList> geomSubsetPrimvars;
+        bool ok = _ConvertGeometry(param, sceneDelegate, id,
+                                   &primType, &primvars,
+                                   &geomSubsets, &geomSubsetPrimvars);
+        if (!ok) {
+            // We expect a specific error will have already been issued.
+            return;
+        }
 
         // identifier:object is useful for cryptomatte
         primvars.SetString(RixStr.k_identifier_object,
                            RtUString(id.GetName().c_str()));
+        for (size_t i=0, n=geomSubsets.size(); i<n; ++i) {
+            primvars.SetString(RixStr.k_identifier_object,
+                               RtUString(geomSubsets[i].id.GetName().c_str()));
+        }
 
 // In 2311 and beyond, we can use
 // HdPrman_PreviewSurfacePrimvarsSceneIndexPlugin.
@@ -303,33 +318,38 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
             // material networks are passed to the instances.
             subsetMaterialIds.reserve(geomSubsets.size());
 
-            // We also cache the subset paths for re-use when creating the instances
+            // We also cache the subset paths for re-use when creating
+            // the instances
             subsetPaths.reserve(geomSubsets.size());
 
             for (size_t j=0; j < geomSubsets.size(); ++j) {
                 auto& prototypeId = _prototypeIds[j];
                 HdGeomSubset &subset = geomSubsets[j];
+                RtPrimVarList &subsetPrimvars = geomSubsetPrimvars[j];
 
                 // Convert indices to int32_t and set as k_shade_faceset.
                 std::vector<int32_t> int32Indices(subset.indices.cbegin(),
                                                   subset.indices.cend());
-                primvars.SetIntegerArray(RixStr.k_shade_faceset,
-                                         int32Indices.data(),
-                                         int32Indices.size());
+                subsetPrimvars.SetIntegerArray(RixStr.k_shade_faceset,
+                                               int32Indices.data(),
+                                               int32Indices.size());
                 // Look up material override for the subset (if any)
                 riley::MaterialId subsetMaterialId = materialId;
                 riley::DisplacementId subsetDispId = dispId;
                 if (subset.materialId.IsEmpty()) {
                     subset.materialId = hdMaterialId;
                 }
-                HdPrman_ResolveMaterial(sceneDelegate, subset.materialId,
-                                        riley, &subsetMaterialId, &subsetDispId);
+                HdPrman_ResolveMaterial(
+                    sceneDelegate, subset.materialId,
+                    riley, &subsetMaterialId, &subsetDispId);
                 subsetMaterialIds.push_back(subsetMaterialId);
 
                 // Look up the path for the subset
-                SdfPath subsetPath = sceneDelegate->GetScenePrimPath(subset.id, 0, nullptr);
+                const SdfPath subsetPath =
+                    sceneDelegate->GetScenePrimPath(subset.id, 0, nullptr);
                 subsetPaths.push_back(subsetPath);
-                primvars.SetString(RixStr.k_stats_prototypeIdentifier,
+                subsetPrimvars.SetString(
+                    RixStr.k_stats_prototypeIdentifier,
                     RtUString(subsetPath.GetText()));
 
                 if (prototypeId == riley::GeometryPrototypeId::InvalidId()) {
@@ -337,12 +357,14 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                     prototypeId =
                         riley->CreateGeometryPrototype(
                             riley::UserId(
-                                stats::AddDataLocation(subsetPath.GetText()).GetValue()),
-                            primType, dispId, primvars);
+                                stats::AddDataLocation(
+                                    subsetPath.GetText()).GetValue()),
+                            primType, subsetDispId, subsetPrimvars);
                 } else if (prmanProtoAttrBitsWereSet) {
                     TRACE_SCOPE("riley::ModifyGeometryPrototype");
-                    riley->ModifyGeometryPrototype(primType, prototypeId,
-                                                &subsetDispId, &primvars);
+                    riley->ModifyGeometryPrototype(
+                        primType, prototypeId,
+                        &subsetDispId, &subsetPrimvars);
                 }
             }
         }

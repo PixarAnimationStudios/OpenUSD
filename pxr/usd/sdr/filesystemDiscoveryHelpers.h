@@ -9,16 +9,11 @@
 #define PXR_USD_SDR_FILESYSTEM_DISCOVERY_HELPERS_H
 
 /// \file sdr/filesystemDiscoveryHelpers.h
-///
-/// \note
-/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
-/// in this file. All existing pxr/usd/ndr implementations will be moved to
-/// pxr/usd/sdr.
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdr/api.h"
 #include "pxr/usd/sdr/declare.h"
-#include "pxr/usd/ndr/filesystemDiscoveryHelpers.h"
+#include "pxr/usd/sdr/filesystemDiscoveryHelpers.h"
 #include "pxr/usd/sdr/shaderNodeDiscoveryResult.h"
 
 #include <functional>

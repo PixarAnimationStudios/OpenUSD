@@ -7,6 +7,8 @@
 #ifndef PXR_IMAGING_HD_NOTICE_BATCHING_SCENE_INDEX_H
 #define PXR_IMAGING_HD_NOTICE_BATCHING_SCENE_INDEX_H
 
+#include "pxr/pxr.h"
+#include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -34,16 +36,19 @@ public:
     HD_API 
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
+    HD_API
     bool IsBatchingEnabled() const;
 
     /// Once batching is enabled, observed notices are queued in contiguious
     /// blocks by notice type. Disabling batching immediately forwards and
     /// flushes any queued batches. Batching state is not currently tracked in
     /// a nested manner.
+    HD_API
     void SetBatchingEnabled(bool enabled);
     
     /// Forwards any queued notices accumuated while batching state is enabled.
     /// This does not itself disable batching.
+    HD_API
     void Flush();
 
 protected:
@@ -52,20 +57,24 @@ protected:
     HdNoticeBatchingSceneIndex(const HdSceneIndexBaseRefPtr &inputScene);
 
     // satisfying HdSingleInputFilteringSceneIndexBase
+    HD_API
     void _PrimsAdded(
             const HdSceneIndexBase &sender,
             const HdSceneIndexObserver::AddedPrimEntries &entries) override;
 
+    HD_API
     void _PrimsRemoved(
             const HdSceneIndexBase &sender,
             const HdSceneIndexObserver::RemovedPrimEntries &entries) override;
 
+    HD_API
     void _PrimsDirtied(
             const HdSceneIndexBase &sender,
             const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;
 
     struct _BatchEntry
     {
+        HD_API
         virtual ~_BatchEntry();
     };
 

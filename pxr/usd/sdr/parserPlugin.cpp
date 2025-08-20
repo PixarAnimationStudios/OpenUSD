@@ -8,15 +8,13 @@
 #include "pxr/usd/sdr/parserPlugin.h"
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderNodeDiscoveryResult.h"
-#include "pxr/usd/ndr/parserPlugin.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Register this plugin type with Tf
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<SdrParserPlugin,
-                   TfType::Bases<NdrParserPlugin>>();
+    TfType::Define<SdrParserPlugin>();
 }
 
 SdrParserPlugin::SdrParserPlugin()
@@ -27,18 +25,6 @@ SdrParserPlugin::SdrParserPlugin()
 SdrParserPlugin::~SdrParserPlugin()
 {
     // nothing yet
-}
-
-NdrNodeUniquePtr
-SdrParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult) {
-
-    SdrShaderNodeDiscoveryResult shaderResult =
-        SdrShaderNodeDiscoveryResult::FromNdrNodeDiscoveryResult(
-            discoveryResult
-        );
-
-    SdrShaderNodeUniquePtr node = ParseShaderNode(shaderResult);
-    return node;
 }
 
 SdrShaderNodeUniquePtr

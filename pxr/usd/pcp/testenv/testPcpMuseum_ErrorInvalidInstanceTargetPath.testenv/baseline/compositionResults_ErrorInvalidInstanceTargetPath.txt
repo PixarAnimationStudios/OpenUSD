@@ -1,14 +1,14 @@
-Loading @ErrorInvalidInstanceTargetPath/root.sdf@
+Loading @ErrorInvalidInstanceTargetPath/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </ConnectionToLocalClass>
 
 Prim Stack:
-    root.sdf             /ConnectionToLocalClass
+    root.usda            /ConnectionToLocalClass
 
 Child names:
      ['LocalClass', 'Instance_1', 'Instance_2']
@@ -17,16 +17,16 @@ Child names:
 Results for composing </ConnectionToLocalClass/LocalClass>
 
 Prim Stack:
-    root.sdf             /ConnectionToLocalClass/LocalClass
+    root.usda            /ConnectionToLocalClass/LocalClass
 
 Property names:
      ['x', 'y']
 
 Property stacks:
 /ConnectionToLocalClass/LocalClass.x:
-    root.sdf             /ConnectionToLocalClass/LocalClass.x
+    root.usda            /ConnectionToLocalClass/LocalClass.x
 /ConnectionToLocalClass/LocalClass.y:
-    root.sdf             /ConnectionToLocalClass/LocalClass.y
+    root.usda            /ConnectionToLocalClass/LocalClass.y
 
 Attribute connections:
 /ConnectionToLocalClass/LocalClass.x:
@@ -37,39 +37,39 @@ Attribute connections:
 Results for composing </ConnectionToLocalClass/Instance_1>
 
 Prim Stack:
-    root.sdf             /ConnectionToLocalClass/Instance_1
-    root.sdf             /ConnectionToLocalClass/LocalClass
+    root.usda            /ConnectionToLocalClass/Instance_1
+    root.usda            /ConnectionToLocalClass/LocalClass
 
 Property names:
      ['x', 'y']
 
 Property stacks:
 /ConnectionToLocalClass/Instance_1.x:
-    root.sdf             /ConnectionToLocalClass/LocalClass.x
+    root.usda            /ConnectionToLocalClass/LocalClass.x
 /ConnectionToLocalClass/Instance_1.y:
-    root.sdf             /ConnectionToLocalClass/LocalClass.y
+    root.usda            /ConnectionToLocalClass/LocalClass.y
 
 ------------------------------------------------------------------------
 Results for composing </ConnectionToLocalClass/Instance_2>
 
 Prim Stack:
-    root.sdf             /ConnectionToLocalClass/Instance_2
-    root.sdf             /ConnectionToLocalClass/LocalClass
+    root.usda            /ConnectionToLocalClass/Instance_2
+    root.usda            /ConnectionToLocalClass/LocalClass
 
 Property names:
      ['x', 'y']
 
 Property stacks:
 /ConnectionToLocalClass/Instance_2.x:
-    root.sdf             /ConnectionToLocalClass/LocalClass.x
+    root.usda            /ConnectionToLocalClass/LocalClass.x
 /ConnectionToLocalClass/Instance_2.y:
-    root.sdf             /ConnectionToLocalClass/LocalClass.y
+    root.usda            /ConnectionToLocalClass/LocalClass.y
 
 ------------------------------------------------------------------------
 Results for composing </FaceRig>
 
 Prim Stack:
-    root.sdf             /FaceRig
+    root.usda            /FaceRig
 
 Child names:
      ['BrowRig', 'Anim']
@@ -78,8 +78,8 @@ Child names:
 Results for composing </FaceRig/BrowRig>
 
 Prim Stack:
-    root.sdf             /FaceRig/BrowRig
-    ref.sdf              /BrowRig
+    root.usda            /FaceRig/BrowRig
+    ref.usda             /BrowRig
 
 Child names:
      ['SymBrow', 'LBrow', 'RBrow', 'Anim']
@@ -88,7 +88,7 @@ Child names:
 Results for composing </FaceRig/BrowRig/SymBrow>
 
 Prim Stack:
-    ref.sdf              /BrowRig/SymBrow
+    ref.usda             /BrowRig/SymBrow
 
 Child names:
      ['BrowInnUDPosBrowInnUDNeg_sculpt', 'Anim']
@@ -97,14 +97,14 @@ Child names:
 Results for composing </FaceRig/BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt>
 
 Prim Stack:
-    ref.sdf              /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt
+    ref.usda             /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt
 
 Property names:
      ['amount']
 
 Property stacks:
 /FaceRig/BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount:
-    ref.sdf              /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount
+    ref.usda             /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount
 
 Attribute connections:
 /FaceRig/BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount:
@@ -115,7 +115,7 @@ Attribute connections:
 Results for composing </FaceRig/BrowRig/SymBrow/Anim>
 
 Prim Stack:
-    ref.sdf              /BrowRig/SymBrow/Anim
+    ref.usda             /BrowRig/SymBrow/Anim
 
 Child names:
      ['Brow']
@@ -124,14 +124,14 @@ Child names:
 Results for composing </FaceRig/BrowRig/SymBrow/Anim/Brow>
 
 Prim Stack:
-    ref.sdf              /BrowRig/SymBrow/Anim/Brow
+    ref.usda             /BrowRig/SymBrow/Anim/Brow
 
 ------------------------------------------------------------------------
 Results for composing </FaceRig/BrowRig/LBrow>
 
 Prim Stack:
-    ref.sdf              /BrowRig/LBrow
-    ref.sdf              /BrowRig/SymBrow
+    ref.usda             /BrowRig/LBrow
+    ref.usda             /BrowRig/SymBrow
 
 Child names:
      ['BrowInnUDPosBrowInnUDNeg_sculpt', 'Anim']
@@ -140,20 +140,20 @@ Child names:
 Results for composing </FaceRig/BrowRig/LBrow/BrowInnUDPosBrowInnUDNeg_sculpt>
 
 Prim Stack:
-    ref.sdf              /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt
+    ref.usda             /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt
 
 Property names:
      ['amount']
 
 Property stacks:
 /FaceRig/BrowRig/LBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount:
-    ref.sdf              /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount
+    ref.usda             /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount
 
 ------------------------------------------------------------------------
 Results for composing </FaceRig/BrowRig/LBrow/Anim>
 
 Prim Stack:
-    ref.sdf              /BrowRig/SymBrow/Anim
+    ref.usda             /BrowRig/SymBrow/Anim
 
 Prohibited child names:
      ['Brow']
@@ -162,8 +162,8 @@ Prohibited child names:
 Results for composing </FaceRig/BrowRig/RBrow>
 
 Prim Stack:
-    ref.sdf              /BrowRig/RBrow
-    ref.sdf              /BrowRig/SymBrow
+    ref.usda             /BrowRig/RBrow
+    ref.usda             /BrowRig/SymBrow
 
 Child names:
      ['BrowInnUDPosBrowInnUDNeg_sculpt', 'Anim']
@@ -172,20 +172,20 @@ Child names:
 Results for composing </FaceRig/BrowRig/RBrow/BrowInnUDPosBrowInnUDNeg_sculpt>
 
 Prim Stack:
-    ref.sdf              /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt
+    ref.usda             /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt
 
 Property names:
      ['amount']
 
 Property stacks:
 /FaceRig/BrowRig/RBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount:
-    ref.sdf              /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount
+    ref.usda             /BrowRig/SymBrow/BrowInnUDPosBrowInnUDNeg_sculpt.amount
 
 ------------------------------------------------------------------------
 Results for composing </FaceRig/BrowRig/RBrow/Anim>
 
 Prim Stack:
-    ref.sdf              /BrowRig/SymBrow/Anim
+    ref.usda             /BrowRig/SymBrow/Anim
 
 Prohibited child names:
      ['Brow']
@@ -194,7 +194,7 @@ Prohibited child names:
 Results for composing </FaceRig/BrowRig/Anim>
 
 Prim Stack:
-    ref.sdf              /BrowRig/Anim
+    ref.usda             /BrowRig/Anim
 
 Prohibited child names:
      ['LBrow', 'RBrow']
@@ -203,7 +203,7 @@ Prohibited child names:
 Results for composing </FaceRig/Anim>
 
 Prim Stack:
-    root.sdf             /FaceRig/Anim
+    root.usda            /FaceRig/Anim
 
 Child names:
      ['Face']
@@ -212,7 +212,7 @@ Child names:
 Results for composing </FaceRig/Anim/Face>
 
 Prim Stack:
-    root.sdf             /FaceRig/Anim/Face
+    root.usda            /FaceRig/Anim/Face
 
 Child names:
      ['Eyes']
@@ -221,7 +221,7 @@ Child names:
 Results for composing </FaceRig/Anim/Face/Eyes>
 
 Prim Stack:
-    root.sdf             /FaceRig/Anim/Face/Eyes
+    root.usda            /FaceRig/Anim/Face/Eyes
 
 Child names:
      ['LBrow', 'RBrow']
@@ -230,11 +230,11 @@ Child names:
 Results for composing </FaceRig/Anim/Face/Eyes/LBrow>
 
 Prim Stack:
-    ref.sdf              /BrowRig/SymBrow/Anim/Brow
+    ref.usda             /BrowRig/SymBrow/Anim/Brow
 
 ------------------------------------------------------------------------
 Results for composing </FaceRig/Anim/Face/Eyes/RBrow>
 
 Prim Stack:
-    ref.sdf              /BrowRig/SymBrow/Anim/Brow
+    ref.usda             /BrowRig/SymBrow/Anim/Brow
 

@@ -11,15 +11,18 @@
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/pegtl/pegtl/contrib/trace.hpp"
 #include "pxr/usd/ar/asset.h"
+#include "pxr/usd/sdf/fileIO.h"
 #include "pxr/usd/sdf/textParserContext.h"
 #include "pxr/usd/sdf/textFileFormatParser.h"
 #include "pxr/usd/sdf/debugCodes.h"
+#include "pxr/usd/sdf/usdaData.h"
 #include "pxr/usd/sdf/textParserHelpers.h"
 #include "pxr/base/ts/raii.h"
 #include "pxr/base/ts/spline.h"
 #include "pxr/base/ts/valueTypeDispatch.h"
 
 #include <cmath>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -178,6 +181,22 @@ struct TextParserAction<KeywordNone>
 };
 
 template <>
+struct TextParserAction<KeywordAnimationBlock>
+{
+    template <class Input>
+    static void apply(const Input& in, Sdf_TextParserContext& context)
+    {
+        Sdf_TextParserCurrentParsingContext parsingContext =
+            context.parsingContext.back();
+        if (parsingContext ==
+            Sdf_TextParserCurrentParsingContext::AttributeSpec)
+        {
+            _SetDefault(context.path, VtValue(SdfAnimationBlock()), context);
+        }
+    }
+};
+
+template <>
 struct TextParserAction<KeywordCustomData>
 {
     template <class Input>
@@ -283,7 +302,12 @@ struct TextParserAction<KeywordCustom>
     template <class Input>
     static void apply(const Input& in, Sdf_TextParserContext& context)
     {
-        context.custom = true;
+        if (context.parsingContext.back() ==
+            Sdf_TextParserCurrentParsingContext::SplineTangent) {
+            context.splineTangentAlgorithm = TsTangentAlgorithmCustom;
+        } else {
+            context.custom = true;
+        }
     }
 };
 
@@ -497,31 +521,22 @@ _BundleSplineValue(
 }
 
 static void
-_SetSplineTanWithWidth(
+_SetSplineTangent(
     Sdf_TextParserContext& context,
     const double width,
-    const VtValue &slope)
+    const VtValue &slope,
+    const TsTangentAlgorithm algorithm)
 {
     if (context.splineTanIsPre) {
         context.splineKnot.SetPreTanWidth(width);
         context.splineKnot.SetPreTanSlope(slope);
+        context.splineKnot.SetPreTanAlgorithm(algorithm);
     } else {
         context.splineKnot.SetPostTanWidth(width);
         context.splineKnot.SetPostTanSlope(slope);
+        context.splineKnot.SetPostTanAlgorithm(algorithm);
     }
-} 
-
-static void
-_SetSplineTanWithoutWidth(
-    Sdf_TextParserContext& context,
-    const VtValue &slope)
-{
-    if (context.splineTanIsPre) {
-        context.splineKnot.SetPreTanSlope(slope);
-    } else {
-        context.splineKnot.SetPostTanSlope(slope);
-    }
-} 
+}
 
 template <class Input>
 std::pair<bool, Sdf_ParserHelpers::Value>
@@ -984,8 +999,8 @@ struct TextParserAction<PathRef>
                 // The relocates map is expected to only hold absolute paths.
                 // The SdRelocatesMapProxy ensures that all paths are made
                 // absolute when editing, but since we're bypassing that proxy
-                // and setting the map directly into the underlying SdfData, we
-                // need to explicitly absolutize paths here.
+                // and setting the map directly into the underlying
+                // SdfUsdaData, we need to explicitly absolutize paths here.
                 const SdfPath srcPath = 
                     context.relocatesKey.MakeAbsolutePath(context.path);
                 const SdfPath targetPath =
@@ -2163,6 +2178,22 @@ struct TextParserAction<KeywordNone_LC>
             Sdf_TextParserCurrentParsingContext::SplineInterpMode) {
             context.splineKnot.SetNextInterpolation(TsInterpValueBlock);
             // SplineInterpMode context will be popped in its action
+        } else if (context.parsingContext.back() ==
+            Sdf_TextParserCurrentParsingContext::SplineTangent) {
+            context.splineTangentAlgorithm = TsTangentAlgorithmNone;
+        }
+    }
+};
+
+template <>
+struct TextParserAction<KeywordAutoEase>
+{
+    template <class Input>
+    static void apply(const Input& in, Sdf_TextParserContext& context)
+    {
+        if (context.parsingContext.back() == 
+            Sdf_TextParserCurrentParsingContext::SplineTangent) {
+            context.splineTangentAlgorithm = TsTangentAlgorithmAutoEase;
         }
     }
 };
@@ -2439,10 +2470,9 @@ struct TextParserAction<SplineKnotTime>
         const std::pair<bool, Sdf_ParserHelpers::Value> result =
             _HelperGetNumericValueFromString(in, context);
         context.splineKnot = TsKnot(
-                context.spline.GetValueType(), 
-                context.spline.GetCurveType());
+                context.spline.GetValueType());
         context.splineKnot.SetTime(result.second.Get<double>());
-        // We should get SplineKnotValue next;
+        // Reset the spline knot context values.
         context.splineKnotValue = Sdf_ParserHelpers::Value();
         context.splineKnotPreValue = Sdf_ParserHelpers::Value();
     }
@@ -2518,41 +2548,74 @@ struct TextParserAction<SplineKnotParam>
 };
 
 template <>
-struct TextParserAction<SplineTangentWithoutWidthValue>
+struct TextParserAction<SplineTangentWidthSlopeAlgorithmItem>
 {
     template <class Input>
     static void apply(const Input& in, Sdf_TextParserContext& context)
     {
         // Set the parsed tangent value
-        _SetSplineTanWithoutWidth(
+        _SetSplineTangent(
             context,
-            _BundleSplineValue(context, context.splineTangentValue));
+            context.splineTangentWidthValue.Get<double>(),
+            _BundleSplineValue(context, context.splineTangentSlopeValue),
+            context.splineTangentAlgorithm);
     }
 };
 
 template <>
-struct TextParserAction<SplineTangentWithWidthValue>
+struct TextParserAction<SplineTangentWidthSlopeItem>
+{
+    template <class Input>
+    static void apply(const Input& in, Sdf_TextParserContext& context)
+    {
+        // Set the parsed tangent value
+        _SetSplineTangent(
+            context,
+            context.splineTangentWidthValue.Get<double>(),
+            _BundleSplineValue(context, context.splineTangentSlopeValue),
+            TsTangentAlgorithmNone);
+    }
+};
+
+template <>
+struct TextParserAction<SplineTangentSlopeAlgorithmItem>
+{
+    template <class Input>
+    static void apply(const Input& in, Sdf_TextParserContext& context)
+    {
+        // Set the parsed tangent value
+        _SetSplineTangent(
+            context,
+            0.0,  // width
+            _BundleSplineValue(context, context.splineTangentSlopeValue),
+            context.splineTangentAlgorithm);
+    }
+};
+
+template <>
+struct TextParserAction<SplineTangentSlopeItem>
 {
     template <class Input>
     static void apply(const Input& in, Sdf_TextParserContext& context)
     {
         // Set the parsed tangent width and value
-        _SetSplineTanWithWidth(
+        _SetSplineTangent(
             context,
-            context.splineTangentWidthValue.Get<double>(), 
-            _BundleSplineValue(context, context.splineTangentValue));
+            0.0,  // width
+            _BundleSplineValue(context, context.splineTangentSlopeValue),
+            TsTangentAlgorithmNone);
     }
 };
 
 template <>
-struct TextParserAction<SplineTangentValue>
+struct TextParserAction<SplineTangentSlope>
 {
     template <class Input>
     static void apply(const Input& in, Sdf_TextParserContext& context)
     {
         const std::pair<bool, Sdf_ParserHelpers::Value> result =
             _HelperGetNumericValueFromString(in, context);
-        context.splineTangentValue = result.second;
+        context.splineTangentSlopeValue = result.second;
     }
 };
 
@@ -2602,8 +2665,9 @@ struct TextParserAction<KeywordPre>
             Sdf_TextParserCurrentParsingContext::SplineKnotParam) {
             context.splineTanIsPre = true;
             // We should get a SplineTangent now
-            context.splineTangentValue = Sdf_ParserHelpers::Value();
+            context.splineTangentSlopeValue = Sdf_ParserHelpers::Value();
             context.splineTangentWidthValue = Sdf_ParserHelpers::Value();
+            context.splineTangentAlgorithm = TsTangentAlgorithmNone;
             _PushContext(context,
                          Sdf_TextParserCurrentParsingContext::SplineTangent);
         }
@@ -2676,8 +2740,9 @@ struct TextParserAction<SplineInterpMode>
         // Anticipate a SplineTangent, which could be empty, so we need to check
         // this in SplinePostShaping action, else SplineTangent will be popped
         // in its matching action.
-        context.splineTangentValue = Sdf_ParserHelpers::Value();
+        context.splineTangentSlopeValue = Sdf_ParserHelpers::Value();
         context.splineTangentWidthValue = Sdf_ParserHelpers::Value();
+        context.splineTangentAlgorithm = TsTangentAlgorithmNone;
         _PushContext(context,
                      Sdf_TextParserCurrentParsingContext::SplineTangent);
     }
@@ -4083,31 +4148,30 @@ struct TextParserAction<LayerHeader>
     template <class Input>
     static void apply(const Input& in, Sdf_TextParserContext& context)
     {
-        const std::string cookie = TfStringTrimRight(in.string());
+        const std::string header = TfStringTrimRight(in.string());
         const std::string expected = "#" +  context.magicIdentifierToken + " ";
-        if (TfStringStartsWith(cookie, expected))
-        {
-            if (!context.versionString.empty() && 
-                !TfStringEndsWith(cookie, context.versionString))
-            {
-                TF_WARN("File '%s' is not the latest %s version (found '%s', "
-                    "expected '%s'). The file may parse correctly and yield "
-                    "incorrect results.",
-                    context.fileContext.c_str(),
-                    context.magicIdentifierToken.c_str(),
-                    cookie.substr(expected.length()).c_str(),
-                    context.versionString.c_str());
-            }
-        }
-        else
-        {
-            // throw error
-            std::string errorMessage = TfStringPrintf(
-                "Magic Cookie '%s'.  Expected prefix of '%s'",
-                TfStringTrim(cookie).c_str(),
-                expected.c_str());
 
-            throw PEGTL_NS::parse_error(errorMessage, in);
+        if (TfStringStartsWith(header, expected)) {
+            // Looks promising, see if we can extract a version that we can
+            // read. Find the first non-space character after expected
+            const size_t beg = header.find_first_not_of(" ", expected.size());
+            const size_t end = header.find_first_of(" \t\n", beg);
+            const std::string versionStr = header.substr(beg, end - beg);
+
+            std::string reason;
+            SdfFileVersion layerVersion =
+                SdfUsdaData::ValidateLayerVersionString(versionStr,
+                                                        &reason);
+            if (layerVersion) {
+                context.data->SetLayerVersion(layerVersion);
+            } else {
+                throw PEGTL_NS::parse_error(reason, in);
+            }
+        } else {
+            const std::string reason = TfStringPrintf(
+                "Invalid layer header '%s' does not start with '%s'",
+                header.c_str(), expected.c_str());
+            throw PEGTL_NS::parse_error(reason, in);
         }
 
         context.nameChildrenStack.emplace_back();
@@ -4226,7 +4290,7 @@ struct TextParserAction<SublayerListClose>
 ////////////////////////////////////////////////////////////////////////
 // Parsing entry-point methods
 
-/// Parse a text layer into an SdfData
+/// Parse a text layer into an SdfUsdaData
 bool 
 Sdf_ParseLayer(
     const std::string& fileContext, 
@@ -4234,12 +4298,19 @@ Sdf_ParseLayer(
     const std::string& magicId,
     const std::string& versionString,
     bool metadataOnly,
-    SdfDataRefPtr data,
+    SdfUsdaDataRefPtr data,
     SdfLayerHints *hints)
 {
     TfAutoMallocTag2 tag("Sdf", "Sdf_ParseLayer");
 
     TRACE_FUNCTION();
+
+    if (!TF_VERIFY(data,
+                   "Invalid null SdfUsdaDataRefPtr pointer passed to"
+                   " Sdf_ParseLayer."))
+    {
+        return false;
+    }
 
     // Configure for input file.
     Sdf_TextParserContext context;
@@ -4249,12 +4320,32 @@ Sdf_ParseLayer(
     context.magicIdentifierToken = magicId;
     context.versionString = versionString;
 
-    // Use the ArAsset buffer facility.
-    auto bufferPtr = asset->GetBuffer();
-    if (!bufferPtr) {
-        TF_RUNTIME_ERROR("Failed to read asset contents @%s@: "
-            "an error occurred while reading",
-            fileContext.c_str());
+    const size_t size = asset->GetSize();
+
+    // If the entire asset size is small, just read the asset content fully into
+    // memory via ArAsset::Read().  We've observed that this can be faster than
+    // demand-paging for very small assets on some systems.
+    const size_t smallSize = 1024;
+    std::unique_ptr<char []> smallBuffer;
+    std::shared_ptr<const char> largeBuffer;
+    char const *contentPtr = nullptr;
+    if (size <= smallSize) {
+        // Use ArAsset::Read().
+        smallBuffer.reset(new char[size]);
+        if (asset->Read(smallBuffer.get(), size, /*offset=*/0) == size) {
+            contentPtr = smallBuffer.get();
+        }
+    }
+    else {
+        // Use the ArAsset buffer facility.
+        largeBuffer = asset->GetBuffer();
+        contentPtr = largeBuffer.get();
+    }
+
+    // Now we should have content, either via smallBuffer or largeBuffer.
+    if (!contentPtr) {
+        TF_RUNTIME_ERROR("Failed to read asset content: @%s@",
+                         fileContext.c_str());
         return false;
     }
 
@@ -4267,13 +4358,14 @@ Sdf_ParseLayer(
         std::string_view
         >;
 
-    PegtlInput content { bufferPtr.get(), asset->GetSize(), fileContext };
+    PegtlInput content { contentPtr, size, fileContext };
     context.values.errorReporter =
         [&context, capture0 = std::cref(content)](auto && PH1) { 
             return Sdf_TextFileFormatParser
                 ::_ReportParseError<PegtlInput>(
                     context, capture0, std::forward<decltype(PH1)>(PH1));
         };
+    
     bool status = false;
     try
     {
@@ -4335,18 +4427,25 @@ Sdf_ParseLayer(
     return status;
 }
 
-/// Parse a layer text string into an SdfData
+/// Parse a layer text string into an SdfUsdaData
 bool
 Sdf_ParseLayerFromString(
     const std::string & layerString, 
     const std::string & magicId,
     const std::string & versionString,
-    SdfDataRefPtr data,
+    SdfUsdaDataRefPtr data,
     SdfLayerHints *hints)
 {
     TfAutoMallocTag2 tag("Sdf", "Sdf_ParseLayerFromString");
 
     TRACE_FUNCTION();
+
+    if (!TF_VERIFY(data,
+                   "Invalid null SdfUsdaDataRefPtr pointer passed to"
+                   " Sdf_ParseLayerFromString."))
+    {
+        return false;
+    }
 
     // Configure for input string.
     Sdf_TextParserContext context;

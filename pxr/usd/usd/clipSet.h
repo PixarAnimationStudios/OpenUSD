@@ -51,9 +51,54 @@ public:
 
     /// Return the active clip at the given \p time. This should
     /// always be a valid Usd_ClipRefPtr.
-    const Usd_ClipRefPtr& GetActiveClip(double time) const
+    ///
+    /// This overload tries to find if \p time has any jump discontinuity, and
+    /// if so, and if querying a pre-time, it will return the previous clip.
+    ///
+    /// \sa GetActiveClip(UsdTimeCode time, bool timeHasJumpDiscontinuity)
+    const Usd_ClipRefPtr& GetActiveClip(UsdTimeCode time) const
     {
-        return valueClips[_FindClipIndexForTime(time)];
+        if (!time.IsPreTime()) {
+            // When querying an ordinary time, we do not need to check if there 
+            // is a jump discontinuity at time, the active clip will be decided 
+            // based on the later time mapping.
+            return GetActiveClip(time, false /*timeHasJumpDiscontinuity*/);
+        }
+
+        return GetActiveClip(
+            time, _HasJumpDiscontinuityAtTime(time.GetValue()));
+    }
+
+    /// Return the active clip at the given \p time. This should
+    /// always be a valid Usd_ClipRefPtr.
+    ///
+    /// If \p timeHasJumpDiscontinuity is true, and \p time is a pre-time 
+    /// then our active clip should be previous clip.
+    const Usd_ClipRefPtr& GetActiveClip(
+        UsdTimeCode time, bool timeHasJumpDiscontinuity) const
+    {
+        size_t clipIndex = _FindClipIndexForTime(time.GetValue());
+        return (timeHasJumpDiscontinuity && time.IsPreTime() && clipIndex > 0) ?
+            valueClips[clipIndex - 1] : valueClips[clipIndex];
+    }
+
+    /// Returns the previous clip given a \p clip. 
+    ///
+    /// If there is no previous clip, this \p clip is returned as the previous 
+    /// clip.
+    const Usd_ClipRefPtr& GetPreviousClip(
+        const Usd_ClipRefPtr& clip) const
+    {
+        auto it = std::find(valueClips.begin(), valueClips.end(), clip);
+        if (it == valueClips.end()) {
+            TF_CODING_ERROR("Clip must be in clip set");
+            return clip;
+        }
+        if (it != valueClips.begin()) {
+            return *(--it);
+        }
+        // No previous clip, return the same clip.
+        return clip; 
     }
 
     /// Return bracketing time samples for the attribute at \p path
@@ -89,7 +134,18 @@ public:
     /// the attribute's value type.
     template <class T>
     bool QueryTimeSample(
-        const SdfPath& path, double time, 
+        const SdfPath& path, UsdTimeCode time, 
+        Usd_InterpolatorBase* interpolator, T* value) const;
+
+    /// Query time samples for an attribute at \p path at pre-time \p time if
+    /// samples represent a jump discontinuity.
+    ///
+    /// If \p time is not a pre-time or it doesn't represent a jump
+    /// discontinuity, this function returns false. Otherwise, it returns
+    /// true and sets the pre-time sample value to \p value.
+    template <class T>
+    bool QueryPreTimeSampleWithJumpDiscontinuity(
+        const SdfPath& path, UsdTimeCode time, 
         Usd_InterpolatorBase* interpolator, T* value) const;
 
     std::string name;
@@ -110,10 +166,18 @@ private:
     // This will always return a valid index into the valueClips list.
     size_t _FindClipIndexForTime(double time) const;
 
+    /// Returns true if the \p time represents a jump discontinuity.
+    ///
+    bool _HasJumpDiscontinuityAtTime(double time) const;
+
     // Return whether the specified clip contributes time sample values
     // to this clip set for the attribute at \p path.
     bool _ClipContributesValue(
         const Usd_ClipRefPtr& clip, const SdfPath& path) const;
+
+    /// Mapping of external to internal times, populated during clips
+    /// population.
+    std::shared_ptr<const Usd_Clip::TimeMappings> _times;
 };
 
 // ------------------------------------------------------------
@@ -121,10 +185,11 @@ private:
 template <class T>
 inline bool
 Usd_ClipSet::QueryTimeSample(
-    const SdfPath& path, double time, 
+    const SdfPath& path, UsdTimeCode time, 
     Usd_InterpolatorBase* interpolator, T* value) const
 {
-    const Usd_ClipRefPtr& clip = GetActiveClip(time);
+    const Usd_ClipRefPtr& clip = 
+        GetActiveClip(time, false /*timeHasJumpDiscontinuity*/);
 
     // First query the clip for time samples at the specified time.
     if (clip->QueryTimeSample(path, time, interpolator, value)) {
@@ -134,6 +199,31 @@ Usd_ClipSet::QueryTimeSample(
     // If no samples exist in the clip, get the default value from
     // the manifest. Return true if we get a non-block value, false
     // otherwise.
+    return Usd_HasDefault(manifestClip, path, value) == 
+        Usd_DefaultValueResult::Found;
+}
+
+template <class T>
+inline bool
+Usd_ClipSet::QueryPreTimeSampleWithJumpDiscontinuity(
+    const SdfPath& path, UsdTimeCode time,
+    Usd_InterpolatorBase* interpolator, T* value) const
+{
+    if (!time.IsPreTime()) {
+        return false;
+    }
+
+    if (!_HasJumpDiscontinuityAtTime(time.GetValue())) {
+        return false;
+    }
+
+    const Usd_ClipRefPtr& clip = 
+        GetActiveClip(time, true /*timeHasJumpDiscontinuity*/);
+    
+    if (clip->QueryTimeSample(path, time, interpolator, value)) {
+        return true;
+    }
+
     return Usd_HasDefault(manifestClip, path, value) == 
         Usd_DefaultValueResult::Found;
 }

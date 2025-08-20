@@ -11,6 +11,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/api.h"
+#include "pxr/usd/pcp/dependency.h"
 #include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
 #include "pxr/usd/sdf/changeList.h"
@@ -150,6 +151,20 @@ private:
     using _ProcessedLayerSublayerPathPairsKey = 
         std::pair<SdfLayerHandle, std::string>;
 
+    using _LayerToLayerStacks = 
+        std::unordered_map<SdfLayerHandle, PcpLayerStackPtrVector, TfHash>;
+
+    /// Sets a list of layer stacks that should override query results for the
+    /// supplied layer.  In practice, this is used during change processing for
+    /// layers that are being unmuted or sublayers that are being added.
+    void _SetLayerStacksUsingLayerOverride(
+        const SdfLayerHandle& layer, 
+        const PcpLayerStackPtrVector& layerStacks);
+
+    /// Returns the overrides set for the supplied layer.
+    const PcpLayerStackPtrVector&
+    _GetLayerStacksUsingLayerOverride(const SdfLayerHandle& layer) const;
+
     // Set of hashed layer / sublayer path pairs that have been processed in
     // in this round of changes.  These values are checked in order to avoid
     // recursively processing cycles created in layer stacks.
@@ -168,6 +183,9 @@ private:
     // ancestor specs in this set and processing children iteratively when
     // applying changes to the cache.
     SdfPathSet _didChangePrimSpecsAndChildrenInternal;
+
+    // Holds layer stack overrides set for individual layers
+    _LayerToLayerStacks _layerToLayerStackOverrides;
 };
 
 /// Structure used to temporarily retain layers and layerStacks within
@@ -337,6 +355,29 @@ public:
     /// Applies the changes to the layer stacks and caches.
     PCP_API
     void Apply() const;
+
+    /// Returns dependencies of the given site of scene description.
+    /// This is similar to PcpCache::FindSiteDependencies but takes
+    /// into account additional information from changes processed
+    /// by this object.
+    PCP_API
+    PcpDependencyVector
+    FindSiteDependencies(const PcpCache* cache,
+                         const SdfLayerHandle& siteLayer,
+                         const SdfPath& sitePath,
+                         PcpDependencyFlags depMask,
+                         bool recurseOnSite,
+                         bool recurseOnIndex,
+                         bool filterForExistingCachesOnly) const;
+
+    /// Returns every layer stack that includes \p layer.
+    /// This is similar to PcpCache::FindAllLayerStacksUsingLayer but takes
+    /// into account additional information from changes processed
+    /// by this object.
+    PCP_API
+    const PcpLayerStackPtrVector& 
+    FindAllLayerStacksUsingLayer(const PcpCache* cache, 
+                                 const SdfLayerHandle& layer) const;
 
 private:
     // Internal data types for namespace edits from Sd.

@@ -32,6 +32,9 @@ public:
 
     USDSKELIMAGING_API
     TfTokenVector InstanceDataSourceNames() override;
+
+    USDSKELIMAGING_API
+    TfTokenVector ProxyPathTranslationDataSourceNames() override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,36 +1,36 @@
-Loading @SubrootReferenceAndVariants/root.sdf@
+Loading @SubrootReferenceAndVariants/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Group>
 
 Prim Stack:
-    root.sdf             /Group
+    root.usda            /Group
 
 ------------------------------------------------------------------------
 Results for composing </SubrootRef>
 
 Prim Stack:
-    root.sdf             /SubrootRef
-    group.sdf            /Group{v=y}Model
+    root.usda            /SubrootRef
+    group.usda           /Group{v=y}Model
 
 Property names:
      ['a']
 
 Property stacks:
 /SubrootRef.a:
-    group.sdf            /Group{v=y}Model.a
+    group.usda           /Group{v=y}Model.a
 
 ------------------------------------------------------------------------
 Results for composing </RootRef>
 
 Prim Stack:
-    root.sdf             /RootRef
-    model.sdf            /Model
-    model.sdf            /Model{v=x}
+    root.usda            /RootRef
+    model.usda           /Model
+    model.usda           /Model{v=x}
 
 Variant Selections:
     {v = x}
@@ -43,25 +43,25 @@ Property names:
 
 Property stacks:
 /RootRef.modelAttr:
-    model.sdf            /Model{v=x}.modelAttr
+    model.usda           /Model{v=x}.modelAttr
 
 ------------------------------------------------------------------------
 Results for composing </RootRef/Child>
 
 Prim Stack:
-    root.sdf             /RootRef/Child
-    group.sdf            /Group{v=y}Model
+    root.usda            /RootRef/Child
+    group.usda           /Group{v=y}Model
 
 Property names:
      ['a']
 
 Property stacks:
 /RootRef/Child.a:
-    group.sdf            /Group{v=y}Model.a
+    group.usda           /Group{v=y}Model.a
 
 ------------------------------------------------------------------------
 Results for composing </InvalidSubrootRefWithVariantSelection>
 
 Prim Stack:
-    root.sdf             /InvalidSubrootRefWithVariantSelection
+    root.usda            /InvalidSubrootRefWithVariantSelection
 

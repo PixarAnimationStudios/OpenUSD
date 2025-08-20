@@ -1,6 +1,0 @@
-#sdf 1.4.32
-
-over "Prim"
-{
-    rel badRel = </Variant/Selection{vset=sel}Is/Invalid>
-}

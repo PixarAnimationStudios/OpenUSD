@@ -715,6 +715,14 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             'Instance3' : instance3Contents,
             'Instance4' : instance4Contents
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Class/Child" : self.PrimResyncType.RenameSource,
+            "/Class/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Instance2/Child" : self.PrimResyncType.RenameSource,
+            "/Instance2/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Instance3": self.PrimResyncType.UnchangedPrimStack,
+            "/Instance4": self.PrimResyncType.UnchangedPrimStack
+        })
 
         # On stage2 the implied class specs on layer2 are also updated with the
         # rename of Child to RenamedChild. This results in Prim2's contents 
@@ -744,6 +752,12 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 }    
             },
             'Prim2' : prim2Contents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Class/Child" : self.PrimResyncType.RenameSource,
+            "/Class/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim2/Child" : self.PrimResyncType.RenameSource,
+            "/Prim2/RenamedChild" : self.PrimResyncType.RenameDestination,
         })
 
         # On stage2_A the implied class specs on layer2_A are also updated with
@@ -775,6 +789,12 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             },
             'Prim2_A' : prim2_AContents,
         })
+        self._VerifyStageResyncNotices(stage2_A, {
+            "/Class/Child" : self.PrimResyncType.RenameSource,
+            "/Class/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim2_A/Child" : self.PrimResyncType.RenameSource,
+            "/Prim2_A/RenamedChild" : self.PrimResyncType.RenameDestination,
+        })
 
         # On stage3 the implied class specs on layer3 are also updated with the
         # rename of Child to RenamedChild. However, Prim3's contents have NOT 
@@ -796,6 +816,11 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             },
             'Prim3' : prim3Contents,
         })
+        self._VerifyStageResyncNotices(stage3, {
+            "/Class/Child" : self.PrimResyncType.RenameSource,
+            "/Class/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
+        })
 
         self._VerifyStageContents(stage3_A, {
             'Class' : {
@@ -808,6 +833,11 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 }    
             },
             'Prim3_A' : prim3_AContents,
+        })
+        self._VerifyStageResyncNotices(stage3_A, {
+            "/Class/Child" : self.PrimResyncType.RenameSource,
+            "/Class/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim3_A" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # On stage4, the implied class specs on layer4 are updated so that 
@@ -835,6 +865,14 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             },
             'Prim4' : prim4Contents,
         })
+        self._VerifyStageResyncNotices(stage4, {
+            # We have a source without a target because the target path, 
+            # /Class/RenamedChild/GrandChild, is subsumed by the resync required
+            # for its parent newly coming into existence.
+            "/Class/Child/GrandChild" : self.PrimResyncType.ReparentSource,
+            "/Class/RenamedChild" : self.PrimResyncType.Other,
+            "/Prim4" : self.PrimResyncType.UnchangedPrimStack,
+        })
 
         self._VerifyStageContents(stage4_A, {
             'Class' : {
@@ -849,6 +887,14 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 }    
             },
             'Prim4_A' : prim4_AContents,
+        })
+        self._VerifyStageResyncNotices(stage4_A, {
+            # We have a source without a target because the target path, 
+            # /Class/RenamedChild/GrandChild, is subsumed by the resync required
+            # for its parent newly coming into existence.
+            "/Class/Child/GrandChild" : self.PrimResyncType.ReparentSource,
+            "/Class/RenamedChild" : self.PrimResyncType.Other,
+            "/Prim4_A" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # On stage5, the combined stage, the implied class specs on layer5 are
@@ -880,6 +926,14 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             'Prim3' : prim3Contents,
             'Prim4' : prim4Contents,
         })
+        self._VerifyStageResyncNotices(stage5, {
+            "/Class/Child" : self.PrimResyncType.RenameSource,
+            "/Class/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim2/Child" : self.PrimResyncType.RenameSource,
+            "/Prim2/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim4" : self.PrimResyncType.UnchangedPrimStack,
+        })
 
         self._VerifyStageContents(stage5_A, {
             'Class' : {
@@ -894,6 +948,14 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             'Prim2_A' : prim2_AContents,
             'Prim3_A' : prim3_AContents,
             'Prim4_A' : prim4_AContents,
+        })
+        self._VerifyStageResyncNotices(stage5_A, {
+            "/Class/Child" : self.PrimResyncType.RenameSource,
+            "/Class/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim2_A/Child" : self.PrimResyncType.RenameSource,
+            "/Prim2_A/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim3_A" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim4_A" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # Edit: Reparent and rename /Class/RenamedChild to /MovedChild
@@ -943,6 +1005,13 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             'Instance3' : instance3Contents,
             'Instance4' : instance4Contents
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Class/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentDestination,
+            "/Instance2/RenamedChild" : self.PrimResyncType.Delete,
+            "/Instance3": self.PrimResyncType.UnchangedPrimStack,
+            "/Instance4": self.PrimResyncType.UnchangedPrimStack
+        })
 
         # On stage2 the implied class is also updated for the move which 
         # manifests as a deletion of the specs for /Class/RenamedChild on 
@@ -966,6 +1035,10 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             },
             'Prim2' : prim2Contents,
         })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Class/RenamedChild" : self.PrimResyncType.Delete,
+            "/Prim2/RenamedChild" : self.PrimResyncType.Delete,
+        })
 
         prim2_AContents = {
             '.' : composed_A_RefAttrs,
@@ -978,6 +1051,10 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 '.' : ['A_impliedClassAttr'],
             },
             'Prim2_A' : prim2_AContents,
+        })
+        self._VerifyStageResyncNotices(stage2_A, {
+            "/Class/RenamedChild" : self.PrimResyncType.Delete,
+            "/Prim2_A/RenamedChild" : self.PrimResyncType.Delete,
         })
 
         # On stage3 the implied class specs on layer3 are updated with the
@@ -1000,6 +1077,11 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             },
             'Prim3' : prim3Contents,
         })
+        self._VerifyStageResyncNotices(stage3, {
+            "/Class/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentDestination,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
+        })
 
         self._VerifyStageContents(stage3_A, {
             'Class' : {
@@ -1013,15 +1095,20 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             },
             'Prim3_A' : prim3_AContents,
         })
+        self._VerifyStageResyncNotices(stage3_A, {
+            "/Class/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentDestination,
+            "/Prim3_A" : self.PrimResyncType.UnchangedPrimStack,
+        })
 
         # On stage4 the implied class specs on layer4 are updated so that 
-        # /Class/RenamedChild/GrandChild now resides at /Moved/GrandChild. In
-        # constrast with the prior edit's effect on stage4 the RenamedChild spec
-        # does NOT stick around even though only RenamedChild/GrandChild needed 
-        # to be moved. This is because the remaining RenamedChild would've been
-        # just an empty over, and we remove those when specs are moved. The 
-        # specs for /Class/Child still remain as they did after the previous 
-        # edit.
+        # /Class/RenamedChild/GrandChild now resides at /MovedChild/GrandChild.
+        # In constrast with the prior edit's effect on stage4 the RenamedChild
+        # spec does NOT stick around even though only RenamedChild/GrandChild 
+        # needed to be moved. This is because the remaining RenamedChild 
+        # would've been just an empty over, and we remove those when specs are
+        # moved. The specs for /Class/Child still remain as they did after the
+        # previous edit.
         #
         # However, Prim4's contents have NOT changed as the class arcs (direct 
         # and implied) now all refer to /MovedChild/GrandChild instead of 
@@ -1044,6 +1131,17 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             },
             'Prim4' : prim4Contents,
         })
+        self._VerifyStageResyncNotices(stage4, {
+            # Note that the real edit is a reparent of 
+            # /Class/RenamedChild/GrandChild to /MovedChild/GrandChild, specs
+            # are deleted and added for the parent paths /Class/RenamedChild
+            # /MovedChild that cause them to be removed and introduced on the
+            # stage. These resyncs of the parents subsume the namespace edit
+            # notifications.
+            "/Class/RenamedChild" : self.PrimResyncType.Delete,
+            "/MovedChild" : self.PrimResyncType.Other,
+            "/Prim4" : self.PrimResyncType.UnchangedPrimStack,
+        })
 
         self._VerifyStageContents(stage4_A, {
             'Class' : {
@@ -1058,6 +1156,17 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 }
             },
             'Prim4_A' : prim4_AContents,
+        })
+        self._VerifyStageResyncNotices(stage4_A, {
+            # Note that the real edit is a reparent of 
+            # /Class/RenamedChild/GrandChild to /MovedChild/GrandChild, specs
+            # are deleted and added for the parent paths /Class/RenamedChild
+            # /MovedChild that cause them to be removed and introduced on the
+            # stage. These resyncs of the parents subsume the namespace edit
+            # notifications.
+            "/Class/RenamedChild" : self.PrimResyncType.Delete,
+            "/MovedChild" : self.PrimResyncType.Other,
+            "/Prim4_A" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # On stage5, the combined stage, the implied class specs on layer5 are
@@ -1091,6 +1200,13 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             'Prim3' : prim3Contents,
             'Prim4' : prim4Contents,
         })
+        self._VerifyStageResyncNotices(stage5, {
+            "/Class/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentDestination,
+            "/Prim2/RenamedChild" : self.PrimResyncType.Delete,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim4" : self.PrimResyncType.UnchangedPrimStack,
+        })
 
         self._VerifyStageContents(stage5_A, {
             'Class' : {
@@ -1105,6 +1221,13 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             'Prim2_A' : prim2_AContents,
             'Prim3_A' : prim3_AContents,
             'Prim4_A' : prim4_AContents,
+        })
+        self._VerifyStageResyncNotices(stage5_A, {
+            "/Class/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentDestination,
+            "/Prim2_A/RenamedChild" : self.PrimResyncType.Delete,
+            "/Prim3_A" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim4_A" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # Edit: Reparent and Rename /MovedChild back to its original path 
@@ -1165,6 +1288,13 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             'Instance3' : instance3Contents,
             'Instance4' : instance4Contents
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/Class/Child" : self.PrimResyncType.RenameAndReparentDestination,
+            "/Instance2/Child" : self.PrimResyncType.Other,
+            "/Instance3": self.PrimResyncType.UnchangedPrimStack,
+            "/Instance4": self.PrimResyncType.UnchangedPrimStack
+        })
 
         # On stage2 the implied class specs are NOT updated as the deleted specs
         # for RenamedChild on layer2 from the prior move are not restored.
@@ -1196,6 +1326,9 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             },
             'Prim2' : prim2Contents,
         })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim2/Child" : self.PrimResyncType.Other,
+        })
 
         prim2_AContents = {
             '.' : composed_A_RefAttrs,
@@ -1214,6 +1347,9 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 '.' : ['A_impliedClassAttr'],
             },
             'Prim2_A' : prim2_AContents,
+        })
+        self._VerifyStageResyncNotices(stage2_A, {
+            "/Prim2_A/Child" : self.PrimResyncType.Other,
         })
 
         # On stage3 the implied class specs on layer3 are updated with the
@@ -1237,6 +1373,11 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             },
             'Prim3' : prim3Contents,
         })
+        self._VerifyStageResyncNotices(stage3, {
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/Class/Child" : self.PrimResyncType.RenameAndReparentDestination,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
+        })
 
         self._VerifyStageContents(stage3_A, {
             'Class' : {
@@ -1249,6 +1390,11 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 },
             },
             'Prim3_A' : prim3_AContents,
+        })
+        self._VerifyStageResyncNotices(stage3_A, {
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/Class/Child" : self.PrimResyncType.RenameAndReparentDestination,
+            "/Prim3_A" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # On stage4 the implied class specs on layer4 are updated with the
@@ -1272,6 +1418,13 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             },
             'Prim4' : prim4Contents,
         })
+        self._VerifyStageResyncNotices(stage4, {
+            # XXX: Add comment about /MovedChild resync as parent of GrandChild
+            # move source
+            "/MovedChild" : self.PrimResyncType.Delete,
+            "/Class/Child/GrandChild" : self.PrimResyncType.ReparentDestination,
+            "/Prim4" : self.PrimResyncType.UnchangedPrimStack,
+        })
 
         self._VerifyStageContents(stage4_A, {
             'Class' : {
@@ -1284,6 +1437,12 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 },
             },
             'Prim4_A' : prim4_AContents,
+        })
+        self._VerifyStageResyncNotices(stage4_A, {
+            # XXX: Add comment same as above
+            "/MovedChild" : self.PrimResyncType.Delete,
+            "/Class/Child/GrandChild" : self.PrimResyncType.ReparentDestination,
+            "/Prim4_A" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # On stage5, the combined stage, the implied class specs on layer5 are
@@ -1335,6 +1494,13 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             'Prim3' : prim3Contents,
             'Prim4' : prim4Contents,
         })
+        self._VerifyStageResyncNotices(stage5, {
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/Class/Child" : self.PrimResyncType.RenameAndReparentDestination,
+            "/Prim2/Child" : self.PrimResyncType.Other,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim4" : self.PrimResyncType.UnchangedPrimStack,
+        })
 
         prim2_AContents = {
             '.' : composed_A_RefAttrs,
@@ -1362,6 +1528,13 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             'Prim2_A' : prim2_AContents,
             'Prim3_A' : prim3_AContents,
             'Prim4_A' : prim4_AContents,
+        })
+        self._VerifyStageResyncNotices(stage5_A, {
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/Class/Child" : self.PrimResyncType.RenameAndReparentDestination,
+            "/Prim2_A/Child" : self.PrimResyncType.Other,
+            "/Prim3_A" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim4_A" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # Edit: Delete /Class/Child 
@@ -1431,14 +1604,21 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             'Instance3' : instance3Contents,
             'Instance4' : instance4Contents
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Class/Child" : self.PrimResyncType.Delete,
+            "/Instance2/Child" : self.PrimResyncType.Delete,
+            "/Instance3": self.PrimResyncType.Other,
+            "/Instance4": self.PrimResyncType.Other
+        })
 
-        # On stage2 the implied class is also updated to delete the specs for
-        # /Class/Child on layer2. Prim2's contents have changed to reflect the
-        # deletion of Child.
+        # On stage2 Prim2's contents have changed to reflect the deletion of 
+        # Child, but no changes were needed to be made to the implied class
+        # specs on layer2 because /Class/Child already didn't exist on this 
+        # layer after the prior edits.
         # 
-        # Similarly on stage2_A, the further implied class specs on layer2_A are
-        # updated in the same way (i.e. deleted), and Prim2_A's contents have
-        # changed to also reflect the full deletion of Child.
+        # Similarly on stage2_A, Prim2_A's contents have changed to also reflect
+        # the full deletion of Child but no implied class specs existed already
+        # due to the same prior edits.
         prim2Contents = {
             '.' : composedRefAttrs,
             'InstanceLocalChild' : {},
@@ -1450,6 +1630,9 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 '.' : ['impliedClassAttr'],
             },
             'Prim2' : prim2Contents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim2/Child" : self.PrimResyncType.Delete,
         })
 
         prim2_AContents = {
@@ -1463,6 +1646,9 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 '.' : ['A_impliedClassAttr'],
             },
             'Prim2_A' : prim2_AContents,
+        })
+        self._VerifyStageResyncNotices(stage2_A, {
+            "/Prim2_A/Child" : self.PrimResyncType.Delete,
         })
 
         # On stage3 the implied class is also updated to delete the specs for
@@ -1492,6 +1678,10 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             },
             'Prim3' : prim3Contents,
         })
+        self._VerifyStageResyncNotices(stage3, {
+            "/Class/Child" : self.PrimResyncType.Delete,
+            "/Prim3" : self.PrimResyncType.Other,
+        })
 
         prim3_AContents = {
             '.' : ['instanceLocalChildAttr', 'overRefChildAttr'],
@@ -1504,6 +1694,10 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 '.' : ['A_impliedClassAttr'],
             },
             'Prim3_A' : prim3_AContents,
+        })
+        self._VerifyStageResyncNotices(stage3_A, {
+            "/Class/Child" : self.PrimResyncType.Delete,
+            "/Prim3_A" : self.PrimResyncType.Other,
         })
 
         # On stage4 the implied class is also updated to delete the specs for
@@ -1534,6 +1728,10 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             },
             'Prim4' : prim4Contents,
         })
+        self._VerifyStageResyncNotices(stage4, {
+            "/Class/Child/GrandChild" : self.PrimResyncType.Delete,
+            "/Prim4" : self.PrimResyncType.Other,
+        })
 
         prim4_AContents = {
             '.' : ['instanceLocalGrandChildAttr', 'overRefGrandChildAttr'],
@@ -1549,6 +1747,10 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 },
             },
             'Prim4_A' : prim4_AContents,
+        })
+        self._VerifyStageResyncNotices(stage4_A, {
+            "/Class/Child/GrandChild" : self.PrimResyncType.Delete,
+            "/Prim4_A" : self.PrimResyncType.Other,
         })
 
         # On stage5, the combined stage, the implied class specs on layer5 are
@@ -1569,6 +1771,12 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             'Prim3' : prim3Contents,
             'Prim4' : prim4Contents,
         })
+        self._VerifyStageResyncNotices(stage5, {
+            "/Class/Child" : self.PrimResyncType.Delete,
+            "/Prim2/Child" : self.PrimResyncType.Delete,
+            "/Prim3" : self.PrimResyncType.Other,
+            "/Prim4" : self.PrimResyncType.Other,
+        })
 
         self._VerifyStageContents(stage5_A, {
             'Class' : {
@@ -1577,6 +1785,12 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
             'Prim2_A' : prim2_AContents,
             'Prim3_A' : prim3_AContents,
             'Prim4_A' : prim4_AContents,
+        })
+        self._VerifyStageResyncNotices(stage5_A, {
+            "/Class/Child" : self.PrimResyncType.Delete,
+            "/Prim2_A/Child" : self.PrimResyncType.Delete,
+            "/Prim3_A" : self.PrimResyncType.Other,
+            "/Prim4_A" : self.PrimResyncType.Other,
         })
 
     def test_BasicDependentGlobalInherits(self):
@@ -2517,6 +2731,18 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 'Instance3' : composedLocalClassGrandChildContents
             }
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Class/Child" : self.PrimResyncType.RenameSource,
+            "/Class/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/NestedClass/Child" : self.PrimResyncType.RenameSource,
+            "/NestedClass/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Model/LocalClass/Child" : self.PrimResyncType.RenameSource,
+            "/Model/LocalClass/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Model/Instance1/Child" : self.PrimResyncType.RenameSource,
+            "/Model/Instance1/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Model/Instance2": self.PrimResyncType.UnchangedPrimStack,
+            "/Model/Instance3": self.PrimResyncType.UnchangedPrimStack
+        })
 
         # On stage2, the propagated edits across implied inherits mean that 
         # Child is renamed to RenamedChild under the implied /Class, 
@@ -2557,6 +2783,18 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 'Instance2' : composedImpliedLocalClassChildContents,
                 'Instance3' : composedImpliedLocalClassGrandChildContents
             }
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Class/Child" : self.PrimResyncType.RenameSource,
+            "/Class/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/NestedClass/Child" : self.PrimResyncType.RenameSource,
+            "/NestedClass/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Char/LocalClass/Child" : self.PrimResyncType.RenameSource,
+            "/Char/LocalClass/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Char/Instance1/Child" : self.PrimResyncType.RenameSource,
+            "/Char/Instance1/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Char/Instance2": self.PrimResyncType.UnchangedPrimStack,
+            "/Char/Instance3": self.PrimResyncType.UnchangedPrimStack
         })
 
         # Edit: Rename and reparent /Class/RenamedChild to /MovedChild
@@ -2621,6 +2859,15 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 'Instance3' : {}
             }
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Class/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/MovedChild" : self.PrimResyncType.RenameAndReparentDestination,
+            "/NestedClass/RenamedChild" : self.PrimResyncType.Delete,
+            "/Model/LocalClass/RenamedChild" : self.PrimResyncType.Delete,
+            "/Model/Instance1/RenamedChild" : self.PrimResyncType.Delete,
+            "/Model/Instance2": self.PrimResyncType.Other,
+            "/Model/Instance3": self.PrimResyncType.Other
+        })
 
         # On stage2, the propagated edits across implied class arcs mean that 
         # RenamedChild is now deleted under the implied /Class, /NestedClass 
@@ -2647,6 +2894,14 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 'Instance2' : {},
                 'Instance3' : {}
             }
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Class/RenamedChild" : self.PrimResyncType.Delete,
+            "/NestedClass/RenamedChild" : self.PrimResyncType.Delete,
+            "/Char/LocalClass/RenamedChild" : self.PrimResyncType.Delete,
+            "/Char/Instance1/RenamedChild" : self.PrimResyncType.Delete,
+            "/Char/Instance2": self.PrimResyncType.Other,
+            "/Char/Instance3": self.PrimResyncType.Other
         })
 
     def test_TestNestedClassInherits(self):
@@ -3262,11 +3517,22 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
                 '.' : classAGrandChildAttrs
             },
         })
-
-        # XXX: The verifications of stage2 and stage3 contents are commnented
-        # out do to a bug/limitation with the prim index graph that prevents us
-        # from being able to find all the implied class spec dependencies when
-        # inherits arcs are nested under specializes arcs.
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/Child" : self.PrimResyncType.RenameSource,
+            "/Ref/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/ClassD/Child" : self.PrimResyncType.RenameSource,
+            "/ClassD/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/ClassC/Child" : self.PrimResyncType.RenameSource,
+            "/ClassC/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/ClassB/Child" : self.PrimResyncType.RenameSource,
+            "/ClassB/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/ClassA/Child" : self.PrimResyncType.RenameSource,
+            "/ClassA/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Instance1/Child" : self.PrimResyncType.RenameSource,
+            "/Instance1/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Instance2": self.PrimResyncType.UnchangedPrimStack,
+            "/Instance3": self.PrimResyncType.UnchangedPrimStack
+        })
 
         # Verify the changed contents of stage2 where "Child" is renamed to
         # "RenamedChild" under every implied class spec to match the renames in
@@ -3280,54 +3546,69 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
         # dependencies in stage3 on all the specs in layer2 as stage2 was not 
         # added as a dependent stage of the namespace editor. If stage3 didn't 
         # have prims that depend on these layer2 specs, the layer2 specs would
-        # not have updated to reflect the rename.
-        #
-        # self._VerifyStageContents(stage2, {
-        #     'ClassD' : {
-        #         '.' : ['implied2ClassDAttr'],
-        #         'RenamedChild' : {
-        #             '.' : ['implied2ChildDAttr'],
-        #             'GrandChild' : {
-        #                 '.' : ['implied2GrandChildDAttr']
-        #             }
-        #         }    
-        #     },
-        #     'ClassC' : {
-        #         '.' : ['implied2ClassCAttr'],
-        #         'RenamedChild' : {
-        #             '.' : ['implied2ChildCAttr'],
-        #             'GrandChild' : {
-        #                 '.' : ['implied2GrandChildCAttr']
-        #             }
-        #         }    
-        #     },
-        #     'ClassB' : {
-        #         '.' : ['implied2ClassBAttr'],
-        #         'RenamedChild' : {
-        #             '.' : ['implied2ChildBAttr'],
-        #             'GrandChild' : {
-        #                 '.' : ['implied2GrandChildBAttr']
-        #             }
-        #         }    
-        #     },
-        #     'ClassA' : {
-        #         '.' : ['implied2ClassAAttr'],
-        #         'RenamedChild' : {
-        #             '.' : ['implied2ChildAAttr'],
-        #             'GrandChild' : {
-        #                 '.' : ['implied2GrandChildAAttr']
-        #             }
-        #         }    
-        #     },
-        #     'Instance1' : {
-        #         '.' : stage2RefComposedAttrs, 
-        #         'RenamedChild' : stage2ChildComposedContents,
-        #     },
-        #     'Instance2' : stage2ChildComposedContents,
-        #     'Instance3' : {
-        #         '.' : stage2GrandChildComposedAttrs
-        #     },
-        # })
+        # not have updated to reflect the rename. Also, stage2 can only report
+        # "Delete" or "Other" resyncs, since the analysis for finer-grained
+        # classifications only occurs on dependent stages.
+        self._VerifyStageContents(stage2, {
+            'ClassD' : {
+                '.' : ['implied2ClassDAttr'],
+                'RenamedChild' : {
+                    '.' : ['implied2ChildDAttr'],
+                    'GrandChild' : {
+                        '.' : ['implied2GrandChildDAttr']
+                    }
+                }    
+            },
+            'ClassC' : {
+                '.' : ['implied2ClassCAttr'],
+                'RenamedChild' : {
+                    '.' : ['implied2ChildCAttr'],
+                    'GrandChild' : {
+                        '.' : ['implied2GrandChildCAttr']
+                    }
+                }    
+            },
+            'ClassB' : {
+                '.' : ['implied2ClassBAttr'],
+                'RenamedChild' : {
+                    '.' : ['implied2ChildBAttr'],
+                    'GrandChild' : {
+                        '.' : ['implied2GrandChildBAttr']
+                    }
+                }    
+            },
+            'ClassA' : {
+                '.' : ['implied2ClassAAttr'],
+                'RenamedChild' : {
+                    '.' : ['implied2ChildAAttr'],
+                    'GrandChild' : {
+                        '.' : ['implied2GrandChildAAttr']
+                    }
+                }    
+            },
+            'Instance1' : {
+                '.' : stage2RefComposedAttrs, 
+                'RenamedChild' : stage2ChildComposedContents,
+            },
+            'Instance2' : stage2ChildComposedContents,
+            'Instance3' : {
+                '.' : stage2GrandChildComposedAttrs
+            },
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/ClassD/Child" : self.PrimResyncType.Delete,
+            "/ClassD/RenamedChild" : self.PrimResyncType.Other,
+            "/ClassC/Child" : self.PrimResyncType.Delete,
+            "/ClassC/RenamedChild" : self.PrimResyncType.Other,
+            "/ClassB/Child" : self.PrimResyncType.Delete,
+            "/ClassB/RenamedChild" : self.PrimResyncType.Other,
+            "/ClassA/Child" : self.PrimResyncType.Delete,
+            "/ClassA/RenamedChild" : self.PrimResyncType.Other,
+            "/Instance1/Child" : self.PrimResyncType.Delete,
+            "/Instance1/RenamedChild" : self.PrimResyncType.Other,
+            "/Instance2": self.PrimResyncType.Other,
+            "/Instance3": self.PrimResyncType.Other
+        })
 
         # Verify the changed contents of stage3 where "Child" is renamed to
         # "RenamedChild" under every implied class spec to match the renames in
@@ -3336,53 +3617,66 @@ class TestUsdNamespaceEditorDependentEditsBasicClassArcs(
         # reference. The contents of /Instance2 and /Instance3 are completely 
         # unchanged as the composed prims they reference in layer2 were 
         # unchanged due the the changes in layer1.
-        #
-        # self._VerifyStageContents(stage3, {
-        #     'ClassD' : {
-        #         '.' : ['implied3ClassDAttr'],
-        #         'RenamedChild' : {
-        #             '.' : ['implied3ChildDAttr'],
-        #             'GrandChild' : {
-        #                 '.' : ['implied3GrandChildDAttr']
-        #             }
-        #         }    
-        #     },
-        #     'ClassC' : {
-        #         '.' : ['implied3ClassCAttr'],
-        #         'RenamedChild' : {
-        #             '.' : ['implied3ChildCAttr'],
-        #             'GrandChild' : {
-        #                 '.' : ['implied3GrandChildCAttr']
-        #             }
-        #         }    
-        #     },
-        #     'ClassB' : {
-        #         '.' : ['implied3ClassBAttr'],
-        #         'RenamedChild' : {
-        #             '.' : ['implied3ChildBAttr'],
-        #             'GrandChild' : {
-        #                 '.' : ['implied3GrandChildBAttr']
-        #             }
-        #         }    
-        #     },
-        #     'ClassA' : {
-        #         '.' : ['implied3ClassAAttr'],
-        #         'RenamedChild' : {
-        #             '.' : ['implied3ChildAAttr'],
-        #             'GrandChild' : {
-        #                 '.' : ['implied3GrandChildAAttr']
-        #             }
-        #         }    
-        #     },
-        #     'Instance1' : {
-        #         '.' : stage3RefComposedAttrs,
-        #         'RenamedChild' : stage3ChildComposedContents
-        #     },
-        #     'Instance2' : stage3ChildComposedContents,
-        #     'Instance3' : {
-        #         '.' : stage3GrandChildComposedAttrs
-        #     },
-        # })
+        self._VerifyStageContents(stage3, {
+            'ClassD' : {
+                '.' : ['implied3ClassDAttr'],
+                'RenamedChild' : {
+                    '.' : ['implied3ChildDAttr'],
+                    'GrandChild' : {
+                        '.' : ['implied3GrandChildDAttr']
+                    }
+                }    
+            },
+            'ClassC' : {
+                '.' : ['implied3ClassCAttr'],
+                'RenamedChild' : {
+                    '.' : ['implied3ChildCAttr'],
+                    'GrandChild' : {
+                        '.' : ['implied3GrandChildCAttr']
+                    }
+                }    
+            },
+            'ClassB' : {
+                '.' : ['implied3ClassBAttr'],
+                'RenamedChild' : {
+                    '.' : ['implied3ChildBAttr'],
+                    'GrandChild' : {
+                        '.' : ['implied3GrandChildBAttr']
+                    }
+                }    
+            },
+            'ClassA' : {
+                '.' : ['implied3ClassAAttr'],
+                'RenamedChild' : {
+                    '.' : ['implied3ChildAAttr'],
+                    'GrandChild' : {
+                        '.' : ['implied3GrandChildAAttr']
+                    }
+                }    
+            },
+            'Instance1' : {
+                '.' : stage3RefComposedAttrs,
+                'RenamedChild' : stage3ChildComposedContents
+            },
+            'Instance2' : stage3ChildComposedContents,
+            'Instance3' : {
+                '.' : stage3GrandChildComposedAttrs
+            },
+        })
+        self._VerifyStageResyncNotices(stage3, {
+            "/ClassD/Child" : self.PrimResyncType.RenameSource,
+            "/ClassD/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/ClassC/Child" : self.PrimResyncType.RenameSource,
+            "/ClassC/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/ClassB/Child" : self.PrimResyncType.RenameSource,
+            "/ClassB/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/ClassA/Child" : self.PrimResyncType.RenameSource,
+            "/ClassA/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Instance1/Child" : self.PrimResyncType.RenameSource,
+            "/Instance1/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Instance2": self.PrimResyncType.UnchangedPrimStack,
+            "/Instance3": self.PrimResyncType.UnchangedPrimStack
+        })
 
 if __name__ == '__main__':
     unittest.main()

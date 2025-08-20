@@ -1,0 +1,17 @@
+#usda 1.0
+
+def "Cloth_Shaders"
+{
+    def "Looks"
+    {
+        def "Cloth_DEFAULT_Cloth_SingleFabric_Cloth_Canvas" (
+            specializes = </Cloth_Shaders/Looks/Cloth_DEFAULT_Cloth_SingleFabric>
+        )
+        {
+        }
+
+        def "Cloth_DEFAULT_Cloth_SingleFabric"
+        {
+        }
+    }
+}

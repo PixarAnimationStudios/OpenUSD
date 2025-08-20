@@ -257,14 +257,14 @@ def _diffUsdzArchives(base, comp, brief):
     return _diffUsdz(base, comp, brief, [base], [comp])
 
 def _diffUsdz(base, comp, brief, baseStack, compStack):
-    from pxr import Tf, Usd
+    from pxr import Sdf, Tf
     diffResult = 0
 
     imageFormats = _findImageDiffFormats()
     imageDiffCmd, imageDiffCmdArgs = _findImageDiffTools()
 
-    baseZip = Usd.ZipFile.Open(base)
-    compZip = Usd.ZipFile.Open(comp)
+    baseZip = Sdf.ZipFile.Open(base)
+    compZip = Sdf.ZipFile.Open(comp)
 
     baseFiles = set(baseZip.GetFileNames())
     compFiles = set(compZip.GetFileNames())

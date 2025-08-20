@@ -355,7 +355,8 @@ UsdSkelSkeletonQuery::_ComputeSkinningTransforms(VtArray<Matrix4>* xforms,
         }
 
         if (xforms->size() == inverseBindXforms.size()) {
-            // xforms = inverseBindXforms * xforms
+            // xforms = inverseBindXforms * xforms 
+            // TODO: MakeUnique()
             _MultTransforms<Matrix4>(inverseBindXforms, *xforms, *xforms);
             return true;
         } else {

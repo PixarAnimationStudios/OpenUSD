@@ -1,0 +1,59 @@
+#usda 1.0
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def Scope "SullivanNoPinNoShade" (
+    doc = '''NoPinNoShade'''
+)
+{
+}
+
+def Scope "SullivanNoPinFlatShade" (
+    doc = '''NoPinFlatShade'''
+)
+{
+}
+
+def Scope "SullivanNoPinPhongShade" (
+    doc = '''NoPinPhongShade'''
+)
+{
+}
+
+def Scope "SullivanModelPinNoShade" (
+    doc = '''ModelPinNoShade'''
+)
+{
+}
+
+def Scope "SullivanModelPinFlatShade" (
+    doc = '''ModelPinFlatShade'''
+)
+{
+}
+
+def Scope "SullivanModelPinPhongShade" (
+    doc = '''ModelPinPhongShade'''
+)
+{
+}
+
+def Scope "SullivanShotPinNoShade" (
+    doc = '''ShotPinNoShade'''
+)
+{
+}
+
+def Scope "SullivanShotPinFlatShade" (
+    doc = '''ShotPinFlatShade'''
+)
+{
+}
+
+def Scope "SullivanShotPinPhongShade" (
+    doc = '''ShotPinPhongShade'''
+)
+{
+}

@@ -1,15 +1,15 @@
-Loading @TrickyListEditedTargetPaths/root.sdf@
+Loading @TrickyListEditedTargetPaths/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </ExternalReferences>
 
 Prim Stack:
-    root.sdf             /ExternalReferences
-    ref.sdf              /Ref
+    root.usda            /ExternalReferences
+    ref.usda             /Ref
 
 Child names:
      ['Child']
@@ -19,17 +19,17 @@ Property names:
 
 Property stacks:
 /ExternalReferences.relToExternalPrim:
-    root.sdf             /ExternalReferences.relToExternalPrim
-    ref.sdf              /Ref.relToExternalPrim
+    root.usda            /ExternalReferences.relToExternalPrim
+    ref.usda             /Ref.relToExternalPrim
 /ExternalReferences.relToExternalPrim2:
-    root.sdf             /ExternalReferences.relToExternalPrim2
-    ref.sdf              /Ref.relToExternalPrim2
+    root.usda            /ExternalReferences.relToExternalPrim2
+    ref.usda             /Ref.relToExternalPrim2
 /ExternalReferences.relToExternalPrim3:
-    root.sdf             /ExternalReferences.relToExternalPrim3
-    ref.sdf              /Ref.relToExternalPrim3
+    root.usda            /ExternalReferences.relToExternalPrim3
+    ref.usda             /Ref.relToExternalPrim3
 /ExternalReferences.relToExternalPrim4:
-    root.sdf             /ExternalReferences.relToExternalPrim4
-    ref.sdf              /Ref.relToExternalPrim4
+    root.usda            /ExternalReferences.relToExternalPrim4
+    ref.usda             /Ref.relToExternalPrim4
 
 Relationship targets:
 /ExternalReferences.relToExternalPrim:
@@ -41,16 +41,16 @@ Relationship targets:
 Results for composing </ExternalReferences/Child>
 
 Prim Stack:
-    root.sdf             /ExternalReferences/Child
-    ref.sdf              /Ref/Child
+    root.usda            /ExternalReferences/Child
+    ref.usda             /Ref/Child
 
 ------------------------------------------------------------------------
 Results for composing </Permissions>
 
 Prim Stack:
-    root.sdf             /Permissions
-    ref.sdf              /PermissionsRef_1
-    ref2.sdf             /PermissionsRef_2
+    root.usda            /Permissions
+    ref.usda             /PermissionsRef_1
+    ref2.usda            /PermissionsRef_2
 
 Child names:
      ['PrivateChild', 'PublicChild']
@@ -60,27 +60,27 @@ Property names:
 
 Property stacks:
 /Permissions.PrivateProp:
-    ref2.sdf             /PermissionsRef_2.PrivateProp
+    ref2.usda            /PermissionsRef_2.PrivateProp
 /Permissions.PublicProp:
-    root.sdf             /Permissions.PublicProp
+    root.usda            /Permissions.PublicProp
 /Permissions.attrToPrivateProp:
-    root.sdf             /Permissions.attrToPrivateProp
-    ref.sdf              /PermissionsRef_1.attrToPrivateProp
+    root.usda            /Permissions.attrToPrivateProp
+    ref.usda             /PermissionsRef_1.attrToPrivateProp
 /Permissions.attrToPrivateProp2:
-    root.sdf             /Permissions.attrToPrivateProp2
-    ref.sdf              /PermissionsRef_1.attrToPrivateProp2
+    root.usda            /Permissions.attrToPrivateProp2
+    ref.usda             /PermissionsRef_1.attrToPrivateProp2
 /Permissions.relToPrivatePrim:
-    root.sdf             /Permissions.relToPrivatePrim
-    ref.sdf              /PermissionsRef_1.relToPrivatePrim
+    root.usda            /Permissions.relToPrivatePrim
+    ref.usda             /PermissionsRef_1.relToPrivatePrim
 /Permissions.relToPrivatePrim2:
-    root.sdf             /Permissions.relToPrivatePrim2
-    ref.sdf              /PermissionsRef_1.relToPrivatePrim2
+    root.usda            /Permissions.relToPrivatePrim2
+    ref.usda             /PermissionsRef_1.relToPrivatePrim2
 /Permissions.relToPrivateProp:
-    root.sdf             /Permissions.relToPrivateProp
-    ref.sdf              /PermissionsRef_1.relToPrivateProp
+    root.usda            /Permissions.relToPrivateProp
+    ref.usda             /PermissionsRef_1.relToPrivateProp
 /Permissions.relToPrivateProp2:
-    root.sdf             /Permissions.relToPrivateProp2
-    ref.sdf              /PermissionsRef_1.relToPrivateProp2
+    root.usda            /Permissions.relToPrivateProp2
+    ref.usda             /PermissionsRef_1.relToPrivateProp2
 
 Relationship targets:
 /Permissions.relToPrivatePrim2:
@@ -104,11 +104,11 @@ Deleted target paths:
 Results for composing </Permissions/PrivateChild>
 
 Prim Stack:
-    ref2.sdf             /PermissionsRef_2/PrivateChild
+    ref2.usda            /PermissionsRef_2/PrivateChild
 
 ------------------------------------------------------------------------
 Results for composing </Permissions/PublicChild>
 
 Prim Stack:
-    root.sdf             /Permissions/PublicChild
+    root.usda            /Permissions/PublicChild
 

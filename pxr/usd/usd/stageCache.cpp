@@ -49,9 +49,9 @@ struct Entry {
 };
 
 using StagesById = std::unordered_map<Id, UsdStageRefPtr, TfHash>;
-using IdsByStage = std::unordered_map<UsdStageRefPtr, Id, TfHash>;
+using IdsByStage = std::unordered_map<UsdStage *, Id, TfHash>;
 using StagesByRootLayer = std::unordered_multimap<SdfLayerHandle,
-                                                  UsdStageRefPtr,
+                                                  UsdStage *,
                                                   TfHash>;
 
 /// The stage container provides a set of synchronized maps to enable
@@ -77,20 +77,20 @@ public:
     // If the stage is not in the cache, generate a new id, populate
     // the synchronized maps, and return {NewId, true}
     std::pair<Id, bool> Insert(const UsdStageRefPtr& stage) {
-        const auto it = _byStage.find(stage);
-        if (  it != _byStage.cend()) {
+        const auto it = _byStage.find(get_pointer(stage));
+        if (it != _byStage.cend()) {
             return std::make_pair(it->second, false);
         }
         const Id id = GetNextId();
-        TF_VERIFY(_byStage.emplace(stage, id).second);
+        TF_VERIFY(_byStage.emplace(get_pointer(stage), id).second);
         TF_VERIFY(_byId.emplace(id, stage).second);
-        _byRootLayer.emplace(stage->GetRootLayer(), stage);
+        _byRootLayer.emplace(stage->GetRootLayer(), get_pointer(stage));
         return std::make_pair(id, true);
     }
 
     // Return true if the stage was successfully erased
     bool Erase(const UsdStageRefPtr& stage) {
-        const auto it = _byStage.find(stage);
+        const auto it = _byStage.find(get_pointer(stage));
         if (it == _byStage.cend()) {
             return false;
         }
@@ -107,7 +107,7 @@ public:
             return false;
         }
         _EraseRootLayerEntry(it->second);
-        TF_VERIFY(_byStage.erase(it->second) == 1);
+        TF_VERIFY(_byStage.erase(get_pointer(it->second)) == 1);
         _byId.erase(it);
         return true;
     }
@@ -133,15 +133,18 @@ public:
                     const SdfLayerHandle& sessionLayer,
                     const ArResolverContext& resolverContext,
                     vector<Entry>* erased) {
-        return _EraseAllIf(rootLayer,
-                          [&sessionLayer, &resolverContext](const auto& stage){
-                              return stage->GetSessionLayer() == sessionLayer &&
-                                     stage->GetPathResolverContext() == resolverContext;
-                          },
-                          erased);
+        return _EraseAllIf(
+            rootLayer,
+            [&sessionLayer, &resolverContext](const auto& stage){
+                return stage->GetSessionLayer() == sessionLayer &&
+                    stage->GetPathResolverContext() == resolverContext;
+            },
+            erased);
     }
 
-    size_t size() const { return _byId.size(); }
+    size_t size() const {
+        return _byId.size();
+    }
 
 private:
     // Helper function to erase the ByRootLayer() entry associated with the
@@ -156,14 +159,14 @@ private:
         const auto it = std::find_if(
             range.first, range.second,
             [&stage](const auto& element){
-                return element.second == stage;
+                return element.second == get_pointer(stage);
             });
         if (it != range.second) {
             _byRootLayer.erase(it);
         } else {
             TF_CODING_ERROR(
-                "Internal StageCache is out of sync."
-                "Cannot find root layer entry for stage '%s'."
+                "Internal StageCache broken invariant: "
+                "Cannot find root layer entry for stage '%s'. "
                 "Skipping erase of incomplete element.",
                 UsdDescribe(stage).c_str()
             );
@@ -183,14 +186,14 @@ private:
                 const auto byStageIt = _byStage.find(it->second);
                 if (byStageIt == _byStage.cend()) {
                     TF_CODING_ERROR(
-                        "Internal StageCache is out of sync. "
-                        "Cannot locate ID for stage '%s'."
+                        "Internal StageCache broken invariant: "
+                        "Cannot locate ID for stage '%s'. "
                         "Skipping erase of incomplete element.",
                         UsdDescribe(it->second).c_str());
                     ++it;
                 } else {
                     if (erased) {
-                        erased->emplace_back(byStageIt->first,
+                        erased->emplace_back(UsdStageRefPtr(byStageIt->first),
                                              byStageIt->second);
                     }
                     // Erase the ID => Stage map by value first and
@@ -229,10 +232,14 @@ struct DebugHelper
 
     bool IsEnabled() const { return _enabled; }
 
-    void AddEntry(const UsdStageRefPtr& stagePtr, const Id id) {
+    void AddEntry(const UsdStageRefPtr& stagePtr, Id id) {
         if (IsEnabled()) {
             _entries.emplace_back(stagePtr, id);
         }
+    }
+
+    void AddEntry(UsdStage *stagePtr, Id id) {
+        AddEntry(UsdStageRefPtr(stagePtr), id);
     }
 
     void IssueMessage() const {
@@ -346,7 +353,9 @@ UsdStageCache::GetAllStages() const
     const IdsByStage &byStage = _impl->stages.ByStage();
     vector<UsdStageRefPtr> result(_impl->stages.size());
     std::transform(byStage.cbegin(), byStage.cend(), result.begin(),
-                   [](const auto& entry) { return entry.first; });
+                   [](const auto& entry) {
+                       return UsdStageRefPtr(entry.first);
+                   });
     return result;
 }
 
@@ -365,10 +374,10 @@ UsdStageCache::RequestStage(UsdStageCacheRequest &&request)
     { LockGuard lock(_mutex);
         // Does the cache currently have a match?  If so, done.
         {
-            const IdsByStage &byStage = _impl->stages.ByStage();
-            for (auto const &element: byStage) {
-                if (request.IsSatisfiedBy(element.first)) {
-                    return std::make_pair(element.first, false);
+            const StagesById &byId = _impl->stages.ById();
+            for (auto const &element: byId) {
+                if (request.IsSatisfiedBy(element.second)) {
+                    return std::make_pair(element.second, false);
                 }
             }
         }
@@ -404,8 +413,9 @@ UsdStageCache::RequestStage(UsdStageCacheRequest &&request)
     }
 
     // If we successfully instantiated a stage, insert it into the cache.
-    if (stage)
+    if (stage) {
         Insert(stage);
+    }
 
     // We have to deliver our stage to all the subscribed mailboxes, even if our
     // stage is null.
@@ -451,7 +461,9 @@ UsdStageCache::FindOneMatching(const SdfLayerHandle &rootLayer) const
     { LockGuard lock(_mutex);
         const StagesByRootLayer& byRootLayer = _impl->stages.ByRootLayer();
         auto iter = byRootLayer.find(rootLayer);
-        result = iter != byRootLayer.end() ? iter->second : TfNullPtr;
+        result = iter != byRootLayer.end()
+            ? UsdStageRefPtr(iter->second)
+            : TfNullPtr;
     }
 
     DBG("%s by rootLayer%s in %s\n",
@@ -474,7 +486,7 @@ UsdStageCache::FindOneMatching(const SdfLayerHandle &rootLayer,
         for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
             const auto& entry = *entryIt;
             if (entry.second->GetSessionLayer() == sessionLayer) {
-                result = entry.second;
+                result = UsdStageRefPtr(entry.second);
                 break;
             }
         }
@@ -503,7 +515,7 @@ UsdStageCache::FindOneMatching(
         for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
             const auto& entry = *entryIt;
             if (entry.second->GetPathResolverContext() == pathResolverContext) {
-                result = entry.second;
+                result = UsdStageRefPtr(entry.second);
                 break;
             }
         }
@@ -532,7 +544,7 @@ UsdStageCache::FindOneMatching(
             const auto& entry = *entryIt;
             if (entry.second->GetSessionLayer() == sessionLayer &&
                 entry.second->GetPathResolverContext() == pathResolverContext) {
-                result = entry.second;
+                result = UsdStageRefPtr(entry.second);
                 break;
             }
         }
@@ -558,7 +570,7 @@ UsdStageCache::FindAllMatching(const SdfLayerHandle &rootLayer) const
     auto range = byRootLayer.equal_range(rootLayer);
     for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
          const auto& entry = *entryIt;
-        result.push_back(entry.second);
+        result.emplace_back(entry.second);
     }
     return result;
 }
@@ -574,7 +586,7 @@ UsdStageCache::FindAllMatching(const SdfLayerHandle &rootLayer,
     for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
         const auto& entry = *entryIt;
         if (entry.second->GetSessionLayer() == sessionLayer)
-            result.push_back(entry.second);
+            result.emplace_back(entry.second);
     }
     return result;
 }
@@ -591,7 +603,7 @@ UsdStageCache::FindAllMatching(
     for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
         const auto& entry = *entryIt;
         if (entry.second->GetPathResolverContext() == pathResolverContext)
-            result.push_back(entry.second);
+            result.emplace_back(entry.second);
     }
     return result;
 }
@@ -610,7 +622,7 @@ UsdStageCache::FindAllMatching(
         const auto& entry = *entryIt;
         if (entry.second->GetSessionLayer() == sessionLayer &&
             entry.second->GetPathResolverContext() == pathResolverContext) {
-            result.push_back(entry.second);
+            result.emplace_back(entry.second);
         }
     }
     return result;
@@ -621,7 +633,7 @@ UsdStageCache::GetId(const UsdStageRefPtr &stage) const
 {
     LockGuard lock(_mutex);
     const IdsByStage& byStage = _impl->stages.ByStage();
-    auto iter = byStage.find(stage);
+    auto iter = byStage.find(get_pointer(stage));
     return iter != byStage.end() ? iter->second : Id();
 }
 
@@ -672,7 +684,7 @@ UsdStageCache::Erase(const UsdStageRefPtr &stage)
     { LockGuard lock(_mutex);
         if (debug.IsEnabled()) {
             const IdsByStage& idsByStage = _impl->stages.ByStage();
-            const auto it = idsByStage.find(stage);
+            const auto it = idsByStage.find(get_pointer(stage));
             if (it != idsByStage.end()) {
                 debug.AddEntry(it->first, it->second);
             }

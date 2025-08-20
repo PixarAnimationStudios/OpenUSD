@@ -298,6 +298,10 @@ class TestUsdNamespaceEditorDependentEditsBasicVariants(
                 }
             },
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/Child" : self.PrimResyncType.RenameSource,
+            "/Ref/RenamedChild" : self.PrimResyncType.RenameDestination,
+        })
 
         # On stage2 the contents of Prim1 have changed to reflect the full 
         # rename /Prim1/Child to /Prim1/RenamedChild as all specs that 
@@ -321,6 +325,12 @@ class TestUsdNamespaceEditorDependentEditsBasicVariants(
             'Prim1': prim1Contents,
             'Prim2': prim2Contents,
             'Prim3': prim3Contents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/Child" : self.PrimResyncType.RenameSource,
+            "/Prim1/RenamedChild" : self.PrimResyncType.RenameDestination,
+            "/Prim2" : self.PrimResyncType.UnchangedPrimStack,
+            "/Prim3" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # Edit: Delete /Ref/RenamedChild
@@ -359,6 +369,9 @@ class TestUsdNamespaceEditorDependentEditsBasicVariants(
             'Ref': {
                 '.' : ['refAttr'],
             },
+        })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/RenamedChild" : self.PrimResyncType.Delete,
         })
 
         # On stage2 the contents of Prim1 have changed to reflect the full that
@@ -399,6 +412,11 @@ class TestUsdNamespaceEditorDependentEditsBasicVariants(
             'Prim1': prim1Contents,
             'Prim2': prim2Contents,
             'Prim3': prim3Contents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/RenamedChild" : self.PrimResyncType.Delete,
+            "/Prim2" : self.PrimResyncType.Other,
+            "/Prim3" : self.PrimResyncType.Other,
         })
 
         # Reset both layer1 and layer2 contents for the next test case and then
@@ -526,6 +544,10 @@ class TestUsdNamespaceEditorDependentEditsBasicVariants(
                 }
             },
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/Child" : self.PrimResyncType.RenameSource,
+            "/Ref/RenamedChild" : self.PrimResyncType.RenameDestination,
+        })
 
         # Verify the contents of stage2 are completely unchanged as there are no
         # composed prim dependencies on the specs in layer1 without the variant
@@ -536,6 +558,7 @@ class TestUsdNamespaceEditorDependentEditsBasicVariants(
             'Prim2': prim2Contents,
             'Prim3': prim3Contents,
         })
+        self._VerifyStageResyncNotices(stage2, None)
 
         # Unmute the session layer on stage2 which reapplies the variant
         # selections in composition for the three main prims again.
@@ -774,6 +797,10 @@ class TestUsdNamespaceEditorDependentEditsBasicVariants(
                 }
             },
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref/Child" : self.PrimResyncType.RenameSource,
+            "/Ref/RenamedChild" : self.PrimResyncType.RenameDestination,
+        })
 
         # On stage2 the contents of Prim have changed to reflect the full rename
         # /Prim/Child to /Prim/RenamedChild as all specs that originally 
@@ -787,6 +814,10 @@ class TestUsdNamespaceEditorDependentEditsBasicVariants(
         self._VerifyStageContents(stage2, {
             'PrimVariants' : {},
             'Prim': primContents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim/Child" : self.PrimResyncType.RenameSource,
+            "/Prim/RenamedChild" : self.PrimResyncType.RenameDestination,
         })
 
         # Edit: Rename /Ref to /RenamedRef
@@ -818,6 +849,10 @@ class TestUsdNamespaceEditorDependentEditsBasicVariants(
                 }
             },
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref" : self.PrimResyncType.RenameSource,
+            "/RenamedRef" : self.PrimResyncType.RenameDestination,
+        })
 
         # Verify that the contents of stage2 are completely unchanged as the 
         # update of the reference path in layer2 maintains the exact same 
@@ -825,6 +860,9 @@ class TestUsdNamespaceEditorDependentEditsBasicVariants(
         self._VerifyStageContents(stage2, {
             'PrimVariants' : {},
             'Prim': primContents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # Edit: Delete /RenamedRef/RenamedChild
@@ -851,6 +889,9 @@ class TestUsdNamespaceEditorDependentEditsBasicVariants(
                 '.' : ['refAttr'],
             },
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/RenamedRef/RenamedChild" : self.PrimResyncType.Delete,
+        })
 
         # On stage2 the contents of /Prim have changed to reflect that there are
         # no opinions coming across the reference to layer1 for ./RenamedChild 
@@ -867,6 +908,9 @@ class TestUsdNamespaceEditorDependentEditsBasicVariants(
         self._VerifyStageContents(stage2, {
             'PrimVariants' : {},
             'Prim': primContents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim/RenamedChild" : self.PrimResyncType.Delete,
         })
 
         # Edit: Delete /RenamedRef/RenamedChild
@@ -888,6 +932,9 @@ class TestUsdNamespaceEditorDependentEditsBasicVariants(
         # Verify the contents of stage1 are now empty given its only prim has
         # now been deleted.
         self._VerifyStageContents(stage1, {})
+        self._VerifyStageResyncNotices(stage1, {
+            "/RenamedRef" : self.PrimResyncType.Delete,
+        })
 
         # On stage2 the contents of /Prim have changed to reflect that there are
         # no opinions from layer1 at all after the deleted reference. However, 
@@ -904,6 +951,9 @@ class TestUsdNamespaceEditorDependentEditsBasicVariants(
         self._VerifyStageContents(stage2, {
             'PrimVariants' : {},
             'Prim': primContents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim" : self.PrimResyncType.Other,
         })
 
 if __name__ == '__main__':

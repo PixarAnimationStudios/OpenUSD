@@ -1,14 +1,14 @@
-Loading @TrickyMultipleRelocationsAndClasses/root.sdf@
+Loading @TrickyMultipleRelocationsAndClasses/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </HumanRig>
 
 Prim Stack:
-    root.sdf             /HumanRig
+    root.usda            /HumanRig
 
 Child names:
      ['Face', 'rig']
@@ -17,7 +17,7 @@ Child names:
 Results for composing </HumanRig/Face>
 
 Prim Stack:
-    FaceRig.sdf          /FaceRig/Anim/Face
+    FaceRig.usda         /FaceRig/Anim/Face
 
 Child names:
      ['Eyes']
@@ -26,7 +26,7 @@ Child names:
 Results for composing </HumanRig/Face/Eyes>
 
 Prim Stack:
-    FaceRig.sdf          /FaceRig/Anim/Face/Eyes
+    FaceRig.usda         /FaceRig/Anim/Face/Eyes
 
 Child names:
      ['LEye', 'REye']
@@ -35,8 +35,8 @@ Child names:
 Results for composing </HumanRig/Face/Eyes/LEye>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim/Eye
-    EyeRig.sdf           /EyeRig/Anim/Eye
+    root.usda            /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim/Eye
+    EyeRig.usda          /EyeRig/Anim/Eye
 
 Child names:
      ['LLids']
@@ -46,30 +46,30 @@ Property names:
 
 Property stacks:
 /HumanRig/Face/Eyes/LEye.value:
-    root.sdf             /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim/Eye.value
-    EyeRig.sdf           /EyeRig/Anim/Eye.value
+    root.usda            /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim/Eye.value
+    EyeRig.usda          /EyeRig/Anim/Eye.value
 
 ------------------------------------------------------------------------
 Results for composing </HumanRig/Face/Eyes/LEye/LLids>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim/Lids
-    EyeLidRig.sdf        /EyeLidRig/Anim/Lids
+    root.usda            /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim/Lids
+    EyeLidRig.usda       /EyeLidRig/Anim/Lids
 
 Property names:
      ['value']
 
 Property stacks:
 /HumanRig/Face/Eyes/LEye/LLids.value:
-    root.sdf             /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim/Lids.value
-    EyeLidRig.sdf        /EyeLidRig/Anim/Lids.value
+    root.usda            /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim/Lids.value
+    EyeLidRig.usda       /EyeLidRig/Anim/Lids.value
 
 ------------------------------------------------------------------------
 Results for composing </HumanRig/Face/Eyes/REye>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim/Eye
-    EyeRig.sdf           /EyeRig/Anim/Eye
+    root.usda            /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim/Eye
+    EyeRig.usda          /EyeRig/Anim/Eye
 
 Child names:
      ['RLids']
@@ -79,29 +79,29 @@ Property names:
 
 Property stacks:
 /HumanRig/Face/Eyes/REye.value:
-    root.sdf             /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim/Eye.value
-    EyeRig.sdf           /EyeRig/Anim/Eye.value
+    root.usda            /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim/Eye.value
+    EyeRig.usda          /EyeRig/Anim/Eye.value
 
 ------------------------------------------------------------------------
 Results for composing </HumanRig/Face/Eyes/REye/RLids>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim/Lids
-    EyeLidRig.sdf        /EyeLidRig/Anim/Lids
+    root.usda            /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim/Lids
+    EyeLidRig.usda       /EyeLidRig/Anim/Lids
 
 Property names:
      ['value']
 
 Property stacks:
 /HumanRig/Face/Eyes/REye/RLids.value:
-    root.sdf             /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim/Lids.value
-    EyeLidRig.sdf        /EyeLidRig/Anim/Lids.value
+    root.usda            /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim/Lids.value
+    EyeLidRig.usda       /EyeLidRig/Anim/Lids.value
 
 ------------------------------------------------------------------------
 Results for composing </HumanRig/rig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig
+    root.usda            /HumanRig/rig
 
 Child names:
      ['Face']
@@ -110,8 +110,8 @@ Child names:
 Results for composing </HumanRig/rig/Face>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face
-    FaceRig.sdf          /FaceRig
+    root.usda            /HumanRig/rig/Face
+    FaceRig.usda         /FaceRig
 
 Child names:
      ['Anim', 'EyeLidRig', 'EyeRig']
@@ -120,7 +120,7 @@ Child names:
 Results for composing </HumanRig/rig/Face/Anim>
 
 Prim Stack:
-    FaceRig.sdf          /FaceRig/Anim
+    FaceRig.usda         /FaceRig/Anim
 
 Prohibited child names:
      ['Face']
@@ -129,8 +129,8 @@ Prohibited child names:
 Results for composing </HumanRig/rig/Face/EyeLidRig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeLidRig
-    FaceRig.sdf          /FaceRig/EyeLidRig
+    root.usda            /HumanRig/rig/Face/EyeLidRig
+    FaceRig.usda         /FaceRig/EyeLidRig
 
 Child names:
      ['SymEyeLidRig', 'LEyeLidRig', 'REyeLidRig']
@@ -139,9 +139,9 @@ Child names:
 Results for composing </HumanRig/rig/Face/EyeLidRig/SymEyeLidRig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig
-    FaceRig.sdf          /FaceRig/EyeLidRig/SymEyeLidRig
-    EyeLidRig.sdf        /EyeLidRig
+    root.usda            /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig
+    FaceRig.usda         /FaceRig/EyeLidRig/SymEyeLidRig
+    EyeLidRig.usda       /EyeLidRig
 
 Child names:
      ['Anim', 'Mover']
@@ -150,8 +150,8 @@ Child names:
 Results for composing </HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim
-    EyeLidRig.sdf        /EyeLidRig/Anim
+    root.usda            /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim
+    EyeLidRig.usda       /EyeLidRig/Anim
 
 Child names:
      ['Lids']
@@ -160,29 +160,29 @@ Child names:
 Results for composing </HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim/Lids>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim/Lids
-    EyeLidRig.sdf        /EyeLidRig/Anim/Lids
+    root.usda            /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim/Lids
+    EyeLidRig.usda       /EyeLidRig/Anim/Lids
 
 Property names:
      ['value']
 
 Property stacks:
 /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim/Lids.value:
-    root.sdf             /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim/Lids.value
-    EyeLidRig.sdf        /EyeLidRig/Anim/Lids.value
+    root.usda            /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim/Lids.value
+    EyeLidRig.usda       /EyeLidRig/Anim/Lids.value
 
 ------------------------------------------------------------------------
 Results for composing </HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Mover>
 
 Prim Stack:
-    EyeLidRig.sdf        /EyeLidRig/Mover
+    EyeLidRig.usda       /EyeLidRig/Mover
 
 Property names:
      ['input']
 
 Property stacks:
 /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Mover.input:
-    EyeLidRig.sdf        /EyeLidRig/Mover.input
+    EyeLidRig.usda       /EyeLidRig/Mover.input
 
 Attribute connections:
 /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Mover.input:
@@ -192,10 +192,10 @@ Attribute connections:
 Results for composing </HumanRig/rig/Face/EyeLidRig/LEyeLidRig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig
-    FaceRig.sdf          /FaceRig/EyeLidRig/LEyeLidRig
-    FaceRig.sdf          /FaceRig/EyeLidRig/SymEyeLidRig
-    EyeLidRig.sdf        /EyeLidRig
+    root.usda            /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig
+    FaceRig.usda         /FaceRig/EyeLidRig/LEyeLidRig
+    FaceRig.usda         /FaceRig/EyeLidRig/SymEyeLidRig
+    EyeLidRig.usda       /EyeLidRig
 
 Child names:
      ['Anim', 'Mover']
@@ -204,8 +204,8 @@ Child names:
 Results for composing </HumanRig/rig/Face/EyeLidRig/LEyeLidRig/Anim>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim
-    EyeLidRig.sdf        /EyeLidRig/Anim
+    root.usda            /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim
+    EyeLidRig.usda       /EyeLidRig/Anim
 
 Prohibited child names:
      ['Lids']
@@ -214,14 +214,14 @@ Prohibited child names:
 Results for composing </HumanRig/rig/Face/EyeLidRig/LEyeLidRig/Mover>
 
 Prim Stack:
-    EyeLidRig.sdf        /EyeLidRig/Mover
+    EyeLidRig.usda       /EyeLidRig/Mover
 
 Property names:
      ['input']
 
 Property stacks:
 /HumanRig/rig/Face/EyeLidRig/LEyeLidRig/Mover.input:
-    EyeLidRig.sdf        /EyeLidRig/Mover.input
+    EyeLidRig.usda       /EyeLidRig/Mover.input
 
 Attribute connections:
 /HumanRig/rig/Face/EyeLidRig/LEyeLidRig/Mover.input:
@@ -231,10 +231,10 @@ Attribute connections:
 Results for composing </HumanRig/rig/Face/EyeLidRig/REyeLidRig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig
-    FaceRig.sdf          /FaceRig/EyeLidRig/REyeLidRig
-    FaceRig.sdf          /FaceRig/EyeLidRig/SymEyeLidRig
-    EyeLidRig.sdf        /EyeLidRig
+    root.usda            /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig
+    FaceRig.usda         /FaceRig/EyeLidRig/REyeLidRig
+    FaceRig.usda         /FaceRig/EyeLidRig/SymEyeLidRig
+    EyeLidRig.usda       /EyeLidRig
 
 Child names:
      ['Anim', 'Mover']
@@ -243,8 +243,8 @@ Child names:
 Results for composing </HumanRig/rig/Face/EyeLidRig/REyeLidRig/Anim>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim
-    EyeLidRig.sdf        /EyeLidRig/Anim
+    root.usda            /HumanRig/rig/Face/EyeLidRig/SymEyeLidRig/Anim
+    EyeLidRig.usda       /EyeLidRig/Anim
 
 Prohibited child names:
      ['Lids']
@@ -253,14 +253,14 @@ Prohibited child names:
 Results for composing </HumanRig/rig/Face/EyeLidRig/REyeLidRig/Mover>
 
 Prim Stack:
-    EyeLidRig.sdf        /EyeLidRig/Mover
+    EyeLidRig.usda       /EyeLidRig/Mover
 
 Property names:
      ['input']
 
 Property stacks:
 /HumanRig/rig/Face/EyeLidRig/REyeLidRig/Mover.input:
-    EyeLidRig.sdf        /EyeLidRig/Mover.input
+    EyeLidRig.usda       /EyeLidRig/Mover.input
 
 Attribute connections:
 /HumanRig/rig/Face/EyeLidRig/REyeLidRig/Mover.input:
@@ -270,8 +270,8 @@ Attribute connections:
 Results for composing </HumanRig/rig/Face/EyeRig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeRig
-    FaceRig.sdf          /FaceRig/EyeRig
+    root.usda            /HumanRig/rig/Face/EyeRig
+    FaceRig.usda         /FaceRig/EyeRig
 
 Child names:
      ['SymEyeRig', 'LEyeRig', 'REyeRig']
@@ -280,9 +280,9 @@ Child names:
 Results for composing </HumanRig/rig/Face/EyeRig/SymEyeRig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeRig/SymEyeRig
-    FaceRig.sdf          /FaceRig/EyeRig/SymEyeRig
-    EyeRig.sdf           /EyeRig
+    root.usda            /HumanRig/rig/Face/EyeRig/SymEyeRig
+    FaceRig.usda         /FaceRig/EyeRig/SymEyeRig
+    EyeRig.usda          /EyeRig
 
 Child names:
      ['Anim', 'Mover']
@@ -291,8 +291,8 @@ Child names:
 Results for composing </HumanRig/rig/Face/EyeRig/SymEyeRig/Anim>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim
-    EyeRig.sdf           /EyeRig/Anim
+    root.usda            /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim
+    EyeRig.usda          /EyeRig/Anim
 
 Child names:
      ['Eye']
@@ -301,29 +301,29 @@ Child names:
 Results for composing </HumanRig/rig/Face/EyeRig/SymEyeRig/Anim/Eye>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim/Eye
-    EyeRig.sdf           /EyeRig/Anim/Eye
+    root.usda            /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim/Eye
+    EyeRig.usda          /EyeRig/Anim/Eye
 
 Property names:
      ['value']
 
 Property stacks:
 /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim/Eye.value:
-    root.sdf             /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim/Eye.value
-    EyeRig.sdf           /EyeRig/Anim/Eye.value
+    root.usda            /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim/Eye.value
+    EyeRig.usda          /EyeRig/Anim/Eye.value
 
 ------------------------------------------------------------------------
 Results for composing </HumanRig/rig/Face/EyeRig/SymEyeRig/Mover>
 
 Prim Stack:
-    EyeRig.sdf           /EyeRig/Mover
+    EyeRig.usda          /EyeRig/Mover
 
 Property names:
      ['input']
 
 Property stacks:
 /HumanRig/rig/Face/EyeRig/SymEyeRig/Mover.input:
-    EyeRig.sdf           /EyeRig/Mover.input
+    EyeRig.usda          /EyeRig/Mover.input
 
 Attribute connections:
 /HumanRig/rig/Face/EyeRig/SymEyeRig/Mover.input:
@@ -333,10 +333,10 @@ Attribute connections:
 Results for composing </HumanRig/rig/Face/EyeRig/LEyeRig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeRig/SymEyeRig
-    FaceRig.sdf          /FaceRig/EyeRig/LEyeRig
-    FaceRig.sdf          /FaceRig/EyeRig/SymEyeRig
-    EyeRig.sdf           /EyeRig
+    root.usda            /HumanRig/rig/Face/EyeRig/SymEyeRig
+    FaceRig.usda         /FaceRig/EyeRig/LEyeRig
+    FaceRig.usda         /FaceRig/EyeRig/SymEyeRig
+    EyeRig.usda          /EyeRig
 
 Child names:
      ['Anim', 'Mover']
@@ -345,8 +345,8 @@ Child names:
 Results for composing </HumanRig/rig/Face/EyeRig/LEyeRig/Anim>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim
-    EyeRig.sdf           /EyeRig/Anim
+    root.usda            /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim
+    EyeRig.usda          /EyeRig/Anim
 
 Prohibited child names:
      ['Eye']
@@ -355,14 +355,14 @@ Prohibited child names:
 Results for composing </HumanRig/rig/Face/EyeRig/LEyeRig/Mover>
 
 Prim Stack:
-    EyeRig.sdf           /EyeRig/Mover
+    EyeRig.usda          /EyeRig/Mover
 
 Property names:
      ['input']
 
 Property stacks:
 /HumanRig/rig/Face/EyeRig/LEyeRig/Mover.input:
-    EyeRig.sdf           /EyeRig/Mover.input
+    EyeRig.usda          /EyeRig/Mover.input
 
 Attribute connections:
 /HumanRig/rig/Face/EyeRig/LEyeRig/Mover.input:
@@ -372,10 +372,10 @@ Attribute connections:
 Results for composing </HumanRig/rig/Face/EyeRig/REyeRig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeRig/SymEyeRig
-    FaceRig.sdf          /FaceRig/EyeRig/REyeRig
-    FaceRig.sdf          /FaceRig/EyeRig/SymEyeRig
-    EyeRig.sdf           /EyeRig
+    root.usda            /HumanRig/rig/Face/EyeRig/SymEyeRig
+    FaceRig.usda         /FaceRig/EyeRig/REyeRig
+    FaceRig.usda         /FaceRig/EyeRig/SymEyeRig
+    EyeRig.usda          /EyeRig
 
 Child names:
      ['Anim', 'Mover']
@@ -384,8 +384,8 @@ Child names:
 Results for composing </HumanRig/rig/Face/EyeRig/REyeRig/Anim>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim
-    EyeRig.sdf           /EyeRig/Anim
+    root.usda            /HumanRig/rig/Face/EyeRig/SymEyeRig/Anim
+    EyeRig.usda          /EyeRig/Anim
 
 Prohibited child names:
      ['Eye']
@@ -394,14 +394,14 @@ Prohibited child names:
 Results for composing </HumanRig/rig/Face/EyeRig/REyeRig/Mover>
 
 Prim Stack:
-    EyeRig.sdf           /EyeRig/Mover
+    EyeRig.usda          /EyeRig/Mover
 
 Property names:
      ['input']
 
 Property stacks:
 /HumanRig/rig/Face/EyeRig/REyeRig/Mover.input:
-    EyeRig.sdf           /EyeRig/Mover.input
+    EyeRig.usda          /EyeRig/Mover.input
 
 Attribute connections:
 /HumanRig/rig/Face/EyeRig/REyeRig/Mover.input:

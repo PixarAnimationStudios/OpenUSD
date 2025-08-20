@@ -91,8 +91,11 @@ _AreHandlesValid(
         if (namedTextureHandle.name != namedTextureIdentifier.name) {
             return false;
         }
+        if (namedTextureHandle.handles.size() > 1) {
+            TF_CODING_ERROR("Don't support array of textures for AOV textures");
+        }
         const HdStTextureObjectSharedPtr &textureObject =
-            namedTextureHandle.handle->GetTextureObject();
+            namedTextureHandle.handles[0]->GetTextureObject();
         if (textureObject->GetTextureIdentifier() != namedTextureIdentifier.id) {
             return false;
         }
@@ -316,7 +319,7 @@ HdStRenderPassShader::UpdateAovInputTextures(
             HdStShaderCode::NamedTextureHandle{
                 namedTextureIdentifier.name,
                 HdStTextureType::Uv,
-                std::move(textureHandle),
+                { std::move(textureHandle) },
                 /* hash = */ 0});
         
         // Add a corresponding param so that codegen is

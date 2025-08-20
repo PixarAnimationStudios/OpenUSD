@@ -1,0 +1,95 @@
+#usda 1.0
+(
+    "This test exercises nested point instancers with native instancing and an xform offset.  Reported as OpenUSD github issue 3064."
+    upAxis = "Z"
+)
+
+def Camera "main_cam"
+{
+    double3 xformOp:rotateXYZ = (90, 0, 0)
+    double3 xformOp:translate = (0, 0, 170)
+    uniform token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+}
+
+# The contents of "ref" can be seen as reference with correct behaviour at origin.
+def Scope "ref"
+{
+    def Cube "cube"
+    {
+    }
+
+    def PointInstancer "instancer"
+    {
+        float3[] extent = [(-2.865, -2.865, -2.865), (2.865, 2.865, 2.865)]
+        int64[] invisibleIds = []
+        quath[] orientations = [(1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0)]
+        point3f[] positions = [(1.865, -1.865, 1.865), (-1.865, -1.865, 1.865), (1.865, 1.865, 1.865), (-1.865, 1.865, 1.865), (-1.865, -1.865, -1.865), (1.865, -1.865, -1.865), (-1.865, 1.865, -1.865), (1.865, 1.865, -1.865)]
+        int[] protoIndices = [0, 0, 0, 0, 0, 0, 0, 0]
+        rel prototypes = </ref/instancer/prototypes/exemplar>
+
+        def "prototypes"
+        {
+            def Sphere "exemplar"
+            {
+            }
+        }
+    }
+}
+
+# PointInstancer prototype is native instance DISABLED.
+# The transform applied to "foo" will be correctly applied to instances of the inner PointInstancer.
+def Xform "foo" (
+    kind = "group"
+)
+{
+    double3 xformOp:translate = (0, 0, 10)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def PointInstancer "instancer"
+    {
+        quath[] orientations = [(1, 0, 0, 0), (1, 0, 0, 0)]
+        point3f[] positions = [(-10, -10, 0), (-20, -20, 0)]
+        int[] protoIndices = [0, 0]
+        rel prototypes = </foo/instancer/prototypes/exemplar>
+        float3[] scales = [(1, 1, 1), (1, 1, 1)]
+
+        def "prototypes"
+        {
+            def "exemplar" (
+                references = </ref>
+            )
+            {
+            }
+        }
+    }
+}
+
+# PointInstancer prototype is native instance ENABLED.
+# The transform applied to "bar" won't be correctly applied to instances of the inner PointInstancer.
+def Xform "bar" (
+    kind = "group"
+)
+{
+    double3 xformOp:translate = (0, 0, 10)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def PointInstancer "instancer"
+    {
+        quath[] orientations = [(1, 0, 0, 0), (1, 0, 0, 0)]
+        point3f[] positions = [(10, 10, 0), (20, 20, 0)]
+        int[] protoIndices = [0, 0]
+        rel prototypes = </bar/instancer/prototypes/exemplar>
+        float3[] scales = [(1, 1, 1), (1, 1, 1)]
+
+        def "prototypes"
+        {
+            def "exemplar" (
+                instanceable = true
+                references = </ref>
+            )
+            {
+            }
+        }
+    }
+}
+

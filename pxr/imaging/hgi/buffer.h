@@ -65,7 +65,7 @@ bool operator==(
     const HgiBufferDesc& rhs);
 
 HGI_API
-inline bool operator!=(
+bool operator!=(
     const HgiBufferDesc& lhs,
     const HgiBufferDesc& rhs);
 

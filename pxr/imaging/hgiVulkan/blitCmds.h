@@ -43,6 +43,9 @@ public:
     void CopyBufferGpuToGpu(HgiBufferGpuToGpuOp const& copyOp) override;
 
     HGIVULKAN_API
+    void BlitTexture(HgiTextureHandle src, HgiTextureHandle dst);
+
+    HGIVULKAN_API
     void CopyBufferCpuToGpu(HgiBufferCpuToGpuOp const& copyOp) override;
 
     HGIVULKAN_API

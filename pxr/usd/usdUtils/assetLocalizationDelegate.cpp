@@ -445,15 +445,15 @@ UsdUtils_WritableLocalizationDelegate::_GetOrCreateWritableLayer(
         return nullptr;
     }
 
-    if (_editLayersInPlace) {
-        return layer;
-    }
-
+    // Even when editing layers in place we still want to insert them into the
+    // map. This ensures that they will remain alive for the duration of the
+    // localization process. The edits applied during processing will be
+    // preserved until localization is complete.
     auto result = 
-        _layerCopyMap.insert(std::make_pair(layer, layer));
+        _writableLayerMap.insert(std::make_pair(layer, layer));
 
     // a writable layer already exists
-    if (!result.second) {
+    if (!result.second || _editLayersInPlace) {
         return result.first->second;
     }
 
@@ -475,9 +475,9 @@ UsdUtils_WritableLocalizationDelegate::GetLayerUsedForWriting(
         return layer;
     }
 
-    auto result = _layerCopyMap.find(layer);
+    auto result = _writableLayerMap.find(layer);
 
-    if (result != _layerCopyMap.end()) {
+    if (result != _writableLayerMap.end()) {
         return result->second;
     }
 
@@ -488,7 +488,7 @@ void
 UsdUtils_WritableLocalizationDelegate::ClearLayerUsedForWriting(
     const SdfLayerRefPtr& layer)
 {
-    _layerCopyMap.erase(layer);
+    _writableLayerMap.erase(layer);
 }
 
 std::vector<std::string> 

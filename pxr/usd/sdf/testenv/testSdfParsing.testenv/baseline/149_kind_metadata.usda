@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    framePrecision = 3
+    framesPerSecond = 24
+)
+
+def MfScope "TestPrim" (
+    kind = "model"
+)
+{
+}
+

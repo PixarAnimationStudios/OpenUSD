@@ -30,16 +30,12 @@ public:
 
     virtual TfToken GetDrawMode() const = 0;
 
-    /// Get prim replacing the original prim.
-    ///
-    /// For now, this is just a typeless container prim without data source.
-    const HdSceneIndexPrim &GetPrim() const;
+    /// Get prims replacing the original prim.
+    HdSceneIndexPrim GetPrim(const SdfPath& path) const;
 
-    /// Get paths of all descendants of the typeless container.
-    SdfPathVector GetDescendantPrimPaths() const;
-    
-    /// GetDescendant prim by absolute or relative path.
-    HdSceneIndexPrim GetDescendantPrim(const SdfPath& path) const;
+    /// Get paths for all prims replacing the original prim (including the
+    /// original prim path).
+    SdfPathVector GetPrimPaths() const;
 
     /// Compute added entries for the stand-in geometry
     void ComputePrimAddedEntries(
@@ -57,13 +53,16 @@ public:
         bool * needsRefresh) = 0;
 
 protected:
-    /// returns paths relative to the typeless container.
-    virtual const SdfPathVector _GetDescendantPaths() const = 0;
-    /// accepts paths relative to the typeless container.
-    virtual TfToken _GetDescendantPrimType(const SdfPath& path) const = 0;
-    /// accepts paths relative to the typeless container.
-    virtual HdContainerDataSourceHandle _GetDescendantPrimSource(
-        const SdfPath& path) const = 0;
+    // Returns paths relative to the path of the prim the stand-in is
+    // replacing. Includes the path ".".
+    virtual const SdfPathVector _GetRelativePrimPaths() const = 0;
+    // Accepts path relative to the path of the pirm the stand-in is
+    // replacing.
+    virtual TfToken _GetPrimType(const SdfPath &relPath) const = 0;
+    // Accepts path relative to the path of the pirm the stand-in is
+    // replacing.
+    virtual HdContainerDataSourceHandle _GetPrimSource(
+        const SdfPath &relPath) const = 0;
 
     UsdImaging_DrawModeStandin(
         const SdfPath &path,

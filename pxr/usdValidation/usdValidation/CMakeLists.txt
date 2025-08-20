@@ -9,10 +9,6 @@ pxr_library(usdValidation
         gf
         usd
         work
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
         context 

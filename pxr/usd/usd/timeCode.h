@@ -66,7 +66,8 @@ TF_DECLARE_PUBLIC_TOKENS(UsdTimeCodeTokens, USD_API, USD_TIME_CODE_TOKENS);
 /// to retrieve the first authored timesample for any attribute.
 ///
 /// A UsdTimeCode can also represent a 'pre-time' value, which means the limit 
-/// as time approaches the value from the left.
+/// as time approaches the value from the left. Refer UsdAttribute::Get() for
+/// details on usage of UsdTimeCode::PreTime().
 ///
 class UsdTimeCode {
 public:
@@ -78,6 +79,8 @@ public:
         : _value(sdfTimeCode.GetValue()) {}
 
     /// Produces a UsdTimeCode representing a pre-time at \p t.
+    ///
+    /// \sa UsdAttribute::Get()
     static constexpr UsdTimeCode PreTime(double t) noexcept {
         return UsdTimeCode(t, /*isPreTime=*/true);
     }
@@ -111,7 +114,6 @@ public:
         return UsdTimeCode(std::numeric_limits<double>::quiet_NaN());
     }
 
-public:
     /// Produce a safe step value such that for any numeric UsdTimeCode t in
     /// [-maxValue, maxValue], t +/- (step / maxCompression) != t with a safety
     /// factor of 2.  This is shorthand for

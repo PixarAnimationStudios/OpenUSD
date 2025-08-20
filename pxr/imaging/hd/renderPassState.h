@@ -192,6 +192,10 @@ public:
     void SetClippingEnabled(bool enabled);
     bool GetClippingEnabled() const { return _clippingEnabled; }
 
+    HD_API
+    void SetEnableExposureCompensation(bool enableExposureCompensation);
+    bool GetEnableExposureCompensation() const { return _enableExposureCompensation; }
+
     // ---------------------------------------------------------------------- //
     /// \name Render pipeline state
     // ---------------------------------------------------------------------- //
@@ -357,6 +361,7 @@ protected:
     float _pointSize;
     bool _lightingEnabled;
     bool _clippingEnabled;
+    bool _enableExposureCompensation;
 
     GfVec4f _maskColor;
     GfVec4f _indicatorColor;

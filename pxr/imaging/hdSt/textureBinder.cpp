@@ -13,10 +13,9 @@
 #include "pxr/imaging/hdSt/udimTextureObject.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 #include "pxr/base/gf/matrix4f.h"
+#include "pxr/base/vt/array.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-static const HdTupleType _bindlessHandleTupleType{ HdTypeUInt32Vec2, 1 };
 
 static
 TfToken
@@ -32,7 +31,7 @@ HdSt_TextureBinder::GetBufferSpecs(
     bool doublesSupported)
 {
     const bool useBindlessHandles = textures.empty() ? false :
-        textures[0].handle->UseBindlessHandles();
+        textures[0].handles[0]->UseBindlessHandles();
 
     for (const NamedTextureHandle & texture : textures) {
         switch (texture.type) {
@@ -40,7 +39,7 @@ HdSt_TextureBinder::GetBufferSpecs(
             if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
-                    _bindlessHandleTupleType);
+                    HdTupleType{ HdTypeUInt32Vec2, texture.handles.size() });
             }
             specs->emplace_back(
                 _Concat(
@@ -52,7 +51,7 @@ HdSt_TextureBinder::GetBufferSpecs(
             if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
-                    _bindlessHandleTupleType);
+                    HdTupleType{ HdTypeUInt32Vec2, texture.handles.size() });
             }
             specs->emplace_back(
                 _Concat(
@@ -70,12 +69,12 @@ HdSt_TextureBinder::GetBufferSpecs(
             if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
-                    _bindlessHandleTupleType);
+                    HdTupleType{ HdTypeUInt32Vec2, texture.handles.size() });
                 specs->emplace_back(
                     _Concat(
                         texture.name,
                         HdSt_ResourceBindingSuffixTokens->layout),
-                    _bindlessHandleTupleType);
+                        HdTupleType{ HdTypeUInt32Vec2, texture.handles.size() });
             }
             specs->emplace_back(
                 _Concat(
@@ -87,12 +86,12 @@ HdSt_TextureBinder::GetBufferSpecs(
             if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
-                    _bindlessHandleTupleType);
+                    HdTupleType{ HdTypeUInt32Vec2, texture.handles.size() });
                 specs->emplace_back(
                     _Concat(
                         texture.name,
                         HdSt_ResourceBindingSuffixTokens->layout),
-                    _bindlessHandleTupleType);
+                        HdTupleType{ HdTypeUInt32Vec2, texture.handles.size() });
             }
             specs->emplace_back(
                 _Concat(
@@ -112,7 +111,7 @@ namespace {
 class HdSt_BindlessSamplerBufferSource : public HdBufferSource {
 public:
     HdSt_BindlessSamplerBufferSource(TfToken const &name,
-                                     const uint64_t value)
+                                     const VtArray<uint64_t>& value)
     : HdBufferSource()
     , _name(name)
     , _value(value)
@@ -125,10 +124,10 @@ public:
         return _name;
     }
     void const* GetData() const override {
-        return &_value;
+        return _value.data();
     }
     HdTupleType GetTupleType() const override {
-        return _bindlessHandleTupleType;
+        return { HdTypeUInt32Vec2, _value.size() };
     }
     size_t GetNumElements() const override {
         return 1;
@@ -149,126 +148,152 @@ protected:
 
 private:
     const TfToken _name;
-    const uint64_t _value;
+    const VtArray<uint64_t> _value;
 };
 
 class _ComputeBufferSourcesFunctor {
 public:
     static void Compute(
         TfToken const &name,
-        HdStUvTextureObject const &texture,
-        HdStUvSamplerObject const &sampler,
+        std::vector<const HdStUvTextureObject*> const &textures,
+        std::vector<const HdStUvSamplerObject*> const &samplers,
         HdBufferSourceSharedPtrVector * const sources,
         bool useBindlessHandles,
         bool doublesSupported)
     {
         if (useBindlessHandles) {
+            VtArray<uint64_t> bindlessHandles;
+            for (size_t i = 0; i < textures.size(); i++) {
+                bindlessHandles.push_back(
+                    HdSt_ResourceBinder::GetSamplerBindlessHandle(
+                        samplers[i]->GetSampler(), textures[i]->GetTexture()));
+            }
             sources->push_back(
                 std::make_shared<HdSt_BindlessSamplerBufferSource>(
                     name,
-                    HdSt_ResourceBinder::GetSamplerBindlessHandle(
-                        sampler.GetSampler(), texture.GetTexture())));
+                    bindlessHandles));
         }
-
+       
         sources->push_back(
             std::make_shared<HdVtBufferSource>(
                 _Concat(
                     name,
                     HdSt_ResourceBindingSuffixTokens->valid),
-                VtValue(texture.IsValid())));
+                VtValue(textures[0]->IsValid())));
     }
 
     static void Compute(
         TfToken const &name,
-        HdStFieldTextureObject const &texture,
-        HdStFieldSamplerObject const &sampler,
+        std::vector<const HdStFieldTextureObject*> const &textures,
+        std::vector<const HdStFieldSamplerObject*> const &samplers,
         HdBufferSourceSharedPtrVector * const sources,
         bool useBindlessHandles,
         bool doublesSupported)
     {
         if (useBindlessHandles) {
+            VtArray<uint64_t> bindlessHandles;
+            for (size_t i = 0; i < textures.size(); i++) {
+                bindlessHandles.push_back(
+                    HdSt_ResourceBinder::GetSamplerBindlessHandle(
+                        samplers[i]->GetSampler(), textures[i]->GetTexture()));
+            }
             sources->push_back(
                 std::make_shared<HdSt_BindlessSamplerBufferSource>(
                     name,
-                    HdSt_ResourceBinder::GetSamplerBindlessHandle(
-                        sampler.GetSampler(), texture.GetTexture())));
+                    bindlessHandles));
         }
         sources->push_back(
             std::make_shared<HdVtBufferSource>(
                 _Concat(
                     name,
                     HdSt_ResourceBindingSuffixTokens->valid),
-                VtValue(texture.IsValid())));
+                VtValue(textures[0]->IsValid())));
         sources->push_back(
             std::make_shared<HdVtBufferSource>(
                 _Concat(
                     name,
                     HdSt_ResourceBindingSuffixTokens->samplingTransform),
-                VtValue(texture.GetSamplingTransform()),
+                VtValue(textures[0]->GetSamplingTransform()),
                 1,
                 doublesSupported));
     }
 
     static void Compute(
         TfToken const &name,
-        HdStPtexTextureObject const &texture,
-        HdStPtexSamplerObject const &sampler,
+        std::vector<const HdStPtexTextureObject*> const &textures,
+        std::vector<const HdStPtexSamplerObject*> const &samplers,
         HdBufferSourceSharedPtrVector * const sources,
         bool useBindlessHandles,
         bool doublesSupported)
     {
         if (useBindlessHandles) {
+            VtArray<uint64_t> bindlessHandles;
+            VtArray<uint64_t> bindlessLayoutHandles;
+            for (size_t i = 0; i < textures.size(); i++) {
+                bindlessHandles.push_back(
+                    HdSt_ResourceBinder::GetSamplerBindlessHandle(
+                        samplers[i]->GetTexelsSampler(),
+                        textures[i]->GetTexelTexture()));
+                bindlessLayoutHandles.push_back(
+                    HdSt_ResourceBinder::GetTextureBindlessHandle(
+                        textures[i]->GetLayoutTexture()));
+            }
             sources->push_back(
                 std::make_shared<HdSt_BindlessSamplerBufferSource>(
                     name,
-                    HdSt_ResourceBinder::GetSamplerBindlessHandle(
-                        sampler.GetTexelsSampler(), texture.GetTexelTexture())));
-
+                    bindlessHandles));
             sources->push_back(
                 std::make_shared<HdSt_BindlessSamplerBufferSource>(
                     _Concat(
                         name,
                         HdSt_ResourceBindingSuffixTokens->layout),
-                    HdSt_ResourceBinder::GetTextureBindlessHandle(
-                        texture.GetLayoutTexture())));
+                    bindlessLayoutHandles));
         }
         sources->push_back(
             std::make_shared<HdVtBufferSource>(
                 _Concat(
                     name,
                     HdSt_ResourceBindingSuffixTokens->valid),
-                VtValue(texture.IsValid())));
+                VtValue(textures[0]->IsValid())));
     }
 
     static void Compute(
         TfToken const &name,
-        HdStUdimTextureObject const &texture,
-        HdStUdimSamplerObject const &sampler,
+        std::vector<const HdStUdimTextureObject*> const &textures,
+        std::vector<const HdStUdimSamplerObject*> const &samplers,
         HdBufferSourceSharedPtrVector * const sources,
         bool useBindlessHandles,
         bool doublesSupported)
     {
         if (useBindlessHandles) {
+            VtArray<uint64_t> bindlessHandles;
+            VtArray<uint64_t> bindlessLayoutHandles;
+            for (size_t i = 0; i < textures.size(); i++) {
+                bindlessHandles.push_back(
+                    HdSt_ResourceBinder::GetSamplerBindlessHandle(
+                        samplers[i]->GetTexelsSampler(),
+                        textures[i]->GetTexelTexture()));
+                bindlessLayoutHandles.push_back(
+                    HdSt_ResourceBinder::GetTextureBindlessHandle(
+                        textures[i]->GetLayoutTexture()));
+            }
             sources->push_back(
                 std::make_shared<HdSt_BindlessSamplerBufferSource>(
                     name,
-                    HdSt_ResourceBinder::GetSamplerBindlessHandle(
-                        sampler.GetTexelsSampler(), texture.GetTexelTexture())));
-
+                    bindlessHandles));
             sources->push_back(
                 std::make_shared<HdSt_BindlessSamplerBufferSource>(
                     _Concat(
                         name,
                         HdSt_ResourceBindingSuffixTokens->layout),
-                    HdSt_ResourceBinder::GetTextureBindlessHandle(
-                        texture.GetLayoutTexture())));
+                    bindlessLayoutHandles));
         }
         sources->push_back(
             std::make_shared<HdVtBufferSource>(
                 _Concat(
                     name,
                     HdSt_ResourceBindingSuffixTokens->valid),
-                VtValue(texture.IsValid())));
+                VtValue(textures[0]->IsValid())));
     }
 };
 
@@ -276,61 +301,93 @@ class _BindFunctor {
 public:
     static void Compute(
         TfToken const &name,
-        HdStUvTextureObject const &texture,
-        HdStUvSamplerObject const &sampler,
+        std::vector<const HdStUvTextureObject*> const &textures,
+        std::vector<const HdStUvSamplerObject*> const &samplers,
         HdSt_ResourceBinder const &binder,
         const bool bind)
     {
-        binder.BindTexture(
+        std::vector<HgiTextureHandle> textureHandles;
+        std::vector<HgiSamplerHandle> samplerHandles;
+        for (size_t i = 0; i < textures.size(); i++) {
+            textureHandles.push_back(textures[i]->GetTexture());
+            samplerHandles.push_back(samplers[i]->GetSampler());
+        }
+        binder.BindTextures(
+                name,
+                samplerHandles,
+                textureHandles,
+                bind);
+    }
+
+    static void Compute(
+        TfToken const &name,
+        std::vector<const HdStFieldTextureObject*> const &textures,
+        std::vector<const HdStFieldSamplerObject*> const &samplers,
+        HdSt_ResourceBinder const &binder,
+        const bool bind)
+    {
+        std::vector<HgiTextureHandle> textureHandles;
+        std::vector<HgiSamplerHandle> samplerHandles;
+        for (size_t i = 0; i < textures.size(); i++) {
+            textureHandles.push_back(textures[i]->GetTexture());
+            samplerHandles.push_back(samplers[i]->GetSampler());
+        }
+        binder.BindTextures(
+                name,
+                samplerHandles,
+                textureHandles,
+                bind);
+    }
+
+    static void Compute(
+        TfToken const &name,
+        std::vector<const HdStPtexTextureObject*> const &textures,
+        std::vector<const HdStPtexSamplerObject*> const &samplers,
+        HdSt_ResourceBinder const &binder,
+        const bool bind)
+    {
+        std::vector<HgiTextureHandle> textureHandles;
+        std::vector<HgiTextureHandle> layoutTextureHandles;
+        std::vector<HgiSamplerHandle> samplerHandles;
+        std::vector<HgiSamplerHandle> layoutSamplerHandles;
+        for (size_t i = 0; i < textures.size(); i++) {
+            textureHandles.push_back(textures[i]->GetTexelTexture());
+            layoutTextureHandles.push_back(textures[i]->GetLayoutTexture());
+            samplerHandles.push_back(samplers[i]->GetTexelsSampler());
+            layoutSamplerHandles.push_back(samplers[i]->GetLayoutSampler());
+        }
+        binder.BindTexturesWithLayout(
             name,
-            sampler.GetSampler(),
-            texture.GetTexture(),
+            samplerHandles,
+            textureHandles,
+            layoutSamplerHandles,
+            layoutTextureHandles,
             bind);
     }
 
     static void Compute(
         TfToken const &name,
-        HdStFieldTextureObject const &texture,
-        HdStFieldSamplerObject const &sampler,
+        std::vector<const HdStUdimTextureObject*> const &textures,
+        std::vector<const HdStUdimSamplerObject*> const &samplers,
         HdSt_ResourceBinder const &binder,
         const bool bind)
     {
-        binder.BindTexture(
+        std::vector<HgiTextureHandle> textureHandles;
+        std::vector<HgiTextureHandle> layoutTextureHandles;
+        std::vector<HgiSamplerHandle> samplerHandles;
+        std::vector<HgiSamplerHandle> layoutSamplerHandles;
+        for (size_t i = 0; i < textures.size(); i++) {
+            textureHandles.push_back(textures[i]->GetTexelTexture());
+            layoutTextureHandles.push_back(textures[i]->GetLayoutTexture());
+            samplerHandles.push_back(samplers[i]->GetTexelsSampler());
+            layoutSamplerHandles.push_back(samplers[i]->GetLayoutSampler());
+        }
+        binder.BindTexturesWithLayout(
             name,
-            sampler.GetSampler(),
-            texture.GetTexture(),
-            bind);
-    }
-
-    static void Compute(
-        TfToken const &name,
-        HdStPtexTextureObject const &texture,
-        HdStPtexSamplerObject const &sampler,
-        HdSt_ResourceBinder const &binder,
-        const bool bind)
-    {
-        binder.BindTextureWithLayout(
-            name,
-            sampler.GetTexelsSampler(),
-            texture.GetTexelTexture(),
-            sampler.GetLayoutSampler(),
-            texture.GetLayoutTexture(),
-            bind);
-    }
-
-    static void Compute(
-        TfToken const &name,
-        HdStUdimTextureObject const &texture,
-        HdStUdimSamplerObject const &sampler,
-        HdSt_ResourceBinder const &binder,
-        const bool bind)
-    {
-        binder.BindTextureWithLayout(
-            name,
-            sampler.GetTexelsSampler(),
-            texture.GetTexelTexture(),
-            sampler.GetLayoutSampler(),
-            texture.GetLayoutTexture(),
+            samplerHandles,
+            textureHandles,
+            layoutSamplerHandles,
+            layoutTextureHandles,
             bind);
     }
 };
@@ -339,62 +396,94 @@ class _BindingDescsFunctor {
 public:
     static void Compute(
         TfToken const &name,
-        HdStUvTextureObject const &texture,
-        HdStUvSamplerObject const &sampler,
+        std::vector<const HdStUvTextureObject*> const &textures,
+        std::vector<const HdStUvSamplerObject*> const &samplers,
         HdSt_ResourceBinder const &binder,
         HgiResourceBindingsDesc * bindingsDesc)
     {
-        binder.GetTextureBindingDesc(
+        std::vector<HgiTextureHandle> textureHandles;
+        std::vector<HgiSamplerHandle> samplerHandles;
+        for (size_t i = 0; i < textures.size(); i++) {
+            textureHandles.push_back(textures[i]->GetTexture());
+            samplerHandles.push_back(samplers[i]->GetSampler());
+        }
+        binder.GetTextureBindingDescs(
                 bindingsDesc,
                 name,
-                sampler.GetSampler(),
-                texture.GetTexture());
+                samplerHandles,
+                textureHandles);
     }
 
     static void Compute(
         TfToken const &name,
-        HdStFieldTextureObject const &texture,
-        HdStFieldSamplerObject const &sampler,
+        std::vector<const HdStFieldTextureObject*> const &textures,
+        std::vector<const HdStFieldSamplerObject*> const &samplers,
         HdSt_ResourceBinder const &binder,
         HgiResourceBindingsDesc * bindingsDesc)
     {
-        binder.GetTextureBindingDesc(
+        std::vector<HgiTextureHandle> textureHandles;
+        std::vector<HgiSamplerHandle> samplerHandles;
+        for (size_t i = 0; i < textures.size(); i++) {
+            textureHandles.push_back(textures[i]->GetTexture());
+            samplerHandles.push_back(samplers[i]->GetSampler());
+        }
+        binder.GetTextureBindingDescs(
                 bindingsDesc,
                 name,
-                sampler.GetSampler(),
-                texture.GetTexture());
+                samplerHandles,
+                textureHandles);
     }
 
     static void Compute(
         TfToken const &name,
-        HdStPtexTextureObject const &texture,
-        HdStPtexSamplerObject const &sampler,
+        std::vector<const HdStPtexTextureObject*> const &textures,
+        std::vector<const HdStPtexSamplerObject*> const &samplers,
         HdSt_ResourceBinder const &binder,
         HgiResourceBindingsDesc * bindingsDesc)
     {
-        binder.GetTextureWithLayoutBindingDesc(
+        std::vector<HgiTextureHandle> textureHandles;
+        std::vector<HgiTextureHandle> layoutTextureHandles;
+        std::vector<HgiSamplerHandle> samplerHandles;
+        std::vector<HgiSamplerHandle> layoutSamplerHandles;
+        for (size_t i = 0; i < textures.size(); i++) {
+            textureHandles.push_back(textures[i]->GetTexelTexture());
+            layoutTextureHandles.push_back(textures[i]->GetLayoutTexture());
+            samplerHandles.push_back(samplers[i]->GetTexelsSampler());
+            layoutSamplerHandles.push_back(samplers[i]->GetLayoutSampler());
+        }
+        binder.GetTextureWithLayoutBindingDescs(
                 bindingsDesc,
                 name,
-                sampler.GetTexelsSampler(),
-                texture.GetTexelTexture(),
-                sampler.GetLayoutSampler(),
-                texture.GetLayoutTexture());
+                samplerHandles,
+                textureHandles,
+                layoutSamplerHandles,
+                layoutTextureHandles);
     }
 
     static void Compute(
         TfToken const &name,
-        HdStUdimTextureObject const &texture,
-        HdStUdimSamplerObject const &sampler,
+        std::vector<const HdStUdimTextureObject*> const &textures,
+        std::vector<const HdStUdimSamplerObject*> const &samplers,
         HdSt_ResourceBinder const &binder,
         HgiResourceBindingsDesc * bindingsDesc)
     {
-        binder.GetTextureWithLayoutBindingDesc(
+        std::vector<HgiTextureHandle> textureHandles;
+        std::vector<HgiTextureHandle> layoutTextureHandles;
+        std::vector<HgiSamplerHandle> samplerHandles;
+        std::vector<HgiSamplerHandle> layoutSamplerHandles;
+        for (size_t i = 0; i < textures.size(); i++) {
+            textureHandles.push_back(textures[i]->GetTexelTexture());
+            layoutTextureHandles.push_back(textures[i]->GetLayoutTexture());
+            samplerHandles.push_back(samplers[i]->GetTexelsSampler());
+            layoutSamplerHandles.push_back(samplers[i]->GetLayoutSampler());
+        }
+        binder.GetTextureWithLayoutBindingDescs(
                 bindingsDesc,
                 name,
-                sampler.GetTexelsSampler(),
-                texture.GetTexelTexture(),
-                sampler.GetLayoutSampler(),
-                texture.GetLayoutTexture());
+                samplerHandles,
+                textureHandles,
+                layoutSamplerHandles,
+                layoutTextureHandles);
     }
 };
 
@@ -408,28 +497,34 @@ void _CastAndCompute(
     // e.g. HdStUvSamplerObject
     using SamplerObject = HdStTypedSamplerObject<textureType>;
 
-    if (!namedTextureHandle.handle) {
-        TF_CODING_ERROR("Invalid texture handle in texture binder.");
-        return;
+    std::vector<const TextureObject*> textureObjects;
+    std::vector<const SamplerObject*> samplerObjects;
+    for (const HdStTextureHandleSharedPtr& tex : namedTextureHandle.handles) {
+        if (!tex) {
+            TF_CODING_ERROR("Invalid texture handle in texture binder.");
+            return;
+        }
+        const TextureObject * typedTexture =
+            dynamic_cast<TextureObject *>(
+            tex->GetTextureObject().get());
+        if (!typedTexture) {
+            TF_CODING_ERROR("Bad texture object");
+            return;
+        }
+        textureObjects.push_back(typedTexture);
+
+        const SamplerObject * typedSampler =
+            dynamic_cast<SamplerObject *>(
+                tex->GetSamplerObject().get());
+        if (!typedSampler) {
+            TF_CODING_ERROR("Bad sampler object");
+            return;
+        }
+        samplerObjects.push_back(typedSampler);
     }
 
-    const TextureObject * const typedTexture =
-        dynamic_cast<TextureObject *>(
-            namedTextureHandle.handle->GetTextureObject().get());
-    if (!typedTexture) {
-        TF_CODING_ERROR("Bad texture object");
-        return;
-    }
 
-    const SamplerObject * const typedSampler =
-        dynamic_cast<SamplerObject *>(
-            namedTextureHandle.handle->GetSamplerObject().get());
-    if (!typedSampler) {
-        TF_CODING_ERROR("Bad sampler object");
-        return;
-    }
-
-    Functor::Compute(namedTextureHandle.name, *typedTexture, *typedSampler,
+    Functor::Compute(namedTextureHandle.name, textureObjects, samplerObjects,
                      std::forward<Args>(args)...);
 }
 
@@ -477,7 +572,7 @@ HdSt_TextureBinder::ComputeBufferSources(
     bool doublesSupported)
 {
     const bool useBindlessHandles = textures.empty() ? false :
-        textures[0].handle->UseBindlessHandles();
+        textures[0].handles[0]->UseBindlessHandles();
 
     _Dispatch<_ComputeBufferSourcesFunctor>(textures, sources, 
         useBindlessHandles, doublesSupported);

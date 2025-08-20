@@ -201,6 +201,12 @@ bool HdStIsPrimvarExistentAndValid(
     HdPrimvarDescriptorVector const& primvars,
     TfToken const& primvarName);
 
+HDST_API
+bool HdStIsPrimvarValidForDrawItem(
+    const HdStDrawItem *drawItem,
+    TfToken const &primvarName,
+    VtValue const &primvarValue);
+
 // -----------------------------------------------------------------------------
 // Constant primvar processing utilities
 // -----------------------------------------------------------------------------

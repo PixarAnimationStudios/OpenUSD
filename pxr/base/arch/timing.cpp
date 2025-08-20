@@ -19,7 +19,7 @@
 #include <type_traits>
 #include <thread>
 
-#if defined(ARCH_OS_LINUX)
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_WASM_VM)
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -89,7 +89,7 @@ Arch_ComputeNanosecondsPerTick()
     return static_cast<double>(info.numer) / info.denom;
 }
 
-#elif defined(ARCH_OS_LINUX)
+#elif defined(ARCH_OS_LINUX) || defined(ARCH_OS_WASM_VM)
 
 static
 double

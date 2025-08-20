@@ -7,8 +7,8 @@
 #include "pxr/pxr.h"
 #include "fileFormat.h"
 
-#include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/usdaFileFormat.h"
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/registryManager.h"
@@ -123,7 +123,7 @@ UsdObjFileFormat::WriteToString(
     // XXX: For now, defer to the usda file format for this.  We don't support
     // writing Usd content as a OBJ.
     return SdfFileFormat::FindById(
-        UsdUsdaFileFormatTokens->Id)->WriteToString(layer, str, comment);
+        SdfUsdaFileFormatTokens->Id)->WriteToString(layer, str, comment);
 }
 
 bool
@@ -135,7 +135,7 @@ UsdObjFileFormat::WriteToStream(
     // XXX: For now, defer to the usda file format for this.  We don't support
     // writing Usd content as a OBJ.
     return SdfFileFormat::FindById(
-        UsdUsdaFileFormatTokens->Id)->WriteToStream(spec, out, indent);
+        SdfUsdaFileFormatTokens->Id)->WriteToStream(spec, out, indent);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

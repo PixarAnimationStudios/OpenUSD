@@ -1,0 +1,9 @@
+#usda 1.0
+#tagged-as-never-update
+
+def MfScope "foo"
+{
+    bool a1 = false
+    string a1.connect = </Foo.a>
+}
+

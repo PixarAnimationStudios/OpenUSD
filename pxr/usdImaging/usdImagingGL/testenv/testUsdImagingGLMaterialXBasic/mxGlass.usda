@@ -73,6 +73,7 @@ def Xform "lights"
     {
         asset inputs:texture:file = @./StinsonBeach.hdr@
         float xformOp:rotateX:Zup = 90
+        float inputs:intensity = 2
         uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
     }
 }

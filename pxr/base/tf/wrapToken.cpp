@@ -10,6 +10,7 @@
 #include "pxr/base/tf/token.h"
 
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/tf/pyOptional.h"
 
 #include "pxr/external/boost/python/def.hpp"
 #include "pxr/external/boost/python/to_python_converter.hpp"
@@ -86,6 +87,8 @@ void wrapToken()
     bp::to_python_converter<
         std::pair<TfToken, TfToken>,
         TfPyContainerConversions::to_tuple<std::pair<TfToken, TfToken>>>();
+
+    TfPyOptional::python_optional<TfToken>();
 
     // Stats.
     bp::def("DumpTokenStats", TfDumpTokenStats);

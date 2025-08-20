@@ -10,6 +10,7 @@
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hdsi/tetMeshConversionSceneIndex.h"
+#include "hdPrman/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -17,8 +18,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((sceneIndexPluginName, "HdPrman_TetMeshConversionSceneIndexPlugin"))
 );
-
-static const char * const _pluginDisplayName = "Prman";
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -29,12 +28,14 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 0;
 
-    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        _pluginDisplayName,
-        _tokens->sceneIndexPluginName,
-        nullptr, // No input args.
-        insertionPhase,
-        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    for( auto const& pluginDisplayName : HdPrman_GetPluginDisplayNames()) {
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            pluginDisplayName,
+            _tokens->sceneIndexPluginName,
+            nullptr, // No input args.
+            insertionPhase,
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////

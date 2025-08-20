@@ -27,9 +27,9 @@
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/specType.h"
-#include "pxr/usd/sdf/textFileFormat.h"
-#include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/subLayerListEditor.h"
+#include "pxr/usd/sdf/types.h"
+#include "pxr/usd/sdf/usdaFileFormat.h"
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/variantSpec.h"
 
@@ -335,7 +335,7 @@ SdfLayer::CreateAnonymous(
     }
 
     if (!fileFormat) {
-        fileFormat = SdfFileFormat::FindById(SdfTextFileFormatTokens->Id);
+        fileFormat = SdfFileFormat::FindById(SdfUsdaFileFormatTokens->Id);
     }
 
     if (!fileFormat) {
@@ -1289,6 +1289,14 @@ SdfLayer::SetTimeSample(const SdfPath& path, double time,
         return;
     }
 
+    if (value.IsHolding<SdfAnimationBlock>()) {
+        TF_CODING_ERROR(
+            "Animation block cannot be authored on a time sample."
+            "SdfAnimationBlock can only be authored as the default value to "
+            "block animation from weaker layer.");
+        return;
+    }
+
     // circumvent type checking if setting a block.
     if (value.IsHolding<SdfValueBlock>()) {
         _PrimSetTimeSample(path, time, value);
@@ -1323,10 +1331,18 @@ SdfLayer::SetTimeSample(const SdfPath& path, double time,
 // cache the value of typeid(SdfValueBlock)
 namespace 
 {
-    const TfType& _GetSdfValueBlockType() 
+    const std::type_info& _GetSdfValueBlockTypeid() 
     {
-        static const TfType blockType = TfType::Find<SdfValueBlock>();
-        return blockType;
+        static const std::type_info& typeidSdfValueBlock = 
+            typeid(SdfValueBlock);
+        return typeidSdfValueBlock;
+    }
+
+    const std::type_info& _GetSdfAnimationBlockTypeid()
+    {
+        static const std::type_info& typeidSdfAnimationBlock = 
+            typeid(SdfAnimationBlock);
+        return typeidSdfAnimationBlock;
     }
 }
 
@@ -1343,7 +1359,15 @@ SdfLayer::SetTimeSample(const SdfPath& path, double time,
         return;
     }
 
-    if (value.valueType == _GetSdfValueBlockType().GetTypeid()) {
+    if (TfSafeTypeCompare(value.valueType, _GetSdfAnimationBlockTypeid())) {
+        TF_CODING_ERROR(
+            "Animation block cannot be authored on a time sample."
+            "SdfAnimationBlock can only be authored as the default value to "
+            "block animation from weaker layer.");
+        return;
+    }
+
+    if (TfSafeTypeCompare(value.valueType, _GetSdfValueBlockTypeid())) {
         _PrimSetTimeSample(path, time, value);
         return;
     }
@@ -1582,6 +1606,47 @@ SdfLayer::GetComment() const
     return _GetValue<string>(SdfFieldKeys->Comment);
 }
 
+/*static*/
+SdfPath 
+SdfLayer::ConvertDefaultPrimTokenToPath(const TfToken &defaultPrim)
+{
+    const std::string &pathString = defaultPrim.GetString();
+    if (!SdfPath::IsValidPathString(pathString)) {
+        return SdfPath();
+    }
+    const SdfPath path(pathString);
+    return path.IsPrimPath()
+        ? path.IsAbsolutePath()
+            ? path
+            : path.MakeAbsolutePath(SdfPath::AbsoluteRootPath())
+        : SdfPath();
+}
+
+/*static*/
+TfToken 
+SdfLayer::ConvertDefaultPrimPathToToken(const SdfPath &defaultPrimPath) 
+{
+    // For root prims we use the root relative path, which
+    // is just the prim name, because this allows the layer to be 
+    // backwards compatible with earlier versions of USD which 
+    // expected the defaultPrim field to only be the name token of a root prim.
+    // For non-root prims, we use the absolute path as it's more
+    // clear than a root relative path (which would be just the path 
+    // without the initial forward slash).
+    if (!defaultPrimPath.IsPrimPath()) {
+        return TfToken();
+    }
+    if (defaultPrimPath.GetPathElementCount() == 1) {
+        return defaultPrimPath.GetNameToken();
+    }
+    if (defaultPrimPath.IsAbsolutePath()) {
+        return defaultPrimPath.GetAsToken();
+
+    }
+    return defaultPrimPath.MakeAbsolutePath(
+        SdfPath::AbsoluteRootPath()).GetAsToken();
+}
+
 void
 SdfLayer::SetDefaultPrim(const TfToken &name)
 {
@@ -1597,16 +1662,8 @@ SdfLayer::GetDefaultPrim() const
 SdfPath
 SdfLayer::GetDefaultPrimAsPath() const
 {
-    std::string pathString = 
-        _GetValue<TfToken>(SdfFieldKeys->DefaultPrim).GetString();
-    SdfPath path = SdfPath::IsValidPathString(pathString)
-        ? SdfPath(pathString)
-        : SdfPath();
-    return path.IsPrimPath()
-        ? path.IsAbsolutePath()
-            ? path
-            : path.MakeAbsolutePath(SdfPath::AbsoluteRootPath())
-        : SdfPath();
+    return ConvertDefaultPrimTokenToPath(
+        _GetValue<TfToken>(SdfFieldKeys->DefaultPrim));
 }
 
 void
@@ -2583,18 +2640,25 @@ SdfLayer::SetIdentifier(const string &identifier)
         _InitializeFromIdentifier(absIdentifier);
     }
 
-    // If this layer has changed where it's stored, reset the modification
-    // time. Note that the new identifier may not resolve to an existing
-    // location, and we get an empty timestamp from the resolver. 
-    // This is OK -- this means the layer hasn't been serialized to this 
-    // new location yet.
     const ArResolvedPath newResolvedPath = GetResolvedPath();
     if (oldResolvedPath != newResolvedPath) {
+        // If this layer has changed where it's stored, reset the modification
+        // time. Note that the new identifier may not resolve to an existing
+        // location, and we get an empty timestamp from the resolver. 
+        // This is OK -- this means the layer hasn't been serialized to this 
+        // new location yet.
         const ArTimestamp timestamp = ArGetResolver().GetModificationTimestamp(
             newLayerPath, newResolvedPath);
         _assetModificationTime =
             (timestamp.IsValid() || Sdf_ResolvePath(newLayerPath)) ?
             VtValue(timestamp) : VtValue();
+
+        // We can't tell whether the contents of this layer differ from the
+        // contents (if any) of the layer at the new resolved path without
+        // reading it in entirely, which is too expensive to do. So we
+        // conservatively mark this layer as dirty, which ensures that the
+        // layer will be written out if there's a subsequent call to Save().
+        _stateDelegate->_MarkCurrentStateAsDirty();
     }
 }
 
@@ -2602,6 +2666,7 @@ void
 SdfLayer::UpdateAssetInfo()
 {
     TRACE_FUNCTION();
+    TF_DESCRIBE_SCOPE("Updating asset info for layer: " + GetIdentifier());
     TF_DEBUG(SDF_LAYER).Msg("SdfLayer::UpdateAssetInfo('%s')\n",
                             GetIdentifier().c_str());
 
@@ -5147,16 +5212,19 @@ SdfLayer::_Save(bool force) const
     }
 
     const ArResolvedPath path = GetResolvedPath();
-    if (path.empty())
+    if (path.empty()) {
         return false;
+    }
 
     // Skip saving if the file exists and the layer is clean.
-    if (!force && !IsDirty() && TfPathExists(path))
+    if (!force && !IsDirty() && ArGetResolver().Resolve(path)) {
         return true;
+    }
 
     if (!_WriteToFile(path, std::string(), 
-                      GetFileFormat(), GetFileFormatArguments()))
+                      GetFileFormat(), GetFileFormatArguments())) {
         return false;
+    }
 
     // Layer hints are invalidated by authoring so _hints must be reset now
     // that the layer has been marked as clean.  See GetHints().

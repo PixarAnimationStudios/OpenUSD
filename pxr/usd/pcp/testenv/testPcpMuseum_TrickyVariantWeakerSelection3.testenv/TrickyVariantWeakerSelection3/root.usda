@@ -1,0 +1,21 @@
+#usda 1.0
+
+def __AnyType__ "Model" (
+    add references = @./geo.usda@</Model>
+    add variantSets = ["modelComplexity"]
+    variants = {
+        string modelComplexity = "full"
+    }
+)
+{
+    variantSet "modelComplexity" = {
+        "full" (
+            variants = {
+                string K_hierarchy = "full"
+            }
+        ) {
+
+        }
+    }
+}
+

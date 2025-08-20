@@ -252,6 +252,11 @@ HdSt_FlatNormalsComputationGPU::Execute(
     HdStBufferResourceSharedPtr primitiveParam = topologyRange->GetResource(
         HdTokens->primitiveParam);
 
+    if (!points->GetHandle() || !normals->GetHandle() || !indices->GetHandle()
+        || !primitiveParam->GetHandle()) {
+        return;
+    }
+
     // select shader by datatype
     TfToken shaderToken;
     int indexArity = HdGetComponentCount(indices->GetTupleType().type);

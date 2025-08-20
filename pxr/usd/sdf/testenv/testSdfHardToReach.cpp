@@ -26,7 +26,7 @@ static std::pair<SdfLayerRefPtr, SdfLayerRefPtr>
 _CreateLayerDiffTestLayers() {
     SdfLayerRefPtr actualLayer = SdfLayer::CreateAnonymous();
     actualLayer->ImportFromString(    
-        R"(#sdf 1.4.32
+        R"(#usda 1.0
             over "a"{}
             def "b"{}
             over "c"{
@@ -43,7 +43,7 @@ _CreateLayerDiffTestLayers() {
 
     SdfLayerRefPtr diffLayer = SdfLayer::CreateAnonymous();
     diffLayer->ImportFromString(
-        R"(#sdf 1.4.32
+        R"(#usda 1.0
             def "z"{}
             def "b"{}
             over "c"{
@@ -162,7 +162,7 @@ _CreateTimeSampleLayerDiffTestLayers()
 {
     SdfLayerRefPtr layerA = SdfLayer::CreateAnonymous();
     layerA->ImportFromString(    
-        R"(#sdf 1.4.32
+        R"(#usda 1.0
             def Sphere "PixarBall"
             {
                 double radius = 100
@@ -176,7 +176,7 @@ _CreateTimeSampleLayerDiffTestLayers()
 
     SdfLayerRefPtr layerB = SdfLayer::CreateAnonymous();
     layerB->ImportFromString(    
-        R"(#sdf 1.4.32
+        R"(#usda 1.0
             def Sphere "PixarBall"
             {
                 double radius = 100
@@ -402,7 +402,7 @@ _TestSdfLayerTransferContentsEmptyLayer()
     // Tests that setting data on non empty layers properly cleans up all
     // specs in that layer without the use of SdfLayer::_IsInertSubtree
     const char* layerStr = 
-    R"(#sdf 1.4.32
+    R"(#usda 1.0
     def "Root"{
         def "Node1" (
             prepend variantSets = "testVariants"
@@ -760,22 +760,22 @@ _TestSdfSchemaPathValidation()
     TF_AXIOM(!schema.IsValidSpecializesPath(SdfPath("/A{x=y}")));
     TF_AXIOM(!schema.IsValidSpecializesPath(SdfPath("/A{x=y}B")));
 
-    TF_AXIOM(schema.IsValidPayload(SdfPayload("a.sdf", SdfPath())));
-    TF_AXIOM(schema.IsValidPayload(SdfPayload("a.sdf", SdfPath("/A"))));
+    TF_AXIOM(schema.IsValidPayload(SdfPayload("a.usda", SdfPath())));
+    TF_AXIOM(schema.IsValidPayload(SdfPayload("a.usda", SdfPath("/A"))));
     TF_AXIOM(schema.IsValidPayload(SdfPayload("", SdfPath("/A"))));
-    TF_AXIOM(!schema.IsValidPayload(SdfPayload("a.sdf", SdfPath("/A.a"))));
-    TF_AXIOM(!schema.IsValidPayload(SdfPayload("a.sdf", SdfPath("A"))));
-    TF_AXIOM(!schema.IsValidPayload(SdfPayload("a.sdf", SdfPath("/A{x=y}"))));
-    TF_AXIOM(!schema.IsValidPayload(SdfPayload("a.sdf", SdfPath("/A{x=y}B"))));
+    TF_AXIOM(!schema.IsValidPayload(SdfPayload("a.usda", SdfPath("/A.a"))));
+    TF_AXIOM(!schema.IsValidPayload(SdfPayload("a.usda", SdfPath("A"))));
+    TF_AXIOM(!schema.IsValidPayload(SdfPayload("a.usda", SdfPath("/A{x=y}"))));
+    TF_AXIOM(!schema.IsValidPayload(SdfPayload("a.usda", SdfPath("/A{x=y}B"))));
 
-    TF_AXIOM(schema.IsValidReference(SdfReference("a.sdf", SdfPath())));
-    TF_AXIOM(schema.IsValidReference(SdfReference("a.sdf", SdfPath("/A"))));
+    TF_AXIOM(schema.IsValidReference(SdfReference("a.usda", SdfPath())));
+    TF_AXIOM(schema.IsValidReference(SdfReference("a.usda", SdfPath("/A"))));
     TF_AXIOM(schema.IsValidReference(SdfReference("", SdfPath("/A"))));
-    TF_AXIOM(!schema.IsValidReference(SdfReference("a.sdf", SdfPath("/A.a"))));
-    TF_AXIOM(!schema.IsValidReference(SdfReference("a.sdf", SdfPath("A"))));
-    TF_AXIOM(!schema.IsValidReference(SdfReference("a.sdf",
+    TF_AXIOM(!schema.IsValidReference(SdfReference("a.usda", SdfPath("/A.a"))));
+    TF_AXIOM(!schema.IsValidReference(SdfReference("a.usda", SdfPath("A"))));
+    TF_AXIOM(!schema.IsValidReference(SdfReference("a.usda",
                                                    SdfPath("/A{x=y}"))));
-    TF_AXIOM(!schema.IsValidReference(SdfReference("a.sdf", 
+    TF_AXIOM(!schema.IsValidReference(SdfReference("a.usda", 
                                                    SdfPath("/A{x=y}B"))));
 
     TF_AXIOM(schema.IsValidRelocatesSourcePath(SdfPath("A")));

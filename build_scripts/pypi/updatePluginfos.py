@@ -39,7 +39,7 @@ def process_plugin_dict(plugin_dict, libname, newname):
     # the way USD is currently setting these paths internally. If either
     # changes this will break.
     if is_mac_platform():
-        if f'libs/{libname}' in newname:
+        if f'libs/{libname}.' in newname:
             # strip off a pxr/ at the front of the newname
             plugin_dict['LibraryPath'] = os.path.join('../../', newname[4:])
             return True

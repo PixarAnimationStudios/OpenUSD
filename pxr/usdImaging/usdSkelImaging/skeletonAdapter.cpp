@@ -151,6 +151,10 @@ UsdSkelImagingSkeletonAdapter::Populate(
             
             // Insert two computations ...
             UsdPrim const& skinnedPrim = query.GetPrim();
+            if (!skinnedPrim) {
+                continue;
+            }
+
             SdfPath skinnedPrimPath = ResolveCachePath(
                 skinnedPrim.GetPath(), instancerContext);
 
@@ -703,7 +707,8 @@ UsdSkelImagingSkeletonAdapter::GetExtent(UsdPrim const& prim,
         // Note:
         // Usd stores extent as 2 float vecs. We do an implicit 
         // conversion to doubles
-        return GfRange3d(extent[0], extent[1]);
+        const VtVec3fArray &extentConst = extent.AsConst();
+        return GfRange3d(extentConst[0], extentConst[1]);
     } else {
         // Return empty range if no value was found.
         return GfRange3d();
@@ -2572,7 +2577,8 @@ UsdSkelImagingSkeletonAdapter::_SkelData::ComputeTopologyAndRestState()
 
     _numJoints = xforms.size();
 
-    UsdSkelImagingComputeBonePoints(skelQuery.GetTopology(), xforms,
+    const VtMatrix4dArray &xformsConst = xforms.AsConst();
+    UsdSkelImagingComputeBonePoints(skelQuery.GetTopology(), xformsConst,
                                     numPoints, &_boneMeshPoints);
 
     UsdSkelImagingComputeBoneJointIndices(skelQuery.GetTopology(),
@@ -2621,7 +2627,7 @@ UsdSkelImagingSkeletonAdapter::_SkelData::ComputePoints(
         }
 
         if(TF_VERIFY(_boneMeshPoints.size() == _boneMeshJointIndices.size())) {
-
+            // TODO: MakeUnique()
             VtVec3fArray skinnedPoints(_boneMeshPoints);
 
             const int* jointIndices = _boneMeshJointIndices.cdata();

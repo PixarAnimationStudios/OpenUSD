@@ -74,6 +74,9 @@ public:
     HD_API
     virtual bool HasArbitraryValue(const TfToken& key) const;
 
+    HD_API
+    virtual bool IsValid() const;
+
 private:
     // Hydra will not attempt to copy the class.
     HdRenderParam(const HdRenderParam &) = delete;

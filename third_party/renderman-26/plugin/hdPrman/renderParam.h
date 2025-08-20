@@ -301,7 +301,7 @@ public:
 
     // Checks whether render param was successfully initialized.
     // ie. riley was created
-    bool IsValid() const;
+    bool IsValid() const override;
 
     // Creates displays in riley based on aovBindings vector together
     // with HdPrmanFramebuffer to transfer the result between the
@@ -363,11 +363,11 @@ public:
     };
 #endif
 
-    // Path to the connected Sample Filter from the Render Settings Prim
-    void SetConnectedSampleFilterPaths(HdSceneDelegate *sceneDelegate,
-        SdfPathVector const& connectedSampleFilterPaths);
-    SdfPathVector GetConnectedSampleFilterPaths() {
-        return _connectedSampleFilterPaths;
+    // Paths to the Sample Filters from the Render Settings Prim
+    void SetSampleFilterPaths(HdSceneDelegate *sceneDelegate,
+        SdfPathVector const& sampleFilterPaths);
+    SdfPathVector GetSampleFilterPaths() {
+        return _sampleFilterPaths;
     }
 
     // Riley Data from the Sample Filter Prim
@@ -378,11 +378,11 @@ public:
     void CreateSampleFilterNetwork(HdSceneDelegate *sceneDelegate);
     riley::SampleFilterList GetSampleFilterList();
 
-    // Path to the connected Display Filter from the Render Settings Prim
-    void SetConnectedDisplayFilterPaths(HdSceneDelegate *sceneDelegate,
-        SdfPathVector const& connectedDisplayFilterPaths);
-    SdfPathVector GetConnectedDisplayFilterPaths() {
-        return _connectedDisplayFilterPaths;
+    // Paths to the Display Filters from the Render Settings Prim
+    void SetDisplayFilterPaths(HdSceneDelegate *sceneDelegate,
+        SdfPathVector const& displayFilterPaths);
+    SdfPathVector GetDisplayFilterPaths() {
+        return _displayFilterPaths;
     }
 
     // Riley Data from the Display Filter Prim
@@ -606,11 +606,11 @@ private:
     HdMaterialNode2 _renderSettingsIntegratorNode;
     riley::IntegratorId _integratorId;
 
-    SdfPathVector _connectedSampleFilterPaths;
+    SdfPathVector _sampleFilterPaths;
     _PathToRileyFilterMap _sampleFilterNodes;
     riley::SampleFilterId _sampleFiltersId;
 
-    SdfPathVector _connectedDisplayFilterPaths;
+    SdfPathVector _displayFilterPaths;
     _PathToRileyFilterMap _displayFilterNodes;
     riley::DisplayFilterId _displayFiltersId;
     /// ------------------------------------------------------------------------
@@ -635,10 +635,6 @@ private:
     HdRenderPassAovBindingVector _lastBindings;
 
     // Solaris Legacy Sample & Display Filter Support
-    std::unordered_map<RtUString, riley::ShadingNode> _displayFilters;
-    std::unordered_map<RtUString, riley::ShadingNode> _sampleFilters;
-    bool _displayFiltersDirty;
-    bool _sampleFiltersDirty;
     riley::SampleFilterId _sampleFilterId;
     riley::DisplayFilterId _displayFilterId;    
 

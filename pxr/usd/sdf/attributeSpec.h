@@ -19,6 +19,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class TsSpline;
+
 /// \class SdfAttributeSpec
 ///
 /// A subclass of SdfPropertySpec that holds typed data.
@@ -147,6 +149,23 @@ public:
     /// If the typeName has no roleName, return empty token.
     SDF_API
     TfToken GetRoleName() const;
+
+    /// @}
+    
+    /// \name Spline API
+    /// @{
+    /// Returns the TsSpline at this attribute spec if a spec exists, otherwise
+    /// an empty spline is returned.
+    SDF_API
+    TsSpline GetSpline() const;
+
+    /// Set the provided value as the spline for this attribute spec.
+    SDF_API
+    void SetSpline(const TsSpline& value);
+
+    /// Clear the spline from this attribute spec.
+    SDF_API
+    void ClearSpline();
 
     /// @}
 

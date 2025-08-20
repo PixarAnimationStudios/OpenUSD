@@ -1,16 +1,16 @@
-Loading @TrickyRelocatedTargetInVariant/root.sdf@
+Loading @TrickyRelocatedTargetInVariant/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Root>
 
 Prim Stack:
-    root.sdf             /Root
-    root.sdf             /Root{v=a}
-    ref.sdf              /Ref
+    root.usda            /Root
+    root.usda            /Root{v=a}
+    ref.usda             /Ref
 
 Variant Selections:
     {v = a}
@@ -26,8 +26,8 @@ Property names:
 
 Property stacks:
 /Root.myRel:
-    root.sdf             /Root.myRel
-    root.sdf             /Root{v=a}.myRel
+    root.usda            /Root.myRel
+    root.usda            /Root{v=a}.myRel
 
 Relationship targets:
 /Root.myRel:
@@ -38,8 +38,8 @@ Relationship targets:
 Results for composing </Root/Rig>
 
 Prim Stack:
-    root.sdf             /Root{v=a}Rig
-    ref.sdf              /Ref
+    root.usda            /Root{v=a}Rig
+    ref.usda             /Ref
 
 Prohibited child names:
      ['Child', 'Child2']
@@ -48,7 +48,7 @@ Prohibited child names:
 Results for composing </Root/Anim>
 
 Prim Stack:
-    root.sdf             /Root/Anim
+    root.usda            /Root/Anim
 
 Child names:
      ['Child', 'Child2', 'Child3', 'Child4']
@@ -57,15 +57,15 @@ Child names:
 Results for composing </Root/Anim/Child>
 
 Prim Stack:
-    root.sdf             /Root/Anim/Child
-    ref.sdf              /Ref/Child
+    root.usda            /Root/Anim/Child
+    ref.usda             /Ref/Child
 
 Property names:
      ['sibling']
 
 Property stacks:
 /Root/Anim/Child.sibling:
-    ref.sdf              /Ref/Child.sibling
+    ref.usda             /Ref/Child.sibling
 
 Relationship targets:
 /Root/Anim/Child.sibling:
@@ -75,14 +75,14 @@ Relationship targets:
 Results for composing </Root/Anim/Child2>
 
 Prim Stack:
-    ref.sdf              /Ref/Child2
+    ref.usda             /Ref/Child2
 
 Property names:
      ['sibling']
 
 Property stacks:
 /Root/Anim/Child2.sibling:
-    ref.sdf              /Ref/Child2.sibling
+    ref.usda             /Ref/Child2.sibling
 
 Relationship targets:
 /Root/Anim/Child2.sibling:
@@ -92,14 +92,14 @@ Relationship targets:
 Results for composing </Root/Anim/Child3>
 
 Prim Stack:
-    ref.sdf              /Ref/Child
+    ref.usda             /Ref/Child
 
 Property names:
      ['sibling']
 
 Property stacks:
 /Root/Anim/Child3.sibling:
-    ref.sdf              /Ref/Child.sibling
+    ref.usda             /Ref/Child.sibling
 
 Relationship targets:
 /Root/Anim/Child3.sibling:
@@ -109,14 +109,14 @@ Relationship targets:
 Results for composing </Root/Anim/Child4>
 
 Prim Stack:
-    ref.sdf              /Ref/Child2
+    ref.usda             /Ref/Child2
 
 Property names:
      ['sibling']
 
 Property stacks:
 /Root/Anim/Child4.sibling:
-    ref.sdf              /Ref/Child2.sibling
+    ref.usda             /Ref/Child2.sibling
 
 Relationship targets:
 /Root/Anim/Child4.sibling:

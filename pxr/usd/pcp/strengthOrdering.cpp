@@ -53,19 +53,20 @@ _GetOriginRootNode(const PcpNodeRef& node)
 static bool
 _OriginsAreNestedArcs(const PcpNodeRef& a, const PcpNodeRef& b)
 {
-    for (PcpNodeRef n = a; n; n = n.GetParentNode()) {
-        if (n == b) {
-            return true;
-        }
-    }
+    auto isNestedUnder = [](const PcpNodeRef& x, const PcpNodeRef& y)
+     {
+         for (PcpNodeRef n = x; n;) {
+             if (n == y) {
+                 return true;
+             }
 
-    for (PcpNodeRef n = b; n; n = n.GetParentNode()) {
-        if (n == a) {
-            return true;
-        }
-    }
+             n = Pcp_IsPropagatedSpecializesNode(n) ?
+                 n.GetOriginNode() : n.GetParentNode();
+         }
+         return false;
+    };
 
-    return false;
+    return isNestedUnder(a, b) || isNestedUnder(b, a);
 }
 
 // Returns the namespace depth of the node that inherits or specializes
@@ -215,11 +216,11 @@ PcpCompareSiblingNodeStrength(
             // For example, consider a simple chain of references with
             // a specializes arc at the end:
             //
-            // @root.sdf@</A> -ref-> @ref.sdf@</Ref_1> 
-            //                -ref-> @ref2.sdf@</Ref_2>
-            //                -ref-> @ref3.sdf@</Ref_3> -spec-> @ref3.sdf@</S>
+            // @root.usda@</A> -ref-> @ref.usda@</Ref_1> 
+            //                -ref-> @ref2.usda@</Ref_2>
+            //                -ref-> @ref3.usda@</Ref_3> -spec-> @ref3.usda@</S>
             //
-            // The implied opinions due to @ref3.sdf@</S> are:
+            // The implied opinions due to @ref3.usda@</S> are:
             //
             // @ref2.usda@</S> (origin = @ref3.usda@</S>, 
             //                  distance from origin root = 1)

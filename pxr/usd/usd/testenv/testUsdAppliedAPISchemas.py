@@ -256,9 +256,10 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertTrue(untypedPrim.HasAPI(self.SingleApplyAPIType))
 
         # The prim has properties from the applied schema and value resolution
-        # returns the applied schema's property fallback value.
+        # returns the applied schema's property fallback value. These properties
+        # come with a property order, which is why they are not in alphabetical order.
         self.assertEqual(untypedPrim.GetPropertyNames(), [
-            "single:bool_attr", "single:relationship", "single:token_attr"])
+            "single:relationship", "single:token_attr", "single:bool_attr"])
         self.assertEqual(untypedPrim.GetAttribute("single:token_attr").Get(), 
                          "bar")
 
@@ -269,6 +270,12 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertFalse("hidden" in untypedPrim.GetAllMetadata())
         self.assertIsNone(untypedPrim.GetMetadata("hidden"))
         self.assertFalse(untypedPrim.HasAuthoredMetadata("hidden"))
+
+        # The only metadata single applied API schemas can define is "propertyOrder".
+        self.assertTrue("propertyOrder" in untypedPrim.GetAllMetadata())
+        self.assertIsNotNone(untypedPrim.GetMetadata("propertyOrder"))
+        # "propertyOrder" is defined in the API schema, not authored on the prim.
+        self.assertFalse(untypedPrim.HasAuthoredMetadata("propertyOrder"))
 
         # Untyped prim still has no documentation even with API schemas applied.
         self.assertIsNone(untypedPrim.GetMetadata("documentation"))
@@ -289,10 +296,17 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
                          'TestTypedSchema')
         self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(), [])
 
-        self.assertEqual(typedPrim.GetPropertyNames(), ["testAttr", "testRel"])
+        self.assertEqual(typedPrim.GetPropertyNames(), ["testRel", "testAttr"])
 
         # Add an api schemas to the prim's metadata.
         typedPrim.ApplyAPI(self.SingleApplyAPIType)
+
+        # Ensure property order from the TestSingleApplyAPI is in the prim metadata. 
+        self.assertTrue("propertyOrder" in typedPrim.GetAllMetadata())
+        self.assertIsNotNone(typedPrim.GetMetadata("propertyOrder"))
+        # "propertyOrder" is defined in the API schema, not authored on the prim.
+        self.assertFalse(typedPrim.HasAuthoredMetadata("propertyOrder"))
+
         typedPrim.ApplyAPI(self.MultiApplyAPIType, "garply")
 
         # Prim has the same type and now has API schemas. The properties have
@@ -305,17 +319,20 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(typedPrim.GetPrimTypeInfo().GetAppliedAPISchemas(),
                          ["TestSingleApplyAPI", "TestMultiApplyAPI:garply"])
 
+        # Since TestSingleApplyAPI has specified a property order, those
+        # properties are moved to the front. Other properties follow 
+        # alphabetical order.
         self.assertTrue(typedPrim.HasAPI(self.SingleApplyAPIType))
         self.assertTrue(typedPrim.HasAPI(self.MultiApplyAPIType))
         self.assertEqual(typedPrim.GetPropertyNames(), [
+            "testRel",
+            "testAttr", 
             "multi:garply:bool_attr", 
             "multi:garply:relationship", 
             "multi:garply:token_attr", 
             "single:bool_attr", 
             "single:relationship", 
-            "single:token_attr", 
-            "testAttr", 
-            "testRel"])
+            "single:token_attr"]) 
 
         # Property fallback comes from TestSingleApplyAPI
         attr = typedPrim.GetAttribute("single:token_attr")
@@ -370,12 +387,12 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertTrue(typedPrim.HasAPI(self.SingleApplyAPIType))
         self.assertTrue(typedPrim.HasAPI(self.MultiApplyAPIType))
         self.assertEqual(typedPrim.GetPropertyNames(), [
+            "single:relationship", 
+            "single:token_attr", 
+            "single:bool_attr",
             "multi:builtin:bool_attr", 
             "multi:builtin:relationship",
             "multi:builtin:token_attr", 
-            "single:bool_attr",
-            "single:relationship", 
-            "single:token_attr", 
             "testAttr", 
             "testRel"])
 
@@ -408,15 +425,15 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
 
             # Properties have been expanded to include the new API schema
             self.assertEqual(prim.GetPropertyNames(), [
+                "single:relationship", 
+                "single:token_attr", 
+                "single:bool_attr", 
                 "multi:builtin:bool_attr", 
                 "multi:builtin:relationship",
                 "multi:builtin:token_attr", 
                 "multi:garply:bool_attr", 
                 "multi:garply:relationship", 
                 "multi:garply:token_attr", 
-                "single:bool_attr", 
-                "single:relationship", 
-                "single:token_attr", 
                 "testAttr", 
                 "testRel"])
 
@@ -518,15 +535,15 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertTrue(typedPrim.HasAPI(self.MultiApplyAPIType))
         self.assertTrue(typedPrim.HasAPI(self.SingleApplyAPIType))
         self.assertEqual(typedPrim.GetPropertyNames(), [
+            "single:relationship", 
+            "single:token_attr", 
+            "single:bool_attr", 
             "multi:autoFoo:bool_attr", 
             "multi:autoFoo:relationship",
             "multi:autoFoo:token_attr", 
             "multi:builtin:bool_attr", 
             "multi:builtin:relationship",
             "multi:builtin:token_attr", 
-            "single:bool_attr",
-            "single:relationship", 
-            "single:token_attr", 
             "testAttr", 
             "testRel"])
 
@@ -547,9 +564,9 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
 
         self.assertTrue(typedPrim.HasAPI(self.SingleApplyAPIType))
         self.assertEqual(typedPrim.GetPropertyNames(), [
-            "single:bool_attr",
             "single:relationship", 
             "single:token_attr", 
+            "single:bool_attr", 
             "testAttr", 
             "testRel"])
 
@@ -572,9 +589,9 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
 
         self.assertTrue(typedPrim.HasAPI(self.SingleApplyAPIType))
         self.assertEqual(typedPrim.GetPropertyNames(), [
-            "single:bool_attr",
             "single:relationship", 
             "single:token_attr", 
+            "single:bool_attr", 
             "testAttr", 
             "testRel"])
 
@@ -600,9 +617,9 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
 
         self.assertTrue(typedPrim.HasAPI(self.SingleApplyAPIType))
         self.assertEqual(typedPrim.GetPropertyNames(), [
-            "single:bool_attr",
             "single:relationship", 
             "single:token_attr", 
+            "single:bool_attr",
             "testAttr", 
             "testRel"])
 
@@ -1195,6 +1212,10 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
 
         # Properties come from all composed built-in APIs
         expectedPropNames = [
+            # Properties from TestSingleApplyAPI
+            "single:relationship",
+            "single:token_attr",
+            "single:bool_attr",
             # Properties from TestNestedInnerSingleApplyAPI
             "innerSingle:int_attr", 
             "innerSingle:relationship", 
@@ -1202,11 +1223,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             # Properties from TestMultiApplyAPI:bar
             "multi:bar:bool_attr", 
             "multi:bar:relationship", 
-            "multi:bar:token_attr",
-            # Properties from TestSingleApplyAPI
-            "single:bool_attr",
-            "single:relationship",
-            "single:token_attr"]
+            "multi:bar:token_attr"]
         self.assertEqual(innerSinglePrim.GetPropertyNames(), expectedPropNames)
 
         # Verify that the attribute fallback values come from the API schemas
@@ -1231,7 +1248,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(innerSingleApplyAPIDef.GetAppliedAPISchemas(), 
                          expectedAPISchemas)
         self.assertEqual(sorted(innerSingleApplyAPIDef.GetPropertyNames()),
-                         expectedPropNames)
+                         sorted(expectedPropNames))
         self.assertEqual(innerSingleApplyAPIDef.GetDocumentation(),
             "Test nested single apply API schema: inner schema")
 
@@ -1263,6 +1280,12 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
 
         # Properties come from all composed built-in APIs
         expectedPropNames = [
+            # Properties from TestSingleApplyAPI (included from 
+            # TestNestedInnerSingleApplyAPI)
+            "single:relationship",
+            "single:token_attr",
+            "single:bool_attr",
+            # Properties from TestNestedInnerSingleApplyAPI
             "innerSingle:int_attr",
             "innerSingle:relationship",
             "innerSingle:token_attr",
@@ -1278,12 +1301,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             # Properties from TestNestedOuterSingleApplyAPI
             "outerSingle:int_attr",
             "outerSingle:relationship",
-            "outerSingle:token_attr",
-            # Properties from TestSingleApplyAPI (included from 
-            # TestNestedInnerSingleApplyAPI)
-            "single:bool_attr",
-            "single:relationship",
-            "single:token_attr"]
+            "outerSingle:token_attr"]
         self.assertEqual(outerSinglePrim.GetPropertyNames(), expectedPropNames)
 
         # Verify that the attribute fallback values come from the API schemas
@@ -1314,7 +1332,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(outerSingleApplyAPIDef.GetAppliedAPISchemas(), 
                          expectedAPISchemas)
         self.assertEqual(sorted(outerSingleApplyAPIDef.GetPropertyNames()),
-                         expectedPropNames)
+                         sorted(expectedPropNames))
         self.assertEqual(outerSingleApplyAPIDef.GetDocumentation(),
             "Test nested single apply API schema: outer schema")
 
@@ -2100,6 +2118,9 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
 
         # Properties come from the type and all composed built-in APIs
         expectedPropNames = [
+            "single:relationship",
+            "single:token_attr",
+            "single:bool_attr",
             # Properties from expanded built-in TestNestedCycle1API
             "cycle1:token_attr",
             "cycle2:token_attr",
@@ -2118,9 +2139,6 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "outerSingle:int_attr",
             "outerSingle:relationship",
             "outerSingle:token_attr",
-            "single:bool_attr",
-            "single:relationship",
-            "single:token_attr",
             # Properties from the prim type TestWithBuiltinNestedAppliedSchema
             "testAttr",
             "testRel"]
@@ -2136,7 +2154,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(typedPrimDef.GetAppliedAPISchemas(), 
                          expectedAPISchemas)
         self.assertEqual(sorted(typedPrimDef.GetPropertyNames()),
-                         expectedPropNames)
+                         sorted(expectedPropNames))
         self.assertEqual(typedPrimDef.GetDocumentation(),
             "Test with built-in nested API schemas")
 
@@ -2179,15 +2197,15 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
 
         # Prim's built-in properties come from all of the applied API schemas.
         self.assertEqual(prim.GetPropertyNames(), [
+            "single:relationship",
+            "single:token_attr",
+            "single:bool_attr",
             "multi:autoFoo:bool_attr",
             "multi:autoFoo:relationship",
             "multi:autoFoo:token_attr",
             "multi:builtin:bool_attr",
             "multi:builtin:relationship",
             "multi:builtin:token_attr",
-            "single:bool_attr",
-            "single:relationship",
-            "single:token_attr",
             "testAttr",
             "testRel"])
 
@@ -2230,6 +2248,9 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
 
         # Prim's built-in properties come from all of the applied API schemas.
         self.assertEqual(prim.GetPropertyNames(), [
+            "single:relationship",
+            "single:token_attr",
+            "single:bool_attr",
             "multi:autoFoo:bool_attr",
             "multi:autoFoo:relationship",
             "multi:autoFoo:token_attr",
@@ -2239,9 +2260,6 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "multi:foo:bool_attr",
             "multi:foo:relationship",
             "multi:foo:token_attr",
-            "single:bool_attr",
-            "single:relationship",
-            "single:token_attr",
             "testAttr",
             "testRel"])
 
@@ -2285,6 +2303,9 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertTrue(prim.HasAPI(self.MultiApplyAPIType, "autoFoo"))
         self.assertTrue(prim.HasAPI(self.SingleApplyAPIType))
         self.assertEqual(prim.GetPropertyNames(), [
+            "single:relationship",
+            "single:token_attr",
+            "single:bool_attr",
             "multi:autoFoo:bool_attr",
             "multi:autoFoo:relationship",
             "multi:autoFoo:token_attr",
@@ -2294,9 +2315,6 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "multi:foo:bool_attr",
             "multi:foo:relationship",
             "multi:foo:token_attr",
-            "single:bool_attr",
-            "single:relationship",
-            "single:token_attr",
             "testAttr",
             "testRel"])
 
@@ -2591,19 +2609,18 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             default = (1.0, 1.0, 1.0), 
             hidden = False)
 
-        # This attribute is to verify that only default value and hidden 
-        # metadata is composed from a weaker property definition. With OneAPI 
-        # and TwoAPI both applied in that order, the default value and value
-        # for hidden come through from TwoAPI since OneAPI. TwoAPI DOES define
-        # additional metadata, like displayName, documentation, allowedTokens, 
-        # etc., that OneAPI does not define, however this metadata will not be 
-        # composed.
+        # This attribute is to verify that all property metadata except 
+        # explicitly disallowed fields like 'custom' and 'documentation' are 
+        # composed from a weaker property definition. With OneAPI 
+        # and TwoAPI both applied in that order, the values for default, 
+        # hidden, displayGroup, displayName, and allowedTokens come through 
+        # from TwoAPI since OneAPI does not define values for any of these.
         _VerifyAttribute(prim, "otherMetadataAttr", "token",
             default = "two",
             hidden = False,
-            displayGroup = None,
-            displayName = None,
-            allowedTokens = None)
+            displayGroup = "Two Group",
+            displayName = "OtherTwoAttr",
+            allowedTokens = ["two", "2"])
 
         # Test 3: New prim with no type name; apply only the TwoAPI schema.
         prim = stage.DefinePrim("/UntypedPrim2")

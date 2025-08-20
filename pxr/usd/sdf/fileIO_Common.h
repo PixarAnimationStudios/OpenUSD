@@ -132,6 +132,7 @@ public:
     static const char* Stringify( TsExtrapMode mode );
     static const char* Stringify( TsCurveType curveType );
     static const char* Stringify( TsInterpMode interp );
+    static const char* Stringify( TsTangentAlgorithm algorithm );
 
 private:
 

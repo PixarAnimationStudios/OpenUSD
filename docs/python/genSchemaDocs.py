@@ -428,6 +428,20 @@ def _ProcessSchemaDocs(schemaFile):
                 # the UsdProperty values directly
                 if clsProp.HasAuthoredValue():
                     propDefault = clsProp.Get()
+                    # Convert token arrays into formatted string for 
+                    # better doc output (done by hand to ensure we use
+                    # double-quotes and not Python single-quotes for tokens)
+                    if clsProp.GetTypeName() == Sdf.ValueTypeNames.TokenArray:
+                        tokenArrayString = "[ "
+                        isFirstToken = True
+                        for token in propDefault:
+                            if not isFirstToken:
+                                tokenArrayString += ", "
+                            else:
+                                isFirstToken = False
+                            tokenArrayString += '"{0}"'.format(token)
+                        tokenArrayString += " ]"      
+                        propDefault = tokenArrayString
                 else:
                     propDefault = None
             elif isinstance(clsProp, Usd.Relationship):

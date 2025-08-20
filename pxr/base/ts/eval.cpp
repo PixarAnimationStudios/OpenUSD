@@ -95,18 +95,22 @@ static double _FilterZeroes(
     const std::vector<double> &candidates)
 {
     double result = 0;
-    int numFound = 0;
+    bool found = false;
 
     for (double c : candidates)
     {
         if (c >= 0 && c <= 1)
         {
-            result = c;
-            numFound++;
+            if (TF_VERIFY(!found || result == c,
+                          "Multiple zeros found!"))
+            {
+                result = c;
+                found = true;
+            }
         }
     }
 
-    TF_VERIFY(numFound == 1);
+    TF_VERIFY(found, "No zeros found!");
     return result;
 }
 
@@ -292,9 +296,101 @@ _EvalHermite(
     const TsTime time,
     const Ts_EvalAspect aspect)
 {
-    // XXX TODO
-    TF_WARN("Hermite evaluation is not yet implemented");
-    return 0.0;
+    // For a unit time range (t in [0..1]), and given:
+    //     v0 = value at time 0
+    //     m0 = first derivative at time 0
+    //     v1 = value at time 1
+    //     m1 = first derivative at time 1
+    // the cubic hermite equation is:
+    //   v(t) = (( 2 * t^3 - 3 * t^2     +  1) * v0 +
+    //           (     t^3 - 2 * t^2 + t     ) * m0 +
+    //           (-2 * t^3 + 3 * t^2         ) * v1 +
+    //           (     t^3 -     t^2         ) * m1)
+    //
+    // This can be refactored to be:
+    //   v(t) = (t^3 * ( 2 * v0 - 2 * v1 +     m0 + m1) +
+    //           t^2 * (-3 * v0 + 3 * v1 - 2 * m0 - m1) +
+    //           t   * (                       m0     ) +
+    //                       v0)
+    //
+    // yielding the coefficients of a polynomial:
+    //   a = ( 2 * v0 - 2 * v1 +     m0 + m1)
+    //   b = (-3 * v0 + 3 * v1 - 2 * m0 - m1)
+    //   c = m0
+    //   d = v0
+    //   v(t) = a * t^3 + b * t^2 + c * t + d
+    //
+    // If we let:
+    //   dv = v1 - v0
+    // we can further simplify the a and b coefficients to:
+    //   a = (-2 * dv +     m0 + m1)
+    //   b = ( 3 * dv - 2 * m0 - m1)
+    //
+    // For curves evaluated from [t0..t1] instead of [0..1], a change of
+    // variables is in order. We subtract t0 from t and divide by (t1 - t0).
+    // When we do this, we have to multiply the slopes by (t1 - t0) as they
+    // represent rise/run and we just reduced run by a factor of (t1 - t0).
+    //
+    //   dt = t1 - t0
+    //   u = (t - t0) / dt
+    //   um0 = m0 * dt
+    //   um1 = m1 * dt
+    //
+    //   a = -2 * dv + um0 + um1
+    //   b = 3 * dv - 2 * um0 - um1
+    //   c = um0
+    //   d = v0
+    //
+    // Then:
+    //
+    //   v(t) = a * u^3 + b * u^2 + c * u + d; where u = (t - t0)/(t1 - t0)
+    //
+    // If we are asked to calculate the derivative, the answer is a simple chain
+    // rule.
+    //
+    //   v'(t) = (3*a * u^2 + 2*b * u + c) * (du/dt)
+    //
+    // where du/dt == 1.0/(t1 - t0). (Just to add confusion, (t1 - t0) is stored
+    // in a variable named "dt"). So
+    //
+    //   v'(t) == (3*a * u^2 + 2*b * u + c) / (t1 - t0);
+    //            where u = (t - t0)/(t1 - t0)
+    //
+    const double t0 = beginData.time;
+    const double v0 = beginData.value;
+    const double m0 = beginData.postTanSlope;
+
+    const double t1 = endData.time;
+    const double v1 = endData.GetPreValue();
+    const double m1 = endData.preTanSlope;
+
+    if (!TF_VERIFY(t0 < t1,
+                   "Cannot interpolate Hermite segment whose length <= 0.0"))
+    {
+        return v0;
+    }
+
+    const double dt = t1 - t0;
+    const double dv = v1 - v0;
+
+    // Convert time into the [0..1] range and adjust slopes to match.
+    const double u = (time - t0) / dt;
+    const double um0 = m0 * dt;
+    const double um1 = m1 * dt;
+
+    // Calculate the coefficients
+    const double a = -2 * dv + um0 + um1;
+    const double b = 3 * dv - 2 * um0 - um1;
+    const double c = um0;
+    const double d = v0;
+
+    if (aspect == Ts_EvalDerivative) {
+        // Derivative evaluation via chain rule
+        return (u * (u * 3 * a + 2 * b) + c) / dt;
+    } else {
+        // Normal value evaluation.
+        return u * (u * (u * a + b) + c) + d;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -320,7 +416,6 @@ _GetExtrapolationSlope(
     const bool haveMultipleKnots,
     const Ts_TypedKnotData<double> &endKnotData,
     const Ts_TypedKnotData<double> &adjacentData,
-    const TsCurveType curveType,
     const Ts_EvalLocation location)
 {
     // None, Held, and Sloped have simple answers.
@@ -358,8 +453,9 @@ _GetExtrapolationSlope(
 
     if (location == Ts_EvalPre)
     {
-        // If the first segment is held, the slope is flat.
-        if (endKnotData.nextInterp == TsInterpHeld)
+        // If the first segment is held or value-blocked, the slope is flat.
+        if (endKnotData.nextInterp == TsInterpHeld
+            || endKnotData.nextInterp == TsInterpValueBlock)
         {
             return 0.0;
         }
@@ -377,8 +473,9 @@ _GetExtrapolationSlope(
     }
     else
     {
-        // If the last segment is held, the slope is flat.
-        if (adjacentData.nextInterp == TsInterpHeld)
+        // If the last segment is held or value-blocked, the slope is flat.
+        if (adjacentData.nextInterp == TsInterpHeld
+            || adjacentData.nextInterp == TsInterpValueBlock)
         {
             return 0.0;
         }
@@ -1056,8 +1153,14 @@ _Interpolate(
     const Ts_TypedKnotData<double> &beginData,
     const Ts_TypedKnotData<double> &endData,
     const TsTime time,
-    const Ts_EvalAspect aspect)
+    const Ts_EvalAspect aspect,
+    const TsCurveType curveType)
 {
+    // Special-case value blocks
+    if (beginData.nextInterp == TsInterpValueBlock) {
+        return std::nullopt;
+    }
+
     // Special-case held evaluation.
     if (aspect == Ts_EvalHeldValue)
     {
@@ -1067,7 +1170,7 @@ _Interpolate(
     // Curved segment: Bezier/Hermite math.
     if (beginData.nextInterp == TsInterpCurve)
     {
-        if (beginData.curveType == TsCurveTypeBezier)
+        if (curveType == TsCurveTypeBezier)
         {
             return _EvalBezier(beginData, endData, time, aspect);
         }
@@ -1095,12 +1198,6 @@ _Interpolate(
         return _ExtrapolateLinear(beginData, slope, time, Ts_EvalPost);
     }
 
-    // Disabled interpolation -> no value.
-    if (beginData.nextInterp == TsInterpValueBlock)
-    {
-        return std::nullopt;
-    }
-
     // Should be unreachable.
     TF_CODING_ERROR("Unexpected interpolation type");
     return std::nullopt;
@@ -1122,8 +1219,8 @@ _EvalMain(
     // Figure out where we are in the sequence.  Find the bracketing knots, the
     // knot we're at, if any, and what type of position (before start, after
     // end, at first knot, at last knot, at another knot, between knots).
-    const auto prevIt = (lbIt != times.begin() ? lbIt - 1 : times.end());
     const bool atKnot = (lbIt != times.end() && *lbIt == time);
+    const auto prevIt = (lbIt != times.begin() ? lbIt - 1 : times.end());
     const auto knotIt = (atKnot ? lbIt : times.end());
     const auto nextIt = (atKnot ? lbIt + 1 : lbIt);
     const bool beforeStart = (nextIt == times.begin());
@@ -1157,10 +1254,30 @@ _EvalMain(
             || aspect == Ts_EvalHeldValue)
         {
             // Pre-value after held segment = previous knot value.
-            if (location == Ts_EvalPre
-                    && !atFirst && prevData.nextInterp == TsInterpHeld)
-            {
-                return prevData.value;
+            if (location == Ts_EvalPre) {
+                if (atFirst) {
+                    if (data->preExtrapolation.mode == TsExtrapValueBlock) {
+                        return std::nullopt;
+                    }
+                } else {
+                    if (prevData.nextInterp == TsInterpValueBlock) {
+                        return std::nullopt;
+                    } else if (prevData.nextInterp == TsInterpHeld
+                               || aspect == Ts_EvalHeldValue)
+                    {
+                        return prevData.value;
+                    }
+                }
+            } else {
+                if (atLast) {
+                    if (data->postExtrapolation.mode == TsExtrapValueBlock) {
+                        return std::nullopt;
+                    }
+                } else {
+                    if (knotData.nextInterp == TsInterpValueBlock) {
+                        return std::nullopt;
+                    }
+                }
             }
 
             // Not a special case.  Return what's stored in the knot.
@@ -1179,23 +1296,22 @@ _EvalMain(
                     return _GetExtrapolationSlope(
                         data->preExtrapolation,
                         haveMultipleKnots, knotData, nextData,
-                        data->curveType, Ts_EvalPre);
+                        Ts_EvalPre);
                 }
 
-                // Derivative in held segment = zero.
-                if (prevData.nextInterp == TsInterpHeld)
-                {
+                switch (prevData.nextInterp) {
+                  case TsInterpValueBlock:
+                    return std::nullopt;
+
+                  case TsInterpHeld:
                     return 0.0;
-                }
 
-                // Derivative in linear segment = slope to adjacent knot.
-                if (prevData.nextInterp == TsInterpLinear)
-                {
+                  case TsInterpLinear:
                     return _GetSegmentSlope(prevData, knotData);
-                }
 
-                // Not a special case.  Return what's stored in the knot.
-                return knotData.preTanSlope;
+                  case TsInterpCurve:
+                    return knotData.preTanSlope;
+                }
             }
             else
             {
@@ -1205,23 +1321,22 @@ _EvalMain(
                     return _GetExtrapolationSlope(
                         data->postExtrapolation,
                         haveMultipleKnots, knotData, prevData,
-                        data->curveType, Ts_EvalPost);
+                        Ts_EvalPost);
                 }
 
-                // Derivative in held segment = zero.
-                if (knotData.nextInterp == TsInterpHeld)
-                {
+                switch (knotData.nextInterp) {
+                  case TsInterpValueBlock:
+                    return std::nullopt;
+
+                  case TsInterpHeld:
                     return 0.0;
-                }
 
-                // Derivative in linear segment = slope to adjacent knot.
-                if (knotData.nextInterp == TsInterpLinear)
-                {
+                  case TsInterpLinear:
                     return _GetSegmentSlope(knotData, nextData);
-                }
 
-                // Not a special case.  Return what's stored in the knot.
-                return knotData.postTanSlope;
+                  case TsInterpCurve:
+                    return knotData.postTanSlope;
+                }
             }
         }
     }
@@ -1229,6 +1344,10 @@ _EvalMain(
     // Extrapolate before first knot.
     if (beforeStart)
     {
+        if (data->preExtrapolation.mode == TsExtrapValueBlock) {
+            return std::nullopt;
+        }
+
         // nextData is the first knot.  We also need the knot after that, if
         // there is one.
         Ts_TypedKnotData<double> nextData2;
@@ -1242,6 +1361,9 @@ _EvalMain(
         // Special-case held evaluation.
         if (aspect == Ts_EvalHeldValue)
         {
+            // There's really no reasonable value to return as the held
+            // pre-extrapolation value. This answer is similar to the post-
+            // extrapolation answer.
             return nextData.GetPreValue();
         }
 
@@ -1250,7 +1372,7 @@ _EvalMain(
             _GetExtrapolationSlope(
                 data->preExtrapolation,
                 haveMultipleKnots, nextData, nextData2,
-                data->curveType, Ts_EvalPre);
+                Ts_EvalPre);
 
         // No slope -> no extrapolation.
         if (!slope)
@@ -1271,6 +1393,10 @@ _EvalMain(
     // Extrapolate after last knot.
     if (afterEnd)
     {
+        if (data->postExtrapolation.mode == TsExtrapValueBlock) {
+            return std::nullopt;
+        }
+
         // prevData is the last knot.  We also need the knot before that, if
         // there is one.
         Ts_TypedKnotData<double> prevData2;
@@ -1292,7 +1418,7 @@ _EvalMain(
             _GetExtrapolationSlope(
                 data->postExtrapolation,
                 haveMultipleKnots, prevData, prevData2,
-                data->curveType, Ts_EvalPost);
+                Ts_EvalPost);
 
         // No slope -> no extrapolation.
         if (!slope)
@@ -1316,7 +1442,7 @@ _EvalMain(
     loopRes.ReplaceBoundaryKnots(&prevData, &nextData);
 
     // Interpolate.
-    return _Interpolate(prevData, nextData, time, aspect);
+    return _Interpolate(prevData, nextData, time, aspect, data->curveType);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

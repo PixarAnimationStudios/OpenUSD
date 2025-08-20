@@ -96,7 +96,7 @@ _TestExceptionToPython::~_TestExceptionToPython()
 // Unit test support.
 static void _ThrowTest(std::string message)
 {
-    TF_THROW(_TestExceptionToPython, message);
+    PXR_TF_THROW(_TestExceptionToPython, message);
 }
 
 static void _CallThrowTest(pxr_boost::python::object fn)

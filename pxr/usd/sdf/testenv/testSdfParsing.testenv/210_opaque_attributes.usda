@@ -1,0 +1,11 @@
+#usda 1.0
+
+def Scope "MyScope" {
+    custom opaque OpaqueAttr (
+        task = "anim"
+        hidden = true
+    )
+    opaque OpaqueAttr.connect = <.OtherAttr>
+
+    custom group OtherAttr (hidden = true)
+}

@@ -95,7 +95,7 @@ typedef int (*ForkFunc)(void);
 ForkFunc Arch_nonLockingFork =
 #if defined(ARCH_OS_LINUX)
     (ForkFunc)dlsym(RTLD_DEFAULT, "_Fork");
-#elif defined(ARCH_OS_DARWIN)
+#elif defined(ARCH_OS_DARWIN) || defined(ARCH_OS_WASM_VM)
     NULL;
 #else
 #error Unknown architecture.
@@ -235,6 +235,11 @@ public:
                                   std::vector<std::string> const *lines);
     void EmitAnyExtraLogInfo(FILE *outFile, size_t max = 0) const;
 
+    // Attempt to write the extra log info to buf, up to one less than bufSize,
+    // always null-terminates.  Return false in case of failure to acquire the
+    // lock or if not all the log info was written.
+    bool TryToFillLogInfoBuffer(char *buf, size_t bufSize) const;
+
 private:
     typedef std::map<std::string, std::vector<std::string> const *> _LogInfoMap;
     _LogInfoMap _logInfoForErrors;
@@ -258,7 +263,10 @@ Arch_LogInfo::EmitAnyExtraLogInfo(FILE *outFile, size_t max) const
 {
     // This function can't cause any heap allocation, be careful.
     // XXX -- std::string::c_str and fprintf can do allocations.
-    std::lock_guard<std::mutex> lock(_logInfoForErrorsMutex);
+    if (!_logInfoForErrorsMutex.try_lock()) {
+        return;
+    }
+    std::lock_guard<std::mutex> lock(_logInfoForErrorsMutex, std::adopt_lock);
     size_t n = 0;
     for (_LogInfoMap::const_iterator i = _logInfoForErrors.begin(),
              end = _logInfoForErrors.end(); i != end; ++i) {
@@ -275,6 +283,44 @@ Arch_LogInfo::EmitAnyExtraLogInfo(FILE *outFile, size_t max) const
     }
 }
 
+bool
+Arch_LogInfo::TryToFillLogInfoBuffer(char *buf, size_t bufSize) const
+{
+    if (!_logInfoForErrorsMutex.try_lock()) {
+        buf[0] = '\0';
+        return false;
+    }
+    std::lock_guard<std::mutex> lock(_logInfoForErrorsMutex, std::adopt_lock);
+
+    char const * const end = buf + bufSize-1;
+    char *p = buf;
+
+    auto writeTxt = [&p, end](char const *str) {
+        while (*str && p != end) {
+            *p++ = *str++;
+        }
+        *p = '\0';
+        return p != end;
+    };
+    
+    for (_LogInfoMap::const_iterator i = _logInfoForErrors.begin(),
+             end = _logInfoForErrors.end(); i != end; ++i) {
+
+        if (!(writeTxt("\n") &&
+              writeTxt(i->first.c_str()) &&
+              writeTxt(":\n"))) {
+            return false;
+        }
+
+        for (std::string const &line: *i->second) {
+            if (!writeTxt(line.c_str())) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 } // anon-namespace
 
 static Arch_LogInfo &
@@ -284,6 +330,16 @@ ArchStackTrace_GetLogInfo()
     return logInfo;
 }
 
+static constexpr size_t ExtraLogInfoBufSize = 64 * 1024 * 1024;
+static char _extraLogInfoBuffer[ExtraLogInfoBufSize];
+
+static char const *
+_GetExtraLogInfoReportDebugUnsafeImpl()
+{
+    ArchStackTrace_GetLogInfo()
+        .TryToFillLogInfoBuffer(_extraLogInfoBuffer, ExtraLogInfoBufSize);
+    return _extraLogInfoBuffer;
+}
 
 static void
 _atexitCallback()
@@ -1708,3 +1764,11 @@ ArchCrashHandlerSystemv(const char* pathname, char *const argv[],
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+extern "C" {
+ARCH_EXPORT
+char const *Arch_GetExtraLogInfoReportDebugUnsafe()
+{
+    return PXR_NS::_GetExtraLogInfoReportDebugUnsafeImpl();
+}
+}

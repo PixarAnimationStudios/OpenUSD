@@ -1,0 +1,23 @@
+#usda 1.0 
+( 
+    '''Test various kinds of empty lists.'''
+    subLayers = [
+    ]
+)
+
+over Prim "Foo" (
+    references = [
+    ]
+    inherits = [
+    ]
+    relocates = {
+    }
+)
+{
+    double x1.connect = [ ]
+    double x2.connect = [
+    ]
+    rel x5 = [ ]
+    rel x6 = [
+    ]
+}

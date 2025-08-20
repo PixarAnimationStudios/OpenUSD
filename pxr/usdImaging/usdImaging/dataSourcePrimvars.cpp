@@ -62,18 +62,11 @@ _RejectPrimvar(const TfToken &name)
 UsdImagingDataSourcePrimvars::UsdImagingDataSourcePrimvars(
     const SdfPath &sceneIndexPath,
     UsdPrim const &usdPrim,
-    UsdGeomPrimvarsAPI usdPrimvars,
     const UsdImagingDataSourceStageGlobals & stageGlobals)
 : _sceneIndexPath(sceneIndexPath)
 , _usdPrim(usdPrim)
 , _stageGlobals(stageGlobals)
 {
-    const std::vector<UsdGeomPrimvar> primvars = usdPrimvars.GetAuthoredPrimvars();
-    for (const UsdGeomPrimvar & p : primvars) {
-        if (!_RejectPrimvar(p.GetPrimvarName())) {
-            _namespacedPrimvars[p.GetPrimvarName()] = p;
-        }
-    }
 }
 
 
@@ -90,18 +83,17 @@ UsdImagingDataSourcePrimvars::GetNames()
     TRACE_FUNCTION();
 
     TfTokenVector result;
-    result.reserve(_namespacedPrimvars.size());
 
-    for (const auto & entry : _namespacedPrimvars) {
-        result.push_back(entry.first);
-    }
-
-    for (UsdProperty prop :
-            _usdPrim.GetAuthoredPropertiesInNamespace("primvars:")) {
-        if (UsdRelationship rel = prop.As<UsdRelationship>()) {
-            // strip only the "primvars:" namespace
-            static const size_t prefixLength = 9;
-            result.push_back(TfToken(rel.GetName().data() + prefixLength));
+    // Enumerate primvar names using UsdGeomPrimvarsAPI.
+    // This API filters out supporting attributes such as
+    // "primvars:indexedPrimvar:indices".
+    const std::vector<UsdGeomPrimvar> primvars =
+         UsdGeomPrimvarsAPI(_usdPrim).GetAuthoredPrimvars();
+    result.reserve(primvars.size());
+    for (const UsdGeomPrimvar& primvar : primvars) {
+        const TfToken name = primvar.GetPrimvarName();
+         if (!_RejectPrimvar(name)) {
+            result.push_back(name);
         }
     }
 
@@ -125,10 +117,14 @@ UsdImagingDataSourcePrimvars::Get(const TfToken & name)
 {
     TRACE_FUNCTION();
 
-    const auto nsIt = _namespacedPrimvars.find(name);
-    if (nsIt != _namespacedPrimvars.end()) {
-        const UsdGeomPrimvar &usdPrimvar = nsIt->second;
-        const UsdAttribute &attr = usdPrimvar.GetAttr();
+    if (_RejectPrimvar(name)) {
+        return nullptr;
+    }
+
+    const TfToken prefixedName = _GetPrefixedName(name);
+
+    if (UsdAttribute attr = _usdPrim.GetAttribute(prefixedName)) {
+        UsdGeomPrimvar usdPrimvar(attr);
 
         UsdAttributeQuery valueQuery(attr);
         if (!valueQuery.HasAuthoredValue()) {
@@ -148,9 +144,7 @@ UsdImagingDataSourcePrimvars::Get(const TfToken & name)
                 
     }
 
-    if (UsdRelationship rel =
-            _usdPrim.GetRelationship(_GetPrefixedName(name))) {
-
+    if (UsdRelationship rel = _usdPrim.GetRelationship(prefixedName)) {
         return HdPrimvarSchema::Builder()
             .SetPrimvarValue(UsdImagingDataSourceRelationship::New(
                 rel, _stageGlobals))

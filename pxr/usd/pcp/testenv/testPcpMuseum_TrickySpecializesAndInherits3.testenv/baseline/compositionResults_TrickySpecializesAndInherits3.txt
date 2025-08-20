@@ -1,14 +1,14 @@
-Loading @TrickySpecializesAndInherits3/root.sdf@
+Loading @TrickySpecializesAndInherits3/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </SetClass>
 
 Prim Stack:
-    root.sdf             /SetClass
+    root.usda            /SetClass
 
 Child names:
      ['Metal', 'CorrodedMetal']
@@ -17,23 +17,23 @@ Child names:
 Results for composing </SetClass/Metal>
 
 Prim Stack:
-    root.sdf             /SetClass/Metal
+    root.usda            /SetClass/Metal
 
 ------------------------------------------------------------------------
 Results for composing </SetClass/CorrodedMetal>
 
 Prim Stack:
-    root.sdf             /SetClass/CorrodedMetal
+    root.usda            /SetClass/CorrodedMetal
 
 ------------------------------------------------------------------------
 Results for composing </Set>
 
 Prim Stack:
-    root.sdf             /Set
-    root.sdf             /SetClass
-    package.sdf          /SetPackage
-    package.sdf          /SetClass
-    model.sdf            /SetModel
+    root.usda            /Set
+    root.usda            /SetClass
+    package.usda         /SetPackage
+    package.usda         /SetClass
+    model.usda           /SetModel
 
 Child names:
      ['Metal', 'CorrodedMetal']
@@ -42,24 +42,24 @@ Child names:
 Results for composing </Set/Metal>
 
 Prim Stack:
-    root.sdf             /Set/Metal
-    root.sdf             /SetClass/Metal
-    package.sdf          /SetPackage/Metal
-    package.sdf          /SetClass/Metal
-    model.sdf            /SetModel/Metal
+    root.usda            /Set/Metal
+    root.usda            /SetClass/Metal
+    package.usda         /SetPackage/Metal
+    package.usda         /SetClass/Metal
+    model.usda           /SetModel/Metal
 
 ------------------------------------------------------------------------
 Results for composing </Set/CorrodedMetal>
 
 Prim Stack:
-    root.sdf             /Set/CorrodedMetal
-    root.sdf             /SetClass/CorrodedMetal
-    package.sdf          /SetPackage/CorrodedMetal
-    package.sdf          /SetClass/CorrodedMetal
-    model.sdf            /SetModel/CorrodedMetal
-    root.sdf             /Set/Metal
-    root.sdf             /SetClass/Metal
-    package.sdf          /SetPackage/Metal
-    package.sdf          /SetClass/Metal
-    model.sdf            /SetModel/Metal
+    root.usda            /Set/CorrodedMetal
+    root.usda            /SetClass/CorrodedMetal
+    package.usda         /SetPackage/CorrodedMetal
+    package.usda         /SetClass/CorrodedMetal
+    model.usda           /SetModel/CorrodedMetal
+    root.usda            /Set/Metal
+    root.usda            /SetClass/Metal
+    package.usda         /SetPackage/Metal
+    package.usda         /SetClass/Metal
+    model.usda           /SetModel/Metal
 

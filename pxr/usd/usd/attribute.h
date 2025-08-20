@@ -396,10 +396,34 @@ public:
     /// stage's interpolation type.
     /// See \ref Usd_AttributeInterpolation.
     ///
+    /// An attribute's value may be discontinuous at time samples. This happens 
+    /// when the stage is in held interpolation mode or when the sample values
+    /// are not interpolatable. To obtain the attribute's value immediately
+    /// before a given time sample, use 
+    /// \link UsdTimeCode::PreTime() UsdTimeCode::PreTime(time)\endlink. This 
+    /// evaluates the limit of the attribute's value as time approaches the 
+    /// given \p time from the left. 
+    ///
+    /// For example, if a string-valued attribute has time samples 
+    /// `{1.0: "foo", 2.0: "bar"}`, calling Get() with UsdTimeCode(2.0) 
+    /// returns "bar", whereas calling Get() with UsdTimeCode::PreTime(2.0) 
+    /// returns "foo". However, if the attribute's values are interpolatable, 
+    /// such as `{1.0: 3.0, 2.0: 4.0}`, then calling Get() with UsdTimeCode(2.0)  
+    /// and UsdTimeCode::PreTime(2.0) will both return 4.0, since the value 
+    /// is continuous at time=2.0.
+    ///
     /// If no value is authored and no fallback value is provided by the 
     /// schema for this attribute, this function will return false. If the 
     /// consumer's use-case requires a default value, the consumer will need
     /// to provide one, possibly using GetTypeName().GetDefaultValue().
+    ///
+    /// Value resolution first needs to determine the source of the strongest
+    /// value opinion for this attribute at the requested UsdTimeCode \p time.
+    /// But often (i.e. unless the attribute is affected by 
+    /// \ref Usd_Page_ValueClips "Value Clips") the source of the resolved value
+    /// does not vary over time. UsdAttributeQuery finds the source opinion and 
+    /// saves it so that repeated calls to UsdAttributeQuery::Get() avoid 
+    /// redundant work.
     ///
     /// This templated accessor is designed for high performance data-streaming
     /// applications, allowing one to fetch data into the same container

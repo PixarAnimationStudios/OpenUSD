@@ -58,8 +58,6 @@ private:
 
     HdStTextureIdentifier _textureId;
     size_t _textureMemory;
-
-    bool _isInitialized : 1;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

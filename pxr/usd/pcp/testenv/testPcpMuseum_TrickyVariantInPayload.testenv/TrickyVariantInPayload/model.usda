@@ -1,0 +1,28 @@
+#usda 1.0
+
+def Scope "A"
+{
+    def Scope "B" (
+        variantSets = ["v"]
+        variants = { string v = "v1" }
+    ) {
+        variantSet "v" = {
+            "v1" {
+            }
+            "v2" {
+            }
+        }
+    }
+}
+
+def Scope "B" (
+    variantSets = ["v"]
+    variants = { string v = "v2" }
+) {
+    variantSet "v" = {
+        "v1" {
+        }
+        "v2" {
+        }
+    }
+}

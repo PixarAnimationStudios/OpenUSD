@@ -37,6 +37,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (material) \
     ((universalRenderContext, "")) \
     ((all, "__all")) \
+    (terminals) \
+    (surface) \
+    (displacement) \
+    (volume) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdMaterialSchemaTokens, HD_API,
     HD_MATERIAL_SCHEMA_TOKENS);
@@ -150,6 +154,24 @@ public:
 
     HD_API
     HdMaterialNetworkSchema GetMaterialNetwork(TfTokenVector const &contexts);
+
+    // Find the terminal (surface/volume/displcement) from a given data source locator.
+    HD_API
+    static TfToken
+    GetLocatorTerminal(
+        HdDataSourceLocator const& locator);
+
+    HD_API
+    static TfToken 
+    GetLocatorTerminal(
+        HdDataSourceLocator const& locator, 
+        TfToken const& context);
+
+    HD_API
+    static TfToken 
+    GetLocatorTerminal(
+        HdDataSourceLocator const& locator, 
+        TfTokenVector const &contexts);
 
 // --(END CUSTOM CODE: Schema Methods)--
 

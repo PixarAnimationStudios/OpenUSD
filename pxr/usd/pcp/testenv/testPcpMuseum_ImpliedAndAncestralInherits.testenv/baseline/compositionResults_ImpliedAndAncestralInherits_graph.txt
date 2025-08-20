@@ -1,8 +1,8 @@
-Loading @ImpliedAndAncestralInherits/root.sdf@
+Loading @ImpliedAndAncestralInherits/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </World/CharGroup/Sim/includes/Hand/Geom>
@@ -11,7 +11,7 @@ Node 0:
     Type:                     root
     DependencyType:           root
     Source path:              </World/CharGroup/Sim/includes/Hand/Geom>
-    Source layer stack:       @ImpliedAndAncestralInherits/root.sdf@
+    Source layer stack:       @ImpliedAndAncestralInherits/root.usda@
     Target path:              <NONE>
     Target layer stack:       NONE
     Map to parent:
@@ -33,9 +33,9 @@ Node 1:
     Type:                     reference
     DependencyType:           ancestral, non-virtual
     Source path:              </CharGroup/Sim/includes/Hand/Geom>
-    Source layer stack:       @ImpliedAndAncestralInherits/Group.sdf@
+    Source layer stack:       @ImpliedAndAncestralInherits/Group.usda@
     Target path:              </World/CharGroup/Sim/includes/Hand/Geom>
-    Target layer stack:       @ImpliedAndAncestralInherits/root.sdf@
+    Target layer stack:       @ImpliedAndAncestralInherits/root.usda@
     Map to parent:
         /CharGroup -> /World/CharGroup
     Map to root:
@@ -55,9 +55,9 @@ Node 2:
     Type:                     reference
     DependencyType:           ancestral, non-virtual
     Source path:              </CHARGROUP/Sim/includes/Hand/Geom>
-    Source layer stack:       @ImpliedAndAncestralInherits/CharGroupRig.sdf@
+    Source layer stack:       @ImpliedAndAncestralInherits/CharGroupRig.usda@
     Target path:              </CharGroup/Sim/includes/Hand/Geom>
-    Target layer stack:       @ImpliedAndAncestralInherits/Group.sdf@
+    Target layer stack:       @ImpliedAndAncestralInherits/Group.usda@
     Map to parent:
         /CHARGROUP -> /CharGroup
     Map to root:
@@ -77,9 +77,9 @@ Node 3:
     Type:                     inherit
     DependencyType:           ancestral, non-virtual
     Source path:              </_class_SimHand/Geom>
-    Source layer stack:       @ImpliedAndAncestralInherits/CharGroupRig.sdf@
+    Source layer stack:       @ImpliedAndAncestralInherits/CharGroupRig.usda@
     Target path:              </CHARGROUP/Sim/includes/Hand/Geom>
-    Target layer stack:       @ImpliedAndAncestralInherits/CharGroupRig.sdf@
+    Target layer stack:       @ImpliedAndAncestralInherits/CharGroupRig.usda@
     Map to parent:
         / -> /
         /_class_SimHand -> /CHARGROUP/Sim/includes/Hand
@@ -97,7 +97,7 @@ Node 3:
     Has specs:                TRUE
     Has symmetry:             FALSE
     Prim stack:
-      </_class_SimHand/Geom> CharGroupRig.sdf - @ImpliedAndAncestralInherits/CharGroupRig.sdf@
+      </_class_SimHand/Geom> CharGroupRig.usda - @ImpliedAndAncestralInherits/CharGroupRig.usda@
 
 
 
@@ -105,5 +105,5 @@ Node 3:
 
 
 Prim Stack:
-    CharGroupRig.sdf     /_class_SimHand/Geom
+    CharGroupRig.usda    /_class_SimHand/Geom
 

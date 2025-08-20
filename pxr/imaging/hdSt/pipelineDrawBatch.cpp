@@ -1057,6 +1057,9 @@ _BindingState::GetBindingsForViewTransformation(
     binder.GetInterleavedBufferArrayBindingDesc(
         bindingsDesc, constantBar, _tokens->constantPrimvars);
 
+    binder.GetInterleavedBufferArrayBindingDesc(
+        bindingsDesc, topVisBar, HdTokens->topologyVisibility);
+
     // Bind the instance buffers to support instance transformations.
     if (instanceIndexBar) {
         for (size_t level = 0; level < instancePrimvarBars.size(); ++level) {
@@ -1076,9 +1079,6 @@ _BindingState::GetBindingsForDrawing(
     GetBindingsForViewTransformation(bindingsDesc);
 
     bindingsDesc->debugName = "PipelineDrawBatch.Drawing";
-
-    binder.GetInterleavedBufferArrayBindingDesc(
-        bindingsDesc, topVisBar, HdTokens->topologyVisibility);
 
     binder.GetBufferArrayBindingDesc(bindingsDesc, indexBar);
     if (!geometricShader->IsPrimTypePoints()) {

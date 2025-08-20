@@ -61,27 +61,59 @@ surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 
     vec3 clearcoatColor      = vec3(1.0);
     float specularAmount     = 1.0;
+    const int opacityMode    = HdGet_opacityMode();
 
 #ifdef HD_MATERIAL_TAG_MASKED
+
     if (opacity < opacityThreshold) {
         discard;
         return vec4(1.0);
     } 
     opacity = 1.0;
-#endif
+
+#else // !HD_MATERIAL_TAG_MASKED
+
+    // We need to ensure that the opacity is applied correctly to diffuseColor.
+    //
+    // In general, in the simple cases, if opacity has already been
+    // pre-multiplied, we could just use the pre-multiplied diffuseColor.
+    //
+    // However, if we have diffuseColor coming from a pre-multiplied texture
+    // which had biasing applied to it, or which had opacity scale and biasing,
+    // we need to take extra steps to ensure the diffuseColor is scaled
+    // appropriately.
+#ifdef diffuseColor_IS_PREMULTIPLIED
+    // We want to undo the pre-multiplication of diffuseColor.  To do this
+    // correctly we need to work with the diffuseColor and opacity without any
+    // scale or biasing having been applied to either.
+    diffuseColor = HdGet_diffuseColor_withoutScaleAndBias();
+    const float opacity_withoutScaleAndBias =
+        HdGet_opacity_withoutScaleAndBias();
+    if (opacity_withoutScaleAndBias > 0) {
+        diffuseColor.rgb /= opacity_withoutScaleAndBias;
+    }
+
+    // Now we can apply the diffuseColor scale and/or bias to the
+    // un-pre-multiplied diffuseColor if present.
+    diffuseColor = HdGet_diffuseColor_applyScaleAndBias(diffuseColor);
+#endif // diffuseColor_IS_PREMULTIPLIED
+
+    // At this point, diffuseColor has had the pre-multiplication of the
+    // original opacity removed if it was present, and any scale or biasing
+    // applied to it.  And since the opacity has had its scale and/or biasing
+    // applied to it by this point, it can now be applied when appropriate.
+
+    // If opacityMode is "transparent", opacity should only apply to the
+    // diffuseColor component.
+    if (opacityMode == 1) {
+        diffuseColor *= opacity;
+    }
+
+#endif // HD_MATERIAL_TAG_MASKED
 
     // Selection highlighting.
     vec4 colorAndOpacity = vec4(diffuseColor, opacity);
     diffuseColor = ApplyColorOverrides(colorAndOpacity).rgb;
-
-    // We want to undo pre-multiplication of alpha of just the diffuse color so
-    // we can compute a color based on all the material parameters which we can
-    // then apply opacity to.
-#ifdef diffuseColor_IS_PREMULTIPLIED
-    if (opacity > 0) {
-        diffuseColor.rgb /= opacity;
-    }
-#endif
 
     // Evaluate all lights.
     vec3 c = evaluateLights(
@@ -100,8 +132,10 @@ surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
         Peye,
         perturbFragmentNormal(Peye.xyz, Neye));
 
-    // Now we can multiply the final color by opacity.
-    c *= opacity;
+    // If opacityMode is "presence", opacity applies to all color components.
+    if (opacityMode == 0) {
+        c *= opacity;
+    }
 
     return vec4(c, opacity);
 }

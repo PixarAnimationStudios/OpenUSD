@@ -32,6 +32,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (wireframeBack)
     (wireframeFront)
     (wireOnSurfUnlit)
+    (solidWireOnSurf)
     (points)
     (pointsAndSurf)
     );
@@ -119,6 +120,15 @@ My_TestGLDrawing::InitTest()
                                  HdBasisCurvesGeomStyleWire);
     HdPoints::ConfigureRepr(_tokens->wireOnSurfUnlit,
                             HdPointsGeomStylePoints);
+
+    // wireframe on surface, force opaque edges
+    HdMesh::ConfigureRepr(_tokens->solidWireOnSurf,
+                          HdMeshReprDesc(HdMeshGeomStyleEdgeOnSurf,
+                                         HdCullStyleDontCare,
+                                         HdMeshReprDescTokens->surfaceShader,
+                                         /*flatShadingEnabled=*/true,
+                                         /*blendWireframeColor=*/false,
+                                         /*forceOpaqueEdges=*/true));
 
     // 2-pass FeyRay
     HdMesh::ConfigureRepr(_tokens->feyRay,
@@ -221,6 +231,18 @@ My_TestGLDrawing::InitTest()
         delegate.SetReprSelector(SdfPath("/cube9"),
                 HdReprSelector(_tokens->pointsAndSurf));
         pos[0] += 3.0;
+
+        dmat.SetTranslate(pos);
+        delegate.AddCube(SdfPath("/cube10"), GfMatrix4f(dmat), /*guide*/false,
+            /*instancerId*/SdfPath(),
+            /*scheme*/PxOsdOpenSubdivTokens->catmullClark,
+            VtValue(GfVec3f(1,1,1)),
+            HdInterpolationConstant,
+            VtValue(0.5f),
+            HdInterpolationConstant);
+        delegate.SetReprSelector(SdfPath("/cube10"),
+                HdReprSelector(_tokens->solidWireOnSurf));
+        pos[0] += 3.0;
     }
     GfVec3f center(7.5f, 0, 1.5f);
 
@@ -229,7 +251,8 @@ My_TestGLDrawing::InitTest()
 
     _driver->SetClearColor(GfVec4f(0.1f, 0.1f, 0.1f, 1.0f));
     _driver->SetClearDepth(1.0f);
-    _driver->SetupAovs(GetWidth(), GetHeight());
+    _driver->SetupAovs(GetWidth(), GetHeight(), /*multisampled*/true);
+    _driver->SetWireframeColor(GfVec4f(1, 0, 0, 1));
 }
 
 void

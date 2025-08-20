@@ -77,6 +77,7 @@ pxr_plugin(${PXR_PACKAGE}
         hd
         hdsi
         hio
+        TBB::tbb
         usdRi
         usdVol
         usdVolImaging
@@ -190,6 +191,7 @@ pxr_plugin(${PXR_PACKAGE}
         updateObjectSettingsSceneIndex
         updateObjectSettingsSceneIndexPlugin
         utils
+        velocityMotionResolvingSceneIndexPlugin
         virtualStructResolvingSceneIndex
 
     PUBLIC_HEADERS

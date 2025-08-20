@@ -44,14 +44,6 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         set(PYTHON_VERSION_MAJOR "${${package}_VERSION_MAJOR}")
         set(PYTHON_VERSION_MINOR "${${package}_VERSION_MINOR}")
 
-        # Convert paths to CMake path format on Windows to avoid string parsing
-        # issues when we pass PYTHON_EXECUTABLE or PYTHON_INCLUDE_DIRS to
-        # pxr_library or other functions.
-        if(WIN32)
-            file(TO_CMAKE_PATH ${PYTHON_EXECUTABLE} PYTHON_EXECUTABLE)
-            file(TO_CMAKE_PATH ${PYTHON_INCLUDE_DIRS} PYTHON_INCLUDE_DIRS)
-        endif()
-
         # PXR_PY_UNDEFINED_DYNAMIC_LOOKUP might be explicitly set when 
         # packaging wheels, or when cross compiling to a Python environment 
         # that is not the current interpreter environment.
@@ -100,18 +92,27 @@ else()
     endif()
 endif()
 
+# Convert paths to CMake path format on Windows to avoid string parsing
+# issues when we pass PYTHON_EXECUTABLE or PYTHON_INCLUDE_DIRS to
+# pxr_library or other functions.
+if(WIN32)
+    if(PYTHON_EXECUTABLE)
+        file(TO_CMAKE_PATH ${PYTHON_EXECUTABLE} PYTHON_EXECUTABLE)
+    endif()
+
+    if(PYTHON_INCLUDE_DIRS)
+        file(TO_CMAKE_PATH ${PYTHON_INCLUDE_DIRS} PYTHON_INCLUDE_DIRS)
+    endif()
+endif()
 
 # --TBB
-find_package(TBB CONFIG)
-if(TBB_DIR)
-    # Found in CONFIG mode.
-    set(TBB_tbb_LIBRARY TBB::tbb)
+find_package(TBB CONFIG COMPONENTS tbb)
+if(TBB_FOUND) 
     set(PXR_FIND_TBB_IN_CONFIG ON)
 else()
     find_package(TBB REQUIRED COMPONENTS tbb)
     set(PXR_FIND_TBB_IN_CONFIG OFF)
 endif()
-add_definitions(${TBB_DEFINITIONS})
 
 # --math
 if(WIN32)

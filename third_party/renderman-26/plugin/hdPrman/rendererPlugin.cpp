@@ -6,7 +6,7 @@
 //
 #include "hdPrman/renderParam.h"
 #include "hdPrman/renderDelegate.h"
-#include "pxr/imaging/plugin/hdPrmanLoader/rendererPlugin.h"
+#include "hdPrmanLoader/rendererPlugin.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -22,7 +22,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 // a symbol here that can be picked up by HdPrmanLoader::Load.
 HDPRMAN_LOADER_CREATE_DELEGATE
 {
-    if(s_curDelegate) {
+    if (s_curDelegate) {
         // Prman only supports one riley at a time, so when a new one
         // is requested while one already exists, shut down the existing one.
         // This is necessary for some DCCs where switching delegates
@@ -32,7 +32,8 @@ HDPRMAN_LOADER_CREATE_DELEGATE
         static_cast<HdPrman_RenderParam*>(s_curDelegate->GetRenderParam())->End();
     }
 
-    HdRenderDelegate* renderDelegate = new HdPrmanRenderDelegate(settingsMap);
+    HdRenderDelegate* renderDelegate = new HdPrmanRenderDelegate(
+        settingsMap, rileyVariant, xpuCpuConfig, xpuGpuConfig);
     HdPrman_RenderParam* renderParam =
         static_cast<HdPrman_RenderParam*>(renderDelegate->GetRenderParam());
     if(!renderParam->IsValid()) {

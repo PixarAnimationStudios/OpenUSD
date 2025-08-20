@@ -9,7 +9,7 @@
 Module that implements python version of HydraSceneBrowser.
 
 NOTE: Source code for a C++ version of this widget is available (without open
-      source build support) in extras/imaging/examples/hdui.
+      source build support) in pxr/imaging/hdui.
 
       That version (even wrapped in python as a whole) is strongly recommended
       as the basis for any application integration as it is higher performance.
@@ -58,7 +58,6 @@ class HydraSceneBrowser(QtWidgets.QWidget):
         self.__toolbarLayout.addWidget(self.__loggerButton)
 
         self.__observer = HydraObserver()
-
 
         self.__splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
         self.__mainLayout.addWidget(self.__splitter, 10)
@@ -109,7 +108,6 @@ class HydraSceneBrowser(QtWidgets.QWidget):
     def __SceneIndexChanged(self):
         # XXX for initial testing, clear and build /root
         self.__siTreeWidget.Requery(self.__observer)
-
 
     def __PrimSelected(self, primPath, dataSourceProxy):
         self.__valueTreeView.SetDataSource(None)

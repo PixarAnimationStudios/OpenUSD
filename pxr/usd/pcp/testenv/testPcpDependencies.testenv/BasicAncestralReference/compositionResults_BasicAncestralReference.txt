@@ -1,15 +1,15 @@
-Loading @BasicAncestralReference/root.sdf@
+Loading @BasicAncestralReference/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </A>
 
 Prim Stack:
-    root.sdf             /A
-    A.sdf                /A
+    root.usda             /A
+    A.usda                /A
 
 Child names:
      ['B']
@@ -19,21 +19,21 @@ Property names:
 
 Property stacks:
 /A.A_attr:
-    A.sdf                /A.A_attr
+    A.usda                /A.A_attr
 
 ------------------------------------------------------------------------
 Results for composing </A/B>
 
 Prim Stack:
-    root.sdf             /A/B
-    B.sdf                /B
-    A.sdf                /A/B
+    root.usda             /A/B
+    B.usda                /B
+    A.usda                /A/B
 
 Property names:
      ['B_attr']
 
 Property stacks:
 /A/B.B_attr:
-    B.sdf                /B.B_attr
-    A.sdf                /A/B.B_attr
+    B.usda                /B.B_attr
+    A.usda                /A/B.B_attr
 

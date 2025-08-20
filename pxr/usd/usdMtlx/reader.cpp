@@ -410,6 +410,48 @@ _GetShaderId(const mx::ConstNodePtr& mtlxNode)
     return _GetShaderId(_GetNodeDef(mtlxNode));
 }
 
+// Determine if the node is a locally defined custom node 
+// Returns True if the mtlxNodeDef corresponds to a locally defined custom node
+// with an associated nodegraph.
+// XXX Locally defined custom nodes without nodegraphs are not supported
+static
+bool
+_IsLocalCustomNode(
+    const mx::ConstNodeDefPtr &mtlxNodeDef,
+    std::string* mtlxNodeDefUri)
+{
+    if (!mtlxNodeDef) {
+        return false;
+    }
+
+    // Get the absolute path to the NodeDef source uri
+    std::string nodeDefUri = UsdMtlxGetSourceURI(mtlxNodeDef);
+    if (TfIsRelativePath(nodeDefUri)) {
+        // Get the absolute path to the containing directory and combine 
+        // with the nodeDef relative path
+        const std::string dirPath =
+            TfGetPathName(UsdMtlxGetSourceURI(mtlxNodeDef->getParent()));
+        nodeDefUri = TfNormPath(dirPath + nodeDefUri);
+    }
+    *mtlxNodeDefUri = nodeDefUri;
+
+    // This is a locally defined custom node if the absolute path to the
+    // nodedef is not included in the stdlib doc.
+    static const mx::StringSet stdlibIncludes =
+        UsdMtlxGetDocument("")->getReferencedSourceUris();
+    if (stdlibIncludes.find(nodeDefUri) == stdlibIncludes.end()) {
+        // Verify we have an associated nodegraph, since only locally defined 
+        // custom nodes with nodegraphs (not implementations) are supported.
+        const mx::InterfaceElementPtr impl = mtlxNodeDef->getImplementation();
+        if (impl && impl->isA<mx::NodeGraph>()) {
+            return true;
+        }
+        TF_WARN("Locally defined custom nodes without nodegraph implementations"
+                " are not currently supported.");
+    }
+    return false;
+}
+
 static
 bool
 _SetColorSpace(const mx::ConstValueElementPtr& mxElem)
@@ -423,6 +465,7 @@ _SetColorSpace(const mx::ConstValueElementPtr& mxElem)
     return !activeColorSpace.empty() &&
             activeColorSpace != defaultSourceColorSpace;
 }
+
 static
 bool
 _TypeSupportsColorSpace(const mx::ConstValueElementPtr& mxElem)
@@ -678,7 +721,6 @@ public:
 private:
     void _CreateInterfaceInputs(const mx::ConstInterfaceElementPtr &iface,
                                 const UsdShadeConnectableAPI &connectable);
-    bool _IsLocalCustomNode(const mx::ConstNodeDefPtr &mtlxNodeDef);
     void _AddNode(const mx::ConstNodePtr &mtlxNode, const UsdPrim &usdParent);
     UsdShadeInput _AddInput(const mx::ConstInputPtr& mtlxInput,
                             const UsdShadeConnectableAPI& connectable,
@@ -748,18 +790,15 @@ _NodeGraphBuilder::Build(ShaderNamesByOutputName* outputs)
         return UsdPrim();
     }
 
-    const bool isInsideNodeGraph = _mtlxContainer->isA<mx::NodeGraph>();
+    // Create a USD nodegraph.
+    auto usdNodeGraph = UsdShadeNodeGraph::Define(_usdStage, _usdPath);
+    if (!usdNodeGraph) {
+        return UsdPrim();
+    }
+    UsdPrim usdPrim = usdNodeGraph.GetPrim();
 
-    // Create the USD nodegraph.
-    UsdPrim usdPrim;
-    if (isInsideNodeGraph) {
-        // Create the nodegraph.
-        auto usdNodeGraph = UsdShadeNodeGraph::Define(_usdStage, _usdPath);
-        if (!usdNodeGraph) {
-            return UsdPrim();
-        }
-        usdPrim = usdNodeGraph.GetPrim();
-
+    const bool isExplicitNodeGraph = _mtlxContainer->isA<mx::NodeGraph>();
+    if (isExplicitNodeGraph) {
         _SetCoreUIAttributes(usdPrim, _mtlxContainer);
 
         // Create the interface inputs for the NodeDef.
@@ -776,9 +815,6 @@ _NodeGraphBuilder::Build(ShaderNamesByOutputName* outputs)
             _AddInput(in, usdNodeGraph.ConnectableAPI(), /* isInterface */ true);
         }
     }
-    else {
-        usdPrim = _usdStage->DefinePrim(_usdPath);
-    }
 
     // Build the graph of nodes.
     for (mx::NodePtr& mtlxNode : _mtlxContainer->getChildrenOfType<mx::Node>()) {
@@ -786,24 +822,14 @@ _NodeGraphBuilder::Build(ShaderNamesByOutputName* outputs)
         // nodes gathered here will include the material and surfaceshader 
         // nodes which are not part of the implicit nodegraph. Ignore them.
         const std::string &nodeType = _Attr(mtlxNode, names.type);
-        if (nodeType == "material" || nodeType == "surfaceshader")
+        if (!isExplicitNodeGraph &&
+            (nodeType == "material" || nodeType == "surfaceshader")) {
             continue;
+        }
         _AddNode(mtlxNode, usdPrim);
     }
     _ConnectNodes();
-
-    if (isInsideNodeGraph) {
-        _ConnectTerminals(_mtlxContainer, UsdShadeConnectableAPI(usdPrim));
-    }
-    else if (outputs) {
-        // Collect the outputs on the existing shader nodes.
-        for (mx::OutputPtr& mtlxOutput :
-                _mtlxContainer->getChildrenOfType<mx::Output>()) {
-            if (auto nodeName = _Attr(mtlxOutput, names.nodename)) {
-                (*outputs)[_Name(mtlxOutput)] = TfToken(nodeName);
-            }
-        }
-    }
+    _ConnectTerminals(_mtlxContainer, UsdShadeConnectableAPI(usdPrim));
 
     return usdPrim;
 }
@@ -819,54 +845,6 @@ _NodeGraphBuilder::_CreateInterfaceInputs(
         _AddInput(mtlxInput, connectable, isInterface);
     }
     // We deliberately ignore tokens here.
-}
-
-// Returns True if the mtlxNodeDef corresponds to a locally defined custom node
-// with an associated nodegraph.
-// XXX Locally defined custom nodes without nodegraphs are not supported
-bool
-_NodeGraphBuilder::_IsLocalCustomNode(const mx::ConstNodeDefPtr &mtlxNodeDef)
-{
-    if (!mtlxNodeDef) {
-        return false;
-    }
-
-    // Get the absolute path to the NodeDef source uri
-    std::string nodeDefUri = UsdMtlxGetSourceURI(mtlxNodeDef);
-    if (TfIsRelativePath(nodeDefUri)) {
-        // Get the absolute path to the base mtlx file and strip the filename
-        std::string fullMtlxPath = UsdMtlxGetSourceURI(mtlxNodeDef->getParent());
-        std::size_t found = fullMtlxPath.rfind("/");
-        if (found != std::string::npos) {
-            fullMtlxPath = fullMtlxPath.substr(0, found+1);
-        }
-        // Combine with the nodeDef relative path
-        nodeDefUri = TfNormPath(fullMtlxPath + nodeDefUri);
-    }
-    
-    // This is a locally defined custom node if the absolute path to the
-    // nodedef is not included in the stdlibDoc.
-    static mx::StringSet customNodeDefNames;
-    static const mx::StringSet stdlibIncludes =
-        UsdMtlxGetDocument("")->getReferencedSourceUris();
-    if (stdlibIncludes.find(nodeDefUri) == stdlibIncludes.end()) {
-        // Check if we already used this custom node
-        if (std::find(customNodeDefNames.begin(), customNodeDefNames.end(),
-            mtlxNodeDef->getName()) != customNodeDefNames.end()) {
-            return true;
-        }
-        // Verify we have an associated nodegraph, since only locally defined 
-        // custom nodes with nodegraphs (not implementations) are supported.  
-        if (mx::InterfaceElementPtr impl = mtlxNodeDef->getImplementation()) {
-            if (impl && impl->isA<mx::NodeGraph>()) {
-                customNodeDefNames.insert(mtlxNodeDef->getName());
-                return true;
-            }
-        }
-        TF_WARN("Locally defined custom nodes without nodegraph implementations"
-                " are not currently supported.");
-    }
-    return false;
 }
 
 void
@@ -886,35 +864,31 @@ _NodeGraphBuilder::_AddNode(
     UsdStageWeakPtr usdStage = usdParent.GetStage();
     const mx::ConstNodeDefPtr mtlxNodeDef = _GetNodeDef(mtlxNode);
 
-    // If this is a locally defined custom mtlx node, use the associated
-    // UsdShadeNodeGraph as the connectable, otherwise use the UsdShadeShader 
-    // version of the mtlxNode.
-    UsdShadeConnectableAPI connectable;
-    if (_IsLocalCustomNode(mtlxNodeDef)) {
+    const SdfPath shaderPath =
+    usdParent.GetPath().AppendChild(_MakeName(mtlxNode));
+    UsdShadeShader usdShader  = UsdShadeShader::Define(usdStage, shaderPath);
+    if (!shaderId.IsEmpty()) {
+        usdShader.CreateIdAttr(VtValue(TfToken(shaderId)));
+    }
+    const UsdShadeConnectableAPI connectable = usdShader.ConnectableAPI();
+    _SetCoreUIAttributes(usdShader.GetPrim(), mtlxNode);
+    
+    // For locally defined custom nodes - set the sourceAsset as the absolute
+    // path to the mtlx file, and the subIdentifier to the nodeDef name.
+    std::string mtlxNodeDefUri;
+    if (_IsLocalCustomNode(mtlxNodeDef, &mtlxNodeDefUri)) {
         TF_DEBUG(USDMTLX_READER).Msg("Processing custom node (%s) of def (%s) "
-                "to be added alongside nodegraph (%s).\n", 
-                mtlxNode->getName().c_str(),
-                mtlxNodeDef->getName().c_str(),
-                usdParent.GetPath().GetText());
-        // Nodegraphs associated with locally defined custom nodes are added 
-        // before reading materials, and therefore get-able here 
-        auto nodeGraphPath = usdParent.GetParent().GetPath().AppendChild(
-            _MakeName(mtlxNodeDef));
-        auto usdNodeGraph = UsdShadeNodeGraph::Get(usdStage, nodeGraphPath);
-        connectable = usdNodeGraph.ConnectableAPI();
-        _SetCoreUIAttributes(usdNodeGraph.GetPrim(), mtlxNode);
+                "to be added under parent (%s).\n", mtlxNode->getName().c_str(),
+                mtlxNodeDef->getName().c_str(), usdParent.GetPath().GetText());
+        usdShader.SetSourceAsset(
+            SdfAssetPath(mtlxNodeDefUri), _tokens->mtlxRenderContext);
+        usdShader.SetSourceAssetSubIdentifier(
+            TfToken(mtlxNodeDef->getName()), _tokens->mtlxRenderContext);
     }
     else {
         TF_DEBUG(USDMTLX_READER).Msg("Processing shader node (%s) to be added "
                 "under parent (%s).\n", mtlxNode->getName().c_str(), 
                 usdParent.GetPath().GetText());
-        auto shaderPath = usdParent.GetPath().AppendChild(_MakeName(mtlxNode));
-        auto usdShader  = UsdShadeShader::Define(usdStage, shaderPath);
-        if (!shaderId.IsEmpty()) {
-            usdShader.CreateIdAttr(VtValue(TfToken(shaderId)));
-        }
-        connectable = usdShader.ConnectableAPI();
-        _SetCoreUIAttributes(usdShader.GetPrim(), mtlxNode);
     }
 
     // Add the inputs.
@@ -1555,6 +1529,16 @@ _Context::AddShaderNode(const mx::ConstNodePtr& mtlxShaderNode)
     auto shaderPath = _usdMaterial.GetPath().AppendChild(name);
     auto usdShader = UsdShadeShader::Define(_stage, shaderPath);
     usdShader.GetPrim().GetReferences().AddInternalReference(shaderImplPath);
+
+    // For locally defined custom nodes - set the sourceAsset as the absolute
+    // path to the mtlx file, and the subIdentifier to the nodeDef name.
+    std::string mtlxNodeDefUri;
+    if (_IsLocalCustomNode(mtlxNodeDef, &mtlxNodeDefUri)) {
+        usdShader.SetSourceAsset(
+            SdfAssetPath(mtlxNodeDefUri), _tokens->mtlxRenderContext);
+        usdShader.SetSourceAssetSubIdentifier(
+            TfToken(mtlxNodeDef->getName()), _tokens->mtlxRenderContext);
+    }
 
     // Record the referencing shader for later variants.
     _shaders[_Name(_mtlxMaterial)][_Name(mtlxShaderNode)] =
@@ -2316,7 +2300,7 @@ _TranslateShaderNodes(
     for (auto mtlxShaderNode: mx::getShaderNodes(mtlxMaterial, mtlxShaderType)) {
         // Translate shader node.
         TF_DEBUG(USDMTLX_READER).Msg("Adding shaderNode '%s' type: '%s'\n",
-                                    _Name(mtlxShaderNode).c_str(), mtlxShaderType.c_str());
+            _Name(mtlxShaderNode).c_str(), mtlxShaderType.c_str());
         if (auto usdShader = context.AddShaderNode(mtlxShaderNode)) {
             // Do nothing.
         }
@@ -2356,7 +2340,7 @@ static
 void
 ReadMaterials(mx::ConstDocumentPtr mtlx, _Context& context)
 {
-    for (auto& mtlxMaterial: mtlx->getMaterialNodes()) {
+    for (auto& mtlxMaterial : mtlx->getMaterialNodes()) {
         // Translate material.
         TF_DEBUG(USDMTLX_READER).Msg("Adding mtlxMaterial '%s'\n",
                                      _Name(mtlxMaterial).c_str());

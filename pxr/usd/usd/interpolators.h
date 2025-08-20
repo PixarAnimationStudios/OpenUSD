@@ -344,7 +344,7 @@ Usd_GetOrInterpolateValue(
     if (GfIsClose(lower, upper, /* epsilon = */ 1e-6)) {
         bool queryResult = Usd_QueryTimeSample(
             src, path, lower, interpolator, result);
-        return queryResult && (!Usd_ClearValueIfBlocked(result));
+        return queryResult && (!Usd_ClearValueIfBlocked<SdfValueBlock>(result));
     }
 
     return interpolator->Interpolate(src, path, time, lower, upper);

@@ -9,18 +9,12 @@
 #define PXR_USD_SDR_SHADER_PROPERTY_H
 
 /// \file sdr/shaderProperty.h
-///
-/// \note
-/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
-/// in this file. All existing pxr/usd/ndr implementations will be moved to
-/// pxr/usd/sdr.
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/usd/ndr/property.h"
 #include "pxr/usd/sdr/api.h"
 #include "pxr/usd/sdr/declare.h"
 #include "pxr/usd/sdr/sdfTypeIndicator.h"
@@ -95,7 +89,7 @@ TF_DECLARE_PUBLIC_TOKENS(SdrPropertyTokens, SDR_API, SDR_PROPERTY_TOKENS);
 /// additional metadata. Instances can also be queried to determine if another
 /// `SdrShaderProperty` instance can be connected to it.
 ///
-class SdrShaderProperty : public NdrProperty
+class SdrShaderProperty
 {
 public:
     // Constructor.
@@ -111,12 +105,68 @@ public:
         const SdrOptionVec& options
     );
 
+    /// Destructor.
+    SDR_API
+    virtual ~SdrShaderProperty();
+
+    /// \name The Basics
+    /// @{
+
+    /// Gets the name of the property.
+    SDR_API
+    const TfToken& GetName() const { return _name; }
+
+    /// Gets the type of the property.
+    SDR_API
+    const TfToken& GetType() const { return _type; }
+
+    /// Gets this property's default value associated with the type of the
+    /// property.
+    /// 
+    /// \sa GetType()
+    SDR_API
+    const VtValue& GetDefaultValue() const { return _defaultValue; }
+
+    /// Whether this property is an output.
+    SDR_API
+    bool IsOutput() const { return _isOutput; }
+
+    /// Whether this property's type is an array type.
+    SDR_API
+    bool IsArray() const { return (_arraySize > 0) || _isDynamicArray; }
+
+    /// Whether this property's array type is dynamically-sized.
+    SDR_API
+    bool IsDynamicArray() const { return _isDynamicArray; };
+
+    /// Gets this property's array size.
+    ///
+    /// If this property is a fixed-size array type, the array size is returned.
+    /// In the case of a dynamically-sized array, this method returns the array
+    /// size that the parser reports, and should not be relied upon to be
+    /// accurate. A parser may report -1 for the array size, for example, to
+    /// indicate a dynamically-sized array. For types that are not a fixed-size
+    /// array or dynamic array, this returns 0.
+    SDR_API
+    int GetArraySize() const { return _arraySize; }
+
+    /// Gets a string with basic information about this property. Helpful for
+    /// things like adding this property to a log.
+    SDR_API
+    std::string GetInfoString() const;
+
+    /// @}
+
     /// \name Metadata
     /// The metadata returned here is a direct result of what the parser plugin
     /// is able to determine about the property. See the documentation for a
     /// specific parser plugin to get help on what the parser is looking for to
     /// populate these values.
     /// @{
+
+    /// All of the metadata that came from the parse process.
+    SDR_API
+    const SdrTokenMap& GetMetadata() const { return _metadata; }
 
     /// The label assigned to this property, if any. Distinct from the name
     /// returned from `GetName()`. In the context of a UI, the label value
@@ -204,7 +254,7 @@ public:
     /// returns `true`, connectability to a specific property can be tested via
     /// `CanConnectTo()`.
     SDR_API
-    bool IsConnectable() const override { return _isConnectable; }
+    bool IsConnectable() const { return _isConnectable; }
 
     /// Gets the list of valid connection types for this property. This value
     /// comes from shader metadata, and may not be specified. The value from
@@ -214,14 +264,6 @@ public:
     const SdrTokenVec& GetValidConnectionTypes() const {
         return _validConnectionTypes;
     }
-
-    /// Determines if this property can be connected to the specified property.
-    ///
-    /// \deprecated
-    /// Deprecated in favor of
-    /// SdrShaderProperty::CanConnectTo(SdrShaderProperty)
-    SDR_API
-    bool CanConnectTo(const NdrProperty& other) const override;
 
     /// Determines if this property can be connected to the specified property.
     SDR_API
@@ -243,8 +285,10 @@ public:
     /// set to `Token` to indicate an unclean mapping, and
     /// SdrSdfTypeIndicator::GetSdrType will be set to the original type
     /// returned by `GetType()`.
+    ///
+    /// \sa GetDefaultValueAsSdfType()
     SDR_API
-    SdrSdfTypeIndicator GetTypeAsSdfType() const override;
+    SdrSdfTypeIndicator GetTypeAsSdfType() const;
 
     /// Accessor for default value corresponding to the SdfValueTypeName
     /// returned by GetTypeAsSdfType. Note that this is different than 
@@ -254,7 +298,7 @@ public:
     ///
     /// \sa GetTypeAsSdfType
     SDR_API
-    const VtValue& GetDefaultValueAsSdfType() const override {
+    const VtValue& GetDefaultValueAsSdfType() const {
         return _sdfTypeDefaultValue;
     }
 
@@ -295,6 +339,15 @@ protected:
     // information is locked in and won't be changed anymore. This allows each
     // property to take some extra steps once all information is available.
     void _FinalizeProperty();
+
+    TfToken _name;
+    TfToken _type;
+    VtValue _defaultValue;
+    bool _isOutput;
+    size_t _arraySize;
+    bool _isDynamicArray;
+    bool _isConnectable;
+    SdrTokenMap _metadata;
 
     // Some metadata values cannot be returned by reference from the main
     // metadata dictionary because they need additional parsing.

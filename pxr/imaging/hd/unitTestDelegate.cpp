@@ -1237,6 +1237,78 @@ HdUnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4f const &transform, bool
 }
 
 void
+HdUnitTestDelegate::AddCube(SdfPath const &id, GfMatrix4f const &transform,
+                            bool guide, SdfPath const &instancerId,
+                            TfToken const &scheme, VtValue const &color,
+                            HdInterpolation colorInterpolation,
+                            VtValue const &opacity,
+                            HdInterpolation opacityInterpolation)
+{
+    GfVec3f points[] = {
+        GfVec3f( 1.0f, 1.0f, 1.0f ),
+        GfVec3f(-1.0f, 1.0f, 1.0f ),
+        GfVec3f(-1.0f,-1.0f, 1.0f ),
+        GfVec3f( 1.0f,-1.0f, 1.0f ),
+        GfVec3f(-1.0f,-1.0f,-1.0f ),
+        GfVec3f(-1.0f, 1.0f,-1.0f ),
+        GfVec3f( 1.0f, 1.0f,-1.0f ),
+        GfVec3f( 1.0f,-1.0f,-1.0f ),
+    };
+
+    if (scheme == PxOsdOpenSubdivTokens->loop) {
+        int numVerts[] = { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
+        int verts[] = {
+            0, 1, 2, 0, 2, 3,
+            4, 5, 6, 4, 6, 7,
+            0, 6, 5, 0, 5, 1,
+            4, 7, 3, 4, 3, 2,
+            0, 3, 7, 0, 7, 6,
+            4, 2, 1, 4, 1, 5,
+        };
+        AddMesh(
+            id,
+            transform,
+            _BuildArray(points, sizeof(points)/sizeof(points[0])),
+            _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
+            _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
+            /*holes*/VtIntArray(),
+            PxOsdSubdivTags(),
+            color,
+            colorInterpolation,
+            opacity,
+            opacityInterpolation,
+            guide,
+            instancerId,
+            scheme);
+    } else {
+        int numVerts[] = { 4, 4, 4, 4, 4, 4 };
+        int verts[] = {
+            0, 1, 2, 3,
+            4, 5, 6, 7,
+            0, 6, 5, 1,
+            4, 7, 3, 2,
+            0, 3, 7, 6,
+            4, 2, 1, 5,
+        };
+        AddMesh(
+            id,
+            transform,
+            _BuildArray(points, sizeof(points)/sizeof(points[0])),
+            _BuildArray(numVerts, sizeof(numVerts)/sizeof(numVerts[0])),
+            _BuildArray(verts, sizeof(verts)/sizeof(verts[0])),
+            /*holes*/VtIntArray(),
+            PxOsdSubdivTags(),
+            color,
+            colorInterpolation,
+            opacity,
+            opacityInterpolation,
+            guide,
+            instancerId,
+            scheme);
+    }
+}
+
+void
 HdUnitTestDelegate::AddPolygons(
     SdfPath const &id, GfMatrix4f const &transform,
     HdInterpolation colorInterp,

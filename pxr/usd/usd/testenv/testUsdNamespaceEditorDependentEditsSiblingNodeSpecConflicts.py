@@ -271,6 +271,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Ref1' : ref1Contents,
             'Ref2' : ref2Contents,
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref1/Child" : self.PrimResyncType.RenameSource,
+            "/Ref1/RenamedChild" : self.PrimResyncType.RenameDestination,
+        })
 
         # On stage2, the contents of Prim1 change to reflect that the reference
         # to /Ref1 brings in the name child RenamedChild instead of Child.
@@ -329,6 +333,11 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
         })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/Child" : self.PrimResyncType.Other,
+            "/Prim1/RenamedChild" : self.PrimResyncType.Other,
+            "/Prim2" : self.PrimResyncType.UnchangedPrimStack,
+        })
 
         # Edit: Now rename /Ref2/Child to be /Ref2/RenamedChild to match the
         # namespace hierarchy of /Ref1 again. Unlike the previous edit, we do
@@ -364,6 +373,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
         self._VerifyStageContents(stage1, {
             'Ref1' : ref1Contents,
             'Ref2' : ref2Contents,
+        })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref2/Child" : self.PrimResyncType.RenameSource,
+            "/Ref2/RenamedChild" : self.PrimResyncType.RenameDestination,
         })
 
         # On stage2, the contents of Prim1 change to reflect that the reference
@@ -406,6 +419,11 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
         self._VerifyStageContents(stage2, {
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/Child" : self.PrimResyncType.Delete,
+            "/Prim1/RenamedChild" : self.PrimResyncType.Other,
+            "/Prim2" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # These next few cases demonstrate reparenting RenamedChild in both
@@ -450,6 +468,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'MovedChild_1' : ref1ChildContents,
             'Ref2' : ref2Contents,
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref1/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/MovedChild_1" : self.PrimResyncType.RenameAndReparentDestination,
+        })
 
         # On stage2, the contents of /Prim1 reflect the fact the /Ref1 no longer
         # has RenamedChild as a namespace child and therefore RenamedChild has
@@ -483,6 +505,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
         self._VerifyStageContents(stage2, {
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/RenamedChild" : self.PrimResyncType.Other,
+            "/Prim2" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # Edit: Next reparent (and rename) /Ref2/RenamedChild to
@@ -526,6 +552,11 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'MovedChild_1' : ref1ChildContents,
             'Ref2' : ref2Contents,
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref2/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/Ref2/ChildSibling/MovedChild_2" : 
+                self.PrimResyncType.RenameAndReparentDestination,
+        })
 
         # On stage2, the contents of Prim1 change to reflect the moving of
         # RenamedChild to be under ChildSibling as MovedChild_2. This time again
@@ -558,6 +589,12 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
         self._VerifyStageContents(stage2, {
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/Prim1/ChildSibling/MovedChild_2" : 
+                self.PrimResyncType.RenameAndReparentDestination,
+            "/Prim2" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # Undo the the last two edits by moving both moved prims back to
@@ -607,6 +644,8 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Ref1' : ref1Contents,
             'Ref2' : ref2Contents,
         })
+        # XXX: Skipping the resync notice verifications for now because of the 
+        # consecutive edits
 
         # On stage2, /Prim1's contents have returned to be the exact same state
         # as before the two reparent edits (a true undo). This is notable
@@ -640,6 +679,8 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
         })
+        # XXX: Skipping the resync notice verificattions for now because of the
+        # consecutive edits.
 
         # This time we're going to perform the prior reparent (and rename) in
         # reverse order.
@@ -685,6 +726,11 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Ref1' : ref1Contents,
             'Ref2' : ref2Contents,
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref2/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/Ref2/ChildSibling/MovedChild_2" : 
+                self.PrimResyncType.RenameAndReparentDestination,
+        })
 
         # On stage2, the contents of Prim1 change to reflect the moving of
         # RenamedChild to be under ChildSibling as MovedChild_2. But unlike the
@@ -726,6 +772,11 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
         })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/RenamedChild" : self.PrimResyncType.Other,
+            "/Prim1/ChildSibling/MovedChild_2" : self.PrimResyncType.Other,
+            "/Prim2" : self.PrimResyncType.UnchangedPrimStack,
+        })
 
         # Edit: Now move /Ref1/RenamedChild to /MovedChild_1 as the second
         # operation. This moves the child prim out from being a descendant of
@@ -766,6 +817,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'MovedChild_1' : ref1ChildContents,
             'Ref2' : ref2Contents,
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref1/RenamedChild" : self.PrimResyncType.RenameAndReparentSource,
+            "/MovedChild_1" : self.PrimResyncType.RenameAndReparentDestination,
+        })
 
         # On stage2, the contents of /Prim1 reflect the fact the /Ref1 no longer
         # has RenamedChild as a namespace child and therefore RenamedChild has
@@ -798,6 +853,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
         self._VerifyStageContents(stage2, {
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/RenamedChild" : self.PrimResyncType.Delete,
+            "/Prim2" : self.PrimResyncType.UnchangedPrimStack,
         })
 
         # Edit: Undo the last two edits again by moving both moved prims back
@@ -845,6 +904,8 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Ref1' : ref1Contents,
             'Ref2' : ref2Contents,
         })
+        # XXX: Skipping resync notice verification for now because of the 
+        # two consecutive edits.
 
         # This time, on stage2, /Prim1's contents have mostly returned to be the
         # same state as before the two reparents with exception that we no
@@ -877,6 +938,8 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
         })
+        # XXX: Skipping resync notice verification for now because of the 
+        # two consecutive edits.
 
     def test_DeletionForSiblingReferenceWithSameHierarchy(self):
         """Test downstream dependency name space deletion across references,
@@ -1335,6 +1398,9 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Ref1' : ref1Contents,
             'Ref2' : ref2Contents,
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref1/SharedChild_A" : self.PrimResyncType.Delete,
+        })
 
         # On stage2, the contents of Prim1 change to reflect that the reference
         # to /Ref1 no longer brings in the child prim SharedChild_A. However, we
@@ -1396,6 +1462,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
         })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/SharedChild_A" : self.PrimResyncType.Other,
+            "/Prim2" : self.PrimResyncType.Other,
+        })
 
         # Edit: Delete /Ref2/SharedChild_A
         with self.ApplyEdits(editor, "Delete /Ref2/SharedChild_A"):
@@ -1423,7 +1493,7 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
         })
 
         # Verify on stage1 that just only ShareChild_A has been deleted from 
-        # /Ref2 now; no other contensts have changed.
+        # /Ref2 now; no other contents have changed.
         ref2Contents = {
             '.' : ['ref2_Attr'],
             'SharedChild_B' : ref2ChildBContents,
@@ -1433,6 +1503,9 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
         self._VerifyStageContents(stage1, {
             'Ref1' : ref1Contents,
             'Ref2' : ref2Contents,
+        })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref2/SharedChild_A" : self.PrimResyncType.Delete,
         })
 
         # On stage2, the contents of Prim1 change to reflect that the reference
@@ -1471,6 +1544,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
         })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/SharedChild_A" : self.PrimResyncType.Delete,
+            "/Prim2" : self.PrimResyncType.Other,
+        })
 
         # Edit: Delete /Ref1
         with self.ApplyEdits(editor, "Delete /Ref1",
@@ -1497,6 +1574,9 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
         # Verify on stage1 that /Ref1 is gone. /Ref2 is unchanged.
         self._VerifyStageContents(stage1, {
             'Ref2' : ref2Contents,
+        })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref1" : self.PrimResyncType.Delete,
         })
 
         # On stage2, the contents of Prim1 change to reflect that the reference
@@ -1558,10 +1638,20 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
         })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1" : self.PrimResyncType.Other,
+            "/Prim2" : self.PrimResyncType.Other,
+        })
 
         # Edit: Delete /Ref2
         with self.ApplyEdits(editor, "Delete /Ref2"):
             self.assertTrue(editor.DeletePrimAtPath('/Ref2'))
+
+        # Verify on stage1 that /Ref2 is now gone and the stage is empty.
+        self._VerifyStageContents(stage1, {})
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref2" : self.PrimResyncType.Delete,
+        })
 
         # The only references left referred to /Ref2 or its descendants so all
         # reference from both /Prim1 and /Prim2 have been removed.
@@ -1589,6 +1679,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
         self._VerifyStageContents(stage2, {
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1" : self.PrimResyncType.Other,
+            "/Prim2" : self.PrimResyncType.Other,
         })
 
     def test_DeletionForSiblingReferenceWithSameHierarchyWithRelocates(self):
@@ -1850,6 +1944,9 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Ref1' : ref1Contents,
             'Ref2' : ref2Contents,
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref1/Child" : self.PrimResyncType.Delete,
+        })
 
         # Verify the new contents of stage2. /Prim1/Child, 
         # /Prim1/Child/GrandChild, and /Prim2/Child all no longer have opinions
@@ -1882,6 +1979,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
         self._VerifyStageContents(stage2, {
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/Child" : self.PrimResyncType.Other,
+            "/Prim2" : self.PrimResyncType.Other,
         })
 
         # Edit: Delete /Ref2/Child
@@ -1934,6 +2035,9 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
             'Ref1' : ref1Contents,
             'Ref2' : ref2Contents,
         })
+        self._VerifyStageResyncNotices(stage1, {
+            "/Ref2/Child" : self.PrimResyncType.Delete,
+        })
 
         # Verify the new contents of stage2. This time all descendants of 
         # /Prim1 and /Prim2 have been deleted as there no other sibling nodes
@@ -1955,6 +2059,10 @@ class TestUsdNamespaceEditorDependentEditsBasicReferencesAndPayloads(
         self._VerifyStageContents(stage2, {
             'Prim1' : prim1Contents,
             'Prim2' : prim2Contents,
+        })
+        self._VerifyStageResyncNotices(stage2, {
+            "/Prim1/Child" : self.PrimResyncType.Delete,
+            "/Prim2" : self.PrimResyncType.Other,
         })
 
 if __name__ == '__main__':

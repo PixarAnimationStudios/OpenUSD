@@ -66,6 +66,10 @@ public:
     HGIVULKAN_API
     VkImageLayout GetImageLayout() const;
 
+    // Returns the allocation info of the texture
+    HGIVULKAN_API
+    VmaAllocationInfo2 GetAllocationInfo() const;
+
     /// Returns the device used to create this object.
     HGIVULKAN_API
     HgiVulkanDevice* GetDevice() const;
@@ -87,7 +91,7 @@ public:
     /// transition isn't immediately executed. The command buffer simply 
     /// records the request and executes when in the next submission cycle.
     HGIVULKAN_API
-    void SubmitLayoutChange(HgiTextureUsage newLayout) override;
+    HgiTextureUsage SubmitLayoutChange(HgiTextureUsage newLayout) override;
 
     /// Transition image from oldLayout to newLayout.
     /// `producerAccess` of 0 means:
@@ -122,7 +126,9 @@ protected:
     HgiVulkanTexture(
         HgiVulkan* hgi,
         HgiVulkanDevice* device,
-        HgiTextureDesc const & desc);
+        HgiTextureDesc const & desc,
+        bool optimalTiling,
+        bool interop);
 
     // Texture view constructor to alias another texture's data.
     HGIVULKAN_API

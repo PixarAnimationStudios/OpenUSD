@@ -253,6 +253,8 @@ _MergeValueFn(
         field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
         || _MergeValue<SdfUIntListOp>(
         field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
+        || _MergeValue<SdfInt64ListOp>(
+        field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
         || _MergeValue<SdfUInt64ListOp>(
         field, fallback, dstLayer, dstPath, srcLayer, srcPath, valueToCopy)
         || _MergeValue<SdfTokenListOp>(

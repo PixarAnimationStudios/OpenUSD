@@ -259,8 +259,12 @@ private:
 
     bool _keepEmptyPathsInArrays = false;
 
-    // Maps source layer identifiers to their anonymous writable copies.
-    std::map<SdfLayerRefPtr, SdfLayerRefPtr> _layerCopyMap;
+    // Maps source layer identifiers to their writable counterparts.
+    // If _editLayersInPlace is true, the layers will map to themselves,
+    // ensuring they stay alive for the duration of the localization process.
+    // Otherwise, source layers will map to an anonymous copy that will be
+    // used for all edits that would apply to the source layer
+    std::map<SdfLayerRefPtr, SdfLayerRefPtr> _writableLayerMap;
 };
 
 // This delegate provides clients with ReadOnly access to processed

@@ -50,7 +50,7 @@ _AppendPathList(
     }
 }
 
-ARCH_CONSTRUCTOR(Plug_InitConfig, 2, void)
+ARCH_CONSTRUCTOR(Plug_InitConfig, 2)
 {
     std::vector<std::string> result;
 

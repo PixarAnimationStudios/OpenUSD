@@ -33,7 +33,6 @@ private:
     UsdImagingDataSourcePrimvars(
             const SdfPath &sceneIndexPath,
             UsdPrim const &usdPrim,
-            UsdGeomPrimvarsAPI usdPrimvars,
             const UsdImagingDataSourceStageGlobals &stageGlobals);
 
 private:
@@ -46,9 +45,6 @@ private:
 
     // Stage globals handle.
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
-
-    using _NamespacedPrimvarsMap = std::map<TfToken, UsdGeomPrimvar>;
-    _NamespacedPrimvarsMap _namespacedPrimvars;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourcePrimvars);

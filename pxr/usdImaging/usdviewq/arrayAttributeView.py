@@ -148,6 +148,10 @@ class ArrayAttributeView(QtWidgets.QWidget):
     def CanView(self, attr):
         return attr.GetTypeName().isArray
 
+    def Clear(self):
+        self._arrayAttrModel.SetArrayDataAndTypeName(None, "")
+        self._lineEdit.setText("")
+
     def keyPressEvent(self, e):
         # XXX note, this is extremely finicky.  it does not really
         # have keyboard focus.

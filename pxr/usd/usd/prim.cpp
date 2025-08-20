@@ -32,6 +32,7 @@
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/singularTask.h"
+#include "pxr/base/work/sort.h"
 #include "pxr/base/work/utils.h"
 #include "pxr/base/work/withScopedParallelism.h"
 
@@ -41,7 +42,6 @@
 
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_unordered_set.h>
-#include <tbb/parallel_sort.h>
 
 #include <algorithm>
 #include <functional>
@@ -1361,7 +1361,7 @@ UsdPrim::_GetPropertyNames(
     return namesVec;
 }
 
-TfTokenVector
+const TfTokenVector &
 UsdPrim::GetAppliedSchemas() const
 {
     return GetPrimDefinition().GetAppliedAPISchemas();
@@ -1678,8 +1678,7 @@ private:
         WorkWithScopedParallelism([this]() {
                 _VisitSubtree(_prim);
                 _dispatcher.Wait();
-                tbb::parallel_sort(_result.begin(), _result.end(),
-                                   SdfPath::FastLessThan());
+                WorkParallelSort(&_result, SdfPath::FastLessThan());
             });
 
         _result.erase(unique(_result.begin(), _result.end()), _result.end());

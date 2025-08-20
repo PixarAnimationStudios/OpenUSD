@@ -35,10 +35,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
 
         self.assertEqual(set(primDef.ListMetadataFields()), 
             set(["typeName", "testCustomMetadata", "testDictionaryMetadata",
-                 "hidden", "documentation"]))
+                 "hidden"]))
         self.assertEqual(primDef.GetMetadata("typeName"), "MetadataTest")
-        self.assertEqual(primDef.GetMetadata("documentation"),
-                         "Testing documentation metadata")
+        self.assertIsNone(primDef.GetMetadata("documentation"))
         self.assertEqual(primDef.GetMetadata("hidden"), True)
         self.assertEqual(primDef.GetMetadata("testCustomMetadata"), "garply")
 
@@ -75,7 +74,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         # List metadata fields
         self.assertEqual(set(attrDef.ListMetadataFields()), 
             set(["allowedTokens", "custom", "default", "displayGroup",
-                 "displayName", "documentation", "hidden", "testCustomMetadata",
+                 "displayName", "hidden", "testCustomMetadata",
                  "testDictionaryMetadata", "typeName", "variability"]))
         self.assertEqual(primDef.ListPropertyMetadataFields("testAttr"), 
                          attrDef.ListMetadataFields())
@@ -102,10 +101,10 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(attrDef.GetFallbackValue(), "foo")
         self.assertEqual(primDef.GetAttributeFallbackValue("testAttr"), "foo")
 
-        # Documentation has special functions on both the attribute and prim
-        # defs.
-        self.assertEqual(attrDef.GetMetadata("documentation"),
-                         "Testing documentation metadata")
+        # Documentation is no longer present in the schema registry. Verify
+        # instead that def GetDocumentation/GetPropertyDocumentation are 
+        # returning the userDocBrief values.
+        self.assertIsNone(attrDef.GetMetadata("documentation"))
         self.assertEqual(attrDef.GetDocumentation(),
                          "Testing brief user doc for schema attr")
         self.assertEqual(primDef.GetPropertyDocumentation("testAttr"),
@@ -164,7 +163,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
 
         # List metadata fields
         self.assertEqual(set(relDef.ListMetadataFields()), 
-            set(["custom", "displayGroup", "displayName", "documentation",
+            set(["custom", "displayGroup", "displayName",
                  "hidden", "testCustomMetadata", "testDictionaryMetadata",
                  "variability"]))
         self.assertEqual(primDef.ListPropertyMetadataFields("testRel"), 
@@ -181,10 +180,10 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                          Sdf.VariabilityUniform)
         self.assertEqual(relDef.GetVariability(), Sdf.VariabilityUniform)
 
-        # Documentation has special functions on both the attribute and prim
-        # defs.
-        self.assertEqual(relDef.GetMetadata("documentation"),
-                         "Testing documentation metadata")
+        # Documentation is no longer present in the schema registry. Verify
+        # instead that def GetDocumentation/GetPropertyDocumentation are 
+        # returning the userDocBrief values.
+        self.assertIsNone(relDef.GetMetadata("documentation"))
         self.assertEqual(relDef.GetDocumentation(),
                          "Testing brief user doc for schema rel")
         self.assertEqual(primDef.GetPropertyDocumentation("testRel"),
@@ -612,7 +611,6 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                 "allowedTokens" : ["bar", "baz"],
                 "displayGroup" : "Display Group",
                 "displayName" : "Display Name",
-                "documentation" : "Testing documentation metadata",
                 "hidden" : True,
                 "testCustomMetadata" : "garply",
                 "testDictionaryMetadata" : {"name" : "bar", "value" : 3},
@@ -624,7 +622,6 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                 "custom" : False,
                 "displayGroup" : "Display Group",
                 "displayName" : "Display Name",
-                "documentation" : "Testing documentation metadata",
                 "hidden" : True,
                 "testCustomMetadata" : "garply",
                 "testDictionaryMetadata" : {"name" : "baz", "value" : 5},
@@ -662,9 +659,10 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "collection:__INSTANCE_NAME__" : {
                 "custom" : False,
                 "typeName" : Sdf.ValueTypeNames.Opaque,
-                "documentation" : apiPrimDef.GetPropertyDocumentation(
-                    "collection:__INSTANCE_NAME__"),
-                "variability" : Sdf.VariabilityUniform
+                "variability" : Sdf.VariabilityUniform,
+                "customData" : 
+                {"userDocBrief" : apiPrimDef.GetPropertyDocumentation(
+                    "collection:__INSTANCE_NAME__")}
             },
             "collection:__INSTANCE_NAME__:expansionRule" : {
                 "custom" : False,
@@ -672,37 +670,42 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                 "typeName" : Sdf.ValueTypeNames.Token,
                 "allowedTokens" : ["explicitOnly", "expandPrims", 
                                    "expandPrimsAndProperties"],
-                "documentation" : apiPrimDef.GetPropertyDocumentation(
-                    "collection:__INSTANCE_NAME__:expansionRule"),
-                "variability" : Sdf.VariabilityUniform
+                "variability" : Sdf.VariabilityUniform,
+                "customData" : 
+                {"userDocBrief" : apiPrimDef.GetPropertyDocumentation(
+                    "collection:__INSTANCE_NAME__:expansionRule")}
             },
             "collection:__INSTANCE_NAME__:includeRoot" : {
                 "custom" : False,
                 "default" : None,
                 "typeName" : Sdf.ValueTypeNames.Bool,
-                "documentation" : apiPrimDef.GetPropertyDocumentation(
-                    "collection:__INSTANCE_NAME__:includeRoot"),
-                "variability" : Sdf.VariabilityUniform
+                "variability" : Sdf.VariabilityUniform,
+                "customData" : 
+                {"userDocBrief" : apiPrimDef.GetPropertyDocumentation(
+                    "collection:__INSTANCE_NAME__:includeRoot")}                
             },
             "collection:__INSTANCE_NAME__:includes" : {
                 "custom" : False,
-                "documentation" : apiPrimDef.GetPropertyDocumentation(
-                    "collection:__INSTANCE_NAME__:includes"),
-                "variability" : Sdf.VariabilityUniform
+                "variability" : Sdf.VariabilityUniform,
+                "customData" : 
+                {"userDocBrief" : apiPrimDef.GetPropertyDocumentation(
+                    "collection:__INSTANCE_NAME__:includes")}                
             },
             "collection:__INSTANCE_NAME__:excludes" : {
                 "custom" : False,
-                "documentation" : apiPrimDef.GetPropertyDocumentation(
-                    "collection:__INSTANCE_NAME__:excludes"),
-                "variability" : Sdf.VariabilityUniform
+                "variability" : Sdf.VariabilityUniform,
+                "customData" : 
+                {"userDocBrief" : apiPrimDef.GetPropertyDocumentation(
+                    "collection:__INSTANCE_NAME__:excludes")}                
             },
             "collection:__INSTANCE_NAME__:membershipExpression" : {
                 "custom" : False,
                 "default" : None,
                 "typeName" : Sdf.ValueTypeNames.PathExpression,
-                "documentation" : apiPrimDef.GetPropertyDocumentation(
-                    "collection:__INSTANCE_NAME__:membershipExpression"),
-                "variability" : Sdf.VariabilityUniform
+                "variability" : Sdf.VariabilityUniform,
+                "customData" : 
+                {"userDocBrief" : apiPrimDef.GetPropertyDocumentation(
+                    "collection:__INSTANCE_NAME__:membershipExpression")}                
             }
         }
 

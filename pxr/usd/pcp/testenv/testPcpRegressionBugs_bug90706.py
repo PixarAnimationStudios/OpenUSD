@@ -14,7 +14,7 @@ import unittest
 
 class testPcpRegressionBugs_bug90706(unittest.TestCase):
     def test_Basic(self):
-        rootLayer = Sdf.Layer.FindOrOpen('bug90706/root.sdf')
+        rootLayer = Sdf.Layer.FindOrOpen('bug90706/root.usda')
         pcpCache = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
         
         (index, err) = pcpCache.ComputePrimIndex('/Sarah/EmptyPrim')

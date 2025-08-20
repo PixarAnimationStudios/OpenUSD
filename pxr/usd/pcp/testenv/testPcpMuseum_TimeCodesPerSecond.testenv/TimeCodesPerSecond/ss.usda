@@ -1,0 +1,15 @@
+#usda 1.0
+(
+)
+
+def "SS1" 
+(
+    prepend references = [
+        @./ref.usda@</Ref> (offset = 10.0; scale = 2.0),
+        @./ref_48tcps.usda@</Ref> (offset = 10.0; scale = 2.0),
+        @./ref_24tcps_12fps.usda@</Ref> (offset = 10.0; scale = 2.0),
+        @./ref_12fps.usda@</Ref> (offset = 10.0; scale = 2.0)
+    ]
+)
+{
+}

@@ -26,7 +26,7 @@ def GetPluginIdFromArgument(argumentString):
 
     from pxr import UsdImagingGL
     for p in UsdImagingGL.Engine.GetRendererPlugins():
-        if argumentString == UsdImagingGL.Engine.GetRendererDisplayName(p):
+        if argumentString == UsdImagingGL.Engine.GetRendererDisplayName(p) or argumentString == p:
             return p
     return None
 
@@ -46,7 +46,11 @@ def AddCmdlineArgs(argsParser, altHelpText=''):
             'Hydra renderer plugin to use when generating images. "GL" and '
             '"Storm" currently alias to the same renderer, Storm.')
 
-    renderers = GetAllPluginArguments()
+    class RendererChoices(list):
+        def __contains__(self, other):
+            return super().__contains__(other) or UsdImagingGL.Engine.GetRendererPlugins().__contains__(other)
+
+    renderers = RendererChoices(GetAllPluginArguments())
     # "GL" is still (unfortunately) the offical display name for Storm, but 
     # we've hacked UsdImagingGLEngine::GetRendererDisplayName to instead 
     # return "Storm" for the HdStormRendererPlugin. We still wish to support 

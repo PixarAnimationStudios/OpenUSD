@@ -261,7 +261,7 @@ Usd_DescribePrimData(const Usd_PrimData *p, SdfPath const &proxyPrimPath)
 void
 Usd_ThrowExpiredPrimAccessError(const Usd_PrimData *p)
 {
-    TF_THROW(UsdExpiredPrimAccessError,
+    PXR_TF_THROW(UsdExpiredPrimAccessError,
              TfStringPrintf(
                  "Used %s", Usd_DescribePrimData(p, SdfPath()).c_str()));
 }

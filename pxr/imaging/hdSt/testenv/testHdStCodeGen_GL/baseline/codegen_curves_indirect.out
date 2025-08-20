@@ -316,6 +316,13 @@ float GetLightingBlendAmount() {
     return 1;
 #endif
 }
+float GetLinearExposure() {
+#if defined(HD_HAS_linearExposure)
+    return HdGet_linearExposure();
+#else
+    return 1;
+#endif
+}
 vec4  GetViewport() {
 #if defined(HD_HAS_viewport)
     return HdGet_viewport();
@@ -939,14 +946,14 @@ float HdGet_faceVisibility() { return HdGet_faceVisibility(0); }
 float HdGetScalar_faceVisibility(int localIndex) { return HdGet_faceVisibility(localIndex); }
 float HdGetScalar_faceVisibility() { return HdGet_faceVisibility(0); }
 vec3 HdGet_points(int localIndex) {
-  int index = gl_InvocationID;
+  int index = gl_InvocationID + localIndex;
   return vec3(inPrimvars[index].points);
 }
 vec3 HdGet_points() { return HdGet_points(0); }
 float HdGetScalar_points(int localIndex) { return HdGet_points(localIndex).x; }
 float HdGetScalar_points() { return HdGet_points(0).x; }
 vec3 HdGet_normals(int localIndex) {
-  int index = gl_InvocationID;
+  int index = gl_InvocationID + localIndex;
   return vec3(inPrimvars[index].normals);
 }
 vec3 HdGet_normals() { return HdGet_normals(0); }
@@ -1020,6 +1027,13 @@ vec3 GetPositionInWorldSpace(vec3 windowRelativeCoord)
 float GetLightingBlendAmount() {
 #if defined(HD_HAS_lightingBlendAmount)
     return HdGet_lightingBlendAmount();
+#else
+    return 1;
+#endif
+}
+float GetLinearExposure() {
+#if defined(HD_HAS_linearExposure)
+    return HdGet_linearExposure();
 #else
     return 1;
 #endif
@@ -1108,6 +1122,29 @@ struct CurveData
     vec3 Neye[4];
 };
 
+float WorldToPixelWidth(MAT4 projMat, float posZ)
+{
+    // If any screen space width operations are required, compute the
+    // conversion factor from world units to screen pixels at this curve tess
+    // position. Critically, this procedure does not rely on the thickening
+    // 'direction' vector, which may point out of the image plane and have
+    // zero apparent screen-space length in some circumstances.
+    //
+    // This procedure is correct for both perspective and ortho cameras. It is a
+    // boiled-down x-only expression of the projected pixel length of a
+    // hypothetical unit X vector in eye space, and can be derived by writing a
+    // projection matrix transforming (1,0,0,1) and performing the usual
+    // division by w. Since the viewport is 2 NDC units across, we take half the
+    // viewportSizeX. The division is by -position.z for perspective projections
+    // and by 1 for ortho projections, using entries 2,3 and 3,3 to select
+    // which. See articles on the forms of these projection matrices for more
+    // info.
+    float x = projMat[0][0];
+    float w = posZ * projMat[2][3] + projMat[3][3];
+    float viewportSizeX = GetViewport().z;
+    return abs((viewportSizeX * 0.5) * (x / w));
+}
+
 
 
 void SetTessFactors(float out0, float out1, float out2, float out3,
@@ -1136,12 +1173,44 @@ float GetPixelToTessRatio()
     return 20.0;
 }
 
+float TessWidthFromScreenSize(float screenSpaceSize)
+{
+    return clamp(screenSpaceSize / GetPixelToTessRatio(), 1.0, GetMaxTess());
+}
+
+float TessLengthFromScreenSize(float screenSpaceSize)
+{
+    return clamp(screenSpaceSize / GetPixelToTessRatio(), 0.0, GetMaxTess());
+}
+
 vec2 projectToScreen(MAT4 projMat, vec4 P, vec2 screen_size)
 {
     vec4 res = vec4(projMat * P);
     res /= res.w;
     return (clamp(res.xy, -1.3f, 1.3f) + 1.0f) * (screen_size * 0.5f);
 }
+
+#ifdef HD_HAS_widths
+float GetScreenSpaceWidth(int index, CurveData vertexData, MAT4 projMat)
+{
+    float width = HdGet_widths(index);
+
+#ifdef HD_HAS_screenSpaceWidths
+    bool screenSpaceWidths = HdGet_screenSpaceWidths(index);
+#else
+    bool screenSpaceWidths = false;
+#endif
+    if (!screenSpaceWidths) {
+        width = WorldToPixelWidth(projMat, vertexData.Peye[index].z) * width;
+    }
+
+#ifdef HD_HAS_minScreenSpaceWidths
+    width = max(width, HdGet_minScreenSpaceWidths(index));
+#endif
+
+    return width;
+}
+#endif
 
 
 
@@ -1181,11 +1250,9 @@ void determineLODSettings(CurveData vertexData)
     vec2 v2 = projectToScreen(projMat, vertexData.Peye[2], screen_size);
     vec2 v3 = projectToScreen(projMat, vertexData.Peye[3], screen_size);
 
-    float maxTess = GetMaxTess();
-
     // Need to handle off screen
     float dist = distance(v0, v1) + distance(v1, v2) + distance(v2, v3);
-    float level = clamp(dist / GetPixelToTessRatio(), 0.0f, maxTess);
+    float level = TessLengthFromScreenSize(dist);
 
     SetTessFactors(1.0f, level, 0.0f, 0.0f, 0.0f, 0.0f);
 }
@@ -1544,6 +1611,13 @@ float GetLightingBlendAmount() {
     return 1;
 #endif
 }
+float GetLinearExposure() {
+#if defined(HD_HAS_linearExposure)
+    return HdGet_linearExposure();
+#else
+    return 1;
+#endif
+}
 vec4  GetViewport() {
 #if defined(HD_HAS_viewport)
     return HdGet_viewport();
@@ -1647,6 +1721,29 @@ struct CurveData
     vec4 Peye[4];
     vec3 Neye[4];
 };
+
+float WorldToPixelWidth(MAT4 projMat, float posZ)
+{
+    // If any screen space width operations are required, compute the
+    // conversion factor from world units to screen pixels at this curve tess
+    // position. Critically, this procedure does not rely on the thickening
+    // 'direction' vector, which may point out of the image plane and have
+    // zero apparent screen-space length in some circumstances.
+    //
+    // This procedure is correct for both perspective and ortho cameras. It is a
+    // boiled-down x-only expression of the projected pixel length of a
+    // hypothetical unit X vector in eye space, and can be derived by writing a
+    // projection matrix transforming (1,0,0,1) and performing the usual
+    // division by w. Since the viewport is 2 NDC units across, we take half the
+    // viewportSizeX. The division is by -position.z for perspective projections
+    // and by 1 for ortho projections, using entries 2,3 and 3,3 to select
+    // which. See articles on the forms of these projection matrices for more
+    // info.
+    float x = projMat[0][0];
+    float w = posZ * projMat[2][3] + projMat[3][3];
+    float viewportSizeX = GetViewport().z;
+    return abs((viewportSizeX * 0.5) * (x / w));
+}
 
 
 
@@ -2269,6 +2366,13 @@ float GetLightingBlendAmount() {
     return 1;
 #endif
 }
+float GetLinearExposure() {
+#if defined(HD_HAS_linearExposure)
+    return HdGet_linearExposure();
+#else
+    return 1;
+#endif
+}
 vec4  GetViewport() {
 #if defined(HD_HAS_viewport)
     return HdGet_viewport();
@@ -2555,6 +2659,9 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
                                          Neye,
                                          shadingColor);
 #endif
+
+        // Modify the shaded color by camera exposure.
+        shadingColor.rgb *= GetLinearExposure();
 
         reprColor.rgb = reprStyle.useSurfaceShaderColor ?
                         shadingColor.rgb :

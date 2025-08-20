@@ -134,8 +134,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (refined)                                   \
     (refinedWire)                               \
     (refinedWireOnSurf)                         \
+    (refinedSolidWireOnSurf)                    \
     (wire)                                      \
-    (wireOnSurf)
+    (wireOnSurf)                                \
+    (solidWireOnSurf)
 
 #define HD_CULLSTYLE_TOKENS \
     (dontCare) \
@@ -205,6 +207,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (cullStyle)                                 \
     (drawRange)                                 \
     (environmentMap)                            \
+    (linearExposure)                            \
     (displacementShader)                        \
     (fragmentShader)                            \
     (geometryShader)                            \
@@ -264,11 +267,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_RPRIMTYPE_TOKENS                     \
     /* Rprims */                                \
     (capsule)                                   \
-    (capsule_1)                                 \
     (cone)                                      \
     (cube)                                      \
     (cylinder)                                  \
-    (cylinder_1)                                \
     (geomSubset)                                \
     (mesh)                                      \
     (tetMesh)                                   \
@@ -435,6 +436,7 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (enableShadows)                                   \
     (enableSceneMaterials)                            \
     (enableSceneLights)                               \
+    (enableExposureCompensation)                      \
     (domeLightCameraVisibility)                       \
     /* Raytracer sampling settings */                 \
     (convergedVariance)                               \

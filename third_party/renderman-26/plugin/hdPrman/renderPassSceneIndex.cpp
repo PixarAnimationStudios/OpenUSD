@@ -154,6 +154,114 @@ HdPrman_RenderPassSceneIndex::_RenderPassState::DoesPrune(
     return pruneEval && pruneEval->Match(primPath);
 }
 
+// Prim data source for applying render pass overrides to a prim.
+class HdPrman_RenderPass_PrimDataSource : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(HdPrman_RenderPass_PrimDataSource);
+
+    TfTokenVector GetNames() override {
+        return _prim.dataSource->GetNames();
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+private:
+    HdPrman_RenderPass_PrimDataSource(
+        HdPrman_RenderPassSceneIndexConstPtr const& sceneIndex,
+        SdfPath const& primPath,
+        HdSceneIndexPrim const& prim)
+     : _sceneIndex(sceneIndex)
+     , _primPath(primPath)
+     , _prim(prim)
+    {
+    }
+
+    // This dataSource accesses scene state tracked by the scene index.
+    const HdPrman_RenderPassSceneIndexConstPtr _sceneIndex;
+    const SdfPath _primPath;
+    const HdSceneIndexPrim _prim;
+};
+
+HdDataSourceBaseHandle
+HdPrman_RenderPass_PrimDataSource::Get(const TfToken &name)
+{
+    if (!_sceneIndex || !_prim.dataSource) {
+        return nullptr;
+    }
+
+    // State from the scene index.
+    HdPrman_RenderPassSceneIndex::_RenderPassState const& renderPass =
+        _sceneIndex->_activeRenderPass;
+
+    // Primvars
+    if (name == HdPrimvarsSchema::GetSchemaToken()) {
+        HdContainerDataSourceHandle primvarsDs =
+            HdPrimvarsSchema::GetFromParent(_prim.dataSource).GetContainer();
+        HdContainerDataSourceEditor primvarEditor(primvarsDs);
+
+        // Camera Visibility -> ri:visibility:camera
+        //
+        // Renderable prims that are camera-visible in the upstream scene index,
+        // but excluded from the pass cameraVisibility collection, get their
+        // riAttributesVisibilityCamera primvar overriden to 0.
+        //
+        if (renderPass.DoesOverrideCameraVis(_primPath, _prim)) {
+            static const HdContainerDataSourceHandle invisDs =
+                HdPrimvarSchema::Builder()
+                    .SetPrimvarValue(
+                        HdRetainedTypedSampledDataSource<int>::New(0))
+                    .SetInterpolation(
+                        HdPrimvarSchema::BuildInterpolationDataSource(
+                            HdPrimvarSchemaTokens->constant))
+                    .Build();
+            primvarEditor.Overlay(
+                HdDataSourceLocator(_tokens->riAttributesVisibilityCamera),
+                invisDs);
+        }
+
+        // Matte -> ri:Matte
+        //
+        // If the matte pattern matches this prim, set ri:Matte=1.
+        // Matte only applies to geometry types.
+        // We do not bother to check if the upstream prim already
+        // has matte set since that is essentially never the case.
+        //
+        if (renderPass.DoesOverrideMatte(_primPath, _prim)) {
+            static const HdContainerDataSourceHandle matteDs =
+                HdPrimvarSchema::Builder()
+                    .SetPrimvarValue(
+                        HdRetainedTypedSampledDataSource<int>::New(1))
+                    .SetInterpolation(HdPrimvarSchema::
+                        BuildInterpolationDataSource(
+                            HdPrimvarSchemaTokens->constant))
+                    .Build();
+            primvarEditor.Overlay(
+                HdDataSourceLocator(_tokens->riAttributesRiMatte),
+                matteDs);
+        }
+
+        return primvarEditor.Finish();
+    }
+
+    // Render Visibility -> HdVisibilitySchema
+    //
+    // Renderable prims that are visible in the upstream scene index,
+    // but excluded from the pass renderVisibility collection, get their
+    // visibility overriden to 0.
+    //
+    if (name == HdVisibilitySchema::GetSchemaToken()) {
+        if (renderPass.DoesOverrideVis(_primPath, _prim)) {
+            return HdVisibilitySchema::Builder()
+                .SetVisibility(
+                    HdRetainedTypedSampledDataSource<bool>::New(false))
+                .Build();
+        }
+    }
+
+    return _prim.dataSource->Get(name);
+}
+
 HdSceneIndexPrim 
 HdPrman_RenderPassSceneIndex::GetPrim(
     const SdfPath &primPath) const
@@ -169,78 +277,10 @@ HdPrman_RenderPassSceneIndex::GetPrim(
 
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
 
-    // Temp storage for overriding primvars.
-    TfSmallVector<TfToken, 2> primvarNames;
-    TfSmallVector<HdDataSourceBaseHandle, 2> primvarVals;
-
-    // Render Visibility -> HdVisibilitySchema
-    //
-    // Renderable prims that are visible in the upstream scene index,
-    // but excluded from the pass renderVisibility collection, get their
-    // visibility overriden to 0.
-    //
-    if (_activeRenderPass.DoesOverrideVis(primPath, prim)) {
-        static const HdContainerDataSourceHandle invisDs =
-            HdRetainedContainerDataSource::New(
-                HdVisibilitySchema::GetSchemaToken(),
-                HdVisibilitySchema::Builder()
-                    .SetVisibility(
-                        HdRetainedTypedSampledDataSource<bool>::New(0))
-                    .Build());
-        prim.dataSource =
-            HdOverlayContainerDataSource::New(invisDs, prim.dataSource);
-    }
-
-    // Camera Visibility -> ri:visibility:camera
-    //
-    // Renderable prims that are camera-visible in the upstream scene index,
-    // but excluded from the pass cameraVisibility collection, get their
-    // riAttributesVisibilityCamera primvar overriden to 0.
-    //
-    if (_activeRenderPass.DoesOverrideCameraVis(primPath, prim)) {
-        static const HdContainerDataSourceHandle cameraInvisDs =
-            HdPrimvarSchema::Builder()
-                .SetPrimvarValue(
-                    HdRetainedTypedSampledDataSource<int>::New(0))
-                .SetInterpolation(
-                    HdPrimvarSchema::BuildInterpolationDataSource(
-                        HdPrimvarSchemaTokens->constant))
-                .Build();
-        primvarNames.push_back(_tokens->riAttributesVisibilityCamera);
-        primvarVals.push_back(cameraInvisDs);
-    }
-
-    // Matte -> ri:Matte
-    //
-    // If the matte pattern matches this prim, set ri:Matte=1.
-    // Matte only applies to geometry types.
-    // We do not bother to check if the upstream prim already
-    // has matte set since that is essentially never the case.
-    //
-    if (_activeRenderPass.DoesOverrideMatte(primPath, prim)) {
-        static const HdContainerDataSourceHandle matteDs =
-            HdPrimvarSchema::Builder()
-                .SetPrimvarValue(
-                    HdRetainedTypedSampledDataSource<int>::New(1))
-                .SetInterpolation(HdPrimvarSchema::
-                    BuildInterpolationDataSource(
-                        HdPrimvarSchemaTokens->constant))
-                .Build();
-        primvarNames.push_back(_tokens->riAttributesRiMatte);
-        primvarVals.push_back(matteDs);
-    }
-
-    // Apply any accumulated primvar overrides.
-    if (!primvarNames.empty()) {
-        prim.dataSource =
-            HdOverlayContainerDataSource::New(
-                HdRetainedContainerDataSource::New(
-                    HdPrimvarsSchema::GetSchemaToken(),
-                    HdPrimvarsSchema::BuildRetained(
-                        primvarNames.size(),
-                        primvarNames.data(),
-                        primvarVals.data())),
-                prim.dataSource);
+    if (prim.dataSource) {
+        // All other overrides happen in the prim-level data source.
+        prim.dataSource = HdPrman_RenderPass_PrimDataSource::New(
+            TfCreateWeakPtr(this), primPath, prim);
     }
 
     return prim;

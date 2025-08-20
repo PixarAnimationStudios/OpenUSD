@@ -40,11 +40,9 @@ class TestUsdAppUtilsCmdlineArgs(unittest.TestCase):
         """
         UsdAppUtils.cameraArgs.AddCmdlineArgs(self._parser)
 
-        # By default, the camera arg should contain the primary camera name.
+        # By default, the camera arg should contain None.
         args = self._parser.parse_args([])
-        self.assertEqual(type(args.camera), Sdf.Path)
-        self.assertEqual(args.camera.pathString,
-            UsdUtils.GetPrimaryCameraName())
+        self.assertEqual(args.camera, None)
 
         args = self._parser.parse_args(['--camera', 'MainCamera'])
         self.assertEqual(type(args.camera), Sdf.Path)

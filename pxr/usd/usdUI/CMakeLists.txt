@@ -42,3 +42,17 @@ pxr_register_test(testUsdUISceneGraphPrim
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUISceneGraphPrim"
 )
+
+pxr_build_test(testUsdUIAccessibilityAPI
+    LIBRARIES
+        tf
+        usd
+        usdUI
+    CPPFILES
+        testenv/testUsdUIAccessibilityAPI.cpp
+)
+
+pxr_register_test(testUsdUIAccessibilityAPI
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUIAccessibilityAPI"
+    EXPECTED_RETURN_CODE 0
+)

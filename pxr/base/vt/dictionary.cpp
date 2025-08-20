@@ -66,15 +66,17 @@ VtDictionary::size_type VtDictionary::erase(const string& key) {
     return _dictMap ? _dictMap->erase(key) : 0;
 }
 
-void VtDictionary::erase(iterator it) {
-    _dictMap->erase(it.GetUnderlyingIterator(_dictMap.get()));
+VtDictionary::iterator VtDictionary::erase(iterator it) {
+    return iterator(_dictMap.get(),
+                    _dictMap->erase(it.GetUnderlyingIterator(_dictMap.get())));
 }
 
-void VtDictionary::erase(iterator f, iterator l) {
+VtDictionary::iterator VtDictionary::erase(iterator f, iterator l) {
     if (!_dictMap)
-        return;
-    _dictMap->erase(f.GetUnderlyingIterator(_dictMap.get()),
-        l.GetUnderlyingIterator(_dictMap.get()));
+        return iterator();
+    return iterator(_dictMap.get(),
+                    _dictMap->erase(f.GetUnderlyingIterator(_dictMap.get()),
+                                    l.GetUnderlyingIterator(_dictMap.get())));
 }
 
 void VtDictionary::clear() {

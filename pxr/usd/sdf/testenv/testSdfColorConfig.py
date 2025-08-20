@@ -11,7 +11,7 @@ import unittest
 class TestSdfColorConfig(unittest.TestCase):
     # Test the color config API on SdfLayer
     def test_LayerColorConfig(self):
-        filePath = 'testSdfColorConfig.testenv/colorConfig.sdf'
+        filePath = 'testSdfColorConfig.testenv/colorConfig.usda'
         layer = Sdf.Layer.FindOrOpen(filePath)
         self.assertTrue(layer is not None)
 
@@ -32,7 +32,7 @@ class TestSdfColorConfig(unittest.TestCase):
         self.assertFalse(layer.HasColorConfiguration())
 
     def test_AttrColorSpace(self):
-        filePath = 'testSdfColorConfig.testenv/colorSpace.sdf'
+        filePath = 'testSdfColorConfig.testenv/colorSpace.usda'
         layer = Sdf.Layer.FindOrOpen(filePath)
         self.assertTrue(layer is not None)
 

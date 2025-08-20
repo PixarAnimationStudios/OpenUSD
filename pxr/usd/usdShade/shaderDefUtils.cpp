@@ -36,21 +36,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 /* static */
-NdrNodeDiscoveryResultVec 
-UsdShadeShaderDefUtils::GetNodeDiscoveryResults(
-    const UsdShadeShader &shaderDef,
-    const std::string &sourceUri)
-{
-    SdrShaderNodeDiscoveryResultVec sdrVec = GetDiscoveryResults(
-        shaderDef, sourceUri);
-    NdrNodeDiscoveryResultVec ndrVec;
-    for (const SdrShaderNodeDiscoveryResult& sdrRes : sdrVec) {
-        ndrVec.push_back(sdrRes.ToNdrNodeDiscoveryResult());
-    }
-    return ndrVec;
-}
-
-/* static */
 SdrShaderNodeDiscoveryResultVec 
 UsdShadeShaderDefUtils::GetDiscoveryResults(
     const UsdShadeShader &shaderDef,
@@ -337,7 +322,7 @@ _CreateSdrShaderProperty(
         VtTokenArray attrAllowedTokens;
         shaderProperty.GetAttr().GetMetadata(SdfFieldKeys->AllowedTokens, 
                 &attrAllowedTokens);
-        for (const TfToken &token : attrAllowedTokens) {
+        for (const TfToken &token : attrAllowedTokens.AsConst()) {
             options.emplace_back(std::make_pair(token, TfToken()));
         }
     }
@@ -361,19 +346,6 @@ _CreateSdrShaderProperty(
             isOutput,
             arraySize,
             metadata, hints, options));
-}
-
-/*static*/
-NdrPropertyUniquePtrVec 
-UsdShadeShaderDefUtils::GetShaderProperties(
-    const UsdShadeConnectableAPI &shaderDef)
-{
-    NdrPropertyUniquePtrVec vec;
-    SdrShaderPropertyUniquePtrVec sdrVec = GetProperties(shaderDef);
-    for (SdrShaderPropertyUniquePtr& sdrProp: sdrVec) {
-        vec.push_back(NdrPropertyUniquePtr(std::move(sdrProp)));
-    }
-    return vec;
 }
 
 /*static*/

@@ -1,17 +1,17 @@
-Loading @TrickyVariantWeakerSelection3/root.sdf@
+Loading @TrickyVariantWeakerSelection3/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Model>
 
 Prim Stack:
-    root.sdf             /Model
-    root.sdf             /Model{modelComplexity=full}
-    geo.sdf              /Model
-    geo.sdf              /Model{K_hierarchy=full}
+    root.usda            /Model
+    root.usda            /Model{modelComplexity=full}
+    geo.usda             /Model
+    geo.usda             /Model{K_hierarchy=full}
 
 Variant Selections:
     {K_hierarchy = full}

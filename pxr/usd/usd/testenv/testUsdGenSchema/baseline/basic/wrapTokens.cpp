@@ -127,6 +127,11 @@ void wrapUsdContrivedTokens()
     _ADD_TOKEN(cls, test_MultipleApplyTemplate_);
     _ADD_TOKEN(cls, test_MultipleApplyTemplate_TestAttrOne);
     _ADD_TOKEN(cls, test_MultipleApplyTemplate_TestAttrTwo);
+    _ADD_TOKEN(cls, testAttrDuplicate);
+    _ADD_TOKEN(cls, testAttrExternal);
+    _ADD_TOKEN(cls, testAttrInternal);
+    _ADD_TOKEN(cls, testAttrOne);
+    _ADD_TOKEN(cls, testAttrTwo);
     _ADD_TOKEN(cls, testingAsset);
     _ADD_TOKEN(cls, testNewVersion);
     _ADD_TOKEN(cls, testNewVersion_MultipleApplyTemplate_TestAttrOne);
@@ -135,6 +140,9 @@ void wrapUsdContrivedTokens()
     _ADD_TOKEN(cls, testo_MultipleApplyTemplate_);
     _ADD_TOKEN(cls, testo_MultipleApplyTemplate_TestAttrOne);
     _ADD_TOKEN(cls, testo_MultipleApplyTemplate_TestAttrTwo);
+    _ADD_TOKEN(cls, testRelDuplicate);
+    _ADD_TOKEN(cls, testRelExternal);
+    _ADD_TOKEN(cls, testRelInternal);
     _ADD_TOKEN(cls, token);
     _ADD_TOKEN(cls, tokenArray);
     _ADD_TOKEN(cls, transform);
@@ -169,7 +177,12 @@ void wrapUsdContrivedTokens()
     _ADD_TOKEN(cls, SingleApplyAPI_1);
     _ADD_TOKEN(cls, TestNoVersion0);
     _ADD_TOKEN(cls, TestNoVersion0_2);
+    _ADD_TOKEN(cls, TestPropertyOrderSingleApplyAPI);
+    _ADD_TOKEN(cls, TestPropertyOrderTyped);
     _ADD_TOKEN(cls, TestPxHairman);
     _ADD_TOKEN(cls, TestPxHairman_1);
+    _ADD_TOKEN(cls, TestReflectedAPIBase);
+    _ADD_TOKEN(cls, TestReflectedExternalAPI);
+    _ADD_TOKEN(cls, TestReflectedInternalAPI);
     _ADD_TOKEN(cls, UsdContrivedNoAlias);
 }

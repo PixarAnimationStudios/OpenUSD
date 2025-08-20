@@ -436,6 +436,15 @@ PcpComputePrimIndex(
     PcpPrimIndexOutputs* outputs,
     ArResolver* pathResolver = NULL);
 
+/// Computes the list of prim specs that contribute opinions for the given
+/// \p primIndex in order from strongest to weakest. This should only be used
+/// when it is needed to be known what all the specs are that contribute to the
+/// prim index and it makes sense to potentially cache the result. This should
+/// never be used for value resolution as it is ineffecient for that purpose.
+PCP_API
+SdfPrimSpecHandleVector
+PcpComputePrimStackForPrimIndex(const PcpPrimIndex &primIndex);
+
 // Returns true if \p index should be recomputed due to changes to
 // any computed asset paths that were used to find or open layers
 // when originally composing \p index. This may be due to scene

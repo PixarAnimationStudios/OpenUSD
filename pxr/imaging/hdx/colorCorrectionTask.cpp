@@ -1151,7 +1151,8 @@ HdxColorCorrectionTask::Execute(HdTaskContext* ctx)
     // However, the intermediate color-corrected buffer is in the correct layout
     // ie: Color Attachment Optimal.
     // So, no layout transition there.
-    aovTexture->SubmitLayoutChange(HgiTextureUsageBitsShaderRead);
+    const auto oldLayout =
+        aovTexture->SubmitLayoutChange(HgiTextureUsageBitsShaderRead);
 
     if (!TF_VERIFY(_CreateBufferResources())) {
         return;
@@ -1175,7 +1176,7 @@ HdxColorCorrectionTask::Execute(HdTaskContext* ctx)
     // is converted to a Color Attachment Optimal layout.
     // Hence, preserving the state atomicity of this pass.
     // Otherwise, it's business as usual.
-    aovTexture->SubmitLayoutChange(HgiTextureUsageBitsColorTarget);
+    aovTexture->SubmitLayoutChange(oldLayout);
 
     // Toggle color and colorIntermediate
     _ToggleRenderTarget(ctx);

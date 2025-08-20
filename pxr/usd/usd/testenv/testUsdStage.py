@@ -505,20 +505,30 @@ class TestUsdStage(unittest.TestCase):
             self.assertTrue(x)
 
             self.assertEqual(foo, s.GetPrimAtPath('/Foo'))
+            self.assertEqual(foo, s.GetObjectAtPath('/Foo'))
             self.assertEqual(y, s.GetPropertyAtPath('/Foo.y'))
+            self.assertEqual(y, s.GetObjectAtPath('/Foo.y'))
             self.assertEqual(x, s.GetPropertyAtPath('/Foo.x'))
+            self.assertEqual(x, s.GetObjectAtPath('/Foo.x'))
             self.assertEqual(y, s.GetRelationshipAtPath('/Foo.y'))
+            self.assertEqual(y, s.GetObjectAtPath('/Foo.y'))
             self.assertEqual(x, s.GetAttributeAtPath('/Foo.x'))
-    
-            self.assertFalse(s.GetPropertyAtPath('/Foo'))
+            self.assertEqual(x, s.GetObjectAtPath('/Foo.x'))
+
             self.assertFalse(s.GetAttributeAtPath('/Foo.y'))
             self.assertFalse(s.GetRelationshipAtPath('/Foo.x'))
+
+            # This previously returned `/Foo.x` due to a bug.
+            self.assertFalse(s.GetObjectAtPath('/Foo.rel[/targ].x'))
 
             self.assertFalse(s.GetAttributeAtPath(Sdf.Path.emptyPath))
             self.assertFalse(s.GetRelationshipAtPath(Sdf.Path.emptyPath))
             self.assertFalse(s.GetPropertyAtPath(Sdf.Path.emptyPath))
             self.assertFalse(s.GetPrimAtPath(Sdf.Path.emptyPath))
             self.assertFalse(s.GetObjectAtPath(Sdf.Path.emptyPath))
+
+            self.assertEqual(s.GetPseudoRoot(), s.GetPrimAtPath('/'))
+            self.assertEqual(s.GetPseudoRoot(), s.GetObjectAtPath('/'))
 
     def test_Save(self):
         for fmt in allFormats:

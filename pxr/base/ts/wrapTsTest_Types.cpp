@@ -7,9 +7,13 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/ts/tsTest_Types.h"
+#include "pxr/base/ts/spline.h"
 #include "pxr/base/tf/pyContainerConversions.h"
+#include "pxr/base/vt/value.h"
 
 #include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/extract.hpp"
 #include <sstream>
 #include <string>
 #include <cstdio>
@@ -43,6 +47,18 @@ _SampleRepr(const TsTest_Sample &sample)
     return result.str();
 }
 
+static 
+TsSpline
+_TestTsSplineToVtValueFromPython(VtValue val) {
+    if (!val.IsHolding<TsSpline>()) {
+        TF_CODING_ERROR("VtValue did not hold a TsSpline.");
+        // Default Spline, but we are interested in the coding error so we
+        // don't care.
+        return TsSpline();
+    }
+
+    return val.UncheckedGet<TsSpline>();
+}
 
 void wrapTsTest_Types()
 {
@@ -54,6 +70,9 @@ void wrapTsTest_Types()
         .def_readwrite("time", &TsTest_Sample::time)
         .def_readwrite("value", &TsTest_Sample::value)
         ;
+
+    def("_TestTsSplineToVtValueFromPython", 
+        _TestTsSplineToVtValueFromPython);
 
     to_python_converter<
         TsTest_SampleVec,

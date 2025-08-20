@@ -1,0 +1,26 @@
+#usda 1.0
+
+over "SetClass"
+{
+    over "Metal"
+    {
+    }
+
+    over "CorrodedMetal"
+    {
+    }
+}
+
+def "Set" (
+    prepend references = @./package.usda@</SetPackage>
+)
+{
+    over "Metal"
+    {
+    }
+
+    over "CorrodedMetal"
+    {
+    }
+}
+

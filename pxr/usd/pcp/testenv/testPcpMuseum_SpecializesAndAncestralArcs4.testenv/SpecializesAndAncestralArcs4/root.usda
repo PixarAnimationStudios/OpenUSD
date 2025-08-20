@@ -1,0 +1,102 @@
+#usda 1.0
+(
+    """
+    This exercises combinations of inherits and specializes arcs
+    along with composition of ancestral opinions.
+
+    The main prims to examine are /Parent/Child and /Parent2/Child.
+    The latter is the same as the former but adds an ancestral
+    specializes arc. The specs that are common between these two
+    prims should be in the same relative order.
+    """
+)
+
+def "Parent" (
+    prepend inherits = </PI>
+    prepend references = @./ref.usda@</PR>
+)
+{
+    over "Child"
+    {
+    }
+
+    over "Sibling"
+    {
+    }
+}
+
+def "Parent2" (
+    prepend inherits = </PI>
+    prepend references = @./ref.usda@</PR>
+    prepend specializes = </PS>
+)
+{
+    over "Child"
+    {
+    }
+
+    over "Sibling"
+    {
+    }
+}
+
+def "PS" (
+    prepend inherits = </PSI>
+)
+{
+    over "Child"
+    {
+    }
+
+    over "Sibling"
+    {
+    }
+}
+
+def "PSI"
+{
+    over "Child"
+    {
+    }
+
+    over "Sibling"
+    {
+    }
+}
+
+def "PI" (
+    prepend specializes = </PIS>
+)
+{
+    over "Child"
+    {
+    }
+
+    over "Sibling"
+    {
+    }
+}
+
+def "PIS" (
+    prepend inherits = </PISI>
+)
+{
+    over "Child"
+    {
+    }
+
+    over "Sibling"
+    {
+    }
+}
+
+def "PISI"
+{
+    over "Child"
+    {
+    }
+
+    over "Sibling"
+    {
+    }
+}

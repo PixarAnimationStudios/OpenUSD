@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    """
+    This case exercises relocation using paths with an
+    embedded variant selection, which are disallowed,
+    both as a source or target of a relocation.
+    """
+    relocates = {
+        </Model_1{vset=vsel}PrimOnlyInVariantSet>: </Model_1/TryOutsideVariantSet>,
+        </Model_1/A/B>: </Model_1{vset=vsel}TryInsideVariantSet>
+    }
+)
+
+def "Model_1" (
+    add references = @./model.usda@</Model>
+)
+{
+}

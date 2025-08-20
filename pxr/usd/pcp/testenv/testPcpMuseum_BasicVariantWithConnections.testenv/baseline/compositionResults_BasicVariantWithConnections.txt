@@ -1,19 +1,19 @@
-Loading @BasicVariantWithConnections/root.sdf@
+Loading @BasicVariantWithConnections/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </main_cam>
 
 Prim Stack:
-    root.sdf             /main_cam
-    camera.sdf           /camera
-    camera.sdf           /camera{projection=perspective}
-    camera_perspective.sdf /camera
-    camera_perspective.sdf /_class_camera
-    camera_perspective.sdf /_class_StdAvarsModel
+    root.usda            /main_cam
+    camera.usda          /camera
+    camera.usda          /camera{projection=perspective}
+    camera_perspective.usda /camera
+    camera_perspective.usda /_class_camera
+    camera_perspective.usda /_class_StdAvarsModel
 
 Variant Selections:
     {projection = perspective}
@@ -25,58 +25,58 @@ Child names:
 Results for composing </main_cam/Lens>
 
 Prim Stack:
-    camera.sdf           /camera{projection=perspective}Lens
-    camera.sdf           /camera{projection=perspective}_localclass_Lens
-    camera_perspective.sdf /camera/Lens
-    camera_perspective.sdf /camera/_localclass_Lens
+    camera.usda          /camera{projection=perspective}Lens
+    camera.usda          /camera{projection=perspective}_localclass_Lens
+    camera_perspective.usda /camera/Lens
+    camera_perspective.usda /camera/_localclass_Lens
 
 Property names:
      ['focus', 'focalLength', 'breathingScale']
 
 Property stacks:
 /main_cam/Lens.breathingScale:
-    camera.sdf           /camera{projection=perspective}Lens.breathingScale
+    camera.usda          /camera{projection=perspective}Lens.breathingScale
 /main_cam/Lens.focalLength:
-    camera.sdf           /camera{projection=perspective}Lens.focalLength
+    camera.usda          /camera{projection=perspective}Lens.focalLength
 /main_cam/Lens.focus:
-    camera.sdf           /camera{projection=perspective}_localclass_Lens.focus
-    camera_perspective.sdf /camera/_localclass_Lens.focus
+    camera.usda          /camera{projection=perspective}_localclass_Lens.focus
+    camera_perspective.usda /camera/_localclass_Lens.focus
 
 ------------------------------------------------------------------------
 Results for composing </main_cam/_localclass_Lens>
 
 Prim Stack:
-    camera.sdf           /camera{projection=perspective}_localclass_Lens
-    camera_perspective.sdf /camera/_localclass_Lens
+    camera.usda          /camera{projection=perspective}_localclass_Lens
+    camera_perspective.usda /camera/_localclass_Lens
 
 Property names:
      ['focus']
 
 Property stacks:
 /main_cam/_localclass_Lens.focus:
-    camera.sdf           /camera{projection=perspective}_localclass_Lens.focus
-    camera_perspective.sdf /camera/_localclass_Lens.focus
+    camera.usda          /camera{projection=perspective}_localclass_Lens.focus
+    camera_perspective.usda /camera/_localclass_Lens.focus
 
 ------------------------------------------------------------------------
 Results for composing </main_cam/Rig>
 
 Prim Stack:
-    camera.sdf           /camera{projection=perspective}Rig
-    camera_perspective.sdf /camera/Rig
+    camera.usda          /camera{projection=perspective}Rig
+    camera_perspective.usda /camera/Rig
 
 Property names:
      ['controls', 'focusDistance', 'focalLength', 'breathingScale']
 
 Property stacks:
 /main_cam/Rig.breathingScale:
-    camera.sdf           /camera{projection=perspective}Rig.breathingScale
+    camera.usda          /camera{projection=perspective}Rig.breathingScale
 /main_cam/Rig.controls:
-    camera.sdf           /camera{projection=perspective}Rig.controls
-    camera_perspective.sdf /camera/Rig.controls
+    camera.usda          /camera{projection=perspective}Rig.controls
+    camera_perspective.usda /camera/Rig.controls
 /main_cam/Rig.focalLength:
-    camera.sdf           /camera{projection=perspective}Rig.focalLength
+    camera.usda          /camera{projection=perspective}Rig.focalLength
 /main_cam/Rig.focusDistance:
-    camera_perspective.sdf /camera/Rig.focusDistance
+    camera_perspective.usda /camera/Rig.focusDistance
 
 Relationship targets:
 /main_cam/Rig.controls:

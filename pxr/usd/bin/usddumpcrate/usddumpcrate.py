@@ -38,11 +38,11 @@ def main():
 
     args = parser.parse_args()
 
-    print('Usd crate software version', Usd.CrateInfo().GetSoftwareVersion())
+    print('Usd crate software version', Sdf.CrateInfo().GetSoftwareVersion())
 
     for fname in args.inputFiles:
         try:
-            info = Usd.CrateInfo.Open(fname)
+            info = Sdf.CrateInfo.Open(fname)
             if not info:
                 Err('Failed to read %s' % fname)
                 continue

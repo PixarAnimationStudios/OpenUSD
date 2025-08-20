@@ -27,6 +27,8 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/thisPlugin.h"
 #include <MaterialXCore/Util.h>
 #include <MaterialXFormat/Util.h>
 #include <MaterialXFormat/XmlIo.h>
@@ -39,11 +41,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
+std::mutex documentCacheMutex;
 using DocumentCache = std::map<std::string, mx::DocumentPtr>;
 
 static
 DocumentCache&
-_GetCache()
+_GetDocumentCache()
 {
     static DocumentCache cache;
     return cache;
@@ -180,6 +183,18 @@ _ComputeStdlibSearchPaths()
     stdlibSearchPaths =
         _MergeSearchPaths(stdlibSearchPaths, { PXR_MATERIALX_STDLIB_DIR });
 #endif
+
+    // The MaterialX plugin contains the MaterialX standard
+    // library under the libraries location in its resource folder
+    // Append it as the lowest priority path so it can be overridden
+    // with environment variables
+    static PlugPluginPtr plugin = PLUG_THIS_PLUGIN;
+    const std::string resourceMtlxLibrary = PlugFindPluginResource(plugin,
+            "libraries");
+    if (! resourceMtlxLibrary.empty()) {
+        stdlibSearchPaths =
+            _MergeSearchPaths(stdlibSearchPaths, { resourceMtlxLibrary });
+    }
     return stdlibSearchPaths;
 }
 
@@ -352,15 +367,17 @@ UsdMtlxReadDocument(const std::string& resolvedPath)
 mx::ConstDocumentPtr 
 UsdMtlxGetDocumentFromString(const std::string &mtlxXml)
 {
+    std::lock_guard<std::mutex> docLoc(documentCacheMutex);
+
     const std::string hashStr =
         std::to_string(std::hash<std::string>{}(mtlxXml));
     // Look up in the cache, inserting a null document if missing.
-    auto insertResult = _GetCache().emplace(hashStr, nullptr);
-    auto& document = insertResult.first->second;
-    if (insertResult.second) {       
+    auto insertResult = _GetDocumentCache().emplace(hashStr, nullptr);
+    mx::DocumentPtr& document = insertResult.first->second;
+    if (insertResult.second) {
         // cache miss
         try {
-            auto doc = mx::createDocument();
+            mx::DocumentPtr doc = mx::createDocument();
             _ReadFromString(doc, mtlxXml);
             document = doc;
         }
@@ -403,9 +420,11 @@ _ImportLibraries(const SdrStringVec& searchPaths, mx::Document* document)
 mx::ConstDocumentPtr
 UsdMtlxGetDocument(const std::string& resolvedUri)
 {
+    std::lock_guard<std::mutex> docLoc(documentCacheMutex);
+
     // Look up in the cache, inserting a null document if missing.
-    auto insertResult = _GetCache().emplace(resolvedUri, nullptr);
-    auto& document = insertResult.first->second;
+    auto insertResult = _GetDocumentCache().emplace(resolvedUri, nullptr);
+    mx::DocumentPtr& document = insertResult.first->second;
     if (!insertResult.second) {
         // Cache hit.
         return document;

@@ -1,22 +1,22 @@
-Loading @PayloadsAndAncestralArcs3/root.sdf@
+Loading @PayloadsAndAncestralArcs3/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Model>
 
 Prim Stack:
-    root.sdf             /Model
+    root.usda            /Model
 
 ------------------------------------------------------------------------
 Results for composing </ReferencePayloadedModel>
 
 Prim Stack:
-    root.sdf             /ReferencePayloadedModel
-    model.sdf            /Model
-    model_payload.sdf    /Model
+    root.usda            /ReferencePayloadedModel
+    model.usda           /Model
+    model_payload.usda   /Model
 
 Child names:
      ['Test']
@@ -28,7 +28,7 @@ Prohibited child names:
 Results for composing </ReferencePayloadedModel/Test>
 
 Prim Stack:
-    model.sdf            /Model/Test
+    model.usda           /Model/Test
 
 Child names:
      ['Anim']
@@ -37,13 +37,13 @@ Child names:
 Results for composing </ReferencePayloadedModel/Test/Anim>
 
 Prim Stack:
-    model_payload.sdf    /Model/Anim
+    model_payload.usda   /Model/Anim
 
 ------------------------------------------------------------------------
 Results for composing </PayloadedModel>
 
 Prim Stack:
-    root.sdf             /PayloadedModel
+    root.usda            /PayloadedModel
 
 Child names:
      ['Test']
@@ -55,7 +55,7 @@ Prohibited child names:
 Results for composing </PayloadedModel/Test>
 
 Prim Stack:
-    root.sdf             /PayloadedModel/Test
+    root.usda            /PayloadedModel/Test
 
 Child names:
      ['Anim']
@@ -69,9 +69,9 @@ Prim Stack:
 Results for composing </InternalReferencePayloadedModel>
 
 Prim Stack:
-    root.sdf             /InternalReferencePayloadedModel
-    root.sdf             /PayloadedModel
-    model_payload.sdf    /Model
+    root.usda            /InternalReferencePayloadedModel
+    root.usda            /PayloadedModel
+    model_payload.usda   /Model
 
 Child names:
      ['Test']
@@ -83,7 +83,7 @@ Prohibited child names:
 Results for composing </InternalReferencePayloadedModel/Test>
 
 Prim Stack:
-    root.sdf             /PayloadedModel/Test
+    root.usda            /PayloadedModel/Test
 
 Child names:
      ['Anim']
@@ -92,5 +92,5 @@ Child names:
 Results for composing </InternalReferencePayloadedModel/Test/Anim>
 
 Prim Stack:
-    model_payload.sdf    /Model/Anim
+    model_payload.usda   /Model/Anim
 

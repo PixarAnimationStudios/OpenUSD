@@ -1099,36 +1099,7 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsAdded(
             // declares it to be.
 
             if (_IsMeshLight(prim) && _HasValidMaterialNetwork(prim)) {
-                const bool meshVisible = _GetMaterialSyncMode(prim.dataSource)
-#if PXR_VERSION >= 2311
-                    != UsdLuxTokens->noMaterialResponse;
-#else
-                    != _tokens->noMaterialResponse;
-#endif
-                _meshLights.insert({ entry.primPath, meshVisible });
-
-                // The light prim
-                added.emplace_back(
-                    entry.primPath.AppendChild(_tokens->meshLightLightName),
-#if PXR_VERSION <= 2211
-                    HdPrmanTokens->meshLight);
-#else
-                    HdPrimTypeTokens->meshLight);
-#endif
-                
-                // The source mesh (for the light prim)
-                added.emplace_back(
-                    entry.primPath.AppendChild(_tokens->meshLightSourceName),
-                    entry.primType == HdPrimTypeTokens->volume
-                      ? HdPrmanTokens->meshLightSourceVolume
-                      : HdPrmanTokens->meshLightSourceMesh);
-
-                // The stripped-down origin prim
-                if (meshVisible) {
-                    added.emplace_back(
-                        entry.primPath.AppendChild(_tokens->meshLightMeshName),
-                        entry.primType);
-                }
+                _AddMeshLight(entry.primPath, prim, &added);
 
                 // skip fallback insertion
                 continue;
@@ -1149,22 +1120,7 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsRemoved(
 
     for (const auto& entry : entries) {
         if (_meshLights.count(entry.primPath)) {
-
-            // The light prim
-            removed.emplace_back(
-                entry.primPath.AppendChild(_tokens->meshLightLightName));
-
-            // The source mesh (for the light prim)
-            removed.emplace_back(
-                entry.primPath.AppendChild(_tokens->meshLightSourceName));
-
-            // The stripped-down origin prim
-            if (_meshLights.at(entry.primPath)) {
-                removed.emplace_back(
-                    entry.primPath.AppendChild(_tokens->meshLightMeshName));
-            }
-
-            _meshLights.erase(entry.primPath);
+            _RemoveMeshLight(entry.primPath, &removed);
 
             // skip fallback removal
             continue;
@@ -1184,10 +1140,27 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsDirtied(
     // we do still need to add/remove the stripped-down origin prim when
     // materialSyncMode changes from/to noMaterialResponse.
 
+    static const auto& lightLoc = HdLightSchema::GetDefaultLocator();
+    static const auto& matLoc   = HdMaterialSchema::GetDefaultLocator();
+    static const HdDataSourceLocatorSet lightAndMatLocs{lightLoc, matLoc};
+
+    HdSceneIndexObserver::AddedPrimEntries added;
+    HdSceneIndexObserver::RemovedPrimEntries removed;
+
     for (const auto& entry : entries) {
+        const auto& dirtyLocs = entry.dirtyLocators;
+
         if (_meshLights.count(entry.primPath)) {
             const HdSceneIndexPrim& prim = _GetInputSceneIndex()
                 ->GetPrim(entry.primPath);
+
+            // Check for revocation of mesh-lightiness (no longer a mesh light).
+            if ((dirtyLocs.Intersects(lightLoc) && !_IsMeshLight(prim)) ||
+                (dirtyLocs.Intersects(matLoc) && !_HasValidMaterialNetwork(prim))) {
+                _RemoveMeshLight(entry.primPath, &removed);
+                continue;
+            }
+
             const bool visible = _GetMaterialSyncMode(prim.dataSource)
 #if PXR_VERSION <= 2308
                 != _tokens->noMaterialResponse;
@@ -1211,6 +1184,14 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsDirtied(
                 _SendPrimsRemoved({{ 
                     entry.primPath.AppendChild(_tokens->meshLightMeshName)
                 }});
+            }
+        }
+
+        // Check for endowment of mesh-lightiness (now a mesh light).
+        else if (dirtyLocs.Intersects(lightAndMatLocs)) {
+            const auto prim = _GetInputSceneIndex()->GetPrim(entry.primPath);
+            if (_IsMeshLight(prim) && _HasValidMaterialNetwork(prim)) {
+                _AddMeshLight(entry.primPath, prim, &added);
             }
         }
     }
@@ -1246,7 +1227,79 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsDirtied(
     }
 #endif
 
+    _SendPrimsAdded(added);
+    _SendPrimsRemoved(removed);
     _SendPrimsDirtied(entries);
+}
+
+void
+HdPrmanMeshLightResolvingSceneIndex::_AddMeshLight(
+    const SdfPath& primPath,
+    const HdSceneIndexPrim& prim,
+    HdSceneIndexObserver::AddedPrimEntries* added)
+{
+    const bool meshVisible = _GetMaterialSyncMode(prim.dataSource)
+#if PXR_VERSION >= 2311
+        != UsdLuxTokens->noMaterialResponse;
+#else
+        != _tokens->noMaterialResponse;
+#endif
+    _meshLights.insert({ primPath, meshVisible });
+
+    if (!added) {
+        return;
+    }
+
+    // The light prim
+    added->emplace_back(
+        primPath.AppendChild(_tokens->meshLightLightName),
+#if PXR_VERSION <= 2211
+        HdPrmanTokens->meshLight);
+#else
+        HdPrimTypeTokens->meshLight);
+#endif
+    
+    // The source mesh (for the light prim)
+    added->emplace_back(
+        primPath.AppendChild(_tokens->meshLightSourceName),
+        prim.primType == HdPrimTypeTokens->volume
+          ? HdPrmanTokens->meshLightSourceVolume
+          : HdPrmanTokens->meshLightSourceMesh);
+
+    // The stripped-down origin prim
+    if (meshVisible) {
+        added->emplace_back(
+            primPath.AppendChild(_tokens->meshLightMeshName),
+            prim.primType);
+    }
+}
+
+void
+HdPrmanMeshLightResolvingSceneIndex::_RemoveMeshLight(
+    const SdfPath& primPath,
+    HdSceneIndexObserver::RemovedPrimEntries* removed)
+{
+    const auto i = _meshLights.find(primPath);
+    if (i == _meshLights.end()) {
+        return;
+    }
+    const bool meshVisible = i->second;
+    _meshLights.erase(i);
+
+    if (!removed) {
+        return;
+    }
+
+    // The light prim
+    removed->emplace_back(primPath.AppendChild(_tokens->meshLightLightName));
+
+    // The source mesh (for the light prim)
+    removed->emplace_back(primPath.AppendChild(_tokens->meshLightSourceName));
+
+    // The stripped-down origin prim
+    if (meshVisible) {
+        removed->emplace_back(primPath.AppendChild(_tokens->meshLightMeshName));
+    }
 }
 
 HdPrmanMeshLightResolvingSceneIndex::~HdPrmanMeshLightResolvingSceneIndex()

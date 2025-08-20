@@ -1,8 +1,8 @@
-Loading @ErrorInvalidReferenceToRelocationSource/root.sdf@
+Loading @ErrorInvalidReferenceToRelocationSource/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Bad_ReloOfPreRelo>
@@ -13,8 +13,8 @@ Prim Stack:
 Results for composing </Good_ReloOfRelocated>
 
 Prim Stack:
-    char.sdf             /Char/Relocated
-    model.sdf            /Model/PreRelo
+    char.usda            /Char/Relocated
+    model.usda           /Model/PreRelo
 
 Child names:
      ['ModelChild', 'RelocatedChild']
@@ -23,21 +23,21 @@ Child names:
 Results for composing </Good_ReloOfRelocated/ModelChild>
 
 Prim Stack:
-    model.sdf            /Model/PreRelo/ModelChild
+    model.usda           /Model/PreRelo/ModelChild
 
 ------------------------------------------------------------------------
 Results for composing </Good_ReloOfRelocated/RelocatedChild>
 
 Prim Stack:
-    char.sdf             /Char/Relocated/RelocatedChild
+    char.usda            /Char/Relocated/RelocatedChild
 
 ------------------------------------------------------------------------
 Results for composing </Good_RefToRelocated>
 
 Prim Stack:
-    root.sdf             /Good_RefToRelocated
-    char.sdf             /Char/Relocated
-    model.sdf            /Model/PreRelo
+    root.usda            /Good_RefToRelocated
+    char.usda            /Char/Relocated
+    model.usda           /Model/PreRelo
 
 Child names:
      ['ModelChild', 'RelocatedChild']
@@ -46,40 +46,40 @@ Child names:
 Results for composing </Good_RefToRelocated/ModelChild>
 
 Prim Stack:
-    model.sdf            /Model/PreRelo/ModelChild
+    model.usda           /Model/PreRelo/ModelChild
 
 ------------------------------------------------------------------------
 Results for composing </Good_RefToRelocated/RelocatedChild>
 
 Prim Stack:
-    char.sdf             /Char/Relocated/RelocatedChild
+    char.usda            /Char/Relocated/RelocatedChild
 
 ------------------------------------------------------------------------
 Results for composing </Good_RefToChildOfRelocated>
 
 Prim Stack:
-    root.sdf             /Good_RefToChildOfRelocated
-    model.sdf            /Model/PreRelo/ModelChild
+    root.usda            /Good_RefToChildOfRelocated
+    model.usda           /Model/PreRelo/ModelChild
 
 ------------------------------------------------------------------------
 Results for composing </Bad_RefToPreRelo>
 
 Prim Stack:
-    root.sdf             /Bad_RefToPreRelo
+    root.usda            /Bad_RefToPreRelo
 
 ------------------------------------------------------------------------
 Results for composing </Bad_RefToChildOfPreRelo>
 
 Prim Stack:
-    root.sdf             /Bad_RefToChildOfPreRelo
+    root.usda            /Bad_RefToChildOfPreRelo
 
 ------------------------------------------------------------------------
 Results for composing </ReferencedChar>
 
 Prim Stack:
-    root.sdf             /ReferencedChar
-    char.sdf             /Char
-    model.sdf            /Model
+    root.usda            /ReferencedChar
+    char.usda            /Char
+    model.usda           /Model
 
 Prohibited child names:
      ['PreRelo', 'Relocated']

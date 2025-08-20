@@ -1,0 +1,23 @@
+#usda 1.0
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "TestPrim1" (
+    add payload = None
+)
+{
+}
+
+def MfScope "TestPrim2" (
+    add payload = @///test/layer.usda@</Prim>
+)
+{
+}
+
+def MfScope "TestPrim3" (
+    payload = [ @///test/layer.usda@</Prim> ]
+)
+{
+}

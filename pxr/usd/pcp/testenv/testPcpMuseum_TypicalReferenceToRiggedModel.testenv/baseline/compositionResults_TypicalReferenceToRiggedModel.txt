@@ -1,21 +1,21 @@
-Loading @TypicalReferenceToRiggedModel/root.sdf@
+Loading @TypicalReferenceToRiggedModel/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Model>
 
 Prim Stack:
-    root.sdf             /Model
-    root.sdf             /Class
-    mcat.sdf             /Model
-    mcat.sdf             /Class
-    mcat.sdf             /Model{pin=latest}
-    model_latest.sdf     /Model
-    model_latest.sdf     /Model{standin=render}
-    model_latest_payload.sdf /Model
+    root.usda            /Model
+    root.usda            /Class
+    mcat.usda            /Model
+    mcat.usda            /Class
+    mcat.usda            /Model{pin=latest}
+    model_latest.usda    /Model
+    model_latest.usda    /Model{standin=render}
+    model_latest_payload.usda /Model
 
 Variant Selections:
     {pin = latest}
@@ -29,28 +29,28 @@ Property names:
 
 Property stacks:
 /Model.a:
-    root.sdf             /Model.a
-    root.sdf             /Class.a
-    model_latest.sdf     /Model.a
+    root.usda            /Model.a
+    root.usda            /Class.a
+    model_latest.usda    /Model.a
 /Model.standin_name:
-    model_latest.sdf     /Model{standin=render}.standin_name
+    model_latest.usda    /Model{standin=render}.standin_name
 
 ------------------------------------------------------------------------
 Results for composing </Model/Rig>
 
 Prim Stack:
-    model_latest_payload.sdf /Model/Rig
+    model_latest_payload.usda /Model/Rig
 
 ------------------------------------------------------------------------
 Results for composing </Class>
 
 Prim Stack:
-    root.sdf             /Class
+    root.usda            /Class
 
 Property names:
      ['a']
 
 Property stacks:
 /Class.a:
-    root.sdf             /Class.a
+    root.usda            /Class.a
 

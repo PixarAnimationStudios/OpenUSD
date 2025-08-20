@@ -15,6 +15,7 @@
                             "UsdImagingPrimAdapter"
                         ],
                         "isInternal": true,
+                        "includeDerivedPrimTypes": true,
                         "primTypeName": "SkelRoot"
                     },
                     "UsdSkelImagingAnimationAdapter": {

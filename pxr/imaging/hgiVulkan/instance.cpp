@@ -42,7 +42,13 @@ _RemoveUnsupportedInstanceLayers(
             [name = lay](const VkLayerProperties& p) 
             { return strcmp(p.layerName, name) == 0; })) {
             layers.push_back(lay);
-        } else if (HgiVulkanIsDebugEnabled()) {
+        } else if (HgiVulkanIsDebugEnabled() &&
+                   strcmp(lay, "VK_LAYER_KHRONOS_validation") == 0) {
+            // Special handling for the validation layer, which we always want
+            // to be available.
+            TF_CODING_ERROR("Instance layer %s is not available, skipping it",
+                lay);
+        } else {
             TF_STATUS("Instance layer %s is not available, skipping it", lay);
         }
     }

@@ -7,7 +7,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/textFileFormat.h"
+#include "pxr/usd/sdf/usdaFileFormat.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -19,6 +19,15 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((A_Target, "A"))
     ((B_Id, "test_target_format_B"))
     ((B_Target, "B"))
+    ((BigCookie_Id,
+      "Molasssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"
+       "ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"
+       "ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"
+       "ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"
+       "ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"
+       "ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"
+       "ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"
+       "ssssssssssssssssssssssssssssssssssssssssssssssses"))
 );
 
 class TestSdfTargetFileFormatBase
@@ -44,7 +53,7 @@ public:
 protected:
     TestSdfTargetFileFormatBase(const TfToken& formatId, const TfToken& target)
         : SdfFileFormat(formatId, TfToken(), target, _Tokens->Extension)
-        , _sdfFormat(SdfFileFormat::FindByExtension("sdf"))
+        , _sdfFormat(SdfFileFormat::FindByExtension("usda"))
     {
     }
 
@@ -76,11 +85,24 @@ public:
     }
 };
 
+class TestSdfTargetFileFormat_BigCookie
+: public SdfUsdaFileFormat
+{
+public:
+    SDF_FILE_FORMAT_FACTORY_ACCESS;
+
+    TestSdfTargetFileFormat_BigCookie()
+        : SdfUsdaFileFormat(_Tokens->BigCookie_Id)
+    {
+    }
+};
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     SDF_DEFINE_ABSTRACT_FILE_FORMAT(TestSdfTargetFileFormatBase, SdfFileFormat);
     SDF_DEFINE_FILE_FORMAT(TestSdfTargetFileFormat_A, TestSdfTargetFileFormatBase);
     SDF_DEFINE_FILE_FORMAT(TestSdfTargetFileFormat_B, TestSdfTargetFileFormatBase);
+    SDF_DEFINE_FILE_FORMAT(TestSdfTargetFileFormat_BigCookie, SdfUsdaFileFormat);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

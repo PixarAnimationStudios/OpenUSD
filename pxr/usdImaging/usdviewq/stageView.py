@@ -1390,6 +1390,7 @@ class StageView(QGLWidget):
         self._rendererSelectionNeedsUpdate = True
         self.update()
 
+    @Tf.CatchAndRepostErrors()
     def _processSelection(self):
         if not self._rendererSelectionNeedsUpdate:
             return
@@ -1416,11 +1417,13 @@ class StageView(QGLWidget):
                     renderer.AddSelected(
                         prim.GetPath(), UsdImagingGL.ALL_INSTANCES)
         except Tf.ErrorException as e:
-            # If we encounter an error, we want to continue running. Just log 
-            # the error and continue.
+            # If we encounter an error, we want to continue running. Just log
+            # the error and continue.  The CatchAndRepostErrors decorator will
+            # halt exception propagation but retain the Tf.Errors.
             sys.stderr.write(
                 "ERROR: Usdview encountered an error while updating selection."
                 "{}\n".format(e))
+            raise
         finally:
             # Make sure not to leak a reference to the renderer
             renderer = None
@@ -1451,6 +1454,7 @@ class StageView(QGLWidget):
                 bbox = Gf.BBox3d.Combine(bbox, primBBox)
         return bbox
 
+    @Tf.CatchAndRepostErrors()
     def renderSinglePass(self, renderMode, renderSelHighlights):
         if not self._dataModel.stage:
             return
@@ -1501,14 +1505,16 @@ class StageView(QGLWidget):
             renderer.Render(pseudoRoot, self._renderParams)
         except Tf.ErrorException as e:
             # If we encounter an error during a render, we want to continue
-            # running. Just log the error and continue.
-            sys.stderr.write(
-                "ERROR: Usdview encountered an error while rendering.{}\n".format(e))
+            # running. Just log the error and continue.  The
+            # CatchAndRepostErrors decorator will halt exception propagation but
+            # retain the Tf.Errors.
+            sys.stderr.write("ERROR: Usdview encountered an error "
+                             "while rendering.{}\n".format(e))
+            raise
         finally:
             # Make sure not to leak a reference to the renderer
             renderer = None
         self._forceRefresh = False
-
 
     def initializeGL(self):
         if not self.isValid():
@@ -1667,6 +1673,7 @@ class StageView(QGLWidget):
 
         self.update()
 
+    @Tf.CatchAndRepostErrors()
     def paintGL(self):
         if not self._dataModel.stage:
             return
@@ -1878,13 +1885,17 @@ class StageView(QGLWidget):
 
             if (not self._dataModel.playing) & (not renderer.IsConverged()):
                 QtCore.QTimer.singleShot(5, self.update)
-        
+
         except Exception as e:
-            # If we encounter an error during a render, we want to continue 
-            # running. Just log the error and continue.
+            # If we encounter an error during a render, we want to continue
+            # running. Just log the error and continue.  The
+            # CatchAndRepostErrors decorator will halt exception propagation but
+            # retain the Tf.Errors.
             sys.stderr.write(
                 "ERROR: Usdview encountered an error while rendering."
                 "{}\n".format(e))
+            if isinstance(e, Tf.ErrorException):
+                raise
 
         finally:
             # Make sure not to leak a reference to the renderer
@@ -2272,6 +2283,7 @@ class StageView(QGLWidget):
 
         return (inImageBounds, cameraFrustum.ComputeNarrowedFrustum(point, size))
 
+    @Tf.CatchAndRepostErrors()
     def pickObject(self, x, y, button, modifiers):
         '''
         Render stage into fbo with each piece as a different color.
@@ -2315,11 +2327,13 @@ class StageView(QGLWidget):
                     selectedPrimPath, selectedInstanceIndex, selectedTLPath,
                     selectedTLIndex, selectedPoint, modifiers)
         except Tf.ErrorException as e:
-            # If we encounter an error, we want to continue running. Just log 
-            # the error and continue.
+            # If we encounter an error, we want to continue running. Just log
+            # the error and continue.  The CatchAndRepostErrors decorator will
+            # halt exception propagation but retain the Tf.Errors.
             sys.stderr.write(
                 "ERROR: Usdview encountered an error while picking."
                 "{}\n".format(e))
+            raise
         finally:
             renderer = None
 

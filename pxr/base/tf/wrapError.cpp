@@ -96,6 +96,15 @@ _GetErrors( const TfErrorMark & mark )
     return vector<TfError>(mark.GetBegin(), mark.GetEnd());
 }
 
+static void
+_RaiseIfNotClean(const TfErrorMark &mark)
+{
+    if (!mark.IsClean()) {
+        TfPyConvertTfErrorsToPythonException(mark);
+        pxr_boost::python::throw_error_already_set();
+    }
+}
+
 // Repost any errors contained in exc to the TfError system.  This is used for
 // those python clients that do not intend to handle errors themselves, but need
 // to continue executing.  This pushes them back on the TfError list for the
@@ -207,6 +216,9 @@ void wrapError() {
         .def("GetErrors", &_GetErrors,
             return_value_policy<TfPySequenceToList>(),
              "A list of the errors held by this mark.")
+        .def("RaiseIfNotClean", &_RaiseIfNotClean,
+             "If this mark is not clean, raise a Tf.ErrorException with "
+             "the contained errors, otherwise do nothing.")
         ;
     
 }

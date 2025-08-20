@@ -1,0 +1,9 @@
+#usda 1.0
+#tagged-as-never-update
+
+def MfScope "Test"
+{
+    # Can't change type name from bool to double.
+    bool boolAttr
+    double boolAttr = 1.0
+}

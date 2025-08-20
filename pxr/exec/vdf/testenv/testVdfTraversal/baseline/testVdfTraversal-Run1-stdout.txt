@@ -1,0 +1,100 @@
+
+
+Testing traversal in input-to-output direction...
+
+Traversing with mask 10
+output: VdfInputVector<GfVec3d> points[out] with mask 10 reached via input: NULL
+node:   VdfTestUtils::DependencyCallbackNode translate1
+output: VdfTestUtils::DependencyCallbackNode translate1[.pool] with mask 10 reached via input: NULL
+node:   VdfTestUtils::DependencyCallbackNode translate2
+output: VdfTestUtils::DependencyCallbackNode translate2[.pool] with mask 10 reached via input: NULL
+
+Traversing with mask 01
+output: VdfInputVector<GfVec3d> points[out] with mask 01 reached via input: NULL
+node:   VdfTestUtils::DependencyCallbackNode translate1
+output: VdfTestUtils::DependencyCallbackNode translate1[.pool] with mask 01 reached via input: NULL
+node:   VdfTestUtils::DependencyCallbackNode translate2
+output: VdfTestUtils::DependencyCallbackNode translate2[.pool] with mask 01 reached via input: NULL
+
+
+Testing traversal in output-to-input direction...
+
+Traversing with mask 10
+
+node: VdfTestUtils::DependencyCallbackNode translate1
+path: 
+    VdfTestUtils::DependencyCallbackNode translate1[.pool] -> [.pool]VdfTestUtils::DependencyCallbackNode translate2
+
+node: VdfInputVector<GfVec3d> axis1
+path: 
+    VdfInputVector<GfVec3d> axis1[out] -> [axis]VdfTestUtils::DependencyCallbackNode translate1
+    VdfTestUtils::DependencyCallbackNode translate1[.pool] -> [.pool]VdfTestUtils::DependencyCallbackNode translate2
+
+node: VdfInputVector<GfVec3d> points
+path: 
+    VdfInputVector<GfVec3d> points[out] -> [.pool]VdfTestUtils::DependencyCallbackNode translate1
+    VdfTestUtils::DependencyCallbackNode translate1[.pool] -> [.pool]VdfTestUtils::DependencyCallbackNode translate2
+
+Traversing with mask 01
+
+node: VdfTestUtils::DependencyCallbackNode translate2
+path: 
+
+node: VdfInputVector<GfVec3d> disconnectedOutput
+path: 
+    VdfInputVector<GfVec3d> disconnectedOutput[out] -> [axis]VdfTestUtils::DependencyCallbackNode translate2
+
+node: VdfInputVector<GfVec3d> axis2
+path: 
+    VdfInputVector<GfVec3d> axis2[out] -> [axis]VdfTestUtils::DependencyCallbackNode translate2
+
+node: VdfInputVector<GfVec3d> points
+path: 
+    VdfInputVector<GfVec3d> points[out] -> [.pool]VdfTestUtils::DependencyCallbackNode translate1
+    VdfTestUtils::DependencyCallbackNode translate1[.pool] -> [.pool]VdfTestUtils::DependencyCallbackNode translate2
+
+Traversing with CallbackMode set to CallbackModeTerminalNodes and with mask 10
+node:   VdfInputVector<GfVec3d> axis1
+node:   VdfInputVector<GfVec3d> points
+
+Traversing with CallbackMode set to CallbackModeTerminalNodes and with mask 01
+node:   VdfInputVector<GfVec3d> disconnectedOutput
+node:   VdfInputVector<GfVec3d> axis2
+node:   VdfInputVector<GfVec3d> points
+
+
+Testing traversal in output-to-input direction, with input depdenceny callback...
+
+Traversing with mask 1
+
+node: VdfTestUtils::DependencyCallbackNode outputNode
+path: 
+
+node: VdfTestUtils::DependencyCallbackNode nodeB
+path: 
+    VdfTestUtils::DependencyCallbackNode nodeB[output] -> [input2]VdfTestUtils::DependencyCallbackNode outputNode
+
+node: VdfTestUtils::DependencyCallbackNode commonNode
+path: 
+    VdfTestUtils::DependencyCallbackNode commonNode[output2] -> [input]VdfTestUtils::DependencyCallbackNode nodeB
+    VdfTestUtils::DependencyCallbackNode nodeB[output] -> [input2]VdfTestUtils::DependencyCallbackNode outputNode
+
+node: VdfInputVector<GfVec2d> input2
+path: 
+    VdfInputVector<GfVec2d> input2[out] -> [input2]VdfTestUtils::DependencyCallbackNode commonNode
+    VdfTestUtils::DependencyCallbackNode commonNode[output2] -> [input]VdfTestUtils::DependencyCallbackNode nodeB
+    VdfTestUtils::DependencyCallbackNode nodeB[output] -> [input2]VdfTestUtils::DependencyCallbackNode outputNode
+
+node: VdfTestUtils::DependencyCallbackNode nodeA
+path: 
+    VdfTestUtils::DependencyCallbackNode nodeA[output] -> [input1]VdfTestUtils::DependencyCallbackNode outputNode
+
+node: VdfInputVector<GfVec2d> input1
+path: 
+    VdfInputVector<GfVec2d> input1[out] -> [input1]VdfTestUtils::DependencyCallbackNode commonNode
+    VdfTestUtils::DependencyCallbackNode commonNode[output1] -> [input]VdfTestUtils::DependencyCallbackNode nodeA
+    VdfTestUtils::DependencyCallbackNode nodeA[output] -> [input1]VdfTestUtils::DependencyCallbackNode outputNode
+
+Traversing with CallbackMode set to CallbackModeTerminalNodes and with mask 1
+node:   VdfInputVector<GfVec2d> input2
+node:   VdfInputVector<GfVec2d> input1

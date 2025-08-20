@@ -66,9 +66,9 @@ Linux
 =====
 
 * **OS**: CentOS Linux 7
-* **CPU**: 23 cores of Intel(R) Xeon(R) Platinum 8268 CPU @ 2.90GHz
+* **CPU**: AMD EPYC 7763 64-Core Processor, 2450 Mhz
 * **RAM**: 117GB
-* **GPU**: NVIDIA TU102GL (Quadro RTX 6000/8000)
+* **GPU**: NVIDIA RTXA6000-24Q
 
 macOS
 =====
@@ -81,7 +81,7 @@ macOS
 Windows
 =======
 
-* **OS**: Microsoft Windows 10 Enterprise
+* **OS**: Microsoft Windows 11 Enterprise
 * **CPU**: AMD EPYC 7763 64-Core Processor, 2450 Mhz, 31 Core(s), 31 Logical Processor(s)
 * **RAM**: 128GB
 * **GPU**: NVIDIA RTXA6000-24Q
@@ -92,7 +92,9 @@ USD Build
 For each of the operating systems and hardware platforms listed previously, we
 build USD with the same build configuration. We use a stock invocation of 
 ``build_usd.py`` with the default options (release build, Python components,
-imaging and USD imaging components, usdview, etc).
+imaging and USD imaging components, usdview, etc). Note that this build uses
+the default system memory allocator, and does not use an alternate allocator 
+(as described in :ref:`maxperf_optimized_allocator`).
 
 *******
 Metrics
@@ -109,6 +111,9 @@ Windows platforms (as described in :ref:`perf_environments`).
 
 .. note::
 
+    Linux and Windows machine configurations changed as of 25.08; historical
+    numbers have been rerun for consistency.
+
     A small increase or decrease in performance metrics over different releases
     may not necessarily indicate an overall performance improvement or
     regression in USD. Best-case minimum measurements are taken over multiple
@@ -116,7 +121,7 @@ Windows platforms (as described in :ref:`perf_environments`).
     so use the below results with caution. We are investigating these sources
     of variation.
 
-    Additionally, there are known issues with obtaining the create_first_image
+    There are known issues with obtaining the create_first_image
     metric on macOS. We will update published metrics when this issue is
     resolved.
 
@@ -216,7 +221,7 @@ also be run to validate local runtime environments and hardware configurations.
 
 Performance metrics are generating using the :program:`usdmeasureperformance.py`
 script found in ``pxr/extras/performance``. See the 
-`usdmeasureperformance tool docs <toolset>`_ for more 
+:ref:`usdmeasureperformance tool docs <toolset:usdmeasureperformance>` for more 
 information on the different parameters available.
 
 :program:`usdmeasureperformance.py` uses :program:`usdview` and 

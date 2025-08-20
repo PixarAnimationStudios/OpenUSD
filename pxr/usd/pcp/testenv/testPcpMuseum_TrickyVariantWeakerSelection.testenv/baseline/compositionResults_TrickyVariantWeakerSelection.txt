@@ -1,17 +1,17 @@
-Loading @TrickyVariantWeakerSelection/root.sdf@
+Loading @TrickyVariantWeakerSelection/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </A>
 
 Prim Stack:
-    root.sdf             /A
-    root.sdf             /A{v=v2}
-    model.sdf            /A
-    model.sdf            /A{v=v2}
+    root.usda            /A
+    root.usda            /A{v=v2}
+    model.usda           /A
+    model.usda           /A{v=v2}
 
 Variant Selections:
     {v = v2}
@@ -21,6 +21,6 @@ Property names:
 
 Property stacks:
 /A.v2:
-    root.sdf             /A{v=v2}.v2
-    model.sdf            /A{v=v2}.v2
+    root.usda            /A{v=v2}.v2
+    model.usda           /A{v=v2}.v2
 

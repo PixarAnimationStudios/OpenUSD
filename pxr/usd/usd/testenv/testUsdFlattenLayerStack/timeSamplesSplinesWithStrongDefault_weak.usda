@@ -1,0 +1,13 @@
+#usda 1.0
+
+def "Prim" {
+    int a.timeSamples = {
+        1: 15,
+        2: 18,
+    }
+
+    double b.spline = {
+        1: 15; post held,
+        2: 18; post held,
+    }
+}

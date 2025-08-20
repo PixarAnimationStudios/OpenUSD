@@ -26,7 +26,7 @@ namespace {
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((discoveryType, "mtlx"))
+    (mtlx)
 );
 
 // Maps a nodedef name to its SdrShaderNode name.
@@ -148,9 +148,9 @@ _DiscoverNodes(
             SdrIdentifier(nodeDef->getName()),
             UsdMtlxGetVersion(nodeDef, &implicitDefault),
             _ChooseName(nodeDef->getName(), nameMapping),
-            TfToken(nodeDef->getNodeString()),
-            _tokens->discoveryType,
-            _tokens->discoveryType,
+            TfToken(nodeDef->getNodeString()),  /* family */
+            _tokens->mtlx,  /* discoveryType */
+            _tokens->mtlx,  /* sourceType */
             fileResult.uri,
             fileResult.resolvedUri
         );

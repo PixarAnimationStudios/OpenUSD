@@ -219,6 +219,7 @@ private:
     friend class PcpNodeRef_PrivateChildrenConstReverseIterator;
     friend class PcpNodeRef_PrivateSubtreeConstIterator;
     template <class T> friend class Pcp_TraversalCache;
+    friend bool Pcp_IsPropagatedSpecializesNode(const PcpNodeRef& node);
 
     // NOTE: These accessors assume the consumer will be changing the node
     //       and may cause shared node data to be copied locally.
@@ -238,6 +239,10 @@ private:
     const _Node& _GetNode(const PcpNodeRef& node) const
     {
         return _GetNode(node._GetNodeIndex());
+    }
+
+    inline PcpArcType GetArcType(size_t nodeIdx) const {
+        return _GetNode(nodeIdx).smallInts.arcType;
     }
 
 private:

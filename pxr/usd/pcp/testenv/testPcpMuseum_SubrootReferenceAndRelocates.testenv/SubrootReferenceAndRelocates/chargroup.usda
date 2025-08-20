@@ -1,0 +1,14 @@
+#usda 1.0
+
+def "CharGroup"
+{
+    def "_class_Char"
+    {
+    }
+
+    def "Char" (
+        inherits = </CharGroup/_class_Char>
+    )
+    {
+    }
+}

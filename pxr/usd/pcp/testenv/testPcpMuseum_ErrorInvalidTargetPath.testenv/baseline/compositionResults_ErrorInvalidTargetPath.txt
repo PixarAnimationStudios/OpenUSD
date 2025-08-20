@@ -1,51 +1,51 @@
-Loading @ErrorInvalidTargetPath/root.sdf@
+Loading @ErrorInvalidTargetPath/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Root>
 
 Prim Stack:
-    root.sdf             /Root
-    root.sdf             /_Class1
-    A.sdf                /A
+    root.usda            /Root
+    root.usda            /_Class1
+    A.usda               /A
 
 Property names:
      ['A', 'B', 'prohibitedConnectionToInstance', 'x']
 
 Property stacks:
 /Root.A:
-    A.sdf                /A.A
+    A.usda               /A.A
 /Root.B:
-    A.sdf                /A.B
+    A.usda               /A.B
 /Root.prohibitedConnectionToInstance:
-    root.sdf             /_Class1.prohibitedConnectionToInstance
+    root.usda            /_Class1.prohibitedConnectionToInstance
 /Root.x:
-    root.sdf             /Root.x
+    root.usda            /Root.x
 
 ------------------------------------------------------------------------
 Results for composing </SubrootRef>
 
 Prim Stack:
-    root.sdf             /SubrootRef
-    A.sdf                /B/C
+    root.usda            /SubrootRef
+    A.usda               /B/C
 
 Property names:
      ['testRel']
 
 Property stacks:
 /SubrootRef.testRel:
-    A.sdf                /B/C.testRel
+    A.usda               /B/C.testRel
 
 ------------------------------------------------------------------------
 Results for composing </RootWithReferenceUnderVariant>
 
 Prim Stack:
-    root.sdf             /RootWithReferenceUnderVariant
-    root.sdf             /RootWithReferenceUnderVariant{standin=anim}
-    A.sdf                /A
+    root.usda            /RootWithReferenceUnderVariant
+    root.usda            /RootWithReferenceUnderVariant{standin=anim}
+    A.usda               /A
 
 Variant Selections:
     {standin = anim}
@@ -55,22 +55,22 @@ Property names:
 
 Property stacks:
 /RootWithReferenceUnderVariant.A:
-    A.sdf                /A.A
+    A.usda               /A.A
 /RootWithReferenceUnderVariant.B:
-    A.sdf                /A.B
+    A.usda               /A.B
 
 ------------------------------------------------------------------------
 Results for composing </_Class1>
 
 Prim Stack:
-    root.sdf             /_Class1
+    root.usda            /_Class1
 
 Property names:
      ['prohibitedConnectionToInstance']
 
 Property stacks:
 /_Class1.prohibitedConnectionToInstance:
-    root.sdf             /_Class1.prohibitedConnectionToInstance
+    root.usda            /_Class1.prohibitedConnectionToInstance
 
 Attribute connections:
 /_Class1.prohibitedConnectionToInstance:

@@ -41,61 +41,21 @@ _Repr(const UsdLuxNonboundableLightBase &self)
         primRepr.c_str());
 }
 
-} // anonymous namespace
-
-void wrapUsdLuxNonboundableLightBase()
-{
-    typedef UsdLuxNonboundableLightBase This;
-
-    class_<This, bases<UsdGeomXformable> >
-        cls("NonboundableLightBase");
-
-    cls
-        .def(init<UsdPrim>(arg("prim")))
-        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
-        .def(TfTypePythonClass())
-
-        .def("Get", &This::Get, (arg("stage"), arg("path")))
-        .staticmethod("Get")
-
-        .def("GetSchemaAttributeNames",
-             &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetSchemaAttributeNames")
-
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
-        .staticmethod("_GetStaticTfType")
-
-        .def(!self)
-
-
-        .def("__repr__", ::_Repr)
-    ;
-
-    _CustomWrapCode(cls);
+        
+static UsdAttribute
+_CreateShaderIdAttr(UsdLuxNonboundableLightBase &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateShaderIdAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
 }
-
-// ===================================================================== //
-// Feel free to add custom code below this line, it will be preserved by 
-// the code generator.  The entry point for your custom code should look
-// minimally like the following:
-//
-// WRAP_CUSTOM {
-//     _class
-//         .def("MyCustomMethod", ...)
-//     ;
-// }
-//
-// Of course any other ancillary or support code may be provided.
-// 
-// Just remember to wrap code in the appropriate delimiters:
-// 'namespace {', '}'.
-//
-// ===================================================================== //
-// --(BEGIN CUSTOM CODE)--
-
+        
+static UsdAttribute
+_CreateMaterialSyncModeAttr(UsdLuxNonboundableLightBase &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateMaterialSyncModeAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
 static UsdAttribute
 _CreateIntensityAttr(UsdLuxNonboundableLightBase &self,
                                       object defaultVal, bool writeSparsely) {
@@ -151,62 +111,100 @@ _CreateColorTemperatureAttr(UsdLuxNonboundableLightBase &self,
     return self.CreateColorTemperatureAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Float), writeSparsely);
 }
+} // anonymous namespace
 
-namespace {
-
-WRAP_CUSTOM {
+void wrapUsdLuxNonboundableLightBase()
+{
     typedef UsdLuxNonboundableLightBase This;
 
-    _class
+    class_<This, bases<UsdGeomXformable> >
+        cls("NonboundableLightBase");
+
+    cls
+        .def(init<UsdPrim>(arg("prim")))
+        .def(init<UsdSchemaBase const&>(arg("schemaObj")))
+        .def(TfTypePythonClass())
+
+        .def("Get", &This::Get, (arg("stage"), arg("path")))
+        .staticmethod("Get")
+
+        .def("GetSchemaAttributeNames",
+             &This::GetSchemaAttributeNames,
+             arg("includeInherited")=true,
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetSchemaAttributeNames")
+
+        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
+             return_value_policy<return_by_value>())
+        .staticmethod("_GetStaticTfType")
+
+        .def(!self)
+
+
+        
+        .def("GetShaderIdAttr",
+             &This::GetShaderIdAttr)
+        .def("CreateShaderIdAttr",
+             &_CreateShaderIdAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetMaterialSyncModeAttr",
+             &This::GetMaterialSyncModeAttr)
+        .def("CreateMaterialSyncModeAttr",
+             &_CreateMaterialSyncModeAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
         .def("GetIntensityAttr",
              &This::GetIntensityAttr)
         .def("CreateIntensityAttr",
              &_CreateIntensityAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
-
+        
         .def("GetExposureAttr",
              &This::GetExposureAttr)
         .def("CreateExposureAttr",
              &_CreateExposureAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
-
+        
         .def("GetDiffuseAttr",
              &This::GetDiffuseAttr)
         .def("CreateDiffuseAttr",
              &_CreateDiffuseAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
-
+        
         .def("GetSpecularAttr",
              &This::GetSpecularAttr)
         .def("CreateSpecularAttr",
              &_CreateSpecularAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
-
+        
         .def("GetNormalizeAttr",
              &This::GetNormalizeAttr)
         .def("CreateNormalizeAttr",
              &_CreateNormalizeAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
-
+        
         .def("GetColorAttr",
              &This::GetColorAttr)
         .def("CreateColorAttr",
              &_CreateColorAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
-
+        
         .def("GetEnableColorTemperatureAttr",
              &This::GetEnableColorTemperatureAttr)
         .def("CreateEnableColorTemperatureAttr",
              &_CreateEnableColorTemperatureAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
-
+        
         .def("GetColorTemperatureAttr",
              &This::GetColorTemperatureAttr)
         .def("CreateColorTemperatureAttr",
@@ -220,7 +218,35 @@ WRAP_CUSTOM {
              &This::CreateFiltersRel)
 
         .def("LightAPI", &This::LightAPI)
-        ;
+        .def("__repr__", ::_Repr)
+    ;
+
+    _CustomWrapCode(cls);
+}
+
+// ===================================================================== //
+// Feel free to add custom code below this line, it will be preserved by 
+// the code generator.  The entry point for your custom code should look
+// minimally like the following:
+//
+// WRAP_CUSTOM {
+//     _class
+//         .def("MyCustomMethod", ...)
+//     ;
+// }
+//
+// Of course any other ancillary or support code may be provided.
+// 
+// Just remember to wrap code in the appropriate delimiters:
+// 'namespace {', '}'.
+//
+// ===================================================================== //
+// --(BEGIN CUSTOM CODE)--
+
+namespace {
+
+WRAP_CUSTOM {
+
 }
 
 }

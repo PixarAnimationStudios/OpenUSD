@@ -1,15 +1,15 @@
-Loading @ImpliedAndAncestralInherits_ComplexEvaluation/root.sdf@
+Loading @ImpliedAndAncestralInherits_ComplexEvaluation/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Root>
 
 Prim Stack:
-    root.sdf             /Root
-    root.sdf             /_X
+    root.usda            /Root
+    root.usda            /_X
 
 Child names:
      ['_Y', 'B']
@@ -18,8 +18,8 @@ Child names:
 Results for composing </Root/_Y>
 
 Prim Stack:
-    root.sdf             /_X/_Y
-    ref.sdf              /Ref
+    root.usda            /_X/_Y
+    ref.usda             /Ref
 
 Child names:
      ['C']
@@ -28,8 +28,8 @@ Child names:
 Results for composing </Root/_Y/C>
 
 Prim Stack:
-    ref.sdf              /Ref/C
-    ref.sdf              /_G
+    ref.usda             /Ref/C
+    ref.usda             /_G
 
 Child names:
      ['_Z', 'D']
@@ -38,38 +38,38 @@ Child names:
 Results for composing </Root/_Y/C/_Z>
 
 Prim Stack:
-    ref.sdf              /Ref/C/_Z
+    ref.usda             /Ref/C/_Z
 
 Property names:
      ['prop']
 
 Property stacks:
 /Root/_Y/C/_Z.prop:
-    ref.sdf              /Ref/C/_Z.prop
+    ref.usda             /Ref/C/_Z.prop
 
 ------------------------------------------------------------------------
 Results for composing </Root/_Y/C/D>
 
 Prim Stack:
-    ref.sdf              /Ref/C/D
-    ref.sdf              /Ref/C/_Z
+    ref.usda             /Ref/C/D
+    ref.usda             /Ref/C/_Z
 
 Property names:
      ['prop']
 
 Property stacks:
 /Root/_Y/C/D.prop:
-    ref.sdf              /Ref/C/D.prop
-    ref.sdf              /Ref/C/_Z.prop
+    ref.usda             /Ref/C/D.prop
+    ref.usda             /Ref/C/_Z.prop
 
 ------------------------------------------------------------------------
 Results for composing </Root/B>
 
 Prim Stack:
-    root.sdf             /Root/B
-    root.sdf             /_X/B
-    root.sdf             /_X/_Y
-    ref.sdf              /Ref
+    root.usda            /Root/B
+    root.usda            /_X/B
+    root.usda            /_X/_Y
+    ref.usda             /Ref
 
 Child names:
      ['C']
@@ -78,9 +78,9 @@ Child names:
 Results for composing </Root/B/C>
 
 Prim Stack:
-    root.sdf             /Root/B/C
-    ref.sdf              /Ref/C
-    ref.sdf              /_G
+    root.usda            /Root/B/C
+    ref.usda             /Ref/C
+    ref.usda             /_G
 
 Child names:
      ['_Z', 'D']
@@ -89,41 +89,41 @@ Child names:
 Results for composing </Root/B/C/_Z>
 
 Prim Stack:
-    root.sdf             /Root/B/C/_Z
-    ref.sdf              /Ref/C/_Z
+    root.usda            /Root/B/C/_Z
+    ref.usda             /Ref/C/_Z
 
 Property names:
      ['prop']
 
 Property stacks:
 /Root/B/C/_Z.prop:
-    root.sdf             /Root/B/C/_Z.prop
-    ref.sdf              /Ref/C/_Z.prop
+    root.usda            /Root/B/C/_Z.prop
+    ref.usda             /Ref/C/_Z.prop
 
 ------------------------------------------------------------------------
 Results for composing </Root/B/C/D>
 
 Prim Stack:
-    root.sdf             /Root/B/C/D
-    root.sdf             /Root/B/C/_Z
-    ref.sdf              /Ref/C/D
-    ref.sdf              /Ref/C/_Z
+    root.usda            /Root/B/C/D
+    root.usda            /Root/B/C/_Z
+    ref.usda             /Ref/C/D
+    ref.usda             /Ref/C/_Z
 
 Property names:
      ['prop']
 
 Property stacks:
 /Root/B/C/D.prop:
-    root.sdf             /Root/B/C/D.prop
-    root.sdf             /Root/B/C/_Z.prop
-    ref.sdf              /Ref/C/D.prop
-    ref.sdf              /Ref/C/_Z.prop
+    root.usda            /Root/B/C/D.prop
+    root.usda            /Root/B/C/_Z.prop
+    ref.usda             /Ref/C/D.prop
+    ref.usda             /Ref/C/_Z.prop
 
 ------------------------------------------------------------------------
 Results for composing </_X>
 
 Prim Stack:
-    root.sdf             /_X
+    root.usda            /_X
 
 Child names:
      ['_Y', 'B']
@@ -132,8 +132,8 @@ Child names:
 Results for composing </_X/_Y>
 
 Prim Stack:
-    root.sdf             /_X/_Y
-    ref.sdf              /Ref
+    root.usda            /_X/_Y
+    ref.usda             /Ref
 
 Child names:
      ['C']
@@ -142,8 +142,8 @@ Child names:
 Results for composing </_X/_Y/C>
 
 Prim Stack:
-    ref.sdf              /Ref/C
-    ref.sdf              /_G
+    ref.usda             /Ref/C
+    ref.usda             /_G
 
 Child names:
      ['_Z', 'D']
@@ -152,37 +152,37 @@ Child names:
 Results for composing </_X/_Y/C/_Z>
 
 Prim Stack:
-    ref.sdf              /Ref/C/_Z
+    ref.usda             /Ref/C/_Z
 
 Property names:
      ['prop']
 
 Property stacks:
 /_X/_Y/C/_Z.prop:
-    ref.sdf              /Ref/C/_Z.prop
+    ref.usda             /Ref/C/_Z.prop
 
 ------------------------------------------------------------------------
 Results for composing </_X/_Y/C/D>
 
 Prim Stack:
-    ref.sdf              /Ref/C/D
-    ref.sdf              /Ref/C/_Z
+    ref.usda             /Ref/C/D
+    ref.usda             /Ref/C/_Z
 
 Property names:
      ['prop']
 
 Property stacks:
 /_X/_Y/C/D.prop:
-    ref.sdf              /Ref/C/D.prop
-    ref.sdf              /Ref/C/_Z.prop
+    ref.usda             /Ref/C/D.prop
+    ref.usda             /Ref/C/_Z.prop
 
 ------------------------------------------------------------------------
 Results for composing </_X/B>
 
 Prim Stack:
-    root.sdf             /_X/B
-    root.sdf             /_X/_Y
-    ref.sdf              /Ref
+    root.usda            /_X/B
+    root.usda            /_X/_Y
+    ref.usda             /Ref
 
 Child names:
      ['C']
@@ -191,8 +191,8 @@ Child names:
 Results for composing </_X/B/C>
 
 Prim Stack:
-    ref.sdf              /Ref/C
-    ref.sdf              /_G
+    ref.usda             /Ref/C
+    ref.usda             /_G
 
 Child names:
      ['_Z', 'D']
@@ -201,37 +201,37 @@ Child names:
 Results for composing </_X/B/C/_Z>
 
 Prim Stack:
-    ref.sdf              /Ref/C/_Z
+    ref.usda             /Ref/C/_Z
 
 Property names:
      ['prop']
 
 Property stacks:
 /_X/B/C/_Z.prop:
-    ref.sdf              /Ref/C/_Z.prop
+    ref.usda             /Ref/C/_Z.prop
 
 ------------------------------------------------------------------------
 Results for composing </_X/B/C/D>
 
 Prim Stack:
-    ref.sdf              /Ref/C/D
-    ref.sdf              /Ref/C/_Z
+    ref.usda             /Ref/C/D
+    ref.usda             /Ref/C/_Z
 
 Property names:
      ['prop']
 
 Property stacks:
 /_X/B/C/D.prop:
-    ref.sdf              /Ref/C/D.prop
-    ref.sdf              /Ref/C/_Z.prop
+    ref.usda             /Ref/C/D.prop
+    ref.usda             /Ref/C/_Z.prop
 
 ------------------------------------------------------------------------
 Results for composing </RefToRoot>
 
 Prim Stack:
-    root.sdf             /RefToRoot
-    root.sdf             /Root
-    root.sdf             /_X
+    root.usda            /RefToRoot
+    root.usda            /Root
+    root.usda            /_X
 
 Child names:
      ['_Y', 'B']
@@ -240,8 +240,8 @@ Child names:
 Results for composing </RefToRoot/_Y>
 
 Prim Stack:
-    root.sdf             /_X/_Y
-    ref.sdf              /Ref
+    root.usda            /_X/_Y
+    ref.usda             /Ref
 
 Child names:
      ['C']
@@ -250,8 +250,8 @@ Child names:
 Results for composing </RefToRoot/_Y/C>
 
 Prim Stack:
-    ref.sdf              /Ref/C
-    ref.sdf              /_G
+    ref.usda             /Ref/C
+    ref.usda             /_G
 
 Child names:
      ['_Z', 'D']
@@ -260,38 +260,38 @@ Child names:
 Results for composing </RefToRoot/_Y/C/_Z>
 
 Prim Stack:
-    ref.sdf              /Ref/C/_Z
+    ref.usda             /Ref/C/_Z
 
 Property names:
      ['prop']
 
 Property stacks:
 /RefToRoot/_Y/C/_Z.prop:
-    ref.sdf              /Ref/C/_Z.prop
+    ref.usda             /Ref/C/_Z.prop
 
 ------------------------------------------------------------------------
 Results for composing </RefToRoot/_Y/C/D>
 
 Prim Stack:
-    ref.sdf              /Ref/C/D
-    ref.sdf              /Ref/C/_Z
+    ref.usda             /Ref/C/D
+    ref.usda             /Ref/C/_Z
 
 Property names:
      ['prop']
 
 Property stacks:
 /RefToRoot/_Y/C/D.prop:
-    ref.sdf              /Ref/C/D.prop
-    ref.sdf              /Ref/C/_Z.prop
+    ref.usda             /Ref/C/D.prop
+    ref.usda             /Ref/C/_Z.prop
 
 ------------------------------------------------------------------------
 Results for composing </RefToRoot/B>
 
 Prim Stack:
-    root.sdf             /Root/B
-    root.sdf             /_X/B
-    root.sdf             /_X/_Y
-    ref.sdf              /Ref
+    root.usda            /Root/B
+    root.usda            /_X/B
+    root.usda            /_X/_Y
+    ref.usda             /Ref
 
 Child names:
      ['C']
@@ -300,9 +300,9 @@ Child names:
 Results for composing </RefToRoot/B/C>
 
 Prim Stack:
-    root.sdf             /Root/B/C
-    ref.sdf              /Ref/C
-    ref.sdf              /_G
+    root.usda            /Root/B/C
+    ref.usda             /Ref/C
+    ref.usda             /_G
 
 Child names:
      ['_Z', 'D']
@@ -311,33 +311,33 @@ Child names:
 Results for composing </RefToRoot/B/C/_Z>
 
 Prim Stack:
-    root.sdf             /Root/B/C/_Z
-    ref.sdf              /Ref/C/_Z
+    root.usda            /Root/B/C/_Z
+    ref.usda             /Ref/C/_Z
 
 Property names:
      ['prop']
 
 Property stacks:
 /RefToRoot/B/C/_Z.prop:
-    root.sdf             /Root/B/C/_Z.prop
-    ref.sdf              /Ref/C/_Z.prop
+    root.usda            /Root/B/C/_Z.prop
+    ref.usda             /Ref/C/_Z.prop
 
 ------------------------------------------------------------------------
 Results for composing </RefToRoot/B/C/D>
 
 Prim Stack:
-    root.sdf             /Root/B/C/D
-    root.sdf             /Root/B/C/_Z
-    ref.sdf              /Ref/C/D
-    ref.sdf              /Ref/C/_Z
+    root.usda            /Root/B/C/D
+    root.usda            /Root/B/C/_Z
+    ref.usda             /Ref/C/D
+    ref.usda             /Ref/C/_Z
 
 Property names:
      ['prop']
 
 Property stacks:
 /RefToRoot/B/C/D.prop:
-    root.sdf             /Root/B/C/D.prop
-    root.sdf             /Root/B/C/_Z.prop
-    ref.sdf              /Ref/C/D.prop
-    ref.sdf              /Ref/C/_Z.prop
+    root.usda            /Root/B/C/D.prop
+    root.usda            /Root/B/C/_Z.prop
+    ref.usda             /Ref/C/D.prop
+    ref.usda             /Ref/C/_Z.prop
 

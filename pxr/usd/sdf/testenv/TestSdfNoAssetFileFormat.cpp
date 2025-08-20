@@ -7,12 +7,12 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/textFileFormat.h"
+#include "pxr/usd/sdf/usdaFileFormat.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define TEST_SDF_NO_ASSET_FILE_FORMAT_TOKENS       \
-    ((Extension, "testsdfnoasset")) \
+    ((Extension, "testusdanoasset")) \
     ((RootName, "rootName"))
 
 TF_DECLARE_PUBLIC_TOKENS(TestSdfNoAssetFileFormat_Tokens, 
@@ -25,13 +25,13 @@ TF_DEFINE_PUBLIC_TOKENS(
 /// Simple text file format that does not read any assets and instead
 /// creates a layer with a single root prim spec whose name may be 
 /// specified in the file format arguments
-class TestSdfNoAssetFileFormat : public SdfTextFileFormat
+class TestSdfNoAssetFileFormat : public SdfUsdaFileFormat
 {
 public:
     SDF_FILE_FORMAT_FACTORY_ACCESS;
 
     TestSdfNoAssetFileFormat()
-        :SdfTextFileFormat(TestSdfNoAssetFileFormat_Tokens->Extension)
+        :SdfUsdaFileFormat(TestSdfNoAssetFileFormat_Tokens->Extension)
     {
         // Do Nothing.
     }
@@ -78,7 +78,7 @@ protected:
 TF_REGISTRY_FUNCTION(TfType)
 {
     SDF_DEFINE_FILE_FORMAT(TestSdfNoAssetFileFormat, 
-                           SdfTextFileFormat);
+                           SdfUsdaFileFormat);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

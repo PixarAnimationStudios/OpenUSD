@@ -290,13 +290,16 @@ public:
     }
 
     /// Return a vector containing the names of API schemas which have
-    /// been applied to this prim. This includes both the authored API schemas
-    /// applied using the Apply() method on the particular schema class as 
-    /// well as any built-in API schemas that are automatically included 
-    /// through the prim type's prim definition.
+    /// been applied to this prim.
+    ///
+    /// The returned vector includes both the authored API schemas applied using
+    /// the Apply() method on the particular schema class as well as any
+    /// built-in API schemas that are automatically included through the prim
+    /// type's prim definition.
+    ///
     /// To get only the authored API schemas use GetPrimTypeInfo instead.
     USD_API
-    TfTokenVector GetAppliedSchemas() const;
+    const TfTokenVector &GetAppliedSchemas() const;
 
     /// Alias for the "predicate" function parameter passed into the various
     /// Get{Authored}{PropertyNames,Properties} methods.

@@ -111,26 +111,36 @@ private:
     const TfType &_GetTfType() const override;
 
 public:
-    // ===================================================================== //
-    // Feel free to add custom code below this line, it will be preserved by 
-    // the code generator. 
-    //
-    // Just remember to: 
-    //  - Close the class declaration with }; 
-    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
-    //  - Close the include guard with #endif
-    // ===================================================================== //
-    // --(BEGIN CUSTOM CODE)--
-
     /// \name LightAPI
     /// 
-    /// Convenience accessors for the light's built-in UsdLuxLightAPI
+    /// Convenience accessors for the built-in UsdLuxLightAPI
     /// 
     /// @{
 
-    /// Contructs and returns a UsdLuxLightAPI object for this light.
+    /// Constructs and returns a UsdLuxLightAPI object.
+    /// Use this object to access UsdLuxLightAPI custom methods.
     USDLUX_API
     UsdLuxLightAPI LightAPI() const;
+
+    /// See UsdLuxLightAPI::GetShaderIdAttr().
+    USDLUX_API
+    UsdAttribute GetShaderIdAttr() const;
+
+    /// See UsdLuxLightAPI::CreateShaderIdAttr().
+    USDLUX_API
+    UsdAttribute CreateShaderIdAttr(
+        VtValue const &defaultValue = VtValue(), 
+        bool writeSparsely=false) const;
+
+    /// See UsdLuxLightAPI::GetMaterialSyncModeAttr().
+    USDLUX_API
+    UsdAttribute GetMaterialSyncModeAttr() const;
+
+    /// See UsdLuxLightAPI::CreateMaterialSyncModeAttr().
+    USDLUX_API
+    UsdAttribute CreateMaterialSyncModeAttr(
+        VtValue const &defaultValue = VtValue(), 
+        bool writeSparsely=false) const;
 
     /// See UsdLuxLightAPI::GetIntensityAttr().
     USDLUX_API
@@ -221,6 +231,17 @@ public:
     UsdRelationship CreateFiltersRel() const;
 
     /// @}
+public:
+    // ===================================================================== //
+    // Feel free to add custom code below this line, it will be preserved by 
+    // the code generator. 
+    //
+    // Just remember to: 
+    //  - Close the class declaration with }; 
+    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
+    //  - Close the include guard with #endif
+    // ===================================================================== //
+    // --(BEGIN CUSTOM CODE)--
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

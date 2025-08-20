@@ -32,6 +32,12 @@ UsdImagingSceneIndexPlugin::InstanceDataSourceNames()
     return {};
 }
 
+TfTokenVector
+UsdImagingSceneIndexPlugin::ProxyPathTranslationDataSourceNames()
+{
+    return {};
+}
+
 std::vector<UsdImagingSceneIndexPluginUniquePtr>
 UsdImagingSceneIndexPlugin::GetAllSceneIndexPlugins()
 {

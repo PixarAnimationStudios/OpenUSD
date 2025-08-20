@@ -64,7 +64,7 @@ def "MaterialX"
         }
     }
 
-    def "NodeGraphs"
+    def NodeGraph "NodeGraphs"
     {
         def Shader "redClorVal"
         {

@@ -140,7 +140,7 @@ def Scope "Render"
 {
     def RenderSettings "RenderSettings"
     {
-        token outputs:ri:displayFilters.connect = </Render/DisplayFilter1.outputs:result>
+        rel ri:displayFilters = </Render/DisplayFilter1>
         bool ri:hider:jitter = 0
         float ri:Ri:PixelVariance = 0.0
         int ri:hider:minsamples = 32

@@ -261,6 +261,114 @@ void HgiVulkanBlitCmds::CopyBufferGpuToGpu(
         &copyRegion);
 }
 
+void HgiVulkanBlitCmds::BlitTexture(HgiTextureHandle src, HgiTextureHandle dst)
+{
+    _CreateCommandBuffer();
+
+    HgiVulkanTexture* srcTexture =
+        static_cast<HgiVulkanTexture*>(src.Get());
+
+    if (!TF_VERIFY(srcTexture && srcTexture->GetImage(),
+        "Invalid texture handle")) {
+        return;
+    }
+
+    HgiVulkanTexture* dstTexture =
+        static_cast<HgiVulkanTexture*>(dst.Get());
+
+    if (!TF_VERIFY(srcTexture && srcTexture->GetImage(),
+        "Invalid texture handle")) {
+        return;
+    }
+
+    HgiTextureDesc const& texDesc = srcTexture->GetDescriptor();
+
+    VkOffset3D origin;
+    origin.x = 0;
+    origin.y = 0;
+    origin.z = 0;
+
+    VkOffset3D size;
+    size.x = texDesc.dimensions[0];
+    size.y = texDesc.dimensions[1];
+    size.z = texDesc.dimensions[2];
+
+    VkImageSubresourceLayers imageSub;
+    imageSub.baseArrayLayer = 0;
+    imageSub.layerCount = 1;
+    imageSub.mipLevel = 0;
+    imageSub.aspectMask = _GetImageAspectMaskForCopy(texDesc.usage);
+
+    VkImageBlit region;
+    region.srcOffsets[0] = origin;
+    region.srcOffsets[1] = size;
+    region.srcSubresource = imageSub;
+    region.dstOffsets[0] = origin;
+    region.dstOffsets[1] = size;
+    region.dstSubresource = imageSub;
+
+    // Transition src image to TRANSFER_READ
+    VkImageLayout oldLayoutSrc = srcTexture->GetImageLayout();
+    srcTexture->TransitionImageBarrier(
+        _commandBuffer,
+        srcTexture,
+        oldLayoutSrc,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, // transition tex to this layout
+        HgiVulkanTexture::NO_PENDING_WRITES,  // no pending writes
+        VK_ACCESS_TRANSFER_READ_BIT,          // type of access
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,    // producer stage
+        VK_PIPELINE_STAGE_TRANSFER_BIT);      // consumer stage
+
+    // Transition dst image to TRANSFER_WRITE
+    VkImageLayout oldLayoutDst = dstTexture->GetImageLayout();
+    dstTexture->TransitionImageBarrier(
+        _commandBuffer,
+        dstTexture,
+        oldLayoutDst,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // transition tex to this layout
+        HgiVulkanTexture::NO_PENDING_WRITES,  // no pending writes
+        VK_ACCESS_TRANSFER_WRITE_BIT,          // type of access
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,    // producer stage
+        VK_PIPELINE_STAGE_TRANSFER_BIT);      // consumer stage
+
+    vkCmdBlitImage(_commandBuffer->GetVulkanCommandBuffer(),
+        srcTexture->GetImage(),
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        dstTexture->GetImage(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1,
+        &region,
+        VK_FILTER_NEAREST);
+
+    // Transition src image back to what it was.
+    VkAccessFlags accessSrc = HgiVulkanTexture::GetDefaultAccessFlags(
+        srcTexture->GetDescriptor().usage);
+
+    srcTexture->TransitionImageBarrier(
+        _commandBuffer,
+        srcTexture,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        oldLayoutSrc,                        // transition tex to this layout
+        HgiVulkanTexture::NO_PENDING_WRITES, // no pending writes
+        accessSrc,                           // type of access
+        VK_PIPELINE_STAGE_TRANSFER_BIT,      // producer stage
+        VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT); // consumer stage
+
+    // Transition dst image back to what it was.
+    VkAccessFlags accessDst = HgiVulkanTexture::GetDefaultAccessFlags(
+        dstTexture->GetDescriptor().usage);
+
+    dstTexture->TransitionImageBarrier(
+        _commandBuffer,
+        dstTexture,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        oldLayoutDst,                        // transition tex to this layout
+        HgiVulkanTexture::NO_PENDING_WRITES, // no pending writes
+        accessDst,                           // type of access
+        VK_PIPELINE_STAGE_TRANSFER_BIT,      // producer stage
+        VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT); // consumer stage
+}
+
 void HgiVulkanBlitCmds::CopyBufferCpuToGpu(
     HgiBufferCpuToGpuOp const& copyOp)
 {

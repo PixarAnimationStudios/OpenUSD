@@ -34,6 +34,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdxSkydomeTask : public HdxTask
 {
 public:
+    using TaskParams = HdxRenderTaskParams;
+    
     HDX_API
     HdxSkydomeTask(HdSceneDelegate* delegate, SdfPath const& id);
 

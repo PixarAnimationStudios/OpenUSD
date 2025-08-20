@@ -7,6 +7,7 @@ class TestSchemaConcrete "TestSchemaConcrete" (
     inherits = </Light>
 )
 {
+    reorder properties = ["inputs:exposure", "inputs:intensity", "inputs:sunDirection", "propNS:testShaderPropWithNS"]
     float inputs:exposure = 0 (
         connectability = "interfaceOnly"
         customData = {

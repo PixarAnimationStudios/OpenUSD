@@ -1,17 +1,17 @@
-Loading @TrickySpookyInherits/root.sdf@
+Loading @TrickySpookyInherits/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Model_1>
 
 Prim Stack:
-    root.sdf             /Model_1
-    root.sdf             /_class_Model
-    model.sdf            /Model
-    model.sdf            /_class_Model
+    root.usda            /Model_1
+    root.usda            /_class_Model
+    model.usda           /Model
+    model.usda           /_class_Model
 
 Child names:
      ['Rig', 'Anim']
@@ -20,10 +20,10 @@ Child names:
 Results for composing </Model_1/Rig>
 
 Prim Stack:
-    root.sdf             /_class_Model/Rig
-    model.sdf            /Model/Rig
-    model.sdf            /_class_Model/Rig
-    rig.sdf              /Rig
+    root.usda            /_class_Model/Rig
+    model.usda           /Model/Rig
+    model.usda           /_class_Model/Rig
+    rig.usda             /Rig
 
 Child names:
      ['SymRig']
@@ -35,17 +35,17 @@ Prohibited child names:
 Results for composing </Model_1/Rig/SymRig>
 
 Prim Stack:
-    root.sdf             /_class_Model/Rig/SymRig
-    model.sdf            /_class_Model/Rig/SymRig
-    rig.sdf              /Rig/SymRig
+    root.usda            /_class_Model/Rig/SymRig
+    model.usda           /_class_Model/Rig/SymRig
+    rig.usda             /Rig/SymRig
 
 ------------------------------------------------------------------------
 Results for composing </Model_1/Anim>
 
 Prim Stack:
-    root.sdf             /_class_Model/Anim
-    model.sdf            /Model/Anim
-    model.sdf            /_class_Model/Anim
+    root.usda            /_class_Model/Anim
+    model.usda           /Model/Anim
+    model.usda           /_class_Model/Anim
 
 Child names:
      ['LAnim']
@@ -54,19 +54,19 @@ Child names:
 Results for composing </Model_1/Anim/LAnim>
 
 Prim Stack:
-    root.sdf             /_class_Model/Rig/SymRig
-    root.sdf             /_class_Model/Rig/LRig
-    root.sdf             /_class_Model/Anim/LAnim
-    model.sdf            /_class_Model/Rig/SymRig
-    model.sdf            /_class_Model/Rig/LRig
-    rig.sdf              /Rig/LRig
-    rig.sdf              /Rig/SymRig
+    root.usda            /_class_Model/Rig/SymRig
+    root.usda            /_class_Model/Rig/LRig
+    root.usda            /_class_Model/Anim/LAnim
+    model.usda           /_class_Model/Rig/SymRig
+    model.usda           /_class_Model/Rig/LRig
+    rig.usda             /Rig/LRig
+    rig.usda             /Rig/SymRig
 
 ------------------------------------------------------------------------
 Results for composing </_class_Model>
 
 Prim Stack:
-    root.sdf             /_class_Model
+    root.usda            /_class_Model
 
 Child names:
      ['Rig', 'Anim']
@@ -75,7 +75,7 @@ Child names:
 Results for composing </_class_Model/Rig>
 
 Prim Stack:
-    root.sdf             /_class_Model/Rig
+    root.usda            /_class_Model/Rig
 
 Child names:
      ['SymRig', 'LRig']
@@ -84,19 +84,19 @@ Child names:
 Results for composing </_class_Model/Rig/SymRig>
 
 Prim Stack:
-    root.sdf             /_class_Model/Rig/SymRig
+    root.usda            /_class_Model/Rig/SymRig
 
 ------------------------------------------------------------------------
 Results for composing </_class_Model/Rig/LRig>
 
 Prim Stack:
-    root.sdf             /_class_Model/Rig/LRig
+    root.usda            /_class_Model/Rig/LRig
 
 ------------------------------------------------------------------------
 Results for composing </_class_Model/Anim>
 
 Prim Stack:
-    root.sdf             /_class_Model/Anim
+    root.usda            /_class_Model/Anim
 
 Child names:
      ['LAnim']
@@ -105,5 +105,5 @@ Child names:
 Results for composing </_class_Model/Anim/LAnim>
 
 Prim Stack:
-    root.sdf             /_class_Model/Anim/LAnim
+    root.usda            /_class_Model/Anim/LAnim
 

@@ -7,13 +7,14 @@ pxr_library(vt
         tf
         gf
         trace
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
+        TBB::tbb
 
     PUBLIC_CLASSES
         array
+        arrayEdit
+        arrayEditBuilder
+        arrayEditOps
+        debugCodes
         dictionary
         hash
         streamOut
@@ -33,6 +34,7 @@ pxr_library(vt
     
     PYTHON_PUBLIC_HEADERS
         pyOperators.h
+        wrapArrayEdit.h
 
     PYMODULE_CPPFILES
         module.cpp
@@ -64,8 +66,17 @@ pxr_build_test(testVtCpp
     CPPFILES
         testenv/testVtCpp.cpp
 )
+pxr_build_test(testVtArrayEditCpp
+    LIBRARIES
+        tf
+        gf
+        vt
+    CPPFILES
+        testenv/testVtArrayEdit.cpp
+)
 pxr_test_scripts(
     testenv/testVtArray.py
+    testenv/testVtArrayEdit.py
     testenv/testVtValue.py
 )
 pxr_register_test(testVtValue
@@ -76,6 +87,13 @@ pxr_register_test(testVtArray
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtArray"
 )
+pxr_register_test(testVtArrayEdit
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtArrayEdit"
+)
 pxr_register_test(testVtCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtCpp"
+)
+pxr_register_test(testVtArrayEditCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testVtArrayEditCpp"
 )

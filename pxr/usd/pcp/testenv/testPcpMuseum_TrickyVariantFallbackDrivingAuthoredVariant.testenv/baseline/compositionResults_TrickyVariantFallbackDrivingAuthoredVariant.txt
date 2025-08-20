@@ -1,16 +1,16 @@
-Loading @TrickyVariantFallbackDrivingAuthoredVariant/root.sdf@
+Loading @TrickyVariantFallbackDrivingAuthoredVariant/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </A>
 
 Prim Stack:
-    root.sdf             /A
-    root.sdf             /A{vset1=fallback}
-    root.sdf             /A{vset2=authored}
+    root.usda            /A
+    root.usda            /A{vset1=fallback}
+    root.usda            /A{vset2=authored}
 
 Variant Selections:
     {vset1 = fallback}
@@ -23,22 +23,22 @@ Child names:
 Results for composing </A/vset2_authored_child>
 
 Prim Stack:
-    root.sdf             /A{vset2=authored}vset2_authored_child
+    root.usda            /A{vset2=authored}vset2_authored_child
 
 ------------------------------------------------------------------------
 Results for composing </A_Ancestral>
 
 Prim Stack:
-    root.sdf             /A_Ancestral
-    root.sdf             /A{vset2=authored}vset2_authored_child
+    root.usda            /A_Ancestral
+    root.usda            /A{vset2=authored}vset2_authored_child
 
 ------------------------------------------------------------------------
 Results for composing </B>
 
 Prim Stack:
-    root.sdf             /B
-    root.sdf             /B{vset2=authored}
-    root.sdf             /B{vset1=fallback}
+    root.usda            /B
+    root.usda            /B{vset2=authored}
+    root.usda            /B{vset1=fallback}
 
 Variant Selections:
     {vset1 = fallback}
@@ -51,12 +51,12 @@ Child names:
 Results for composing </B/vset2_authored_child>
 
 Prim Stack:
-    root.sdf             /B{vset2=authored}vset2_authored_child
+    root.usda            /B{vset2=authored}vset2_authored_child
 
 ------------------------------------------------------------------------
 Results for composing </B_Ancestral>
 
 Prim Stack:
-    root.sdf             /B_Ancestral
-    root.sdf             /B{vset2=authored}vset2_authored_child
+    root.usda            /B_Ancestral
+    root.usda            /B{vset2=authored}vset2_authored_child
 

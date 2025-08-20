@@ -1,0 +1,8 @@
+#usda 1.0
+(
+    customLayerData = {
+        token layerAccessId = 'id'
+        asset layerAccessAssetPath  = @/layer/access.usda@
+        int layerAccessRandomNumber = 5
+    }
+)

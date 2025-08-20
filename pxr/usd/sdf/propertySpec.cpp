@@ -217,8 +217,9 @@ SdfPropertySpec::SetDefaultValue(const VtValue &defaultValue)
             */
             return SetField(SdfFieldKeys->Default, value);
         }
-        else if (defaultValue.IsHolding<SdfValueBlock>()) {
-            // If we're setting a value block, always allow that.
+        else if (defaultValue.IsHolding<SdfValueBlock>() || 
+                 defaultValue.IsHolding<SdfAnimationBlock>()) {
+            // If we're setting a value or animation block, always allow that.
             return SetField(SdfFieldKeys->Default, defaultValue);
         }
     }

@@ -12,7 +12,7 @@ class TestPcpCache(unittest.TestCase):
     def test_Basic(self):
         # Create a PcpCache for a reference chain, but do not perform any actual
         # composition before querying its used layers. Verify that this does not crash.
-        file = 'BasicReference/root.sdf'
+        file = 'BasicReference/root.usda'
         self.assertTrue(os.path.isfile(file))
         layer = Sdf.Layer.FindOrOpen(file)
         self.assertTrue(layer)
@@ -27,7 +27,7 @@ class TestPcpCache(unittest.TestCase):
 
         # Create a PcpCache with a file format target, ensuring that layers
         # without the correct target will be marked invalid during composition.
-        pcpCache = Pcp.Cache(lsi, fileFormatTarget='sdf')
+        pcpCache = Pcp.Cache(lsi, fileFormatTarget='usd')
         (pi, _) = pcpCache.ComputePrimIndex('/PrimWithReferences')
         self.assertTrue(pi.IsValid())
         self.assertFalse(pi.IsUsd())
@@ -35,7 +35,7 @@ class TestPcpCache(unittest.TestCase):
 
         # Should be two local errors corresponding to invalid asset paths,
         # since this prim has two references to layers with a different target.
-        pcpCache = Pcp.Cache(lsi, fileFormatTarget='Presto')
+        pcpCache = Pcp.Cache(lsi, fileFormatTarget='UnspecifiedPrestoTarget')
         (pi, _) = pcpCache.ComputePrimIndex('/PrimWithReferences')
         self.assertTrue(pi.IsValid())
         self.assertFalse(pi.IsUsd())

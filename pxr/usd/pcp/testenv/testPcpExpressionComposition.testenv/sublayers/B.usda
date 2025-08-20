@@ -1,0 +1,10 @@
+#usda 1.0
+(
+    subLayers = [
+        @./B_sub.usda@
+    ]
+)
+
+def "Test"
+{
+}

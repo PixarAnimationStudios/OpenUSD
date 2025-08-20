@@ -1,0 +1,26 @@
+#usda 1.0
+(
+    framePrecision = 3
+    framesPerSecond = 24
+)
+
+class MfScope "Root" (
+    assetInfo = {
+        asset identifier = @Root/sdf/Root.usda@
+        token name = "RootName"
+        int version = 100
+    }
+)
+{
+}
+
+def MfScope "Ref" (
+    assetInfo = {
+        string chiselLabel = "shriram"
+        int version = 99
+    }
+    inherits = </Root>
+)
+{
+}
+

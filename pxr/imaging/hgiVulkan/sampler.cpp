@@ -54,10 +54,11 @@ HgiVulkanSampler::HgiVulkanSampler(
          desc.mipFilter == HgiMipFilterLinear) &&
          desc.magFilter != HgiSamplerFilterNearest) {
         HgiVulkanCapabilities const& caps = device->GetDeviceCapabilities();
-        sampler.anisotropyEnable = caps.vkDeviceFeatures.samplerAnisotropy;
+        sampler.anisotropyEnable =
+            caps.vkDeviceFeatures2.features.samplerAnisotropy;
         sampler.maxAnisotropy = sampler.anisotropyEnable ?
             std::min<float>({
-                caps.vkDeviceProperties.limits.maxSamplerAnisotropy,
+                caps.vkDeviceProperties2.properties.limits.maxSamplerAnisotropy,
                 static_cast<float>(desc.maxAnisotropy),
                 static_cast<float>(TfGetEnvSetting(HGI_MAX_ANISOTROPY))}) : 1.0f;
     }

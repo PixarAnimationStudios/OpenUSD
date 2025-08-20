@@ -61,6 +61,7 @@ class UIPropertyValueSourceColors(ConstantsGroup):
     DEFAULT = UIBaseColors.LIGHT_SKY_BLUE
     NONE = QtGui.QBrush(QtGui.QColor(140, 140, 140))
     VALUE_CLIPS = QtGui.QBrush(QtGui.QColor(230, 150, 230))
+    SPLINE = QtGui.QBrush(QtGui.QColor(80, 200, 180))
 
 class UIFonts(ConstantsGroup):
     # Font constants.  We use font in the prim browser to distinguish
@@ -316,6 +317,11 @@ def GetPropertyTextFont(prop, frame):
     if bracketing and (len(bracketing) == 2) and (bracketing[0] != frameVal):
         return UIFonts.ITALIC
 
+    if prop.GetResolveInfo(frame).GetSource() == Usd.ResolveInfoSourceSpline:
+        spline = prop.GetSpline()
+        if frameVal not in spline.GetKnots().keys():
+            return UIFonts.ITALIC
+
     return None
 
 # Helper function that takes attribute status and returns the display color
@@ -329,7 +335,8 @@ def GetPropertyColor(prop, frame, hasValue=None, hasAuthoredValue=None,
                      Usd.ResolveInfoSourceDefault    : UIPropertyValueSourceColors.DEFAULT,
                      Usd.ResolveInfoSourceValueClips : UIPropertyValueSourceColors.VALUE_CLIPS,
                      Usd.ResolveInfoSourceTimeSamples: UIPropertyValueSourceColors.TIME_SAMPLE,
-                     Usd.ResolveInfoSourceNone       : UIPropertyValueSourceColors.NONE}
+                     Usd.ResolveInfoSourceNone       : UIPropertyValueSourceColors.NONE,
+                     Usd.ResolveInfoSourceSpline     : UIPropertyValueSourceColors.SPLINE}
 
     valueSource = _GetAttributeStatus(prop, frame)
 

@@ -287,6 +287,26 @@ HgiGL::EndFrame()
     }
 }
 
+void
+HgiGL::GarbageCollect()
+{
+    #if defined(GL_KHR_debug)
+    if (GARCH_GLAPI_HAS(KHR_debug)) {
+        glPushDebugGroup(GL_DEBUG_SOURCE_THIRD_PARTY, 0, -1, 
+            "Garbage Collection");
+    }
+    #endif
+
+    _garbageCollector.PerformGarbageCollection();
+    _device->GarbageCollect();
+
+    #if defined(GL_KHR_debug)
+    if (GARCH_GLAPI_HAS(KHR_debug)) {
+        glPopDebugGroup();
+    }
+    #endif
+}
+
 HgiGLContextArenaHandle
 HgiGL::CreateContextArena()
 {

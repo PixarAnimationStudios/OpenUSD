@@ -49,6 +49,29 @@ struct CurveData
     vec3 Neye[4];
 };
 
+float WorldToPixelWidth(MAT4 projMat, float posZ)
+{
+    // If any screen space width operations are required, compute the
+    // conversion factor from world units to screen pixels at this curve tess
+    // position. Critically, this procedure does not rely on the thickening
+    // 'direction' vector, which may point out of the image plane and have
+    // zero apparent screen-space length in some circumstances.
+    //
+    // This procedure is correct for both perspective and ortho cameras. It is a
+    // boiled-down x-only expression of the projected pixel length of a
+    // hypothetical unit X vector in eye space, and can be derived by writing a
+    // projection matrix transforming (1,0,0,1) and performing the usual
+    // division by w. Since the viewport is 2 NDC units across, we take half the
+    // viewportSizeX. The division is by -position.z for perspective projections
+    // and by 1 for ortho projections, using entries 2,3 and 3,3 to select
+    // which. See articles on the forms of these projection matrices for more
+    // info.
+    float x = projMat[0][0];
+    float w = posZ * projMat[2][3] + projMat[3][3];
+    float viewportSizeX = GetViewport().z;
+    return abs((viewportSizeX * 0.5) * (x / w));
+}
+
 --- --------------------------------------------------------------------------
 -- glsl Curves.PostTess.CurveData
 
@@ -265,12 +288,44 @@ float GetPixelToTessRatio()
     return 20.0;
 }
 
+float TessWidthFromScreenSize(float screenSpaceSize)
+{
+    return clamp(screenSpaceSize / GetPixelToTessRatio(), 1.0, GetMaxTess());
+}
+
+float TessLengthFromScreenSize(float screenSpaceSize)
+{
+    return clamp(screenSpaceSize / GetPixelToTessRatio(), 0.0, GetMaxTess());
+}
+
 vec2 projectToScreen(MAT4 projMat, vec4 P, vec2 screen_size)
 {
     vec4 res = vec4(projMat * P);
     res /= res.w;
     return (clamp(res.xy, -1.3f, 1.3f) + 1.0f) * (screen_size * 0.5f);
 }
+
+#ifdef HD_HAS_widths
+float GetScreenSpaceWidth(int index, CurveData vertexData, MAT4 projMat)
+{
+    float width = HdGet_widths(index);
+
+#ifdef HD_HAS_screenSpaceWidths
+    bool screenSpaceWidths = HdGet_screenSpaceWidths(index);
+#else
+    bool screenSpaceWidths = false;
+#endif
+    if (!screenSpaceWidths) {
+        width = WorldToPixelWidth(projMat, vertexData.Peye[index].z) * width;
+    }
+
+#ifdef HD_HAS_minScreenSpaceWidths
+    width = max(width, HdGet_minScreenSpaceWidths(index));
+#endif
+
+    return width;
+}
+#endif
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.PostTessControl.Linear.Patch
@@ -327,36 +382,31 @@ void determineLODSettings(CurveData vertexData)
 -- glsl Curves.CommonControl.Linear.HalfTube
 
 // Use the width of the control points in screen space to determine how 
-// many times to subdivide the curve.  NOTE.  As a quick hack, we leverage the
-// fact that the normal isn't normalized at this point in the pipeline to 
-// provide a quick estimate of width in eye space.  If that becomes a bad
-// assumption in the future, this needs to be reworked.
+// many times to subdivide the curve.
 void determineLODSettings(CurveData vertexData)
 {
     MAT4 projMat = GetProjectionMatrix();
-    vec4 viewport = GetViewport();
-    vec2 screen_size = vec2(viewport.z, viewport.w);
 
-    // NOTE. We've observed that outData.Neye is not normalized, and 
-    // we're using its length as an estimator of the accumulated transform
-    float wEye0 = HdGet_widths(0) * length(vertexData.Neye[0]);
-    float wEye1 = HdGet_widths(1) * length(vertexData.Neye[1]);
+    // Length-wise factors
+    float w0 = GetScreenSpaceWidth(0, vertexData, projMat);
+    float w1 = GetScreenSpaceWidth(1, vertexData, projMat);
 
-    // project a point that is 'w' units away from the origin
-    vec2 v_w0 = projectToScreen(projMat, vec4(wEye0, 0, 0, 1), screen_size);
-    vec2 v_w1 = projectToScreen(projMat, vec4(wEye1, 0, 0, 1), screen_size);
+    // increase detail in width by this value so tube geometry is better
+    // captured
+    const float widthMultiplier = 2.0;
 
-    float maxTess = GetMaxTess();
-    // reduce the tessellation in the width by this value.
-    float widthDecimation = 10.0;
+    float maxWidthScreenSpace = max(w0, w1);
 
-    float maxWidthScreenSpace = max(length(v_w0), length(v_w1));
+    float level_w = TessWidthFromScreenSize(maxWidthScreenSpace * widthMultiplier);
 
-    float level_w = clamp(
-        maxWidthScreenSpace / GetPixelToTessRatio() / widthDecimation,
-        1.0f, maxTess);
+    // tessfactors for vert 0 and 1 seperate to match neighbor and avoid seams
+    float level_w0 = TessWidthFromScreenSize(w0 * widthMultiplier);
+    float level_w1 = TessWidthFromScreenSize(w1 * widthMultiplier);
 
-    SetTessFactors(1.0f, level_w, 1.0f, level_w, level_w, 1.0f);
+    // Note: using level_w for both inner levels, if we use 1.0 for the
+    // lengthwise inner factor we can produce inner vertices at the quad's edge
+    // https://docs.vulkan.org/spec/latest/chapters/tessellation.html#tessellation-quad-tessellation
+    SetTessFactors(1.0f, level_w1, 1.0f, level_w0, level_w, level_w);
 }
 
 --- --------------------------------------------------------------------------
@@ -373,11 +423,9 @@ void main(void)
     vec2 v2 = projectToScreen(projMat, vertexData.Peye[2], screen_size);
     vec2 v3 = projectToScreen(projMat, vertexData.Peye[3], screen_size);
 
-    float maxTess = GetMaxTess();
-
     // Need to handle off screen
     float dist = distance(v0, v1) + distance(v1, v2) + distance(v2, v3);
-    float level = clamp(dist / GetPixelToTessRatio(), 0.0f, maxTess);
+    float level = TessLengthFromScreenSize(dist);
 
     SetTessFactors(1.0f, 1.0f, 1.0f, 1.0f, 1.0f, level);
 }
@@ -423,11 +471,9 @@ void determineLODSettings(CurveData vertexData)
     vec2 v2 = projectToScreen(projMat, vertexData.Peye[2], screen_size);
     vec2 v3 = projectToScreen(projMat, vertexData.Peye[3], screen_size);
 
-    float maxTess = GetMaxTess();
-
     // Need to handle off screen
     float dist = distance(v0, v1) + distance(v1, v2) + distance(v2, v3);
-    float level = clamp(dist / GetPixelToTessRatio(), 0.0f, maxTess);
+    float level = TessLengthFromScreenSize(dist);
 
     SetTessFactors(1.0f, level, 0.0f, 0.0f, 0.0f, 0.0f);
 }
@@ -488,11 +534,9 @@ void determineLODSettings(CurveData vertexData)
     vec2 v2 = projectToScreen(projMat, vertexData.Peye[2], screen_size);
     vec2 v3 = projectToScreen(projMat, vertexData.Peye[3], screen_size);
 
-    float maxTess = GetMaxTess();
-
     // Need to handle off screen
     float dist = distance(v0, v1) + distance(v1, v2) + distance(v2, v3);
-    float level = clamp(dist / GetPixelToTessRatio(), 0.0f, maxTess);
+    float level = TessLengthFromScreenSize(dist);
 
     SetTessFactors(level, 1.0f, level, 1.0f, 1.0f, level);
 }
@@ -500,50 +544,61 @@ void determineLODSettings(CurveData vertexData)
 --- --------------------------------------------------------------------------
 -- glsl Curves.CommonControl.Cubic.HalfTube
 
-// Use the width & length of the control points in screen space to determine how 
-// many times to subdivide the curve.  NOTE.  As a quick hack, we leverage the
-// fact that the normal isn't normalized at this point in the pipeline to 
-// provide a quick estimate of width in eye space.  If that becomes a bad
-// assumption in the future, this needs to be reworked.
+float evaluateBasisWidth(float u,
+    CurveData vertexData, float screenSpaceWidthsArr[4])
+{
+    vec4 basis = evaluateBasis(u, vertexData.Peye).basis;
+
+    float screenSpaceWidth = basis[0] * screenSpaceWidthsArr[0] 
+        + basis[1] * screenSpaceWidthsArr[1]
+        + basis[2] * screenSpaceWidthsArr[2]
+        + basis[3] * screenSpaceWidthsArr[3];
+
+    // increase detail in width by this value so tube curvature is better
+    // captured
+    const float widthMultiplier = 2.0;
+    return TessWidthFromScreenSize(screenSpaceWidth * widthMultiplier);
+}
+
+// Use the length of the control points in screen space to determine how many
+// times to subdivide the curve.
+// Use the width of the evaluated points in screen space to determine
+// width-wise subdivision.
 void determineLODSettings(CurveData vertexData)
 {
     MAT4 projMat = GetProjectionMatrix();
     vec4 viewport = GetViewport();
     vec2 screen_size = vec2(viewport.z, viewport.w);
+
+    // Length-wise factors
     vec2 v0 = projectToScreen(projMat, vertexData.Peye[0], screen_size);
     vec2 v1 = projectToScreen(projMat, vertexData.Peye[1], screen_size);
     vec2 v2 = projectToScreen(projMat, vertexData.Peye[2], screen_size);
     vec2 v3 = projectToScreen(projMat, vertexData.Peye[3], screen_size);
 
-    // NOTE. We've observed that outData.Neye is not normalized, and
-    // we're using its length as an estimator of the accumulated transform
-    float wEye0 = HdGet_widths(0) * length(vertexData.Neye[0]);
-    float wEye1 = HdGet_widths(1) * length(vertexData.Neye[1]);
-    float wEye2 = HdGet_widths(2) * length(vertexData.Neye[2]);
-    float wEye3 = HdGet_widths(3) * length(vertexData.Neye[3]);
-
-    // project a point that is 'w' units away from the origin
-    vec2 v_w0 = projectToScreen(projMat, vec4(wEye0, 0, 0, 1), screen_size);
-    vec2 v_w1 = projectToScreen(projMat, vec4(wEye1, 0, 0, 1), screen_size);
-    vec2 v_w2 = projectToScreen(projMat, vec4(wEye2, 0, 0, 1), screen_size);
-    vec2 v_w3 = projectToScreen(projMat, vec4(wEye3, 0, 0, 1), screen_size);
-
-    float maxTess = GetMaxTess();
-    // reduce the tessellation in the width by this value.
-    float widthDecimation = 10.0;
-
     // Need to handle off screen
     float dist = distance(v0, v1) + distance(v1, v2) + distance(v2, v3);
-    float level = clamp(dist / GetPixelToTessRatio(), 0.0f, maxTess);
+    float level = TessLengthFromScreenSize(dist);
 
-    float maxWidthScreenSpace = 
-      max(max(max(length(v_w0), length(v_w1)), length(v_w2)), length(v_w3));
+    // Width-wise factors
+    float widths[4];
+    widths[0] = GetScreenSpaceWidth(0, vertexData, projMat);
+    widths[1] = GetScreenSpaceWidth(1, vertexData, projMat);
+    widths[2] = GetScreenSpaceWidth(2, vertexData, projMat);
+    widths[3] = GetScreenSpaceWidth(3, vertexData, projMat);
 
-    float level_w = clamp(
-        maxWidthScreenSpace / GetPixelToTessRatio() / widthDecimation,
-        1.0f, maxTess);
+    // Convert control point relative width to evaluated 
+    // width based tessellation level
+    float level_u0_00 = evaluateBasisWidth(0.00, vertexData, widths);
+    float level_u0_33 = evaluateBasisWidth(0.33, vertexData, widths);
+    float level_u0_66 = evaluateBasisWidth(0.66, vertexData, widths);
+    float level_u1_00 = evaluateBasisWidth(1.00, vertexData, widths);
 
-    SetTessFactors(level, level_w, level, level_w, level_w, level);
+    float level_uAvg = (level_u0_00 + level_u0_33
+        + level_u0_66 + level_u1_00) / 4.0;
+
+    // using level_u0_00 and level_u1_00 on edges to avoid discontinuities
+    SetTessFactors(level, level_u0_00, level, level_u1_00, level_uAvg, level);
 }
 
 --- --------------------------------------------------------------------------
@@ -712,26 +767,7 @@ void main()
     MAT4 projMat = GetProjectionMatrix();
 
 #if defined(HD_HAS_screenSpaceWidths) || defined(HD_HAS_minScreenSpaceWidths)
-
-    // If any screen space width operations are required, compute the 
-    // conversion factor from world units to screen pixels at this curve tess
-    // position. Critically, this procedure does not rely on the thickening
-    // 'direction' vector, which may point out of the image plane and have 
-    // zero apparent screen-space length in some circumstances.
-    //
-    // This procedure is correct for both perspective and ortho cameras. It is a
-    // boiled-down x-only expression of the projected pixel length of a
-    // hypothetical unit X vector in eye space, and can be derived by writing a
-    // projection matrix transforming (1,0,0,1) and performing the usual 
-    // division by w. Since the viewport is 2 NDC units across, we take half the
-    // viewportSizeX. The division is by -position.z for perspective projections
-    // and by 1 for ortho projections, using entries 2,3 and 3,3 to select
-    // which. See articles on the forms of these projection matrices for more
-    // info.
-    float x = projMat[0][0];
-    float w = position.z * projMat[2][3] + projMat[3][3];
-    float viewportSizeX = GetViewport().z;
-    float worldToPixelWidth = abs((viewportSizeX * 0.5) * (x / w));
+    float worldToPixelWidth = WorldToPixelWidth(projMat, position.z);
 
 #ifdef HD_HAS_screenSpaceWidths
     if (HdGet_screenSpaceWidths()) {

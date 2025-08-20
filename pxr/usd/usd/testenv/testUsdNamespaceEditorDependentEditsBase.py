@@ -6,12 +6,16 @@
 # https://openusd.org/license.
 
 import contextlib, inspect, sys, unittest
-from pxr import Sdf, Usd
+from pxr import Tf, Usd
 
 class TestUsdNamespaceEditorDependentEditsBase(unittest.TestCase):
     '''Base class for testUsdNamespaceEditDependentEditsXXX tests which 
     provides share utilities for verifying outcomes of edits.
     '''
+
+    # Assign the Objects changed PrimResyncType enum to reduce namespace
+    # clutter in the test cases.
+    PrimResyncType = Usd.Notice.ObjectsChanged.PrimResyncType
 
     @contextlib.contextmanager
     def ApplyEdits(self, editor, label, expectWarnings = False):
@@ -39,12 +43,93 @@ class TestUsdNamespaceEditorDependentEditsBase(unittest.TestCase):
         if expectWarnings:
             print("\n=== EXPECT WARNINGS ===", file=sys.stderr)
         self.assertTrue(editor.CanApplyEdits())
+
+        # Register an ObjectsChanged notice handler while applying the edits
+        # to store the resynced objects and their resync types for verification.
+        self.resyncedObjectsPerStage = {}
+        objectsChanged = Tf.Notice.RegisterGlobally(
+            Usd.Notice.ObjectsChanged, self._OnObjectsChanged)
         self.assertTrue(editor.ApplyEdits())       
+        objectsChanged.Revoke()
+
         if expectWarnings:
             print("\n=== END EXPECTED WARNINGS ===", file=sys.stderr)
 
         print("==== End ApplyEdits : {} ====".format(msg))
         print("==== End ApplyEdits : {} ====".format(msg), file=sys.stderr)
+
+    def _OnObjectsChanged(self, notice, sender):
+        """Notice handler callback for ObjectsChanged notices sent by stages
+        affected by the edits applied in ApplyEdits function. This classifies
+        the calls the notice's GetPrimResyncType for each resynced path in the 
+        notice, verifies expected invariants around associated paths, and stores
+        a dictionary of resync path to resync type for comparison in 
+        _VerifyStageResyncNotices. 
+        """
+
+        def _GetResyncTypeWithVerification(notice, path):
+            # GetResyncType, in python, returns a tuple of the resync type and
+            # its associated path for resync types where it is relevant. Each 
+            # resynced path with a Rename/Reparent/RenameAndReparent Source type
+            # will have an associated resynced path whose resync type is the 
+            # complementing Rename/Reparent/RenameAndReparent Destination type
+            # and whose associated path is the Source's path. All other resync
+            # types will return an empty associated path. We verify that all
+            # here before returning just the resync type 
+            resyncType, associatedPath = notice.GetPrimResyncType(path)
+
+            def _VerifyAssociatedResync(associatesResyncType):
+                self.assertTrue(associatedPath,
+                    msg = "Failed check of GetPrimResyncType({}) on "
+                        "ObjectsChanged notice from stage {}".format(
+                            path, notice.GetStage()))
+                self.assertEqual(notice.GetPrimResyncType(associatedPath),
+                    (associatesResyncType, path),
+                    msg = "Failed check of associated GetPrimResyncType({}) on"
+                        "ObjectsChanged notice from stage {}".format(
+                            associatedPath, notice.GetStage()))
+
+            if resyncType == self.PrimResyncType.RenameSource:
+                _VerifyAssociatedResync(
+                    self.PrimResyncType.RenameDestination)
+            elif resyncType == self.PrimResyncType.ReparentSource:
+                _VerifyAssociatedResync(
+                    self.PrimResyncType.ReparentDestination)
+            elif resyncType == self.PrimResyncType.RenameAndReparentSource:
+                _VerifyAssociatedResync(
+                    self.PrimResyncType.RenameAndReparentDestination,)
+            elif resyncType == self.PrimResyncType.RenameDestination:
+                _VerifyAssociatedResync(
+                    self.PrimResyncType.RenameSource)
+            elif resyncType == self.PrimResyncType.ReparentDestination:
+                _VerifyAssociatedResync(
+                    self.PrimResyncType.ReparentSource)
+            elif resyncType == self.PrimResyncType.RenameAndReparentDestination:
+                _VerifyAssociatedResync(
+                    self.PrimResyncType.RenameAndReparentSource)
+            else:
+                self.assertFalse(associatedPath)
+
+            return resyncType
+
+        # For the notice's stage, store the dictionary of all resynced paths
+        # returned by the notice mapped to their verified resync types. This
+        # can be verified against in _VerifyStageResyncNotices.
+        self.resyncedObjectsPerStage[notice.GetStage()] = {
+            str(resyncedPath) : 
+                _GetResyncTypeWithVerification(notice, resyncedPath) \
+            for resyncedPath in notice.GetResyncedPaths()
+        }
+
+    def _VerifyStageResyncNotices(self, stage, expectedResyncsDict):
+        """Helper for verifying the expected prim resyncs and their types that 
+        are returned by a stage's ObjectsChanged notice when edits are applied
+        through the this test fixtures ApplyEdits function."""
+        if expectedResyncsDict is None:
+            self.assertNotIn(stage, self.resyncedObjectsPerStage)
+        else:
+            self.assertEqual(self.resyncedObjectsPerStage[stage], 
+                             expectedResyncsDict)
 
     def _VerifyPrimContents(self, prim, expectedContentsDict):
         '''Helper that verifies the contents of a USD prim, specifically its

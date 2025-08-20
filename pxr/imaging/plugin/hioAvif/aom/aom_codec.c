@@ -16,11 +16,11 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-#include "pxr/imaging/plugin/hioAvif/aom/config/aom_config.h"
-#include "pxr/imaging/plugin/hioAvif/aom/config/aom_version.h"
+#include "config/aom_config.h"
+#include "config/aom_version.h"
 
-#include "pxr/imaging/plugin/hioAvif/aom/aom_integer.h"
-#include "pxr/imaging/plugin/hioAvif/aom/internal/aom_codec_internal.h"
+#include "aom/aom_integer.h"
+#include "aom/internal/aom_codec_internal.h"
 
 int aom_codec_version(void) { return VERSION_PACKED; }
 

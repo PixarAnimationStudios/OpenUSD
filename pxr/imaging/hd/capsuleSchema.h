@@ -78,6 +78,9 @@ public:
     HD_API
     HdDoubleDataSourceHandle GetHeight() const;
 
+    /// Deprecated. Only use if no radiusTop or radiusBottom data source.
+    /// Comes from UsdGeom Capsule which has been deprecated in favor of
+    /// Capsule_1.
     HD_API
     HdDoubleDataSourceHandle GetRadius() const;
 

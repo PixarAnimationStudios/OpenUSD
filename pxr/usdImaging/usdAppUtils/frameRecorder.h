@@ -45,10 +45,14 @@ public:
     /// plugin will be chosen depending on the value of \p gpuEnabled.
     /// The \p gpuEnabled argument determines if the UsdAppUtilsFrameRecorder
     /// instance will allow Hydra to use the GPU to produce images.
+    /// The \p enableUsdDrawModes argument determines whether the frame
+    /// recorder instance will respect USD draw modes as authored. Setting
+    /// this to false causes the frame recorder to ignore draw modes.
     USDAPPUTILS_API
     UsdAppUtilsFrameRecorder(
         const TfToken& rendererPluginId = TfToken(),
-        bool gpuEnabled = true);
+        bool gpuEnabled = true,
+        bool enableUsdDrawModes = true);
 
     /// Gets the ID of the Hydra renderer plugin that will be used for
     /// recording.
@@ -133,6 +137,10 @@ public:
     USDAPPUTILS_API
     void SetIncludedPurposes(const TfTokenVector& purposes);
 
+    /// Sets the primary camera prim path.
+    USDAPPUTILS_API
+    void SetPrimaryCameraPrimPath(const SdfPath& cameraPath);
+
     /// Records an image and writes the result to \p outputImagePath.
     ///
     /// The recorded image will represent the view from \p usdCamera looking at
@@ -141,11 +149,11 @@ public:
     /// If \p usdCamera is not a valid camera, a camera will be computed
     /// to automatically frame the stage geometry.
     ///
-    /// When we are using a RenderSettings prim, the generated image will be 
-    /// written to the file indicated on the connected RenderProducts, 
+    /// When we are using a RenderSettings prim, the generated image will be
+    /// written to the file indicated on the connected RenderProducts,
     /// instead of the given \p outputImagePath. Note that in this case the
-    /// given \p usdCamera will later be overridden by the one authored on the 
-    /// RenderSettings Prim. 
+    /// given \p usdCamera will later be overridden by the one authored on the
+    /// RenderSettings Prim.
     ///
     /// Returns true if the image was generated and written successfully, or
     /// false otherwise.

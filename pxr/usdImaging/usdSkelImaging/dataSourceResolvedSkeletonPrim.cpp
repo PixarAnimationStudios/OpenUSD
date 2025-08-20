@@ -25,6 +25,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
+// Wrapper around std::set_union to compute the set-wise union of two
+// sorted vectors of sample times.
+static std::vector<HdSampledDataSource::Time>
+_Union(const std::vector<HdSampledDataSource::Time> &a,
+       const std::vector<HdSampledDataSource::Time> &b)
+{
+    std::vector<HdSampledDataSource::Time> result;
+    std::set_union(a.begin(), a.end(),
+                   b.begin(), b.end(),
+                   std::back_inserter(result));
+    return result;
+}
+
 /// Data source for resolvedSkeleton/skinningTransforms
 class _SkinningTransformsDataSource : public HdMatrix4fArrayDataSource
 {
@@ -50,10 +63,38 @@ public:
         HdSampledDataSourceHandle const ds[] = {
             _translationsDataSource, _rotationsDataSource, _scalesDataSource };
 
-        return
-            HdGetMergedContributingSampleTimesForInterval(
+        if (!HdGetMergedContributingSampleTimesForInterval(
                 std::size(ds), ds,
-                startTime, endTime, outSampleTimes);
+                startTime, endTime,
+                outSampleTimes)) {
+            return false;
+        }
+
+        if (outSampleTimes) {
+            // Replicate behavior of usdSkel/skeletonAdapter.cpp
+            // and usdImagingDelegate.
+            //
+            // startTime and endTime are explictily added by
+            // _UnionTimeSample in skeletonAdapter.cpp
+            //
+            // The 0 sample time ended up in a more circuitous route:
+            // If a USD attribute is not animated, the UsdImagingDelegate
+            // sample method gives a sample at time zero.
+            // HdsiExtComputationPrimvarPruningSceneIndex takes the union
+            // of all input time samples.
+            // For skeletons served by the UsdImagingDelegate, the
+            // geomBindTransform is typically not animated and ultimately
+            // causes the 0 sample time to be seen by the render delegate.
+            //
+            // TODO: This should be controlled by the Usd MotionAPI.
+            // It is unclear though whether to apply it to the Skeleton
+            // or the affected mesh.
+            //
+            *outSampleTimes = _Union(
+                *outSampleTimes, { startTime, 0.0f, endTime });
+        }
+
+        return true;
     }
 
 private:

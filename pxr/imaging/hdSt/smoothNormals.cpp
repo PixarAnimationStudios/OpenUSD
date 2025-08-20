@@ -255,6 +255,19 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     HdStBufferArrayRangeSharedPtr adjacencyRange =
         std::static_pointer_cast<HdStBufferArrayRange>(adjacencyRange_);
 
+    HdStBufferArrayRangeSharedPtr range =
+        std::static_pointer_cast<HdStBufferArrayRange> (range_);
+
+    // buffer resources for GPU computation
+    HdStBufferResourceSharedPtr points = range->GetResource(_srcName);
+    HdStBufferResourceSharedPtr normals = range->GetResource(_dstName);
+    HdStBufferResourceSharedPtr adjacency = adjacencyRange->GetResource();
+
+    if (!points->GetHandle() || !normals->GetHandle() ||
+        !adjacency->GetHandle()) {
+        return;
+    }
+
     // select shader by datatype
     TfToken shaderToken;
     if (_srcDataType == HdTypeFloatVec3) {
@@ -338,13 +351,6 @@ HdSt_SmoothNormalsComputationGPU::Execute(
 
     if (!computeProgram) return;
 
-    HdStBufferArrayRangeSharedPtr range =
-        std::static_pointer_cast<HdStBufferArrayRange> (range_);
-
-    // buffer resources for GPU computation
-    HdStBufferResourceSharedPtr points = range->GetResource(_srcName);
-    HdStBufferResourceSharedPtr normals = range->GetResource(_dstName);
-    HdStBufferResourceSharedPtr adjacency = adjacencyRange->GetResource();
 
     // prepare uniform buffer for GPU computation
     // coherent vertex offset in aggregated buffer array

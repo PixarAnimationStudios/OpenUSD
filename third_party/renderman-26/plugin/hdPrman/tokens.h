@@ -60,13 +60,16 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanRenderParamTokens,
                          HD_PRMAN_RENDER_PARAM_TOKENS);
 
 #define HD_PRMAN_PLUGIN_TOKENS \
-    ((motionBlur,       "HdPrman_MotionBlurSceneIndexPlugin")) \
-    ((extComp,          "HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin")) \
-    ((retesselation,    "HdPrman_RetesselationSceneIndexPlugin"))
+    ((motionBlur,        "HdPrman_MotionBlurSceneIndexPlugin")) \
+    ((extComp,           "HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin")) \
+    ((retesselation,     "HdPrman_RetesselationSceneIndexPlugin")) \
+    ((vblurInterpreting, "HdPrman_VblurInterpretingSceneIndexPlugin")) \
+    ((velocityMotion,    "HdPrman_VelocityMotionResolvingSceneIndexPlugin"))
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanPluginTokens, HD_PRMAN_PLUGIN_TOKENS);
 
 const std::vector<std::string>& HdPrman_GetPluginDisplayNames();
+const TfTokenVector& HdPrman_GetRenderContexts();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

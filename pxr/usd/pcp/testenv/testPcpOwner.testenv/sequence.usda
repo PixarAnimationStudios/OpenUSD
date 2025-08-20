@@ -1,0 +1,8 @@
+#usda 1.0
+(
+)
+
+def GprimSphere "Sphere"
+{
+    double radius = 0;
+}

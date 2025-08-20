@@ -113,6 +113,7 @@ HdSt_TestDriver::_CreateRenderPassState()
             _GetRenderDelegate()->CreateRenderPassState()) };
     // set depthfunc to GL default
     _renderPassStates[0]->SetDepthFunc(HdCmpFuncLess);
+    _renderPassStates[0]->SetAlphaToCoverageEnabled(true);
 }
 
 HdRenderPassSharedPtr const &

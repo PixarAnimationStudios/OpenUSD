@@ -359,6 +359,7 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
     // GlfSimpleShadowArray's shadow textures to the textures backing the 
     // shadow render buffers.
     std::vector<uint32_t> textureIds;
+    HgiTextureHandleVector textureHandles;
     for (size_t shadowId = 0; shadowId < numShadowMaps; shadowId++) {
         if (shadowId < shadowAovBindings.size()) {
             HdRenderBuffer const * renderBuffer = 
@@ -368,6 +369,12 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
                 HgiTextureHandle texture = aov.UncheckedGet<HgiTextureHandle>();
                 if (texture) {
                     textureIds.push_back((uint32_t)texture->GetRawResource());
+                    
+                    // While we're here, transition layout of texture to depth
+                    // target. Store textures in vector so we can transition
+                    // back after shadow render passes complete.
+                    texture->SubmitLayoutChange(HgiTextureUsageBitsDepthTarget);
+                    textureHandles.push_back(texture);
                 }
             }
         }
@@ -443,6 +450,11 @@ HdxShadowTask::Execute(HdTaskContext* ctx)
                     "Failed to write shadow texture: %s\n", filename.c_str());
             }
         }
+    }
+
+    // Transition layout of shadows maps to shader read for next render tasks.
+    for (HgiTextureHandle& texture : textureHandles) {
+        texture->SubmitLayoutChange(HgiTextureUsageBitsShaderRead);
     }
 }
 

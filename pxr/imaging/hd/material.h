@@ -28,7 +28,10 @@ public:
         // XXX: Got to skip varying and force sync bits for now
         DirtyParams           = 1 << 2,
         DirtyResource         = 1 << 3,
-        AllDirty              = (DirtyParams | DirtyResource)
+        DirtySurface          = 1 << 4,
+        DirtyDisplacement     = 1 << 5,
+        DirtyVolume           = 1 << 6,
+        AllDirty              = (DirtyParams | DirtyResource | DirtySurface | DirtyDisplacement | DirtyVolume)
     };
 
     HD_API

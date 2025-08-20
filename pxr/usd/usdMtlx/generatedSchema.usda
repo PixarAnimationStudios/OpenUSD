@@ -4,19 +4,17 @@
 )
 
 class "MaterialXConfigAPI" (
-    doc = """MaterialXConfigAPI is an API schema that provides an interface for
-    storing information about the MaterialX environment.
-
-    Initially, it only exposes an interface to record the MaterialX library
-    version that data was authored against. The intention is to use this
-    information to allow the MaterialX library to perform upgrades on data
-    from prior MaterialX versions.
-    """
+    customData = {
+        string userDocBrief = """MaterialXConfigAPI is an API schema that provides an interface for
+    storing information about the MaterialX environment."""
+    }
 )
 {
     string config:mtlx:version = "1.38" (
-        doc = """MaterialX library version that the data has been authored
-        against. Defaults to 1.38 to allow correct verisoning of old files."""
+        customData = {
+            string userDocBrief = """MaterialX library version that the data has been authored
+        against."""
+        }
     )
 }
 

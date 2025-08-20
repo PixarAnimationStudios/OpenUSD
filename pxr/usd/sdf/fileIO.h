@@ -8,7 +8,7 @@
 #define PXR_USD_SDF_FILE_IO_H
 
 #include "pxr/pxr.h"
-
+#include "pxr/usd/sdf/fileVersion.h"
 #include "pxr/usd/ar/ar.h"
 
 #include "pxr/usd/ar/writableAsset.h"
@@ -29,49 +29,71 @@ class Sdf_StreamWritableAsset
     : public ArWritableAsset
 {
 public:
+    SDF_API
     explicit Sdf_StreamWritableAsset(std::ostream& out)
-        : _out(out)
+    : _offset(0)
+    , _out(out)
     {
     }
 
+    SDF_API
     virtual ~Sdf_StreamWritableAsset();
 
     bool Close() override
     {
         _out.flush();
+        _offset = 0;
         return true;
     }
 
     size_t Write(const void* buffer, size_t count, size_t offset) override
     {
-        // The offset is ignored as we assume this object will only be
-        // used for sequential writes. This is a performance optimization,
-        // since calling tellp repeatedly can be expensive.
-        // if (_out.tellp() != static_cast<ssize_t>(offset)) {
-        //     _out.seekp(offset);
-        // }
+        if (offset != _offset) {
+            // The caller wants to seek. This may fail depending on the
+            // ostream. Streams to pipes or terminals are not seekable. If the
+            // seek fails, it may even raise an exception so handle it
+            // carefully.
+            try {
+                _out.seekp(offset);
+            } catch (const std::ios_base::failure&) {
+                // Ignore the exception. We're going to check for failure below.
+            }
+
+            if (_out.fail()) {
+                // We could not seek. Do not output any bytes.
+                return 0;
+            }
+
+            _offset = offset;
+        }
 
         _out.write(static_cast<const char*>(buffer), count);
+        _offset += count;
+
         return count;
     }
 
 private:
+    size_t _offset;
     std::ostream& _out;
 };
 
-// Helper class for writing out strings for the text file format.
+// Class for managing reading and writing multiple versions of text files.
 class Sdf_TextOutput
 {
 public:
-    explicit Sdf_TextOutput(std::ostream& out)
-        : Sdf_TextOutput(std::make_shared<Sdf_StreamWritableAsset>(out))
+    explicit Sdf_TextOutput(std::ostream& out,
+                          const std::string& name)
+    : Sdf_TextOutput(std::make_shared<Sdf_StreamWritableAsset>(out), name)
     { }
 
-    explicit Sdf_TextOutput(std::shared_ptr<ArWritableAsset>&& asset)
+    explicit Sdf_TextOutput(std::shared_ptr<ArWritableAsset>&& asset,
+                          const std::string& name)
         : _asset(std::move(asset))
         , _offset(0)
         , _buffer(new char[BUFFER_SIZE])
         , _bufferPos(0)
+        , _name(name)
     { }
 
     ~Sdf_TextOutput()
@@ -91,7 +113,9 @@ public:
             return true;
         }
 
-        const bool ok = _FlushBuffer() && _asset->Close();
+        const bool ok = _FlushBuffer() &&
+                        _UpdateHeader() &&
+                        _asset->Close();
         _asset.reset();
         return ok;
     }
@@ -108,7 +132,40 @@ public:
         return _Write(str, strlen(str));
     }
 
+    // Write the header of a text file. This should be the first output when
+    // writing a USD text file. The header consists of a cookie and a
+    // version. Because the version may be updated while writing the file if
+    // advanced features are encountered, the header is padded with extra white
+    // space to allow it to be safely overwritten with a new version if
+    // necessary.
+    //
+    // If version is supplied and is valid then it will be the version written
+    // and become the version of the output. If version is not supplied or is
+    // not valid, the existing output version will be used.
+    //
+    SDF_API
+    bool WriteHeader(const std::string& cookie,
+                     const SdfFileVersion version = SdfFileVersion());
+
+    // Inform the writer that the output stream requires the given version (or
+    // newer) to represent all the features in the layer.  This allows the
+    // writer to start with a conservative version assumption and promote to
+    // newer versions only as required by the data stream contents.
+    SDF_API
+    bool RequestWriteVersionUpgrade(const SdfFileVersion& ver, std::string reason);
+
 private:
+    // Potentially update the version string in the header of the output
+    // file. This should be the last output when writing a usda text file and
+    // is invoked automatically by \c Close.
+    //
+    // If \c RequestWriteVersionUpgrade has upgraded the version, this method
+    // will update the header at the beginning of the file. Not all outputs
+    // support seeking (like terminals or pipes) so a runtime error will be
+    // emitted if the version needs to be updated but cannot be.
+    SDF_API
+    bool _UpdateHeader();
+
     bool _Write(const char* str, size_t strLength)
     {
         // Much of the text format writing code writes small number of
@@ -151,12 +208,30 @@ private:
         return true;
     };
 
+    bool _Seek(size_t pos) {
+        if (!_FlushBuffer()) {
+            return false;
+        }
+
+        // We don't actually seek, we just arrange for the next output
+        // to occur at pos. If pos is out of range or the output does
+        // not support seeking, the next write operation may fail.
+        _offset = pos;
+
+        return true;
+    }
+
     std::shared_ptr<ArWritableAsset> _asset;
     size_t _offset;
 
     const size_t BUFFER_SIZE = 4096;
     std::unique_ptr<char[]> _buffer;
     size_t _bufferPos;
+
+    std::string _cookie;
+    SdfFileVersion _writtenVersion;
+    SdfFileVersion _requestedVersion;
+    std::string _name;
 };
 
 // Helper class for writing out strings for the text file format
@@ -166,7 +241,7 @@ class Sdf_StringOutput
 {
 public:
     explicit Sdf_StringOutput()
-        : Sdf_TextOutput(_str)
+    : Sdf_TextOutput(_str, "<string>")
     {
     }
 

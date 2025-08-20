@@ -27,9 +27,11 @@ generally practical for each client to use whatever threading system they like
 The library defaults to maximum concurrency, i.e. it will attempt to use as
 many threads as available on the system.  The default concurrency limit is
 established at static initialization time.
-The PXR_WORK_THREAD_LIMIT environment variable can be set to further limit
-concurrency, such as for example in a farm environment.  PXR_WORK_THREAD_LIMIT
-must be set to an integer N, denoting one of the following:
+If granular thread limits is enabled on the libwork backend 
+(as described in /ref work_Implementation) then the PXR_WORK_THREAD_LIMIT 
+environment variable can be set to further limit concurrency, such as for example 
+in a farm environment.  PXR_WORK_THREAD_LIMIT must be set to an integer N, 
+denoting one of the following:
     <ul>
     <li> 0 - maximum concurrency (default if unset)
     <li> 1 - single-threaded mode
@@ -38,6 +40,17 @@ must be set to an integer N, denoting one of the following:
     <li> negative N - limit to all but N hardware threads (clamped to 1)
     </ul>
 
+If granular thread limits is not enabled then the PXR_WORK_THREAD_LIMIT 
+environment variable can be set to allow maximum concurrency or run the program 
+serially.  PXR_WORK_THREAD_LIMIT must be set to an integer N, denoting one of
+the following:
+    <ul>
+    <li> 0 - maximum concurrency (default if unset)
+    <li> 1 - single-threaded mode
+    <li> positive N - maximum concurrency
+    <li> negative N - maximum concurrency (if absolute value of N equals or 
+    exceeds max physical concurrency, clamped to 1)
+    </ul>
 The concurrency limit can be set programmatically, using for example:
 
 \code
@@ -80,5 +93,116 @@ static void DoubleInParallel(std::vector<int> *v)
 \endcode
 
 You can avoid the std::bind and provide your own functor object as well.
+
+\section work_Implementation Providing an Alternate Work Implementation
+
+You can provide your own work backend that uses your preferred dispatching 
+system, instead of TBB's task/task_group API, by building your own library that 
+implements the APIs described in the following sections:
+
+Note: In each of the subsections below we list the required API and also outline
+specific behaviors that the implementations must follow.  For general 
+requirements please refer to the API docs under `pxr/base/work`.  For more 
+information on building and linking an alternate work backend to USD please refer 
+to BUILDING.md.
+\subsection work_Impl_Algorithms Parallel Algorithms API
+
+\code
+
+template <typename C>
+void WorkImpl_ParallelSort(C* container);
+
+template <typename C, typename Compare>
+void WorkImpl_ParallelSort(C* container, const Compare& comp);
+
+template <typename Fn>
+void WorkImpl_ParallelForN(size_t n, Fn &&callback, size_t grainSize);
+
+template <typename InputIterator, typename Fn>
+void WorkImpl_ParallelForEach_(InputIterator first, InputIterator last, Fn &&fn);
+
+template <typename Fn, typename Rn, typename V>
+V WorkImpl_ParallelReduceN(const V &identity,
+                           size_t n,
+                           Fn &&loopCallback,
+                           Rn &&reductionCallback);
+
+\endcode
+
+Note that the work abstraction contains a serial implementation of these
+functions so you only need to provide a concurrent implementation.
+
+\subsection work_Impl_Limiting Concurrency Limiting API
+
+\code
+
+unsigned WorkImpl_GetPhysicalConcurrencyLimit();
+
+void WorkImpl_InitializeThreading(int threadLimit);
+
+bool WorkImpl_SupportsGranularThreadLimits();
+
+unsigned WorkImpl_GetConcurrencyLimit();
+
+unsigned WorkImpl_SetConcurrencyLimit();
+
+\endcode
+
+If the implementation can support granular thread limits (limiting the 
+concurrency to any value other than 1 and maximum concurrency), you must 
+set `WorkImpl_SupportsGranularThreadLimits` accordingly and implement 
+`WorkImpl_GetConcurrencyLimit` as outlined in \ref work_Initialization above. The 
+user can implement `WorkImpl_InitializeThreading` if any thread limiting object 
+needs to be eagerly initialized if `PXR_WORK_THREAD_LIMIT` is set.
+\subsection work_Impl_Dispatch Dispatching Tasks API
+
+\code
+
+template <class Fn>
+void WorkImpl_RunDetachedTask(Fn &&fn);
+
+template <class Fn>
+auto WorkImpl_WithScopedParallelism(Fn &&fn);
+
+class WorkImpl_Dispatcher {
+    WorkImpl_Dispatcher();
+
+    ~WorkImpl_Dispatcher() noexcept;
+
+    WorkImpl_Dispatcher(WorkImpl_Dispatcher const &) = delete;
+    WorkImpl_Dispatcher &operator=(WorkImpl_Dispatcher const &) = delete;
+
+    template <class Callable>
+    void Run(Callable &&c);
+
+    void Reset();
+    void Wait();
+    void Cancel();
+}
+
+\endcode
+
+When running a detached task, you must ensure that the program does not end
+while a detached task could still be running.  An example of how this could be 
+done is in `/pxr/extras/usd/examples/workTaskflowExample/detachedTask.cpp`.
+
+When executing with scoped parallelism, the callable `fn` must be executed in the
+same calling thread as `WorkImpl_WithScopedParallelism`.
+
+On top of the documented requirements for WorkDispatcher, you must ensure 
+that `WorkImpl_Dispatcher` can execute serially and that `Run(Callable &&c)` 
+will still return immediately when single threaded.  It is common for tasks to 
+spawn more tasks for the same dispatcher, so if the implemention executes the
+callable in place, then the program runs a risk of causing a stack overflow due 
+to the now recursive nature of these nested calls.
+
+\subsection work_Impl_Caveats Caveats of an Alternate Work Backend.
+
+Currently OpenUSD and especially OpenExec take advantage of the low level 
+control over work stealing and scheduling that TBB provides to optimize our code;
+however not all work dispatching systems may provide that same functionality.  If 
+an alternate backend is not able to implement the `WorkImpl_IsolatingDispatcher`, 
+the abstraction will default to the `WorkImpl_Dispatcher`, and if so it is 
+possible that the performance of OpenUSD and OpenExec may suffer.
 
 */

@@ -1,15 +1,15 @@
-Loading @TrickyLocalClassHierarchyWithRelocates/root.sdf@
+Loading @TrickyLocalClassHierarchyWithRelocates/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </C_1>
 
 Prim Stack:
-    root.sdf             /C_1
-    Sullivan_masterrig.sdf /C
+    root.usda            /C_1
+    Sullivan_masterrig.usda /C
 
 Child names:
      ['ArmsRig', 'CollisionRig']
@@ -18,8 +18,8 @@ Child names:
 Results for composing </C_1/ArmsRig>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/ArmsRig
-    ArmsRig.sdf          /ArmsRig
+    Sullivan_masterrig.usda /C/ArmsRig
+    ArmsRig.usda         /ArmsRig
 
 Child names:
      ['_Class_ArmRig', 'SymArmRig', 'LArmRig']
@@ -28,8 +28,8 @@ Child names:
 Results for composing </C_1/ArmsRig/_Class_ArmRig>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/ArmsRig/_Class_ArmRig
-    ArmsRig.sdf          /ArmsRig/_Class_ArmRig
+    Sullivan_masterrig.usda /C/ArmsRig/_Class_ArmRig
+    ArmsRig.usda         /ArmsRig/_Class_ArmRig
 
 Child names:
      ['ArmRegion']
@@ -38,8 +38,8 @@ Child names:
 Results for composing </C_1/ArmsRig/_Class_ArmRig/ArmRegion>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/ArmsRig/_Class_ArmRig/ArmRegion
-    Sullivan_masterrig.sdf /C/CollisionRig/_Class_CollisionRig/_class_Region
+    Sullivan_masterrig.usda /C/ArmsRig/_Class_ArmRig/ArmRegion
+    Sullivan_masterrig.usda /C/CollisionRig/_Class_CollisionRig/_class_Region
 
 Child names:
      ['Region']
@@ -48,15 +48,15 @@ Child names:
 Results for composing </C_1/ArmsRig/_Class_ArmRig/ArmRegion/Region>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/CollisionRig/_Class_CollisionRig/_class_Region/Region
+    Sullivan_masterrig.usda /C/CollisionRig/_Class_CollisionRig/_class_Region/Region
 
 ------------------------------------------------------------------------
 Results for composing </C_1/ArmsRig/SymArmRig>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/ArmsRig/_Class_ArmRig
-    ArmsRig.sdf          /ArmsRig/SymArmRig
-    ArmsRig.sdf          /ArmsRig/_Class_ArmRig
+    Sullivan_masterrig.usda /C/ArmsRig/_Class_ArmRig
+    ArmsRig.usda         /ArmsRig/SymArmRig
+    ArmsRig.usda         /ArmsRig/_Class_ArmRig
 
 Child names:
      ['ArmRegion']
@@ -65,8 +65,8 @@ Child names:
 Results for composing </C_1/ArmsRig/SymArmRig/ArmRegion>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/ArmsRig/_Class_ArmRig/ArmRegion
-    Sullivan_masterrig.sdf /C/CollisionRig/_Class_CollisionRig/_class_Region
+    Sullivan_masterrig.usda /C/ArmsRig/_Class_ArmRig/ArmRegion
+    Sullivan_masterrig.usda /C/CollisionRig/_Class_CollisionRig/_class_Region
 
 Child names:
      ['Region']
@@ -75,16 +75,16 @@ Child names:
 Results for composing </C_1/ArmsRig/SymArmRig/ArmRegion/Region>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/CollisionRig/_Class_CollisionRig/_class_Region/Region
+    Sullivan_masterrig.usda /C/CollisionRig/_Class_CollisionRig/_class_Region/Region
 
 ------------------------------------------------------------------------
 Results for composing </C_1/ArmsRig/LArmRig>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/ArmsRig/_Class_ArmRig
-    ArmsRig.sdf          /ArmsRig/LArmRig
-    ArmsRig.sdf          /ArmsRig/SymArmRig
-    ArmsRig.sdf          /ArmsRig/_Class_ArmRig
+    Sullivan_masterrig.usda /C/ArmsRig/_Class_ArmRig
+    ArmsRig.usda         /ArmsRig/LArmRig
+    ArmsRig.usda         /ArmsRig/SymArmRig
+    ArmsRig.usda         /ArmsRig/_Class_ArmRig
 
 Child names:
      ['ArmRegion']
@@ -93,8 +93,8 @@ Child names:
 Results for composing </C_1/ArmsRig/LArmRig/ArmRegion>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/ArmsRig/_Class_ArmRig/ArmRegion
-    Sullivan_masterrig.sdf /C/CollisionRig/_Class_CollisionRig/_class_Region
+    Sullivan_masterrig.usda /C/ArmsRig/_Class_ArmRig/ArmRegion
+    Sullivan_masterrig.usda /C/CollisionRig/_Class_CollisionRig/_class_Region
 
 Prohibited child names:
      ['Region']
@@ -103,7 +103,7 @@ Prohibited child names:
 Results for composing </C_1/CollisionRig>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/CollisionRig
+    Sullivan_masterrig.usda /C/CollisionRig
 
 Child names:
      ['_Class_CollisionRig', 'Body']
@@ -112,7 +112,7 @@ Child names:
 Results for composing </C_1/CollisionRig/_Class_CollisionRig>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/CollisionRig/_Class_CollisionRig
+    Sullivan_masterrig.usda /C/CollisionRig/_Class_CollisionRig
 
 Child names:
      ['_class_Region', 'CollBody']
@@ -121,7 +121,7 @@ Child names:
 Results for composing </C_1/CollisionRig/_Class_CollisionRig/_class_Region>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/CollisionRig/_Class_CollisionRig/_class_Region
+    Sullivan_masterrig.usda /C/CollisionRig/_Class_CollisionRig/_class_Region
 
 Child names:
      ['Region']
@@ -130,13 +130,13 @@ Child names:
 Results for composing </C_1/CollisionRig/_Class_CollisionRig/_class_Region/Region>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/CollisionRig/_Class_CollisionRig/_class_Region/Region
+    Sullivan_masterrig.usda /C/CollisionRig/_Class_CollisionRig/_class_Region/Region
 
 ------------------------------------------------------------------------
 Results for composing </C_1/CollisionRig/_Class_CollisionRig/CollBody>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/CollisionRig/_Class_CollisionRig/CollBody
+    Sullivan_masterrig.usda /C/CollisionRig/_Class_CollisionRig/CollBody
 
 Child names:
      ['SimRegions']
@@ -145,14 +145,14 @@ Child names:
 Results for composing </C_1/CollisionRig/_Class_CollisionRig/CollBody/SimRegions>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/CollisionRig/_Class_CollisionRig/CollBody/SimRegions
+    Sullivan_masterrig.usda /C/CollisionRig/_Class_CollisionRig/CollBody/SimRegions
 
 ------------------------------------------------------------------------
 Results for composing </C_1/CollisionRig/Body>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/CollisionRig/Body
-    Sullivan_masterrig.sdf /C/CollisionRig/_Class_CollisionRig
+    Sullivan_masterrig.usda /C/CollisionRig/Body
+    Sullivan_masterrig.usda /C/CollisionRig/_Class_CollisionRig
 
 Child names:
      ['_class_Region', 'CollBody']
@@ -161,7 +161,7 @@ Child names:
 Results for composing </C_1/CollisionRig/Body/_class_Region>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/CollisionRig/_Class_CollisionRig/_class_Region
+    Sullivan_masterrig.usda /C/CollisionRig/_Class_CollisionRig/_class_Region
 
 Child names:
      ['Region']
@@ -170,13 +170,13 @@ Child names:
 Results for composing </C_1/CollisionRig/Body/_class_Region/Region>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/CollisionRig/_Class_CollisionRig/_class_Region/Region
+    Sullivan_masterrig.usda /C/CollisionRig/_Class_CollisionRig/_class_Region/Region
 
 ------------------------------------------------------------------------
 Results for composing </C_1/CollisionRig/Body/CollBody>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/CollisionRig/_Class_CollisionRig/CollBody
+    Sullivan_masterrig.usda /C/CollisionRig/_Class_CollisionRig/CollBody
 
 Child names:
      ['SimRegions']
@@ -185,7 +185,7 @@ Child names:
 Results for composing </C_1/CollisionRig/Body/CollBody/SimRegions>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/CollisionRig/_Class_CollisionRig/CollBody/SimRegions
+    Sullivan_masterrig.usda /C/CollisionRig/_Class_CollisionRig/CollBody/SimRegions
 
 Child names:
      ['LArm']
@@ -194,5 +194,5 @@ Child names:
 Results for composing </C_1/CollisionRig/Body/CollBody/SimRegions/LArm>
 
 Prim Stack:
-    Sullivan_masterrig.sdf /C/CollisionRig/_Class_CollisionRig/_class_Region/Region
+    Sullivan_masterrig.usda /C/CollisionRig/_Class_CollisionRig/_class_Region/Region
 

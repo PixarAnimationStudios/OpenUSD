@@ -612,13 +612,37 @@ ParseDoubleVector(
     }
 }
 
+static bool ParseBool(int& i, int argc, char *argv[])
+{
+    if (i + 1 == argc) {
+        ParseError(argv[0], "missing parameter for '%s'", argv[i]);
+        return false;
+    }
+
+    bool result = false;
+    if (strcmp(argv[i + 1], "true") == 0) {
+        result = true;
+    } else if (strcmp(argv[i + 1], "false") == 0) {
+        result = false;
+    } else {
+        ParseError(argv[0], "invalid parameter for '%s': %s. Must be either "
+                            "'true' or 'false'",
+                   argv[i], argv[i + 1]);
+    }
+
+    ++i;
+    return result;
+}
+
 static VtValue ParseVtValue(int &i, int argc, char *argv[])
 {
     const char * const typeString = ParseString(i, argc, argv);
-
     if (strcmp(typeString, "float") == 0) {
         CheckForMissingArguments(i, 1, argc, argv);
         return VtValue(float(ParseDouble(i, argc, argv)));
+    } else if (strcmp(typeString, "bool") == 0) {
+        CheckForMissingArguments(i, 1, argc, argv);
+        return VtValue(ParseBool(i, argc, argv));
     } else {
         ParseError(argv[0], "unknown type '%s'", typeString);
         return VtValue();

@@ -56,5 +56,13 @@ UsdSkelImagingResolvingSceneIndexPlugin::InstanceDataSourceNames()
     };
 }
 
+TfTokenVector
+UsdSkelImagingResolvingSceneIndexPlugin::ProxyPathTranslationDataSourceNames()
+{
+    return {
+        UsdSkelImagingBindingSchema::GetSchemaToken()
+    };
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

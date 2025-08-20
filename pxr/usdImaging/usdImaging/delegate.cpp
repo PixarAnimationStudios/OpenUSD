@@ -125,23 +125,20 @@ UsdImagingDelegate::~UsdImagingDelegate()
 {
     TfNotice::Revoke(_objectsChangedNoticeKey);
 
-    // Remove all prims from the render index.
-
-    // Even though this delegate is going out of scope
-    // the render index may not be.  So, need to make
-    // sure we properly remove all prims from the
-    // render index.
-    //
-    // Note: This is not going through the adapters
-    // as we are destroying the whole delegate.  It is
-    // assumed that adapters are not shared between delegates.
-    HdRenderIndex& index = GetRenderIndex();
-    index.RemoveSubtree(GetDelegateID(), this);
-
-    _refineLevelMap.clear();
-    _hdPrimInfoMap.clear();
-    _dependencyInfo.clear();
-    _adapterMap.clear();
+    if (_stage) {
+        // Remove all prims conteributed by this delegate
+        // from the render index.
+        //
+        // Even though this delegate is going out of scope
+        // the render index may not be.  So, need to make
+        // sure we properly remove all prims from the
+        // render index.
+        //
+        // Note: This is not going through the adapters
+        // as we are destroying the whole delegate.  It is
+        // assumed that adapters are not shared between delegates.
+        GetRenderIndex().RemoveSubtree(GetDelegateID(), this);
+    }
 }
 
 
@@ -1190,6 +1187,22 @@ _HasConnectionChanged(const SdfPath &path, const PathRange &pathRange)
     return false;
 }
 
+// Helper function to check if a path entry has relationship target did change
+// notice
+bool
+_HasRelationshipTargetsChanged(const SdfPath &path, const PathRange &pathRange)
+{
+    PathRange::const_iterator itr = pathRange.find(path);
+    if (itr != pathRange.end()) {
+        for (const SdfChangeList::Entry *entry : itr.GetBase()->second) {
+            if (entry->flags.didChangeRelationshipTargets) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void 
 UsdImagingDelegate::_OnUsdObjectsChanged(
     UsdNotice::ObjectsChanged const& notice,
@@ -1209,8 +1222,9 @@ UsdImagingDelegate::_OnUsdObjectsChanged(
     // and repopulate those trees.
     const PathRange pathsToResync = notice.GetResyncedPaths();
     for (const auto& path : pathsToResync) {
-        if (path.IsPrimPropertyPath() && 
-                _HasConnectionChanged(path, pathsToResync)) {
+        if (path.IsPrimPropertyPath() &&
+                (_HasConnectionChanged(path, pathsToResync) ||
+                 _HasRelationshipTargetsChanged(path, pathsToResync))) {
             // Resync the prim path instead of the property path:
             _usdPathsToResync.emplace_back(path.GetPrimPath());
         } else {

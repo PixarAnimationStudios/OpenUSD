@@ -77,12 +77,15 @@ _Union(const VtIntArray &a, const VtIntArray &b)
     }
 }
 
-RtPrimVarList
-HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
-                                HdSceneDelegate *sceneDelegate,
-                                const SdfPath &id,
-                                RtUString *primType,
-                                HdGeomSubsets *geomSubsets)
+bool
+HdPrman_Mesh::_ConvertGeometry(
+    HdPrman_RenderParam *renderParam,
+    HdSceneDelegate *sceneDelegate,
+    const SdfPath &id,
+    RtUString *primType,
+    RtPrimVarList *primvars,
+    std::vector<HdGeomSubset> *geomSubsets,
+    std::vector<RtPrimVarList> *geomSubsetPrimvars)
 {
     // Pull topology.
     const HdMeshTopology topology = GetMeshTopology(sceneDelegate);
@@ -125,7 +128,7 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
         }
     }
 
-    RtPrimVarList primvars(
+    *primvars = RtPrimVarList(
          nverts.size(), /* uniform */
          npoints, /* vertex */
          npoints, /* varying */
@@ -138,22 +141,22 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
         sceneDelegate,
         id,
         renderParam->GetShutterInterval(),
-        primvars,
+        *primvars,
         npoints);
     // Topology.
-    primvars.SetIntegerDetail(RixStr.k_Ri_nvertices, nverts.cdata(),
+    primvars->SetIntegerDetail(RixStr.k_Ri_nvertices, nverts.cdata(),
                               RtDetailType::k_uniform);
-    primvars.SetIntegerDetail(RixStr.k_Ri_vertices, verts.cdata(),
+    primvars->SetIntegerDetail(RixStr.k_Ri_vertices, verts.cdata(),
                               RtDetailType::k_facevarying);
     if (topology.GetScheme() == PxOsdOpenSubdivTokens->catmullClark) {
         *primType = RixStr.k_Ri_SubdivisionMesh;
-        primvars.SetString(RixStr.k_Ri_scheme, RixStr.k_catmullclark);
+        primvars->SetString(RixStr.k_Ri_scheme, RixStr.k_catmullclark);
     } else if (topology.GetScheme() == PxOsdOpenSubdivTokens->loop) {
         *primType = RixStr.k_Ri_SubdivisionMesh;
-        primvars.SetString(RixStr.k_Ri_scheme, RixStr.k_loop);
+        primvars->SetString(RixStr.k_Ri_scheme, RixStr.k_loop);
     } else if (topology.GetScheme() == PxOsdOpenSubdivTokens->bilinear) {
         *primType = RixStr.k_Ri_SubdivisionMesh;
-        primvars.SetString(RixStr.k_Ri_scheme, RixStr.k_bilinear);
+        primvars->SetString(RixStr.k_Ri_scheme, RixStr.k_bilinear);
     } else { // if scheme == PxOsdOpenSubdivTokens->none
         *primType = RixStr.k_Ri_PolygonMesh;
     }
@@ -170,17 +173,17 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
         // Poly meshes with holes are promoted to bilinear subdivs, to
         // make riley respect the holes.
         *primType = RixStr.k_Ri_SubdivisionMesh;
-        primvars.SetString(RixStr.k_Ri_scheme, RixStr.k_bilinear);
+        primvars->SetString(RixStr.k_Ri_scheme, RixStr.k_bilinear);
     }
-  
+
     // Orientation, aka winding order.
     // Because PRMan uses a left-handed coordinate system, and USD/Hydra
     // use a right-handed coordinate system, the meaning of orientation
     // also flips when we convert between them.  So LH<->RH.
     if (topology.GetOrientation() == PxOsdOpenSubdivTokens->leftHanded) {
-        primvars.SetString(RixStr.k_Ri_Orientation, RixStr.k_rh);
+        primvars->SetString(RixStr.k_Ri_Orientation, RixStr.k_rh);
     } else {
-        primvars.SetString(RixStr.k_Ri_Orientation, RixStr.k_lh);
+        primvars->SetString(RixStr.k_Ri_Orientation, RixStr.k_lh);
     }
 
     // Subdiv tags
@@ -208,7 +211,7 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
         const VtIntArray creaseIndices = osdTags.GetCreaseIndices();
         const VtFloatArray creaseWeights = osdTags.GetCreaseWeights();
         if (!creaseIndices.empty()) {
-            const bool weightPerCrease = 
+            const bool weightPerCrease =
                 creaseWeights.size() == creaseLengths.size();
             for (int creaseLength: creaseLengths) {
                 tagNames.push_back(RixStr.k_crease);
@@ -276,28 +279,54 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
             tagIntArgs.push_back(
                     UsdRiConvertToRManTriangleSubdivisionRule(triSubdivRule));
         }
-        primvars.SetStringArray(RixStr.k_Ri_subdivtags,
+        primvars->SetStringArray(RixStr.k_Ri_subdivtags,
                                  &tagNames[0], tagNames.size());
-        primvars.SetIntegerArray(RixStr.k_Ri_subdivtagnargs,
+        primvars->SetIntegerArray(RixStr.k_Ri_subdivtagnargs,
                                   &tagArgCounts[0], tagArgCounts.size());
-        primvars.SetFloatArray(RixStr.k_Ri_subdivtagfloatargs,
+        primvars->SetFloatArray(RixStr.k_Ri_subdivtagfloatargs,
                                 &tagFloatArgs[0], tagFloatArgs.size());
-        primvars.SetIntegerArray(RixStr.k_Ri_subdivtagintargs,
+        primvars->SetIntegerArray(RixStr.k_Ri_subdivtagintargs,
                                   &tagIntArgs[0], tagIntArgs.size());
     }
 
     // Set element ID.
     std::vector<int32_t> elementId(nverts.size());
     std::iota(elementId.begin(), elementId.end(), 0);
-    primvars.SetIntegerDetail(RixStr.k_faceindex, elementId.data(),
+    primvars->SetIntegerDetail(RixStr.k_faceindex, elementId.data(),
                               RtDetailType::k_uniform);
 
+    // Convert primvars for mesh.
     HdPrman_ConvertPrimvars(
-        sceneDelegate, id, primvars, nverts.size(), npoints, npoints,
+        sceneDelegate, id, *primvars, nverts.size(), npoints, npoints,
         verts.size(),
         renderParam->GetShutterInterval());
 
-    return primvars;
+    // Convert primvars for subsets.
+    //
+    // This picks up attributes specific to a subset.   For example,
+    // a displacement material may provide the appropriate displacement
+    // bound attribute to a geom subset that binds it.
+    geomSubsetPrimvars->resize(geomSubsets->size());
+    for (size_t i=0, n=geomSubsets->size(); i<n; ++i) {
+        // Convert primvars specific to this subset.
+        HdPrman_ConvertPrimvars(
+            sceneDelegate,
+            (*geomSubsets)[i].id,
+            ((*geomSubsetPrimvars)[i]),
+            nverts.size(), npoints, npoints, verts.size(),
+            renderParam->GetShutterInterval());
+
+        // Resize details to match the parent mesh. Otherwise
+        // Inherit() will skip anything that isn't constant.
+        (*geomSubsetPrimvars)[i].SetDetail(
+            nverts.size(), npoints, npoints, verts.size());
+
+        // Inherit primvars from the parent mesh. Any already
+        // present on the subset are ignored.
+        (*geomSubsetPrimvars)[i].Inherit(*primvars);
+    }
+
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

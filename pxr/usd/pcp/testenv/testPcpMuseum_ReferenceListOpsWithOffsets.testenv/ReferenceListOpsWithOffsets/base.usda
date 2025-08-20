@@ -1,0 +1,47 @@
+#usda 1.0
+(
+)
+
+def "AddRefs1" 
+(
+    prepend references = [
+        @./ref.usda@</Ref>,
+        @./ref.usda@</Ref> (offset = 10.0; scale = 2.0),
+        @./ref.usda@</Ref> (offset = 100.0)
+    ]
+)
+{
+}
+
+def "DeleteRefs1" 
+(
+    prepend references = [
+        @./ref.usda@</Ref>,
+        @./ref.usda@</Ref> (offset = 10.0; scale = 2.0),
+        @./ref.usda@</Ref> (offset = 100.0)
+    ]
+)
+{
+}
+
+def "AddRefs2" 
+(
+    prepend references = [
+        @./ref.usda@</Ref>,
+        @./ref.usda@</Ref> (offset = 10.0; scale = 2.0),
+        @./ref.usda@</Ref> (offset = 100.0)
+    ]
+)
+{
+}
+
+def "DeleteRefs2" 
+(
+    prepend references = [
+        @./ref.usda@</Ref>,
+        @./ref.usda@</Ref> (offset = 10.0; scale = 2.0),
+        @./ref.usda@</Ref> (offset = 100.0)
+    ]
+)
+{
+}

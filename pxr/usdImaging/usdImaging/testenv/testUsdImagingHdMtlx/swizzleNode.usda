@@ -1,0 +1,49 @@
+#usda 1.0
+
+def Scope "Materials"
+{
+    def Material "SwizzleExample"
+    {
+        token outputs:mtlx:surface.connect = </Materials/SwizzleExample/StandardSurface.outputs:out>
+
+        def Shader "StandardSurface"
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            color3f inputs:base_color.connect = </Materials/SwizzleExample/ramplr.outputs:out>
+            token outputs:out
+        }
+
+        def Shader "ramplr"
+        {
+            uniform token info:id = "ND_ramplr_color3"
+            float2 inputs:texcoord.connect = </Materials/SwizzleExample/geompropvalue.outputs:out>
+            color3f inputs:valuel.connect = </Materials/SwizzleExample/dot.outputs:out>
+            color3f inputs:valuer = (1, 1, 0)
+            color3f inputs:valuer.connect = </Materials/SwizzleExample/swizzle.outputs:out>
+            color3f outputs:out
+        }
+
+        def Shader "geompropvalue"
+        {
+            uniform token info:id = "ND_geompropvalue_vector2"
+            string inputs:geomprop = "st"
+            float2 outputs:out
+        }
+
+        def Shader "dot"
+        {
+            uniform token info:id = "ND_dot_color3"
+            color3f inputs:in = (0, 0.5, 1)
+            color3f outputs:out
+        }
+
+        def Shader "swizzle"
+        {
+            uniform token info:id = "ND_swizzle_color3_color3"
+            string inputs:channels = "bgr"
+            color3f inputs:in.connect = </Materials/SwizzleExample/dot.outputs:out>
+            color3f outputs:out
+        }
+    }
+}
+

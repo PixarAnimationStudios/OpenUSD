@@ -101,13 +101,11 @@ HdPrman_DisplayFilter::Sync(
     HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(renderParam);
 
     if (*dirtyBits & HdChangeTracker::DirtyParams) {
-        // Only Create the DisplayFilter if connected to the RenderSettings
+        // Only Create the DisplayFilter if on the RenderSettings
         // Note that this works because the RenderSettings, being a Bprim,
         // always gets synced before the DisplayFilter Sprim.
-        const SdfPathVector& connectedFilters =
-            param->GetConnectedDisplayFilterPaths();
-        if (std::find(connectedFilters.begin(), connectedFilters.end(), id)
-            != connectedFilters.end()) {
+        const SdfPathVector& filters = param->GetDisplayFilterPaths();
+        if (std::find(filters.begin(), filters.end(), id) != filters.end()) {
             const VtValue displayFilterResourceValue =
                 sceneDelegate->Get(id, _tokens->resource);
 

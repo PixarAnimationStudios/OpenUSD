@@ -1,0 +1,22 @@
+#usda 1.0
+(
+    "Test displayName metadata"
+    framePrecision = 3
+    framesPerSecond = 24
+)
+
+class MfScope "Rig"
+{
+    def MfScope "Leg" (
+        displayName = "Foo"
+    )
+    {
+        custom rel foo = </Rig/Leg.kneeFB> (
+            displayName = "Lfoo"
+        )
+        custom double kneeFB (
+            displayName = "LkneeFB"
+        )
+    }
+}
+

@@ -1,19 +1,19 @@
-Loading @RelativePathPayloads/root.sdf@
+Loading @RelativePathPayloads/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
-     sub1/sub1.sdf
-     sub2/sub2.sdf
-     sub3.sdf
+     root.usda
+     sub1/sub1.usda
+     sub2/sub2.usda
+     sub3.usda
 
 ------------------------------------------------------------------------
 Results for composing </Model>
 
 Prim Stack:
-    sub1/sub1.sdf        /Model
-    sub2/sub2.sdf        /Model
-    sub3.sdf             /Model
-    sub1/ref.sdf         /Ref
-    sub2/ref.sdf         /Ref
+    sub1/sub1.usda       /Model
+    sub2/sub2.usda       /Model
+    sub3.usda            /Model
+    sub1/ref.usda        /Ref
+    sub2/ref.usda        /Ref
 

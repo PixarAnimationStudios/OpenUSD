@@ -24,6 +24,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((sceneIndexPluginName, "HdPrman_RenderTerminalOutputInvalidatingSceneIndexPlugin"))
+    ((riIntegrator, "ri:integrator"))
+    ((riSampleFilters, "ri:sampleFilters"))
+    ((riDisplayFilters, "ri:displayFilters"))
+    // Legacy terminal connections. Remove in a future USD version.
     ((outputsRiIntegrator, "outputs:ri:integrator"))
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
     ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
@@ -57,7 +61,7 @@ namespace
 {
 
 VtArray<SdfPath>
-_GetConnectedOutputs(const HdSceneIndexPrim &prim)
+_GetRenderSettingsTerminalPaths(const HdSceneIndexPrim &prim)
 {
     const HdContainerDataSourceHandle renderSettingsDs =
         HdContainerDataSource::Cast(prim.dataSource->Get(
@@ -76,12 +80,15 @@ _GetConnectedOutputs(const HdSceneIndexPrim &prim)
     }
 
     const TfToken outputTokens[] = {
+        _tokens->riIntegrator,
+        _tokens->riSampleFilters,
+        _tokens->riDisplayFilters,
         _tokens->outputsRiIntegrator,
         _tokens->outputsRiSampleFilters,
         _tokens->outputsRiDisplayFilters
     };
 
-    VtArray<SdfPath> connectedOutputs;
+    VtArray<SdfPath> rsTerminalPaths;
     for (const auto& outputToken : outputTokens) {
         const HdSampledDataSourceHandle valueDs =
             HdSampledDataSource::Cast(namespacedSettingsDS->Get(outputToken));
@@ -91,11 +98,11 @@ _GetConnectedOutputs(const HdSceneIndexPrim &prim)
         const VtValue pathsValue = valueDs->GetValue(0);
         const SdfPathVector paths = pathsValue.GetWithDefault<SdfPathVector>();
         for (const auto& path : paths) {
-            connectedOutputs.push_back(path);
+            rsTerminalPaths.push_back(path);
         }
     }
     
-    return connectedOutputs;
+    return rsTerminalPaths;
 }
 
 TF_DECLARE_REF_PTRS(_HdPrmanRenderTerminalOutputInvalidatingSceneIndex);
@@ -154,7 +161,7 @@ protected:
                 if (!prim.dataSource) {
                     continue;
                 }
-                for (auto const& path : _GetConnectedOutputs(prim)) {
+                for (auto const& path : _GetRenderSettingsTerminalPaths(prim)) {
                     const TfToken outputType = 
                         _GetInputSceneIndex()->GetPrim(path).primType;
                     if (outputType == HdPrimTypeTokens->integrator) {
@@ -207,7 +214,7 @@ protected:
                 if (!prim.dataSource) {
                     continue;
                 }
-                for (auto const& path : _GetConnectedOutputs(prim)) {
+                for (auto const& path : _GetRenderSettingsTerminalPaths(prim)) {
                     const HdSceneIndexPrim prim =
                         _GetInputSceneIndex()->GetPrim(path);
                     if (prim.primType == HdPrimTypeTokens->integrator) {

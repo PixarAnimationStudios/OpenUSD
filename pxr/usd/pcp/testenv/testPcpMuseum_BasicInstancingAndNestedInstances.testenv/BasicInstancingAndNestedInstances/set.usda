@@ -1,0 +1,33 @@
+#usda 1.0
+
+def "Set"
+{
+    def "PropInstance_1" (
+        references = @./prop.usda@</Prop>
+        instanceable = true
+    )
+    {
+        over "geom"
+        {
+        }
+    }
+
+    def "PropInstance2" (
+        references = @./prop.usda@</Prop>
+        instanceable = true
+    )
+    {
+        over "geom"
+        {
+        }
+    }
+
+    def "PropNotAnInstance_1" (
+        references = @./prop.usda@</Prop>
+    )
+    {
+        over "geom"
+        {
+        }
+    }
+}
