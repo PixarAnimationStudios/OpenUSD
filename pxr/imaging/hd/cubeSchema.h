@@ -42,6 +42,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdCubeSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdCubeSchema
+///
 class HdCubeSchema : public HdSchema
 {
 public:

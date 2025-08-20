@@ -10,6 +10,28 @@
                         "isInternal": true,
                         "primTypeName": "PxrAovLight"
                     },
+                    "UsdRiPxrImagingCameraAPIAdapter": {
+                        "bases": [
+                            "UsdImagingAPISchemaAdapter"
+                        ],
+                        "isInternal": true,
+                        "apiSchemaName": "PxrCameraAPI"
+                    },
+                    "UsdRiPxrImagingCameraProjectionAdapter": {
+                        "bases": [
+                            "UsdImagingSceneIndexPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "PxrProjectionPluginBase",
+                        "includeDerivedPrimTypes": true
+                    },
+                    "UsdRiPxrImagingCameraProjectionAPIAdapter": {
+                        "bases": [
+                            "UsdImagingAPISchemaAdapter"
+                        ],
+                        "isInternal": true,
+                        "apiSchemaName": "PxrCameraProjectionAPI"
+                    },
                     "UsdRiPxrImagingDisplayFilterAdapter": {
                         "bases": [
                             "UsdImagingPrimAdapter"
@@ -24,7 +46,7 @@
                         ],
                         "isInternal": true,
                         "primTypeName": "PxrIntegratorPluginBase",
-                        "includeDerivedPrimTypes" : true 
+                        "includeDerivedPrimTypes" : true
                     },
                     "UsdRiPxrImagingSampleFilterAdapter": {
                         "bases": [
@@ -32,14 +54,7 @@
                         ],
                         "isInternal": true,
                         "primTypeName": "PxrSampleFilterPluginBase",
-                        "includeDerivedPrimTypes" : true 
-                    },
-                    "UsdRiPxrImagingCameraAPIAdapter": {
-                        "bases": [
-                            "UsdImagingAPISchemaAdapter"
-                        ],
-                        "isInternal": true,
-                        "apiSchemaName": "PxrCameraAPI"
+                        "includeDerivedPrimTypes" : true
                     }
                 }
             },

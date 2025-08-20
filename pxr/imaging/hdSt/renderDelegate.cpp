@@ -547,8 +547,15 @@ HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
 }
 
 bool
-HdStRenderDelegate::IsSupported()
+HdStRenderDelegate::IsSupported(
+    HdRendererCreateArgs const& rendererCreateArgs)
 {
+    if (rendererCreateArgs.hgi) {
+        return rendererCreateArgs.hgi->IsBackendSupported();
+    }
+
+    // If invalid Hgi instance is provided, check support for platform default
+    // Hgi.
     return Hgi::IsSupported();
 }
 

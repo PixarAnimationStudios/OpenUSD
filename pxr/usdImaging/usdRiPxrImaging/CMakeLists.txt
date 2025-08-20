@@ -21,8 +21,11 @@ pxr_library(usdRiPxrImaging
         ar
 
     PUBLIC_CLASSES
+        projectionSchema
         pxrAovLightAdapter
         pxrCameraAPIAdapter
+        pxrCameraProjectionAdapter
+        pxrCameraProjectionAPIAdapter
         pxrDisplayFilterAdapter
         pxrIntegratorAdapter
         pxrSampleFilterAdapter

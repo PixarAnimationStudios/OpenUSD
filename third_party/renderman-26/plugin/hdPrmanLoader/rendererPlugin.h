@@ -43,8 +43,12 @@ public:
     HDPRMANLOADER_API
 #if PXR_VERSION < 2305
     bool IsSupported() const override;
-#else
+#elif HD_API_VERSION < 83
     bool IsSupported(bool gpuEnabled = true) const override;
+#else
+    bool IsSupported(
+        HdRendererCreateArgs const &rendererCreateArgs,
+        std::string * reasonWhyNot = nullptr) const override;
 #endif
 
 protected:

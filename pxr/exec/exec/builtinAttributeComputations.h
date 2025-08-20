@@ -7,14 +7,14 @@
 #ifndef PXR_EXEC_EXEC_BUILTIN_ATTRIBUTE_COMPUTATIONS_H
 #define PXR_EXEC_EXEC_BUILTIN_ATTRIBUTE_COMPUTATIONS_H
 
+/// \file
+///
+/// This file defines builtin computations that are provided by attributes.
+///
+
 #include "pxr/exec/exec/computationDefinition.h"
-#include "pxr/exec/exec/inputKey.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-//
-// This file defines builtin computations that are provided by attributes.
-//
 
 /// A computation that yields the computed value of an attribute.
 ///
@@ -28,6 +28,7 @@ public:
 
     TfType GetResultType(
         const EsfObjectInterface &providerObject,
+        const TfToken &metadataKey,
         EsfJournal *journal) const override;
 
     TfType GetExtractionType(
@@ -39,6 +40,7 @@ public:
 
     VdfNode *CompileNode(
         const EsfObjectInterface &providerObject,
+        const TfToken &metadataKey,
         EsfJournal *nodeJournal,
         Exec_Program *program) const override;
 

@@ -43,6 +43,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdDisplayFilterSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdDisplayFilterSchema
+///
 class HdDisplayFilterSchema : public HdSchema
 {
 public:

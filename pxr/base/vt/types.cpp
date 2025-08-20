@@ -10,6 +10,7 @@
 #include "pxr/base/vt/types.h"
 
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/arrayEdit.h"
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/tf/preprocessorUtilsLite.h"
@@ -66,13 +67,16 @@ TF_PP_SEQ_FOR_EACH(VT_ZERO_EMPTY_CONSTRUCTOR, ~,    \
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    // The following preprocessor code instantiates TfTypes for VtArray holding
-    // various scalar value types.
+    // The following preprocessor code defines TfTypes for VtArray & VtArrayEdit
+    // holding the various scalar value types.
 
-#   define _INSTANTIATE_ARRAY(unused, elem) \
-        TfType::Define< VtArray<VT_TYPE(elem)> >();
+#define DEFINE_ARRAY_AND_EDIT(unused, elem)             \
+    TfType::Define< VtArray<VT_TYPE(elem)> >();         \
+    TfType::Define< VtArrayEdit<VT_TYPE(elem)> >();
 
-    TF_PP_SEQ_FOR_EACH(_INSTANTIATE_ARRAY, ~, VT_SCALAR_VALUE_TYPES)
+    TF_PP_SEQ_FOR_EACH(DEFINE_ARRAY_AND_EDIT, ~, VT_SCALAR_VALUE_TYPES)
+
+#undef DEFINE_ARRAY_AND_EDIT
 }
 
 // Floating point conversions... in future, we might hope to use SSE here.

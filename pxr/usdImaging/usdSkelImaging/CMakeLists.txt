@@ -38,6 +38,7 @@ pxr_library(usdSkelImaging
         skelRootAdapter
         tokens
         utils
+        xformResolver
 
     PUBLIC_HEADERS
         api.h

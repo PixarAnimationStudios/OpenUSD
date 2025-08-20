@@ -69,6 +69,10 @@ public:
     static void RegisterTranslatorsForCustomSprimType(TfToken const& primType,
         LocatorSetToDirtyBitsFnc sToBFnc, DirtyBitsToLocatorSetFnc bToSFnc);
 
+    /// Allows for customization of translation for rprim types.
+    HD_API
+    static void RegisterTranslatorsForCustomRprimType(TfToken const& primType,
+        LocatorSetToDirtyBitsFnc sToBFnc, DirtyBitsToLocatorSetFnc bToSFnc);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

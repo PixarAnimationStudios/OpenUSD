@@ -780,6 +780,9 @@ HdStRenderPassState::Bind(HgiCapabilities const &hgiCapabilities)
             glEnable(GL_POINT_SMOOTH);
         }
     }
+
+    // Default to seamless cubemap sampling.
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
 
 void

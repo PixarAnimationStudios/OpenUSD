@@ -1612,6 +1612,16 @@ template <typename Rule>
 using TextParserControl = 
     TextParserDefaultErrorControl<TextParserControlValues>::control<Rule>;
 
+/// Attempt to parse a VtValue from a string representing a value
+/// given the expected sdf type. The parse follows the expectations of
+/// the .usda file format. On success, returns true and populates outputValue.
+/// On failure, returns false and issues TfError(s).
+bool Sdf_ParseValueFromString(
+    const std::string& input,
+    const SdfValueTypeName& sdfType,
+    VtValue* outputValue
+);
+
 } // end namespace Sdf_TextFileFormatParser
 
 PXR_NAMESPACE_CLOSE_SCOPE

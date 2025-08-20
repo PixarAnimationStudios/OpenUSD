@@ -845,6 +845,25 @@ HdSt_ResourceBinder::ResolveBindings(
                             /*isPremultiplied=*/param.isPremultiplied,
                             /*processTextureFallbackValue=*/isMaterialShader);
                     _bindingMap[name] = textureBinding; // used for non-bindless
+                } else if (param.textureType == HdStTextureType::Cubemap) {
+                    // Cubemap texture
+                    HdStBinding textureBinding = bindless
+                        ? HdStBinding(HdStBinding::BINDLESS_TEXTURE_CUBEMAP,
+                                    bindlessTextureLocation++)
+                        : HdStBinding(HdStBinding::TEXTURE_CUBEMAP,
+                                    locator.uniformLocation++,
+                                    locator.textureUnit++);
+
+                    metaDataOut->shaderParameterBinding[textureBinding] =
+                        MetaData::ShaderParameterAccessor(
+                            /*name=*/glName,
+                            /*type=*/glType,
+                            /*swizzle=*/glSwizzle,
+                            /*inPrimvars=*/param.samplerCoords,
+                            /*isPremultiplied=*/param.isPremultiplied,
+                            /*processTextureFallbackValue=*/isMaterialShader);
+                    // used for non-bindless
+                    _bindingMap[name] = textureBinding;
                 }
             } else if (param.IsPrimvarRedirect() || param.IsFieldRedirect()) {
                 TfTokenVector const& samplePrimvars = param.samplerCoords;

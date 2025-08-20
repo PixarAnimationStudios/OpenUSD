@@ -10,6 +10,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/smallVector.h"
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/hash.h"
 
 #include "pxr/imaging/hd/api.h"
@@ -17,6 +18,36 @@
 #include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+#define HD_DATA_SOURCE_LOCATOR_SENTINEL_TOKENS      \
+    ((container, "__containerDataSource"))
+
+/// Special tokens in a data source locator.
+///
+/// HdDataSourceLocatorSentinelTokens->container indicates that
+/// the container data source needs to be refetched even though none of
+/// its contained data sources have changed unless indicated by another
+/// data source locator.
+///
+/// For example, assume that MyFilteringSceneIndex::GetPrim("/MyPrim")
+/// previously returned the result from the input scene index but now
+/// returns
+///     HdContainerDataSourceEditor(_GetInputScene()->GetPrim("/MyPrim"))
+///         .Set(HdDataSourceLocator("foo", "bar", "mySource"), mySource)
+///         .Finish().
+/// Then it needs to send prims dirtied with
+///     HdDataSourceLocatorSet{
+///         HdDataSourceLocator(
+///             HdDataSourceLocatorSentinelTokens->container),
+///         HdDataSourceLocator(
+///             "foo", HdDataSourceLocatorSentinelTokens->container),
+///         HdDataSourceLocator(
+///             "foo", "bar", HdDataSourceLocatorSentinelTokens->container),
+///         HdDataSourceLocator(
+///             "foo", "bar", "mySource")}.
+///
+TF_DECLARE_PUBLIC_TOKENS(HdDataSourceLocatorSentinelTokens, HD_API,
+                         HD_DATA_SOURCE_LOCATOR_SENTINEL_TOKENS);
 
 /// \class HdDataSourceLocator
 ///

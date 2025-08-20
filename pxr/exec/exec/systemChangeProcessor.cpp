@@ -14,6 +14,8 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/schema.h"
 
+#include <utility>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct ExecSystem::_ChangeProcessor::_State {
@@ -21,11 +23,16 @@ struct ExecSystem::_ChangeProcessor::_State {
         : uncompiler(system->_program.get(), system->_runtime.get())
     {}
 
-    // Accumulate scene paths to attributes with invalid authored values, so
+    // Accumulates scene paths to attributes with invalid authored values, so
     // that program and executor invalidation can be batch-processed.
     TfSmallVector<SdfPath, 1> attributesWithInvalidAuthoredValues;
+
+    // Accumulates scene paths and field names that indicate invalid metadata
+    // values.
+    TfSmallVector<std::pair<SdfPath, TfToken>, 1>
+    objectsWithInvalidMetadataValues;
     
-    // Uncompile changed network.
+    // Uncompiles changed network.
     Exec_Uncompiler uncompiler;
 };
 
@@ -58,19 +65,39 @@ ExecSystem::_ChangeProcessor::DidChangeInfoOnly(
     const TfTokenVector &changedFields)
 {
     if (path.IsPropertyPath()) {
-        bool didRecordAuthoredValueChange = false;
+        bool didRecordAttributeValueChange = false;
         for (const TfToken &field : changedFields) {
-            if (!didRecordAuthoredValueChange &&
-                    (field == SdfFieldKeys->Default ||
-                    field == SdfFieldKeys->Spline ||
-                    field == SdfFieldKeys->TimeSamples)) {
+            if (!didRecordAttributeValueChange &&
+                (field == SdfFieldKeys->Default ||
+                 field == SdfFieldKeys->Spline ||
+                 field == SdfFieldKeys->TimeSamples)) {
                 _state->attributesWithInvalidAuthoredValues.push_back(path);
-                didRecordAuthoredValueChange = true;
+                didRecordAttributeValueChange = true;
             }
             else if (field == SdfFieldKeys->TargetPaths) {
                 _state->uncompiler.UncompileForSceneChange(
                     path, EsfEditReason::ChangedTargetPaths);
             }
+            else if (field == SdfFieldKeys->ConnectionPaths) {
+                _state->uncompiler.UncompileForSceneChange(
+                    path, EsfEditReason::ChangedConnectionPaths);
+            }
+            else {
+                // TODO: The field name may not even be a valid metadata key.
+                // It works correctly to pass along all invalid field names
+                // here, since we will only invalidate when they correspond to
+                // metadata input nodes that have been compiled. But we could
+                // potentially avoid unnecessary map lookups if we could filter
+                // upstream--but it's not totally clear which strategy actually
+                // yields the best performance.
+                _state->objectsWithInvalidMetadataValues.emplace_back(
+                    path, field);
+            }
+        }
+    }
+    else if (path.IsPrimPath()) {
+        for (const TfToken &field : changedFields) {
+            _state->objectsWithInvalidMetadataValues.emplace_back(path, field);
         }
     }
 }
@@ -83,8 +110,13 @@ ExecSystem::_ChangeProcessor::_PostProcessChanges()
     }
 
     if (!_state->attributesWithInvalidAuthoredValues.empty()) {
-        _system->_InvalidateAuthoredValues(
+        _system->_InvalidateAttributeValues(
             _state->attributesWithInvalidAuthoredValues);
+    }
+
+    if (!_state->objectsWithInvalidMetadataValues.empty()) {
+        _system->_InvalidateMetadataValues(
+            _state->objectsWithInvalidMetadataValues);
     }
 }
 

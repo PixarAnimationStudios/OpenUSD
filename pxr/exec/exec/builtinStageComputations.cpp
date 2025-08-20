@@ -7,8 +7,6 @@
 #include "pxr/exec/exec/builtinStageComputations.h"
 
 #include "pxr/exec/exec/builtinComputations.h"
-#include "pxr/exec/exec/definitionRegistry.h"
-#include "pxr/exec/exec/inputKey.h"
 #include "pxr/exec/exec/program.h"
 
 #include "pxr/base/tf/diagnosticLite.h"
@@ -41,6 +39,7 @@ Exec_TimeComputationDefinition::GetInputKeys(
 VdfNode *
 Exec_TimeComputationDefinition::CompileNode(
     const EsfObjectInterface &,
+    const TfToken &,
     EsfJournal *const nodeJournal,
     Exec_Program *const program) const
 {

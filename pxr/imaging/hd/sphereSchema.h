@@ -42,6 +42,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdSphereSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdSphereSchema
+///
 class HdSphereSchema : public HdSchema
 {
 public:

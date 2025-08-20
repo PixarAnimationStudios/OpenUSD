@@ -403,7 +403,7 @@ public:
     /// 
     /// * <i>if angleScale < 0:</i>
     /// <center><b>
-    /// 𝛳<sub>ies</sub> = (𝛳<sub>light</sub> - π) / -angleScale
+    /// 𝛳<sub>ies</sub> = (𝛳<sub>light</sub> - π) / -angleScale + π
     /// </b></center>
     /// 
     /// Usage guidelines for artists / lighting TDs:

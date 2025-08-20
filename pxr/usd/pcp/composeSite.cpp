@@ -225,6 +225,18 @@ PcpComposeSiteHasSymmetry(PcpLayerStackRefPtr const &layerStack,
     return false;
 }
 
+bool
+PcpComposeSiteHasValueClips(PcpLayerStackRefPtr const &layerStack,
+                            SdfPath const &path)
+{
+    for (auto const &layer: layerStack->GetLayers()) {
+        if (layer->HasField(path, SdfFieldKeys->Clips)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void
 PcpComposeSitePrimSites(PcpLayerStackRefPtr const &layerStack,
                         SdfPath const &path,

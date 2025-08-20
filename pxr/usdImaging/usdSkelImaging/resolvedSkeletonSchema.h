@@ -34,7 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define USD_SKEL_IMAGING_RESOLVED_SKELETON_SCHEMA_TOKENS \
     (resolvedSkeleton) \
-    (skelLocalToWorld) \
+    (skelLocalToCommonSpace) \
     (skinningTransforms) \
     (blendShapes) \
     (blendShapeWeights) \
@@ -44,10 +44,12 @@ TF_DECLARE_PUBLIC_TOKENS(UsdSkelImagingResolvedSkeletonSchemaTokens, USDSKELIMAG
 
 //-----------------------------------------------------------------------------
 
-// Resolved data for a skeleton and the targeted skelAnim. Populated by the
-// skeleton resolving scene index.
-//
 
+/// \class UsdSkelImagingResolvedSkeletonSchema
+///
+/// Resolved data for a skeleton and the targeted skelAnim. Populated by the
+/// skeleton resolving scene index.
+///
 class UsdSkelImagingResolvedSkeletonSchema : public HdSchema
 {
 public:
@@ -74,9 +76,10 @@ public:
     /// \name Member accessor
     /// @{
 
-    /// Xform of skeleton prim.
+    /// Transform to go from the local space if the skeleton prim to common
+    /// space (as defined by UsdSkelImagingDataSourceXformResolver).
     USDSKELIMAGING_API
-    HdMatrixDataSourceHandle GetSkelLocalToWorld() const;
+    HdMatrixDataSourceHandle GetSkelLocalToCommonSpace() const;
 
     /// Passed to the extComputations. Computed from the following: skeleton's
     /// joints (determining the topology), and bind and rest (if needed)
@@ -119,9 +122,9 @@ public:
     /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
     /// @{
 
-    /// Prim-level relative data source locator to locate skelLocalToWorld.
+    /// Prim-level relative data source locator to locate skelLocalToCommonSpace.
     USDSKELIMAGING_API
-    static const HdDataSourceLocator &GetSkelLocalToWorldLocator();
+    static const HdDataSourceLocator &GetSkelLocalToCommonSpaceLocator();
 
     /// Prim-level relative data source locator to locate skinningTransforms.
     USDSKELIMAGING_API
@@ -149,7 +152,7 @@ public:
     USDSKELIMAGING_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdMatrixDataSourceHandle &skelLocalToWorld,
+        const HdMatrixDataSourceHandle &skelLocalToCommonSpace,
         const HdMatrix4fArrayDataSourceHandle &skinningTransforms,
         const HdTokenArrayDataSourceHandle &blendShapes,
         const HdFloatArrayDataSourceHandle &blendShapeWeights
@@ -165,8 +168,8 @@ public:
     {
     public:
         USDSKELIMAGING_API
-        Builder &SetSkelLocalToWorld(
-            const HdMatrixDataSourceHandle &skelLocalToWorld);
+        Builder &SetSkelLocalToCommonSpace(
+            const HdMatrixDataSourceHandle &skelLocalToCommonSpace);
         USDSKELIMAGING_API
         Builder &SetSkinningTransforms(
             const HdMatrix4fArrayDataSourceHandle &skinningTransforms);
@@ -182,7 +185,7 @@ public:
         HdContainerDataSourceHandle Build();
 
     private:
-        HdMatrixDataSourceHandle _skelLocalToWorld;
+        HdMatrixDataSourceHandle _skelLocalToCommonSpace;
         HdMatrix4fArrayDataSourceHandle _skinningTransforms;
         HdTokenArrayDataSourceHandle _blendShapes;
         HdFloatArrayDataSourceHandle _blendShapeWeights;

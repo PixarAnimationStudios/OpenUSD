@@ -6,6 +6,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/attributeLimits.h"
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/instanceCache.h"
@@ -30,7 +31,6 @@
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 // ------------------------------------------------------------------------- //
 // UsdAttribute 
@@ -319,6 +319,80 @@ bool
 UsdAttribute::ClearColorSpace() const
 {
     return ClearMetadata(SdfFieldKeys->ColorSpace);
+}
+
+VtDictionary
+UsdAttribute::GetLimits() const
+{
+    VtDictionary limits;
+    if (GetMetadata(SdfFieldKeys->Limits, &limits)) {
+        return limits;
+    }
+    return {};
+}
+
+bool
+UsdAttribute::SetLimits(const VtDictionary& limits) const
+{
+    VtDictionary conformedLimits;
+    bool isValid = true;
+
+    // Verify `limits` contains only valid sub-dicts
+    for (const auto& it : limits) {
+        const std::string& key = it.first;
+        const VtValue& value = it.second;
+
+        if (!value.IsHolding<VtDictionary>()) {
+            TF_CODING_ERROR(
+                "Cannot set limits dictionary for <%s> (must contain only "
+                "sub-dictionary entries)",
+                GetPath().GetText());
+            return false;
+        }
+
+        const VtDictionary& subDict = value.UncheckedGet<VtDictionary>();
+        UsdAttributeLimits::ValidationResult result;
+
+        if (GetLimits(TfToken(key)).Validate(subDict, &result)) {
+            conformedLimits[key] = result.GetConformedSubDict();
+        }
+        else {
+            TF_CODING_ERROR(result.GetErrorString());
+            isValid = false;
+        }
+    }
+
+    return isValid && SetMetadata(SdfFieldKeys->Limits, conformedLimits);
+}
+
+bool
+UsdAttribute::HasAuthoredLimits() const
+{
+    return HasAuthoredMetadata(SdfFieldKeys->Limits);
+}
+
+bool
+UsdAttribute::ClearLimits() const
+{
+    return ClearMetadata(SdfFieldKeys->Limits);
+}
+
+UsdAttributeLimits
+UsdAttribute::GetSoftLimits() const
+{
+    return UsdAttributeLimits(*this, UsdLimitsKeys->Soft);
+}
+
+UsdAttributeLimits
+UsdAttribute::GetHardLimits() const
+{
+    return UsdAttributeLimits(*this, UsdLimitsKeys->Hard);
+}
+
+UsdAttributeLimits
+UsdAttribute::GetLimits(const TfToken& key) const
+{
+    return UsdAttributeLimits(*this, key);
 }
 
 SdfAttributeSpecHandle

@@ -50,9 +50,11 @@ TF_DECLARE_PUBLIC_TOKENS(UsdSkelImagingBindingSchemaTokens, USDSKELIMAGING_API,
 
 //-----------------------------------------------------------------------------
 
-// Corresponds to UsdSkelBindingAPI.
-//
 
+/// \class UsdSkelImagingBindingSchema
+///
+/// Corresponds to UsdSkelBindingAPI.
+///
 class UsdSkelImagingBindingSchema : public HdSchema
 {
 public:

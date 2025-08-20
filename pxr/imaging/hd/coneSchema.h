@@ -47,6 +47,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdConeSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdConeSchema
+///
 class HdConeSchema : public HdSchema
 {
 public:

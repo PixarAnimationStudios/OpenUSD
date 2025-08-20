@@ -42,6 +42,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrimOriginSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdPrimOriginSchema
+///
 class HdPrimOriginSchema : public HdSchema
 {
 public:

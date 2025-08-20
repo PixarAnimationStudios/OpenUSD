@@ -53,6 +53,7 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder(
     , _restorePointSprite(false)
     , _restoreUnpackAlignment(1)
     , _restorePackAlignment(1)
+    , _restoreCubeMapSeamless(false)
 {
     TRACE_FUNCTION();
 
@@ -137,6 +138,10 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder(
 
     glGetIntegerv(GL_UNPACK_ALIGNMENT, &_restoreUnpackAlignment);
     glGetIntegerv(GL_PACK_ALIGNMENT, &_restorePackAlignment);
+
+    glGetBooleanv(
+        GL_TEXTURE_CUBE_MAP_SEAMLESS,
+        (GLboolean*)&_restoreCubeMapSeamless);
 
     HGIGL_POST_PENDING_GL_ERRORS();
     #if defined(GL_KHR_debug)
@@ -300,6 +305,12 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, _restoreUnpackAlignment);
     glPixelStorei(GL_PACK_ALIGNMENT, _restorePackAlignment);
+
+    if (_restoreCubeMapSeamless) {
+        glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+    } else {
+        glDisable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+    }
 
     static const GLuint samplers[8] = {0};
     glBindSamplers(0, TfArraySize(samplers), samplers);

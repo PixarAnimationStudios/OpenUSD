@@ -7,12 +7,15 @@
 #ifndef PXR_IMAGING_HD_GP_SCENE_INDEX_PLUGIN_H
 #define PXR_IMAGING_HD_GP_SCENE_INDEX_PLUGIN_H
 
+#include "pxr/pxr.h"
+#include "pxr/imaging/hdGp/api.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/imaging/hd/sceneIndexPlugin.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+HDGP_API
 extern TfEnvSetting<bool> HDGP_INCLUDE_DEFAULT_RESOLVER;
 
 /// \class HdGpSceneIndexPlugin
@@ -33,6 +36,7 @@ public:
         return 2;
     }
 
+    HDGP_API
     HdGpSceneIndexPlugin();
 
 protected:

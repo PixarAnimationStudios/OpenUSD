@@ -526,7 +526,7 @@ VdfNode::_AppendInputs(
         const VdfInputSpec *spec = newInputSpecs.GetInputSpec(i);
         const TfToken &outputName = spec->GetAssociatedOutputName();
         const size_t newIndex = numExistingInputs + i;
-        VdfInput *newInput = NULL;
+        VdfInput *newInput = nullptr;
 
         // If we have an associated output, resolve it and set it in the 
         // connector.
@@ -552,15 +552,28 @@ VdfNode::_AppendInputs(
 
         // Store the newly created input.
         if (newInput) {
-            // XXX
-            // We should have a TF_VERIFY that fails if we have already inserted
-            // this input, rather than silently allowing inputs to be added
-            // redundantly. Unfortunately, it turns out we do this all over the
-            // place at Pixar. Doing so appears to be inadvertent but benign,
-            // but we should get to the bottom of that and add the missing
-            // verify here.
-            if (!_inputs.insert(std::make_pair(
-                    spec->GetName(), newInput)).second) {
+            // Note that we may already have an input of the given name. We
+            // allow input names to be repeated, since this allows input
+            // connections to be aggregated so the callback can iterate over
+            // all resulting input values.
+            const auto [it, inserted] =
+                _inputs.insert({spec->GetName(), newInput});
+            if (!inserted) {
+                // Associated inputs, however, must have unique names.
+                TF_VERIFY(
+                    outputName.IsEmpty(),
+                    "Input name '%s' is repeated, but has an associated output "
+                    "'%s'",
+                    spec->GetName().GetText(),
+                    outputName.GetText());
+                // Also, repeated input specs have to have the same value type.
+                TF_VERIFY(
+                    spec->GetType() == it->second->GetSpec().GetType(),
+                    "Input name '%s' is repeated, but the spec type %s doesn't "
+                    "match the previous type %s",
+                    spec->GetName().GetText(),
+                    spec->GetType().GetTypeName().c_str(),
+                    it->second->GetSpec().GetType().GetTypeName().c_str());
                 delete newInput;
             }
 

@@ -78,8 +78,8 @@ ARCH_API
 std::string ArchVStringPrintf(const char *fmt, va_list ap)
 #ifndef doxygen
     ARCH_PRINTF_FUNCTION(1, 0)
+#endif /* doxygen */
     ;
-#endif
 
 /// @}
 

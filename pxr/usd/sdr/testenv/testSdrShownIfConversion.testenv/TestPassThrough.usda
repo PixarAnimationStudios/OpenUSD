@@ -1,0 +1,35 @@
+#usda 1.0
+
+def Shader "TestPassThrough" {
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @testDummy.glslfx@
+
+    int inputs:numOps = 1
+    float inputs:input1 = 0.0 (
+        sdrMetadata = {
+            token conditionalVisOp = "greaterThanOrEqualTo"
+            token conditionalVisPath = "../../numOps"
+            token conditionalVisValue = "1"
+
+            # intentional additional parenthesis to check if it's being preserved
+            token shownIf = "(numOps >= 1)"
+        }
+    )
+    float inputs:input2 = 0.0 (
+        sdrMetadata = {
+            token conditionalVisOp = "and"
+            token conditionalVisLeft = "conditionalVis1"
+            token conditionalVisRight = "conditionalVis2"
+            token conditionalVis1Op = "greaterThanOrEqualTo"
+            token conditionalVis1Path = "../../numOps"
+            token conditionalVis1Value = "2"
+            token conditionalVis2Op = "lessThan"
+            token conditionalVis2Path = "../../input1"
+            token conditionalVis2Value = "10"
+
+            # intentional additional parenthesis to check if it's being preserved
+            token shownIf = "((numOps >= 2) && (input1 < 10))"
+        }
+    )
+    float outputs:bar
+}

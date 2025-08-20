@@ -219,6 +219,16 @@ HdxOitResolveTask::_GetAovBindings(
     return ctxRenderPassState->GetAovBindings();
 }
 
+static
+bool
+_HasColorAov(HdRenderPassAovBindingVector const& aovBindings)
+{
+    return std::find_if(aovBindings.begin(), aovBindings.end(),
+        [](HdRenderPassAovBinding const& binding){
+            return binding.aovName == HdAovTokens->color; })
+                != aovBindings.end();
+}
+
 GfVec2i
 HdxOitResolveTask::_ComputeScreenSize(
     HdTaskContext* ctx,
@@ -330,22 +340,25 @@ HdxOitResolveTask::_PrepareOitBuffers(
                                    screenSize[1] > _screenSize[1]);
 
     if (resizeOitBuffers) {
-        _screenSize = screenSize;
+        const int oldBufferSize = _screenSize[0] * _screenSize[1];
         const int newBufferSize = screenSize[0] * screenSize[1];
+        _screenSize = screenSize;
 
-        // +1 because element 0 of the counter buffer is used as an atomic
-        // counter in the shader to give each fragment a unique index.
-        _counterBar->Resize(newBufferSize + 1);
-        _indexBar->Resize(newBufferSize * numSamples);
-        _dataBar->Resize(newBufferSize * numSamples);
-        _depthBar->Resize(newBufferSize * numSamples);
+        if (oldBufferSize < newBufferSize) {
+            // +1 because element 0 of the counter buffer is used as an atomic
+            // counter in the shader to give each fragment a unique index.
+            _counterBar->Resize(newBufferSize + 1);
+            _indexBar->Resize(newBufferSize * numSamples);
+            _dataBar->Resize(newBufferSize * numSamples);
+            _depthBar->Resize(newBufferSize * numSamples);
+        }
 
         // Update the values in the uniform buffer
         hdStResourceRegistry->AddSource(
             _uniformBar,
             std::make_shared<HdVtBufferSource>(
                 HdxTokens->oitScreenSize,
-                VtValue(screenSize)));
+                VtValue(_screenSize)));
     }
 }
 
@@ -364,6 +377,12 @@ HdxOitResolveTask::Prepare(HdTaskContext* ctx,
     // execute of the first oit render task will clear the buffer in this
     // iteration.
     ctx->erase(HdxTokens->oitClearedFlag);
+
+    // If there are aovs, but none of them are color, skip this task.
+    const HdRenderPassAovBindingVector aovBindings = _GetAovBindings(ctx);
+    if (!aovBindings.empty() && !_HasColorAov(aovBindings)) {
+        return;
+    }
 
     if (!_renderPass) {
         HdRprimCollection collection;
@@ -402,10 +421,16 @@ HdxOitResolveTask::Execute(HdTaskContext* ctx)
     // OIT render and resolve tasks.
     ctx->erase(HdxTokens->oitClearedFlag);
 
+    // If there are aovs, but none of them are color, skip this task.
+    HdRenderPassAovBindingVector const& aovBindings = _GetAovBindings(ctx);
+    if (!aovBindings.empty() && !_HasColorAov(aovBindings)) {
+        return;
+    }
+
     if (!TF_VERIFY(_renderPassState)) return;
     if (!TF_VERIFY(_renderPassShader)) return;
 
-    _renderPassState->SetAovBindings(_GetAovBindings(ctx));
+    _renderPassState->SetAovBindings(aovBindings);
     _UpdateCameraFraming(ctx);
 
     HdxOitBufferAccessor oitBufferAccessor(ctx);

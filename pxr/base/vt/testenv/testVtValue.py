@@ -63,6 +63,17 @@ class TestVtValue(unittest.TestCase):
         self.assertEqual(Vt._test_ValueTypeName(u'hello'), 'string')
         self.assertEqual(Vt._test_ValueTypeName(Vt.Token('hello')), 'TfToken')
 
+        # Test that VtArrayEdit instances box into VtValue from-python
+        # correctly.  If they did not the returned type name would be
+        # 'TfPyObjWrapper'.
+        self.assertEqual(Vt._test_ValueTypeName(Vt.IntArrayEdit()),
+                         'VtArrayEdit<int>')
+        self.assertEqual(Vt._test_ValueTypeName(Vt.StringArrayEdit()),
+                         'VtArrayEdit<string>')
+        self.assertEqual(Vt._test_ValueTypeName(Vt.FloatArrayEdit()),
+                         'VtArrayEdit<float>')
+                         
+
     def test_IntValueRoundTrip(self):
         '''Make sure we correctly convert ints of various sizes in the value
         python bindings

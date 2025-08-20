@@ -33,10 +33,17 @@ TF_DEFINE_PUBLIC_TOKENS(UsdImagingCollectionMaterialBindingSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdPathDataSourceHandle
-UsdImagingCollectionMaterialBindingSchema::GetCollectionPath() const
+UsdImagingCollectionMaterialBindingSchema::GetCollectionPrimPath() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
-        UsdImagingCollectionMaterialBindingSchemaTokens->collectionPath);
+        UsdImagingCollectionMaterialBindingSchemaTokens->collectionPrimPath);
+}
+
+HdTokenDataSourceHandle
+UsdImagingCollectionMaterialBindingSchema::GetCollectionName() const
+{
+    return _GetTypedDataSource<HdTokenDataSource>(
+        UsdImagingCollectionMaterialBindingSchemaTokens->collectionName);
 }
 
 HdPathDataSourceHandle
@@ -56,19 +63,25 @@ UsdImagingCollectionMaterialBindingSchema::GetBindingStrength() const
 /*static*/
 HdContainerDataSourceHandle
 UsdImagingCollectionMaterialBindingSchema::BuildRetained(
-        const HdPathDataSourceHandle &collectionPath,
+        const HdPathDataSourceHandle &collectionPrimPath,
+        const HdTokenDataSourceHandle &collectionName,
         const HdPathDataSourceHandle &materialPath,
         const HdTokenDataSourceHandle &bindingStrength
 )
 {
-    TfToken _names[3];
-    HdDataSourceBaseHandle _values[3];
+    TfToken _names[4];
+    HdDataSourceBaseHandle _values[4];
 
     size_t _count = 0;
 
-    if (collectionPath) {
-        _names[_count] = UsdImagingCollectionMaterialBindingSchemaTokens->collectionPath;
-        _values[_count++] = collectionPath;
+    if (collectionPrimPath) {
+        _names[_count] = UsdImagingCollectionMaterialBindingSchemaTokens->collectionPrimPath;
+        _values[_count++] = collectionPrimPath;
+    }
+
+    if (collectionName) {
+        _names[_count] = UsdImagingCollectionMaterialBindingSchemaTokens->collectionName;
+        _values[_count++] = collectionName;
     }
 
     if (materialPath) {
@@ -84,10 +97,18 @@ UsdImagingCollectionMaterialBindingSchema::BuildRetained(
 }
 
 UsdImagingCollectionMaterialBindingSchema::Builder &
-UsdImagingCollectionMaterialBindingSchema::Builder::SetCollectionPath(
-    const HdPathDataSourceHandle &collectionPath)
+UsdImagingCollectionMaterialBindingSchema::Builder::SetCollectionPrimPath(
+    const HdPathDataSourceHandle &collectionPrimPath)
 {
-    _collectionPath = collectionPath;
+    _collectionPrimPath = collectionPrimPath;
+    return *this;
+}
+
+UsdImagingCollectionMaterialBindingSchema::Builder &
+UsdImagingCollectionMaterialBindingSchema::Builder::SetCollectionName(
+    const HdTokenDataSourceHandle &collectionName)
+{
+    _collectionName = collectionName;
     return *this;
 }
 
@@ -111,7 +132,8 @@ HdContainerDataSourceHandle
 UsdImagingCollectionMaterialBindingSchema::Builder::Build()
 {
     return UsdImagingCollectionMaterialBindingSchema::BuildRetained(
-        _collectionPath,
+        _collectionPrimPath,
+        _collectionName,
         _materialPath,
         _bindingStrength
     );

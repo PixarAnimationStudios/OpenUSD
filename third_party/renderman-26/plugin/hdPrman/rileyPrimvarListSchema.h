@@ -47,29 +47,31 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanRileyPrimvarListSchemaTokens, HDPRMAN_API,
 
 //-----------------------------------------------------------------------------
 
-// Schema to describe RtPrimvarList.
-//
-// To obtain an RtPrimvarList we pass numUniform, numVertex, numVarying,
-// numFaceVarying to the constructor, call RtPrimvarList::SetTimes if "P" (for
-// points) is among the params and has samples and finally call the
-// appropriate RtPrimvarList::SetFOO[Detail]( name, value[, detailType[,
-// sampleTimeIndex]]).
-//
-// The HdPrmanRileyPrimvarSchema determines what SetFOO[Detail] method is
-// valled with what value, detailType or sampleTimeIndex.
-//
-// For many data types or when detailType is constant, the behavior is the
-// same as for the HdPrmanRileyParamSchema.
-//
-// Otherweise, we call SetFooDetail using HdPrmanRileyParamSchema similar as
-// we did for HdPrmanRileyParamSchema but consuming the detailType data source
-// as well. The value data source is only sampled at time 0.
-//
-// The "P" param is treated specially. It is the only param for which take
-// time samples (from the sampled value data source) and always corresponds to
-// a call to RtPrimvarList::SetPointDetail with detailType = vertex.
-//
 
+/// \class HdPrmanRileyPrimvarListSchema
+///
+/// Schema to describe RtPrimvarList.
+///
+/// To obtain an RtPrimvarList we pass numUniform, numVertex, numVarying,
+/// numFaceVarying to the constructor, call RtPrimvarList::SetTimes if "P" (for
+/// points) is among the params and has samples and finally call the
+/// appropriate RtPrimvarList::SetFOO[Detail]( name, value[, detailType[,
+/// sampleTimeIndex]]).
+///
+/// The HdPrmanRileyPrimvarSchema determines what SetFOO[Detail] method is
+/// valled with what value, detailType or sampleTimeIndex.
+///
+/// For many data types or when detailType is constant, the behavior is the
+/// same as for the HdPrmanRileyParamSchema.
+///
+/// Otherweise, we call SetFooDetail using HdPrmanRileyParamSchema similar as
+/// we did for HdPrmanRileyParamSchema but consuming the detailType data source
+/// as well. The value data source is only sampled at time 0.
+///
+/// The "P" param is treated specially. It is the only param for which take
+/// time samples (from the sampled value data source) and always corresponds to
+/// a call to RtPrimvarList::SetPointDetail with detailType = vertex.
+///
 class HdPrmanRileyPrimvarListSchema : public HdSchema
 {
 public:

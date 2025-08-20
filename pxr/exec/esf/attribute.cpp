@@ -28,4 +28,16 @@ EsfAttributeInterface::GetQuery() const
     return _GetQuery();
 }
 
+SdfPathVector
+EsfAttributeInterface::GetConnections(EsfJournal *const journal) const
+{
+    if (journal) {
+        journal->Add(
+            _GetPath(),
+            EsfEditReason::ResyncedObject |
+            EsfEditReason::ChangedConnectionPaths);
+    }
+    return _GetConnections();
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

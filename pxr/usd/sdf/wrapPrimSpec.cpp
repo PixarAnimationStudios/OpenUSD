@@ -104,6 +104,13 @@ _SetSymmetryArguments(const SdfPrimSpec& self,
 }
 
 static void
+_SetClips(const SdfPrimSpec& self,
+          VtDictionary const &dictionary)
+{
+    self.GetClips() = dictionary;
+}
+
+static void
 _SetCustomData(const SdfPrimSpec& self,
                VtDictionary const &dictionary)
 {
@@ -268,6 +275,24 @@ void wrapPrimSpec()
             &This::SetPermission,
             "The prim's permission restriction.\n"
             "The default value is SdfPermissionPublic.")
+
+        .add_property("clipSetsList",
+            &This::GetClipSetsList,
+            "A StringListEditor for the prim's value clip sets.\n\n"
+            "The list of the clip sets for this prim may be "
+            "modified with this NameListEditor.\n\n"
+            "A NameListEditor may express a list either as an explicit "
+            "value or as a set of list editing operations.  See NameListEditor "
+            "for more information.")
+
+        .add_property("clips",
+            &This::GetClips,
+            &_SetClips,
+            "Dictionary with value clips information.")
+
+        .add_property("hasClipSets",
+            &This::HasClipSets,
+            "Returns true if this prim has clipSets set.")
 
         .add_property("symmetryFunction",
             &This::GetSymmetryFunction,

@@ -1668,9 +1668,9 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     // Initialize MaterialX Variables
     mxInit(Peye, Neye);
-    surfaceshader SR_default_out = surfaceshader(vec3(0.0),vec3(0.0));
-    IMP_UsdPreviewSurface_surfaceshader(diffuseColor, emissiveColor, useSpecularWorkflow, specularColor, metallic, roughness, clearcoat, clearcoatRoughness, opacity, opacityMode, opacityThreshold, ior, normal, displacement, occlusion, SR_default_out);
-    vec4 mxOut = vec4(SR_default_out.color, 1.0);
+    surfaceshader Surface_out = surfaceshader(vec3(0.0),vec3(0.0));
+    IMP_UsdPreviewSurface_surfaceshader(diffuseColor, emissiveColor, useSpecularWorkflow, specularColor, metallic, roughness, clearcoat, clearcoatRoughness, opacity, opacityMode, opacityThreshold, ior, normal, displacement, occlusion, Surface_out);
+    vec4 mxOut = vec4(Surface_out.color, 1.0);
     mxOut = ApplyColorOverrides(mxOut);
     return mxOut;
 }

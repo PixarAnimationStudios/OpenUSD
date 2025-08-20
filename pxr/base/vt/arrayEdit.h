@@ -18,8 +18,12 @@
 #include "pxr/base/vt/traits.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/functionRef.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/trace/trace.h"
+
+#include <iosfwd>
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -188,14 +192,72 @@ public:
         }        
         return _ComposeEdits(std::move(weaker));
     }
-    
+
+    /// Insert \p self to the stream \p out.  If \p self is a dense array,
+    /// insert as VtArray would do, with comma-separated elements serialized by
+    /// VtStreamOut() surrounded by square brackets.  Otherwise insert using the
+    /// following format:
+    ///
+    /// ```
+    /// edit [<op_1>; <op_2>; ... <op_N>]
+    /// ```
+    ///
+    /// Where each op is one of:
+    ///
+    /// ```
+    /// write <literal> to <index>
+    /// write <index> to <index>
+    /// insert <literal> at <index>
+    /// insert <index> at <index>
+    /// prepend <literal>
+    /// prepend <index>
+    /// append <literal>
+    /// append <index>
+    /// erase <index>
+    /// minsize N [fill <literal>]
+    /// resize N [fill <literal>]
+    /// maxsize N
+    /// ```
+    ///
+    /// An `<index>` is an integer enclosed in square brackets, and a
+    /// `<literal>` is an element value serialized by `VtStreamOut()`.
+    ///
+    friend std::ostream &
+    operator<<(std::ostream &out, const VtArrayEdit self) {
+        auto streamElem = [&](int64_t index) -> std::ostream & {
+            return VtStreamOut(self._denseOrLiterals[index], out);
+        };
+        return Vt_ArrayEditStreamImpl(
+            self._isDense, self._ops, self._denseOrLiterals.size(),
+            streamElem, out);
+    }
+
+    /// Insert \p self to the stream \p out, but call \p unaryOp on each
+    /// contained value-type element and pass the result to \p VtStreamOut().
+    /// An example where this is useful is when the element-type is string and
+    /// the destination format requires quoting.  For more details on the
+    /// overall output format, see the regular stream insertion operator.
+    template <class UnaryOp>
+    std::ostream &
+    StreamCustom(std::ostream &out, UnaryOp &&unaryOp) const {
+        auto streamElem = [&](int64_t index) -> std::ostream & {
+            return VtStreamOut(
+                std::forward<UnaryOp>(unaryOp)(_denseOrLiterals[index]),
+                out);
+        };
+        return Vt_ArrayEditStreamImpl(
+            _isDense, _ops, _denseOrLiterals.size(), streamElem, out);
+    }
+
 private:
     friend class VtArrayEditBuilder<ELEM>;
+    friend class Vt_ArrayEditHashAccess;
 
-    template <class HashState>
-    friend void TfHashAppend(HashState &h, VtArrayEdit const &self) {
-        h.Append(self._denseOrLiterals, self._ops, self._isDense);
-    }
+    friend
+    std::ostream &Vt_ArrayEditStreamImpl(
+        bool isDense, Vt_ArrayEditOps const &ops, size_t denseOrLiteralsSize,
+        TfFunctionRef<std::ostream &(int64_t index)> elemToStr,
+        std::ostream &out);
     
     using _Ops = Vt_ArrayEditOps;
     
@@ -219,12 +281,32 @@ private:
     bool _isDense = false;
 };
 
+VT_API
+std::ostream &Vt_ArrayEditStreamImpl(
+    bool isDense, Vt_ArrayEditOps const &ops, size_t denseOrLiteralsSize,
+    TfFunctionRef<std::ostream &(int64_t index)> streamElem,
+    std::ostream &out);
+
 // Declare basic arrayEdit instantiations as extern templates.  They are
 // explicitly instantiated in arrayEdit.cpp.
 #define VT_ARRAY_EDIT_EXTERN_TMPL(unused, elem) \
     VT_API_TEMPLATE_CLASS(VtArrayEdit< VT_TYPE(elem) >);
 TF_PP_SEQ_FOR_EACH(VT_ARRAY_EDIT_EXTERN_TMPL, ~, VT_SCALAR_VALUE_TYPES)
 #undef VT_ARRAY_EDIT_EXTERN_TMPL
+
+struct Vt_ArrayEditHashAccess
+{
+    template <class HashState, class Edit>
+    static void Append(HashState &h, Edit const &edit) {
+        h.Append(edit._denseOrLiterals, edit._ops, edit._isDense);
+    }
+};
+
+template <class HashState, class ELEM>
+std::enable_if_t<VtIsHashable<ELEM>()>
+TfHashAppend(HashState &h, VtArrayEdit<ELEM> const &edit) {
+    Vt_ArrayEditHashAccess::Append(h, edit);
+}
 
 template <class ELEM>
 VtArray<ELEM>

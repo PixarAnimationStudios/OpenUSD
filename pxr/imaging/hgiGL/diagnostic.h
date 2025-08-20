@@ -19,7 +19,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// This macro tags the diagnostic errors with the name of the calling
 /// function.
 #define HGIGL_POST_PENDING_GL_ERRORS() \
-        HgiGLPostPendingGLErrors(__ARCH_PRETTY_FUNCTION__)
+        HgiGLPostPendingGLErrors(__ARCH_PRETTY_FUNCTION__, __LINE__)
 
 /// Returns true if GL debug is enabled
 HGIGL_API
@@ -27,7 +27,7 @@ bool HgiGLDebugEnabled();
 
 /// Posts diagnostic errors for all GL errors in the current context.
 HGIGL_API
-void HgiGLPostPendingGLErrors(std::string const & where = std::string());
+void HgiGLPostPendingGLErrors(std::string const & where = std::string(), int line = 0);
 
 /// Setup OpenGL 4 debug facilities
 HGIGL_API

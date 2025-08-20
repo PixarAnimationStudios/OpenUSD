@@ -136,11 +136,16 @@ have these.
               node output providing the material terminal <name>
                 - upstreamNodePath (TfToken)
                 - upstreamNodeOutputName (TfToken)
-        - interfaceMappings (HdContainerDataSource)
-            - <name> (HdVectorDataSource) 
-                - <index> (HdMaterialInterfaceMappingsSchema) 
-                    - nodePath (TfToken)
-                    - inputName (TfToken)
+        - interface (HdContainerDataSource)
+            - parameters (HdMaterialInterfaceParameterContainerSchema)
+                - <name> (HdMaterialInterfaceParameterSchema)
+                    - displayGroup (TfToken)
+                    - displayName (TfToken)
+                    - mappings (HdMaterialInterfaceMappingVectorSchema) 
+                        - <index> (HdMaterialInterfaceMappingSchema) 
+                            - nodePath (TfToken)
+                            - inputName (TfToken)
+            - parameterOrder (VtArray<TfToken>)
 - materialOverride (HdMaterialOverrideSchema)
     - interfaceValues (HdContainerDataSource)
         - <name> (HdMaterialNodeParameterSchema)
@@ -159,10 +164,10 @@ The diagram intends to show how the two sibling container data sources
 
 Note the following:
 1. The data flows from left to right.
-2. The dotted lines between "materialOverride" and "interfaceMappings" are not 
-true connections and are not backed by the MaterialConnection schema. Each item 
-within "materialOverride" and "interfaceMappings" is loosely coupled by their 
-matching names.
+2. The dotted lines between "materialOverride" and "interface" parameters are 
+not true connections and are not backed by the MaterialConnection schema. Each 
+item within "materialOverride" and "interface" is loosely coupled by their 
+matching parameter names.
 3. The connections in the diagram are drawn with an 'o' to indicate the source 
 where the connection was authored, and these connections are backed by the 
 MaterialConnection schema.

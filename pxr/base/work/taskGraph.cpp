@@ -15,13 +15,15 @@ WorkTaskGraph::BaseTask::~BaseTask() = default;
 void
 WorkTaskGraph::RunLists(const TaskLists &taskLists)
 {
-    WorkParallelForEach(
-        taskLists.begin(), taskLists.end(),
-        [this] (const TaskList &taskList) {
-            for (const auto task : taskList) {
-                RunTask(task);
+    WorkParallelForTBBRange(taskLists.range(), 
+        [this] (const TaskLists::range_type &range){
+            for (const TaskList &taskList: range) {
+                for (const auto task: taskList) {
+                    RunTask(task);
+                }
             }
-        });
+        }
+    );
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -12,8 +12,13 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdr/api.h"
+#include "pxr/base/tf/functionRef.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/vt/value.h"
 #include "pxr/usd/sdr/declare.h"
+#include "pxr/usd/sdr/shaderNode.h"
+#include "pxr/usd/sdr/shaderProperty.h"
+#include "pxr/usd/sdf/valueTypeName.h"
 
 #include <limits>
 
@@ -90,10 +95,43 @@ namespace ShaderMetadataHelpers
     IsPropertyATerminal(const SdrTokenMap& metadata);
 
     /// Gets the "role" from metadata if one is provided. Only returns a value
-    // if it's a valid role as defined by SdrPropertyRole tokens.
+    /// if it's a valid role as defined by SdrPropertyRole tokens.
     SDR_API
     TfToken
     GetRoleFromMetadata(const SdrTokenMap& metadata);
+
+    /// Parses the VtValue from the given valueStr according to the sdf type
+    /// expressed by the given property via two steps.
+    ///
+    /// 1. valueStr is preprocessed into a suitable input for the sdf value
+    ///    parser.
+    ///    - If the value has an sdf type of string or token, the value will
+    ///      be quoted.
+    ///    - If the value is an sdf asset, appropriate @'s are added.
+    ///    - If the value is array-like, square brackets are added.
+    ///    - If the value is tuple-like, parentheses are added.
+    ///    NOTE: Constituent items of iterable types must be appropriately
+    ///          quoted by the caller of this function.
+    /// 2. sdf value parsing is performed on the preprocessed result.
+    ///
+    /// If parsing fails, this returns an empty VtValue and populates err. This
+    /// function does not throw exceptions.
+    SDR_API
+    VtValue
+    ParseSdfValue(const std::string& valueStr,
+                  const SdrShaderPropertyConstPtr& property,
+                  std::string* err);
+
+    /// Synthesizes a "shownIf" expression from conditional visibility metadata
+    /// in \p property, expressed according to Katana's "args" format.
+    /// The sibling properties should be provided in \p allProperties and will
+    /// be referenced when resolving relative paths (`../../some/property`) and
+    /// when parsing embedded property values.
+    SDR_API
+    std::string
+    ComputeShownIfFromMetadata(SdrShaderPropertyConstPtr property,
+        const SdrShaderPropertyUniquePtrVec& allProperties,
+        SdrShaderNodeConstPtr shader);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

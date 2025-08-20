@@ -43,6 +43,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdXformSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdXformSchema
+///
 class HdXformSchema : public HdSchema
 {
 public:

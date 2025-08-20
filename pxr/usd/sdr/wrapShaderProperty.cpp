@@ -82,6 +82,7 @@ void wrapShaderProperty()
         .def("GetOptions", &This::GetOptions,
             return_value_policy<TfPySequenceToList>())
         .def("GetImplementationName", &This::GetImplementationName)
+        .def("GetShownIf", &This::GetShownIf)
         .def("GetVStructMemberOf", &This::GetVStructMemberOf, copyRefPolicy)
         .def("GetVStructMemberName", &This::GetVStructMemberName, copyRefPolicy)
         .def("GetVStructConditionalExpr",

@@ -46,6 +46,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdGeomSubsetSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdGeomSubsetSchema
+///
 class HdGeomSubsetSchema : public HdSchema
 {
 public:

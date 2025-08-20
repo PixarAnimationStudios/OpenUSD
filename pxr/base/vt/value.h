@@ -1047,6 +1047,9 @@ public:
     /// Return true if this holds a VtArray instance, false otherwise.
     VT_API bool IsArrayValued() const;
 
+    /// Return true if this holds a VtArrayEdit instance, false otherwise.
+    VT_API bool IsArrayEditValued() const;
+
     /// Return the number of elements in the held value if IsArrayValued(),
     /// return 0 otherwise.
     size_t GetArraySize() const { return _GetNumElements(); }

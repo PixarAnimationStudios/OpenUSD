@@ -72,6 +72,7 @@ pxr_library(hdSt
         drawItemInstance
         drawTarget
         drawTargetRenderPassState
+        dynamicCubemapTextureObject
         dynamicUvTextureObject
         extComputation
         extCompCpuComputation
@@ -108,6 +109,7 @@ pxr_library(hdSt
         renderDelegate
         renderParam
         renderPass
+        renderPassPruneSceneIndexPlugin
         renderPassShader
         renderPassState
         resourceRegistry
@@ -140,6 +142,7 @@ pxr_library(hdSt
 
     PUBLIC_HEADERS
         api.h
+        dynamicCubemapTextureImplementation.h
         dynamicUvTextureImplementation.h
         enums.h
 
@@ -2910,14 +2913,14 @@ pxr_register_test(testHdStMaterialXShaderGen_SScopper
     TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_UsdPStextured
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename usd_preview_surface_brass_tiled.mtlx --textureMap image_color_file:diffuseColor --textureMap image_roughness_file:roughness"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename usd_preview_surface_brass_tiled.mtlx --textureName image_color_file --textureName image_roughness_file"
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT shadergen_UsdPStextured.out
     DIFF_COMPARE shadergen_UsdPStextured.out
     TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_SStextured
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_brass_tiled.mtlx --textureMap image_color_file:diffuseColor --textureMap image_roughness_file:roughness --primvarMap uv:vector2"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_brass_tiled.mtlx --textureName image_color_file --textureName image_roughness_file --primvarMap uv:vector2"
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT shadergen_SStextured.out
     DIFF_COMPARE shadergen_SStextured.out
@@ -2930,8 +2933,8 @@ pxr_register_test(testHdStMaterialXShaderGen_UsdPSglass
     DIFF_COMPARE shadergen_UsdPSglass.out
     TESTENV testHdStMaterialXShaderGen
 )
-pxr_register_test(testHdStMaterialXShaderGen8_SStextured_bindless
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_brass_tiled.mtlx --textureMap image_color_file:diffuseColor --textureMap image_roughness_file:roughness --primvarMap uv:vector2 --bindless"
+pxr_register_test(testHdStMaterialXShaderGen_SStextured_bindless
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_brass_tiled.mtlx --textureName image_color_file --textureName image_roughness_file --primvarMap uv:vector2 --bindless"
     EXPECTED_RETURN_CODE 0
     STDOUT_REDIRECT shadergen_SStextured_bindless.out
     DIFF_COMPARE shadergen_SStextured_bindless.out

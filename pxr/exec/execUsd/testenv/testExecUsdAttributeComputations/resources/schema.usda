@@ -1,0 +1,29 @@
+#usda 1.0
+(
+    "Test schema file for testExecUsdAttributeComputations"
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "testExecUsdAttributeComputations"
+        string libraryPath      = "pxr/exec/execUsd"
+        bool skipCodeGeneration = true
+    }
+)
+{
+}
+
+class CustomSchema "CustomSchema" (
+    inherits = </Typed>
+)
+{
+}
+
+class "DispatchingSchema" (
+    inherits = </APISchemaBase>
+)
+{
+}

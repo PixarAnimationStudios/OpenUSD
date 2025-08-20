@@ -27,6 +27,15 @@
 
 #include <tbb/concurrent_unordered_map.h>
 
+#ifdef TBB_PREVIEW_CONCURRENT_ORDERED_CONTAINERS
+#include <tbb/concurrent_map.h>
+#else
+#define TBB_PREVIEW_CONCURRENT_ORDERED_CONTAINERS 1
+#include <tbb/concurrent_map.h>
+#undef TBB_PREVIEW_CONCURRENT_ORDERED_CONTAINERS
+#endif
+
+#include <functional>
 #include <memory>
 #include <set>
 #include <unordered_map>
@@ -84,6 +93,7 @@ public:
     const Exec_ComputationDefinition *GetComputationDefinition(
         const EsfAttributeInterface &providerAttribute,
         const TfToken &computationName,
+        EsfSchemaConfigKey dispatchingConfigKey,
         EsfJournal *journal) const;
 
     /// Returns the definition for the computation named \p computationName
@@ -107,8 +117,18 @@ public:
     {
         friend class Exec_ComputationBuilder;
         friend class Exec_PrimComputationBuilder;
+        friend class Exec_AttributeComputationBuilder;
 
         inline static void _RegisterPrimComputation(
+            TfType schemaType,
+            const TfToken &computationName,
+            TfType resultType,
+            ExecCallbackFn &&callback,
+            Exec_InputKeyVectorRefPtr &&inputKeys,
+            std::unique_ptr<ExecDispatchesOntoSchemas> &&dispatchesOntoSchemas);
+
+        inline static void _RegisterAttributeComputation(
+            const TfToken &attributeName,
             TfType schemaType,
             const TfToken &computationName,
             TfType resultType,
@@ -139,13 +159,23 @@ private:
         const TfToken &computationName,
         EsfJournal *journal) const;
 
-    // Looks for a dispatched prim computation using the given \p
+    // Looks for a dispatched prim or attribute computation using the given \p
     // dispatchingConfigKey.
     //
-    const Exec_ComputationDefinition *_LookUpDispatchedPrimComputation(
+    const Exec_ComputationDefinition *_LookUpDispatchedComputation(
         const EsfPrimInterface &providerPrim,
         const TfToken &computationName,
+        bool isPrimComputation,
         EsfSchemaConfigKey dispatchingConfigKey,
+        EsfJournal *journal) const;
+
+    // Looks for a local (non-dispatched) plugin attribute computation on the
+    // given \p providerPrim, composing the prim definition if it's not already
+    // composed.
+    //
+    const Exec_ComputationDefinition *_LookUpLocalAttributeComputation(
+        const EsfAttributeInterface &providerAttribute,
+        const TfToken &computationName,
         EsfJournal *journal) const;
 
     // Returns a reference to the singleton that is suitable for registering
@@ -160,18 +190,35 @@ private:
     // be found on a prim of a given type.
     //
     struct _ComposedPrimDefinition {
-        // Map from computation name to plugin prim computation definition.
-        using _ComposedPrimDefinitionMap =
+        // Map from computation name to plugin computation definition.
+        using _ComputationDefinitionMap =
             std::unordered_map<
                 TfToken,
                 const Exec_PluginComputationDefinition *,
                 TfHash>;
 
-        _ComposedPrimDefinitionMap primComputationDefinitions;
-        _ComposedPrimDefinitionMap dispatchedPrimComputationDefinitions;
+        _ComputationDefinitionMap primComputationDefinitions;
+        _ComputationDefinitionMap dispatchedPrimComputationDefinitions;
 
-        // TODO: Add plugin attribute computation definitions.
+        // Map from (attribute name, computation name) to plugin attribute
+        // computation definition.
+        using _AttributeComputationDefinitionMap =
+            std::unordered_map<
+                std::pair<TfToken, TfToken>,
+                const Exec_PluginComputationDefinition *,
+                TfHash>;
+
+        _AttributeComputationDefinitionMap attributeComputationDefinitions;
+        _ComputationDefinitionMap dispatchedAttributeComputationDefinitions;
     };
+
+    // Returns the composed prim definition for \p providerPrim, composing it
+    // if necessary.
+    //
+    const Exec_DefinitionRegistry::_ComposedPrimDefinition &
+    _GetOrCreateComposedPrimDefinition(
+        const EsfPrimInterface &providerPrim,
+        EsfJournal *journal) const;
 
     // Creates and returns the composed prim definition for a prim on \p stage
     // with typed schema \p schemaType and API schemas \p appliedSchemas.
@@ -181,6 +228,13 @@ private:
         TfType schemaType,
         const TfTokenVector &appliedSchemas) const;
 
+    // Returns true if it's valid to register a computation named \p
+    // computationName for \p schemaType.
+    //
+    bool _ValidateComputationRegistration(
+        TfType schemaType,
+        const TfToken &computationName) const;
+
     // Registers a prim computation on \p schemaType.
     //
     // If \p dispatchesOntoSchemas is null, the computation is local
@@ -189,6 +243,23 @@ private:
     // if the list is empty.
     // 
     void _RegisterPrimComputation(
+        TfType schemaType,
+        const TfToken &computationName,
+        TfType resultType,
+        ExecCallbackFn &&callback,
+        Exec_InputKeyVectorRefPtr &&inputKeys,
+        std::unique_ptr<ExecDispatchesOntoSchemas> &&dispatchesOntoSchemas);
+
+    // Registers an attribute computation on \p schemaType for attributes named
+    // \p attributeName.
+    //
+    // If \p dispatchesOntoSchemas is null, the computation is local
+    // (non-dispatched). Otherwise, it is a dispatched computation that
+    // dispatches onto attributes owned by prims with the given list of schemas,
+    // or onto all attributes, if the list is empty.
+    // 
+    void _RegisterAttributeComputation(
+        const TfToken &attributeName,
         TfType schemaType,
         const TfToken &computationName,
         TfType resultType,
@@ -213,7 +284,7 @@ private:
     // Returns true if plugin computation registration for \p schemaType is
     // complete.
     //
-    bool _IsComputationRegistrationComplete(const TfType schemaType);
+    bool _IsComputationRegistrationComplete(const TfType schemaType) const;
 
     // Should be called when plugin computation registration for \p schemaType
     // is complete.
@@ -252,9 +323,10 @@ private:
 
     // Map from schemaType to plugin prim computation definitions.
     //
-    // This is a concurrent map to allow computation lookup to happen in
-    // parallel with loading of plugin computations.
-    using _PrimPluginComputationMap =
+    // This is a concurrent map to allow lazy caching of composed prim
+    // definitions (which reads from these maps) to happen in parallel with
+    // loading of plugin computations (which writes to them).
+    using _PluginComputationMap =
         tbb::concurrent_unordered_map<
             TfType,
             std::set<
@@ -262,8 +334,25 @@ private:
                 _PluginComputationDefinitionComparator>,
             TfHash>;
 
-    _PrimPluginComputationMap _pluginPrimComputationDefinitions;
-    _PrimPluginComputationMap _pluginDispatchedPrimComputationDefinitions;
+    _PluginComputationMap _pluginPrimComputationDefinitions;
+    _PluginComputationMap _pluginDispatchedPrimComputationDefinitions;
+
+    // Map from schemaType to map from attribute name to plugin attribute
+    // computation definitions.
+    //
+    // This is a concurrent map to allow lazy caching of composed prim
+    // defintitions (which reads from these maps) to happen in parallel with
+    // loading of plugin computations (which writes to them).
+    using _PluginAttributeComputationMap =
+        tbb::concurrent_map<
+            std::pair<TfType, TfToken>,
+            std::set<
+                Exec_PluginComputationDefinition,
+                _PluginComputationDefinitionComparator>,
+            std::less<>>;
+
+    _PluginAttributeComputationMap _pluginAttributeComputationDefinitions;
+    _PluginComputationMap _pluginDispatchedAttributeComputationDefinitions;
 
     // Map from an opaque key to composed prim exec definition.
     //
@@ -319,6 +408,26 @@ Exec_DefinitionRegistry::ComputationBuilderAccess::_RegisterPrimComputation(
     std::unique_ptr<ExecDispatchesOntoSchemas> &&dispatchesOntoSchemas)
 {
     _GetInstanceForRegistration()._RegisterPrimComputation(
+        schemaType,
+        computationName,
+        resultType,
+        std::move(callback),
+        std::move(inputKeys),
+        std::move(dispatchesOntoSchemas));
+}
+
+void
+Exec_DefinitionRegistry::ComputationBuilderAccess::_RegisterAttributeComputation(
+    const TfToken &attributeName,
+    const TfType schemaType,
+    const TfToken &computationName,
+    const TfType resultType,
+    ExecCallbackFn &&callback,
+    Exec_InputKeyVectorRefPtr &&inputKeys,
+    std::unique_ptr<ExecDispatchesOntoSchemas> &&dispatchesOntoSchemas)
+{
+    _GetInstanceForRegistration()._RegisterAttributeComputation(
+        attributeName,
         schemaType,
         computationName,
         resultType,

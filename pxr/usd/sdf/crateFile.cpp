@@ -52,6 +52,8 @@
 #include "pxr/base/ts/binary.h"
 #include "pxr/base/ts/spline.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/vt/arrayEdit.h"
+#include "pxr/base/vt/arrayEditBuilder.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/dispatcher.h"
@@ -274,6 +276,15 @@ static constexpr ValueRep ValueRepForArray(uint64_t payload = 0) {
 }
 
 template <class T>
+static constexpr ValueRep ValueRepForArrayEdit(uint64_t payload = 0) {
+    ValueRep r {
+        _TypeEnumFor<T>::value,
+        /*isInlined=*/false, /*isArray=*/false, payload };
+    r.SetIsArrayEdit();
+    return r;
+}
+
+template <class T>
 T *RoundToPageAddr(T *addr) {
     return reinterpret_cast<T *>(
         reinterpret_cast<uintptr_t>(addr) & CRATE_PAGEMASK);
@@ -332,6 +343,7 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
+// 0.14.0: Added support for ArrayEdits.
 // 0.13.0: Support for splines with tangent algorithms None, Custom, AutoEase.
 // 0.12.0: Added support for splines.
 // 0.11.0: Added support for relocates in layer metadata.
@@ -350,7 +362,7 @@ using std::vector;
 //         See _PathItemHeader_0_0_1.
 //  0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 13;
+constexpr uint8_t USDC_MINOR = 14;
 constexpr uint8_t USDC_PATCH = 0;
 
 constexpr CrateFile::Version
@@ -1649,7 +1661,7 @@ struct CrateFile::_ValueHandler : _ValueHandlerBase
     }
 
     ValueRep PackArray(_Writer w, VtArray<T> const &array) {
-        auto result = ValueRepForArray<T>(0);
+        auto result = ValueRepForArray<T>();
 
         // If this is an empty array we inline it.
         if (array.empty())
@@ -1697,10 +1709,81 @@ struct CrateFile::_ValueHandler : _ValueHandlerBase
         _ReadPossiblyCompressedArray(reader, rep, out, fileVer, 0);
     }
 
+    ValueRep PackArrayEdit(_Writer w, VtArrayEdit<T> const &arrayEdit) {
+        w.crate->_packCtx->RequestWriteVersionUpgrade(
+            Version(0,14,0), "A VtArrayEdit value type was detected which "
+            "requires crate version 0.14.0.");
+        
+        auto result = ValueRepForArrayEdit<T>();
+
+        // If this is the identity arrayEdit we inline it.
+        if (arrayEdit.IsIdentity()) {
+            return result;
+        }
+
+        if (!_arrayEditDedup) {
+            _arrayEditDedup.reset(
+                new typename decltype(_arrayEditDedup)::element_type);
+        }
+
+        auto iresult = _arrayEditDedup->emplace(arrayEdit, result);
+        ValueRep &target = iresult.first->second;
+        if (iresult.second) {
+            // Wasn't already present in the dedup table -- fetch the
+            // serialization data and pack them as VtArrays.  This way we get
+            // dedup / compression / zero-copy, etc.
+            VtArray<T> valuesArray;
+            std::vector<int64_t> indexes;
+            VtArrayEditBuilder<T>::
+                GetSerializationData(arrayEdit, &valuesArray, &indexes);
+
+            const VtInt64Array indexArray { indexes.begin(), indexes.end() };
+
+            ValueRep valuesRep = w.crate->_PackValue(valuesArray);
+            ValueRep indexesRep = w.crate->_PackValue(indexArray);
+
+            target = ValueRepForArrayEdit<T>(w.Tell());
+            w.Write(valuesRep);
+            w.Write(indexesRep);
+            w.Write(arrayEdit.IsDenseArray());
+        }
+        return target;
+    }
+
+    template <class Reader>
+    void
+    UnpackArrayEdit(Reader reader, ValueRep rep, VtArrayEdit<T> *out) const {
+        // If payload is 0, it's an identity arrayEdit.
+        if (rep.GetPayload() == 0) {
+            *out = VtArrayEdit<T>();
+            return;
+        }
+        VtArray<T> valuesArray;
+        VtInt64Array indexesArray;
+        reader.Seek(rep.GetPayload());
+
+        reader.crate->_UnpackValue(
+            reader.template Read<ValueRep>(), &valuesArray);
+        reader.crate->_UnpackValue(
+            reader.template Read<ValueRep>(), &indexesArray);
+
+        *out = VtArrayEditBuilder<T>::CreateFromSerializationData(
+            valuesArray, indexesArray, reader.template Read<bool>());
+
+        if (SafetyOverSpeed) {
+            // Run the edit through the builder's Optimize() function to clear
+            // out any out-of-bounds accesses.
+            *out = VtArrayEditBuilder<T>::Optimize(std::move(*out));
+        }
+    }
+
     ValueRep PackVtValue(_Writer w, VtValue const &v) {
         if constexpr (_SupportsArray<T>::value) {
             if (v.IsArrayValued()) {
                 return this->PackArray(w, v.UncheckedGet<VtArray<T>>());
+            }
+            if (v.IsArrayEditValued()) {
+                return this->PackArrayEdit(w, v.UncheckedGet<VtArrayEdit<T>>());
             }
         }
         return this->Pack(w, v.UncheckedGet<T>());
@@ -1715,6 +1798,12 @@ struct CrateFile::_ValueHandler : _ValueHandlerBase
                 out->Swap(array);
                 return;
             }
+            if (rep.IsArrayEdit()) {
+                VtArrayEdit<T> arrayEdit;
+                this->UnpackArrayEdit(r, rep, &arrayEdit);
+                out->Swap(arrayEdit);
+                return;
+            }
         }
         T obj;
         this->Unpack(r, rep, &obj);
@@ -1727,12 +1816,15 @@ struct CrateFile::_ValueHandler : _ValueHandlerBase
         }
         if constexpr (_SupportsArray<T>::value) {
             _arrayDedup.reset();
+            _arrayEditDedup.reset();
         }                
     }
     
     std::unique_ptr<std::unordered_map<T, ValueRep, _Hasher>> _valueDedup;
     std::unique_ptr<
         std::unordered_map<VtArray<T>, ValueRep, _Hasher>> _arrayDedup;
+    std::unique_ptr<
+        std::unordered_map<VtArrayEdit<T>, ValueRep, _Hasher>> _arrayEditDedup;
 
 };
 
@@ -3990,6 +4082,12 @@ CrateFile::_PackValue(VtArray<T> const &v) {
     return _GetValueHandler<T>().PackArray(_Writer(this), v);
 }
 
+template <class T>
+ValueRep
+CrateFile::_PackValue(VtArrayEdit<T> const &v) {
+    return _GetValueHandler<T>().PackArrayEdit(_Writer(this), v);
+}
+
 ValueRep
 CrateFile::_PackValue(VtValue const &v)
 {
@@ -4020,12 +4118,17 @@ CrateFile::_PackValue(VtValue const &v)
             return ts.valueRep;
     }
 
-    std::type_index ti =
-        v.IsArrayValued() ? v.GetElementTypeid() : v.GetTypeid();
+    // Arrays and array-edits use the underlying element typeid, otherwise the
+    // ordinary typeid.
+    std::type_index ti = v.GetElementTypeid();
+    if (ti == typeid(void)) {
+        ti = v.GetTypeid();
+    }
 
     auto it = _packValueFunctions.find(ti);
-    if (it != _packValueFunctions.end())
+    if (it != _packValueFunctions.end()) {
         return it->second(v);
+    }
 
     TF_CODING_ERROR("Attempted to pack unsupported type '%s' "
                     "(%s)", ArchGetDemangled(ti).c_str(),

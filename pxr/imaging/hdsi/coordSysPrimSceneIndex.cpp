@@ -17,6 +17,7 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/tf/scopeDescription.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -408,6 +409,7 @@ HdsiCoordSysPrimSceneIndex::_PrimsAdded(
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
     TRACE_FUNCTION();
+    TF_DESCRIBE_SCOPE("Processing coordinate systems");
 
     const bool isObserved = _IsObserved();
 
@@ -443,6 +445,7 @@ HdsiCoordSysPrimSceneIndex::_PrimsDirtied(
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
     TRACE_FUNCTION();
+    TF_DESCRIBE_SCOPE("Processing coordinate systems");
 
     const bool isObserved = _IsObserved();
 

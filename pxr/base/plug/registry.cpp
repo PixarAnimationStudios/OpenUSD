@@ -161,7 +161,7 @@ PlugPluginPtr
 PlugRegistry::GetPluginForType(TfType t) const
 {
     if (t.IsUnknown()) {
-        TF_CODING_ERROR("Unknown base type");
+        TF_CODING_ERROR("Unknown type");
         return TfNullPtr;
     }
     return PlugPlugin::_GetPluginForType(t);
@@ -260,6 +260,51 @@ Plug_SetPaths(const std::vector<std::string>& paths,
     pathsInfo.debugMessages = debugMessages;
     pathsInfo.pathsAreOrdered = pathsAreOrdered;
 }
+
+
+PlugPluginPtr
+PlugRegistry::DemandPluginForType(TfType t) const
+{
+    auto issueError = [&]() {
+        std::string msg;
+        PathsInfo &info = Plug_GetPathsInfo();
+        msg += TfStringPrintf(
+            "Failed to find the plugInfo.json file that declares the "
+            "plugin for %s.\n",
+            t.IsUnknown() ? "unknown type" : t.GetTypeName().c_str());
+        msg += "Check the plugin search path configuration and run with "
+            "TF_DEBUG=PLUG_INFO_SEARCH to debug.\n";
+        if (info.paths.empty()) {
+            msg += "No plugin search paths.\n";
+        }
+        else {
+            msg += "Plugin search paths:\n";
+            for (std::string const &dirName: info.paths) {
+                msg += TfStringPrintf("    %s\n", dirName.c_str());
+            }
+        }
+        if (!info.debugMessages.empty()) {
+            msg += "Plugin debug info:\n";
+            for (std::string const &debugMsg: info.debugMessages) {
+                // These already have newlines appended, oddly.
+                msg += TfStringPrintf("    %s", debugMsg.c_str());
+            }
+        }
+        TF_FATAL_ERROR("%s", msg.c_str());
+    };
+    
+    if (t.IsUnknown()) {
+        issueError();
+    }
+    else if (PlugPluginPtr plugin = PlugPlugin::_GetPluginForType(t)) {
+        return plugin;
+    }
+    else {
+        issueError();
+    }
+    return TfNullPtr;
+}
+
 
 // This is here so plugin.cpp doesn't have to include info.h or registry.h.
 void

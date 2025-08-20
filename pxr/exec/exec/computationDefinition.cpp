@@ -21,6 +21,7 @@ Exec_ComputationDefinition::~Exec_ComputationDefinition() = default;
 TfType
 Exec_ComputationDefinition::GetResultType(
     const EsfObjectInterface &,
+    const TfToken &,
     EsfJournal *) const
 {
     return _resultType;

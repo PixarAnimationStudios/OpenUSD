@@ -126,7 +126,8 @@ public:
     // Returns whether or not HdStRenderDelegate can run on the current
     // hardware.
     HDST_API
-    static bool IsSupported();
+    static bool IsSupported(
+        HdRendererCreateArgs const& rendererCreateArgs = {});
 
     // Returns a raw pointer to the draw items cache owned (solely) by the
     // render delegate.

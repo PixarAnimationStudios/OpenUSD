@@ -6,7 +6,6 @@
 //
 #include "pxr/imaging/hdGp/sceneIndexPlugin.h"
 #include "pxr/imaging/hdGp/generativeProceduralResolvingSceneIndex.h"
-#include "pxr/imaging/hdGp/generativeProceduralPluginRegistry.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 
 #include "pxr/base/tf/envSetting.h"
@@ -49,24 +48,17 @@ HdGpSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {
-    // Ensure that procedurals are discovered are prior to the scene index
-    // querying for specific procedurals. Absence of this was causing a test
-    // case to non-deterministically fail due to not finding a registered
-    // procedural.
-    HdGpGenerativeProceduralPluginRegistry::GetInstance();
-    
-    HdSceneIndexBaseRefPtr result = inputScene;
-
     if (inputArgs) {
         using _TokenDs = HdTypedSampledDataSource<TfToken>;
         if (_TokenDs::Handle tds =_TokenDs::Cast(
                 inputArgs->Get(_tokens->proceduralPrimTypeName))) {
-            return HdGpGenerativeProceduralResolvingSceneIndex::New(result,
+            return HdGpGenerativeProceduralResolvingSceneIndex::New(
+                inputScene,
                 tds->GetTypedValue(0.0f));
         }
     }
 
-    return HdGpGenerativeProceduralResolvingSceneIndex::New(result);
+    return HdGpGenerativeProceduralResolvingSceneIndex::New(inputScene);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

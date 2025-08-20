@@ -22,6 +22,7 @@
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/imaging/hgi/capabilities.h"
+#include "pxr/imaging/hgi/enums.h"
 #include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/imaging/hio/glslfx.h"
@@ -31,8 +32,6 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticTokens.h"
-
-#include "pxr/base/tf/hash.h"
 
 #include <sstream>
 #include <map>
@@ -961,6 +960,29 @@ _ResourceGenerator::_GenerateHgiResources(
     }
 }
 
+static
+HgiShaderTextureType
+_GetHgiShaderTextureType(
+    const HioGlslfxResourceLayout::TextureType hioTextureType)
+{
+    using TextureType = HioGlslfxResourceLayout::TextureType;
+
+    switch (hioTextureType) {
+        case TextureType::TEXTURE:
+            return HgiShaderTextureTypeTexture;
+        case TextureType::SHADOW_TEXTURE:
+            return HgiShaderTextureTypeShadowTexture;
+        case TextureType::ARRAY_TEXTURE:
+            return HgiShaderTextureTypeArrayTexture;
+        case TextureType::CUBEMAP_TEXTURE:
+            return HgiShaderTextureTypeCubemapTexture;
+    }
+
+    TF_CODING_ERROR("Unhandled HioGlslfxResourceLayout::TextureType value %d",
+                    int(hioTextureType));
+    return HgiShaderTextureTypeTexture;
+}
+
 void
 _ResourceGenerator::_GenerateHgiTextureResources(
     HgiShaderFunctionDesc *funcDesc,
@@ -971,12 +993,8 @@ _ResourceGenerator::_GenerateHgiTextureResources(
     using TextureType = HioGlslfxResourceLayout::TextureType;
 
     for (auto const & texture : textureElements) {
-        HgiShaderTextureType const textureType =
-            texture.textureType == TextureType::SHADOW_TEXTURE
-                ? HgiShaderTextureTypeShadowTexture
-                : texture.textureType == TextureType::ARRAY_TEXTURE
-                    ? HgiShaderTextureTypeArrayTexture
-                    : HgiShaderTextureTypeTexture;
+        HgiShaderTextureType const hgiTextureType =
+            _GetHgiShaderTextureType(texture.textureType);
         HdFormat const hdTextureFormat =
             HdStHioConversions::GetHdFormat(texture.format);
         if (texture.arraySize > 0) {
@@ -987,7 +1005,7 @@ _ResourceGenerator::_GenerateHgiTextureResources(
                 texture.bindingIndex,
                 texture.dim,
                 HdStHgiConversions::GetHgiFormat(hdTextureFormat),
-                textureType);
+                hgiTextureType);
         } else {
             HgiShaderFunctionAddTexture(
                 funcDesc,
@@ -995,7 +1013,7 @@ _ResourceGenerator::_GenerateHgiTextureResources(
                 texture.bindingIndex,
                 texture.dim,
                 HdStHgiConversions::GetHgiFormat(hdTextureFormat),
-                textureType);
+                hgiTextureType);
         }
     }
 }
@@ -1253,6 +1271,52 @@ _GetGLSLSamplerTypePrefix(HioFormat hioFormat)
     }
 }
 
+static
+std::string
+_GetGLSLSamplerType(
+    const bool isCubemapTexture,
+    const int dim)
+{
+    if (isCubemapTexture) {
+        return "samplerCube";
+    }
+
+    if (dim == 1) {
+        return "sampler1D";
+    }
+    if (dim == 2) {
+        return "sampler2D";
+    }
+    return "sampler3D";
+}
+
+static
+std::string
+_GetGLSLSamplerType(
+    const bool isCubemapTexture,
+    const int dim,
+    const bool isArrayTexture,
+    const bool isShadowTexture)
+{
+    return
+        _GetGLSLSamplerType(isCubemapTexture, dim) +
+        (isArrayTexture ? "Array" : "") +
+        (isShadowTexture ? "Shadow" : "");
+}
+
+static
+std::string
+_GetSamplerSuffix(
+    const bool isCubemapTexture,
+    const int dim)
+{
+    if (isCubemapTexture) {
+        return "Cube";
+    }
+
+    return std::to_string(dim) + "d";
+}
+
 void
 _ResourceGenerator::_GenerateGLSLTextureResources(
     std::stringstream &str,
@@ -1267,6 +1331,9 @@ _ResourceGenerator::_GenerateGLSLTextureResources(
         bool const isShadowTexture =
             (texture.textureType == TextureType::SHADOW_TEXTURE);
 
+        bool const isCubemapTexture =
+            (texture.textureType == TextureType::CUBEMAP_TEXTURE);
+
         bool const isArrayOfTexture = (texture.arraySize > 0);
 
         const std::string typePrefix =
@@ -1274,21 +1341,22 @@ _ResourceGenerator::_GenerateGLSLTextureResources(
 
         std::string const samplerType =
             typePrefix +
-            (isShadowTexture
-                ? "sampler" + std::to_string(texture.dim) + "DShadow"
-                : "sampler" + std::to_string(texture.dim) + "D") +
-            (isArrayTexture ? "Array" : "");
+            _GetGLSLSamplerType(
+                isCubemapTexture,
+                texture.dim,
+                isArrayTexture,
+                isShadowTexture);
 
         std::string const resultType =
             typePrefix +
             (isShadowTexture ? "float" : "vec4");
 
         std::string const resourceName =
-            "sampler" + std::to_string(texture.dim) + "d_" +
+            "sampler" + _GetSamplerSuffix(isCubemapTexture, texture.dim) + "_" +
             texture.name.GetString();
 
         int const coordDim =
-            (isArrayTexture || isShadowTexture)
+            (isArrayTexture || isShadowTexture || isCubemapTexture)
                 ? (texture.dim + 1) : texture.dim;
 
         std::string const intCoordType = coordDim == 1 ?
@@ -1328,7 +1396,7 @@ _ResourceGenerator::_GenerateGLSLTextureResources(
                 << ";\n"
                 << "}\n";
 
-            if (!isShadowTexture) {
+            if (!isShadowTexture && !isCubemapTexture) {
                 str << resultType
                     << " HgiTexelFetch_" << texture.name
                     << "(int index, " << intCoordType << " coord) {\n"
@@ -1355,7 +1423,7 @@ _ResourceGenerator::_GenerateGLSLTextureResources(
                 << ";\n"
                 << "}\n";
 
-            if (!isShadowTexture) {
+            if (!isShadowTexture && !isCubemapTexture) {
                 str << resultType
                     << " HgiTexelFetch_" << texture.name
                     << "(" << intCoordType << " coord) {\n"
@@ -2129,7 +2197,9 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             bindingType == HdStBinding::ARRAY_OF_TEXTURE_2D ||
             bindingType == HdStBinding::BINDLESS_ARRAY_OF_TEXTURE_2D ||
             bindingType == HdStBinding::TEXTURE_UDIM_ARRAY || 
-            bindingType == HdStBinding::BINDLESS_TEXTURE_UDIM_ARRAY) {
+            bindingType == HdStBinding::BINDLESS_TEXTURE_UDIM_ARRAY ||
+            bindingType == HdStBinding::TEXTURE_CUBEMAP ||
+            bindingType == HdStBinding::BINDLESS_TEXTURE_CUBEMAP) {
             _genDefines
                 << "#define HD_HAS_COORD_" << it->second.name << " 1\n";
         }
@@ -3725,14 +3795,18 @@ static void _EmitTextureAccessors(
     bool const isBindless,
     bool const bindlessTextureEnabled,
     bool const isArray=false,
-    bool const isShadowSampler=false)
+    bool const isShadowSampler=false,
+    bool const isCubemapSampler=false)
 {
     TfToken const &name = acc.name;
 
-    int const coordDim = isShadowSampler ? dim + 1 : dim;
-    std::string const samplerType = isShadowSampler ? 
-        "sampler" + std::to_string(dim) + "DShadow" : 
-        "sampler" + std::to_string(dim) + "D";
+    int const coordDim = (isShadowSampler || isCubemapSampler) ? dim + 1 : dim;
+    std::string const samplerType =
+        _GetGLSLSamplerType(
+            isCubemapSampler,
+            dim,
+            /*isArrayTexture =*/false,
+            isShadowSampler);
 
     // Forward declare texture scale and bias
     if (hasTextureScaleAndBias) {
@@ -3746,13 +3820,17 @@ static void _EmitTextureAccessors(
                 accessors
                     << samplerType << " "
                     << "HdGetSampler_" << name << "(int index) {\n"
-                    << "  return sampler" << dim << "d_" << name << "[index];\n"
+                    << "  return sampler"
+                    << _GetSamplerSuffix(isCubemapSampler, dim) << "_" << name
+                    << "[index];\n"
                     << "}\n";
             } else {
                 accessors
                     << samplerType << " "
                     << "HdGetSampler_" << name << "() {\n"
-                    << "  return sampler" << dim << "d_" << name << ";\n"
+                    << "  return sampler"
+                    << _GetSamplerSuffix(isCubemapSampler, dim) << "_" << name
+                    << ";\n"
                     << "}\n";
             }
         } else {
@@ -6338,7 +6416,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                 /* isBindless = */ false,
                 bindlessTextureEnabled);
 
-        } else if (bindingType == HdStBinding::ARRAY_OF_TEXTURE_2D) {       
+        } else if (bindingType == HdStBinding::ARRAY_OF_TEXTURE_2D) {
 
             // Handle special case for shadow textures.
             bool const isShadowTexture = 
@@ -6386,6 +6464,38 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                 /* hasTextureScaleAndBias = */ false,
                 /* isBindless = */ false,
                 bindlessTextureEnabled);
+
+        } else if (bindingType == HdStBinding::BINDLESS_TEXTURE_CUBEMAP) {
+
+            _EmitTextureAccessors(
+                accessors, it->second, swizzle, fallbackSwizzle,
+                /* dim = */ 2,
+                /* hasTextureTransform = */ false,
+                /* hasTextureScaleAndBias = */ false,
+                /* isBindless = */ true,
+                bindlessTextureEnabled,
+                /* isArray = */ false,
+                /* isShadowSampler = */ false,
+                /* isCubemapSampler = */ true);
+
+        } else if (bindingType == HdStBinding::TEXTURE_CUBEMAP) {
+
+            _AddTextureElement(&_resTextures,
+                               it->second.name, 2,
+                               binding.GetTextureUnit(),
+                               HioFormatFloat32Vec4,
+                               TextureType::CUBEMAP_TEXTURE);
+
+            _EmitTextureAccessors(
+                accessors, it->second, swizzle, fallbackSwizzle,
+                /* dim = */ 2,
+                /* hasTextureTransform = */ false,
+                /* hasTextureScaleAndBias = */ false,
+                /* isBindless = */ false,
+                bindlessTextureEnabled,
+                /* isArray = */ false,
+                /* isShadowSampler = */ false,
+                /* isCubemapSampler = */ true);
 
         } else if (bindingType == HdStBinding::BINDLESS_TEXTURE_UDIM_ARRAY) {
 

@@ -42,9 +42,13 @@ struct ExecProviderResolution {
         /// The localTraversal path directly indicates the computation provider.
         Local,             
 
-        /// Find the providers by traversing relationship targets, applying any
+        /// Find providers by traversing relationship targets, applying any
         /// relationship forwarding, to the targeted objects.
         RelationshipTargetedObjects,
+
+        /// Find providers by traversing attribute connections to the objects
+        /// they target.
+        ConnectionTargetedObjects,
 
         /// Find the provider by traversing upward in namespace
         NamespaceAncestor,

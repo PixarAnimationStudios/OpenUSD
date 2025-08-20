@@ -13,7 +13,7 @@
     <output name="out_roughness" type="float" nodename="image_roughness" />
   </nodegraph>
 
-  <UsdPreviewSurface name="SR_brass1" type="surfaceshader">
+  <UsdPreviewSurface name="Surface" type="surfaceshader">
     <input name="diffuseColor" type="color3" nodegraph="NG_brass1" output="out_color" />
     <input name="useSpecularWorkflow" type="integer" value="0" />
     <input name="specularColor" type="color3" value="0, 0, 0" />
@@ -22,7 +22,7 @@
     <input name="ior" type="float" value="50" />
   </UsdPreviewSurface>
   <surfacematerial name="USD_Tiled_Brass" type="material">
-    <input name="surfaceshader" type="surfaceshader" nodename="SR_brass1" />
+    <input name="surfaceshader" type="surfaceshader" nodename="Surface" />
   </surfacematerial>
   
 </materialx>

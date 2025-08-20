@@ -48,6 +48,10 @@ public:
     ///
     static const EsfEditReason ChangedPropertyList;
 
+    /// The list of connection paths on an attribute has changed.
+    ///
+    static const EsfEditReason ChangedConnectionPaths;
+
     /// The list of target paths on a relationship has changed.
     ///
     static const EsfEditReason ChangedTargetPaths;
@@ -123,6 +127,7 @@ private:
     enum class _BitIndex : uint8_t {
         ResyncedObject,
         ChangedPropertyList,
+        ChangedConnectionPaths,
         ChangedTargetPaths,
         Max
     };
@@ -145,6 +150,9 @@ inline constexpr EsfEditReason EsfEditReason::ResyncedObject(
 
 inline constexpr EsfEditReason EsfEditReason::ChangedPropertyList(
     EsfEditReason::_BitIndex::ChangedPropertyList);
+
+inline constexpr EsfEditReason EsfEditReason::ChangedConnectionPaths(
+    EsfEditReason::_BitIndex::ChangedConnectionPaths);
 
 inline constexpr EsfEditReason EsfEditReason::ChangedTargetPaths(
     EsfEditReason::_BitIndex::ChangedTargetPaths);

@@ -10,6 +10,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/exec/exec/compilerTaskSync.h"
+#include "pxr/exec/exec/taskCycleDetector.h"
 
 #include <utility>
 
@@ -50,6 +51,11 @@ public:
         return _program;
     }
 
+    /// Gets object for tracking potential task cycles.
+    Exec_TaskCycleDetector &GetTaskCycleDetector() {
+        return _taskCycleDetector;
+    }
+
     /// Extends access to the Exec_CompilerTaskSync member.
     class OutputTasksAccess {
         friend class Exec_CompilationTask;
@@ -65,6 +71,7 @@ public:
 
 private:
     const EsfStage &_stage;
+    Exec_TaskCycleDetector _taskCycleDetector;
     Exec_CompilerTaskSync _outputTasks;
     Exec_Program *_program;
 };

@@ -13,6 +13,8 @@
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/timeSampleArray.h"
 
+#include <Riley.h>
+
 #include "pxr/base/vt/array.h"
 
 #include <optional>
@@ -59,6 +61,11 @@ public:
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> const&
     GetTimeSampleXforms() const {
         return _sampleXforms;
+    }
+
+    riley::ShadingNode
+    GetProjectionNode() const {
+        return _projectionNode;
     }
 
 #if HD_API_VERSION < 52
@@ -187,6 +194,8 @@ private:
     float _dofMult;
 
     VtDictionary _params;
+
+    riley::ShadingNode _projectionNode;
 };
 
 

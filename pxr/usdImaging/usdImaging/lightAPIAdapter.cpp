@@ -145,7 +145,7 @@ UsdImagingLightAPIAdapter::GetImagingSubprimData(
 
     if (subprim.IsEmpty()) {
         return HdRetainedContainerDataSource::New(
-            HdPrimTypeTokens->material,
+            HdMaterialSchema::GetSchemaToken(),
             UsdImagingDataSourceMaterial::New(
                 prim,
                 stageGlobals,

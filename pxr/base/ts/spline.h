@@ -238,17 +238,41 @@ public:
         const GfInterval &interval) const;
 
     /// @}
-    /// \name Splitting
+    /// \name Breakdowns
+    ///
+    /// A Breakdown in animation is a pose between the key poses. Breakdown
+    /// applied to a \c TsSpline will insert a TsKnot between existing knots
+    /// with as little disruption as possible to the overall shape of the
+    /// spline.
     /// @{
 
-    /// <b>Not yet implemented.</b>
+    /// Add a knot at the specified time.  The new knot is defined so that the
+    /// shape of the curve is changed as little as possible. If necessary,
+    /// neighboring knots may also be modified.
     ///
-    /// Adds a knot at the specified time.  The new knot is arranged so that the
-    /// shape of the curve is as unchanged as possible.
+    /// There are some situations where a new knot cannot be inserted. For
+    /// example, if there is already a knot at the requested time, or if the
+    /// requested insertion time is in a region of the spline that is looped
+    /// from either extrapolation or inner looping. Use \c CanBreakdown to see
+    /// if a breakdown would succeed.
+    ///
+    /// \return true if a knot was successfully inserted or false if not.
     TS_API
-    bool Split(
+    bool Breakdown(
         TsTime time,
         GfInterval *affectedIntervalOut = nullptr);
+
+    /// Test if a knot could be inserted by \c Breakdown at \c time.
+    ///
+    /// \return true if a knot could be successfully inserted by \c Breakdown
+    /// or false if not. If false is returned and \c reason is not \c nullptr
+    /// then a description of the failure will be stored in \c reason. This is
+    /// the same error or warning message that would have been emitted by
+    /// \c Breakdown if it had failed to insert a knot.
+    TS_API
+    bool CanBreakdown(
+        TsTime time,
+        std::string* reason = nullptr);
 
     /// @}
     /// \name Anti-regression

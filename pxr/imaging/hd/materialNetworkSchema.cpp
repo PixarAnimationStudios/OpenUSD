@@ -46,11 +46,11 @@ HdMaterialNetworkSchema::GetTerminals() const
         HdMaterialNetworkSchemaTokens->terminals));
 }
 
-HdMaterialInterfaceMappingsContainerSchema
-HdMaterialNetworkSchema::GetInterfaceMappings() const
+HdMaterialInterfaceSchema
+HdMaterialNetworkSchema::GetInterface() const
 {
-    return HdMaterialInterfaceMappingsContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
-        HdMaterialNetworkSchemaTokens->interfaceMappings));
+    return HdMaterialInterfaceSchema(_GetTypedDataSource<HdContainerDataSource>(
+        HdMaterialNetworkSchemaTokens->interface));
 }
 
 HdSampledDataSourceContainerSchema
@@ -65,7 +65,7 @@ HdContainerDataSourceHandle
 HdMaterialNetworkSchema::BuildRetained(
         const HdContainerDataSourceHandle &nodes,
         const HdContainerDataSourceHandle &terminals,
-        const HdContainerDataSourceHandle &interfaceMappings,
+        const HdContainerDataSourceHandle &interface,
         const HdContainerDataSourceHandle &config
 )
 {
@@ -84,9 +84,9 @@ HdMaterialNetworkSchema::BuildRetained(
         _values[_count++] = terminals;
     }
 
-    if (interfaceMappings) {
-        _names[_count] = HdMaterialNetworkSchemaTokens->interfaceMappings;
-        _values[_count++] = interfaceMappings;
+    if (interface) {
+        _names[_count] = HdMaterialNetworkSchemaTokens->interface;
+        _values[_count++] = interface;
     }
 
     if (config) {
@@ -113,10 +113,10 @@ HdMaterialNetworkSchema::Builder::SetTerminals(
 }
 
 HdMaterialNetworkSchema::Builder &
-HdMaterialNetworkSchema::Builder::SetInterfaceMappings(
-    const HdContainerDataSourceHandle &interfaceMappings)
+HdMaterialNetworkSchema::Builder::SetInterface(
+    const HdContainerDataSourceHandle &interface)
 {
-    _interfaceMappings = interfaceMappings;
+    _interface = interface;
     return *this;
 }
 
@@ -134,7 +134,7 @@ HdMaterialNetworkSchema::Builder::Build()
     return HdMaterialNetworkSchema::BuildRetained(
         _nodes,
         _terminals,
-        _interfaceMappings,
+        _interface,
         _config
     );
 } 

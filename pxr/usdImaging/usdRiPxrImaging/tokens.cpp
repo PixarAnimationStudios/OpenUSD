@@ -6,11 +6,14 @@
 //
 #include "pxr/usdImaging/usdRiPxrImaging/tokens.h"
 
+#include "pxr/base/tf/staticTokens.h"
+
+#include "pxr/pxr.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 TF_DEFINE_PUBLIC_TOKENS(UsdRiPxrImagingTokens, USDRIPXRIMAGING_TOKENS);
-
+TF_DEFINE_PUBLIC_TOKENS(
+    UsdRiPxrImagingPrimTypeTokens, USDRIPXRIMAGING_PRIM_TYPE_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

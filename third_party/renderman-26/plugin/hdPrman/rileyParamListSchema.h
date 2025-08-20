@@ -42,17 +42,19 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanRileyParamListSchemaTokens, HDPRMAN_API,
 
 //-----------------------------------------------------------------------------
 
-// Schema to describe RtParamList.
-//
-// To obtain an RtParamList from this schema, we call the appropriate
-// RtParamList::SetFOO(name, value) for each name in the container params.
-//
-// The schema HdPrmanRileyParamSchema determines what SetFOO method is called
-// with what value. To resolve what SetFOO method to use, the type of the
-// VtValue from the value data source is used as well as the role token if
-// necessary. The value is coming from the value data source.
-//
 
+/// \class HdPrmanRileyParamListSchema
+///
+/// Schema to describe RtParamList.
+///
+/// To obtain an RtParamList from this schema, we call the appropriate
+/// RtParamList::SetFOO(name, value) for each name in the container params.
+///
+/// The schema HdPrmanRileyParamSchema determines what SetFOO method is called
+/// with what value. To resolve what SetFOO method to use, the type of the
+/// VtValue from the value data source is used as well as the role token if
+/// necessary. The value is coming from the value data source.
+///
 class HdPrmanRileyParamListSchema : public HdSchema
 {
 public:

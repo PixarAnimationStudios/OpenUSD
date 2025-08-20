@@ -11,6 +11,8 @@
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/stopwatch.h"
 
+#include "pxr/base/arch/timing.h"
+
 #include <string>
 #include <thread>
 #include <vector>
@@ -74,35 +76,12 @@ TestThreads()
 static void
 TestOverhead()
 {
-    size_t count = 0;
-    unsigned int val = 0;
-    TfStopwatch sw;
-    do {
-        sw.Start();
-        val += rand();
-        ++count;
-        sw.Stop();
-    } while (sw.GetSeconds() < 0.5);
-    // printf("%zd rand calls in %f seconds: %u\n",
-    //        count, sw.GetSeconds(), val);
-    double baseSecsPerCall = sw.GetSeconds() / double(count);
-
-    count = 0;
-    val = 0;
-    sw.Reset();
-    do {
-        sw.Start();
-        TF_DESCRIBE_SCOPE("calling rand");
-        val += rand();
-        ++count;
-        sw.Stop();
-    } while (sw.GetSeconds() < 0.5);
-    // printf("%zd described rand calls in %f seconds: %u\n",
-    //        count, sw.GetSeconds(), val);
-    double describedSecsPerCall = sw.GetSeconds() / double(count);
+    int64_t ticks = ArchMeasureExecutionTime([]() {
+        TF_DESCRIBE_SCOPE("TF_DESCRIBE_SCOPE overhead test");
+    });
 
     printf("TF_DESCRIBE_SCOPE overhead approx %f ns\n",
-           (describedSecsPerCall - baseSecsPerCall) / 1e-9);
+           ArchTicksToSeconds(ticks) * 1e9);
 }
 
 static void

@@ -125,7 +125,7 @@ ExecTypeRegistry::GetExtractor(const TfType type) const
 
 void
 ExecTypeRegistry::_RegisterExtractor(
-    const TfType type, const Exec_ValueExtractorFunction &extractor)
+    const TfType type, Exec_ValueExtractorFunction &extractor)
 {
     _extractors.emplace(type, extractor);
 }

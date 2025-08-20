@@ -33,8 +33,8 @@ struct ExecUsd_ExpiredValueKey
     TfToken computation;
 };
 
-/// Represents attribute value keys.
-struct ExecUsd_AttributeValueKey
+/// Represents attribute computation value keys.
+struct ExecUsd_AttributeComputationValueKey
 {
     UsdAttribute provider;
     TfToken computation;
@@ -55,9 +55,15 @@ struct ExecUsd_PrimComputationValueKey
 class ExecUsdValueKey
 {
 public:
-    /// Constructs a value key representing an attribute value.
+    /// Constructs a value key that computes the builtin computeValue attribute
+    /// computation.
+    ///
     EXECUSD_API
     explicit ExecUsdValueKey(const UsdAttribute &provider);
+
+    /// Constructs a value key representing an attribute computation.
+    EXECUSD_API
+    ExecUsdValueKey(const UsdAttribute &provider, const TfToken &computation);
 
     /// Constructs a value key representing a prim computation.
     EXECUSD_API
@@ -76,7 +82,7 @@ private:
 
     std::variant<
         ExecUsd_ExpiredValueKey,
-        ExecUsd_AttributeValueKey,
+        ExecUsd_AttributeComputationValueKey,
         ExecUsd_PrimComputationValueKey
     > _key;
 };

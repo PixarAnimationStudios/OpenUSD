@@ -79,6 +79,16 @@ HdxOitVolumeRenderTask::Prepare(HdTaskContext* ctx,
     }
 }
 
+static
+bool
+_HasColorAov(HdRenderPassAovBindingVector const& aovBindings)
+{
+    return std::find_if(aovBindings.begin(), aovBindings.end(),
+        [](HdRenderPassAovBinding const& binding){
+            return binding.aovName == HdAovTokens->color; })
+                != aovBindings.end();
+}
+
 void
 HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
 {
@@ -90,15 +100,6 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
     if (!_isOitEnabled || !HdxRenderTask::_HasDrawItems()) {
         return;
     }
-    
-    //
-    // Pre Execute Setup
-    //
-
-    HdxOitBufferAccessor oitBufferAccessor(ctx);
-
-    oitBufferAccessor.RequestOitBuffers();
-    oitBufferAccessor.InitializeOitBuffersIfNecessary(_GetHgi());
 
     HdRenderPassStateSharedPtr renderPassState = _GetRenderPassState(ctx);
     if (!TF_VERIFY(renderPassState)) return;
@@ -109,17 +110,33 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
         return;
     }
 
-    extendedState->SetUseSceneMaterials(true);
-    renderPassState->SetEnableDepthTest(false);
-    // Setting cull style for consistency even though it is hard-coded in
-    // shaders/volume.glslfx.
-    renderPassState->SetCullStyle(HdCullStyleBack);
+    // If there are aovs, but none of them are color, skip rendering for this 
+    // task.
+    HdRenderPassAovBindingVector const& aovBindings =
+        renderPassState->GetAovBindings();
+    if (!aovBindings.empty() && !_HasColorAov(aovBindings)) {
+        return;
+    }
 
+    //
+    // Pre Execute Setup
+    //
+
+    HdxOitBufferAccessor oitBufferAccessor(ctx);
+
+    oitBufferAccessor.RequestOitBuffers();
+    oitBufferAccessor.InitializeOitBuffersIfNecessary(_GetHgi());
     if(!oitBufferAccessor.AddOitBufferBindings(_oitVolumeRenderPassShader)) {
         TF_CODING_ERROR(
             "No OIT buffers allocated but needed by OIT volume render task");
         return;
     }
+
+    extendedState->SetUseSceneMaterials(true);
+    renderPassState->SetEnableDepthTest(false);
+    // Setting cull style for consistency even though it is hard-coded in
+    // shaders/volume.glslfx.
+    renderPassState->SetCullStyle(HdCullStyleBack);
 
     // We render into an SSBO -- not MSSA compatible
     renderPassState->SetMultiSampleEnabled(false);

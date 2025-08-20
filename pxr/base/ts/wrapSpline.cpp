@@ -10,6 +10,7 @@
 #include "pxr/base/ts/types.h"
 #include "pxr/base/ts/typeHelpers.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/pyAnnotatedBoolResult.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/valueFromPython.h"
 
@@ -71,6 +72,41 @@ static void _WrapRemoveKnot(
     TsSpline &spline, const TsTime time)
 {
     spline.RemoveKnot(time);
+}
+
+static object _WrapBreakdown(
+    TsSpline& spline, const TsTime time)
+{
+    // The C++ version returns a bool and populates a pointed-to GfInterval
+    // object. The python version returns a Gf.Interval or None. The GfInterval
+    // object evaluates to True in a boolean context so it can be used the
+    // same way as the C++ version:
+    //    if spline.Breakdown(time):
+    //        ...
+    GfInterval affectedInterval;
+    bool status = spline.Breakdown(time, &affectedInterval);
+    if (status) {
+        return object(affectedInterval);
+    } else {
+        return object();
+    }
+}
+
+struct _CanBreakdownResult: public TfPyAnnotatedBoolResult<std::string>
+{
+    _CanBreakdownResult(bool val, const std::string reason)
+    : TfPyAnnotatedBoolResult<std::string>(val, reason)
+    {}
+};
+
+static
+_CanBreakdownResult
+_WrapCanBreakdown(
+    TsSpline& spline, const TsTime time)
+{
+    std::string reason;
+    bool result = spline.CanBreakdown(time, &reason);
+    return _CanBreakdownResult(result, reason);
 }
 
 #define WRAP_EVAL(method)                                   \
@@ -161,6 +197,11 @@ void wrapSpline()
         .def("GetKnots", &This::GetKnots)
         .def("GetKnot", &_WrapGetKnot)
 
+        .def("Breakdown", &_WrapBreakdown,
+             arg("time"))
+        .def("CanBreakdown", &_WrapCanBreakdown,
+             arg("time"))
+
         .def("ClearKnots", &This::ClearKnots)
         .def("RemoveKnot", &_WrapRemoveKnot)
 
@@ -199,5 +240,7 @@ void wrapSpline()
         .staticmethod("IsSupportedValueType")
         ;
 
+    _CanBreakdownResult::Wrap<_CanBreakdownResult>("_CanBreakdownResult",
+                                                   "reason");
     VtValueFromPython<TsSpline>();
 }

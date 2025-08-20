@@ -114,6 +114,8 @@ private:
     // Rebuild _inputsPathTable from the current contents of _inputs.
     void _RebuildInputsPathTable();
 
+    bool _HasPrim(const SdfPath &path);
+
     class _Observer : public HdSceneIndexObserver
     {
     public:

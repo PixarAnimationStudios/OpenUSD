@@ -7,15 +7,15 @@
 #ifndef PXR_EXEC_EXEC_BUILTIN_STAGE_COMPUTATIONS_H
 #define PXR_EXEC_EXEC_BUILTIN_STAGE_COMPUTATIONS_H
 
+/// \file
+///
+/// This file defines builtin computations that are provided by the stage, i.e.,
+/// by the pseudo-root prim.
+///
+
 #include "pxr/exec/exec/computationDefinition.h"
-#include "pxr/exec/exec/inputKey.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-//
-// This file defines builtin computations that are provided by the stage, i.e.,
-// by the pseudo-root prim.
-//
 
 /// A computation that yields the current evaluation time.
 class Exec_TimeComputationDefinition final
@@ -32,6 +32,7 @@ public:
 
     VdfNode *CompileNode(
         const EsfObjectInterface &providerObject,
+        const TfToken &metadataKey,
         EsfJournal *nodeJournal,
         Exec_Program *program) const override;
 };

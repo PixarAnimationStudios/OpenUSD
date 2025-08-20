@@ -8,8 +8,57 @@
 
 #include "pxr/exec/exec/definitionRegistry.h"
 #include "pxr/exec/exec/inputKey.h"
+#include "pxr/exec/exec/privateBuiltinComputations.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+//
+// Exec_ComputationBuilderCommonBase
+//
+
+template <Exec_ComputationBuilderProviderTypes allowed>
+Exec_ComputationBuilderComputationValueSpecifier<allowed>
+Exec_ComputationBuilderCommonBase::_GetMetadataValueSpecifier(
+    const TfType resultType,
+    const SdfPath &localTraversal,
+    const TfToken &metadataKey)
+{
+    return Exec_ComputationBuilderComputationValueSpecifier<allowed>(
+        Exec_PrivateBuiltinComputations->computeMetadata,
+        resultType,
+        {localTraversal, ExecProviderResolution::DynamicTraversal::Local},
+        metadataKey)
+        .InputName(metadataKey);
+}
+
+// Explicit template instantiations
+
+template Exec_ComputationBuilderComputationValueSpecifier<
+    Exec_ComputationBuilderProviderTypes::Prim>
+EXEC_API
+Exec_ComputationBuilderCommonBase::_GetMetadataValueSpecifier<
+    Exec_ComputationBuilderProviderTypes::Prim>(
+        TfType resultType,
+        const SdfPath &localTraversal,
+        const TfToken &metadataKey);
+
+template Exec_ComputationBuilderComputationValueSpecifier<
+    Exec_ComputationBuilderProviderTypes::Attribute>
+EXEC_API
+Exec_ComputationBuilderCommonBase::_GetMetadataValueSpecifier<
+    Exec_ComputationBuilderProviderTypes::Attribute>(
+        TfType resultType,
+        const SdfPath &localTraversal,
+        const TfToken &metadataKey);
+
+template Exec_ComputationBuilderComputationValueSpecifier<
+    Exec_ComputationBuilderProviderTypes::Any>
+EXEC_API
+Exec_ComputationBuilderCommonBase::_GetMetadataValueSpecifier<
+    Exec_ComputationBuilderProviderTypes::Any>(
+        TfType resultType,
+        const SdfPath &localTraversal,
+        const TfToken &metadataKey);
 
 
 //
@@ -41,14 +90,15 @@ Exec_ComputationBuilderValueSpecifierBase(
     TfType resultType,
     ExecProviderResolution &&providerResolution,
     const TfToken &inputName,
-    bool fallsBackToDispatched)
+    const TfToken &metadataKey)
     : _data(
         _Data::Create(
             inputName,
             computationName,
             resultType,
+            metadataKey,
             std::move(providerResolution),
-            fallsBackToDispatched,
+            /* fallsBackToDispatched */ false,
             /* optional */ true))
 {}
 
@@ -90,17 +140,19 @@ Exec_ComputationBuilderValueSpecifierBase::_GetInputKey(
 }
 
 //
-// Exec_PrimComputationBuilder
+// Exec_ComputationBuilderBase
 //
 
-struct Exec_PrimComputationBuilder::_Data
+struct Exec_ComputationBuilderBase::_Data
 {
     _Data(
+        const TfToken &attributeName_,
         const TfType schemaType_,
         const TfToken &computationName_,
         const bool dispatched_,
         ExecDispatchesOntoSchemas &&dispatchesOntoSchemas_)
-    : schemaType(schemaType_)
+    : attributeName(attributeName_)
+    , schemaType(schemaType_)
     , computationName(computationName_)
     , dispatched(dispatched_)
     , dispatchesOntoSchemas(std::move(dispatchesOntoSchemas_))
@@ -108,6 +160,7 @@ struct Exec_PrimComputationBuilder::_Data
     {
     }
 
+    const TfToken attributeName;
     const TfType schemaType;
     const TfToken computationName;
     const bool dispatched;
@@ -117,41 +170,33 @@ struct Exec_PrimComputationBuilder::_Data
     Exec_InputKeyVectorRefPtr inputKeys;
 };
 
-Exec_PrimComputationBuilder::Exec_PrimComputationBuilder(
+Exec_ComputationBuilderBase::_Data &
+Exec_ComputationBuilderBase::_GetData()
+{
+    if (TF_VERIFY(_data)) {
+        return *_data;
+    }
+
+    static _Data empty({}, {}, {}, {}, {});
+    return empty;
+}
+
+Exec_ComputationBuilderBase::Exec_ComputationBuilderBase(
+    const TfToken &attributeName,
     const TfType schemaType,
     const TfToken &computationName,
     const bool dispatched,
     ExecDispatchesOntoSchemas &&dispatchesOntoSchemas)
     : _data(std::make_unique<_Data>(
-                schemaType, computationName,
+                attributeName, schemaType, computationName,
                 dispatched, std::move(dispatchesOntoSchemas)))
 {
 }
 
-Exec_PrimComputationBuilder::~Exec_PrimComputationBuilder()
-{
-    // A null pointer indicates the computation is not dispatched; otherwise,
-    // the pointed-to vector contains the list of the schemas onto which the
-    // dispatched computation dispatches, which can be empty, to indicate that
-    // the computation dispatches onto all prims.
-    std::unique_ptr<ExecDispatchesOntoSchemas> dispatchesOntoSchemas;
-    if (_data->dispatched) {
-        dispatchesOntoSchemas.reset(
-            new ExecDispatchesOntoSchemas(
-                std::move(_data->dispatchesOntoSchemas)));
-    }
-
-    Exec_DefinitionRegistry::ComputationBuilderAccess::_RegisterPrimComputation(
-        _data->schemaType,
-        _data->computationName,
-        _data->resultType,
-        std::move(_data->callback),
-        std::move(_data->inputKeys),
-        std::move(dispatchesOntoSchemas));
-}
+Exec_ComputationBuilderBase::~Exec_ComputationBuilderBase() = default;
 
 void
-Exec_PrimComputationBuilder::_AddCallback(
+Exec_ComputationBuilderBase::_AddCallback(
     ExecCallbackFn &&callback, TfType resultType)
 {
     _data->callback = std::move(callback);
@@ -159,11 +204,114 @@ Exec_PrimComputationBuilder::_AddCallback(
 }
 
 void
-Exec_PrimComputationBuilder::_AddInputKey(
+Exec_ComputationBuilderBase::_AddInputKey(
     const Exec_ComputationBuilderValueSpecifierBase *const valueSpecifier)
 {
     _data->inputKeys->Get().push_back({});
     valueSpecifier->_GetInputKey(&_data->inputKeys->Get().back());
+}
+
+std::unique_ptr<ExecDispatchesOntoSchemas>
+Exec_ComputationBuilderBase::_GetDispatchesOntoSchemas()
+{
+    // A null pointer indicates the computation is not dispatched; otherwise,
+    // the pointed-to vector contains the list of the schemas onto which the
+    // dispatched computation dispatches, which can be empty, to indicate that
+    // the computation dispatches onto all prims, regardless of schemas.
+    return _data->dispatched
+        ? std::make_unique<ExecDispatchesOntoSchemas>(
+            std::move(_data->dispatchesOntoSchemas))
+        : nullptr;
+}
+
+//
+// Exec_ComputationBuilderCRTPBase
+//
+
+template <typename Derived>
+Exec_ComputationBuilderCRTPBase<Derived>::Exec_ComputationBuilderCRTPBase(
+    const TfToken &attributeName,
+    const TfType schemaType,
+    const TfToken &computationName,
+    const bool dispatched,
+    ExecDispatchesOntoSchemas &&dispatchesOntoSchemas)
+    : Exec_ComputationBuilderBase(
+        attributeName, schemaType, computationName,
+        dispatched, std::move(dispatchesOntoSchemas))
+{
+}
+
+template <typename Derived>
+Exec_ComputationBuilderCRTPBase<Derived>::~Exec_ComputationBuilderCRTPBase()
+= default;
+
+// Explicit template instantiations.
+template class Exec_ComputationBuilderCRTPBase<Exec_PrimComputationBuilder>;
+template class Exec_ComputationBuilderCRTPBase<Exec_AttributeComputationBuilder>;
+
+//
+// Exec_PrimComputationBuilder
+//
+
+Exec_PrimComputationBuilder::Exec_PrimComputationBuilder(
+    const TfType schemaType,
+    const TfToken &computationName,
+    const bool dispatched,
+    ExecDispatchesOntoSchemas &&dispatchesOntoSchemas)
+    : Exec_ComputationBuilderCRTPBase<Exec_PrimComputationBuilder>(
+        /* attributeName */ TfToken(),
+        schemaType,
+        computationName,
+        dispatched,
+        std::move(dispatchesOntoSchemas))
+{
+}
+
+Exec_PrimComputationBuilder::~Exec_PrimComputationBuilder()
+{
+    _Data &data = _GetData();
+
+    Exec_DefinitionRegistry::ComputationBuilderAccess::_RegisterPrimComputation(
+        data.schemaType,
+        data.computationName,
+        data.resultType,
+        std::move(data.callback),
+        std::move(data.inputKeys),
+        _GetDispatchesOntoSchemas());
+}
+
+//
+// Exec_AttributeComputationBuilder
+//
+
+Exec_AttributeComputationBuilder::Exec_AttributeComputationBuilder(
+    const TfToken &attributeName,
+    const TfType schemaType,
+    const TfToken &computationName,
+    const bool dispatched,
+    ExecDispatchesOntoSchemas &&dispatchesOntoSchemas)
+    : Exec_ComputationBuilderCRTPBase<Exec_AttributeComputationBuilder>(
+        attributeName,
+        schemaType,
+        computationName,
+        dispatched,
+        std::move(dispatchesOntoSchemas))
+{
+}
+
+Exec_AttributeComputationBuilder::~Exec_AttributeComputationBuilder()
+{
+    _Data &data = _GetData();
+
+    Exec_DefinitionRegistry::ComputationBuilderAccess::
+        _RegisterAttributeComputation(
+            data.attributeName,
+            data.schemaType,
+            data.computationName,
+            data.resultType,
+            std::move(data.callback),
+            std::move(data.inputKeys),
+            _GetDispatchesOntoSchemas());
 }
 
 //
@@ -189,12 +337,34 @@ Exec_ComputationBuilder::PrimComputation(
     return Exec_PrimComputationBuilder(_schemaType, computationName);
 }
 
+Exec_AttributeComputationBuilder 
+Exec_ComputationBuilder::AttributeComputation(
+    const TfToken &attributeName,
+    const TfToken &computationName)
+{
+    return Exec_AttributeComputationBuilder(
+        attributeName, _schemaType, computationName);
+}
+
 Exec_PrimComputationBuilder 
 Exec_ComputationBuilder::DispatchedPrimComputation(
     const TfToken &computationName,
     ExecDispatchesOntoSchemas &&ontoSchemas)
 {
     return Exec_PrimComputationBuilder(
+        _schemaType,
+        computationName,
+        /* dispatched */ true,
+        std::move(ontoSchemas));
+}
+
+Exec_AttributeComputationBuilder 
+Exec_ComputationBuilder::DispatchedAttributeComputation(
+    const TfToken &computationName,
+    ExecDispatchesOntoSchemas &&ontoSchemas)
+{
+    return Exec_AttributeComputationBuilder(
+        /* attributeName */ TfToken(),
         _schemaType,
         computationName,
         /* dispatched */ true,

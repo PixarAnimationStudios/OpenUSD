@@ -66,11 +66,23 @@ void VtWrapArrayEdit()
     // Register the unboxing converter for ArrayEdit.
     to_python_converter<ArrayEdit, Wrapped>();
 
-    // VtArray can implicitly convert to VtArrayEdit.
+    // VtArray can implicitly convert to Wrapped/VtArrayEdit.
     implicitly_convertible<Array, Wrapped>();
-    // Wrapped implicitly converts to ArrayEdit
-    implicitly_convertible<Wrapped, ArrayEdit>();
+    implicitly_convertible<Array, ArrayEdit>();
 
+    // Wrapped lvalue from-python conversion to ArrayEdit.
+    auto lvalueFromPython = [](PyObject *pyObj) -> void * {
+        extract<Wrapped &> e(pyObj);
+        if (e.check()) {
+            // If we can get a Wrapped lvalue from pyObj, we can make an
+            // ArrayEdit lvalue by just casting to the base class type.
+            Wrapped &w = e();
+            return static_cast<void *>(static_cast<ArrayEdit *>(&w));
+        }
+        return nullptr;
+    };
+    converter::registry::insert(lvalueFromPython, type_id<ArrayEdit>());
+    
     // Builder.
     using Builder = VtArrayEditBuilder<ElementType>;
     class_<Builder>((name + "Builder").c_str())

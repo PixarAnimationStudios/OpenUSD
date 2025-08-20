@@ -1698,9 +1698,9 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     float mod1_out = mx_mod(add1_out, mod1_in2);
     vec3 swizz_xxx_out = vec3(0.0);
     NG_convert_float_color3(mod1_out, swizz_xxx_out);
-    surfaceshader surface_shader_node_out = surfaceshader(vec3(0.0),vec3(0.0));
-    IMP_UsdPreviewSurface_surfaceshader(swizz_xxx_out, emissiveColor, useSpecularWorkflow, specularColor, metallic, roughness, clearcoat, clearcoatRoughness, opacity, opacityMode, opacityThreshold, ior, normal, displacement, occlusion, surface_shader_node_out);
-    vec4 mxOut = vec4(surface_shader_node_out.color, 1.0);
+    surfaceshader Surface_out = surfaceshader(vec3(0.0),vec3(0.0));
+    IMP_UsdPreviewSurface_surfaceshader(swizz_xxx_out, emissiveColor, useSpecularWorkflow, specularColor, metallic, roughness, clearcoat, clearcoatRoughness, opacity, opacityMode, opacityThreshold, ior, normal, displacement, occlusion, Surface_out);
+    vec4 mxOut = vec4(Surface_out.color, 1.0);
     mxOut = ApplyColorOverrides(mxOut);
     return mxOut;
 }

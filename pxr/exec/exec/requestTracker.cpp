@@ -51,7 +51,16 @@ Exec_RequestTracker::Remove(Exec_RequestImpl *impl)
 
 void
 Exec_RequestTracker::DidInvalidateComputedValues(
-    const Exec_AuthoredValueInvalidationResult &invalidationResult)
+    const Exec_AttributeValueInvalidationResult &invalidationResult)
+{
+    ParallelForEachRequest([&invalidationResult](Exec_RequestImpl &impl) {
+        impl.DidInvalidateComputedValues(invalidationResult);
+    });
+}
+
+void
+Exec_RequestTracker::DidInvalidateComputedValues(
+        const Exec_MetadataInvalidationResult &invalidationResult)
 {
     ParallelForEachRequest([&invalidationResult](Exec_RequestImpl &impl) {
         impl.DidInvalidateComputedValues(invalidationResult);

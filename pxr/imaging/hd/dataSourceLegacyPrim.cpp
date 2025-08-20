@@ -2387,16 +2387,17 @@ void
 HdDataSourceLegacyPrim::PrimDirtied(const HdDataSourceLocatorSet &locators)
 {
     if (locators.Intersects(HdPrimvarsSchema::GetDefaultLocator())) {
-        _primvarsBuilt.store(false);
+        {
+            TfSpinMutex::ScopedLock lock(_primvarsMutex);
+            HdContainerDataSource::AtomicStore(_primvars, nullptr);
+            _primvarsBuilt.store(false);
+        }
         _extComputationPrimvarsBuilt = false;
-        HdContainerDataSourceHandle null(nullptr);
-        HdContainerDataSource::AtomicStore(_primvars, null);
         _extComputationPrimvars.reset();
     }
 
     if (locators.Intersects(HdInstancerTopologySchema::GetDefaultLocator())) {
-        HdContainerDataSourceHandle null(nullptr);
-        HdContainerDataSource::AtomicStore(_instancerTopology, null);
+        HdContainerDataSource::AtomicStore(_instancerTopology, nullptr);
     }
 }
 
@@ -2601,6 +2602,15 @@ _ConvertRenderTerminalResourceToHdDataSource(const VtValue &outputNodeValue)
 HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetPrimvarsDataSource()
 {
+    if (_primvarsBuilt.load()) {
+        return HdContainerDataSource::AtomicLoad(_primvars);
+    }
+
+    // Serialize this section so that only one thread invokes that non-threadsafe
+    // code path GetPrimvarDescriptors().
+    TfSpinMutex::ScopedLock lock(_primvarsMutex);
+
+    // Check if another thread completed this computation.
     if (_primvarsBuilt.load()) {
         return HdContainerDataSource::AtomicLoad(_primvars);
     }

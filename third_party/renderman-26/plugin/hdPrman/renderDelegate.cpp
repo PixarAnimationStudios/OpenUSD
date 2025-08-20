@@ -5,57 +5,80 @@
 // https://openusd.org/license.
 //
 #include "hdPrman/renderDelegate.h"
+
 #include "hdPrman/basisCurves.h"
 #include "hdPrman/camera.h"
-#if PXR_VERSION >= 2208
-#include "hdPrman/cone.h"
-#include "hdPrman/cylinder.h"
-#include "hdPrman/sphere.h"
-#endif
-#include "hdPrman/renderParam.h"
-#include "hdPrman/renderBuffer.h"
-#if PXR_VERSION >= 2308
-#include "hdPrman/renderSettings.h"
-#include "hdPrman/integrator.h"
-#include "hdPrman/sampleFilter.h"
-#include "hdPrman/displayFilter.h"
-#endif
 #include "hdPrman/coordSys.h"
 #include "hdPrman/instancer.h"
-#include "hdPrman/renderParam.h"
-#include "hdPrman/renderPass.h"
 #include "hdPrman/light.h"
 #include "hdPrman/lightFilter.h"
 #include "hdPrman/material.h"
 #include "hdPrman/mesh.h"
 #include "hdPrman/points.h"
+#include "hdPrman/renderBuffer.h"
+#include "hdPrman/renderParam.h"
+#include "hdPrman/renderPass.h"
 #include "hdPrman/resourceRegistry.h"
+#include "hdPrman/sceneIndexObserverApi.h"
 #include "hdPrman/tokens.h"
 #include "hdPrman/volume.h"
-#include "hdPrman/sceneIndexObserverApi.h"
+
+#include "pxr/imaging/hd/aov.h"
+#include "pxr/imaging/hd/bprim.h"
+#include "pxr/imaging/hd/dataSource.h"
+#include "pxr/imaging/hd/extComputation.h"
+#include "pxr/imaging/hd/instancer.h"
+#include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/rprim.h"
+#include "pxr/imaging/hd/rprimCollection.h"
+#include "pxr/imaging/hd/sprim.h"
+#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/types.h"
+#include "pxr/imaging/hd/version.h"
+
+#include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/gf/vec3f.h"
+#include "pxr/base/gf/vec4f.h"
+#include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/token.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/base/vt/dictionary.h"
+#include "pxr/base/vt/value.h"
+
+#include "pxr/pxr.h"
+
+#include <memory>
+#include <prmanapi.h>
+#include <string>
+#include <vector>
 
 #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
 #include "hdPrman/rileyPrimFactory.h"
+
 #include "pxr/imaging/hdsi/primManagingSceneIndexObserver.h"
 #include "pxr/imaging/hdsi/primTypeNoticeBatchingSceneIndex.h"
 #endif
-
-#include "pxr/imaging/hd/bprim.h"
-#include "pxr/imaging/hd/camera.h"
-#include "pxr/imaging/hd/extComputation.h"
-#include "pxr/imaging/hd/rprim.h"
-#include "pxr/imaging/hd/sceneIndex.h"
-#include "pxr/imaging/hd/sprim.h"
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/version.h"
-
 #if HD_API_VERSION >= 60
 #include "pxr/imaging/hd/renderCapabilitiesSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #endif
-
-#include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/getenv.h"
+#if PXR_VERSION >= 2208
+#include "hdPrman/cone.h"
+#include "hdPrman/cylinder.h"
+#include "hdPrman/sphere.h"
+#endif
+#if PXR_VERSION >= 2308
+#include "hdPrman/displayFilter.h"
+#include "hdPrman/integrator.h"
+#include "hdPrman/renderSettings.h"
+#include "hdPrman/sampleFilter.h"
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -323,13 +346,23 @@ HdPrmanRenderDelegate::_Initialize()
     // automate using PRManOptions.args.
     _settingDescriptors.reserve(5);
 
-    const std::string integrator = TfGetenv(
-        "HD_PRMAN_INTEGRATOR", HdPrmanIntegratorTokens->PxrPathTracer);
-    _settingDescriptors.push_back({
-        std::string("Integrator"),
-        HdPrmanRenderSettingsTokens->integratorName,
-        VtValue(integrator)
-    });
+    const std::string integrator = TfGetenv("HD_PRMAN_INTEGRATOR");
+    if (!integrator.empty()) {
+        // The priority order should be:
+        //   1) RenderSettings prim + Integrator prim
+        //   2) Legacy RenderSettingsMap
+        //   3) HD_PRMAN_INTEGRATOR
+        //   4) HdPrman_RenderParam::SetDefaultIntegratorOverride()
+        //   5) PxrPathTracer
+        // So we only include this here if the env var is set. We cannot include
+        // a fallback value here. Otherwise we cannot tell (3) from (5).
+        // Fallback resolution is now handled by RenderParam.
+        _settingDescriptors.push_back({
+            std::string("Integrator"),
+            HdPrmanRenderSettingsTokens->integratorName,
+            VtValue(integrator)
+        });
+    }
 
     if (TfGetEnvSetting(HD_PRMAN_ENABLE_QUICKINTEGRATE)) {
         const std::string interactiveIntegrator =

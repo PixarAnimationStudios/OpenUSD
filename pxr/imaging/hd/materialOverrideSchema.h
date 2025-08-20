@@ -42,49 +42,51 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialOverrideSchemaTokens, HD_API,
 
 //-----------------------------------------------------------------------------
 
-// The MaterialOverride schema allows overrides to be made to the material's
-// public UI. Overrides can be applied to both material or geometry scene
-// index prim locations.
-//
-// The following is an example of a material override. The data source to
-// author an override on the public UI name "globalSpecularKface" would look
-// like this:
-//
-// ds at: materialOverride/interfaceValues/globalSpecularKface/value = 0.666
-//
-// There needs to be an interface mapping defined for "globalSpecularKface",
-// which could look like this:
-//
-// ds at: material/<renderContext>/interfaceMappings/
-// globalSpecularKface/[0]/nodePath = MaterialLayer
-//
-// ds at: material/<renderContext>/interfaceMappings/
-// globalSpecularKface/[0]/inputName = specularKface
-//
-// The above means that the "globalSpecularKface" public UI name will map to
-// the node parameter "specularKface", and for example, this node parameter
-// may already have a data source for its value:
-//
-// ds at: material/<renderContext>/nodes/MaterialLayer/parameters/
-// specularKface/value = 0.222
-//
-// After resolving the material override, the data source of the node
-// parameter's value is replaced by the overriding value data source.
-//
-// ds at: material/<renderContext>/nodes/MaterialLayer/parameters/
-// specularKface/value = 0.666
-//
-// Note that the MaterialOverride schema does not specify a render context
-// token because material overrides are high-level and do not need to know
-// about implementation details--they just need to specify an overriding data
-// source. By contrast, the contents of a material network do specify a render
-// context token in order to define the material nodes and interface mappings
-// --you can imagine that a Renderman vs Storm implementation of a material
-// network would be quite different.
-//
-// See also the Material schema documentation for ASCII art diagram.
-//
 
+/// \class HdMaterialOverrideSchema
+///
+/// The MaterialOverride schema allows overrides to be made to the material's
+/// public UI. Overrides can be applied to both material or geometry scene
+/// index prim locations.
+///
+/// The following is an example of a material override. The data source to
+/// author an override on the public UI name "globalSpecularKface" would look
+/// like this:
+///
+/// ds at: materialOverride/interfaceValues/globalSpecularKface/value = 0.666
+///
+/// There needs to be an interface mapping defined for "globalSpecularKface",
+/// which could look like this:
+///
+/// ds at: material/<renderContext>/interfaceMappings/
+/// globalSpecularKface/[0]/nodePath = MaterialLayer
+///
+/// ds at: material/<renderContext>/interfaceMappings/
+/// globalSpecularKface/[0]/inputName = specularKface
+///
+/// The above means that the "globalSpecularKface" public UI name will map to
+/// the node parameter "specularKface", and for example, this node parameter
+/// may already have a data source for its value:
+///
+/// ds at: material/<renderContext>/nodes/MaterialLayer/parameters/
+/// specularKface/value = 0.222
+///
+/// After resolving the material override, the data source of the node
+/// parameter's value is replaced by the overriding value data source.
+///
+/// ds at: material/<renderContext>/nodes/MaterialLayer/parameters/
+/// specularKface/value = 0.666
+///
+/// Note that the MaterialOverride schema does not specify a render context
+/// token because material overrides are high-level and do not need to know
+/// about implementation details--they just need to specify an overriding data
+/// source. By contrast, the contents of a material network do specify a render
+/// context token in order to define the material nodes and interface mappings
+/// --you can imagine that a Renderman vs Storm implementation of a material
+/// network would be quite different.
+///
+/// See also the Material schema documentation for ASCII art diagram.
+///
 class HdMaterialOverrideSchema : public HdSchema
 {
 public:

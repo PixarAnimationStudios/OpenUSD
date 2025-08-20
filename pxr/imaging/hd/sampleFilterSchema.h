@@ -43,6 +43,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdSampleFilterSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdSampleFilterSchema
+///
 class HdSampleFilterSchema : public HdSchema
 {
 public:

@@ -48,6 +48,12 @@ _GlTextureStorageND(
                            internalformat,
                            dimensions[0], dimensions[1], dimensions[2]);
         break;
+    case HgiTextureTypeCubemap:
+        glTextureStorage2D(texture,
+                           levels,
+                           internalformat,
+                           dimensions[0], dimensions[1]);
+        break;
     case HgiTextureType1DArray:
         glTextureStorage2D(texture,
                            levels,
@@ -103,6 +109,15 @@ _GlTextureSubImageND(
                             level,
                             offsets[0], offsets[1], offsets[2],
                             dimensions[0], dimensions[1], dimensions[2],
+                            format,
+                            type,
+                            pixels);
+        break;
+    case HgiTextureTypeCubemap:
+        glTextureSubImage3D(texture,
+                            level,
+                            offsets[0], offsets[1], offsets[2],
+                            dimensions[0], dimensions[1], layerCount,
                             format,
                             type,
                             pixels);

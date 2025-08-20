@@ -67,6 +67,12 @@ public:
         const Ts_KnotData *knotData,
         const VtDictionary &customData) = 0;
 
+    // For ease of use by breakdown, double knot data to be set into any type of
+    // spline.
+    virtual size_t SetKnotFromDouble(
+        const Ts_TypedKnotData<double>* knotData,
+        const VtDictionary &customData) = 0;
+
     virtual Ts_KnotData* CloneKnotAtIndex(size_t index) const = 0;
     virtual Ts_KnotData* CloneKnotAtTime(TsTime time) const = 0;
     virtual Ts_KnotData* GetKnotPtrAtIndex(size_t index) = 0;
@@ -151,6 +157,12 @@ public:
         const VtDictionary &customData) override;
     size_t SetKnot(
         const Ts_KnotData *knotData,
+        const VtDictionary &customData) override;
+
+    // For ease of use while splitting, double knot data to be set
+    // into any type of spline.
+    size_t SetKnotFromDouble(
+        const Ts_TypedKnotData<double>* knotData,
         const VtDictionary &customData) override;
 
     Ts_KnotData* CloneKnotAtIndex(size_t index) const override;
@@ -319,6 +331,74 @@ size_t Ts_TypedSplineData<T>::SetKnot(
     }
 
     return idx;
+}
+
+template <typename T>
+size_t Ts_TypedSplineData<T>::SetKnotFromDouble(
+        const Ts_TypedKnotData<double>* knotData,
+        const VtDictionary &customDataIn)
+{
+    // If we have double data, just set it directly.
+    if constexpr(std::is_same_v<T, double>) {
+        return SetKnot(knotData, customDataIn);
+    }
+
+    Ts_TypedKnotData<T> typedData;
+
+    // Use operator= to copy base-class members.  This is admittedly weird, but
+    // it will continue working if members are added to the base class.
+    static_cast<Ts_KnotData&>(typedData) = 
+        static_cast<const Ts_KnotData&>(*knotData);
+
+    // We need to copy and convert the data from double to T. We don't want
+    // infinite values, so clamp to the largest possible finite value.
+    auto _Clamp_cast =
+        [](double v) -> T
+        {
+            if (v >= 0) {
+                return std::min(T(v), std::numeric_limits<T>::max());
+            } else {
+                return std::max(T(v), std::numeric_limits<T>::lowest());
+            }
+        };
+
+    // Convert and clamp the value fields.
+    typedData.value = _Clamp_cast(knotData->value);
+    typedData.preValue = _Clamp_cast(knotData->preValue);
+
+    // Slopes are tricky. If they overflow, we need to compute a new slope and a
+    // new width such that the new tangent end-point is as close as possible to
+    // the original tangent end point.
+
+    auto _ConvertTangent =
+        [&_Clamp_cast](double slope, double* width) -> T
+        {
+            T typedSlope = T(slope);
+            // std::isfinite<GfHalf>() is missing so use the helper from
+            // typeHelpers.h instead.
+            if (Ts_IsFinite(typedSlope)) {
+                return typedSlope;
+            }
+
+            // Convert both the slope and width to values that preserve the
+            // endpoint of the tangent as much as possible.
+            double height = *width * slope;
+
+            // typedSlope is infinite, clamp it to a finite value.
+            typedSlope = _Clamp_cast(slope);
+
+            // modify width to preserve the tangent's height.
+            *width = height / typedSlope;
+
+            return typedSlope;
+        };
+
+    typedData.preTanSlope = _ConvertTangent(knotData->preTanSlope,
+                                            &typedData.preTanWidth);
+    typedData.postTanSlope = _ConvertTangent(knotData->postTanSlope,
+                                             &typedData.postTanWidth);
+
+    return SetKnot(&typedData, customDataIn);
 }
 
 template <typename T>

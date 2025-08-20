@@ -78,6 +78,16 @@ HdxOitRenderTask::Prepare(HdTaskContext* ctx,
     }
 }
 
+static
+bool
+_HasColorAov(HdRenderPassAovBindingVector const& aovBindings)
+{
+    return std::find_if(aovBindings.begin(), aovBindings.end(),
+        [](HdRenderPassAovBinding const& binding){
+            return binding.aovName == HdAovTokens->color; })
+                != aovBindings.end();
+}
+
 void
 HdxOitRenderTask::Execute(HdTaskContext* ctx)
 {
@@ -90,6 +100,23 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
         return;
     }
     
+    HdRenderPassStateSharedPtr renderPassState = _GetRenderPassState(ctx);
+    if (!TF_VERIFY(renderPassState)) return;
+
+    HdStRenderPassState* extendedState =
+        dynamic_cast<HdStRenderPassState*>(renderPassState.get());
+    if (!TF_VERIFY(extendedState, "OIT only works with HdSt")) {
+        return;
+    }
+    
+    // If there are aovs, but none of them are color, skip rendering for this 
+    // task.
+    HdRenderPassAovBindingVector const& aovBindings =
+        renderPassState->GetAovBindings();
+    if (!aovBindings.empty() && !_HasColorAov(aovBindings)) {
+        return;
+    }
+
     //
     // Pre Execute Setup
     //
@@ -104,15 +131,6 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
                 "No OIT buffers allocated but needed by OIT render task");
             return;
         }
-    }
-
-    HdRenderPassStateSharedPtr renderPassState = _GetRenderPassState(ctx);
-    if (!TF_VERIFY(renderPassState)) return;
-
-    HdStRenderPassState* extendedState =
-        dynamic_cast<HdStRenderPassState*>(renderPassState.get());
-    if (!TF_VERIFY(extendedState, "OIT only works with HdSt")) {
-        return;
     }
 
     // Render pass state overrides

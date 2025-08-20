@@ -48,6 +48,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdImageShaderSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdImageShaderSchema
+///
 class HdImageShaderSchema : public HdSchema
 {
 public:

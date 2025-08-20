@@ -422,7 +422,7 @@ _MakeStaticCopy(HdVectorDataSourceHandle const &ds)
     std::vector<HdDataSourceBaseHandle> values;
     values.reserve(n);
     for (size_t i = 0; i < n; ++i) {
-        values.push_back(ds->GetElement(i));
+        values.push_back(HdMakeStaticCopy(ds->GetElement(i)));
     }
     return HdRetainedSmallVectorDataSource::New(n, values.data());
 }

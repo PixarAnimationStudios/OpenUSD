@@ -15,22 +15,26 @@
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
 #include "hdPrman/motionBlurSceneIndexPlugin.h"
-#include "hdPrman/prmanArchDefs.h" // required for stats/Session.h
+#include "hdPrman/prmanArchDefs.h" // IWYU pragma: keep for stats/Session.h
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/renderViewContext.h"
 #include "hdPrman/rixStrings.h"
-#include "hdPrman/utils.h"
 #include "hdPrman/tokens.h"
+#include "hdPrman/utils.h"
+#include "hdPrman/worldOffsetSceneIndexPlugin.h"
 
 #include "pxr/imaging/hd/aov.h"
+#include "pxr/imaging/hd/dataSourceLocator.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/extComputationUtils.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderThread.h"
+#include "pxr/imaging/hd/retainedSceneIndex.h"
 #include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/timeSampleArray.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -48,15 +52,15 @@
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec3f.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/iterator.h"
-#include "pxr/base/tf/pathUtils.h"  // Extract extension from tf token
+#include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/staticData.h"
@@ -67,14 +71,15 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/types.h"
+
 #include "pxr/pxr.h"
 
 #include <prmanapi.h>
 #include <ri.h>
 #include <RiEntrypoints.h>
 #include <Riley.h>
-#include <RiTypesHelper.h>
 #include <RileyIds.h>
+#include <RiTypesHelper.h>
 #include <RixEventCallbacks.h>
 #include <RixInterfaces.h>
 #include <RixRiCtl.h>
@@ -91,7 +96,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <functional>
+#include <ios>
 #include <iterator>
 #include <map>
 #include <memory>
@@ -106,13 +113,20 @@
 #include <utility>
 #include <vector>
 
+#ifdef WIN32
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
+
 #if PXR_VERSION >= 2302
-#include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/containerDataSourceEditor.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
 #endif
 
 #if PXR_VERSION >= 2308
 #include "hdPrman/renderSettings.h"
+
 #include "pxr/imaging/hd/renderSettings.h"
 #endif
 
@@ -189,6 +203,8 @@ extern TfEnvSetting<bool> HD_PRMAN_ENABLE_QUICKINTEGRATE;
 static bool _enableQuickIntegrate =
     TfGetEnvSetting(HD_PRMAN_ENABLE_QUICKINTEGRATE);
 
+static TfToken _defaultIntegratorOverride;
+
 // Used when Creating Riley RenderView from the RenderSettings or RenderSpec
 static GfVec2i _fallbackResolution = GfVec2i(512,512);
 
@@ -196,6 +212,12 @@ TF_MAKE_STATIC_DATA(std::vector<HdPrman_RenderParam::IntegratorCameraCallback>,
                     _integratorCameraCallbacks)
 {
     _integratorCameraCallbacks->clear();
+}
+
+TF_MAKE_STATIC_DATA(std::vector<HdPrman_RenderParam::RileyOptionsCallback>,
+                    _rileyOptionsCallbacks)
+{
+    _rileyOptionsCallbacks->clear();
 }
 
 HdPrman_RenderParam::HdPrman_RenderParam(
@@ -1899,6 +1921,19 @@ HdPrman_RenderParam::RegisterIntegratorCallbackForCamera(
 }
 
 void
+HdPrman_RenderParam::RegisterRileyOptionsCallback(
+    const RileyOptionsCallback& callback)
+{
+    _rileyOptionsCallbacks->push_back(callback);
+}
+
+void
+HdPrman_RenderParam::SetDefaultIntegratorOverride(const TfToken& integrator)
+{
+    _defaultIntegratorOverride = integrator;
+}
+
+void
 HdPrman_RenderParam::_CreateStatsSession(void)
 {
     // Set log level for diagnostics relating to initialization. If we succeed in loading a
@@ -2292,7 +2327,7 @@ _ToRtParamList(VtDictionary const& dict, TfToken prefix=TfToken())
 }
 
 static
-RtUString
+TfToken
 _GetOutputDisplayDriverType(const std::string &extension)
 {
     static const std::map<std::string,TfToken> extToDisplayDriver{
@@ -2304,19 +2339,19 @@ _GetOutputDisplayDriverType(const std::string &extension)
 
     const auto it = extToDisplayDriver.find(extension);
     if (it != extToDisplayDriver.end()) {
-        return RtUString(it->second.GetText());
+        return it->second;
     }
 
     TF_WARN(
         "Could not determine display driver for product filename extension %s."
         "Falling back to openexr.", extension.c_str());
 
-    return RtUString(_tokens->openexr.GetText());
+    return _tokens->openexr;
 }
 
 // Overload used when creating the render view from a renderSpec dict.
 static
-RtUString
+TfToken
 _GetOutputDisplayDriverType(const TfToken &name)
 {
     const std::string outputExt = TfGetExtension(name.GetString());
@@ -2326,7 +2361,7 @@ _GetOutputDisplayDriverType(const TfToken &name)
 #if PXR_VERSION >= 2308
 // Overload used when creating the render view from a render settings' product.
 static
-RtUString
+TfToken
 _GetOutputDisplayDriverType(
     const VtDictionary &productSettings,
     const TfToken &productName,
@@ -2334,14 +2369,20 @@ _GetOutputDisplayDriverType(
 {
     // Use "ri:productType" from the product's namespaced settings if
     // available.
-    const TfToken driverName =
+    const TfToken riProductType =
         VtDictionaryGet<TfToken>(
             productSettings,
             _tokens->riProductType.GetText(),
             VtDefault = TfToken());
 
-    if (!driverName.IsEmpty()) {
-        return RtUString(driverName.GetText());
+    if (riProductType == HdPrmanRenderProductTokens->idMap) {
+        // The idMap product is not a standard display output, instead produced
+        // by a file write on render pass execution completion.
+        return TfToken("");
+    }
+
+    if (!riProductType.IsEmpty()) {
+        return riProductType;
     }
 
     // Otherwise, use the extension from the product name and product type
@@ -2350,7 +2391,7 @@ _GetOutputDisplayDriverType(
     const std::string outputExt = TfGetExtension(productName.GetString());
 
     if (productType == _tokens->deepRaster && outputExt == std::string("exr")) {
-        return RtUString(_tokens->deepexr.GetText());
+        return _tokens->deepexr;
     }
 
     return _GetOutputDisplayDriverType(outputExt);
@@ -2439,7 +2480,8 @@ _ComputeRenderViewDesc(
                 HdPrmanExperimentalRenderSpecTokens->name));
 
         displayDesc.name = RtUString(name.GetText());
-        displayDesc.driver = _GetOutputDisplayDriverType(name);
+        displayDesc.driver = RtUString(
+            _GetOutputDisplayDriverType(name).GetText());
         displayDesc.params = _ToRtParamList(
             VtDictionaryGet<VtDictionary>(
                 renderProduct,
@@ -2501,13 +2543,19 @@ _ComputeRenderViewDesc(
 
 
     for (const HdRenderSettings::RenderProduct &product : products) {
+
+        const TfToken driverType = _GetOutputDisplayDriverType(
+            product.namespacedSettings, product.name, product.type);
+        if (driverType.IsEmpty()) {
+            continue;
+        }
+
         // Create a DisplayDesc for this RenderProduct
         HdPrman_RenderViewDesc::DisplayDesc displayDesc;
         displayDesc.name = RtUString(product.name.GetText());
         displayDesc.params = _ToRtParamList(product.namespacedSettings,
             _tokens->riDisplayDriverNamespace);
-        displayDesc.driver = _GetOutputDisplayDriverType(
-            product.namespacedSettings, product.name, product.type);
+        displayDesc.driver = RtUString(driverType.GetText());
 
         /* RenderVar */
         for (const HdRenderSettings::RenderProduct::RenderVar &renderVar :
@@ -2773,15 +2821,20 @@ static
 std::string
 _GetIntegratorName(HdRenderDelegate * const renderDelegate)
 {
-    const std::string &integratorNameFromRS =
+    const std::string defaultIntegrator = _defaultIntegratorOverride.IsEmpty()
+      ? HdPrmanIntegratorTokens->PxrPathTracer.GetString()
+      : _defaultIntegratorOverride.GetString();
+
+    const auto& integratorName =
         renderDelegate->GetRenderSetting<std::string>(
             HdPrmanRenderSettingsTokens->integratorName,
-            HdPrmanIntegratorTokens->PxrPathTracer.GetString());
+            defaultIntegrator); // only used if integratorName is not set
 
-    // Avoid potentially empty integrator
-    return integratorNameFromRS.empty() ?
-            HdPrmanIntegratorTokens->PxrPathTracer.GetString() :
-            integratorNameFromRS;
+    // integratorName might have been set to empty string,
+    // in which case we should use the default.
+    return integratorName.empty()
+      ? defaultIntegrator
+      : integratorName;
 }
 
 riley::ShadingNode
@@ -2789,6 +2842,13 @@ HdPrman_RenderParam::_ComputeIntegratorNode(
     HdRenderDelegate * const renderDelegate,
     const HdPrmanCamera * const cam)
 {
+    // The priority order should be:
+    //   1) RenderSettings prim + Integrator prim
+    //   2) Legacy RenderSettingsMap
+    //   3) HD_PRMAN_INTEGRATOR
+    //   4) HdPrman_RenderParam::SetDefaultIntegratorOverride()
+    //   5) PxrPathTracer
+    // (1) is handled here, (2)-(5) in _GetIntegratorName()
 #if PXR_VERSION >= 2308
     // Use the integrator node from a terminal connection on the
     // renderSettingsPrim if we can
@@ -3257,6 +3317,33 @@ HdPrman_RenderParam::SetRileyOptions()
 
         if (_renderDelegate->IsInteractive() && !_usingHusk) {
             prunedOptions = HdPrman_Utils::PruneBatchOnlyOptions(prunedOptions);
+        }
+
+        // Set the world origin as "world offset" and the world offset as our camera/offset.
+        // Geometry/Lights/Camera all enter into riley in "world offset" space.
+        // This is handled by the world offset scene index plugin.
+        // However we still need this setting so that we can transform them back to world space
+        // in certain tasks like AOVs and OSL patterns.
+        // We always set this as "world offset" and set it with the exact offset the scene index
+        // is using. If we set to camera it may use all the time samples where as the scene index is
+        // only transforming around time zero for simplicity.
+        // TODO: This task should be moved into the scene index itself. However we cannot do this
+        // yet as there is a dependency on knowing  which rendersetting/camera is being used in
+        // the scene which is not known until after the scene index. If we change the rendersetting
+        // in the scene index it would be pushed forward to the render delegate, which would pass
+        // it back to the scene index, which would be pushed forward to the render delegate,
+        // creating a feedback loop.
+        // Once the SceneGlobals is properly supported we can move everything into the scene index
+        // plugin.
+        const GfVec3f worldOffset = GfVec3f(
+            HdPrman_WorldOffsetSceneIndexPlugin::GetCameraOffset() +
+            HdPrman_WorldOffsetSceneIndexPlugin::GetWorldOffset()
+        );
+        prunedOptions.SetFloatArray(RixStr.k_trace_worldoffset, worldOffset.GetArray(), 3);
+        prunedOptions.SetString(RixStr.k_trace_worldorigin, RixStr.k_worldoffset);
+
+        for(const auto& cb: *_rileyOptionsCallbacks) {
+            cb(prunedOptions);
         }
 
         riley::Riley * const riley = AcquireRiley();
@@ -4855,6 +4942,50 @@ HdPrman_RenderParam::_UpdateShutterInterval(const RtParamList& composedParams)
     // a workaround to provide it.
     HdPrman_MotionBlurSceneIndexPlugin::SetShutterInterval(
         _shutterInterval[0], _shutterInterval[1]);
+}
+
+TfToken
+HdPrman_RenderParam::GetIdMapProductName(HdPrman_RenderSettings* renderSettings)
+{
+    for (const auto& product : renderSettings->GetRenderProducts()) {
+        const TfToken productType =
+            VtDictionaryGet<TfToken>(
+                product.namespacedSettings,
+                _tokens->riProductType.GetText(),
+                VtDefault = TfToken());
+
+        if (productType == HdPrmanRenderProductTokens->idMap) {
+            return product.name;
+        }
+    }
+
+    return TfToken();
+}
+
+void
+HdPrman_RenderParam::WriteIdMap(
+    HdRenderIndex* renderIndex,
+    const TfToken& productName)
+{
+    std::ofstream outFile(productName.GetText(), std::ios::binary);
+    if (!outFile) {
+        TF_WARN("Failed to create ID file '%s'", productName.GetText());
+        return;
+    }
+
+    for (const auto& path : renderIndex->GetRprimIds()) {
+        const int64_t pathLen = path.GetString().size() + 1;
+        const int64_t id = renderIndex->GetRprim(path)->GetPrimId() + 1;
+
+        outFile.write(reinterpret_cast<const char*>(&id), sizeof(int64_t))
+               .write(reinterpret_cast<const char*>(&pathLen), sizeof(pathLen))
+               .write(path.GetText(), pathLen);
+
+        if (!outFile) {
+            TF_WARN("Writing ID file failed on '%s'", path.GetText());
+            return;
+        }
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -110,6 +110,42 @@ TestCustomSprimTypes()
     return true;
 }
 
+bool
+TestCustomRprimTypes()
+{
+    // This call would normally go in the type registry for something like a
+    // prim adapter, render delegate or scene delegate (who might care deeply
+    // about the dirtiness of tacos)
+    HdDirtyBitsTranslator::RegisterTranslatorsForCustomRprimType(
+        _tokens->taco,
+        _ConvertLocatorSetToDirtyBitsForTacos,
+        _ConvertDirtyBitsToLocatorSetForTacos);
+
+    // confirm that dirtying an unrelated locator does not dirty a taco
+    HdDataSourceLocatorSet dirtyStuff(HdCameraSchema::GetDefaultLocator());
+
+    if (HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
+            _tokens->taco, dirtyStuff) != HdChangeTracker::Clean) {
+        std::cerr << "Expected clean taco." << std::endl;
+        return false;
+    }
+
+    // test round trip of bits
+    HdDirtyBits bits = DirtyTortilla | DirtyProtein;
+    HdDataSourceLocatorSet set;
+    HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(
+        _tokens->taco, bits, &set);
+
+    if (HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(_tokens->taco, set)
+            != bits) {
+        std::cerr << "Roundtrip of dirty taco doesn't match." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+
 //-----------------------------------------------------------------------------
 
 #define xstr(s) str(s)
@@ -125,7 +161,7 @@ int main(int argc, char**argv)
 
     int i = 0;
     TEST(TestCustomSprimTypes);
-
+    TEST(TestCustomRprimTypes);
     // ------------------------------------------------------------------------
     std::cout << "DONE testHdDirtyBitsTranslator: SUCCESS" << std::endl;
     return 0;

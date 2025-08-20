@@ -13,11 +13,12 @@
 #include "pxr/usdImaging/usdSkelImaging/animationSchema.h"
 #include "pxr/usdImaging/usdSkelImaging/dataSourceUtils.h"
 #include "pxr/usdImaging/usdSkelImaging/skeletonSchema.h"
+#include "pxr/usdImaging/usdSkelImaging/xformResolver.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdSkelImagingSkelData;
-class UsdSkelImagingSkelGuideData;
+struct UsdSkelImagingSkelData;
+struct UsdSkelImagingSkelGuideData;
 
 /// \class UsdSkelImagingDataSourceResolvedSkeletonPrim
 ///
@@ -49,13 +50,23 @@ public:
         return _animationSource;
     }
 
+    /// Paths to instancers instancing this prim - not including ones
+    /// outside the skel root.
+    ///
+    /// See UsdSkelImagingDataSourceXformResolver for details.
+    ///
+    const VtArray<SdfPath> &GetInstancerPaths() const {
+        return _xformResolver.GetInstancerPaths();
+    }
+
     /// Schema from skelAnimation at GetAnimationSource().
     const UsdSkelImagingAnimationSchema &GetAnimationSchema() const {
         return _animationSchema;
     }
 
-    /// Inverse transform matrix of this skeleton prim.
-    HdMatrixDataSourceHandle GetSkelLocalToWorld() const;
+    /// Transfrom to go from local space of skeleton prim to common
+    /// space (as defined by UsdSkelImagingDataSourceXformResolver).
+    HdMatrixDataSourceHandle GetSkelLocalToCommonSpace() const;
 
     /// Skinning transforms.
     HdMatrix4fArrayDataSourceHandle GetSkinningTransforms();
@@ -111,6 +122,10 @@ private:
         const HdDataSourceLocatorSet &dirtyLocators,
         HdDataSourceLocatorSet * newDirtyLocators);
 
+    bool _ProcessInstancerDirtyLocators(
+        const HdDataSourceLocatorSet &dirtyLocators,
+        HdDataSourceLocatorSet * newDirtyLocators);
+
     // Path to this skeleton prim.
     const SdfPath _primPath;
     // Input data source for this skeleton prim.
@@ -155,6 +170,9 @@ private:
     //
     class _RestTransformsDataSource;
     std::shared_ptr<_RestTransformsDataSource> const _restTransformsDataSource;
+
+    // Serves GetSkelLocalToWorld - taking instancing into account.
+    UsdSkelImagingDataSourceXformResolver _xformResolver;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdSkelImagingDataSourceResolvedSkeletonPrim);

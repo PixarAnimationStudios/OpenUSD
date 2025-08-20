@@ -519,8 +519,8 @@ public:
     }
 
     /// Return a pair of iterators [\a b, \a e), describing the maximal range
-    /// such that for all \a i in the range, \a i->first is \a b->first or
-    /// is prefixed by \a b->first.
+    /// such that for all \a i in the range, \a i->first is \a path or
+    /// is prefixed by \a path.
     std::pair<iterator, iterator>
     FindSubtreeRange(SdfPath const &path) {
         std::pair<iterator, iterator> result;
@@ -530,8 +530,8 @@ public:
     }
 
     /// Return a pair of const_iterators [\a b, \a e), describing the maximal
-    /// range such that for all \a i in the range, \a i->first is \a b->first or
-    /// is prefixed by \a b->first.
+    /// range such that for all \a i in the range, \a i->first is \a path or
+    /// is prefixed by \a path.
     std::pair<const_iterator, const_iterator>
     FindSubtreeRange(SdfPath const &path) const {
         std::pair<const_iterator, const_iterator> result;

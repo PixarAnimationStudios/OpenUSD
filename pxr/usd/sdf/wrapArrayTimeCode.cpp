@@ -8,6 +8,7 @@
 #include "pxr/usd/sdf/timeCode.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/wrapArray.h"
+#include "pxr/base/vt/wrapArrayEdit.h"
 #include "pxr/base/vt/valueFromPython.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -26,4 +27,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 void wrapArrayTimeCode() {
     VtWrapArray<VtArray<SdfTimeCode> >();
     VtValueFromPythonLValue<VtArray<SdfTimeCode> >();
+    VtWrapArrayEdit<VtArrayEdit<SdfTimeCode> >();
+    VtValueFromPythonLValue<VtArrayEdit<SdfTimeCode> >();
 }

@@ -11,6 +11,7 @@
 #include "pxr/usdImaging/usdSkelImaging/api.h"
 #include "pxr/usdImaging/usdSkelImaging/dataSourceUtils.h"
 #include "pxr/usdImaging/usdSkelImaging/resolvedSkeletonSchema.h"
+#include "pxr/usdImaging/usdSkelImaging/xformResolver.h"
 
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/sceneIndexObserver.h"
@@ -76,6 +77,15 @@ public:
         return _blendShapeTargetPaths;
     }
 
+    /// Paths to instancers instancing this prim - not including ones
+    /// outside the skel root.
+    ///
+    /// See UsdSkelImagingDataSourceXformResolver for details.
+    ///
+    const VtArray<SdfPath> &GetInstancerPaths() const {
+        return _xformResolver.GetInstancerPaths();
+    }
+    
     /// Primvars of prim in the input scene.
     const HdPrimvarsSchema &GetPrimvars() const { return _primvars; }
 
@@ -84,10 +94,11 @@ public:
         return _resolvedSkeletonSchema;
     }
 
-    /// Typed sampled data source for the inverse of the xform matrix of the
-    /// prim in the input scene.
+    /// Transfrom to go from common space (as defined by
+    /// UsdSkelImagingDataSourceXformResolver) to the local space of this
+    /// prim.
     USDSKELIMAGING_API
-    HdMatrixDataSourceHandle GetPrimWorldToLocal() const;
+    HdMatrixDataSourceHandle GetCommonSpaceToPrimLocal() const;
 
     /// Blend shape data computed from primvars, skel bindings and skeleton.
     USDSKELIMAGING_API
@@ -180,6 +191,12 @@ private:
         HdDataSourceLocatorSet * dirtyLocatorsForAggregatorComputation,
         HdDataSourceLocatorSet * dirtyLocatorsForComputation);
 
+    bool
+    _ProcessDirtyInstancerLocators(
+        const HdDataSourceLocatorSet &dirtyLocators,
+        HdDataSourceLocatorSet * dirtyLocatorsForAggregatorComputation,
+        HdDataSourceLocatorSet * dirtyLocatorsForComputation);
+    
     // Input scene.
     HdSceneIndexBaseRefPtr const _sceneIndex;
     // Path of prim in the input scene.
@@ -224,6 +241,9 @@ private:
         HdContainerDataSourceHandle const _skeletonPrimSource;
     };
     _JointInfluencesDataCache _jointInfluencesDataCache;
+
+    // Serves GetPrimWorldToLocal - taking instancing into account.
+    UsdSkelImagingDataSourceXformResolver _xformResolver;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdSkelImagingDataSourceResolvedPointsBasedPrim);

@@ -50,20 +50,22 @@ TF_DECLARE_PUBLIC_TOKENS(HdSceneGlobalsSchemaTokens, HD_API,
 
 //-----------------------------------------------------------------------------
 
-// The HdSceneGlobalsSchema encapsulates "global" state to orchestrate a
-// render. It currently houses the active render settings and pass prim paths
-// that describe the information necessary to generate images from a single
-// invocation of a renderer, the active time sample range and current frame
-// number that may be relevant to downstream scene indices (e.g. procedural
-// evaluation), the time codes per second (sometimes informally referred to as
-// FPS), and the primary camera.
-//
-// We shall use the convention of a container data source at the root prim of
-// the scene index that is populated with this global state. The renderer and
-// downstream scene indices can query it to configure their behavior as
-// necessary.
-//
 
+/// \class HdSceneGlobalsSchema
+///
+/// The HdSceneGlobalsSchema encapsulates "global" state to orchestrate a
+/// render. It currently houses the active render settings and pass prim paths
+/// that describe the information necessary to generate images from a single
+/// invocation of a renderer, the active time sample range and current frame
+/// number that may be relevant to downstream scene indices (e.g. procedural
+/// evaluation), the time codes per second (sometimes informally referred to as
+/// FPS), and the primary camera.
+///
+/// We shall use the convention of a container data source at the root prim of
+/// the scene index that is populated with this global state. The renderer and
+/// downstream scene indices can query it to configure their behavior as
+/// necessary.
+///
 class HdSceneGlobalsSchema : public HdSchema
 {
 public:

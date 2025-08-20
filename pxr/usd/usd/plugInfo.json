@@ -10,18 +10,6 @@
                         "appliesTo": "prims", 
                         "type": "tokenlistop"
                     }, 
-                    "clipSets": {
-                        "appliesTo": [
-                            "prims"
-                        ], 
-                        "type": "stringlistop"
-                    }, 
-                    "clips": {
-                        "appliesTo": [
-                            "prims"
-                        ], 
-                        "type": "dictionary"
-                    }, 
                     "fallbackPrimTypes": {
                         "appliesTo": [
                             "layers"

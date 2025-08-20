@@ -4285,6 +4285,77 @@ struct TextParserAction<SublayerListClose>
     }
 };
 
+bool
+Sdf_ParseValueFromString(
+    const std::string& input,
+    const SdfValueTypeName& sdfType,
+    VtValue* outputValue)
+{
+    Sdf_TextParserContext context;
+    context.values.SetupFactory(sdfType.GetAsToken().GetString());
+
+    // XXX: TypedValue has special behavior for certain parsingContexts when
+    // its apply action is triggered during a full layer parse. We push
+    // Sdf_TextParserCurrentParsingContext::Metadata to avoid this special
+    // behavior. The other way to address this behavior is to parse the
+    // PEGTL_NS::sor constituent parts of the TypedValue definition directly.
+    _PushContext(context, Sdf_TextParserCurrentParsingContext::Metadata);
+
+    using PegtlInput = Sdf_TextFileFormatParser::PEGTL_NS::string_input<>;
+    PegtlInput content { input, "" };
+    bool error = false;
+    context.values.errorReporter = 
+        [&context, capture0 = std::cref(content), errPtr = &error]
+        (auto && PH1) mutable {
+            *errPtr = true;
+            return Sdf_TextFileFormatParser
+                ::_ReportParseError<PegtlInput>(
+                    context, capture0, std::forward<decltype(PH1)>(PH1));
+        };
+
+    try
+    {
+        bool status = false;
+        status = Sdf_TextFileFormatParser::PEGTL_NS::parse<
+            Sdf_TextFileFormatParser::PEGTL_NS::must<
+                    Sdf_TextFileFormatParser::TypedValue,
+                    Sdf_TextFileFormatParser::PEGTL_NS::internal::eof>,
+            Sdf_TextFileFormatParser::TextParserAction,
+            Sdf_TextFileFormatParser::TextParserControl>(content, context);
+
+        if (status && context.currentValue.IsEmpty()) {
+            TF_CODING_ERROR("Parse succeeded but output value was not "
+                            "populated");
+            return false;
+        } else if (error || !status) {
+            // Avoid populating non-empty context.currentValue to outputValue
+            // when errors were reported or parsing fails.
+            return false;
+        }
+
+        *outputValue = context.currentValue;
+        return true;
+    }
+    catch (std::bad_variant_access const &)
+    {
+        Sdf_TextFileFormatParser::Sdf_TextFileFormatParser_Err(
+            context,
+            content,
+            content.position(),
+            "Variant mismatch between expected sdf type and parsed type.");
+        return false;
+    }
+    catch (const Sdf_TextFileFormatParser::PEGTL_NS::parse_error& e)
+    {
+        Sdf_TextFileFormatParser::Sdf_TextFileFormatParser_Err(
+            context,
+            content,
+            e.positions().empty() ? content.position() : e.positions()[0],
+            e.what());
+        return false;
+    }
+}
+
 } // end namespace Sdf_TextFileFormatParser
 
 ////////////////////////////////////////////////////////////////////////

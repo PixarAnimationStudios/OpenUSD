@@ -41,6 +41,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialBindingSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdMaterialBindingSchema
+///
 class HdMaterialBindingSchema : public HdSchema
 {
 public:

@@ -113,7 +113,7 @@ readers.
 
 Accessibility information is provided as a standard triplet of label, 
 description, and priority. This is a multiple apply schema, and so may have 
-multiple namespaced accessibility triplets, where a instance name may reflect a 
+multiple namespaced accessibility triplets, where an instance name may reflect a 
 given purpose for that triplet. The following simple example provides
 multiple triplets of accessibility information for a Prim.
 
@@ -130,8 +130,5 @@ def Mesh "Cube" (
     token accessibility:size:priority = "low"
 }
 ```
-
-Note that this schema will use "default" as an instance name if no namespace is 
-specified.
 
 See {ref}`AccessibilityAPI` for additional best practices for using this schema.

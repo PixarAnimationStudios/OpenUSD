@@ -7,6 +7,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/refPtr.h"
+#include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdr/debugCodes.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/sdr/shaderMetadataHelpers.h"
@@ -112,6 +113,8 @@ SdrShaderNode::_PostProcessProperties()
         if (isVStruct) {
             shaderProperty->_ConvertToVStruct();
         }
+
+        shaderProperty->_ConvertExpressions(_properties, this);
 
         // There must not be any further modifications of this property after
         // this method has been called.

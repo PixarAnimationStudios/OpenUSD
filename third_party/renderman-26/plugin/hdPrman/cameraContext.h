@@ -31,31 +31,39 @@ class HdPrmanCamera;
 class HdPrman_CameraContext final
 {
 public:
+    HDPRMAN_API
     HdPrman_CameraContext();
 
     /// Call when hydra changed the transform or parameters of a camera.
+    HDPRMAN_API
     void MarkCameraInvalid(const SdfPath &path);
 
     /// Set the active camera. If camera is the same as it used to be,
     /// context is not marked invalid.
+    HDPRMAN_API
     void SetCameraPath(const SdfPath &path);
 
     /// Set the camera framing. Context is only marked invalid if framing
     /// is different from what it used to be.
+    HDPRMAN_API
     void SetFraming(const CameraUtilFraming &framing);
-    
+
     /// Set window policy. Same comments as for SetFraming apply.
+    HDPRMAN_API
     void SetWindowPolicy(CameraUtilConformWindowPolicy policy);
 
     /// If true, some aspect of the camera or related state has changed
     /// and the riley camera or options need to be updated.
+    HDPRMAN_API
     bool IsInvalid() const;
 
     /// Create riley camera (with default settings).
+    HDPRMAN_API
     void CreateRileyCamera(
         riley::Riley * riley,
         const RtUString &cameraName);
 
+    HDPRMAN_API
     void DeleteRileyCameraAndClipPlanes(riley::Riley * riley);
 
     /// Get id of riley camera - valid only after Begin.
@@ -65,6 +73,7 @@ public:
     /// to an image file.
     ///
     /// Sets the crop window, format resolution and pixel aspect ratio.
+    HDPRMAN_API
     void SetRileyOptions(
         RtParamList * options) const;
 
@@ -72,18 +81,21 @@ public:
     /// render buffers of the given size.
     ///
     /// Sets the crop window and pixel aspect ratio.
+    HDPRMAN_API
     void SetRileyOptionsInteractive(
         RtParamList * options,
         const GfVec2i &renderBufferSize) const;
 
     /// Update riley camera and clipping planes for offline rendering
     /// to an image file.
+    HDPRMAN_API
     void UpdateRileyCameraAndClipPlanes(
         riley::Riley * riley,
         const HdRenderIndex * renderIndex);
 
     /// Update riley camera and clipping planes for rendering to AOVs
     /// baked by render buffers of the given size.
+    HDPRMAN_API
     void UpdateRileyCameraAndClipPlanesInteractive(
         riley::Riley * riley,
         const HdRenderIndex * renderIndex,
@@ -91,20 +103,25 @@ public:
 
     // A projection that will override the value from the camera setting if
     // it is different from the default perspective.
+    HDPRMAN_API
     void SetProjectionOverride(const RtUString& projection,
                                const RtParamList& projectionParams);
-    
+
     /// Mark that riley camera and options are up to date.
+    HDPRMAN_API
     void MarkValid();
 
     /// Get resolution from the display window.
+    HDPRMAN_API
     GfVec2i GetResolutionFromDisplayWindow() const;
 
     // Get resolution from the data window
     // This can be removed once XPU handles under/overscan correctly.
+    HDPRMAN_API
     GfVec2i GetResolutionFromDataWindow() const;
 
     /// When depth of field is disabled the fstop is set to infinity.
+    HDPRMAN_API
     void SetDisableDepthOfField(bool disableDepthOfField);
 
     /// Path of current camera in render index.
@@ -114,11 +131,14 @@ public:
     const RtUString& GetCameraName() const { return _cameraName; }
 
     /// For convenience, get camera at camera path from render index.
+    HDPRMAN_API
     const HdPrmanCamera * GetCamera(const HdRenderIndex *renderIndex) const;
 
     /// Get the camera framing.
+    HDPRMAN_API
     const CameraUtilFraming &GetFraming() const;
 
+    HDPRMAN_API
     static RtUString GetDefaultReferenceCameraName();
 
 private:
@@ -148,7 +168,7 @@ private:
     CameraUtilFraming _framing;
     CameraUtilConformWindowPolicy _policy;
     bool _disableDepthOfField;
-    
+
     // Save ids of riley clip planes so that we can delete them before
     // re-creating them to update the clip planes.
     std::vector<riley::ClippingPlaneId> _clipPlaneIds;
@@ -156,7 +176,7 @@ private:
     // Riley camera name provided as an argument to CreateRileyCamera.
     // This needs to be unique across all cameras.
     RtUString _cameraName;
-    
+
     RtUString _projectionNameOverride;
     RtParamList _projectionParamsOverride;
 

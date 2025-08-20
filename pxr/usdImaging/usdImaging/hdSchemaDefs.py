@@ -100,7 +100,8 @@
         SCHEMA_TOKEN = 'collectionMaterialBinding',
         ADD_DEFAULT_LOCATOR = True,
         MEMBERS = [
-            ('collectionPath', T_PATH, {}),
+            ('collectionPrimPath', T_PATH, {}),
+            ('collectionName', T_TOKEN, {}),
             ('materialPath', T_PATH, {}),
             ('bindingStrength', T_TOKEN, {}),
         ],

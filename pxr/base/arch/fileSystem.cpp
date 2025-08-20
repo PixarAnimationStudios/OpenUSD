@@ -1219,8 +1219,11 @@ std::string ArchReadLink(const char* path)
                                unsigned char[MAX_REPARSE_DATA_SIZE]);
     REPARSE_DATA_BUFFER* reparse = (REPARSE_DATA_BUFFER*)buffer.get();
 
+    // The windows API documentation for DeviceIoControl states the if the
+    // lpOverlapped parameter is NULL, lpBytesReturned cannot be NULL.
+    DWORD unusedBytesReturned = 0;
     if (!DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, NULL, 0, reparse,
-                         MAX_REPARSE_DATA_SIZE, NULL, NULL)) {
+                         MAX_REPARSE_DATA_SIZE, &unusedBytesReturned, NULL)) {
         CloseHandle(handle);
         return std::string();
     }
@@ -1371,5 +1374,40 @@ void ArchFileAdvise(
     }
 #endif
 }
+
+
+#if defined(ARCH_OS_WINDOWS)
+
+std::string ArchWindowsUtf16ToUtf8(const std::wstring &wstr)
+{
+    if (wstr.empty()) return std::string();
+    // first call is only to get required size for string
+    int size = WideCharToMultiByte(
+        CP_UTF8, 0, wstr.data(), (int)wstr.size(), NULL, 0, NULL, NULL);
+    if (size == 0) return std::string();
+    std::string str(size, 0);
+    if (WideCharToMultiByte(CP_UTF8, 0, wstr.data(), (int)wstr.size(),
+                            &str[0], size, NULL, NULL) == 0) {
+        return std::string();
+    }
+    return str;
+}
+
+std::wstring ArchWindowsUtf8ToUtf16(const std::string &str)
+{
+    if (str.empty()) return std::wstring();
+    // first call is only to get required size for wstring
+    int size = MultiByteToWideChar(
+        CP_UTF8, 0, str.data(), (int)str.size(), NULL, 0);
+    if (size == 0) return std::wstring();
+    std::wstring wstr(size, 0);
+    if(MultiByteToWideChar(
+           CP_UTF8, 0, str.data(), (int)str.size(), &wstr[0], size) == 0) {
+        return std::wstring();
+    }
+    return wstr;
+}
+
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

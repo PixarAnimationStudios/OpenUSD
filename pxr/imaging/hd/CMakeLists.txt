@@ -114,6 +114,8 @@ pxr_library(hd
         materialConnectionSchema
         materialFilteringSceneIndexBase
         materialInterfaceMappingSchema
+        materialInterfaceParameterSchema
+        materialInterfaceSchema
         materialNetworkSchema
         materialNetwork2Interface
         materialNodeSchema
@@ -136,7 +138,6 @@ pxr_library(hd
         pluginRenderDelegateUniqueHandle
         points
         prefixingSceneIndex
-        primDataSourceOverlayCache
         primGather
         primOriginSchema
         primTypeIndex

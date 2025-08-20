@@ -1,0 +1,23 @@
+#usda 1.0
+(
+    "Test schema file for testExecUsdMetadataInput"
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "testExecUsdMetadataInput"
+        string libraryPath      = "pxr/exec/execUsd"
+        bool skipCodeGeneration = true
+    }
+)
+{
+}
+
+class CustomSchema "CustomSchema" (
+    inherits = </Typed>
+)
+{
+}

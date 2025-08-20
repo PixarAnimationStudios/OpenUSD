@@ -152,7 +152,8 @@ public:
     // writer to start with a conservative version assumption and promote to
     // newer versions only as required by the data stream contents.
     SDF_API
-    bool RequestWriteVersionUpgrade(const SdfFileVersion& ver, std::string reason);
+    bool RequestWriteVersionUpgrade(const SdfFileVersion& ver,
+                                    std::string reason);
 
 private:
     // Potentially update the version string in the header of the output

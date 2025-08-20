@@ -47,18 +47,20 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialSchemaTokens, HD_API,
 
 //-----------------------------------------------------------------------------
 
-// The Material schema is a container schema that provides the correct
-// material definition per render context.
-//
-// For example, a material may specify several render contexts like the
-// universalRenderContext (""), Renderman ("ri"), Storm ("glslfx"), etc. Each
-// render context will then provide the specific definition for the renderer,
-// which is defined by the MaterialNetwork schema. The universalRenderContext
-// applies to all renderers.
-//
-// See "Custom Code: Schema Methods" section for ASCII art diagram.
-//
 
+/// \class HdMaterialSchema
+///
+/// The Material schema is a container schema that provides the correct
+/// material definition per render context.
+///
+/// For example, a material may specify several render contexts like the
+/// universalRenderContext (""), Renderman ("ri"), Storm ("glslfx"), etc. Each
+/// render context will then provide the specific definition for the renderer,
+/// which is defined by the MaterialNetwork schema. The universalRenderContext
+/// applies to all renderers.
+///
+/// See "Custom Code: Schema Methods" section for ASCII art diagram.
+///
 class HdMaterialSchema : public HdSchema
 {
 public:
@@ -111,7 +113,7 @@ public:
     /// | |  +------------------------------+ |      |  +--------------------------------------------------------------------------------------------------------------------------------------------------+  |    |
     /// | |  | interfaceValues              | |      |  | ri [materialNetwork for Renderman render context]                                                                                                |  |    |
     /// | |  |                              | |      |  |    +-----------------------+       +--------------------------------------------------------------------------------+   +-------------------+    |  |    |
-    /// | |  | *globalVal = 0.2-------------+-+----+ |  |    |interfaceMappings      |       | nodes                                                                          |   |terminals          |    |  |    |
+    /// | |  | *globalVal = 0.2-------------+-+----+ |  |    |interface [parameters] |       | nodes                                                                          |   |terminals          |    |  |    |
     /// | |  |                              | |    | |  |    |                       |       | +--------------------+                                                         |   |                   |    |  |    |
     /// | |  | *globalSpecularKface = 0.666-+-+-+  +-+--+--+-+*globalVal o-----------+---+   | |"Color_Manipulate"  |                                                         | +-+-o*surface         |    |  |    |
     /// | |  |                              | | |    |  |    |                       |   |   | |[materialNode]      |                                                         | | |                   |    |  |    |

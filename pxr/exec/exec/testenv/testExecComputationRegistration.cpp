@@ -28,6 +28,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 
@@ -47,19 +48,28 @@ TF_DEFINE_PRIVATE_TOKENS(
     (attributeComputedValueComputation)
     (attributeName)
     (baseAndDerivedSchemaComputation)
+    (convertibleReturnTypeComputation)
     (derivedSchemaComputation)
+    (dispatchedAttributeComputation)
     (dispatchedPrimComputation)
     (dispatchedPrimComputationOnCustomSchema)
     (emptyComputation)
+    (functionPointerComputation)
     (missingComputation)
     (multiApplySchemaComputation)
     (namespaceAncestorInput)
     (noInputsComputation)
     (nonComputationalSchemaComputation)
+    (otherAttr)
+    (otherComputation)
     (primComputation)
     (relationshipName)
+    (relationshipTargetsInput)
+    (returnTypeLambdaComputation)
     (stageAccessComputation)
     (unknownSchemaTypeComputation)
+    (voidFunctionPointerComputation)
+    (voidLambdaComputation)
 );
 
 // Attempt to register a computation for a schema type that is not registered
@@ -90,40 +100,173 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(TestExecConflictingComputationalSchema)
         .Callback<double>(+[](const VdfContext &) { return 1.0; });
 }
 
+static double
+_CallbackFunction(const VdfContext &) {
+    return 1.0;
+}
+
+static void
+_CallbackFunctionVoidReturn(const VdfContext &ctx) {
+    ctx.SetOutput<double>(1.0);
+}
+
 // Register computations for a typed schema.
 EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(
     TestExecComputationRegistrationCustomSchema)
 {
+    //
+    // Test different kinds of callback functions.
+    //
+    // Here, we just verify that these compile.
+    //
+
+    /// Callback: a lambda that returns the deduced result type
+    self.PrimComputation(_tokens->returnTypeLambdaComputation)
+        .Callback(+[](const VdfContext &) {
+            return 1.0;
+        });
+
+    // Callback: a lambda that returns void
+    self.PrimComputation(
+        _tokens->voidLambdaComputation)
+        .Callback<double>(+[](const VdfContext &ctx) {
+            ctx.SetOutput(1.0);
+        });
+
+    // Callback: a pointer to a function where the return type is the deduced
+    // computation result type
+    self.PrimComputation(
+        _tokens->functionPointerComputation)
+        .Callback(_CallbackFunction);
+
+    // Callback: a pointer to a function that returns void
+    self.PrimComputation(
+        _tokens->voidFunctionPointerComputation)
+        .Callback<double>(_CallbackFunctionVoidReturn);
+
+    // Callback: a lambda that returns a type that is convertible to the
+    // computation result type
+    self.PrimComputation(
+        _tokens->convertibleReturnTypeComputation)
+        .Callback<std::string>(+[](const VdfContext &ctx) {
+            return "string result value";
+        });
+
+    //
+    // Error cases
+    //
+
+    // A computation registration that has no callback.
     self.PrimComputation(_tokens->emptyComputation);
 
     // Attempt to register a prim computation that uses a builtin computation
     // name.
     self.PrimComputation(ExecBuiltinComputations->computeTime);
 
+    //
+    // Test different kinds of computation inputs.
+    //
+
     self.PrimComputation(_tokens->noInputsComputation)
         .Callback(+[](const VdfContext &) { return 1.0; });
 
     // A prim computation that exercises various kinds of inputs.
     self.PrimComputation(_tokens->primComputation)
-        .Callback<double>([](const VdfContext &ctx) { ctx.SetOutput(11.0); })
+        .Callback<double>(+[](const VdfContext &ctx) { ctx.SetOutput(11.0); })
         .Inputs(
-            Computation<double>(_tokens->primComputation),
+            // Take input from another computation provided by the prim.
+            Computation<double>(_tokens->otherComputation),
+
+            // Take input from a computation provided by an attribute on the
+            // prim.
             Attribute(_tokens->attributeName)
                 .Computation<int>(_tokens->attributeComputation),
+
+            // Take input from a computation provided by any objects targeted
+            // by attribute connections on an attribute on the prim.
+            Attribute(_tokens->attributeName)
+                .ConnectionTargetedObjects<int>(
+                    _tokens->attributeComputation),
+
+            // Take input from the value of an attribute, marking it as a
+            // required input.
             AttributeValue<int>(_tokens->attributeName)
                 .Required(),
+
+            // Take input from the objects targeted by a relationship on the
+            // prim.
             Relationship(_tokens->relationshipName)
                 .TargetedObjects<int>(_tokens->primComputation),
+
+            // Take input from the nearest namespace ancestor of the prim that
+            // defines the same computation, assigning the input a unique
+            // name.
             NamespaceAncestor<bool>(_tokens->primComputation)
-                .InputName(_tokens->namespaceAncestorInput)
+                .InputName(_tokens->namespaceAncestorInput),
+
+            // Take input from prim metadata.
+            Metadata<std::string>(SdfFieldKeys->Documentation),
+
+            // Take input from attribute metadata.
+            Attribute(_tokens->attributeName)
+                .Metadata<std::string>(SdfFieldKeys->Documentation),
+
+            // Take input from relationship metadata.
+            Relationship(_tokens->relationshipName)
+                .Metadata<std::string>(SdfFieldKeys->Documentation)
+        );
+
+    // An attribute computation.
+    self.AttributeComputation(
+        _tokens->attr,
+        _tokens->attributeComputation)
+        .Callback<double>(+[](const VdfContext &ctx) { ctx.SetOutput(11.0); })
+        .Inputs(
+            // Take input from another computation provided by the attribute.
+            Computation<double>(ExecBuiltinComputations->computeValue),
+
+            // Take input from the objects targeted by this attribute's
+            // connections.
+            ConnectionTargetedObjects<double>(_tokens->otherComputation),
+
+            // Take input from a computation on the attribute's owning prim.
+            Prim().Computation<double>(_tokens->primComputation),
+
+            // Take input from the value of a sibling attribute.
+            Prim().AttributeValue<double>(_tokens->otherAttr),
+
+            // Take input from a computation on a sibling attribute.
+            Prim()
+                .Attribute(_tokens->otherAttr)
+                .Computation<double>(_tokens->attributeComputation),
+
+            // Take input via relationship targets on a sibling relationship.
+            Prim()
+                .Relationship(_tokens->relationshipName)
+                .TargetedObjects<int>(_tokens->primComputation)
+                .InputName(_tokens->relationshipTargetsInput),
+
+            // Take input from attribute metadata.
+            Metadata<std::string>(SdfFieldKeys->Documentation),
+
+            // Take input from metadata on the owninbg prim.
+            Prim()
+                .Metadata<std::string>(SdfFieldKeys->Documentation),
+
+            // Take input from metadata on a sibling attribute.
+            Prim()
+                .Attribute(_tokens->otherAttr)
+                .Metadata<std::string>(SdfFieldKeys->Documentation)
         );
 
     // A prim computation that returns the current time.
     self.PrimComputation(_tokens->stageAccessComputation)
-        .Callback<EfTime>([](const VdfContext &ctx) {
+        .Callback<EfTime>(+[](const VdfContext &ctx) {
             ctx.SetOutput(EfTime());
         })
         .Inputs(
+            // Get the time input by computing the builtin 'computeTime'
+            // computation, provided by the stage.
             Stage()
                 .Computation<EfTime>(ExecBuiltinComputations->computeTime)
                 .Required()
@@ -133,7 +276,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(
     // type double), or 0.0, if there is no attribute of that name on the
     // owning prim.
     self.PrimComputation(_tokens->attributeComputedValueComputation)
-        .Callback<double>([](const VdfContext &ctx) {
+        .Callback<double>(+[](const VdfContext &ctx) {
             const double *const valuePtr =
                 ctx.GetInputValuePtr<double>(
                     ExecBuiltinComputations->computeValue);
@@ -148,6 +291,10 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(
     self.PrimComputation(_tokens->baseAndDerivedSchemaComputation)
         .Callback(+[](const VdfContext &) { return 1.0; });
 
+    //
+    // Test dispatched computations
+    //
+
     // A dispatched prim computation.
     self.DispatchedPrimComputation(_tokens->dispatchedPrimComputation)
         .Callback(+[](const VdfContext &) { return 1.0; });
@@ -156,6 +303,11 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(
     self.DispatchedPrimComputation(
         _tokens->dispatchedPrimComputationOnCustomSchema,
         TfType::FindByName("TestExecComputationRegistrationCustomSchema"))
+        .Callback(+[](const VdfContext &) { return 1.0; });
+
+    // A dispatched attribute computation.
+    self.DispatchedAttributeComputation(
+        _tokens->dispatchedAttributeComputation)
         .Callback(+[](const VdfContext &) { return 1.0; });
 }
 
@@ -186,7 +338,7 @@ EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(
     // A computation that is registered for the applied schema and also for a
     // typed schema.
     self.PrimComputation(_tokens->primComputation)
-        .Callback<double>([](const VdfContext &ctx) { ctx.SetOutput(42.0); });
+        .Callback<double>(+[](const VdfContext &ctx) { ctx.SetOutput(42.0); });
 }
 
 // Register computations for a multi-apply schema.
@@ -476,6 +628,67 @@ TestRegistrationErrors()
     }
 }
 
+// Test cases where we should fail to find a specified computation.
+//
+static void
+TestUndefinedComputations()
+{
+    EsfJournal *const nullJournal = nullptr;
+    const Exec_DefinitionRegistry &reg = Exec_DefinitionRegistry::GetInstance();
+    const EsfStage stage = _NewStageFromLayer(R"usd(#usda 1.0
+        def ConflictingComputationalSchema "Prim"
+        {
+            int attr
+        }
+        )usd");
+
+    const EsfPrim pseudoroot =
+        stage->GetPrimAtPath(SdfPath("/"), nullJournal);
+    const EsfPrim prim = stage->GetPrimAtPath(SdfPath("/Prim"), nullJournal);
+    TF_AXIOM(prim->IsValid(nullJournal));
+    const EsfAttribute attr =
+        stage->GetAttributeAtPath(SdfPath("/Prim.attr"), nullJournal);
+    TF_AXIOM(attr->IsValid(nullJournal));
+
+    const Exec_ComputationDefinition *compDef;
+
+    compDef = reg.GetComputationDefinition(
+        *pseudoroot,
+        TfToken("bogusStageComputation"),
+        EsfSchemaConfigKey(), nullJournal);
+    TF_AXIOM(!compDef);
+
+    compDef = reg.GetComputationDefinition(
+        *pseudoroot,
+        TfToken("__bogusBuiltinStageComputation"),
+        EsfSchemaConfigKey(), nullJournal);
+    TF_AXIOM(!compDef);
+
+    compDef = reg.GetComputationDefinition(
+        *prim,
+        TfToken("bogusPrimComputation"),
+        EsfSchemaConfigKey(), nullJournal);
+    TF_AXIOM(!compDef);
+
+    compDef = reg.GetComputationDefinition(
+        *prim,
+        TfToken("__bogusBuiltinPrimComputation"),
+        EsfSchemaConfigKey(), nullJournal);
+    TF_AXIOM(!compDef);
+
+    compDef = reg.GetComputationDefinition(
+        *attr,
+        TfToken("bogusAttrComputation"),
+        EsfSchemaConfigKey(), nullJournal);
+    TF_AXIOM(!compDef);
+
+    compDef = reg.GetComputationDefinition(
+        *attr,
+        TfToken("__bogusBuiltinAttrComputation"),
+        EsfSchemaConfigKey(), nullJournal);
+    TF_AXIOM(!compDef);
+}
+
 // Test that an unknown applied schema is ignored and we still find computations
 // registered for an applied schema.
 //
@@ -532,11 +745,17 @@ TestTypedSchemaComputationRegistration()
     const Exec_DefinitionRegistry &reg = Exec_DefinitionRegistry::GetInstance();
     const EsfStage stage = _NewStageFromLayer(R"usd(#usda 1.0
         def CustomSchema "Prim" {
+            int attr
         }
     )usd");
     const EsfPrim pseudoroot = stage->GetPrimAtPath(SdfPath("/"), nullJournal);
+
     const EsfPrim prim = stage->GetPrimAtPath(SdfPath("/Prim"), nullJournal);
     TF_AXIOM(prim->IsValid(nullJournal));
+
+    const EsfAttribute attribute =
+        stage->GetAttributeAtPath(SdfPath("/Prim.attr"), nullJournal);
+    TF_AXIOM(attribute->IsValid(nullJournal));
 
     {
         // Look up a computation that wasn't registered.
@@ -608,15 +827,15 @@ TestTypedSchemaComputationRegistration()
 
         const auto inputKeys =
             primCompDef->GetInputKeys(*prim, nullJournal);
-        ASSERT_EQ(inputKeys->Get().size(), 5);
+        ASSERT_EQ(inputKeys->Get().size(), 9);
 
         _PrintInputKeys(inputKeys->Get());
 
         size_t index = 0;
         {
             const Exec_InputKey &key = inputKeys->Get()[index++];
-            ASSERT_EQ(key.inputName, _tokens->primComputation);
-            ASSERT_EQ(key.computationName, _tokens->primComputation);
+            ASSERT_EQ(key.inputName, _tokens->otherComputation);
+            ASSERT_EQ(key.computationName, _tokens->otherComputation);
             ASSERT_EQ(key.resultType, TfType::Find<double>());
             ASSERT_EQ(key.providerResolution.localTraversal, SdfPath("."));
             ASSERT_EQ(key.providerResolution.dynamicTraversal,
@@ -633,6 +852,19 @@ TestTypedSchemaComputationRegistration()
                       SdfPath(".attributeName"));
             ASSERT_EQ(key.providerResolution.dynamicTraversal,
                       ExecProviderResolution::DynamicTraversal::Local);
+            ASSERT_EQ(key.optional, true);
+        }
+
+        {
+            const Exec_InputKey &key = inputKeys->Get()[index++];
+            ASSERT_EQ(key.inputName, _tokens->attributeComputation);
+            ASSERT_EQ(key.computationName, _tokens->attributeComputation);
+            ASSERT_EQ(key.resultType, TfType::Find<int>());
+            ASSERT_EQ(key.providerResolution.localTraversal,
+                      SdfPath(".attributeName"));
+            ASSERT_EQ(key.providerResolution.dynamicTraversal,
+                      ExecProviderResolution::DynamicTraversal::
+                          ConnectionTargetedObjects);
             ASSERT_EQ(key.optional, true);
         }
 
@@ -671,6 +903,95 @@ TestTypedSchemaComputationRegistration()
             ASSERT_EQ(key.providerResolution.dynamicTraversal,
                       ExecProviderResolution::DynamicTraversal::
                           NamespaceAncestor);
+            ASSERT_EQ(key.optional, true);
+        }
+    }
+
+    {
+        // Look up an attribute computation.
+        const Exec_ComputationDefinition *const attrCompDef =
+            reg.GetComputationDefinition(
+                *attribute, _tokens->attributeComputation,
+                EsfSchemaConfigKey(), nullJournal);
+        TF_AXIOM(attrCompDef);
+
+        const auto inputKeys =
+            attrCompDef->GetInputKeys(*attribute, nullJournal);
+        ASSERT_EQ(inputKeys->Get().size(), 9);
+
+        _PrintInputKeys(inputKeys->Get());
+
+        size_t index = 0;
+        {
+            const Exec_InputKey &key = inputKeys->Get()[index++];
+            ASSERT_EQ(key.inputName, ExecBuiltinComputations->computeValue);
+            ASSERT_EQ(
+                key.computationName, ExecBuiltinComputations->computeValue);
+            ASSERT_EQ(key.resultType, TfType::Find<double>());
+            ASSERT_EQ(key.providerResolution.localTraversal, SdfPath("."));
+            ASSERT_EQ(key.providerResolution.dynamicTraversal,
+                      ExecProviderResolution::DynamicTraversal::Local);
+            ASSERT_EQ(key.optional, true);
+        }
+
+        {
+            const Exec_InputKey &key = inputKeys->Get()[index++];
+            ASSERT_EQ(key.inputName, _tokens->otherComputation);
+            ASSERT_EQ(key.computationName, _tokens->otherComputation);
+            ASSERT_EQ(key.resultType, TfType::Find<double>());
+            ASSERT_EQ(key.providerResolution.localTraversal, SdfPath("."));
+            ASSERT_EQ(key.providerResolution.dynamicTraversal,
+                      ExecProviderResolution::DynamicTraversal::
+                          ConnectionTargetedObjects);
+            ASSERT_EQ(key.optional, true);
+        }
+
+        {
+            const Exec_InputKey &key = inputKeys->Get()[index++];
+            ASSERT_EQ(key.inputName, _tokens->primComputation);
+            ASSERT_EQ(key.computationName, _tokens->primComputation);
+            ASSERT_EQ(key.resultType, TfType::Find<double>());
+            ASSERT_EQ(key.providerResolution.localTraversal, SdfPath(".."));
+            ASSERT_EQ(key.providerResolution.dynamicTraversal,
+                      ExecProviderResolution::DynamicTraversal::Local);
+            ASSERT_EQ(key.optional, true);
+        }
+
+        {
+            const Exec_InputKey &key = inputKeys->Get()[index++];
+            ASSERT_EQ(key.inputName, _tokens->otherAttr);
+            ASSERT_EQ(key.computationName,
+                      ExecBuiltinComputations->computeValue);
+            ASSERT_EQ(key.resultType, TfType::Find<double>());
+            ASSERT_EQ(key.providerResolution.localTraversal,
+                      SdfPath("../.otherAttr"));
+            ASSERT_EQ(key.providerResolution.dynamicTraversal,
+                      ExecProviderResolution::DynamicTraversal::Local);
+            ASSERT_EQ(key.optional, true);
+        }
+
+        {
+            const Exec_InputKey &key = inputKeys->Get()[index++];
+            ASSERT_EQ(key.inputName, _tokens->attributeComputation);
+            ASSERT_EQ(key.computationName, _tokens->attributeComputation);
+            ASSERT_EQ(key.resultType, TfType::Find<double>());
+            ASSERT_EQ(key.providerResolution.localTraversal,
+                      SdfPath("../.otherAttr"));
+            ASSERT_EQ(key.providerResolution.dynamicTraversal,
+                      ExecProviderResolution::DynamicTraversal::Local);
+            ASSERT_EQ(key.optional, true);
+        }
+
+        {
+            const Exec_InputKey &key = inputKeys->Get()[index++];
+            ASSERT_EQ(key.inputName, _tokens->relationshipTargetsInput);
+            ASSERT_EQ(key.computationName, _tokens->primComputation);
+            ASSERT_EQ(key.resultType, TfType::Find<int>());
+            ASSERT_EQ(key.providerResolution.localTraversal,
+                      SdfPath("../.relationshipName"));
+            ASSERT_EQ(key.providerResolution.dynamicTraversal,
+                      ExecProviderResolution::DynamicTraversal::
+                          RelationshipTargetedObjects);
             ASSERT_EQ(key.optional, true);
         }
     }
@@ -836,7 +1157,7 @@ TestAppliedSchemaComputationRegistration()
             TF_AXIOM(primCompDef);
             const auto inputKeys =
                 primCompDef->GetInputKeys(*prim, nullJournal);
-            ASSERT_EQ(inputKeys->Get().size(), 5);
+            ASSERT_EQ(inputKeys->Get().size(), 9);
         }
     }
 
@@ -958,12 +1279,17 @@ TestDispatchedComputations()
     const Exec_DefinitionRegistry &reg = Exec_DefinitionRegistry::GetInstance();
     const EsfStage stage = _NewStageFromLayer(R"usd(#usda 1.0
         def CustomSchema "Prim" {
+            int attr
         }
         def Scope "Scope" {
         }
     )usd");
     const EsfPrim prim = stage->GetPrimAtPath(SdfPath("/Prim"), nullJournal);
     TF_AXIOM(prim->IsValid(nullJournal));
+
+    const EsfAttribute attribute =
+        stage->GetAttributeAtPath(SdfPath("/Prim.attr"), nullJournal);
+    TF_AXIOM(attribute->IsValid(nullJournal));
 
     const EsfPrim scope = stage->GetPrimAtPath(SdfPath("/Scope"), nullJournal);
     TF_AXIOM(scope->IsValid(nullJournal));
@@ -1021,6 +1347,16 @@ TestDispatchedComputations()
                 EsfSchemaConfigKey(), nullJournal);
         TF_AXIOM(!primCompDef);
     }
+
+    {
+        // Look up a dispatched attribute computation, which is keyed off of the
+        // schema config key.
+        const Exec_ComputationDefinition *const attributeCompDef =
+            reg.GetComputationDefinition(
+                *attribute, _tokens->dispatchedAttributeComputation,
+                attribute->GetSchemaConfigKey(nullJournal), nullJournal);
+        TF_AXIOM(attributeCompDef);
+    }
 }
 
 static void
@@ -1052,6 +1388,7 @@ int main()
     _SetupTestPlugins();
 
     TestRegistrationErrors();
+    TestUndefinedComputations();
     TestUnknownSchemaType();
     TestStageBuiltinComputationOnPrim();
     TestTypedSchemaComputationRegistration();

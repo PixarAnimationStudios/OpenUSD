@@ -504,10 +504,19 @@ UsdPrimDefinition::_CreateComposedPrimOrPropertyIfNeeded(
     const TfTokenVector& blockedFields = _GetDisallowedComposeFromWeakerFields(
         Property(&weakProp).GetSpecType());
 
-    for (const TfToken &field : Property(&weakProp).ListMetadataFields()) {
-        // If the stronger property already has the field, skip it.
-        if (strongProp && strongProp.HasField<VtValue>(field, nullptr)) {
-            continue;
+    for (const TfToken &field : Property(&weakProp).ListMetadataFields()) {        
+        // Dictionary-valued metadata and the PropertyOrder field are allowed 
+        // to merge with the value from weaker prim definitions. propertyOrder 
+        // from the weaker prim definitions will be appended on to the stronger 
+        // value, while dictionary metadata will be merged recursively.
+        VtValue mergeValue = weakProp.GetField(field);
+        bool allowedMerge = (field == SdfFieldKeys->PropertyOrder) || 
+                            (mergeValue.IsHolding<VtDictionary>());
+        if (!allowedMerge) {
+            // If the stronger property already has the field, skip it.
+            if (strongProp && strongProp.HasField<VtValue>(field, nullptr)) {
+                continue;
+            }
         }
 
         // If this field is not allowed to compose from a weaker API, skip it
@@ -516,16 +525,45 @@ UsdPrimDefinition::_CreateComposedPrimOrPropertyIfNeeded(
             continue;
         }
 
-        // If we get here we need to compose a property definition so create a
-        // a copy of the stronger property if we haven't already and add the
-        // field from the weaker property.
-        const VtValue weakValue = weakProp.GetField(field);
+        // If the field can merge with a weaker field, copy the stronger field 
+        // value and merge the weaker value into it.
+        if (strongProp && allowedMerge) {
+            VtValue strongValue;
+            if (strongProp.HasField<VtValue>(field, &strongValue)) {
+                if (strongValue.IsHolding<std::vector<TfToken>>()) {
+                    // Append the contents of the weaker value after the stronger values.
+                    std::vector<TfToken> weakVec = mergeValue.Get<std::vector<TfToken>>();
+                    std::vector<TfToken> strongVec = strongValue.Get<std::vector<TfToken>>();
+                    TfToken::Set uniqueElements(strongVec.begin(), strongVec.end());
 
+                    // We don't want duplicates in the combined list of fields, so
+                    // silently skip any we encounter from the weaker list.
+                    for (TfToken& field : weakVec) {
+                        if (uniqueElements.insert(field).second) {
+                            strongVec.push_back(field);
+                        }
+                    }
+
+                    mergeValue.Swap(strongVec);
+                } else if (strongValue.IsHolding<VtDictionary>()) {
+                    // Merge dictionaries.
+                    VtDictionary weakDict = mergeValue.Get<VtDictionary>();
+                    VtDictionary strongDict= strongValue.Get<VtDictionary>();
+                    VtDictionary mergeDict = VtDictionaryOverRecursive(strongDict, weakDict);
+                    mergeValue.Swap(mergeDict);
+                }
+            }
+        }
+
+        // Create a composed property definition by creating a copy of the 
+        // stronger property if we haven't already and adding the field from 
+        // the weaker property.
         if (!destSpec) {
             destSpec = _FindOrCreateSpecForComposition(
                 propName, strongProp);
         }
-        destSpec->SetField(field, weakValue);
+
+        destSpec->SetField(field, mergeValue); 
     }
 
     return destSpec;

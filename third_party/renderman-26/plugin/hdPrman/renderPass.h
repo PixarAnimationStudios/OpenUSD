@@ -63,7 +63,6 @@ private:
     int _lastRprimRenderTagVersion;
 
     std::chrono::steady_clock::time_point _frameStart;
-    std::string _projection;
     float _quickIntegrateTime;
 };
 

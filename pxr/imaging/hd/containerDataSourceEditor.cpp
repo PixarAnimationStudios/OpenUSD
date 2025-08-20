@@ -155,6 +155,44 @@ HdContainerDataSourceEditor::Finish()
     }
 }
 
+/* static */
+HdDataSourceLocatorSet
+HdContainerDataSourceEditor::ComputeDirtyLocators(
+    const HdDataSourceLocatorSet &locatorSet)
+{
+    if (locatorSet == HdDataSourceLocatorSet::UniversalSet()) {
+        return locatorSet;
+    }
+
+    HdDataSourceLocatorSet result;
+
+    // Invalidate the chain of container handles leading to the data source
+    // that is being set/overlaid.
+    //
+    for (const HdDataSourceLocator &loc : locatorSet) {
+        // For locator "a/b/c", we want to insert the following locators:
+        //  "HDataSourceSentinelTokens->container"
+        //  "a/HdDataSourceSentinelTokens->container"
+        //  "a/b/HdDataSourceSentinelTokens->container"
+        //  "a/b/c"
+
+        // Add locators to the container handles that need to be refetched.
+        HdDataSourceLocator curLoc;
+        for (size_t i = 0, e = loc.GetElementCount(); i < e; ++i) {
+            result.insert(
+                curLoc.Append(HdDataSourceLocatorSentinelTokens->container));
+
+            const TfToken &name = loc.GetElement(i);
+            curLoc = curLoc.Append(name);
+        }
+        // Finally, insert the locator for the data source that needs to be
+        // refetched.
+        result.insert(loc);
+    }
+
+    return result;
+}
+
 HdContainerDataSourceHandle
 HdContainerDataSourceEditor::_FinishWithNoInitialContainer()
 {

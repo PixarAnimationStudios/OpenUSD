@@ -151,11 +151,12 @@ class TestUsdObjectsChangedNoticesSublayerOps(unittest.TestCase):
                               """)
         
         sub = Sdf.Layer.CreateAnonymous('sub.usda')
-        sub.ImportFromString("""#usda 1.0
+        subLayerText = """#usda 1.0
                                 over "World" { 
                                     def "Prim" { }
                                 }
-                            """)
+                            """
+        sub.ImportFromString(subLayerText)
         
         stage = Usd.Stage.Open(root)
         self._listenForNotices(stage)
@@ -216,6 +217,29 @@ class TestUsdObjectsChangedNoticesSublayerOps(unittest.TestCase):
             }
         })
 
+        # Test sublayer clear / import from string
+        sub.Clear()
+        self.assertEqual(len(self._objectsChangedNotices), 6)
+        self.assertDictEqual(self._objectsChangedNotices[5], {
+            'ChangedInfoOnly': {
+                '/World': []
+            },
+            'Resynced': {
+                '/World/Prim': [] 
+            }
+        })
+
+        sub.ImportFromString(subLayerText)
+        self.assertEqual(len(self._objectsChangedNotices), 7)
+        self.assertDictEqual(self._objectsChangedNotices[6], {
+            'ChangedInfoOnly': {
+                '/World': []
+            },
+            'Resynced': {
+                '/World/Prim': ['specifier'] 
+            }
+        })
+
     def test_SublayerWithAttr(self):
         """Tests that proper notifications are generated when muting a sublayer
         which contains a prim which overrides an attribute"""
@@ -232,7 +256,7 @@ class TestUsdObjectsChangedNoticesSublayerOps(unittest.TestCase):
         
 
         glowLayer = Sdf.Layer.CreateAnonymous('glowLayer.usda')
-        glowLayer.ImportFromString("""#usda 1.0
+        glowLayerText = """#usda 1.0
                                  over "World" { 
                                    over "Sets" {
                                      over "GlassLens" {
@@ -240,7 +264,8 @@ class TestUsdObjectsChangedNoticesSublayerOps(unittest.TestCase):
                                      }
                                    }
                                 }
-                              """)
+                              """
+        glowLayer.ImportFromString(glowLayerText)
 
         root.subLayerPaths = [glowLayer.identifier]
 
@@ -301,6 +326,36 @@ class TestUsdObjectsChangedNoticesSublayerOps(unittest.TestCase):
             }
         })
 
+        # Test sublayer clear / import from string
+        glowLayer.Clear()
+
+        self.assertEqual(len(self._objectsChangedNotices), 5)
+        self.assertDictEqual(self._objectsChangedNotices[4], {
+            'ChangedInfoOnly': {
+                '/World': [],
+                '/World/Sets': [],
+                '/World/Sets/GlassLens': []
+            },
+            'Resynced': {
+                '/World/Sets/GlassLens.primvars:lightBulbColor': ['default'] 
+            }
+        })
+
+        glowLayer.ImportFromString(glowLayerText)
+
+        self.assertEqual(len(self._objectsChangedNotices), 6)
+        self.assertDictEqual(self._objectsChangedNotices[5], {
+            'ChangedInfoOnly': {
+                '/World': [],
+                '/World/Sets': [],
+                '/World/Sets/GlassLens': []
+            },
+            'Resynced': {
+                '/World/Sets/GlassLens.primvars:lightBulbColor': 
+                    ['default', 'typeName'] 
+            }
+        })
+
     def test_SublayerWithSublayer(self):
         root = Sdf.Layer.CreateAnonymous('root.usda')
         root.ImportFromString("""#usda 1.0
@@ -327,6 +382,7 @@ class TestUsdObjectsChangedNoticesSublayerOps(unittest.TestCase):
         sub = Sdf.Layer.CreateAnonymous('sub.usda')
         sub.subLayerPaths = [over.identifier]
         root.subLayerPaths = [sub.identifier]
+        subLayerText = sub.ExportToString()
 
         stage = Usd.Stage.Open(root)
         self._listenForNotices(stage)
@@ -360,6 +416,16 @@ class TestUsdObjectsChangedNoticesSublayerOps(unittest.TestCase):
         stage.UnmuteLayer(sub.identifier)
         self.assertEqual(len(self._objectsChangedNotices), 4)
         self.assertDictEqual(self._objectsChangedNotices[3], expectedChanges)
+
+        # Test sublayer clear / import from string
+        sub.Clear()
+        self.assertEqual(len(self._objectsChangedNotices), 5)
+        self.assertDictEqual(self._objectsChangedNotices[4], expectedChanges)
+
+        sub.ImportFromString(subLayerText)
+        self.assertEqual(len(self._objectsChangedNotices), 6)
+        self.assertDictEqual(self._objectsChangedNotices[5], expectedChanges)
+
 
     def test_MutingSublayerThoughReference(self):
         """Tests that proper change notifications are generated when a

@@ -52,11 +52,19 @@ _BuildCollectionBindingsVectorDataSource(
 
     for (auto const &binding : bindings) {
         if (binding.IsValid()) {
-            auto const &b = binding;
+            const auto &b = binding;
+            const TfToken collectionName =
+                TfToken(SdfPath::StripPrefixNamespace(
+                    b.GetCollectionPath().GetName(),
+                    UsdTokens->collection.GetString()).first);
+
             bindingsDs.push_back(
                 UsdImagingCollectionMaterialBindingSchema::Builder()
-                .SetCollectionPath(
-                    _RetainedTypedDs<SdfPath>::New(b.GetCollectionPath()))
+                .SetCollectionPrimPath(
+                    _RetainedTypedDs<SdfPath>::New(
+                        b.GetCollectionPath().GetPrimPath()))
+                .SetCollectionName(
+                    _RetainedTypedDs<TfToken>::New(collectionName))
                 .SetMaterialPath(
                     _RetainedTypedDs<SdfPath>::New(b.GetMaterialPath()))
                 .SetBindingStrength(

@@ -35,9 +35,6 @@ namespace
 
 // Container that computes the resolved material binding from the flattened 
 // direct material bindings.
-//
-// XXX The flattened direct binding is returned as the resolved binding.
-//     This needs to be updated to factor collection bindings.
 // 
 class _HdMaterialBindingsDataSource final : public HdContainerDataSource
 {
@@ -101,7 +98,7 @@ private:
     {
         SdfPath materialPath;
         bool strongerThanDescendants;
-        std::optional<SdfPath> collectionPath;
+        std::optional<std::pair<SdfPath, TfToken>> collectionPrimPathAndName;
     };
 
     std::optional<_ResolveInfo>
@@ -115,21 +112,22 @@ private:
             const UsdImagingCollectionMaterialBindingSchema
                 colBindingSchema = colVecSchema.GetElement(j);
             
-            auto colPathDs    = colBindingSchema.GetCollectionPath();
-            auto matPathDs    = colBindingSchema.GetMaterialPath();
-            auto strengthDs   = colBindingSchema.GetBindingStrength();
+            auto colPrimPathDs = colBindingSchema.GetCollectionPrimPath();
+            auto colNameDs     = colBindingSchema.GetCollectionName();
+            auto matPathDs     = colBindingSchema.GetMaterialPath();
+            auto strengthDs    = colBindingSchema.GetBindingStrength();
 
-            if (!(colPathDs && matPathDs && strengthDs)) {
+            if (!(colPrimPathDs && colNameDs && matPathDs && strengthDs)) {
                 continue;
             }
 
-            // Path returned will be of the form /Foo.collection:colName
-            const SdfPath collectionAttributePath =
-                colPathDs->GetTypedValue(0.0);
+            const SdfPath collectionPrimPath =
+                colPrimPathDs->GetTypedValue(0.0);
+            const TfToken collectionName = colNameDs->GetTypedValue(0.0);
 
             // Query scene index to get collection path expression.
             auto exprOpt = _GetCollectionPathExpression(
-                collectionAttributePath);
+                collectionPrimPath, collectionName);
             if (!exprOpt) {
                 continue;
             }
@@ -139,23 +137,26 @@ private:
             if (!eval.Match(_primPath)) {
                 TF_DEBUG(USDIMAGING_MATERIAL_BINDING_RESOLUTION).Msg(
                 "- Prim <%s> is NOT affected by collection material binding "
-                "<%s> (expr = \"%s\").\n", _primPath.GetText(),
-                collectionAttributePath.GetText(), exprOpt->GetText().c_str());
+                "<%s.collection:%s> (expr = \"%s\").\n", _primPath.GetText(),
+                collectionPrimPath.GetText(), collectionName.GetText(),
+                exprOpt->GetText().c_str());
 
                 continue;
             }
 
             TF_DEBUG(USDIMAGING_MATERIAL_BINDING_RESOLUTION).Msg(
-                "+ Prim <%s> IS affected by collection material binding <%s> "
-                "(expr = \"%s\").\n", _primPath.GetText(),
-                collectionAttributePath.GetText(), exprOpt->GetText().c_str());
+                "+ Prim <%s> IS affected by collection material binding "
+                " <%s.collection:%s> (expr = \"%s\").\n",
+                _primPath.GetText(),
+                collectionPrimPath.GetText(), collectionName.GetText(),
+                exprOpt->GetText().c_str());
 
             return
                 _ResolveInfo {
                     matPathDs->GetTypedValue(0.0),
                     strengthDs->GetTypedValue(0.0) ==
                         UsdShadeTokens->strongerThanDescendants,
-                    collectionAttributePath};
+                    std::make_pair(collectionPrimPath, collectionName)};
         }
 
         return std::nullopt;
@@ -208,11 +209,12 @@ private:
                 TF_DEBUG(USDIMAGING_MATERIAL_BINDING_RESOLUTION).Msg(
                     "Prim <%s>: Winning material set to <%s>. "
                     "Binding strength for collection binding "
-                    "<%s> is strongerThanDescendants. "
+                    "<%s.collection:%s> is strongerThanDescendants. "
                     "Skipping the rest of the bindings.\n",
                     _primPath.GetText(),
                     winningBindingPath.GetText(),
-                    colBindInfo->collectionPath->GetText());
+                    colBindInfo->collectionPrimPathAndName->first.GetText(),
+                    colBindInfo->collectionPrimPathAndName->second.GetText());
 
                 break;
             }
@@ -242,10 +244,11 @@ private:
 
                 TF_DEBUG(USDIMAGING_MATERIAL_BINDING_RESOLUTION).Msg(
                     "Prim <%s>: Current winning material set to <%s> for "
-                    "collection binding <%s>.\n",
+                    "collection binding <%s.collection:%s>.\n",
                     _primPath.GetText(),
                     winningBindingPath.GetText(),
-                    colBindInfo->collectionPath->GetText());
+                    colBindInfo->collectionPrimPathAndName->first.GetText(),
+                    colBindInfo->collectionPrimPathAndName->second.GetText());
                 
                 continue;
             }
@@ -268,22 +271,14 @@ private:
     }
 
     std::optional<SdfPathExpression>
-    _GetCollectionPathExpression(const SdfPath &collectionAttributePath) const
+    _GetCollectionPathExpression(
+        const SdfPath &primPath,
+        const TfToken &collectionName) const
     {
-        const SdfPath primPath = collectionAttributePath.GetPrimPath();
-        const auto [collectionName, namespaceFound] =
-            SdfPath::StripPrefixNamespace(
-                collectionAttributePath.GetName(),
-                HdCollectionSchemaTokens->collection.GetString());
-
-        if (!namespaceFound) {
-            return std::nullopt;
-        }
-
         HdContainerDataSourceHandle primDs = _si->GetPrim(primPath).dataSource;
         HdCollectionSchema colSchema =
             HdCollectionsSchema::GetFromParent(primDs)
-            .GetCollection(TfToken(collectionName));
+            .GetCollection(collectionName);
         
         const auto  exprDs = colSchema.GetMembershipExpression();
         if (!exprDs) {

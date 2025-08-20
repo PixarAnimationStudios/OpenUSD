@@ -99,6 +99,9 @@ private:
     EsfPrim _GetPrim() const final;
     EsfStage _GetStage() const final;
     EsfSchemaConfigKey _GetSchemaConfigKey() const final;
+    bool _IsValidMetadataKey(const TfToken &key) const final;
+    VtValue _GetMetadata(const TfToken &key) const final;
+    TfType _GetMetadataValueType(const TfToken &key) const final;
     bool IsPrim() const final;
     bool IsAttribute() const final;
     bool IsRelationship() const final;

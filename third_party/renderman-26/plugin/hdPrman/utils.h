@@ -7,12 +7,19 @@
 #ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_UTILS_H
 #define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_UTILS_H
 
-#include "pxr/pxr.h"
+#include "hdPrman/api.h"
+
 #include "pxr/base/gf/matrix4d.h"
 
-#include "pxr/imaging/hd/dataSource.h"
+#include "pxr/pxr.h"
 
 #include "RiTypesHelper.h" // for RtParamList
+
+#include <cstddef>
+#include <functional>
+#include <tuple>
+#include <type_traits>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -24,6 +31,7 @@ namespace HdPrman_Utils {
 
 /// Adds (or updates) a VtValue parameter to \p params and returns true if
 /// the parameter was set.
+HDPRMAN_API
 bool
 SetParamFromVtValue(
     RtUString const& name,
@@ -31,8 +39,9 @@ SetParamFromVtValue(
     TfToken const& role,
     RtParamList *params);
 
-/// Similar to the function above, with the addition of \p detail, which 
+/// Similar to the function above, with the addition of \p detail, which
 /// specifies how array values should be handled across topology.
+HDPRMAN_API
 bool
 SetPrimVarFromVtValue(
     RtUString const& name,
@@ -68,6 +77,7 @@ RtMatrixToGfMatrix(const RtMatrix4x4 &m)
 /// If \p asset is determined to not be a .tex file, attempt to use the Hio
 /// based Rtx plugin to load the texture.  If \p asset is non-empty, we will
 /// always return _something_
+HDPRMAN_API
 RtUString
 ResolveAssetToRtUString(
     SdfAssetPath const &asset,
@@ -78,6 +88,7 @@ ResolveAssetToRtUString(
 /// Some quantites previously given as options now need to be provided
 /// through different Riley APIs. This method returns a pruned
 /// copy of the options, to be provided to SetOptions().
+HDPRMAN_API
 RtParamList
 PruneDeprecatedOptions(
     const RtParamList &options);
@@ -85,15 +96,18 @@ PruneDeprecatedOptions(
 /// Some options, such as exitat, should only apply to a batch-mode render.
 /// This method returns a pruned copy of the options, removing those
 /// that should only be used in batch rendering.
+HDPRMAN_API
 RtParamList
 PruneBatchOnlyOptions(
     const RtParamList &options);
 
 /// Returns a small set of options for default path tracer configuration.
+HDPRMAN_API
 RtParamList
 GetDefaultRileyOptions();
 
 /// Returns the options driven by environment variables.
+HDPRMAN_API
 RtParamList
 GetRileyOptionsFromEnvironment();
 

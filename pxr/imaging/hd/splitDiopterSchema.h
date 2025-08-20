@@ -49,6 +49,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdSplitDiopterSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdSplitDiopterSchema
+///
 class HdSplitDiopterSchema : public HdSchema
 {
 public:

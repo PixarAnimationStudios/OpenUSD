@@ -183,6 +183,14 @@ void wrapAttributeSpec()
         .def("HasColorSpace", &This::HasColorSpace)
         .def("ClearColorSpace", &This::ClearColorSpace)
 
+        .add_property("limits",
+            &This::GetLimits,
+            &This::SetLimits,
+            "The limits dictionary for this attribute.")
+
+        .def("HasLimits", &This::HasLimits)
+        .def("ClearLimits", &This::ClearLimits)
+
         .def("ListTimeSamples", &_ListTimeSamples,
              return_value_policy<TfPySequenceToList>())
         .def("GetNumTimeSamples", &_GetNumTimeSamples)
@@ -209,5 +217,6 @@ void wrapAttributeSpec()
         
         .setattr("ConnectionPathsKey", SdfFieldKeys->ConnectionPaths)
         .setattr("DisplayUnitKey", SdfFieldKeys->DisplayUnit)
+        .setattr("LimitsKey", SdfFieldKeys->Limits)
         ;
 }

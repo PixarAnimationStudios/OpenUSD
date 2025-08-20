@@ -8,11 +8,10 @@
 #define PXR_IMAGING_HD_GP_GENERATIVE_PROCEDURAL_PLUGIN_REGISTRY_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hdGp/api.h"
+#include "pxr/imaging/hdGp/generativeProceduralPlugin.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/imaging/hf/pluginRegistry.h"
-#include "pxr/imaging/hdGp/api.h"
-
-#include "pxr/imaging/hdGp/generativeProceduralPlugin.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

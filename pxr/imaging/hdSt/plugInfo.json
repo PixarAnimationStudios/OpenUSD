@@ -45,6 +45,12 @@
                         "priority": 0,
                         "displayName": "Scene Index to resolve terminal names."
                     },
+                    "HdSt_RenderPassPruneSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "GL",
+                        "priority": 0,
+                        "displayName": "Scene Index to resolve render pass prune rules."
+                    },
                     "HdSt_TetMeshConversionSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "GL",

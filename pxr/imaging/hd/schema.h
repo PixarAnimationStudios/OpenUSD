@@ -26,7 +26,7 @@ class HdSchema
 {
 public:
     HdSchema(HdContainerDataSourceHandle container)
-    : _container(container) {}
+     : _container(std::move(container)) {}
 
 
     /// Returns the container data source that this schema is interpreting.

@@ -6,26 +6,133 @@
 //
 #include "pxr/usdImaging/usdImaging/instanceProxyPathTranslationSceneIndex.h"
 #include "pxr/imaging/hd/dataSourceHash.h"
-#include "pxr/imaging/hd/instancedBySchema.h"
+#include "pxr/imaging/hd/instanceSchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/trace.h" 
 #include "pxr/base/tf/stackTrace.h"
+
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace { // anonymous implementation namespace
+namespace UsdImaging_InstanceProxyPathTranslationSceneIndexImpl {
 
-// Helper for recursive path translation in data sources.
-static HdDataSourceBaseHandle
+struct Data
+{
+public:
+    Data(TfTokenVector const& proxyPathDataSourceNames)
+        : _proxyPathDataSourceNames(proxyPathDataSourceNames) {}
+    
+    bool
+    ShouldTranslatePathsForDataSourceName(TfToken const& name) const
+    {
+        return std::find(_proxyPathDataSourceNames.begin(),
+                         _proxyPathDataSourceNames.end(),
+                         name) != _proxyPathDataSourceNames.end();
+    }
+private:
+    // Prim-level data source names under which to apply instance proxy path
+    // translation.
+    TfTokenVector _proxyPathDataSourceNames;
+
+};
+
+} // namespace UsdImaging_InstanceProxyPathTranslationSceneIndexImpl
+
+// -----------------------------------------------------------------------------
+
+namespace {
+
+// Forward declare helper for recursive path translation in data sources.
+HdDataSourceBaseHandle
 _TranslateDataSource(
     HdDataSourceBaseHandle const& ds,
-    UsdImaging_InstanceProxyPathTranslationSceneIndexConstPtr const& si);
+    HdSceneIndexBaseConstRefPtr const& si);
 
-// XXX The data source implementation here resembles that in
-// HdPrefixingSceneIndex; perhaps we can find a way to generalize it.
+std::optional<SdfPath>
+_GetPrototypePath(
+    HdInstanceSchema const& instanceSchema,
+    HdSceneIndexBaseConstRefPtr const& sceneIndex)
+{
+    const auto instancerPathDs = instanceSchema.GetInstancer();
+    if (!instancerPathDs) {
+        return {};
+    }
+    const auto prototypeIdxDs = instanceSchema.GetPrototypeIndex();
+    if (!prototypeIdxDs) {
+        return {};
+    }
+
+    const SdfPath instancerPath = instancerPathDs->GetTypedValue(0.0);
+    const int protoIdx = prototypeIdxDs->GetTypedValue(0.0);
+
+    const HdSceneIndexPrim instancerPrim = sceneIndex->GetPrim(instancerPath);
+    HdInstancerTopologySchema instancerTopologySchema =
+        HdInstancerTopologySchema::GetFromParent(instancerPrim.dataSource);
+    
+    if (HdPathArrayDataSourceHandle protoPathsDs =
+            instancerTopologySchema.GetPrototypes()) {
+
+        const VtArray<SdfPath> protoPaths = protoPathsDs->GetTypedValue(0.0);
+        if (protoIdx >= 0 && protoIdx < static_cast<int>(protoPaths.size())) {
+            return protoPaths[protoIdx];
+        }
+    }
+
+    return {};
+}
+
+bool
+_IsValid(HdSceneIndexPrim const &prim)
+{
+    return !prim.primType.IsEmpty() || prim.dataSource;
+}
+
+SdfPath
+_TranslatePath(
+    SdfPath const& path,
+    HdSceneIndexBaseConstRefPtr const& sceneIndex)
+{
+    TRACE_FUNCTION();
+    // Don't translate a path to a valid scene index prim.
+    // We do this for two reasons:
+    // 1. Avoid querying the scene index at each path prefix for the general
+    //    case where the prim is not a descendant of an instance prim.
+    // 2. To not incorreclty translate an instance prim path to its
+    //    prototype path. We want to do this only for *descendant* paths of
+    //    instance prims that don't have a corresponding prim in the scene
+    //    index.
+    //
+    const HdSceneIndexPrim prim = sceneIndex->GetPrim(path);
+    if (_IsValid(prim)) {
+        return path;
+    }
+
+    // Iterate over the prefixes, adding the terminal path element of each
+    // prefix and checking if the prim at the resulting path is an instance.
+    // If it is, replace the result with the prototype path of the instance and
+    // continue iterating over the prefixes.
+    //
+    SdfPath result = SdfPath::AbsoluteRootPath();
+
+    for (SdfPath const& p: path.GetPrefixes()) {
+        result = result.AppendChild(p.GetNameToken());
+
+        HdInstanceSchema instanceSchema = 
+            HdInstanceSchema::GetFromParent(
+                sceneIndex->GetPrim(result).dataSource);
+        
+        if (const std::optional<SdfPath> prototypePath =
+                _GetPrototypePath(instanceSchema, sceneIndex)) {
+            result = *prototypePath;
+        }
+    }
+
+    return result;
+}
 
 // Data source that recursively wraps data sources to apply path translation,
 // given a HdVectorDataSource.
@@ -43,15 +150,14 @@ public:
 
 private:
     _VectorDs(
-        UsdImaging_InstanceProxyPathTranslationSceneIndexConstPtr const&
-            sceneIndex,
+        HdSceneIndexBaseConstRefPtr const& sceneIndex,
         HdVectorDataSourceHandle const& underlyingDs)
     : _sceneIndex(sceneIndex)
     , _underlyingDs(underlyingDs)
     {
     }
 
-    const UsdImaging_InstanceProxyPathTranslationSceneIndexConstPtr _sceneIndex;
+    const HdSceneIndexBaseConstRefPtr _sceneIndex;
     const HdVectorDataSourceHandle _underlyingDs;
 };
 
@@ -71,59 +177,70 @@ public:
 
 protected:
     _ContainerDs(
-        UsdImaging_InstanceProxyPathTranslationSceneIndexConstPtr const&
-            sceneIndex,
+        HdSceneIndexBaseConstRefPtr const& sceneIndex,
         HdContainerDataSourceHandle const& underlyingDs)
     : _sceneIndex(sceneIndex)
     , _underlyingDs(underlyingDs)
     {
     }
 
-    const UsdImaging_InstanceProxyPathTranslationSceneIndexConstPtr _sceneIndex;
+    const HdSceneIndexBaseConstRefPtr _sceneIndex;
     const HdContainerDataSourceHandle _underlyingDs;
 };
 
 // Data source that recursively wraps data sources to apply path translation,
-// given a prim-level conatiner data source.
-class _PrimDs : public _ContainerDs
+// given a prim-level container data source.
+class _PrimDs : public HdContainerDataSource
 {
 public:
+    using ImplDataSharedPtr =
+        UsdImaging_InstanceProxyPathTranslationSceneIndexImpl::DataSharedPtr;
+
     HD_DECLARE_DATASOURCE(_PrimDs);
 
+    TfTokenVector GetNames() override {
+        return _underlyingDs->GetNames();
+    }
     HdDataSourceBaseHandle Get(TfToken const& name) override {
-        return _sceneIndex->ShouldTranslatePathsForDataSourceName(name)
-            ? _ContainerDs::Get(name)
+        return _data->ShouldTranslatePathsForDataSourceName(name)
+            ? _TranslateDataSource(_underlyingDs->Get(name), _sceneIndex)
             : _underlyingDs->Get(name);
     }
 
 private:
     _PrimDs(
-        UsdImaging_InstanceProxyPathTranslationSceneIndexConstPtr const&
-            sceneIndex,
-        HdContainerDataSourceHandle const& underlyingDs)
-    : _ContainerDs(sceneIndex, underlyingDs)
+        HdSceneIndexBaseRefPtr const& inputSceneIndex,
+        HdContainerDataSourceHandle const& underlyingDs,
+        ImplDataSharedPtr const& data)
+    : _sceneIndex(inputSceneIndex)
+    , _underlyingDs(underlyingDs)
+    , _data(data)
     {
     }
+
+    const HdSceneIndexBaseConstRefPtr _sceneIndex;
+    const HdContainerDataSourceHandle _underlyingDs;
+    const ImplDataSharedPtr _data;
 };
 
 // Apply instance path-translation and recursive wrapping to the data source.
-static HdDataSourceBaseHandle
+HdDataSourceBaseHandle
 _TranslateDataSource(
     HdDataSourceBaseHandle const& ds,
-    UsdImaging_InstanceProxyPathTranslationSceneIndexConstPtr const& si)
+    HdSceneIndexBaseConstRefPtr const& si)
 {
     // Translate SdfPath-valued data sources.
     if (auto pathDs = HdPathDataSource::Cast(ds)) {
         SdfPath path = pathDs->GetTypedValue(0.0); 
         return HdRetainedTypedSampledDataSource<SdfPath>
-            ::New(si->TranslatePath(path));
+            ::New(_TranslatePath(path, si));
     }
 
     // Translate VtArray<SdfPath>-valued data sources.
     if (auto pathArrayDs = HdPathArrayDataSource::Cast(ds)) {
         VtArray<SdfPath> pathArray = pathArrayDs->GetTypedValue(0.0);
         for (SdfPath& path: pathArray) {
-            path = si->TranslatePath(path);
+            path = _TranslatePath(path, si);
         }
         return HdRetainedTypedSampledDataSource<
             VtArray<SdfPath>>::New(pathArray);
@@ -142,8 +259,9 @@ _TranslateDataSource(
     return ds;
 }
 
-} // end anonymous implementation namespace
+} // anon
 
+// -----------------------------------------------------------------------------
 
 UsdImaging_InstanceProxyPathTranslationSceneIndexRefPtr
 UsdImaging_InstanceProxyPathTranslationSceneIndex::New(
@@ -160,7 +278,10 @@ UsdImaging_InstanceProxyPathTranslationSceneIndex(
     HdSceneIndexBaseRefPtr const &inputSceneIndex,
     TfTokenVector const& proxyPathTranslationDataSourceNames)
     : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
-    , _proxyPathDataSourceNames(proxyPathTranslationDataSourceNames)
+    , _data(
+        std::make_shared<
+            UsdImaging_InstanceProxyPathTranslationSceneIndexImpl::Data>(
+                proxyPathTranslationDataSourceNames))
 {
 }
 
@@ -170,7 +291,8 @@ UsdImaging_InstanceProxyPathTranslationSceneIndex::GetPrim(
 {
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
     if (prim.dataSource) {
-        prim.dataSource = _PrimDs::New(TfCreateWeakPtr(this), prim.dataSource);
+        prim.dataSource = _PrimDs::New(
+            _GetInputSceneIndex(), prim.dataSource, _data);
     }
     return prim;
 }
@@ -182,55 +304,11 @@ UsdImaging_InstanceProxyPathTranslationSceneIndex::GetChildPrimPaths(
     return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
 }
 
-bool
-UsdImaging_InstanceProxyPathTranslationSceneIndex::
-    ShouldTranslatePathsForDataSourceName(TfToken const& name) const
-{
-    return std::find(_proxyPathDataSourceNames.begin(),
-                     _proxyPathDataSourceNames.end(),
-                     name) != _proxyPathDataSourceNames.end();
-}
-
-SdfPath
-UsdImaging_InstanceProxyPathTranslationSceneIndex::TranslatePath(
-    SdfPath const& path) const
-{
-    if (_instanceToPrototypePathMap.empty()) {
-        // There are no instance->prototype translations to apply.
-        return path;
-    }
-
-    // Look for the closest enclosing instance path.
-    for (SdfPath p = path; p.IsPrimPath(); p = p.GetParentPath()) {
-        auto it = _instanceToPrototypePathMap.find(p);
-        if (it != _instanceToPrototypePathMap.end()) {
-            // Only translate strictly-descendant paths.  Do not
-            // translate paths that directly point at an instance.
-            //
-            // TODO: Need to add support for nested instancing here.
-            //
-            if (path != it->first) {
-                return path.ReplacePrefix(it->first, it->second);
-            } else {
-                return path;
-            }
-        }
-    }
-
-    // No enclosing instance was found, so return path as-is.
-    return path;
-}
-
 void
 UsdImaging_InstanceProxyPathTranslationSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
-    for (const auto& entry: entries) {
-        if (entry.primType == HdPrimTypeTokens->instancer) {
-            _UpdateInstancerLocations(entry.primPath);
-        }
-    }
     _SendPrimsAdded(entries);
 }
 
@@ -239,12 +317,6 @@ UsdImaging_InstanceProxyPathTranslationSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
-    for (const auto& entry: entries) {
-        if (_instancerToInstancesMap.find(entry.primPath) !=
-            _instancerToInstancesMap.end()) {
-            _UpdateInstancerLocations(entry.primPath);
-        }
-    }
     _SendPrimsRemoved(entries);
 }
 
@@ -253,115 +325,7 @@ UsdImaging_InstanceProxyPathTranslationSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
-    for (const auto& entry: entries) {
-        // If instancerTopology was dirtied, update instance map.
-        if (entry.dirtyLocators.Intersects(
-                HdInstancerTopologySchema::GetDefaultLocator()) &&
-            (_instancerToInstancesMap.find(entry.primPath) !=
-             _instancerToInstancesMap.end())) {
-            _UpdateInstancerLocations(entry.primPath);
-        }
-    }
     _SendPrimsDirtied(entries);
-}
-
-void
-UsdImaging_InstanceProxyPathTranslationSceneIndex::_UpdateInstancerLocations(
-    const SdfPath &instancerPath)
-{
-    TRACE_FUNCTION();
-
-    const HdSceneIndexPrim instancerPrim =
-        _GetInputSceneIndex()->GetPrim(instancerPath);
-
-    // Check if the prim no longer exists, or is no longer an instancer.
-    if (!instancerPrim.dataSource
-        || instancerPrim.primType != HdPrimTypeTokens->instancer)  {
-        // Remove all associated instance->prototype mappings.
-        auto instancerIt = _instancerToInstancesMap.find(instancerPath);
-        if (TF_VERIFY(instancerIt != _instancerToInstancesMap.end())) {
-            for (SdfPath const& instancePath: instancerIt->second) {
-                // Remove this instance->prototype mapping.
-                _instanceToPrototypePathMap.erase(instancePath);
-            }
-            // Remove the instancer entry.
-            _instancerToInstancesMap.erase(instancerIt);
-        }
-        return;
-    }
-
-    const HdInstancerTopologySchema topologySchema =
-        HdInstancerTopologySchema::GetFromParent(
-            instancerPrim.dataSource);
-    const HdPathArrayDataSourceHandle prototypesDs =
-        topologySchema.GetPrototypes();
-    if (!prototypesDs) {
-        return;
-    }
-    const HdPathArrayDataSourceHandle instanceLocationsDs =
-        topologySchema.GetInstanceLocations();
-    if (!instanceLocationsDs) {
-        return;
-    }
-    const HdIntArrayVectorSchema instanceIndicesSchema =
-        topologySchema.GetInstanceIndices();
-    const VtArray<SdfPath> prototypePaths =
-        prototypesDs->GetTypedValue(0.0);
-    const VtArray<SdfPath> instanceLocations =
-        instanceLocationsDs->GetTypedValue(0.0);
-
-    // Prototype path and instance index arrays must correspond.
-    if (prototypePaths.size() != instanceIndicesSchema.GetNumElements()) {
-        // An upstream scene index produced invalid instancer topology.
-        TF_CODING_ERROR(
-            "Prototype path count and instance indices count do not match "
-            "(%zu vs %zu) for instancer <%s>; cannot translate proxy paths.",
-            prototypePaths.size(), instanceIndicesSchema.GetNumElements(),
-            instancerPath.GetText());
-        return;
-    }
-
-    // We will update the set of instance paths for this instancer.
-    _PathSet &instancePathSet = _instancerToInstancesMap[instancerPath];
-
-    // Clear out any prior entries; we'll rebuild them below.
-    {
-        for (SdfPath const& instancePath: instancePathSet) {
-            _instanceToPrototypePathMap.erase(instancePath);
-        }
-        instancePathSet.clear();
-    }
-
-    // For each prototype:
-    for (size_t prototypeIndex=0, n=prototypePaths.size();
-        prototypeIndex < n; ++prototypeIndex) {
-        const SdfPath& prototypePath = prototypePaths[prototypeIndex];
-        // Get the instance indices using the prototype.
-        VtArray<int> instanceIndices;
-        if (HdIntArrayDataSourceHandle indicesDs =
-            instanceIndicesSchema.GetElement(prototypeIndex)) {
-            instanceIndices = indicesDs->GetTypedValue(0);
-        }
-        // Map each instance location to its prototype's path.
-        for (int i: instanceIndices) {
-            if (i < 0 || i >= (int) instanceLocations.size()) {
-                TF_CODING_ERROR(
-                    "Invalid instance index %i for instancer <%s>",
-                    i, instancerPath.GetText());
-                continue;
-            }
-            const SdfPath& instancePath = instanceLocations[i];
-            instancePathSet.insert(instancePath);
-            // We need to check for and disregard cases where
-            // the instance is an ancestor of its prototype.
-            // See testUsdImagingGLPointInstancer/pi_ni_material2.usda
-            // for an example where this occurs.
-            if (!instancePath.HasPrefix(prototypePath) &&
-                !prototypePath.HasPrefix(instancePath)) {
-                _instanceToPrototypePathMap[instancePath] = prototypePath;
-            }
-        }
-    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

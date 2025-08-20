@@ -15,6 +15,7 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/usd/sdf/booleanExpression.h"
 #include "pxr/usd/sdr/api.h"
 #include "pxr/usd/sdr/declare.h"
 #include "pxr/usd/sdr/sdfTypeIndicator.h"
@@ -54,6 +55,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((IsDynamicArray, "isDynamicArray"))             \
     ((Connectable, "connectable"))                   \
     ((Tag, "tag"))                                   \
+    ((ShownIf, "shownIf"))                           \
     ((ValidConnectionTypes, "validConnectionTypes")) \
     ((VstructMemberOf, "vstructMemberOf"))           \
     ((VstructMemberName, "vstructMemberName"))       \
@@ -211,6 +213,17 @@ public:
     SDR_API
     std::string GetImplementationName() const;
 
+    /// A boolean expression (\c SdfBooleanExpression) that determines if the
+    /// property should be shown in the UI based on the state of other
+    /// properties of the same node.
+    ///
+    /// If an expression is not provided for `SdrPropertyMetadata->ShownIf` and
+    /// the property instead contains conditional visibility metadata expressed
+    /// in the style of Katana "args" files, an attempt will be made to convert
+    /// the condition into an SdfBooleanExpression-style boolean expression.
+    SDR_API
+    std::string GetShownIf() const;
+
     /// @}
 
 
@@ -334,6 +347,11 @@ protected:
     // Convert this property to a VStruct, which has a special type and a
     // different default value
     void _ConvertToVStruct();
+
+    // If a shownIf expression is not provided, attempt to synthesize one from
+    // other conditional visibility metadata.
+    void _ConvertExpressions(const SdrShaderPropertyUniquePtrVec& properties,
+        SdrShaderNodeConstPtr shader);
 
     // This function is called by SdrShaderNode::_PostProcessProperties once all
     // information is locked in and won't be changed anymore. This allows each

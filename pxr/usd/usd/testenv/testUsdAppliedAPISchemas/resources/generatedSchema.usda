@@ -4,451 +4,710 @@
 )
 
 class "TestMultiApplyAPI" (
-    doc = "Test multi-apply API schema"
+    customData = {
+        string userDocBrief = "Test multi-apply API schema."
+    }
 )
 {
     uniform bool multi:__INSTANCE_NAME__:bool_attr = 1 (
-        doc = "Boolean attribute"
+        customData = {
+            string userDocBrief = "Boolean attribute."
+        }
     )
     rel multi:__INSTANCE_NAME__:relationship (
-        doc = "Relationship"
+        customData = {
+            string userDocBrief = "Relationship."
+        }
     )
     uniform token multi:__INSTANCE_NAME__:token_attr = "foo" (
         allowedTokens = ["foo", "bar", "baz"]
-        doc = "Token attribute"
+        customData = {
+            string userDocBrief = "Token attribute."
+        }
     )
 }
 
 class "TestSingleApplyAPI" (
-    doc = "Test single apply API schema"
+    customData = {
+        string userDocBrief = "Test single apply API schema."
+    }
+    uiHints = {
+        dictionary customDict = {
+            string TestCompose = "TestSingleApplyAPI"
+            int TestSingleApplyAPI = 3
+        }
+        string displayGroup = "TestSingleApplyAPI group"
+    }
 )
 {
     reorder properties = ["single:relationship", "single:token_attr", "single:bool_attr"]
     uniform bool single:bool_attr = 1 (
-        doc = "Boolean attribute"
+        customData = {
+            string userDocBrief = "Boolean attribute."
+        }
+        uiHints = {
+            string displayGroup = "single:bool_attr group"
+            dictionary valueLabels = {
+                bool TestCompose = 1
+                bool single_bool_attr = 0
+            }
+        }
     )
     rel single:relationship (
-        doc = "Relationship"
+        customData = {
+            string userDocBrief = "Relationship."
+        }
     )
     uniform token single:token_attr = "bar" (
         allowedTokens = ["foo", "bar", "baz"]
-        doc = "Token attribute"
+        customData = {
+            string userDocBrief = "Token attribute."
+        }
+    )
+}
+
+class "TestComposeMetadataAPI" (
+    customData = {
+        string userDocBrief = "Test single apply API schema."
+    }
+    uiHints = {
+        dictionary customDict = {
+            string TestCompose = "TestComposeMetadataAPI"
+            int TestComposeMetadataAPI = 1
+        }
+        string displayGroup = "TestComposeMetadataAPI group"
+    }
+)
+{
+    reorder properties = ["compose:relationship", "compose:token_attr", "compose:bool_attr"]
+    uniform bool compose:bool_attr = 1 (
+        customData = {
+            string userDocBrief = "Boolean attribute."
+        }
+    )
+    rel compose:relationship (
+        customData = {
+            string userDocBrief = "Relationship."
+        }
+    )
+    uniform token compose:token_attr = "bar" (
+        allowedTokens = ["foo", "bar", "baz"]
+        customData = {
+            string userDocBrief = "Token attribute."
+        }
+    )
+    uniform bool single:bool_attr = 1 (
+        customData = {
+            string userDocBrief = "Testing duplicate ignore."
+        }
+        uiHints = {
+            string displayGroup = "single:bool_attr group"
+            dictionary valueLabels = {
+                bool TestCompose = 0
+                bool compose_bool_attr = 1
+            }
+        }
     )
 }
 
 class "TestSingleCanApplyAPI" (
-    doc = "Test single apply API schema with canOnlyApplyTo restrictions"
+    customData = {
+        string userDocBrief = "Test single apply API schema with canOnlyApplyTo restrictions."
+    }
 )
 {
     uniform bool singleCan:bool_attr = 1 (
-        doc = "Boolean attribute"
+        customData = {
+            string userDocBrief = "Boolean attribute."
+        }
     )
     rel singleCan:relationship (
-        doc = "Relationship"
+        customData = {
+            string userDocBrief = "Relationship."
+        }
     )
     uniform token singleCan:token_attr = "bar" (
         allowedTokens = ["foo", "bar", "baz"]
-        doc = "Token attribute"
+        customData = {
+            string userDocBrief = "Token attribute."
+        }
     )
 }
 
 class "TestMultiCanApplyAPI" (
-    doc = "Test multi-apply API schema with instance name and canOnlyApplyTo restrictions"
+    customData = {
+        string userDocBrief = "Test multi-apply API schema with instance name and canOnlyApplyTo restrictions."
+    }
 )
 {
     uniform bool multi:__INSTANCE_NAME__:bool_attr = 1 (
-        doc = "Boolean attribute"
+        customData = {
+            string userDocBrief = "Boolean attribute."
+        }
     )
     rel multi:__INSTANCE_NAME__:relationship (
-        doc = "Relationship"
+        customData = {
+            string userDocBrief = "Relationship."
+        }
     )
     uniform token multi:__INSTANCE_NAME__:token_attr = "foo" (
         allowedTokens = ["foo", "bar", "baz"]
-        doc = "Token attribute"
+        customData = {
+            string userDocBrief = "Token attribute."
+        }
     )
 }
 
 class TestTypedSchema "TestTypedSchema" (
-    doc = "Testing typed schema"
+    customData = {
+        string userDocBrief = "Testing typed schema."
+    }
     hidden = true
 )
 {
     reorder properties = ["testRel", "testAttr"]
     string testAttr = "foo" (
         allowedTokens = ["bar", "baz"]
-        doc = "Testing documentation metadata"
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
     )
     rel testRel (
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
         displayGroup = "Display Group"
-        doc = "Testing documentation metadata"
     )
 }
 
 class TestWithBuiltinAppliedSchema "TestWithBuiltinAppliedSchema" (
-    apiSchemas = ["TestSingleApplyAPI", "TestMultiApplyAPI:builtin"]
-    doc = "Test with built-in API schemas"
+    apiSchemas = ["TestSingleApplyAPI", "TestMultiApplyAPI:builtin", "TestComposeMetadataAPI"]
+    customData = {
+        string userDocBrief = "Test with built-in API schemas."
+    }
     hidden = false
+    uiHints = {
+        dictionary customDict = {
+            string TestCompose = "TestWithBuiltinAppliedSchema"
+            int TestWithBuiltinAppliedSchema = 2
+        }
+        string displayGroup = "TestWithBuiltinAppliedSchema group"
+    }
 )
 {
     uniform bool multi:builtin:bool_attr = 0 (
-        doc = "Override bool_attr from TestMultiApplyAPI:builtin"
+        customData = {
+            string userDocBrief = "Override bool_attr from TestMultiApplyAPI:builtin."
+        }
     )
     string testAttr = "foo" (
         allowedTokens = ["bar", "baz"]
-        doc = "Testing documentation metadata"
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
     )
     rel testRel (
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
         displayGroup = "Display Group"
-        doc = "Testing documentation metadata"
     )
 }
 
 class TestTypedSchemaForAutoApply "TestTypedSchemaForAutoApply" (
     apiSchemas = ["TestMultiApplyAPI:builtin"]
-    doc = "Testing typed schema"
+    customData = {
+        string userDocBrief = "Testing typed schema."
+    }
     hidden = true
 )
 {
     string testAttr = "foo" (
         allowedTokens = ["bar", "baz"]
-        doc = "Testing documentation metadata"
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
     )
     rel testRel (
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
         displayGroup = "Display Group"
-        doc = "Testing documentation metadata"
     )
 }
 
 class TestTypedSchemaForAutoApplyConcreteBase "TestTypedSchemaForAutoApplyConcreteBase" (
-    doc = "Testing typed schema"
+    customData = {
+        string userDocBrief = "Testing typed schema."
+    }
     hidden = true
 )
 {
     string testAttr = "foo" (
         allowedTokens = ["bar", "baz"]
-        doc = "Testing documentation metadata"
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
     )
     rel testRel (
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
         displayGroup = "Display Group"
-        doc = "Testing documentation metadata"
     )
 }
 
 class TestDerivedTypedSchemaForAutoApplyConcreteBase "TestDerivedTypedSchemaForAutoApplyConcreteBase" (
-    doc = "Testing typed schema"
+    customData = {
+        string userDocBrief = "Testing typed schema."
+    }
     hidden = true
 )
 {
     string testAttr = "foo" (
         allowedTokens = ["bar", "baz"]
-        doc = "Testing documentation metadata"
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
     )
     rel testRel (
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
         displayGroup = "Display Group"
-        doc = "Testing documentation metadata"
     )
 }
 
 class "TestTypedSchemaForAutoApplyAbstractBase" (
-    doc = "Testing typed schema"
+    customData = {
+        string userDocBrief = "Testing typed schema."
+    }
     hidden = true
 )
 {
     string testAttr = "foo" (
         allowedTokens = ["bar", "baz"]
-        doc = "Testing documentation metadata"
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
     )
     rel testRel (
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
         displayGroup = "Display Group"
-        doc = "Testing documentation metadata"
     )
 }
 
 class TestDerivedTypedSchemaForAutoApplyAbstractBase "TestDerivedTypedSchemaForAutoApplyAbstractBase" (
-    doc = "Testing typed schema"
+    customData = {
+        string userDocBrief = "Testing typed schema."
+    }
     hidden = true
 )
 {
     string testAttr = "foo" (
         allowedTokens = ["bar", "baz"]
-        doc = "Testing documentation metadata"
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
     )
     rel testRel (
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
         displayGroup = "Display Group"
-        doc = "Testing documentation metadata"
     )
 }
 
 class "TestNestedInnerSingleApplyAPI" (
     apiSchemas = ["TestSingleApplyAPI", "TestMultiApplyAPI:bar"]
-    doc = "Test nested single apply API schema: inner schema"
+    customData = {
+        string userDocBrief = "Test nested single apply API schema: inner schema."
+    }
 )
 {
     uniform int innerSingle:int_attr = 3 (
-        doc = "Int attribute"
+        customData = {
+            string userDocBrief = "Int attribute."
+        }
     )
     rel innerSingle:relationship (
-        doc = "Relationship"
+        customData = {
+            string userDocBrief = "Relationship."
+        }
     )
     uniform token innerSingle:token_attr = "inner" (
-        doc = "Token attribute"
+        customData = {
+            string userDocBrief = "Token attribute."
+        }
     )
     token multi:bar:token_attr = "inner_override" (
-        doc = "Override of TestMultiApplyAPI:bar token_attr"
+        customData = {
+            string userDocBrief = "Override of TestMultiApplyAPI:bar token_attr."
+        }
     )
 }
 
 class "TestNestedOuterSingleApplyAPI" (
     apiSchemas = ["TestMultiApplyAPI:foo", "TestNestedInnerSingleApplyAPI"]
-    doc = "Test nested single apply API schema: outer schema"
+    customData = {
+        string userDocBrief = "Test nested single apply API schema: outer schema."
+    }
 )
 {
     uniform int outerSingle:int_attr = 4 (
-        doc = "Int attribute"
+        customData = {
+            string userDocBrief = "Int attribute."
+        }
     )
     rel outerSingle:relationship (
-        doc = "Relationship"
+        customData = {
+            string userDocBrief = "Relationship."
+        }
     )
     uniform token outerSingle:token_attr = "outer" (
-        doc = "Token attribute"
+        customData = {
+            string userDocBrief = "Token attribute."
+        }
     )
     token single:token_attr = "outer_override" (
-        doc = "Override of TestSingleApplyAPI token_attr"
+        customData = {
+            string userDocBrief = "Override of TestSingleApplyAPI token_attr."
+        }
     )
 }
 
 class "TestNestedInnerMultiApplyBaseAPI" (
-    doc = "Test nested multi apply API schema: inner schema base class"
+    customData = {
+        string userDocBrief = "Test nested multi apply API schema: inner schema base class."
+    }
 )
 {
     uniform int innerMulti:__INSTANCE_NAME__:int_attr = 3 (
-        doc = "Int attribute"
+        customData = {
+            string userDocBrief = "Int attribute."
+        }
     )
     rel innerMulti:__INSTANCE_NAME__:relationship (
-        doc = "Relationship"
+        customData = {
+            string userDocBrief = "Relationship."
+        }
     )
     uniform token innerMulti:__INSTANCE_NAME__:token_attr = "inner_base" (
-        doc = "Token attribute"
+        customData = {
+            string userDocBrief = "Token attribute."
+        }
     )
 }
 
 class "TestNestedInnerMultiApplyDerivedAPI" (
     apiSchemas = ["TestNestedInnerMultiApplyBaseAPI:__INSTANCE_NAME__"]
-    doc = "Test nested multi apply API schema: inner schema derived"
+    customData = {
+        string userDocBrief = "Test nested multi apply API schema: inner schema derived."
+    }
 )
 {
-    uniform int innerMulti:__INSTANCE_NAME__:derived:int_attr = 4 (
-        doc = "Int attribute"
-    )
+    uniform int innerMulti:__INSTANCE_NAME__:derived:int_attr = 4
     uniform token innerMulti:__INSTANCE_NAME__:token_attr = "inner_derived" (
-        doc = "Override of TestNestedInnerMultiApplyBaseAPI token_attr"
+        customData = {
+            string userDocBrief = "Override of TestNestedInnerMultiApplyBaseAPI token_attr."
+        }
     )
 }
 
 class "TestNestedOuterMultiApplyAPI" (
     apiSchemas = ["TestNestedInnerMultiApplyDerivedAPI:__INSTANCE_NAME__:builtin", "TestNestedInnerMultiApplyDerivedAPI:__INSTANCE_NAME__:outerMulti", "TestNestedInnerMultiApplyBaseAPI:__INSTANCE_NAME__"]
-    doc = "Test nested multi apply API schema: outer schema"
+    customData = {
+        string userDocBrief = "Test nested multi apply API schema: outer schema."
+    }
 )
 {
     uniform int outerMulti:__INSTANCE_NAME__:int_attr = 5 (
-        doc = "Int attribute"
+        customData = {
+            string userDocBrief = "Int attribute."
+        }
     )
     rel outerMulti:__INSTANCE_NAME__:relationship (
-        doc = "Relationship"
+        customData = {
+            string userDocBrief = "Relationship."
+        }
     )
     uniform token outerMulti:__INSTANCE_NAME__:token_attr = "outer" (
-        doc = "Token attribute"
+        customData = {
+            string userDocBrief = "Token attribute."
+        }
     )
 }
 
 class "TestNestedMultiApplyInSingleApplyAPI" (
     apiSchemas = ["TestNestedOuterMultiApplyAPI:foo", "TestNestedInnerMultiApplyDerivedAPI:bar"]
-    doc = "Test single apply API with builtin nested multi apply API schema instances"
+    customData = {
+        string userDocBrief = "Test single apply API with builtin nested multi apply API schema instances."
+    }
 )
 {
     uniform int innerMulti:bar:int_attr = 30 (
-        doc = "Override of int attribute"
+        customData = {
+            string userDocBrief = "Override of int attribute."
+        }
     )
     uniform int innerMulti:foo:builtin:derived:int_attr = 20 (
-        doc = "Override of int attribute"
+        customData = {
+            string userDocBrief = "Override of int attribute."
+        }
     )
     uniform int int_attr = 10 (
-        doc = "Int attribute"
+        customData = {
+            string userDocBrief = "Int attribute."
+        }
     )
 }
 
 class "TestNestedCycle1API" (
     apiSchemas = ["TestNestedCycle2API"]
-    doc = "Test nested single apply API schema with a cycle #1"
+    customData = {
+        string userDocBrief = "Test nested single apply API schema with a cycle #1."
+    }
 )
 {
     uniform token cycle1:token_attr = "cycle1" (
-        doc = "Token attribute"
+        customData = {
+            string userDocBrief = "Token attribute."
+        }
     )
     uniform int cycle:int_attr = 1 (
-        doc = "Int attribute"
+        customData = {
+            string userDocBrief = "Int attribute."
+        }
     )
 }
 
 class "TestNestedCycle2API" (
     apiSchemas = ["TestNestedCycle3API"]
-    doc = "Test nested single apply API schema with a cycle #2"
+    customData = {
+        string userDocBrief = "Test nested single apply API schema with a cycle #2."
+    }
 )
 {
     uniform token cycle2:token_attr = "cycle2" (
-        doc = "Token attribute"
+        customData = {
+            string userDocBrief = "Token attribute."
+        }
     )
     uniform int cycle:int_attr = 2 (
-        doc = "Int attribute"
+        customData = {
+            string userDocBrief = "Int attribute."
+        }
     )
 }
 
 class "TestNestedCycle3API" (
     apiSchemas = ["TestNestedCycle1API"]
-    doc = "Test nested single apply API schema with a cycle #3"
+    customData = {
+        string userDocBrief = "Test nested single apply API schema with a cycle #3."
+    }
 )
 {
     uniform token cycle3:token_attr = "cycle3" (
-        doc = "Token attribute"
+        customData = {
+            string userDocBrief = "Token attribute."
+        }
     )
     uniform int cycle:int_attr = 3 (
-        doc = "Int attribute"
+        customData = {
+            string userDocBrief = "Int attribute."
+        }
     )
 }
 
 class TestWithBuiltinNestedAppliedSchema "TestWithBuiltinNestedAppliedSchema" (
     apiSchemas = ["TestNestedOuterSingleApplyAPI", "TestNestedCycle1API"]
-    doc = "Test with built-in nested API schemas"
+    customData = {
+        string userDocBrief = "Test with built-in nested API schemas."
+    }
     hidden = false
 )
 {
     string testAttr = "foo" (
         allowedTokens = ["bar", "baz"]
-        doc = "Testing documentation metadata"
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
     )
     rel testRel (
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
         displayGroup = "Display Group"
-        doc = "Testing documentation metadata"
     )
 }
 
 class "TestAutoAppliedToAPI" (
     apiSchemas = ["TestMultiApplyAPI:builtin"]
-    doc = "API that has other API schemas that auto apply to it"
+    customData = {
+        string userDocBrief = "API that has other API schemas that auto apply to it."
+    }
 )
 {
     string testAttr = "foo" (
         allowedTokens = ["bar", "baz"]
-        doc = "Testing documentation metadata"
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
     )
     rel testRel (
+        customData = {
+            string userDocBrief = "Testing documentation metadata."
+        }
         displayGroup = "Display Group"
-        doc = "Testing documentation metadata"
     )
 }
 
 class "TestNestedAutoAppliedToAPI" (
     apiSchemas = ["TestMultiApplyAPI:foo"]
-    doc = """
-API that TestAutoAppliedToAPI auto applies to for testing that API schemas can 
-be nested through auto apply"""
+    customData = {
+        string userDocBrief = """API that TestAutoAppliedToAPI auto applies to for testing that API schemas can 
+be nested through auto apply."""
+    }
 )
 {
 }
 
 class TestNestedAutoAppliedToAPIAppliedToPrim "TestNestedAutoAppliedToAPIAppliedToPrim" (
-    doc = """
-Typed schema that TestNestedAutoAppliedToAPI auto applies to for testing that 
+    customData = {
+        string userDocBrief = """Typed schema that TestNestedAutoAppliedToAPI auto applies to for testing that 
 API schemas with auto applied API schemas can be correctly auto applied to prim
-type schemas"""
+type schemas."""
+    }
 )
 {
 }
 
 class "TestNestedMultiApplyCycle1API" (
     apiSchemas = ["TestNestedMultiApplyCycle2API:__INSTANCE_NAME__:cycle1", "TestNestedMultiApplyCycle3API:__INSTANCE_NAME__"]
-    doc = "Test nested multi apply API schema cycle"
+    customData = {
+        string userDocBrief = "Test nested multi apply API schema cycle."
+    }
 )
 {
     uniform token cycle1:__INSTANCE_NAME__:token_attr = "cycle1" (
-        doc = "Token attribute"
+        customData = {
+            string userDocBrief = "Token attribute."
+        }
     )
 }
 
 class "TestNestedMultiApplyCycle2API" (
     apiSchemas = ["TestNestedMultiApplyCycle3API:__INSTANCE_NAME__:cycle2", "TestNestedMultiApplyCycle1API:__INSTANCE_NAME__"]
-    doc = "Test nested multi apply API schema cycle"
+    customData = {
+        string userDocBrief = "Test nested multi apply API schema cycle."
+    }
 )
 {
     uniform token cycle2:__INSTANCE_NAME__:token_attr = "cycle2" (
-        doc = "Token attribute"
+        customData = {
+            string userDocBrief = "Token attribute."
+        }
     )
 }
 
 class "TestNestedMultiApplyCycle3API" (
     apiSchemas = ["TestNestedMultiApplyCycle1API:__INSTANCE_NAME__:cycle3", "TestNestedMultiApplyCycle2API:__INSTANCE_NAME__"]
-    doc = "Test nested multi apply API schema cycle"
+    customData = {
+        string userDocBrief = "Test nested multi apply API schema cycle."
+    }
 )
 {
     uniform token cycle3:__INSTANCE_NAME__:token_attr = "cycle3" (
-        doc = "Token attribute"
+        customData = {
+            string userDocBrief = "Token attribute."
+        }
     )
 }
 
 class "TestPropCompOneAPI"
 {
     string nestedAttr1 = "one" (
-        doc = "From TestPropCompOneAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompOneAPI."
+        }
         hidden = true
     )
     int nestedAttr2 (
-        doc = "From TestPropCompOneAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompOneAPI."
+        }
         hidden = true
     )
     double nestedAttr3 = 1 (
-        doc = "From TestPropCompOneAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompOneAPI."
+        }
         hidden = true
     )
     point3f nestedAttr4 = (1, 1, 1) (
-        doc = "From TestPropCompOneAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompOneAPI."
+        }
         hidden = false
     )
     int oneAttr1 = 1 (
-        doc = "From TestPropCompOneAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompOneAPI."
+        }
         hidden = false
     )
     double oneAttr2 = 1 (
-        doc = "From TestPropCompOneAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompOneAPI."
+        }
     )
     color3f oneAttr3 (
-        doc = "From TestPropCompOneAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompOneAPI."
+        }
         hidden = false
     )
     token oneAttr4 (
-        doc = "From TestPropCompOneAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompOneAPI."
+        }
     )
     token oneAttr5 (
-        doc = "From TestPropCompOneAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompOneAPI."
+        }
     )
     token otherMetadataAttr
     int twoAttr1 = 1 (
-        doc = "From TestPropCompOneAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompOneAPI."
+        }
         hidden = true
     )
     double twoAttr2 = 1 (
-        doc = "From TestPropCompOneAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompOneAPI."
+        }
         hidden = true
     )
     color3f twoAttr3 = (1, 1, 1) (
-        doc = "From TestPropCompOneAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompOneAPI."
+        }
         hidden = true
     )
     token twoAttr4 = "one" (
-        doc = "From TestPropCompOneAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompOneAPI."
+        }
         hidden = true
     )
     float twoAttr5 = 1 (
-        doc = "From TestPropCompOneAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompOneAPI."
+        }
         hidden = true
     )
 }
@@ -456,63 +715,93 @@ class "TestPropCompOneAPI"
 class "TestPropCompTwoAPI"
 {
     string nestedAttr1 = "two" (
-        doc = "From TestPropCompTwoAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompTwoAPI."
+        }
         hidden = true
     )
     int nestedAttr2 = 2 (
-        doc = "From TestPropCompTwoAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompTwoAPI."
+        }
     )
     double nestedAttr3 = 2 (
-        doc = "From TestPropCompTwoAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompTwoAPI."
+        }
         hidden = true
     )
     color3f nestedAttr4 = (2, 2, 2) (
-        doc = "From TestPropCompTwoAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompTwoAPI."
+        }
         hidden = true
     )
     uniform int oneAttr1 = 2 (
-        doc = "From TestPropCompTwoAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompTwoAPI."
+        }
         hidden = true
     )
     uniform double oneAttr2 = 2 (
-        doc = "From TestPropCompTwoAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompTwoAPI."
+        }
         hidden = true
     )
     uniform color3f oneAttr3 = (2, 2, 2) (
-        doc = "From TestPropCompTwoAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompTwoAPI."
+        }
         hidden = true
     )
     uniform token oneAttr4 = "two" (
-        doc = "From TestPropCompTwoAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompTwoAPI."
+        }
         hidden = true
     )
     uniform string oneAttr5 = "two" (
-        doc = "From TestPropCompTwoAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompTwoAPI."
+        }
         hidden = true
     )
     token otherMetadataAttr = "two" (
         allowedTokens = ["two", "2"]
+        customData = {
+            string userDocBrief = "From TestPropCompTwoAPI."
+        }
         displayGroup = "Two Group"
         displayName = "OtherTwoAttr"
-        doc = "From TestPropCompTwoAPI"
         hidden = false
     )
     int twoAttr1 = 2 (
-        doc = "From TestPropCompTwoAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompTwoAPI."
+        }
         hidden = false
     )
     double twoAttr2 = 2 (
-        doc = "From TestPropCompTwoAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompTwoAPI."
+        }
     )
     color3f twoAttr3 (
-        doc = "From TestPropCompTwoAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompTwoAPI."
+        }
         hidden = false
     )
     token twoAttr4 (
-        doc = "From TestPropCompTwoAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompTwoAPI."
+        }
     )
     double twoAttr5 (
-        doc = "From TestPropCompTwoAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompTwoAPI."
+        }
     )
 }
 
@@ -521,18 +810,26 @@ class "TestPropCompNestedAPI" (
 )
 {
     string nestedAttr1 = "nested" (
-        doc = "From TestPropCompNestedAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompNestedAPI."
+        }
         hidden = false
     )
     int nestedAttr2 (
-        doc = "From TestPropCompNestedAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompNestedAPI."
+        }
     )
     double nestedAttr3 (
-        doc = "From TestPropCompNestedAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompNestedAPI."
+        }
         hidden = false
     )
     color3f nestedAttr4 (
-        doc = "From TestPropCompNestedAPI"
+        customData = {
+            string userDocBrief = "From TestPropCompNestedAPI."
+        }
     )
 }
 
@@ -541,18 +838,26 @@ class TestPropCompsPrim "TestPropCompsPrim" (
 )
 {
     string nestedAttr1 = "prim" (
-        doc = "From TestPropCompsPrim"
+        customData = {
+            string userDocBrief = "From TestPropCompsPrim."
+        }
         hidden = false
     )
     int nestedAttr2 (
-        doc = "From TestPropCompsPrim"
+        customData = {
+            string userDocBrief = "From TestPropCompsPrim."
+        }
     )
     double nestedAttr3 (
-        doc = "From TestPropCompsPrim"
+        customData = {
+            string userDocBrief = "From TestPropCompsPrim."
+        }
         hidden = false
     )
     point3f nestedAttr4 (
-        doc = "From TestPropCompsPrim"
+        customData = {
+            string userDocBrief = "From TestPropCompsPrim."
+        }
     )
 }
 
@@ -584,14 +889,20 @@ class "TestPropertyOversTwoAPI" (
         allowedTokens = ["two", "2"]
     )
     token defined_in_three (
-        doc = "Doc override in Two"
+        customData = {
+            string userDocBrief = "Doc override in Two."
+        }
     )
     token defined_in_two = "two" (
         allowedTokens = ["two", "2"]
-        doc = "Defined in Two"
+        customData = {
+            string userDocBrief = "Defined in Two."
+        }
     )
     int int_defined_in_two = 2 (
-        doc = "Int defined in Two"
+        customData = {
+            string userDocBrief = "Int defined in Two."
+        }
     )
     bool overrides_nothing = 1
 }
@@ -611,10 +922,14 @@ class "TestPropertyOversThreeAPI" (
     )
     token defined_in_three = "three" (
         allowedTokens = ["three", "3"]
-        doc = "Defined in Three"
+        customData = {
+            string userDocBrief = "Defined in Three."
+        }
     )
     token defined_in_two (
-        doc = "Doc override in Three"
+        customData = {
+            string userDocBrief = "Doc override in Three."
+        }
     )
     bool overrides_nothing = 1
     token uniform_token_defined_in_four = "uni_3" (
@@ -629,21 +944,29 @@ class "TestPropertyOversFourAPI" (
 )
 {
     token defined_in_auto = "4" (
-        doc = "Override doc in Four"
+        customData = {
+            string userDocBrief = "Override doc in Four."
+        }
     )
     token defined_in_four_1 = "four" (
         allowedTokens = ["four", "4"]
-        doc = "Defined in Four"
+        customData = {
+            string userDocBrief = "Defined in Four."
+        }
     )
     token defined_in_four_2 = "four" (
         allowedTokens = ["four", "4"]
-        doc = "Defined in Four also"
+        customData = {
+            string userDocBrief = "Defined in Four also."
+        }
     )
     token defined_in_two = "4"
     bool overrides_nothing = 1
     uniform token uniform_token_defined_in_four = "uni_four" (
         allowedTokens = ["uni_four", "uni_4"]
-        doc = "Uniform token defined in Four"
+        customData = {
+            string userDocBrief = "Uniform token defined in Four."
+        }
     )
 }
 
@@ -665,7 +988,9 @@ class "TestPropertyOversMultiOneAPI" (
 {
     token multi:__INSTANCE_NAME__:defined_in_m1 = "multi_one" (
         allowedTokens = ["multi_one", "m1"]
-        doc = "Defined in MultiOne"
+        customData = {
+            string userDocBrief = "Defined in MultiOne."
+        }
     )
     token multi:__INSTANCE_NAME__:defined_in_m2 = "m1"
     token multi:__INSTANCE_NAME__:multiOne:defined_in_m2 = "multiOne:m1"
@@ -690,7 +1015,9 @@ class "TestPropertyOversMultiTwoAPI" (
 {
     token multi:__INSTANCE_NAME__:defined_in_m2 = "multi_two" (
         allowedTokens = ["multi_two", "m2"]
-        doc = "Defined in MultiTwo"
+        customData = {
+            string userDocBrief = "Defined in MultiTwo."
+        }
     )
     bool multi:__INSTANCE_NAME__:overrides_nothing = 1
 }
@@ -703,7 +1030,9 @@ class "TestPropertyOversMultiThreeAPI" (
 {
     token otherMulti:__INSTANCE_NAME__:defined_in_m3 = "multi_three" (
         allowedTokens = ["multi_three", "m3"]
-        doc = "Defined in MultiThree"
+        customData = {
+            string userDocBrief = "Defined in MultiThree."
+        }
     )
     bool otherMulti:__INSTANCE_NAME__:overrides_nothing = 1
 }
@@ -717,7 +1046,9 @@ class TestPropertyOversTypedPrimBase "TestPropertyOversTypedPrimBase" (
 {
     token defined_in_base = "base_def" (
         allowedTokens = ["base_def", "def_base"]
-        doc = "Defined in Base"
+        customData = {
+            string userDocBrief = "Defined in Base."
+        }
     )
     token defined_in_four_2 = "base_over" (
         allowedTokens = ["base_over", "over_base"]
@@ -725,14 +1056,18 @@ class TestPropertyOversTypedPrimBase "TestPropertyOversTypedPrimBase" (
     token defined_in_three = "base_over"
     token defined_in_two = "base_over"
     int int_defined_in_two = 10 (
-        doc = "Int override in Base"
+        customData = {
+            string userDocBrief = "Int override in Base."
+        }
     )
     token multi:two:defined_in_m2 = "base_over" (
         allowedTokens = ["base_over", "over_base"]
     )
     token over_in_base = "base_over" (
         allowedTokens = ["base_over", "over_base"]
-        doc = "Override in Base"
+        customData = {
+            string userDocBrief = "Override in Base."
+        }
     )
     bool overrides_nothing = 1
 }
@@ -746,7 +1081,9 @@ class TestPropertyOversTypedPrimDerived "TestPropertyOversTypedPrimDerived" (
 {
     token defined_in_base = "derived_over" (
         allowedTokens = ["base_def", "def_base"]
-        doc = "Defined in Base"
+        customData = {
+            string userDocBrief = "Defined in Base."
+        }
     )
     token defined_in_four_1 = "derived_over"
     token defined_in_four_2 = "derived_over" (
@@ -755,7 +1092,9 @@ class TestPropertyOversTypedPrimDerived "TestPropertyOversTypedPrimDerived" (
     token defined_in_three = "base_over"
     token defined_in_two = "base_over"
     token int_defined_in_two = "derived_over" (
-        doc = "Int override in Base"
+        customData = {
+            string userDocBrief = "Int override in Base."
+        }
     )
     token multi:two:defined_in_m1 = "derived_over"
     token multi:two:defined_in_m2 = "derived_over" (
@@ -763,7 +1102,9 @@ class TestPropertyOversTypedPrimDerived "TestPropertyOversTypedPrimDerived" (
     )
     token over_in_base = "derived_def" (
         allowedTokens = ["base_over", "over_base"]
-        doc = "Override in Base"
+        customData = {
+            string userDocBrief = "Override in Base."
+        }
     )
     bool overrides_nothing = 1
     token uniform_token_defined_in_four = "uni_derived"
@@ -777,7 +1118,9 @@ class "TestPropertyOversAutoApplyAPI" (
 {
     token defined_in_auto = "auto" (
         allowedTokens = ["auto"]
-        doc = "Defined in Auto"
+        customData = {
+            string userDocBrief = "Defined in Auto."
+        }
     )
     bool overrides_nothing = 1
 }

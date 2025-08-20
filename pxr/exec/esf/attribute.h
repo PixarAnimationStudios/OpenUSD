@@ -45,6 +45,9 @@ public:
     /// 
     ESF_API EsfAttributeQuery GetQuery() const;
 
+    /// \see UsdAttribute::GetConnections
+    ESF_API SdfPathVector GetConnections(EsfJournal *journal) const;
+
 protected:
     /// This constructor may only be called by the scene adapter implementation.
     EsfAttributeInterface(const SdfPath &path) : EsfPropertyInterface(path) {}
@@ -53,6 +56,7 @@ private:
     // These methods must be implemented by the scene adapter implementation.
     virtual SdfValueTypeName _GetValueTypeName() const = 0;
     virtual EsfAttributeQuery _GetQuery() const = 0;
+    virtual SdfPathVector _GetConnections() const = 0;
 };
 
 /// Holds an implementation of EsfAttributeInterface in a fixed-size buffer.

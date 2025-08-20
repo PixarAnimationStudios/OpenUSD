@@ -1573,36 +1573,17 @@ MATERIALX = Dependency("MaterialX", InstallMaterialX, "include/MaterialXCore/Lib
 
 ############################################################
 # Embree
-# For MacOS we use version 3.13.3 to include a fix from Intel
-# to build on Apple Silicon.
-if MacOS():
-    EMBREE_URL = "https://github.com/embree/embree/archive/v3.13.3.zip"
-else:
-    EMBREE_URL = "https://github.com/embree/embree/archive/v3.2.2.zip"
 
 def InstallEmbree(context, force, buildArgs):
+    EMBREE_URL = "https://github.com/RenderKit/embree/archive/refs/tags/v4.3.3.zip"
+
     with CurrentWorkingDirectory(DownloadURL(EMBREE_URL, context, force)):
         extraArgs = [
-            '-DTBB_ROOT={instDir}'.format(instDir=context.instDir),
+            '-DTBB_ROOT="{instDir}"'.format(instDir=context.instDir),
             '-DEMBREE_TUTORIALS=OFF',
             '-DEMBREE_ISPC_SUPPORT=OFF'
         ]
         if MacOS():
-            # Backport fix for clang build errors in debug output operators
-            # to Embree 3.13.3. This is fixed in Embree 4.3.2.
-            # https://github.com/RenderKit/embree/issues/486
-            PatchFile("kernels/subdiv/bezier_curve.h",
-                [('return cout << "QuadraticBezierCurve ( (" << a.u.lower << ", " << a.u.upper << "), " << a.v0 << ", " << a.v1 << ", " << a.v2 << ")";',
-                'return cout << "QuadraticBezierCurve (" << a.v0 << ", " << a.v1 << ", " << a.v2 << ")";'),
-                ]
-            )
-            PatchFile("kernels/geometry/pointi.h",
-                [("friend __forceinline embree_ostream operator<<(embree_ostream cout, const PointMi& line)",
-                "friend __forceinline embree_ostream operator<<(embree_ostream cout, const PointMi& point)"),
-                ('return cout << "Line" << M << "i {" << line.v0 << ", " << line.geomID() << ", " << line.primID() << "}";',
-                'return cout << "Point" << M << "i {" << point.geomID() << ", " << point.primID() << "}";')
-                ]
-            )
             # Suppress clang build warnings as errors
             PatchFile("kernels/CMakeLists.txt",
                 [("DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES})\n"
@@ -1621,7 +1602,8 @@ def InstallEmbree(context, force, buildArgs):
 
         RunCMake(context, force, extraArgs)
 
-EMBREE = Dependency("Embree", InstallEmbree, "include/embree3/rtcore.h")
+EMBREE = Dependency("Embree", InstallEmbree,
+                    "include/embree4/rtcore.h")
 
 ############################################################
 # AnimX
@@ -2477,11 +2459,6 @@ if (Linux() or MacOS() or not context.buildZlib) and ZLIB in requiredDependencie
 # enabled. This currently results in missing symbols.
 if context.buildDraco and context.buildMonolithic and Windows():
     PrintError("Draco plugin can not be enabled for monolithic build on Windows")
-    sys.exit(1)
-
-# The versions of Embree we currently support do not support oneTBB.
-if context.buildOneTBB and context.buildEmbree:
-    PrintError("Embree support cannot be enabled when building against oneTBB")
     sys.exit(1)
 
 # Windows ARM64 requires oneTBB. Since oneTBB is a non-standard option for the

@@ -64,6 +64,7 @@ Exec_PluginComputationDefinition::GetInputKeys(
 VdfNode *
 Exec_PluginComputationDefinition::CompileNode(
     const EsfObjectInterface &providerObject,
+    const TfToken &,
     EsfJournal *const nodeJournal,
     Exec_Program *const program) const
 {
@@ -84,7 +85,7 @@ Exec_PluginComputationDefinition::CompileNode(
 
     VdfOutputSpecs outputSpecs;
     outputSpecs.Connector(
-        GetResultType(providerObject, nodeJournal),
+        GetResultType(providerObject, /* metadataKey */ TfToken(), nodeJournal),
         VdfTokens->out);
 
     return program->CreateNode<Exec_CallbackNode>(

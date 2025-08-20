@@ -38,16 +38,15 @@ pxr_library(exec
         valueKey
 
     PRIVATE_HEADERS
-        authoredValueInvalidationResult.h
         compilationState.h
-        disconnectedInputsInvalidationResult.h
         inputKey.h
-        parallelForRange.h
+        invalidationResult.h
         timeChangeInvalidationResult.h
 
     PRIVATE_CLASSES
         attributeInputNode
         builtinAttributeComputations
+        builtinObjectComputations
         builtinStageComputations
         callbackNode
         compilationTask
@@ -61,15 +60,19 @@ pxr_library(exec
         inputResolver
         inputResolvingCompilationTask
         leafCompilationTask
+        metadataInputNode
         nodeRecompilationInfo
         nodeRecompilationInfoTable
         outputKey
         outputProvidingCompilationTask
         pluginComputationDefinition
+        pluginData
+        privateBuiltinComputations
         program
         registrationBarrier
         requestTracker
         runtime
+        taskCycleDetector
         uncompilationRuleSet
         uncompilationTable
         uncompilationTarget
@@ -80,7 +83,9 @@ pxr_library(exec
         plugInfo.json
 
     DOXYGEN_FILES
-        README.md        
+        README.md 
+        docs/executionSystemDesign.md
+        docs/images/executionSystemDesignEngineArchitecture.drawio.svg       
 )
 
 #

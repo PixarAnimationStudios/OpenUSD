@@ -13,6 +13,7 @@
 #include "pxr/exec/exec/compiledOutputCache.h"
 #include "pxr/exec/exec/compiledLeafNodeCache.h"
 #include "pxr/exec/exec/inputKey.h"
+#include "pxr/exec/exec/metadataInputNode.h"
 #include "pxr/exec/exec/nodeRecompilationInfoTable.h"
 #include "pxr/exec/exec/uncompilationTable.h"
 
@@ -35,6 +36,7 @@
 #include <tuple>
 #include <type_traits>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -42,8 +44,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 class EfTime;
 class EfTimeInputNode;
 class EsfJournal;
-class Exec_AuthoredValueInvalidationResult;
-class Exec_DisconnectedInputsInvalidationResult;
+struct Exec_AttributeValueInvalidationResult;
+struct Exec_DisconnectedInputsInvalidationResult;
+struct Exec_MetadataInvalidationResult;
 class Exec_TimeChangeInvalidationResult;
 class TfBits;
 template <typename> class TfSpan;
@@ -180,18 +183,23 @@ public:
     Exec_DisconnectedInputsInvalidationResult InvalidateDisconnectedInputs();
 
     /// Gathers the information required to invalidate the system and notify
-    /// requests after authored value invalidation.
+    /// requests after attribute authored value invalidation.
     /// 
-    Exec_AuthoredValueInvalidationResult InvalidateAuthoredValues(
-        TfSpan<const SdfPath> invalidProperties);
+    Exec_AttributeValueInvalidationResult InvalidateAttributeAuthoredValues(
+        TfSpan<const SdfPath> invalidAttributes);
 
-    /// Resets the accumulated set of uninitialized input nodes.
+    /// Gathers the information required to invalidate the system and notify
+    /// requests after metadata authored value invalidation.
     /// 
-    /// Returns an executor invalidation requests with all the uninitialized
-    /// input node outputs for the call site to perform initialization and
+    Exec_MetadataInvalidationResult InvalidateMetadataValues(
+        TfSpan<const std::pair<SdfPath, TfToken>> invalidFields);
+
+    /// Resets the accumulated set of input nodes that require invalidation.
+    /// 
+    /// Returns an executor invalidation requests for the call site to perform
     /// executor invalidation.
     /// 
-    VdfMaskedOutputVector ResetUninitializedInputNodes();
+    VdfMaskedOutputVector ResetInputNodesRequiringInvalidation();
 
     /// Gathers the information required to invalidate the system and notify
     /// requests after time has changed.
@@ -316,11 +324,17 @@ private:
     // Updates data structures for a newly-added node.
     void _AddNode(const EsfJournal &journal, const VdfNode *node);
 
-    // Registers an input node for authored value initialization.
-    void _RegisterInputNode(Exec_AttributeInputNode *inputNode);
+    // Registers an attribute input node for authored value initialization.
+    void _RegisterAttributeInputNode(Exec_AttributeInputNode *inputNode);
 
-    // Unregisters an input node from authored value initialization.
-    void _UnregisterInputNode(const Exec_AttributeInputNode *inputNode);
+    // Unregisters an attribute input node from authored value initialization.
+    void _UnregisterAttributeInputNode(const Exec_AttributeInputNode *inputNode);
+
+    // Registers a metadata input node for authored value initialization.
+    void _RegisterMetadataInputNode(Exec_MetadataInputNode *inputNode);
+
+    // Unregisters a metadata input node from authored value initialization.
+    void _UnregisterMetadataInputNode(const Exec_MetadataInputNode *inputNode);
 
     // Notifies the program of a new or deleted connection between the time
     // input node and the given target node.
@@ -354,14 +368,23 @@ private:
     // an aribrary node or output in the network.
     EfLeafNodeCache _leafNodeCache;
 
-    // Collection of compiled input nodes.
-    struct _InputNodeEntry {
+    // Collection of compiled attribute input nodes.
+    struct _AttributeInputNodeEntry {
         Exec_AttributeInputNode *node;
         std::optional<TsSpline> oldSpline;
     };
-    using _InputNodesMap =
-        tbb::concurrent_unordered_map<SdfPath, _InputNodeEntry, SdfPath::Hash>;
-    _InputNodesMap _inputNodes;
+    using _AttributeInputNodesMap =
+        tbb::concurrent_unordered_map<
+        SdfPath, _AttributeInputNodeEntry, SdfPath::Hash>;
+    _AttributeInputNodesMap _attributeInputNodes;
+
+    // Collection of compiled metadata input nodes.
+    using _MetadataInputNodesMap =
+        tbb::concurrent_unordered_map<
+            std::pair<SdfPath, TfToken>,
+            Exec_MetadataInputNode *,
+            TfHash>;
+    _MetadataInputNodesMap _metadataInputNodes;
 
     // Array of outputs connected to the time input node.
     VdfMaskedOutputVector _timeDependentOutputs;
@@ -370,8 +393,8 @@ private:
     // must be re-computed.
     std::atomic<bool> _timeDependentOutputsValid;
 
-    // Input nodes currently queued for initialization.
-    std::vector<VdfId> _uninitializedInputNodes;
+    // Input nodes currently queued for invalidation.
+    std::vector<VdfId> _inputNodesRequiringInvalidation;
 
     // On behalf of the program intercepts and responds to fine-grained network
     // edits.
@@ -405,7 +428,10 @@ NodeType *Exec_Program::CreateNode(
 
     // Input nodes are tracked for authored value initialization.
     if constexpr (std::is_same_v<Exec_AttributeInputNode, NodeType>) {
-        _RegisterInputNode(node);
+        _RegisterAttributeInputNode(node);
+    }
+    else if constexpr (std::is_same_v<Exec_MetadataInputNode, NodeType>) {
+        _RegisterMetadataInputNode(node);
     }
 
     return node;

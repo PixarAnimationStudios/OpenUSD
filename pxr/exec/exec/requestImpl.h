@@ -25,9 +25,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class EfTime;
-class Exec_AuthoredValueInvalidationResult;
+struct Exec_AttributeValueInvalidationResult;
 class Exec_CacheView;
-class Exec_DisconnectedInputsInvalidationResult;
+struct Exec_DisconnectedInputsInvalidationResult;
+struct Exec_MetadataInvalidationResult;
 class Exec_TimeChangeInvalidationResult;
 class Exec_ValueExtractor;
 class ExecSystem;
@@ -46,10 +47,16 @@ class Exec_RequestImpl
 {
 public:
     /// Notify the request of invalid computed values as a consequence of
-    /// authored value invalidation.
+    /// attribute authored value invalidation.
     /// 
     void DidInvalidateComputedValues(
-        const Exec_AuthoredValueInvalidationResult &invalidationResult);
+        const Exec_AttributeValueInvalidationResult &invalidationResult);
+
+    /// Notify the request of invalid computed values as a consequence of
+    /// metadata authored value invalidation.
+    /// 
+    void DidInvalidateComputedValues(
+        const Exec_MetadataInvalidationResult &invalidationResult);
 
     /// Notify the request of invalid computed values as a consequence of
     /// uncompilation.

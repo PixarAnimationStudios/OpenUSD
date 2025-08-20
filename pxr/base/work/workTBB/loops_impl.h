@@ -14,6 +14,12 @@
 #include <tbb/parallel_for_each.h>
 #include <tbb/task_group.h>
 
+
+/// If this is not defined then WorkImpl_ParallelForTBBRange will default
+/// to a WorkDispatcher based WorkParallelForTBBRange that is provided 
+/// in work/loops.h
+#define WORK_IMPL_HAS_PARALLEL_FOR_TBB_RANGE
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// TBB Parallel For Implementation
@@ -48,6 +54,16 @@ WorkImpl_ParallelForN(size_t n, Fn &&callback, size_t grainSize)
     tbb::parallel_for(tbb::blocked_range<size_t>(0,n,grainSize),
         Work_ParallelForN_TBB(callback),
         ctx);
+}
+
+/// Implements WorkParallelForTBBRange
+///
+template <typename RangeType, typename Fn>
+inline void
+WorkImpl_ParallelForTBBRange(const RangeType &range, Fn &&callback)
+{
+    tbb::task_group_context ctx(tbb::task_group_context::isolated);
+    tbb::parallel_for(range, std::forward<Fn>(callback), ctx);
 }
 
 /// Implements WorkParallelForEach

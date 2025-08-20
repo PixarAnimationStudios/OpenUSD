@@ -383,6 +383,8 @@ HdxPickTask::_ConditionStencilWithGLCallback(
             glFrontFace(GL_CCW);
             glDisable(GL_STENCIL_TEST);
         }
+
+        GLF_POST_PENDING_GL_ERRORS();
     };
 
     glGfxCmds->InsertFunctionOp(executeMaskCallback);

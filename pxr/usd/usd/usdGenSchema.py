@@ -1828,9 +1828,10 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
             if apiSchemaType == SINGLE_APPLY or apiSchemaType == MULTIPLE_APPLY:
                 allowedAPIMetadata.append('apiSchemas')
 
-            # Allow 'propertyOrder' for single-apply schemas only.
+            # Allow 'propertyOrder'  and 'uiHints' for single-apply schemas only.
             if apiSchemaType == SINGLE_APPLY:
                 allowedAPIMetadata.append('propertyOrder')
+                allowedAPIMetadata.append('uiHints')
 
             invalidMetadata = [key for key in p.GetAllAuthoredMetadata().keys()
                                if key not in allowedAPIMetadata]

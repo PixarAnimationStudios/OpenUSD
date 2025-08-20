@@ -29,9 +29,10 @@ struct HdPrman_RenderViewDesc
     riley::SampleFilterList sampleFilterList;
     riley::DisplayFilterList displayFilterList;
     GfVec2i resolution;
-    
+
     struct RenderOutputDesc
     {
+        HDPRMAN_API
         RenderOutputDesc();
 
         RtUString name;
@@ -54,7 +55,7 @@ struct HdPrman_RenderViewDesc
 
         std::vector<size_t> renderOutputIndices;
     };
-    
+
     std::vector<DisplayDesc> displayDescs;
 };
 
@@ -64,18 +65,23 @@ struct HdPrman_RenderViewDesc
 class HdPrman_RenderViewContext final
 {
 public:
+    HDPRMAN_API
     HdPrman_RenderViewContext();
 
+    HDPRMAN_API
     void CreateRenderView(
         const HdPrman_RenderViewDesc &desc,
         riley::Riley * riley);
 
+    HDPRMAN_API
     void DeleteRenderView(riley::Riley * riley);
 
+    HDPRMAN_API
     void SetIntegratorId(
         riley::IntegratorId id,
         riley::Riley * riley);
 
+    HDPRMAN_API
     void SetResolution(
         const GfVec2i &resolution,
         riley::Riley * riley);

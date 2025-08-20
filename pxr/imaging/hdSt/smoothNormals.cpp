@@ -263,8 +263,9 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     HdStBufferResourceSharedPtr normals = range->GetResource(_dstName);
     HdStBufferResourceSharedPtr adjacency = adjacencyRange->GetResource();
 
-    if (!points->GetHandle() || !normals->GetHandle() ||
-        !adjacency->GetHandle()) {
+    if (!points || !normals || !adjacency
+        || !points->GetHandle() || !normals->GetHandle()
+        || !adjacency->GetHandle()) {
         return;
     }
 

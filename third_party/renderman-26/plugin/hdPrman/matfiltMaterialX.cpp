@@ -41,6 +41,10 @@
 #include <MaterialXGenOsl/OslShaderGenerator.h>
 #include <MaterialXRender/Util.h>
 
+#if defined(ARCH_OS_WINDOWS)
+#include <Windows.h>
+#endif
+
 namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE

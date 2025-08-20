@@ -13,6 +13,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/arrayEdit.h"
 #include "pxr/base/vt/value.h"
 
 #include "predicateExpressionParser.h"
@@ -37,6 +38,7 @@ TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<SdfPathExpression>();
     TfType::Define<VtArray<SdfPathExpression>>();
+    TfType::Define<VtArrayEdit<SdfPathExpression>>();
 }
 
 SdfPathExpression::ExpressionReference const &
@@ -396,9 +398,7 @@ SdfPathExpression::GetText() const
         return "<unknown>";
     };
 
-    std::vector<Op> opStack;
-
-    auto printLogic = [&opName, &opStack, &result](
+    auto printLogic = [&opName, &result](
         std::vector<std::pair<Op, int>> const &stack) {
 
         const Op op = stack.back().first;

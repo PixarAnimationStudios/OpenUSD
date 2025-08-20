@@ -95,6 +95,10 @@ HgiVulkanTexture::HgiVulkanTexture(
                                (uint32_t) dimensions[1],
                                (uint32_t) dimensions[2] };
 
+    if (desc.type == HgiTextureTypeCubemap) {
+        imageCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    }
+
     imageCreateInfo.usage = HgiVulkanConversions::GetTextureUsage(desc.usage);
     if (imageCreateInfo.usage == 0) {
         TF_CODING_ERROR("Texture usage missing in descriptor");

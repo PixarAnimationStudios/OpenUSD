@@ -541,6 +541,7 @@ HgiGLOps::SetConstantValues(
         glNamedBufferData(ubo, byteSize, dataCopy, GL_STATIC_DRAW);
         glBindBufferBase(GL_UNIFORM_BUFFER, bindIndex, ubo);
         delete[] dataCopy;
+        HGIGL_POST_PENDING_GL_ERRORS();
     };
 }
 
@@ -565,6 +566,7 @@ HgiGLOps::SetConstantValues(
         glNamedBufferData(ubo, byteSize, dataCopy, GL_STATIC_DRAW);
         glBindBufferBase(GL_UNIFORM_BUFFER, bindIndex, ubo);
         delete[] dataCopy;
+        HGIGL_POST_PENDING_GL_ERRORS();
     };
 }
 
@@ -958,6 +960,8 @@ HgiGLOps::ResolveFramebuffer(
         }
         glReadBuffer(restoreReadBuffer);
         glDrawBuffer(restoreDrawBuffer);
+
+        HGIGL_POST_PENDING_GL_ERRORS();
     };
 }
 

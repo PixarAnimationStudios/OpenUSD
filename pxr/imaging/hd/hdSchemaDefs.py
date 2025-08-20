@@ -474,13 +474,109 @@
         DOC = '''
             The MaterialInterfaceMapping schema identifies a material node
             parameter using its two members 'nodePath' and 'inputName'.  
-            
-            See MaterialNetwork schema's documentation on its 
-            'interfaceMappings' member for an example.
+
+            For example, if we are looking at some material network at
+            material/<renderContext>/... and we have a mapping target defined by
+            the following data sources:
+
+            ds at: material/<renderContext>/.../nodePath = 
+                Color_Manipulate
+
+            ds at: material/<renderContext>/.../inputName = 
+                adjustVal
+                
+            The above defines a mapping target to the material node parameter 
+            under that material network, eg:
+                
+            ds at: material/<renderContext>/nodes/Color_Manipulate/parameters/
+                adjustVal 
             ''',
         MEMBERS = [
             ('nodePath', T_TOKEN, {}),
             ('inputName', T_TOKEN, {})
+        ],
+    ),
+
+    #-------------------------------------------------------------------------
+    # materialInterfaceParameter
+    dict(
+        SCHEMA_NAME = 'MaterialInterfaceParameter',
+        DOC = '''
+            The MaterialInterfaceParameter schema describes a single interface
+            parameter (public UI parameter).
+            
+            An interface parameter defines a vector of mappings to material node
+            parameters. These mappings indicate which material node parameters 
+            should be overridden when a value is set on the interface parameter.
+
+            For example, the following data sources define a public UI 
+            "globalVal" that maps to two different node parameters:
+                
+            ds at: material/<renderContext>/interface/parameters/globalVal/
+                mappings/[0]/nodePath = Color_Manipulate
+
+            ds at: material/<renderContext>/interface/parameters/globalVal/
+                mappings/[0]/inputName = adjustVal
+
+            ds at: material/<renderContext>/interface/parameters/globalVal/
+                mappings/[1]/nodePath = Color_RetargetLayer
+
+            ds at: material/<renderContext>/interface/parameters/globalVal/
+                mappings/[1]/inputName = valRemapAmount
+                
+            The above means that the "globalVal" public UI name maps to the
+            following parameter data sources at:
+                
+            ds at: material/<renderContext>/nodes/Color_Manipulate/parameters/
+                adjustVal 
+                
+            ds at: material/<renderContext>/nodes/Color_RetargetLayer/
+                parameters/valRemapAmount
+            ''',
+        SCHEMA_INCLUDES = [
+            '{{LIBRARY_PATH}}/schemaTypeDefs'],
+        MEMBERS = [
+            ('displayGroup', T_TOKEN, 
+             dict(DOC = '''
+                Optional displayGroup. Intended for GUI organization.
+                ''')),
+            ('displayName', T_TOKEN, 
+             dict(DOC = '''
+                Optional displayName. Intended for GUI organization.
+                ''')),
+            ('mappings', 'HdMaterialInterfaceMappingVectorSchema',
+             dict(DOC = '''
+                Maps this singular interface parameter to a vector of target
+                node parameters. Each mapping target is defined by the 
+                InterfaceMappings schema.
+                ''')),
+        ],
+    ),
+
+    #--------------------------------------------------------------------------
+    # materialInterface
+    dict(
+        SCHEMA_NAME = 'MaterialInterface',
+        DOC = '''
+            The MaterialInterface schema describes a material's interface
+            parameters, also known as public UI parameters.
+            ''',
+        SCHEMA_INCLUDES = [
+            '{{LIBRARY_PATH}}/schemaTypeDefs'],
+        MEMBERS = [
+            ('parameters', 'HdMaterialInterfaceParameterContainerSchema',
+             dict(DOC = '''
+                A container for all the material's interface parameters.
+                ''')),
+            ('parameterOrder', 'HdTokenArrayDataSource',
+             dict(DOC = '''
+                Provides the intended order of the interface parameters for UI
+                purposes. Any member of 'parameters' that is not found in this 
+                list can come after all listed members.
+                  
+                The order of display groups is implicitly encoded. As this list 
+                is traversed, display groups are ordered by first encounter.
+                ''')),
         ],
     ),
 
@@ -491,36 +587,13 @@
         DOC = '''
             The MaterialNetwork schema is a container schema that defines a
             material for a specific render context. A network is composed of 
-            nodes, terminals, and interface mappings.    
-
-            Interface mappings define the material's public UI. For example, the
-            following data sources define a public UI "globalVal" that maps to 
-            two different node parameters:
-                
-            ds at: material/<renderContext>/interfaceMappings/globalVal/[0]/
-                nodePath = Color_Manipulate
-
-            ds at: material/<renderContext>/interfaceMappings/globalVal/[0]/
-                inputName = adjustVal
-
-            ds at: material/<renderContext>/interfaceMappings/globalVal/[1]/
-                nodePath = Color_RetargetLayer
-
-            ds at: material/<renderContext>/interfaceMappings/globalVal/[1]/
-                inputName = valRemapAmount
-                
-            The above means that the "globalVal" public UI name maps to the
-            following parameter data sources at:
-                
-            ds at: material/<renderContext>/nodes/Color_Manipulate/parameters/
-                adjustVal 
-                
-            ds at: material/<renderContext>/nodes/Color_RetargetLayer/
-                parameters/valRemapAmount
+            nodes, terminals, and interface.    
 
             See also the Material schema documentation for ASCII art diagram.
             ''',
-        SCHEMA_INCLUDES = ['{{LIBRARY_PATH}}/schemaTypeDefs'],
+        SCHEMA_INCLUDES = [
+            '{{LIBRARY_PATH}}/schemaTypeDefs',
+            '{{LIBRARY_PATH}}/materialInterfaceSchema'],
         MEMBERS = [
             ('nodes', 'HdMaterialNodeContainerSchema',
              dict(DOC = '''
@@ -534,11 +607,11 @@
                 Maps terminal names to material connections. Each connection
                 is a container defined by the MaterialConnection schema.
                 ''')),
-            ('interfaceMappings', 'HdMaterialInterfaceMappingsContainerSchema',
+            ('interface', 'HdMaterialInterfaceSchema',
              dict(DOC = '''
-                Maps interface names (public UI names) to vectors of material 
-                node parameters. Each mapped material node parameter is a 
-                container defined by the InterfaceMappings schema.
+                Describes the material's interface (public UI). A material's
+                public interface has user-authored order, grouping, naming, and
+                mappings.
                 ''')),
             ('config', "HdSampledDataSourceContainerSchema", {}),
         ],
@@ -600,11 +673,11 @@
             There needs to be an interface mapping defined for 
             "globalSpecularKface", which could look like this:
 
-            ds at: material/<renderContext>/interfaceMappings/
-                globalSpecularKface/[0]/nodePath = MaterialLayer
+            ds at: material/<renderContext>/interface/parameters/
+                globalSpecularKface/mappings/[0]/nodePath = MaterialLayer
                 
-            ds at: material/<renderContext>/interfaceMappings/
-                globalSpecularKface/[0]/inputName = specularKface
+            ds at: material/<renderContext>/interface/parameters/
+                globalSpecularKface/mappings/[0]/inputName = specularKface
 
             The above means that the "globalSpecularKface" public UI name will 
             map to the node parameter "specularKface", and for example, this 

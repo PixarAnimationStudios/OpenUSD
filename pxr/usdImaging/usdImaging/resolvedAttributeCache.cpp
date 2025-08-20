@@ -17,19 +17,27 @@ UsdImaging_MaterialBindingImplData::ClearCaches()
 
     // Speed up destruction of the cache by resetting the unique_ptrs held 
     // within in parallel.
-    WorkParallelForEach(
-        _bindingsCache.begin(), 
-        _bindingsCache.end(), 
-        [](UsdShadeMaterialBindingAPI::BindingsCache::value_type &entry){
-            entry.second.reset();
-        });
+    using BindCacheRange = 
+        UsdShadeMaterialBindingAPI::BindingsCache::range_type;
+    WorkParallelForTBBRange(_bindingsCache.range(), 
+        []( const BindCacheRange &range) {
+            for (auto entryIt = range.begin(); entryIt != range.end(); 
+                ++entryIt) {
+                entryIt->second.reset();
+            }
+        }
+    );
 
-    WorkParallelForEach(
-        _collQueryCache.begin(), 
-        _collQueryCache.end(), 
-        [](UsdShadeMaterialBindingAPI::CollectionQueryCache::value_type &entry){
-            entry.second.reset();
-        });
+    using CollQueryRange =
+        UsdShadeMaterialBindingAPI::CollectionQueryCache::range_type;
+    WorkParallelForTBBRange(_collQueryCache.range(), 
+        []( const CollQueryRange &range) {
+            for (auto entryIt = range.begin(); entryIt != range.end(); 
+                ++entryIt) {
+                entryIt->second.reset();
+            }
+        }
+    );
 
     _bindingsCache.clear();
     _collQueryCache.clear();

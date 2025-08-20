@@ -20,6 +20,7 @@
 #include "pxr/usdImaging/usdImaging/unloadedDrawModeSceneIndex.h"
 
 #include "pxr/usdImaging/usdImaging/geomModelSchema.h"
+#include "pxr/usdImaging/usdImaging/modelSchema.h"
 #include "pxr/usdImaging/usdImaging/materialBindingsSchema.h"
 
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
@@ -128,9 +129,14 @@ _InstanceDataSourceNames()
     TfTokenVector result = {
         UsdImagingMaterialBindingsSchema::GetSchemaToken(),
         HdPurposeSchema::GetSchemaToken(),
-        // We include model to aggregate scene indices
+        // We include the geom model schema in order to aggregate scene indices
         // by draw mode.
-        UsdImagingGeomModelSchema::GetSchemaToken()
+        UsdImagingGeomModelSchema::GetSchemaToken(),
+        // We include the model schema in order to aggregate scene indices by
+        // assetInfo, which may be used in material networks for texture
+        // asset resolution.  See HdDataSourceMaterialNetworkInterface::
+        // GetModelAssetName().
+        UsdImagingModelSchema::GetSchemaToken()
     };
 
     for (const UsdImagingSceneIndexPluginUniquePtr &plugin :

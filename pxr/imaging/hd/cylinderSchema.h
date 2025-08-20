@@ -49,6 +49,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdCylinderSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdCylinderSchema
+///
 class HdCylinderSchema : public HdSchema
 {
 public:

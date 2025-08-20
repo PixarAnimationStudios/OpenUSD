@@ -7,9 +7,11 @@
 #ifndef PXR_IMAGING_HD_GP_GENERATIVE_PROCEDURAL_RESOLVING_SCENE_INDEX_H
 #define PXR_IMAGING_HD_GP_GENERATIVE_PROCEDURAL_RESOLVING_SCENE_INDEX_H
 
+#include "pxr/pxr.h"
+#include "pxr/imaging/hdGp/api.h"
 #include "pxr/imaging/hdGp/generativeProcedural.h"
-#include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/base/tf/denseHashSet.h"
+#include "pxr/imaging/hd/filteringSceneIndex.h"
 
 #include <tbb/concurrent_unordered_map.h>
 #include <mutex>
@@ -46,7 +48,6 @@ class HdGpGenerativeProceduralResolvingSceneIndex
     : public HdSingleInputFilteringSceneIndexBase
 {
 public:
-
     static HdGpGenerativeProceduralResolvingSceneIndexRefPtr New(
             const HdSceneIndexBaseRefPtr &inputScene) {
         return TfCreateRefPtr(
@@ -63,14 +64,19 @@ public:
 
     /// SATISFYING HdSceneIndexBase ///////////////////////////////////////////
 
+    HDGP_API
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
+
+    HDGP_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
 protected:
 
+    HDGP_API
     HdGpGenerativeProceduralResolvingSceneIndex(
         const HdSceneIndexBaseRefPtr &inputScene);
 
+    HDGP_API
     HdGpGenerativeProceduralResolvingSceneIndex(
         const HdSceneIndexBaseRefPtr &inputScene,
         const TfToken &targetPrimTypeName);
@@ -234,7 +240,7 @@ private:
     mutable _MapMutex _dependenciesMutex;
     mutable _MapMutex _proceduralsMutex;
 
-    TfToken _targetPrimTypeName;
+    const TfToken _targetPrimTypeName;
 
     bool _attemptAsync;
 };

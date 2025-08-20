@@ -11,6 +11,11 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 TF_WRAP_MODULE
 {
+    TF_WRAP(UsdUIObjectHints);
+    TF_WRAP(UsdUIPrimHints);
+    TF_WRAP(UsdUIPropertyHints);
+    TF_WRAP(UsdUIAttributeHints);
+
     // Generated Schema classes.  Do not remove or edit the following line.
     #include "generatedSchema.module.h"
 }

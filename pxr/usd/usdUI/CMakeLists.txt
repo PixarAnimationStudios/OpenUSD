@@ -10,9 +10,21 @@ pxr_library(usdUI
         sdf
         usd
 
+    PUBLIC_CLASSES
+        attributeHints
+        objectHints
+        primHints
+        propertyHints
+
     PUBLIC_HEADERS
         api.h
-    
+
+    PYMODULE_CPPFILES
+        wrapAttributeHints.cpp
+        wrapObjectHints.cpp
+        wrapPrimHints.cpp
+        wrapPropertyHints.cpp
+
     PYMODULE_FILES
         __init__.py
 
@@ -21,8 +33,14 @@ pxr_library(usdUI
 )
 
 pxr_test_scripts(
+    testenv/testUsdUIHints.py
     testenv/testUsdUINodeGraphNode.py
     testenv/testUsdUISceneGraphPrim.py
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUIHints
+    DEST testUsdUIHints
 )
 
 pxr_install_test_dir(
@@ -34,6 +52,10 @@ pxr_install_test_dir(
     DEST testUsdUISceneGraphPrim
 )
 
+pxr_register_test(testUsdUIHints
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUIHints"
+)
 pxr_register_test(testUsdUINodeGraphNode
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUINodeGraphNode"

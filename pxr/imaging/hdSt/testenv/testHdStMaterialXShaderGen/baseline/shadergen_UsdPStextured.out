@@ -10,9 +10,9 @@
         "materialTag": "defaultMaterialTag"
     }, 
     "textures": {
-        "roughness": {
+        "image_color_file": {
         },
-        "diffuseColor": {
+        "image_roughness_file": {
         }
     }, 
     "techniques": {
@@ -130,8 +130,8 @@ int u_numActiveLightSources = 0;
 #endif
 
 // Define MaterialX to Hydra Sampler mappings
-#define image_roughness_file HdGetSampler_roughness()
-#define image_color_file HdGetSampler_diffuseColor()
+#define image_color_file HdGetSampler_image_color_file()
+#define image_roughness_file HdGetSampler_image_roughness_file()
 
 struct LightData
 {
@@ -1763,9 +1763,9 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
     NG_tiledimage_color3(image_color_file, image_color_default, geomprop_UV0_out1, image_color_uvtiling, image_color_uvoffset, image_color_realworldimagesize, image_color_realworldtilesize, image_color_filtertype, image_color_framerange, image_color_frameoffset, image_color_frameendaction, image_color_out);
     float image_roughness_out = 0.0;
     NG_tiledimage_float(image_roughness_file, image_roughness_default, geomprop_UV0_out1, image_roughness_uvtiling, image_roughness_uvoffset, image_roughness_realworldimagesize, image_roughness_realworldtilesize, image_roughness_filtertype, image_roughness_framerange, image_roughness_frameoffset, image_roughness_frameendaction, image_roughness_out);
-    surfaceshader SR_brass1_out = surfaceshader(vec3(0.0),vec3(0.0));
-    IMP_UsdPreviewSurface_surfaceshader(image_color_out, emissiveColor, useSpecularWorkflow, specularColor, metallic, image_roughness_out, clearcoat, clearcoatRoughness, opacity, opacityMode, opacityThreshold, ior, normal, displacement, occlusion, SR_brass1_out);
-    vec4 mxOut = vec4(SR_brass1_out.color, 1.0);
+    surfaceshader Surface_out = surfaceshader(vec3(0.0),vec3(0.0));
+    IMP_UsdPreviewSurface_surfaceshader(image_color_out, emissiveColor, useSpecularWorkflow, specularColor, metallic, image_roughness_out, clearcoat, clearcoatRoughness, opacity, opacityMode, opacityThreshold, ior, normal, displacement, occlusion, Surface_out);
+    vec4 mxOut = vec4(Surface_out.color, 1.0);
     mxOut = ApplyColorOverrides(mxOut);
     return mxOut;
 }

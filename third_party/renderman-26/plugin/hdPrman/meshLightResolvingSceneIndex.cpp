@@ -31,7 +31,7 @@
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
-#include "pxr/imaging/hd/schema.h" 
+#include "pxr/imaging/hd/schema.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
@@ -54,7 +54,7 @@ PXR_NAMESPACE_OPEN_SCOPE
  * both traditional Rprims and Sprims. Hydra generally treats them as Rprims.
  * It's up to the render bridge to notice the applied API and do something
  * about it.
- * 
+ *
  * For Prman, that means splitting the mesh light into a mesh (Rprim) and a
  * light (Sprim). The Rprim part is easy enough -- we just take the incoming
  * prim (called the "origin" prim throughout) and strip off the features
@@ -62,55 +62,55 @@ PXR_NAMESPACE_OPEN_SCOPE
  * mesh. The Sprim part (which I'll call the "meshLight" prim, after its prim
  * type) is a bit trickier, due to limitations in Prman and other special
  * considerations.
- * 
+ *
  * The first issue is that Prman does not allow us to reuse the riley geometry
  * prototype we create for the stripped-down origin (mesh) prim as the geometry
  * prototype for the meshLight prim. https://jira.pixar.com/browse/RMAN-19686
  * We must make a second riley geometry prototype for the meshLight prim.
  * This required a special, prototype-only path through HdPrman_Gprim::Sync(),
- * which is triggered by certain gprim prim types. In our case, 
+ * which is triggered by certain gprim prim types. In our case,
  * "meshLightSource" will be the prim type of this third prim. (I call this
  * the "source" prim.) The source prim must be synced before we can fully sync
  * the meshLight prim, since we need its geometry prototype id to create the
  * riley light instance for the meshLight. We resolve this by explicitly syncing
  * the source mesh during sync of the meshLight; see HdPrmanLight::Sync() for
  * details.
- * 
+ *
  * The next issue is that there is a parameter in the Light API that controls
  * the color of the light emitted by the meshLight prim based on the material
  * bound to the origin prim. This parameter ("materialSyncMode") has three
  * possible values:
- * 
+ *
  *   * "materialGlowTintsLight" : The "glow" signal from the bound material
  *     should be forwarded to the light shader's "textureColor" input. This is
  *     the default for mesh lights.
- * 
+ *
  *   * "independent" : The bound material's glow signal and the light's emission
  *     color are independent of one another, and both affect the scene.
- * 
+ *
  *   * "noMaterialResponse" : The material bound to the mesh light has no
  *     contribution to lighting at all. This means that it's not directly
  *     visible at all, and only the light's emission affects the scene.
- * 
+ *
  * When set to "materialGlowTintsLight", we have to alter the light shader
  * we got from the Light API on the incoming origin prim to include the glow
  * signal from the bound material and any additional shader nodes it requires.
- * 
+ *
  * When set to "noMaterialResponse", we have to omit (or remove) the stripped-
  * down origin prim. By not passing it through at all, we achieve the required
  * visual response.
- * 
+ *
  * When set to "independent", we do not have to modify anything, since our
  * overall approach is one of independence. We can just use the light shader
  * we got from the Light API as-is, and forward the stripped-down origin prim
  * as normal.
- * 
+ *
  * The final issue we can work around is that there is another bug in Prman
  * that causes a crash when the geometry prototype and light shader associated
- * with a light instance both undergo rapid simultaneous changes. 
+ * with a light instance both undergo rapid simultaneous changes.
  * https://jira.pixar.com/browse/RMAN-20136. We won't handle that issue here;
  * see HdPrmanLight::Sync() for details.
- * 
+ *
  * There are still some caveats. First, mesh lights are not expected to work
  * without the stage scene index. They are a Hydra-2.0 thing. Backporting them
  * to legacy hydra would be challenging given the constraints of the scene
@@ -122,7 +122,7 @@ PXR_NAMESPACE_OPEN_SCOPE
  * is set to "materialGlowTintsLight". This is because there is currently no
  * way to communicate multiple, subset-specific light shader resources through
  * the scene delegate interface. Material bindings on subsets are ignored. (Note
- * however that some of the code below anticipates support for geom subsets 
+ * however that some of the code below anticipates support for geom subsets
  * becoming possible in the future.)
  */
 
@@ -152,7 +152,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (meshLight_dep_visibility)
     (meshLight_dep_volumeFieldBinding)
     (meshLight_dep_xform)
-    
+
     // synthesized prim names
     ((meshLightLightName, "__meshLight_light"))
     ((meshLightSourceName, "__meshLight_sourceMesh"))
@@ -201,7 +201,7 @@ _HasValidMaterialNetwork(
     const HdSceneIndexPrim& prim)
 {
 #if HD_API_VERSION >= 63
-    HdMaterialNetworkSchema netSchema = 
+    HdMaterialNetworkSchema netSchema =
         HdMaterialSchema::GetFromParent(prim.dataSource)
             .GetMaterialNetwork(_tokens->renderContext);
     return netSchema.GetNodes() && netSchema.GetTerminals();
@@ -280,7 +280,7 @@ SdfPathVector
 _GetLightFilterPaths(
     const HdContainerDataSourceHandle &inputContainer)
 {
-    if (HdLightSchema lightSchema = 
+    if (HdLightSchema lightSchema =
             HdLightSchema::GetFromParent(inputContainer)) {
         if (auto dataSource = HdTypedSampledDataSource<SdfPathVector>::Cast(
                 lightSchema.GetContainer()->Get(HdTokens->filters))) {
@@ -321,7 +321,7 @@ _BuildLightShaderDataSource(
 #if PXR_VERSION <= 2308 && defined(ARCH_OS_WINDOWS)
     const HdContainerDataSourceHandle originalShaderDS;
 #else
-    const HdContainerDataSourceHandle& originalShaderDS = 
+    const HdContainerDataSourceHandle& originalShaderDS =
         HdMaterialSchema::GetFromParent(originPrim.dataSource)
             .GetMaterialNetwork(_tokens->renderContext)
 #if HD_API_VERSION >= 63
@@ -370,7 +370,7 @@ _BuildLightShaderDataSource(
             "modified\n", originPrim.primType.GetText(), originPath.GetText());
         return originalShaderDS;
     }
-    
+
     // interface with the material shader network
 #if PXR_VERSION <= 2308
     const HdDataSourceMaterialNetworkInterface srcMatNI(matPath, matDS);
@@ -392,7 +392,7 @@ _BuildLightShaderDataSource(
     // check the terminal's upstream node is of a supported type
     const TfToken& nodeType = srcMatNI.GetNodeType(
         terminalConn.second.upstreamNodeName);
-    
+
     if (nodeType != expectedShader) {
         // unsupported node type; return unmodified
         TF_DEBUG(HDPRMAN_MESHLIGHT).Msg("%s terminal upstream node is not "
@@ -412,7 +412,7 @@ _BuildLightShaderDataSource(
     // look up the light terminal connection
     const auto lightTC = shaderNI.GetTerminalConnection(
         HdMaterialTerminalTokens->light);
-    
+
     // try for material's glow input connection
     const auto glowIC = srcMatNI.GetNodeInputConnection(
         terminalConn.second.upstreamNodeName, glowParam);
@@ -423,7 +423,7 @@ _BuildLightShaderDataSource(
             lightTC.second.upstreamNodeName,
             _tokens->textureColor,
             glowIC);
-        
+
         // return the modified light shader
 
         // XXX: We a local copy of the nodes, since shader networks cannot
@@ -482,7 +482,7 @@ _BuildLightDependenciesDataSource(
     static const HdLocatorDataSourceHandle lightDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdLightSchema::GetDefaultLocator());
-    
+
     // light.filters
     static const HdLocatorDataSourceHandle lightFiltersDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
@@ -511,19 +511,19 @@ _BuildLightDependenciesDataSource(
     static const HdLocatorDataSourceHandle visibilityDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdVisibilitySchema::GetDefaultLocator());
-    
+
     // xform
     static const HdLocatorDataSourceHandle xformDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdXformSchema::GetDefaultLocator());
-    
+
     // instanced by
     static const HdLocatorDataSourceHandle instancedByDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdInstancedBySchema::GetDefaultLocator());
-    
+
     // Build dependencies data source
-    
+
     // Read "-->" in comments as "depends on"
 
     std::vector<TfToken> names;
@@ -572,7 +572,7 @@ _BuildLightDependenciesDataSource(
         .SetDependedOnDataSourceLocator(visibilityDSL)
         .SetAffectedDataSourceLocator(visibilityDSL)
         .Build());
-    
+
     // meshLight.xform --> origin.xform
     names.push_back(_tokens->meshLight_dep_xform);
     sources.push_back(HdDependencySchema::Builder()
@@ -580,7 +580,7 @@ _BuildLightDependenciesDataSource(
         .SetDependedOnDataSourceLocator(xformDSL)
         .SetAffectedDataSourceLocator(xformDSL)
         .Build());
-    
+
     // meshLight.instancedBy --> origin.instancedBy
     names.push_back(_tokens->meshLight_dep_instancedBy);
     sources.push_back(HdDependencySchema::Builder()
@@ -606,7 +606,7 @@ _BuildLightDependenciesDataSource(
         .SetAffectedDataSourceLocator(materialDSL)
         .Build());
 #endif
-    
+
     // XXX: Light filter dependencies *should* look like this:
     //   meshLight.material --> origin.material,
     //   origin.material --> origin.light.filters,
@@ -630,7 +630,7 @@ _BuildLightDependenciesDataSource(
             .Build());
     }
 
-    // And since these dependencies are dynamic, 
+    // And since these dependencies are dynamic,
     // meshLight.__dependencies --> origin.light.filters
     static const TfToken filtersDepToken("meshLight_dep_dependencies_filters");
     names.push_back(filtersDepToken);
@@ -675,21 +675,21 @@ _BuildLightDataSource(
                 bindingSourceDS,
                 inputSceneIndex)));
     }
-      
+
     // Add a link to the source mesh
     names.push_back(HdLightSchemaTokens->light);
     sources.push_back(HdRetainedContainerDataSource::New(
         HdPrmanTokens->sourceGeom,
         HdRetainedTypedSampledDataSource<SdfPath>::New(
             originPath.AppendChild(_tokens->meshLightSourceName))));
-    
+
     // Add dependencies
     names.push_back(HdDependenciesSchemaTokens->__dependencies);
     sources.push_back(
         _BuildLightDependenciesDataSource(
             originPath, originPrim.dataSource,
             bindingSourcePath, bindingSourceDS));
-    
+
     // Knock out primvars
     names.push_back(HdPrimvarsSchemaTokens->primvars);
     sources.push_back(HdBlockDataSource::New());
@@ -746,7 +746,7 @@ _BuildSourceDependenciesDataSource(
     static const HdLocatorDataSourceHandle primvarsDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdPrimvarsSchema::GetDefaultLocator());
-    
+
     // material binding
     static const HdLocatorDataSourceHandle materialBindingsDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
@@ -755,14 +755,14 @@ _BuildSourceDependenciesDataSource(
 #else
             HdMaterialBindingSchema::GetDefaultLocator());
 #endif
-    
+
     // volume field binding
     static const HdLocatorDataSourceHandle volumeFieldBindingDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdVolumeFieldBindingSchema::GetDefaultLocator());
 
     // Build dependencies data source
-    
+
     // Read "-->" in comments as "depends on"
 
     std::vector<TfToken> names;
@@ -770,7 +770,7 @@ _BuildSourceDependenciesDataSource(
 
     const auto originPathDS = HdRetainedTypedSampledDataSource<SdfPath>
         ::New(originPath);
-    
+
     // source.mesh --> origin.mesh
     names.push_back(_tokens->meshLight_dep_mesh);
     sources.push_back(HdDependencySchema::Builder()
@@ -794,7 +794,7 @@ _BuildSourceDependenciesDataSource(
         .SetDependedOnDataSourceLocator(materialBindingsDSL)
         .SetAffectedDataSourceLocator(materialBindingsDSL)
         .Build());
-    
+
     // source.volumeFieldBinding --> origin.volumeFieldBinding
     names.push_back(_tokens->meshLight_dep_volumeFieldBinding);
     sources.push_back(HdDependencySchema::Builder()
@@ -840,7 +840,7 @@ _BuildSourceDataSource(
 
     HdContainerDataSourceHandle handles[2] = {
         HdRetainedContainerDataSource::New(names.size(), names.data(), sources.data()),
-        originDS 
+        originDS
     };
 #if PXR_VERSION <= 2305 && defined(ARCH_OS_WINDOWS)
     return HdContainerDataSourceHandle();
@@ -864,7 +864,7 @@ _BuildMeshDependenciesDataSource(
     static const HdLocatorDataSourceHandle primvarsDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdPrimvarsSchema::GetDefaultLocator());
-    
+
     // material binding
     static const HdLocatorDataSourceHandle materialBindingDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
@@ -878,7 +878,7 @@ _BuildMeshDependenciesDataSource(
     static const HdLocatorDataSourceHandle visibilityDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdVisibilitySchema::GetDefaultLocator());
-    
+
     // xform
     static const HdLocatorDataSourceHandle xformDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
@@ -888,14 +888,14 @@ _BuildMeshDependenciesDataSource(
     static const HdLocatorDataSourceHandle instancedByDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdInstancedBySchema::GetDefaultLocator());
-    
+
     // volume field binding
     static const HdLocatorDataSourceHandle volumeFieldBindingDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
             HdVolumeFieldBindingSchema::GetDefaultLocator());
 
     // Build dependencies data source
-    
+
     // Read "-->" in comments as "depends on"
 
     std::vector<TfToken> names;
@@ -903,7 +903,7 @@ _BuildMeshDependenciesDataSource(
 
     const auto originPathDS = HdRetainedTypedSampledDataSource<SdfPath>
         ::New(originPath);
-    
+
     // mesh.mesh --> origin.mesh
     names.push_back(_tokens->meshLight_dep_mesh);
     sources.push_back(HdDependencySchema::Builder()
@@ -927,7 +927,7 @@ _BuildMeshDependenciesDataSource(
         .SetDependedOnDataSourceLocator(materialBindingDSL)
         .SetAffectedDataSourceLocator(materialBindingDSL)
         .Build());
-    
+
     // mesh.visibility --> origin.visibility
     names.push_back(_tokens->meshLight_dep_visibility);
     sources.push_back(HdDependencySchema::Builder()
@@ -951,7 +951,7 @@ _BuildMeshDependenciesDataSource(
         .SetDependedOnDataSourceLocator(instancedByDSL)
         .SetAffectedDataSourceLocator(instancedByDSL)
         .Build());
-    
+
     // source.volumeFieldBinding --> origin.volumeFieldBinding
     names.push_back(_tokens->meshLight_dep_volumeFieldBinding);
     sources.push_back(HdDependencySchema::Builder()
@@ -981,7 +981,7 @@ HdPrmanMeshLightResolvingSceneIndex::HdPrmanMeshLightResolvingSceneIndex(
     : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
 { }
 
-HdSceneIndexPrim 
+HdSceneIndexPrim
 HdPrmanMeshLightResolvingSceneIndex::GetPrim(
     const SdfPath &primPath) const
 {
@@ -1002,7 +1002,7 @@ HdPrmanMeshLightResolvingSceneIndex::GetPrim(
         // The stripped-down origin prim -> "mesh" or "volume"
         if (primPath.GetNameToken() == _tokens->meshLightMeshName
             && _meshLights.at(parentPath)) {
-            HdContainerDataSourceHandle handles[2] = { 
+            HdContainerDataSourceHandle handles[2] = {
                 HdRetainedContainerDataSource::New(
                     HdLightSchemaTokens->light, HdBlockDataSource::New(),
                     HdMaterialSchemaTokens->material,
@@ -1010,7 +1010,7 @@ HdPrmanMeshLightResolvingSceneIndex::GetPrim(
                     HdBlockDataSource::New(),
                     HdDependenciesSchemaTokens->__dependencies,
                     _BuildMeshDependenciesDataSource(parentPath)),
-                parentPrim.dataSource 
+                parentPrim.dataSource
             };
 #if PXR_VERSION <= 2305 && defined(ARCH_OS_WINDOWS)
             return _GetInputSceneIndex()->GetPrim(primPath);
@@ -1051,7 +1051,7 @@ HdPrmanMeshLightResolvingSceneIndex::GetPrim(
     return _GetInputSceneIndex()->GetPrim(primPath);
 }
 
-SdfPathVector 
+SdfPathVector
 HdPrmanMeshLightResolvingSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
@@ -1071,11 +1071,11 @@ void
 HdPrmanMeshLightResolvingSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
-{    
+{
     if (!_IsObserved()) {
         return;
     }
-    
+
     TRACE_FUNCTION();
 
     HdSceneIndexObserver::AddedPrimEntries added;
@@ -1085,7 +1085,7 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsAdded(
             (entry.primType == HdPrimTypeTokens->volume)) {
             HdSceneIndexPrim prim = _GetInputSceneIndex()->
                 GetPrim(entry.primPath);
-            
+
             // The prim is a mesh light if light.isLight is true. But a mesh
             // light also needs a valid light shader network [material
             // resource], which it won't have when stage scene index is not
@@ -1110,7 +1110,7 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsAdded(
     _SendPrimsAdded(added);
 }
 
-void 
+void
 HdPrmanMeshLightResolvingSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
@@ -1158,6 +1158,9 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsDirtied(
             if ((dirtyLocs.Intersects(lightLoc) && !_IsMeshLight(prim)) ||
                 (dirtyLocs.Intersects(matLoc) && !_HasValidMaterialNetwork(prim))) {
                 _RemoveMeshLight(entry.primPath, &removed);
+                // The original mesh must be re-added because its prim type
+                // will change as a result of this. See GetPrim().
+                added.emplace_back(entry.primPath, prim.primType);
                 continue;
             }
 
@@ -1170,18 +1173,18 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsDirtied(
             bool prev_visible = _meshLights[entry.primPath];
             if(prev_visible == visible) {
                 continue;
-            }                       
+            }
             if (visible && (!_meshLights.at(entry.primPath))) {
                 // materialSyncMode is no longer noMaterialResponse; insert
                 _meshLights[entry.primPath] = visible;
-                _SendPrimsAdded({{ 
+                _SendPrimsAdded({{
                     entry.primPath.AppendChild(_tokens->meshLightMeshName),
                     prim.primType
                 }});
             } else if ((!visible) && _meshLights.at(entry.primPath)) {
                 // materialSyncMode changed to noMaterialResponse; remove
                 _meshLights[entry.primPath] = visible;
-                _SendPrimsRemoved({{ 
+                _SendPrimsRemoved({{
                     entry.primPath.AppendChild(_tokens->meshLightMeshName)
                 }});
             }
@@ -1196,7 +1199,7 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsDirtied(
         }
     }
 
-#ifndef PIXAR_ANIM
+#if PXR_VERSION < 2505
     for (const auto& entry : entries) {
         if (_meshLights.count(entry.primPath)) {
             // Propogate dirtiness to the meshLight light if applicable.
@@ -1209,8 +1212,8 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsDirtied(
             || entry.dirtyLocators.Intersects(HdMaterialBindingSchema::GetDefaultLocator())) {
 #endif
                 _SendPrimsDirtied({{ entry.primPath.AppendChild(_tokens->meshLightLightName), {
-                    HdLightSchema::GetDefaultLocator(), 
-                    HdMaterialSchema::GetDefaultLocator(), 
+                    HdLightSchema::GetDefaultLocator(),
+                    HdMaterialSchema::GetDefaultLocator(),
                     HdPrimvarsSchema::GetDefaultLocator(),
                     HdVisibilitySchema::GetDefaultLocator(),
                     HdXformSchema::GetDefaultLocator()
@@ -1219,7 +1222,7 @@ HdPrmanMeshLightResolvingSceneIndex::_PrimsDirtied(
 
             // Propogate all dirtiness to the visible meshLight mesh.
             if (_meshLights[entry.primPath] == true /* IsVisible */) {
-                _SendPrimsDirtied({{entry.primPath.AppendChild(_tokens->meshLightMeshName), 
+                _SendPrimsDirtied({{entry.primPath.AppendChild(_tokens->meshLightMeshName),
                     entry.dirtyLocators
                 }});
             }
@@ -1258,7 +1261,7 @@ HdPrmanMeshLightResolvingSceneIndex::_AddMeshLight(
 #else
         HdPrimTypeTokens->meshLight);
 #endif
-    
+
     // The source mesh (for the light prim)
     added->emplace_back(
         primPath.AppendChild(_tokens->meshLightSourceName),

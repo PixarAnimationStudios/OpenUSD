@@ -147,9 +147,11 @@
         MEMBERS = [
             ('ALL_MEMBERS', '', dict(ADD_LOCATOR=True)),
 
-            ('skelLocalToWorld', T_MATRIX,
+            ('skelLocalToCommonSpace', T_MATRIX,
              dict(DOC='''
-                Xform of skeleton prim.''')),
+                Transform to go from the local space if the skeleton prim to
+                common space (as defined by
+                UsdSkelImagingDataSourceXformResolver).''')),
 
             ('skinningTransforms', T_MATRIX4FARRAY,
              dict(DOC='''

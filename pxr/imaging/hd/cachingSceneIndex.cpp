@@ -229,13 +229,15 @@ HdCachingSceneIndex::_PrimsDirtied(
             }
         }
     } else {
-        // Evict the cache entry only if the default prim-level locator is
-        // dirty.
+        static const HdDataSourceLocator primLevelContainer(
+            HdDataSourceLocatorSentinelTokens->container);
+
+        // We can no longer use the cached data source if we received
+        // HdDataSourceLocatorSet::UniversalSet() or an explicit sentinel
+        // saying that the previous prim source is no longer valid.
         //
         for (const HdSceneIndexObserver::DirtiedPrimEntry &entry : entries) {
-            if (entry.dirtyLocators.Contains(
-                    HdDataSourceLocator::EmptyLocator())) {
-
+            if (entry.dirtyLocators.Contains(primLevelContainer)) {
                 const _PrimTable::iterator i = _prims.find(entry.primPath);
                 if (i != _prims.end() && i->second) {
                     WorkSwapDestroyAsync(i->second->dataSource);

@@ -78,6 +78,9 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
         texDesc.textureType = MTLTextureType1D;
     } else if (desc.type == HgiTextureType1DArray) {
         texDesc.textureType = MTLTextureType1DArray;
+    } else if (desc.type == HgiTextureTypeCubemap) {
+        texDesc.textureType = MTLTextureTypeCube;
+        texDesc.arrayLength = 1;
     }
 
     if (desc.sampleCount > 1) {
@@ -108,11 +111,11 @@ HgiMetalTexture::HgiMetalTexture(HgiMetal *hgi, HgiTextureDesc const & desc)
         } else if (desc.type == HgiTextureType1D) {
             texDesc.textureType = MTLTextureType1D;
         } else if (desc.type == HgiTextureType1DArray) {
-            texDesc.textureType = MTLTextureType1DArray;        
+            texDesc.textureType = MTLTextureType1DArray;
         }
         texDesc.usage = MTLTextureUsageShaderRead;
         texDesc.pixelFormat = HgiMetalConversions::GetPixelFormat(
-            desc.format, HgiTextureUsageBitsShaderRead);    
+            desc.format, HgiTextureUsageBitsShaderRead);
 
         // Create temp texture and fill with initial data.
         id<MTLTexture> tempTextureId =

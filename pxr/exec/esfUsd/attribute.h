@@ -38,6 +38,7 @@ private:
     // EsfAttributeInterface implementation.
     SdfValueTypeName _GetValueTypeName() const final;
     EsfAttributeQuery _GetQuery() const final;
+    SdfPathVector _GetConnections() const final;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

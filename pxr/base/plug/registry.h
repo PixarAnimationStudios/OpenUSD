@@ -412,6 +412,16 @@ public:
     PLUG_API
     PlugPluginPtr GetPluginForType(TfType t) const;
 
+    /// Return the plug-in for the given type, or issue a fatal error with
+    /// diagnostic information and terminate the program if the plug-in is not
+    /// found.
+    ///
+    /// This is meant for use in cases where it should be guaranteed that \p t's
+    /// plugin is present (e.g. it is part of the calling code's library) and it
+    /// impossible to continue without the plugin.
+    PLUG_API
+    PlugPluginPtr DemandPluginForType(TfType t) const;
+
     /// Returns all registered plug-ins.  Note that additional plugins may be
     /// registered during program runtime.  \sa \ref Plug_Discovery
     PLUG_API

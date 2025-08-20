@@ -238,14 +238,12 @@ HdRenderIndex::~HdRenderIndex()
 {
     HD_TRACE_FUNCTION();
     
-    // Get rid of prims first.
-    Clear();
-
-    // Delete the emulated scene index datastructures
-    // (although they should be depopulated already by Clear).
     if (_IsEnabledSceneIndexEmulation()) {
-        _emulationSceneIndex.Reset();
+        // ~HdSceneIndexAdapterSceneDelegate calls
+        // _RemoveSubtree to delete all Hd[BSR]prim's.
         _siSd.reset();
+    } else {
+        Clear();
     }
 
     _DestroyFallbackPrims();

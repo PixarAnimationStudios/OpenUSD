@@ -562,6 +562,47 @@ void TsSpline::_PrepareForWrite(TfType valueType)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Breakdown
+bool
+TsSpline::Breakdown(
+    TsTime time,
+    GfInterval *affectedIntervalOut /* = nullptr */)
+{
+    std::string reason;
+
+    GfInterval localAffectedInterval;
+    GfInterval* affectedIntervalPtr = (affectedIntervalOut
+                                       ? affectedIntervalOut
+                                       : &localAffectedInterval);
+
+    _PrepareForWrite();
+    return Ts_Breakdown(_data.get(),
+                        time,
+                        false,  // testOnly
+                        affectedIntervalPtr,
+                        &reason);
+}
+
+bool
+TsSpline::CanBreakdown(
+    TsTime time,
+    std::string *reason /* = nullptr */)
+{
+    std::string localReason;
+    std::string* reasonPtr = (reason
+                              ? reason
+                              : &localReason);
+
+    GfInterval affectedInterval;
+
+    return Ts_Breakdown(_data.get(),
+                        time,
+                        true,  // testOnly
+                        &affectedInterval,
+                        reasonPtr);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Anti-Regression
 
 #ifndef PXR_TS_DEFAULT_ANTI_REGRESSION_AUTHORING_MODE

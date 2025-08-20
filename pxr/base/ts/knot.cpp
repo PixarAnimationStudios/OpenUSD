@@ -506,11 +506,21 @@ std::ostream& operator<<(std::ostream& out, const TsKnot &knot)
     out << "  pre-tan width "
         << TfStringify(knot.GetPreTanWidth()) << std::endl
         << "  pre-tan slope "
-        << GET_VT_VALUE(GetPreTanSlope) << std::endl
-        << "  post-tan width "
+        << GET_VT_VALUE(GetPreTanSlope) << std::endl;
+    if (knot.GetPreTanAlgorithm() != TsTangentAlgorithmNone) {
+        out << "  pre-tan algorithm "
+            << TfEnum::GetName(knot.GetPreTanAlgorithm()).substr(18)
+            << std::endl;
+    }
+    out << "  post-tan width "
         << TfStringify(knot.GetPostTanWidth()) << std::endl
         << "  post-tan slope "
         << GET_VT_VALUE(GetPostTanSlope) << std::endl;
+    if (knot.GetPostTanAlgorithm() != TsTangentAlgorithmNone) {
+        out << "  post-tan algorithm "
+            << TfEnum::GetName(knot.GetPostTanAlgorithm()).substr(18)
+            << std::endl;
+    }
 
     const VtDictionary customData = knot.GetCustomData();
     if (!customData.empty())

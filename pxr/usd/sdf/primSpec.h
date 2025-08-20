@@ -407,6 +407,33 @@ public:
     SDF_API
     void ClearKind();
 
+    /// \name ClipSets
+    /// @{
+
+    /// Returns a proxy for the prim's value clip sets.
+    ///
+    /// Clip sets for this prim may be modified through the proxy.
+    SDF_API
+    SdfNameEditorProxy GetClipSetsList() const;
+
+    /// Returns true if this prim has value clip sets set.
+    SDF_API
+    bool HasClipSets() const;
+
+    /// Returns the value clips for this prim.
+    ///
+    /// The default value for value clips is an empty dictionary.
+    SDF_API
+    SdfDictionaryProxy GetClips() const;
+
+    /// Sets the value clips for this prim spec.
+    ///
+    /// If \p value is empty, then this removes the setting
+    /// for the given value clips \p name.
+    void SetClips(const std::string& name, const VtValue& value);
+
+    /// @}
+
     /// Returns the symmetry function for this prim.
     ///
     /// The default value for symmetry function is an empty token.

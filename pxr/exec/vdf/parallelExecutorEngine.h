@@ -13,8 +13,8 @@
 
 #include "pxr/exec/vdf/parallelExecutorEngineBase.h"
 
+#include "pxr/base/work/isolatingDispatcher.h"
 #include "pxr/base/work/taskGraph.h"
-#include "pxr/base/work/withScopedParallelism.h"
 
 #include <tbb/concurrent_unordered_map.h>
 
@@ -289,7 +289,7 @@ VdfParallelExecutorEngine<DataManagerType>::_PublishLockedBuffers()
 
     PEE_TRACE_SCOPE("VdfParallelExecutorEngine::_PublishLockedBuffers");
 
-    WorkWithScopedParallelism(
+    Base::_isolatingDispatcher.Run(
         [&lockedDataMap = _lockedDataMap, &taskGraph = Base::_taskGraph,
             &dataManager = Base::_dataManager] {
         // For each entry in the locked data map, spawn a new task to publish
@@ -310,6 +310,8 @@ VdfParallelExecutorEngine<DataManagerType>::_PublishLockedBuffers()
         // Wait for all the publishing to complete.
         taskGraph.Wait();
     });
+
+    Base::_isolatingDispatcher.Wait();
 }
 
 template < typename DataManagerType >

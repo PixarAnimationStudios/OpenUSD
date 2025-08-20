@@ -35,4 +35,12 @@ EsfUsd_Attribute::_GetQuery() const
     };
 }
 
+SdfPathVector
+EsfUsd_Attribute::_GetConnections() const
+{
+    SdfPathVector targets;
+    _GetWrapped().GetConnections(&targets);
+    return targets;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

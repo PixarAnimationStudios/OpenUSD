@@ -39,7 +39,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((houdiniFrame,                   "houdini:frame"))                \
     ((checkpointInterval,             "ri:checkpoint:interval"))       \
     ((pixelFilter,                    "ri:Ri:PixelFilterName"))        \
-    ((pixelFilterWidth,               "ri:Ri:PixelFilterWidth"))
+    ((pixelFilterWidth,               "ri:Ri:PixelFilterWidth"))       \
+    ((worldOrigin,                    "ri:trace:worldorigin"))         \
+    ((worldOffset,                    "ri:trace:worldoffset"))         
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanRenderSettingsTokens, HDPRMAN_API,
     HDPRMAN_RENDER_SETTINGS_TOKENS);
@@ -75,7 +77,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanIntegratorTokens, HDPRMAN_API,
     (productName) \
     (productType) \
     (orderedVars) \
-    (sourcePrim)
+    (sourcePrim)  \
+    (idMap)
 
 TF_DECLARE_PUBLIC_TOKENS(
     HdPrmanRenderProductTokens, HDPRMAN_API,

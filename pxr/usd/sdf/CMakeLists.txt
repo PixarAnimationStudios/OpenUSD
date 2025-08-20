@@ -19,6 +19,7 @@ pxr_library(sdf
         allowed
         assetPath
         attributeSpec
+        booleanExpression
         changeBlock
         changeList
         children
@@ -71,6 +72,7 @@ pxr_library(sdf
         spec
         specType
         textFileFormat
+        textParserUtils
         timeCode
         tokens
         types
@@ -107,6 +109,8 @@ pxr_library(sdf
 
     PRIVATE_CLASSES
         assetPathResolver
+        booleanExpressionEval
+        booleanExpressionParsing
         changeManager
         cleanupTracker
         connectionListEditor
@@ -303,6 +307,13 @@ pxr_build_test(testSdfAttributeBlocking_Cpp
         testenv/testSdfAttributeBlocking.cpp
 )
 
+pxr_build_test(testSdfBooleanExpression
+    LIBRARIES
+        sdf
+    CPPFILES
+        testenv/testSdfBooleanExpression.cpp
+)
+
 pxr_build_test(testSdfHardToReach
     LIBRARIES
         sdf
@@ -382,6 +393,15 @@ pxr_build_test(testSdfUsdaFileFormatParsing
         tf
     CPPFILES
         testenv/testSdfUsdaFileFormatParsing.cpp
+)
+
+
+pxr_build_test(testSdfUsdaFileFormatValueParsing
+    LIBRARIES
+        sdf
+        tf
+    CPPFILES
+        testenv/testSdfUsdaFileFormatValueParsing.cpp
 )
 
 pxr_build_test(testSdfUsdzResolver
@@ -488,6 +508,10 @@ pxr_register_test(testSdfAttributeBlocking_Cpp
 pxr_register_test(testSdfBatchNamespaceEdit
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfBatchNamespaceEdit"
+)
+
+pxr_register_test(testSdfBooleanExpression
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfBooleanExpression"
 )
 
 pxr_register_test(testSdfCopyUtils
@@ -628,6 +652,10 @@ pxr_register_test(testSdfPredicateExpression_Cpp
 
 pxr_register_test(testSdfUsdaFileFormatParsing
    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfUsdaFileFormatParsing"
+)
+
+pxr_register_test(testSdfUsdaFileFormatValueParsing
+   COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfUsdaFileFormatValueParsing"
 )
 
 pxr_register_test(testSdfPayload

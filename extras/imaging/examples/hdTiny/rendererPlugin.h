@@ -31,19 +31,21 @@ public:
     virtual ~HdTinyRendererPlugin() = default;
 
     /// Construct a new render delegate of type HdTinyRenderDelegate.
-    virtual HdRenderDelegate *CreateRenderDelegate() override;
+    HdRenderDelegate *CreateRenderDelegate() override;
 
     /// Construct a new render delegate of type HdTinyRenderDelegate.
-    virtual HdRenderDelegate *CreateRenderDelegate(
+    HdRenderDelegate *CreateRenderDelegate(
         HdRenderSettingsMap const& settingsMap) override;
 
     /// Destroy a render delegate created by this class's CreateRenderDelegate.
     ///   \param renderDelegate The render delegate to delete.
-    virtual void DeleteRenderDelegate(
+    void DeleteRenderDelegate(
         HdRenderDelegate *renderDelegate) override;
 
     /// Checks to see if the plugin is supported on the running system.
-    virtual bool IsSupported(bool gpuEnabled = true) const override;
+    bool IsSupported(
+        HdRendererCreateArgs const &rendererCreateArgs,
+        std::string *reasonWhyNot = nullptr) const override;
 
 private:
     // This class does not support copying.

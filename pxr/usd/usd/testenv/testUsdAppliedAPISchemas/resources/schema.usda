@@ -50,6 +50,13 @@ class "TestSingleApplyAPI"
             "TestAutoAppliedToAPI"
         ] 
     }
+    uiHints = {
+        string displayGroup = "TestSingleApplyAPI group"
+        dictionary customDict = {
+            int TestSingleApplyAPI = 3
+            string TestCompose = "TestSingleApplyAPI"
+        }
+    }
     doc = """Test single apply API schema"""
 )
 {
@@ -60,9 +67,60 @@ class "TestSingleApplyAPI"
     )
     uniform bool single:bool_attr = true (
         doc = """Boolean attribute"""
+        uiHints = {
+            string displayGroup = "single:bool_attr group"
+            dictionary valueLabels = {
+                bool TestCompose = True
+                bool single_bool_attr = False
+            }
+        }
     )
     rel single:relationship (
         doc = """Relationship"""
+    )
+}
+
+class "TestComposeMetadataAPI"
+(
+    inherits = </APISchemaBase>
+    customData = {
+        string className = "ComposeMetadataAPI"
+        token[] apiSchemaAutoApplyTo = [
+            "TestTypedSchemaForAutoApplyConcreteBase", 
+            "TestTypedSchemaForAutoApplyAbstractBase",
+            "TestAutoAppliedToAPI"
+        ] 
+    }
+    doc = """Test single apply API schema"""
+    uiHints = {
+        string displayGroup = "TestComposeMetadataAPI group"
+        dictionary customDict = {
+            int TestComposeMetadataAPI = 1
+            string TestCompose = "TestComposeMetadataAPI"
+        }
+    }
+)
+{
+    reorder properties = ['compose:relationship', 'compose:token_attr', 'compose:bool_attr']
+    uniform token compose:token_attr = "bar" (
+        allowedTokens = ["foo", "bar", "baz"]
+        doc = """Token attribute"""
+    )
+    uniform bool compose:bool_attr = true (
+        doc = """Boolean attribute"""
+    )
+    rel compose:relationship (
+        doc = """Relationship"""
+    )
+    uniform bool single:bool_attr = true (
+        doc = """Testing duplicate ignore"""
+        uiHints = {
+            string displayGroup = "single:bool_attr group"
+            dictionary valueLabels = {
+                bool compose_bool_attr = True
+                bool TestCompose = False
+            }
+        }
     )
 }
 
@@ -154,8 +212,15 @@ class TestTypedSchema "TestTypedSchema" (
 class TestWithBuiltinAppliedSchema "TestWithBuiltinAppliedSchema" (
     inherits = </Typed>
     doc = """Test with built-in API schemas"""
-    prepend apiSchemas = ["TestSingleApplyAPI", "TestMultiApplyAPI:builtin"]
+    prepend apiSchemas = ["TestSingleApplyAPI", "TestMultiApplyAPI:builtin", "TestComposeMetadataAPI"]
     hidden = false
+    uiHints = {
+        string displayGroup = "TestWithBuiltinAppliedSchema group"
+        dictionary customDict = {
+            int TestWithBuiltinAppliedSchema = 2
+            string TestCompose = "TestWithBuiltinAppliedSchema"
+        }
+    }
 )
 {
     uniform bool multi:builtin:bool_attr = false (

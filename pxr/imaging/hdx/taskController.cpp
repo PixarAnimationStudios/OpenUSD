@@ -980,6 +980,81 @@ HdxTaskController::_ReplaceLightSprim(size_t const& pathIdx,
                                                 HdLight::AllDirty);
 }
 
+// When we're asked to render "color", we treat that as final color,
+// complete with depth-compositing and selection, so we in-line add
+// some extra buffers if they weren't already requested.
+static
+TfTokenVector
+_ResolvedRenderOutputs(const TfTokenVector &aovNames,
+                       const bool isForStorm)
+{
+    bool hasColor = false;
+    bool hasDepth = false;
+    bool hasPrimId = false;
+    bool hasElementId = false;
+    bool hasInstanceId = false;
+    bool hasNeye = false;
+
+    for (const TfToken &renderOutput : aovNames) {
+        if (renderOutput == HdAovTokens->color) {
+            hasColor = true;
+        } else if (renderOutput == HdAovTokens->depth) {
+            hasDepth = true;
+        } else if (renderOutput == HdAovTokens->primId) {
+            hasPrimId = true;
+        }else if (renderOutput == HdAovTokens->elementId) {
+            hasElementId = true;
+        } else if (renderOutput == HdAovTokens->instanceId) {
+            hasInstanceId = true;
+        } else if (renderOutput == HdAovTokens->Neye) {
+            hasNeye = true;
+        }
+    }
+
+    TfTokenVector result;
+
+    if (isForStorm) {
+        // For Storm, we rearrange AOVs to be a certain order to match how we 
+        // order outputs in the fragment shader. This order is specified via 
+        // HdSt_RenderPassShaderKey and the render pass shader snippets it 
+        // gathers.
+        if (hasColor) {
+            result.push_back(HdAovTokens->color);
+        }
+        if (hasPrimId || hasInstanceId) {
+            result.push_back(HdAovTokens->primId);
+            result.push_back(HdAovTokens->instanceId);
+        }
+        if (hasNeye) {
+            result.push_back(HdAovTokens->Neye);
+        }
+
+        // Even if not requested, add depth.
+        result.push_back(HdAovTokens->depth);
+    } else {
+        result = aovNames;
+
+        // For a backend like PrMan/Embree we fill not just the color buffer,
+        // but also buffers that are used during picking.
+        if (hasColor) {
+            if (!hasDepth) {
+                result.push_back(HdAovTokens->depth);
+            }
+            if (!hasPrimId) {
+                result.push_back(HdAovTokens->primId);
+            }
+            if (!hasElementId) {
+                result.push_back(HdAovTokens->elementId);
+            }
+            if (!hasInstanceId) {
+                result.push_back(HdAovTokens->instanceId);
+            }
+        }
+    }
+
+    return result;
+}
+
 void
 HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
 {
@@ -992,43 +1067,8 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
     }
     _aovOutputs = outputs;
 
-    TfTokenVector localOutputs = outputs;
-
-    // When we're asked to render "color", we treat that as final color,
-    // complete with depth-compositing and selection, so we in-line add
-    // some extra buffers if they weren't already requested.
-    if (_IsStormRenderingBackend(GetRenderIndex())) {
-        if (std::find(localOutputs.begin(), 
-                      localOutputs.end(),
-                      HdAovTokens->depth) == localOutputs.end()) {
-            localOutputs.push_back(HdAovTokens->depth);
-        }
-    } else {
-        std::set<TfToken> mainRenderTokens;
-        for (auto const& aov : outputs) {
-            if (aov == HdAovTokens->color || aov == HdAovTokens->depth ||
-                aov == HdAovTokens->primId || aov == HdAovTokens->instanceId ||
-                aov == HdAovTokens->elementId) {
-                mainRenderTokens.insert(aov);
-            }
-        }
-        // For a backend like PrMan/Embree we fill not just the color buffer,
-        // but also buffers that are used during picking.
-        if (mainRenderTokens.count(HdAovTokens->color) > 0) {
-            if (mainRenderTokens.count(HdAovTokens->depth) == 0) {
-                localOutputs.push_back(HdAovTokens->depth);
-            }
-            if (mainRenderTokens.count(HdAovTokens->primId) == 0) {
-                localOutputs.push_back(HdAovTokens->primId);
-            }
-            if (mainRenderTokens.count(HdAovTokens->elementId) == 0) {
-                localOutputs.push_back(HdAovTokens->elementId);
-            }
-            if (mainRenderTokens.count(HdAovTokens->instanceId) == 0) {
-                localOutputs.push_back(HdAovTokens->instanceId);
-            }
-        }
-    }
+    TfTokenVector localOutputs = _ResolvedRenderOutputs(outputs,
+        _IsStormRenderingBackend(GetRenderIndex()));
 
     // Delete the old renderbuffers.
     for (size_t i = 0; i < _aovBufferIds.size(); ++i) {

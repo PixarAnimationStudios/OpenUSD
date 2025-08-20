@@ -274,6 +274,50 @@ private:
     bool _valid;
 };
 
+/// \class HdStCubemapTextureObject
+///
+/// A base class for cubemap textures.
+///
+class HdStCubemapTextureObject : public HdStTextureObject
+{
+public:
+    HDST_API
+    ~HdStCubemapTextureObject() override;
+
+    /// Get the handle to the actual GPU resource.
+    ///
+    /// Only valid after commit phase.
+    ///
+    HgiTextureHandle const &GetTexture() const {
+        return _gpuTexture;
+    }
+
+    HDST_API
+    HdStTextureType GetTextureType() const final;
+
+protected:
+    HDST_API
+    HdStCubemapTextureObject(
+        const HdStTextureIdentifier &textureId,
+        HdSt_TextureObjectRegistry * textureObjectRegistry);
+
+    HDST_API
+    void _SetCpuData(std::unique_ptr<HdStTextureCpuData> &&);
+    HDST_API
+    HdStTextureCpuData * _GetCpuData() const;
+
+    HDST_API
+    void _CreateTexture(const HgiTextureDesc &desc);
+    HDST_API
+    void _GenerateMipmaps();
+    HDST_API
+    void _DestroyTexture();
+
+private:
+    std::unique_ptr<HdStTextureCpuData> _cpuData;
+    HgiTextureHandle _gpuTexture;
+};
+
 template<HdStTextureType textureType>
 struct HdSt_TypedTextureObjectHelper;
 
@@ -294,6 +338,11 @@ struct HdSt_TypedTextureObjectHelper<HdStTextureType::Uv> {
 template<>
 struct HdSt_TypedTextureObjectHelper<HdStTextureType::Field> {
     using type = HdStFieldTextureObject;
+};
+
+template<>
+struct HdSt_TypedTextureObjectHelper<HdStTextureType::Cubemap> {
+    using type = HdStCubemapTextureObject;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

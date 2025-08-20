@@ -244,5 +244,13 @@ class TestShaderNode(unittest.TestCase):
         })
         _CheckTypes(nodeOld, expectedTypes)
 
+    def test_ParseValue(self):
+        # Sanity check that the metadata helpers python api executes correctly
+        nodeNew = self.reg.GetShaderNodeByNameAndType("TestNodeOSL", self.oslType)
+        intProp = nodeNew.GetShaderInput("IntProperty")
+        val, err = Sdr.MetadataHelpers.ParseSdfValue("3", intProp)
+        assert val == 3
+        assert err == ""
+
 if __name__ == '__main__':
     unittest.main()

@@ -41,7 +41,7 @@ struct _ValueKeyVisitor
     }
 
     ExecValueKey operator()(
-        const ExecUsd_AttributeValueKey &key) const {
+        const ExecUsd_AttributeComputationValueKey &key) const {
         return ExecValueKey(
             EsfUsdSceneAdapter::AdaptObject(key.provider),
             key.computation);
@@ -62,7 +62,7 @@ struct _IsValidVisitor
         return false;
     }
 
-    bool operator()(const ExecUsd_AttributeValueKey &key) const {
+    bool operator()(const ExecUsd_AttributeComputationValueKey &key) const {
         return key.provider.IsValid();
     }
 
@@ -79,8 +79,8 @@ struct _DebugStringVisitor
     }
 
     std::string operator()(
-        const ExecUsd_AttributeValueKey &key) const {
-        return _Format("[attr]", key.provider.GetPath(), key.computation);
+        const ExecUsd_AttributeComputationValueKey &key) const {
+        return _Format("[attribute]", key.provider.GetPath(), key.computation);
     }
 
     std::string operator()(
@@ -160,7 +160,8 @@ ExecUsd_ExpireValueKey(ExecUsdValueKey *uvk)
 {
     auto& key = uvk->_key;
 
-    if (const auto *attrKey = std::get_if<ExecUsd_AttributeValueKey>(&key)) {
+    if (const auto *attrKey =
+            std::get_if<ExecUsd_AttributeComputationValueKey>(&key)) {
         key = ExecUsd_ExpiredValueKey{
             attrKey->provider.GetPath(), std::move(attrKey->computation)};
     }

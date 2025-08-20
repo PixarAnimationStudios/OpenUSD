@@ -41,10 +41,13 @@ class VdfContext;
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
+    (attr)
+    (attributeComputation)
     (inputName)
-    (customComputation)
-    (dispatchedComputation)
+    (dispatchedAttributeComputation)
+    (dispatchedPrimComputation)
     (nonExistentComputation)
+    (primComputation)
 );
 
 #define ASSERT_EQ(expr, expected)                                              \
@@ -99,18 +102,29 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // test only. The schema is loaded from testenv/testExecInputResolver/resources.
 EXEC_REGISTER_COMPUTATIONS_FOR_SCHEMA(TestExecInputResolverCustomSchema)
 {
-    self.PrimComputation(_tokens->customComputation)
+    self.PrimComputation(_tokens->primComputation)
         .Callback<int>(+[](const VdfContext &){ return 0; });
 
-    self.DispatchedPrimComputation(_tokens->dispatchedComputation)
+    self.DispatchedPrimComputation(_tokens->dispatchedPrimComputation)
+        .Callback<int>(+[](const VdfContext &){ return 0; });
+
+    self.AttributeComputation(
+        _tokens->attr,
+        _tokens->attributeComputation)
+        .Callback<int>(+[](const VdfContext &){ return 0; });
+
+    self.DispatchedAttributeComputation(
+        _tokens->dispatchedAttributeComputation)
         .Callback<int>(+[](const VdfContext &){ return 0; });
 }
 
 class Fixture
 {
 public:
-    const Exec_ComputationDefinition *customComputationDefinition;
-    const Exec_ComputationDefinition *dispatchedComputationDefinition;
+    const Exec_ComputationDefinition *primComputationDefinition;
+    const Exec_ComputationDefinition *dispatchedPrimComputationDefinition;
+    const Exec_ComputationDefinition *attributeComputationDefinition;
+    const Exec_ComputationDefinition *dispatchedAttributeComputationDefinition;
     const Exec_ComputationDefinition *timeComputationDefinition;
     EsfJournal journal;
 
@@ -125,6 +139,7 @@ public:
 
         const EsfStage stage = _NewStageFromLayer(R"usd(#usda 1.0
             def CustomSchema "Prim" {
+                int attr
             }
         )usd");
 
@@ -132,17 +147,33 @@ public:
             stage->GetPrimAtPath(SdfPath("/Prim"), nullJournal);
         TF_AXIOM(prim->IsValid(nullJournal));
 
-        customComputationDefinition =
+        primComputationDefinition =
             reg.GetComputationDefinition(
-                *prim.Get(), _tokens->customComputation,
+                *prim.Get(), _tokens->primComputation,
                 EsfSchemaConfigKey(), nullJournal);
-        TF_AXIOM(customComputationDefinition);
+        TF_AXIOM(primComputationDefinition);
 
-        dispatchedComputationDefinition =
+        dispatchedPrimComputationDefinition =
             reg.GetComputationDefinition(
-                *prim.Get(), _tokens->dispatchedComputation,
+                *prim.Get(), _tokens->dispatchedPrimComputation,
                 prim->GetSchemaConfigKey(nullJournal), nullJournal);
-        TF_AXIOM(customComputationDefinition);
+        TF_AXIOM(primComputationDefinition);
+
+        const EsfAttribute attribute =
+            stage->GetAttributeAtPath(SdfPath("/Prim.attr"), nullJournal);
+        TF_AXIOM(attribute->IsValid(nullJournal));
+
+        attributeComputationDefinition =
+            reg.GetComputationDefinition(
+                *attribute.Get(), _tokens->attributeComputation,
+                EsfSchemaConfigKey(), nullJournal);
+        TF_AXIOM(attributeComputationDefinition);
+
+        dispatchedAttributeComputationDefinition =
+            reg.GetComputationDefinition(
+                *attribute.Get(), _tokens->dispatchedAttributeComputation,
+                attribute->GetSchemaConfigKey(nullJournal), nullJournal);
+        TF_AXIOM(attributeComputationDefinition);
 
         const EsfPrim pseudoRoot =
             stage->GetPrimAtPath(SdfPath("/"), nullJournal);
@@ -182,6 +213,7 @@ public:
             _tokens->inputName,
             computationName,
             resultType,
+            /* metadataKey */ TfToken(),
             ExecProviderResolution {
                 localTraversal,
                 dynamicTraversal
@@ -210,9 +242,9 @@ private:
     std::unique_ptr<EsfStage> _stage;
 };
 
-// Test that Exec_ResolveInput finds a computation on the origin object.
+// Test that Exec_ResolveInput finds a computation on the origin prim.
 static void
-TestResolveToComputationOrigin(Fixture &fixture)
+TestResolveToComputationPrimOrigin(Fixture &fixture)
 {
     fixture.NewStageFromLayer(R"usd(#usda 1.0
         def CustomSchema "Origin" {
@@ -221,7 +253,7 @@ TestResolveToComputationOrigin(Fixture &fixture)
 
     const Exec_OutputKeyVector outputKeys = fixture.ResolveInput(
         fixture.GetObjectAtPath("/Origin"),
-        _tokens->customComputation,
+        _tokens->primComputation,
         TfType::Find<int>(),
         EsfSchemaConfigKey(),
         SdfPath("."),
@@ -232,10 +264,41 @@ TestResolveToComputationOrigin(Fixture &fixture)
         outputKeys[0],
         fixture.GetObjectAtPath("/Origin"),
         EsfSchemaConfigKey(),
-        fixture.customComputationDefinition);
+        fixture.primComputationDefinition);
 
     EsfJournal expectedJournal;
     expectedJournal.Add(SdfPath("/Origin"), EsfEditReason::ResyncedObject);
+    ASSERT_EQ(fixture.journal, expectedJournal);
+}
+
+// Test that Exec_ResolveInput finds a computation on the origin attribute.
+static void
+TestResolveToComputationAttributeOrigin(Fixture &fixture)
+{
+    fixture.NewStageFromLayer(R"usd(#usda 1.0
+        def CustomSchema "Prim" {
+            int attr
+        }
+    )usd");
+
+    const Exec_OutputKeyVector outputKeys = fixture.ResolveInput(
+        fixture.GetObjectAtPath("/Prim.attr"),
+        _tokens->attributeComputation,
+        TfType::Find<int>(),
+        EsfSchemaConfigKey(),
+        SdfPath("."),
+        ExecProviderResolution::DynamicTraversal::Local);
+
+    ASSERT_EQ(outputKeys.size(), 1);
+    ASSERT_OUTPUT_KEY(
+        outputKeys[0],
+        fixture.GetObjectAtPath("/Prim.attr"),
+        EsfSchemaConfigKey(),
+        fixture.attributeComputationDefinition);
+
+    EsfJournal expectedJournal;
+    expectedJournal.Add(SdfPath("/Prim.attr"), EsfEditReason::ResyncedObject);
+    expectedJournal.Add(SdfPath("/Prim"), EsfEditReason::ResyncedObject);
     ASSERT_EQ(fixture.journal, expectedJournal);
 }
 
@@ -279,7 +342,7 @@ TestResolveToComputationOrigin_WrongResultType(Fixture &fixture)
 
     const Exec_OutputKeyVector outputKeys = fixture.ResolveInput(
         fixture.GetObjectAtPath("/Origin"),
-        _tokens->customComputation,
+        _tokens->primComputation,
         TfType::Find<double>(),
         EsfSchemaConfigKey(),
         SdfPath("."),
@@ -313,7 +376,7 @@ TestResolveToNamespaceAncestor(Fixture &fixture)
 
     const Exec_OutputKeyVector outputKeys = fixture.ResolveInput(
         fixture.GetObjectAtPath("/Root/Ancestor/Scope1/Scope2/Origin"),
-        _tokens->customComputation,
+        _tokens->primComputation,
         TfType::Find<int>(),
         EsfSchemaConfigKey(),
         SdfPath("."),
@@ -324,7 +387,7 @@ TestResolveToNamespaceAncestor(Fixture &fixture)
         outputKeys[0], 
         fixture.GetObjectAtPath("/Root/Ancestor"), 
         EsfSchemaConfigKey(),
-        fixture.customComputationDefinition);
+        fixture.primComputationDefinition);
 
     EsfJournal expectedJournal;
     expectedJournal
@@ -356,7 +419,7 @@ TestResolveToNamespaceAncestor_NoSuchAncestor(Fixture &fixture)
 
     const Exec_OutputKeyVector outputKeys = fixture.ResolveInput(
         fixture.GetObjectAtPath("/Root/Parent/Origin"),
-        _tokens->customComputation,
+        _tokens->primComputation,
         TfType::Find<int>(),
         EsfSchemaConfigKey(),
         SdfPath("."),
@@ -393,7 +456,7 @@ TestResolveToNamespaceAncestor_WrongResultType(Fixture &fixture)
 
     const Exec_OutputKeyVector outputKeys = fixture.ResolveInput(
         fixture.GetObjectAtPath("/Root/Parent/Origin"),
-        _tokens->customComputation,
+        _tokens->primComputation,
         TfType::Find<double>(),
         EsfSchemaConfigKey(),
         SdfPath("."),
@@ -426,7 +489,7 @@ TestResolveToOwningPrim(Fixture &fixture)
 
     const Exec_OutputKeyVector outputKeys = fixture.ResolveInput(
         fixture.GetObjectAtPath("/OwningPrim.origin"),
-        _tokens->customComputation,
+        _tokens->primComputation,
         TfType::Find<int>(),
         EsfSchemaConfigKey(),
         SdfPath(".."),
@@ -437,7 +500,7 @@ TestResolveToOwningPrim(Fixture &fixture)
         outputKeys[0], 
         fixture.GetObjectAtPath("/OwningPrim"), 
         EsfSchemaConfigKey(),
-        fixture.customComputationDefinition);
+        fixture.primComputationDefinition);
 
     EsfJournal expectedJournal;
     expectedJournal
@@ -446,9 +509,9 @@ TestResolveToOwningPrim(Fixture &fixture)
     ASSERT_EQ(fixture.journal, expectedJournal);
 }
 
-// Test that Exec_ResolveInput finds a computation on the owning prim when the
-// origin is a prim, the local traversal is the relative path to a relationship
-// and the dynamic traversal is TargetedObjects.
+// Test that Exec_ResolveInput finds computations on the targeted objects when
+// the origin is a prim, the local traversal is the relative path to a
+// relationship and the dynamic traversal is TargetedObjects.
 //
 static void
 TestResolveToTargetedObjects(Fixture &fixture)
@@ -464,7 +527,7 @@ TestResolveToTargetedObjects(Fixture &fixture)
 
     const Exec_OutputKeyVector outputKeys = fixture.ResolveInput(
         fixture.GetObjectAtPath("/Origin"),
-        _tokens->customComputation,
+        _tokens->primComputation,
         TfType::Find<int>(),
         EsfSchemaConfigKey(),
         SdfPath(".myRel"),
@@ -475,12 +538,12 @@ TestResolveToTargetedObjects(Fixture &fixture)
         outputKeys[0], 
         fixture.GetObjectAtPath("/Origin/A"), 
         EsfSchemaConfigKey(),
-        fixture.customComputationDefinition);
+        fixture.primComputationDefinition);
     ASSERT_OUTPUT_KEY(
         outputKeys[1], 
         fixture.GetObjectAtPath("/Origin/B"), 
         EsfSchemaConfigKey(),
-        fixture.customComputationDefinition);
+        fixture.primComputationDefinition);
 
     EsfJournal expectedJournal;
     expectedJournal
@@ -507,7 +570,7 @@ TestResolveToTargetedObjects_MissingTarget(Fixture &fixture)
 
     const Exec_OutputKeyVector outputKeys = fixture.ResolveInput(
         fixture.GetObjectAtPath("/Origin"),
-        _tokens->customComputation,
+        _tokens->primComputation,
         TfType::Find<int>(),
         EsfSchemaConfigKey(),
         SdfPath(".myRel"),
@@ -518,7 +581,7 @@ TestResolveToTargetedObjects_MissingTarget(Fixture &fixture)
         outputKeys[0], 
         fixture.GetObjectAtPath("/Origin/A"), 
         EsfSchemaConfigKey(),
-        fixture.customComputationDefinition);
+        fixture.primComputationDefinition);
 
     EsfJournal expectedJournal;
     expectedJournal
@@ -527,6 +590,100 @@ TestResolveToTargetedObjects_MissingTarget(Fixture &fixture)
         .Add(SdfPath("/Origin.myRel"), EsfEditReason::ChangedTargetPaths)
         .Add(SdfPath("/Origin/A"), EsfEditReason::ResyncedObject)
         .Add(SdfPath("/Origin/B"), EsfEditReason::ResyncedObject);
+    ASSERT_EQ(fixture.journal, expectedJournal);
+}
+
+// Test that Exec_ResolveInput finds computations on the targeted objects
+// when the origin is a prim, the local traversal is the relative path to an
+// attribute and the dynamic traversal is ConnectionTargetedObjects.
+//
+static void
+TestResolveToConnectionTargetedObjects(Fixture &fixture)
+{
+    // TODO: When we provide a way for prims to register 'computeValue'
+    // computations, we can add an attribute connection that targets a prim
+    // here.
+    fixture.NewStageFromLayer(R"usd(#usda 1.0
+        def CustomSchema "Origin" {
+            int myAttr.connect = [</Origin/A.attr>, </Origin/B.attr>]
+            def CustomSchema "A" {
+                int attr
+            }
+            def CustomSchema "B" {
+                int attr
+            }
+        }
+    )usd");
+
+    const Exec_OutputKeyVector outputKeys = fixture.ResolveInput(
+        fixture.GetObjectAtPath("/Origin"),
+        _tokens->attributeComputation,
+        TfType::Find<int>(),
+        EsfSchemaConfigKey(),
+        SdfPath(".myAttr"),
+        ExecProviderResolution::DynamicTraversal::ConnectionTargetedObjects);
+
+    ASSERT_EQ(outputKeys.size(), 2);
+    ASSERT_OUTPUT_KEY(
+        outputKeys[0], 
+        fixture.GetObjectAtPath("/Origin/A.attr"), 
+        EsfSchemaConfigKey(),
+        fixture.attributeComputationDefinition);
+    ASSERT_OUTPUT_KEY(
+        outputKeys[1], 
+        fixture.GetObjectAtPath("/Origin/B.attr"), 
+        EsfSchemaConfigKey(),
+        fixture.attributeComputationDefinition);
+
+    EsfJournal expectedJournal;
+    expectedJournal
+        .Add(SdfPath("/Origin"), EsfEditReason::ResyncedObject)
+        .Add(SdfPath("/Origin.myAttr"), EsfEditReason::ResyncedObject)
+        .Add(SdfPath("/Origin.myAttr"), EsfEditReason::ChangedConnectionPaths)
+        .Add(SdfPath("/Origin/A"), EsfEditReason::ResyncedObject)
+        .Add(SdfPath("/Origin/A.attr"), EsfEditReason::ResyncedObject)
+        .Add(SdfPath("/Origin/B"), EsfEditReason::ResyncedObject)
+        .Add(SdfPath("/Origin/B.attr"), EsfEditReason::ResyncedObject);
+    ASSERT_EQ(fixture.journal, expectedJournal);
+}
+
+// Test that Exec_ResolveInput silently ignores missing connection targets.
+static void
+TestResolveToConnectionTargetedObjects_MissingConnectionTarget(
+    Fixture &fixture)
+{
+    fixture.NewStageFromLayer(R"usd(#usda 1.0
+        def CustomSchema "Origin" {
+            int myAttr.connect = [</Origin/A.attr>, </Origin/B.attr>]
+            def CustomSchema "A" {
+                int attr
+            }
+        }
+    )usd");
+
+    const Exec_OutputKeyVector outputKeys = fixture.ResolveInput(
+        fixture.GetObjectAtPath("/Origin"),
+        _tokens->attributeComputation,
+        TfType::Find<int>(),
+        EsfSchemaConfigKey(),
+        SdfPath(".myAttr"),
+        ExecProviderResolution::DynamicTraversal::ConnectionTargetedObjects);
+
+    ASSERT_EQ(outputKeys.size(), 1);
+    ASSERT_OUTPUT_KEY(
+        outputKeys[0], 
+        fixture.GetObjectAtPath("/Origin/A.attr"), 
+        EsfSchemaConfigKey(),
+        fixture.attributeComputationDefinition);
+
+    EsfJournal expectedJournal;
+    expectedJournal
+        .Add(SdfPath("/Origin"), EsfEditReason::ResyncedObject)
+        .Add(SdfPath("/Origin.myAttr"), EsfEditReason::ResyncedObject)
+        .Add(SdfPath("/Origin.myAttr"), EsfEditReason::ChangedConnectionPaths)
+        .Add(SdfPath("/Origin/A"), EsfEditReason::ResyncedObject)
+        .Add(SdfPath("/Origin/A.attr"), EsfEditReason::ResyncedObject)
+        .Add(SdfPath("/Origin/B.attr"), EsfEditReason::ResyncedObject);
     ASSERT_EQ(fixture.journal, expectedJournal);
 }
 
@@ -567,7 +724,7 @@ TestResolveToStage(Fixture &fixture)
 // which is the schema that dispatches the computation we request.
 //
 static void
-TestResolveForDispatchedComputation(Fixture &fixture)
+TestResolveForDispatchedPrimComputation(Fixture &fixture)
 {
     fixture.NewStageFromLayer(R"usd(#usda 1.0
         def Scope "Parent" {
@@ -587,7 +744,7 @@ TestResolveForDispatchedComputation(Fixture &fixture)
 
     const Exec_OutputKeyVector outputKeys = fixture.ResolveInput(
         parent /* origin */,
-        _tokens->dispatchedComputation,
+        _tokens->dispatchedPrimComputation,
         TfType::Find<int>(),
         child->GetSchemaConfigKey(nullJournal),
         SdfPath(".") /* localTraversal */,
@@ -598,10 +755,57 @@ TestResolveForDispatchedComputation(Fixture &fixture)
         outputKeys[0], 
         parent,
         child->GetSchemaConfigKey(nullJournal),
-        fixture.dispatchedComputationDefinition);
+        fixture.dispatchedPrimComputationDefinition);
 
     EsfJournal expectedJournal;
     expectedJournal
+        .Add(SdfPath("/Parent"), EsfEditReason::ResyncedObject);
+    ASSERT_EQ(fixture.journal, expectedJournal);
+}
+
+// Directly test dispatched input resolution here by resolving using an
+// attribute on the parent prim as the origin, but providing the config key for
+// the child prim's schema, which is the schema that dispatches the attribute
+// computation we request.
+//
+static void
+TestResolveForDispatchedAttributeComputation(Fixture &fixture)
+{
+    fixture.NewStageFromLayer(R"usd(#usda 1.0
+        def Scope "Parent" {
+            int attr
+            def CustomSchema "Child" {
+            }
+        }
+    )usd");
+
+    constexpr EsfJournal *nullJournal = nullptr;
+
+    const EsfObject attr = fixture.GetObjectAtPath("/Parent.attr");
+    TF_AXIOM(attr->IsValid(nullJournal));
+    TF_AXIOM(attr->IsAttribute());
+    const EsfObject child = fixture.GetObjectAtPath("/Parent/Child");
+    TF_AXIOM(child->IsValid(nullJournal));
+    TF_AXIOM(child->IsPrim());
+
+    const Exec_OutputKeyVector outputKeys = fixture.ResolveInput(
+        attr /* origin */,
+        _tokens->dispatchedAttributeComputation,
+        TfType::Find<int>(),
+        child->GetSchemaConfigKey(nullJournal),
+        SdfPath(".") /* localTraversal */,
+        ExecProviderResolution::DynamicTraversal::Local);
+
+    ASSERT_EQ(outputKeys.size(), 1);
+    ASSERT_OUTPUT_KEY(
+        outputKeys[0], 
+        attr,
+        child->GetSchemaConfigKey(nullJournal),
+        fixture.dispatchedAttributeComputationDefinition);
+
+    EsfJournal expectedJournal;
+    expectedJournal
+        .Add(SdfPath("/Parent.attr"), EsfEditReason::ResyncedObject)
         .Add(SdfPath("/Parent"), EsfEditReason::ResyncedObject);
     ASSERT_EQ(fixture.journal, expectedJournal);
 }
@@ -633,7 +837,7 @@ TestResolveForDispatchedComputation_RelTarget(Fixture &fixture)
 
     const Exec_OutputKeyVector outputKeys = fixture.ResolveInput(
         fixture.GetObjectAtPath("/Parent/Child"),
-        _tokens->dispatchedComputation,
+        _tokens->dispatchedPrimComputation,
         TfType::Find<int>(),
         child->GetSchemaConfigKey(nullJournal),
         SdfPath(".myRel"),
@@ -645,7 +849,7 @@ TestResolveForDispatchedComputation_RelTarget(Fixture &fixture)
         outputKeys[0], 
         fixture.GetObjectAtPath("/Parent/A"), 
         child->GetSchemaConfigKey(nullJournal),
-        fixture.dispatchedComputationDefinition);
+        fixture.dispatchedPrimComputationDefinition);
 
     EsfJournal expectedJournal;
     expectedJournal
@@ -669,7 +873,8 @@ int main()
     TF_AXIOM(!customSchemaType.IsUnknown());
 
     std::vector tests {
-        TestResolveToComputationOrigin,
+        TestResolveToComputationPrimOrigin,
+        TestResolveToComputationAttributeOrigin,
         TestResolveToComputationOrigin_NoSuchComputation,
         TestResolveToComputationOrigin_WrongResultType,
         TestResolveToNamespaceAncestor,
@@ -678,8 +883,11 @@ int main()
         TestResolveToOwningPrim,
         TestResolveToTargetedObjects,
         TestResolveToTargetedObjects_MissingTarget,
+        TestResolveToConnectionTargetedObjects,
+        TestResolveToConnectionTargetedObjects_MissingConnectionTarget,
         TestResolveToStage,
-        TestResolveForDispatchedComputation,
+        TestResolveForDispatchedPrimComputation,
+        TestResolveForDispatchedAttributeComputation,
         TestResolveForDispatchedComputation_RelTarget,
     };
     for (const auto &test : tests) {

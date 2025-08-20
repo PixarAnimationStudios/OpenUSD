@@ -9,6 +9,7 @@
 #include "pxr/exec/exec/compilationState.h"
 
 #include "pxr/base/arch/hints.h"
+#include "pxr/base/tf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -31,7 +32,39 @@ _RunOrInvoke(
     }
 }
 
-Exec_CompilationTask::~Exec_CompilationTask() = default;
+Exec_CompilationTask::Exec_CompilationTask(
+    Exec_CompilationState &compilationState)
+    : _parent(nullptr)
+    , _numDependents(0)
+    , _taskPhase(0)
+    , _compilationState(compilationState)
+{
+    _compilationState.GetTaskCycleDetector().CreateTask();
+}
+
+Exec_CompilationTask::~Exec_CompilationTask()
+{
+    _compilationState.GetTaskCycleDetector().DestroyTask();
+}
+
+void
+Exec_CompilationTask::AddDependency()
+{
+    if (_numDependents.fetch_add(1, std::memory_order_acquire) == 0) {
+        _compilationState.GetTaskCycleDetector().BlockTask();
+    }
+}
+
+int
+Exec_CompilationTask::RemoveDependency()
+{
+    const int numDependents =
+        _numDependents.fetch_sub(1, std::memory_order_release) - 1;
+    if (numDependents == 0) {
+        _compilationState.GetTaskCycleDetector().UnblockTask();
+    }
+    return numDependents;
+}
 
 Exec_CompilerTaskSync::ClaimResult
 Exec_CompilationTask::TaskDependencies::ClaimSubtask(
@@ -52,6 +85,10 @@ Exec_CompilationTask::operator()(const int depth) const
     // WorkDispatcher semantics require call operators to be const, but we need
     // to mutate our internal task state.
     Exec_CompilationTask *thisTask = const_cast<Exec_CompilationTask*>(this);
+
+    // The thread is busy while it's executing this function.
+    const auto busyScope =
+        _compilationState.GetTaskCycleDetector().NewBusyScope();
 
     // Register an additional dependency while this task is running.
     // 
@@ -119,6 +156,11 @@ Exec_CompilationTask::operator()(const int depth) const
             _RunOrInvoke(taskSync, parent, depth);
         }
     }
+
+    // The task is complete. The task cycle detector expects all tasks to be
+    // unblocked before they are destroyed, so here we remove the dependency
+    // added to prevent re-entry. It should be the only dependency.
+    TF_VERIFY(thisTask->RemoveDependency() == 0);
 
     // The task just completed, and tasks manage their own lifetime: We must
     // delete it now.

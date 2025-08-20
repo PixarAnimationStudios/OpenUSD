@@ -356,6 +356,8 @@ GlfSimpleShadowArray::_AllocTextures()
 
     glBindTexture(GL_TEXTURE_2D, 0);
     _texturesAllocatedExternally = false;
+
+    GLF_POST_PENDING_GL_ERRORS();
 }
 
 void
@@ -421,6 +423,10 @@ GlfSimpleShadowArray::_BindFramebuffer(size_t index)
         TF_CODING_WARNING("Texture index is out of bounds");
     }
 
+    const GLenum status = glCheckNamedFramebufferStatus(
+        _framebuffer, GL_FRAMEBUFFER);
+    TF_VERIFY(status == GL_FRAMEBUFFER_COMPLETE);
+    
     GLF_POST_PENDING_GL_ERRORS();
 }
 

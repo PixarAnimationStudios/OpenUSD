@@ -20,6 +20,7 @@ pxr_library(usd
 
     PUBLIC_CLASSES
         attribute
+        attributeLimits
         attributeQuery
         collectionMembershipQuery
         collectionPredicateLibrary
@@ -91,6 +92,7 @@ pxr_library(usd
 
     PYMODULE_CPPFILES
         wrapAttribute.cpp
+        wrapAttributeLimits.cpp
         wrapAttributeQuery.cpp
         wrapCollectionMembershipQuery.cpp
         wrapCommon.cpp
@@ -202,6 +204,7 @@ pxr_test_scripts(
     testenv/testUsdAppliedAPISchemas.py
     testenv/testUsdAttributeBlocking.py
     testenv/testUsdAttributeConnections.py
+    testenv/testUsdAttributeLimits.py
     testenv/testUsdAttributeAssetPathVariableExpressions.py
     testenv/testUsdAttributeQuery.py
     testenv/testUsdBugs.py
@@ -311,6 +314,15 @@ pxr_build_test(testUsdAttributeInterpolationCpp
         usd
     CPPFILES
         testenv/testUsdAttributeInterpolationCpp.cpp
+)
+
+pxr_build_test(testUsdAttributeLimitsCpp
+    LIBRARIES
+        sdf
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdAttributeLimits.cpp
 )
 
 pxr_build_test(testUsdColorSpaceAPI
@@ -836,6 +848,11 @@ pxr_register_test(testUsdVariants
 
 pxr_register_test(testUsdAttributeInterpolationCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeInterpolationCpp"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAttributeLimitsCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAttributeLimitsCpp"
     EXPECTED_RETURN_CODE 0
 )
 

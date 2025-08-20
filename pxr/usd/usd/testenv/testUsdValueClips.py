@@ -686,6 +686,31 @@ class TestUsdValueClips(unittest.TestCase):
 
         self.CheckTimeSamples(attr)
 
+    def test_ClipStrengthOrderingInherits(self):
+        '''Tests strength of clips when inherits provides clips with nested
+        prims during resolution'''
+        rootLayerFile = 'inherits/root.usda'
+        stage = Usd.Stage.Open(rootLayerFile)
+
+        primInherited = stage.GetPrimAtPath("/InheritedClips/Inner")
+        attrInherited = primInherited.GetAttribute("attr")
+        self.CheckValue(attrInherited, time=0, expected=10)
+        self.CheckValue(attrInherited, time=1, expected=20)
+        self.CheckValue(attrInherited, time=2, expected=30)
+
+        # The "_firstInherits" class should have the strongest opinion,
+        # clobbering any clips from "_hasClips"
+        primClobberedBase = stage.GetPrimAtPath("/InheritedClipsClobbered")
+        attrClobberedBase = primClobberedBase.GetAttribute("attr")
+        self.CheckValue(attrClobberedBase, time=0, expected=-1)
+        self.CheckValue(attrClobberedBase, time=1, expected=-2)
+        self.CheckValue(attrClobberedBase, time=2, expected=-3)
+
+        primClobbered = stage.GetPrimAtPath("/InheritedClipsClobbered/Inner")
+        attrClobbered = primClobbered.GetAttribute("attr")
+        self.CheckValue(attrClobbered, time=0, expected=-10)
+        self.CheckValue(attrClobbered, time=1, expected=-20)
+
     def test_ClipStrengthOrdering(self):
         '''Tests strength of clips during resolution'''
 

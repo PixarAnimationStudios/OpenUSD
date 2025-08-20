@@ -533,6 +533,9 @@ SDF_DEFINE_TYPED_GET_SET(Permission, SdfFieldKeys->Permission,
 SDF_DEFINE_DICTIONARY_GET_SET(GetSymmetryArguments,
                               SetSymmetryArgument, 
                               SdfFieldKeys->SymmetryArguments);
+SDF_DEFINE_DICTIONARY_GET_SET(GetClips,
+                              SetClips,
+                              SdfFieldKeys->Clips);
 SDF_DEFINE_DICTIONARY_GET_SET(GetCustomData,
                               SetCustomData,
                               SdfFieldKeys->CustomData);
@@ -665,9 +668,8 @@ SdfPrimSpec::ClearReferenceList()
 SdfVariantSetNamesProxy
 SdfPrimSpec::GetVariantSetNameList() const
 {
-    return SdfVariantSetNamesProxy(
-        std::make_unique<Sdf_ListOpListEditor<SdfNameKeyPolicy>>(
-            SdfCreateHandle(this), SdfFieldKeys->VariantSetNames));
+    return SdfGetNameEditorProxy(
+            SdfCreateHandle(this), SdfFieldKeys->VariantSetNames);
 }
 
 bool
@@ -791,6 +793,22 @@ SdfPrimSpec::ClearRelocates()
     if (_ValidateEdit(SdfFieldKeys->Relocates)) {
         ClearField(SdfFieldKeys->Relocates);
     }
+}
+
+//
+// ClipSets
+//
+SdfNameEditorProxy
+SdfPrimSpec::GetClipSetsList() const
+{
+    return SdfGetNameEditorProxy(
+        SdfCreateHandle(this), SdfFieldKeys->ClipSets);
+}
+
+bool
+SdfPrimSpec::HasClipSets() const
+{
+    return GetClipSetsList().HasKeys();
 }
 
 //

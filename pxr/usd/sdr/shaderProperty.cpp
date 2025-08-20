@@ -738,6 +738,12 @@ SdrShaderProperty::GetImplementationName() const
                      GetName().GetString());
 }
 
+std::string
+SdrShaderProperty::GetShownIf() const
+{
+    return StringVal(SdrPropertyMetadata->ShownIf, _metadata);
+}
+
 bool
 SdrShaderProperty::CanConnectTo(const SdrShaderProperty& other) const
 {
@@ -869,6 +875,18 @@ SdrShaderProperty::_ConvertToVStruct()
     SdrSdfTypeIndicator typeIndicator = GetTypeAsSdfType();
     SdfValueTypeName typeName = typeIndicator.GetSdfType();
     _defaultValue = typeName.GetDefaultValue();
+}
+
+void
+SdrShaderProperty::_ConvertExpressions(
+    const SdrShaderPropertyUniquePtrVec& properties,
+    SdrShaderNodeConstPtr shader)
+{
+    const TfToken& shownIf = SdrPropertyMetadata->ShownIf;
+    if (_metadata.count(shownIf) == 0) {
+        _metadata[shownIf] = ShaderMetadataHelpers::ComputeShownIfFromMetadata(
+            this, properties, shader);
+    }
 }
 
 void

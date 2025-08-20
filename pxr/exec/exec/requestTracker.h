@@ -18,8 +18,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class Exec_AuthoredValueInvalidationResult;
-class Exec_DisconnectedInputsInvalidationResult;
+struct Exec_AttributeValueInvalidationResult;
+struct Exec_DisconnectedInputsInvalidationResult;
+struct Exec_MetadataInvalidationResult;
 class Exec_RequestImpl;
 class Exec_TimeChangeInvalidationResult;
 
@@ -51,10 +52,16 @@ public:
     void Remove(Exec_RequestImpl *impl);
 
     /// Notify all requests of invalid computed values as a consequence of
-    /// authored value invalidation.
+    /// attribute authored value invalidation.
     /// 
     void DidInvalidateComputedValues(
-        const Exec_AuthoredValueInvalidationResult &invalidationResult);
+        const Exec_AttributeValueInvalidationResult &invalidationResult);
+
+    /// Notify all requests of invalid computed values as a consequence of
+    /// metadata authored value invalidation.
+    /// 
+    void DidInvalidateComputedValues(
+        const Exec_MetadataInvalidationResult &invalidationResult);
 
     /// Notify all requests of invalid computed values as a consequence of
     /// uncompilation.

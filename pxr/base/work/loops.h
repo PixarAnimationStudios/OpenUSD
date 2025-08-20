@@ -10,6 +10,7 @@
 /// \file work/loops.h
 #include "pxr/pxr.h"
 #include "pxr/base/work/api.h"
+#include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/impl.h"
 #include "pxr/base/work/threadLimits.h"
 
@@ -63,10 +64,8 @@ WorkParallelForN(size_t n, Fn &&callback, size_t grainSize)
         PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
         WorkImpl_ParallelForN(n, std::forward<Fn>(callback), grainSize);
     } else {
-
         // If concurrency is limited to 1, execute serially.
         WorkSerialForN(n, std::forward<Fn>(callback));
-
     }
 }
 
@@ -90,6 +89,79 @@ WorkParallelForN(size_t n, Fn &&callback)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///
+/// WorkParallelForTBBRange(const RangeType &r, Fn &&callback)
+///
+/// Runs \p callback in parallel over a RangeType that adheres to TBB's
+/// splittable range requirements: 
+/// https://oneapi-spec.uxlfoundation.org/specifications/oneapi/latest/elements/onetbb/source/named_requirements/algorithms/range
+///
+/// Callback must be of the form:
+///
+///     void LoopCallback(RangeType range);
+///
+///
+template <typename RangeType, typename Fn>
+void
+WorkParallelForTBBRange(const RangeType &range, Fn &&callback)
+{
+    // Don't bother with parallel_for, if concurrency is limited to 1.
+    if (WorkHasConcurrency()) {
+        PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
+        // Use the work backend's ParallelForTBBRange if one exists
+        // otherwise use the default implementation below that builds off of the 
+        // dispatcher.
+#if defined WORK_IMPL_HAS_PARALLEL_FOR_TBB_RANGE
+        WorkImpl_ParallelForTBBRange(range, std::forward<Fn>(callback));
+#else
+        // The parallel task responsible for recursively sub-dividing the range
+        // and invoking the callback on the sub-ranges.
+        class _RangeTask
+        {
+        public:
+            _RangeTask(
+                WorkDispatcher &dispatcher,
+                RangeType &&range,
+                const Fn &callback)
+            : _dispatcher(dispatcher)
+            , _range(std::move(range))
+            , _callback(callback) {}
+
+            void operator()() const {
+                // Subdivide the given range until it is no longer divisible, and
+                // recursively spawn _RangeTasks for the right side of the split.
+                RangeType &leftRange = _range;
+                while (leftRange.is_divisible()) {
+                    RangeType rightRange(leftRange, tbb::split());
+                    _dispatcher.Run(_RangeTask(
+                        _dispatcher, std::move(rightRange), _callback));
+                }
+
+                // If there are any more entries remaining in the left-most side
+                // of the given range, invoke the callback on the left-most range.
+                if (!leftRange.empty()) {
+                    std::invoke(_callback, leftRange);
+                }
+            }
+
+        private:
+            WorkDispatcher &_dispatcher;
+            mutable RangeType _range;
+            const Fn &_callback;
+        };
+
+        WorkDispatcher dispatcher;
+        RangeType range = range;
+        dispatcher.Run(_RangeTask(
+            dispatcher, range, std::forward<Fn>(callback)));
+#endif
+    } else {
+        // If concurrency is limited to 1, execute serially.
+        std::forward<Fn>(callback)(range);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///
 /// WorkParallelForEach(Iterator first, Iterator last, CallbackType callback)
 ///
 /// Callback must be of the form:
@@ -100,7 +172,6 @@ WorkParallelForN(size_t n, Fn &&callback)
 /// argument.
 ///
 /// 
-///
 template <typename InputIterator, typename Fn>
 inline void
 WorkParallelForEach(

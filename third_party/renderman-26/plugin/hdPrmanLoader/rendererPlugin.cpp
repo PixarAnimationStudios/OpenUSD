@@ -262,8 +262,12 @@ HdPrmanLoaderRendererPlugin::DeleteRenderDelegate(
 bool
 #if PXR_VERSION < 2305
 HdPrmanLoaderRendererPlugin::IsSupported() const
-#else
+#elif HD_API_VERSION < 83
 HdPrmanLoaderRendererPlugin::IsSupported(bool /* gpuEnabled */) const
+#else
+HdPrmanLoaderRendererPlugin::IsSupported(
+    HdRendererCreateArgs const & /* rendererCreateArgs */,
+    std::string *reasonWhyNot) const
 #endif
 {
     // TODO: Should we disable XPU gpus with gpuEnabled off?
@@ -271,6 +275,12 @@ HdPrmanLoaderRendererPlugin::IsSupported(bool /* gpuEnabled */) const
         TF_DEBUG(HD_RENDERER_PLUGIN).Msg(
             "hdPrman renderer plugin unsupported: %s\n",
             _hdPrman.errorMsg.c_str());
+#if HD_API_VERSION >= 83
+        if (reasonWhyNot) {
+            *reasonWhyNot = "hdPrman renderer plugin unsupported: " +
+                _hdPrman.errorMsg;
+        }
+#endif
     }
 
     return _hdPrman.valid;

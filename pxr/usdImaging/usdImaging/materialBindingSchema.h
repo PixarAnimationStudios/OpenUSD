@@ -33,7 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // --(BEGIN CUSTOM CODE: Declares)--
 using UsdImagingCollectionMaterialBindingVectorSchema =
-    HdSchemaBasedVectorSchema<class UsdImagingCollectionMaterialBindingSchema>;
+    HdVectorOfSchemasSchema<class UsdImagingCollectionMaterialBindingSchema>;
 // --(END CUSTOM CODE: Declares)--
 
 #define USD_IMAGING_MATERIAL_BINDING_SCHEMA_TOKENS \
@@ -46,13 +46,13 @@ TF_DECLARE_PUBLIC_TOKENS(UsdImagingMaterialBindingSchemaTokens, USDIMAGING_API,
 
 //-----------------------------------------------------------------------------
 
-// The UsdImagingMaterialBindingSchema specifies a container for a prim's
-// material bindings for a particular purpose. Note that only one direct
-// binding but any number of collection-based bindings may be declared for a
-// given purpose. See UsdImagingMaterialBindingsSchema which specifies the
-// purposes and their associated bindings.
-//
 
+/// The UsdImagingMaterialBindingSchema specifies a container for a prim's
+/// material bindings for a particular purpose. Note that only one direct
+/// binding but any number of collection-based bindings may be declared for a
+/// given purpose. See UsdImagingMaterialBindingsSchema which specifies the
+/// purposes and their associated bindings.
+///
 class UsdImagingMaterialBindingSchema : public HdSchema
 {
 public:

@@ -99,6 +99,8 @@ using HgiDeviceCapabilities = HgiBits;
 ///   A two-dimensional texture.</li>
 /// <li>HgiTextureType3D:
 ///   A three-dimensional texture.</li>
+/// <li>HgiTextureTypeCubemap:
+///   A cubemap texture.</li>
 /// <li>HgiTextureType1DArray:
 ///   An array of one-dimensional textures.</li>
 /// <li>HgiTextureType2DArray:
@@ -110,6 +112,7 @@ enum HgiTextureType
     HgiTextureType1D = 0,
     HgiTextureType2D,
     HgiTextureType3D,
+    HgiTextureTypeCubemap,
     HgiTextureType1DArray,
     HgiTextureType2DArray,
 
@@ -790,13 +793,16 @@ enum HgiStorageType
 ///   Indicates a shadow texture.</li>
 /// <li>HgiShaderTextureTypeArrayTexture:
 ///   Indicates an array texture.</li>
+/// <li>HgiShaderTextureTypeCubemapTexture:
+///   Indicates a cubemap texture.</li>
 /// </ul>
 ///
 enum HgiShaderTextureType
 {
     HgiShaderTextureTypeTexture = 0,
     HgiShaderTextureTypeShadowTexture,
-    HgiShaderTextureTypeArrayTexture
+    HgiShaderTextureTypeArrayTexture,
+    HgiShaderTextureTypeCubemapTexture
 };
 
 /// \enum HgiComputeDispatch

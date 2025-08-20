@@ -26,6 +26,8 @@ class EsfObject;
 class EsfPrim;
 class EsfRelationship;
 class TfToken;
+class TfType;
+class VtValue;
 
 /// Scene object abstraction for scene adapter implementations.
 ///
@@ -67,6 +69,28 @@ public:
     /// schemas will have the same schema config key.
     ///
     ESF_API EsfSchemaConfigKey GetSchemaConfigKey(EsfJournal *journal) const;
+
+    /// \name Metadata
+    /// @{
+
+    /// Returns the value of the metadata field indicated by \p key.
+    ///
+    /// Emits an error if \p key is not a valid metadata key.
+    ///
+    ESF_API VtValue GetMetadata(const TfToken &key) const;
+
+    /// Returns true if the field indicated by \p key is a valid metadata field
+    /// for this object.
+    ///
+    ESF_API bool IsValidMetadataKey(const TfToken &key) const;
+
+    /// Returns the value type for the indicated \p key.
+    ///
+    /// Emits an error if \p key is not a valid metadata key.
+    ///
+    ESF_API TfType GetMetadataValueType(const TfToken &key) const;
+
+    /// @}
 
     /// \see UsdObject::Is
     virtual bool IsPrim() const = 0;
@@ -111,6 +135,9 @@ private:
     virtual TfToken _GetName() const = 0;
     virtual EsfPrim _GetPrim() const = 0;
     virtual EsfSchemaConfigKey _GetSchemaConfigKey() const = 0;
+    virtual VtValue _GetMetadata(const TfToken &key) const = 0;
+    virtual bool _IsValidMetadataKey(const TfToken &key) const = 0;
+    virtual TfType _GetMetadataValueType(const TfToken &key) const = 0;
 };
 
 /// Holds an implementation of EsfObjectInterface in a fixed-size buffer.

@@ -49,6 +49,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdSubdivisionTagsSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdSubdivisionTagsSchema
+///
 class HdSubdivisionTagsSchema : public HdSchema
 {
 public:

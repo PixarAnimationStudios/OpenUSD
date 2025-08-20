@@ -42,6 +42,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdCoordSysSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdCoordSysSchema
+///
 class HdCoordSysSchema : public HdSchema
 {
 public:

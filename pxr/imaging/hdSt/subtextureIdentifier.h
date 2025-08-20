@@ -17,6 +17,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdStDynamicUvTextureImplementation;
+class HdStDynamicCubemapTextureImplementation;
 
 ///
 /// \class HdStSubtextureIdentifier
@@ -239,6 +240,40 @@ protected:
 private:
     bool _premultiplyAlpha;
     TfToken _sourceColorSpace;
+};
+
+///
+/// \class HdStDynamicCubemapSubtextureIdentifier
+///
+/// Used as a tag that the Storm texture system returns a
+/// HdStDynamicCubemapTextureObject that is populated by a client rather
+/// than by the Storm texture system.
+///
+/// Clients can subclass this class and provide their own
+/// HdStDynamicCubemapTextureImplementation to create cubemap texture with
+/// custom load and commit behavior.
+///
+class HdStDynamicCubemapSubtextureIdentifier : public HdStSubtextureIdentifier
+{
+public:
+    HDST_API
+    HdStDynamicCubemapSubtextureIdentifier();
+
+    HDST_API
+    ~HdStDynamicCubemapSubtextureIdentifier() override;
+    
+    HDST_API
+    std::unique_ptr<HdStSubtextureIdentifier> Clone() const override;
+
+    /// Textures can return their own HdStDynamicUvTextureImplementation
+    /// to customize the load and commit behavior.
+    HDST_API
+    virtual HdStDynamicCubemapTextureImplementation*
+        GetTextureImplementation() const;
+
+protected:
+    HDST_API
+    ID _Hash() const override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

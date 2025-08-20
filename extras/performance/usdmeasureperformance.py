@@ -244,7 +244,7 @@ def run(assetPath, testusdviewMetrics, traceDir, iteration):
     Collect performance metrics.
     """
     # Supply session layer overrides, if found
-    assetDir = os.path.dirname(assetPath)
+    assetDir = os.path.dirname(assetPath) or "."
     sessionLayer = None
     for fname in os.listdir(assetDir):
         if fname.endswith("overrides.usda"):

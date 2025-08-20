@@ -241,13 +241,11 @@ Ts_TypedKnotData<T>::_UpdateTangentAutoEase(
 
     // See if we overflowed the type.
     //
-    // XXX: There is currently an issue on Mac where std::isfinite(GfHalf) is
-    // failing because std::is_arithmetic<GfHalf>::value is false. Work around
-    // it by casting the T back to a double. If it overflowed to infinity,
-    // casting it back will preserve the infinite value.
-    if (!std::isfinite(double(typedSlope))) {
+    // std::isfinite<GfHalf>() is not fully implemented. Use the help method
+    // in typeHelpers.h instead.
+    if (!Ts_IsFinite(typedSlope)) {
         double height = slope * width;
-        T typedSlope = T(std::copysign(double(std::numeric_limits<T>::max()),
+        typedSlope = T(std::copysign(double(std::numeric_limits<T>::max()),
                                        slope));
         width = height / typedSlope;
     }

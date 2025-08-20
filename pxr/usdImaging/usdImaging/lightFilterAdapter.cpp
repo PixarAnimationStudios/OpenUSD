@@ -224,7 +224,7 @@ UsdImagingLightFilterAdapter::GetImagingSubprimData(
     // other needed data like xform and visibility.
     return HdOverlayContainerDataSource::New(
         HdRetainedContainerDataSource::New(
-            HdPrimTypeTokens->material,
+            HdMaterialSchema::GetSchemaToken(),
             UsdImagingDataSourceMaterial::New(
                 prim,
                 stageGlobals,

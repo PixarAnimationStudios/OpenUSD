@@ -78,6 +78,11 @@ _MakeSamplerObject(
             texture,
             samplerParameters,
             samplerObjectRegistry);
+    case HdStTextureType::Cubemap:
+        return _MakeTypedSamplerObject<HdStTextureType::Cubemap>(
+            texture,
+            samplerParameters,
+            samplerObjectRegistry);
     }
 
     TF_CODING_ERROR("Unsupported texture type");

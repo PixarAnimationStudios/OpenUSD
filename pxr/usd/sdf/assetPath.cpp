@@ -17,6 +17,7 @@
 #include "pxr/base/tf/type.h"
 
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/arrayEdit.h"
 #include "pxr/base/vt/value.h"
 
 #include <ostream>
@@ -29,6 +30,7 @@ TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<SdfAssetPath>();
     TfType::Define<VtArray<SdfAssetPath>>();
+    TfType::Define<VtArrayEdit<SdfAssetPath>>();
 }
 
 TF_REGISTRY_FUNCTION(VtValue)

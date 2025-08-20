@@ -94,6 +94,9 @@ private:
     std::map<SdfPath, _DsHandle> _pathToResolvedSkeleton;
     // Prims targeted as animation by skeletons to skeletons.
     std::map<SdfPath, SdfPathSet> _skelAnimPathToSkeletonPaths;
+    // Instancer to skeletons it instances that are in a prototype
+    // with skelBinding:hasSkelRoot.
+    std::map<SdfPath, SdfPathSet> _instancerPathToSkeletonPaths;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

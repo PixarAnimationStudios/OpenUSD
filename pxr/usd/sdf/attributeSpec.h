@@ -105,6 +105,22 @@ public:
     SDF_API
     void ClearAllowedTokens(); 
 
+    /// Returns the limits dictionary for this attribute.
+    SDF_API
+    VtDictionary GetLimits() const;
+
+    /// Sets the limits dictionary for this attribute.
+    SDF_API
+    void SetLimits(const VtDictionary& limits);
+
+    /// Returns true if limits metadata is set for this attribute.
+    SDF_API
+    bool HasLimits() const;
+
+    /// Clears the limits metadata for this attribute.
+    SDF_API
+    void ClearLimits();
+
     /// Returns the display unit of the attribute.
     SDF_API
     TfEnum GetDisplayUnit() const;

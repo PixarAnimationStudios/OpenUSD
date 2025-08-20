@@ -67,6 +67,7 @@ Linux
 
 * **OS**: CentOS Linux 7
 * **CPU**: AMD EPYC 7763 64-Core Processor, 2450 Mhz
+* **CPU Utilization**: 31 Core(s), 31 Logical Processor(s) (no hyperthreading)
 * **RAM**: 117GB
 * **GPU**: NVIDIA RTXA6000-24Q
 
@@ -82,7 +83,8 @@ Windows
 =======
 
 * **OS**: Microsoft Windows 11 Enterprise
-* **CPU**: AMD EPYC 7763 64-Core Processor, 2450 Mhz, 31 Core(s), 31 Logical Processor(s)
+* **CPU**: AMD EPYC 7763 64-Core Processor, 2450 Mhz
+* **CPU Utilization**: 31 Core(s), 31 Logical Processor(s) (no hyperthreading)
 * **RAM**: 128GB
 * **GPU**: NVIDIA RTXA6000-24Q
 
@@ -107,12 +109,21 @@ Performance Graphs Per Platform
 
 The following graphs show the time (in seconds) to open and close 
 :program:`usdview` for each asset. Graphs are provided for Linux, macOS, and
-Windows platforms (as described in :ref:`perf_environments`).
+Windows platforms (as described in :ref:`perf_environments`). Performance
+data from the four most recent releases is reported on a rolling basis.
 
 .. note::
 
     Linux and Windows machine configurations changed as of 25.08; historical
     numbers have been rerun for consistency.
+
+    For 25.08, the "render first image" metric on macOS is reported. This
+    reported metric does not include platform-specific imaging initialization
+    time, which is included in the corresponding Linux and Windows metrics.
+    For the 25.11 release, historical performance re-evaluations will
+    be performed on all platforms to exclude imaging initialization time from
+    all "render first image" datapoints. The initialization time is roughly
+    constant across all assets, around 0.3-0.4 seconds.
 
     A small increase or decrease in performance metrics over different releases
     may not necessarily indicate an overall performance improvement or
@@ -120,10 +131,6 @@ Windows platforms (as described in :ref:`perf_environments`).
     iterations, but these measurements may still be subject to some variation,
     so use the below results with caution. We are investigating these sources
     of variation.
-
-    There are known issues with obtaining the create_first_image
-    metric on macOS. We will update published metrics when this issue is
-    resolved.
 
 .. image:: performance/linux.svg
     :width: 500

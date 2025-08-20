@@ -190,6 +190,7 @@ _textureTypeTable[HgiTextureTypeCount][2] =
     {HgiTextureType1D,      GL_TEXTURE_1D},
     {HgiTextureType2D,      GL_TEXTURE_2D},
     {HgiTextureType3D,      GL_TEXTURE_3D},
+    {HgiTextureTypeCubemap, GL_TEXTURE_CUBE_MAP},
     {HgiTextureType1DArray, GL_TEXTURE_1D_ARRAY},
     {HgiTextureType2DArray, GL_TEXTURE_2D_ARRAY}
 };

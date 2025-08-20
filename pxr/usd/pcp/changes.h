@@ -130,12 +130,6 @@ public:
     /// Layers used in the composition may have changed.
     bool didMaybeChangeLayers = false;
 
-    /// Will be true if a muting operation took place on a non empty layer.
-    bool didMuteOrUnmuteNonEmptyLayer = false;
-
-    /// Will be true if a non empty sublayer was added or removed.
-    bool didAddOrRemoveNonEmptySublayer = false;
-
     /// Set of layers that were explicitly muted or removed from a sublayer
     /// list and all sublayers of those layers, recursively.
     std::unordered_set<SdfLayerHandle, TfHash> layersAffectedByMutingOrRemoval;

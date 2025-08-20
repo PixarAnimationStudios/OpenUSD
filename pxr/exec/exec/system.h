@@ -14,6 +14,7 @@
 #include "pxr/exec/esf/stage.h"
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -25,6 +26,7 @@ class Exec_RequestTracker;
 class Exec_Runtime;
 class ExecValueKey;
 class SdfPath;
+class TfToken;
 template <typename> class TfFunctionRef;
 template <typename> class TfSpan;
 class VdfMaskedOutput;
@@ -104,9 +106,14 @@ private:
     EXEC_API
     void _InvalidateDisconnectedInputs();
 
-    // Notifies the system of authored value invalidation.
+    // Notifies the system of attribute value invalidation.
     EXEC_API
-    void _InvalidateAuthoredValues(TfSpan<const SdfPath> invalidProperties);
+    void _InvalidateAttributeValues(TfSpan<const SdfPath> invalidAttributes);
+
+    // Notifies the system of metadata value invalidation.
+    EXEC_API
+    void _InvalidateMetadataValues(
+        TfSpan<const std::pair<SdfPath, TfToken>> invalidObjects);
 
 private:
     EsfStage _stage;

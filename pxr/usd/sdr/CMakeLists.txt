@@ -37,6 +37,7 @@ pxr_library(sdr
         wrapFilesystemDiscoveryHelpers.cpp
         wrapRegistry.cpp
         wrapSdfTypeIndicator.cpp
+        wrapShaderMetadataHelpers.cpp
         wrapShaderNode.cpp
         wrapShaderNodeDiscoveryResult.cpp
         wrapShaderProperty.cpp
@@ -55,6 +56,7 @@ pxr_library(sdr
 pxr_test_scripts(
     testenv/testSdrFilesystemDiscovery.py
     testenv/testSdrRegistry.py
+    testenv/testSdrShownIfConversion.py
     testenv/testSdrVersion.py
 )
 
@@ -80,12 +82,39 @@ pxr_build_test_shared_lib(TestSdrRegistry
         testenv/TestSdrRegistry_oslParserPlugin.cpp
 )
 
+pxr_build_test(testSdrParseValue
+    LIBRARIES
+        gf
+        sdf
+        sdr
+        tf
+        vt
+    CPPFILES
+        testenv/testSdrParseValue.cpp
+)
+
+pxr_register_test(testSdrParseValue
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdrParseValue"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testSdrRegistry
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdrRegistry"
     ENV
         PXR_SDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY=1
         PXR_SDR_SKIP_PARSER_PLUGIN_DISCOVERY=1
+)
+
+pxr_install_test_dir(
+    SRC testenv/testSdrShownIfConversion.testenv
+    DEST testSdrShownIfConversion
+)
+
+pxr_register_test(testSdrShownIfConversion
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdrShownIfConversion"
+    EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testSdrVersion

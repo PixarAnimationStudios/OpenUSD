@@ -51,6 +51,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdLensDistortionSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdLensDistortionSchema
+///
 class HdLensDistortionSchema : public HdSchema
 {
 public:

@@ -1823,7 +1823,12 @@ _AddArc(
             newNode.SetHasSpecs(PcpComposeSiteHasPrimSpecs(newNode));
 
             if (!newNode.IsInert() && newNode.HasSpecs()) {
-                if (!indexer->inputs.usd) {
+                if (indexer->inputs.usd) {
+                    // Compose the existence of value clips and update HasValueClips
+                    // accordingly.
+                    newNode.SetHasValueClips(
+                        PcpComposeSiteHasValueClips(newNode));
+                } else {
                     // Determine whether opinions from this site can be accessed
                     // from other sites in the graph.
                     newNode.SetPermission(
@@ -2135,18 +2140,9 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
         }
 
         const bool isNegativeScale = layerOffset.GetScale() < 0.0;
-        const bool negativeScaleAllowed = PcpNegativeLayerOffsetScaleAllowed();
-
-        if (isNegativeScale && negativeScaleAllowed) {
-            TF_WARN("Found negative scale in layer offset for %s to @%s@<%s>. "
-                    "Negative offset scale is deprecated.",
-                    ARC_TYPE == PcpArcTypePayload ? "payload" : "reference",
-                    info.authoredAssetPath.c_str(), 
-                    refOrPayload.GetPrimPath().GetText());
-        }
 
         // Validate layer offset in original reference or payload.
-        if ((isNegativeScale && !negativeScaleAllowed) ||
+        if (isNegativeScale ||
             !layerOffset.IsValid() ||
             !layerOffset.GetInverse().IsValid()) {
             PcpErrorInvalidReferenceOffsetPtr err =
@@ -3271,25 +3267,7 @@ _AddClassBasedArc(
             // overhead. See also _FindSpecializesToPropagateToRoot.
             if (!indexer->previousFrame && placeholder &&
                 !_IsRelocatesPlaceholderImpliedArc(placeholder)) {
-
-                PcpNodeRef propagatedNode = 
-                    _PropagateNodeToRoot(placeholder, indexer);
-
-                // If a new node was created to propagate the placeholder
-                // to the root, tasks will have been enqueued to continue
-                // implying the class to the root of the prim index.
-                //
-                // If a pre-existing node was found instead (i.e., the 
-                // returned node's origin isn't the placeholder), we need
-                // to manually enqueue tasks on the placeholder to continue
-                // that process.
-                if (propagatedNode && 
-                    propagatedNode.GetOriginNode() != placeholder) {
-                    indexer->AddTasksForNode(
-                        placeholder, Task::EvalImpliedClasses);
-                }
-
-                return propagatedNode;
+                return _PropagateNodeToRoot(placeholder, indexer);
             }
 
             return placeholder;
@@ -4706,17 +4684,26 @@ _ConvertNodeForChild(
     // Inert nodes are just placeholders, so we can skip computing these
     // bits of information since these nodes shouldn't have any opinions to
     // contribute.
-    if (!inputs.usd && !node.IsInert() && node.HasSpecs()) {
-        // If the parent's permission is private, it will be inherited by the
-        // child. Otherwise, we recompute it here.
-        if (node.GetPermission() == SdfPermissionPublic) {
-            node.SetPermission(PcpComposeSitePermission(node));
-        }
-        
-        // If the parent had symmetry, it will be inherited by the child.
-        // Otherwise, we recompute it here.
-        if (!node.HasSymmetry()) {
-            node.SetHasSymmetry(PcpComposeSiteHasSymmetry(node));
+    if (!node.IsInert() && node.HasSpecs()) {
+        if (inputs.usd) {
+            // The child site inherits the parent's value clips status, but if
+            // no ancestor has clips, check whether it has value clips.
+            if (!node.HasValueClips()) {
+                node.SetHasValueClips(
+                    PcpComposeSiteHasValueClips(node));
+            }
+        } else {
+            // If the parent's permission is private, it will be inherited by the
+            // child. Otherwise, we recompute it here.
+            if (node.GetPermission() == SdfPermissionPublic) {
+                node.SetPermission(PcpComposeSitePermission(node));
+            }
+            
+            // If the parent had symmetry, it will be inherited by the child.
+            // Otherwise, we recompute it here.
+            if (!node.HasSymmetry()) {
+                node.SetHasSymmetry(PcpComposeSiteHasSymmetry(node));
+            }
         }
     }
 
@@ -4778,6 +4765,15 @@ _NodeCanBeCulled(
     // layer stack before composing across arcs, Pcp needs to keep around 
     // any node that directly OR ancestrally provides symmetry info.
     if (node.HasSymmetry()) {
+        return false;
+    }
+
+    // Nodes that have value clips or that have a namespace ancestor with
+    // value clips should not be culled. Otherwise, composition arcs without
+    // clips authored directly on them may be culled; this is undesirable
+    // because a clip authored on a namespace ancestor may contain opinions
+    // for its namespace descendants.
+    if (node.HasValueClips()) {
         return false;
     }
 

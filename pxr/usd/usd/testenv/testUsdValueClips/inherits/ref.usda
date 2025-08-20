@@ -1,0 +1,9 @@
+#usda 1.0
+
+def "Anim"
+{
+    def "Inner" {
+        float attr
+    }
+    float attr
+}

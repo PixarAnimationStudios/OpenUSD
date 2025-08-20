@@ -88,7 +88,7 @@ protected:
     // Store MaterialX and Hydra counterparts and other Hydra specific info
     // to generate an appropriate glslfx header and properly initialize 
     // MaterialX values.
-    MaterialX::StringMap _mxHdTextureMap;
+    MaterialX::StringVec _mxHdTextureNames;
     MaterialX::StringMap _mxHdPrimvarMap;
     MaterialX::StringMap _mxHdPrimvarDefaultValueMap;
     std::string _defaultTexcoordName;

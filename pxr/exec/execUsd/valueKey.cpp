@@ -17,8 +17,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 ExecUsdValueKey::ExecUsdValueKey(const UsdAttribute &provider)
-    : _key(ExecUsd_AttributeValueKey{
+    : _key(ExecUsd_AttributeComputationValueKey{
             provider, ExecBuiltinComputations->computeValue})
+{}
+
+ExecUsdValueKey::ExecUsdValueKey(
+    const UsdAttribute &provider, const TfToken &computation)
+    : _key(ExecUsd_AttributeComputationValueKey{provider, computation})
 {}
 
 ExecUsdValueKey::ExecUsdValueKey(

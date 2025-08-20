@@ -36,6 +36,29 @@ pxr_library(execUsd
         docs/tutorial2DefiningComputations.md
 )
 
+pxr_build_test(testExecUsdAttributeComputations
+    LIBRARIES
+        tf
+        esf
+        exec
+        execUsd
+        vdf
+        usdGeom
+    CPPFILES
+        testenv/testExecUsdAttributeComputations.cpp
+)
+
+pxr_install_test_dir(
+    SRC testenv/testExecUsdAttributeComputations
+    DEST testExecUsdAttributeComputations
+)
+
+pxr_register_test(testExecUsdAttributeComputations
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdAttributeComputations"
+    EXPECTED_RETURN_CODE 0
+    TESTENV testExecUsdAttributeComputations
+)
+
 pxr_build_test(testExecUsdBasicCompilation
     LIBRARIES
         gf
@@ -62,6 +85,52 @@ pxr_register_test(testExecUsdBasicCompilation
     TESTENV testExecUsdBasicCompilation
 )
 
+pxr_build_test(testExecUsdCallbacks
+    LIBRARIES
+        tf
+        esf
+        exec
+        execUsd
+        vdf
+        usdGeom
+    CPPFILES
+        testenv/testExecUsdCallbacks.cpp
+)
+
+pxr_install_test_dir(
+    SRC testenv/testExecUsdCallbacks
+    DEST testExecUsdCallbacks
+)
+
+pxr_register_test(testExecUsdCallbacks
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdCallbacks"
+    EXPECTED_RETURN_CODE 0
+    TESTENV testExecUsdCallbacks
+)
+
+pxr_build_test(testExecUsdConnectionTargetedObjects
+    LIBRARIES
+        tf
+        esf
+        exec
+        execUsd
+        vdf
+        usdGeom
+    CPPFILES
+        testenv/testExecUsdConnectionTargetedObjects.cpp
+)
+
+pxr_install_test_dir(
+    SRC testenv/testExecUsdConnectionTargetedObjects
+    DEST testExecUsdConnectionTargetedObjects
+)
+
+pxr_register_test(testExecUsdConnectionTargetedObjects
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdConnectionTargetedObjects"
+    EXPECTED_RETURN_CODE 0
+    TESTENV testExecUsdConnectionTargetedObjects
+)
+
 pxr_build_test(testExecUsdDispatchedComputations
     LIBRARIES
         tf
@@ -84,6 +153,62 @@ pxr_register_test(testExecUsdDispatchedComputations
     EXPECTED_RETURN_CODE 0
     TESTENV testExecUsdDispatchedComputations
 )
+
+pxr_build_test(testExecUsdMetadataInput
+    LIBRARIES
+        tf
+        esf
+        exec
+        execUsd
+        vdf
+        usdGeom
+    CPPFILES
+        testenv/testExecUsdMetadataInput.cpp
+)
+
+pxr_install_test_dir(
+    SRC testenv/testExecUsdMetadataInput
+    DEST testExecUsdMetadataInput
+)
+
+pxr_register_test(testExecUsdMetadataInput
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdMetadataInput"
+    EXPECTED_RETURN_CODE 0
+    TESTENV testExecUsdMetadataInput
+)
+
+pxr_build_test(testExecUsdCycleDetection
+    LIBRARIES
+        tf
+        plug
+        exec
+        execUsd
+        vdf
+        sdf
+        usd
+    CPPFILES
+        testenv/testExecUsdCycleDetection.cpp
+)
+
+pxr_install_test_dir(
+    SRC testenv/testExecUsdCycleDetection
+    DEST testExecUsdCycleDetection
+)
+
+function(pxr_register_test_ExecUsdCycleDetection TESTNAME)
+    pxr_register_test(testExecUsdCycleDetection_${TESTNAME}
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testExecUsdCycleDetection ${TESTNAME}"
+        EXPECTED_RETURN_CODE 134
+        TESTENV testExecUsdCycleDetection
+        ENV TF_FATAL_VERIFY=0
+    )
+endfunction()
+
+pxr_register_test_ExecUsdCycleDetection(CyclicComputation)
+pxr_register_test_ExecUsdCycleDetection(CyclicComputationPair)
+pxr_register_test_ExecUsdCycleDetection(CyclicRelationshipComputation)
+pxr_register_test_ExecUsdCycleDetection(LargeCyclicRelationshipComputation)
+pxr_register_test_ExecUsdCycleDetection(CyclicAncestorComputation)
 
 pxr_build_test(testExecUsdRecompilation
     LIBRARIES

@@ -234,6 +234,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdviewInstancingEdits
+    DEST testUsdviewInstancingEdits_SceneIndex
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdviewAnimatedBounds
     DEST testUsdviewAnimatedBounds
 )
@@ -602,12 +607,6 @@ pxr_register_test(testUsdviewUpAxis_yUp
 pxr_register_test(testUsdviewDefaultFontFamily
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewDefaultFontFamily.py test.usda"
-    EXPECTED_RETURN_CODE 0
-)
-
-pxr_register_test(testUsdviewInstancingEdits
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewInstancingEdits.py test.usda"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -1163,6 +1162,36 @@ pxr_register_test(testUsdviewExpressionVariableEdits
     EXPECTED_RETURN_CODE 0
     ENV
         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+)
+
+pxr_register_test(testUsdviewInstancingEdits
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewInstancingEdits.py test.usda"
+    EXPECTED_RETURN_CODE 0
+    IMAGE_DIFF_COMPARE
+        instanceWithParent.png
+        instanceWithParentDeactivated.png
+    FAIL 0.04
+    FAIL_PERCENT 0.1
+    WARN 0.02
+    WARN_PERCENT 0.2
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=false
+)
+
+pxr_register_test(testUsdviewInstancingEdits_SceneIndex
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewInstancingEdits.py test.usda"
+    EXPECTED_RETURN_CODE 0
+    IMAGE_DIFF_COMPARE
+        instanceWithParent.png
+        instanceWithParentDeactivated.png
+    FAIL 0.04
+    FAIL_PERCENT 0.1
+    WARN 0.02
+    WARN_PERCENT 0.2
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 if(OPENCOLORIO_FOUND AND ${PXR_BUILD_OPENCOLORIO_PLUGIN})

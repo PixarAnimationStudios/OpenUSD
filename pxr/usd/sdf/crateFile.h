@@ -81,9 +81,10 @@ struct ValueRep {
                        bool isInlined, bool isArray, uint64_t payload)
         : data(_Combine(t, isInlined, isArray, payload)) {}
 
-    static const uint64_t _IsArrayBit = 1ull << 63;
-    static const uint64_t _IsInlinedBit = 1ull << 62;
-    static const uint64_t _IsCompressedBit = 1ull << 61;
+    static constexpr uint64_t _IsArrayBit = 1ull << 63;
+    static constexpr uint64_t _IsInlinedBit = 1ull << 62;
+    static constexpr uint64_t _IsCompressedBit = 1ull << 61;
+    static constexpr uint64_t _IsArrayEditBit = 1ull << 60;
 
     static const uint64_t _PayloadMask = ((1ull << 48) - 1);
 
@@ -95,6 +96,9 @@ struct ValueRep {
 
     inline bool IsCompressed() const { return data & _IsCompressedBit; }
     inline void SetIsCompressed() { data |= _IsCompressedBit; }
+
+    inline bool IsArrayEdit() const { return data & _IsArrayEditBit; }
+    inline void SetIsArrayEdit() { data |= _IsArrayEditBit; }
 
     inline TypeEnum GetType() const {
         return static_cast<TypeEnum>((data >> 48) & 0xFF);
@@ -460,12 +464,12 @@ private:
 
         // Add an an externally referenced page range.
         Vt_ArrayForeignDataSource *
-        AddRangeReference(void const *addr, size_t numBytes) {
+        AddRangeReference(void const *addr, size_t numBytes) const {
             return _impl->_AddRangeReference(addr, numBytes);
         }
 
     private:
-        TfDelegatedCountPtr<_Impl> _impl;
+        mutable TfDelegatedCountPtr<_Impl> _impl;
     };
     
     ////////////////////////////////////////////////////////////////////////
@@ -887,10 +891,13 @@ private:
 
     template <class T> inline ValueRep _PackValue(T const &v);
     template <class T> inline ValueRep _PackValue(VtArray<T> const &v);
+    template <class T> inline ValueRep _PackValue(VtArrayEdit<T> const &v);
     ValueRep _PackValue(VtValue const &v);
 
     template <class T> void _UnpackValue(ValueRep rep, T *out) const;
     template <class T> void _UnpackValue(ValueRep rep, VtArray<T> *out) const;
+    template <class T> void _UnpackValue(ValueRep rep,
+                                         VtArrayEdit<T> *out) const;
     void _UnpackValue(ValueRep rep, VtValue *result) const;
 
     // Functions that populate the value read/write functions.

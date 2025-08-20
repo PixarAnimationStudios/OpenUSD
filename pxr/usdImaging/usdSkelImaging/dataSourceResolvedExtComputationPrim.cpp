@@ -499,11 +499,10 @@ public:
         TRACE_FUNCTION();
 
         if (name == UsdSkelImagingExtComputationInputNameTokens
-                                ->primWorldToLocal) {
+                                ->commonSpaceToPrimLocal) {
             // Typed sampled data source holding inverse of xform:matrix from
             // prim from input scene.
-            return _resolvedPrimSource->GetPrimWorldToLocal();
-
+            return _resolvedPrimSource->GetCommonSpaceToPrimLocal();
         }
 
         if (name == UsdSkelImagingExtComputationInputNameTokens
@@ -536,8 +535,8 @@ public:
         }
 
         if (name == UsdSkelImagingExtComputationInputNameTokens
-                                ->skelLocalToWorld) {
-            return _GetResolvedSkeletonSchema().GetSkelLocalToWorld();
+                                ->skelLocalToCommonSpace) {
+            return _GetResolvedSkeletonSchema().GetSkelLocalToCommonSpace();
         }
 
         return nullptr;

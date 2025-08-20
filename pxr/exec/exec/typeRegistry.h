@@ -145,7 +145,7 @@ private:
     EXEC_API
     void _RegisterExtractor(
         TfType type,
-        const Exec_ValueExtractorFunction &extractor);
+        Exec_ValueExtractorFunction &extractor);
 
 private:
     std::unique_ptr<Exec_RegistrationBarrier> _registrationBarrier;

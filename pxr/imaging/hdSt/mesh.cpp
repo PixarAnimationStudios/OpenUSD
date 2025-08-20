@@ -350,12 +350,12 @@ HdStMesh::_UpdateDrawItemsForGeomSubsets(HdSceneDelegate *sceneDelegate,
     if (numGeomSubsets != oldNumGeomSubsets) {
         // Shift the instance primvars if necessary
         if (drawItem->HasInstancer()) {
-            const size_t numInstanceLevels = 
+            const int numInstanceLevels = 
                 drawItem->GetInstancePrimvarNumLevels();
             if (numGeomSubsets < oldNumGeomSubsets) {
                 // less geom susbets than before
                 // move instance primvar levels toward start
-                for (size_t i = 0; i < numInstanceLevels; ++i) {
+                for (int i = 0; i < numInstanceLevels; ++i) {
                     HdBufferArrayRangeSharedPtr instancePvRange = 
                         drawItem->GetInstancePrimvarRange(i);
                     HdStUpdateDrawItemBAR(
@@ -368,7 +368,7 @@ HdStMesh::_UpdateDrawItemsForGeomSubsets(HdSceneDelegate *sceneDelegate,
             } else {
                 // more geom subsets than before
                 // move instance primvar levels toward end
-                for (size_t i = numInstanceLevels - 1; i >= 0; --i) {
+                for (int i = numInstanceLevels - 1; i >= 0; --i) {
                     HdBufferArrayRangeSharedPtr instancePvRange = 
                         drawItem->GetInstancePrimvarRange(i);
                     HdStUpdateDrawItemBAR(

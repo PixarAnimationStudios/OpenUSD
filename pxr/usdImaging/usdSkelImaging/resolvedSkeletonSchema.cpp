@@ -33,10 +33,10 @@ TF_DEFINE_PUBLIC_TOKENS(UsdSkelImagingResolvedSkeletonSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdMatrixDataSourceHandle
-UsdSkelImagingResolvedSkeletonSchema::GetSkelLocalToWorld() const
+UsdSkelImagingResolvedSkeletonSchema::GetSkelLocalToCommonSpace() const
 {
     return _GetTypedDataSource<HdMatrixDataSource>(
-        UsdSkelImagingResolvedSkeletonSchemaTokens->skelLocalToWorld);
+        UsdSkelImagingResolvedSkeletonSchemaTokens->skelLocalToCommonSpace);
 }
 
 HdMatrix4fArrayDataSourceHandle
@@ -63,7 +63,7 @@ UsdSkelImagingResolvedSkeletonSchema::GetBlendShapeWeights() const
 /*static*/
 HdContainerDataSourceHandle
 UsdSkelImagingResolvedSkeletonSchema::BuildRetained(
-        const HdMatrixDataSourceHandle &skelLocalToWorld,
+        const HdMatrixDataSourceHandle &skelLocalToCommonSpace,
         const HdMatrix4fArrayDataSourceHandle &skinningTransforms,
         const HdTokenArrayDataSourceHandle &blendShapes,
         const HdFloatArrayDataSourceHandle &blendShapeWeights
@@ -74,9 +74,9 @@ UsdSkelImagingResolvedSkeletonSchema::BuildRetained(
 
     size_t _count = 0;
 
-    if (skelLocalToWorld) {
-        _names[_count] = UsdSkelImagingResolvedSkeletonSchemaTokens->skelLocalToWorld;
-        _values[_count++] = skelLocalToWorld;
+    if (skelLocalToCommonSpace) {
+        _names[_count] = UsdSkelImagingResolvedSkeletonSchemaTokens->skelLocalToCommonSpace;
+        _values[_count++] = skelLocalToCommonSpace;
     }
 
     if (skinningTransforms) {
@@ -97,10 +97,10 @@ UsdSkelImagingResolvedSkeletonSchema::BuildRetained(
 }
 
 UsdSkelImagingResolvedSkeletonSchema::Builder &
-UsdSkelImagingResolvedSkeletonSchema::Builder::SetSkelLocalToWorld(
-    const HdMatrixDataSourceHandle &skelLocalToWorld)
+UsdSkelImagingResolvedSkeletonSchema::Builder::SetSkelLocalToCommonSpace(
+    const HdMatrixDataSourceHandle &skelLocalToCommonSpace)
 {
-    _skelLocalToWorld = skelLocalToWorld;
+    _skelLocalToCommonSpace = skelLocalToCommonSpace;
     return *this;
 }
 
@@ -132,7 +132,7 @@ HdContainerDataSourceHandle
 UsdSkelImagingResolvedSkeletonSchema::Builder::Build()
 {
     return UsdSkelImagingResolvedSkeletonSchema::BuildRetained(
-        _skelLocalToWorld,
+        _skelLocalToCommonSpace,
         _skinningTransforms,
         _blendShapes,
         _blendShapeWeights
@@ -168,11 +168,11 @@ UsdSkelImagingResolvedSkeletonSchema::GetDefaultLocator()
 
 /* static */
 const HdDataSourceLocator &
-UsdSkelImagingResolvedSkeletonSchema::GetSkelLocalToWorldLocator()
+UsdSkelImagingResolvedSkeletonSchema::GetSkelLocalToCommonSpaceLocator()
 {
     static const HdDataSourceLocator locator =
         GetDefaultLocator().Append(
-            UsdSkelImagingResolvedSkeletonSchemaTokens->skelLocalToWorld);
+            UsdSkelImagingResolvedSkeletonSchemaTokens->skelLocalToCommonSpace);
     return locator;
 }
 

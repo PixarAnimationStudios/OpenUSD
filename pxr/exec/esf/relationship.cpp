@@ -57,6 +57,10 @@ _GetForwardedTargetsImpl(
                         visitedRels, uniqueTargets, result,
                         journal);
                 }
+
+                // We don't include relationships in the forwarded targeted
+                // objects.
+                continue;
             }
         }
 

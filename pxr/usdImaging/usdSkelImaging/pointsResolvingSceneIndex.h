@@ -126,6 +126,9 @@ private:
     std::map<SdfPath, SdfPathSet> _skelPathToPrimPaths;
     // Same for blend shapes.
     std::map<SdfPath, SdfPathSet> _blendShapePathToPrimPaths;
+    // Instancer to prims that it instances, that are in a prototype with
+    // skelBinding:hasSkelRoot and that are posed by a skeleton.
+    std::map<SdfPath, SdfPathSet> _instancerPathToPrimPaths;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

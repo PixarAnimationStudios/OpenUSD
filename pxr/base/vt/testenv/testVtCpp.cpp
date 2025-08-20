@@ -588,6 +588,26 @@ static void testArray() {
             // pass
         }
     }
+    {
+        // Test that checks that MakeUnique creates a unique copy of the data 
+        // if necessary.
+        VtIntArray v1 = {0,1,2,3,4,5};
+        VtIntArray v2 (v1);
+
+        // this call should create a copy since v1 and v2 share the same data
+        TF_AXIOM(v1.IsIdentical(v2));
+        TF_AXIOM (v2.MakeUnique());
+        TF_AXIOM(!v1.IsIdentical(v2));
+        // v2's data should be unique by this point so calling MakeUnique should
+        // not make any copies.
+        TF_AXIOM (!v2.MakeUnique());
+        
+        TF_AXIOM(v2.size() == v1.size());
+        for (int i = 0; i < (int)v1.size(); ++i) {
+            TF_AXIOM(v1[i] == i);
+            TF_AXIOM(v2[i] == i);
+        }
+    }
 }
 
 static void testRecursiveDictionaries()
@@ -1453,6 +1473,7 @@ static void testValue() {
         v = b;
         TF_AXIOM(v.Get<VtVec2iArray>().size() == 3);
         TF_AXIOM(v.IsArrayValued());
+        TF_AXIOM(!v.IsArrayEditValued());
         TF_AXIOM(v.GetElementTypeid() == typeid(GfVec2i));
         TF_AXIOM(vclone.Get<VtVec2iArray>().size() == 2);
     }
@@ -1463,6 +1484,7 @@ static void testValue() {
         VtValue v { dae };
         TF_AXIOM(v.IsHolding<VtDoubleArrayEdit>());
         TF_AXIOM(!v.IsArrayValued());
+        TF_AXIOM(v.IsArrayEditValued());
         TF_AXIOM(v.GetElementTypeid() == typeid(double));
     }
 
@@ -1689,6 +1711,7 @@ testTypedVtValueProxy()
     TF_AXIOM(varrayProxy.IsHolding<_TypedProxy<VtFloatArray>>());
     
     TF_AXIOM(varrayProxy.IsArrayValued());
+    TF_AXIOM(!varrayProxy.IsArrayEditValued());
     TF_AXIOM(varrayProxy.GetArraySize() == 7);
     TF_AXIOM(varrayProxy.GetElementTypeid() == typeid(float));
     TF_AXIOM(varrayProxy.Get<VtFloatArray>() == fa);
@@ -1798,6 +1821,11 @@ struct Stringify
         return TfStringPrintf("array: sz=%zu", arr.size());
     }
     
+    template <class T>
+    std::string operator()(VtArrayEdit<T> const &arrayEdit) const {
+        return "array edit";
+    }
+
     std::string operator()(VtValue const &unknown) const {
         return "unknown type";
     }
@@ -1819,6 +1847,11 @@ struct GetArraySize
         return array.size();
     }
 
+    template <class T>
+    size_t operator()(VtArrayEdit<T> const &arrayEdit) const {
+        return 0xED17;
+    }
+
     size_t operator()(VtValue const &val) const {
         return ~0;
     }
@@ -1834,6 +1867,8 @@ testVisitValue()
     VtValue sv(std::string("hello"));
     VtValue av(VtArray<float>(123));
     VtValue ov(std::vector<float>(123));
+    VtValue evf(VtArrayEdit<float> {});
+    VtValue evi(VtArrayEdit<int> {});
 
     TF_AXIOM(VtVisitValue(iv, Stringify()) == "int: 123");
     TF_AXIOM(VtVisitValue(dv, Stringify()) == "double: 1.23");
@@ -1842,6 +1877,8 @@ testVisitValue()
     TF_AXIOM(VtVisitValue(sv, Stringify()) == "string: 'hello'");
     TF_AXIOM(VtVisitValue(av, Stringify()) == "array: sz=123");
     TF_AXIOM(VtVisitValue(ov, Stringify()) == "unknown type");
+    TF_AXIOM(VtVisitValue(evf, Stringify()) == "array edit");
+    TF_AXIOM(VtVisitValue(evi, Stringify()) == "array edit");
     
     TF_AXIOM(VtVisitValue(iv, RoundOrMinusOne()) == 123);
     TF_AXIOM(VtVisitValue(dv, RoundOrMinusOne()) == 1);
@@ -1850,11 +1887,15 @@ testVisitValue()
     TF_AXIOM(VtVisitValue(sv, RoundOrMinusOne()) == -1);
     TF_AXIOM(VtVisitValue(av, RoundOrMinusOne()) == -1);
     TF_AXIOM(VtVisitValue(ov, RoundOrMinusOne()) == -1);
+    TF_AXIOM(VtVisitValue(evf, RoundOrMinusOne()) == -1);
+    TF_AXIOM(VtVisitValue(evi, RoundOrMinusOne()) == -1);
     
     TF_AXIOM(VtVisitValue(av, GetArraySize()) == 123);
     TF_AXIOM(VtVisitValue(iv, GetArraySize()) == size_t(~0));
     TF_AXIOM(VtVisitValue(
                  VtValue(VtArray<GfVec3d>(234)), GetArraySize()) == 234);
+    TF_AXIOM(VtVisitValue(evf, GetArraySize()) == 0xED17);
+    TF_AXIOM(VtVisitValue(evi, GetArraySize()) == 0xED17);
 
 }
 

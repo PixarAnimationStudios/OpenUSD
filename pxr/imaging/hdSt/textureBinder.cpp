@@ -36,6 +36,7 @@ HdSt_TextureBinder::GetBufferSpecs(
     for (const NamedTextureHandle & texture : textures) {
         switch (texture.type) {
         case HdStTextureType::Uv:
+        case HdStTextureType::Cubemap:
             if (useBindlessHandles) {
                 specs->emplace_back(
                     texture.name,
@@ -66,22 +67,6 @@ HdSt_TextureBinder::GetBufferSpecs(
                     HdTypeDoubleMat4 : HdTypeFloatMat4), 1});
             break;
         case HdStTextureType::Ptex:
-            if (useBindlessHandles) {
-                specs->emplace_back(
-                    texture.name,
-                    HdTupleType{ HdTypeUInt32Vec2, texture.handles.size() });
-                specs->emplace_back(
-                    _Concat(
-                        texture.name,
-                        HdSt_ResourceBindingSuffixTokens->layout),
-                        HdTupleType{ HdTypeUInt32Vec2, texture.handles.size() });
-            }
-            specs->emplace_back(
-                _Concat(
-                    texture.name,
-                    HdSt_ResourceBindingSuffixTokens->valid),
-                HdTupleType{HdTypeBool, 1});
-            break;
         case HdStTextureType::Udim:
             if (useBindlessHandles) {
                 specs->emplace_back(
@@ -295,6 +280,35 @@ public:
                     HdSt_ResourceBindingSuffixTokens->valid),
                 VtValue(textures[0]->IsValid())));
     }
+
+    static void Compute(
+        TfToken const &name,
+        std::vector<const HdStCubemapTextureObject*> const &textures,
+        std::vector<const HdStCubemapSamplerObject*> const &samplers,
+        HdBufferSourceSharedPtrVector * const sources,
+        bool useBindlessHandles,
+        bool /*doublesSupported*/)
+    {
+        if (useBindlessHandles) {
+            VtArray<uint64_t> bindlessHandles;
+            for (size_t i = 0; i < textures.size(); i++) {
+                bindlessHandles.push_back(
+                    HdSt_ResourceBinder::GetSamplerBindlessHandle(
+                        samplers[i]->GetSampler(), textures[i]->GetTexture()));
+            }
+            sources->push_back(
+                std::make_shared<HdSt_BindlessSamplerBufferSource>(
+                    name,
+                    bindlessHandles));
+        }
+       
+        sources->push_back(
+            std::make_shared<HdVtBufferSource>(
+                _Concat(
+                    name,
+                    HdSt_ResourceBindingSuffixTokens->valid),
+                VtValue(textures[0]->IsValid())));
+    }
 };
 
 class _BindFunctor {
@@ -389,6 +403,26 @@ public:
             layoutSamplerHandles,
             layoutTextureHandles,
             bind);
+    }
+
+    static void Compute(
+        TfToken const &name,
+        std::vector<const HdStCubemapTextureObject*> const &textures,
+        std::vector<const HdStCubemapSamplerObject*> const &samplers,
+        HdSt_ResourceBinder const &binder,
+        const bool bind)
+    {
+        std::vector<HgiTextureHandle> textureHandles;
+        std::vector<HgiSamplerHandle> samplerHandles;
+        for (size_t i = 0; i < textures.size(); i++) {
+            textureHandles.push_back(textures[i]->GetTexture());
+            samplerHandles.push_back(samplers[i]->GetSampler());
+        }
+        binder.BindTextures(
+                name,
+                samplerHandles,
+                textureHandles,
+                bind);
     }
 };
 
@@ -485,6 +519,26 @@ public:
                 layoutSamplerHandles,
                 layoutTextureHandles);
     }
+
+    static void Compute(
+        TfToken const &name,
+        std::vector<const HdStCubemapTextureObject*> const &textures,
+        std::vector<const HdStCubemapSamplerObject*> const &samplers,
+        HdSt_ResourceBinder const &binder,
+        HgiResourceBindingsDesc * bindingsDesc)
+    {
+        std::vector<HgiTextureHandle> textureHandles;
+        std::vector<HgiSamplerHandle> samplerHandles;
+        for (size_t i = 0; i < textures.size(); i++) {
+            textureHandles.push_back(textures[i]->GetTexture());
+            samplerHandles.push_back(samplers[i]->GetSampler());
+        }
+        binder.GetTextureBindingDescs(
+                bindingsDesc,
+                name,
+                samplerHandles,
+                textureHandles);
+    }
 };
 
 template<HdStTextureType textureType, class Functor, typename ...Args>
@@ -548,6 +602,10 @@ void _Dispatch(
         break;
     case HdStTextureType::Udim:
         _CastAndCompute<HdStTextureType::Udim, Functor>(
+            namedTextureHandle, std::forward<Args>(args)...);
+        break;
+    case HdStTextureType::Cubemap:
+        _CastAndCompute<HdStTextureType::Cubemap, Functor>(
             namedTextureHandle, std::forward<Args>(args)...);
         break;
     }

@@ -4,12 +4,14 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
+#include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/materialXFilter.h"
 #include "pxr/imaging/hdSt/materialXShaderGen.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdMtlx/hdMtlx.h"
+#include "pxr/imaging/hdMtlx/tokens.h"
 #include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/usd/sdf/schema.h"
@@ -27,6 +29,8 @@
 #include <MaterialXGenShader/DefaultColorManagementSystem.h>
 #include <MaterialXRender/Util.h>
 #include <MaterialXRender/LightHandler.h> 
+
+#include <fstream>
 
 namespace mx = MaterialX;
 
@@ -79,6 +83,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Primvar detection constants
     (geompropvalue)
+
+    // Normalmap node Tokens
+    (ND_normalmap)
+    (space)
 );
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -167,7 +175,7 @@ R"(
 )";
 
 static mx::GenContext
-_CreateHdStMaterialXContext(
+_InitHdStMaterialXContext(
     HdSt_MxShaderGenInfo const& mxHdInfo,
     TfToken const& apiName)
 {
@@ -198,14 +206,15 @@ HdSt_GenMaterialXShader(
     HdSt_MxShaderGenInfo const& mxHdInfo,
     TfToken const& apiName)
 {
-    TRACE_FUNCTION_SCOPE("Create GlslShader from MtlxDocument")
+    TRACE_FUNCTION_SCOPE("Create Storm Shader from MtlxDocument")
     // Initialize the Context for shaderGen. 
-    mx::GenContext mxContext = _CreateHdStMaterialXContext(mxHdInfo, apiName);
+    mx::GenContext mxContext = _InitHdStMaterialXContext(mxHdInfo, apiName);
 
-    mxContext.getOptions().hwTransparency
-        = mxHdInfo.materialTag != HdStMaterialTagTokens->defaultMaterialTag;
+    mxContext.getOptions().hwTransparency =
+        mxHdInfo.materialTag != HdStMaterialTagTokens->defaultMaterialTag;
 
-    // Starting from MaterialX 1.38.4 at PR 877, we must remove the "libraries" part:
+    // Starting from MaterialX 1.38.4 at PR 877, we must remove the 
+    // "libraries" part:
     mx::FileSearchPath libSearchPaths;
     for (const mx::FilePath &path : searchPaths) {
         if (path.getBaseName() == "libraries") {
@@ -239,41 +248,16 @@ HdSt_GenMaterialXShader(
     std::vector<mx::NodePtr> lights;
     lightHandler.findLights(mxDoc, lights);
     lightHandler.registerLights(mxDoc, lights, mxContext);
-
-    // Find renderable elements in the Mtlx Document.
-    std::vector<mx::TypedElementPtr> renderableElements;
-    mx::findRenderableElements(mxDoc, renderableElements);
-
-    // Should have exactly one renderable element (material).
-    if (renderableElements.size() != 1) {
-        TF_CODING_ERROR(
-            "Generated MaterialX Document has %lu materials, should only have "
-            "1.\nMake sure mtlx files containing custom node definitions do "
-            "not contain multiple materials.", renderableElements.size());
+    
+    // Get the surface shader node from the mxDoc which HdMtlx has named 
+    const mx::NodePtr shaderNode =
+        mxDoc->getNode(HdMtlxTokens->surfaceshaderName);
+    if (!shaderNode) {
+        TF_CODING_ERROR("Unable to generate a shader from the MaterialX "
+                        "Document - could not find surface shader node.");
         return nullptr;
     }
-
-    // Extract out the Surface Shader Node for the Material Node 
-    mx::TypedElementPtr renderableElem = renderableElements.at(0);
-    mx::NodePtr node = renderableElem->asA<mx::Node>();
-    if (node && node->getType() == mx::MATERIAL_TYPE_STRING) {
-        // Use auto so can compile against MaterialX 1.38.0 or 1.38.1
-        auto mxShaderNodes = 
-            mx::getShaderNodes(node, mx::SURFACE_SHADER_TYPE_STRING);
-        if (!mxShaderNodes.empty()) {
-            renderableElem = *mxShaderNodes.begin();
-        }
-    }
-    // Generate the PixelShader for the renderable element (surfaceshader).
-    const mx::ElementPtr & mxElem = mxDoc->getDescendant(
-                                            renderableElem->getNamePath());
-    mx::TypedElementPtr typedElem = mxElem ? mxElem->asA<mx::TypedElement>()
-                                         : nullptr;
-    if (typedElem) {
-        return _GenMaterialXShader(mxContext, typedElem);
-    }
-    TF_CODING_ERROR("Unable to generate a shader from the MaterialX Document");
-    return nullptr;
+    return _GenMaterialXShader(mxContext, shaderNode);
 }
 
 
@@ -404,7 +388,7 @@ _AddDefaultMtlxTextureValues(
 static void
 _AddFallbackDomeLightTextureNode(
     HdMaterialNetwork2* hdNetwork,
-    SdfPath const& hdTerminalNodePath)
+    SdfPath const& terminalNodePath)
 {
     // Create and add a Fallback Dome Light Texture Node to the hdNetwork
     HdMaterialNode2 hdDomeTextureNode;
@@ -414,44 +398,46 @@ _AddFallbackDomeLightTextureNode(
             HdStPackageFallbackDomeLightTexture(), 
             HdStPackageFallbackDomeLightTexture()));
     const SdfPath domeTexturePath = 
-        hdTerminalNodePath.ReplaceName(_tokens->domeLightFallback);
+        terminalNodePath.ReplaceName(_tokens->domeLightFallback);
     hdNetwork->nodes.insert({domeTexturePath, hdDomeTextureNode});
 
     // Connect the new Texture Node to the Terminal Node
     HdMaterialConnection2 domeTextureConn;
     domeTextureConn.upstreamNode = domeTexturePath;
     domeTextureConn.upstreamOutputName = domeTexturePath.GetNameToken();
-    hdNetwork->nodes[hdTerminalNodePath].
+    hdNetwork->nodes[terminalNodePath].
         inputConnections[domeTextureConn.upstreamOutputName] = {domeTextureConn};
 }
 
 // Store texture node connections, default dome light texture path and any
-// filename inputs from the terminal nodeto the mxHdTextureMap
+// filename inputs from the terminal node to the mxHdTextureNames
 static void 
-_UpdateMxHdTextureMap(
+_UpdateMxHdTextureNames(
     std::set<SdfPath> const& hdTextureNodes,
     HdMtlxTexturePrimvarData::TextureMap const& hdMtlxTextureInfo,
     HdMaterialNode2 const& hdTerminalNode,
-    SdfPath const& hdTerminalNodePath,
-    mx::StringMap* mxHdTextureMap)
+    SdfPath const& terminalNodePath,
+    mx::StringVec* mxHdTextureNames)
 {
     // Store the added connection to the terminal node for MaterialXShaderGen
     for (SdfPath const& texturePath : hdTextureNodes) {
         auto mtlxTextureInfo = hdMtlxTextureInfo.find(texturePath.GetName());
         if (mtlxTextureInfo != hdMtlxTextureInfo.end()) {
-            for (std::string const& fileInputName: mtlxTextureInfo->second) {
+            for (std::string const& fileInputName : mtlxTextureInfo->second) {
                 // Note these connections were made in _UpdateTextureNode()
+                // and use the mtlx paramName which follows the pattern:
+                // 'nodeName_paramName'
                 const std::string newConnName =
                     texturePath.GetName() + "_" + fileInputName;
-                mxHdTextureMap->emplace(newConnName, newConnName);
+                mxHdTextureNames->push_back(newConnName);
             }
         }
     }
 
     // Add the Dome Texture name to the TextureMap for MaterialXShaderGen
     const SdfPath domeTexturePath =
-        hdTerminalNodePath.ReplaceName(_tokens->domeLightFallback);
-    (*mxHdTextureMap)[domeTexturePath.GetName()] = domeTexturePath.GetName();
+        terminalNodePath.ReplaceName(_tokens->domeLightFallback);
+    mxHdTextureNames->push_back(domeTexturePath.GetName());
 
     // Check the terminal node for any filename inputs requiring special
     // handling due to node remapping:
@@ -460,7 +446,7 @@ _UpdateMxHdTextureMap(
     if (terminalNodeDef) {
         for (auto const& mxInput : terminalNodeDef->getActiveInputs()) {
             if (mxInput->getType() == _tokens->filename) {
-                (*mxHdTextureMap)[mxInput->getName()] = mxInput->getName();
+                mxHdTextureNames->push_back(mxInput->getName());
             }
         }
     }
@@ -802,7 +788,7 @@ _GetMaterialTag(
         HdMtlxGetNodeDef(TfToken(mtlxSdrNode->GetIdentifier()));
     if (!mxNodeDef) {
         TF_WARN("Unable to find the nodeDef for '%s'.", 
-            mtlxSdrNode->GetIdentifier().GetText());
+                mtlxSdrNode->GetIdentifier().GetText());
         return HdStMaterialTagTokens->defaultMaterialTag.GetString();
     }
 
@@ -878,6 +864,12 @@ _ConnectPrimvarNodesToTerminalNode(
             sdrRegistry.GetShaderNodeByIdentifierAndType(
                 mxNodeDefName, _tokens->mtlx);
 
+        if (!mtlxSdrNode) {
+            TF_DEBUG(HDST_MTLX).Msg("Unable to find Sdr node of type '%s' for "
+                "node at <%s>. May lose primvar connection.\n",
+                mxNodeDefName.GetText(), nodePath.GetAsString().c_str());
+                continue;
+        }
         if (!mtlxSdrNode || (mtlxSdrNode->GetFamily() != _tokens->geompropvalue 
             && !_NodeUsesTexcoordPrimvar(mtlxSdrNode))) {
             continue;
@@ -892,6 +884,11 @@ _ConnectPrimvarNodesToTerminalNode(
 
         hdNetwork->nodes[terminalNodePath]
             .inputConnections[primvarConn.upstreamOutputName] = {primvarConn};
+
+        TF_DEBUG(HDST_MTLX).Msg(
+            "Connecting primvar node <%s> to terminal node <%s>.\n",
+            nodePath.GetAsString().c_str(),
+            terminalNodePath.GetAsString().c_str());
     }
 }
 
@@ -950,15 +947,20 @@ _UpdateTextureNode(
     textureConn.upstreamNode = textureNodePath;
     hdNetwork->nodes[terminalNodePath].
         inputConnections[mtlxParamName] = {textureConn};
+
+    TF_DEBUG(HDST_MTLX).Msg(
+        "Connecting texture node <%s> to terminal node <%s>.\n",
+        textureNodePath.GetAsString().c_str(),
+        terminalNodePath.GetAsString().c_str());
 }
 
 static void
 _ReplaceFilenameInput(
     HdMaterialNetwork2* hdNetwork,
-    SdfPath const& hdTerminalNodePath,
+    SdfPath const& terminalNodePath,
     std::string const& mxFilenameInputName)
 {
-    const auto& hdTerminalNode = hdNetwork->nodes.at(hdTerminalNodePath);
+    const auto& hdTerminalNode = hdNetwork->nodes.at(terminalNodePath);
     const mx::NodeDefPtr mxNodeDef = HdMtlxGetNodeDef(hdTerminalNode.nodeTypeId);
     if (!mxNodeDef) {
         return;
@@ -1055,7 +1057,7 @@ _ReplaceFilenameInput(
 
     // Add the Texture Node to the hdNetwork
     const SdfPath terminalTexturePath =
-        hdTerminalNodePath.AppendChild(filenameToken);
+        terminalNodePath.AppendChild(filenameToken);
     hdNetwork->nodes.insert({terminalTexturePath, terminalTextureNode});
 
     // Make a new connection to the terminal node
@@ -1064,11 +1066,17 @@ _ReplaceFilenameInput(
     terminalTextureConn.upstreamOutputName = terminalTexturePath.GetNameToken();
 
     // Replace the filename parameter with the TerminalTextureConnection
-    hdNetwork->nodes[hdTerminalNodePath].parameters.erase(filenameParamIt);
-    hdNetwork->nodes[hdTerminalNodePath].
+    hdNetwork->nodes[terminalNodePath].parameters.erase(filenameParamIt);
+    hdNetwork->nodes[terminalNodePath].
         inputConnections[terminalTextureConn.upstreamOutputName] =
             {terminalTextureConn};
 
+    TF_DEBUG(HDST_MTLX).Msg(
+        "Creating texture node <%s> and connecting it to terminal node <%s>, "
+        "for the filename input '%s' on the '%s' typed node.\n",
+        terminalTexturePath.GetAsString().c_str(), 
+        terminalNodePath.GetAsString().c_str(),
+        mxFilenameInputName.c_str(), mxNodeDef->getName().c_str());
 }
 
 // Gather the Material Params from the glslfx ShaderPtr
@@ -1129,15 +1137,15 @@ _AddMaterialXParams(
         // MaterialX parameter Information
         const auto* variable = paramsBlock[i];
         const auto varType = HdStMaterialXHelpers::GetMxTypeDesc(variable);
+        const std::string mxParamName = variable->getVariable();
 
         // Create a corresponding HdSt_MaterialParam
         HdSt_MaterialParam param;
         param.paramType = HdSt_MaterialParam::ParamTypeFallback;
-        param.name = TfToken(variable->getVariable());
+        param.name = TfToken(mxParamName);
 
         // Get the parameter value from the map created above
-        const auto paramValueIt =
-            mxParamNameToValue.find(variable->getVariable());
+        const auto paramValueIt = mxParamNameToValue.find(mxParamName);
         if (paramValueIt != mxParamNameToValue.end()) {
             if (varType.getBaseType() == mx::TypeDesc::BASETYPE_BOOLEAN ||
                 varType.getBaseType() == mx::TypeDesc::BASETYPE_FLOAT ||
@@ -1204,7 +1212,7 @@ _AddMaterialXParams(
                 else if (varType.getSize() == 4) {
                     GfVec4i val;
                     valueStream >> val[0] >> separator >> val[1] >> separator
-                        >> val[2] >> separator >> val[3];
+                                >> val[2] >> separator >> val[3];
                     param.fallbackValue = VtValue(val);
                 }
             }
@@ -1218,7 +1226,7 @@ _AddMaterialXParams(
         if (varType.getSemantic() == mx::TypeDesc::SEMANTIC_FILENAME) {
             // Get the anonymized MaterialX node name from the param name
             // annonNodeName_paramName -> annonNodeName
-            std::string mxNodeName = variable->getVariable();
+            std::string mxNodeName = mxParamName;
             const auto underscorePos = mxNodeName.find('_');
             if (underscorePos != std::string_view::npos) {
                 mxNodeName = mxNodeName.substr(0, underscorePos);
@@ -1234,8 +1242,7 @@ _AddMaterialXParams(
                 // Storm does not expect textures/filename to be direct inputs 
                 // on materials, replace this filename input with a connection
                 // to an image node
-                _ReplaceFilenameInput(
-                    hdNetwork, terminalNodePath, variable->getVariable());
+                _ReplaceFilenameInput(hdNetwork, terminalNodePath, mxParamName);
             }
         }
     }
@@ -1251,12 +1258,14 @@ _GenerateMaterialXShader(
     TfToken const& apiName,
     bool const bindlessTexturesEnabled)
 {
-    // Get Standard Libraries and SearchPaths (for mxDoc and mxShaderGen)
-    const mx::DocumentPtr& stdLibraries = HdMtlxStdLibraries();
-    const mx::FileSearchPath& searchPaths = HdMtlxSearchPaths();
+    TF_DEBUG(HDST_MTLX).Msg("Generate MaterialX Shader for <%s> material.\n"
+        " - bindless textures %s enabled\n - '%s' api\n - '%s' materialTag.\n", 
+        materialPath.GetAsString().c_str(),
+        (bindlessTexturesEnabled ? "" : "not"), apiName.GetText(),
+        materialTagToken.GetText());
 
     // Create the MaterialX Document from the HdMaterialNetwork
-    HdSt_MxShaderGenInfo mxHdInfo;
+    const mx::DocumentPtr& stdLibraries = HdMtlxStdLibraries();
     HdMtlxTexturePrimvarData hdMtlxData;
     const mx::DocumentPtr mtlxDoc =
         HdMtlxCreateMtlxDocumentFromHdNetwork(
@@ -1265,9 +1274,10 @@ _GenerateMaterialXShader(
 
     // Add domelight and other textures to mxHdInfo so the proper entry points
     // get generated in MaterialXShaderGen
-    _UpdateMxHdTextureMap(
+    HdSt_MxShaderGenInfo mxHdInfo;
+    _UpdateMxHdTextureNames(
         hdMtlxData.hdTextureNodes, hdMtlxData.mxHdTextureMap,
-        terminalNode, terminalNodePath, &mxHdInfo.textureMap);
+        terminalNode, terminalNodePath, &mxHdInfo.textureNames);
 
     _UpdatePrimvarNodes(
         mtlxDoc, hdNetwork, hdMtlxData.hdPrimvarNodes, 
@@ -1278,7 +1288,7 @@ _GenerateMaterialXShader(
 
     // Generate the glslfx source code from the mtlxDoc
     return HdSt_GenMaterialXShader(
-        mtlxDoc, stdLibraries, searchPaths, mxHdInfo, apiName);
+        mtlxDoc, stdLibraries, HdMtlxSearchPaths(), mxHdInfo, apiName);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1311,7 +1321,8 @@ _IsTopologicalShader(TfToken const& nodeId)
 
 // Build the topoNetwork, equivalent to the given hdNetwork but anonymized and 
 // stripped of non-topological parameters to better re-use the generated shader.  
-size_t _BuildEquivalentMaterialNetwork(
+static size_t
+_BuildEquivalentMaterialNetwork(
     HdMaterialNetwork2 const& hdNetwork,
     HdMaterialNetwork2* topoNetwork,
     HdAnnonNodePathMap* annonNodePathMap)
@@ -1404,6 +1415,18 @@ size_t _BuildEquivalentMaterialNetwork(
                     }
                 }
             }
+
+            // Normal map nodes in v1.38 included a 'space' parameter that 
+            // needs to be in the anonymized network otherwise it may not be 
+            // correctly translated into v1.39.
+            if (TfStringStartsWith(
+                    inNode.nodeTypeId.GetString(), _tokens->ND_normalmap)) {
+                const auto spaceIt = inNode.parameters.find(_tokens->space);
+                if (spaceIt != inNode.parameters.end()) {
+                    outNode.parameters.insert(*spaceIt);
+                }
+            }
+            
         }
 
         for (const auto& connPair : inNode.inputConnections) {
@@ -1468,9 +1491,11 @@ HdSt_ApplyMaterialXFilter(
 
     // Anonymize the network to make sure shader code does not depend
     // on node names
+    TF_DEBUG(HDST_MTLX).Msg("Build Anonymous Material Network for <%s>.\n",
+        terminalNodePath.GetAsString().c_str());
     HdAnnonNodePathMap annonNodePathMap;
     HdMaterialNetwork2 annonNetwork;
-    auto topoHash = _BuildEquivalentMaterialNetwork(
+    size_t topoHash = _BuildEquivalentMaterialNetwork(
         *hdNetwork, &annonNetwork, &annonNodePathMap);
     SdfPath anonTerminalNodePath = annonNodePathMap[terminalNodePath];
 
@@ -1506,6 +1531,8 @@ HdSt_ApplyMaterialXFilter(
     else {
         // Get the mx::ShaderPtr from the resource registry
         glslfxShader = glslfxInstance.GetValue();
+        TF_DEBUG(HDST_MTLX).Msg("Use previously generated MaterialX shader for "
+            "material <%s>.\n", materialPath.GetAsString().c_str());
     }
 
     // Add a Fallback DomeLight texture node to the network
@@ -1520,6 +1547,14 @@ HdSt_ApplyMaterialXFilter(
     if (glslfxShader) {
         const std::string glslfxSourceCode =
             glslfxShader->getSourceCode(mx::Stage::PIXEL);
+        if (TfDebug::IsEnabled(HDST_MTLX_DUMP_SHADER_SOURCEFILE)) {
+            const std::string filename = materialPath.GetName() + ".glslfx";
+            std::fstream output(filename.c_str(), std::ios::out);
+            output << glslfxSourceCode;
+            output.close();
+            fprintf(stdout, "Write MaterialX glslfx shader: '%s'\n",
+                filename.c_str());
+        }
         SdrShaderNodeConstPtr sdrNode =
             sdrRegistry.GetShaderNodeFromSourceCode(
                 glslfxSourceCode,

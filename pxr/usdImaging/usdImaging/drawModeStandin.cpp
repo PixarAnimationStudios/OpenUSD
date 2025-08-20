@@ -25,6 +25,7 @@
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/meshSchema.h"
 #include "pxr/imaging/hd/meshTopologySchema.h"
+#include "pxr/imaging/hd/primOriginSchema.h"
 #include "pxr/imaging/hd/primvarSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
@@ -352,6 +353,7 @@ protected:
 /// - purpose (from the given prim data source)
 /// - visibility (from the given prim data source)
 /// - displayStyle (constant)
+/// - primOrigin (HdPrimOriginSchema to map picking back to the USD prim)
 ///
 class _PrimDataSource : public HdContainerDataSource
 {
@@ -363,14 +365,16 @@ public:
             HdPurposeSchemaTokens->purpose,
             HdVisibilitySchemaTokens->visibility,
             HdInstancedBySchemaTokens->instancedBy,
-            HdLegacyDisplayStyleSchemaTokens->displayStyle };
+            HdLegacyDisplayStyleSchemaTokens->displayStyle,
+            HdPrimOriginSchemaTokens->primOrigin };
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
         if (name == HdXformSchemaTokens->xform ||
             name == HdPurposeSchemaTokens->purpose ||
             name == HdVisibilitySchemaTokens->visibility ||
-            name == HdInstancedBySchemaTokens->instancedBy) {
+            name == HdInstancedBySchemaTokens->instancedBy ||
+            name == HdPrimOriginSchemaTokens->primOrigin) {
             if (_primSource) {
                 return _primSource->Get(name);
             }

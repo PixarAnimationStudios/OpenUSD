@@ -92,6 +92,7 @@ private:
     bool _restorePointSprite;
     int32_t _restoreUnpackAlignment;
     int32_t _restorePackAlignment;
+    bool _restoreCubeMapSeamless;
 };
 
 

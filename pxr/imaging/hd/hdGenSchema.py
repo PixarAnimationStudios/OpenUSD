@@ -104,8 +104,8 @@ def ToComment(text, indent = 0):
     for paragraph in re.split(r'\n\s*\n', text, re.DOTALL):
         for line in textwrap.wrap(' '.join(paragraph.split()),
                                   width = 75 - indent):
-            result += indent * ' ' + '// ' + line + '\n'
-        result += indent * ' ' + '//' + '\n'
+            result += indent * ' ' + '/// ' + line + '\n'
+        result += indent * ' ' + '///' + '\n'
 
     return result
 

@@ -39,7 +39,21 @@ def _testInstancingEdits6146(appController):
 
     # If we get this far without crashing, we're good for now.
 
+#
+# Test a case where we deactivate the parent prim of a native instance.
+#   
+def _testDeactivatingInstanceParent11237(appController):
+    from pxr import Sdf, Usd
+
+    testLayer = Sdf.Layer.FindOrOpen("usd-11237/instanceWithParent.usda")
+    appController._dataModel.stage.GetRootLayer().TransferContent(testLayer)
+    appController._takeShot("instanceWithParent.png")
+
+    instance = appController._dataModel.stage.GetPrimAtPath("/World/Parent")
+    instance.SetActive(False)
+    appController._takeShot("instanceWithParentDeactivated.png")
 
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)
     _testInstancingEdits6146(appController)
+    _testDeactivatingInstanceParent11237(appController)

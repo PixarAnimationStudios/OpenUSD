@@ -30,7 +30,7 @@ class WorkImpl_IsolatingDispatcher
 {
 public:
     WORK_API WorkImpl_IsolatingDispatcher();
-    WORK_API ~WorkImpl_IsolatingDispatcher() noexcept;
+    WORK_API ~WorkImpl_IsolatingDispatcher();
 
     WorkImpl_IsolatingDispatcher(WorkImpl_IsolatingDispatcher const &) = delete;
     WorkImpl_IsolatingDispatcher &operator=(

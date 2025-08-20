@@ -533,6 +533,54 @@ def Xform "Prim"
         # No spline was set on e
         self.assertFalse(e.HasInfo('spline'))
 
+    def test_Limits(self):
+        """
+        Exercise basic API for the limits metadata field
+        """
+        layer = Sdf.Layer.CreateAnonymous()
+        layer.ImportFromString(
+'''#usda 1.0
+def Sphere "Foo"
+{
+    double radius (
+        limits = {
+            dictionary "hard" = {
+                double minimum = 0.0
+                double maximum = 10.0
+                string foo = "bar"
+            }
+        }
+    )
+}
+''')
+
+        spec = layer.GetAttributeAtPath("/Foo.radius")
+
+        # Check initial value
+        myLimits = {
+            'hard' : {
+                'minimum' : 0.0,
+                'maximum' : 10.0,
+                'foo' : 'bar'
+            }
+        }
+
+        self.assertTrue(spec.HasLimits())
+        self.assertEqual(spec.limits, myLimits)
+
+        # Modify
+        myLimits['hard']['minimumValue'] = 5.5
+        myLimits['hard']['foo'] = 'baz'
+
+        spec.limits = myLimits
+        self.assertTrue(spec.HasLimits())
+        self.assertEqual(spec.limits, myLimits)
+
+        # Clear
+        spec.ClearLimits()
+        self.assertFalse(spec.HasLimits())
+        self.assertEqual(spec.limits, {})
+
     def test_OpaqueNoAuthoredDefault(self):
         """
         Attempting to set the default value of an opaque attribute should fail.

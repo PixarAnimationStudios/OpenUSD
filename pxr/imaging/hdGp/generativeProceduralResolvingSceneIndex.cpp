@@ -33,6 +33,9 @@ HdGpGenerativeProceduralResolvingSceneIndex::
 , _targetPrimTypeName(HdGpGenerativeProceduralTokens->generativeProcedural)
 , _attemptAsync(false)
 {
+    // Ensure that HdGp plugins are loaded.
+    HdGpGenerativeProceduralPluginRegistry::GetInstance();
+
     // XXX The input scene may not be empty. We should traverse it to find any
     //     targeted procedurals and cook them.
 }
@@ -45,6 +48,9 @@ HdGpGenerativeProceduralResolvingSceneIndex::
 , _targetPrimTypeName(targetPrimTypeName)
 , _attemptAsync(false)
 {
+    // Ensure that HdGp plugins are loaded.
+    HdGpGenerativeProceduralPluginRegistry::GetInstance();
+
     // XXX The input scene may not be empty. We should traverse it to find any
     //     targeted procedurals and cook them.
 }
@@ -302,6 +308,26 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsRemoved(
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
     TRACE_FUNCTION();
+
+    // Fast path for scene teardown.
+    for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
+        if (entry.primPath.IsAbsoluteRootPath()) {
+            // Reset all scene-population state.
+            {
+                _MapLock procsLock(_proceduralsMutex);
+                _procedurals.clear();
+            }
+            {
+                _MapLock depsLock(_dependenciesMutex);
+                _dependencies.clear();
+            }
+            _activeSyncProcedurals.clear();
+            _generatedPrims.clear();
+            // Pass through notification as-is.
+            _SendPrimsRemoved(entries);
+            return;
+        }
+    }
 
     using _PathSetMap =
          TfDenseHashMap<SdfPath, TfDenseHashSet<SdfPath, TfHash>, TfHash>;

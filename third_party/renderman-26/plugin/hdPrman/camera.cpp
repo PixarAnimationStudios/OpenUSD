@@ -7,9 +7,13 @@
 #include "hdPrman/camera.h"
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/cameraContext.h"
+#include "hdPrman/utils.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/version.h"
+
+#include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdr/registry.h"
 
 #include <cmath>
 
@@ -36,7 +40,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((apertureDensity,    "ri:apertureDensity"))
     ((apertureNSides,     "ri:apertureNSides"))
     ((apertureRoundness,  "ri:apertureRoundness"))
+    ((projection,         "ri:projection"))
     ((projection_dofMult, "ri:projection:dofMult"))
+    (OSL)
+    (resource)
+    (RmanCpp)
 );
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -78,6 +86,56 @@ _ToOptionalFloat8(const VtValue &value)
         result[i] = array[i];
     }
     return result;
+}
+
+static
+riley::ShadingNode _CreateNode(
+    HdSceneDelegate *sceneDelegate,
+    const SdfPath& riProjectionPath)
+{
+    VtValue resourceValue = 
+        sceneDelegate->Get(riProjectionPath, _tokens->resource);
+
+    auto resource = resourceValue.UncheckedGet<HdMaterialNode2>();
+
+    riley::ShadingNode node;
+
+    SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
+    SdrShaderNodeConstPtr sdrEntry = 
+        sdrRegistry.GetShaderNodeByIdentifier(
+            resource.nodeTypeId, { _tokens->OSL, _tokens->RmanCpp, });
+
+    if (!sdrEntry) {
+        node.type = riley::ShadingNode::Type::k_Invalid;
+        return node;
+    }
+    std::string shaderPath = sdrEntry->GetImplementationName();
+    if (shaderPath.empty()) {
+        TF_WARN("Shader '%s' did not provide a valid implementation path.",
+                sdrEntry->GetName().c_str());
+        node.type = riley::ShadingNode::Type::k_Invalid;
+        return node;
+    }
+    node.name = RtUString(shaderPath.c_str());
+
+    for (const auto &param : resource.parameters) {
+        const SdrShaderProperty* prop = sdrEntry->GetShaderInput(param.first);
+        if (!prop) {
+            TF_WARN("Unknown shaderProperty '%s' for the '%s' "
+                    "shader at '%s', ignoring.\n",
+                    param.first.GetText(), 
+                    resource.nodeTypeId.GetText(), 
+                    riProjectionPath.GetText());
+            continue;
+        }
+        HdPrman_Utils::SetParamFromVtValue(
+            RtUString(prop->GetImplementationName().c_str()),
+            param.second, prop->GetType(), &node.params);
+    }
+
+    node.type = riley::ShadingNode::Type::k_Projection;
+    node.handle = RtUString(riProjectionPath.GetText());
+    return node;
 }
 
 HdPrmanCamera::HdPrmanCamera(SdfPath const& id)
@@ -151,6 +209,18 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
 
     HdCamera::Sync(sceneDelegate, renderParam, dirtyBits);
 
+    if (bits & DirtyParams) {
+        const SdfPath riProjectionPath = 
+            sceneDelegate->GetCameraParamValue(id, _tokens->projection)
+            .GetWithDefault<SdfPath>(SdfPath::EmptyPath());
+
+        if (!riProjectionPath.IsEmpty()) {
+            _projectionNode = _CreateNode(sceneDelegate, riProjectionPath);
+        } else {
+            _projectionNode = {};
+        }
+    }
+   
     if (bits & DirtyParams) {
 #if HD_API_VERSION < 52
         _lensDistortionK1 =

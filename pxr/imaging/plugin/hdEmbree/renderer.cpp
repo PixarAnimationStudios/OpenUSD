@@ -28,8 +28,18 @@
 // oneTBB as a min spec. This applies the "Work" thread limit to the
 // render thread if "Work" is using old TBB, but won't affect other "Work"
 // implementations.  Note that it may affect Embree TBB usage as well.
+//
+// Note: The TBB version macro is located in different headers in legacy TBB.
 // -------------------------------------------------------------------------
+#if __has_include(<tbb/tbb_stddef.h>)
 #include <tbb/tbb_stddef.h>
+#elif __has_include(<tbb/version.h>)
+#include <tbb/version.h>
+#endif
+
+#ifndef TBB_INTERFACE_VERSION_MAJOR
+#error "TBB version macro TBB_INTERFACE_VERSION_MAJOR not found"
+#endif
 
 #if TBB_INTERFACE_VERSION_MAJOR < 12
 
@@ -709,9 +719,7 @@ HdEmbreeRenderer::_TraceRay(unsigned int x, unsigned int y,
     rayHit.ray.flags = 0;
     _PopulateRayHit(&rayHit, origin, dir, 0.0f);
     {
-      RTCIntersectContext context;
-      rtcInitIntersectContext(&context);
-      rtcIntersect1(_scene, &context, &rayHit);
+      rtcIntersect1(_scene, &rayHit);
       //
       // there is something odd about how this is used in Embree. Is it reversed
       // here and then when it it used in
@@ -1047,9 +1055,7 @@ HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
         shadow.flags = 0;
         _PopulateRay(&shadow, position, shadowDir, 0.001f);
         {
-          RTCIntersectContext context;
-          rtcInitIntersectContext(&context);
-          rtcOccluded1(_scene,&context,&shadow);
+          rtcOccluded1(_scene, &shadow);
         }
 
         // Record this AO ray's contribution to the occlusion factor: a

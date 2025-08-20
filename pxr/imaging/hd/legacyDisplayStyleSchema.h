@@ -51,6 +51,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdLegacyDisplayStyleSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdLegacyDisplayStyleSchema
+///
 class HdLegacyDisplayStyleSchema : public HdSchema
 {
 public:

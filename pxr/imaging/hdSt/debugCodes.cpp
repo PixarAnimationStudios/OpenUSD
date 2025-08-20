@@ -60,9 +60,13 @@ TF_REGISTRY_FUNCTION(TfDebug)
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_MATERIAL_ADDED,
         "Report when a material is added");
-
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_MATERIAL_REMOVED,
         "Report when a material is removed");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_MTLX,
+        "Debug messages in the MaterialX Filter.");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDST_MTLX_DUMP_SHADER_SOURCEFILE,
+        "Write out the MaterialX generated glslfx shader to a file");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

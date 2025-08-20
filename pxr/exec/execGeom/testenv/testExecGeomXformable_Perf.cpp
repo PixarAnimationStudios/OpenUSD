@@ -22,6 +22,7 @@
 #include "pxr/base/trace/reporter.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/threadLimits.h"
+#include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/usd/stage.h"
@@ -360,7 +361,7 @@ private:
 
         // Write the value to the perfstats file.
         static const char *const metricTemplate =
-            "{'profile':'%s','metric':'memory','value':%s,'samples':1}\n";
+            "{'profile':'%s','metric':'malloc_size','value':%s,'samples':1}\n";
         file << TfStringPrintf(
             metricTemplate, tag.c_str(), memInMiBString.c_str());
     }
@@ -508,6 +509,7 @@ TestExecGeomXformable_Perf(
         {
             TRACE_SCOPE("Scene edit 2");
 
+            SdfChangeBlock changeBlock;
             for (size_t i=leafPrims.size()/2; i<leafPrims.size(); ++i) {
                 const SdfPrimSpecHandle leafPrimSpec =
                     usdStage->GetRootLayer()->GetPrimAtPath(leafPrims[i]);
@@ -523,7 +525,7 @@ TestExecGeomXformable_Perf(
             TRACE_SCOPE("Build request 2");
 
             std::vector<ExecUsdValueKey> valueKeys;
-            valueKeys.reserve(leafPrims.size());
+            valueKeys.reserve(leafPrims.size()/2);
             for (size_t i=0; i<leafPrims.size()/2; ++i) {
                 UsdPrim prim = usdStage->GetPrimAtPath(leafPrims[i]);
                 TF_AXIOM(prim.IsValid());
@@ -542,7 +544,6 @@ TestExecGeomXformable_Perf(
             TF_AXIOM(request.IsValid());
             memMetrics.RecordMetric("mem_prepare_request_3");
 
-            // TODO: Compute and extract values again.
             ExecUsdCacheView cache = execSystem.Compute(request);
             memMetrics.RecordMetric("mem_cache_values_3");
 

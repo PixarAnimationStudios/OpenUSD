@@ -663,10 +663,6 @@ HgiVulkanBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
     int32_t width = desc.dimensions[0];
     int32_t height = desc.dimensions[1];
 
-    if (desc.layerCount > 1) {
-        TF_CODING_ERROR("Missing implementation generating mips for layers");
-    }
-
     // Ensure texture format supports blit src&dst required for mips
     VkFormatProperties formatProps;
     vkGetPhysicalDeviceFormatProperties(
@@ -699,7 +695,7 @@ HgiVulkanBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 
         // Source
         imageBlit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        imageBlit.srcSubresource.layerCount = 1;
+        imageBlit.srcSubresource.layerCount = desc.layerCount;
         imageBlit.srcSubresource.mipLevel = i - 1;
         imageBlit.srcOffsets[1].x = std::max(width >> (i - 1), 1);
         imageBlit.srcOffsets[1].y = std::max(height >> (i - 1), 1);
@@ -707,7 +703,7 @@ HgiVulkanBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 
         // Destination
         imageBlit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        imageBlit.dstSubresource.layerCount = 1;
+        imageBlit.dstSubresource.layerCount = desc.layerCount;
         imageBlit.dstSubresource.mipLevel = i;
         imageBlit.dstOffsets[1].x = std::max(width >> i, 1);
         imageBlit.dstOffsets[1].y = std::max(height >> i, 1);

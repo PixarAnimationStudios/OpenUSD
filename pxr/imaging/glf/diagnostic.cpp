@@ -38,7 +38,7 @@ GlfTraceEnabled()
 }
 
 void
-GlfPostPendingGLErrors(std::string const & where)
+GlfPostPendingGLErrors(std::string const & where, int line)
 {
     bool foundError = false;
     GLenum error;
@@ -59,7 +59,7 @@ GlfPostPendingGLErrors(std::string const & where)
         }
 
         if (!where.empty()) {
-            errorMessage << ", reported from " << where;
+            errorMessage << ", reported from " << where << " at line " << line;
         }
 
         TF_DEBUG(GLF_DEBUG_ERROR_STACKTRACE).Msg(errorMessage.str() + "\n");

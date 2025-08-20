@@ -41,6 +41,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdPurposeSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdPurposeSchema
+///
 class HdPurposeSchema : public HdSchema
 {
 public:

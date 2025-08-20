@@ -97,7 +97,7 @@ auto VtVisitValue(VtValue const &value, Visitor &&visitor)
             return Vt_ValueVisitDetail::Visit<VT_TYPE(elem)>(                  \
                 value, std::forward<Visitor>(visitor), 0);                     \
             break;
-TF_PP_SEQ_FOR_EACH(VT_CASE_FOR_TYPE_INDEX, ~, VT_VALUE_TYPES)
+VT_FOR_EACH_VALUE_TYPE(VT_CASE_FOR_TYPE_INDEX)
 #undef VT_CASE_FOR_TYPE_INDEX
     
         default:

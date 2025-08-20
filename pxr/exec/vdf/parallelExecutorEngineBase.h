@@ -32,8 +32,8 @@
 #include "pxr/base/tf/errorTransport.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/loops.h"
+#include "pxr/base/work/isolatingDispatcher.h"
 #include "pxr/base/work/taskGraph.h"
-#include "pxr/base/work/withScopedParallelism.h"
 
 #include <tbb/concurrent_vector.h>
 
@@ -594,6 +594,9 @@ protected:
     // A task graph for dynamically adding and spawning tasks during execution. 
     WorkTaskGraph _taskGraph;
 
+    // A dispatcher for running tasks within an isolated region. 
+    WorkIsolatingDispatcher _isolatingDispatcher;
+
     // Keep track of which unique input dependencies have had their cached
     // state checked.
     std::unique_ptr<std::atomic<uint8_t>[]> _dependencyState;
@@ -650,6 +653,9 @@ VdfParallelExecutorEngineBase<Derived, DataManager>::RunSchedule(
 {
     TRACE_SCOPE("VdfParallelExecutorEngineBase::RunSchedule");
 
+    // Release the python GIL before creating and running parallel work. 
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+
     // Make sure the data manager is appropriately sized.
     _dataManager->Resize(*schedule.GetNetwork());
 
@@ -663,11 +669,11 @@ VdfParallelExecutorEngineBase<Derived, DataManager>::RunSchedule(
     // view for random access into the compute request in a parallel for-loop.
     VdfRequest::IndexedView view(computeRequest);
 
-    // Perform all the work of spawning and waiting on tasks with scoped
+    // Perform all the work of spawning and waiting on tasks with isolated 
     // parallelism, in order to prevent evaluation tasks from being stolen in
     // unrelated loops.
     VdfParallelExecutorEngineBase<Derived, DataManager> *engine = this;
-    WorkWithScopedParallelism([engine, &state, &view, &callback] {
+    _isolatingDispatcher.Run([engine, &state, &view, &callback] {
         // Collect all the leaf tasks, which are the entry point for evaluation.
         // We will later spawn all these tasks together.
         WorkTaskGraph::TaskLists taskLists;
@@ -701,6 +707,8 @@ VdfParallelExecutorEngineBase<Derived, DataManager>::RunSchedule(
             engine->_taskGraph.Wait();
         }
     });
+
+    _isolatingDispatcher.Wait();
 
     // Allow the derived executor engine to finalize state after evaluation
     // completed.

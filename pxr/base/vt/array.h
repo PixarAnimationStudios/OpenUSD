@@ -961,6 +961,17 @@ ARCH_PRAGMA_POP
         return !(*this == other);
     }
 
+    /// Ensure that this array does not share its underlying data with any other 
+    /// instance by making a copy if necessary.  Return true if a copy was made 
+    /// and iterators & references were invalidated, false otherwise.  Call this 
+    /// function when a possibly shared VtArray instance will definitely be 
+    /// modified.  Since this function makes an explicit detaching copy, it does
+    /// not log stack traces when 'VT_LOG_STACK_TRACE_ON_ARRAY_DETACH_COPY' is 
+    /// enabled.  See the class documentation for more information.
+    bool MakeUnique() {
+        return _DetachIfNotUnique(/*invokeHook=*/false);
+    }
+
   public:
     // XXX -- Public so VtValue::_ArrayHelper<T,U>::GetShapeData() has access.
     Vt_ShapeData const *_GetShapeData() const {
@@ -994,14 +1005,18 @@ ARCH_PRAGMA_POP
         lhs.swap(rhs);
     }
 
-    void _DetachIfNotUnique() {
-        if (_IsUnique())
-            return;
+    bool _DetachIfNotUnique(bool invokeHook=true) {
+        if (_IsUnique()) {
+            return false;
+        }
         // Copy to local.
-        _DetachCopyHook(__ARCH_PRETTY_FUNCTION__);
+        if (invokeHook) {
+            _DetachCopyHook(__ARCH_PRETTY_FUNCTION__);
+        }
         auto *newData = _AllocateCopy(_data, size(), size());
         _DecRef();
         _data = newData;
+        return true;
     }
 
     inline bool _IsUnique() const {

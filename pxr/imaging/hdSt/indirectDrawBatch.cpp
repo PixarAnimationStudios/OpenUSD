@@ -1261,6 +1261,7 @@ HdSt_IndirectDrawBatch::_ExecuteDrawIndirect(
             0, drawCount,
             stride);
     }
+    GLF_POST_PENDING_GL_ERRORS();
 }
 
 void
@@ -1355,6 +1356,7 @@ HdSt_IndirectDrawBatch::_ExecuteDrawImmediate(
                 cmd->baseInstance);
         }
     }
+    GLF_POST_PENDING_GL_ERRORS();
 }
 
 ////////////////////////////////////////////////////////////

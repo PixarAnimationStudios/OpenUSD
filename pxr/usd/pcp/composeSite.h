@@ -231,6 +231,18 @@ PcpComposeSiteHasSymmetry(PcpNodeRef const &node)
     return PcpComposeSiteHasSymmetry(node.GetLayerStack(), node.GetPath());
 }
 
+/// Value clips
+PCP_API
+bool
+PcpComposeSiteHasValueClips(PcpLayerStackRefPtr const &layerStack,
+                            SdfPath const &path);
+PCP_API
+inline bool
+PcpComposeSiteHasValueClips(PcpNodeRef const &node)
+{
+    return PcpComposeSiteHasValueClips(node.GetLayerStack(), node.GetPath());
+}
+
 /// Inherits
 PCP_API
 void

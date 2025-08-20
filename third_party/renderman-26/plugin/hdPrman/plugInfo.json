@@ -3,6 +3,18 @@
         {
             "Info": {
                 "Types": {
+                    "HdPrman_GenerativeProceduralSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
+                        "priority": 0,
+                        "displayName": "HdPrman_GenerativeProceduralSceneIndexPlugin"
+                    },
+                    "HdPrman_WorldOffsetSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
+                        "priority": 0,
+                        "displayName": "Prman World Offset Scene Index"
+                    },
                     "HdPrman_MotionBlurSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
@@ -81,11 +93,17 @@
                         "priority": 0,
                         "displayName": "Prman ExtComputation Primvar Pruning Scene Index"
                     },
-                    "HdPrman_RenderPassSceneIndexPlugin" : {
+                    "HdPrman_RenderPassPruneSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
-                        "displayName": "Prman Render Pass Scene Index"
+                        "displayName": "Prman Render Pass Prune Scene Index"
+                    },
+                    "HdPrman_RenderPassVisibilitySceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
+                        "priority": 0,
+                        "displayName": "Prman Render Pass Visibility Scene Index"
                     },
                     "HdPrman_RenderSettingsFilteringSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
@@ -140,6 +158,24 @@
                         "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
                         "priority": 0,
                         "displayName": "Scene index that adds primvars needed for UsdPreviewSurface"
+                    },
+                    "HdPrman_MeshLightResolvingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
+                        "priority": 0,
+                        "displayName": "Prman Resolve Mesh Lights Scene Index"
+                    },
+                    "HdPrman_PortalLightResolvingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
+                        "priority": 0,
+                        "displayName": "Prman Resolve Portal Lights Scene Index"
+                    },
+                    "HdPrman_NodeIdentifierResolvingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": ["RenderMan RIS", "RenderMan XPU", "RenderMan XPU - CPU", "RenderMan XPU - GPU"],
+                        "priority": 0,
+                        "displayName": "Resolves Node Identifiers for shader nodes with OSL:sourceAsset"
                     }
                 }
             },

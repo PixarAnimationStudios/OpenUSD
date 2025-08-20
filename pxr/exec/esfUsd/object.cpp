@@ -11,6 +11,7 @@
 #include "pxr/exec/esfUsd/relationship.h"
 #include "pxr/exec/esfUsd/stage.h"
 
+#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/exec/esf/attribute.h"
 #include "pxr/exec/esf/object.h"
@@ -18,6 +19,7 @@
 #include "pxr/exec/esf/property.h"
 #include "pxr/exec/esf/relationship.h"
 #include "pxr/exec/esf/stage.h"
+#include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/object.h"
 #include "pxr/usd/usd/prim.h"
@@ -71,13 +73,87 @@ EsfUsd_ObjectImpl<InterfaceType, UsdObjectType>::_GetSchemaConfigKey() const
     // it is unique to the set of types and applied schemas for the prim and it
     // is stable, since it is guaranteed to stay alive at least as long as the
     // UsdStage.
-    if constexpr (std::is_base_of_v<UsdPrim, UsdObjectType>) {
+    if constexpr (std::is_same_v<UsdPrim, UsdObjectType>) {
         return EsfObjectInterface::CreateSchemaConfigKey(
             &_GetWrapped().GetPrimTypeInfo());
     } else {
         return EsfObjectInterface::CreateSchemaConfigKey(
             &_GetWrapped().GetPrim().GetPrimTypeInfo());
     }
+}
+
+template <class InterfaceType, class UsdObjectType>
+VtValue
+EsfUsd_ObjectImpl<InterfaceType, UsdObjectType>::_GetMetadata(
+    const TfToken &key) const
+{
+    VtValue value;
+    if (!_GetWrapped().GetMetadata(key, &value)) {
+        TF_CODING_ERROR("Invalid metadata key '%s'", key.GetText());
+    }
+    return value;
+}
+
+template <class InterfaceType, class UsdObjectType>
+bool
+EsfUsd_ObjectImpl<InterfaceType, UsdObjectType>::_IsValidMetadataKey(
+    const TfToken &key) const
+{
+    const SdfSchema &schema = SdfSchema::GetInstance();
+    const SdfSchema::SpecDefinition *spec = nullptr;
+
+    // If the wrapped type is a concrete type, we can avoid additional virtual
+    // function calls.
+    if constexpr (std::is_same_v<UsdPrim, UsdObjectType>) {
+        spec = schema.GetSpecDefinition(SdfSpecTypePrim);
+    }
+    else if constexpr (std::is_same_v<UsdAttribute, UsdObjectType>) {
+        spec = schema.GetSpecDefinition(SdfSpecTypeAttribute);
+    }
+    else if constexpr (std::is_same_v<UsdRelationship, UsdObjectType>) {
+        spec = schema.GetSpecDefinition(SdfSpecTypeRelationship);
+    }
+    else {
+        // Otherwise, the wrapped type is abstract (UsdObject or UsdProperty),
+        // so we need to call virtual functions to determine the type.
+        if (IsPrim()) {
+            spec = schema.GetSpecDefinition(SdfSpecTypePrim);
+        }
+        else if (IsAttribute()) {
+            spec = schema.GetSpecDefinition(SdfSpecTypeAttribute);
+        }
+        else if (IsRelationship()) {
+            spec = schema.GetSpecDefinition(SdfSpecTypeRelationship);
+        }
+    }
+
+    if (!TF_VERIFY(spec, "Unexpected object type")) {
+        return false;
+    }
+
+    return spec->IsMetadataField(key);
+}
+
+template <class InterfaceType, class UsdObjectType>
+TfType
+EsfUsd_ObjectImpl<InterfaceType, UsdObjectType>::_GetMetadataValueType(
+    const TfToken &key) const
+{
+    // TODO: This will be cleaner when we have SdfSchema API that lets us
+    // directly qurey the value type for a given field.
+    const SdfSchemaBase::FieldDefinition *const fieldDef =
+        SdfSchema::GetInstance().GetFieldDefinition(key);
+    if (!fieldDef) {
+        TF_CODING_ERROR("Invalid metadata key '%s'", key.GetText());
+        return TfType();
+    }
+
+    static TfType vtValueType = TfType::Find<VtValue>();
+
+    // An empty value indicates a value type of VtValue; otherwise, we return
+    // the fallback value held type.
+    const VtValue fallback = fieldDef->GetFallbackValue();
+    return fallback.IsEmpty() ? vtValueType : fallback.GetType();
 }
 
 template <class InterfaceType, class UsdObjectType>

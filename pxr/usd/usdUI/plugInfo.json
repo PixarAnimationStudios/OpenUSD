@@ -5,6 +5,16 @@
     "Plugins": [
         {
             "Info": {
+                "SdfMetadata": {
+                    "uiHints": {
+                        "appliesTo": [
+                            "prims", 
+                            "properties"
+                        ], 
+                        "documentation": "Presentation hints", 
+                        "type": "dictionary"
+                    }
+                }, 
                 "Types": {
                     "UsdUIAccessibilityAPI": {
                         "alias": {

@@ -43,6 +43,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdSelectionSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdSelectionSchema
+///
 class HdSelectionSchema : public HdSchema
 {
 public:

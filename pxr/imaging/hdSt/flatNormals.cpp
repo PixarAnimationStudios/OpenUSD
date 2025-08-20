@@ -252,8 +252,9 @@ HdSt_FlatNormalsComputationGPU::Execute(
     HdStBufferResourceSharedPtr primitiveParam = topologyRange->GetResource(
         HdTokens->primitiveParam);
 
-    if (!points->GetHandle() || !normals->GetHandle() || !indices->GetHandle()
-        || !primitiveParam->GetHandle()) {
+    if (!points || !normals || !indices || !primitiveParam
+        || !points->GetHandle() || !normals->GetHandle()
+        || !indices->GetHandle() || !primitiveParam->GetHandle()) {
         return;
     }
 

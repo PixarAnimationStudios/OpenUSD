@@ -33,6 +33,7 @@ pxr_library(ef
         leafNode
         leafNodeCache
         leafNodeIndexer
+        loftedOutputSet
         maskedSubExecutor
         outputValueCache
         pageCache

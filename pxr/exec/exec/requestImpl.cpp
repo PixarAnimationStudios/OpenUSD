@@ -6,11 +6,10 @@
 //
 #include "pxr/exec/exec/requestImpl.h"
 
-#include "pxr/exec/exec/authoredValueInvalidationResult.h"
 #include "pxr/exec/exec/cacheView.h"
 #include "pxr/exec/exec/debugCodes.h"
 #include "pxr/exec/exec/definitionRegistry.h"
-#include "pxr/exec/exec/disconnectedInputsInvalidationResult.h"
+#include "pxr/exec/exec/invalidationResult.h"
 #include "pxr/exec/exec/program.h"
 #include "pxr/exec/exec/requestTracker.h"
 #include "pxr/exec/exec/runtime.h"
@@ -91,7 +90,7 @@ _OutputInvalidationResultDebugMsg(
 
 void 
 Exec_RequestImpl::DidInvalidateComputedValues(
-    const Exec_AuthoredValueInvalidationResult &invalidationResult)
+    const Exec_AttributeValueInvalidationResult &invalidationResult)
 {
     if (!_valueCallback || _leafOutputs.empty()) {
         TF_DEBUG(EXEC_REQUEST_INVALIDATION).Msg(
@@ -125,6 +124,50 @@ Exec_RequestImpl::DidInvalidateComputedValues(
     // In doing so we must dispatch to the derived class in order to let the
     // specific scene description library determine properties, which do not
     // require execution.
+
+    // Only invoke the invalidation callback if there are any invalid indices
+    // from this request.
+    if (!invalidIndices.empty()) {
+        if (ARCH_UNLIKELY(TfDebug::IsEnabled(EXEC_REQUEST_INVALIDATION))) {
+            _OutputInvalidationResultDebugMsg(
+                TF_FUNC_NAME(), invalidIndices, invalidInterval);
+        }
+        TRACE_FUNCTION_SCOPE("value invalidation callback");
+        _valueCallback(invalidIndices, invalidInterval);
+    }
+}
+
+void 
+Exec_RequestImpl::DidInvalidateComputedValues(
+    const Exec_MetadataInvalidationResult &invalidationResult)
+{
+    if (!_valueCallback || _leafOutputs.empty()) {
+        TF_DEBUG(EXEC_REQUEST_INVALIDATION).Msg(
+            "[%s] %s\n", TF_FUNC_NAME().c_str(),
+            !_valueCallback
+            ? "No value invalidation callback"
+            : "Request has not been prepared");
+        return;
+    }
+
+    TRACE_FUNCTION();
+
+    // For metadata value changes, we always invalidate over the entire time
+    // range. This is considered new invalidation if the last invalidation
+    // interval isn't already over the entire time range.
+    const EfTimeInterval &invalidInterval = EfTimeInterval::GetFullInterval();
+    const bool isNewlyInvalidInterval =
+        !_lastInvalidatedInterval.IsFullInterval();
+    if (isNewlyInvalidInterval) {
+        _lastInvalidatedInterval = invalidInterval;
+    }
+
+    // Build a set of invalid indices from the provided invalid leaf nodes.
+    ExecRequestIndexSet invalidIndices;
+    _InvalidateLeafOutputs(
+        isNewlyInvalidInterval,
+        invalidationResult.invalidLeafNodes,
+        &invalidIndices);
 
     // Only invoke the invalidation callback if there are any invalid indices
     // from this request.

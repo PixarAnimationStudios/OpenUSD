@@ -8,6 +8,11 @@
     upAxis = "Y"
 )
 
+# Test scene with 3 spheres with material bindings set to a material prim that
+# isn't instanced (left), is an instance of a USD prototype (middle), and is
+# a nested instance (right). The expected result is that all three spheres
+# look identical (red).
+#
 def Xform "sphere1" (
     prepend apiSchemas = ["MaterialBindingAPI"]
 )
@@ -26,12 +31,26 @@ def Xform "sphere2" (
     prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
-    rel material:binding = </i_mtlxmaterial/mtlxmaterial>
+    rel material:binding = </instanced_materials/i_mtlxmaterial/mtlxmaterial>
 
     def Sphere "sphere"
     {
         double radius = 1
         matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+
+def Xform "sphere3" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </nested_instanced_materials/i_mtlxmaterial/mtlxmaterial>
+
+    def Sphere "sphere"
+    {
+        double radius = 1
+        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (3, 0, 0, 1) )
         uniform token[] xformOpOrder = ["xformOp:transform"]
     }
 }
@@ -51,11 +70,20 @@ def Scope "materials"
     }
 }
 
-def "i_mtlxmaterial" (
-     instanceable = true
-     prepend references = </materials>
+def Scope "instanced_materials"
+{
+    def "i_mtlxmaterial" (
+        instanceable = true
+        prepend references = </materials>
+    )
+    { }
+}
+
+def Scope "nested_instanced_materials" (
+    instanceable = true
+    prepend references = </instanced_materials>
 )
-{ }
+{}
 
 def DomeLight "Light"
 {

@@ -64,7 +64,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanRenderParamTokens,
     ((extComp,           "HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin")) \
     ((retesselation,     "HdPrman_RetesselationSceneIndexPlugin")) \
     ((vblurInterpreting, "HdPrman_VblurInterpretingSceneIndexPlugin")) \
-    ((velocityMotion,    "HdPrman_VelocityMotionResolvingSceneIndexPlugin"))
+    ((velocityMotion,    "HdPrman_VelocityMotionResolvingSceneIndexPlugin")) \
+    ((worldOffset,      "HdPrman_WorldOffsetSceneIndexPlugin"))
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanPluginTokens, HD_PRMAN_PLUGIN_TOKENS);
 

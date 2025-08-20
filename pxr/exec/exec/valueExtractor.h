@@ -33,7 +33,7 @@ public:
     Exec_ValueExtractor() = default;
 
     /// Construct an extractor that invokes \p func.
-    explicit Exec_ValueExtractor(const Exec_ValueExtractorFunction &func)
+    explicit Exec_ValueExtractor(Exec_ValueExtractorFunction &func)
         : _func(func)
     {
     }
@@ -56,7 +56,7 @@ private:
     static VtValue _ExtractInvalid(const VdfVector &, const VdfMask::Bits &);
 
 private:
-    const Exec_ValueExtractorFunction *_func = &_ExtractInvalid;
+    Exec_ValueExtractorFunction *_func = &_ExtractInvalid;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

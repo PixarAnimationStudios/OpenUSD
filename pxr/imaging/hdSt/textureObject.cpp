@@ -594,4 +594,77 @@ HdStFieldTextureObject::GetTextureType() const
     return HdStTextureType::Field;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Cubemap texture
+
+HdStCubemapTextureObject::HdStCubemapTextureObject(
+    const HdStTextureIdentifier &textureId,
+    HdSt_TextureObjectRegistry * textureObjectRegistry)
+  : HdStTextureObject(textureId, textureObjectRegistry)
+{
+}
+
+HdStTextureType
+HdStCubemapTextureObject::GetTextureType() const
+{
+    return HdStTextureType::Cubemap;
+}
+
+HdStCubemapTextureObject::~HdStCubemapTextureObject()
+{
+    _DestroyTexture();
+}
+
+void
+HdStCubemapTextureObject::_SetCpuData(
+    std::unique_ptr<HdStTextureCpuData> &&cpuData)
+{
+    _cpuData = std::move(cpuData);
+}
+
+HdStTextureCpuData *
+HdStCubemapTextureObject::_GetCpuData() const
+{
+    return _cpuData.get();
+}
+
+void
+HdStCubemapTextureObject::_CreateTexture(const HgiTextureDesc &desc)
+{
+    Hgi * const hgi = _GetHgi();
+    if (!TF_VERIFY(hgi)) {
+        return;
+    }
+
+    _DestroyTexture();
+
+    _gpuTexture = hgi->CreateTexture(desc);
+    _AddToTotalTextureMemory(_gpuTexture);
+}
+
+void
+HdStCubemapTextureObject::_GenerateMipmaps()
+{
+    HdStResourceRegistry * const registry = _GetResourceRegistry();
+    if (!TF_VERIFY(registry)) {
+        return;
+    }
+
+    if (!_gpuTexture) {
+        return;
+    }
+
+    HgiBlitCmds* const blitCmds = registry->GetGlobalBlitCmds();
+    blitCmds->GenerateMipMaps(_gpuTexture);
+}
+
+void
+HdStCubemapTextureObject::_DestroyTexture()
+{
+    if (Hgi * hgi = _GetHgi()) {
+        _SubtractFromTotalTextureMemory(_gpuTexture);
+        hgi->DestroyTexture(&_gpuTexture);
+    }
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

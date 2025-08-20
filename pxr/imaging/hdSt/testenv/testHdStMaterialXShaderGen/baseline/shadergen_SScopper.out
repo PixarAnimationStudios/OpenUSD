@@ -2058,15 +2058,15 @@ vec4 surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
     // Initialize MaterialX Variables
     mxInit(Peye, Neye);
-    vec3 SR_copper_coat_color_cm_out = vec3(0.0);
-    NG_srgb_texture_to_lin_rec709_color3(coat_color, SR_copper_coat_color_cm_out);
-    vec3 SR_copper_base_color_cm_out = vec3(0.0);
-    NG_srgb_texture_to_lin_rec709_color3(base_color, SR_copper_base_color_cm_out);
+    vec3 Surface_coat_color_cm_out = vec3(0.0);
+    NG_srgb_texture_to_lin_rec709_color3(coat_color, Surface_coat_color_cm_out);
+    vec3 Surface_base_color_cm_out = vec3(0.0);
+    NG_srgb_texture_to_lin_rec709_color3(base_color, Surface_base_color_cm_out);
     vec3 geomprop_Nworld_out = normalize(vd.normalWorld);
     vec3 geomprop_Tworld_out = normalize(vd.tangentWorld);
-    surfaceshader SR_copper_out = surfaceshader(vec3(0.0),vec3(0.0));
-    NG_standard_surface_surfaceshader_100(base, SR_copper_base_color_cm_out, diffuse_roughness, metalness, specular, specular_color, specular_roughness, specular_IOR, specular_anisotropy, specular_rotation, transmission, transmission_color, transmission_depth, transmission_scatter, transmission_scatter_anisotropy, transmission_dispersion, transmission_extra_roughness, subsurface, subsurface_color, subsurface_radius, subsurface_scale, subsurface_anisotropy, sheen, sheen_color, sheen_roughness, coat, SR_copper_coat_color_cm_out, coat_roughness, coat_anisotropy, coat_rotation, coat_IOR, geomprop_Nworld_out, coat_affect_color, coat_affect_roughness, thin_film_thickness, thin_film_IOR, emission, emission_color, opacity, thin_walled, geomprop_Nworld_out, geomprop_Tworld_out, SR_copper_out);
-    vec4 mxOut = vec4(SR_copper_out.color, 1.0);
+    surfaceshader Surface_out = surfaceshader(vec3(0.0),vec3(0.0));
+    NG_standard_surface_surfaceshader_100(base, Surface_base_color_cm_out, diffuse_roughness, metalness, specular, specular_color, specular_roughness, specular_IOR, specular_anisotropy, specular_rotation, transmission, transmission_color, transmission_depth, transmission_scatter, transmission_scatter_anisotropy, transmission_dispersion, transmission_extra_roughness, subsurface, subsurface_color, subsurface_radius, subsurface_scale, subsurface_anisotropy, sheen, sheen_color, sheen_roughness, coat, Surface_coat_color_cm_out, coat_roughness, coat_anisotropy, coat_rotation, coat_IOR, geomprop_Nworld_out, coat_affect_color, coat_affect_roughness, thin_film_thickness, thin_film_IOR, emission, emission_color, opacity, thin_walled, geomprop_Nworld_out, geomprop_Tworld_out, Surface_out);
+    vec4 mxOut = vec4(Surface_out.color, 1.0);
     mxOut = ApplyColorOverrides(mxOut);
     return mxOut;
 }

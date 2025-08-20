@@ -16,7 +16,7 @@
 #include "pxr/imaging/hd/meshSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
-#include "pxr/imaging/hd/xformSchema.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 
 #include "pxr/base/trace/trace.h"
@@ -150,7 +150,7 @@ public:
 
     TfTokenVector GetNames() override {
         static const TfTokenVector names = {
-            UsdSkelImagingResolvedSkeletonSchemaTokens->skelLocalToWorld,
+            UsdSkelImagingResolvedSkeletonSchemaTokens->skelLocalToCommonSpace,
             UsdSkelImagingResolvedSkeletonSchemaTokens->skinningTransforms,
             UsdSkelImagingResolvedSkeletonSchemaTokens->blendShapes,
             UsdSkelImagingResolvedSkeletonSchemaTokens->blendShapeWeights };
@@ -162,8 +162,8 @@ public:
         TRACE_FUNCTION();
 
         if (name == UsdSkelImagingResolvedSkeletonSchemaTokens
-                        ->skelLocalToWorld) {
-            return _resolvedSkeletonSource->GetSkelLocalToWorld();
+                        ->skelLocalToCommonSpace) {
+            return _resolvedSkeletonSource->GetSkelLocalToCommonSpace();
         }
         if (name == UsdSkelImagingResolvedSkeletonSchemaTokens
                         ->skinningTransforms) {
@@ -419,6 +419,7 @@ UsdSkelImagingDataSourceResolvedSkeletonPrim(
  , _restTransformsDataSource(
      _RestTransformsDataSource::New(
          UsdSkelImagingSkeletonSchema::GetFromParent(primSource)))
+ , _xformResolver(sceneIndex, primSource)
 {
 }
 
@@ -468,9 +469,9 @@ UsdSkelImagingDataSourceResolvedSkeletonPrim::Get(const TfToken &name)
 }
 
 HdMatrixDataSourceHandle
-UsdSkelImagingDataSourceResolvedSkeletonPrim::GetSkelLocalToWorld() const
+UsdSkelImagingDataSourceResolvedSkeletonPrim::GetSkelLocalToCommonSpace() const
 {
-    return HdXformSchema::GetFromParent(_primSource).GetMatrix();
+    return _xformResolver.GetPrimLocalToCommonSpace();
 }
 
 HdMatrix4fArrayDataSourceHandle
@@ -493,7 +494,7 @@ GetDependendendOnDataSourceLocators()
     static const HdDataSourceLocatorSet result{
         UsdSkelImagingSkeletonSchema::GetDefaultLocator(),
         UsdSkelImagingBindingSchema::GetAnimationSourceLocator(),
-        HdXformSchema::GetDefaultLocator()
+        UsdSkelImagingDataSourceXformResolver::GetXformLocator()
     };
     return result;
 }
@@ -531,6 +532,13 @@ _ProcessSkeletonDirtyLocators(
         return true;
     }
 
+    if (dirtyLocators.Contains(
+            UsdSkelImagingDataSourceXformResolver::GetInstancedByLocator())) {
+        // Instancers have changed.
+        // Just indicate that we want to blow everything.
+        return true;
+    }
+
     static const HdDataSourceLocatorSet skelDataLocators = {
         UsdSkelImagingSkeletonSchema::GetJointsLocator(),
         UsdSkelImagingSkeletonSchema::GetBindTransformsLocator() };
@@ -560,11 +568,12 @@ _ProcessSkeletonDirtyLocators(
         }
     }
 
-    if (dirtyLocators.Intersects(HdXformSchema::GetDefaultLocator())) {
+    if (dirtyLocators.Intersects(
+            UsdSkelImagingDataSourceXformResolver::GetXformLocator())) {
         if (newDirtyLocators) {
             newDirtyLocators->insert(
                 UsdSkelImagingResolvedSkeletonSchema::
-                GetSkelLocalToWorldLocator());
+                GetSkelLocalToCommonSpaceLocator());
         }
     }
 
@@ -581,6 +590,10 @@ _ProcessSkelAnimationDirtyLocators(
 
     if (dirtyLocators.Contains(
             UsdSkelImagingAnimationSchema::GetDefaultLocator())) {
+        return true;
+    }
+    if (dirtyLocators.Contains(
+            UsdSkelImagingDataSourceXformResolver::GetInstancedByLocator())) {
         return true;
     }
 
@@ -632,11 +645,40 @@ _ProcessSkelAnimationDirtyLocators(
 
 bool
 UsdSkelImagingDataSourceResolvedSkeletonPrim::
+_ProcessInstancerDirtyLocators(
+    const HdDataSourceLocatorSet &dirtyLocators,
+    HdDataSourceLocatorSet * const newDirtyLocators)
+{
+    TRACE_FUNCTION();
+
+    if (dirtyLocators.Intersects(
+            UsdSkelImagingDataSourceXformResolver::GetInstancedByLocator())) {
+        return true;
+    }
+
+    if (dirtyLocators.Intersects(
+            UsdSkelImagingDataSourceXformResolver::GetXformLocator()) ||
+        dirtyLocators.Intersects(
+            UsdSkelImagingDataSourceXformResolver::GetInstanceXformLocator())) {
+        if (newDirtyLocators) {
+            newDirtyLocators->insert(
+                UsdSkelImagingResolvedSkeletonSchema::
+                GetSkelLocalToCommonSpaceLocator());
+        }
+    }
+
+    return false;
+}
+
+bool
+UsdSkelImagingDataSourceResolvedSkeletonPrim::
 ProcessDirtyLocators(
         const TfToken &dirtiedPrimType,
         const HdDataSourceLocatorSet &dirtyLocators,
         HdSceneIndexObserver::DirtiedPrimEntries * const entries)
 {
+    TRACE_FUNCTION();
+    
     HdDataSourceLocatorSet newDirtyLocators;
     bool result = false;
 
@@ -648,7 +690,11 @@ ProcessDirtyLocators(
         result =
             _ProcessSkelAnimationDirtyLocators(
                 dirtyLocators, entries ? &newDirtyLocators : nullptr);
-    }
+    } else if (dirtiedPrimType == HdPrimTypeTokens->instancer) {
+        result =
+            _ProcessInstancerDirtyLocators(
+                dirtyLocators, entries ? &newDirtyLocators : nullptr);
+    }                
 
     if (entries) {
         if (!newDirtyLocators.IsEmpty()) {

@@ -20,6 +20,8 @@ EsfEditReason::_GetBitDescription(EsfEditReason::_BitIndex bitIndex)
         return "ResyncedObject";
     case EsfEditReason::_BitIndex::ChangedPropertyList:
         return "ChangedPropertyList";
+    case EsfEditReason::_BitIndex::ChangedConnectionPaths:
+        return "ChangedConnectionPaths";
     case EsfEditReason::_BitIndex::ChangedTargetPaths:
         return "ChangedTargetPaths";
     case EsfEditReason::_BitIndex::Max:

@@ -690,7 +690,7 @@ formula is:
 &if \\quad angleScale = 0: \\\\
 & \\quad 𝛳_{ies} = 𝛳_{light} \\\\
 &if \\quad angleScale < 0: \\\\
-& \\quad 𝛳_{ies} = (𝛳_{light} - π) / -angleScale
+& \\quad 𝛳_{ies} = (𝛳_{light} - π) / -angleScale + π
 \\end{aligned}
 ```
 

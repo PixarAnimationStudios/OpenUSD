@@ -6,6 +6,7 @@
 //
 #include "pxr/exec/exec/inputResolver.h"
 
+#include "pxr/exec/exec/builtinComputations.h"
 #include "pxr/exec/exec/computationDefinition.h"
 #include "pxr/exec/exec/definitionRegistry.h"
 #include "pxr/exec/exec/inputKey.h"
@@ -331,8 +332,13 @@ private:
                 continue;
             }
 
+            // Note that there's no way to directly request metadata via a
+            // relationship target, so we just pass an empty key.
             if (const Exec_ComputationDefinition *const computationDefinition =
-                _FindComputationDefinition(computationName, resultType)) {
+                _FindComputationDefinition(
+                    computationName,
+                    resultType,
+                    /* metadataKey */ TfToken())) {
                 outputKeys.emplace_back(
                     _currentObject->AsObject(),
                     _GetDispatchingConfigKeyForOutputKey(computationDefinition),
@@ -340,11 +346,54 @@ private:
             }
         }
 
-        // Clear the current object to make it clear that the traversal has
-        // terminated.
+        // Clear the current object, because the traversal has terminated.
         _currentObjectVariant = std::monostate{};
         _currentObject = nullptr;
         _currentRelationship = nullptr;
+
+        return outputKeys;
+    }
+
+    // Returns the ouput keys for the objects targeted by the connections of the
+    // currrent attribute, for the computation of the given name and result
+    // type.
+    //
+    // The current object must be a valid attribute prior to calling this
+    // method.
+    //
+    Exec_OutputKeyVector _TraverseToConnectionTargetedObjects(
+        const TfToken &computationName,
+        const TfType resultType)
+    {
+        if (!TF_VERIFY(_currentAttribute->IsValid(_journal))) {
+            return {};
+        }
+
+        Exec_OutputKeyVector outputKeys;
+
+        for (const SdfPath &path : _currentAttribute->GetConnections(_journal)) {
+            if (!_TraverseToAbsolutePath(path)) {
+                continue;
+            }
+
+            // Note that there's no way to directly request metadata via an
+            // attribute connection, so we just pass an empty key.
+            if (const Exec_ComputationDefinition *const computationDefinition =
+                _FindComputationDefinition(
+                    computationName,
+                    resultType,
+                    /* metadataKey */ TfToken())) {
+                outputKeys.emplace_back(
+                    _currentObject->AsObject(),
+                    _GetDispatchingConfigKeyForOutputKey(computationDefinition),
+                    computationDefinition);
+            }
+        }
+
+        // Clear the current object since the traversal has terminated.
+        _currentObjectVariant = std::monostate{};
+        _currentObject = nullptr;
+        _currentAttribute = nullptr;
 
         return outputKeys;
     }
@@ -384,9 +433,14 @@ private:
                     computationName,
                     _dispatchingSchemaKey,
                     _journal);
-            
+
+            // Note that there's no way to directly request metadata from a
+            // namespace ancestor, so we just pass an empty key.
             if (computationDefinition &&
-                computationDefinition->GetResultType(*_currentPrim, _journal) ==
+                computationDefinition->GetResultType(
+                    *_currentPrim,
+                    /* metadataKey */ TfToken(),
+                    _journal) ==
                 resultType) {
                 *foundComputationDefinition = computationDefinition;
                 return true;
@@ -408,10 +462,13 @@ private:
     //
     // If found, the returned definition may refer to a prim computation or an
     // attribute computation. If not found, this returns nullptr.
+    //
+    // \p metadataKey is only used for the computeMetadata builtin computation.
     // 
     const Exec_ComputationDefinition *_FindComputationDefinition(
         const TfToken &computationName,
-        const TfType resultType) const
+        const TfType resultType,
+        const TfToken &metadataKey) const
     {
         const Exec_ComputationDefinition *computationDefinition = nullptr;
 
@@ -428,6 +485,7 @@ private:
                 _definitionRegistry.GetComputationDefinition(
                     *_currentAttribute,
                     computationName,
+                    _dispatchingSchemaKey,
                     _journal);
         }
 
@@ -440,7 +498,8 @@ private:
         // of the found definition.
         if (resultType.IsUnknown() ||
             resultType ==
-            computationDefinition->GetResultType(*_currentObject, _journal)) {
+            computationDefinition->GetResultType(
+                *_currentObject, metadataKey, _journal)) {
             return computationDefinition;
         }
 
@@ -491,12 +550,19 @@ private:
         case ExecProviderResolution::DynamicTraversal::Local:
             computationDefinition = _FindComputationDefinition(
                 inputKey.computationName,
-                inputKey.resultType);
+                inputKey.resultType,
+                inputKey.metadataKey);
             break;
             
         case ExecProviderResolution::DynamicTraversal::
             RelationshipTargetedObjects:
             return _TraverseToRelationshipTargetedObjects(
+                inputKey.computationName,
+                inputKey.resultType);
+            
+        case ExecProviderResolution::DynamicTraversal::
+            ConnectionTargetedObjects:
+            return _TraverseToConnectionTargetedObjects(
                 inputKey.computationName,
                 inputKey.resultType);
             
@@ -517,7 +583,8 @@ private:
         return {
             {_currentObject->AsObject(),
              _GetDispatchingConfigKeyForOutputKey(computationDefinition),
-             computationDefinition}
+             computationDefinition,
+             inputKey.metadataKey}
         };
     }
 

@@ -41,6 +41,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdExtComputationOutputSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdExtComputationOutputSchema
+///
 class HdExtComputationOutputSchema : public HdSchema
 {
 public:

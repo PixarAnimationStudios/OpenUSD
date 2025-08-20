@@ -12,6 +12,8 @@
 #include "pxr/imaging/hd/dependenciesSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/materialInterfaceMappingSchema.h"
+#include "pxr/imaging/hd/materialInterfaceParameterSchema.h"
+#include "pxr/imaging/hd/materialInterfaceSchema.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialNodeParameterSchema.h"
 #include "pxr/imaging/hd/materialNodeSchema.h"
@@ -46,7 +48,7 @@ using NestedTfTokenMap =
     std::unordered_map<TfToken, TfTokenMap, TfToken::HashFunctor>;
 using NestedTfTokenMapPtr = std::shared_ptr<NestedTfTokenMap>;
 
-// Given a material network container data source, returns a map of reversed
+// Given a material interface container data source, returns a map of reversed
 // interface mappings.  If no interface mappings were found, returns an empty
 // map.
 // 
@@ -57,37 +59,37 @@ using NestedTfTokenMapPtr = std::shared_ptr<NestedTfTokenMap>;
 // nodePath -> (inputName -> publicUIName)
 NestedTfTokenMap
 _BuildReverseInterfaceMappings(
-    const HdContainerDataSourceHandle& matNetworkDsContainer)
+    const HdMaterialInterfaceSchema& interfaceSchema)
 {
     NestedTfTokenMap reverseInterfaceMappings;
 
-    const HdMaterialNetworkSchema matNetworkSchema(matNetworkDsContainer);
-    if (!matNetworkSchema) {
+    const HdMaterialInterfaceParameterContainerSchema 
+        interfaceParameters = interfaceSchema.GetParameters();
+    if (!interfaceParameters) {
         return reverseInterfaceMappings;
     }
 
-    HdMaterialInterfaceMappingsContainerSchema interfaceMappingsSchema = 
-        matNetworkSchema.GetInterfaceMappings();
-    if (!interfaceMappingsSchema) {
-        return reverseInterfaceMappings;
-    }
-
-    for (const TfToken& publicUIName : interfaceMappingsSchema.GetNames()) {
-        // Each publicUIName maps to a list of material node parameters ie.
-        // [(nodePath, inputName), ...]
-        const HdMaterialInterfaceMappingVectorSchema 
-            interfaceMappingsVectorSchema =
-            interfaceMappingsSchema.Get(publicUIName);
-        if (!interfaceMappingsVectorSchema) {
+    for (const TfToken& publicUIName : interfaceParameters.GetNames()) {
+        // Each publicUIName maps to an interface parameter
+        const HdMaterialInterfaceParameterSchema parameterSchema =
+            interfaceParameters.Get(publicUIName);
+        if (!parameterSchema) {
             continue;
         }
 
-        const size_t numElems = 
-            interfaceMappingsVectorSchema.GetNumElements();
+        //  Each interface parameter maps to a list of material node parameters 
+        // ie. [(nodePath, inputName), ...]
+        const HdMaterialInterfaceMappingVectorSchema mappings =
+            parameterSchema.GetMappings();
+        if (!mappings) {
+            continue;
+        }
+
+        const size_t numElems = mappings.GetNumElements();
         for (size_t i = 0; i < numElems; i++) {
             // Each interfaceMapping should be a (nodePath, inputName) pair 
             HdMaterialInterfaceMappingSchema interfaceMappingSchema =
-                interfaceMappingsVectorSchema.GetElement(i);
+                mappings.GetElement(i);
             if (!interfaceMappingSchema) {
                 continue;
             }
@@ -475,10 +477,10 @@ public:
             return result;
         }
 
-        // Only do work if the material network has interface mappings
-        const HdMaterialInterfaceMappingsContainerSchema 
-            interfaceMappingsSchema = matNetworkSchema.GetInterfaceMappings();
-        if (!interfaceMappingsSchema) {
+        // Only do work if the material network has a public interface
+        const HdMaterialInterfaceSchema
+            interfaceSchema = matNetworkSchema.GetInterface();
+        if (!interfaceSchema) {
             return result;
         }
 
@@ -488,7 +490,7 @@ public:
         // parameter
         auto reverseInterfaceMappingsPtr(
             std::make_shared<NestedTfTokenMap>(
-                _BuildReverseInterfaceMappings(matNetworkSchema.GetContainer()))
+                _BuildReverseInterfaceMappings(interfaceSchema))
             );
 
         return _MaterialNetworkContainerDataSource::New(

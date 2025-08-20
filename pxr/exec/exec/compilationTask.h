@@ -33,9 +33,7 @@ public:
     /// As long as there are unfulfilled dependencies, this task will not be
     /// re-run to continue its next phase(s).
     /// 
-    void AddDependency() {
-        _numDependents.fetch_add(1, std::memory_order_acquire);
-    }
+    void AddDependency();
 
     /// Removes a dependency after it has been fulfilled.
     ///
@@ -43,9 +41,7 @@ public:
     /// is `0`, this task can be re-run to continue its next phase(s). The
     /// caller is responsible for re-running the task.
     ///
-    int RemoveDependency() {
-        return _numDependents.fetch_sub(1, std::memory_order_release) - 1;
-    }
+    int RemoveDependency();
 
     /// Executes the task.
     ///
@@ -61,12 +57,7 @@ protected:
     /// All compilation tasks are heap allocated and must be constructed through
     /// NewTask() and NewSubtask().
     /// 
-    explicit Exec_CompilationTask(Exec_CompilationState &compilationState)
-        : _parent(nullptr)
-        , _numDependents(0)
-        , _taskPhase(0)
-        , _compilationState(compilationState)
-    {}
+    explicit Exec_CompilationTask(Exec_CompilationState &compilationState);
 
     /// Main entry point of a compilation task to be implemented in the
     /// derived class.

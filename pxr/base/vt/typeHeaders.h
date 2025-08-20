@@ -10,6 +10,7 @@
 #include <string>
 
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/arrayEdit.h"
 
 #include "pxr/base/tf/token.h"
 

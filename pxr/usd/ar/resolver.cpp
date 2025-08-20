@@ -208,6 +208,12 @@ _FindMetadataValueOnTypeOrBase(const TfToken& metadata, const TfType& t)
 std::vector<_ResolverInfo> 
 _GetAvailableResolvers()
 {
+    // Demand that we find the type & plugin for the default resolver, which is
+    // provided by this library.  We cannot operate without it.  This call will
+    // terminate the program if the plugin is not found.
+    PlugRegistry::GetInstance().
+        DemandPluginForType(TfType::Find<ArDefaultResolver>());
+    
     std::vector<TfType> sortedResolverTypes;
     {
         std::set<TfType> resolverTypes;

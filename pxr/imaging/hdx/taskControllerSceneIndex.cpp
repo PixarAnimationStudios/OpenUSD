@@ -1412,32 +1412,47 @@ _ResolvedRenderOutputs(const TfTokenVector &aovNames,
     bool hasPrimId = false;
     bool hasElementId = false;
     bool hasInstanceId = false;
+    bool hasNeye = false;
 
     for (const TfToken &renderOutput : aovNames) {
         if (renderOutput == HdAovTokens->color) {
             hasColor = true;
-        }
-        if (renderOutput == HdAovTokens->depth) {
+        } else if (renderOutput == HdAovTokens->depth) {
             hasDepth = true;
-        }
-        if (renderOutput == HdAovTokens->primId) {
+        } else if (renderOutput == HdAovTokens->primId) {
             hasPrimId = true;
-        }
-        if (renderOutput == HdAovTokens->elementId) {
+        }else if (renderOutput == HdAovTokens->elementId) {
             hasElementId = true;
-        }
-        if (renderOutput == HdAovTokens->instanceId) {
+        } else if (renderOutput == HdAovTokens->instanceId) {
             hasInstanceId = true;
+        } else if (renderOutput == HdAovTokens->Neye) {
+            hasNeye = true;
         }
     }
 
-    TfTokenVector result = aovNames;
+    TfTokenVector result;
 
     if (isForStorm) {
-        if (!hasDepth) {
-            result.push_back(HdAovTokens->depth);
+        // For Storm, we rearrange AOVs to be a certain order to match how we 
+        // order outputs in the fragment shader. This order is specified via 
+        // HdSt_RenderPassShaderKey and the render pass shader snippets it 
+        // gathers.
+        if (hasColor) {
+            result.push_back(HdAovTokens->color);
         }
+        if (hasPrimId || hasInstanceId) {
+            result.push_back(HdAovTokens->primId);
+            result.push_back(HdAovTokens->instanceId);
+        }
+        if (hasNeye) {
+            result.push_back(HdAovTokens->Neye);
+        }
+
+        // Even if not requested, add depth.
+        result.push_back(HdAovTokens->depth);
     } else {
+        result = aovNames;
+
         // For a backend like PrMan/Embree we fill not just the color buffer,
         // but also buffers that are used during picking.
         if (hasColor) {
@@ -1466,7 +1481,7 @@ HdxTaskControllerSceneIndex::SetRenderOutputs(
     if (_aovNames == aovNames) {
         return;
     }
-    _aovNames = _aovNames;
+    _aovNames = aovNames;
 
     _SetRenderOutputs(_ResolvedRenderOutputs(aovNames, _IsForStorm()));
 

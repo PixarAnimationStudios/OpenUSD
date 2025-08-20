@@ -320,6 +320,13 @@ public:
     PCP_API
     bool HasSpecs() const;
 
+    /// Returns true if this node's site or a namespace ancestor
+    /// has authored value clips.
+    PCP_API
+    void SetHasValueClips(bool hasValueClips);
+    PCP_API
+    bool HasValueClips() const;
+
     /// @}
 
     // Returns a compressed Sd site.  For internal use only.
