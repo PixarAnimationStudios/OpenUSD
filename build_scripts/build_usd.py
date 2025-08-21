@@ -1027,7 +1027,7 @@ def InstallTBB_Windows(context, force, buildArgs):
         CopyFiles(context, "cmake\\TBBConfig.cmake", "lib\\cmake\\TBB")
         CopyFiles(context, "cmake\\TBBConfigVersion.cmake", "lib\\cmake\\TBB")
 
-        PatchFile(os.path.join(context.instDir, "lib\\cmake\\TBB\\TBBConfig.cmake"),
+        PatchFile(os.path.join(context.instDir, "lib", "cmake", "TBB", "TBBConfig.cmake"),
                   [
                       (
                         "# TBBConfigVersion.cmake defines TBB_VERSION",
@@ -1170,7 +1170,7 @@ def InstallTBB_MacOS(context, force, buildArgs):
         CopyFiles(context, os.path.join(context.instDir, "cmake", "TBBConfigVersion.cmake"),
                   os.path.join(context.instDir, "lib", "cmake", "TBB"))
         
-        PatchFile(os.path.join(context.instDir, "lib/cmake/TBB/TBBConfig.cmake"),
+        PatchFile(os.path.join(context.instDir, "lib", "cmake", "TBB", "TBBConfig.cmake"),
             [
                 (
                     "# TBBConfigVersion.cmake defines TBB_VERSION",
@@ -1246,7 +1246,7 @@ def InstallTBB_Linux(context, force, buildArgs):
         CopyFiles(context, os.path.join(context.instDir, "cmake", "TBBConfigVersion.cmake"),
                   os.path.join(context.instDir, "lib", "cmake", "TBB"))
         
-        PatchFile(os.path.join(context.instDir, "lib/cmake/TBB/TBBConfig.cmake"),
+        PatchFile(os.path.join(context.instDir, "lib", "cmake", "TBB", "TBBConfig.cmake"),
             [
                 (
                     "# TBBConfigVersion.cmake defines TBB_VERSION",
