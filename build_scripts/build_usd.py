@@ -1037,7 +1037,7 @@ def InstallTBB_Windows(context, force, buildArgs):
                       ),
                       (
                         "get_filename_component(_tbb_root \"${_tbb_root}\" PATH)",
-                        "get_filename_component(_tbb_root \"${_tbb_root}/../..\" ABSOLUTE)"
+                        "get_filename_component(_tbb_root \"${_tbb_root}/../../..\" ABSOLUTE)"
                       ),
                       (
                         "get_filename_component(_tbb_lib_path \"${_tbb_root}/bin/${_tbb_arch_subdir}/${_tbb_compiler_subdir}\" ABSOLUTE)",
@@ -1178,7 +1178,7 @@ def InstallTBB_MacOS(context, force, buildArgs):
                 ),
                 (
                     "get_filename_component(_tbb_root \"${_tbb_root}\" PATH)",
-                    "get_filename_component(_tbb_root \"${_tbb_root}/../..\" ABSOLUTE)"
+                    "get_filename_component(_tbb_root \"${_tbb_root}/../../..\" ABSOLUTE)"
                 ),
                 (
                     "get_filename_component(_tbb_lib_path \"${_tbb_root}/lib/${_tbb_arch_subdir}/${_tbb_compiler_subdir}\" ABSOLUTE)",
@@ -1252,7 +1252,7 @@ def InstallTBB_Linux(context, force, buildArgs):
                 ),
                 (
                     "get_filename_component(_tbb_root \"${_tbb_root}\" PATH)",
-                    "get_filename_component(_tbb_root \"${_tbb_root}/../..\" ABSOLUTE)"
+                    "get_filename_component(_tbb_root \"${_tbb_root}/../../..\" ABSOLUTE)"
                 ),
                 (
                     "get_filename_component(_tbb_lib_path \"${_tbb_root}/lib/${_tbb_arch_subdir}/${_tbb_compiler_subdir}\" ABSOLUTE)",
