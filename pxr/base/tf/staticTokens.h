@@ -29,7 +29,11 @@
 ///        // Syntax when string name differs from symbol.
 ///        ((foo, "bar"))
 ///
-///    TF_DECLARE_PUBLIC_TOKENS(MfTokens, MF_TOKENS);
+///    // Include an export/import macro (e.g., MF_API) as the second argument
+///    // if you need the symbols to be exported. Othwerise, the two argument
+///    // version `TF_DECLARE_PUBLIC_TOKENS(MfTokens, MF_TOKENS);` is
+///    // sufficient.
+///    TF_DECLARE_PUBLIC_TOKENS(MfTokens, MF_API, MF_TOKENS);
 /// \endcode
 ///
 /// In cpp file:
