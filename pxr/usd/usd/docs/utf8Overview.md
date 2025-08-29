@@ -18,6 +18,13 @@ character and string. Users should think of UTF-8 strings as bytes representing
 "code points" in the Unicode code charts. A single code point may be represented 
 by 1, 2, 3, or 4 byte sequences.
 
+## Byte Order Mark (BOM)
+
+The USD parser does not support Byte Order Marks (BOMs) at the beginning of USDA
+files. Files containing a BOM will be treated as invalid layers. To fix this,
+open your USDA file in a text editor and ensure it's saved without a BOM (most
+modern text editors default to UTF-8 without BOM).
+
 ### Replacement Code Point {#Usd_UTF_8_Encoding_Replacement}
 
 Not every 1, 2, 3, or 4 byte sequence represents a valid UTF-8 code point. When 
