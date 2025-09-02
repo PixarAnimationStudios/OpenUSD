@@ -615,6 +615,8 @@ public:
     HDST_API
     void Prepare();
 
+    void SetReceiveShadows(bool enabled) override;
+
 private:
     struct Light {
         GfVec3f dir;

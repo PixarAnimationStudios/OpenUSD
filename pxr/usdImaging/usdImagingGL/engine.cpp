@@ -2367,6 +2367,7 @@ UsdImagingGLEngine::_MakeHydraUsdImagingGLRenderParams(
     // - params.camera
     // - params.viewport
 
+    params.receiveShadows = renderParams.receiveShadows;
     return params;
 }
 

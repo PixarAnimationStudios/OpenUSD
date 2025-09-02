@@ -223,6 +223,8 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
         // types, a single sample will be selected.
         renderPassState->SetMultiSampleEnabled(params.useAovMultiSample);
 
+        renderPassState->SetReceiveShadows(params.receiveShadows);
+
         if (HdStRenderPassState * const hdStRenderPassState =
                     dynamic_cast<HdStRenderPassState*>(renderPassState.get())) {
             hdStRenderPassState->SetUseSceneMaterials(
@@ -304,9 +306,9 @@ HdxRenderSetupTask::_GetRenderPassState(HdRenderIndex* renderIndex)
 
 std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
 {
-    out << "RenderTask Params: (...) " 
-        << pv.overrideColor << " " 
-        << pv.wireframeColor << " " 
+    out << "RenderTask Params: (...) "
+        << pv.overrideColor << " "
+        << pv.wireframeColor << " "
         << pv.pointColor << " "
         << pv.pointSize << " "
         << pv.enableLighting << " "
@@ -314,8 +316,8 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
         << pv.enableSceneMaterials << " "
         << pv.enableSceneLights << " "
 
-        << pv.maskColor << " " 
-        << pv.indicatorColor << " " 
+        << pv.maskColor << " "
+        << pv.indicatorColor << " "
         << pv.pointSelectedSize << " "
 
         << pv.depthBiasUseDefault << " "
@@ -348,7 +350,9 @@ std::ostream& operator<<(std::ostream& out, const HdxRenderTaskParams& pv)
         << pv.framing.dataWindow << " "
         << pv.framing.pixelAspectRatio << " "
         << pv.viewport << " "
-        << pv.cullStyle << " ";
+        << pv.cullStyle << " "
+
+        << pv.receiveShadows << " ";
 
     for (auto const& a : pv.aovBindings) {
         out << a << " ";
@@ -406,7 +410,8 @@ bool operator==(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs)
            lhs.framing                  == rhs.framing                  &&
            lhs.viewport                 == rhs.viewport                 &&
            lhs.cullStyle                == rhs.cullStyle                &&
-           lhs.overrideWindowPolicy     == rhs.overrideWindowPolicy;
+           lhs.overrideWindowPolicy     == rhs.overrideWindowPolicy     &&
+           lhs.receiveShadows           == rhs.receiveShadows;
 }
 
 bool operator!=(const HdxRenderTaskParams& lhs, const HdxRenderTaskParams& rhs) 

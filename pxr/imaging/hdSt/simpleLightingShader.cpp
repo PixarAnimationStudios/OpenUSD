@@ -56,6 +56,7 @@ HdStSimpleLightingShader::HdStSimpleLightingShader()
             {},
             HdStTokens->shadowCompareTextures.Hash()})
     , _renderParam(nullptr)
+    , _receiveShadows(true)
 {
 }
 
@@ -73,8 +74,7 @@ HdStSimpleLightingShader::ComputeHash() const
     const TfToken glslfxFile = HdStPackageSimpleLightingShader();
     const size_t numLights =
         _useLighting ? _lightingContext->GetNumLightsUsed() : 0;
-    const bool useShadows =
-        _useLighting ? _lightingContext->GetUseShadows() : false;
+    const bool useShadows = _ReceiveShadows();
     const size_t numShadows =
         useShadows ? _lightingContext->ComputeNumShadowsUsed() : 0;
 
@@ -116,8 +116,7 @@ HdStSimpleLightingShader::GetSource(TfToken const &shaderStageKey) const
     std::stringstream defineStream;
     const size_t numLights =
         _useLighting ? _lightingContext->GetNumLightsUsed() : 0;
-    const bool useShadows =
-        _useLighting ? _lightingContext->GetUseShadows() : false;
+    const bool useShadows = _ReceiveShadows();
     const size_t numShadows =
         useShadows ? _lightingContext->ComputeNumShadowsUsed() : 0;
     defineStream << "#define NUM_LIGHTS " << numLights<< "\n";
@@ -236,8 +235,7 @@ HdStSimpleLightingShader::AddBindings(HdStBindingRequestVector *customBindings)
                 HdStTextureType::Uv));
     }
 
-    const bool useShadows =
-        _useLighting ? _lightingContext->GetUseShadows() : false;
+    const bool useShadows = _ReceiveShadows();
     if (useShadows) {
         size_t const numShadowPasses = 
             _lightingContext->GetShadows()->GetNumShadowMapPasses();
@@ -409,8 +407,7 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdRenderIndex const &renderInde
 {
     const std::string &resolvedPath =
         _GetResolvedDomeLightEnvironmentFilePath(_lightingContext);
-    const bool useShadows =
-        _useLighting ? _lightingContext->GetUseShadows() : false;
+    const bool useShadows = _useLighting ? _lightingContext->GetUseShadows() : false;
     if (resolvedPath.empty()) {
         _domeLightEnvironmentTextureHandle = nullptr;
         _domeLightTextureHandles.clear();
@@ -649,6 +646,18 @@ HdStShaderCode::NamedTextureHandleVector const &
 HdStSimpleLightingShader::GetNamedTextureHandles() const
 {
     return _namedTextureHandles;
+}
+
+void
+HdStSimpleLightingShader::SetReceiveShadows(bool enabled)
+{
+    _receiveShadows = enabled;
+}
+
+bool
+HdStSimpleLightingShader::_ReceiveShadows() const
+{
+    return _useLighting ? (_receiveShadows && _lightingContext->GetUseShadows()) : false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

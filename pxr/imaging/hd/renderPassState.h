@@ -343,6 +343,9 @@ public:
     void SetMultiSampleEnabled(bool enabled);
     bool GetMultiSampleEnabled() const { return _multiSampleEnabled; }
 
+    void SetReceiveShadows(bool enabled) { _receiveShadows = enabled; }
+    bool GetReceiveShadows() const { return _receiveShadows; }
+
 protected:
     // ---------------------------------------------------------------------- //
     // Camera and framing state 
@@ -424,6 +427,8 @@ protected:
     float _stepSizeLighting;
 
     bool _multiSampleEnabled;
+
+    bool _receiveShadows;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

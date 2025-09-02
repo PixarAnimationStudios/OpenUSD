@@ -121,10 +121,14 @@ public:
         return _shadowAovBindings;
     }
 
+    HDST_API
+    void SetReceiveShadows(bool enabled) override;
+
 private:
     SdfPath _GetAovPath(TfToken const &aov, size_t shadowIndex) const;
     void _ResizeOrCreateBufferForAov(size_t shadowIndex) const;
     void _CleanupAovBindings();
+    bool _ReceiveShadows() const;
 
     GlfSimpleLightingContextRefPtr _lightingContext; 
     bool _useLighting;
@@ -151,6 +155,8 @@ private:
 
     HdRenderPassAovBindingVector _shadowAovBindings;
     std::vector<std::unique_ptr<HdStRenderBuffer>> _shadowAovBuffers;
+
+    bool _receiveShadows;
 };
 
 

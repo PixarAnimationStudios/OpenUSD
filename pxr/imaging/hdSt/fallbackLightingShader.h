@@ -48,6 +48,9 @@ public:
     void SetCamera(GfMatrix4d const &worldToViewMatrix,
                    GfMatrix4d const &projectionMatrix) override;
 
+    HDST_API
+    void SetReceiveShadows(bool enabled) override;
+
 private:
     std::unique_ptr<HioGlslfx> _glslfx;
 };

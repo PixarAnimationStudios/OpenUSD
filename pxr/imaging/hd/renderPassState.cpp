@@ -69,6 +69,7 @@ HdRenderPassState::HdRenderPassState()
     , _stepSize(0.f)
     , _stepSizeLighting(0.f)
     , _multiSampleEnabled(true)
+    , _receiveShadows(true)
 {
 }
 
