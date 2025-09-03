@@ -25,6 +25,7 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/hash.h"
 
+#include <filesystem>
 #include <iostream>
 #include <istream>
 #include <fstream>
@@ -232,11 +233,7 @@ static unique_ptr<istream>
 _CreateStreamForFile(string const& filePath)
 {
     if (TfIsFile(filePath)) {
-#if defined(ARCH_OS_WINDOWS)
-        return make_unique<ifstream>(ArchWindowsUtf8ToUtf16(filePath));
-#else
-        return make_unique<ifstream>(filePath);
-#endif
+        return make_unique<ifstream>(std::filesystem::u8path(filePath));
     }
 
     const shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
