@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/scope.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/config.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail {
@@ -25,5 +21,4 @@ void PXR_BOOST_PYTHON_DECL scope_setattr_doc(char const* name, object const& obj
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_SCOPE_HPP

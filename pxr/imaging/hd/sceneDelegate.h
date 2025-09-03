@@ -63,6 +63,9 @@ struct HdSyncRequestVector {
 ///
 struct HdDisplayStyle {
     /// The prim refine level, in the range [0, 8].
+    ///
+    /// The refinement level indicates how many iterations to apply when
+    /// subdividing subdivision surfaces or other refinable primitives.
     int refineLevel;
     
     /// Is the prim flat shaded.
@@ -70,6 +73,9 @@ struct HdDisplayStyle {
     
     /// Is the prim displacement shaded.
     bool displacementEnabled;
+
+    /// Is the prim overlayed on top of other prims.
+    bool displayInOverlay;
 
     /// Does the prim act "transparent" to allow occluded selection to show
     /// through?
@@ -87,12 +93,14 @@ struct HdDisplayStyle {
     /// - refineLevel is 0.
     /// - flatShading is disabled.
     /// - displacement is enabled.
+    /// - displayInOverlay is disabled.
     /// - occludedSelectionShowsThrough is disabled.
     /// - pointsShading is disabled.
     HdDisplayStyle()
         : refineLevel(0)
         , flatShadingEnabled(false)
         , displacementEnabled(true)
+        , displayInOverlay(false)
         , occludedSelectionShowsThrough(false)
         , pointsShadingEnabled(false)
         , materialIsFinal(false)
@@ -103,6 +111,7 @@ struct HdDisplayStyle {
     ///        Valid range is [0, 8].
     /// \param flatShading enables flat shading, defaults to false.
     /// \param displacement enables displacement shading, defaults to true.
+    /// \param displayInOverlay enables display in overlay, defaults to false.
     /// \param occludedSelectionShowsThrough controls whether the prim lets
     ///        occluded selection show through it, defaults to false.
     /// \param pointsShadingEnabled controls whether the prim's points 
@@ -113,12 +122,14 @@ struct HdDisplayStyle {
     HdDisplayStyle(int refineLevel_,
                    bool flatShading = false,
                    bool displacement = true,
+                   bool displayInOverlay_ = false,
                    bool occludedSelectionShowsThrough_ = false,
                    bool pointsShadingEnabled_ = false,
                    bool materialIsFinal_ = false)
         : refineLevel(std::max(0, refineLevel_))
         , flatShadingEnabled(flatShading)
         , displacementEnabled(displacement)
+        , displayInOverlay(displayInOverlay_)
         , occludedSelectionShowsThrough(occludedSelectionShowsThrough_)
         , pointsShadingEnabled(pointsShadingEnabled_)
         , materialIsFinal(materialIsFinal_)
@@ -137,6 +148,7 @@ struct HdDisplayStyle {
         return refineLevel == rhs.refineLevel
             && flatShadingEnabled == rhs.flatShadingEnabled
             && displacementEnabled == rhs.displacementEnabled
+            && displayInOverlay == rhs.displayInOverlay
             && occludedSelectionShowsThrough ==
                 rhs.occludedSelectionShowsThrough
             && pointsShadingEnabled == rhs.pointsShadingEnabled
@@ -473,13 +485,10 @@ public:
     HD_API
     virtual VtValue GetShadingStyle(SdfPath const &id);
 
-    /// Returns the refinement level for the given prim in the range [0,8].
-    ///
-    /// The refinement level indicates how many iterations to apply when
-    /// subdividing subdivision surfaces or other refinable primitives.
+    /// Returns the display style for the given prim.
     HD_API
     virtual HdDisplayStyle GetDisplayStyle(SdfPath const& id);
-    
+
     /// Returns a named value.
     HD_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key);

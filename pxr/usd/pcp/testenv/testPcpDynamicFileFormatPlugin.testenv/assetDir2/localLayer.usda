@@ -1,0 +1,4 @@
+#usda 1.0
+
+# Placeholder layer file. The contents are irrelevant; this file just needs 
+# to exist for asset path resolution to successfully resolve this file's path.

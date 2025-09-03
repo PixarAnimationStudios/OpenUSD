@@ -7,10 +7,9 @@
 #ifndef PXR_IMAGING_HD_GP_GENERATIVE_PROCEDURAL_PLUGIN_H
 #define PXR_IMAGING_HD_GP_GENERATIVE_PROCEDURAL_PLUGIN_H
 
-#include "pxr/imaging/hdGp/generativeProcedural.h"
-
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdGp/api.h"
+#include "pxr/imaging/hdGp/generativeProcedural.h"
 #include "pxr/imaging/hf/pluginBase.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

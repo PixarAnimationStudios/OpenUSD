@@ -1,8 +1,0 @@
-#sdf 1.4.32
-
-def "SetB" 
-{
-   def "Model" (references = @./model.sdf@</Model>)
-   {
-   }
-}

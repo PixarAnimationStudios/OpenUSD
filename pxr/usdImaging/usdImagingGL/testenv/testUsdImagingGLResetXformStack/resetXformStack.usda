@@ -1,0 +1,27 @@
+#usda 1.0
+(
+    """This file demonstrates a bug where a bare !resetXformStack!
+    operation with no other xform ops was ignored by UsdImaging."""
+    framesPerSecond = 24
+    metersPerUnit = 1
+    timeCodesPerSecond = 24
+)
+
+def Cone "cone"
+{
+    float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+    double radius = 1
+}
+
+def Xform "xform"
+{
+    matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (3, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+
+    def Sphere "sphere"
+    {
+        float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+        double radius = 1
+        uniform token[] xformOpOrder = ["!resetXformStack!"]
+    }
+}

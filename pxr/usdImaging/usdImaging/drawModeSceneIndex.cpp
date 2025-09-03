@@ -8,29 +8,18 @@
 
 #include "pxr/usdImaging/usdImaging/drawModeStandin.h"
 #include "pxr/usdImaging/usdImaging/geomModelSchema.h"
-#include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/work/loops.h"
+
+#include "tbb/concurrent_vector.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
-
-bool
-_IsUsdNativeInstance(const HdSceneIndexPrim &prim)
-{
-    UsdImagingUsdPrimInfoSchema primInfoSchema =
-        UsdImagingUsdPrimInfoSchema::GetFromParent(prim.dataSource);
-
-    HdPathDataSourceHandle const ds = primInfoSchema.GetNiPrototypePath();
-    if (!ds) {
-        return false;
-    }
-    return !ds->GetTypedValue(0.0f).IsEmpty();
-}
 
 // Resolve draw mode for prim from input scene index.
 // Default draw mode can be expressed by either the empty token
@@ -39,15 +28,6 @@ TfToken
 _GetDrawMode(const HdSceneIndexPrim &prim)
 {
     static const TfToken empty;
-
-    if (_IsUsdNativeInstance(prim)) {
-        // Do not apply draw mode to native instance.
-        // Instead, the native instance prototype propagating scene index
-        // will create a copy of the prototype with the apply draw mode set
-        // and the draw mode scene index processing that prototype applies
-        // the draw mode.
-        return empty;
-    }
 
     UsdImagingGeomModelSchema geomModelSchema =
         UsdImagingGeomModelSchema::GetFromParent(prim.dataSource);
@@ -122,13 +102,16 @@ auto _FindPrefixOfPath(
 UsdImaging_DrawModeStandinSharedPtr
 UsdImagingDrawModeSceneIndex::_FindStandinForPrimOrAncestor(
     const SdfPath &path,
-    size_t * const relPathLen) const
+    bool * const isPathDescendant) const
 {
     const auto it = _FindPrefixOfPath(_prims, path);
     if (it == _prims.end()) {
         return nullptr;
     }
-    *relPathLen = path.GetPathElementCount() - it->first.GetPathElementCount();
+    if (isPathDescendant) {
+        *isPathDescendant =
+            path.GetPathElementCount() > it->first.GetPathElementCount();
+    }
     return it->second;
 }
 
@@ -140,36 +123,21 @@ UsdImagingDrawModeSceneIndex::GetPrim(
 
     // Do we have this prim path or an ancestor prim path in the
     // _prims map?
-    size_t relPathLen;
     if (UsdImaging_DrawModeStandinSharedPtr const standin =
-            _FindStandinForPrimOrAncestor(primPath, &relPathLen)) {
-        
-        if (relPathLen == 0) {
-            // Example
-            // Queried prim is /Foo and the DrawModeStandin is at /Foo.
-            //
-            // We query the DrawmodeStandin for its self, untyped prim.
-            return standin->GetPrim();
-        }
-        if (relPathLen == 1 || relPathLen == 2) {
-            // Example:
-            // DrawModeStandin is at /Foo, and queried prim is at
-            //   /Foo/cardsMesh, or
-            //   /Foo/subsetMaterialXPos, or
-            //   /Foo/cardsMesh/subsetXPos
-            //
-            // We query the DrawmodeStandin for the descendant prim.
-            return standin->GetDescendantPrim(primPath);
-        }
-        // Example:
-        // Queried prim is /Foo/A/B and the DrawModeStandin is at /Foo.
-        //
-        // We block everything at this level since draw mode standin's
-        // only have children (depth 1) or grandchildren (depth 2).
-        return { TfToken(), nullptr };
+            _FindStandinForPrimOrAncestor(primPath)) {
+        return standin->GetPrim(primPath);
     }
 
     return _GetInputSceneIndex()->GetPrim(primPath);
+}
+
+static
+bool
+_IsImmediateChildOf(const SdfPath &path, const SdfPath &parentPath)
+{
+    return
+        path.GetPathElementCount() - parentPath.GetPathElementCount() == 1 &&
+        path.HasPrefix(parentPath);
 }
 
 SdfPathVector
@@ -180,9 +148,8 @@ UsdImagingDrawModeSceneIndex::GetChildPrimPaths(
 
     // Do we have this prim path or an ancestor prim path in the
     // _prims map?
-    size_t relPathLen;
     if (UsdImaging_DrawModeStandinSharedPtr const standin =
-            _FindStandinForPrimOrAncestor(primPath, &relPathLen)) {
+            _FindStandinForPrimOrAncestor(primPath)) {
         // standin->GetDescendantPrimPaths() gives all descendants, but
         // we just want the queried prim's direct children so we only
         // want the descendant paths with the full queried path as prefix and
@@ -191,9 +158,8 @@ UsdImagingDrawModeSceneIndex::GetChildPrimPaths(
         // materials), the standin prim (children: subsets), a subset (children:
         // none), or a material (children: none).
         SdfPathVector paths;
-        for (const SdfPath& path : standin->GetDescendantPrimPaths()) {
-            if (path.HasPrefix(primPath) && path.GetPathElementCount()
-                - primPath.GetPathElementCount() == 1) {
+        for (const SdfPath &path : standin->GetPrimPaths()) {
+            if (_IsImmediateChildOf(path, primPath)) {
                 paths.push_back(path);
             }
         }
@@ -253,25 +219,54 @@ UsdImagingDrawModeSceneIndex::_PrimsAdded(
     HdSceneIndexObserver::AddedPrimEntries newEntries;
     HdSceneIndexObserver::RemovedPrimEntries removedEntries;
 
-    for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
+    // Loop over notices to determine the prims that have a draw mode. Since
+    // the prim container is used to determine this, it can be quite expensive.
+    // So, we parallelize the work below with the caveat that we may be querying
+    // descendant prims under a tracked prim that has a draw mode.
+    // XXX We preserve the order of notice entries to workaround a bug in 
+    // backend emulation in the handling of geom subset prims.
+    //
+    using _AddedEntryAndPrimPair =
+        std::pair<HdSceneIndexObserver::AddedPrimEntry, HdSceneIndexPrim>;
+    tbb::concurrent_vector<_AddedEntryAndPrimPair> entryPrimPairs(
+        entries.size());
+
+    {
+        TRACE_FUNCTION_SCOPE("Notice processing - prim query");
+        WorkParallelForN(entries.size(),
+            [&](size_t begin, size_t end) {
+                for (size_t i = begin; i < end; ++i) {
+                    const HdSceneIndexObserver::AddedPrimEntry &entry =
+                        entries[i];
+                    
+                    const SdfPath &path = entry.primPath;
+                    const HdSceneIndexPrim prim =
+                        _GetInputSceneIndex()->GetPrim(path);
+                    entryPrimPairs[i] = {entry, prim};
+                }
+            });
+    }
+
+    // Serial loop for simplicity because _prims is not thread safe.
+    //
+    for (const auto& [entry, prim] : entryPrimPairs) {
         const SdfPath &path = entry.primPath;
 
         // Suppress prims from input scene delegate that have an ancestor
         // with a draw mode.
-        size_t relPathLen;
+        bool isPathDescendant = false;
         if (UsdImaging_DrawModeStandinSharedPtr standin =
-               _FindStandinForPrimOrAncestor(path, &relPathLen)) {
-            if (relPathLen > 0) {
+               _FindStandinForPrimOrAncestor(path, &isPathDescendant)) {
+            if (isPathDescendant) {
                 continue;
             }
         }
-               
-        const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(path);
+
         const TfToken drawMode = _GetDrawMode(prim);
 
         if (UsdImaging_DrawModeStandinSharedPtr standin =
-                UsdImaging_GetDrawModeStandin(
-                    drawMode, path, prim.dataSource)) {
+            UsdImaging_GetDrawModeStandin(
+                drawMode, path, prim.dataSource)) {
 
             // Sending out removed entry here for the following scenario:
             // Assume that the input to the draw mode scene index has a
@@ -315,13 +310,8 @@ UsdImagingDrawModeSceneIndex::_PrimsAdded(
         }
     }
 
-    if (!removedEntries.empty()) {
-        _SendPrimsRemoved(removedEntries);
-    }
-     
-    if (!newEntries.empty()) {
-        _SendPrimsAdded(newEntries);
-    }
+    _SendPrimsRemoved(removedEntries);
+    _SendPrimsAdded(newEntries);
 }
 
 void
@@ -386,10 +376,10 @@ UsdImagingDrawModeSceneIndex::_PrimsDirtied(
 
             // Suppress prims from input scene delegate that have an ancestor
             // with a draw mode.
-            size_t relPathLen;
+            bool isPathDescendant = false;
             if (UsdImaging_DrawModeStandinSharedPtr standin =
-                _FindStandinForPrimOrAncestor(path, &relPathLen)) {
-                if (relPathLen > 0) {
+                _FindStandinForPrimOrAncestor(path, &isPathDescendant)) {
+                if (isPathDescendant) {
                     continue;
                 }
             }
@@ -459,9 +449,9 @@ UsdImagingDrawModeSceneIndex::_PrimsDirtied(
     
     for (const HdSceneIndexObserver::DirtiedPrimEntry &entry : entries) {
         const SdfPath &path = entry.primPath;
-        size_t relPathLen;
+        bool isPathDescendant = false;
         UsdImaging_DrawModeStandinSharedPtr const standin =
-            _FindStandinForPrimOrAncestor(path, &relPathLen);
+            _FindStandinForPrimOrAncestor(path, &isPathDescendant);
         if (!standin) {
             // Prim and all its ancestors have default draw mode,
             // just forward entry.
@@ -469,7 +459,7 @@ UsdImagingDrawModeSceneIndex::_PrimsDirtied(
             continue;
         }
 
-        if (relPathLen > 0) {
+        if (isPathDescendant) {
             // Descendants of prims with non-default draw mode can be ignored.
             continue;
         }

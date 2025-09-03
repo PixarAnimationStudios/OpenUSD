@@ -62,10 +62,10 @@ protected:
 /// data source of an expected type.
 ///
 template<typename T>
-class HdTypedVectorSchema : public HdVectorSchema
+class HdVectorOfTypedSampledDataSourcesSchema : public HdVectorSchema
 {
 public:
-    HdTypedVectorSchema(HdVectorDataSourceHandle const &vector)
+    HdVectorOfTypedSampledDataSourcesSchema(HdVectorDataSourceHandle const &vector)
       : HdVectorSchema(vector) {}
 
     typename T::Handle GetElement(const size_t element) const {
@@ -73,14 +73,18 @@ public:
     }
 };
 
+/// \deprecated
+template<typename T>
+using HdTypedVectorSchema = HdVectorOfTypedSampledDataSourcesSchema<T>;
+
 /// Template class wrapping a vector data source whose children are
 /// container data source conforming to an expected schema.
 ///
 template<typename Schema>
-class HdSchemaBasedVectorSchema : public HdVectorSchema
+class HdVectorOfSchemasSchema : public HdVectorSchema
 {
 public:
-    HdSchemaBasedVectorSchema(HdVectorDataSourceHandle const &vector)
+    HdVectorOfSchemasSchema(HdVectorDataSourceHandle const &vector)
       : HdVectorSchema(vector) {}
     
     Schema GetElement(const size_t element) const {
@@ -88,6 +92,10 @@ public:
         return Schema(_GetTyped<DataSource>(element));
     }
 };
+
+/// \deprecated
+template<typename T>
+using HdSchemaBasedVectorSchema = HdVectorOfSchemasSchema<T>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

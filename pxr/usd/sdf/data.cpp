@@ -413,6 +413,36 @@ SdfData::GetBracketingTimeSamplesForPath(
 }
 
 bool
+SdfData::GetPreviousTimeSampleForPath(
+    const SdfPath &path, double time,
+    double* tPrevious) const
+{
+    auto getTime = [](SdfTimeSampleMap::value_type const &p) { return p.first; };
+    const VtValue *fval = _GetFieldValue(path, SdfDataTokens->TimeSamples);
+    if (fval && fval->IsHolding<SdfTimeSampleMap>()) {
+        auto const &tsmap = fval->UncheckedGet<SdfTimeSampleMap>();
+        if (tsmap.empty() || time <= getTime(*tsmap.begin())) {
+            // no samples, or 
+            // can't get previous sample for time before first sample.
+            return false;
+        } else if (time > getTime(*tsmap.rbegin())) {
+            // last sample is the previous time sample, as time is greater than
+            // the last sample time.
+            *tPrevious = getTime(*tsmap.rbegin());
+        } else {
+            auto iter = tsmap.lower_bound(time);
+            // We need to back up one sample to get the previous sample from
+            // the lower_bound. If the lower_bound is the first sample, we would
+            // have returned false above.
+            TF_VERIFY(iter != tsmap.begin());
+            *tPrevious = getTime(*std::prev(iter));
+        }
+        return true;
+    }
+    return false;
+}
+
+bool
 SdfData::QueryTimeSample(const SdfPath &path, double time, 
                          VtValue *value) const
 {

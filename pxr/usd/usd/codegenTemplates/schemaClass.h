@@ -390,6 +390,62 @@ public:
 
 {% endif %}
 {% endfor %}
+{% for schema in appliedSchemas %}
+{% set schemaCls = classes[schema]%}
+public:
+    /// \name {{ schema }}
+    /// 
+    /// Convenience accessors for the built-in {{ schemaCls.cppClassName }}
+    /// 
+    /// @{
+
+    /// Constructs and returns a {{ schemaCls.cppClassName }} object.
+    /// Use this object to access {{ schemaCls.cppClassName }} custom methods.
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    {{ schemaCls.cppClassName }} {{ schema }}() const;
+
+{% for attrName in schemaCls.attrOrder %}
+{% set attr = schemaCls.attrs[attrName]%}
+{# Only emit Create/Get API and doxygen if apiName is not empty string. #}
+{% if attr.apiName != '' %}
+    /// See {{ schemaCls.cppClassName }}::Get{{ Proper(attr.apiName) }}Attr().
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    UsdAttribute Get{{ Proper(attr.apiName) }}Attr() const;
+
+    /// See {{ schemaCls.cppClassName }}::Create{{ Proper(attr.apiName) }}Attr().
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    UsdAttribute Create{{ Proper(attr.apiName) }}Attr(
+        VtValue const &defaultValue = VtValue(), 
+        bool writeSparsely=false) const;
+
+{% endif %}
+{% endfor %}
+{% for relName in schemaCls.relOrder %}
+{% set rel = schemaCls.rels[relName]%}
+{# Only emit Create/Get API and doxygen if apiName is not empty string. #}
+{% if rel.apiName != '' %}
+    /// See {{ schemaCls.cppClassName }}::Get{{ Proper(rel.apiName) }}Rel().
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    UsdRelationship Get{{ Proper(rel.apiName) }}Rel() const;
+
+    /// See {{ schemaCls.cppClassName }}::Create{{ Proper(rel.apiName) }}Rel().
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    UsdRelationship Create{{ Proper(rel.apiName) }}Rel() const;
+{% endif %}
+
+{% endfor %}
+    /// @}
+{% endfor %}
 {% for relName in cls.relOrder %}
 {% set rel = cls.rels[relName]%}
 {# Only emit Create/Get API and doxygen if apiName is not empty string. #}

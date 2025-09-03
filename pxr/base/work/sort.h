@@ -7,12 +7,12 @@
 #ifndef PXR_BASE_WORK_SORT_H
 #define PXR_BASE_WORK_SORT_H
 
-/// \file
+/// \file work/sort.h
 
 #include "pxr/pxr.h"
+#include "pxr/base/work/impl.h"
 #include "pxr/base/work/threadLimits.h"
 
-#include <tbb/parallel_sort.h>
 #include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -25,7 +25,8 @@ WorkParallelSort(C* container)
 {
     // Don't bother with parallel_for, if concurrency is limited to 1.
     if (WorkHasConcurrency()) {
-        tbb::parallel_sort(container->begin(), container->end());
+        PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
+        WorkImpl_ParallelSort(container);
     }else{
         std::sort(container->begin(), container->end());
     }
@@ -41,7 +42,8 @@ WorkParallelSort(C* container, const Compare& comp)
 {
     // Don't bother with parallel_for, if concurrency is limited to 1.
     if (WorkHasConcurrency()) {
-        tbb::parallel_sort(container->begin(), container->end(), comp);
+        PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
+        WorkImpl_ParallelSort(container, comp);
     }else{
         std::sort(container->begin(), container->end(), comp);
     }

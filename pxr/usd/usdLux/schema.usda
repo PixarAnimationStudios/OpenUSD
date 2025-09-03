@@ -53,6 +53,41 @@ class "LightAPI" (
     type (e.g. RectLight or DistantLight) or is applied directly to a Gprim 
     that should be treated as a light.
 
+    <b>Quantities and Units</b>
+
+    Most renderers consuming OpenUSD today are RGB renderers, rather than
+    spectral. Units in RGB renderers are tricky to define as each of the red,
+    green and blue channels transported by the renderer represents the
+    convolution of a spectral exposure distribution, e.g. CIE Illuminant D65,
+    with a sensor response function, e.g. CIE 1931 𝓍̅. Thus the main quantity
+    in an RGB renderer is neither radiance nor luminance, but "integrated
+    radiance" or "tristimulus weight".
+
+    The emission of a default light with `intensity` 1 and `color` [1, 1, 1] is
+    an Illuminant D spectral distribution with chromaticity matching the
+    rendering color space white point, normalized such that a ray normally
+    incident upon the sensor with EV0 exposure settings will generate a pixel
+    value of [1, 1, 1] in the rendering color space.
+
+    Given the above definition, that means that the luminance of said default
+    light will be 1 *nit (cd∕m²)* and its emission spectral radiance
+    distribution is easily computed by appropriate normalization.
+
+    For brevity, the term *emission* will be used in the documentation to mean
+    "emitted spectral radiance" or "emitted integrated radiance/tristimulus
+    weight", as appropriate.
+
+    The method of "uplifting" an RGB color to a spectral distribution is
+    unspecified other than that it should round-trip under the rendering
+    illuminant to the limits of numerical accuracy.
+
+    Note that some color spaces, most notably ACES, define their white points
+    by chromaticity coordinates that do not exactly line up to any value of a
+    standard illuminant. Because we do not define the method of uplift beyond
+    the round-tripping requirement, we discourage the use of such color spaces
+    as the rendering color space, and instead encourage the use of color spaces
+    whose white point has a well-defined spectral representation, such as D65.
+
     <b>Linking</b>
 
     Lights can be linked to geometry.  Linking controls which geometry
@@ -152,7 +187,22 @@ class "LightAPI" (
     float inputs:intensity = 1 (
         displayGroup = "Basic"
         displayName = "Intensity"
-        doc = """Scales the power of the light linearly."""
+        doc = """Scales the brightness of the light linearly.
+
+        Expresses the "base", unmultiplied luminance emitted (L) of the light,
+        in nits (cd∕m²):
+
+        <center><b>
+                        L<sub>Scalar</sub> = intensity
+        </b></center>
+
+        Normatively, the lights' emission is in units of spectral radiance
+        normalized such that a directly visible light with `intensity` 1 and
+        `exposure` 0 normally incident upon the sensor plane will generate a
+        pixel value of [1, 1, 1] in an RGB renderer, and thus have a luminance
+        of 1 nit. A light with `intensity` 2 and `exposure` 0 would therefore
+        have a luminance of 2 nits.
+        """
         customData = {
             token apiName = "intensity"
         }
@@ -160,9 +210,21 @@ class "LightAPI" (
     float inputs:exposure = 0 (
         displayGroup = "Basic"
         displayName = "Exposure"
-        doc = """Scales the power of the light exponentially as a power
+        doc = """Scales the brightness of the light exponentially as a power
         of 2 (similar to an F-stop control over exposure).  The result
-        is multiplied against the intensity."""
+        is multiplied against the intensity:
+
+        <center><b>
+                L<sub>Scalar</sub> = L<sub>Scalar</sub> ⋅ 2<sup>exposure</sup>
+        </b></center>
+
+        Normatively, the lights' emission is in units of spectral radiance
+        normalized such that a directly visible light with `intensity` 1 and
+        `exposure` 0 normally incident upon the sensor plane will generate a
+        pixel value of [1, 1, 1] in an RGB renderer, and thus have a luminance
+        of 1 nit (cd∕m²). A light with `intensity` 1 and `exposure` 2 would
+        therefore have a luminance of 4 nits.
+        """
         customData = {
             token apiName = "exposure"
         }
@@ -188,10 +250,118 @@ class "LightAPI" (
     bool inputs:normalize = false (
         displayGroup = "Advanced"
         displayName = "Normalize Power"
-        doc = """Normalizes power by the surface area of the light.
-        This makes it easier to independently adjust the power and shape
-        of the light, by causing the power to not vary with the area or
-        angular size of the light."""
+        doc = """Normalizes the emission such that the power of the light
+        remains constant while altering the size of the light, by dividing the
+        luminance by the world-space surface area of the light.
+
+        This makes it easier to independently adjust the brightness and size
+        of the light, by causing the total illumination provided by a light to
+        not vary with the area or angular size of the light.
+
+        Mathematically, this means that the luminance of the light will be
+        divided by a factor representing the "size" of the light:
+
+        <center><b>
+                        L<sub>Scalar</sub> = L<sub>Scalar</sub> / sizeFactor
+        </b></center>
+
+        ...where `sizeFactor` = 1 if `normalize` is off, and is calculated
+        depending on the family of the light as described below if `normalize`
+        is on.
+
+        ### DomeLight / PortalLight:
+
+        For a dome light (and its associated PortalLight), this attribute is
+        ignored:
+
+        <center><b>
+                        sizeFactor<sub>dome</sub> = 1
+        </b></center>
+
+        ### Area Lights:
+
+        For an area light, the `sizeFactor` is the surface area (in world
+        space) of the shape of the light, including any scaling applied to the
+        light by its transform stack. This includes the boundable light types
+        which have a calculable surface area:
+
+        - MeshLightAPI
+        - DiskLight
+        - RectLight
+        - SphereLight
+        - CylinderLight
+
+        <center><b>
+                        sizeFactor<sub>area</sub> = worldSpaceSurfaceArea(light)
+        </b></center>
+
+        ### DistantLight:
+
+        For distant lights, we first define 𝛳<sub>max</sub> as:
+
+        <center><b>
+                𝛳<sub>max</sub> = clamp(toRadians(distantLightAngle) / 2, 0, 𝜋)
+        </b></center>
+
+        Then we use the following formula:
+
+        * <i>if 𝛳<sub>max</sub> = 0:</i>
+        <center><b>
+                sizeFactor<sub>distant</sub> = 1
+        </b></center>
+
+        * <i>if 0 < 𝛳<sub>max</sub> ≤ 𝜋 / 2:</i>
+        <center><b>
+            sizeFactor<sub>distant</sub> = sin²𝛳<sub>max</sub> ⋅ 𝜋
+        </b></center>
+
+        * <i>if 𝜋 / 2 < 𝛳<sub>max</sub> ≤ 𝜋:</i>
+        <center><b>
+                    sizeFactor<sub>distant</sub> =
+                        (2 - sin²𝛳<sub>max</sub>) ⋅ 𝜋
+        </b></center>
+
+        This formula is used because it satisfies the following two properties:
+
+        1. When normalize is enabled, the received illuminance from this light
+           on a surface normal to the light's primary direction is held constant
+           when angle changes, and the "intensity" property becomes a measure of
+           the illuminance, expressed in lux, for a light with 0 exposure.
+
+        2. If we assume that our distant light is an approximation for a "very
+           far" sphere light (like the sun), then (for
+           *0 < 𝛳<sub>max</sub> ≤ 𝜋/2*) this definition agrees with the
+           definition used for area lights - i.e., the total power of this distant
+           sphere light is constant when the "size" (i.e., angle) changes, and our
+           sizeFactor is proportional to the total surface area of this sphere.
+
+        ### Other Lights
+
+        The above taxonomy describes behavior for all built-in light types.
+        (Note that the above is based on schema *family* - i.e., `DomeLight_1`
+        follows the rules for a `DomeLight`, and ignores `normalize`).
+
+        Lights from other third-party plugins / schemas must document their
+        expected behavior with regards to normalize.  However, some general
+        guidelines are:
+
+        - Lights that either inherit from or are strongly associated with one of
+          the built-in types should follow the behavior of the built-in type
+          they inherit/resemble; i.e., a renderer-specific "MyRendererRectLight"
+          should have its size factor be its world-space surface area.
+        - Lights that are boundable and have a calculable surface area should
+          follow the rules for an Area Light, and have their sizeFactor be their
+          world-space surface area.
+        - Lights that are non-boundable and/or have no way to concretely or even
+          "intuitively" associate them with a "size" will ignore this attribute
+          (and always set sizeFactor = 1).
+
+        Lights that don't clearly meet any of the above criteria may either
+        ignore the normalize attribute or try to implement support using
+        whatever heuristic seems to make sense. For instance,
+        MyMandelbulbLight might use a sizeFactor equal to the world-space
+        surface area of a sphere which "roughly" bounds it.
+        """
         customData = {
             token apiName = "normalize"
         }
@@ -199,7 +369,21 @@ class "LightAPI" (
     color3f inputs:color = (1, 1, 1) (
         displayGroup = "Basic"
         displayName = "Color"
-        doc = """The color of emitted light, in energy-linear terms."""
+        doc = """The color of emitted light, in the rendering color space.
+
+        This color is just multiplied with the emission:
+
+        <center><b>
+                        L<sub>Color</sub> = L<sub>Scalar</sub> ⋅ color
+        </b></center>
+
+        In the case of a spectral renderer, this color should be uplifted such
+        that it round-trips to within the limit of numerical accuracy under the
+        rendering illuminant. We recommend the use of a rendering color space
+        well defined in terms of a Illuminant D illuminant (ideally a D
+        illuminant whose white point has a well-defined spectral representation,
+        such as D65), to avoid unspecified uplift. See: \\ref usdLux_quantities
+        """
         customData = {
             token apiName = "color"
         }
@@ -221,7 +405,18 @@ class "LightAPI" (
         is from 1000 to 10000. Only takes effect when
         enableColorTemperature is set to true.  When active, the
         computed result multiplies against the color attribute.
-        See UsdLuxBlackbodyTemperatureAsRgb()."""
+        See UsdLuxBlackbodyTemperatureAsRgb().
+
+        This is always calculated as an RGB color using a D65 white point,
+        regardless of the rendering color space, normalized such that the
+        default value of 6500 will always result in white, and then should be
+        transformed to the rendering color space.
+
+        Spectral renderers should do the same and then uplift the resulting
+        color after multiplying with the `color` attribute.  We recommend the
+        use of a rendering color space well defined in terms of a Illuminant D
+        illuminant, to avoid unspecified uplift.  See: \\ref usdLux_quantities
+        """
         customData = {
             token apiName = "colorTemperature"
         }
@@ -474,8 +669,21 @@ class "ShapingAPI" (
         displayName = "Emission Focus"
         doc = """A control to shape the spread of light.  Higher focus
         values pull light towards the center and narrow the spread.
-        Implemented as an off-axis cosine power exponent.
-        TODO: clarify semantics"""
+
+        This is implemented as a multiplication with the absolute value of the
+        dot product between the light's surface normal and the emission
+        direction, raised to the power `focus`.  See `inputs:shaping:focusTint`
+        for the complete formula, but if we assume a default `focusTint` of
+        pure black, then that formula simplifies to:
+
+        <center><b>
+            focusFactor = ｜emissionDirection • lightNormal｜<sup>focus</sup>
+
+                    L<sub>Color</sub> = focusFactor ⋅ L<sub>Color</sub>
+        </b></center>
+
+        Values < 0 are ignored.
+        """
         customData = {
             token apiName = "shaping:focus"
         }
@@ -485,7 +693,23 @@ class "ShapingAPI" (
         displayName = "Emission Focus Tint"
         doc = """Off-axis color tint.  This tints the emission in the
         falloff region.  The default tint is black.
-        TODO: clarify semantics"""
+
+        This is implemented as a linear interpolation between `focusTint` and
+        white, by the factor computed from the focus attribute, in other words:
+
+        <center><b>
+            focusFactor = ｜emissionDirection • lightNormal｜<sup>focus</sup>
+
+                focusColor = lerp(focusFactor, focusTint, [1, 1, 1])
+
+                L<sub>Color</sub> =
+                    componentwiseMultiply(focusColor, L<sub>Color</sub>)
+        </b></center>
+
+        Note that this implies that a focusTint of pure white will disable
+        focus.
+        """
+
         customData = {
             token apiName = "shaping:focusTint"
         }
@@ -493,8 +717,29 @@ class "ShapingAPI" (
     float inputs:shaping:cone:angle = 90 (
         displayGroup = "Shaping"
         displayName = "Cone Angle"
-        doc = """Angular limit off the primary axis to restrict the
-        light spread."""
+        doc = """Angular limit off the primary axis to restrict the light
+        spread, in degrees.
+
+        Light emissions at angles off the primary axis greater than this are
+        guaranteed to be zero, i.e.:
+
+
+        <center><b>
+                    𝛳<sub>offAxis</sub> = acos(lightAxis • emissionDir)
+
+                    𝛳<sub>cutoff</sub> = toRadians(coneAngle)
+
+
+                    𝛳<sub>offAxis</sub> > 𝛳<sub>cutoff</sub>
+                            ⟹ L<sub>Scalar</sub> = 0
+
+        </b></center>
+
+        For angles < coneAngle, see the documentation for `shaping:cone:softness`.
+        However, at the default of coneSoftness = 0, the luminance is
+        unaltered if emissionOffAxisAngle <= coneAngle, so the coneAngle
+        functions as a hard binary "off" toggle for all angles > coneAngle.
+        """
         customData = {
             token apiName = "shaping:cone:angle"
         }
@@ -503,7 +748,32 @@ class "ShapingAPI" (
         displayGroup = "Shaping"
         displayName = "Cone Softness"
         doc = """Controls the cutoff softness for cone angle.
-        TODO: clarify semantics"""
+
+        At the default of coneSoftness = 0, the luminance is unaltered if 
+        emissionOffAxisAngle <= coneAngle, and 0 if
+        emissionOffAxisAngle > coneAngle, so in this situation the coneAngle
+        functions as a hard binary "off" toggle for all angles > coneAngle.
+
+        For coneSoftness in the range (0, 1], it defines the proportion of the
+        non-cutoff angles over which the luminance is smoothly interpolated from
+        0 to 1. Mathematically:
+
+        <center><b>
+                𝛳<sub>offAxis</sub> = acos(lightAxis • emissionDir)
+
+                    𝛳<sub>cutoff</sub> = toRadians(coneAngle)
+
+          𝛳<sub>smoothStart</sub> = lerp(coneSoftness, 𝛳<sub>cutoff</sub>, 0)
+
+            L<sub>Scalar</sub> = L<sub>Scalar</sub> ⋅
+                    (1 - smoothStep(𝛳<sub>offAxis</sub>,
+                                    𝛳<sub>smoothStart</sub>,
+                                    𝛳<sub>cutoff</sub>)
+        </b></center>
+
+        Values outside of the [0, 1] range are clamped to the range.
+        """
+
         customData = {
             token apiName = "shaping:cone:softness"
         }
@@ -512,7 +782,38 @@ class "ShapingAPI" (
         displayGroup = "Shaping"
         displayName = "IES Profile"
         doc = """An IES (Illumination Engineering Society) light
-        profile describing the angular distribution of light."""
+        profile describing the angular distribution of light.
+
+        For full details on the .ies file format, see the full specification,
+        ANSI/IES LM-63-19:
+
+        https://store.ies.org/product/lm-63-19-approved-method-ies-standard-file-format-for-the-electronic-transfer-of-photometric-data-and-related-information/
+
+        The luminous intensity values in the IES profile are sampled using
+        the emission direction in the light's local space (after a possible
+        transformation by a non-zero shaping:ies:angleScale, see below). The
+        sampled value is then potentially normalized by the overall power of the
+        profile if shaping:ies:normalize is enabled, and then used as a scaling
+        factor on the returned luminance:
+
+
+        <center><b>
+                𝛳<sub>light</sub>, 𝜙 =
+                    toPolarCoordinates(emissionDirectionInLightSpace)
+
+            𝛳<sub>ies</sub> = applyAngleScale(𝛳<sub>light</sub>, angleScale)
+
+                    iesSample = sampleIES(iesFile, 𝛳<sub>ies</sub>, 𝜙)
+
+             iesNormalize ⟹ iesSample = iesSample ⋅ iesProfilePower(iesFile)
+
+                    L<sub>Color</sub> = iesSample ⋅ L<sub>Color</sub>
+        </b></center>
+
+        See `inputs:shaping:ies:angleScale` for a description of
+        `applyAngleScale`, and `inputs:shaping:ies:normalize` for how
+        `iesProfilePower` is calculated.
+        """
         customData = {
             token apiName = "shaping:ies:file"
         }
@@ -521,7 +822,75 @@ class "ShapingAPI" (
         displayGroup = "Shaping"
         displayName = "Profile Scale"
         doc = """Rescales the angular distribution of the IES profile.
-        TODO: clarify semantics"""
+
+        Applies a scaling factor to the latitudinal theta/vertical polar
+        coordinate before sampling the IES profile, to shift the samples more
+        toward the "top" or "bottom" of the profile. The scaling origin varies
+        depending on whether `angleScale` is positive or negative. If it is
+        positive, the scaling origin is theta = 0. If it is negative, the
+        scaling origin is theta = pi (180 degrees).  Values where
+        |angleScale| < 1 will "shrink" the angular range in which the
+        iesProfile is applied, while values where |angleScale| > 1 will
+        "grow" the angular range to which the iesProfile is mapped.
+
+        If <i>𝛳<sub>light</sub></i> is the latitudinal theta polar
+        coordinate of the emission direction in the light's local space, and
+        <em>𝛳<sub>ies</sub></em> is the value that will be used when
+        actually sampling the profile, then the exact formula is:
+
+        * <i>if angleScale > 0:</i>
+        <center><b>
+                𝛳<sub>ies</sub> = 𝛳<sub>light</sub> / angleScale
+        </b></center>
+
+        * <i>if angleScale = 0:</i>
+        <center><b>
+                𝛳<sub>ies</sub> = 𝛳<sub>light</sub>
+        </b></center>
+
+        * <i>if angleScale < 0:</i>
+        <center><b>
+                𝛳<sub>ies</sub> = (𝛳<sub>light</sub> - π) / -angleScale + π
+        </b></center>
+
+        Usage guidelines for artists / lighting TDs:
+
+        **If you have an IES profile for a spotlight aimed "down":**
+
+        - You should use a positive angleScale (> 0).
+        - Values where 0 < angleScale < 1 will narrow the spotlight beam.
+        - Values where angleScale > 1 will broaden the spotlight beam.
+
+        For example, if the original IES profile is a downward spotlight with
+        a total cone angle of 60°, then angleScale = .5 will narrow it to
+        have a cone angle of 30°, and an angleScale of 1.5 will broaden it
+        to have a cone angle of 90°.
+
+        **If you have an IES profile for a spotlight aimed "up":**
+
+        - You should use a negative angleScale (< 0).
+        - Values where -1 < angleScale < 0 will narrow the spotlight beam.
+        - Values where angleScale < -1 will broaden the spotlight beam.
+
+        For example, if the original IES profile is an upward spotlight with
+        a total cone angle of 60°, then angleScale = -.5 will narrow it to
+        have a cone angle of 30°, and an angleScale of -1.5 will broaden
+        it to have a cone angle of 90°.
+
+        **If you have an IES profile that's isn't clearly "aimed" in a single
+        direction, OR it's aimed in a direction other than straight up or
+        down:**
+
+        - Applying angleScale will alter the vertical angle mapping for your
+          IES light, but it may be difficult to have a clear intuitive sense
+          of how varying the angleScale will affect the shape of your light
+
+        If you violate the above rules (i.e., use a negative angleScale for a
+        spotlight aimed down), then angleScale will still alter the vertical-
+        angle mapping, but in more non-intuitive ways (i.e., broadening /
+        narrowing may seem inverted, and the IES profile may seem to "translate"
+        through the vertical angles, rather than uniformly scale).
+        """
         customData = {
             token apiName = "shaping:ies:angleScale"
         }
@@ -530,7 +899,13 @@ class "ShapingAPI" (
         displayGroup = "Shaping"
         displayName = "Profile Normalization"
         doc = """Normalizes the IES profile so that it affects the shaping
-        of the light while preserving the overall energy output."""
+        of the light while preserving the overall energy output.
+
+        The sampled luminous intensity is scaled by the overall power of the
+        IES profile if this is on, where the total power is calculated by
+        integrating the luminous intensity over all solid angle patches
+        defined in the profile.
+        """
         customData = {
             token apiName = "shaping:ies:normalize"
         }
@@ -663,6 +1038,7 @@ class "BoundableLightBase" (
     """
     customData = {
         string extraIncludes = """#include "pxr/usd/usdLux/lightAPI.h" """
+        token[] reflectedAPISchemas = ["LightAPI"]
     }
     prepend apiSchemas = ["LightAPI"]
 ) {
@@ -677,6 +1053,7 @@ class "NonboundableLightBase" (
     """
     customData = {
         string extraIncludes = """#include "pxr/usd/usdLux/lightAPI.h" """
+        token[] reflectedAPISchemas = ["LightAPI"]
     }
     prepend apiSchemas = ["LightAPI"]
 ) {
@@ -695,17 +1072,27 @@ class DistantLight "DistantLight" (
     float inputs:angle = 0.53 (
         displayGroup = "Basic"
         displayName = "Angle Extent"
-        doc = """Angular size of the light in degrees.
+        doc = """Angular diameter of the light in degrees.
         As an example, the Sun is approximately 0.53 degrees as seen from Earth.
         Higher values broaden the light and therefore soften shadow edges.
+
+        This value is assumed to be in the range `0 <= angle < 360`, and will
+        be clipped to this range. Note that this implies that we can have a
+        distant light emitting from more than a hemispherical area of light
+        if angle > 180. While this is valid, it is possible that for large
+        angles a DomeLight may provide better performance. If angle is 0, the
+        DistantLight represents a perfectly parallel light source.
         """
         customData = {
             token apiName = "angle"
         }
     )
     float inputs:intensity = 50000 (
-        doc = """Scales the emission of the light linearly.
-        The DistantLight has a high default intensity to approximate the Sun."""
+        doc = """Scales the brightness of the light linearly.
+
+        Intensity is overridden on DistantLight from LightAPI so that we can 
+        supply a high default intensity to approximate the Sun.
+        """
         customData = {
             token apiName = "intensity"
             bool apiSchemaOverride = true

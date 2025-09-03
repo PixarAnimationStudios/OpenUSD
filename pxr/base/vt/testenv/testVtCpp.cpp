@@ -7,9 +7,11 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/arrayEdit.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/vt/streamOut.h"
+#include "pxr/base/vt/traits.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/visitValue.h"
 
@@ -77,6 +79,17 @@ static void die(const std::string &msg) {
 }
 
 static void testArray() {
+
+    // Test traits.
+    static_assert(VtIsArray<VtIntArray>::value);
+    static_assert(!VtIsArray<VtIntArrayEdit>::value);
+    static_assert(!VtIsArray<int>::value);
+    static_assert(!VtIsArray<std::vector<int>>::value);
+
+    static_assert(!VtIsArrayEdit<VtIntArray>::value);
+    static_assert(VtIsArrayEdit<VtIntArrayEdit>::value);
+    static_assert(!VtIsArrayEdit<int>::value);
+    static_assert(!VtIsArrayEdit<std::vector<int>>::value);
 
     VtDoubleArray da(60);
 
@@ -363,6 +376,59 @@ static void testArray() {
         }
     }
     {
+        // Test VtArray insert.
+        VtIntArray ia;
+        TF_AXIOM(*ia.insert(ia.cbegin(), 9) == 9);
+        TF_AXIOM(ia.size() == 1);
+
+        TF_AXIOM(*ia.insert(ia.cend(), -9) == -9);
+        TF_AXIOM(ia.size() == 2);
+        TF_AXIOM(ia == VtIntArray({ 9, -9 }));
+
+        TF_AXIOM(*ia.insert(ia.cbegin()+1, 3) == 3);
+        TF_AXIOM(ia.size() == 3);
+        TF_AXIOM(ia == VtIntArray({ 9, 3, -9 }));
+
+        {
+            VtIntArray ia2 { ia };
+            // Elements from the array.
+            TF_AXIOM(*ia2.insert(ia2.cbegin(), ia2.AsConst()[1]) == 3);
+            TF_AXIOM(ia2.size() == 4);
+            TF_AXIOM(ia2 == VtIntArray({ 3, 9, 3, -9 }));
+        
+            TF_AXIOM(*ia2.insert(ia2.cend(), ia2.AsConst()[1]) == 9);
+            TF_AXIOM(ia2.size() == 5);
+            TF_AXIOM(ia2 == VtIntArray({ 3, 9, 3, -9, 9 }));
+        }
+
+        // 4 7s at index 2.
+        TF_AXIOM(*ia.insert(ia.cbegin()+2, 4, 7) == 7);
+        TF_AXIOM(ia.size() == 7);
+        TF_AXIOM(ia == VtIntArray({ 9, 3, 7, 7, 7, 7, -9 }));
+
+        // Initializer list.
+        TF_AXIOM(*ia.insert(ia.cbegin()+3, {1, 2, 3, 4}) == 1);
+        TF_AXIOM(ia.size() == 11);
+        TF_AXIOM(ia == VtIntArray({ 9, 3, 7, 1, 2, 3, 4, 7, 7, 7, -9 }));
+
+        // Range.
+        VtIntArray ia2 = ia;
+        TF_AXIOM(*ia2.insert(ia2.cbegin()+4, ia.cbegin()+1, ia.cend()-1) == 3);
+        TF_AXIOM(ia2 == VtIntArray({ 9, 3, 7, 1, 3, 7, 1, 2, 3, 4, 7, 7,
+                                     7, 2, 3, 4, 7, 7, 7, -9 }));
+
+        // Fill function
+        ia = VtIntArray { 9, 9, 9, 9 };
+        ia.insert(ia.cbegin() + 2, 3, [](int *b, int *e) {
+            int x = 4;
+            while (b != e) {
+                new (b++) int { x++ };
+            }
+        });
+        TF_AXIOM(ia.size() == 7);
+        TF_AXIOM(ia == VtIntArray({ 9, 9, 4, 5, 6, 9, 9 }));
+    }
+    {
         // Test VtArray erasing from the middle
         VtIntArray array({1, 2, 3, 4, 5, 6});
         VtIntArray::iterator it = array.erase(
@@ -520,6 +586,26 @@ static void testArray() {
         }
         catch (std::bad_alloc const &) {
             // pass
+        }
+    }
+    {
+        // Test that checks that MakeUnique creates a unique copy of the data 
+        // if necessary.
+        VtIntArray v1 = {0,1,2,3,4,5};
+        VtIntArray v2 (v1);
+
+        // this call should create a copy since v1 and v2 share the same data
+        TF_AXIOM(v1.IsIdentical(v2));
+        TF_AXIOM (v2.MakeUnique());
+        TF_AXIOM(!v1.IsIdentical(v2));
+        // v2's data should be unique by this point so calling MakeUnique should
+        // not make any copies.
+        TF_AXIOM (!v2.MakeUnique());
+        
+        TF_AXIOM(v2.size() == v1.size());
+        for (int i = 0; i < (int)v1.size(); ++i) {
+            TF_AXIOM(v1[i] == i);
+            TF_AXIOM(v2[i] == i);
         }
     }
 }
@@ -889,6 +975,20 @@ testDictionaryIterators()
                 "have equal values.");
         }
     }
+
+
+    // Check a dictionaries erase method allows iterator incrementing
+    {
+        VtDictionary a = {key1, key2, key3};
+        for (auto it = a.begin(); it != a.end();) {
+            it = a.erase(it);
+        }
+
+        if (!a.empty()) {
+            die("VtDictionary::erase iterator did not remove all items");
+        }
+    }
+
 }
 
 static void
@@ -1373,8 +1473,19 @@ static void testValue() {
         v = b;
         TF_AXIOM(v.Get<VtVec2iArray>().size() == 3);
         TF_AXIOM(v.IsArrayValued());
+        TF_AXIOM(!v.IsArrayEditValued());
         TF_AXIOM(v.GetElementTypeid() == typeid(GfVec2i));
         TF_AXIOM(vclone.Get<VtVec2iArray>().size() == 2);
+    }
+
+    // Element type of VtValue holding VtArrayEdit.
+    {
+        VtDoubleArrayEdit dae;
+        VtValue v { dae };
+        TF_AXIOM(v.IsHolding<VtDoubleArrayEdit>());
+        TF_AXIOM(!v.IsArrayValued());
+        TF_AXIOM(v.IsArrayEditValued());
+        TF_AXIOM(v.GetElementTypeid() == typeid(double));
     }
 
     // Precision-casting of VtArrays
@@ -1600,6 +1711,7 @@ testTypedVtValueProxy()
     TF_AXIOM(varrayProxy.IsHolding<_TypedProxy<VtFloatArray>>());
     
     TF_AXIOM(varrayProxy.IsArrayValued());
+    TF_AXIOM(!varrayProxy.IsArrayEditValued());
     TF_AXIOM(varrayProxy.GetArraySize() == 7);
     TF_AXIOM(varrayProxy.GetElementTypeid() == typeid(float));
     TF_AXIOM(varrayProxy.Get<VtFloatArray>() == fa);
@@ -1709,6 +1821,11 @@ struct Stringify
         return TfStringPrintf("array: sz=%zu", arr.size());
     }
     
+    template <class T>
+    std::string operator()(VtArrayEdit<T> const &arrayEdit) const {
+        return "array edit";
+    }
+
     std::string operator()(VtValue const &unknown) const {
         return "unknown type";
     }
@@ -1730,6 +1847,11 @@ struct GetArraySize
         return array.size();
     }
 
+    template <class T>
+    size_t operator()(VtArrayEdit<T> const &arrayEdit) const {
+        return 0xED17;
+    }
+
     size_t operator()(VtValue const &val) const {
         return ~0;
     }
@@ -1745,6 +1867,8 @@ testVisitValue()
     VtValue sv(std::string("hello"));
     VtValue av(VtArray<float>(123));
     VtValue ov(std::vector<float>(123));
+    VtValue evf(VtArrayEdit<float> {});
+    VtValue evi(VtArrayEdit<int> {});
 
     TF_AXIOM(VtVisitValue(iv, Stringify()) == "int: 123");
     TF_AXIOM(VtVisitValue(dv, Stringify()) == "double: 1.23");
@@ -1753,6 +1877,8 @@ testVisitValue()
     TF_AXIOM(VtVisitValue(sv, Stringify()) == "string: 'hello'");
     TF_AXIOM(VtVisitValue(av, Stringify()) == "array: sz=123");
     TF_AXIOM(VtVisitValue(ov, Stringify()) == "unknown type");
+    TF_AXIOM(VtVisitValue(evf, Stringify()) == "array edit");
+    TF_AXIOM(VtVisitValue(evi, Stringify()) == "array edit");
     
     TF_AXIOM(VtVisitValue(iv, RoundOrMinusOne()) == 123);
     TF_AXIOM(VtVisitValue(dv, RoundOrMinusOne()) == 1);
@@ -1761,11 +1887,15 @@ testVisitValue()
     TF_AXIOM(VtVisitValue(sv, RoundOrMinusOne()) == -1);
     TF_AXIOM(VtVisitValue(av, RoundOrMinusOne()) == -1);
     TF_AXIOM(VtVisitValue(ov, RoundOrMinusOne()) == -1);
+    TF_AXIOM(VtVisitValue(evf, RoundOrMinusOne()) == -1);
+    TF_AXIOM(VtVisitValue(evi, RoundOrMinusOne()) == -1);
     
     TF_AXIOM(VtVisitValue(av, GetArraySize()) == 123);
     TF_AXIOM(VtVisitValue(iv, GetArraySize()) == size_t(~0));
     TF_AXIOM(VtVisitValue(
                  VtValue(VtArray<GfVec3d>(234)), GetArraySize()) == 234);
+    TF_AXIOM(VtVisitValue(evf, GetArraySize()) == 0xED17);
+    TF_AXIOM(VtVisitValue(evi, GetArraySize()) == 0xED17);
 
 }
 

@@ -2,7 +2,6 @@ set(DIRS
     ar
     kind
     sdf
-    ndr
     sdr
     pcp
     usd

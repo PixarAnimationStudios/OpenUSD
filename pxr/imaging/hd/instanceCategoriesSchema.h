@@ -42,6 +42,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdInstanceCategoriesSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdInstanceCategoriesSchema
+///
 class HdInstanceCategoriesSchema : public HdSchema
 {
 public:

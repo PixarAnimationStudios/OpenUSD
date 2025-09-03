@@ -37,9 +37,10 @@ namespace
 {
 
 // Returns the expanded value that is computed by replicating the first and last
-// values `numRepeat` times per curve. This is used for expanding index buffers,
-// vertex primvars and possibly varying primvars of pinned curves.
-// See relevant comments in _ComputeExpandedVaryingValue below.
+// values `numRepeat` times per curve.  This may be applied to:
+// - topology index buffers
+// - primvar index buffers
+// - (non-indexed) vertex and varying primvar values
 template <typename T>
 VtArray<T>
 _ComputeExpandedValue(
@@ -72,6 +73,16 @@ _ComputeExpandedValue(
     const auto workLambda = [&](const size_t beginIdx, const size_t endIdx)
     {
         for (size_t curveIdx = beginIdx; curveIdx < endIdx; ++curveIdx) {
+            // In the unlikely event of degenerate topology, we skip to the next
+            // curve in order to avoid illegal indexing of the input that the
+            // expansion code would perform if the zero-length curve were the
+            // first or last curve.  Practically speaking, this just leaves
+            // default-constructed values in the output; it doesn't mess up the
+            // alignment of anything.
+            if (ARCH_UNLIKELY(perCurveCounts[curveIdx] == 0)) {
+                continue;
+            }
+
             // input index range [start, end)
             const size_t inputStartIdx = authoredStartIndices[curveIdx];
             const size_t inputEndIdx =
@@ -91,135 +102,6 @@ _ComputeExpandedValue(
             
             // Repeat the last value as necessary.
             outIt = std::fill_n(outIt, numRepeat, input[inputEndIdx - 1]);
-        }
-    };
-
-    // Dirty data in Hydra is sync'd in parallel, so whether we benefit from
-    // the additional parallelism below needs to be tested.
-    #if USE_PARALLEL_EXPANSION
-    // XXX Using a simple untested heuristic to divvy up the work.
-    constexpr size_t numCurvesPerThread = 25;
-    WorkParallelForN(numCurves, workLambda, numCurvesPerThread);
-    #else
-    workLambda(0, numCurves);
-    #endif
-
-    return output;
-}
-
-// Returns the expanded value that is computed by replicating the first and last
-// values `numRepeat` times per curve when the vertex count is 4 or more, and
-// repeating the authored varying values if/as necessary otherwise.
-//
-template <typename T>
-VtArray<T>
-_ComputeExpandedVaryingValue(
-    const VtArray<T> &input,
-    const VtIntArray &curveVaryingCounts,
-    const VtIntArray &curveVertexCounts,
-    const size_t numRepeat,
-    const TfToken &name)
-{
-    if (!TF_VERIFY(curveVaryingCounts.size() == curveVertexCounts.size())) {
-        return input;
-    }
-
-    // Build cumulative sum arrays to help index into the authored and expanded
-    // varying values per curve.
-    const size_t numCurves = curveVaryingCounts.size();
-    VtIntArray authoredStartIndices(numCurves);
-    VtIntArray expandedStartIndices(numCurves);
-    size_t authoredSum = 0;
-    size_t expandedSum = 0;
-
-    for (size_t idx = 0; idx < numCurves; idx++) {
-        const int numVarying = curveVaryingCounts[idx];
-        const int numVertices = curveVertexCounts[idx];
-
-        authoredStartIndices[idx] = authoredSum;
-        authoredSum += size_t(numVarying);
-
-        expandedStartIndices[idx] = expandedSum;
-
-        if (numVertices >= 4) {
-            expandedSum += size_t(numVarying) + 2 * numRepeat;
-
-        } else if (numVertices >= 2) { // i.e., 2 or 3
-
-            const size_t numExpandedVertices = numVertices + 2 * numRepeat;
-            const size_t nSegs = numExpandedVertices - 3;
-            const size_t nVarying = nSegs + 1;
-            expandedSum += nVarying;
-        }
-    }
-
-    if (input.size() != authoredSum) {
-        TF_WARN("Data for %s does not match expected size "
-                "(got %zu, expected %zu)", name.GetText(),
-                input.size(), authoredSum);
-        return input;
-    }
-
-    VtArray<T> output(expandedSum);
-
-    const auto workLambda = [&](const size_t beginIdx, const size_t endIdx)
-    {
-        for (size_t curveIdx = beginIdx; curveIdx < endIdx; ++curveIdx) {
-            // input index range [start, end)
-            const size_t inputStartIdx = authoredStartIndices[curveIdx];
-            const size_t outStartIdx   = expandedStartIndices[curveIdx];
-
-            const size_t nextIdx = curveIdx + 1;
-
-            const size_t inputEndIdx = (nextIdx != endIdx)?
-                authoredStartIndices[nextIdx] : authoredSum;
-            const size_t outEndIdx   = (nextIdx != endIdx)?
-                expandedStartIndices[nextIdx] : expandedSum;
-            
-            const size_t inputSize  = inputEndIdx - inputStartIdx;
-            const size_t outputSize = outEndIdx - outStartIdx;
-            const size_t padding    = outputSize - inputSize;
-
-            typename VtArray<T>::iterator outIt = output.begin() + outStartIdx;
-
-            if (padding == 2 * numRepeat) {
-                // Repeat the first value as necessary.
-                outIt = std::fill_n(outIt, numRepeat, input[inputStartIdx]);
-
-                // Copy authored data.
-                outIt = std::copy(input.cbegin() + inputStartIdx,
-                                  input.cbegin() + inputEndIdx,
-                                  outIt);
-                
-                // Repeat the last value as necessary.
-                outIt = std::fill_n(outIt, numRepeat, input[inputEndIdx - 1]);
-
-            } else {
-                // curveVertexCount is 2 or 3 requiring special handling for
-                // varying primvar expansion. The possible scenarios are:
-                //        |           AUTHORED       ||         EXPANDED
-                // repeat | vtx count | varyingCount || vtx count | varyingCount
-                // -------|--------------------------||-------------------------
-                //    1   |     2     |       2      ||     4     |      2
-                //    1   |     3     |       2      ||     5     |      3
-                //    2   |     2     |       2      ||     6     |      4
-                //    2   |     3     |       2      ||     7     |      5
-                
-                // Repeat the first value *if* necessary.
-                outIt = std::fill_n(outIt,
-                                    (padding + 1)/2,
-                                    input[inputStartIdx]);
-
-                // Copy authored data.
-                outIt = std::copy(input.cbegin() + inputStartIdx,
-                                  input.cbegin() + inputEndIdx,
-                                  outIt);
-
-                // Repeat the last value *if* necessary.
-                outIt = std::fill_n(outIt,
-                                    padding - (padding + 1)/2,
-                                    input[inputEndIdx - 1]);
-            }
         }
     };
 
@@ -267,7 +149,8 @@ public:
 };
 
 
-// Typed sampled data source override that does the actual primvar expansion
+// Typed sampled data source override that expands the contents of the array
+// produced by the input data source.
 template <typename T>
 class _ExpandedDataSource final : public HdTypedSampledDataSource<VtArray<T>>
 {
@@ -281,15 +164,11 @@ public:
         const HdSampledDataSourceHandle& input,
         const TfToken &primvarName,
         const VtIntArray& perCurveCounts,
-        const VtIntArray& curveVertexCounts,
-        const size_t numExtraEnds,
-        const bool expandConditionally)
+        const size_t numExtraEnds)
         : _input(input)
         , _primvarName(primvarName)
         , _perCurveCounts(perCurveCounts)
-        , _curveVertexCounts(curveVertexCounts)
         , _numExtraEnds(numExtraEnds)
-        , _expandConditionally(expandConditionally)
     {
     }
 
@@ -316,12 +195,6 @@ public:
                 return array;
             }
 
-            if (_expandConditionally) {
-                return _ComputeExpandedVaryingValue<T>(
-                    array, _perCurveCounts, _curveVertexCounts, _numExtraEnds,
-                    _primvarName);
-            }
-
             return _ComputeExpandedValue<T>(
                 array, _perCurveCounts, _numExtraEnds, _primvarName);
         }
@@ -332,41 +205,37 @@ public:
     New(const HdSampledDataSourceHandle& input,
         const TfToken& primvarName,
         const VtIntArray& perCurveCounts,
-        const VtIntArray& curveVertexCounts,
-        const size_t numExtraEnds,
-        const bool expandConditionally)
+        const size_t numExtraEnds)
     {
         return _ExpandedDataSource<T>::Handle(new _ExpandedDataSource<T>(
-            input, primvarName, perCurveCounts, curveVertexCounts, numExtraEnds,
-            expandConditionally));
+            input, primvarName, perCurveCounts, numExtraEnds));
     }
 
 private:
     HdSampledDataSourceHandle _input;
     const TfToken _primvarName;
     const VtIntArray _perCurveCounts;
-    const VtIntArray _curveVertexCounts;
     size_t _numExtraEnds;
-    bool _expandConditionally;
 };
 
-// Visitor that expands a given value if it holds an array and returns
-// the value otherwise.
+
+// Visitor that returns a contents-expanding data source wrapping the given
+// input data source if it produced a VtArray, or returns the input data source
+// otherwise.  The latter case is considered an error, as the caller will have
+// already handled data sources expected to hold non-array values (e.g.
+// 'constant' primvars or empty index buffers).
 struct _Visitor
 {
     HdSampledDataSourceHandle _input;
     const TfToken _primvarName;
     const VtIntArray& _perCurveCounts;
-    const VtIntArray& _curveVertexCounts;
     size_t _numExtraEnds;
-    bool _expandConditionally;
 
     template <typename T>
     HdDataSourceBaseHandle operator()(const VtArray<T>& array)
     {
         return _ExpandedDataSource<T>::New(
-            _input, _primvarName, _perCurveCounts, _curveVertexCounts,
-            _numExtraEnds, _expandConditionally);
+            _input, _primvarName, _perCurveCounts, _numExtraEnds);
     }
 
     HdDataSourceBaseHandle operator()(const VtValue& value)
@@ -378,11 +247,11 @@ struct _Visitor
 };
 
 
-// Primvar schema data source override that:
-//  - expands vertex primvars for non-indexed curves (not to be confused with
-//    indexed primvars mentioned below).
-//  - expands varying primvars.
-//  - expands indices for indexed primvars with vertex & varying interp.
+// Primvar schema data source override that expands primvar values or indexed
+// primvar indices for vertex- and varying-interpolation primvars.  If the
+// curves are using an indexed topology, the expansion of that buffer by the
+// _TopologyDataSource is taken into account with what's done to the primvar.
+// See the Get() method for details.
 class _PrimvarDataSource : public HdContainerDataSource
 {
 public:
@@ -399,13 +268,16 @@ public:
     , _curveVertexCounts(curveVertexCounts)
     , _numExtraEnds(numExtraEnds)
     , _hasCurveIndices(hasCurveIndices)
-    , _expandVaryingConditionally(false)
     {
         if (ARCH_UNLIKELY(!_input)) {
             TF_CODING_ERROR("Invalid container data source input provided.");
             _input = _EmptyContainerDataSource::New();
         }
-        // _curveVaryingCounts is initialized when necessary in Get(..).
+        if (ARCH_UNLIKELY(_numExtraEnds == 0)) {
+            // XXX This is to prevent underflowing a size_t in Get()
+            TF_CODING_ERROR("Invalid expansion size provided.");
+            _numExtraEnds = 1;
+        }
     }
 
     TfTokenVector
@@ -422,87 +294,99 @@ public:
             return nullptr;
         }
 
+        // Non-indexed primvars are accessed in the 'primvarValue' data source,
+        // while indexed primvars are in 'indexedPrimvarValue' and 'indices'.  A
+        // primvar will never have both 'primvarValue' AND 'indices', but the
+        // processing we need to do applies to either the (non-indexed) value,
+        // or to the indices (but not values) of an indexed primvar.
         if (name == HdPrimvarSchemaTokens->primvarValue ||
             name == HdPrimvarSchemaTokens->indices) {
             HdPrimvarSchema pvs(_input);
             const TfToken interp = 
                 _SafeGetTypedValue<TfToken>(pvs.GetInterpolation());
 
-            if (interp != HdPrimvarSchemaTokens->vertex &&
-                interp != HdPrimvarSchemaTokens->varying) {
-                // constant and uniform interp don't need expansion.
-                // faceVarying isn't relevant for curves.
-                return result;
+            // Expansion will only be necessary for some vertex and some varying
+            // primvars.  Other interpolations and certain combinations of input
+            // conditions will allow us to just return the input data source.
+            size_t expansionSize = 0;
+
+            if (interp == HdPrimvarSchemaTokens->vertex) {
+                // If the topology has an index buffer for mapping vertices, the
+                // expansion of the topology's indices is sufficient and nothing
+                // needs to be done to the primvar itself.  Otherwise, we expand
+                // the primvar values in the same way as the the vertices were
+                // expanded (adding one or two duplicate values to each end of
+                // each curve).
+                expansionSize = _hasCurveIndices ? 0 : _numExtraEnds;
+            }
+            else if (interp == HdPrimvarSchemaTokens->varying) {
+                // Varying primvars require one value for each curve segment,
+                // plus an additional value for the end of the last segment.
+                // However, the number of "logical" curve segments defined by a
+                // given number of vertices is different for a 'pinned' curve
+                // than the number of "literal" curve segments defined by a
+                // 'nonperiodic' curve.  As this scene index is taking 'pinned'
+                // curve input data and producing 'nonperiodic' curves, we need
+                // to account for this difference; and what we do with varying
+                // primvars depends on how many segments we're adding (how many
+                // vertices we pad each end in the topology).
+                //
+                // The math on this (for each curve) works out to:
+                //
+                //   numInputSegs = (numInputVerts - 1)      [for 'pinned']
+                //   numInputVals = numInputSegs + 1 == numInputVerts
+                //
+                //   numOutputSegs = (numOutputVerts - 3)    [for 'nonperiodic']
+                //   numOutputVals = numOutputSegs + 1 == (numOutputVerts - 2)
+                //
+                // If we're adding one value to each end, then:
+                //
+                //   numOutputVerts = (numInputVerts + 2)
+                //
+                // ...which results in numOutputVals == numInputVals.
+                //
+                // But if we're adding two values to each end, then:
+                //
+                //   numOutputVerts = (numInputVerts + 4)
+                //
+                // ...which requires numOutputVals == (numInputVals + 2).
+                //
+                // What this all boils down to is: if _numExtraEnds is 1, we can
+                // simply pass on the data source from the input; if it's 2, we
+                // expand the data by 1 on each end.  Note we're guaranteed by a
+                // check in the c'tor that _numExtraEnds will be >= 1.
+                expansionSize = _numExtraEnds - 1;
             }
 
-            // For indexed primvars, only the indices needs to be expanded.
-            // The indexedPrimvarValue doesn't.
-            if (name == HdPrimvarSchemaTokens->primvarValue && 
-                _hasCurveIndices && 
-                interp == HdPrimvarSchemaTokens->vertex) {
-                // Don't need to expand the primvar since the expanded curve
-                // index buffer takes care of it.
-                return result;
+            if (expansionSize > 0) {
+                // Use VtVisitValue to manufacture an appropriately-typed array-
+                // expanding data source based on the held type of the primvar.
+                // Note that the number of input values for a 'pinned' varying
+                // primvar is the same as for a vertex primvar (so the size
+                // checking logic in the value-expanding function applies
+                // uniformly); but the number of output values will be different
+                // for the two.
+                if (const HdSampledDataSourceHandle sds =
+                    HdSampledDataSource::Cast(result)) {
+                    return VtVisitValue(
+                        sds->GetValue(0.0f),
+                        _Visitor { sds, _primvarName, _curveVertexCounts,
+                                   expansionSize });
+                }
             }
-
-            HdSampledDataSourceHandle sds = HdSampledDataSource::Cast(result);
-            if (!sds) {
-                return result;
-            }
-
-            if (interp == HdPrimvarSchemaTokens->varying &&
-                _curveVaryingCounts.empty()) {
-                _InitCurveVaryingCounts();
-            }
-
-            const VtIntArray& perCurveCounts
-                = (interp == HdPrimvarSchemaTokens->varying)
-                ? _curveVaryingCounts
-                : _curveVertexCounts;
-
-            const bool expandConditionally
-                = interp == HdPrimvarSchemaTokens->varying
-                && _expandVaryingConditionally;
-
-            return VtVisitValue(
-                sds->GetValue(0.0f),
-                _Visitor { sds, _primvarName, perCurveCounts,
-                           _curveVertexCounts, _numExtraEnds,
-                           expandConditionally });
         }
 
+        // If we got here, either:
+        // - something other than the non-indexed value or indexed indices was
+        //   requested
+        // - this primvar is constant or uniform and doesn't need expansion
+        // - this primvar is vertex but doesn't need expansion because the
+        //   topology is indexed and that is being expanded
+        // - this primvar is varying but doesn't need expansion due to the
+        //   number of points being added
+        // - a data source cast failed so we can't do anything more
+        // In any case, return the unmodified data source to the caller.
         return result;
-    }
-
-private:
-
-    // Compute the expected number of authored varying primvars per curve.
-    // Note that we still compute it as though it were non-periodic.
-    void
-    _InitCurveVaryingCounts()
-    {
-        const size_t numCurves = _curveVertexCounts.size();
-        _curveVaryingCounts.resize(numCurves);
-        for (size_t cId = 0; cId < numCurves; cId++) {
-            const int &vertexCount = _curveVertexCounts[cId];
-            int &varyingCount = _curveVaryingCounts[cId];
-
-            if (vertexCount < 2) {
-                varyingCount = 0;
-                continue;
-            }
-            if (vertexCount < 4) {
-                _expandVaryingConditionally = true;
-            }
-
-            // Note: We treat cv = 2 or 3 as a single segment requiring 2
-            // authored varying values.
-            const size_t nSegs =
-                std::max(_curveVertexCounts[cId] - 4, 0) + 1;
-            const size_t nVarying = nSegs + 1;
-            varyingCount = nVarying;
-
-        }
     }
 
 private:
@@ -511,13 +395,10 @@ private:
     const VtIntArray _curveVertexCounts;
     size_t _numExtraEnds;
     bool _hasCurveIndices;
-    VtIntArray _curveVaryingCounts;
-    bool _expandVaryingConditionally;
 };
 
 
 // Primvars schema data source override.
-//
 class _PrimvarsDataSource : public HdContainerDataSource
 {
 public:
@@ -570,7 +451,6 @@ private:
 
 
 // Basis curves topology schema data source override.
-//
 class _TopologyDataSource : public HdContainerDataSource
 {
 public:
@@ -621,19 +501,20 @@ public:
                 // Curve indices can be expanded just like we'd expand a
                 // vertex primvar by replicating the first and last values as
                 // necessary.
-                VtIntArray vExpanded =
-                    _ComputeExpandedValue<int>(
+                const VtIntArray vExpanded =
+                    _ComputeExpandedValue(
                         curveIndices,
                         _curveVertexCounts,
                         _numExtraEnds,
                         HdBasisCurvesTopologySchemaTokens->curveIndices);
 
-                return HdRetainedTypedSampledDataSource<VtIntArray>::New(vExpanded);
+                return HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                    vExpanded);
             }
         }
 
         if (name == HdBasisCurvesTopologySchemaTokens->wrap) {
-            // Override to nonPeriodic.
+            // Override to nonperiodic.
             return HdRetainedTypedSampledDataSource<TfToken>::New(
                     HdTokens->nonperiodic);
         }
@@ -650,7 +531,6 @@ private:
 
 
 // Basis curves schema data source override.
-//
 class _BasisCurvesDataSource : public HdContainerDataSource
 {
 public:
@@ -786,8 +666,8 @@ public:
             if (name == HdPrimvarsSchemaTokens->primvars) {
                 // If we have authored curve indices, we can avoid expanding
                 // vertex primvars by expanding the curve indices instead.
-                // Note that varying primvars would still need to be 
-                // expanded due to the additional curve segments.
+                // Varying primvars may still need to be expanded due to the
+                // additional curve segments.
                 VtIntArray curveIndices =
                     _SafeGetTypedValue<VtIntArray>(ts.GetCurveIndices());
             

@@ -635,8 +635,7 @@ TfDiagnosticMgr::FormatDiagnostic(const TfEnum &code,
 {
     string output;
     string codeName = TfDiagnosticMgr::GetCodeName(code);
-    if (context.IsHidden() ||
-        !strcmp(context.GetFunction(), "") || !strcmp(context.GetFile(), "")) {
+    if (!context || context.IsHidden()) {
         output = TfStringPrintf("%s%s: %s [%s]\n",
                                 codeName.c_str(),
                                 ArchIsMainThread() ? "" : " (secondary thread)",

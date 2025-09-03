@@ -31,8 +31,38 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 using UsdImagingGLEngineSharedPtr = std::shared_ptr<class UsdImagingGLEngine>;
 
+// This simple listener sanity checks that we are not simply re-synching
+// the pesudoroot
+class ResyncChecker 
+    : public TfWeakBase
+{
+public:
+    ResyncChecker(const UsdStageRefPtr& stage)
+    {
+        _key = TfNotice::Register(TfCreateWeakPtr(this), 
+            &ResyncChecker::_OnUsdObjectsChanged, UsdStagePtr(stage));
+    }
+
+    ~ResyncChecker() {
+        TfNotice::Revoke(_key);
+    }
+
+private:
+    void _OnUsdObjectsChanged(const UsdNotice::ObjectsChanged& n)
+    {
+        for (const auto & path : n.GetResyncedPaths()) {
+            TF_AXIOM(path != SdfPath::AbsoluteRootPath());
+        }
+    }
+
+    TfNotice::Key _key;
+};
+
+
 int main(int argc, char *argv[])
 {
+    TfErrorMark mark;
+
     // prepare GL context
     int width = 512, height = 512;
     GarchGLDebugWindow window("UsdImagingGL Test", width, height);
@@ -41,6 +71,8 @@ int main(int argc, char *argv[])
     // open stage
     UsdStageRefPtr stage = UsdStage::Open("root.usda");
     TF_AXIOM(stage);
+
+    ResyncChecker resyncChecker(stage);
 
     SdfLayerHandle rootLayer = stage->GetRootLayer();
 
@@ -124,4 +156,12 @@ int main(int argc, char *argv[])
     engine->Render(stage->GetPseudoRoot(), params);
     UsdImagingGL_UnitTestGLDrawing::WriteAovToFile(
         engine.get(), HdAovTokens->color, "add_sublayer_with_sub.png");
+    
+    if (mark.IsClean()) {
+        std::cout << "OK" << std::endl;
+        return EXIT_SUCCESS;
+    } else {
+        std::cout << "FAILED" << std::endl;
+        return EXIT_FAILURE;
+    }
 }

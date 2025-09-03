@@ -1,0 +1,35 @@
+#usda 1.0
+
+def "MaterialX"
+{
+    def "Materials"
+    {
+        def Material "SwitchExample" (
+            prepend apiSchemas = ["MaterialXConfigAPI"]
+        )
+        {
+            string config:mtlx:version = "1.38"
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/SwitchExample/StandardSurface.outputs:surface>
+
+            def Shader "StandardSurface" 
+            {
+                uniform token info:id = "ND_standard_surface_surfaceshader"
+                float inputs:base.connect = </MaterialX/Materials/SwitchExample/NodeGraphs/switch.outputs:out>
+                token outputs:surface
+            }
+
+            def "NodeGraphs"
+            {
+                def Shader "switch"
+                {
+                    uniform token info:id = "ND_switch_floatI"
+                    float inputs:in1 = 0.2
+                    float inputs:in2 = 0.4
+                    int inputs:which = 5
+                    float outputs:out
+                }
+            }
+        }
+    }
+}
+

@@ -9,11 +9,6 @@
 #define PXR_USD_SDR_PARSER_PLUGIN_H
 
 /// \file sdr/parserPlugin.h
-///
-/// \note
-/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
-/// in this file. All existing pxr/usd/ndr implementations will be moved to
-/// pxr/usd/sdr.
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/type.h"
@@ -21,7 +16,6 @@
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/usd/sdr/api.h"
 #include "pxr/usd/sdr/declare.h"
-#include "pxr/usd/ndr/parserPlugin.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -112,7 +106,7 @@ TF_REGISTRY_FUNCTION(TfType)                                            \
 ///         the documentation for the `plug` library (in pxr/base).
 ///     </li>
 /// </ul>
-class SdrParserPlugin : public NdrParserPlugin
+class SdrParserPlugin : public TfWeakBase
 {
 public:
     SDR_API
@@ -120,22 +114,31 @@ public:
     SDR_API
     virtual ~SdrParserPlugin();
 
-    /// Takes the specified `NdrNodeDiscoveryResult` instance, which was a
-    /// result of the discovery process, and generates a new `NdrNode`.
-    /// The node's name, source type, and family must match.
-    ///
-    /// \deprecated
-    /// Deprecated in favor of SdrParserPlugin::ParseShaderNode
-    SDR_API
-    NdrNodeUniquePtr Parse(
-        const NdrNodeDiscoveryResult& discoveryResult) override;
-
     /// Takes the specified `SdrShaderNodeDiscoveryResult` instance, which was a
     /// result of the discovery process, and generates a new `SdrShaderNode`.
     /// The node's name, source type, and family must match.
     SDR_API
     virtual SdrShaderNodeUniquePtr ParseShaderNode(
         const SdrShaderNodeDiscoveryResult& discoveryResult) = 0;
+
+    /// Returns the types of nodes that this plugin can parse.
+    ///
+    /// "Type" here is the discovery type (in the case of files, this will
+    /// probably be the file extension, but in other systems will be data that
+    /// can be determined during discovery). This type should only be used to
+    /// match up a `SdrShaderNodeDiscoveryResult` to its parser plugin; this
+    /// value is not exposed in the node's API.
+    SDR_API
+    virtual const SdrTokenVec& GetDiscoveryTypes() const = 0;
+
+    /// Returns the source type that this parser operates on.
+    ///
+    /// A source type is the most general type for a node. The parser plugin is
+    /// responsible for parsing all discovery results that have the types
+    /// declared under `GetDiscoveryTypes()`, and those types are collectively
+    /// identified as one "source type".
+    SDR_API
+    virtual const TfToken& GetSourceType() const = 0;
 
     /// Gets an invalid node based on the discovery result provided. An invalid
     /// node is a node that has no properties, but may have basic data found
@@ -147,10 +150,21 @@ public:
 
 /// \cond
 /// Factory classes should be hidden from the documentation.
-using SdrParserPluginFactoryBase = NdrParserPluginFactoryBase;
+class SdrParserPluginFactoryBase : public TfType::FactoryBase
+{
+public:
+    virtual SdrParserPlugin* New() const = 0;
+};
 
-template<class T>
-using SdrParserPluginFactory = NdrParserPluginFactory<T>;
+template <class T>
+class SdrParserPluginFactory : public SdrParserPluginFactoryBase
+{
+public:
+    virtual SdrParserPlugin* New() const
+    {
+        return new T;
+    }
+};
 
 /// \endcond
 

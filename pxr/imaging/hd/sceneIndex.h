@@ -161,7 +161,7 @@ protected:
 
     /// Notify attached observers of prims added to the scene. The set of
     /// scene prims compiled from added/removed notices should match the set
-    /// from a traversal based on \p GetChildPrimNames. Each prim has a path
+    /// from a traversal based on \p GetChildPrimPaths. Each prim has a path
     /// and type. It's possible for \p PrimsAdded to be called for prims that
     /// already exist; in that case, observers should be sure to update the
     /// prim type, in case it changed, and resync the prim. This function is

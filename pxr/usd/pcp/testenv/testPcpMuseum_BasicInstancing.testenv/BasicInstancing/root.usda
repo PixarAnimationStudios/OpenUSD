@@ -1,0 +1,69 @@
+#usda 1.0
+(
+    """
+    This museum case demonstrates basic instancing behavior in Pcp.
+    Prims tagged as instances are only allowed to override property
+    values at the instance root; overrides on descendent prims are
+    ignored.
+    """
+)
+
+class "_class_Prop"
+{
+    double a = 3.5
+
+    def "From_class_in_root"
+    {
+    }
+
+    over "geom"
+    {
+        double x = 3.5
+    }
+}
+
+def "Set_1" (
+    references = @./set.usda@</Set>
+)
+{
+    over "InstancedProp"
+    {
+        double a = 3.0
+
+        def "From_root"
+        {
+        }
+
+        over "geom"
+        {
+            double x = 3.0
+        }
+    }
+
+    over "UninstancedProp"
+    {
+        double a = 3.0
+
+        def "From_root"
+        {
+        }
+
+        over "geom"
+        {
+            double x = 3.0
+        }
+    }
+}
+
+def "NotAnInstance" (
+    # Even though this prim is tagged with instance metdata, it does not
+    # introduce a composition arc containing instance-able data. So,
+    # it will not be considered a 'real' instance and will not be subject
+    # to the same restrictions on local name children overrides.
+    instanceable = True
+)
+{
+    def "Child"
+    {
+    }
+}

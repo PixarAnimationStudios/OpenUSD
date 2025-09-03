@@ -121,11 +121,12 @@ public:
     /// @{
 
     /// Information necessary to bind textures and create accessor
-    /// for the texture.
+    /// for the texture. Can be used for a single texture, or an array of 
+    /// textures.
     ///
     struct NamedTextureHandle {
-        /// Name by which the texture will be accessed, i.e., the name
-        /// of the accesor for thexture will be HdGet_name(...).
+        /// Name by which the texture(s) will be accessed, i.e., the name
+        /// of the accesor for the texture(s) will be HdGet_name(...).
         ///
         TfToken name;
         /// Equal to handle->GetTextureObject()->GetTextureType().
@@ -134,9 +135,9 @@ public:
         /// HdGet_name(...)).
         ///
         HdStTextureType type;
-        /// The texture.
-        HdStTextureHandleSharedPtr handle;
-
+        /// The texture(s). Multiple handles indicate an array of textures.
+        std::vector<HdStTextureHandleSharedPtr> handles;
+        
         /// A hash unique to the corresponding asset; used to
         /// split draw batches when not using bindless textures.
         size_t hash;

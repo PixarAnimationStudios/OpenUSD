@@ -1,38 +1,38 @@
-Loading @BasicDuplicateSublayer/root.sdf@
+Loading @BasicDuplicateSublayer/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
-     A.sdf
-     B.sdf
-     B.sdf
+     root.usda
+     A.usda
+     B.usda
+     B.usda
 
 ------------------------------------------------------------------------
 Results for composing </B>
 
 Prim Stack:
-    B.sdf                /B
-    B.sdf                /B
+    B.usda               /B
+    B.usda               /B
 
 Property names:
      ['B_attr']
 
 Property stacks:
 /B.B_attr:
-    B.sdf                /B.B_attr
-    B.sdf                /B.B_attr
+    B.usda               /B.B_attr
+    B.usda               /B.B_attr
 
 ------------------------------------------------------------------------
 Results for composing </A>
 
 Prim Stack:
-    root.sdf             /A
-    A.sdf                /A
+    root.usda            /A
+    A.usda               /A
 
 Property names:
      ['A_attr']
 
 Property stacks:
 /A.A_attr:
-    A.sdf                /A.A_attr
+    A.usda               /A.A_attr
 

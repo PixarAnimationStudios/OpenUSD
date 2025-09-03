@@ -41,6 +41,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdVolumeFieldBindingSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdVolumeFieldBindingSchema
+///
 class HdVolumeFieldBindingSchema : public HdSchema
 {
 public:

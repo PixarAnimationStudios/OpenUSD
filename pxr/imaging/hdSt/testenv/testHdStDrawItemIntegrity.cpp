@@ -29,9 +29,13 @@ public:
     {
         _renderPassStates = {
             std::dynamic_pointer_cast<HdStRenderPassState>(
+                _GetRenderDelegate()->CreateRenderPassState()),
+            std::dynamic_pointer_cast<HdStRenderPassState>(
                 _GetRenderDelegate()->CreateRenderPassState()) };
         _renderPassStates[0]->SetDepthFunc(HdCmpFuncLess);
         _renderPassStates[0]->SetCullStyle(HdCullStyleNothing);
+        _renderPassStates[1]->SetDepthFunc(HdCmpFuncLess);
+        _renderPassStates[1]->SetCullStyle(HdCullStyleNothing);
 
         // Init sets up the camera in the render pass state and
         // thus needs to be called after render pass state has been setup.
@@ -60,11 +64,12 @@ public:
     void Draw(const std::vector<int> &passIdx)
     {
         HdTaskSharedPtrVector tasks;
+        int passStateIndex = 0;
         for (int idx : passIdx) {
             tasks.push_back(
                 std::make_shared<HdSt_DrawTask>(
                     _renderPasses[idx],
-                    _renderPassStates[0],
+                    _renderPassStates[passStateIndex++],
                     TfTokenVector{ HdRenderTagTokens->geometry }));
         }
         _GetEngine()->Execute(&(GetDelegate().GetRenderIndex()), &tasks);

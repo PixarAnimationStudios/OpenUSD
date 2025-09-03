@@ -11,6 +11,11 @@
 
 #include "pxr/usd/usdSkel/skeleton.h"
 
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/purposeSchema.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/tokens.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -51,11 +56,22 @@ UsdSkelImagingDataSourceSkeletonPrim::UsdSkelImagingDataSourceSkeletonPrim(
 {
 }
 
+void
+_AddIfNecessary(const TfToken &name, TfTokenVector * const names)
+{
+    if (std::find(names->begin(), names->end(), name) == names->end()) {
+        names->push_back(name);
+    }
+}
+
 TfTokenVector
 UsdSkelImagingDataSourceSkeletonPrim::GetNames()
 {
     TfTokenVector result = UsdImagingDataSourceGprim::GetNames();
     result.push_back(UsdSkelImagingSkeletonSchema::GetSchemaToken());
+
+    _AddIfNecessary(HdPurposeSchema::GetSchemaToken(), &result);
+
     return result;
 }
 
@@ -71,7 +87,26 @@ UsdSkelImagingDataSourceSkeletonPrim::Get(const TfToken & name)
                 _GetStageGlobals());
     }
 
-    return UsdImagingDataSourceGprim::Get(name);
+    HdDataSourceBaseHandle const result =
+        UsdImagingDataSourceGprim::Get(name);
+
+    if (name == HdPurposeSchema::GetSchemaToken()) {
+        static HdContainerDataSourceHandle const purposeSchemaDataSource =
+            HdPurposeSchema::Builder()
+                .SetPurpose(
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        // This token and the method returning a token
+                        // data source should be on HdPurposeSchema.
+                        HdRenderTagTokens->guide))
+                .Build();
+
+        return HdOverlayContainerDataSource::OverlayedContainerDataSources(
+            // Authored opinion about purpose overrides default.
+            HdContainerDataSource::Cast(result),
+            purposeSchemaDataSource);
+    }
+
+    return result;
 }
 
 HdDataSourceLocatorSet

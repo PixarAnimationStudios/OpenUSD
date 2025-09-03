@@ -34,6 +34,8 @@ using UsdImagingGLEngineSharedPtr = std::shared_ptr<class UsdImagingGLEngine>;
 
 int main(int argc, char *argv[])
 {
+    TfErrorMark mark;
+
     // Parse Arguments
     std::string stageFilePath;
     std::string domeLightTexturePath;
@@ -164,5 +166,11 @@ int main(int argc, char *argv[])
     UsdImagingGL_UnitTestGLDrawing::WriteAovToFile(
         engine.get(), HdAovTokens->color, "rotatedDome.png");
 
-    return EXIT_SUCCESS;
+    if (mark.IsClean()) {
+        std::cout << "OK" << std::endl;
+        return EXIT_SUCCESS;
+    } else {
+        std::cout << "FAILED" << std::endl;
+        return EXIT_FAILURE;
+    }
 }

@@ -69,6 +69,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdCameraSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdCameraSchema
+///
 class HdCameraSchema : public HdSchema
 {
 public:

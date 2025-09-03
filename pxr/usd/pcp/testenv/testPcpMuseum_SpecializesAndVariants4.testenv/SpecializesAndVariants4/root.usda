@@ -1,0 +1,47 @@
+#usda 1.0
+(
+    """
+    Museum case showing combinations of specializes and variants.
+
+    In this example, when composing /A/render, a specializes arc to
+    /_class_/defaultImplementation is introduced within a variant.
+    That specializes arc is propagated to the root of the graph and
+    must also add implied specializes arcs to its parent nodes;
+    in particular, there should be an implied specializes arc added
+    for /A/defaultImplementation.
+    """
+)
+
+class "_class_"
+{
+    class "defaultImplementation"
+    {
+        uniform string test = "value from /_class_/defaultImplementation"
+    }
+
+    def "render" (
+        variants = {
+            string implementation = "default"
+        }
+        prepend variantSets = "implementation"
+    )
+    {
+        variantSet "implementation" = {
+            "default" (
+                prepend specializes = </_class_/defaultImplementation>
+            ) {
+
+            }
+        }
+    }
+}
+
+def "A"  (
+    prepend specializes = </_class_>
+)
+{
+    over "defaultImplementation"
+    {
+        uniform string test = "value from /A/defaultImplementation"
+    }
+}

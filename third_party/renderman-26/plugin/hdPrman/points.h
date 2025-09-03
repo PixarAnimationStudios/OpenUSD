@@ -4,8 +4,8 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_POINTS_H
-#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_POINTS_H
+#ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_POINTS_H
+#define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_POINTS_H
 
 #include "pxr/pxr.h"
 #include "hdPrman/gprim.h"
@@ -27,14 +27,16 @@ public:
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 protected:
-    RtPrimVarList
-    _ConvertGeometry(HdPrman_RenderParam *renderParam,
-                     HdSceneDelegate *sceneDelegate,
-                     const SdfPath &id,
-                     RtUString *primType,
-                     std::vector<HdGeomSubset> *geomSubsets) override;
+    bool _ConvertGeometry(
+        HdPrman_RenderParam *renderParam,
+        HdSceneDelegate *sceneDelegate,
+        const SdfPath &id,
+        RtUString *primType,
+        RtPrimVarList *primvars,
+        std::vector<HdGeomSubset> *geomSubsets,
+        std::vector<RtPrimVarList> *geomSubsetPrimvars) override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_POINTS_H
+#endif // EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_POINTS_H

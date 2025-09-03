@@ -19,6 +19,10 @@ will use as our starting point and all the code for this exercise is in the
    do this we use the :usdcpp:`UsdGeomXformCommonAPI schema <UsdGeomXformCommonAPI>`,
    which we will discuss further, later.
 
+   Copy :filename:`extras/usd/tutorials/referencingLayers/HelloWorld.usda` to
+   a folder of your choice. In that folder, create and run a new Python script
+   with the following code:
+
    .. code-block:: python
 
       from pxr import Usd, UsdGeom
@@ -29,9 +33,10 @@ will use as our starting point and all the code for this exercise is in the
       print(stage.GetRootLayer().ExportToString())
       stage.GetRootLayer().Save()
 
-   produces
+   This should modify your copied :filename:`HelloWorld.usda` to look like the
+   following:
 
-   .. code-block:: usd
+   .. code-block:: usda
 
       #usda 1.0
       (
@@ -52,7 +57,8 @@ will use as our starting point and all the code for this exercise is in the
       }
 
 #. Now let's create a new stage to reference in HelloWorld.usda and create an
-   override prim to contain the reference.
+   override prim to contain the reference. In your Python script add the 
+   following code and run the script.
 
    .. code-block:: python
 
@@ -60,9 +66,9 @@ will use as our starting point and all the code for this exercise is in the
       refSphere = refStage.OverridePrim('/refSphere')
       print(refStage.GetRootLayer().ExportToString())
 
-   produces
+   This will output:
 
-   .. code-block:: usd
+   .. code-block:: usda
 
       #usda 1.0
 
@@ -70,9 +76,9 @@ will use as our starting point and all the code for this exercise is in the
       {
       }
 
-   All of the previous prims we had created are :usda:`def` s , which are
+   All of the previous prims we had created are :usda:`defs`, which are
    concrete prims that appear in standard scenegraph traversals (i.e. by clients
-   performing imaging, or importing the stage into another DCC application).  By
+   performing imaging, or importing the stage into another DCC application). By
    contrast, an :usda:`over` can be thought of as containing a set of
    *speculative opinions* that are applied over any concrete prims that may be
    defined in other layers at the corresponding namespace location in a composed
@@ -80,7 +86,8 @@ will use as our starting point and all the code for this exercise is in the
    composition operators. For example, an over can non-destructively express a
    different opinion for the transform and displayColor attributes above.
 
-#. Let's reference in the stage from HelloWorld.
+#. Let's reference in the stage from HelloWorld. Update your script to add
+   a reference to "refSphere":
 
    .. code-block:: python
 
@@ -88,9 +95,9 @@ will use as our starting point and all the code for this exercise is in the
       print(refStage.GetRootLayer().ExportToString())
       refStage.GetRootLayer().Save()
 
-   produces
+   This will produce (in :filename:`RefExample.usda`):
 
-   .. code-block:: usd
+   .. code-block:: usda
 
       #usda 1.0
 
@@ -102,26 +109,26 @@ will use as our starting point and all the code for this exercise is in the
 
    .. admonition:: Asset Path Resolver and File Format Plugins
 
-      In this example we use a filename to reference the layer.  In practice,
+      In this example we use a filename to reference the layer. In practice,
       the layer identifier passed to :python:`Usd.References.AddReference()` can
       be any string that a path resolver plugin can resolve and a scene
       description file format plugin would process to populate the actual scene
       description. USD supports user-implementable asset path resolver and file
       format plugins to allow site-specific customization and pipeline
-      integration.  USD does not require that layers be files on disk.  See `the
-      Ar library documentation
-      <api/ar_page_front.html>`_ for more
-      about asset resolvers, and see the code in
+      integration. USD does not require that layers be files on disk. See 
+      `the Ar library documentation <api/ar_page_front.html>`__ for more about 
+      asset resolvers, and see the code in
       :filename:`USD/extras/usd/examples/usdObj/` for an example file format
       plugin.
 
    Note that since we authored :usda:`defaultPrim` in
-   :filename:`HelloWorld.usda`, we only need to specify the root layer we want
-   to reference, and it is inferred that we will be bringing in the scenegraph
-   contents rooted at :sdfpath:`/hello` into our :sdfpath:`/refSphere`.
+   :filename:`HelloWorld.usda` in step 1, we only need to specify the root 
+   layer we want to reference, and it is inferred that we will be bringing in 
+   the scenegraph contents rooted at :sdfpath:`/hello` into our 
+   :sdfpath:`/refSphere`.
 
-   Running usdview on the exported :filename:`RefExample.usda` shows the
-   composed result.
+   Running :program:`usdview` on the exported :filename:`RefExample.usda` shows 
+   the composed result.
 
    .. image:: http://openusd.org/images/tut_referencing_layers_refexample.png
 
@@ -133,7 +140,8 @@ will use as our starting point and all the code for this exercise is in the
    Note also that there is no prim named "hello" since it has been referenced
    into :sdfpath:`/refSphere`.
    
-#. Let's reset the transform on our over to the identity.
+#. Let's reset the transform on our :usda:`over` to the identity. Add the 
+   following to your script:
 
    .. code-block:: python
 
@@ -141,9 +149,9 @@ will use as our starting point and all the code for this exercise is in the
       refXform.SetXformOpOrder([])
       print(refStage.GetRootLayer().ExportToString())
 
-   produces
+   This should output:
 
-   .. code-block:: usd
+   .. code-block:: usda
 
       #usda 1.0
 
@@ -154,7 +162,7 @@ will use as our starting point and all the code for this exercise is in the
           uniform token[] xformOpOrder = []
       }
 
-   What Just Happened?
+   What just happened?
 
    The `UsdGeomXformable
    <api/class_usd_geom_xformable.html#details>`_
@@ -173,7 +181,7 @@ will use as our starting point and all the code for this exercise is in the
    :code:`XformOps`, please see the `API documentation for UsdGeomXformable
    <api/class_usd_geom_xformable.html#details>`_
 
-#. Reference in another HelloWorld.
+#. Update your script to add an additional HelloWorld reference.
 
    .. code-block:: python
 
@@ -182,9 +190,9 @@ will use as our starting point and all the code for this exercise is in the
       print(refStage.GetRootLayer().ExportToString())
       refStage.GetRootLayer().Save()
 
-   produces
+   The updated :filename:`RefExample.usda` should look like:
 
-   .. code-block:: usd
+   .. code-block:: usda
 
       #usda 1.0
 
@@ -203,11 +211,12 @@ will use as our starting point and all the code for this exercise is in the
 
    .. image:: http://openusd.org/images/tut_referencing_layers_xform.png
 
-   We can see that our over has been applied to move the first sphere to the
-   origin, while the second sphere is still translated by :code:`(4, 5, 6)`.
+   We can see that our :usda:`over` has been applied to move the first sphere 
+   to the origin, while the second sphere is still translated by 
+   :code:`(4, 5, 6)`.
 
-#. Of course, overs can be authored for the actual sphere prims underneath the
-   reference as well. Let's color our second sphere red.
+#. Of course, :usda:`overs` can be authored for the actual sphere prims 
+   underneath the reference as well. Let's color our second sphere red.
 
    .. code-block:: python
 
@@ -222,7 +231,9 @@ will use as our starting point and all the code for this exercise is in the
    is called if one doesn't already exist for that prim in the current authoring
    layer.
 
-   .. code-block:: usd
+   :filename:`RefExample.usda` should now look like:
+
+   .. code-block:: usda
 
       #usda 1.0
 
@@ -245,7 +256,7 @@ will use as our starting point and all the code for this exercise is in the
 
    .. image:: http://openusd.org/images/tut_referencing_layers_color.png
 
-#. We can also flatten the composed results.  All of the scene description
+#. We can also flatten the composed results. All of the scene description
    listings above were of the stage's root layer, where we performed our
    authoring. Calling :usdcpp:`ExportToString() <UsdStage::ExportToString>` or
    :usdcpp:`Export() <UsdStage::Export>` on the :usdcpp:`UsdStage` itself, will
@@ -259,15 +270,21 @@ will use as our starting point and all the code for this exercise is in the
       references generated in order to preserve :ref:`scene graph instancing
       <glossary:Instancing>`). :usdcpp:`UsdStage::Flatten`
       flattens an entire stage and is used by :code:`Export()` and
-      :code:`ExportToString()`.  USD also supports flattening individual
-      :ref:`layer stacks <glossary:LayerStack>`.  See 
+      :code:`ExportToString()`. USD also supports flattening individual
+      :ref:`layer stacks <glossary:LayerStack>`. See 
       :usdcpp:`UsdFlattenLayerStack`.
 
    .. code-block:: python
 
       print(refStage.ExportToString())
 
-   .. code-block:: usd
+   Your script should output the following flattened stage string. Note that
+   if you've opened :filename:`RefExample.usda` in :program:`usdview` you can
+   get the same flattened stage string by simply entering 
+   :code:`print(usdviewApi.stage.ExportToString())` in usdview's interpreter
+   window.
+
+   .. code-block:: usda
                        
       #usda 1.0
       (

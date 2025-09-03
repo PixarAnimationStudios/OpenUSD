@@ -36,9 +36,6 @@ HasActiveRenderSettingsPrim(
 
     HdSceneGlobalsSchema sgSchema =
         HdSceneGlobalsSchema::GetFromSceneIndex(si);
-    if (!sgSchema) {
-        return false;
-    }
 
     if (auto pathHandle = sgSchema.GetActiveRenderSettingsPrim()) {
         const SdfPath rspPath = pathHandle->GetTypedValue(0);
@@ -48,6 +45,35 @@ HasActiveRenderSettingsPrim(
             prim.dataSource) {
             if (primPath) {
                 *primPath = rspPath;
+            }
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/* static */
+bool
+HasActiveRenderPassPrim(
+    const HdSceneIndexBaseRefPtr &si,
+    SdfPath *primPath /* = nullptr */)
+{
+    if (!si) {
+        return false;
+    }
+
+    HdSceneGlobalsSchema sgSchema =
+        HdSceneGlobalsSchema::GetFromSceneIndex(si);
+
+    if (auto pathHandle = sgSchema.GetActiveRenderPassPrim()) {
+        const SdfPath rpPath = pathHandle->GetTypedValue(0);
+        // Validate prim.
+        HdSceneIndexPrim prim = si->GetPrim(rpPath);
+        if (prim.primType == HdPrimTypeTokens->renderPass &&
+            prim.dataSource) {
+            if (primPath) {
+                *primPath = rpPath;
             }
             return true;
         }

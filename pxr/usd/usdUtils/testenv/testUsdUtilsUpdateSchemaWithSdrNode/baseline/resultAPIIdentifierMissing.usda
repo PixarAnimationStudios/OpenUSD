@@ -8,6 +8,7 @@ class "APIIdentifierMissingAPI" (
     inherits = </APISchemaBase>
 )
 {
+    reorder properties = ["inputs:intensity", "outputs:resultRGB"]
     float inputs:intensity = 1 (
         connectability = "interfaceOnly"
         customData = {

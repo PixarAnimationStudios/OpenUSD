@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/object/value_holder_fwd.hpp>
-#else
-
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace objects { 
 
 struct no_back_reference;
@@ -25,5 +21,4 @@ template <class CallbackType = no_back_reference> struct value_holder_generator;
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::object
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_VALUE_HOLDER_FWD_HPP

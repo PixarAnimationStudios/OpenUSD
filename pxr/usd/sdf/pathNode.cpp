@@ -425,10 +425,12 @@ Sdf_PathNode::Sdf_PathNode(bool isAbsolute) :
 {
 }
 
+static TfStaticData<
+    const Sdf_PathNode::VariantSelectionType> theEmptyVariantSelection;
+
 const Sdf_PathNode::VariantSelectionType &
 Sdf_PathNode::_GetEmptyVariantSelection() const {
-    static VariantSelectionType _emptyVariantSelection;
-    return _emptyVariantSelection;
+    return *theEmptyVariantSelection;
 }
 
 namespace {

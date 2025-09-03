@@ -30,10 +30,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#if PXR_VERSION < 2505
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     // render context / material network selector
     ((renderContext, "ri")));
+#endif
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -43,6 +45,8 @@ TF_REGISTRY_FUNCTION(TfType)
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 0;
+
+    // TODO: How to prevent XPU in tools branch
 
     for (const auto& pluginDisplayName : HdPrman_GetPluginDisplayNames()) {
         // XPU Doesn't Currently Need Geometry Dirtied For Displacement Edits
@@ -125,6 +129,42 @@ protected:
 #endif
     }
 
+#if PXR_VERSION >= 2505
+    void _PrimsAdded(
+        const HdSceneIndexBase& sender,
+        const HdSceneIndexObserver::AddedPrimEntries& entries)
+    {
+        _SendPrimsAdded(entries);
+    }
+
+    void _PrimsRemoved(
+        const HdSceneIndexBase& sender,
+        const HdSceneIndexObserver::RemovedPrimEntries& entries)
+    {
+        _SendPrimsRemoved(entries);
+    }
+
+    void _PrimsDirtied(
+        const HdSceneIndexBase& sender,
+        const HdSceneIndexObserver::DirtiedPrimEntries& entries)
+    {
+        for (const HdSceneIndexObserver::DirtiedPrimEntry& entry : entries) {
+            for (const auto& dirtyLocator : entry.dirtyLocators) {
+                if (HdMaterialSchema::GetLocatorTerminal(
+                        dirtyLocator, HdPrman_GetRenderContexts())
+                    == HdMaterialSchemaTokens->displacement) {
+                    HdSceneIndexObserver::DirtiedPrimEntries
+                        dirtyGeometryEntries;
+                    _GetDirtyGeometryPrims(dirtyGeometryEntries, entry.primPath);
+                    _SendPrimsDirtied(dirtyGeometryEntries);
+                }
+            }
+        }
+
+        _SendPrimsDirtied(entries);
+    }
+
+#else
     virtual void _PrimsAdded(
         const HdSceneIndexBase& sender,
         const HdSceneIndexObserver::AddedPrimEntries& entries)
@@ -378,6 +418,7 @@ protected:
         HdDataSourceMaterialNetworkInterface,
         SdfPath::Hash>
         cacheDisplacementNetworks;
+#endif
 };
 
 HdPrman_RetesselationSceneIndexPlugin::HdPrman_RetesselationSceneIndexPlugin()

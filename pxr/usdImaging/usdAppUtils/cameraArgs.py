@@ -14,10 +14,6 @@ def AddCmdlineArgs(argsParser, defaultValue=None, altHelpText=''):
     containing the primary camera name.
     """
     from pxr import Sdf
-    from pxr import UsdUtils
-
-    if defaultValue is None:
-        defaultValue = UsdUtils.GetPrimaryCameraName()
 
     helpText = altHelpText
     if not helpText:

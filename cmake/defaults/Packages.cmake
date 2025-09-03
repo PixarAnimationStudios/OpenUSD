@@ -20,7 +20,7 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
 set(PXR_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 
-if((PXR_ENABLE_PYTHON_SUPPORT AND PXR_USE_BOOST_PYTHON) OR PXR_ENABLE_OPENVDB_SUPPORT)
+if(PXR_ENABLE_OPENVDB_SUPPORT)
     # Find Boost package before getting any boost specific components as we need to
     # disable boost-provided cmake config, based on the boost version found.
     find_package(Boost REQUIRED)
@@ -43,14 +43,6 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         set(PYTHON_INCLUDE_DIRS "${${package}_INCLUDE_DIRS}")
         set(PYTHON_VERSION_MAJOR "${${package}_VERSION_MAJOR}")
         set(PYTHON_VERSION_MINOR "${${package}_VERSION_MINOR}")
-
-        # Convert paths to CMake path format on Windows to avoid string parsing
-        # issues when we pass PYTHON_EXECUTABLE or PYTHON_INCLUDE_DIRS to
-        # pxr_library or other functions.
-        if(WIN32)
-            file(TO_CMAKE_PATH ${PYTHON_EXECUTABLE} PYTHON_EXECUTABLE)
-            file(TO_CMAKE_PATH ${PYTHON_INCLUDE_DIRS} PYTHON_INCLUDE_DIRS)
-        endif()
 
         # PXR_PY_UNDEFINED_DYNAMIC_LOOKUP might be explicitly set when 
         # packaging wheels, or when cross compiling to a Python environment 
@@ -86,34 +78,6 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     # USD builds only work with Python3
     setup_python_package(Python3)
 
-    if(PXR_USE_BOOST_PYTHON)
-        if(WIN32 AND PXR_USE_DEBUG_PYTHON)
-            set(Boost_USE_DEBUG_PYTHON ON)
-        endif()
-
-        # Manually specify VS2022, 2019, and 2017 as USD's supported compiler versions
-        if(WIN32)
-            set(Boost_COMPILER "-vc143;-vc142;-vc141")
-        endif()
-
-        # As of boost 1.67 the boost_python component name includes the
-        # associated Python version (e.g. python27, python36). 
-        # XXX: After boost 1.73, boost provided config files should be able to 
-        # work without specifying a python version!
-        # https://github.com/boostorg/boost_install/blob/master/BoostConfig.cmake
-
-        # Find the component under the versioned name and then set the generic
-        # Boost_PYTHON_LIBRARY variable so that we don't have to duplicate this
-        # logic in each library's CMakeLists.txt.
-        set(python_version_nodot "${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}")
-        find_package(Boost
-            COMPONENTS
-            python${python_version_nodot}
-            REQUIRED
-        )
-        set(Boost_PYTHON_LIBRARY "${Boost_PYTHON${python_version_nodot}_LIBRARY}")
-    endif()
-
     # --Jinja2
     find_package(Jinja2)
 else()
@@ -128,10 +92,27 @@ else()
     endif()
 endif()
 
+# Convert paths to CMake path format on Windows to avoid string parsing
+# issues when we pass PYTHON_EXECUTABLE or PYTHON_INCLUDE_DIRS to
+# pxr_library or other functions.
+if(WIN32)
+    if(PYTHON_EXECUTABLE)
+        file(TO_CMAKE_PATH ${PYTHON_EXECUTABLE} PYTHON_EXECUTABLE)
+    endif()
+
+    if(PYTHON_INCLUDE_DIRS)
+        file(TO_CMAKE_PATH ${PYTHON_INCLUDE_DIRS} PYTHON_INCLUDE_DIRS)
+    endif()
+endif()
 
 # --TBB
-find_package(TBB REQUIRED COMPONENTS tbb)
-add_definitions(${TBB_DEFINITIONS})
+find_package(TBB CONFIG COMPONENTS tbb)
+if(TBB_FOUND) 
+    set(PXR_FIND_TBB_IN_CONFIG ON)
+else()
+    find_package(TBB REQUIRED COMPONENTS tbb)
+    set(PXR_FIND_TBB_IN_CONFIG OFF)
+endif()
 
 # --math
 if(WIN32)
@@ -242,7 +223,29 @@ if (PXR_BUILD_IMAGING)
     endif()
     # --Opensubdiv
     set(OPENSUBDIV_USE_GPU ${PXR_BUILD_GPU_SUPPORT})
-    find_package(OpenSubdiv 3 REQUIRED)
+    find_package(OpenSubdiv 3 CONFIG)
+    if(OpenSubdiv_DIR)
+        # Found in CONFIG mode.
+        # First check the shared, then the static library, just like find_library() in FindOpenSubdiv.cmake.
+        foreach(postfix "" "_static")
+            if(NOT TARGET OpenSubdiv::osdCPU${postfix})
+                continue()
+            endif()
+            set(OPENSUBDIV_LIBRARIES OpenSubdiv::osdCPU${postfix})
+            if(OPENSUBDIV_USE_GPU)
+                list(APPEND OPENSUBDIV_LIBRARIES OpenSubdiv::osdGPU${postfix})
+            endif()
+            break()
+        endforeach()
+    endif()
+    if(OPENSUBDIV_LIBRARIES)
+        list(GET OPENSUBDIV_LIBRARIES 0 OPENSUBDIV_OSDCPU_LIBRARY)
+        set(PXR_FIND_OPENSUBDIV_IN_CONFIG ON)
+    else()
+        # Try again with the find-module.
+        find_package(OpenSubdiv 3 REQUIRED)
+        set(PXR_FIND_OPENSUBDIV_IN_CONFIG OFF)
+    endif()
     # --Ptex
     if (PXR_ENABLE_PTEX_SUPPORT)
         find_package(PTex REQUIRED)

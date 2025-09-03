@@ -13,7 +13,7 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/primSpec.h"
-#include "pxr/usd/sdf/textFileFormat.h"
+#include "pxr/usd/sdf/usdaFileFormat.h"
 #include "pxr/usd/pcp/dynamicFileFormatContext.h"
 #include "pxr/usd/pcp/dynamicFileFormatInterface.h"
 
@@ -58,16 +58,16 @@ TF_DEFINE_ENV_SETTING(TEST_PCP_DYNAMIC_FILE_FORMAT_TOKENS_USE_ATTRIBUTE_INPUTS,
 /// related to generating dynamic content from composed metadata fields in scene
 /// description through payloads.
 /// 
-/// This contents of a file of this format are expected to be the same as sdf
+/// This contents of a file of this format are expected to be the same as usda
 /// file content. If the file is opened with file format arguments for "num" and
 /// "depth" that are greater than 0, then it will generate a ring of Xform prim
 /// children that will each have a payload to this file again but with depth-1.
 /// It will also adds a "geom" child that references the payload asset file
-/// with no parameters, just reading it as an sdf file and referencing the 
+/// with no parameters, just reading it as an usda file and referencing the 
 /// default prim. Thus we end up with a recursively generated set of prims 
 /// containing the contents of the dynamic file.
 /// 
-/// As an example if you have the following prim defined in an sdf file:
+/// As an example if you have the following prim defined in an usda file:
 ///   
 ///     def Xform "Root" (
 ///         payload = @cone.testpcpdyanic@ num=2 depth=3 radius = 20.0) {}
@@ -272,15 +272,15 @@ Test_PcpDynamicFileFormatPlugin_FileFormat::Read(
         &payloadId);
 
     // At depth 0, we're done recursing. just read in the contents of our file 
-    // as an sdf text file format into the layer. 
+    // as an usda text file format into the layer. 
     if (depth <= 0) {
         const SdfFileFormatConstPtr fileFormat = 
-            SdfFileFormat::FindById(SdfTextFileFormatTokens->Id);
+            SdfFileFormat::FindById(SdfUsdaFileFormatTokens->Id);
         return fileFormat->Read(layer, resolvedPath, metadataOnly);
     }
 
     // Otherwise, here we generate new file content.
-    SdfLayerRefPtr genLayer = SdfLayer::CreateAnonymous(".sdf");
+    SdfLayerRefPtr genLayer = SdfLayer::CreateAnonymous(".usda");
     SdfChangeBlock block;
 
     // Create a "Root" Xform prim at the root of the genLayer. 
@@ -394,9 +394,9 @@ Test_PcpDynamicFileFormatPlugin_FileFormat::WriteToString(
     std::string* str,
     const std::string& comment) const
 {
-    // Write the contents as an sdf text file.
+    // Write the contents as an usda text file.
     return SdfFileFormat::FindById(
-        SdfTextFileFormatTokens->Id)->WriteToString(layer, str, comment);
+        SdfUsdaFileFormatTokens->Id)->WriteToString(layer, str, comment);
 }
 
 bool
@@ -405,9 +405,9 @@ Test_PcpDynamicFileFormatPlugin_FileFormat::WriteToStream(
     std::ostream& out,
     size_t indent) const
 {
-    // Write the contents as an sdf text file.
+    // Write the contents as an usda text file.
     return SdfFileFormat::FindById(
-        SdfTextFileFormatTokens->Id)->WriteToStream(spec, out, indent);
+        SdfUsdaFileFormatTokens->Id)->WriteToStream(spec, out, indent);
 }
 
 // Helper for extracting a value by name from an already computed argument 

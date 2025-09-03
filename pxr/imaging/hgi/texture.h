@@ -171,9 +171,10 @@ public:
 
     /// This function initiates a layout change process on this texture 
     /// resource. This feature is at the moment required explicitly by explicit 
-    /// APIs like Vulkan.
+    /// APIs like Vulkan. Returns the previous layout to make it easier to
+    /// restore it correctly.
     HGI_API
-    virtual void SubmitLayoutChange(HgiTextureUsage newLayout) = 0;
+    virtual HgiTextureUsage SubmitLayoutChange(HgiTextureUsage newLayout) = 0;
 
 protected:
     HGI_API

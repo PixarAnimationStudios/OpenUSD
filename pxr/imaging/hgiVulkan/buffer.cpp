@@ -90,6 +90,23 @@ HgiVulkanBuffer::HgiVulkanBuffer(
         copyRegion.size = stagingDesc.byteSize;
         vkCmdCopyBuffer(vkCmdBuf, vkStagingBuf, _vkBuffer, 1, &copyRegion);
 
+        VkBufferMemoryBarrier memoryBarrier {
+            VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER };
+        memoryBarrier.srcAccessMask = VK_ACCESS_MEMORY_WRITE_BIT;
+        memoryBarrier.dstAccessMask =
+            VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+        memoryBarrier.buffer = _vkBuffer;
+        memoryBarrier.offset = 0;
+        memoryBarrier.size = stagingDesc.byteSize;
+        vkCmdPipelineBarrier(
+            vkCmdBuf,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+            0,
+            0, nullptr,
+            1, &memoryBarrier,
+            0, nullptr);
+
         // We don't know if this buffer is a static (immutable) or
         // dynamic (animated) buffer. We assume that most buffers are
         // static and schedule garbage collection of staging resource.

@@ -28,10 +28,12 @@ public:
     {
         // Single-segment ordinary curves.
         TwoKnotBezier,
+        TwoKnotHermite,
         TwoKnotLinear,
 
         // Longer splines.
         FourKnotBezier,
+        FourKnotHermite,
 
         // Looping cases.
         SimpleInnerLoop,
@@ -43,7 +45,7 @@ public:
         ExtrapLoopOscillate,
         InnerAndExtrapLoops,
 
-        // Tests of several regressive cases.
+        // Tests of several regressive Bezier cases.
         RegressiveLoop,
         RegressiveS,
         RegressiveSStandard,

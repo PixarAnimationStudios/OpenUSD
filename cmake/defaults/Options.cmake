@@ -14,9 +14,13 @@ option(PXR_BUILD_USD_TOOLS "Build commandline tools" ON)
 option(PXR_BUILD_IMAGING "Build imaging components" ON)
 option(PXR_BUILD_EMBREE_PLUGIN "Build embree imaging plugin" OFF)
 option(PXR_BUILD_OPENIMAGEIO_PLUGIN "Build OpenImageIO plugin" OFF)
+if(APPLE)
+    option(PXR_BUILD_IMAGEIO_PLUGIN "Build the ImageIO.framework plugin for Apple platforms" ON)
+endif()
 option(PXR_BUILD_OPENCOLORIO_PLUGIN "Build OpenColorIO plugin" OFF)
 option(PXR_BUILD_USD_IMAGING "Build USD imaging components" ON)
 option(PXR_BUILD_USD_VALIDATION "Build USD validation library and core USD validators" ON)
+option(PXR_BUILD_EXEC "Build the Exec libraries" ON)
 option(PXR_BUILD_USDVIEW "Build usdview" ON)
 option(PXR_BUILD_ALEMBIC_PLUGIN "Build the Alembic plugin for USD" OFF)
 option(PXR_BUILD_DRACO_PLUGIN "Build the Draco plugin for USD" OFF)
@@ -27,7 +31,6 @@ option(PXR_BUILD_PYTHON_DOCUMENTATION "Generate Python documentation" OFF)
 option(PXR_BUILD_HTML_DOCUMENTATION "Generate HTML documentation if PXR_BUILD_DOCUMENTATION is ON" ON)
 option(PXR_ENABLE_PYTHON_SUPPORT "Enable Python based components for USD" ON)
 option(PXR_USE_DEBUG_PYTHON "Build with debug python" OFF)
-option(PXR_USE_BOOST_PYTHON "Use boost::python for Python bindings (deprecated)" OFF)
 option(PXR_ENABLE_HDF5_SUPPORT "Enable HDF5 backend in the Alembic plugin for USD" OFF)
 option(PXR_ENABLE_OSL_SUPPORT "Enable OSL (OpenShadingLanguage) based components" OFF)
 option(PXR_ENABLE_PTEX_SUPPORT "Enable Ptex support" OFF)
@@ -90,6 +93,12 @@ set(PXR_PRECOMPILED_HEADER_NAME "pch.h"
     CACHE
     STRING
     "Default name of precompiled header files"
+)
+
+set(PXR_WORK_IMPL ""
+    CACHE
+    STRING
+    "Name of CMake package containing custom implementation for libWork."
 )
 
 set(PXR_INSTALL_LOCATION ""

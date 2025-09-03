@@ -67,6 +67,13 @@ UsdSkelImagingBindingSchema::GetBlendShapeTargets() const
         UsdSkelImagingBindingSchemaTokens->blendShapeTargets);
 }
 
+HdBoolDataSourceHandle
+UsdSkelImagingBindingSchema::GetHasSkelRoot() const
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        UsdSkelImagingBindingSchemaTokens->hasSkelRoot);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 UsdSkelImagingBindingSchema::BuildRetained(
@@ -74,11 +81,12 @@ UsdSkelImagingBindingSchema::BuildRetained(
         const HdPathDataSourceHandle &skeleton,
         const HdTokenArrayDataSourceHandle &joints,
         const HdTokenArrayDataSourceHandle &blendShapes,
-        const HdPathArrayDataSourceHandle &blendShapeTargets
+        const HdPathArrayDataSourceHandle &blendShapeTargets,
+        const HdBoolDataSourceHandle &hasSkelRoot
 )
 {
-    TfToken _names[5];
-    HdDataSourceBaseHandle _values[5];
+    TfToken _names[6];
+    HdDataSourceBaseHandle _values[6];
 
     size_t _count = 0;
 
@@ -105,6 +113,11 @@ UsdSkelImagingBindingSchema::BuildRetained(
     if (blendShapeTargets) {
         _names[_count] = UsdSkelImagingBindingSchemaTokens->blendShapeTargets;
         _values[_count++] = blendShapeTargets;
+    }
+
+    if (hasSkelRoot) {
+        _names[_count] = UsdSkelImagingBindingSchemaTokens->hasSkelRoot;
+        _values[_count++] = hasSkelRoot;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -149,6 +162,14 @@ UsdSkelImagingBindingSchema::Builder::SetBlendShapeTargets(
     return *this;
 }
 
+UsdSkelImagingBindingSchema::Builder &
+UsdSkelImagingBindingSchema::Builder::SetHasSkelRoot(
+    const HdBoolDataSourceHandle &hasSkelRoot)
+{
+    _hasSkelRoot = hasSkelRoot;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 UsdSkelImagingBindingSchema::Builder::Build()
 {
@@ -157,7 +178,8 @@ UsdSkelImagingBindingSchema::Builder::Build()
         _skeleton,
         _joints,
         _blendShapes,
-        _blendShapeTargets
+        _blendShapeTargets,
+        _hasSkelRoot
     );
 }
 
@@ -235,6 +257,16 @@ UsdSkelImagingBindingSchema::GetBlendShapeTargetsLocator()
     static const HdDataSourceLocator locator =
         GetDefaultLocator().Append(
             UsdSkelImagingBindingSchemaTokens->blendShapeTargets);
+    return locator;
+}
+
+/* static */
+const HdDataSourceLocator &
+UsdSkelImagingBindingSchema::GetHasSkelRootLocator()
+{
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            UsdSkelImagingBindingSchemaTokens->hasSkelRoot);
     return locator;
 } 
 

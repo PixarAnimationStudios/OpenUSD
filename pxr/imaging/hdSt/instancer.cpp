@@ -23,6 +23,7 @@ HdStInstancer::HdStInstancer(HdSceneDelegate* delegate,
                              SdfPath const &id)
     : HdInstancer(delegate, id)
     , _instancePrimvarNumElements(0)
+    , _visible(true)
 {
 }
 
@@ -35,6 +36,10 @@ HdStInstancer::Sync(HdSceneDelegate *sceneDelegate,
     HF_MALLOC_TAG_FUNCTION();
 
     SdfPath const& instancerId = GetId();
+
+    if (*dirtyBits & HdChangeTracker::DirtyVisibility) {
+        _visible = sceneDelegate->GetVisible(instancerId);
+    }
 
     _UpdateInstancer(sceneDelegate, dirtyBits);
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, instancerId)) {
@@ -161,26 +166,36 @@ HdStInstancer::_SyncPrimvars(HdSceneDelegate *sceneDelegate,
 }
 
 void
-HdStInstancer::_GetInstanceIndices(SdfPath const &prototypeId,
-                            std::vector<VtIntArray> *instanceIndicesArray)
+HdStInstancer::_GetInstanceIndices(
+    const SdfPath &prototypeId,
+    std::vector<VtIntArray> * const instanceIndicesArray)
 {
     SdfPath const &instancerId = GetId();
-    VtIntArray instanceIndices
-        = GetDelegate()->GetInstanceIndices(instancerId, prototypeId);
 
-    // quick sanity check
-    // instance indices should not exceed the size of instance primvars.
-    for (auto it = instanceIndices.cbegin();
-         it != instanceIndices.cend(); ++it) {
-        if (*it >= (int)_instancePrimvarNumElements) {
-            TF_WARN("Instance index exceeds the element count of instance "
-                    "primvars (%d >= %zu) for <%s>",
-                    *it, _instancePrimvarNumElements, instancerId.GetText());
-            instanceIndices.clear();
-            // insert 0-th index as placeholder (0th should always exist, since
-            // we don't populate instance primvars with numElements == 0).
-            instanceIndices.push_back(0);
-            break;
+    VtIntArray instanceIndices;
+
+    if (_visible) {
+        instanceIndices =
+            GetDelegate()->GetInstanceIndices(instancerId, prototypeId);
+
+        // quick sanity check
+        // instance indices should not exceed the size of instance primvars.
+        for (auto it = instanceIndices.cbegin();
+             it != instanceIndices.cend(); ++it) {
+            if (*it >= (int)_instancePrimvarNumElements) {
+                TF_WARN("Instance index exceeds the element count of instance "
+                        "primvars (%d >= %zu) for <%s>",
+                        *it, _instancePrimvarNumElements,
+                        instancerId.GetText());
+                instanceIndices.clear();
+                if (_instancePrimvarNumElements > 0) {
+                    // insert 0-th index as placeholder (0th should always
+                    // exist, since we don't populate instance primvars with
+                    // numElements == 0).
+                    instanceIndices.push_back(0);
+                }
+                break;
+            }
         }
     }
 

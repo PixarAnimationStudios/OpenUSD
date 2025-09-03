@@ -13,6 +13,7 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
+#include "pxr/base/ts/spline.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -134,9 +135,8 @@ UsdAttributeQuery::_Get(T* value, UsdTimeCode time) const
     // varying, then the stored resolve info won't give us the correct value 
     // for default time. In this case we have to get the resolve info at default
     // time and query the value from that.
-    if (time.IsDefault() &&
-            (_resolveInfo.GetSource() == UsdResolveInfoSourceTimeSamples ||
-             _resolveInfo.GetSource() == UsdResolveInfoSourceValueClips)) {
+    if (time.IsDefault() && 
+            _resolveInfo.ValueSourceMightBeTimeVarying()) {
 
         static const UsdTimeCode defaultTime = UsdTimeCode::Default();
         UsdResolveInfo defaultResolveInfo;
@@ -166,6 +166,28 @@ UsdAttributeQuery::GetTimeSamples(std::vector<double>* times) const
 {
     return _attr._GetStage()->_GetTimeSamplesInIntervalFromResolveInfo(
         _resolveInfo, _attr, GfInterval::GetFullInterval(), times);
+}
+
+TsSpline
+UsdAttributeQuery::GetSpline() const
+{
+    if (_resolveInfo.GetSource() != UsdResolveInfoSourceSpline) {
+        return TsSpline();
+    }
+
+    if (!TF_VERIFY(_resolveInfo._spline, 
+        "Spline should be valid when source is Spline")) {
+        return TsSpline();
+    }
+
+    if (_resolveInfo._layerToStageOffset.IsIdentity()) {
+        return _resolveInfo._spline.value();
+    }
+
+    TsSpline mappedSpline = _resolveInfo._spline.value();
+    Usd_ApplyLayerOffsetToValue(
+        &mappedSpline, _resolveInfo._layerToStageOffset);
+    return mappedSpline;
 }
 
 bool
@@ -248,6 +270,12 @@ bool
 UsdAttributeQuery::HasValue() const
 {
     return _resolveInfo._source != UsdResolveInfoSourceNone;  
+}
+
+bool
+UsdAttributeQuery::HasSpline() const
+{
+    return _resolveInfo._source == UsdResolveInfoSourceSpline;
 }
 
 bool 

@@ -12,7 +12,7 @@ def "Spheres"
 {
     def Sphere "RedSphere"
     {
-        float radius = 1.0
+        double radius = 1.0
         color3f[] primvars:displayColor = [(1.0, 0.0, 0.0)]
     }
 }

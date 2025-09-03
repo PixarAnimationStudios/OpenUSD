@@ -41,6 +41,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdVisibilitySchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdVisibilitySchema
+///
 class HdVisibilitySchema : public HdSchema
 {
 public:

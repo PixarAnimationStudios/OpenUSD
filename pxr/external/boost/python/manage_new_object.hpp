@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/manage_new_object.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/detail/indirect_traits.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
@@ -50,5 +46,4 @@ struct manage_new_object
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_MANAGE_NEW_OBJECT_HPP

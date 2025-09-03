@@ -1,0 +1,109 @@
+Loading @SpecializesAndVariants2/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </element>
+
+Prim Stack:
+    root.usda            /element
+    root.usda            /_element_class
+    root.usda            /middleman
+    root.usda            /referencedMiddleman
+    root.usda            /implementation
+    root.usda            /implementation{testVariantSet=testVariant}
+
+Variant Selections:
+    {testVariantSet = testVariant}
+
+Property names:
+     ['variantAttr', 'referencedAttr']
+
+Property stacks:
+/element.referencedAttr:
+    root.usda            /referencedMiddleman.referencedAttr
+/element.variantAttr:
+    root.usda            /implementation{testVariantSet=testVariant}.variantAttr
+
+------------------------------------------------------------------------
+Results for composing </_element_class>
+
+Prim Stack:
+    root.usda            /_element_class
+    root.usda            /middleman
+    root.usda            /referencedMiddleman
+    root.usda            /implementation
+    root.usda            /implementation{testVariantSet=testVariant}
+
+Variant Selections:
+    {testVariantSet = testVariant}
+
+Property names:
+     ['variantAttr', 'referencedAttr']
+
+Property stacks:
+/_element_class.referencedAttr:
+    root.usda            /referencedMiddleman.referencedAttr
+/_element_class.variantAttr:
+    root.usda            /implementation{testVariantSet=testVariant}.variantAttr
+
+------------------------------------------------------------------------
+Results for composing </middleman>
+
+Prim Stack:
+    root.usda            /middleman
+    root.usda            /referencedMiddleman
+    root.usda            /implementation
+    root.usda            /implementation{testVariantSet=testVariant}
+
+Variant Selections:
+    {testVariantSet = testVariant}
+
+Property names:
+     ['variantAttr', 'referencedAttr']
+
+Property stacks:
+/middleman.referencedAttr:
+    root.usda            /referencedMiddleman.referencedAttr
+/middleman.variantAttr:
+    root.usda            /implementation{testVariantSet=testVariant}.variantAttr
+
+------------------------------------------------------------------------
+Results for composing </referencedMiddleman>
+
+Prim Stack:
+    root.usda            /referencedMiddleman
+    root.usda            /implementation
+    root.usda            /implementation{testVariantSet=testVariant}
+
+Variant Selections:
+    {testVariantSet = testVariant}
+
+Property names:
+     ['variantAttr', 'referencedAttr']
+
+Property stacks:
+/referencedMiddleman.referencedAttr:
+    root.usda            /referencedMiddleman.referencedAttr
+/referencedMiddleman.variantAttr:
+    root.usda            /implementation{testVariantSet=testVariant}.variantAttr
+
+------------------------------------------------------------------------
+Results for composing </implementation>
+
+Prim Stack:
+    root.usda            /implementation
+    root.usda            /implementation{testVariantSet=testVariant}
+
+Variant Selections:
+    {testVariantSet = testVariant}
+
+Property names:
+     ['variantAttr']
+
+Property stacks:
+/implementation.variantAttr:
+    root.usda            /implementation{testVariantSet=testVariant}.variantAttr
+

@@ -1,15 +1,15 @@
-Loading @BasicRelocateToAnimInterfaceAsNewRootPrim/root.sdf@
+Loading @BasicRelocateToAnimInterfaceAsNewRootPrim/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Model>
 
 Prim Stack:
-    root.sdf             /Model
-    charRig.sdf          /CharRig
+    root.usda            /Model
+    charRig.usda         /CharRig
 
 Child names:
      ['Anim', 'Rig']
@@ -18,8 +18,8 @@ Child names:
 Results for composing </Model/Anim>
 
 Prim Stack:
-    root.sdf             /Model/Anim
-    charRig.sdf          /CharRig/Anim
+    root.usda            /Model/Anim
+    charRig.usda         /CharRig/Anim
 
 Child names:
      ['Path']
@@ -28,9 +28,9 @@ Child names:
 Results for composing </Model/Anim/Path>
 
 Prim Stack:
-    root.sdf             /Model/Anim/Path
-    charRig.sdf          /Path
-    pathRig.sdf          /PathRig/Path
+    root.usda            /Model/Anim/Path
+    charRig.usda         /Path
+    pathRig.usda         /PathRig/Path
 
 Child names:
      ['AnimScope']
@@ -42,25 +42,25 @@ Prohibited child names:
 Results for composing </Model/Anim/Path/AnimScope>
 
 Prim Stack:
-    root.sdf             /Model/Anim/Path/AnimScope
-    charRig.sdf          /Path/AnimScope
-    pathRig.sdf          /PathRig/Path/Anim
+    root.usda            /Model/Anim/Path/AnimScope
+    charRig.usda         /Path/AnimScope
+    pathRig.usda         /PathRig/Path/Anim
 
 Property names:
      ['track']
 
 Property stacks:
 /Model/Anim/Path/AnimScope.track:
-    root.sdf             /Model/Anim/Path/AnimScope.track
-    charRig.sdf          /Path/AnimScope.track
-    pathRig.sdf          /PathRig/Path/Anim.track
+    root.usda            /Model/Anim/Path/AnimScope.track
+    charRig.usda         /Path/AnimScope.track
+    pathRig.usda         /PathRig/Path/Anim.track
 
 ------------------------------------------------------------------------
 Results for composing </Model/Rig>
 
 Prim Stack:
-    root.sdf             /Model/Rig
-    charRig.sdf          /CharRig/Rig
+    root.usda            /Model/Rig
+    charRig.usda         /CharRig/Rig
 
 Child names:
      ['PathRig']
@@ -69,9 +69,9 @@ Child names:
 Results for composing </Model/Rig/PathRig>
 
 Prim Stack:
-    root.sdf             /Model/Rig/PathRig
-    charRig.sdf          /CharRig/Rig/PathRig
-    pathRig.sdf          /PathRig
+    root.usda            /Model/Rig/PathRig
+    charRig.usda         /CharRig/Rig/PathRig
+    pathRig.usda         /PathRig
 
 Prohibited child names:
      ['Path']
@@ -81,7 +81,7 @@ Property names:
 
 Property stacks:
 /Model/Rig/PathRig.relationshipToPathAvar:
-    pathRig.sdf          /PathRig.relationshipToPathAvar
+    pathRig.usda         /PathRig.relationshipToPathAvar
 /Model/Rig/PathRig.relationshipToPathAvar2:
-    charRig.sdf          /CharRig/Rig/PathRig.relationshipToPathAvar2
+    charRig.usda         /CharRig/Rig/PathRig.relationshipToPathAvar2
 

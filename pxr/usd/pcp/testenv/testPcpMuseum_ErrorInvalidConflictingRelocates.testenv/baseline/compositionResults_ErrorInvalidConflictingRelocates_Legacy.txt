@@ -1,15 +1,15 @@
-Loading @ErrorInvalidConflictingRelocates/root.sdf@
+Loading @ErrorInvalidConflictingRelocates/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Model_1>
 
 Prim Stack:
-    root.sdf             /Model_1
-    model.sdf            /Model
+    root.usda            /Model_1
+    model.usda           /Model
 
 Child names:
      ['LocalClass', 'Instance']
@@ -18,8 +18,8 @@ Child names:
 Results for composing </Model_1/LocalClass>
 
 Prim Stack:
-    root.sdf             /Model_1/LocalClass
-    model.sdf            /Model/LocalClass
+    root.usda            /Model_1/LocalClass
+    model.usda           /Model/LocalClass
 
 Child names:
      ['ClassChild', 'Test']
@@ -28,7 +28,7 @@ Child names:
 Results for composing </Model_1/LocalClass/ClassChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild
+    model.usda           /Model/LocalClass/ClassChild
 
 Child names:
      ['ClassGrandChild']
@@ -37,22 +37,22 @@ Child names:
 Results for composing </Model_1/LocalClass/ClassChild/ClassGrandChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+    model.usda           /Model/LocalClass/ClassChild/ClassGrandChild
 
 ------------------------------------------------------------------------
 Results for composing </Model_1/LocalClass/Test>
 
 Prim Stack:
-    root.sdf             /Model_1/LocalClass/Test
+    root.usda            /Model_1/LocalClass/Test
 
 ------------------------------------------------------------------------
 Results for composing </Model_1/Instance>
 
 Prim Stack:
-    root.sdf             /Model_1/Instance
-    root.sdf             /Model_1/LocalClass
-    model.sdf            /Model/Instance
-    model.sdf            /Model/LocalClass
+    root.usda            /Model_1/Instance
+    root.usda            /Model_1/LocalClass
+    model.usda           /Model/Instance
+    model.usda           /Model/LocalClass
 
 Child names:
      ['ClassChild', 'InstanceChild', 'Test']
@@ -61,7 +61,7 @@ Child names:
 Results for composing </Model_1/Instance/ClassChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild
+    model.usda           /Model/LocalClass/ClassChild
 
 Child names:
      ['ClassGrandChild']
@@ -70,13 +70,13 @@ Child names:
 Results for composing </Model_1/Instance/ClassChild/ClassGrandChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+    model.usda           /Model/LocalClass/ClassChild/ClassGrandChild
 
 ------------------------------------------------------------------------
 Results for composing </Model_1/Instance/InstanceChild>
 
 Prim Stack:
-    model.sdf            /Model/Instance/InstanceChild
+    model.usda           /Model/Instance/InstanceChild
 
 Child names:
      ['InstanceGrandChild']
@@ -85,21 +85,21 @@ Child names:
 Results for composing </Model_1/Instance/InstanceChild/InstanceGrandChild>
 
 Prim Stack:
-    model.sdf            /Model/Instance/InstanceChild/InstanceGrandChild
+    model.usda           /Model/Instance/InstanceChild/InstanceGrandChild
 
 ------------------------------------------------------------------------
 Results for composing </Model_1/Instance/Test>
 
 Prim Stack:
-    root.sdf             /Model_1/Instance/Test
-    root.sdf             /Model_1/LocalClass/Test
+    root.usda            /Model_1/Instance/Test
+    root.usda            /Model_1/LocalClass/Test
 
 ------------------------------------------------------------------------
 Results for composing </Model_2>
 
 Prim Stack:
-    root.sdf             /Model_2
-    model.sdf            /Model
+    root.usda            /Model_2
+    model.usda           /Model
 
 Child names:
      ['LocalClass', 'Instance']
@@ -111,8 +111,8 @@ Prohibited child names:
 Results for composing </Model_2/LocalClass>
 
 Prim Stack:
-    root.sdf             /Model_2/LocalClass
-    model.sdf            /Model/LocalClass
+    root.usda            /Model_2/LocalClass
+    model.usda           /Model/LocalClass
 
 Child names:
      ['ClassChild', 'Test']
@@ -121,7 +121,7 @@ Child names:
 Results for composing </Model_2/LocalClass/ClassChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild
+    model.usda           /Model/LocalClass/ClassChild
 
 Child names:
      ['ClassGrandChild']
@@ -130,22 +130,22 @@ Child names:
 Results for composing </Model_2/LocalClass/ClassChild/ClassGrandChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+    model.usda           /Model/LocalClass/ClassChild/ClassGrandChild
 
 ------------------------------------------------------------------------
 Results for composing </Model_2/LocalClass/Test>
 
 Prim Stack:
-    root.sdf             /Model_2/LocalClass/Test
+    root.usda            /Model_2/LocalClass/Test
 
 ------------------------------------------------------------------------
 Results for composing </Model_2/Instance>
 
 Prim Stack:
-    root.sdf             /Model_2/Instance
-    root.sdf             /Model_2/LocalClass
-    model.sdf            /Model/Instance
-    model.sdf            /Model/LocalClass
+    root.usda            /Model_2/Instance
+    root.usda            /Model_2/LocalClass
+    model.usda           /Model/Instance
+    model.usda           /Model/LocalClass
 
 Child names:
      ['ClassChild', 'Test']
@@ -157,7 +157,7 @@ Prohibited child names:
 Results for composing </Model_2/Instance/ClassChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild
+    model.usda           /Model/LocalClass/ClassChild
 
 Child names:
      ['ClassGrandChild']
@@ -166,20 +166,20 @@ Child names:
 Results for composing </Model_2/Instance/ClassChild/ClassGrandChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+    model.usda           /Model/LocalClass/ClassChild/ClassGrandChild
 
 ------------------------------------------------------------------------
 Results for composing </Model_2/Instance/Test>
 
 Prim Stack:
-    root.sdf             /Model_2/Instance/Test
+    root.usda            /Model_2/Instance/Test
 
 ------------------------------------------------------------------------
 Results for composing </Model_3>
 
 Prim Stack:
-    root.sdf             /Model_3
-    model.sdf            /Model
+    root.usda            /Model_3
+    model.usda           /Model
 
 Child names:
      ['LocalClass', 'Instance', 'Test']
@@ -188,8 +188,8 @@ Child names:
 Results for composing </Model_3/LocalClass>
 
 Prim Stack:
-    root.sdf             /Model_3/LocalClass
-    model.sdf            /Model/LocalClass
+    root.usda            /Model_3/LocalClass
+    model.usda           /Model/LocalClass
 
 Child names:
      ['ClassChild', 'Test']
@@ -198,7 +198,7 @@ Child names:
 Results for composing </Model_3/LocalClass/ClassChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild
+    model.usda           /Model/LocalClass/ClassChild
 
 Child names:
      ['ClassGrandChild']
@@ -207,22 +207,22 @@ Child names:
 Results for composing </Model_3/LocalClass/ClassChild/ClassGrandChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+    model.usda           /Model/LocalClass/ClassChild/ClassGrandChild
 
 ------------------------------------------------------------------------
 Results for composing </Model_3/LocalClass/Test>
 
 Prim Stack:
-    root.sdf             /Model_3/LocalClass/Test
+    root.usda            /Model_3/LocalClass/Test
 
 ------------------------------------------------------------------------
 Results for composing </Model_3/Instance>
 
 Prim Stack:
-    root.sdf             /Model_3/Instance
-    root.sdf             /Model_3/LocalClass
-    model.sdf            /Model/Instance
-    model.sdf            /Model/LocalClass
+    root.usda            /Model_3/Instance
+    root.usda            /Model_3/LocalClass
+    model.usda           /Model/Instance
+    model.usda           /Model/LocalClass
 
 Child names:
      ['ClassChild', 'Test']
@@ -234,7 +234,7 @@ Prohibited child names:
 Results for composing </Model_3/Instance/ClassChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild
+    model.usda           /Model/LocalClass/ClassChild
 
 Child names:
      ['ClassGrandChild']
@@ -243,20 +243,20 @@ Child names:
 Results for composing </Model_3/Instance/ClassChild/ClassGrandChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+    model.usda           /Model/LocalClass/ClassChild/ClassGrandChild
 
 ------------------------------------------------------------------------
 Results for composing </Model_3/Instance/Test>
 
 Prim Stack:
-    root.sdf             /Model_3/Instance/Test
-    root.sdf             /Model_3/LocalClass/Test
+    root.usda            /Model_3/Instance/Test
+    root.usda            /Model_3/LocalClass/Test
 
 ------------------------------------------------------------------------
 Results for composing </Model_3/Test>
 
 Prim Stack:
-    model.sdf            /Model/Instance/InstanceChild
+    model.usda           /Model/Instance/InstanceChild
 
 Child names:
      ['InstanceGrandChild']
@@ -265,14 +265,14 @@ Child names:
 Results for composing </Model_3/Test/InstanceGrandChild>
 
 Prim Stack:
-    model.sdf            /Model/Instance/InstanceChild/InstanceGrandChild
+    model.usda           /Model/Instance/InstanceChild/InstanceGrandChild
 
 ------------------------------------------------------------------------
 Results for composing </Model_4>
 
 Prim Stack:
-    root.sdf             /Model_4
-    model.sdf            /Model
+    root.usda            /Model_4
+    model.usda           /Model
 
 Child names:
      ['LocalClass', 'Instance', 'Test']
@@ -281,8 +281,8 @@ Child names:
 Results for composing </Model_4/LocalClass>
 
 Prim Stack:
-    root.sdf             /Model_4/LocalClass
-    model.sdf            /Model/LocalClass
+    root.usda            /Model_4/LocalClass
+    model.usda           /Model/LocalClass
 
 Child names:
      ['ClassChild', 'Test']
@@ -291,7 +291,7 @@ Child names:
 Results for composing </Model_4/LocalClass/ClassChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild
+    model.usda           /Model/LocalClass/ClassChild
 
 Child names:
      ['ClassGrandChild']
@@ -300,22 +300,22 @@ Child names:
 Results for composing </Model_4/LocalClass/ClassChild/ClassGrandChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+    model.usda           /Model/LocalClass/ClassChild/ClassGrandChild
 
 ------------------------------------------------------------------------
 Results for composing </Model_4/LocalClass/Test>
 
 Prim Stack:
-    root.sdf             /Model_4/LocalClass/Test
+    root.usda            /Model_4/LocalClass/Test
 
 ------------------------------------------------------------------------
 Results for composing </Model_4/Instance>
 
 Prim Stack:
-    root.sdf             /Model_4/Instance
-    root.sdf             /Model_4/LocalClass
-    model.sdf            /Model/Instance
-    model.sdf            /Model/LocalClass
+    root.usda            /Model_4/Instance
+    root.usda            /Model_4/LocalClass
+    model.usda           /Model/Instance
+    model.usda           /Model/LocalClass
 
 Child names:
      ['ClassChild', 'Test']
@@ -327,7 +327,7 @@ Prohibited child names:
 Results for composing </Model_4/Instance/ClassChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild
+    model.usda           /Model/LocalClass/ClassChild
 
 Child names:
      ['ClassGrandChild']
@@ -336,20 +336,20 @@ Child names:
 Results for composing </Model_4/Instance/ClassChild/ClassGrandChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+    model.usda           /Model/LocalClass/ClassChild/ClassGrandChild
 
 ------------------------------------------------------------------------
 Results for composing </Model_4/Instance/Test>
 
 Prim Stack:
-    root.sdf             /Model_4/Instance/Test
-    root.sdf             /Model_4/LocalClass/Test
+    root.usda            /Model_4/Instance/Test
+    root.usda            /Model_4/LocalClass/Test
 
 ------------------------------------------------------------------------
 Results for composing </Model_4/Test>
 
 Prim Stack:
-    model.sdf            /Model/Instance/InstanceChild
+    model.usda           /Model/Instance/InstanceChild
 
 Child names:
      ['Child']
@@ -361,14 +361,14 @@ Prohibited child names:
 Results for composing </Model_4/Test/Child>
 
 Prim Stack:
-    model.sdf            /Model/Instance/InstanceChild/InstanceGrandChild
+    model.usda           /Model/Instance/InstanceChild/InstanceGrandChild
 
 ------------------------------------------------------------------------
 Results for composing </Model_5>
 
 Prim Stack:
-    root.sdf             /Model_5
-    model.sdf            /Model
+    root.usda            /Model_5
+    model.usda           /Model
 
 Child names:
      ['LocalClass', 'Instance', 'Test']
@@ -377,8 +377,8 @@ Child names:
 Results for composing </Model_5/LocalClass>
 
 Prim Stack:
-    root.sdf             /Model_5/LocalClass
-    model.sdf            /Model/LocalClass
+    root.usda            /Model_5/LocalClass
+    model.usda           /Model/LocalClass
 
 Child names:
      ['ClassChild', 'Test']
@@ -387,7 +387,7 @@ Child names:
 Results for composing </Model_5/LocalClass/ClassChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild
+    model.usda           /Model/LocalClass/ClassChild
 
 Child names:
      ['ClassGrandChild']
@@ -396,22 +396,22 @@ Child names:
 Results for composing </Model_5/LocalClass/ClassChild/ClassGrandChild>
 
 Prim Stack:
-    model.sdf            /Model/LocalClass/ClassChild/ClassGrandChild
+    model.usda           /Model/LocalClass/ClassChild/ClassGrandChild
 
 ------------------------------------------------------------------------
 Results for composing </Model_5/LocalClass/Test>
 
 Prim Stack:
-    root.sdf             /Model_5/LocalClass/Test
+    root.usda            /Model_5/LocalClass/Test
 
 ------------------------------------------------------------------------
 Results for composing </Model_5/Instance>
 
 Prim Stack:
-    root.sdf             /Model_5/Instance
-    root.sdf             /Model_5/LocalClass
-    model.sdf            /Model/Instance
-    model.sdf            /Model/LocalClass
+    root.usda            /Model_5/Instance
+    root.usda            /Model_5/LocalClass
+    model.usda           /Model/Instance
+    model.usda           /Model/LocalClass
 
 Child names:
      ['Test']
@@ -423,14 +423,14 @@ Prohibited child names:
 Results for composing </Model_5/Instance/Test>
 
 Prim Stack:
-    root.sdf             /Model_5/Instance/Test
-    root.sdf             /Model_5/LocalClass/Test
+    root.usda            /Model_5/Instance/Test
+    root.usda            /Model_5/LocalClass/Test
 
 ------------------------------------------------------------------------
 Results for composing </Model_5/Test>
 
 Prim Stack:
-    model.sdf            /Model/Instance/InstanceChild
+    model.usda           /Model/Instance/InstanceChild
 
 Child names:
      ['InstanceGrandChild']
@@ -439,14 +439,14 @@ Child names:
 Results for composing </Model_5/Test/InstanceGrandChild>
 
 Prim Stack:
-    model.sdf            /Model/Instance/InstanceChild/InstanceGrandChild
+    model.usda           /Model/Instance/InstanceChild/InstanceGrandChild
 
 ------------------------------------------------------------------------
 Results for composing </OtherModel_1>
 
 Prim Stack:
-    root.sdf             /OtherModel_1
-    model.sdf            /OtherModel
+    root.usda            /OtherModel_1
+    model.usda           /OtherModel
 
 Child names:
      ['W']
@@ -458,7 +458,7 @@ Prohibited child names:
 Results for composing </OtherModel_1/W>
 
 Prim Stack:
-    model.sdf            /OtherModel/A
+    model.usda           /OtherModel/A
 
 Child names:
      ['X']
@@ -470,7 +470,7 @@ Prohibited child names:
 Results for composing </OtherModel_1/W/X>
 
 Prim Stack:
-    model.sdf            /OtherModel/A/B
+    model.usda           /OtherModel/A/B
 
 Child names:
      ['Y']
@@ -482,7 +482,7 @@ Prohibited child names:
 Results for composing </OtherModel_1/W/X/Y>
 
 Prim Stack:
-    model.sdf            /OtherModel/A/B/C
+    model.usda           /OtherModel/A/B/C
 
 Child names:
      ['Z']
@@ -494,7 +494,7 @@ Prohibited child names:
 Results for composing </OtherModel_1/W/X/Y/Z>
 
 Prim Stack:
-    model.sdf            /OtherModel/A/B/C/D
+    model.usda           /OtherModel/A/B/C/D
 
 Child names:
      ['Foo']
@@ -506,14 +506,14 @@ Prohibited child names:
 Results for composing </OtherModel_1/W/X/Y/Z/Foo>
 
 Prim Stack:
-    model.sdf            /OtherModel/A/B/C/D/E
+    model.usda           /OtherModel/A/B/C/D/E
 
 ------------------------------------------------------------------------
 Results for composing </OtherModel_2>
 
 Prim Stack:
-    root.sdf             /OtherModel_2
-    model.sdf            /OtherModel
+    root.usda            /OtherModel_2
+    model.usda           /OtherModel
 
 Child names:
      ['W', 'J']
@@ -525,7 +525,7 @@ Prohibited child names:
 Results for composing </OtherModel_2/W>
 
 Prim Stack:
-    model.sdf            /OtherModel/A
+    model.usda           /OtherModel/A
 
 Prohibited child names:
      ['B']
@@ -534,7 +534,7 @@ Prohibited child names:
 Results for composing </OtherModel_2/J>
 
 Prim Stack:
-    model.sdf            /OtherModel/A/B
+    model.usda           /OtherModel/A/B
 
 Child names:
      ['C']
@@ -543,7 +543,7 @@ Child names:
 Results for composing </OtherModel_2/J/C>
 
 Prim Stack:
-    model.sdf            /OtherModel/A/B/C
+    model.usda           /OtherModel/A/B/C
 
 Child names:
      ['D']
@@ -552,7 +552,7 @@ Child names:
 Results for composing </OtherModel_2/J/C/D>
 
 Prim Stack:
-    model.sdf            /OtherModel/A/B/C/D
+    model.usda           /OtherModel/A/B/C/D
 
 Child names:
      ['E']
@@ -561,5 +561,5 @@ Child names:
 Results for composing </OtherModel_2/J/C/D/E>
 
 Prim Stack:
-    model.sdf            /OtherModel/A/B/C/D/E
+    model.usda           /OtherModel/A/B/C/D/E
 

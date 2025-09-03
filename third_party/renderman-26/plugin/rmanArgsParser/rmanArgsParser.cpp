@@ -67,6 +67,7 @@ namespace {
     const char* hintdictStr = "hintdict";
     const char* hintlistStr = "hintlist";
     const char* optionsStr = "options";
+    const char* conditionalVisOpsStr = "conditionalVisOps";
     const char* valueStr = "value";
     const char* tagStr = "tag";
     const char* tagsStr = "tags";
@@ -487,6 +488,16 @@ _ParseChildElem(
                     options.emplace_back(std::make_pair(name, value));
 
                     optChild = optChild.next_sibling();
+                }
+            } else if (EQUALS(conditionalVisOpsStr, nameAttr.value())) {
+                xml_node visChild = attrChild.first_child();
+
+                while (visChild) {
+                    const TfToken name(visChild.attribute(nameStr).value());
+                    const TfToken value(visChild.attribute(valueStr).value());
+                    attributes.insert(std::make_pair(name, value));
+
+                    visChild = visChild.next_sibling();
                 }
             }
         }

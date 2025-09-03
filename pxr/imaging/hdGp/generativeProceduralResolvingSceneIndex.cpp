@@ -33,6 +33,9 @@ HdGpGenerativeProceduralResolvingSceneIndex::
 , _targetPrimTypeName(HdGpGenerativeProceduralTokens->generativeProcedural)
 , _attemptAsync(false)
 {
+    // Ensure that HdGp plugins are loaded.
+    HdGpGenerativeProceduralPluginRegistry::GetInstance();
+
     // XXX The input scene may not be empty. We should traverse it to find any
     //     targeted procedurals and cook them.
 }
@@ -45,6 +48,9 @@ HdGpGenerativeProceduralResolvingSceneIndex::
 , _targetPrimTypeName(targetPrimTypeName)
 , _attemptAsync(false)
 {
+    // Ensure that HdGp plugins are loaded.
+    HdGpGenerativeProceduralPluginRegistry::GetInstance();
+
     // XXX The input scene may not be empty. We should traverse it to find any
     //     targeted procedurals and cook them.
 }
@@ -152,8 +158,6 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
-    TRACE_FUNCTION();
-
     // Added/removed/dirtied notices which result from cooking or recooking
     // a procedural.
     _Notices notices;
@@ -162,7 +166,9 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
 
     bool entriesCopied = false;
 
-    { // _dependencies and _procedural lock acquire
+    {
+    TRACE_FUNCTION_SCOPE("Scanning notice entries.");
+    // _dependencies and _procedural lock acquire
     // hold lock for longer but don't try to acquire it per iteration
     _MapLock procsLock(_proceduralsMutex);
     _MapLock depsLock(_dependenciesMutex);
@@ -240,6 +246,10 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsAdded(
     } // _dependencies and _procedural lock release
 
     if (!proceduralsToCook.empty()) {
+        const std::string scopeName =
+            TfStringPrintf("Cooking %zu procedurals", proceduralsToCook.size());
+        TRACE_SCOPE_DYNAMIC(scopeName);
+
         const size_t parallelThreshold = 2;
 
         if (proceduralsToCook.size() >= parallelThreshold) {
@@ -301,7 +311,25 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
-    TRACE_FUNCTION();
+    // Fast path for scene teardown.
+    for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
+        if (entry.primPath.IsAbsoluteRootPath()) {
+            // Reset all scene-population state.
+            {
+                _MapLock procsLock(_proceduralsMutex);
+                _procedurals.clear();
+            }
+            {
+                _MapLock depsLock(_dependenciesMutex);
+                _dependencies.clear();
+            }
+            _activeSyncProcedurals.clear();
+            _generatedPrims.clear();
+            // Pass through notification as-is.
+            _SendPrimsRemoved(entries);
+            return;
+        }
+    }
 
     using _PathSetMap =
          TfDenseHashMap<SdfPath, TfDenseHashSet<SdfPath, TfHash>, TfHash>;
@@ -313,6 +341,8 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsRemoved(
     //       upstream.
     _PathSetMap dependencyAncestors;
     {
+        TRACE_FUNCTION_SCOPE("Pre-seeding ancestor-depencency lookups.");
+
         _MapLock depsLock(_dependenciesMutex);
         for (const auto &pathEntryPair : _dependencies) {
             const SdfPath &path = pathEntryPair.first;
@@ -329,6 +359,8 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsRemoved(
     //       upstream.
     _PathSetMap procAncestors;
     {
+        TRACE_FUNCTION_SCOPE("Pre-seeding ancestor-procedural lookups.");
+
         _MapLock procsLock(_proceduralsMutex);
         for (const auto &pathEntryPair : _procedurals) {
             const SdfPath &path = pathEntryPair.first;
@@ -345,70 +377,74 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsRemoved(
     TfDenseHashSet<SdfPath, TfHash> invalidatedProcedurals;
     TfDenseHashSet<SdfPath, TfHash> removedProcedurals;
 
-    for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
-        _PathSetMap::const_iterator it =
-            dependencyAncestors.find(entry.primPath);
-        if (it != dependencyAncestors.end()) {
-            for (const SdfPath &dependencyPath : it->second) {
-                _DependencyMap::const_iterator dIt =
-                    _dependencies.find(dependencyPath);
-                if (dIt != _dependencies.end()) {
-                    removedDependencies.insert(dependencyPath);
+    {
+        TRACE_FUNCTION_SCOPE("Scanning notice entries.");
+        
+        for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
+            _PathSetMap::const_iterator it =
+                dependencyAncestors.find(entry.primPath);
+            if (it != dependencyAncestors.end()) {
+                for (const SdfPath &dependencyPath : it->second) {
+                    _DependencyMap::const_iterator dIt =
+                        _dependencies.find(dependencyPath);
+                    if (dIt != _dependencies.end()) {
+                        removedDependencies.insert(dependencyPath);
 
+                        for (const SdfPath &dependentPath : dIt->second) {
+                            // don't invalidate procedurals which know are 
+                            // directly removed.
+                            if (removedProcedurals.find(dependentPath) ==
+                                    removedProcedurals.end()) {
+                                invalidatedProcedurals.insert(dependentPath);
+                            }
+                        }
+                    }
+                }
+            } else {
+                // check if parent path is a dependency with childNames
+                _DependencyMap::const_iterator dIt =
+                    _dependencies.find(entry.primPath.GetParentPath());
+                if (dIt != _dependencies.end()) {
                     for (const SdfPath &dependentPath : dIt->second) {
-                        // don't invalidate procedurals which know are directly
-                        // removed.
-                        if (removedProcedurals.find(dependentPath) ==
-                                removedProcedurals.end()) {
+
+                        // don't bother checking a procedural slated for removal
+                        if (removedProcedurals.find(dependentPath) !=
+                            removedProcedurals.end()) {
+                            continue;
+                        }
+
+                        _ProcEntryMap::const_iterator procIt =
+                                _procedurals.find(dependentPath);
+                        if (procIt == _procedurals.end()) {
+                            continue;
+                        }
+
+                        const _ProcEntry &procEntry = procIt->second;
+                        const auto dslIt = procEntry.dependencies.find(
+                                entry.primPath.GetParentPath());
+                        if (dslIt == procEntry.dependencies.end()) {
+                            continue;
+                        }
+
+                        if (dslIt->second.Intersects(HdGpGenerativeProcedural::
+                                GetChildNamesDependencyKey())) {
                             invalidatedProcedurals.insert(dependentPath);
+                            // TODO consider providing this dependency set
+                            // to send to _UpdateProcedural. Currently removals
+                            // don't bother to track individual procedurals
                         }
                     }
                 }
             }
-        } else {
-            // check if parent path is a dependency with childNames
-            _DependencyMap::const_iterator dIt =
-                _dependencies.find(entry.primPath.GetParentPath());
-            if (dIt != _dependencies.end()) {
-                for (const SdfPath &dependentPath : dIt->second) {
 
-                    // don't bother checking a procedural slated for removal
-                    if (removedProcedurals.find(dependentPath) !=
-                           removedProcedurals.end()) {
-                        continue;
-                    }
-
-                    _ProcEntryMap::const_iterator procIt =
-                            _procedurals.find(dependentPath);
-                    if (procIt == _procedurals.end()) {
-                        continue;
-                    }
-
-                    const _ProcEntry &procEntry = procIt->second;
-                    const auto dslIt = procEntry.dependencies.find(
-                            entry.primPath.GetParentPath());
-                    if (dslIt == procEntry.dependencies.end()) {
-                        continue;
-                    }
-
-                    if (dslIt->second.Intersects(HdGpGenerativeProcedural::
-                            GetChildNamesDependencyKey())) {
-                        invalidatedProcedurals.insert(dependentPath);
-                        // TODO consider providing this dependency set
-                        // to send to _UpdateProcedural. Currently removals
-                        // don't bother to track individual procedurals
-                    }
+            it = procAncestors.find(entry.primPath);
+            if (it != procAncestors.end()) {
+                for (const SdfPath &procPath : it->second) {
+                    removedProcedurals.insert(procPath);
+                    // disregard any previously invalidated procedurals as
+                    // removal means we don't need to invalidate
+                    invalidatedProcedurals.erase(procPath);
                 }
-            }
-        }
-
-        it = procAncestors.find(entry.primPath);
-        if (it != procAncestors.end()) {
-            for (const SdfPath &procPath : it->second) {
-                removedProcedurals.insert(procPath);
-                // disregard any previously invalidated procedurals as removal
-                // means we don't need to invalidate
-                invalidatedProcedurals.erase(procPath);
             }
         }
     }
@@ -427,6 +463,11 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsRemoved(
     }
 
     if (!invalidatedProcedurals.empty()) {
+        const std::string scopeName =
+            TfStringPrintf("Recooking %zu procedurals",
+                invalidatedProcedurals.size());
+        TRACE_SCOPE_DYNAMIC(scopeName);
+
         _Notices notices;
         notices.removed = entries;
 
@@ -497,12 +538,12 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
-    TRACE_FUNCTION();
-
     TfDenseHashMap<SdfPath, HdGpGenerativeProcedural::DependencyMap, TfHash>
         invalidatedProceduralDependencies;
 
     {
+        TRACE_FUNCTION_SCOPE("Scanning notice entries.");
+
         // hold lock for longer but don't try to acquire it per iteration
         _MapLock procsLock(_proceduralsMutex);
         _MapLock depsLock(_dependenciesMutex);
@@ -539,6 +580,11 @@ HdGpGenerativeProceduralResolvingSceneIndex::_PrimsDirtied(
     }
 
     if (!invalidatedProceduralDependencies.empty()) {
+        const std::string scopeName =
+            TfStringPrintf("Recooking %zu procedurals",
+                invalidatedProceduralDependencies.size());
+        TRACE_SCOPE_DYNAMIC(scopeName);
+
         _Notices notices;
         notices.dirtied = entries;
         HdSceneIndexObserver::DirtiedPrimEntries dirtiedEntries = entries;

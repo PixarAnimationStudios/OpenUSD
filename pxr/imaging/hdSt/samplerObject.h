@@ -19,6 +19,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class Hgi;
+class HdStCubemapTextureObject;
 class HdStUvTextureObject;
 class HdStFieldTextureObject;
 class HdStPtexTextureObject;
@@ -170,6 +171,34 @@ private:
     HgiSamplerHandle _layoutSampler;
 };
 
+/// \class HdStCubemapSamplerObject
+///
+/// A sampler suitable for HdStCubemapTextureObject.
+///
+/// Note that since we default to using seamless cubemap sampling, the wrap
+/// modes specified in the sampler parameters will be ignored.
+///
+class HdStCubemapSamplerObject final : public HdStSamplerObject {
+public:
+    HDST_API 
+    HdStCubemapSamplerObject(
+        HdStCubemapTextureObject const &cubemapTexture,
+        HdSamplerParameters const &samplerParameters,
+        HdSt_SamplerObjectRegistry * samplerObjectRegistry);
+
+    HDST_API 
+    ~HdStCubemapSamplerObject() override;
+
+    /// The sampler.
+    ///
+    const HgiSamplerHandle &GetSampler() const {
+        return _sampler;
+    }
+
+private:
+    HgiSamplerHandle _sampler;
+};
+
 template<HdStTextureType textureType>
 struct HdSt_TypedSamplerObjectHelper;
 
@@ -200,6 +229,11 @@ struct HdSt_TypedSamplerObjectHelper<HdStTextureType::Ptex> {
 template<>
 struct HdSt_TypedSamplerObjectHelper<HdStTextureType::Udim> {
     using type = HdStUdimSamplerObject;
+};
+
+template<>
+struct HdSt_TypedSamplerObjectHelper<HdStTextureType::Cubemap> {
+    using type = HdStCubemapSamplerObject;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

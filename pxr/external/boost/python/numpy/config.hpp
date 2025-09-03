@@ -20,10 +20,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/numpy/config.hpp>
-#else
-
 /*****************************************************************************
  *
  *  Set up dll import/export options:
@@ -68,5 +64,4 @@
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_NUMPY_CONFIG_HPP

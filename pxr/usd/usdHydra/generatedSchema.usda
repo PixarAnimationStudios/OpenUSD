@@ -4,26 +4,25 @@
 )
 
 class "HydraGenerativeProceduralAPI" (
-    doc = """
-    This API extends and configures the core UsdProcGenerativeProcedural schema
+    customData = {
+        string userDocBrief = """This API extends and configures the core UsdProcGenerativeProcedural schema
     defined within usdProc for use with hydra generative procedurals as defined
-    within hdGp.
-    """
+    within hdGp."""
+    }
 )
 {
     token primvars:hdGp:proceduralType (
-        doc = """The registered name of a HdGpGenerativeProceduralPlugin to
+        customData = {
+            string userDocBrief = """The registered name of a HdGpGenerativeProceduralPlugin to
         be executed."""
+        }
     )
     token proceduralSystem = "hydraGenerativeProcedural" (
-        doc = '''
-        This value should correspond to a configured instance of
+        customData = {
+            string userDocBrief = """This value should correspond to a configured instance of
         HdGpGenerativeProceduralResolvingSceneIndex which will evaluate the
-        procedural. The default value of "hydraGenerativeProcedural" matches
-        the equivalent default of HdGpGenerativeProceduralResolvingSceneIndex.
-        Multiple instances of the scene index can be used to determine where
-        within a scene index chain a given procedural will be evaluated.
-        '''
+        procedural."""
+        }
     )
 }
 

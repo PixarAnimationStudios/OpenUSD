@@ -1,15 +1,15 @@
-Loading @TrickyRelocationOfPrimFromPayload/root.sdf@
+Loading @TrickyRelocationOfPrimFromPayload/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </PayloadedModel>
 
 Prim Stack:
-    root.sdf             /PayloadedModel
-    model_payload.sdf    /Model
+    root.usda            /PayloadedModel
+    model_payload.usda   /Model
 
 Child names:
      ['Rig', 'Test']
@@ -22,14 +22,14 @@ Property names:
 
 Property stacks:
 /PayloadedModel.doc:
-    model_payload.sdf    /Model.doc
+    model_payload.usda   /Model.doc
 
 ------------------------------------------------------------------------
 Results for composing </PayloadedModel/Rig>
 
 Prim Stack:
-    model_payload.sdf    /Model/Rig
-    rig.sdf              /Rig
+    model_payload.usda   /Model/Rig
+    rig.usda             /Rig
 
 Child names:
      ['SymRigBase', 'SymRig', 'LRig']
@@ -38,7 +38,7 @@ Child names:
 Results for composing </PayloadedModel/Rig/SymRigBase>
 
 Prim Stack:
-    rig.sdf              /Rig/SymRigBase
+    rig.usda             /Rig/SymRigBase
 
 Child names:
      ['Anim']
@@ -47,21 +47,21 @@ Child names:
 Results for composing </PayloadedModel/Rig/SymRigBase/Anim>
 
 Prim Stack:
-    rig.sdf              /Rig/SymRigBase/Anim
+    rig.usda             /Rig/SymRigBase/Anim
 
 Property names:
      ['foo']
 
 Property stacks:
 /PayloadedModel/Rig/SymRigBase/Anim.foo:
-    rig.sdf              /Rig/SymRigBase/Anim.foo
+    rig.usda             /Rig/SymRigBase/Anim.foo
 
 ------------------------------------------------------------------------
 Results for composing </PayloadedModel/Rig/SymRig>
 
 Prim Stack:
-    rig.sdf              /Rig/SymRig
-    rig.sdf              /Rig/SymRigBase
+    rig.usda             /Rig/SymRig
+    rig.usda             /Rig/SymRigBase
 
 Child names:
      ['Anim']
@@ -70,22 +70,22 @@ Child names:
 Results for composing </PayloadedModel/Rig/SymRig/Anim>
 
 Prim Stack:
-    rig.sdf              /Rig/SymRigBase/Anim
+    rig.usda             /Rig/SymRigBase/Anim
 
 Property names:
      ['foo']
 
 Property stacks:
 /PayloadedModel/Rig/SymRig/Anim.foo:
-    rig.sdf              /Rig/SymRigBase/Anim.foo
+    rig.usda             /Rig/SymRigBase/Anim.foo
 
 ------------------------------------------------------------------------
 Results for composing </PayloadedModel/Rig/LRig>
 
 Prim Stack:
-    rig.sdf              /Rig/LRig
-    rig.sdf              /Rig/SymRig
-    rig.sdf              /Rig/SymRigBase
+    rig.usda             /Rig/LRig
+    rig.usda             /Rig/SymRig
+    rig.usda             /Rig/SymRigBase
 
 Prohibited child names:
      ['Anim']
@@ -94,7 +94,7 @@ Prohibited child names:
 Results for composing </PayloadedModel/Test>
 
 Prim Stack:
-    root.sdf             /PayloadedModel/Test
+    root.usda            /PayloadedModel/Test
 
 Child names:
      ['Anim']
@@ -103,7 +103,7 @@ Child names:
 Results for composing </PayloadedModel/Test/Anim>
 
 Prim Stack:
-    model_payload.sdf    /Model/Anim
+    model_payload.usda   /Model/Anim
 
 Child names:
      ['LRig']
@@ -112,22 +112,22 @@ Child names:
 Results for composing </PayloadedModel/Test/Anim/LRig>
 
 Prim Stack:
-    rig.sdf              /Rig/SymRigBase/Anim
+    rig.usda             /Rig/SymRigBase/Anim
 
 Property names:
      ['foo']
 
 Property stacks:
 /PayloadedModel/Test/Anim/LRig.foo:
-    rig.sdf              /Rig/SymRigBase/Anim.foo
+    rig.usda             /Rig/SymRigBase/Anim.foo
 
 ------------------------------------------------------------------------
 Results for composing </ReferencePayloadedModel>
 
 Prim Stack:
-    root.sdf             /ReferencePayloadedModel
-    model.sdf            /Model
-    model_payload.sdf    /Model
+    root.usda            /ReferencePayloadedModel
+    model.usda           /Model
+    model_payload.usda   /Model
 
 Child names:
      ['Rig', 'Test']
@@ -140,14 +140,14 @@ Property names:
 
 Property stacks:
 /ReferencePayloadedModel.doc:
-    model_payload.sdf    /Model.doc
+    model_payload.usda   /Model.doc
 
 ------------------------------------------------------------------------
 Results for composing </ReferencePayloadedModel/Rig>
 
 Prim Stack:
-    model_payload.sdf    /Model/Rig
-    rig.sdf              /Rig
+    model_payload.usda   /Model/Rig
+    rig.usda             /Rig
 
 Child names:
      ['SymRigBase', 'SymRig', 'LRig']
@@ -156,7 +156,7 @@ Child names:
 Results for composing </ReferencePayloadedModel/Rig/SymRigBase>
 
 Prim Stack:
-    rig.sdf              /Rig/SymRigBase
+    rig.usda             /Rig/SymRigBase
 
 Child names:
      ['Anim']
@@ -165,21 +165,21 @@ Child names:
 Results for composing </ReferencePayloadedModel/Rig/SymRigBase/Anim>
 
 Prim Stack:
-    rig.sdf              /Rig/SymRigBase/Anim
+    rig.usda             /Rig/SymRigBase/Anim
 
 Property names:
      ['foo']
 
 Property stacks:
 /ReferencePayloadedModel/Rig/SymRigBase/Anim.foo:
-    rig.sdf              /Rig/SymRigBase/Anim.foo
+    rig.usda             /Rig/SymRigBase/Anim.foo
 
 ------------------------------------------------------------------------
 Results for composing </ReferencePayloadedModel/Rig/SymRig>
 
 Prim Stack:
-    rig.sdf              /Rig/SymRig
-    rig.sdf              /Rig/SymRigBase
+    rig.usda             /Rig/SymRig
+    rig.usda             /Rig/SymRigBase
 
 Child names:
      ['Anim']
@@ -188,22 +188,22 @@ Child names:
 Results for composing </ReferencePayloadedModel/Rig/SymRig/Anim>
 
 Prim Stack:
-    rig.sdf              /Rig/SymRigBase/Anim
+    rig.usda             /Rig/SymRigBase/Anim
 
 Property names:
      ['foo']
 
 Property stacks:
 /ReferencePayloadedModel/Rig/SymRig/Anim.foo:
-    rig.sdf              /Rig/SymRigBase/Anim.foo
+    rig.usda             /Rig/SymRigBase/Anim.foo
 
 ------------------------------------------------------------------------
 Results for composing </ReferencePayloadedModel/Rig/LRig>
 
 Prim Stack:
-    rig.sdf              /Rig/LRig
-    rig.sdf              /Rig/SymRig
-    rig.sdf              /Rig/SymRigBase
+    rig.usda             /Rig/LRig
+    rig.usda             /Rig/SymRig
+    rig.usda             /Rig/SymRigBase
 
 Prohibited child names:
      ['Anim']
@@ -212,7 +212,7 @@ Prohibited child names:
 Results for composing </ReferencePayloadedModel/Test>
 
 Prim Stack:
-    model.sdf            /Model/Test
+    model.usda           /Model/Test
 
 Child names:
      ['Anim']
@@ -221,7 +221,7 @@ Child names:
 Results for composing </ReferencePayloadedModel/Test/Anim>
 
 Prim Stack:
-    model_payload.sdf    /Model/Anim
+    model_payload.usda   /Model/Anim
 
 Child names:
      ['LRig']
@@ -230,12 +230,12 @@ Child names:
 Results for composing </ReferencePayloadedModel/Test/Anim/LRig>
 
 Prim Stack:
-    rig.sdf              /Rig/SymRigBase/Anim
+    rig.usda             /Rig/SymRigBase/Anim
 
 Property names:
      ['foo']
 
 Property stacks:
 /ReferencePayloadedModel/Test/Anim/LRig.foo:
-    rig.sdf              /Rig/SymRigBase/Anim.foo
+    rig.usda             /Rig/SymRigBase/Anim.foo
 

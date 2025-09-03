@@ -8,6 +8,7 @@ class "TestDuplicatePropsAPI" (
     inherits = </APISchemaBase>
 )
 {
+    reorder properties = ["inputs:colorMapGamma", "inputs:one", "inputs:two", "outputs:resultRGB"]
     uniform token inputs:colorMapGamma (
         allowedTokens = ["texture"]
         connectability = "interfaceOnly"

@@ -216,6 +216,7 @@ HdStDispatchBuffer::CopyData(std::vector<uint32_t> const &data)
     blitOp.gpuDestinationBuffer = _entireResource->GetHandle();
     blitOp.destinationByteOffset = 0;
     blitCmds->CopyBufferCpuToGpu(blitOp);
+    blitCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
     hgi->SubmitCmds(blitCmds.get());
 }
 

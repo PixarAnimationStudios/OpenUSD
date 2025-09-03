@@ -14,7 +14,7 @@ class TestSdfReferences(unittest.TestCase):
     def test_Basic(self):
         # Test all combinations of the following keyword arguments.
         args = [
-            ['assetPath', '//unit/layer.sdf'],
+            ['assetPath', '//unit/layer.usda'],
             ['primPath', '/rootPrim'],
             ['layerOffset', Sdf.LayerOffset(48, -2)],
             ['customData', {'key': 42, 'other': 'yes'}],
@@ -43,7 +43,7 @@ class TestSdfReferences(unittest.TestCase):
         # way to support nested proxies).  Make sure the user can't modify
         # temporary Reference objects.
         with self.assertRaises(AttributeError):
-            Sdf.Reference().assetPath = '//unit/blah.sdf'
+            Sdf.Reference().assetPath = '//unit/blah.usda'
 
         with self.assertRaises(AttributeError):
             Sdf.Reference().primPath = '/root'
@@ -73,7 +73,7 @@ class TestSdfReferences(unittest.TestCase):
         # Regression test for bug USD-5000 where less than operator was not 
         # fully anti-symmetric
         r1 = Sdf.Reference()
-        r2 = Sdf.Reference('//test/layer.sdf', layerOffset=Sdf.LayerOffset(48, -2))
+        r2 = Sdf.Reference('//test/layer.usda', layerOffset=Sdf.LayerOffset(48, -2))
         self.assertTrue(r1 < r2)
         self.assertFalse(r2 < r1)
 

@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/reference_existing_object.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/detail/indirect_traits.hpp"
 # include "pxr/external/boost/python/detail/mpl2/if.hpp"
@@ -55,5 +51,4 @@ struct reference_existing_object
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_REFERENCE_EXISTING_OBJECT_HPP

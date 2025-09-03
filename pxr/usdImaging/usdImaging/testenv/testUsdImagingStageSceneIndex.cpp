@@ -132,6 +132,9 @@ void TraversalTest()
         return;
     }
 
+    // The order below is important.  We need to add the observer before setting
+    // the stage, otherwise we won't get the initial PrimsAdded notices from
+    // population.
     PrimListener primListener;
     inputSceneIndex->AddObserver(HdSceneIndexObserverPtr(&primListener));
     inputSceneIndex->SetStage(stage);
@@ -460,9 +463,10 @@ void AddNonEmptyLayerTest()
     PrimListener primListener;
     inputSceneIndex->AddObserver(HdSceneIndexObserverPtr(&primListener));
 
-    // Create a layer with just an over on "/cube".
+    // Create a layer with a single prim on "/cube".
     SdfLayerRefPtr layer = SdfLayer::CreateAnonymous(".usda");
     SdfPrimSpecHandle prim = SdfCreatePrimInLayer(layer, SdfPath("/cube"));
+    prim->SetField(SdfFieldKeys->Specifier, SdfSpecifierDef);
     stage->GetRootLayer()->InsertSubLayerPath(layer->GetIdentifier());
 
     inputSceneIndex->ApplyPendingUpdates();

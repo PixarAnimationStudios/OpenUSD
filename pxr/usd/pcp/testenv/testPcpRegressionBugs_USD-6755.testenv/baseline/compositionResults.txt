@@ -1,26 +1,26 @@
-Loading @root.sdf@
+Loading @root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </A>
 
 Prim Stack:
-    root.sdf             /A
+    root.usda            /A
 
 ------------------------------------------------------------------------
 Results for composing </B>
 
 Prim Stack:
-    root.sdf             /B
+    root.usda            /B
 
 ------------------------------------------------------------------------
 Results for composing </C>
 
 Prim Stack:
-    root.sdf             /C
-    root.sdf             /A
-    root.sdf             /B
+    root.usda            /C
+    root.usda            /A
+    root.usda            /B
 

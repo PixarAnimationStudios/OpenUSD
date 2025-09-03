@@ -7,6 +7,8 @@
 
 from . import TsTest_SplineData as SData
 
+from pxr import Ts
+
 import sys
 
 
@@ -321,67 +323,105 @@ class TsTest_Grapher(object):
             # regions include vertical discontinuities, extrapolation, and
             # looping.
             samples = self._splines[splineIdx].samples
-            for sampleIdx in range(len(samples)):
 
-                # Determine whether we have a vertical discontinuity.  That is
-                # signaled by two consecutive samples with identical times.
-                # Allow some fuzz in the detection of "identical", since
-                # left-side evaluation in Maya is emulated with a small delta.
-                sample = samples[sampleIdx]
-                nextSample = samples[sampleIdx + 1] \
-                    if sampleIdx < len(samples) - 1 else None
-                isCliff = (nextSample
-                           and abs(nextSample.time - sample.time) < 1e-4)
+            if isinstance(samples, (Ts.SplineSamples,
+                                    Ts.SplineSamplesWithSources)):
+                # These samples were produced by Ts.Spline.Sample. Use it
+                # directly.
+                prevValue = None
+                prevTime = None
+                color = splineColor
 
-                # Determine whether we have crossed into a different style
-                # region.
-                isRegionEnd = (
-                    nextSample
-                    and styleTable.IsDim(nextSample.time) !=
-                    styleTable.IsDim(sample.time))
+                useSources = hasattr(samples, "sources")
+                
+                for i, polyline in enumerate(samples.polylines):
 
-                # Append this sample for drawing.
-                sampleTimes.append(sample.time)
-                sampleValues.append(sample.value)
+                    if (polyline[0][0] == prevTime
+                        and polyline[0][1] != prevValue):
+                        
+                        # We have a cliff, draw it.
+                        axMain.plot(
+                            [prevTime, polyline[0][0]],
+                            [prevValue, polyline[0][1]],
+                            color = color,
+                            linestyle = "dotted")
 
-                # If this is the end of a region, and sample times have been set
-                # up correctly, then the next sample falls exactly on a region
-                # boundary.  Include that sample to end this region... unless
-                # this is also a cliff, in which case the vertical will span the
-                # gap instead.
-                if isRegionEnd and not isCliff:
-                    sampleTimes.append(nextSample.time)
-                    sampleValues.append(nextSample.value)
+                    if useSources:
+                        source = samples.sources[i]
 
-                # At the end of each region, draw.
-                if (not nextSample) or isCliff or isRegionEnd:
+                        color = splineColor
+                        if source not in (Ts.SourceInnerLoopProto,
+                                          Ts.SourceKnotInterp):
+                            color = self._DimColor(color)
 
-                    # Use this spline's color, possibly dimmed.
-                    color = splineColor
-                    if styleTable.IsDim(sample.time):
-                        color = self._DimColor(color)
+                    sampleTimes, sampleValues = zip(*polyline)
+                    axMain.plot(sampleTimes, sampleValues, color=color)
 
-                    # Draw.
-                    axMain.plot(sampleTimes, sampleValues, color = color)
+                    # Save the last vertext for a possible "cliff"
+                    prevTime, prevValue = polyline[-1]
 
-                    # Reset data for next region.
-                    sampleTimes = []
-                    sampleValues = []
+            else:
+                for sampleIdx in range(len(samples)):
 
-                # At discontinuities, draw a dashed vertical.
-                if isCliff:
+                    # Determine whether we have a vertical discontinuity.  That is
+                    # signaled by two consecutive samples with identical times.
+                    # Allow some fuzz in the detection of "identical", since
+                    # left-side evaluation in Maya is emulated with a small delta.
+                    sample = samples[sampleIdx]
+                    nextSample = samples[sampleIdx + 1] \
+                        if sampleIdx < len(samples) - 1 else None
+                    isCliff = (nextSample
+                               and abs(nextSample.time - sample.time) < 1e-4)
 
-                    # Verticals span no time, so the region rules are the same
-                    # as for knots.
-                    color = splineColor
-                    if knotStyleTable.IsDim(sample.time):
-                        color = self._DimColor(color)
+                    # Determine whether we have crossed into a different style
+                    # region.
+                    isRegionEnd = (
+                        nextSample
+                        and styleTable.IsDim(nextSample.time) !=
+                        styleTable.IsDim(sample.time))
 
-                    axMain.plot(
-                        [sample.time, nextSample.time],
-                        [sample.value, nextSample.value],
-                        color = color,
-                        linestyle = "dashed")
+                    # Append this sample for drawing.
+                    sampleTimes.append(sample.time)
+                    sampleValues.append(sample.value)
+
+                    # If this is the end of a region, and sample times have been set
+                    # up correctly, then the next sample falls exactly on a region
+                    # boundary.  Include that sample to end this region... unless
+                    # this is also a cliff, in which case the vertical will span the
+                    # gap instead.
+                    if isRegionEnd and not isCliff:
+                        sampleTimes.append(nextSample.time)
+                        sampleValues.append(nextSample.value)
+
+                    # At the end of each region, draw.
+                    if (not nextSample) or isCliff or isRegionEnd:
+
+                        # Use this spline's color, possibly dimmed.
+                        color = splineColor
+                        if styleTable.IsDim(sample.time):
+                            color = self._DimColor(color)
+
+                        # Draw.
+                        axMain.plot(sampleTimes, sampleValues, color = color)
+
+                        # Reset data for next region.
+                        sampleTimes = []
+                        sampleValues = []
+
+                    # At discontinuities, draw a dashed vertical.
+                    if isCliff:
+
+                        # Verticals span no time, so the region rules are the same
+                        # as for knots.
+                        color = splineColor
+                        if knotStyleTable.IsDim(sample.time):
+                            color = self._DimColor(color)
+
+                        axMain.plot(
+                            [sample.time, nextSample.time],
+                            [sample.value, nextSample.value],
+                            color = color,
+                            linestyle = "dashed")
 
         # Legend, if multiple splines
         if len(legendNames) > 1:

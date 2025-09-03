@@ -65,6 +65,10 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderSettingsBase
     const TfToken camera;
+    /// \brief "collection:cameraVisibility:includeRoot"
+    /// 
+    /// UsdRenderPass
+    const TfToken collectionCameraVisibilityIncludeRoot;
     /// \brief "collection:renderVisibility:includeRoot"
     /// 
     /// UsdRenderPass

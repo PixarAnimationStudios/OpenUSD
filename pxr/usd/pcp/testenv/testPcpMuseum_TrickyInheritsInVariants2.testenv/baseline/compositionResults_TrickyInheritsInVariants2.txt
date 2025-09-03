@@ -1,24 +1,24 @@
-Loading @TrickyInheritsInVariants2/root.sdf@
+Loading @TrickyInheritsInVariants2/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </_class_Model>
 
 Prim Stack:
-    root.sdf             /_class_Model
+    root.usda            /_class_Model
 
 ------------------------------------------------------------------------
 Results for composing </Sarah>
 
 Prim Stack:
-    root.sdf             /Sarah
-    root.sdf             /_class_Model
-    Sarah_modelComplexity.sdf /Sarah
-    Sarah_modelComplexity.sdf /Sarah{modelComplexity=full}
-    Sarah_rig.sdf        /Sarah
+    root.usda            /Sarah
+    root.usda            /_class_Model
+    Sarah_modelComplexity.usda /Sarah
+    Sarah_modelComplexity.usda /Sarah{modelComplexity=full}
+    Sarah_rig.usda       /Sarah
 
 Variant Selections:
     {modelComplexity = full}
@@ -30,8 +30,8 @@ Child names:
 Results for composing </Sarah/FaceRig>
 
 Prim Stack:
-    Sarah_modelComplexity.sdf /Sarah{modelComplexity=full}FaceRig
-    Sarah_rig.sdf        /Sarah/FaceRig
+    Sarah_modelComplexity.usda /Sarah{modelComplexity=full}FaceRig
+    Sarah_rig.usda       /Sarah/FaceRig
 
 Child names:
      ['EyesRig']
@@ -40,8 +40,8 @@ Child names:
 Results for composing </Sarah/FaceRig/EyesRig>
 
 Prim Stack:
-    Sarah_modelComplexity.sdf /Sarah{modelComplexity=full}FaceRig/EyesRig
-    Sarah_rig.sdf        /Sarah/FaceRig/EyesRig
+    Sarah_modelComplexity.usda /Sarah{modelComplexity=full}FaceRig/EyesRig
+    Sarah_rig.usda       /Sarah/FaceRig/EyesRig
 
 Child names:
      ['SymEyeRig', 'LEyeRig']
@@ -50,15 +50,15 @@ Child names:
 Results for composing </Sarah/FaceRig/EyesRig/SymEyeRig>
 
 Prim Stack:
-    Sarah_modelComplexity.sdf /Sarah{modelComplexity=full}FaceRig/EyesRig/SymEyeRig
-    Sarah_rig.sdf        /Sarah/FaceRig/EyesRig/SymEyeRig
+    Sarah_modelComplexity.usda /Sarah{modelComplexity=full}FaceRig/EyesRig/SymEyeRig
+    Sarah_rig.usda       /Sarah/FaceRig/EyesRig/SymEyeRig
 
 ------------------------------------------------------------------------
 Results for composing </Sarah/FaceRig/EyesRig/LEyeRig>
 
 Prim Stack:
-    Sarah_modelComplexity.sdf /Sarah{modelComplexity=full}FaceRig/EyesRig/LEyeRig
-    Sarah_modelComplexity.sdf /Sarah{modelComplexity=full}FaceRig/EyesRig/SymEyeRig
-    Sarah_rig.sdf        /Sarah/FaceRig/EyesRig/LEyeRig
-    Sarah_rig.sdf        /Sarah/FaceRig/EyesRig/SymEyeRig
+    Sarah_modelComplexity.usda /Sarah{modelComplexity=full}FaceRig/EyesRig/LEyeRig
+    Sarah_modelComplexity.usda /Sarah{modelComplexity=full}FaceRig/EyesRig/SymEyeRig
+    Sarah_rig.usda       /Sarah/FaceRig/EyesRig/LEyeRig
+    Sarah_rig.usda       /Sarah/FaceRig/EyesRig/SymEyeRig
 

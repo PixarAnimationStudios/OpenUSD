@@ -10,6 +10,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
 #include "pxr/usd/sdf/textFileFormat.h"
+#include "pxr/usd/sdf/usdaFileFormat.h"
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -19,25 +20,26 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((Id,      "usda"))             \
     ((Version, "1.0"))
 
-TF_DECLARE_PUBLIC_TOKENS(UsdUsdaFileFormatTokens, USD_API, USD_USDA_FILE_FORMAT_TOKENS);
-
-TF_DECLARE_WEAK_AND_REF_PTRS(UsdUsdaFileFormat);
+/// Struct containing .usda file format related tokens.
+///
+/// \deprecated in favor of SdfUsdaFileFormatTokens
+TF_DECLARE_PUBLIC_TOKENS(UsdUsdaFileFormatTokens, USD_API,
+    USD_USDA_FILE_FORMAT_TOKENS);
 
 /// \class UsdUsdaFileFormat
 ///
-/// File format used by textual USD files.
+/// \deprecated and aliased in favor of SdfUsdaFileFormat
 ///
-class UsdUsdaFileFormat : public SdfTextFileFormat
-{
-private:
-    SDF_FILE_FORMAT_FACTORY_ACCESS;
-
-    UsdUsdaFileFormat();
-    virtual ~UsdUsdaFileFormat();
-
-    friend class UsdUsdFileFormat;
-};
+using UsdUsdaFileFormat = SdfUsdaFileFormat;
+using UsdUsdaFileFormatPtr = SdfUsdaFileFormatPtr;
+using UsdUsdaFileFormatConstPtr = SdfUsdaFileFormatConstPtr;
+using UsdUsdaFileFormatPtrVector = SdfUsdaFileFormatPtrVector;
+using UsdUsdaFileFormatConstPtrVector = SdfUsdaFileFormatConstPtrVector;
+using UsdUsdaFileFormatRefPtr = SdfUsdaFileFormatRefPtr;
+using UsdUsdaFileFormatConstRefPtr = SdfUsdaFileFormatConstRefPtr;
+using UsdUsdaFileFormatRefPtrVector = SdfUsdaFileFormatRefPtrVector;
+using UsdUsdaFileFormatConstRefPtrVector = SdfUsdaFileFormatConstRefPtrVector;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // USDA_FILE_FORMAT_H
+#endif // PXR_USD_USD_USDA_FILE_FORMAT_H

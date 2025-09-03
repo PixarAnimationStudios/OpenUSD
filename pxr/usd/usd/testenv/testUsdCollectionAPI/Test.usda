@@ -15,11 +15,15 @@ def "CollectionTest" (
         </CollectionTest/Geom/Shapes/Cylinder>,
         </CollectionTest/Geom/Shapes/Cube>,
     ]
+    # (unused - just ensures that it's ignored in relationships-mode) 
+    pathExpression collection:leafGeom:membershipExpression = "//"
 
     token collection:allGeom:expansionRule = "expandPrims"
     rel collection:allGeom:includes  = [
         </CollectionTest/Geom>,
     ]
+    # (unused - just ensures that it's ignored in relationships-mode) 
+    pathExpression collection:allGeom:membershipExpression = "//"
 
     token collection:allGeomProperties:expansionRule = "expandPrimsAndProperties"
     rel collection:allGeomProperties:includes  = [
@@ -104,6 +108,8 @@ def "CollectionTest" (
     uniform token collection:explicitOnlyAndIncludeRoot:expansionRule = "explicitOnly"
     uniform bool collection:explicitOnlyAndIncludeRoot:includeRoot = true
 
+    # Ensure "explicitOnly" behaves the same as "expandPrims".
+    uniform token collection:withMembershipExpr:expansionRule = "explicitOnly"
     pathExpression collection:withMembershipExpr:membershipExpression = "/CollectionTest/Geom//C* //{model} //Box %:expressionRef"
 
     pathExpression collection:expressionRef:membershipExpression = "/CollectionTest/Geom/Shapes//H*"    

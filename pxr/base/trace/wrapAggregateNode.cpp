@@ -57,7 +57,6 @@ _New(const TfToken &key,
     const int exclusiveCount)
 {
     return TraceAggregateNode::New(
-        TraceAggregateNode::Id(), 
         key, ArchSecondsToTicks(timeMS / 1e3), count, exclusiveCount);
 }
 
@@ -74,9 +73,8 @@ void wrapAggregateNode()
              arg("timeMS") = 0,
              arg("count") = 1,
              arg("exclusiveCount") = 1))
-        .add_property("key", &This::GetKey )
-        .add_property("id", 
-            make_function(&This::GetId, 
+        .add_property("key",
+            make_function(&This::GetKey,
                           return_value_policy<return_by_value>()))
         .add_property("count", GetCount)
         .add_property("exclusiveCount", &This::GetExclusiveCount)

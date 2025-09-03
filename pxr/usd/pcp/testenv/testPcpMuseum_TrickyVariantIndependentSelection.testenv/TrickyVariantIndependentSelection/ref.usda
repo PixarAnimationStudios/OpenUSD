@@ -1,0 +1,136 @@
+#usda 1.0
+
+def Scope "Model_1" (
+    add variantSets = ["transformVariant", "pin"]
+    variants = {
+        string transformVariant = "a"
+        string pin = "stable"
+    }
+)
+{
+    variantSet "transformVariant" = {
+        "a" {
+            def Scope "Model_1_Transform_A"
+            {
+            }
+        }
+        "b" {
+            def Scope "Model_1_Transform_B"
+            {
+            }
+        }
+        "c" {
+            def Scope "Model_1_Transform_C"
+            {
+            }
+        }
+    }
+
+    variantSet "pin" = {
+        "stable" {
+            def Scope "Model_1_Pin_Stable"
+            {
+            }
+        }
+        "test" {
+            def Scope "Model_1_Pin_Test"
+            {
+            }
+        }
+        "qa" {
+            def Scope "Model_1_Pin_QA"
+            {
+            }
+        }
+    }
+}
+
+def Scope "Model_2" (
+    add variantSets = ["transformVariant", "pin"]
+    variants = {
+        string transformVariant = "b"
+        string pin = "test"
+    }
+)
+{
+    variantSet "transformVariant" = {
+        "a" {
+            def Scope "Model_2_Transform_A"
+            {
+            }
+        }
+        "b" {
+            def Scope "Model_2_Transform_B"
+            {
+            }
+        }
+        "c" {
+            def Scope "Model_2_Transform_C"
+            {
+            }
+        }
+    }
+
+    variantSet "pin" = {
+        "stable" {
+            def Scope "Model_2_Pin_Stable"
+            {
+            }
+        }
+        "test" {
+            def Scope "Model_2_Pin_Test"
+            {
+            }
+        }
+        "qa" {
+            def Scope "Model_2_Pin_QA"
+            {
+            }
+        }
+    }
+}
+
+def Scope "Model_3" (
+    add variantSets = ["transformVariant", "pin"]
+    variants = {
+        string transformVariant = "c"
+        string pin = "qa"
+    }
+)
+{
+    variantSet "transformVariant" = {
+        "a" {
+            def Scope "Model_3_Transform_A"
+            {
+            }
+        }
+        "b" {
+            def Scope "Model_3_Transform_B"
+            {
+            }
+        }
+        "c" {
+            def Scope "Model_3_Transform_C"
+            {
+            }
+        }
+    }
+
+    variantSet "pin" = {
+        "stable" {
+            def Scope "Model_3_Pin_Stable"
+            {
+            }
+        }
+        "test" {
+            def Scope "Model_3_Pin_Test"
+            {
+            }
+        }
+        "qa" {
+            def Scope "Model_3_Pin_QA"
+            {
+            }
+        }
+    }
+}

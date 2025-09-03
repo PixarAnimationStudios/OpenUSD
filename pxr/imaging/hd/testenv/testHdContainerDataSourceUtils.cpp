@@ -285,6 +285,35 @@ bool TestContainerEditor()
             test, baseline);
     }
 
+    // Scene indices using HdContainerDataSourceEditor with retained data
+    // sources often incorrectly invalidate the prim with just the locators 
+    // that were set/overlaid. Validate the utility function provided that
+    // leverages the sentinel locator token to invalidate the necessary chain
+    // of container data source handles.
+    {
+        const HdDataSourceLocatorSet overridenLocators{
+            L("A/B"),
+            L("A/C"),
+            L("D/E/F")
+        };
+
+        const HdDataSourceLocatorSet expectedDirtyLocators{
+            L("A/B"),
+            L("A/C"),
+            L("D/E/F"),
+            HdDataSourceLocator(HdDataSourceLocatorSentinelTokens->container),
+            HdDataSourceLocator(
+                TfToken("A"), HdDataSourceLocatorSentinelTokens->container),
+            HdDataSourceLocator(
+                TfToken("D"), HdDataSourceLocatorSentinelTokens->container),
+            HdDataSourceLocator(TfToken("D"), TfToken("E"), HdDataSourceLocatorSentinelTokens->container),
+        };
+
+        COMPAREVALUE("locators to invalidate",
+            HdContainerDataSourceEditor::ComputeDirtyLocators(overridenLocators),
+            expectedDirtyLocators);
+    }
+
     return true;
 }
 

@@ -15,10 +15,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/numpy/numpy_object_mgr_traits.hpp>
-#else
-
 #include "pxr/external/boost/python/numpy/config.hpp"
 
 /**
@@ -46,6 +42,5 @@ struct PXR_BOOST_NUMPY_DECL object_manager_traits<manager>		\
   static PyTypeObject const * get_pytype();				\
 }
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif
 

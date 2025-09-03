@@ -1,0 +1,5 @@
+#usda 1.0
+(
+    colorConfiguration = @https://github.com/imageworks/OpenColorIO-Configs/blob/master/aces_1.0.1/config.ocio@
+)
+

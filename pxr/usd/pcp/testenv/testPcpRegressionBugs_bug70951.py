@@ -14,8 +14,8 @@ import unittest
 
 class TestPcpRegressionBugs_bug70951(unittest.TestCase):
     def test_Basic(self):
-        rootLayer = Sdf.Layer.FindOrOpen('bug70951/root.sdf')
-        refLayer = Sdf.Layer.FindOrOpen('bug70951/JoyGroup.sdf')
+        rootLayer = Sdf.Layer.FindOrOpen('bug70951/root.usda')
+        refLayer = Sdf.Layer.FindOrOpen('bug70951/JoyGroup.usda')
 
         pcpCache = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
 

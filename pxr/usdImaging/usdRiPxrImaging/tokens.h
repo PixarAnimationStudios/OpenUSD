@@ -7,12 +7,13 @@
 #ifndef PXR_USD_IMAGING_USD_RI_PXR_IMAGING_TOKENS_H
 #define PXR_USD_IMAGING_USD_RI_PXR_IMAGING_TOKENS_H
 
-#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdRiPxrImaging/api.h"
+
 #include "pxr/base/tf/staticTokens.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include "pxr/pxr.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 #define USDRIPXRIMAGING_TOKENS   \
     ((infoSource, "info:source")) \
@@ -47,6 +48,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_PUBLIC_TOKENS(
     UsdRiPxrImagingTokens,
     USDRIPXRIMAGING_API, USDRIPXRIMAGING_TOKENS);
+
+#define USDRIPXRIMAGING_PRIM_TYPE_TOKENS \
+    (projection)
+
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdRiPxrImagingPrimTypeTokens,
+    USDRIPXRIMAGING_API, USDRIPXRIMAGING_PRIM_TYPE_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

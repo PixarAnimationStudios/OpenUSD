@@ -8,6 +8,7 @@
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/wrapArray.h"
+#include "pxr/base/vt/wrapArrayEdit.h"
 #include "pxr/base/vt/valueFromPython.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -31,4 +32,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 void wrapArrayAssetPath() {
     VtWrapArray<VtArray<SdfAssetPath> >();
     VtValueFromPythonLValue<VtArray<SdfAssetPath> >();
+    VtWrapArrayEdit<VtArrayEdit<SdfAssetPath> >();
+    VtValueFromPythonLValue<VtArrayEdit<SdfAssetPath> >();
 }

@@ -238,17 +238,41 @@ public:
         const GfInterval &interval) const;
 
     /// @}
-    /// \name Splitting
+    /// \name Breakdowns
+    ///
+    /// A Breakdown in animation is a pose between the key poses. Breakdown
+    /// applied to a \c TsSpline will insert a TsKnot between existing knots
+    /// with as little disruption as possible to the overall shape of the
+    /// spline.
     /// @{
 
-    /// <b>Not yet implemented.</b>
+    /// Add a knot at the specified time.  The new knot is defined so that the
+    /// shape of the curve is changed as little as possible. If necessary,
+    /// neighboring knots may also be modified.
     ///
-    /// Adds a knot at the specified time.  The new knot is arranged so that the
-    /// shape of the curve is as unchanged as possible.
+    /// There are some situations where a new knot cannot be inserted. For
+    /// example, if there is already a knot at the requested time, or if the
+    /// requested insertion time is in a region of the spline that is looped
+    /// from either extrapolation or inner looping. Use \c CanBreakdown to see
+    /// if a breakdown would succeed.
+    ///
+    /// \return true if a knot was successfully inserted or false if not.
     TS_API
-    bool Split(
+    bool Breakdown(
         TsTime time,
         GfInterval *affectedIntervalOut = nullptr);
+
+    /// Test if a knot could be inserted by \c Breakdown at \c time.
+    ///
+    /// \return true if a knot could be successfully inserted by \c Breakdown
+    /// or false if not. If false is returned and \c reason is not \c nullptr
+    /// then a description of the failure will be stored in \c reason. This is
+    /// the same error or warning message that would have been emitted by
+    /// \c Breakdown if it had failed to insert a knot.
+    TS_API
+    bool CanBreakdown(
+        TsTime time,
+        std::string* reason = nullptr);
 
     /// @}
     /// \name Anti-regression
@@ -319,6 +343,54 @@ public:
     TS_API
     bool DoSidesDiffer(
         TsTime time) const;
+
+    /// \brief Evaluates the value of the TsSpline over the given time interval,
+    /// typically for drawing.
+    ///
+    /// \c Sample creates a piecewise linear approximation of the spline curve.
+    /// When the returned samples are scaled by \e timeScale and \e valueScale
+    /// and linearly interpolated, the reconstructed curve will nowhere have an
+    /// error greater than \e tolerance.
+    ///
+    /// The values of \e timeScale and \e valueScale are typically chosen to
+    /// scale the spline's units to pixels and then \e tolerance represents
+    /// the allowed deviation in pixel space from a theoretical exact answer.
+    ///
+    /// \c timeInterval must not be empty and \c timeScale, \c valueScale, and
+    /// \c tolerance must all be greater than 0.0. If any of these conditions
+    /// are not met, \c Sample returns false and \c *splineSamples is unchanged.
+    /// Otherwise, true is returned and \c splineSamples is populated.
+    template <typename Vertex>
+    bool
+    Sample(
+        const GfInterval& timeInterval,
+        double timeScale,
+        double valueScale,
+        double tolerance,
+        TsSplineSamples<Vertex>* splineSamples) const
+    {
+        return _Sample(timeInterval, timeScale, valueScale, tolerance,
+                       splineSamples);
+    }
+
+    /// \overload
+    /// When passed a \c TsSplineSamplesWithSources<Vertex> class, the returned
+    /// information contains a \c TsSplineSampleSource value for each
+    /// polyline. The \c TsSplineSampleSource indicates the source region
+    /// (extrapolation, looping, normal interpolation, etc.) of the spline
+    /// generated that polyline.
+    template <typename Vertex>
+    bool
+    Sample(
+        const GfInterval& timeInterval,
+        double timeScale,
+        double valueScale,
+        double tolerance,
+        TsSplineSamplesWithSources<Vertex>* splineSamples) const
+    {
+        return _Sample(timeInterval, timeScale, valueScale, tolerance,
+                       splineSamples);
+    }
 
     /// @}
     /// \name Whole-spline queries
@@ -412,7 +484,17 @@ public:
 
 private:
     friend class TsRegressionPreventer;
+
+    // Direct access method used by TsRegressionPreventer.
     void _SetKnotUnchecked(const TsKnot & knot);
+
+    template <typename SampleHolder>
+    bool _Sample(
+        const GfInterval& timeInterval,
+        double timeScale,
+        double valueScale,
+        double tolerance,
+        SampleHolder* splineSamples) const;
 
     // External helpers provide direct data access for Ts implementation.
     friend Ts_SplineData* Ts_GetSplineData(TsSpline &spline);
@@ -437,6 +519,18 @@ private:
         T *valueOut,
         Ts_EvalAspect aspect,
         Ts_EvalLocation location) const;
+
+    // Update all the tangents based on the tangent algorithms in the knots and
+    // follow that with a call to AdjustRegressiveTangents() to remove any
+    // remaining regressive spline segments.  Return true if any changes were
+    // made.
+    TS_API
+    bool _UpdateAllTangents();
+
+    // Update the tangents of a single knot based on its tangent algorithms and
+    // the regression prevention settings.
+    TS_API
+    bool _UpdateKnotTangents(const size_t knotIndex);
 
 private:
     // Our parameter data.  Copy-on-write.  Null only if we are in the default
@@ -500,6 +594,17 @@ bool TsSpline::_Eval(
     *valueOut = T(*result);
     return true;
 }
+
+// Implement a special case that will ensure the contents of the VtValue output
+// variable contain a value of the same type (double, float, or GfHalf) as the
+// spline.
+template <>
+TS_API
+bool TsSpline::_Eval(
+    const TsTime time,
+    VtValue* const valueOut,
+    const Ts_EvalAspect aspect,
+    const Ts_EvalLocation location) const;
 
 template <typename T>
 bool TsSpline::Eval(const TsTime time, T* const valueOut) const

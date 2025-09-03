@@ -8,17 +8,17 @@
       "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@",
       "Info": {
         "Types": {
-          "_NdrTestDiscoveryPlugin": {
-            "bases": ["NdrDiscoveryPlugin"]
+          "_SdrTestDiscoveryPlugin": {
+            "bases": ["SdrDiscoveryPlugin"]
           },
-          "_NdrTestDiscoveryPlugin2": {
-            "bases": ["NdrDiscoveryPlugin"]
+          "_SdrTestDiscoveryPlugin2": {
+            "bases": ["SdrDiscoveryPlugin"]
           },
-          "_NdrArgsTestParserPlugin": {
-            "bases": ["NdrParserPlugin"]
+          "_SdrArgsTestParserPlugin": {
+            "bases": ["SdrParserPlugin"]
           },
-          "_NdrOslTestParserPlugin": {
-            "bases": ["NdrParserPlugin"]
+          "_SdrOslTestParserPlugin": {
+            "bases": ["SdrParserPlugin"]
           }
         }
       }

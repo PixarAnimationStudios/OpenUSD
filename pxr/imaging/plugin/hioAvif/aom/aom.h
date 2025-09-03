@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, Alliance for Open Media. All rights reserved
+ * Copyright (c) 2016, Alliance for Open Media. All rights reserved.
  *
  * This source code is subject to the terms of the BSD 2 Clause License and
  * the Alliance for Open Media Patent License 1.0. If the BSD 2 Clause License
@@ -31,8 +31,8 @@
 #ifndef AOM_AOM_AOM_H_
 #define AOM_AOM_AOM_H_
 
-#include "pxr/imaging/plugin/hioAvif/aom/aom_codec.h"
-#include "pxr/imaging/plugin/hioAvif/aom/aom_image.h"
+#include "aom/aom_codec.h"
+#include "aom/aom_image.h"
 
 #ifdef __cplusplus
 extern "C" {

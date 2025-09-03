@@ -57,10 +57,6 @@ struct UsdRiTokensType {
     /// 
     /// UsdSplineAPI - Catmull-Rom spline interpolation
     const TfToken catmullRom;
-    /// \brief "collection:cameraVisibility:includeRoot"
-    /// 
-    /// UsdRiRenderPassAPI
-    const TfToken collectionCameraVisibilityIncludeRoot;
     /// \brief "constant"
     /// 
     /// UsdSplineAPI - Constant-value spline interpolation
@@ -109,10 +105,6 @@ struct UsdRiTokensType {
     /// 
     /// Schema identifer and family for UsdRiMaterialAPI
     const TfToken RiMaterialAPI;
-    /// \brief "RiRenderPassAPI"
-    /// 
-    /// Schema identifer and family for UsdRiRenderPassAPI
-    const TfToken RiRenderPassAPI;
     /// \brief "RiSplineAPI"
     /// 
     /// Schema identifer and family for UsdRiSplineAPI

@@ -25,7 +25,7 @@ TF_DECLARE_REF_PTRS(HdsiLegacyDisplayStyleOverrideSceneIndex);
 /// \class HdsiLegacyDisplayStyleOverrideSceneIndex
 ///
 /// A scene index overriding the legacy display style for each prim.
-/// So far, it only supports the refine level.
+/// So far, it only supports the refine level and cull style.
 ///
 class HdsiLegacyDisplayStyleOverrideSceneIndex :
     public HdSingleInputFilteringSceneIndexBase
@@ -60,6 +60,12 @@ public:
     HDSI_API
     void SetRefineLevel(const OptionalInt &refineLevel);
 
+    /// Sets the cullStyleFallback (at data source locator displayStyle:cullStyleFallback)
+    /// for every prim in the input scene index.
+    ///
+    HDSI_API
+    void SetCullStyleFallback(const TfToken &cullStyleFallback);
+
 protected:
     HdsiLegacyDisplayStyleOverrideSceneIndex(
         const HdSceneIndexBaseRefPtr &inputSceneIndex);
@@ -82,8 +88,9 @@ private:
     HdsiLegacyDisplayStyleSceneIndex_Impl::
     _StyleInfoSharedPtr const _styleInfo;
 
-    /// Prim overlay data source.
+    /// Prim overlaj & underlay data sources.
     HdContainerDataSourceHandle const _overlayDs;
+    HdContainerDataSourceHandle const _underlayDs;
 };
 
 HDSI_API

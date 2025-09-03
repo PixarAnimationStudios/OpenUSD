@@ -50,10 +50,10 @@ TF_DEFINE_ENV_SETTING(HDST_ENABLE_SHARED_VERTEX_PRIMVAR, 1,
 
 TF_MAKE_STATIC_DATA(
     HdSt_MaterialNetworkShaderSharedPtr,
-    _fallbackWidgetShader)
+    _fallbackOverlayShader)
 {
-    *_fallbackWidgetShader = std::make_shared<HdStGLSLFXShader>(
-        std::make_shared<HioGlslfx>(HdStPackageWidgetShader()));
+    *_fallbackOverlayShader = std::make_shared<HdStGLSLFXShader>(
+        std::make_shared<HioGlslfx>(HdStPackageOverlayShader()));
 }
 
 // -----------------------------------------------------------------------------
@@ -290,15 +290,23 @@ HdStSetMaterialTag(HdRenderParam * const renderParam,
 }
 
 // Opinion precedence:
-// Show occluded selection > Material opinion > displayOpacity primvar
-//
+//   Display In Overlay >
+//     Show occluded selection >
+//       Material opinion >
+//         displayOpacity primvar
 static
 TfToken
 _ComputeMaterialTag(HdSceneDelegate * const delegate,
+                    HdDrawItem *drawItem,
                     SdfPath const & materialId,
                     const bool hasDisplayOpacityPrimvar,
+                    const bool displayInOverlay,
                     const bool occludedSelectionShowsThrough)
 {
+    if (displayInOverlay) {
+        return HdStMaterialTagTokens->displayInOverlay;
+    }
+
     if (occludedSelectionShowsThrough) {
         return HdStMaterialTagTokens->translucentToSelection;
     }
@@ -324,13 +332,14 @@ HdStSetMaterialTag(HdSceneDelegate * const delegate,
                    HdDrawItem *drawItem,
                    SdfPath const & materialId,
                    const bool hasDisplayOpacityPrimvar,
+                   const bool displayInOverlay,
                    const bool occludedSelectionShowsThrough)
 {
     HdStSetMaterialTag(
         renderParam, drawItem,
         _ComputeMaterialTag(
-            delegate, materialId, hasDisplayOpacityPrimvar, 
-            occludedSelectionShowsThrough));
+            delegate, drawItem, materialId, hasDisplayOpacityPrimvar,
+            displayInOverlay, occludedSelectionShowsThrough));
 }
 
 HdSt_MaterialNetworkShaderSharedPtr
@@ -352,11 +361,14 @@ HdStGetMaterialNetworkShader(
     HdStMaterial const * material = static_cast<HdStMaterial const *>(
             renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
     if (material == nullptr) {
-        if (prim->GetRenderTag(delegate) == HdRenderTagTokens->widget) {
-            TF_DEBUG(HD_RPRIM_UPDATED).Msg("Using built-in widget material for "
-                "%s\n", prim->GetId().GetText());
-               
-            return *_fallbackWidgetShader;
+        const bool displayInOverlay =
+            delegate->GetDisplayStyle(prim->GetId()).displayInOverlay;
+
+        if (displayInOverlay) {
+            TF_DEBUG(HD_RPRIM_UPDATED).Msg("Using built-in overlay material for"
+                " %s\n", prim->GetId().GetText());
+
+            return *_fallbackOverlayShader;
         } else {
             TF_DEBUG(HD_RPRIM_UPDATED).Msg("Using fallback material for %s\n",
                 prim->GetId().GetText());
@@ -698,6 +710,67 @@ bool HdStIsPrimvarExistentAndValid(
     return false;
 }
 
+bool HdStIsPrimvarValidForDrawItem(
+    const HdStDrawItem *drawItem,
+    TfToken const &primvarName,
+    VtValue const &primvarValue)
+{
+    if (primvarValue.IsEmpty()) {
+        TF_DEBUG_MSG(HDST_LOG_SKIPPED_PRIMVAR, 
+            "Prim: %s Primvar: %s is empty! Skipping...\n",
+            drawItem->GetRprimID().GetString().c_str(),
+            primvarName.GetString().c_str());
+        return false;
+    }
+
+    // XXX Storm doesn't support string or token primvars yet
+    if (primvarValue.IsHolding<std::string>() ||
+        primvarValue.IsHolding<VtStringArray>() ||
+        primvarValue.IsHolding<TfToken>() ||
+        primvarValue.IsHolding<VtTokenArray>()) {
+        TF_DEBUG_MSG(HDST_LOG_SKIPPED_PRIMVAR,
+            "Prim: %s Primvar: %s holds an incompatible type!"
+            "Type: %s Skipping...\n",
+            drawItem->GetRprimID().GetString().c_str(),
+            primvarName.GetString().c_str(),
+            primvarValue.GetTypeName().c_str());
+        return false;
+    }
+
+    if (!drawItem->GetMaterialNetworkShader()) {
+        return true;
+    }
+
+    const VtValue* fallback = drawItem->GetMaterialNetworkShader()
+        ->GetFallbackValueForParam(primvarName);
+    if (!fallback) {
+        return true;
+    }
+
+    if (primvarName == HdTokens->displayColor
+        && (primvarValue.CanCastToTypeid(typeid(GfVec4f))
+        || primvarValue.CanCastToTypeid(typeid(VtArray<GfVec4f>)))) {
+        // Allowing 'displayColor' to be a vec4 or vec3 to support
+        // clients expecting this behavior
+        return true;
+    }
+
+    if (primvarValue.CanCastToTypeOf(*fallback) ||
+        primvarValue.GetElementTypeid() == fallback->GetTypeid()) {
+        return true;
+    } else {
+        TF_WARN(
+            "Value input not compatible with default! Prim: %s Primvar: %s\n"
+            "Default: Type - %s\n"
+            "Input: Type - %s",
+            drawItem->GetRprimID().GetString().c_str(),
+            primvarName.GetString().c_str(),
+            fallback->GetTypeName().c_str(),
+            primvarValue.GetTypeName().c_str());
+        return false;
+    }
+}
+
 // -----------------------------------------------------------------------------
 // Constant primvar processing utilities
 // -----------------------------------------------------------------------------
@@ -838,38 +911,68 @@ HdStPopulateConstantPrimvars(
         for (const HdPrimvarDescriptor& pv: constantPrimvars) {
             if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, pv.name)) {
                 VtValue value = delegate->Get(id, pv.name);
-                // XXX Storm doesn't support string or token primvars yet
-                if (value.IsHolding<std::string>() ||
-                    value.IsHolding<VtStringArray>() ||
-                    value.IsHolding<TfToken>() ||
-                    value.IsHolding<VtTokenArray>()) {
+                if (!HdStIsPrimvarValidForDrawItem(drawItem, pv.name, value)) {
                     continue;
                 }
 
                 if (value.IsArrayValued() && value.GetArraySize() == 0) {
                     // A value holding an empty array does not count as an
                     // empty value. Catch that case here.
-                    //
-                    // Do nothing in this case.
-                } else if (!value.IsEmpty()) {
-                    // Given that this is a constant primvar, if it is
-                    // holding VtArray then use that as a single array
-                    // value rather than as one value per element.
-                    HdBufferSourceSharedPtr source =
-                        std::make_shared<HdVtBufferSource>(pv.name, value,
-                            value.IsArrayValued() ? value.GetArraySize() : 1);
-
-                    // Skip buffer source if tuple type is invalid.
-                    if (!TF_VERIFY(
-                            source->GetTupleType().type != HdTypeInvalid)) {
-                        continue;
-                    }
-                    if (!TF_VERIFY(source->GetTupleType().count > 0)) {
-                        continue;
-                    }
-                 
-                    sources.push_back(source);
+                    TF_DEBUG_MSG(HDST_LOG_SKIPPED_PRIMVAR, 
+                        "Prim: %s Primvar: %s is an empty array! Skipping...\n",
+                        drawItem->GetRprimID().GetString().c_str(),
+                        pv.name.GetString().c_str());
+                    continue;
                 }
+
+                const HdSt_MaterialNetworkShaderSharedPtr material =
+                    drawItem->GetMaterialNetworkShader();
+                const VtValue* fallback = material ? material
+                    ->GetFallbackValueForParam(pv.name) : nullptr;
+                if (fallback) {
+                    size_t valSize = value.IsArrayValued()
+                        ? value.GetArraySize() : 1;
+                    size_t fallbackSize = fallback->IsArrayValued()
+                        ? fallback->GetArraySize() : 1;
+                    // Don't perform size validation on constant array primvars
+                    bool bothArrays = value.IsArrayValued() 
+                        && fallback->IsArrayValued();
+                    if (!bothArrays && valSize != fallbackSize) {
+                        TF_WARN("Value input not compatible with default! "
+                            "Prim: %s Primvar: %s\n"
+                            "Default: Type - %s, IsArray - %i, "
+                            "ArraySize - %zu\n"
+                            "Input: Type - %s, IsArray - %i, "
+                            "ArraySize - %zu\n",
+                            sharedData->rprimID.GetString().c_str(),
+                            pv.name.GetString().c_str(),
+                            fallback->GetTypeName().c_str(),
+                            fallback->IsArrayValued(),
+                            fallback->GetArraySize(),
+                            value.GetTypeName().c_str(),
+                            value.IsArrayValued(),
+                            value.GetArraySize());
+                        continue;
+                    }
+                }
+
+                // Given that this is a constant primvar, if it is
+                // holding VtArray then use that as a single array
+                // value rather than as one value per element.
+                HdBufferSourceSharedPtr source =
+                    std::make_shared<HdVtBufferSource>(pv.name, value,
+                        value.IsArrayValued() ? value.GetArraySize() : 1);
+
+                // Skip buffer source if tuple type is invalid.
+                if (!TF_VERIFY(
+                        source->GetTupleType().type != HdTypeInvalid)) {
+                    continue;
+                }
+                if (!TF_VERIFY(source->GetTupleType().count > 0)) {
+                    continue;
+                }
+
+                sources.push_back(source);
             }
         }
     }

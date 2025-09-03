@@ -32,14 +32,26 @@ PXR_NAMESPACE_OPEN_SCOPE
  * That assumption fails badly when it comes to python.
  */
 TfCallContext
-Tf_PythonCallContext(char const *fileName,
-                     char const *moduleName,
-                     char const *functionName,
+Tf_PythonCallContext(std::string fileName,
+                     std::string moduleName,
+                     std::string functionName,
                      size_t line)
 {
     static _Cache cache;
 
-    string const& fullName = TfStringPrintf("%s.%s", moduleName, functionName);
+    string fullName;
+    if (moduleName.empty()) {
+        fullName = functionName;
+    } else if (functionName.empty()) {
+        fullName = moduleName;
+    } else {
+        fullName = TfStringPrintf("%s.%s", moduleName.c_str(),
+                                  functionName.c_str());
+    }
+
+    if (fullName.empty()) {
+        return TfCallContext{};
+    }
 
     tbb::spin_mutex::scoped_lock lock(cache.lock);
     char const* prettyFunctionPtr = cache.data.insert(fullName).first->c_str();

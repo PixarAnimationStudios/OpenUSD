@@ -40,9 +40,12 @@ _GetSdrMetadata(const UsdShadeShader &shaderDef,
     auto shaderDefMetadata = shaderDef.GetSdrMetadata();
     metadata.insert(shaderDefMetadata.begin(), shaderDefMetadata.end());
 
-    metadata[SdrNodeMetadata->Primvars] = 
+    const std::string primvarsStr = 
         UsdShadeShaderDefUtils::GetPrimvarNamesMetadataString(
-            metadata, shaderDef.ConnectableAPI());
+                                          metadata, shaderDef.ConnectableAPI());
+    if (!primvarsStr.empty()) {
+        metadata[SdrNodeMetadata->Primvars] = primvarsStr;
+    }
 
     return metadata;
 }

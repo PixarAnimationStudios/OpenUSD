@@ -8,9 +8,11 @@
 #include "pxr/pxr.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/wrapArray.h"
+#include "pxr/base/vt/wrapArrayEdit.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapArrayToken() {
     VtWrapArray<VtArray<TfToken> >();
+    VtWrapArrayEdit<VtArrayEdit<TfToken> >();
 }

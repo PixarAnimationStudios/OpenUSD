@@ -7,6 +7,7 @@ class TestNSPrefix "TestNSPrefix" (
     inherits = </Typed>
 )
 {
+    reorder properties = ["inputs:input1withNodeNS", "inputs:input2withNodeNS", "outputs:out"]
     float inputs:input1withNodeNS = 0
     float inputs:input2withNodeNS = 0
     color3f outputs:out

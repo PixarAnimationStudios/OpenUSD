@@ -49,6 +49,8 @@ T_VEC4F = "HdVec4fDataSource"
 T_VEC4D = "HdVec4dDataSource"
 T_VEC4DARRAY = "HdVec4dArrayDataSource"
 T_QUATFARRAY = "HdQuatfArrayDataSource"
+T_MATRIX4 = "HdMatrix4fDataSource"
+T_MATRIX4FARRAY = "HdMatrix4fArrayDataSource"
 T_MATRIX = "HdMatrixDataSource"
 T_MATRIXARRAY = "HdMatrixArrayDataSource"
 T_LOCATOR = "HdLocatorDataSource"
@@ -58,6 +60,7 @@ T_TUPLE = "HdTupleTypeDataSource"
 T_SIZET = "HdSizetDataSource"
 T_BASE = "HdDataSourceBase"
 T_STRING = "HdStringDataSource"
+T_STRINGARRAY = "HdStringArrayDataSource"
 T_VECTOR = "HdVectorDataSource"
 T_RESOLVERCONTEXT = "HdResolverContextDataSource"
 
@@ -102,8 +105,8 @@ def ToComment(text, indent = 0):
     for paragraph in re.split(r'\n\s*\n', text, re.DOTALL):
         for line in textwrap.wrap(' '.join(paragraph.split()),
                                   width = 75 - indent):
-            result += indent * ' ' + '// ' + line + '\n'
-        result += indent * ' ' + '//' + '\n'
+            result += indent * ' ' + '/// ' + line + '\n'
+        result += indent * ' ' + '///' + '\n'
 
     return result
 

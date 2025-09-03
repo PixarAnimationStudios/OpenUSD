@@ -39,6 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (joints) \
     (blendShapes) \
     (blendShapeTargets) \
+    (hasSkelRoot) \
     ((skinningMethodPrimvar, "skel:skinningMethod")) \
     ((geomBindTransformPrimvar, "skel:geomBindTransform")) \
     ((jointIndicesPrimvar, "skel:jointIndices")) \
@@ -49,9 +50,11 @@ TF_DECLARE_PUBLIC_TOKENS(UsdSkelImagingBindingSchemaTokens, USDSKELIMAGING_API,
 
 //-----------------------------------------------------------------------------
 
-// Corresponds to UsdSkelBindingAPI.
-//
 
+/// \class UsdSkelImagingBindingSchema
+///
+/// Corresponds to UsdSkelBindingAPI.
+///
 class UsdSkelImagingBindingSchema : public HdSchema
 {
 public:
@@ -98,7 +101,13 @@ public:
 
     /// This is not inherited according to the UsdSkel spec.
     USDSKELIMAGING_API
-    HdPathArrayDataSourceHandle GetBlendShapeTargets() const; 
+    HdPathArrayDataSourceHandle GetBlendShapeTargets() const;
+
+    /// Is this prim a descendant of a SkelRoot? Does not correspond to Usd
+    /// attribute and is actually populated by the SkelRoot and not the
+    /// SkelBinding.
+    USDSKELIMAGING_API
+    HdBoolDataSourceHandle GetHasSkelRoot() const; 
 
     /// @}
 
@@ -145,6 +154,10 @@ public:
     /// Prim-level relative data source locator to locate blendShapeTargets.
     USDSKELIMAGING_API
     static const HdDataSourceLocator &GetBlendShapeTargetsLocator();
+
+    /// Prim-level relative data source locator to locate hasSkelRoot.
+    USDSKELIMAGING_API
+    static const HdDataSourceLocator &GetHasSkelRootLocator();
     /// @} 
 
     /// \name Schema construction
@@ -164,7 +177,8 @@ public:
         const HdPathDataSourceHandle &skeleton,
         const HdTokenArrayDataSourceHandle &joints,
         const HdTokenArrayDataSourceHandle &blendShapes,
-        const HdPathArrayDataSourceHandle &blendShapeTargets
+        const HdPathArrayDataSourceHandle &blendShapeTargets,
+        const HdBoolDataSourceHandle &hasSkelRoot
     );
 
     /// \class UsdSkelImagingBindingSchema::Builder
@@ -191,6 +205,9 @@ public:
         USDSKELIMAGING_API
         Builder &SetBlendShapeTargets(
             const HdPathArrayDataSourceHandle &blendShapeTargets);
+        USDSKELIMAGING_API
+        Builder &SetHasSkelRoot(
+            const HdBoolDataSourceHandle &hasSkelRoot);
 
         /// Returns a container data source containing the members set thus far.
         USDSKELIMAGING_API
@@ -202,6 +219,7 @@ public:
         HdTokenArrayDataSourceHandle _joints;
         HdTokenArrayDataSourceHandle _blendShapes;
         HdPathArrayDataSourceHandle _blendShapeTargets;
+        HdBoolDataSourceHandle _hasSkelRoot;
 
     };
 

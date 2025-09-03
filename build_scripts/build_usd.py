@@ -153,14 +153,25 @@ def IsVisualStudio2017OrGreater():
     VISUAL_STUDIO_2017_VERSION = (14, 1)
     return IsVisualStudioVersionOrGreater(VISUAL_STUDIO_2017_VERSION)
 
+# Helper to get the current host arch on Windows
+def GetWindowsHostArch():
+    identifier = os.environ.get('PROCESSOR_IDENTIFIER')
+    # ARM64 identifiers currently start with "ARMv8 ...."
+    # Note: This could be modified in the future to distinguish between ARMv8 and ARMv9
+    if "ARMv" in identifier:
+        return "ARM64"
+    elif any(x64Arch in identifier for x64Arch in ["AMD64", "Intel64", "EM64T"]):
+        return "x64"
+    else:
+        raise RuntimeError("Unknown Windows host arch")
+
 def GetPythonInfo(context):
     """Returns a tuple containing the path to the Python executable, shared
     library, and include directory corresponding to the version of Python
     currently running. Returns None if any path could not be determined.
 
     This function is used to extract build information from the Python 
-    interpreter used to launch this script. This information is used
-    in the Boost and USD builds. By taking this approach we can support
+    interpreter used to launch this script. This allows us to support
     having USD builds for different Python versions built on the same
     machine. This is very useful, especially when developers have multiple
     versions installed on their machine.
@@ -343,17 +354,7 @@ def AppendCXX11ABIArg(buildFlag, context, buildArgs):
     buildArgs.append('{flag}="{flags}"'.format(
         flag=buildFlag, flags=" ".join(cxxFlags)))
 
-def FormatMultiProcs(numJobs, generator):
-    tag = "-j"
-    if generator:
-        if "Visual Studio" in generator:
-            tag = "/M:" # This will build multiple projects at once.
-        elif "Xcode" in generator:
-            tag = "-j "
-
-    return "{tag}{procs}".format(tag=tag, procs=numJobs)
-
-def RunCMake(context, force, extraArgs = None):
+def RunCMake(context, force, extraArgs = None, installDir = None):
     """Invoke CMake to configure, build, and install a library whose 
     source code is located in the current working directory."""
     # Create a directory for out-of-source builds in the build directory
@@ -364,11 +365,11 @@ def RunCMake(context, force, extraArgs = None):
         # ensure we can freely modify our extraArgs without affecting caller
         extraArgs = list(extraArgs)
 
+    instDir = installDir if installDir else context.instDir
+
     if context.cmakeBuildArgs:
         extraArgs.insert(0, context.cmakeBuildArgs)
     srcDir = os.getcwd()
-    instDir = (context.usdInstDir if srcDir == context.usdSrcDir
-               else context.instDir)
     buildDir = os.path.join(context.buildDir, os.path.split(srcDir)[1])
     if force and os.path.isdir(buildDir):
         shutil.rmtree(buildDir)
@@ -394,7 +395,7 @@ def RunCMake(context, force, extraArgs = None):
 
     # Note - don't want to add -A (architecture flag) if generator is, ie, Ninja
     if IsVisualStudio2019OrGreater() and "Visual Studio" in generator:
-        generator = generator + " -A x64"
+        generator = generator + " -A " + GetWindowsHostArch()
 
     toolset = context.cmakeToolset
     if toolset is not None:
@@ -454,9 +455,12 @@ def RunCMake(context, force, extraArgs = None):
                     generator=(generator or ""),
                     toolset=(toolset or ""),
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
-        Run("cmake --build . --config {config} --target install -- {multiproc}"
-            .format(config=config,
-                    multiproc=FormatMultiProcs(context.numJobs, generator)))
+
+        # As of CMake 3.12, the -j parameter for `cmake --build` allows
+        # specifying the number of parallel build jobs, forwarding it to the
+        # underlying native build tool.
+        Run("cmake --build . --config {config} --target install -j {numJobs}"
+            .format(config=config, numJobs=context.numJobs))
 
 def GetCMakeVersion():
     """
@@ -754,43 +758,28 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 # this script.
 BOOST_VERSION_FILES = [
     "include/boost/version.hpp",
-    "include/boost-1_76/boost/version.hpp",
-    "include/boost-1_78/boost/version.hpp",
+    "include/boost-1_80/boost/version.hpp",
     "include/boost-1_82/boost/version.hpp",
     "include/boost-1_86/boost/version.hpp"
 ]
 
 def InstallBoost_Helper(context, force, buildArgs):
-    # In general we use boost 1.76.0 to adhere to VFX Reference Platform CY2022.
+    # In general we use boost 1.80.0 to adhere to VFX Reference Platform CY2023.
     # However, there are some cases where a newer version is required.
     # - Building with Visual Studio 2022 with the 14.4x toolchain requires boost
     #   1.86.0 or newer, we choose it for all Visual Studio 2022 versions for
     #   simplicity.
-    # - Building with Python 3.11 requires boost 1.82.0 or newer
-    #   (https://github.com/boostorg/python/commit/a218ba)
     # - Building on MacOS requires v1.82.0 or later for C++17 support starting
-    #   with Xcode 15. We choose to use this version for all MacOS builds for
-    #   simplicity."
-    # - Building with Python 3.10 requires boost 1.76.0 or newer
-    #   (https://github.com/boostorg/python/commit/cbd2d9)
-    #   XXX: Due to a typo we've been using 1.78.0 in this case for a while.
-    #        We're leaving it that way to minimize potential disruption.
-    # - Building on MacOS requires boost 1.78.0 or newer to resolve Python 3
-    #   compatibility issues on Big Sur and Monterey.
-    pyInfo = GetPythonInfo(context)
-    pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
+    #   with Xcode 15.
     if IsVisualStudio2022OrGreater():
         BOOST_VERSION = (1, 86, 0)
         BOOST_SHA256 = "cd20a5694e753683e1dc2ee10e2d1bb11704e65893ebcc6ced234ba68e5d8646"
-    elif MacOS() or (context.buildBoostPython and pyVer >= (3,11)):
+    elif MacOS():
         BOOST_VERSION = (1, 82, 0)
         BOOST_SHA256 = "f7c9e28d242abcd7a2c1b962039fcdd463ca149d1883c3a950bbcc0ce6f7c6d9"
-    elif context.buildBoostPython and pyVer >= (3, 10):
-        BOOST_VERSION = (1, 78, 0)
-        BOOST_SHA256 = "f22143b5528e081123c3c5ed437e92f648fe69748e95fa6e2bd41484e2986cc3"
     else:
-        BOOST_VERSION = (1, 76, 0)
-        BOOST_SHA256 = "0fd43bb53580ca54afc7221683dfe8c6e3855b351cd6dce53b1a24a7d7fbeedd"
+        BOOST_VERSION = (1, 80, 0)
+        BOOST_SHA256 = "e34756f63abe8ac34b35352743f17d061fcc825969a2dd8458264edb38781782"
 
     # Documentation files in the boost archive can have exceptionally
     # long paths. This can lead to errors when extracting boost on Windows,
@@ -894,32 +883,6 @@ def InstallBoost_Helper(context, force, buildArgs):
             '--with-regex'
         ]
 
-        if context.buildBoostPython:
-            b2_settings.append("--with-python")
-            pythonInfo = GetPythonInfo(context)
-            # This is the only platform-independent way to configure these
-            # settings correctly and robustly for the Boost jam build system.
-            # There are Python config arguments that can be passed to bootstrap 
-            # but those are not available in boostrap.bat (Windows) so we must 
-            # take the following approach:
-            projectPath = 'python-config.jam'
-            with open(projectPath, 'w') as projectFile:
-                # Note that we must escape any special characters, like 
-                # backslashes for jam, hence the mods below for the path 
-                # arguments. Also, if the path contains spaces jam will not
-                # handle them well. Surround the path parameters in quotes.
-                projectFile.write('using python : %s\n' % pythonInfo[3])
-                projectFile.write('  : "%s"\n' % pythonInfo[0].replace("\\","/"))
-                projectFile.write('  : "%s"\n' % pythonInfo[2].replace("\\","/"))
-                projectFile.write('  : "%s"\n' % os.path.dirname(pythonInfo[1]).replace("\\","/"))
-                if context.buildDebug and context.debugPython:
-                    projectFile.write('  : <python-debugging>on\n')
-                projectFile.write('  ;\n')
-            b2_settings.append("--user-config=python-config.jam")
-
-            if context.buildDebug and context.debugPython:
-                b2_settings.append("python-debugging=on")
-
         if context.buildOIIO:
             b2_settings.append("--with-date_time")
 
@@ -1017,7 +980,7 @@ BOOST = Dependency("boost", InstallBoost, *BOOST_VERSION_FILES)
 ############################################################
 # Intel oneTBB
 
-ONETBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.9.0.zip"
+ONETBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.12.0.zip"
 
 def InstallOneTBB(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ONETBB_URL, context, force)):
@@ -1034,11 +997,7 @@ if Windows():
     TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/v2020.3/tbb-2020.3-win.zip"
     TBB_ROOT_DIR_NAME = "tbb"
 elif MacOS():
-    # On MacOS Intel systems we experience various crashes in tests during
-    # teardown starting with 2018 Update 2. Until we figure that out, we use
-    # 2018 Update 1 on this platform.
     TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2020.3.zip"
-    TBB_INTEL_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2018_U1.zip"
 else:
     # Use point release with fix https://github.com/oneapi-src/oneTBB/pull/833
     TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2020.3.1.zip"
@@ -1067,8 +1026,7 @@ def InstallTBB_Windows(context, force, buildArgs):
         CopyDirectory(context, "include\\tbb", "include\\tbb")
 
 def InstallTBB_MacOS(context, force, buildArgs):
-    tbb_url = TBB_URL if apple_utils.IsTargetArm(context) else TBB_INTEL_URL
-    with CurrentWorkingDirectory(DownloadURL(tbb_url, context, force)):
+    with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force)):
         # Ensure that the tbb build system picks the proper architecture.
         PatchFile("build/macos.clang.inc",
                 [("-m64",
@@ -1130,7 +1088,7 @@ def InstallTBB_MacOS(context, force, buildArgs):
         # See comments in InstallTBB_Linux about why we patch the Makefile
         # and rerun builds. This is only required for TBB 2020; 2019 and
         # earlier build both release and debug, and 2021 has moved to CMake.
-        if "2020" in tbb_url:
+        if "2020" in TBB_URL:
             PatchFile("Makefile", [("release", "debug")])
             _RunBuild(primaryArch)
             _RunBuild(secondaryArch)
@@ -1253,20 +1211,20 @@ TIFF = Dependency("TIFF", InstallTIFF, "include/tiff.h")
 ############################################################
 # PNG
 
-PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.38.zip"
+PNG_URL = "https://github.com/pnggroup/libpng/archive/refs/tags/v1.6.47.zip"
 
 def InstallPNG(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(PNG_URL, context, force)):
-        macArgs = []
+        # Framework builds were enabled by default in v1.6.41 in commit
+        # 8fc13a8. We explicitly disable this to maintain legacy behavior
+        # from v1.6.38, which is what this script used previously.
+        # OpenImageIO v2.5.16.0 runs into linker issues otherwise.
+        macArgs = ["-DPNG_FRAMEWORK=OFF"]
+
         if MacOS() and apple_utils.IsTargetArm(context):
             # Ensure libpng's build doesn't erroneously activate inappropriate
             # Neon extensions
-            macArgs = ["-DCMAKE_C_FLAGS=\"-DPNG_ARM_NEON_OPT=0\""]
-
-            if context.targetUniversal:
-                PatchFile("scripts/genout.cmake.in",
-                [("CMAKE_OSX_ARCHITECTURES",
-                  "CMAKE_OSX_INTERNAL_ARCHITECTURES")])
+            macArgs += ["-DCMAKE_C_FLAGS=\"-DPNG_ARM_NEON_OPT=0\""]
 
         RunCMake(context, force, buildArgs + macArgs)
 
@@ -1316,17 +1274,20 @@ PTEX = Dependency("Ptex", InstallPtex, "include/PtexVersion.h")
 ############################################################
 # BLOSC (Compression used by OpenVDB)
 
-# Using blosc v1.20.1 to avoid build errors on macOS Catalina (10.15)
-# related to implicit declaration of functions in zlib. See:
-# https://github.com/Blosc/python-blosc/issues/229
 BLOSC_URL = "https://github.com/Blosc/c-blosc/archive/v1.20.1.zip"
+if MacOS():
+    # Using blosc v1.21.6 to avoid build errors with Xcode 16.3+ toolchain, 
+    # caused by incompatibility with internally used zlib v1.2.8 with blosc 
+    # v1.20.1
+    BLOSC_URL = "https://github.com/Blosc/c-blosc/archive/v1.21.6.zip"
 
 def InstallBLOSC(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(BLOSC_URL, context, force)):
-        macArgs = []
+        # MacOS we can use the built in Zlib instead of the external one.
+        macArgs = ["-DPREFER_EXTERNAL_ZLIB=ON"]
         if MacOS() and apple_utils.IsTargetArm(context):
             # Need to disable SSE for macOS ARM targets.
-            macArgs = ["-DDEACTIVATE_SSE2=ON"]
+            macArgs += ["-DDEACTIVATE_SSE2=ON"]
         RunCMake(context, force, buildArgs + macArgs)
 
 BLOSC = Dependency("Blosc", InstallBLOSC, "include/blosc.h")
@@ -1334,20 +1295,24 @@ BLOSC = Dependency("Blosc", InstallBLOSC, "include/blosc.h")
 ############################################################
 # OpenVDB
 
-OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v9.1.0.zip"
-
-# OpenVDB v9.1.0 requires TBB 2019.0 or above, but this script installs
-# TBB 2018 on macOS Intel systems for reasons documented above. So we
-# keep OpenVDB at the version specified for the VFX Reference Platform
-# CY2021, which is the last version that supported 2018.
-OPENVDB_INTEL_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v8.2.0.zip"
+OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v10.1.0.zip"
 
 def InstallOpenVDB(context, force, buildArgs):
-    openvdb_url = OPENVDB_URL
-    if MacOS() and not apple_utils.IsTargetArm(context):
-        openvdb_url = OPENVDB_INTEL_URL
+    with CurrentWorkingDirectory(DownloadURL(OPENVDB_URL, context, force)):
+        # Back-port patch from OpenVDB PR #1977 to avoid errors when building
+        # with Xcode 16.3+. This fix is anticipated to be part of an OpenVDB
+        # 12.x release, which is in the VFX Reference Platform CY2025 and is
+        # several major versions ahead of what we currently use.
+        PatchFile("openvdb/openvdb/tree/NodeManager.h",
+                  [("OpT::template eval", "OpT::eval")])
 
-    with CurrentWorkingDirectory(DownloadURL(openvdb_url, context, force)):
+        # Replace BOOST_STATIC_ASSERT to workaround an "identifier not found"
+        # build failure on Windows with Visual Studio 2022. This change already
+        # exists upstream in OpenVDB 11.0.0+.
+        PatchFile("openvdb/openvdb/tools/VelocityFields.h",
+                  [("BOOST_STATIC_ASSERT(OrderRK <= 4);",
+                    "static_assert(OrderRK <= 4);")])
+
         extraArgs = [
             '-DOPENVDB_BUILD_PYTHON_MODULE=OFF',
             '-DOPENVDB_BUILD_BINARIES=OFF',
@@ -1410,6 +1375,9 @@ def InstallOpenImageIO(context, force, buildArgs):
         # Make sure to use boost installed by the build script and not any
         # system installed boost
         extraArgs.append('-DBoost_NO_SYSTEM_PATHS=ON')
+        # OIIO 2.5.16 requires Boost_NO_BOOST_CMAKE to be explicitly defined,
+        # else it sets it to ON.
+        extraArgs.append('-DBoost_NO_BOOST_CMAKE=OFF')
 
         # OpenImageIO 2.3.5 changed the default postfix for debug library
         # names from "" to "_d". USD's build system currently does not support
@@ -1428,12 +1396,11 @@ OPENIMAGEIO = Dependency("OpenImageIO", InstallOpenImageIO,
 ############################################################
 # OpenColorIO
 
-OCIO_URL = "https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/refs/tags/v2.1.3.zip"
+OCIO_URL = "https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/refs/tags/v2.2.1.zip"
 
 def InstallOpenColorIO(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OCIO_URL, context, force)):
         extraArgs = ['-DOCIO_BUILD_APPS=OFF',
-                     '-DOCIO_BUILD_NUKE=OFF',
                      '-DOCIO_BUILD_DOCS=OFF',
                      '-DOCIO_BUILD_TESTS=OFF',
                      '-DOCIO_BUILD_GPU_TESTS=OFF',
@@ -1487,6 +1454,20 @@ OPENSUBDIV = Dependency("OpenSubdiv", InstallOpenSubdiv,
                         "include/opensubdiv/version.h")
 
 ############################################################
+# Jinja2
+
+def GetJinja2Instructions():
+    return ('Jinja2 is not installed. If you have pip '
+            'installed, run "pip install Jinja2" to '
+            'install it, then re-run this script.\n'
+            'If Jinja2 is already installed, you may need to '
+            'update your PYTHONPATH to indicate where it is '
+            'located.')
+
+JINJA2 = PythonDependency("Jinja2", GetJinja2Instructions, 
+                          moduleNames=["jinja2"])
+
+############################################################
 # PyOpenGL
 
 def GetPyOpenGLInstructions():
@@ -1525,27 +1506,6 @@ def GetPySideInstructions():
 PYSIDE = PythonDependency("PySide", GetPySideInstructions,
                           moduleNames=["PySide2", "PySide6"])
 
-############################################################
-# HDF5
-
-HDF5_URL = "https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-1.10.0-patch1/src/hdf5-1.10.0-patch1.zip"
-
-def InstallHDF5(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(HDF5_URL, context, force)):
-        if MacOS():
-            PatchFile("config/cmake_ext_mod/ConfigureChecks.cmake",
-                    [("if (ARCH_LENGTH GREATER 1)", "if (FALSE)")])
-            if context.targetUniversal:
-                PatchFile("config/cmake/H5pubconf.h.in",
-                        [(" #define H5_SIZEOF_LONG_LONG 8",
-                        " #define H5_SIZEOF_LONG_LONG 8\n" +
-                        " #define H5_SIZEOF_LONG_DOUBLE 16")])
-        RunCMake(context, force,
-                 ['-DBUILD_TESTING=OFF',
-                  '-DHDF5_BUILD_TOOLS=OFF',
-                  '-DHDF5_BUILD_EXAMPLES=OFF'] + buildArgs)
-                 
-HDF5 = Dependency("HDF5", InstallHDF5, "include/hdf5.h")
 
 ############################################################
 # Alembic
@@ -1554,17 +1514,7 @@ ALEMBIC_URL = "https://github.com/alembic/alembic/archive/refs/tags/1.8.5.zip"
 
 def InstallAlembic(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ALEMBIC_URL, context, force)):
-        cmakeOptions = ['-DUSE_BINARIES=OFF', '-DUSE_TESTS=OFF']
-        if context.enableHDF5:
-            # HDF5 requires the H5_BUILT_AS_DYNAMIC_LIB macro be defined if
-            # it was built with CMake as a dynamic library.
-            cmakeOptions += [
-                '-DUSE_HDF5=ON',
-                '-DHDF5_ROOT="{instDir}"'.format(instDir=context.instDir),
-                '-DCMAKE_CXX_FLAGS="-D H5_BUILT_AS_DYNAMIC_LIB"']
-        else:
-           cmakeOptions += ['-DUSE_HDF5=OFF']
-                 
+        cmakeOptions = ['-DUSE_BINARIES=OFF', '-DUSE_TESTS=OFF', '-DUSE_HDF5=OFF']
         cmakeOptions += buildArgs
 
         RunCMake(context, force, cmakeOptions)
@@ -1574,12 +1524,12 @@ ALEMBIC = Dependency("Alembic", InstallAlembic, "include/Alembic/Abc/Base.h")
 ############################################################
 # Draco
 
-DRACO_URL = "https://github.com/google/draco/archive/refs/tags/1.3.6.zip"
+DRACO_URL = "https://github.com/google/draco/archive/refs/tags/1.5.6.zip"
 
 def InstallDraco(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(DRACO_URL, context, force)):
         cmakeOptions = [
-            '-DBUILD_USD_PLUGIN=ON',
+            '-DBUILD_SHARED_LIBS=ON',
         ]
         cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
@@ -1589,7 +1539,7 @@ DRACO = Dependency("Draco", InstallDraco, "include/draco/compression/decode.h")
 ############################################################
 # MaterialX
 
-MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.10.zip"
+MATERIALX_URL = "https://github.com/AcademySoftwareFoundation/MaterialX/archive/v1.39.3.zip"
 
 def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
@@ -1623,31 +1573,37 @@ MATERIALX = Dependency("MaterialX", InstallMaterialX, "include/MaterialXCore/Lib
 
 ############################################################
 # Embree
-# For MacOS we use version 3.13.3 to include a fix from Intel
-# to build on Apple Silicon.
-if MacOS():
-    EMBREE_URL = "https://github.com/embree/embree/archive/v3.13.3.zip"
-else:
-    EMBREE_URL = "https://github.com/embree/embree/archive/v3.2.2.zip"
 
 def InstallEmbree(context, force, buildArgs):
+    EMBREE_URL = "https://github.com/RenderKit/embree/archive/refs/tags/v4.3.3.zip"
+
     with CurrentWorkingDirectory(DownloadURL(EMBREE_URL, context, force)):
         extraArgs = [
-            '-DTBB_ROOT={instDir}'.format(instDir=context.instDir),
+            '-DTBB_ROOT="{instDir}"'.format(instDir=context.instDir),
             '-DEMBREE_TUTORIALS=OFF',
             '-DEMBREE_ISPC_SUPPORT=OFF'
         ]
-
-        if MacOS() and context.targetUniversal:
-            extraArgs += [
-                '-DEMBREE_MAX_ISA=NEON',
-                '-DEMBREE_ISA_NEON=ON']
+        if MacOS():
+            # Suppress clang build warnings as errors
+            PatchFile("kernels/CMakeLists.txt",
+                [("DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES})\n"
+                "ADD_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})\n",
+                "DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES})\n"
+                "ADD_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES})\n"
+                "target_compile_options(embree PRIVATE -Wno-unused-but-set-variable)\n")],
+                multiLineMatches=True,
+            )
+            if context.targetUniversal:
+                extraArgs += [
+                    '-DEMBREE_MAX_ISA=NEON',
+                    '-DEMBREE_ISA_NEON=ON']
 
         extraArgs += buildArgs
 
         RunCMake(context, force, extraArgs)
 
-EMBREE = Dependency("Embree", InstallEmbree, "include/embree3/rtcore.h")
+EMBREE = Dependency("Embree", InstallEmbree,
+                    "include/embree4/rtcore.h")
 
 ############################################################
 # AnimX
@@ -1698,11 +1654,6 @@ def InstallUSD(context, force, buildArgs):
                 extraArgs.append('-DPXR_USE_DEBUG_PYTHON=ON')
             else:
                 extraArgs.append('-DPXR_USE_DEBUG_PYTHON=OFF')
-
-            if context.buildBoostPython:
-                extraArgs.append('-DPXR_USE_BOOST_PYTHON=ON')
-            else:
-                extraArgs.append('-DPXR_USE_BOOST_PYTHON=OFF')
 
             # CMake has trouble finding the executable, library, and include
             # directories when there are multiple versions of Python installed.
@@ -1799,6 +1750,12 @@ def InstallUSD(context, force, buildArgs):
                 extraArgs.append('-DPXR_BUILD_PRMAN_PLUGIN=ON')
             else:
                 extraArgs.append('-DPXR_BUILD_PRMAN_PLUGIN=OFF')                
+
+            if MacOS():
+                if context.buildImageIO:
+                    extraArgs.append('-DPXR_BUILD_IMAGEIO_PLUGIN=ON')
+                else:
+                    extraArgs.append('-DPXR_BUILD_IMAGEIO_PLUGIN=OFF')
             
             if context.buildOIIO:
                 extraArgs.append('-DPXR_BUILD_OPENIMAGEIO_PLUGIN=ON')
@@ -1830,15 +1787,6 @@ def InstallUSD(context, force, buildArgs):
 
         if context.buildAlembic:
             extraArgs.append('-DPXR_BUILD_ALEMBIC_PLUGIN=ON')
-            if context.enableHDF5:
-                extraArgs.append('-DPXR_ENABLE_HDF5_SUPPORT=ON')
-
-                # CMAKE_PREFIX_PATH isn't sufficient for the FindHDF5 module 
-                # to find the HDF5 we've built, so provide an extra hint.
-                extraArgs.append('-DHDF5_ROOT="{instDir}"'
-                                 .format(instDir=context.instDir))
-            else:
-                extraArgs.append('-DPXR_ENABLE_HDF5_SUPPORT=OFF')
         else:
             extraArgs.append('-DPXR_BUILD_ALEMBIC_PLUGIN=OFF')
 
@@ -1877,7 +1825,7 @@ def InstallUSD(context, force, buildArgs):
 
         extraArgs += buildArgs
 
-        RunCMake(context, force, extraArgs)
+        RunCMake(context, force, extraArgs, context.usdInstDir)
 
 USD = Dependency("USD", InstallUSD, "include/pxr/pxr.h")
 
@@ -2111,10 +2059,6 @@ subgroup.add_argument("--no-usdValidation", dest="build_usd_validation",
                       action="store_false", help="Do not build USD " \
                       "Validation library and validators")
 
-group.add_argument("--boost-python", dest="build_boost_python",
-                   action="store_true", default=False,
-                   help="Build Python bindings with boost::python (deprecated)")
-
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--debug-python", dest="debug_python", 
                       action="store_true", help=
@@ -2193,6 +2137,12 @@ subgroup.add_argument("--openimageio", dest="build_oiio", action="store_true",
                       help="Build OpenImageIO plugin for USD")
 subgroup.add_argument("--no-openimageio", dest="build_oiio", action="store_false",
                       help="Do not build OpenImageIO plugin for USD (default)")
+if MacOS():
+    group.add_argument("--imageio", dest="build_imageio", action="store_true", 
+                      default=True,
+                      help="Build the ImageIO.framework plugin for USD (default).")
+    group.add_argument("--no-imageio", dest="build_imageio", action="store_false",
+                       help="Do not build build the ImageIO.framework plugin for USD.")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--opencolorio", dest="build_ocio", action="store_true", 
                       default=False,
@@ -2207,12 +2157,6 @@ subgroup.add_argument("--alembic", dest="build_alembic", action="store_true",
                       help="Build Alembic plugin for USD")
 subgroup.add_argument("--no-alembic", dest="build_alembic", action="store_false",
                       help="Do not build Alembic plugin for USD (default)")
-subgroup = group.add_mutually_exclusive_group()
-subgroup.add_argument("--hdf5", dest="enable_hdf5", action="store_true", 
-                      default=False,
-                      help="Enable HDF5 support in the Alembic plugin")
-subgroup.add_argument("--no-hdf5", dest="enable_hdf5", action="store_false",
-                      help="Disable HDF5 support in the Alembic plugin (default)")
 
 group = parser.add_argument_group(title="Draco Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
@@ -2366,7 +2310,6 @@ class InstallContext:
         # Optional components
         self.buildTests = args.build_tests and not embedded
         self.buildPython = args.build_python and not embedded
-        self.buildBoostPython = self.buildPython and args.build_boost_python
         self.buildExamples = args.build_examples and not embedded
         self.buildTutorials = args.build_tutorials and not embedded
         self.buildTools = args.build_tools and not embedded
@@ -2407,11 +2350,12 @@ class InstallContext:
         self.buildOIIO = ((args.build_oiio or (self.buildUsdImaging
                                                and self.buildTests))
                           and not embedded)
+        if MacOS():
+            self.buildImageIO = args.build_imageio
         self.buildOCIO = args.build_ocio and not embedded
 
         # - Alembic Plugin
         self.buildAlembic = args.build_alembic
-        self.enableHDF5 = self.buildAlembic and args.enable_hdf5
 
         # - Draco Plugin
         self.buildDraco = args.build_draco
@@ -2470,13 +2414,8 @@ if context.buildOneTBB:
 
 requiredDependencies = [TBB]
 
-if context.buildBoostPython:
-    requiredDependencies += [BOOST]
-
 if context.buildAlembic:
-    if context.enableHDF5:
-        requiredDependencies += [ZLIB, HDF5]
-    requiredDependencies += [OPENEXR, ALEMBIC]
+    requiredDependencies += [ZLIB, OPENEXR, ALEMBIC]
 
 if context.buildDraco:
     requiredDependencies += [DRACO]
@@ -2508,13 +2447,13 @@ if context.buildUsdview:
 if context.buildAnimXTests:
     requiredDependencies += [ANIMX]
 
-# Linux provides zlib. Skipping it here avoids issues where a host 
+# Linux and MacOS provide zlib. Skipping it here avoids issues where a host 
 # application loads a different version of zlib than the one we build against.
 # Building zlib is the default when a dependency requires it, although OpenUSD
 # itself does not require it. The --no-zlib flag can be passed to the build
 # script to allow the dependency to find zlib in the build environment.
-if (Linux() or not context.buildZlib) and ZLIB in requiredDependencies:
-    requiredDependencies.remove(ZLIB)
+if (Linux() or MacOS() or not context.buildZlib) and ZLIB in requiredDependencies:
+    requiredDependencies = [r for r in requiredDependencies if r != ZLIB]
 
 # Error out if user is building monolithic library on windows with draco plugin
 # enabled. This currently results in missing symbols.
@@ -2522,9 +2461,12 @@ if context.buildDraco and context.buildMonolithic and Windows():
     PrintError("Draco plugin can not be enabled for monolithic build on Windows")
     sys.exit(1)
 
-# The versions of Embree we currently support do not support oneTBB.
-if context.buildOneTBB and context.buildEmbree:
-    PrintError("Embree support cannot be enabled when building against oneTBB")
+# Windows ARM64 requires oneTBB. Since oneTBB is a non-standard option for the
+# currently aligned version of the VFX Reference Platform, we error out and 
+# require the user to explicitly specify --onetbb instead of silently switching
+# to oneTBB for them.
+if Windows() and GetWindowsHostArch() == "ARM64" and not context.buildOneTBB:
+    PrintError("Windows ARM64 builds require oneTBB. Enable via the --onetbb argument")
     sys.exit(1)
 
 # Error out if user enables Vulkan support but env var VULKAN_SDK is not set.
@@ -2599,31 +2541,12 @@ if not isPython64Bit:
 
 if which("cmake"):
     # Check cmake minimum version requirements
-    pyInfo = GetPythonInfo(context)
-    pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
-    if context.buildPython and pyVer >= (3, 11):
-        # Python 3.11 requires boost 1.82.0, which is not supported prior
-        # to 3.27
-        cmake_required_version = (3, 27)
-    elif context.buildPython and pyVer >= (3, 10):
-        # Python 3.10 is not supported prior to 3.24
-        cmake_required_version = (3, 24)
-    elif IsVisualStudio2022OrGreater():
-        # Visual Studio 2022 is not supported prior to 3.24
-        cmake_required_version = (3, 24)
-    elif Windows():
-        # Visual Studio 2017 and 2019 are verified to work correctly with 3.14
-        cmake_required_version = (3, 14)
-    elif MacOS():
-        # Apple Silicon is not supported prior to 3.19
-        cmake_required_version = (3, 19)
-
+    if MacOS() and context.buildTarget == apple_utils.TARGET_VISIONOS:
         # visionOS support was added in CMake 3.28
-        if context.buildTarget == apple_utils.TARGET_VISIONOS:
-            cmake_required_version = (3, 28)
+        cmake_required_version = (3, 28)
     else:
-        # Linux, and vfx platform CY2020, are verified to work correctly with 3.14
-        cmake_required_version = (3, 14)
+        # OpenUSD requires CMake 3.26+
+        cmake_required_version = (3, 26)
 
     cmake_version = GetCMakeVersion()
     if not cmake_version:
@@ -2726,8 +2649,10 @@ summaryMsg += """\
     Imaging                     {buildImaging}
       Ptex support:             {enablePtex}
       OpenVDB support:          {enableOpenVDB}
+      ImageIO support:          {buildImageIO}
       OpenImageIO support:      {buildOIIO} 
       OpenColorIO support:      {buildOCIO} 
+      Embree support:           {buildEmbree}
       PRMan support:            {buildPrman}
       Vulkan support:           {enableVulkan}
     UsdImaging                  {buildUsdImaging}
@@ -2744,7 +2669,6 @@ summaryMsg += """\
     Tutorials                   {buildTutorials}
     Tools                       {buildTools}
     Alembic Plugin              {buildAlembic}
-      HDF5 support:             {enableHDF5}
     Draco Plugin                {buildDraco}
 
   Dependencies                  {dependencies}"""
@@ -2762,6 +2686,23 @@ def FormatBuildArguments(buildArgs):
             name=AllDependenciesByName[depName].name,
             args=" ".join(args))
     return s.lstrip()
+
+# The USD build will automatically skip these utilities if Jinja2 is not
+# available. We inform the user here so they're not surprised later on.
+omitUsdGenSchemaMsg = context.buildPython and not JINJA2.Exists(context)
+
+omittedSchemaGenScripts = [
+    "usdGenSchema",
+    "usdgenschemafromsdr",
+    "usdInitSchema"
+]
+
+if omitUsdGenSchemaMsg:
+    summaryMsg += """
+\nOmitted (Jinja2 not found): {omittedSchemaGenScripts}."""
+
+# Make sure to have a newline at the end of the summary message
+summaryMsg += "\n"
 
 summaryMsg = summaryMsg.format(
     usdSrcDir=context.usdSrcDir,
@@ -2790,8 +2731,10 @@ summaryMsg = summaryMsg.format(
     buildImaging=("On" if context.buildImaging else "Off"),
     enablePtex=("On" if context.enablePtex else "Off"),
     enableOpenVDB=("On" if context.enableOpenVDB else "Off"),
+    buildImageIO=("On" if (MacOS() and context.buildImageIO) else "Off"),
     buildOIIO=("On" if context.buildOIIO else "Off"),
     buildOCIO=("On" if context.buildOCIO else "Off"),
+    buildEmbree=("On" if context.buildEmbree else "Off"),
     buildPrman=("On" if context.buildPrman else "Off"),
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
     buildUsdview=("On" if context.buildUsdview else "Off"),
@@ -2810,7 +2753,7 @@ summaryMsg = summaryMsg.format(
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
     buildMayapyTests=("On" if context.buildMayapyTests else "Off"),
     buildAnimXTests=("On" if context.buildAnimXTests else "Off"),
-    enableHDF5=("On" if context.enableHDF5 else "Off"))
+    omittedSchemaGenScripts=(", ".join(omittedSchemaGenScripts)))
 
 Print(summaryMsg)
 

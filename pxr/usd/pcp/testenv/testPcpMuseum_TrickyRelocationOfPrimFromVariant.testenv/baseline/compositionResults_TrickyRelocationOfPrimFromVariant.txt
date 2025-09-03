@@ -1,16 +1,16 @@
-Loading @TrickyRelocationOfPrimFromVariant/root.sdf@
+Loading @TrickyRelocationOfPrimFromVariant/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Char>
 
 Prim Stack:
-    root.sdf             /Char
-    CharRig.sdf          /CharRig
-    CharRig.sdf          /CharRig{TailRigVersion=Standard}
+    root.usda            /Char
+    CharRig.usda         /CharRig
+    CharRig.usda         /CharRig{TailRigVersion=Standard}
 
 Variant Selections:
     {TailRigVersion = Standard}
@@ -22,8 +22,8 @@ Child names:
 Results for composing </Char/TailRig>
 
 Prim Stack:
-    CharRig.sdf          /CharRig{TailRigVersion=Standard}TailRig
-    TailRig.sdf          /TailRig
+    CharRig.usda         /CharRig{TailRigVersion=Standard}TailRig
+    TailRig.usda         /TailRig
 
 Prohibited child names:
      ['Tail']
@@ -32,7 +32,7 @@ Prohibited child names:
 Results for composing </Char/Anim>
 
 Prim Stack:
-    CharRig.sdf          /CharRig/Anim
+    CharRig.usda         /CharRig/Anim
 
 Child names:
      ['Tail']
@@ -41,15 +41,15 @@ Child names:
 Results for composing </Char/Anim/Tail>
 
 Prim Stack:
-    TailRig.sdf          /TailRig/Tail
+    TailRig.usda         /TailRig/Tail
 
 ------------------------------------------------------------------------
 Results for composing </Char2>
 
 Prim Stack:
-    root.sdf             /Char2
-    CharRig.sdf          /CharRig2
-    CharRig.sdf          /CharRig2{TailRigVersion=None}
+    root.usda            /Char2
+    CharRig.usda         /CharRig2
+    CharRig.usda         /CharRig2{TailRigVersion=None}
 
 Variant Selections:
     {TailRigVersion = None}
@@ -61,7 +61,7 @@ Child names:
 Results for composing </Char2/Anim>
 
 Prim Stack:
-    CharRig.sdf          /CharRig2/Anim
+    CharRig.usda         /CharRig2/Anim
 
 Child names:
      ['Tail']

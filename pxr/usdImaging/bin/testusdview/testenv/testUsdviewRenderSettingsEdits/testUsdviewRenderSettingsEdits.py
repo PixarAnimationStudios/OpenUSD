@@ -34,14 +34,24 @@ def _updateRenderSettingsMetadata(appController, rsPath):
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)
 
+    # Verify that the render settings prim path in the stage metadata is the
+    # active one.
+    activeRenderSettingsPrim = appController.getActiveRenderSettingsPrim()
+    assert activeRenderSettingsPrim.GetPath() == '/Render/Settings'
+
     productPath = '/Render/Product'
 
     appController._takeShot("DofEnabled.png", waitForConvergence=True)
 
-    # Disable Depth of Field attribute
+    # Disable Depth of Field attribute on the render product.
     _updateAttribute(appController, productPath, 'disableDepthOfField', True)
     appController._takeShot("DofDisabled.png", waitForConvergence=True)
 
-    # Update the Render Settings Prim Path in the stage metadata
+    # Modify the Render Settings Prim Path in the stage metadata
     _updateRenderSettingsMetadata(appController, "/Render/SettingsMurk")
     appController._takeShot("switchRenderSettings.png", waitForConvergence=True)
+
+    # Switch back to the original Render Settings prim using the appController.
+    appController.setActiveRenderSettingsPrim(activeRenderSettingsPrim)
+    appController._takeShot(
+        "switchBackRenderSettings.png", waitForConvergence=True)

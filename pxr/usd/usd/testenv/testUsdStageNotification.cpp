@@ -449,6 +449,46 @@ TestObjectsChanged()
         attr.Set(42);
     }
 
+    // Assert that changing two attribute values causes info changes for both.
+    {
+        UsdAttribute attr2 =
+            foo.CreateAttribute(TfToken("attr2"), SdfValueTypeNames->Int);
+
+        printf("Setting two attribute values should cause info changes\n");
+        _NoticeTester tester(stage);
+        tester.AddTest([attr, attr2](Notice const &n) {
+                const SdfPathVector changedInfoPaths{
+                    SdfPath("/foo.attr"),
+                    SdfPath("/foo.attr2")};
+                return
+                    TF_AXIOM(!n.ResyncedObject(attr)) &&
+                    TF_AXIOM(!n.ResyncedObject(attr2)) &&
+                    TF_AXIOM(n.ChangedInfoOnly(attr)) &&
+                    TF_AXIOM(n.ChangedInfoOnly(attr2)) &&
+                    TF_AXIOM(n.AffectedObject(attr)) &&
+                    TF_AXIOM(n.AffectedObject(attr2)) &&
+                    TF_AXIOM(n.GetResyncedPaths().empty()) &&
+                    TF_AXIOM(SdfPathVector(n.GetChangedInfoOnlyPaths()) == 
+                        changedInfoPaths);
+            });
+        tester.AddTest([attr, attr2](Notice const &n) {
+                return
+                    TF_AXIOM(n.HasChangedFields(attr)) &&
+                    TF_AXIOM(n.HasChangedFields(attr2)) &&
+                    TF_AXIOM(n.GetChangedFields(attr) == 
+                             TfTokenVector{SdfFieldKeys->Default}) &&
+                    TF_AXIOM(n.GetChangedFields(attr2) == 
+                             TfTokenVector{SdfFieldKeys->Default});
+            });
+
+        { SdfChangeBlock block;
+            rootLayer->GetAttributeAtPath(SdfPath("/foo.attr"))
+                ->SetDefaultValue(VtValue(int(13)));
+            rootLayer->GetAttributeAtPath(SdfPath("/foo.attr2"))
+                ->SetDefaultValue(VtValue(int(42)));
+        }
+    }
+
     // Assert that creating a relationship causes resyncs
     UsdRelationship rel;
     {

@@ -37,6 +37,7 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Render output parameters");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_RETESSELATION,
         "Debug retesselation for displacements edits.");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_RILEY, "Debug Riley variant and devices")
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

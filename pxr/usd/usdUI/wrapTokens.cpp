@@ -17,9 +17,20 @@ void wrapUsdUITokens()
 {
     pxr_boost::python::class_<UsdUITokensType, pxr_boost::python::noncopyable>
         cls("Tokens", pxr_boost::python::no_init);
+    _ADD_TOKEN(cls, accessibility);
+    _ADD_TOKEN(cls, accessibility_MultipleApplyTemplate_Description);
+    _ADD_TOKEN(cls, accessibility_MultipleApplyTemplate_Label);
+    _ADD_TOKEN(cls, accessibility_MultipleApplyTemplate_Priority);
     _ADD_TOKEN(cls, closed);
+    _ADD_TOKEN(cls, default_);
+    _ADD_TOKEN(cls, description);
+    _ADD_TOKEN(cls, high);
+    _ADD_TOKEN(cls, label);
+    _ADD_TOKEN(cls, low);
     _ADD_TOKEN(cls, minimized);
     _ADD_TOKEN(cls, open);
+    _ADD_TOKEN(cls, priority);
+    _ADD_TOKEN(cls, standard);
     _ADD_TOKEN(cls, uiDescription);
     _ADD_TOKEN(cls, uiDisplayGroup);
     _ADD_TOKEN(cls, uiDisplayName);
@@ -30,6 +41,7 @@ void wrapUsdUITokens()
     _ADD_TOKEN(cls, uiNodegraphNodePos);
     _ADD_TOKEN(cls, uiNodegraphNodeSize);
     _ADD_TOKEN(cls, uiNodegraphNodeStackingOrder);
+    _ADD_TOKEN(cls, AccessibilityAPI);
     _ADD_TOKEN(cls, Backdrop);
     _ADD_TOKEN(cls, NodeGraphNodeAPI);
     _ADD_TOKEN(cls, SceneGraphPrimAPI);

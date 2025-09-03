@@ -35,6 +35,8 @@ Arch_ObtainCacheLineSize()
 {
 #if defined(ARCH_OS_LINUX)
     return sysconf(_SC_LEVEL1_DCACHE_LINESIZE);
+#elif defined(ARCH_OS_WASM_VM)
+    return 64;
 #elif defined(ARCH_OS_DARWIN)
     size_t cacheLineSize = 0;
     size_t cacheLineSizeSize = sizeof(cacheLineSize);
@@ -150,6 +152,18 @@ Arch_ValidateAssumptions()
             ARCH_ERROR("Big-endian byte order not supported.");
         }
     }    
+
+    /*
+     * Make sure that ARM64_CNTVCT == 0x5F02 on Windows ARM64
+     * This is manually calculated in pxr/base/arch/timing.h to
+     * avoid including <windows.h>
+     */
+#if defined(ARCH_OS_WINDOWS) && defined(ARCH_CPU_ARM)
+    {
+        static_assert(ARM64_CNTVCT == 0x5F02,
+            "Manually calculated ARM64_CNTVCT value is no longer correct");
+    }
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

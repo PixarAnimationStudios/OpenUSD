@@ -914,6 +914,12 @@ function(pxr_register_test TEST_NAME)
         set(testWrapperCmd ${testWrapperCmd} --expected-return-code=${bt_EXPECTED_RETURN_CODE})
     endif()
 
+    # Ensure that TF_FATAL_VERIFY is enabled for tests, so that failed verifies
+    # turn into test failures.
+    # Set this first, so that env vars passed to pxr_register_test can turn off
+    # TF_FATAL_VERIFY where desired.
+    set(testWrapperCmd ${testWrapperCmd} --env-var=TF_FATAL_VERIFY=1)
+
     if (bt_ENV)
         foreach(env ${bt_ENV})
             set(testWrapperCmd ${testWrapperCmd} --env-var=${env})
@@ -1170,6 +1176,19 @@ function(pxr_toplevel_epilogue)
             target_link_libraries(usd_ms
                 PRIVATE
                     -Wl,-force_load $<BUILD_INTERFACE:$<TARGET_FILE:usd_m>>
+            )
+        endif()
+        if(APPLE AND PXR_PY_UNDEFINED_DYNAMIC_LOOKUP)
+            # When not explicitly linking to the python lib we need to allow
+            # the linker to complete without resolving all symbols. This lets
+            # python resolve at runtime, and use this to support python
+            # versions built with different compilers and point versions.
+            # This only needed on macOS; this is not an issue on Windows,
+            # and on Linux the equivalent --allow-shlib-undefined option for ld
+            # is enabled by default when creating shared libraries.
+            target_link_options(usd_ms
+                PUBLIC
+                "LINKER:SHELL:-undefined dynamic_lookup"
             )
         endif()
 

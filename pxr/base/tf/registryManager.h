@@ -145,8 +145,8 @@ public:
 // the body of the function inside braces.  KEY_TYPE and TAG must be types.
 #define TF_REGISTRY_DEFINE_WITH_TYPE(KEY_TYPE, TAG)                            \
     static void _Tf_RegistryFunction(KEY_TYPE*, TAG*);                         \
-    ARCH_CONSTRUCTOR(TF_PP_CAT(_Tf_RegistryAdd, __LINE__),                     \
-                     TF_REGISTRY_PRIORITY, KEY_TYPE*, TAG*)                    \
+    ARCH_CONSTRUCTOR(TF_PP_CAT(_Tf_RegistryAdd, __COUNTER__),                  \
+                     TF_REGISTRY_PRIORITY)                                     \
     {                                                                          \
         Tf_RegistryInit::Add(TF_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME),            \
                              (void(*)(KEY_TYPE*, TAG*))_Tf_RegistryFunction,   \
@@ -160,8 +160,7 @@ public:
 // must be a valid C++ name.
 #define TF_REGISTRY_DEFINE(KEY_TYPE, NAME)                                     \
     static void TF_PP_CAT(_Tf_RegistryFunction, NAME)(KEY_TYPE*, void*);       \
-    ARCH_CONSTRUCTOR(TF_PP_CAT(_Tf_RegistryAdd, NAME),                         \
-                     TF_REGISTRY_PRIORITY, KEY_TYPE*)                          \
+    ARCH_CONSTRUCTOR(TF_PP_CAT(_Tf_RegistryAdd, NAME), TF_REGISTRY_PRIORITY)   \
     {                                                                          \
         Tf_RegistryInit::Add(TF_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME),            \
                              (void(*)(KEY_TYPE*, void*))                       \
@@ -200,7 +199,7 @@ public:
 ///
 /// \hideinitializer
 #define TF_REGISTRY_FUNCTION(KEY_TYPE) \
-    TF_REGISTRY_DEFINE(KEY_TYPE, __LINE__)
+    TF_REGISTRY_DEFINE(KEY_TYPE, __COUNTER__)
 
 /// Define a function that is called on demand by \c TfRegistryManager.
 ///
@@ -241,7 +240,7 @@ public:
 ///
 /// \hideinitializer
 #define TF_REGISTRY_FUNCTION_WITH_TAG(KEY_TYPE, TAG) \
-    TF_REGISTRY_DEFINE(KEY_TYPE, TF_PP_CAT(TAG, __LINE__))
+    TF_REGISTRY_DEFINE(KEY_TYPE, TF_PP_CAT(TAG, __COUNTER__))
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

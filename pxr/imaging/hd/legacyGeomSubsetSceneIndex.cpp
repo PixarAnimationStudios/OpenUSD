@@ -33,6 +33,7 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/types.h"
+#include "pxr/base/trace/trace.h"
 
 #include "pxr/pxr.h"
 
@@ -314,6 +315,8 @@ HdLegacyGeomSubsetSceneIndex::_PrimsAdded(
     const HdSceneIndexBase&  /*sender*/,
     const HdSceneIndexObserver::AddedPrimEntries& entries)
 {
+    TRACE_FUNCTION();
+
     HdSceneIndexObserver::AddedPrimEntries newEntries;
     for (const HdSceneIndexObserver::AddedPrimEntry& entry : entries) {
         if (!HdPrimTypeSupportsGeomSubsets(entry.primType)) {
@@ -358,6 +361,8 @@ HdLegacyGeomSubsetSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase& /*sender*/,
     const HdSceneIndexObserver::DirtiedPrimEntries& entries)
 {
+    TRACE_FUNCTION();
+
     // XXX: We cache each parent prim's subset paths so we can tell when
     // dirty topology means one or more subsets were added or removed.
     // Otherwise, we would have to remove and add every subset every time the

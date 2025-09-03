@@ -1,15 +1,15 @@
-Loading @SubrootReferenceAndRelocates/root.sdf@
+Loading @SubrootReferenceAndRelocates/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </CrowdGroup>
 
 Prim Stack:
-    root.sdf             /CrowdGroup
-    groups.sdf           /Groups/CrowdGroup
+    root.usda            /CrowdGroup
+    groups.usda          /Groups/CrowdGroup
 
 Child names:
      ['Char', '_class_Char']
@@ -18,23 +18,23 @@ Child names:
 Results for composing </CrowdGroup/Char>
 
 Prim Stack:
-    root.sdf             /CrowdGroup/Char
-    groups.sdf           /Groups/CrowdGroup/Char
-    groups.sdf           /Groups/CharGroup/_class_Char
-    chargroup.sdf        /CharGroup/Char
-    chargroup.sdf        /CharGroup/_class_Char
+    root.usda            /CrowdGroup/Char
+    groups.usda          /Groups/CrowdGroup/Char
+    groups.usda          /Groups/CharGroup/_class_Char
+    chargroup.usda       /CharGroup/Char
+    chargroup.usda       /CharGroup/_class_Char
 
 ------------------------------------------------------------------------
 Results for composing </CrowdGroup/_class_Char>
 
 Prim Stack:
-    root.sdf             /CrowdGroup/_class_Char
+    root.usda            /CrowdGroup/_class_Char
 
 ------------------------------------------------------------------------
 Results for composing </CharGroup>
 
 Prim Stack:
-    root.sdf             /CharGroup
+    root.usda            /CharGroup
 
 Child names:
      ['_class_Char']
@@ -43,5 +43,5 @@ Child names:
 Results for composing </CharGroup/_class_Char>
 
 Prim Stack:
-    root.sdf             /CharGroup/_class_Char
+    root.usda            /CharGroup/_class_Char
 

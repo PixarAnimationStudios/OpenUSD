@@ -24,8 +24,10 @@ class AttributeValueEditor(QtWidgets.QWidget):
         self._defaultView = self._ui.valueViewer
 
         from .arrayAttributeView import ArrayAttributeView
+        from .splineViewer import SplineViewer
         self._extraAttrViews = [
                 ArrayAttributeView(self),
+                SplineViewer(parent=self),
                 ]
 
         for attrView in self._extraAttrViews:
@@ -37,6 +39,15 @@ class AttributeValueEditor(QtWidgets.QWidget):
         # pass the appController instance from which to retrieve
         # variable data.
         self._appController = appController
+        for attrView in self._extraAttrViews:
+            self._appController._dataModel.selection \
+                .signalPrimSelectionChanged.connect(self.clear)
+            from .splineViewer import SplineViewer
+            if isinstance(attrView, SplineViewer):
+                self._appController._dataModel.currentFrameChanged.connect(
+                    attrView.SetCurrentFrame)
+                self._appController._dataModel.frameRangeChanged.connect(
+                    attrView.SetStartAndEndTime)
 
     def populate(self, primPath, propName):
         # called when the selected attribute has changed
@@ -75,6 +86,8 @@ class AttributeValueEditor(QtWidgets.QWidget):
         # If the current attribute doesn't belong to the current prim, don't
         # display its value.
         if self._attribute.GetPrimPath() != self._primPath:
+            if whichView := self._FindView(self._attribute):
+                whichView.Clear()
             self._ui.valueViewer.setText("")
             return
 
@@ -108,5 +121,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
         # set the value editor to 'no attribute selected' mode
         self._isSet = False
         self._ui.valueViewer.setText("")
+        for attrView in self._extraAttrViews:
+            attrView.Clear()
         # make sure we're showing the default view
         self._ui.stackedWidget.setCurrentWidget(self._defaultView)

@@ -7,6 +7,9 @@
 #include "pxr/imaging/hdsi/utils.h"
 
 #include "pxr/imaging/hd/collectionExpressionEvaluator.h"
+#include "pxr/imaging/hd/collectionsSchema.h"
+#include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/predicateLibrary.h"
 #include "pxr/base/trace/trace.h"
 
@@ -49,6 +52,26 @@ _GetPruneMatchResult(
 }
 
 } // anon
+
+void
+HdsiUtilsCompileCollection(
+    HdCollectionsSchema &collections,
+    TfToken const& collectionName,
+    HdSceneIndexBaseRefPtr const& sceneIndex,
+    SdfPathExpression *expr,
+    std::optional<HdCollectionExpressionEvaluator> *eval)
+{
+    if (HdCollectionSchema collection =
+        collections.GetCollection(collectionName)) {
+        if (HdPathExpressionDataSourceHandle pathExprDs =
+            collection.GetMembershipExpression()) {
+            *expr = pathExprDs->GetTypedValue(0.0);
+            if (!expr->IsEmpty()) {
+                *eval = HdCollectionExpressionEvaluator(sceneIndex, *expr);
+            }
+        }
+    }
+}
 
 bool
 HdsiUtilsIsPruned(

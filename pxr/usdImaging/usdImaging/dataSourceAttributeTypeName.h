@@ -36,6 +36,9 @@ public:
     ///
     TfToken GetTypedValue(HdSampledDataSource::Time shutterOffset) override
     {
+        if (!_usdAttr) {
+            return {};
+        }
         TF_UNUSED(shutterOffset);
         // We are using the GetAsToken() here since we do not expect an alias 
         // other than the "official" type name.

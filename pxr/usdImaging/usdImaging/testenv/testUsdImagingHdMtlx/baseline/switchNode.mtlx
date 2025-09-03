@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<materialx version="1.39">
+  <standard_surface name="Surface" type="surfaceshader">
+    <input name="base" type="float" output="base_out" nodegraph="NodeGraphs" />
+  </standard_surface>
+  <surfacematerial name="SwitchExample" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="Surface" />
+  </surfacematerial>
+  <nodegraph name="NodeGraphs">
+    <switch name="switch" type="float" nodedef="ND_switch_floatI">
+      <input name="in1" type="float" value="0.2" />
+      <input name="in2" type="float" value="0.4" />
+      <input name="which" type="integer" value="0" />
+    </switch>
+    <output name="base_out" type="float" nodename="switch" />
+  </nodegraph>
+</materialx>

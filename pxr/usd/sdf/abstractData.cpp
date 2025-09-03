@@ -8,6 +8,7 @@
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/base/trace/trace.h"
 
+#include <cmath>
 #include <ostream>
 #include <vector>
 #include <utility>
@@ -264,6 +265,37 @@ std::type_info const &
 SdfAbstractData::GetTypeid(const SdfPath &path, const TfToken &fieldName) const
 {
     return Get(path, fieldName).GetTypeid();
+}
+
+bool
+SdfAbstractData::GetPreviousTimeSampleForPath(
+    const SdfPath &path, double time, double* tPrevious) const
+{
+    double lower, upper;
+    bool result = GetBracketingTimeSamplesForPath(path, time, &lower, &upper);
+    if (result) {
+        if (time < lower) {
+            return false;
+        }
+        if (time == lower) {
+            // time falls on a time sample and hence lower == time (and upper).
+            // Go backwards to find the previous time sample using the 
+            // bracketing time samples.
+            double prevTime = 
+                nexttoward(time, -std::numeric_limits<double>::infinity());
+            result = GetBracketingTimeSamplesForPath(path, prevTime, &lower, 
+                                                     &upper);
+            if (!result || time == lower) {
+                // couldn't get bracketing times again, or,
+                // time is still same as lower, is only possible when time is 
+                // same as the first time sample, we cannot determine the
+                // previous time sample in this case.
+                return false;
+            }
+        }
+        *tPrevious = lower;
+    }
+    return result;
 }
 
 bool

@@ -4,8 +4,8 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATERIAL_H
-#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATERIAL_H
+#ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATERIAL_H
+#define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATERIAL_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/material.h"
@@ -66,7 +66,9 @@ private:
         HdSceneDelegate *sceneDelegate,
         riley::Riley *riley);
 
+    bool _dirtyMaterial;
     riley::MaterialId _materialId;
+    bool _dirtyDisplacement;
     riley::DisplacementId _displacementId;
 
     // XXX only used to set disp bound for UsdPreviewMaterial cases
@@ -94,4 +96,4 @@ HdPrmanMaterial_GetFallbackSurfaceMaterialNetwork();
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATERIAL_H
+#endif  // EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATERIAL_H

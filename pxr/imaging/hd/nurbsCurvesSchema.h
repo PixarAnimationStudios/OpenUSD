@@ -45,6 +45,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdNurbsCurvesSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdNurbsCurvesSchema
+///
 class HdNurbsCurvesSchema : public HdSchema
 {
 public:

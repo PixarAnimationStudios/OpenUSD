@@ -1,0 +1,215 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+# Based on ni_ni_material_binding_resolution_2.usda with the materials housed
+# under the instanced hierarchy.
+#
+# We should see:
+#
+# [LeftColumn]    [CenterColumn]    [RightColumn]
+#       Yellow         Green            Green
+#       Yellow         Green            Green
+#       Yellow          Red              Red
+#
+# but we don't because the material binding paths are not being translated
+# during prototype propagation.
+#
+def Camera "main_cam"
+{
+     point3f xformOp:translate = (0,5,28)
+     float xformOp:rotateX = -10
+     uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX"]
+}
+
+def DistantLight "Sun"
+{
+    # Use default intensity and direction (light is emitted along -Z).
+    # The latter is fine since the stage is Y up.
+}
+
+def Xform "World"
+{
+    def Xform "NI_NI"
+    {
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Xform "CenterColumn" (
+            prepend apiSchemas = [ "MaterialBindingAPI" ]
+        )
+        {
+            # Weaker binding than that on the prototype or native instances.
+            rel material:binding = </World/NI_NI/CenterColumn/ThreeSpheres/Looks/Yellow>
+
+            def Xform "ThreeSpheres"
+            {
+                def Xform "Prototype"
+                {
+                    def Sphere "Sphere"
+                    (
+                        prepend apiSchemas = [ "MaterialBindingAPI" ]
+                    )
+                    {
+                        float3 xformOp:translate = (0, 0, 0)
+                        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+                        rel material:binding = </World/NI_NI/CenterColumn/ThreeSpheres/Looks/Green>
+                    }
+                }
+
+                def Xform "Sphere2"
+                (
+                    instanceable = true
+                    references = </World/NI_NI/CenterColumn/ThreeSpheres/Prototype>
+                    prepend apiSchemas = [ "MaterialBindingAPI" ]
+                )
+                {
+                    float3 xformOp:translate = (0,-3,0)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                    rel material:binding = </World/NI_NI/CenterColumn/ThreeSpheres/Looks/Red> (
+                        bindMaterialAs = "strongerThanDescendants"
+                    )
+                }
+
+                def Xform "Sphere3"
+                (
+                    instanceable = true
+                    references = </World/NI_NI/CenterColumn/ThreeSpheres/Prototype>
+                    prepend apiSchemas = [ "MaterialBindingAPI" ]
+                )
+                {
+                    float3 xformOp:translate = (0,3,0)
+                    uniform token[] xformOpOrder = ["xformOp:translate"]
+                    # Weaker binding than that on the prototype.
+                    rel material:binding = </World/NI_NI/CenterColumn/ThreeSpheres/Looks/Blue>
+                }
+
+                def Scope "Looks"
+                {
+                    def Material "Green"
+                    {
+                        token outputs:surface.connect = </World/NI_NI/CenterColumn/ThreeSpheres/Looks/Green/Surface.outputs:out>
+
+                        def Shader "Surface"
+                        {
+                            uniform token info:id = "UsdPreviewSurface"
+                            color3f inputs:diffuseColor = (0.0, 1.0, 0.0)
+                            token outputs:out
+                        }
+                    }
+
+                    def Material "Red"
+                    {
+                        token outputs:surface.connect = </World/NI_NI/CenterColumn/ThreeSpheres/Looks/Red/Surface.outputs:out>
+
+                        def Shader "Surface"
+                        {
+                            uniform token info:id = "UsdPreviewSurface"
+                            color3f inputs:diffuseColor = (1.0, 0.0, 0.0)
+                            token outputs:out
+                        }
+                    }
+
+                    def Material "Blue"
+                    {
+                        token outputs:surface.connect = </World/NI_NI/CenterColumn/ThreeSpheres/Looks/Blue/Surface.outputs:out>
+
+                        def Shader "Surface"
+                        {
+                            uniform token info:id = "UsdPreviewSurface"
+                            color3f inputs:diffuseColor = (0.0, 0.0, 0.5)
+                            token outputs:out
+                        }
+                    }
+
+                    def Material "Yellow"
+                    {
+                        token outputs:surface.connect = </World/NI_NI/CenterColumn/ThreeSpheres/Looks/Yellow/Surface.outputs:out>
+
+                        def Shader "Surface"
+                        {
+                            uniform token info:id = "UsdPreviewSurface"
+                            color3f inputs:diffuseColor = (0.7, 0.7, 0.0)
+                            token outputs:out
+                        }
+                    }
+
+                    def Material "Cyan"
+                    {
+                        token outputs:surface.connect = </World/NI_NI/CenterColumn/ThreeSpheres/Looks/Cyan/Surface.outputs:out>
+
+                        def Shader "Surface"
+                        {
+                            uniform token info:id = "UsdPreviewSurface"
+                            color3f inputs:diffuseColor = (0.0, 0.7, 0.7)
+                            token outputs:out
+                        }
+                    }
+
+                    def Material "Magenta"
+                    {
+                        token outputs:surface.connect = </World/NI_NI/CenterColumn/ThreeSpheres/Looks/Magenta/Surface.outputs:out>
+
+                        def Shader "Surface"
+                        {
+                            uniform token info:id = "UsdPreviewSurface"
+                            color3f inputs:diffuseColor = (0.7, 0.0, 0.7)
+                            token outputs:out
+                        }
+                    }
+                }
+            }
+        }
+
+        def Xform "LeftColumn" (
+            prepend apiSchemas = [ "MaterialBindingAPI" ]
+        )
+        {
+            float3 xformOp:translate = (-3,0,0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            rel material:binding = </World/NI_NI/LeftColumn/NestedInstance/Looks/Yellow> (
+                bindMaterialAs = "strongerThanDescendants"
+            )
+
+            def Xform "NestedInstance"
+            (
+                instanceable = true
+                references = </World/NI_NI/CenterColumn/ThreeSpheres>
+                prepend apiSchemas = [ "MaterialBindingAPI" ]
+            )
+            {
+                # Provide an overriding binding opinion on the nested instance.
+                # Note that we have an opinion on the parent prim too.
+                # Which wins? Need to find out! I expect Yellow spheres.
+                rel material:binding = </World/NI_NI/LeftColumn/NestedInstance/Looks/Cyan> (
+                    bindMaterialAs = "strongerThanDescendants"
+                )
+            }
+        }
+
+        # Here, I expect the same color as the CenterColumn spheres if the
+        # material binding below doesn't have a stronger opinion.
+        def Xform "RightColumn" (
+            prepend apiSchemas = [ "MaterialBindingAPI" ]
+        )
+        {
+            float3 xformOp:translate = (3,0,0)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            rel material:binding = </World/NI_NI/RightColumn/NestedInstance/Looks/Magenta>
+            # rel material:binding = </Looks/Magenta> (
+            #     bindMaterialAs = "strongerThanDescendants"
+            # )
+
+            def Xform "NestedInstance"
+            (
+                instanceable = true
+                references = </World/NI_NI/CenterColumn/ThreeSpheres>
+                prepend apiSchemas = [ "MaterialBindingAPI" ]
+            )
+            {
+                rel material:binding = </World/NI_NI/RightColumn/NestedInstance/Looks/Cyan>
+            }
+        }
+    }
+}

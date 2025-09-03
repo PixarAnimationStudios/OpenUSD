@@ -11,6 +11,7 @@
 #include "pxr/usd/sdf/path.h"
 
 #include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/usd/usd/stage.h"
 
 #include "pxr/base/tf/error.h"
@@ -68,6 +69,32 @@ _TestSplineAndAttr(
     } else {
         TF_AXIOM(splineValue == attrValue);
     }
+
+    // Do a pre value test.
+    splineDouble = 0.0;
+    splineSuccess = spline.EvalPreValue(0.0, &splineDouble);
+    attrDouble = 1.0;
+    attrSuccess = attr.Get<double>(&attrDouble, UsdTimeCode::PreTime(1.0));
+    if (!attrSuccess || !splineSuccess) {
+        // If either fails, both should fail to eval / get the value.
+        // This is the case when spline is empty.
+        TF_AXIOM(attrSuccess == splineSuccess);
+    } else {
+        TF_AXIOM(splineDouble == attrDouble);
+    }
+    // Lets also try UsdAttributeQuery matching the spline value and the attr
+    // value.
+    UsdAttributeQuery attrQuery(attr);
+    TF_AXIOM(attrQuery.GetSpline() == spline);
+    VtValue queryValue;
+    bool querySuccess = attrQuery.Get(&queryValue, 1.0);
+    if (!querySuccess || !splineSuccess) {
+        // If either fails, both should fail to eval / get the value.
+        // This is the case when spline is empty.
+        TF_AXIOM(querySuccess == splineSuccess);
+    } else {
+        TF_AXIOM(queryValue == splineValue);
+    }
 }
 
 static
@@ -79,6 +106,7 @@ _GetTestSpline(
     TsKnot knot1(attrType.GetType());
     knot1.SetTime(1);
     knot1.SetValue(8.0);
+    knot1.SetPreValue(6.0);
     knot1.SetNextInterpolation(TsInterpCurve);
     knot1.SetPostTanWidth(1.3);
     knot1.SetPostTanSlope(0.125);
@@ -86,6 +114,7 @@ _GetTestSpline(
     TsKnot knot2(attrType.GetType());
     knot2.SetTime(6);
     knot2.SetValue(20.0);
+    knot2.SetPreValue(10.0);
     knot2.SetNextInterpolation(TsInterpCurve);
     knot2.SetPreTanWidth(1.3);
     knot2.SetPreTanSlope(-0.2);
@@ -129,6 +158,7 @@ _DoSerializationTest(
 
         if (isEmpty) {
             TF_AXIOM(!attr2.HasSpline());
+            TF_AXIOM(attr2.GetSpline().IsEmpty());
         } else {
             TF_AXIOM(attr2.HasSpline());
             const TsSpline spline2 = attr2.GetSpline();
@@ -266,7 +296,6 @@ TestSerializationComplex()
         TsSpline spline = TsSpline();
         spline.SetCurveType(TsCurveTypeHermite);
         TsKnot knot1;
-        knot1.SetCurveType(TsCurveTypeHermite);
         knot1.SetTime(1);
         knot1.SetValue(8.0);
         knot1.SetNextInterpolation(TsInterpCurve);
@@ -274,7 +303,6 @@ TestSerializationComplex()
         spline.SetKnot(knot1);
 
         TsKnot knot2;
-        knot2.SetCurveType(TsCurveTypeHermite);
         knot2.SetTime(6);
         knot2.SetValue(20.0);
         knot2.SetNextInterpolation(TsInterpCurve);
@@ -379,6 +407,67 @@ TestInvalidType()
     TF_AXIOM(!attr.ValueMightBeTimeVarying());
 }
 
+static
+void
+TestClobbered()
+{
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    const UsdPrim prim = stage->DefinePrim(SdfPath("/MyPrim"));
+    UsdAttribute attr = prim.CreateAttribute(
+        TfToken("myAttr"), SdfValueTypeNames->Double);
+    const TsSpline spline = _GetTestSpline(SdfValueTypeNames->Double);
+
+    attr.SetSpline(spline);
+    TF_AXIOM(attr.HasSpline());
+    TF_AXIOM(attr.GetSpline() == spline);
+    attr.Set(100.0, 1);
+
+    TF_AXIOM(!attr.HasSpline());
+    TF_AXIOM(attr.GetSpline().IsEmpty());
+    attr.SetSpline(spline);
+    TF_AXIOM(!attr.HasSpline());
+    TF_AXIOM(attr.GetSpline().IsEmpty());
+
+    double value;
+    attr.Get(&value, 1);
+    TF_AXIOM(value == 100.0);
+}
+
+static
+void
+TestWeakerSplineOpinion()
+{
+    UsdStageRefPtr stage = UsdStage::CreateInMemory();
+    SdfLayerRefPtr rootLayer = stage->GetRootLayer();
+    const SdfLayerRefPtr subLayer = SdfLayer::CreateAnonymous();
+    rootLayer->SetSubLayerPaths({subLayer->GetIdentifier()});
+
+    // Set spline in the subLayer
+    stage->SetEditTarget(stage->GetEditTargetForLocalLayer(subLayer));
+    const UsdPrim prim = stage->DefinePrim(SdfPath("/MyPrim"));
+    UsdAttribute attr = prim.CreateAttribute(TfToken("myAttr"),
+                                             SdfValueTypeNames->Double);
+    TsSpline spline = _GetTestSpline();
+    attr.SetSpline(spline);
+    TF_AXIOM(attr.HasSpline());
+    TF_AXIOM(attr.GetSpline() == spline);
+
+    // Set stronger time samples in the rootLayer
+    stage->SetEditTarget(stage->GetEditTargetForLocalLayer(rootLayer));
+    const UsdPrim rootPrim = stage->DefinePrim(SdfPath("/MyPrim"));
+    UsdAttribute rootAttr = prim.CreateAttribute(TfToken("myAttr"),
+                                                 SdfValueTypeNames->Double);
+    TF_AXIOM(attr.HasSpline());
+    TF_AXIOM(attr.GetSpline() == spline);
+    rootAttr.Set(100.0, 1);
+    TF_AXIOM(!attr.HasSpline());
+    TF_AXIOM(attr.GetSpline().IsEmpty());
+
+    double value;
+    attr.Get(&value, 1);
+    TF_AXIOM(value == 100.0);
+}
+
 int main()
 {
     TestSerializationEmpty();
@@ -389,5 +478,7 @@ int main()
     TestLayerOffsets();
     TestLayerOffsetsTimeCode();
     TestInvalidType();
+    TestClobbered();
+    TestWeakerSplineOpinion();
     return 0;
 }

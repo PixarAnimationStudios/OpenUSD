@@ -77,17 +77,18 @@ private:
         const RenamedPrimEntries&) override;
 
 Q_SIGNALS:
-    /// Sent when prims in the observed scene are added, removed, or moved
-    /// (including renames).
+    /// Sent when prims in the observed scene are added, removed, renamed or
+    /// dirtied. Details described by \p entries.
     ///
-    /// For moves, the original and new paths are included in \p removedPaths
-    /// and \p addedPaths, respectively.
-    void PrimsAddedOrRemoved(
-        const SdfPathSet& addedPaths,
-        const SdfPathSet& removedPaths);
-
-    /// Sent when prims in the observed scene are dirtied, indicating one or
-    /// more of their data sources have changed. Details described by \p entries.
+    /// \note The signature of the signals below mimics the scene index observer
+    /// structures because we want to keep processing costs minimal when we're
+    /// not in batching mode. The object associated with the slot (connected to
+    /// one of the signals below) may not be visible, and processing the entries
+    /// to generate a list of prim paths would be wasteful.
+    ///
+    void PrimsMarkedAdded(const AddedPrimEntries& entries);
+    void PrimsMarkedRemoved(const RemovedPrimEntries& entries);
+    void PrimsMarkedRenamed(const RenamedPrimEntries& entries);
     void PrimsMarkedDirty(const DirtiedPrimEntries& entries);
 
     /// Sent when a change to the observed scene is queued while in batching
@@ -95,19 +96,16 @@ Q_SIGNALS:
     void ChangeBatched();
 
 private:
-    void _BatchAddedPrim(const SdfPath&);
-    void _BatchRemovedPrim(const SdfPath&);
-    void _BatchDirtiedPrim(const SdfPath&, const HdDataSourceLocatorSet&);
-
     void _ClearBatchedChanges();
 
 private:
     HdSceneIndexBasePtr _index;
 
     bool _batching;
-    SdfPathSet _batchedAddedPrims;
-    SdfPathSet _batchedRemovedPrims;
-    std::map<SdfPath, HdDataSourceLocatorSet> _batchedDirtiedPrims;
+    AddedPrimEntries _batchedAddedPrimEntries;
+    RemovedPrimEntries _batchedRemovedPrimEntries;
+    RenamedPrimEntries _batchedRenamedPrimEntries;
+    DirtiedPrimEntries _batchedDirtiedPrimEntries;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

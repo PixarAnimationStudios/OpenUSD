@@ -44,6 +44,7 @@ HdStBasisCurves::HdStBasisCurves(SdfPath const& id)
     , _customDirtyBitsInUse(0)
     , _refineLevel(0)
     , _displayOpacity(false)
+    , _displayInOverlay(false)
     , _occludedSelectionShowsThrough(false)
     , _pointsShadingEnabled(false)
 {
@@ -591,7 +592,7 @@ HdStBasisCurves::_UpdateMaterialTagsForAllReprs(HdSceneDelegate *sceneDelegate,
 
             HdStSetMaterialTag(sceneDelegate, renderParam, drawItem, 
                 this->GetMaterialId(), _displayOpacity, 
-                _occludedSelectionShowsThrough);
+                _displayInOverlay, _occludedSelectionShowsThrough);
         }
     }
 }
@@ -616,6 +617,7 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
     if (*dirtyBits & HdChangeTracker::DirtyDisplayStyle) {
         HdDisplayStyle ds = GetDisplayStyle(sceneDelegate);
         _refineLevel = ds.refineLevel;
+        _displayInOverlay = ds.displayInOverlay;
         _occludedSelectionShowsThrough = ds.occludedSelectionShowsThrough;
         _pointsShadingEnabled = ds.pointsShadingEnabled;
     }
@@ -890,13 +892,14 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
         //assert name not in range.bufferArray.GetResources()
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
-        if (!value.IsEmpty()) {
-            ProcessVertexOrVaryingPrimvar(id, primvar.name,
-                HdInterpolationVertex, value, _topology, &sources);
+        if (!HdStIsPrimvarValidForDrawItem(drawItem, primvar.name, value)) {
+            continue;
+        }
+        ProcessVertexOrVaryingPrimvar(id, primvar.name,
+            HdInterpolationVertex, value, _topology, &sources);
 
-            if (primvar.name == HdTokens->displayOpacity) {
-                _displayOpacity = true;
-            }
+        if (primvar.name == HdTokens->displayOpacity) {
+            _displayOpacity = true;
         }
     }
 
@@ -1006,13 +1009,14 @@ HdStBasisCurves::_PopulateVaryingPrimvars(HdSceneDelegate *sceneDelegate,
 
         //assert name not in range.bufferArray.GetResources()
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
-        if (!value.IsEmpty()) {
-            ProcessVertexOrVaryingPrimvar(id, primvar.name, 
-                HdInterpolationVarying, value, _topology, &sources);
+        if (!HdStIsPrimvarValidForDrawItem(drawItem, primvar.name, value)) {
+            continue;
+        }
+        ProcessVertexOrVaryingPrimvar(id, primvar.name, 
+            HdInterpolationVarying, value, _topology, &sources);
 
-            if (primvar.name == HdTokens->displayOpacity) {
-                _displayOpacity = true;
-            }
+        if (primvar.name == HdTokens->displayOpacity) {
+            _displayOpacity = true;
         }
     }
  
@@ -1085,24 +1089,25 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
             continue;
 
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
-        if (!value.IsEmpty()) {
-            HdBufferSourceSharedPtr source =
-                std::make_shared<HdVtBufferSource>(primvar.name, value);
+        if (!HdStIsPrimvarValidForDrawItem(drawItem, primvar.name, value)) {
+            continue;
+        }
+        HdBufferSourceSharedPtr source =
+            std::make_shared<HdVtBufferSource>(primvar.name, value);
 
-            // verify primvar length
-            if (source->GetNumElements() != numCurves) {
-                HF_VALIDATION_WARN(id,
-                    "# of curves mismatch (%d != %d) for uniform primvar %s",
-                    (int)source->GetNumElements(), (int)numCurves, 
-                    primvar.name.GetText());
-                continue;
-            }
-           
-            sources.push_back(source);
+        // verify primvar length
+        if (source->GetNumElements() != numCurves) {
+            HF_VALIDATION_WARN(id,
+                "# of curves mismatch (%d != %d) for uniform primvar %s",
+                (int)source->GetNumElements(), (int)numCurves, 
+                primvar.name.GetText());
+            continue;
+        }
+        
+        sources.push_back(source);
 
-            if (primvar.name == HdTokens->displayOpacity) {
-                 _displayOpacity = true;
-            }
+        if (primvar.name == HdTokens->displayOpacity) {
+            _displayOpacity = true;
         }
     }
 

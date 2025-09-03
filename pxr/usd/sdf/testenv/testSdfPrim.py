@@ -91,6 +91,23 @@ class TestSdfPrim(unittest.TestCase):
         Sdf.CreatePrimInLayer(layer, "/InertVariants{v=b}")
         del layer.GetPrimAtPath("/InertVariants").variantSets["v"]
 
+    def test_Clips(self):
+        layer = Sdf.Layer.CreateAnonymous()
+        prim = Sdf.CreatePrimInLayer(layer, "/HasClips")
+
+        # `clipSets`` behavior
+        self.assertFalse(prim.hasClipSets)
+        prim.clipSetsList.Append("clip1")
+        self.assertTrue(prim.hasClipSets)
+        self.assertTrue(prim.clipSetsList.appendedItems == ["clip1"])
+        prim.clipSetsList.ClearEdits()
+        self.assertFalse(prim.hasClipSets)
+    
+        # `clips`` behavior
+        self.assertTrue(len(prim.clips) == 0)
+        prim.clips = {"a": 1}
+        self.assertTrue(prim.clips["a"] == 1)
+
 if __name__ == "__main__":
     unittest.main()
 

@@ -307,7 +307,44 @@ struct ValueFactory {
 
 ValueFactory const &GetValueFactoryForMenvaName(std::string const &name,
                                                 bool *found);
-}
+
+// Base class for building VtArrayEdit instances from type-erased values.
+struct ArrayEditFactoryBase {
+
+    virtual ~ArrayEditFactoryBase() = 0;
+
+    bool Append(VtValue const &elem);
+    void AppendRef(int64_t srcIndex);
+    
+    bool Prepend(VtValue const &elem);
+    void PrependRef(int64_t srcIndex);
+    
+    virtual bool Write(VtValue const &elem, int64_t index) = 0;
+    virtual void WriteRef(int64_t srcIndex, int64_t dstIndex) = 0;
+    virtual bool Insert(VtValue const &elem, int64_t index) = 0;
+    virtual void InsertRef(int64_t srcIndex, int64_t dstIndex) = 0;
+
+    virtual void EraseRef(int64_t index) = 0;
+
+    virtual void MinSize(int64_t size) = 0;
+    virtual bool MinSizeFill(int64_t size, VtValue const &fill) = 0;
+
+    virtual void MaxSize(int64_t size) = 0;
+
+    virtual void SetSize(int64_t size) = 0;
+    virtual bool SetSizeFill(int64_t size, VtValue const &fill) = 0;
+
+    virtual VtValue FinalizeAndReset() = 0;
+
+    virtual std::string GetErrorMessage() const = 0;
+};
+
+// Create a new ArrayEditFactory for menva type name \p name (same as in
+// GetValueFactoryForMenvaName()).  Return nullptr if not found.
+std::unique_ptr<ArrayEditFactoryBase>
+MakeArrayEditFactoryForMenvaName(std::string const &name);
+
+} // Sdf_ParserHelpers
 
 /// Converts a string to a bool.
 /// Accepts case insensitive "yes", "no", "false", true", "0", "1".

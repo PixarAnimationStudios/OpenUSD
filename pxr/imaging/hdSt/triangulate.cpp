@@ -111,17 +111,25 @@ HdSt_TriangulateFaceVaryingComputation::Resolve()
     HD_PERF_COUNTER_INCR(HdPerfTokens->triangulateFaceVarying);
 
     VtValue result;
-    HdMeshUtil meshUtil(_topology, _id);
-    if(meshUtil.ComputeTriangulatedFaceVaryingPrimvar(
+    HdMeshUtil meshUtil{_topology, _id};
+    const HdMeshComputationResult status =
+        meshUtil.ComputeTriangulatedFaceVaryingPrimvar(
             _source->GetData(),
             _source->GetNumElements(),
             _source->GetTupleType().type,
-            &result)) {
-        _SetResult(std::make_shared<HdVtBufferSource>(
-                        _source->GetName(),
-                        result));
-    } else {
+            &result);
+    switch (status) {
+    case HdMeshComputationResult::Error:
+        TF_CODING_ERROR("[%s] Could not triangulate face-varying data.",
+            _source->GetName().GetText());
+        break;
+    case HdMeshComputationResult::Success:
+        _SetResult(std::make_shared<HdVtBufferSource>(_source->GetName(),
+            result));
+        break;
+    case HdMeshComputationResult::Unchanged:
         _SetResult(_source);
+        break;
     }
 
     _SetResolved();
@@ -142,4 +150,3 @@ HdSt_TriangulateFaceVaryingComputation::_CheckValid() const
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

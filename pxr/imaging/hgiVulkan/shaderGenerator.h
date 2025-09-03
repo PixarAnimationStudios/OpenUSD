@@ -9,6 +9,7 @@
 #define PXR_IMAGING_HGIVULKAN_SHADERGENERATOR_H
 
 #include "pxr/imaging/hgi/shaderGenerator.h"
+#include "pxr/imaging/hgiVulkan/descriptorSetLayouts.h"
 #include "pxr/imaging/hgiVulkan/shaderSection.h"
 #include "pxr/imaging/hgiVulkan/api.h"
 
@@ -37,6 +38,12 @@ public:
 
     template<typename SectionType, typename ...T>
     SectionType *CreateShaderSection(T && ...t);
+
+    /// Returns information describing resources used by the generated shader.
+    /// This information can be merged with the info of the other
+    /// shader stage modules to create the pipeline descriptor set layout.
+    HGIVULKAN_API
+    HgiVulkanDescriptorSetInfoVector const &GetDescriptorSetInfo();
 
 protected:
     HGIVULKAN_API
@@ -67,13 +74,21 @@ private:
     void _WriteInOutBlocks(
         const HgiShaderFunctionParamBlockDescVector &parameterBlocks,
         const std::string &qualifier);
-    
+
+    void _AddDescriptorSetLayoutBinding(
+        uint32_t bindingIndex,
+        VkDescriptorType descriptorType,
+        uint32_t descriptorCount);
+
     HgiVulkanShaderSectionUniquePtrVector _shaderSections;
     Hgi const *_hgi;
     uint32_t _textureBindIndexStart;
     uint32_t _inLocationIndex;
     uint32_t _outLocationIndex;
     std::vector<std::string> _shaderLayoutAttributes;
+
+    HgiVulkanDescriptorSetInfoVector _descriptorSetInfo;
+    bool _descriptorSetLayoutsAdded;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

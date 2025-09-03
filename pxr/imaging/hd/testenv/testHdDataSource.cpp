@@ -12,6 +12,7 @@
 #include "pxr/imaging/hd/xformSchema.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialInterfaceMappingSchema.h"
+#include "pxr/imaging/hd/materialInterfaceParameterSchema.h"
 
 #include "pxr/imaging/hd/tokens.h"
 
@@ -471,7 +472,7 @@ bool TestContainerSchemas()
         TfToken("b"), HdRetainedTypedSampledDataSource<int>::New(2),
         TfToken("c"), HdRetainedTypedSampledDataSource<float>::New(3.0f));
 
-    HdTypedContainerSchema<HdIntDataSource> s1(c1);
+    HdContainerOfTypedSampledDataSourcesSchema<HdIntDataSource> s1(c1);
 
     if (!s1.Get(TfToken("a")) || !s1.Get(TfToken("b"))) {
         std::cerr << "expected int data source result" << std::endl;
@@ -483,6 +484,7 @@ bool TestContainerSchemas()
         return false;
     }
 
+    // Build mappings for use in material interface parameter
     auto _TDS = [](const char *v) {
         return HdRetainedTypedSampledDataSource<TfToken>::New(TfToken(v));
     };
@@ -498,20 +500,69 @@ bool TestContainerSchemas()
             .Build(),
     };
 
-    HdContainerDataSourceHandle c2 = HdRetainedContainerDataSource::New(
-        TfToken("Q"), HdRetainedSmallVectorDataSource::New(2, h1));
+    // Build material interface parameter
+    HdContainerDataSourceHandle c2 = 
+        HdMaterialInterfaceParameterSchema::Builder()
+            .SetDisplayGroup(
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    TfToken("Foo")))
+            .SetDisplayName(
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    TfToken("Bar")))
+            .SetMappings(
+                HdRetainedSmallVectorDataSource::New(2, h1))
+            .Build();
 
-    HdMaterialInterfaceMappingsContainerSchema mappings(c2);
-    HdTokenDataSourceHandle t =
-        mappings.Get(TfToken("Q")).GetElement(1).GetNodePath();
+    HdContainerDataSourceHandle c3 = HdRetainedContainerDataSource::New(
+        TfToken("Q"), c2);
 
-    if (!t) {
+    HdMaterialInterfaceParameterContainerSchema parameters(c3);
+
+    HdTokenDataSourceHandle t1 = 
+        parameters.Get(TfToken("Q")).GetDisplayGroup();
+    
+    if (!t1) {
+        std::cerr << "expected token data source for display group" 
+            << std::endl;
+        return false;  
+    }
+
+    if (t1->GetTypedValue(0.0f) != TfToken("Foo")) {
+        std::cerr << "unexpected value for display group" << std::endl;
+        return false;
+    }
+
+    HdTokenDataSourceHandle t2 = 
+        parameters.Get(TfToken("Q")).GetDisplayName();
+    
+    if (!t2) {
+        std::cerr << "expected token data source for display name" << std::endl;
+        return false;  
+    }
+
+    if (t2->GetTypedValue(0.0f) != TfToken("Bar")) {
+        std::cerr << "unexpected value for display name" << std::endl;
+        return false;
+    }
+
+    HdMaterialInterfaceMappingVectorSchema v1 = 
+        parameters.Get(TfToken("Q")).GetMappings();
+
+    if (!v1) {
+        std::cerr << "expected vector of mappings" << std::endl;
+        return false;
+    }
+
+    HdTokenDataSourceHandle t3 = parameters.Get(TfToken("Q")).GetMappings()
+        .GetElement(1).GetNodePath();
+
+    if (!t3) {
         std::cerr << "expected token data source for mapping node path"
             << std::endl;
         return false;
     }
 
-    if (t->GetTypedValue(0.0f) != TfToken("B")) {
+    if (t3->GetTypedValue(0.0f) != TfToken("B")) {
         std::cerr << "unexpected value for mapping node path" << std::endl;
         return false;
     }

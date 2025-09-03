@@ -4147,6 +4147,30 @@ UsdAbc_AlembicDataReader::TimeSamples::Bracket(
     return true;
 }
 
+template <class T>
+bool
+UsdAbc_AlembicDataReader::TimeSamples::PreviousTime(
+    const T& samples, double usdTime, double* tPrevious) const
+{
+    if (samples.empty() || usdTime <= *(samples.begin())) {
+        // No samples or
+        // can't get preceding samples for time before first sample
+        return false;
+    } else if (usdTime > *(samples.rbegin())) {
+        // last sample is the preceding time sample, as time is greater than the
+        // last sample time.
+        *tPrevious = *(samples.rbegin());
+    } else {
+        typename T::const_iterator i = UsdAbc_lower_bound(samples, usdTime);
+        // We need to back up one sample to get the preceding sample from the
+        // lower_bound. If the lower_bound is the first sample, we would have
+        // returned false above.
+        TF_VERIFY(i != samples.begin());
+        *tPrevious = *std::prev(i);
+    }
+    return true;
+}
+
 // Instantiate for UsdAbc_TimeSamples.
 template
 bool
@@ -4159,6 +4183,19 @@ UsdAbc_AlembicDataReader::TimeSamples::Bracket(
     double usdTime, double* tLower, double* tUpper) const
 {
     return Bracket(_times, usdTime, tLower, tUpper);
+}
+
+template
+bool
+UsdAbc_AlembicDataReader::TimeSamples::PreviousTime(
+    const UsdAbc_TimeSamples& samples, double usdTime, 
+    double* tPPrevious) const;
+
+bool
+UsdAbc_AlembicDataReader::TimeSamples::PreviousTime(
+    double usdTime, double* tPrevious) const
+{
+    return PreviousTime(_times, usdTime, tPrevious);
 }
 
 //

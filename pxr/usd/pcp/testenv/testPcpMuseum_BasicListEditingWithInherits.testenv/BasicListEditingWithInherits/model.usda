@@ -1,0 +1,23 @@
+#usda 1.0
+
+def "Model"
+{
+    def Scope "SymRig"
+    {
+        reorder nameChildren = ["C2", "C1"]
+
+        def Prim "C1"
+        {
+        }
+        def Prim "C2"
+        {
+        }
+    }
+
+    def Scope "LeftRig" (
+        add inherits = </Model/SymRig>
+    )
+    {
+        reorder nameChildren = ["C1", "C2"]
+    }
+}

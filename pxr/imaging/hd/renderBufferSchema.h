@@ -44,6 +44,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdRenderBufferSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdRenderBufferSchema
+///
 class HdRenderBufferSchema : public HdSchema
 {
 public:

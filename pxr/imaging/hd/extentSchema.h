@@ -43,6 +43,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdExtentSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdExtentSchema
+///
 class HdExtentSchema : public HdSchema
 {
 public:

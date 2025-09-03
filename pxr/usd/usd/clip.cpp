@@ -8,6 +8,7 @@
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/clip.h"
 #include "pxr/usd/usd/interpolators.h"
+#include "pxr/usd/usd/timeCode.h"
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverScopedCache.h"
@@ -18,9 +19,9 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/usdaFileFormat.h"
 
 #include "pxr/usd/usd/tokens.h"
-#include "pxr/usd/usd/usdaFileFormat.h"
 
 #include "pxr/base/gf/interval.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
@@ -594,11 +595,11 @@ _TranslateTimeToInternalHelper(
 }
 
 Usd_Clip::InternalTime
-Usd_Clip::_TranslateTimeToInternal(ExternalTime extTime) const
+Usd_Clip::_TranslateTimeToInternal(UsdTimeCode extTime) const
 {
     size_t i1, i2;
-    if (!_GetBracketingTimeSegment(*times, extTime, &i1, &i2)) {
-        return extTime;
+    if (!_GetBracketingTimeSegment(*times, extTime.GetValue(), &i1, &i2)) {
+        return extTime.GetValue();
     }
 
     const TimeMapping& m1 = (*times)[i1];
@@ -626,14 +627,26 @@ Usd_Clip::_TranslateTimeToInternal(ExternalTime extTime) const
     // (0, 0) and (10, 10), which gives a translated internal time of 3.
     // This avoids all of the issues above and more closely matches the intent
     // expressed in the authored times metadata.
+    // 
+    // We also need to make sure pretime time segments are handled properly when 
+    // we are at a jump discontinuity.
+    if (extTime.IsPreTime() && m1.isJumpDiscontinuity) {
+        // We are querying for a pre-time, and we are at a jump 
+        // discontinuity, instead of using the internal time from next time
+        // and interpolating, we should use the internalTime from this jump 
+        // discontinuity mapping to query for this clip's internal time.
+        return m1.internalTime;
+    }
+
     if (m2.isJumpDiscontinuity) {
         TF_VERIFY(i2 + 1 < times->size());
         const TimeMapping& m3 = (*times)[i2 + 1];
         return _TranslateTimeToInternalHelper(
-            extTime, m1, TimeMapping(m3.externalTime, m2.internalTime));
+            extTime.GetValue(), m1, 
+            TimeMapping(m3.externalTime, m2.internalTime));
     }
 
-    return _TranslateTimeToInternalHelper(extTime, m1, m2);
+    return _TranslateTimeToInternalHelper(extTime.GetValue(), m1, m2);
 }
 
 static Usd_Clip::ExternalTime
@@ -740,7 +753,7 @@ Usd_Clip::_GetLayerForClip() const
                 assetPath.GetAssetPath().c_str());
         layer = SdfLayer::CreateAnonymous(TfStringPrintf(
                      _tokens->dummy_clipFormat.GetText(), 
-                     UsdUsdaFileFormatTokens->Id.GetText()));
+                     SdfUsdaFileFormatTokens->Id.GetText()));
     }
 
     std::lock_guard<std::mutex> lock(_layerMutex);
@@ -894,7 +907,7 @@ _Interpolate(
 template <class T>
 bool 
 Usd_Clip::QueryTimeSample(
-    const SdfPath& path, ExternalTime time, 
+    const SdfPath& path, UsdTimeCode time, 
     Usd_InterpolatorBase* interpolator, T* value) const
 {
     const SdfPath clipPath = _TranslatePathToClip(path);
@@ -909,17 +922,17 @@ Usd_Clip::QueryTimeSample(
     }
 
     // Convert values containing SdfTimeCodes if necessary.
-    _ConvertValueForTime(time, clipTime, value);
+    _ConvertValueForTime(time.GetValue(), clipTime, value);
     return true;
 }
 
 #define _INSTANTIATE_QUERY_TIME_SAMPLE(unused, elem)            \
     template bool Usd_Clip::QueryTimeSample(                    \
-        const SdfPath&, Usd_Clip::ExternalTime,                 \
+        const SdfPath&, UsdTimeCode,                            \
         Usd_InterpolatorBase*,                                  \
         SDF_VALUE_CPP_TYPE(elem)*) const;                       \
     template bool Usd_Clip::QueryTimeSample(                    \
-        const SdfPath&, Usd_Clip::ExternalTime,                 \
+        const SdfPath&, UsdTimeCode,                            \
         Usd_InterpolatorBase*,                                  \
         SDF_VALUE_CPP_ARRAY_TYPE(elem)*) const;
 
@@ -927,12 +940,12 @@ TF_PP_SEQ_FOR_EACH(_INSTANTIATE_QUERY_TIME_SAMPLE, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_QUERY_TIME_SAMPLE
 
 template bool Usd_Clip::QueryTimeSample(
-    const SdfPath&, Usd_Clip::ExternalTime,
+    const SdfPath&, UsdTimeCode,
     Usd_InterpolatorBase*,
     SdfAbstractDataValue*) const;
 
 template bool Usd_Clip::QueryTimeSample(
-    const SdfPath&, Usd_Clip::ExternalTime,
+    const SdfPath&, UsdTimeCode,
     Usd_InterpolatorBase*,
     VtValue*) const;
 

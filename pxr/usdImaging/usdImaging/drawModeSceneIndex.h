@@ -81,14 +81,14 @@ private:
         const HdSceneIndexPrim &prim,
         HdSceneIndexObserver::AddedPrimEntries *entries);
 
-    // Finds prim or ancestor of prim with non-default drawmode in _prims map.
-    // relPathLen indicates whether the found entry is for the prim itself (0),
-    // an immediate parent (1) or further ancestor (2 or larger).
+    // Finds prim or ancestor of prim with non-trivial drawmode in _prims map.
+    // isPathDescendant is set to true if the given path is a descendant of such
+    // a prim (but not the prim itself).
     UsdImaging_DrawModeStandinSharedPtr
     _FindStandinForPrimOrAncestor(
-        const SdfPath &path, size_t * const relPathLen) const;
+        const SdfPath &path, bool * isPathDescendant = nullptr) const;
 
-    // For prims with non-default drawmode, store a DrawModeStandin object
+    // For prims with applyDrawMode, store a DrawModeStandin object
     // that can be queried for the stand-in geometry.
     // No path in the map is a prefix of any other path in the map.
     std::map<SdfPath, UsdImaging_DrawModeStandinSharedPtr> _prims;

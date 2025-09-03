@@ -45,7 +45,8 @@ public:
 
 protected:
     // Helper functions to generate the Glslfx Shader
-    void _EmitGlslfxHeader(MaterialX::ShaderStage& mxStage) const;
+    void _EmitGlslfxHeader(MaterialX::GenContext& mxContext,
+                           MaterialX::ShaderStage& mxStage) const;
 
     void _EmitMxSurfaceShader(const MaterialX::ShaderGraph& mxGraph,
                               MaterialX::GenContext& mxContext,
@@ -87,7 +88,7 @@ protected:
     // Store MaterialX and Hydra counterparts and other Hydra specific info
     // to generate an appropriate glslfx header and properly initialize 
     // MaterialX values.
-    MaterialX::StringMap _mxHdTextureMap;
+    MaterialX::StringVec _mxHdTextureNames;
     MaterialX::StringMap _mxHdPrimvarMap;
     MaterialX::StringMap _mxHdPrimvarDefaultValueMap;
     std::string _defaultTexcoordName;
@@ -201,7 +202,9 @@ bool MxTypeIsSurfaceShader(MaterialX::TypeDesc typeDesc);
 bool MxTypeDescIsFilename(const MaterialX::TypeDesc typeDesc);
 const MaterialX::TypeDesc GetMxTypeDesc(const MaterialX::ShaderPort* port);
 const std::string MxGetTypeString(
-    MaterialX::SyntaxPtr syntax, const std::string& typeName);
+    MaterialX::SyntaxPtr syntax, 
+    const MaterialX::GenContext& mxContext,
+    const std::string& typeName);
 const std::string& GetVector2Name();
 
 } // namespace HdStMaterialXHelpers

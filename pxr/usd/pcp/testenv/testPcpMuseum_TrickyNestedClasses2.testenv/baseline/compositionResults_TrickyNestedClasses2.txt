@@ -1,19 +1,19 @@
-Loading @TrickyNestedClasses2/root.sdf@
+Loading @TrickyNestedClasses2/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Kilt>
 
 Prim Stack:
-    root.sdf             /Kilt
-    root.sdf             /_class_ClothRig
-    rig.sdf              /KiltRig
-    rig.sdf              /_class_ClothRig
-    ClothRig.sdf         /ClothRig
-    ClothRig.sdf         /_class_StdAvarsRig
+    root.usda            /Kilt
+    root.usda            /_class_ClothRig
+    rig.usda             /KiltRig
+    rig.usda             /_class_ClothRig
+    ClothRig.usda        /ClothRig
+    ClothRig.usda        /_class_StdAvarsRig
 
 Child names:
      ['rig']
@@ -22,8 +22,8 @@ Child names:
 Results for composing </Kilt/rig>
 
 Prim Stack:
-    root.sdf             /Kilt/rig
-    rig.sdf              /KiltRig/rig
+    root.usda            /Kilt/rig
+    rig.usda             /KiltRig/rig
 
 Child names:
      ['KiltHemRig']
@@ -32,9 +32,9 @@ Child names:
 Results for composing </Kilt/rig/KiltHemRig>
 
 Prim Stack:
-    root.sdf             /Kilt/rig/KiltHemRig
-    rig.sdf              /KiltRig/rig/KiltHemRig
-    ClothHemRig.sdf      /ClothHemRig
+    root.usda            /Kilt/rig/KiltHemRig
+    rig.usda             /KiltRig/rig/KiltHemRig
+    ClothHemRig.usda     /ClothHemRig
 
 Child names:
      ['rig']
@@ -43,8 +43,8 @@ Child names:
 Results for composing </Kilt/rig/KiltHemRig/rig>
 
 Prim Stack:
-    root.sdf             /Kilt/rig/KiltHemRig/rig
-    ClothHemRig.sdf      /ClothHemRig/rig
+    root.usda            /Kilt/rig/KiltHemRig/rig
+    ClothHemRig.usda     /ClothHemRig/rig
 
 Child names:
      ['PatchWeightRig']
@@ -53,8 +53,8 @@ Child names:
 Results for composing </Kilt/rig/KiltHemRig/rig/PatchWeightRig>
 
 Prim Stack:
-    root.sdf             /Kilt/rig/KiltHemRig/rig/PatchWeightRig
-    ClothHemRig.sdf      /ClothHemRig/rig/PatchWeightRig
+    root.usda            /Kilt/rig/KiltHemRig/rig/PatchWeightRig
+    ClothHemRig.usda     /ClothHemRig/rig/PatchWeightRig
 
 Child names:
      ['PatchWeightsClass', 'SimPatchWeights']
@@ -63,8 +63,8 @@ Child names:
 Results for composing </Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass>
 
 Prim Stack:
-    root.sdf             /Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass
-    ClothHemRig.sdf      /ClothHemRig/rig/PatchWeightRig/PatchWeightsClass
+    root.usda            /Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass
+    ClothHemRig.usda     /ClothHemRig/rig/PatchWeightRig/PatchWeightsClass
 
 Child names:
      ['PatchClass', 'Patch0']
@@ -73,26 +73,26 @@ Child names:
 Results for composing </Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass>
 
 Prim Stack:
-    root.sdf             /Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass
-    ClothHemRig.sdf      /ClothHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass
+    root.usda            /Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass
+    ClothHemRig.usda     /ClothHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass
 
 ------------------------------------------------------------------------
 Results for composing </Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass/Patch0>
 
 Prim Stack:
-    root.sdf             /Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass/Patch0
-    root.sdf             /Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass
-    ClothHemRig.sdf      /ClothHemRig/rig/PatchWeightRig/PatchWeightsClass/Patch0
-    ClothHemRig.sdf      /ClothHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass
+    root.usda            /Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass/Patch0
+    root.usda            /Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass
+    ClothHemRig.usda     /ClothHemRig/rig/PatchWeightRig/PatchWeightsClass/Patch0
+    ClothHemRig.usda     /ClothHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass
 
 ------------------------------------------------------------------------
 Results for composing </Kilt/rig/KiltHemRig/rig/PatchWeightRig/SimPatchWeights>
 
 Prim Stack:
-    root.sdf             /Kilt/rig/KiltHemRig/rig/PatchWeightRig/SimPatchWeights
-    root.sdf             /Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass
-    ClothHemRig.sdf      /ClothHemRig/rig/PatchWeightRig/SimPatchWeights
-    ClothHemRig.sdf      /ClothHemRig/rig/PatchWeightRig/PatchWeightsClass
+    root.usda            /Kilt/rig/KiltHemRig/rig/PatchWeightRig/SimPatchWeights
+    root.usda            /Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass
+    ClothHemRig.usda     /ClothHemRig/rig/PatchWeightRig/SimPatchWeights
+    ClothHemRig.usda     /ClothHemRig/rig/PatchWeightRig/PatchWeightsClass
 
 Child names:
      ['PatchClass', 'Patch0']
@@ -101,24 +101,24 @@ Child names:
 Results for composing </Kilt/rig/KiltHemRig/rig/PatchWeightRig/SimPatchWeights/PatchClass>
 
 Prim Stack:
-    root.sdf             /Kilt/rig/KiltHemRig/rig/PatchWeightRig/SimPatchWeights/PatchClass
-    root.sdf             /Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass
-    ClothHemRig.sdf      /ClothHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass
+    root.usda            /Kilt/rig/KiltHemRig/rig/PatchWeightRig/SimPatchWeights/PatchClass
+    root.usda            /Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass
+    ClothHemRig.usda     /ClothHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass
 
 ------------------------------------------------------------------------
 Results for composing </Kilt/rig/KiltHemRig/rig/PatchWeightRig/SimPatchWeights/Patch0>
 
 Prim Stack:
-    root.sdf             /Kilt/rig/KiltHemRig/rig/PatchWeightRig/SimPatchWeights/Patch0
-    root.sdf             /Kilt/rig/KiltHemRig/rig/PatchWeightRig/SimPatchWeights/PatchClass
-    root.sdf             /Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass/Patch0
-    root.sdf             /Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass
-    ClothHemRig.sdf      /ClothHemRig/rig/PatchWeightRig/PatchWeightsClass/Patch0
-    ClothHemRig.sdf      /ClothHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass
+    root.usda            /Kilt/rig/KiltHemRig/rig/PatchWeightRig/SimPatchWeights/Patch0
+    root.usda            /Kilt/rig/KiltHemRig/rig/PatchWeightRig/SimPatchWeights/PatchClass
+    root.usda            /Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass/Patch0
+    root.usda            /Kilt/rig/KiltHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass
+    ClothHemRig.usda     /ClothHemRig/rig/PatchWeightRig/PatchWeightsClass/Patch0
+    ClothHemRig.usda     /ClothHemRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass
 
 ------------------------------------------------------------------------
 Results for composing </_class_ClothRig>
 
 Prim Stack:
-    root.sdf             /_class_ClothRig
+    root.usda            /_class_ClothRig
 

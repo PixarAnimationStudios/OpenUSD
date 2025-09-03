@@ -26,10 +26,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct Ts_BinaryDataAccess
 {
 public:
-    // Get current version that will be written.
-    // Version history:
+    // Get spline data version that is needed to write the given spline.
     // 1: initial version.
-    static constexpr uint8_t GetBinaryFormatVersion() { return 1; }
+    // 2: added tangent algorithms None and AutoEase
+    TS_API
+    static uint8_t GetBinaryFormatVersion(const TsSpline& spline);
 
     // Write a spline to binary data.  There are two outputs: a blob, and a
     // customData map-of-dictionaries that consists of standard types.
@@ -46,7 +47,8 @@ public:
         std::unordered_map<TsTime, VtDictionary> &&customData);
 
 private:
-    static TsSpline _ParseV1(
+    static TsSpline _ParseV1_2(
+        uint8_t version,
         const std::vector<uint8_t> &buf,
         std::unordered_map<TsTime, VtDictionary> &&customData);
 };

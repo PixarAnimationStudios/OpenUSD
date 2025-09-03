@@ -1,14 +1,14 @@
-Loading @ErrorOpinionAtRelocationSource/root.sdf@
+Loading @ErrorOpinionAtRelocationSource/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </CharRig>
 
 Prim Stack:
-    root.sdf             /CharRig
+    root.usda            /CharRig
 
 Child names:
      ['Anim', 'Rig']
@@ -17,7 +17,7 @@ Child names:
 Results for composing </CharRig/Anim>
 
 Prim Stack:
-    root.sdf             /CharRig/Anim
+    root.usda            /CharRig/Anim
 
 Child names:
      ['Path']
@@ -26,13 +26,13 @@ Child names:
 Results for composing </CharRig/Anim/Path>
 
 Prim Stack:
-    pathRig.sdf          /PathRig/Path
+    pathRig.usda         /PathRig/Path
 
 ------------------------------------------------------------------------
 Results for composing </CharRig/Rig>
 
 Prim Stack:
-    root.sdf             /CharRig/Rig
+    root.usda            /CharRig/Rig
 
 Child names:
      ['PathRig']
@@ -41,8 +41,8 @@ Child names:
 Results for composing </CharRig/Rig/PathRig>
 
 Prim Stack:
-    root.sdf             /CharRig/Rig/PathRig
-    pathRig.sdf          /PathRig
+    root.usda            /CharRig/Rig/PathRig
+    pathRig.usda         /PathRig
 
 Prohibited child names:
      ['Path']
@@ -51,8 +51,8 @@ Prohibited child names:
 Results for composing </VariantAtRelocateSource>
 
 Prim Stack:
-    root.sdf             /VariantAtRelocateSource
-    ref.sdf              /Ref
+    root.usda            /VariantAtRelocateSource
+    ref.usda             /Ref
 
 Child names:
      ['Child', 'Sibling', 'Inherit']
@@ -61,9 +61,9 @@ Child names:
 Results for composing </VariantAtRelocateSource/Child>
 
 Prim Stack:
-    root.sdf             /VariantAtRelocateSource/Child
-    root.sdf             /VariantAtRelocateSource/Child{child=a}
-    ref.sdf              /Ref/Child
+    root.usda            /VariantAtRelocateSource/Child
+    root.usda            /VariantAtRelocateSource/Child{child=a}
+    ref.usda             /Ref/Child
 
 Variant Selections:
     {child = a}
@@ -75,9 +75,9 @@ Prohibited child names:
 Results for composing </VariantAtRelocateSource/Sibling>
 
 Prim Stack:
-    root.sdf             /VariantAtRelocateSource/Sibling
-    root.sdf             /VariantAtRelocateSource/Child{child=a}Child2
-    ref.sdf              /Ref/Child/Child2
+    root.usda            /VariantAtRelocateSource/Sibling
+    root.usda            /VariantAtRelocateSource/Child{child=a}Child2
+    ref.usda             /Ref/Child/Child2
 
 Child names:
      ['Class']
@@ -86,16 +86,16 @@ Child names:
 Results for composing </VariantAtRelocateSource/Sibling/Class>
 
 Prim Stack:
-    root.sdf             /VariantAtRelocateSource/Sibling/Class
-    root.sdf             /VariantAtRelocateSource/Child{child=a}Child2/Class
-    ref.sdf              /Ref/Child/Child2/Class
+    root.usda            /VariantAtRelocateSource/Sibling/Class
+    root.usda            /VariantAtRelocateSource/Child{child=a}Child2/Class
+    ref.usda             /Ref/Child/Child2/Class
 
 ------------------------------------------------------------------------
 Results for composing </VariantAtRelocateSource/Inherit>
 
 Prim Stack:
-    root.sdf             /VariantAtRelocateSource/Inherit
-    root.sdf             /VariantAtRelocateSource/Sibling/Class
-    root.sdf             /VariantAtRelocateSource/Child{child=a}Child2/Class
-    ref.sdf              /Ref/Child/Child2/Class
+    root.usda            /VariantAtRelocateSource/Inherit
+    root.usda            /VariantAtRelocateSource/Sibling/Class
+    root.usda            /VariantAtRelocateSource/Child{child=a}Child2/Class
+    ref.usda             /Ref/Child/Child2/Class
 

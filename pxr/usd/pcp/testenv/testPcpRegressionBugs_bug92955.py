@@ -13,7 +13,7 @@ import unittest
 
 class TestPcpRegressionBugs_bug92955(unittest.TestCase):
     def test_Basic(self):
-        rootLayer = Sdf.Layer.FindOrOpen('bug92955/root.sdf')
+        rootLayer = Sdf.Layer.FindOrOpen('bug92955/root.usda')
         pcpCache = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
 
         # Populate all prims in the scene

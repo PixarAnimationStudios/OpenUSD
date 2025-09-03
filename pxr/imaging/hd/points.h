@@ -40,6 +40,8 @@ public:
     HD_API
     ~HdPoints() override;
 
+    inline HdDisplayStyle  GetDisplayStyle(HdSceneDelegate* delegate)  const;
+
     HD_API
     TfTokenVector const & GetBuiltinPrimvarNames() const override;
 
@@ -68,6 +70,12 @@ private:
 
     static _PointsReprConfig _reprDescConfig;
 };
+
+inline HdDisplayStyle
+HdPoints::GetDisplayStyle(HdSceneDelegate* delegate) const
+{
+    return delegate->GetDisplayStyle(GetId());
+}
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

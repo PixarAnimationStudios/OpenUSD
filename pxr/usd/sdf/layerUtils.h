@@ -34,6 +34,14 @@ SdfComputeAssetPathRelativeToLayer(
     const SdfLayerHandle& anchor,
     const std::string& assetPath);
 
+/// Wrapper for SdfComputeAssetPathRelativeToLayer that returns the resolved 
+/// \p assetPath. If \p assetPath is empty or \p anchor is anonymous, \p assetPath
+/// returns unchanged.
+SDF_API std::string
+SdfResolveAssetPathRelativeToLayer(
+    const SdfLayerHandle& anchor,
+    const std::string& assetPath);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_SDF_LAYER_UTILS_H

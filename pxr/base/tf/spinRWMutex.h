@@ -106,6 +106,24 @@ public:
             }
         }
 
+        /// If the current scoped lock is acquired, Release() it, then associate
+        /// this lock with \p m and try to acquire either a read or a write
+        /// lock, depending on \p write.  Return true if successfully acquired,
+        /// false if not.
+        bool TryAcquire(TfSpinRWMutex &m, bool write=true) {
+            Release();
+            _mutex = &m;
+            return TryAcquire(write);
+        }
+
+        /// Try to acquire either a read or a write lock on this lock's
+        /// associated mutex.  The lock must not already be acquired when
+        /// calling \p TryAcquire().  Return true if the lock was successfully
+        /// acquired, false if not.
+        bool TryAcquire(bool write=true) {
+            return write ? TryAcquireWrite() : TryAcquireRead();
+        }
+
         /// Release the currently required lock on the associated mutex.  If
         /// this lock is not currently acquired, silently do nothing.
         void Release() {
@@ -125,17 +143,45 @@ public:
         /// Acquire a read lock on this lock's associated mutex.  This lock must
         /// not already be acquired when calling \p AcquireRead().
         void AcquireRead() {
+            TF_DEV_AXIOM(_mutex);
             TF_DEV_AXIOM(_acqState == NotAcquired);
             _mutex->AcquireRead();
             _acqState = ReadAcquired;
         }
 
+        /// Try to acquire a read lock on this lock's associated mutex.  The
+        /// lock must not already be acquired when calling \p TryAcquireRead().
+        /// Return true if the lock was successfully acquired, false if not.
+        bool TryAcquireRead() {
+            TF_DEV_AXIOM(_mutex);
+            TF_DEV_AXIOM(_acqState == NotAcquired);
+            if (_mutex->TryAcquireRead()) {
+                _acqState = ReadAcquired;
+                return true;
+            }
+            return false;
+        }
+
         /// Acquire a write lock on this lock's associated mutex.  This lock
         /// must not already be acquired when calling \p AcquireWrite().
         void AcquireWrite() {
+            TF_DEV_AXIOM(_mutex);
             TF_DEV_AXIOM(_acqState == NotAcquired);
             _mutex->AcquireWrite();
             _acqState = WriteAcquired;
+        }
+
+        /// Try to acquire a write lock on this lock's associated mutex.  The
+        /// lock must not already be acquired when calling \p TryAcquireWrite().
+        /// Return true if the lock was successfully acquired, false if not.
+        bool TryAcquireWrite() {
+            TF_DEV_AXIOM(_mutex);
+            TF_DEV_AXIOM(_acqState == NotAcquired);
+            if (_mutex->TryAcquireWrite()) {
+                _acqState = WriteAcquired;
+                return true;
+            }
+            return false;
         }
 
         /// Change this lock's acquisition state from a read lock to a write
@@ -143,6 +189,7 @@ public:
         /// if the upgrade occurred without releasing the read lock, false if it
         /// was released.
         bool UpgradeToWriter() {
+            TF_DEV_AXIOM(_mutex);
             TF_DEV_AXIOM(_acqState == ReadAcquired);
             _acqState = WriteAcquired;
             return _mutex->UpgradeToWriter();
@@ -154,6 +201,7 @@ public:
         /// interim, false if it was released and other writers may have
         /// intervened.
         bool DowngradeToReader() {
+            TF_DEV_AXIOM(_mutex);
             TF_DEV_AXIOM(_acqState == WriteAcquired);
             _acqState = ReadAcquired;
             return _mutex->DowngradeToReader();

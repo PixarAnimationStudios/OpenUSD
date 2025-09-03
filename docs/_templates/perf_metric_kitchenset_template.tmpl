@@ -1,5 +1,7 @@
 {% set kitchenset_metrics_linux_24_11 = load('performance/24.11_linux_kitchenset.yaml', data_format='yaml') %}
 {% set kitchenset_metrics_linux_25_02 = load('performance/25.02_linux_kitchenset.yaml', data_format='yaml') %}
+{% set kitchenset_metrics_linux_25_05 = load('performance/25.05_linux_kitchenset.yaml', data_format='yaml') %}
+{% set kitchenset_metrics_linux_25_08 = load('performance/25.08_linux_kitchenset.yaml', data_format='yaml') %}
 
 .. list-table:: Linux Metrics (min/max/mean in seconds)
    :header-rows: 1
@@ -8,6 +10,7 @@
      - 24.11
      - 25.02
      - 25.05
+     - 25.08
    * - Open stage
      - | min: {{ kitchenset_metrics_linux_24_11['open_stage']['min'] }}
        | max: {{ kitchenset_metrics_linux_24_11['open_stage']['max'] }}
@@ -15,7 +18,12 @@
      - | min: {{ kitchenset_metrics_linux_25_02['open_stage']['min'] }}
        | max: {{ kitchenset_metrics_linux_25_02['open_stage']['max'] }}
        | mean: {{ kitchenset_metrics_linux_25_02['open_stage']['mean']}}
-     - TBD
+     - | min: {{ kitchenset_metrics_linux_25_05['open_stage']['min'] }}
+       | max: {{ kitchenset_metrics_linux_25_05['open_stage']['max'] }}
+       | mean: {{ kitchenset_metrics_linux_25_05['open_stage']['mean']}}
+     - | min: {{ kitchenset_metrics_linux_25_08['open_stage']['min'] }}
+       | max: {{ kitchenset_metrics_linux_25_08['open_stage']['max'] }}
+       | mean: {{ kitchenset_metrics_linux_25_08['open_stage']['mean']}}
    * - Render first image
      - | min: {{ kitchenset_metrics_linux_24_11['create_first_image']['min'] }}
        | max: {{ kitchenset_metrics_linux_24_11['create_first_image']['max'] }}
@@ -23,7 +31,12 @@
      - | min: {{ kitchenset_metrics_linux_25_02['create_first_image']['min'] }}
        | max: {{ kitchenset_metrics_linux_25_02['create_first_image']['max'] }}
        | mean: {{ kitchenset_metrics_linux_25_02['create_first_image']['mean']}}
-     - TBD
+     - | min: {{ kitchenset_metrics_linux_25_05['create_first_image']['min'] }}
+       | max: {{ kitchenset_metrics_linux_25_05['create_first_image']['max'] }}
+       | mean: {{ kitchenset_metrics_linux_25_05['create_first_image']['mean']}}
+     - | min: {{ kitchenset_metrics_linux_25_08['create_first_image']['min'] }}
+       | max: {{ kitchenset_metrics_linux_25_08['create_first_image']['max'] }}
+       | mean: {{ kitchenset_metrics_linux_25_08['create_first_image']['mean']}}
    * - Close stage
      - | min: {{ kitchenset_metrics_linux_24_11['close_stage']['min'] }}
        | max: {{ kitchenset_metrics_linux_24_11['close_stage']['max'] }}
@@ -31,7 +44,12 @@
      - | min: {{ kitchenset_metrics_linux_25_02['close_stage']['min'] }}
        | max: {{ kitchenset_metrics_linux_25_02['close_stage']['max'] }}
        | mean: {{ kitchenset_metrics_linux_25_02['close_stage']['mean']}}
-     - TBD
+     - | min: {{ kitchenset_metrics_linux_25_05['close_stage']['min'] }}
+       | max: {{ kitchenset_metrics_linux_25_05['close_stage']['max'] }}
+       | mean: {{ kitchenset_metrics_linux_25_05['close_stage']['mean']}}
+     - | min: {{ kitchenset_metrics_linux_25_08['close_stage']['min'] }}
+       | max: {{ kitchenset_metrics_linux_25_08['close_stage']['max'] }}
+       | mean: {{ kitchenset_metrics_linux_25_08['close_stage']['mean']}}
    * - Shut down Hydra
      - | min: {{ kitchenset_metrics_linux_24_11['shut_down_hydra']['min'] }}
        | max: {{ kitchenset_metrics_linux_24_11['shut_down_hydra']['max'] }}
@@ -39,10 +57,17 @@
      - | min: {{ kitchenset_metrics_linux_25_02['shut_down_hydra']['min'] }}
        | max: {{ kitchenset_metrics_linux_25_02['shut_down_hydra']['max'] }}
        | mean: {{ kitchenset_metrics_linux_25_02['shut_down_hydra']['mean']}}
-     - TBD     
+     - | min: {{ kitchenset_metrics_linux_25_05['shut_down_hydra']['min'] }}
+       | max: {{ kitchenset_metrics_linux_25_05['shut_down_hydra']['max'] }}
+       | mean: {{ kitchenset_metrics_linux_25_05['shut_down_hydra']['mean']}}
+     - | min: {{ kitchenset_metrics_linux_25_08['shut_down_hydra']['min'] }}
+       | max: {{ kitchenset_metrics_linux_25_08['shut_down_hydra']['max'] }}
+       | mean: {{ kitchenset_metrics_linux_25_08['shut_down_hydra']['mean']}}
 
 {% set kitchenset_metrics_macos_24_11 = load('performance/24.11_macos_kitchenset.yaml', data_format='yaml') %}
 {% set kitchenset_metrics_macos_25_02 = load('performance/25.02_macos_kitchenset.yaml', data_format='yaml') %}
+{% set kitchenset_metrics_macos_25_05 = load('performance/25.05_macos_kitchenset.yaml', data_format='yaml') %}
+{% set kitchenset_metrics_macos_25_08 = load('performance/25.08_macos_kitchenset.yaml', data_format='yaml') %}
 
 .. list-table:: macOS Metrics (min/max/mean in seconds)
    :header-rows: 1
@@ -51,6 +76,7 @@
      - 24.11
      - 25.02
      - 25.05
+     - 25.08
    * - Open stage
      - | min: {{ kitchenset_metrics_macos_24_11['open_stage']['min'] }}
        | max: {{ kitchenset_metrics_macos_24_11['open_stage']['max'] }}
@@ -58,7 +84,12 @@
      - | min: {{ kitchenset_metrics_macos_25_02['open_stage']['min'] }}
        | max: {{ kitchenset_metrics_macos_25_02['open_stage']['max'] }}
        | mean: {{ kitchenset_metrics_macos_25_02['open_stage']['mean']}}
-     - TBD
+     - | min: {{ kitchenset_metrics_macos_25_05['open_stage']['min'] }}
+       | max: {{ kitchenset_metrics_macos_25_05['open_stage']['max'] }}
+       | mean: {{ kitchenset_metrics_macos_25_05['open_stage']['mean']}}
+     - | min: {{ kitchenset_metrics_macos_25_08['open_stage']['min'] }}
+       | max: {{ kitchenset_metrics_macos_25_08['open_stage']['max'] }}
+       | mean: {{ kitchenset_metrics_macos_25_08['open_stage']['mean']}}
    * - Render first image
      - | min: {{ kitchenset_metrics_macos_24_11['create_first_image']['min'] }}
        | max: {{ kitchenset_metrics_macos_24_11['create_first_image']['max'] }}
@@ -66,7 +97,12 @@
      - | min: {{ kitchenset_metrics_macos_25_02['create_first_image']['min'] }}
        | max: {{ kitchenset_metrics_macos_25_02['create_first_image']['max'] }}
        | mean: {{ kitchenset_metrics_macos_25_02['create_first_image']['mean']}}
-     - TBD
+     - | min: {{ kitchenset_metrics_macos_25_05['create_first_image']['min'] }}
+       | max: {{ kitchenset_metrics_macos_25_05['create_first_image']['max'] }}
+       | mean: {{ kitchenset_metrics_macos_25_05['create_first_image']['mean']}}
+     - | min: {{ kitchenset_metrics_macos_25_08['create_first_image']['min'] }}
+       | max: {{ kitchenset_metrics_macos_25_08['create_first_image']['max'] }}
+       | mean: {{ kitchenset_metrics_macos_25_08['create_first_image']['mean']}}
    * - Close stage
      - | min: {{ kitchenset_metrics_macos_24_11['close_stage']['min'] }}
        | max: {{ kitchenset_metrics_macos_24_11['close_stage']['max'] }}
@@ -74,7 +110,12 @@
      - | min: {{ kitchenset_metrics_macos_25_02['close_stage']['min'] }}
        | max: {{ kitchenset_metrics_macos_25_02['close_stage']['max'] }}
        | mean: {{ kitchenset_metrics_macos_25_02['close_stage']['mean']}}
-     - TBD
+     - | min: {{ kitchenset_metrics_macos_25_05['close_stage']['min'] }}
+       | max: {{ kitchenset_metrics_macos_25_05['close_stage']['max'] }}
+       | mean: {{ kitchenset_metrics_macos_25_05['close_stage']['mean']}}
+     - | min: {{ kitchenset_metrics_macos_25_08['close_stage']['min'] }}
+       | max: {{ kitchenset_metrics_macos_25_08['close_stage']['max'] }}
+       | mean: {{ kitchenset_metrics_macos_25_08['close_stage']['mean']}}
    * - Shut down Hydra
      - | min: {{ kitchenset_metrics_macos_24_11['shut_down_hydra']['min'] }}
        | max: {{ kitchenset_metrics_macos_24_11['shut_down_hydra']['max'] }}
@@ -82,10 +123,17 @@
      - | min: {{ kitchenset_metrics_macos_25_02['shut_down_hydra']['min'] }}
        | max: {{ kitchenset_metrics_macos_25_02['shut_down_hydra']['max'] }}
        | mean: {{ kitchenset_metrics_macos_25_02['shut_down_hydra']['mean']}}
-     - TBD     
+     - | min: {{ kitchenset_metrics_macos_25_05['shut_down_hydra']['min'] }}
+       | max: {{ kitchenset_metrics_macos_25_05['shut_down_hydra']['max'] }}
+       | mean: {{ kitchenset_metrics_macos_25_05['shut_down_hydra']['mean']}}
+     - | min: {{ kitchenset_metrics_macos_25_08['shut_down_hydra']['min'] }}
+       | max: {{ kitchenset_metrics_macos_25_08['shut_down_hydra']['max'] }}
+       | mean: {{ kitchenset_metrics_macos_25_08['shut_down_hydra']['mean']}}
 
 {% set kitchenset_metrics_win_24_11 = load('performance/24.11_windows_kitchenset.yaml', data_format='yaml') %}
 {% set kitchenset_metrics_win_25_02 = load('performance/25.02_windows_kitchenset.yaml', data_format='yaml') %}
+{% set kitchenset_metrics_win_25_05 = load('performance/25.05_windows_kitchenset.yaml', data_format='yaml') %}
+{% set kitchenset_metrics_win_25_08 = load('performance/25.08_windows_kitchenset.yaml', data_format='yaml') %}
 
 .. list-table:: Windows Metrics (min/max/mean in seconds)
    :header-rows: 1
@@ -94,6 +142,7 @@
      - 24.11
      - 25.02
      - 25.05
+     - 25.08
    * - Open stage
      - | min: {{ kitchenset_metrics_win_24_11['open_stage']['min'] }}
        | max: {{ kitchenset_metrics_win_24_11['open_stage']['max'] }}
@@ -101,7 +150,12 @@
      - | min: {{ kitchenset_metrics_win_25_02['open_stage']['min'] }}
        | max: {{ kitchenset_metrics_win_25_02['open_stage']['max'] }}
        | mean: {{ kitchenset_metrics_win_25_02['open_stage']['mean']}}
-     - TBD
+     - | min: {{ kitchenset_metrics_win_25_05['open_stage']['min'] }}
+       | max: {{ kitchenset_metrics_win_25_05['open_stage']['max'] }}
+       | mean: {{ kitchenset_metrics_win_25_05['open_stage']['mean']}}
+     - | min: {{ kitchenset_metrics_win_25_08['open_stage']['min'] }}
+       | max: {{ kitchenset_metrics_win_25_08['open_stage']['max'] }}
+       | mean: {{ kitchenset_metrics_win_25_08['open_stage']['mean']}}
    * - Render first image
      - | min: {{ kitchenset_metrics_win_24_11['create_first_image']['min'] }}
        | max: {{ kitchenset_metrics_win_24_11['create_first_image']['max'] }}
@@ -109,7 +163,12 @@
      - | min: {{ kitchenset_metrics_win_25_02['create_first_image']['min'] }}
        | max: {{ kitchenset_metrics_win_25_02['create_first_image']['max'] }}
        | mean: {{ kitchenset_metrics_win_25_02['create_first_image']['mean']}}
-     - TBD
+     - | min: {{ kitchenset_metrics_win_25_05['create_first_image']['min'] }}
+       | max: {{ kitchenset_metrics_win_25_05['create_first_image']['max'] }}
+       | mean: {{ kitchenset_metrics_win_25_05['create_first_image']['mean']}}
+     - | min: {{ kitchenset_metrics_win_25_08['create_first_image']['min'] }}
+       | max: {{ kitchenset_metrics_win_25_08['create_first_image']['max'] }}
+       | mean: {{ kitchenset_metrics_win_25_08['create_first_image']['mean']}}
    * - Close stage
      - | min: {{ kitchenset_metrics_win_24_11['close_stage']['min'] }}
        | max: {{ kitchenset_metrics_win_24_11['close_stage']['max'] }}
@@ -117,7 +176,12 @@
      - | min: {{ kitchenset_metrics_win_25_02['close_stage']['min'] }}
        | max: {{ kitchenset_metrics_win_25_02['close_stage']['max'] }}
        | mean: {{ kitchenset_metrics_win_25_02['close_stage']['mean']}}
-     - TBD
+     - | min: {{ kitchenset_metrics_win_25_05['close_stage']['min'] }}
+       | max: {{ kitchenset_metrics_win_25_05['close_stage']['max'] }}
+       | mean: {{ kitchenset_metrics_win_25_05['close_stage']['mean']}}
+     - | min: {{ kitchenset_metrics_win_25_08['close_stage']['min'] }}
+       | max: {{ kitchenset_metrics_win_25_08['close_stage']['max'] }}
+       | mean: {{ kitchenset_metrics_win_25_08['close_stage']['mean']}}
    * - Shut down Hydra
      - | min: {{ kitchenset_metrics_win_24_11['shut_down_hydra']['min'] }}
        | max: {{ kitchenset_metrics_win_24_11['shut_down_hydra']['max'] }}
@@ -125,4 +189,9 @@
      - | min: {{ kitchenset_metrics_win_25_02['shut_down_hydra']['min'] }}
        | max: {{ kitchenset_metrics_win_25_02['shut_down_hydra']['max'] }}
        | mean: {{ kitchenset_metrics_win_25_02['shut_down_hydra']['mean']}}
-     - TBD     
+     - | min: {{ kitchenset_metrics_win_25_05['shut_down_hydra']['min'] }}
+       | max: {{ kitchenset_metrics_win_25_05['shut_down_hydra']['max'] }}
+       | mean: {{ kitchenset_metrics_win_25_05['shut_down_hydra']['mean']}}
+     - | min: {{ kitchenset_metrics_win_25_08['shut_down_hydra']['min'] }}
+       | max: {{ kitchenset_metrics_win_25_08['shut_down_hydra']['max'] }}
+       | mean: {{ kitchenset_metrics_win_25_08['shut_down_hydra']['mean']}}

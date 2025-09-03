@@ -29,6 +29,7 @@ class HdRenderIndex;
 class HdRenderPass;
 class HdInstancer;
 class HdDriver;
+class Hgi;
 
 TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 
@@ -74,6 +75,9 @@ public:
     HD_API
     virtual bool HasArbitraryValue(const TfToken& key) const;
 
+    HD_API
+    virtual bool IsValid() const;
+
 private:
     // Hydra will not attempt to copy the class.
     HdRenderParam(const HdRenderParam &) = delete;
@@ -94,6 +98,18 @@ struct HdRenderSettingDescriptor
     TfToken key;
     // The default value.
     VtValue defaultValue;
+};
+
+///
+/// HdRendererCreateArgs contains members indicating the resources available 
+/// when creating a renderer plugin.
+///
+struct HdRendererCreateArgs
+{
+    // Whether the GPU is available or not.
+    bool gpuEnabled { true };
+    // An Hgi instance to check backend support against.
+    Hgi* hgi { nullptr };
 };
 
 typedef std::vector<HdRenderSettingDescriptor> HdRenderSettingDescriptorList;

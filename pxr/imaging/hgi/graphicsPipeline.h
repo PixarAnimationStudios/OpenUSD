@@ -54,7 +54,7 @@ bool operator==(
     const HgiVertexAttributeDesc& rhs);
 
 HGI_API
-inline bool operator!=(
+bool operator!=(
     const HgiVertexAttributeDesc& lhs,
     const HgiVertexAttributeDesc& rhs);
 

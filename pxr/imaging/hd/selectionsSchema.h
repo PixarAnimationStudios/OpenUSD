@@ -27,11 +27,11 @@ TF_DECLARE_PUBLIC_TOKENS(HdSelectionsSchemaTokens, HD_API,
 
 //-----------------------------------------------------------------------------
 
-class HdSelectionsSchema : public HdSchemaBasedVectorSchema<HdSelectionSchema>
+class HdSelectionsSchema : public HdVectorOfSchemasSchema<HdSelectionSchema>
 {
 public:
     HdSelectionsSchema(HdVectorDataSourceHandle const &vector)
-      : HdSchemaBasedVectorSchema(vector) {}
+      : HdVectorOfSchemasSchema<HdSelectionSchema>(vector) {}
 
     /// Retrieves a vector data source with the schema's default name token
     /// "selections" from the parent vector and constructs a

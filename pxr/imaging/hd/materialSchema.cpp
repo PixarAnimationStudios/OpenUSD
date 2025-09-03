@@ -70,6 +70,54 @@ HdMaterialSchema::GetMaterialNetwork(TfTokenVector const &contexts)
                 HdMaterialSchemaTokens->universalRenderContext));
 }
 
+/*static*/
+TfToken
+HdMaterialSchema::GetLocatorTerminal(HdDataSourceLocator const& locator)
+{
+    return GetLocatorTerminal(locator, TfTokenVector());
+}
+
+/*static*/
+TfToken
+HdMaterialSchema::GetLocatorTerminal(HdDataSourceLocator const& locator, TfToken const &context)
+{
+    return GetLocatorTerminal(locator, TfTokenVector({context}));
+}
+
+/*static*/
+TfToken
+HdMaterialSchema::GetLocatorTerminal(
+        HdDataSourceLocator const& locator, TfTokenVector const& contexts)
+{
+    if (locator.GetElementCount() >= 4) {
+
+        // Always check the universal render context
+        static const HdDataSourceLocator universalTerminalLocator(
+            HdMaterialSchema::GetSchemaToken(),
+            HdMaterialSchemaTokens->universalRenderContext,
+            HdMaterialSchemaTokens->terminals
+        );
+        if (locator.Intersects(universalTerminalLocator)) {
+            return locator.GetElement(3);
+        }
+
+        // Check the render specific contexts
+        for (const TfToken& context : contexts) {
+            const HdDataSourceLocator terminalLocator(
+                HdMaterialSchema::GetSchemaToken(),
+                context,
+                HdMaterialSchemaTokens->terminals
+            );
+            if (locator.Intersects(terminalLocator)) {
+                return locator.GetElement(3);
+            }
+        }
+
+    }
+
+    return TfToken();
+}
+
 // --(END CUSTOM CODE: Schema Methods)--
 
 /*static*/

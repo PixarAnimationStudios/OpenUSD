@@ -9,15 +9,9 @@
 #define PXR_USD_SDR_REGISTRY_H
 
 /// \file sdr/registry.h
-///
-/// \note
-/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
-/// in this file. All existing pxr/usd/ndr implementations will be moved to
-/// pxr/usd/sdr.
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/singleton.h"
-#include "pxr/usd/ndr/registry.h"
 #include "pxr/usd/sdr/api.h"
 #include "pxr/usd/sdr/declare.h"
 #include "pxr/usd/sdr/discoveryPlugin.h"
@@ -52,7 +46,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Some methods in this library may allow for a "family" to be provided. A
 /// family is simply a generic grouping which is optional.
 ///
-class SdrRegistry : public NdrRegistry
+class SdrRegistry : public TfWeakBase
 {
 public:
     using DiscoveryPluginRefPtrVec = SdrDiscoveryPluginRefPtrVector;
@@ -60,6 +54,27 @@ public:
     /// Get the single `SdrRegistry` instance.
     SDR_API
     static SdrRegistry& GetInstance();
+
+    /// Allows the client to set any additional discovery plugins that would
+    /// otherwise NOT be found through the plugin system. Runs the discovery
+    /// process for the specified plugins immediately.
+    ///
+    /// Note that this method cannot be called after any nodes in the registry
+    /// have been parsed (eg, through GetNode*()), otherwise an error will
+    /// result.
+    SDR_API
+    void SetExtraDiscoveryPlugins(DiscoveryPluginRefPtrVec plugins);
+
+    /// Allows the client to set any additional discovery plugins that would
+    /// otherwise NOT be found through the plugin system. Runs the discovery
+    /// process for the specified plugins immediately.
+    ///
+    /// Note that this method cannot be called after any nodes in the registry
+    /// have been parsed (eg, through GetNode*()), otherwise an error will
+    /// result.
+    SDR_API
+    void SetExtraDiscoveryPlugins(const std::vector<TfType>& pluginTypes);
+
 
     /// Allows the client to explicitly set additional discovery results that
     /// would otherwise NOT be found through the plugin system. For example
@@ -79,7 +94,21 @@ public:
     void AddDiscoveryResult(
         const SdrShaderNodeDiscoveryResult& discoveryResult);
 
-    using NdrRegistry::AddDiscoveryResult;
+    /// Allows the client to set any additional parser plugins that would
+    /// otherwise NOT be found through the plugin system.
+    ///
+    /// Note that this method cannot be called after any nodes in the registry
+    /// have been parsed (eg, through GetNode*()), otherwise an error will
+    /// result.
+    SDR_API
+    void SetExtraParserPlugins(const std::vector<TfType>& pluginTypes);
+
+    /// Get the locations where the registry is searching for nodes.
+    ///
+    /// Depending on which discovery plugins were used, this may include
+    /// non-filesystem paths.
+    SDR_API
+    SdrStringVec GetSearchURIs() const;
 
     /// Get identifiers of all the shader nodes that the registry is aware of.
     ///
@@ -136,16 +165,6 @@ public:
         const SdrIdentifier& identifier,
         const TfToken& nodeType);
 
-    /// Get the shader node with the specified name.
-    ///
-    /// \deprecated
-    /// Deprecated in favor of GetShaderNodeByName(..., SdrVersionFilter filter)
-    SDR_API
-    SdrShaderNodeConstPtr GetShaderNodeByName(
-        const std::string& name,
-        const NdrTokenVec& typePriority,
-        NdrVersionFilter filter);
-
     /// Get the shader node with the specified name.  An optional priority list
     /// specifies the set of node SOURCE types
     /// (\sa SdrShaderNode::GetSourceType()) that should be searched and in what
@@ -161,16 +180,6 @@ public:
         const std::string& name,
         const SdrTokenVec& typePriority = SdrTokenVec(),
         SdrVersionFilter filter = SdrVersionFilterDefaultOnly);
-
-    /// A convenience wrapper around \c GetShaderNodeByName().
-    ///
-    /// \deprecated
-    /// Deprecated in favor of GetShaderNodeByNameAndType(..., SdrVersionFilter filter)
-    SDR_API
-    SdrShaderNodeConstPtr GetShaderNodeByNameAndType(
-        const std::string& name,
-        const TfToken& nodeType,
-        NdrVersionFilter filter);
 
     /// A convenience wrapper around \c GetShaderNodeByName(). Instead of
     /// providing a priority list, an exact type is specified, and
@@ -242,15 +251,6 @@ public:
     SDR_API
     SdrShaderNodePtrVec GetShaderNodesByIdentifier(const SdrIdentifier& identifier);
 
-    /// Get all shader nodes matching the given name.
-    ///
-    /// \deprecated
-    /// Deprecated in favor of GetShaderNodesByName(..., SdrVersionFilter filter)
-    SDR_API
-    SdrShaderNodePtrVec GetShaderNodesByName(
-        const std::string& name,
-        NdrVersionFilter filter);
-
     /// Get all shader nodes matching the given name. Only nodes matching the
     /// specified name will be parsed. Optionally, a filter can be specified
     /// to get just the default version (the default) or all versions of the
@@ -259,16 +259,6 @@ public:
     SdrShaderNodePtrVec GetShaderNodesByName(
         const std::string& name,
         SdrVersionFilter filter = SdrVersionFilterDefaultOnly);
-
-    /// Get all shader nodes, optionally restricted to the nodes
-    /// that fall under a specified family and/or the default version.
-    ///
-    /// \deprecated
-    /// Deprecated in favor of GetShaderNodesByFamily(..., SdrVersionFilter filter)
-    SDR_API
-    SdrShaderNodePtrVec GetShaderNodesByFamily(
-        const TfToken& family,
-        NdrVersionFilter filter);
 
     /// Get all shader nodes, optionally restricted to the nodes
     /// that fall under a specified family and/or the default version.
@@ -298,12 +288,140 @@ public:
 protected:
     // Allow TF to construct the class
     friend class TfSingleton<SdrRegistry>;
+    SdrRegistry(const SdrRegistry&) = delete;
+    SdrRegistry& operator=(const SdrRegistry&) = delete;
 
     SDR_API
     SdrRegistry();
 
     SDR_API
     ~SdrRegistry();
+
+private:
+    class _DiscoveryContext;
+    friend class _DiscoveryContext;
+
+    using _TypeToParserPluginMap = 
+        std::unordered_map<TfToken, SdrParserPlugin*, TfToken::HashFunctor>;
+
+    // Node cache data structure, stored SdrShaderNodes keyed by
+    // identifier and source type.
+    using _ShaderNodeMapKey = std::pair<SdrIdentifier, TfToken>;
+    using _ShaderNodeMap =
+        std::unordered_map<_ShaderNodeMapKey, SdrShaderNodeUniquePtr, TfHash>;
+
+    // Discovery results data structure, SdrShaderNodeDiscoveryResults
+    // multimap keyed ny identifier
+    using _DiscoveryResultsByIdentifier = std::unordered_multimap<
+        TfToken, SdrShaderNodeDiscoveryResult, TfHash>;
+    using _DiscoveryResultsByIdentifierRange = 
+        std::pair<_DiscoveryResultsByIdentifier::const_iterator,
+                  _DiscoveryResultsByIdentifier::const_iterator>;
+
+    // Discovery results data structure: a multimap of raw pointers to 
+    // SdrShaderNodeDiscoveryResults (i.e. pointers to the discovery results
+    // stored in a _DiscoveryResultsByIdentifier) keyed by name.
+    using _DiscoveryResultPtrsByName = std::unordered_multimap<
+        std::string, const SdrShaderNodeDiscoveryResult *, TfHash>;
+    using _DiscoveryResultPtrsByNameRange = 
+        std::pair<_DiscoveryResultPtrsByName::const_iterator,
+                  _DiscoveryResultPtrsByName::const_iterator>;
+
+    // The discovery result data structures are not concurrent and must be kept
+    // in sync, thus they need some locking infrastructure.
+    mutable std::mutex _discoveryResultMutex;
+
+    // The node map is not a concurrent data structure, thus it needs some
+    // locking infrastructure.
+    mutable std::mutex _nodeMapMutex;
+
+    // Runs each discovery plugin provided and adds the results to the
+    // internal discovery result maps
+    void _RunDiscoveryPlugins(
+        const DiscoveryPluginRefPtrVec& discoveryPlugins);
+
+    // Takes the discovery and puts in the maps that hold the discovery
+    // results, keeping them in sync.
+    void _AddDiscoveryResultNoLock(SdrShaderNodeDiscoveryResult&& dr);
+
+    // Finds and instantiates the discovery plugins
+    void _FindAndInstantiateDiscoveryPlugins();
+
+    // Finds and instantiates the parser plugins
+    void _FindAndInstantiateParserPlugins();
+
+    // Instantiates the specified parser plugins and adds them to
+    // the registry.
+    void _InstantiateParserPlugins(const std::set<TfType>& parserPluginTypes);
+
+    // Parses the node for the discovery result if adding it to the node map if
+    // able and adds the discovery result to the discovery result maps.
+    // Intended for the GetShadeNodeFromAsset and GetShaderNodeFromSourceCode
+    // APIs which can add nodes that don't already appear in the discovery
+    // results.
+    SdrShaderNodeConstPtr _ParseNodeFromAssetOrSourceCode(
+        SdrParserPlugin &parser, SdrShaderNodeDiscoveryResult &&dr);
+
+    // Implementation helper for getting the first node of the given sourceType 
+    // in the range of node discovery results for a paricular identifier.
+    SdrShaderNodeConstPtr _GetNodeInIdentifierRangeWithSourceType(
+        _DiscoveryResultsByIdentifierRange range, const TfToken& sourceType);
+
+    // Implementation helper for getting the first node of the given sourceType 
+    // and matching the given version filter in the range of node discovery 
+    // results for a paricular name.
+    SdrShaderNodeConstPtr _GetNodeInNameRangeWithSourceType(
+        _DiscoveryResultPtrsByNameRange range, const TfToken& sourceType,
+        SdrVersionFilter filter);
+
+    // Thread-safe find of a shader node in the cache by key.
+    SdrShaderNodeConstPtr _FindNodeInCache(
+        const _ShaderNodeMapKey &key) const;
+
+    // Thread-safe insertion of a node into the cache with a given key. If a 
+    // node with the same key already exists in the cache, the pointer to the
+    // existing node will be returned, otherwise the pointer to pointer to the
+    // inserted node is returned.
+    SdrShaderNodeConstPtr _InsertNodeInCache(
+        _ShaderNodeMapKey &&key, SdrShaderNodeUniquePtr &&node);
+
+    // Finds an existing node in the node cache for the discovery result if one
+    // exists. Otherwise it parses the new node, inserts it into the cache, and
+    // returns it. If there was an error parsing or validating the node, 
+    // `nullptr` will be returned.
+    SdrShaderNodeConstPtr _FindOrParseNodeInCache(
+        const SdrShaderNodeDiscoveryResult& dr);
+
+    // Return the parser plugin for a discovery type. Returns null if no parser 
+    // plugin has that discovery type.
+    SdrParserPlugin*
+    _GetParserForDiscoveryType(const TfToken& discoveryType) const;
+
+    // The discovery plugins that were found through libplug and/or provided by
+    // the client
+    DiscoveryPluginRefPtrVec _discoveryPlugins;
+
+    // The parser plugins that have been discovered via the plugin system. Maps
+    // a discovery result's "discovery type" to a specific parser.
+    _TypeToParserPluginMap _parserPluginMap;
+
+    // The parser plugins.  This has ownership of the plugin objects.
+    std::vector<std::unique_ptr<SdrParserPlugin>> _parserPlugins;
+
+    // The preliminary discovery results prior to parsing. These are stored 
+    // in a multimap by identifier and a multimap by name. If accessing or
+    // mutating, _discoveryResultMutex should be used.
+    _DiscoveryResultsByIdentifier _discoveryResultsByIdentifier;
+    _DiscoveryResultPtrsByName _discoveryResultPtrsByName;
+
+    // Set of all possible source types as determined by the existing discovery
+    // results. Populated along with the discovery result multimaps. If 
+    // accessing or mutating, _discoveryResultMutex should be used.
+    TfToken::Set _allSourceTypes;
+
+    // Maps a node's identifier and source type to a node instance. If accessing
+    // or mutating, _nodeMapMutex should be used.
+    _ShaderNodeMap _nodeMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

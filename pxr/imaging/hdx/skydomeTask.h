@@ -34,6 +34,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdxSkydomeTask : public HdxTask
 {
 public:
+    using TaskParams = HdxRenderTaskParams;
+    
     HDX_API
     HdxSkydomeTask(HdSceneDelegate* delegate, SdfPath const& id);
 
@@ -59,6 +61,7 @@ protected:
 private:
     HdRenderIndex* _renderIndex;
     HgiTextureHandle _skydomeTexture;
+    HgiSamplerHandle _skydomeSampler;
     // Optional internal render setup task, for params unpacking.
     // This is used for aov bindings, camera matrices and framing
     HdxRenderSetupTaskSharedPtr _setupTask;

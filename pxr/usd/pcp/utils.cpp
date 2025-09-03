@@ -146,15 +146,24 @@ Pcp_FindStartingNodeOfClassHierarchy(const PcpNodeRef& n)
 {
     TF_VERIFY(PcpIsClassBasedArc(n.GetArcType()));
 
-    const int depth = n.GetDepthBelowIntroduction();
     PcpNodeRef instanceNode = n;
     PcpNodeRef classNode;
+
+    if (Pcp_IsPropagatedSpecializesNode(instanceNode)) {
+        instanceNode = instanceNode.GetOriginNode();
+    }
+
+    const int depth = instanceNode.GetDepthBelowIntroduction();
 
     while (PcpIsClassBasedArc(instanceNode.GetArcType())
            && instanceNode.GetDepthBelowIntroduction() == depth) {
         TF_VERIFY(instanceNode.GetParentNode());
         classNode = instanceNode;
         instanceNode = instanceNode.GetParentNode();
+
+        if (Pcp_IsPropagatedSpecializesNode(instanceNode)) {
+            instanceNode = instanceNode.GetOriginNode();
+        }
     }
 
     return std::make_pair(instanceNode, classNode);

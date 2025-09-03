@@ -70,3 +70,19 @@ pxr_register_test(testVariantMaterialBindingAPI
     EXPECTED_RETURN_CODE 0
     CLEAN_OUTPUT
 )
+
+if (PXR_BUILD_PRMAN_PLUGIN)
+pxr_install_test_dir(
+    SRC testenv/testRenderSettingsTerminalsAPI
+    DEST testRenderSettingsTerminalsAPI
+)
+
+pxr_register_test(testRenderSettingsTerminalsAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdfixbrokenpixarschemas test.usda --backup backup.usda"
+    DIFF_COMPARE test.usda
+    DIFF_COMPARE backup.usda
+    EXPECTED_RETURN_CODE 0
+    CLEAN_OUTPUT
+)
+endif()

@@ -1,0 +1,31 @@
+digraph network {
+	rankdir=TB;
+	page="8.5, 11";
+
+	node [shape=plaintext];
+		"0x7fdf4006a520" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD COLSPAN="1"> EfTimeInputNode / [__computeTime] </TD></TR>
+		</TABLE>>];
+	node [shape=plaintext];
+		"0x7fdf34a14b00" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD PORT="0x7fdf34a5bf30" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#9999cc">customAttr</FONT></TD></TR>
+			<TR><TD COLSPAN="1"> Exec_CallbackNode /Prim [computeUsingCustomAttr] </TD></TR>
+		</TABLE>>];
+	node [shape=plaintext];
+		"0x7fdf34a41700" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD PORT="0x7fdf34a5bed0" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#9999cc">in</FONT></TD></TR>
+			<TR><TD COLSPAN="1"> EfLeafNode /Prim [computeUsingCustomAttr] </TD></TR>
+		</TABLE>>];
+	node [shape=plaintext];
+		"0x7fdf40038400" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD PORT="0x7fdf3226c060" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#9999cc">time</FONT></TD></TR>
+			<TR><TD COLSPAN="1"> Exec_AttributeInputNode /Prim.customAttr [__computeValue] </TD></TR>
+		</TABLE>>];
+		"0x7fdf40038400" -> "0x7fdf34a14b00":"0x7fdf34a5bf30":n;
+		"0x7fdf34a14b00" -> "0x7fdf34a41700":"0x7fdf34a5bed0":n;
+		"0x7fdf4006a520" -> "0x7fdf40038400":"0x7fdf3226c060":n;
+}

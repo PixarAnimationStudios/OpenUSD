@@ -1,19 +1,19 @@
-Loading @ErrorInvalidPreRelocateTargetPath/root.sdf@
+Loading @ErrorInvalidPreRelocateTargetPath/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
-     sub1.sdf
-     sub2.sdf
+     root.usda
+     sub1.usda
+     sub2.usda
 
 ------------------------------------------------------------------------
 Results for composing </SublayerRoot>
 
 Prim Stack:
-    root.sdf             /SublayerRoot
-    sub1.sdf             /SublayerRoot
-    sub2.sdf             /SublayerRoot
-    ref.sdf              /Ref
+    root.usda            /SublayerRoot
+    sub1.usda            /SublayerRoot
+    sub2.usda            /SublayerRoot
+    ref.usda             /Ref
 
 Child names:
      ['Rig', 'Anim']
@@ -23,17 +23,17 @@ Property names:
 
 Property stacks:
 /SublayerRoot.badAttrA:
-    sub2.sdf             /SublayerRoot.badAttrA
+    sub2.usda            /SublayerRoot.badAttrA
 /SublayerRoot.badRelA:
-    sub2.sdf             /SublayerRoot.badRelA
+    sub2.usda            /SublayerRoot.badRelA
 /SublayerRoot.badRelB:
-    sub2.sdf             /SublayerRoot.badRelB
+    sub2.usda            /SublayerRoot.badRelB
 /SublayerRoot.goodAttrA:
-    sub2.sdf             /SublayerRoot.goodAttrA
+    sub2.usda            /SublayerRoot.goodAttrA
 /SublayerRoot.goodRelA:
-    sub2.sdf             /SublayerRoot.goodRelA
+    sub2.usda            /SublayerRoot.goodRelA
 /SublayerRoot.goodRelB:
-    sub2.sdf             /SublayerRoot.goodRelB
+    sub2.usda            /SublayerRoot.goodRelB
 
 Relationship targets:
 /SublayerRoot.badRelA:
@@ -55,7 +55,7 @@ Attribute connections:
 Results for composing </SublayerRoot/Rig>
 
 Prim Stack:
-    ref.sdf              /Ref/Rig
+    ref.usda             /Ref/Rig
 
 Prohibited child names:
      ['Scope']
@@ -64,7 +64,7 @@ Prohibited child names:
 Results for composing </SublayerRoot/Anim>
 
 Prim Stack:
-    sub1.sdf             /SublayerRoot/Anim
+    sub1.usda            /SublayerRoot/Anim
 
 Child names:
      ['Scope']
@@ -73,21 +73,21 @@ Child names:
 Results for composing </SublayerRoot/Anim/Scope>
 
 Prim Stack:
-    ref.sdf              /Ref/Rig/Scope
+    ref.usda             /Ref/Rig/Scope
 
 Property names:
      ['x']
 
 Property stacks:
 /SublayerRoot/Anim/Scope.x:
-    ref.sdf              /Ref/Rig/Scope.x
+    ref.usda             /Ref/Rig/Scope.x
 
 ------------------------------------------------------------------------
 Results for composing </Root>
 
 Prim Stack:
-    root.sdf             /Root
-    ref.sdf              /Ref
+    root.usda            /Root
+    ref.usda             /Ref
 
 Child names:
      ['Rig', 'Anim']
@@ -97,17 +97,17 @@ Property names:
 
 Property stacks:
 /Root.badAttrA:
-    root.sdf             /Root.badAttrA
+    root.usda            /Root.badAttrA
 /Root.badRelA:
-    root.sdf             /Root.badRelA
+    root.usda            /Root.badRelA
 /Root.badRelB:
-    root.sdf             /Root.badRelB
+    root.usda            /Root.badRelB
 /Root.goodAttrA:
-    root.sdf             /Root.goodAttrA
+    root.usda            /Root.goodAttrA
 /Root.goodRelA:
-    root.sdf             /Root.goodRelA
+    root.usda            /Root.goodRelA
 /Root.goodRelB:
-    root.sdf             /Root.goodRelB
+    root.usda            /Root.goodRelB
 
 Relationship targets:
 /Root.badRelA:
@@ -129,7 +129,7 @@ Attribute connections:
 Results for composing </Root/Rig>
 
 Prim Stack:
-    ref.sdf              /Ref/Rig
+    ref.usda             /Ref/Rig
 
 Prohibited child names:
      ['Scope']
@@ -138,7 +138,7 @@ Prohibited child names:
 Results for composing </Root/Anim>
 
 Prim Stack:
-    root.sdf             /Root/Anim
+    root.usda            /Root/Anim
 
 Child names:
      ['Scope']
@@ -147,12 +147,12 @@ Child names:
 Results for composing </Root/Anim/Scope>
 
 Prim Stack:
-    ref.sdf              /Ref/Rig/Scope
+    ref.usda             /Ref/Rig/Scope
 
 Property names:
      ['x']
 
 Property stacks:
 /Root/Anim/Scope.x:
-    ref.sdf              /Ref/Rig/Scope.x
+    ref.usda             /Ref/Rig/Scope.x
 

@@ -13,15 +13,15 @@ def _modifySettings(appController):
     appController._dataModel.viewSettings.showHUD = False
     appController._dataModel.viewSettings.autoComputeClippingPlanes = True
 
-# Update the connected Sample Filter.
-def _updateSampleFilterConnection(filterPaths, appController):
+# Update the targeted Sample Filter.
+def _updateSampleFilterTargets(filterPaths, appController):
     stage = appController._dataModel.stage
     layer = stage.GetSessionLayer()
     stage.SetEditTarget(layer)
 
     renderSettings = stage.GetPrimAtPath('/Render/RenderSettings')
-    sampleFilterAttr = renderSettings.GetAttribute('outputs:ri:sampleFilters')
-    sampleFilterAttr.SetConnections(filterPaths)
+    sampleFilterRel = renderSettings.GetRelationship('ri:sampleFilters')
+    sampleFilterRel.SetTargets(filterPaths)
 
 def _updateSampleFilterParam(filterPath, attrName, attrValue, appController):
     stage = appController._dataModel.stage
@@ -37,22 +37,21 @@ def _updateSampleFilterParam(filterPath, attrName, attrValue, appController):
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)
 
-    filter1out = '/Render/MurkFilter1.outputs:result'
-    filter2out = '/Render/MurkFilter2.outputs:result'
+    filter1 = '/Render/MurkFilter1'
     filter2 = '/Render/MurkFilter2'
     conFarDistAttrName = "inputs:ri:conFarDist"
 
     appController._takeShot("firstFilter.png", waitForConvergence=True)
 
-    _updateSampleFilterConnection([filter2out], appController)
+    _updateSampleFilterTargets([filter2], appController)
     appController._takeShot("secondFilter.png", waitForConvergence=True)
 
     _updateSampleFilterParam(filter2, conFarDistAttrName, 1, appController)
     appController._takeShot("secondFilter_modified.png", waitForConvergence=True)
 
     _updateSampleFilterParam(filter2, conFarDistAttrName, 50, appController)
-    _updateSampleFilterConnection([filter1out, filter2out], appController)
+    _updateSampleFilterTargets([filter1, filter2], appController)
     appController._takeShot("multiFilters1.png", waitForConvergence=True)
 
-    _updateSampleFilterConnection([filter2out, filter1out], appController)
+    _updateSampleFilterTargets([filter2, filter1], appController)
     appController._takeShot("multiFilters2.png", waitForConvergence=True)

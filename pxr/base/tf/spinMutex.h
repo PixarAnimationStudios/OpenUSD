@@ -50,14 +50,12 @@ public:
     struct ScopedLock {
 
         /// Construct a scoped lock for mutex \p m and acquire a lock.
-        explicit ScopedLock(TfSpinMutex &m)
-            : _mutex(&m)
-            , _acquired(false) {
+        explicit ScopedLock(TfSpinMutex &m) : _mutex(&m) {
             Acquire();
         }
 
         /// Construct a scoped lock not associated with a \p mutex.
-        ScopedLock() : _mutex(nullptr), _acquired(false) {}
+        ScopedLock() = default;
 
         /// If this scoped lock is acquired, Release() it.
         ~ScopedLock() {
@@ -70,24 +68,44 @@ public:
             Release();
             _mutex = &m;
             Acquire();
-        }            
+        }
 
         /// Release the currently required lock on the associated mutex.  If
-        /// this lock is not currently acquired, silently do nothing.
+        /// this lock is not currently acquired, do nothing.
         void Release() {
             if (_acquired) {
                 _Release();
             }
         }
-        
+
         /// Acquire a lock on this lock's associated mutex.  This lock must not
         /// already be acquired when calling \p Acquire().
         void Acquire() {
+            TF_DEV_AXIOM(_mutex);
             TF_DEV_AXIOM(!_acquired);
             _mutex->Acquire();
             _acquired = true;
         }
 
+        /// If the current scoped lock is acquired, Release() it, then associate
+        /// this lock with \p m and try to acquire a lock.  Return true if the
+        /// lock was successfully acquired, false if not.
+        bool TryAcquire(TfSpinMutex &m) {
+            Release();
+            _mutex = &m;
+            return TryAcquire();
+        }
+
+        /// Try to acquire a lock on this lock's associated mutex.  The lock
+        /// must not already be acquired when calling \p TryAcquire().  Return
+        /// true if the lock was successfully acquired, false if not.
+        bool TryAcquire() {
+            TF_DEV_AXIOM(_mutex);
+            TF_DEV_AXIOM(!_acquired);
+            _acquired = _mutex->TryAcquire();
+            return _acquired;
+        }
+        
     private:
 
         void _Release() {
@@ -96,8 +114,8 @@ public:
             _acquired = false;
         }
 
-        TfSpinMutex *_mutex;
-        bool _acquired;
+        TfSpinMutex *_mutex = nullptr;
+        bool _acquired = false;
     };
 
     /// Acquire a lock on this mutex if it is not currently held by another

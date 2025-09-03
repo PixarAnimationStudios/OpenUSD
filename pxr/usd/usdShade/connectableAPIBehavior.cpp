@@ -440,17 +440,26 @@ public:
             const _PrimTypeId &primTypeId,
             const SharedConnectableAPIBehaviorPtr &behavior)
     {
-        bool didInsert = false;
+        std::pair<_PrimTypeIdCache::iterator, bool> insertResult;
         {
             _RWMutex::scoped_lock lock(_primTypeCacheMutex, /* write = */ true);
-            didInsert = _primTypeIdCache.emplace(primTypeId, behavior).second;
+            insertResult = _primTypeIdCache.emplace(primTypeId, behavior);
         }
 
-        if (!didInsert) {
+        if (!insertResult.second) {
+
+            // If we are trying to register a behavior for a primTypeId which
+            // already has a behavior registered, we should not allow it, but if
+            // multiple threads tried to register the same behavior (like a null
+            // behavior for caching purpose, its benign and we silently allow
+            // it)
+            if (behavior == insertResult.first->second) {
+                return;
+            }
             
             TF_CODING_ERROR(
-                "UsdShade Connectable behavior already registered for "
-                "primTypeId comprised of '%s' type and apischemas.",
+                "A different UsdShade Connectable behavior already registered "
+                "for primTypeId comprised of '%s' type and apischemas.",
                 primTypeId.GetString().c_str());
         }
     }

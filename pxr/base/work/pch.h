@@ -31,21 +31,24 @@
 #include <chrono>
 #include <cinttypes>
 #include <cmath>
+#include <complex>
 #include <cstdarg>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <deque>
 #include <functional>
 #include <iosfwd>
+#include <iostream>
 #include <iterator>
+#include <limits>
 #include <list>
 #include <locale>
 #include <map>
 #include <math.h>
 #include <memory>
 #include <numeric>
+#include <ostream>
 #include <set>
 #include <sstream>
 #include <stdarg.h>
@@ -53,23 +56,12 @@
 #include <string>
 #include <sys/types.h>
 #include <thread>
+#include <tuple>
 #include <type_traits>
 #include <typeindex>
 #include <typeinfo>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
-#if defined(PXR_PYTHON_SUPPORT_ENABLED) && !defined(PXR_USE_INTERNAL_BOOST_PYTHON)
-#include "pxr/external/boost/python/common.hpp"
-#include <boost/python/def.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/module.hpp>
-#if defined(__APPLE__) // Fix breakage caused by Python's pyport.h.
-#undef tolower
-#undef toupper
-#endif
-#endif // PXR_PYTHON_SUPPORT_ENABLED && !PXR_USE_INTERNAL_BOOST_PYTHON
 #include <tbb/blocked_range.h>
 #include <tbb/concurrent_vector.h>
 #include <tbb/enumerable_thread_specific.h>

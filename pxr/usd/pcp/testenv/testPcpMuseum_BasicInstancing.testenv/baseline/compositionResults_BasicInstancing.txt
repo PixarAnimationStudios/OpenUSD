@@ -1,14 +1,14 @@
-Loading @BasicInstancing/root.sdf@
+Loading @BasicInstancing/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </_class_Prop>
 
 Prim Stack:
-    root.sdf             /_class_Prop
+    root.usda            /_class_Prop
 
 Child names:
      ['From_class_in_root', 'geom']
@@ -18,33 +18,33 @@ Property names:
 
 Property stacks:
 /_class_Prop.a:
-    root.sdf             /_class_Prop.a
+    root.usda            /_class_Prop.a
 
 ------------------------------------------------------------------------
 Results for composing </_class_Prop/From_class_in_root>
 
 Prim Stack:
-    root.sdf             /_class_Prop/From_class_in_root
+    root.usda            /_class_Prop/From_class_in_root
 
 ------------------------------------------------------------------------
 Results for composing </_class_Prop/geom>
 
 Prim Stack:
-    root.sdf             /_class_Prop/geom
+    root.usda            /_class_Prop/geom
 
 Property names:
      ['x']
 
 Property stacks:
 /_class_Prop/geom.x:
-    root.sdf             /_class_Prop/geom.x
+    root.usda            /_class_Prop/geom.x
 
 ------------------------------------------------------------------------
 Results for composing </Set_1>
 
 Prim Stack:
-    root.sdf             /Set_1
-    set.sdf              /Set
+    root.usda            /Set_1
+    set.usda             /Set
 
 Child names:
      ['InstancedProp', 'UninstancedProp']
@@ -53,12 +53,12 @@ Child names:
 Results for composing </Set_1/InstancedProp>
 
 Prim Stack:
-    root.sdf             /Set_1/InstancedProp
-    root.sdf             /_class_Prop
-    set.sdf              /Set/InstancedProp
-    set.sdf              /_class_Prop
-    prop.sdf             /Prop
-    prop.sdf             /_class_Prop
+    root.usda            /Set_1/InstancedProp
+    root.usda            /_class_Prop
+    set.usda             /Set/InstancedProp
+    set.usda             /_class_Prop
+    prop.usda            /Prop
+    prop.usda            /_class_Prop
 
 Child names:
      ['geom', 'From_class_in_set', 'From_class_in_root']
@@ -68,51 +68,51 @@ Property names:
 
 Property stacks:
 /Set_1/InstancedProp.a:
-    root.sdf             /Set_1/InstancedProp.a
-    root.sdf             /_class_Prop.a
-    set.sdf              /Set/InstancedProp.a
-    set.sdf              /_class_Prop.a
-    prop.sdf             /Prop.a
+    root.usda            /Set_1/InstancedProp.a
+    root.usda            /_class_Prop.a
+    set.usda             /Set/InstancedProp.a
+    set.usda             /_class_Prop.a
+    prop.usda            /Prop.a
 
 ------------------------------------------------------------------------
 Results for composing </Set_1/InstancedProp/geom>
 
 Prim Stack:
-    root.sdf             /_class_Prop/geom
-    set.sdf              /_class_Prop/geom
-    prop.sdf             /Prop/geom
+    root.usda            /_class_Prop/geom
+    set.usda             /_class_Prop/geom
+    prop.usda            /Prop/geom
 
 Property names:
      ['x']
 
 Property stacks:
 /Set_1/InstancedProp/geom.x:
-    root.sdf             /_class_Prop/geom.x
-    set.sdf              /_class_Prop/geom.x
-    prop.sdf             /Prop/geom.x
+    root.usda            /_class_Prop/geom.x
+    set.usda             /_class_Prop/geom.x
+    prop.usda            /Prop/geom.x
 
 ------------------------------------------------------------------------
 Results for composing </Set_1/InstancedProp/From_class_in_set>
 
 Prim Stack:
-    set.sdf              /_class_Prop/From_class_in_set
+    set.usda             /_class_Prop/From_class_in_set
 
 ------------------------------------------------------------------------
 Results for composing </Set_1/InstancedProp/From_class_in_root>
 
 Prim Stack:
-    root.sdf             /_class_Prop/From_class_in_root
+    root.usda            /_class_Prop/From_class_in_root
 
 ------------------------------------------------------------------------
 Results for composing </Set_1/UninstancedProp>
 
 Prim Stack:
-    root.sdf             /Set_1/UninstancedProp
-    root.sdf             /_class_Prop
-    set.sdf              /Set/UninstancedProp
-    set.sdf              /_class_Prop
-    prop.sdf             /Prop
-    prop.sdf             /_class_Prop
+    root.usda            /Set_1/UninstancedProp
+    root.usda            /_class_Prop
+    set.usda             /Set/UninstancedProp
+    set.usda             /_class_Prop
+    prop.usda            /Prop
+    prop.usda            /_class_Prop
 
 Child names:
      ['geom', 'From_class_in_set', 'From_set', 'From_class_in_root', 'From_root']
@@ -122,62 +122,62 @@ Property names:
 
 Property stacks:
 /Set_1/UninstancedProp.a:
-    root.sdf             /Set_1/UninstancedProp.a
-    root.sdf             /_class_Prop.a
-    set.sdf              /Set/UninstancedProp.a
-    set.sdf              /_class_Prop.a
-    prop.sdf             /Prop.a
+    root.usda            /Set_1/UninstancedProp.a
+    root.usda            /_class_Prop.a
+    set.usda             /Set/UninstancedProp.a
+    set.usda             /_class_Prop.a
+    prop.usda            /Prop.a
 
 ------------------------------------------------------------------------
 Results for composing </Set_1/UninstancedProp/geom>
 
 Prim Stack:
-    root.sdf             /Set_1/UninstancedProp/geom
-    root.sdf             /_class_Prop/geom
-    set.sdf              /Set/UninstancedProp/geom
-    set.sdf              /_class_Prop/geom
-    prop.sdf             /Prop/geom
+    root.usda            /Set_1/UninstancedProp/geom
+    root.usda            /_class_Prop/geom
+    set.usda             /Set/UninstancedProp/geom
+    set.usda             /_class_Prop/geom
+    prop.usda            /Prop/geom
 
 Property names:
      ['x']
 
 Property stacks:
 /Set_1/UninstancedProp/geom.x:
-    root.sdf             /Set_1/UninstancedProp/geom.x
-    root.sdf             /_class_Prop/geom.x
-    set.sdf              /Set/UninstancedProp/geom.x
-    set.sdf              /_class_Prop/geom.x
-    prop.sdf             /Prop/geom.x
+    root.usda            /Set_1/UninstancedProp/geom.x
+    root.usda            /_class_Prop/geom.x
+    set.usda             /Set/UninstancedProp/geom.x
+    set.usda             /_class_Prop/geom.x
+    prop.usda            /Prop/geom.x
 
 ------------------------------------------------------------------------
 Results for composing </Set_1/UninstancedProp/From_class_in_set>
 
 Prim Stack:
-    set.sdf              /_class_Prop/From_class_in_set
+    set.usda             /_class_Prop/From_class_in_set
 
 ------------------------------------------------------------------------
 Results for composing </Set_1/UninstancedProp/From_set>
 
 Prim Stack:
-    set.sdf              /Set/UninstancedProp/From_set
+    set.usda             /Set/UninstancedProp/From_set
 
 ------------------------------------------------------------------------
 Results for composing </Set_1/UninstancedProp/From_class_in_root>
 
 Prim Stack:
-    root.sdf             /_class_Prop/From_class_in_root
+    root.usda            /_class_Prop/From_class_in_root
 
 ------------------------------------------------------------------------
 Results for composing </Set_1/UninstancedProp/From_root>
 
 Prim Stack:
-    root.sdf             /Set_1/UninstancedProp/From_root
+    root.usda            /Set_1/UninstancedProp/From_root
 
 ------------------------------------------------------------------------
 Results for composing </NotAnInstance>
 
 Prim Stack:
-    root.sdf             /NotAnInstance
+    root.usda            /NotAnInstance
 
 Child names:
      ['Child']
@@ -186,5 +186,5 @@ Child names:
 Results for composing </NotAnInstance/Child>
 
 Prim Stack:
-    root.sdf             /NotAnInstance/Child
+    root.usda            /NotAnInstance/Child
 

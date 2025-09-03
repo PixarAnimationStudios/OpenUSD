@@ -13,9 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/aix_init_module.hpp>
-#else
 # ifdef _AIX
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include <cstdio>
@@ -35,5 +32,4 @@ void aix_init_module(so_load_function, char const* name, void (*init_module)());
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 # endif
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_AIX_INIT_MODULE_HPP

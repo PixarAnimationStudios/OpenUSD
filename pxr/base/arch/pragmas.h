@@ -88,6 +88,12 @@
     #define ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND \
         _Pragma("clang diagnostic ignored \"-Wobjc-method-access\"")
 
+    #define ARCH_PRAGMA_SELF_MOVE \
+        _Pragma("clang diagnostic ignored \"-Wself-move\"")
+
+    #define ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED \
+        _Pragma("clang diagnostic ignored \"-Wself-assign-overloaded\"")
+
 #elif defined(ARCH_COMPILER_MSVC)
 
     #define ARCH_PRAGMA_PUSH \
@@ -257,6 +263,14 @@
 
 #if !defined ARCH_PRAGMA_NON_EXPORTED_BASE_CLASS
     #define ARCH_PRAGMA_NON_EXPORTED_BASE_CLASS
+#endif
+
+#if !defined ARCH_PRAGMA_SELF_MOVE
+    #define ARCH_PRAGMA_SELF_MOVE
+#endif
+
+#if !defined ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED
+    #define ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED
 #endif
 
 #endif // PXR_BASE_ARCH_PRAGMAS_H

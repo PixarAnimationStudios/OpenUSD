@@ -17,7 +17,7 @@
     <output name="out_color" type="color3" nodename="image_color" />
     <output name="out_roughness" type="float" nodename="image_roughness" />
   </nodegraph>
-  <standard_surface name="SR_brass1" type="surfaceshader">
+  <standard_surface name="Surface" type="surfaceshader">
     <input name="base" type="float" value="1" />
     <input name="base_color" type="color3" value="1, 1, 1" />
     <input name="specular" type="float" value="0" />
@@ -28,6 +28,6 @@
     <input name="coat_roughness" type="float" nodegraph="NG_brass1" output="out_roughness" />
   </standard_surface>
   <surfacematerial name="Tiled_Brass" type="material">
-    <input name="surfaceshader" type="surfaceshader" nodename="SR_brass1" />
+    <input name="surfaceshader" type="surfaceshader" nodename="Surface" />
   </surfacematerial>
 </materialx>

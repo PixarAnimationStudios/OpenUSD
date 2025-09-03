@@ -1,0 +1,13 @@
+#usda 1.0
+
+def "Test_1" (
+    references = @./ref1.usda@</Ref_1>
+)
+{
+}
+
+def "Test_2" (
+    references = @./ref2.usda@</Ref_2>
+)
+{
+}

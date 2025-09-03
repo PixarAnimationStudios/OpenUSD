@@ -1,0 +1,17 @@
+#usda 1.0
+
+def Prim "ArmRig"
+{
+    def Scope "Rig"
+    {
+        def Mover "Some_Internal_Rig_Prim"
+        {
+            add double bendAmount.connect = </ArmRig/Anim.bendAmount>
+        }
+    }
+
+    def Scope "Anim"
+    {
+        double bendAmount = 1
+    }
+}

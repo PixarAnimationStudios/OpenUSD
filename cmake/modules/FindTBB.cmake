@@ -137,21 +137,27 @@ if(NOT TBB_FOUND)
       set(TBB_ARCHITECTURE "ia32")
     endif()
 
-    # Set the TBB search library path search suffix based on the version of VC
+    # Set the TBB search library/runtime path search suffix based on the version of VC
     if(WINDOWS_STORE)
       set(TBB_LIB_PATH_SUFFIX "lib/${TBB_ARCHITECTURE}/vc11_ui")
+      set(TBB_RUNTIME_PATH_SUFFIX "bin/${TBB_ARCHITECTURE}/vc11_ui")
     elseif(MSVC14)
       set(TBB_LIB_PATH_SUFFIX "lib/${TBB_ARCHITECTURE}/vc14")
+      set(TBB_RUNTIME_PATH_SUFFIX "bin/${TBB_ARCHITECTURE}/vc14")
     elseif(MSVC12)
       set(TBB_LIB_PATH_SUFFIX "lib/${TBB_ARCHITECTURE}/vc12")
+      set(TBB_RUNTIME_PATH_SUFFIX "bin/${TBB_ARCHITECTURE}/vc12")
     elseif(MSVC11)
       set(TBB_LIB_PATH_SUFFIX "lib/${TBB_ARCHITECTURE}/vc11")
+      set(TBB_RUNTIME_PATH_SUFFIX "bin/${TBB_ARCHITECTURE}/vc11")
     elseif(MSVC10)
       set(TBB_LIB_PATH_SUFFIX "lib/${TBB_ARCHITECTURE}/vc10")
+      set(TBB_RUNTIME_PATH_SUFFIX "bin/${TBB_ARCHITECTURE}/vc10")
     endif()
 
-    # Add the library path search suffix for the VC independent version of TBB
+    # Add the library/runtime path search suffix for the VC independent version of TBB
     list(APPEND TBB_LIB_PATH_SUFFIX "lib/${TBB_ARCHITECTURE}/vc_mt")
+    list(APPEND TBB_RUNTIME_PATH_SUFFIX "bin/${TBB_ARCHITECTURE}/vc_mt")
 
   elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     # OS X
@@ -176,12 +182,13 @@ if(NOT TBB_FOUND)
     endif()
   endif()
   
-  # The above TBB_LIB_PATH_SUFFIX is based on where Intel puts the libraries
+  # The above TBB_LIB_PATH_SUFFIX/TBB_RUNTIME_PATH_SUFFIX is based on where Intel puts the libraries
   # in the package of prebuilt libraries it distributes. However, users may
-  # install these shared libraries into the more conventional "lib" directory
+  # install these shared libraries into the more conventional "lib"/"bin" directory
   # (especially when building from source), so we add that as an additional
   # location to search.
   list(APPEND TBB_LIB_PATH_SUFFIX "lib")
+  list(APPEND TBB_RUNTIME_PATH_SUFFIX "bin")
 
   ##################################
   # Find the TBB include dir
@@ -224,13 +231,13 @@ if(NOT TBB_FOUND)
   endif()
 
   if(TBB_VERSION VERSION_LESS 4.3)
-    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc tbb)
+    set(TBB_SEARCH_COMPONENTS tbb_preview tbbmalloc tbb)
   else()
-    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc_proxy tbbmalloc tbb)
+    set(TBB_SEARCH_COMPONENTS tbb_preview tbbmalloc_proxy tbbmalloc tbb)
   endif()
 
   # Find each component
-  foreach(_comp ${TBB_SEARCH_COMPOMPONENTS})
+  foreach(_comp ${TBB_SEARCH_COMPONENTS})
     if(";${TBB_FIND_COMPONENTS};tbb" MATCHES ";${_comp};")
 
       if(${_comp} STREQUAL tbb)
@@ -249,6 +256,32 @@ if(NOT TBB_FOUND)
           HINTS ${TBB_LIBRARY} ${TBB_SEARCH_DIR}
           PATHS ${TBB_DEFAULT_SEARCH_DIR} ENV LIBRARY_PATH
           PATH_SUFFIXES ${TBB_LIB_PATH_SUFFIX})
+
+      # On Windows platforms also looks for .dll binaries.
+      # If we find some, assume TBB is built as a shared library with the .lib/.dll pair,
+      # otherwise assume it is built as a static library
+      set(TBB_${_comp}_TARGET_TYPE SHARED)
+      if(WIN32)
+        find_file(TBB_${_comp}_SHARED_LIBRARY_RELEASE
+            NAMES ${CMAKE_SHARED_LIBRARY_PREFIX}${_lib_name}${CMAKE_SHARED_LIBRARY_SUFFIX}
+            HINTS ${TBB_LIBRARY} ${TBB_SEARCH_DIR}
+            PATHS ${TBB_DEFAULT_SEARCH_DIR} ENV LIBRARY_PATH
+            PATH_SUFFIXES ${TBB_RUNTIME_PATH_SUFFIX})
+        
+        find_file(TBB_${_comp}_SHARED_LIBRARY_DEBUG
+            NAMES ${CMAKE_SHARED_LIBRARY_PREFIX}${_lib_name}_debug${CMAKE_SHARED_LIBRARY_SUFFIX}
+            HINTS ${TBB_LIBRARY} ${TBB_SEARCH_DIR}
+            PATHS ${TBB_DEFAULT_SEARCH_DIR} ENV LIBRARY_PATH
+            PATH_SUFFIXES ${TBB_RUNTIME_PATH_SUFFIX})
+      
+        if(TBB_${_comp}_LIBRARY_RELEASE AND TBB_${_comp}_SHARED_LIBRARY_RELEASE)
+          set(TBB_${_comp}_TARGET_TYPE SHARED)
+        elseif(TBB_${_comp}_LIBRARY_DEBUG AND TBB_${_comp}_SHARED_LIBRARY_DEBUG)
+          set(TBB_${_comp}_TARGET_TYPE SHARED)
+        else()
+          set(TBB_${_comp}_TARGET_TYPE STATIC)
+        endif()
+      endif()
 
       if(TBB_${_comp}_LIBRARY_DEBUG)
         list(APPEND TBB_LIBRARIES_DEBUG "${TBB_${_comp}_LIBRARY_DEBUG}")
@@ -270,6 +303,7 @@ if(NOT TBB_FOUND)
       mark_as_advanced(TBB_${_comp}_LIBRARY_RELEASE)
       mark_as_advanced(TBB_${_comp}_LIBRARY_DEBUG)
       mark_as_advanced(TBB_${_comp}_LIBRARY)
+      mark_as_advanced(TBB_${_comp}_TARGET_TYPE)
 
     endif()
   endforeach()
@@ -302,26 +336,83 @@ if(NOT TBB_FOUND)
   ##################################
 
   if(NOT CMAKE_VERSION VERSION_LESS 3.0 AND TBB_FOUND)
-    add_library(TBB::tbb SHARED IMPORTED)
-    set_target_properties(TBB::tbb PROPERTIES
-          INTERFACE_INCLUDE_DIRECTORIES  ${TBB_INCLUDE_DIRS}
-          IMPORTED_LOCATION              ${TBB_LIBRARIES})
-    if(TBB_LIBRARIES_RELEASE AND TBB_LIBRARIES_DEBUG)
-      set_target_properties(TBB::tbb PROPERTIES
-          INTERFACE_COMPILE_DEFINITIONS "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:TBB_USE_DEBUG=1>"
-          IMPORTED_LOCATION_DEBUG          ${TBB_LIBRARIES_DEBUG}
-          IMPORTED_LOCATION_RELWITHDEBINFO ${TBB_LIBRARIES_DEBUG}
-          IMPORTED_LOCATION_RELEASE        ${TBB_LIBRARIES_RELEASE}
-          IMPORTED_LOCATION_MINSIZEREL     ${TBB_LIBRARIES_RELEASE}
-          )
-    elseif(TBB_LIBRARIES_RELEASE)
-      set_target_properties(TBB::tbb PROPERTIES IMPORTED_LOCATION ${TBB_LIBRARIES_RELEASE})
-    else()
-      set_target_properties(TBB::tbb PROPERTIES
-          INTERFACE_COMPILE_DEFINITIONS "${TBB_DEFINITIONS_DEBUG}"
-          IMPORTED_LOCATION              ${TBB_LIBRARIES_DEBUG}
-          )
-    endif()
+    foreach(_comp ${TBB_SEARCH_COMPONENTS})
+      if(";${TBB_FIND_COMPONENTS};tbb" MATCHES ";${_comp};")
+
+        add_library(TBB::${_comp} ${TBB_${_comp}_TARGET_TYPE} IMPORTED)
+        set_property(TARGET TBB::${_comp} APPEND PROPERTY
+            INTERFACE_INCLUDE_DIRECTORIES ${TBB_INCLUDE_DIRS}
+        )
+
+        set(TBB_LINK_DIR_DEBUG)
+        set(TBB_LINK_DIR_RELEASE)
+
+        if(WIN32 AND TBB_${_comp}_SHARED_LIBRARY_${TBB_BUILD_TYPE})
+          set_target_properties(TBB::${_comp} PROPERTIES
+              IMPORTED_IMPLIB            ${TBB_${_comp}_LIBRARY_${TBB_BUILD_TYPE}}
+              IMPORTED_LOCATION          ${TBB_${_comp}_SHARED_LIBRARY_${TBB_BUILD_TYPE}})
+        else()
+          set_target_properties(TBB::${_comp} PROPERTIES
+              IMPORTED_LOCATION          ${TBB_${_comp}_LIBRARY_${TBB_BUILD_TYPE}})
+        endif()
+
+        if(TBB_${_comp}_LIBRARY_DEBUG)
+          set_property(TARGET TBB::${_comp} APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
+          set_property(TARGET TBB::${_comp} APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:TBB_USE_DEBUG=1>")
+            cmake_path(GET TBB_${_comp}_LIBRARY_DEBUG PARENT_PATH TBB_LINK_DIR_DEBUG)
+
+          if(WIN32 AND TBB_${_comp}_SHARED_LIBRARY_DEBUG)
+            set_target_properties(TBB::${_comp} PROPERTIES
+                IMPORTED_IMPLIB_DEBUG            ${TBB_${_comp}_LIBRARY_DEBUG}
+                IMPORTED_IMPLIB_RELWITHDEBINFO   ${TBB_${_comp}_LIBRARY_DEBUG}
+
+                IMPORTED_LOCATION_DEBUG          ${TBB_${_comp}_SHARED_LIBRARY_DEBUG}
+                IMPORTED_LOCATION_RELWITHDEBINFO ${TBB_${_comp}_SHARED_LIBRARY_DEBUG})
+          else()
+            set_target_properties(TBB::${_comp} PROPERTIES
+                IMPORTED_LOCATION_DEBUG          ${TBB_${_comp}_LIBRARY_DEBUG}
+                IMPORTED_LOCATION_RELWITHDEBINFO ${TBB_${_comp}_LIBRARY_DEBUG})
+          endif()
+        endif()
+
+        if(TBB_${_comp}_LIBRARY_RELEASE)
+          set_property(TARGET TBB::${_comp} APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+            cmake_path(GET TBB_${_comp}_LIBRARY_RELEASE PARENT_PATH TBB_LINK_DIR_RELEASE)
+
+          if(WIN32 AND TBB_${_comp}_SHARED_LIBRARY_RELEASE)
+            set_target_properties(TBB::${_comp} PROPERTIES
+                IMPORTED_IMPLIB_RELEASE      ${TBB_${_comp}_LIBRARY_RELEASE}
+                IMPORTED_IMPLIB_MINSIZEREL   ${TBB_${_comp}_LIBRARY_RELEASE}
+
+                IMPORTED_LOCATION_RELEASE    ${TBB_${_comp}_SHARED_LIBRARY_RELEASE}
+                IMPORTED_LOCATION_MINSIZEREL ${TBB_${_comp}_SHARED_LIBRARY_RELEASE})
+          else()
+            set_target_properties(TBB::${_comp} PROPERTIES
+                IMPORTED_LOCATION_RELEASE    ${TBB_${_comp}_LIBRARY_RELEASE}
+                IMPORTED_LOCATION_MINSIZEREL ${TBB_${_comp}_LIBRARY_RELEASE})
+          endif()
+        endif()
+
+      endif()
+
+      # Set the linker directory path for the target.  This is specifically
+      # used on linux so that the linker can find the appropriate 
+      # numbered shared object
+      if (TBB_LINK_DIR_DEBUG AND TBB_LINK_DIR_RELEASE)
+        set(TBB_LINK_DIRS "$<$<CONFIG:Debug>:${TBB_LINK_DIR_DEBUG}>;$<$<CONFIG:Release>:${TBB_LINK_DIR_RELEASE}>")
+      elseif(TBB_LINK_DIRS_DEBUG)
+        set(TBB_LINK_DIRS ${TBB_LINK_DIR_DEBUG})
+      elseif(TBB_LINK_DIR_RELEASE)
+        set(TBB_LINK_DIRS ${TBB_LINK_DIR_RELEASE})
+      endif()
+      if (TBB_LINK_DIRS)
+        set_property(TARGET TBB::${_comp} APPEND PROPERTY INTERFACE_LINK_DIRECTORIES ${TBB_LINK_DIRS})
+      endif()
+
+      unset(TBB_LINK_DIR_DEBUG)
+      unset(TBB_LINK_DIR_RELEASE)
+      unset(TBB_LINK_DIRS)
+    endforeach()
   endif()
 
   mark_as_advanced(TBB_INCLUDE_DIRS TBB_LIBRARIES)
@@ -330,5 +421,4 @@ if(NOT TBB_FOUND)
   unset(TBB_BUILD_TYPE)
   unset(TBB_LIB_PATH_SUFFIX)
   unset(TBB_DEFAULT_SEARCH_DIR)
-
 endif()

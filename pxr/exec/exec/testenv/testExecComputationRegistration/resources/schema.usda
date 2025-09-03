@@ -1,0 +1,71 @@
+#usda 1.0
+(
+    "Test schema file for testExecComputationRegistration"
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "testExecComputationRegistration"
+        string libraryPath      = "pxr/exec/exec"
+        bool skipCodeGeneration = true
+    }
+)
+{
+}
+
+class CustomSchema "CustomSchema" (
+    inherits = </Typed>
+)
+{
+}
+
+class DerivedCustomSchema "DerivedCustomSchema" (
+    inherits = </CustomSchema>
+)
+{
+}
+
+class PluginComputationSchema "PluginComputationSchema" (
+    inherits = </Typed>
+)
+{
+}
+
+class ExtraPluginComputationSchema "ExtraPluginComputationSchema" (
+    inherits = </Typed>
+)
+{
+}
+
+class ConflictingPluginRegistrationSchema "ConflictingPluginRegistrationSchema" {
+    inherits = </Typed>
+)
+{
+}
+
+class ConflictingComputationalSchema "ConflictingComputationalSchema" {
+    inherits = </Typed>
+)
+{
+}
+
+class "CustomAppliedSchema" (
+    inherits = </APISchemaBase>
+)
+{
+}
+
+class "CustomMultiApplySchema" (
+    inherits = </APISchemaBase>
+)
+{
+}
+
+class "NonComputationalSchema" (
+    inherits = </APISchemaBase>
+)
+{
+}

@@ -52,13 +52,13 @@ class TestPcpExpressionComposition(unittest.TestCase):
         return pi
 
     def test_BasicSublayers(self):
-        pcpCache = LoadPcpCache('sublayers/root.sdf')
+        pcpCache = LoadPcpCache('sublayers/root.usda')
         rootLayer = pcpCache.GetLayerStackIdentifier().rootLayer
 
-        aLayer = Sdf.Layer.FindOrOpen('sublayers/A.sdf')
-        bLayer = Sdf.Layer.FindOrOpen('sublayers/B.sdf')
-        bSubLayer = Sdf.Layer.FindOrOpen('sublayers/B_sub.sdf')
-        cLayer = Sdf.Layer.FindOrOpen('sublayers/C.sdf')
+        aLayer = Sdf.Layer.FindOrOpen('sublayers/A.usda')
+        bLayer = Sdf.Layer.FindOrOpen('sublayers/B.usda')
+        bSubLayer = Sdf.Layer.FindOrOpen('sublayers/B_sub.usda')
+        cLayer = Sdf.Layer.FindOrOpen('sublayers/C.usda')
 
         # Verify initial state.
         pi, err = pcpCache.ComputePrimIndex('/Test')
@@ -75,8 +75,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
             [rootLayer, 
              aLayer])
 
-        # Modify the expression variable to X=B. This should drop A.sdf and load
-        # B.sdf as a sublayer. Since B.sdf is not empty, this should incur a
+        # Modify the expression variable to X=B. This should drop A.usda and load
+        # B.usda as a sublayer. Since B.usda is not empty, this should incur a
         # significant resync.
         with Pcp._TestChangeProcessor(pcpCache) as changes:
             rootLayer.expressionVariables = {'X':'B'}
@@ -99,9 +99,9 @@ class TestPcpExpressionComposition(unittest.TestCase):
              bLayer,
              bSubLayer])
 
-        # Modify the expression variable to X=C. This drops B.sdf and loads
-        # C.sdf as a sublayer. This incurs a significant resync even though
-        # C.sdf is empty -- see comment in 
+        # Modify the expression variable to X=C. This drops B.usda and loads
+        # C.usda as a sublayer. This incurs a significant resync even though
+        # C.usda is empty -- see comment in 
         # PcpChanges::_DidChangeLayerStackExpressionVariables
         with Pcp._TestChangeProcessor(pcpCache) as changes:
             rootLayer.expressionVariables = {'X':'C'}
@@ -121,9 +121,9 @@ class TestPcpExpressionComposition(unittest.TestCase):
             [rootLayer,
              cLayer])
 
-        # Modify the expression variable to X=BAD. This should drop C.sdf and
-        # attempt to load BAD.sdf as a sublayer, but fail to do so since
-        # BAD.sdf does not exist.
+        # Modify the expression variable to X=BAD. This should drop C.usda and
+        # attempt to load BAD.usda as a sublayer, but fail to do so since
+        # BAD.usda does not exist.
         with Pcp._TestChangeProcessor(pcpCache) as changes:
             rootLayer.expressionVariables = {'X':'BAD'}
             self.assertEqual(changes.GetSignificantChanges(), ['/'])
@@ -142,7 +142,7 @@ class TestPcpExpressionComposition(unittest.TestCase):
             [rootLayer])
 
         # Modify the expression variable to X=A. This should resolve the error
-        # and load A.sdf again.
+        # and load A.usda again.
         with Pcp._TestChangeProcessor(pcpCache) as changes:
             rootLayer.expressionVariables = {'X':'A'}
             self.assertEqual(changes.GetSignificantChanges(), ['/'])
@@ -184,13 +184,13 @@ class TestPcpExpressionComposition(unittest.TestCase):
              aLayer])
 
     def test_SublayerAuthoring(self):
-        pcpCache = LoadPcpCache('sublayers/root.sdf')
+        pcpCache = LoadPcpCache('sublayers/root.usda')
         rootLayer = pcpCache.GetLayerStackIdentifier().rootLayer
 
-        aLayer = Sdf.Layer.FindOrOpen('sublayers/A.sdf')
-        bLayer = Sdf.Layer.FindOrOpen('sublayers/B.sdf')
-        bSubLayer = Sdf.Layer.FindOrOpen('sublayers/B_sub.sdf')
-        cLayer = Sdf.Layer.FindOrOpen('sublayers/C.sdf')
+        aLayer = Sdf.Layer.FindOrOpen('sublayers/A.usda')
+        bLayer = Sdf.Layer.FindOrOpen('sublayers/B.usda')
+        bSubLayer = Sdf.Layer.FindOrOpen('sublayers/B_sub.usda')
+        cLayer = Sdf.Layer.FindOrOpen('sublayers/C.usda')
 
         # Verify initial state.
         pi, err = pcpCache.ComputePrimIndex('/Test')
@@ -207,10 +207,10 @@ class TestPcpExpressionComposition(unittest.TestCase):
             [rootLayer, 
              aLayer])
 
-        # Add a new sublayer using an expression that evaluates to B.sdf.
-        # Since B.sdf is not empty, this should incur a significant resync.
+        # Add a new sublayer using an expression that evaluates to B.usda.
+        # Since B.usda is not empty, this should incur a significant resync.
         with Pcp._TestChangeProcessor(pcpCache) as changes:
-            rootLayer.subLayerPaths.append('`"./B.sdf"`')
+            rootLayer.subLayerPaths.append('`"./B.usda"`')
 
             if INCREMENTAL_CHANGES:
                 self.assertEqual(changes.GetSignificantChanges(), ['/Test'])
@@ -262,10 +262,10 @@ class TestPcpExpressionComposition(unittest.TestCase):
             [rootLayer, 
              aLayer])
 
-        # Add a new sublayer using an expression that evaluates to C.sdf.
-        # Since C.sdf is empty, this should not incur any changes to /Test.
+        # Add a new sublayer using an expression that evaluates to C.usda.
+        # Since C.usda is empty, this should not incur any changes to /Test.
         with Pcp._TestChangeProcessor(pcpCache) as changes:
-            rootLayer.subLayerPaths.append('`"./C.sdf"`')
+            rootLayer.subLayerPaths.append('`"./C.usda"`')
             self.assertEqual(changes.GetSignificantChanges(), [])
             self.assertEqual(changes.GetSpecChanges(), [])
 
@@ -305,11 +305,11 @@ class TestPcpExpressionComposition(unittest.TestCase):
              aLayer])
 
     def test_SublayerAuthoringAndVariableChange(self):
-        pcpCache = LoadPcpCache('multi_sublayer_auth/base_ref.sdf')
+        pcpCache = LoadPcpCache('multi_sublayer_auth/base_ref.usda')
 
         rootLayer = pcpCache.GetLayerStackIdentifier().rootLayer
-        aLayer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/A.sdf')
-        bLayer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/B.sdf')
+        aLayer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/A.usda')
+        bLayer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/B.usda')
 
         # Verify initial state.
         pi, err = pcpCache.ComputePrimIndex('/BaseRef')
@@ -330,7 +330,7 @@ class TestPcpExpressionComposition(unittest.TestCase):
         with Pcp._TestChangeProcessor(pcpCache) as changes:
             with Sdf.ChangeBlock():
                 rootLayer.expressionVariables = {'X':'B'}
-                rootLayer.subLayerPaths.append('`"./${X}.sdf"`')
+                rootLayer.subLayerPaths.append('`"./${X}.usda"`')
 
             if INCREMENTAL_CHANGES:
                 self.assertEqual(changes.GetSignificantChanges(), ['/BaseRef'])
@@ -374,15 +374,15 @@ class TestPcpExpressionComposition(unittest.TestCase):
             [rootLayer])
 
     def test_SublayerAuthoringAffectingMultipleLayerStacks(self):
-        pcpCache = LoadPcpCache('multi_sublayer_auth/root.sdf')
+        pcpCache = LoadPcpCache('multi_sublayer_auth/root.usda')
 
         rootLayer = pcpCache.GetLayerStackIdentifier().rootLayer
-        ref1Layer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/ref1.sdf')
-        ref2Layer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/ref2.sdf')
-        baseRefLayer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/base_ref.sdf')
+        ref1Layer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/ref1.usda')
+        ref2Layer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/ref2.usda')
+        baseRefLayer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/base_ref.usda')
 
-        aLayer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/A.sdf')
-        bLayer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/B.sdf')
+        aLayer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/A.usda')
+        bLayer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/B.usda')
 
         # Verify initial state.
         pi, err = pcpCache.ComputePrimIndex('/Test_1')
@@ -414,16 +414,16 @@ class TestPcpExpressionComposition(unittest.TestCase):
             [baseRefLayer])
 
         # Add a sublayer that refers to the expression variable X in
-        # base_ref.sdf. This variable is assigned different values in the
+        # base_ref.usda. This variable is assigned different values in the
         # various referenced layer stacks:
         #
-        #   - In ref1.sdf, X=A, which should load insignificant sublayer
-        #     A.sdf, causing no changes for /Test_1.
+        #   - In ref1.usda, X=A, which should load insignificant sublayer
+        #     A.usda, causing no changes for /Test_1.
         #
-        #   - In ref2.sdf, X=B, which should load significant sublayer
-        #     B.sdf, causing a significant resync for /Test_2.
+        #   - In ref2.usda, X=B, which should load significant sublayer
+        #     B.usda, causing a significant resync for /Test_2.
         with Pcp._TestChangeProcessor(pcpCache) as changes:
-            baseRefLayer.subLayerPaths.append('`"./${X}.sdf"`')
+            baseRefLayer.subLayerPaths.append('`"./${X}.usda"`')
             self.assertEqual(changes.GetSignificantChanges(), ['/Test_2'])
             self.assertEqual(changes.GetSpecChanges(), [])
 
@@ -493,15 +493,15 @@ class TestPcpExpressionComposition(unittest.TestCase):
             [baseRefLayer])
 
     def test_BasicReferencesAndPayloads(self):
-        pcpCache = LoadPcpCache('refs_and_payloads/root.sdf')
+        pcpCache = LoadPcpCache('refs_and_payloads/root.usda')
         rootLayer = pcpCache.GetLayerStackIdentifier().rootLayer
 
         # Verify initial state.
         self.AssertVariables(
             pcpCache, '/Ref',
             expected = [
-                ('refs_and_payloads/root.sdf', {'REF':'A'}), [
-                    ('refs_and_payloads/A.sdf', {'REF':'A'}), [
+                ('refs_and_payloads/root.usda', {'REF':'A'}), [
+                    ('refs_and_payloads/A.usda', {'REF':'A'}), [
                     ],
                 ]
             ])
@@ -509,8 +509,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/Payload',
             expected = [
-                ('refs_and_payloads/root.sdf', {'REF':'A'}), [
-                    ('refs_and_payloads/A.sdf', {'REF':'A'}), [
+                ('refs_and_payloads/root.usda', {'REF':'A'}), [
+                    ('refs_and_payloads/A.usda', {'REF':'A'}), [
                     ],
                 ]
             ])
@@ -518,8 +518,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/NoExpressionRef',
             expected = [
-                ('refs_and_payloads/root.sdf', {'REF':'A'}), [
-                    ('refs_and_payloads/A.sdf', {'REF':'A'}), [
+                ('refs_and_payloads/root.usda', {'REF':'A'}), [
+                    ('refs_and_payloads/A.usda', {'REF':'A'}), [
                     ],
                 ]
             ])
@@ -527,8 +527,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/NoExpressionPayload',
             expected = [
-                ('refs_and_payloads/root.sdf', {'REF':'A'}), [
-                    ('refs_and_payloads/A.sdf', {'REF':'A'}), [
+                ('refs_and_payloads/root.usda', {'REF':'A'}), [
+                    ('refs_and_payloads/A.usda', {'REF':'A'}), [
                     ],
                 ]
             ])
@@ -543,8 +543,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/Ref',
             expected = [
-                ('refs_and_payloads/root.sdf', {'REF':'A', 'OTHER_REF':'A'}), [
-                    ('refs_and_payloads/A.sdf', {'REF':'A', 'OTHER_REF':'A'}), [
+                ('refs_and_payloads/root.usda', {'REF':'A', 'OTHER_REF':'A'}), [
+                    ('refs_and_payloads/A.usda', {'REF':'A', 'OTHER_REF':'A'}), [
                     ],
                 ]
             ])
@@ -552,8 +552,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/Payload',
             expected = [
-                ('refs_and_payloads/root.sdf', {'REF':'A', 'OTHER_REF':'A'}), [
-                    ('refs_and_payloads/A.sdf', {'REF':'A', 'OTHER_REF':'A'}), [
+                ('refs_and_payloads/root.usda', {'REF':'A', 'OTHER_REF':'A'}), [
+                    ('refs_and_payloads/A.usda', {'REF':'A', 'OTHER_REF':'A'}), [
                     ],
                 ]
             ])
@@ -561,8 +561,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/NoExpressionRef',
             expected = [
-                ('refs_and_payloads/root.sdf', {'REF':'A', 'OTHER_REF':'A'}), [
-                    ('refs_and_payloads/A.sdf', {'REF':'A', 'OTHER_REF':'A'}), [
+                ('refs_and_payloads/root.usda', {'REF':'A', 'OTHER_REF':'A'}), [
+                    ('refs_and_payloads/A.usda', {'REF':'A', 'OTHER_REF':'A'}), [
                     ],
                 ]
             ])
@@ -570,8 +570,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/NoExpressionPayload',
             expected = [
-                ('refs_and_payloads/root.sdf', {'REF':'A', 'OTHER_REF':'A'}), [
-                    ('refs_and_payloads/A.sdf', {'REF':'A', 'OTHER_REF':'A'}), [
+                ('refs_and_payloads/root.usda', {'REF':'A', 'OTHER_REF':'A'}), [
+                    ('refs_and_payloads/A.usda', {'REF':'A', 'OTHER_REF':'A'}), [
                     ],
                 ]
             ])
@@ -586,8 +586,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/Ref',
             expected = [
-                ('refs_and_payloads/root.sdf', {'REF':'B'}), [
-                    ('refs_and_payloads/B.sdf', {'REF':'B'}), [
+                ('refs_and_payloads/root.usda', {'REF':'B'}), [
+                    ('refs_and_payloads/B.usda', {'REF':'B'}), [
                     ],
                 ]
             ])
@@ -595,8 +595,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/Payload',
             expected = [
-                ('refs_and_payloads/root.sdf', {'REF':'B'}), [
-                    ('refs_and_payloads/B.sdf', {'REF':'B'}), [
+                ('refs_and_payloads/root.usda', {'REF':'B'}), [
+                    ('refs_and_payloads/B.usda', {'REF':'B'}), [
                     ],
                 ]
             ])
@@ -604,8 +604,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/NoExpressionRef',
             expected = [
-                ('refs_and_payloads/root.sdf', {'REF':'B'}), [
-                    ('refs_and_payloads/A.sdf', {'REF':'B'}), [
+                ('refs_and_payloads/root.usda', {'REF':'B'}), [
+                    ('refs_and_payloads/A.usda', {'REF':'B'}), [
                     ],
                 ]
             ])
@@ -613,8 +613,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/NoExpressionPayload',
             expected = [
-                ('refs_and_payloads/root.sdf', {'REF':'B'}), [
-                    ('refs_and_payloads/A.sdf', {'REF':'B'}), [
+                ('refs_and_payloads/root.usda', {'REF':'B'}), [
+                    ('refs_and_payloads/A.usda', {'REF':'B'}), [
                     ],
                 ]
             ])
@@ -630,7 +630,7 @@ class TestPcpExpressionComposition(unittest.TestCase):
         pi = self.AssertVariables(
             pcpCache, '/Ref',
             expected = [
-                ('refs_and_payloads/root.sdf', {'REF':'`${BAD`'}), [
+                ('refs_and_payloads/root.usda', {'REF':'`${BAD`'}), [
                 ]
             ],
             errorsExpected = True)
@@ -641,7 +641,7 @@ class TestPcpExpressionComposition(unittest.TestCase):
         pi = self.AssertVariables(
             pcpCache, '/Payload',
             expected = [
-                ('refs_and_payloads/root.sdf', {'REF':'`${BAD`'}), [
+                ('refs_and_payloads/root.usda', {'REF':'`${BAD`'}), [
                 ]
             ],
             errorsExpected = True)
@@ -652,8 +652,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/NoExpressionRef',
             expected = [
-                ('refs_and_payloads/root.sdf', {'REF':'`${BAD`'}), [
-                    ('refs_and_payloads/A.sdf', {'REF':'`${BAD`'}), [
+                ('refs_and_payloads/root.usda', {'REF':'`${BAD`'}), [
+                    ('refs_and_payloads/A.usda', {'REF':'`${BAD`'}), [
                     ],
                 ]
             ])
@@ -661,8 +661,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/NoExpressionPayload',
             expected = [
-                ('refs_and_payloads/root.sdf', {'REF':'`${BAD`'}), [
-                    ('refs_and_payloads/A.sdf', {'REF':'`${BAD`'}), [
+                ('refs_and_payloads/root.usda', {'REF':'`${BAD`'}), [
+                    ('refs_and_payloads/A.usda', {'REF':'`${BAD`'}), [
                     ],
                 ]
             ])
@@ -670,21 +670,21 @@ class TestPcpExpressionComposition(unittest.TestCase):
     def test_ExpressionVarChanges_MultipleReferences(self):
         """Test expression variable changes involving multiple references on
         a single prim."""
-        pcpCache = LoadPcpCache('multi_ref/root.sdf')
-        rootLayer = Sdf.Layer.FindOrOpen('multi_ref/root.sdf')
-        ref1Layer = Sdf.Layer.FindOrOpen('multi_ref/ref1.sdf')
-        ref2Layer = Sdf.Layer.FindOrOpen('multi_ref/ref2.sdf')
+        pcpCache = LoadPcpCache('multi_ref/root.usda')
+        rootLayer = Sdf.Layer.FindOrOpen('multi_ref/root.usda')
+        ref1Layer = Sdf.Layer.FindOrOpen('multi_ref/ref1.usda')
+        ref2Layer = Sdf.Layer.FindOrOpen('multi_ref/ref2.usda')
 
         self.AssertVariables(
             pcpCache, '/MultiRef',
             expected = [
-                ('multi_ref/root.sdf', {}), [
-                    ('multi_ref/ref1.sdf', {'SOURCE':'ref1'}), [
-                        ('multi_ref/base_ref.sdf', {'SOURCE':'ref1'}), [
+                ('multi_ref/root.usda', {}), [
+                    ('multi_ref/ref1.usda', {'SOURCE':'ref1'}), [
+                        ('multi_ref/base_ref.usda', {'SOURCE':'ref1'}), [
                         ]
                     ],
-                    ('multi_ref/ref2.sdf', {'SOURCE':'ref2'}), [
-                        ('multi_ref/base_ref.sdf', {'SOURCE':'ref2'}), [
+                    ('multi_ref/ref2.usda', {'SOURCE':'ref2'}), [
+                        ('multi_ref/base_ref.usda', {'SOURCE':'ref2'}), [
                         ]
                     ],
                 ]
@@ -697,13 +697,13 @@ class TestPcpExpressionComposition(unittest.TestCase):
         multiRef = self.AssertVariables(
             pcpCache, '/MultiRef',
             expected = [
-                ('multi_ref/root.sdf', {'SOURCE':'root'}), [
-                    ('multi_ref/ref1.sdf', {'SOURCE':'root'}), [
-                        ('multi_ref/base_ref.sdf', {'SOURCE':'root'}), [
+                ('multi_ref/root.usda', {'SOURCE':'root'}), [
+                    ('multi_ref/ref1.usda', {'SOURCE':'root'}), [
+                        ('multi_ref/base_ref.usda', {'SOURCE':'root'}), [
                         ]
                     ],
-                    ('multi_ref/ref2.sdf', {'SOURCE':'root'}), [
-                        ('multi_ref/base_ref.sdf', {'SOURCE':'root'}), [
+                    ('multi_ref/ref2.usda', {'SOURCE':'root'}), [
+                        ('multi_ref/base_ref.usda', {'SOURCE':'root'}), [
                         ]
                     ],
                 ]
@@ -723,13 +723,13 @@ class TestPcpExpressionComposition(unittest.TestCase):
         multiRef = self.AssertVariables(
             pcpCache, '/MultiRef',
             expected = [
-                ('multi_ref/root.sdf', {'SOURCE':'root'}), [
-                    ('multi_ref/ref1.sdf', {'SOURCE':'root', 'A':'B'}), [
-                        ('multi_ref/base_ref.sdf', {'SOURCE':'root', 'A':'B'}), [
+                ('multi_ref/root.usda', {'SOURCE':'root'}), [
+                    ('multi_ref/ref1.usda', {'SOURCE':'root', 'A':'B'}), [
+                        ('multi_ref/base_ref.usda', {'SOURCE':'root', 'A':'B'}), [
                         ]
                     ],
-                    ('multi_ref/ref2.sdf', {'SOURCE':'root', 'A':'C'}), [
-                        ('multi_ref/base_ref.sdf', {'SOURCE':'root', 'A':'C'}), [
+                    ('multi_ref/ref2.usda', {'SOURCE':'root', 'A':'C'}), [
+                        ('multi_ref/base_ref.usda', {'SOURCE':'root', 'A':'C'}), [
                         ]
                     ],
                 ]
@@ -746,13 +746,13 @@ class TestPcpExpressionComposition(unittest.TestCase):
         multiRef = self.AssertVariables(
             pcpCache, '/MultiRef',
             expected = [
-                ('multi_ref/root.sdf', {'SOURCE':'root', 'A':'D'}), [
-                    ('multi_ref/ref1.sdf', {'SOURCE':'root', 'A':'D'}), [
-                        ('multi_ref/base_ref.sdf', {'SOURCE':'root', 'A':'D'}), [
+                ('multi_ref/root.usda', {'SOURCE':'root', 'A':'D'}), [
+                    ('multi_ref/ref1.usda', {'SOURCE':'root', 'A':'D'}), [
+                        ('multi_ref/base_ref.usda', {'SOURCE':'root', 'A':'D'}), [
                         ]
                     ],
-                    ('multi_ref/ref2.sdf', {'SOURCE':'root', 'A':'D'}), [
-                        ('multi_ref/base_ref.sdf', {'SOURCE':'root', 'A':'D'}), [
+                    ('multi_ref/ref2.usda', {'SOURCE':'root', 'A':'D'}), [
+                        ('multi_ref/base_ref.usda', {'SOURCE':'root', 'A':'D'}), [
                         ]
                     ],
                 ]
@@ -765,16 +765,16 @@ class TestPcpExpressionComposition(unittest.TestCase):
     def test_ExpressionVarChanges_CommonReference(self):
         """Test that changes to authored expression variables invalidate the
         appropriate layer stacks and prim pcpCache."""
-        pcpCache = LoadPcpCache('common_ref/root.sdf')
-        ref1Layer = Sdf.Layer.FindOrOpen('common_ref/ref1.sdf')
-        ref2Layer = Sdf.Layer.FindOrOpen('common_ref/ref2.sdf')
+        pcpCache = LoadPcpCache('common_ref/root.usda')
+        ref1Layer = Sdf.Layer.FindOrOpen('common_ref/ref1.usda')
+        ref2Layer = Sdf.Layer.FindOrOpen('common_ref/ref2.usda')
         
         ref1 = self.AssertVariables(
             pcpCache, '/A',
             expected = [
-                ('common_ref/root.sdf', {'A':'B'}), [
-                    ('common_ref/ref1.sdf', {'A':'B'}), [
-                        ('common_ref/base_ref.sdf', {'A':'B'}), [
+                ('common_ref/root.usda', {'A':'B'}), [
+                    ('common_ref/ref1.usda', {'A':'B'}), [
+                        ('common_ref/base_ref.usda', {'A':'B'}), [
                         ]
                     ]
                 ]
@@ -783,16 +783,16 @@ class TestPcpExpressionComposition(unittest.TestCase):
         ref2 = self.AssertVariables(
             pcpCache, '/B',
             expected = [
-                ('common_ref/root.sdf', {'A':'B'}), [
-                    ('common_ref/ref2.sdf', {'A':'B'}), [
-                        ('common_ref/base_ref.sdf', {'A':'B'}), [
+                ('common_ref/root.usda', {'A':'B'}), [
+                    ('common_ref/ref2.usda', {'A':'B'}), [
+                        ('common_ref/base_ref.usda', {'A':'B'}), [
                         ]
                     ]
                 ]
             ])
 
-        # We expect the root.sdf and base_ref.sdf layer stacks to be shared
-        # across the two prim indexes, even though base_ref.sdf is referenced
+        # We expect the root.usda and base_ref.usda layer stacks to be shared
+        # across the two prim indexes, even though base_ref.usda is referenced
         # from different layer stacks.
         self.assertEqual(ref1.rootNode.layerStack, ref2.rootNode.layerStack)
         self.assertNotEqual(ref1.rootNode.children[0].layerStack, 
@@ -800,9 +800,9 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.assertEqual(ref1.rootNode.children[0].children[0].layerStack, 
                          ref2.rootNode.children[0].children[0].layerStack)
 
-        # Author new expression variables in ref1.sdf. This should affect only
-        # /A and not /B, since /B does not reference ref1.sdf. The new
-        # expression variables should show up in the ref1.sdf and base_ref.sdf
+        # Author new expression variables in ref1.usda. This should affect only
+        # /A and not /B, since /B does not reference ref1.usda. The new
+        # expression variables should show up in the ref1.usda and base_ref.usda
         # layer stacks.
         with Pcp._TestChangeProcessor(pcpCache) as changes:
             ref1Layer.expressionVariables = {'X':'Y'}
@@ -811,9 +811,9 @@ class TestPcpExpressionComposition(unittest.TestCase):
         ref1 = self.AssertVariables(
             pcpCache, '/A',
             expected = [
-                ('common_ref/root.sdf', {'A':'B'}), [
-                    ('common_ref/ref1.sdf', {'A':'B', 'X':'Y'}), [
-                        ('common_ref/base_ref.sdf', {'A':'B', 'X':'Y'}), [
+                ('common_ref/root.usda', {'A':'B'}), [
+                    ('common_ref/ref1.usda', {'A':'B', 'X':'Y'}), [
+                        ('common_ref/base_ref.usda', {'A':'B', 'X':'Y'}), [
                         ]
                     ]
                 ]
@@ -822,15 +822,15 @@ class TestPcpExpressionComposition(unittest.TestCase):
         ref2 = self.AssertVariables(
             pcpCache, '/B',
             expected = [
-                ('common_ref/root.sdf', {'A':'B'}), [
-                    ('common_ref/ref2.sdf', {'A':'B'}), [
-                        ('common_ref/base_ref.sdf', {'A':'B'}), [
+                ('common_ref/root.usda', {'A':'B'}), [
+                    ('common_ref/ref2.usda', {'A':'B'}), [
+                        ('common_ref/base_ref.usda', {'A':'B'}), [
                         ]
                     ]
                 ]
             ])
 
-        # At this point, the base_ref.sdf layer stacks must differ between
+        # At this point, the base_ref.usda layer stacks must differ between
         # the two prim indexes since they have different composed expression
         # variables.
         self.assertEqual(ref1.rootNode.layerStack, ref2.rootNode.layerStack)
@@ -848,9 +848,9 @@ class TestPcpExpressionComposition(unittest.TestCase):
         ref1 = self.AssertVariables(
             pcpCache, '/A',
             expected = [
-                ('common_ref/root.sdf', {'A':'B'}), [
-                    ('common_ref/ref1.sdf', {'A':'B'}), [
-                        ('common_ref/base_ref.sdf', {'A':'B'}), [
+                ('common_ref/root.usda', {'A':'B'}), [
+                    ('common_ref/ref1.usda', {'A':'B'}), [
+                        ('common_ref/base_ref.usda', {'A':'B'}), [
                         ]
                     ]
                 ]
@@ -859,9 +859,9 @@ class TestPcpExpressionComposition(unittest.TestCase):
         ref2 = self.AssertVariables(
             pcpCache, '/B',
             expected = [
-                ('common_ref/root.sdf', {'A':'B'}), [
-                    ('common_ref/ref2.sdf', {'A':'B'}), [
-                        ('common_ref/base_ref.sdf', {'A':'B'}), [
+                ('common_ref/root.usda', {'A':'B'}), [
+                    ('common_ref/ref2.usda', {'A':'B'}), [
+                        ('common_ref/base_ref.usda', {'A':'B'}), [
                         ]
                     ]
                 ]
@@ -873,8 +873,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.assertEqual(ref1.rootNode.children[0].children[0].layerStack, 
                          ref2.rootNode.children[0].children[0].layerStack)
 
-        # Batch changes to expression variables in both ref1.sdf and ref2.sdf
-        # and verify that the base_ref.sdf layer stack in /A and /B have
+        # Batch changes to expression variables in both ref1.usda and ref2.usda
+        # and verify that the base_ref.usda layer stack in /A and /B have
         # different composed expression variables.
         with Pcp._TestChangeProcessor(pcpCache) as changes:
             with Sdf.ChangeBlock():
@@ -886,9 +886,9 @@ class TestPcpExpressionComposition(unittest.TestCase):
         ref1 = self.AssertVariables(
             pcpCache, '/A',
             expected = [
-                ('common_ref/root.sdf', {'A':'B'}), [
-                    ('common_ref/ref1.sdf', {'A':'B', 'X':'Y'}), [
-                        ('common_ref/base_ref.sdf', {'A':'B', 'X':'Y'}), [
+                ('common_ref/root.usda', {'A':'B'}), [
+                    ('common_ref/ref1.usda', {'A':'B', 'X':'Y'}), [
+                        ('common_ref/base_ref.usda', {'A':'B', 'X':'Y'}), [
                         ]
                     ]
                 ]
@@ -897,15 +897,15 @@ class TestPcpExpressionComposition(unittest.TestCase):
         ref2 = self.AssertVariables(
             pcpCache, '/B',
             expected = [
-                ('common_ref/root.sdf', {'A':'B'}), [
-                    ('common_ref/ref2.sdf', {'A':'B', 'X':'Z'}), [
-                        ('common_ref/base_ref.sdf', {'A':'B', 'X':'Z'}), [
+                ('common_ref/root.usda', {'A':'B'}), [
+                    ('common_ref/ref2.usda', {'A':'B', 'X':'Z'}), [
+                        ('common_ref/base_ref.usda', {'A':'B', 'X':'Z'}), [
                         ]
                     ]
                 ]
             ])
 
-        # Again, we expect the base_ref.sdf layer stack to differ between the
+        # Again, we expect the base_ref.usda layer stack to differ between the
         # two prim indexes because of the different composed expression
         # variables.
         self.assertEqual(ref1.rootNode.layerStack, ref2.rootNode.layerStack)
@@ -918,17 +918,17 @@ class TestPcpExpressionComposition(unittest.TestCase):
         """Test that changes to expression variables propagates to downstream
         layer stacks in cases where multiple references have been chained
         together"""
-        pcpCache = LoadPcpCache('chained_ref/root.sdf')
-        ref1Layer = Sdf.Layer.FindOrOpen('chained_ref/ref1.sdf')
-        ref2Layer = Sdf.Layer.FindOrOpen('chained_ref/ref2.sdf')
+        pcpCache = LoadPcpCache('chained_ref/root.usda')
+        ref1Layer = Sdf.Layer.FindOrOpen('chained_ref/ref1.usda')
+        ref2Layer = Sdf.Layer.FindOrOpen('chained_ref/ref2.usda')
 
         self.AssertVariables(
             pcpCache, '/Root1',
             expected = [
-                ('chained_ref/root.sdf', {'A':'B'}), [
-                    ('chained_ref/ref1.sdf', {'A':'B'}), [
-                        ('chained_ref/ref2.sdf', {'A':'B'}), [
-                            ('chained_ref/ref3.sdf', {'A':'B'}), [
+                ('chained_ref/root.usda', {'A':'B'}), [
+                    ('chained_ref/ref1.usda', {'A':'B'}), [
+                        ('chained_ref/ref2.usda', {'A':'B'}), [
+                            ('chained_ref/ref3.usda', {'A':'B'}), [
                             ]
                         ]
                     ]
@@ -938,9 +938,9 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/Root2',
             expected = [
-                ('chained_ref/root.sdf', {'A':'B'}), [
-                    ('chained_ref/ref2.sdf', {'A':'B'}), [
-                        ('chained_ref/ref3.sdf', {'A':'B'}), [
+                ('chained_ref/root.usda', {'A':'B'}), [
+                    ('chained_ref/ref2.usda', {'A':'B'}), [
+                        ('chained_ref/ref3.usda', {'A':'B'}), [
                         ]
                     ]
                 ]
@@ -949,14 +949,14 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/Root3',
             expected = [
-                ('chained_ref/root.sdf', {'A':'B'}), [
-                    ('chained_ref/ref3.sdf', {'A':'B'}), [
+                ('chained_ref/root.usda', {'A':'B'}), [
+                    ('chained_ref/ref3.usda', {'A':'B'}), [
                     ]
                 ]
             ])
         
-        # Batch together changes to the expression variables in ref1.sdf and
-        # ref2.sdf and verify they propagate to downstream layer stacks
+        # Batch together changes to the expression variables in ref1.usda and
+        # ref2.usda and verify they propagate to downstream layer stacks
         # in all prim indexes.
         with Pcp._TestChangeProcessor(pcpCache) as changes:
             with Sdf.ChangeBlock():
@@ -969,10 +969,10 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/Root1',
             expected = [
-                ('chained_ref/root.sdf', {'A':'B'}), [
-                    ('chained_ref/ref1.sdf', {'A':'B', 'I':'J'}), [
-                        ('chained_ref/ref2.sdf', {'A':'B', 'I':'J', 'X':'Y'}), [
-                            ('chained_ref/ref3.sdf', {'A':'B', 'I':'J', 'X':'Y'}), [
+                ('chained_ref/root.usda', {'A':'B'}), [
+                    ('chained_ref/ref1.usda', {'A':'B', 'I':'J'}), [
+                        ('chained_ref/ref2.usda', {'A':'B', 'I':'J', 'X':'Y'}), [
+                            ('chained_ref/ref3.usda', {'A':'B', 'I':'J', 'X':'Y'}), [
                             ]
                         ]
                     ]
@@ -982,9 +982,9 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/Root2',
             expected = [
-                ('chained_ref/root.sdf', {'A':'B'}), [
-                    ('chained_ref/ref2.sdf', {'A':'B', 'X':'Y'}), [
-                        ('chained_ref/ref3.sdf', {'A':'B', 'X':'Y'}), [
+                ('chained_ref/root.usda', {'A':'B'}), [
+                    ('chained_ref/ref2.usda', {'A':'B', 'X':'Y'}), [
+                        ('chained_ref/ref3.usda', {'A':'B', 'X':'Y'}), [
                         ]
                     ]
                 ]
@@ -993,8 +993,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/Root3',
             expected = [
-                ('chained_ref/root.sdf', {'A':'B'}), [
-                    ('chained_ref/ref3.sdf', {'A':'B'}), [
+                ('chained_ref/root.usda', {'A':'B'}), [
+                    ('chained_ref/ref3.usda', {'A':'B'}), [
                     ]
                 ]
             ])
@@ -1002,16 +1002,16 @@ class TestPcpExpressionComposition(unittest.TestCase):
     def test_ExpressionVarChanges_SignificantLayerStackChanges(self):
         """Test scenarios involving significant changes to layer stacks
         combined with expression variable changes"""
-        pcpCache = LoadPcpCache('sig_changes/root.sdf')
-        rootLayer = Sdf.Layer.FindOrOpen('sig_changes/root.sdf')
-        ref1Layer = Sdf.Layer.FindOrOpen('sig_changes/ref1.sdf')
+        pcpCache = LoadPcpCache('sig_changes/root.usda')
+        rootLayer = Sdf.Layer.FindOrOpen('sig_changes/root.usda')
+        ref1Layer = Sdf.Layer.FindOrOpen('sig_changes/ref1.usda')
 
         self.AssertVariables(
             pcpCache, '/Root1',
             expected = [
-                ('sig_changes/root.sdf', {'A':'B'}), [
-                    ('sig_changes/ref1.sdf', {'A':'B'}), [
-                        ('sig_changes/ref2.sdf', {'A':'B'}), [
+                ('sig_changes/root.usda', {'A':'B'}), [
+                    ('sig_changes/ref1.usda', {'A':'B'}), [
+                        ('sig_changes/ref2.usda', {'A':'B'}), [
                         ]
                     ]
                 ]
@@ -1020,8 +1020,8 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/Root2',
             expected = [
-                ('sig_changes/root.sdf', {'A':'B'}), [
-                    ('sig_changes/ref2.sdf', {'A':'B'}), [
+                ('sig_changes/root.usda', {'A':'B'}), [
+                    ('sig_changes/ref2.usda', {'A':'B'}), [
                     ]
                 ]
             ])
@@ -1032,7 +1032,7 @@ class TestPcpExpressionComposition(unittest.TestCase):
         with Pcp._TestChangeProcessor(pcpCache) as changes:
             with Sdf.ChangeBlock():
                 rootLayer.expressionVariables = {'A':'C'}
-                rootLayer.subLayerPaths.append('sig_changes/sub.sdf')
+                rootLayer.subLayerPaths.append('sig_changes/sub.usda')
 
             if INCREMENTAL_CHANGES:
                 self.assertEqual(changes.GetSignificantChanges(), ['/Dummy'])
@@ -1042,9 +1042,9 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/Root1',
             expected = [
-                ('sig_changes/root.sdf', {'A':'C'}), [
-                    ('sig_changes/ref1.sdf', {'A':'C'}), [
-                        ('sig_changes/ref2.sdf', {'A':'C'}), [
+                ('sig_changes/root.usda', {'A':'C'}), [
+                    ('sig_changes/ref1.usda', {'A':'C'}), [
+                        ('sig_changes/ref2.usda', {'A':'C'}), [
                         ]
                     ]
                 ]
@@ -1053,30 +1053,30 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/Root2',
             expected = [
-                ('sig_changes/root.sdf', {'A':'C'}), [
-                    ('sig_changes/ref2.sdf', {'A':'C'}), [
+                ('sig_changes/root.usda', {'A':'C'}), [
+                    ('sig_changes/ref2.usda', {'A':'C'}), [
                     ]
                 ]
             ])
 
-        # Batch together a change to the expression variables in root.sdf and
-        # ref1.sdf, along with a significant layer stack change. We expect
+        # Batch together a change to the expression variables in root.usda and
+        # ref1.usda, along with a significant layer stack change. We expect
         # only /Root1 to be resynced since its the only index that references
-        # ref1.sdf, and variable changes should be propagated appropriately.
+        # ref1.usda, and variable changes should be propagated appropriately.
         with Pcp._TestChangeProcessor(pcpCache) as changes:
             with Sdf.ChangeBlock():
                 rootLayer.expressionVariables = {'A':'D'}
                 ref1Layer.expressionVariables = {'X':'Y'}
-                ref1Layer.subLayerPaths.append('sig_changes/sub1.sdf')
+                ref1Layer.subLayerPaths.append('sig_changes/sub1.usda')
 
             self.assertEqual(changes.GetSignificantChanges(), ['/Root1'])
         
         self.AssertVariables(
             pcpCache, '/Root1',
             expected = [
-                ('sig_changes/root.sdf', {'A':'D'}), [
-                    ('sig_changes/ref1.sdf', {'A':'D', 'X':'Y'}), [
-                        ('sig_changes/ref2.sdf', {'A':'D', 'X':'Y'}), [
+                ('sig_changes/root.usda', {'A':'D'}), [
+                    ('sig_changes/ref1.usda', {'A':'D', 'X':'Y'}), [
+                        ('sig_changes/ref2.usda', {'A':'D', 'X':'Y'}), [
                         ]
                     ]
                 ]
@@ -1085,15 +1085,15 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.AssertVariables(
             pcpCache, '/Root2',
             expected = [
-                ('sig_changes/root.sdf', {'A':'D'}), [
-                    ('sig_changes/ref2.sdf', {'A':'D'}), [
+                ('sig_changes/root.usda', {'A':'D'}), [
+                    ('sig_changes/ref2.usda', {'A':'D'}), [
                     ]
                 ]
             ])
 
     def test_BasicVariantSelections(self):
         """Test expressions in variant selections."""
-        pcpCache = LoadPcpCache('variants/root.sdf')
+        pcpCache = LoadPcpCache('variants/root.usda')
         rootLayer = pcpCache.GetLayerStackIdentifier().rootLayer
 
         # Verify initial state
@@ -1128,9 +1128,9 @@ class TestPcpExpressionComposition(unittest.TestCase):
 
     def test_VariantSelectionInReference(self):
         """Test variant selection expressions across references."""
-        pcpCache = LoadPcpCache('variants/root.sdf')
+        pcpCache = LoadPcpCache('variants/root.usda')
         rootLayer = pcpCache.GetLayerStackIdentifier().rootLayer
-        refLayer = Sdf.Layer.FindOrOpen('variants/ref.sdf')
+        refLayer = Sdf.Layer.FindOrOpen('variants/ref.usda')
 
         # Verify initial state
         pi, err = pcpCache.ComputePrimIndex('/Reference')
@@ -1144,7 +1144,7 @@ class TestPcpExpressionComposition(unittest.TestCase):
         self.assertEqual(
             pi.GetSelectionAppliedForVariantSet('v'), 'x_sel')
 
-        # Author expression variable REF=y in the referenced layer ref.sdf.
+        # Author expression variable REF=y in the referenced layer ref.usda.
         # This affects the variant selection used by /Reference, so it should
         # cause a resync.
         with Pcp._TestChangeProcessor(pcpCache) as changes:
@@ -1165,7 +1165,7 @@ class TestPcpExpressionComposition(unittest.TestCase):
             pi.GetSelectionAppliedForVariantSet('v'), 'y_sel')
 
         # Author expression variable REF=z in the root layer stack. This
-        # should override the variable in ref.sdf and affect the variant
+        # should override the variable in ref.usda and affect the variant
         # selection on /Reference again.
         with Pcp._TestChangeProcessor(pcpCache) as changes:
             rootLayer.expressionVariables = {'REF':'z'}
@@ -1186,7 +1186,7 @@ class TestPcpExpressionComposition(unittest.TestCase):
 
     def test_NoChanges(self):
         """Test scenarios where no recomputations are expected."""
-        pcpCache = LoadPcpCache('no_changes/root.sdf')
+        pcpCache = LoadPcpCache('no_changes/root.usda')
         rootLayer = pcpCache.GetLayerStackIdentifier().rootLayer
 
         # Authoring expression variables in the root layer stack should
@@ -1204,7 +1204,7 @@ class TestPcpExpressionComposition(unittest.TestCase):
         """Test expression variable composition in layer stacks"""
         sessionSublayer = Sdf.Layer.CreateAnonymous('session-sublayer')
         sessionSublayer.ImportFromString('''
-        #sdf 1.4.32
+        #usda 1.0
         (
             expressionVariables = {
                 string SESSION_SUBLAYER_ONLY = "session-sublayer"
@@ -1214,7 +1214,7 @@ class TestPcpExpressionComposition(unittest.TestCase):
         
         sessionLayer = Sdf.Layer.CreateAnonymous('session')
         sessionLayer.ImportFromString('''
-        #sdf 1.4.32
+        #usda 1.0
         (
             expressionVariables = {{
                 string SESSION_ONLY = "session"
@@ -1228,7 +1228,7 @@ class TestPcpExpressionComposition(unittest.TestCase):
 
         subLayer = Sdf.Layer.CreateAnonymous('sublayer')
         subLayer.ImportFromString('''
-        #sdf 1.4.32
+        #usda 1.0
         (
             expressionVariables = {
                 string SUBLAYER_ONLY = "sublayer"
@@ -1238,7 +1238,7 @@ class TestPcpExpressionComposition(unittest.TestCase):
         
         rootLayer = Sdf.Layer.CreateAnonymous('root')
         rootLayer.ImportFromString('''
-        #sdf 1.4.32
+        #usda 1.0
         (
             expressionVariables = {{
                 string ROOT_ONLY = "root"

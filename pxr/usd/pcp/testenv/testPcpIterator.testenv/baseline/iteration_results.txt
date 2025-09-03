@@ -1,28 +1,28 @@
 Iterating over root nodes for </Model>:
- @root.sdf@</Model>	root
+ @root.usda@</Model>	root
 
 Reverse iterating over root nodes for </Model>:
- @root.sdf@</Model>	root
+ @root.usda@</Model>	root
 
 Iterating over root prim specs for </Model>:
- @root.sdf@</Model>	root
+ @root.usda@</Model>	root
 
 Reverse iterating over root prim specs for </Model>:
- @root.sdf@</Model>	root
+ @root.usda@</Model>	root
 
 ====================
 
 Iterating over inherit nodes for </Model>:
- @root.sdf@</Class>	inherit
+ @root.usda@</Class>	inherit
 
 Reverse iterating over inherit nodes for </Model>:
- @root.sdf@</Class>	inherit
+ @root.usda@</Class>	inherit
 
 Iterating over inherit prim specs for </Model>:
- @root.sdf@</Class>	inherit
+ @root.usda@</Class>	inherit
 
 Reverse iterating over inherit prim specs for </Model>:
- @root.sdf@</Class>	inherit
+ @root.usda@</Class>	inherit
 
 ====================
 
@@ -37,34 +37,34 @@ Reverse iterating over variant prim specs for </Model>:
 ====================
 
 Iterating over reference nodes for </Model>:
- @mcat.sdf@</Model>	reference
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model{pin=latest}>	variant
- @model_latest.sdf@</Model>	reference
- @model_latest_payload.sdf@</Model>	payload
- @mcat.sdf@</Specializes>	specialize
+ @mcat.usda@</Model>	reference
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model{pin=latest}>	variant
+ @model_latest.usda@</Model>	reference
+ @model_latest_payload.usda@</Model>	payload
+ @mcat.usda@</Specializes>	specialize
 
 Reverse iterating over reference nodes for </Model>:
- @mcat.sdf@</Specializes>	specialize
- @model_latest_payload.sdf@</Model>	payload
- @model_latest.sdf@</Model>	reference
- @mcat.sdf@</Model{pin=latest}>	variant
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model>	reference
+ @mcat.usda@</Specializes>	specialize
+ @model_latest_payload.usda@</Model>	payload
+ @model_latest.usda@</Model>	reference
+ @mcat.usda@</Model{pin=latest}>	variant
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model>	reference
 
 Iterating over reference prim specs for </Model>:
- @mcat.sdf@</Model>	reference
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model{pin=latest}>	variant
- @model_latest.sdf@</Model>	reference
- @model_latest_payload.sdf@</Model>	payload
+ @mcat.usda@</Model>	reference
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model{pin=latest}>	variant
+ @model_latest.usda@</Model>	reference
+ @model_latest_payload.usda@</Model>	payload
 
 Reverse iterating over reference prim specs for </Model>:
- @model_latest_payload.sdf@</Model>	payload
- @model_latest.sdf@</Model>	reference
- @mcat.sdf@</Model{pin=latest}>	variant
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model>	reference
+ @model_latest_payload.usda@</Model>	payload
+ @model_latest.usda@</Model>	reference
+ @mcat.usda@</Model{pin=latest}>	variant
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model>	reference
 
 ====================
 
@@ -79,219 +79,219 @@ Reverse iterating over payload prim specs for </Model>:
 ====================
 
 Iterating over specialize nodes for </Model>:
- @root.sdf@</Specializes>	specialize
- @mcat.sdf@</Specializes>	specialize
+ @root.usda@</Specializes>	specialize
+ @mcat.usda@</Specializes>	specialize
 
 Reverse iterating over specialize nodes for </Model>:
- @mcat.sdf@</Specializes>	specialize
- @root.sdf@</Specializes>	specialize
+ @mcat.usda@</Specializes>	specialize
+ @root.usda@</Specializes>	specialize
 
 Iterating over specialize prim specs for </Model>:
- @mcat.sdf@</Specializes>	specialize
+ @mcat.usda@</Specializes>	specialize
 
 Reverse iterating over specialize prim specs for </Model>:
- @mcat.sdf@</Specializes>	specialize
+ @mcat.usda@</Specializes>	specialize
 
 ====================
 
 Iterating over all nodes for </Model>:
- @root.sdf@</Model>	root
- @root.sdf@</Class>	inherit
- @mcat.sdf@</Model>	reference
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model{pin=latest}>	variant
- @model_latest.sdf@</Model>	reference
- @model_latest_payload.sdf@</Model>	payload
- @mcat.sdf@</Specializes>	specialize
- @root.sdf@</Specializes>	specialize
- @mcat.sdf@</Specializes>	specialize
+ @root.usda@</Model>	root
+ @root.usda@</Class>	inherit
+ @mcat.usda@</Model>	reference
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model{pin=latest}>	variant
+ @model_latest.usda@</Model>	reference
+ @model_latest_payload.usda@</Model>	payload
+ @mcat.usda@</Specializes>	specialize
+ @root.usda@</Specializes>	specialize
+ @mcat.usda@</Specializes>	specialize
 
 Reverse iterating over all nodes for </Model>:
- @mcat.sdf@</Specializes>	specialize
- @root.sdf@</Specializes>	specialize
- @mcat.sdf@</Specializes>	specialize
- @model_latest_payload.sdf@</Model>	payload
- @model_latest.sdf@</Model>	reference
- @mcat.sdf@</Model{pin=latest}>	variant
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model>	reference
- @root.sdf@</Class>	inherit
- @root.sdf@</Model>	root
+ @mcat.usda@</Specializes>	specialize
+ @root.usda@</Specializes>	specialize
+ @mcat.usda@</Specializes>	specialize
+ @model_latest_payload.usda@</Model>	payload
+ @model_latest.usda@</Model>	reference
+ @mcat.usda@</Model{pin=latest}>	variant
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model>	reference
+ @root.usda@</Class>	inherit
+ @root.usda@</Model>	root
 
 Iterating over all prim specs for </Model>:
- @root.sdf@</Model>	root
- @root.sdf@</Class>	inherit
- @mcat.sdf@</Model>	reference
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model{pin=latest}>	variant
- @model_latest.sdf@</Model>	reference
- @model_latest_payload.sdf@</Model>	payload
- @mcat.sdf@</Specializes>	specialize
+ @root.usda@</Model>	root
+ @root.usda@</Class>	inherit
+ @mcat.usda@</Model>	reference
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model{pin=latest}>	variant
+ @model_latest.usda@</Model>	reference
+ @model_latest_payload.usda@</Model>	payload
+ @mcat.usda@</Specializes>	specialize
 
 Reverse iterating over all prim specs for </Model>:
- @mcat.sdf@</Specializes>	specialize
- @model_latest_payload.sdf@</Model>	payload
- @model_latest.sdf@</Model>	reference
- @mcat.sdf@</Model{pin=latest}>	variant
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model>	reference
- @root.sdf@</Class>	inherit
- @root.sdf@</Model>	root
+ @mcat.usda@</Specializes>	specialize
+ @model_latest_payload.usda@</Model>	payload
+ @model_latest.usda@</Model>	reference
+ @mcat.usda@</Model{pin=latest}>	variant
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model>	reference
+ @root.usda@</Class>	inherit
+ @root.usda@</Model>	root
 
 ====================
 
 Iterating over weaker than root nodes for </Model>:
- @root.sdf@</Class>	inherit
- @mcat.sdf@</Model>	reference
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model{pin=latest}>	variant
- @model_latest.sdf@</Model>	reference
- @model_latest_payload.sdf@</Model>	payload
- @mcat.sdf@</Specializes>	specialize
- @root.sdf@</Specializes>	specialize
- @mcat.sdf@</Specializes>	specialize
+ @root.usda@</Class>	inherit
+ @mcat.usda@</Model>	reference
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model{pin=latest}>	variant
+ @model_latest.usda@</Model>	reference
+ @model_latest_payload.usda@</Model>	payload
+ @mcat.usda@</Specializes>	specialize
+ @root.usda@</Specializes>	specialize
+ @mcat.usda@</Specializes>	specialize
 
 Reverse iterating over weaker than root nodes for </Model>:
- @mcat.sdf@</Specializes>	specialize
- @root.sdf@</Specializes>	specialize
- @mcat.sdf@</Specializes>	specialize
- @model_latest_payload.sdf@</Model>	payload
- @model_latest.sdf@</Model>	reference
- @mcat.sdf@</Model{pin=latest}>	variant
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model>	reference
- @root.sdf@</Class>	inherit
+ @mcat.usda@</Specializes>	specialize
+ @root.usda@</Specializes>	specialize
+ @mcat.usda@</Specializes>	specialize
+ @model_latest_payload.usda@</Model>	payload
+ @model_latest.usda@</Model>	reference
+ @mcat.usda@</Model{pin=latest}>	variant
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model>	reference
+ @root.usda@</Class>	inherit
 
 Iterating over weaker than root prim specs for </Model>:
- @root.sdf@</Class>	inherit
- @mcat.sdf@</Model>	reference
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model{pin=latest}>	variant
- @model_latest.sdf@</Model>	reference
- @model_latest_payload.sdf@</Model>	payload
- @mcat.sdf@</Specializes>	specialize
+ @root.usda@</Class>	inherit
+ @mcat.usda@</Model>	reference
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model{pin=latest}>	variant
+ @model_latest.usda@</Model>	reference
+ @model_latest_payload.usda@</Model>	payload
+ @mcat.usda@</Specializes>	specialize
 
 Reverse iterating over weaker than root prim specs for </Model>:
- @mcat.sdf@</Specializes>	specialize
- @model_latest_payload.sdf@</Model>	payload
- @model_latest.sdf@</Model>	reference
- @mcat.sdf@</Model{pin=latest}>	variant
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model>	reference
- @root.sdf@</Class>	inherit
+ @mcat.usda@</Specializes>	specialize
+ @model_latest_payload.usda@</Model>	payload
+ @model_latest.usda@</Model>	reference
+ @mcat.usda@</Model{pin=latest}>	variant
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model>	reference
+ @root.usda@</Class>	inherit
 
 ====================
 
 Iterating over stronger than payload nodes for </Model>:
- @root.sdf@</Model>	root
- @root.sdf@</Class>	inherit
- @mcat.sdf@</Model>	reference
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model{pin=latest}>	variant
- @model_latest.sdf@</Model>	reference
- @model_latest_payload.sdf@</Model>	payload
- @mcat.sdf@</Specializes>	specialize
- @root.sdf@</Specializes>	specialize
- @mcat.sdf@</Specializes>	specialize
+ @root.usda@</Model>	root
+ @root.usda@</Class>	inherit
+ @mcat.usda@</Model>	reference
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model{pin=latest}>	variant
+ @model_latest.usda@</Model>	reference
+ @model_latest_payload.usda@</Model>	payload
+ @mcat.usda@</Specializes>	specialize
+ @root.usda@</Specializes>	specialize
+ @mcat.usda@</Specializes>	specialize
 
 Reverse iterating over stronger than payload nodes for </Model>:
- @mcat.sdf@</Specializes>	specialize
- @root.sdf@</Specializes>	specialize
- @mcat.sdf@</Specializes>	specialize
- @model_latest_payload.sdf@</Model>	payload
- @model_latest.sdf@</Model>	reference
- @mcat.sdf@</Model{pin=latest}>	variant
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model>	reference
- @root.sdf@</Class>	inherit
- @root.sdf@</Model>	root
+ @mcat.usda@</Specializes>	specialize
+ @root.usda@</Specializes>	specialize
+ @mcat.usda@</Specializes>	specialize
+ @model_latest_payload.usda@</Model>	payload
+ @model_latest.usda@</Model>	reference
+ @mcat.usda@</Model{pin=latest}>	variant
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model>	reference
+ @root.usda@</Class>	inherit
+ @root.usda@</Model>	root
 
 Iterating over stronger than payload prim specs for </Model>:
- @root.sdf@</Model>	root
- @root.sdf@</Class>	inherit
- @mcat.sdf@</Model>	reference
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model{pin=latest}>	variant
- @model_latest.sdf@</Model>	reference
- @model_latest_payload.sdf@</Model>	payload
- @mcat.sdf@</Specializes>	specialize
+ @root.usda@</Model>	root
+ @root.usda@</Class>	inherit
+ @mcat.usda@</Model>	reference
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model{pin=latest}>	variant
+ @model_latest.usda@</Model>	reference
+ @model_latest_payload.usda@</Model>	payload
+ @mcat.usda@</Specializes>	specialize
 
 Reverse iterating over stronger than payload prim specs for </Model>:
- @mcat.sdf@</Specializes>	specialize
- @model_latest_payload.sdf@</Model>	payload
- @model_latest.sdf@</Model>	reference
- @mcat.sdf@</Model{pin=latest}>	variant
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model>	reference
- @root.sdf@</Class>	inherit
- @root.sdf@</Model>	root
+ @mcat.usda@</Specializes>	specialize
+ @model_latest_payload.usda@</Model>	payload
+ @model_latest.usda@</Model>	reference
+ @mcat.usda@</Model{pin=latest}>	variant
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model>	reference
+ @root.usda@</Class>	inherit
+ @root.usda@</Model>	root
 
 ====================
 
 
-Subtree iterating over subtree nodes starting at node @root.sdf@</Model>:
- @root.sdf@</Model>	root
- @root.sdf@</Class>	inherit
- @mcat.sdf@</Model>	reference
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model{pin=latest}>	variant
- @model_latest.sdf@</Model>	reference
- @model_latest_payload.sdf@</Model>	payload
- @mcat.sdf@</Specializes>	specialize
- @root.sdf@</Specializes>	specialize
- @mcat.sdf@</Specializes>	specialize
+Subtree iterating over subtree nodes starting at node @root.usda@</Model>:
+ @root.usda@</Model>	root
+ @root.usda@</Class>	inherit
+ @mcat.usda@</Model>	reference
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model{pin=latest}>	variant
+ @model_latest.usda@</Model>	reference
+ @model_latest_payload.usda@</Model>	payload
+ @mcat.usda@</Specializes>	specialize
+ @root.usda@</Specializes>	specialize
+ @mcat.usda@</Specializes>	specialize
 
-Subtree iterating over subtree nodes starting at node @root.sdf@</Class>:
- @root.sdf@</Class>	inherit
+Subtree iterating over subtree nodes starting at node @root.usda@</Class>:
+ @root.usda@</Class>	inherit
 
-Subtree iterating over subtree nodes starting at node @mcat.sdf@</Model>:
- @mcat.sdf@</Model>	reference
- @mcat.sdf@</Class>	inherit
- @mcat.sdf@</Model{pin=latest}>	variant
- @model_latest.sdf@</Model>	reference
- @model_latest_payload.sdf@</Model>	payload
- @mcat.sdf@</Specializes>	specialize
+Subtree iterating over subtree nodes starting at node @mcat.usda@</Model>:
+ @mcat.usda@</Model>	reference
+ @mcat.usda@</Class>	inherit
+ @mcat.usda@</Model{pin=latest}>	variant
+ @model_latest.usda@</Model>	reference
+ @model_latest_payload.usda@</Model>	payload
+ @mcat.usda@</Specializes>	specialize
 
-Subtree iterating over subtree nodes starting at node @mcat.sdf@</Class>:
- @mcat.sdf@</Class>	inherit
+Subtree iterating over subtree nodes starting at node @mcat.usda@</Class>:
+ @mcat.usda@</Class>	inherit
 
-Subtree iterating over subtree nodes starting at node @mcat.sdf@</Model{pin=latest}>:
- @mcat.sdf@</Model{pin=latest}>	variant
- @model_latest.sdf@</Model>	reference
- @model_latest_payload.sdf@</Model>	payload
+Subtree iterating over subtree nodes starting at node @mcat.usda@</Model{pin=latest}>:
+ @mcat.usda@</Model{pin=latest}>	variant
+ @model_latest.usda@</Model>	reference
+ @model_latest_payload.usda@</Model>	payload
 
-Subtree iterating over subtree nodes starting at node @model_latest.sdf@</Model>:
- @model_latest.sdf@</Model>	reference
- @model_latest_payload.sdf@</Model>	payload
+Subtree iterating over subtree nodes starting at node @model_latest.usda@</Model>:
+ @model_latest.usda@</Model>	reference
+ @model_latest_payload.usda@</Model>	payload
 
-Subtree iterating over subtree nodes starting at node @model_latest_payload.sdf@</Model>:
- @model_latest_payload.sdf@</Model>	payload
+Subtree iterating over subtree nodes starting at node @model_latest_payload.usda@</Model>:
+ @model_latest_payload.usda@</Model>	payload
 
-Subtree iterating over subtree nodes starting at node @mcat.sdf@</Specializes>:
- @mcat.sdf@</Specializes>	specialize
+Subtree iterating over subtree nodes starting at node @mcat.usda@</Specializes>:
+ @mcat.usda@</Specializes>	specialize
 
-Subtree iterating over subtree nodes starting at node @root.sdf@</Specializes>:
- @root.sdf@</Specializes>	specialize
+Subtree iterating over subtree nodes starting at node @root.usda@</Specializes>:
+ @root.usda@</Specializes>	specialize
 
-Subtree iterating over subtree nodes starting at node @mcat.sdf@</Specializes>:
- @mcat.sdf@</Specializes>	specialize
+Subtree iterating over subtree nodes starting at node @mcat.usda@</Specializes>:
+ @mcat.usda@</Specializes>	specialize
 
 ====================
 
 Iterating over local property specs for </Model.a>:
- @root.sdf@</Model.a> from node @root.sdf@</Model>	root
+ @root.usda@</Model.a> from node @root.usda@</Model>	root
 
 Reverse iterating over local property specs for </Model.a>:
- @root.sdf@</Model.a> from node @root.sdf@</Model>	root
+ @root.usda@</Model.a> from node @root.usda@</Model>	root
 
 ====================
 
 Iterating over all property specs for </Model.a>:
- @root.sdf@</Model.a> from node @root.sdf@</Model>	root
- @root.sdf@</Class.a> from node @root.sdf@</Class>	inherit
- @model_latest.sdf@</Model.a> from node @model_latest.sdf@</Model>	reference
+ @root.usda@</Model.a> from node @root.usda@</Model>	root
+ @root.usda@</Class.a> from node @root.usda@</Class>	inherit
+ @model_latest.usda@</Model.a> from node @model_latest.usda@</Model>	reference
 
 Reverse iterating over all property specs for </Model.a>:
- @model_latest.sdf@</Model.a> from node @model_latest.sdf@</Model>	reference
- @root.sdf@</Class.a> from node @root.sdf@</Class>	inherit
- @root.sdf@</Model.a> from node @root.sdf@</Model>	root
+ @model_latest.usda@</Model.a> from node @model_latest.usda@</Model>	reference
+ @root.usda@</Class.a> from node @root.usda@</Class>	inherit
+ @root.usda@</Model.a> from node @root.usda@</Model>	root

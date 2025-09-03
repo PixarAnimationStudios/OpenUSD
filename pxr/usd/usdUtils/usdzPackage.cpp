@@ -14,8 +14,8 @@
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/assetPath.h"
+#include "pxr/usd/sdf/usdcFileFormat.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/usdcFileFormat.h"
 #include "pxr/usd/usd/zipFile.h"
 
 #include "pxr/base/tf/fileUtils.h"
@@ -134,10 +134,10 @@ UsdUtilsCreateNewARKitUsdzPackage(
         TfGetBaseName(assetPath.GetAssetPath()) : firstLayerName;
     const std::string &fileExt = resolver.GetExtension(targetBaseName);
     bool renamingRootLayer = false;
-    if (fileExt != UsdUsdcFileFormatTokens->Id) {
+    if (fileExt != SdfUsdcFileFormatTokens->Id) {
         renamingRootLayer = true;
         targetBaseName = targetBaseName.substr(0, targetBaseName.rfind(".")+1) +  
-                UsdUsdcFileFormatTokens->Id.GetString();
+                SdfUsdcFileFormatTokens->Id.GetString();
     }
 
     // If there are no external dependencies needed for composition, we can 

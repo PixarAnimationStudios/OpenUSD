@@ -5,7 +5,7 @@
 # Licensed under the terms set forth in the LICENSE.txt file available at
 # https://openusd.org/license.
 
-from pxr import Ar, UsdUtils, Sdf, Usd
+from pxr import Ar, Tf, UsdUtils, Sdf, Usd
 from pathlib import Path
 import os
 import unittest
@@ -294,6 +294,28 @@ class TestUsdUtilsDependencies(unittest.TestCase):
         self.assertEqual(unresolved, ["missing.png",
                                       "missing_in_package.png", 
                                       "missing_in_reference.png"])
+        
+    def test_ComputeAllDependenciesInvalidPayload(self):
+        """Tests that invalid payloads are detected and reported"""
+
+        def TestDirPath(path):
+            return os.path.normcase(
+                os.path.abspath(os.path.join(testDir, path)))
+
+        testDir = "computeAllDependenciesInvalidPayload"
+        stagePath = "root.usda"
+
+        delegate = UsdUtils.CoalescingDiagnosticDelegate()
+
+        layers, references, unresolved = UsdUtils.ComputeAllDependencies(TestDirPath(stagePath))
+        self.assertEqual(len(layers), 1)
+        self.assertEqual(os.path.normcase(layers[0].identifier), TestDirPath(stagePath))
+        self.assertEqual(len(references), 0)
+        self.assertEqual(len(unresolved), 0)
+
+        unfiltered = delegate.TakeUncoalescedDiagnostics()
+        self.assertEqual(len(unfiltered), 1)
+        self.assertTrue(unfiltered[0].commentary.startswith("Failed to open dependency layer: ./invalid.usd "))
 
 if __name__=="__main__":
     unittest.main()

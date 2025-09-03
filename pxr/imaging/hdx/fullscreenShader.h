@@ -99,11 +99,14 @@ public:
     /// By default HdxFullscreenShader creates a pipeline object that enables
     /// depth testing and enables depth write if there is a depth texture.
     /// This function allows you to override the depth and stencil state.
+    /// Note that this also sets the depth loadOp to Load if a nontrivial depth
+    //// compare is active.
     HDX_API
     void SetDepthState(HgiDepthStencilState const& state);
 
     /// By default HdxFullscreenShader uses no blending (opaque).
-    /// This function allows you to override blend state (e.g. alpha blending)
+    /// This function allows you to override blend state (e.g. alpha blending).
+    /// Note that this also sets the color loadOp to Load if blending is on.
     HDX_API
     void SetBlendState(
         bool enableBlending,
@@ -114,12 +117,14 @@ public:
         HgiBlendFactor dstAlphaBlendFactor,
         HgiBlendOp alphaBlendOp);
 
-    /// By default HdxFullscreenShader uses LoadOpDontCare and StoreOpStore.
-    /// This function allows you to override the attachment load and store op.
+    /// Ask HdxFullscreenShader to do a color/depth clear.  Note that this
+    /// sets loadOp to Clear, and should be used if you're using the fullscreen
+    /// shader as a background/clear pass, to make sure especially that
+    /// depth/stencil get cleared correctly.
     HDX_API
-    void SetAttachmentLoadStoreOp(
-        HgiAttachmentLoadOp attachmentLoadOp,
-        HgiAttachmentStoreOp attachmentStoreOp);
+    void SetClearState(
+        GfVec4f clearColor,
+        GfVec4f clearDepth);
 
     /// Provide the shader constant values (uniforms).
     /// The data values are copied, so you do not have to set them

@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/python_type.hpp>
-#else
-
 #include "pxr/external/boost/python/converter/registered.hpp"
 
 namespace PXR_BOOST_NAMESPACE {namespace python {namespace detail{
@@ -46,5 +42,4 @@ template <class T> struct python_class : PyObject
 
 }}} //namespace PXR_BOOST_NAMESPACE :: python :: detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif //PXR_EXTERNAL_BOOST_PYTHON_DETAIL_PYTHON_TYPE_HPP

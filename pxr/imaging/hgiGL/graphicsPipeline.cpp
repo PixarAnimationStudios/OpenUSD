@@ -150,6 +150,11 @@ HgiGLGraphicsPipeline::BindPipeline()
     //
     if (_descriptor.multiSampleState.multiSampleEnable) {
         glEnable(GL_MULTISAMPLE);
+        if (!_hgi->GetCapabilities()->IsSet(
+            HgiDeviceCapabilitiesBitsRoundPoints)) {
+            // Needed to get gl_pointCoord in FS.
+            glEnable(GL_POINT_SPRITE);
+        }
     } else {
         glDisable(GL_MULTISAMPLE);
         // If not using GL_MULTISAMPLE, use GL_POINT_SMOOTH to render points as 
@@ -223,6 +228,16 @@ HgiGLGraphicsPipeline::BindPipeline()
     {
         glEnable(GL_CLIP_DISTANCE0 + i);
     }
+
+    // Provoking vertex
+    //
+    // GL defaults to last vertex, but because Vulkan and Metal use first 
+    // vertex (and are less easily configurable, if at all, compared to GL),
+    // we use first for GL, too.
+    glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
+
+    // Default to seamless cubemap sampling.
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     //
     // Shader program

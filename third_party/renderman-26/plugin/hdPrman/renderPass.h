@@ -4,8 +4,8 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PASS_H
-#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PASS_H
+#ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PASS_H
+#define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PASS_H
 
 #include "pxr/imaging/hd/renderPass.h"
 
@@ -63,10 +63,9 @@ private:
     int _lastRprimRenderTagVersion;
 
     std::chrono::steady_clock::time_point _frameStart;
-    std::string _projection;
     float _quickIntegrateTime;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PASS_H
+#endif // EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_PASS_H

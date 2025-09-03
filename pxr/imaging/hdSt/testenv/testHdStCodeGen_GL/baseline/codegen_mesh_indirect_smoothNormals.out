@@ -317,6 +317,13 @@ float GetLightingBlendAmount() {
     return 1;
 #endif
 }
+float GetLinearExposure() {
+#if defined(HD_HAS_linearExposure)
+    return HdGet_linearExposure();
+#else
+    return 1;
+#endif
+}
 vec4  GetViewport() {
 #if defined(HD_HAS_viewport)
     return HdGet_viewport();
@@ -1096,6 +1103,13 @@ float GetLightingBlendAmount() {
     return 1;
 #endif
 }
+float GetLinearExposure() {
+#if defined(HD_HAS_linearExposure)
+    return HdGet_linearExposure();
+#else
+    return 1;
+#endif
+}
 vec4  GetViewport() {
 #if defined(HD_HAS_viewport)
     return HdGet_viewport();
@@ -1846,6 +1860,13 @@ float GetLightingBlendAmount() {
     return 1;
 #endif
 }
+float GetLinearExposure() {
+#if defined(HD_HAS_linearExposure)
+    return HdGet_linearExposure();
+#else
+    return 1;
+#endif
+}
 vec4  GetViewport() {
 #if defined(HD_HAS_viewport)
     return HdGet_viewport();
@@ -2411,6 +2432,9 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
                                          Neye,
                                          shadingColor);
 #endif
+
+        // Modify the shaded color by camera exposure.
+        shadingColor.rgb *= GetLinearExposure();
 
         reprColor.rgb = reprStyle.useSurfaceShaderColor ?
                         shadingColor.rgb :
@@ -3002,6 +3026,13 @@ vec3 GetPositionInWorldSpace(vec3 windowRelativeCoord)
 float GetLightingBlendAmount() {
 #if defined(HD_HAS_lightingBlendAmount)
     return HdGet_lightingBlendAmount();
+#else
+    return 1;
+#endif
+}
+float GetLinearExposure() {
+#if defined(HD_HAS_linearExposure)
+    return HdGet_linearExposure();
 #else
     return 1;
 #endif
@@ -3785,6 +3816,13 @@ float GetLightingBlendAmount() {
     return 1;
 #endif
 }
+float GetLinearExposure() {
+#if defined(HD_HAS_linearExposure)
+    return HdGet_linearExposure();
+#else
+    return 1;
+#endif
+}
 vec4  GetViewport() {
 #if defined(HD_HAS_viewport)
     return HdGet_viewport();
@@ -4564,6 +4602,13 @@ float GetLightingBlendAmount() {
     return 1;
 #endif
 }
+float GetLinearExposure() {
+#if defined(HD_HAS_linearExposure)
+    return HdGet_linearExposure();
+#else
+    return 1;
+#endif
+}
 vec4  GetViewport() {
 #if defined(HD_HAS_viewport)
     return HdGet_viewport();
@@ -5129,6 +5174,9 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
                                          Neye,
                                          shadingColor);
 #endif
+
+        // Modify the shaded color by camera exposure.
+        shadingColor.rgb *= GetLinearExposure();
 
         reprColor.rgb = reprStyle.useSurfaceShaderColor ?
                         shadingColor.rgb :

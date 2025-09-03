@@ -1,15 +1,15 @@
-Loading @TrickySpookyInheritsInSymmetricArmRig/root.sdf@
+Loading @TrickySpookyInheritsInSymmetricArmRig/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </CharRig>
 
 Prim Stack:
-    root.sdf             /CharRig
-    humanRig.sdf         /HumanRig
+    root.usda            /CharRig
+    humanRig.usda        /HumanRig
 
 Child names:
      ['Anim', 'Rig']
@@ -18,8 +18,8 @@ Child names:
 Results for composing </CharRig/Anim>
 
 Prim Stack:
-    root.sdf             /CharRig/Anim
-    humanRig.sdf         /HumanRig/Anim
+    root.usda            /CharRig/Anim
+    humanRig.usda        /HumanRig/Anim
 
 Child names:
      ['LArm']
@@ -28,22 +28,22 @@ Child names:
 Results for composing </CharRig/Anim/LArm>
 
 Prim Stack:
-    root.sdf             /CharRig/Anim/LArm
-    humanRig.sdf         /HumanRig/Anim/LArm
-    armRig.sdf           /ArmRig/Anim
+    root.usda            /CharRig/Anim/LArm
+    humanRig.usda        /HumanRig/Anim/LArm
+    armRig.usda          /ArmRig/Anim
 
 Property names:
      ['bendAmount']
 
 Property stacks:
 /CharRig/Anim/LArm.bendAmount:
-    armRig.sdf           /ArmRig/Anim.bendAmount
+    armRig.usda          /ArmRig/Anim.bendAmount
 
 ------------------------------------------------------------------------
 Results for composing </CharRig/Rig>
 
 Prim Stack:
-    humanRig.sdf         /HumanRig/Rig
+    humanRig.usda        /HumanRig/Rig
 
 Child names:
      ['SymArm', 'LArm']
@@ -52,8 +52,8 @@ Child names:
 Results for composing </CharRig/Rig/SymArm>
 
 Prim Stack:
-    humanRig.sdf         /HumanRig/Rig/SymArm
-    armRig.sdf           /ArmRig
+    humanRig.usda        /HumanRig/Rig/SymArm
+    armRig.usda          /ArmRig
 
 Child names:
      ['Rig', 'Anim']
@@ -62,7 +62,7 @@ Child names:
 Results for composing </CharRig/Rig/SymArm/Rig>
 
 Prim Stack:
-    armRig.sdf           /ArmRig/Rig
+    armRig.usda          /ArmRig/Rig
 
 Child names:
      ['Some_Internal_Rig_Prim']
@@ -71,14 +71,14 @@ Child names:
 Results for composing </CharRig/Rig/SymArm/Rig/Some_Internal_Rig_Prim>
 
 Prim Stack:
-    armRig.sdf           /ArmRig/Rig/Some_Internal_Rig_Prim
+    armRig.usda          /ArmRig/Rig/Some_Internal_Rig_Prim
 
 Property names:
      ['bendAmount']
 
 Property stacks:
 /CharRig/Rig/SymArm/Rig/Some_Internal_Rig_Prim.bendAmount:
-    armRig.sdf           /ArmRig/Rig/Some_Internal_Rig_Prim.bendAmount
+    armRig.usda          /ArmRig/Rig/Some_Internal_Rig_Prim.bendAmount
 
 Attribute connections:
 /CharRig/Rig/SymArm/Rig/Some_Internal_Rig_Prim.bendAmount:
@@ -88,22 +88,22 @@ Attribute connections:
 Results for composing </CharRig/Rig/SymArm/Anim>
 
 Prim Stack:
-    armRig.sdf           /ArmRig/Anim
+    armRig.usda          /ArmRig/Anim
 
 Property names:
      ['bendAmount']
 
 Property stacks:
 /CharRig/Rig/SymArm/Anim.bendAmount:
-    armRig.sdf           /ArmRig/Anim.bendAmount
+    armRig.usda          /ArmRig/Anim.bendAmount
 
 ------------------------------------------------------------------------
 Results for composing </CharRig/Rig/LArm>
 
 Prim Stack:
-    humanRig.sdf         /HumanRig/Rig/LArm
-    humanRig.sdf         /HumanRig/Rig/SymArm
-    armRig.sdf           /ArmRig
+    humanRig.usda        /HumanRig/Rig/LArm
+    humanRig.usda        /HumanRig/Rig/SymArm
+    armRig.usda          /ArmRig
 
 Child names:
      ['Rig']
@@ -115,7 +115,7 @@ Prohibited child names:
 Results for composing </CharRig/Rig/LArm/Rig>
 
 Prim Stack:
-    armRig.sdf           /ArmRig/Rig
+    armRig.usda          /ArmRig/Rig
 
 Child names:
      ['Some_Internal_Rig_Prim']
@@ -124,14 +124,14 @@ Child names:
 Results for composing </CharRig/Rig/LArm/Rig/Some_Internal_Rig_Prim>
 
 Prim Stack:
-    armRig.sdf           /ArmRig/Rig/Some_Internal_Rig_Prim
+    armRig.usda          /ArmRig/Rig/Some_Internal_Rig_Prim
 
 Property names:
      ['bendAmount']
 
 Property stacks:
 /CharRig/Rig/LArm/Rig/Some_Internal_Rig_Prim.bendAmount:
-    armRig.sdf           /ArmRig/Rig/Some_Internal_Rig_Prim.bendAmount
+    armRig.usda          /ArmRig/Rig/Some_Internal_Rig_Prim.bendAmount
 
 Attribute connections:
 /CharRig/Rig/LArm/Rig/Some_Internal_Rig_Prim.bendAmount:

@@ -1,0 +1,14 @@
+#usda 1.0
+
+def Prim "Model"
+{
+    class Prim "LocalClass"
+    {
+    }
+
+    def Prim "Instance" (
+        add inherits = </Model/LocalClass>
+    )
+    {
+    }
+}

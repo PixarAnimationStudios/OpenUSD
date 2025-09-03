@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/object_attributes.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 # include "pxr/external/boost/python/proxy.hpp"
@@ -125,5 +121,4 @@ inline void objattribute_policies::del(
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::api
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_ATTRIBUTES_HPP

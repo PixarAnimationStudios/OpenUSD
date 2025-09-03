@@ -10,8 +10,9 @@
 //
 // OS
 //
-
-#if defined(__linux__)
+#if defined(__EMSCRIPTEN__)
+#define ARCH_OS_WASM_VM
+#elif defined(__linux__)
 #define ARCH_OS_LINUX
 #elif defined(__APPLE__)
 #include "TargetConditionals.h"
@@ -35,7 +36,8 @@
 #if defined(i386) || defined(__i386__) || defined(__x86_64__) || \
     defined(_M_IX86) || defined(_M_X64)
 #define ARCH_CPU_INTEL
-#elif defined(__arm__) || defined(__aarch64__) || defined(_M_ARM)
+#elif defined(__arm__) || defined(__aarch64__) || defined(_M_ARM) || \
+    defined(_M_ARM64)
 #define ARCH_CPU_ARM
 #endif
 
@@ -43,8 +45,11 @@
 // Bits
 //
 
-#if defined(__x86_64__) || defined(__aarch64__) || defined(_M_X64)
+#if defined(__x86_64__) || defined(__aarch64__) || defined(_M_X64) || \
+    defined(_M_ARM64) || defined(__wasm64__)
 #define ARCH_BITS_64
+#elif defined(__wasm32__)
+#define ARCH_BITS_32
 #else
 #error "Unsupported architecture.  x86_64 or ARM64 required."
 #endif
@@ -77,12 +82,6 @@
 // Only use the GNU STL extensions on Linux when using gcc.
 #if defined(ARCH_OS_LINUX) && defined(ARCH_COMPILER_GCC)
 #define ARCH_HAS_GNU_STL_EXTENSIONS
-#endif
-
-// The current version of Apple clang does not support the thread_local
-// keyword.
-#if !(defined(ARCH_OS_DARWIN) && defined(ARCH_COMPILER_CLANG))
-#define ARCH_HAS_THREAD_LOCAL
 #endif
 
 // The MAP_POPULATE flag for mmap calls only exists on Linux platforms.

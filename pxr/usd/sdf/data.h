@@ -112,6 +112,11 @@ public:
 
     SDF_API
     virtual bool
+    GetPreviousTimeSampleForPath(const SdfPath& path, double time, 
+                                 double* tPrevious) const;
+
+    SDF_API
+    virtual bool
     QueryTimeSample(const SdfPath& path, double time,
                     SdfAbstractDataValue *optionalValue) const;
     SDF_API

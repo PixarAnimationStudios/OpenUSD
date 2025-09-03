@@ -1,0 +1,22 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Exec" : {
+                    "Schemas": {
+                        "TestExecConflictingPluginRegistrationSchema": {
+                        },
+                        "TestExecConflictingComputationalSchema": {
+                            "allowsPluginComputations": false
+                        }
+                    }
+                }
+            },
+            "LibraryPath": "@TEST_PLUG_INFO_LIBRARY_PATH@",
+            "Name": "TestExecConflictingPluginRegistration2",
+            "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@TEST_PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

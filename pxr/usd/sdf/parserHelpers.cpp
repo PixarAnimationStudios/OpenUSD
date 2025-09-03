@@ -32,6 +32,8 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/arrayEdit.h"
+#include "pxr/base/vt/arrayEditBuilder.h"
 #include "pxr/base/vt/value.h"
 
 #include <algorithm>
@@ -341,7 +343,108 @@ MakeShapedValueTemplate(vector<unsigned int> const &shape,
     return VtValue(array);
 }
 
-typedef std::map<std::string, ValueFactory> _ValueFactoryMap;
+ArrayEditFactoryBase::~ArrayEditFactoryBase() = default;
+
+bool
+ArrayEditFactoryBase::Append(VtValue const &elem)
+{
+    return Insert(elem, Vt_ArrayEditOps::EndIndex);
+}
+void
+ArrayEditFactoryBase::AppendRef(int64_t srcIndex)
+{
+    InsertRef(srcIndex, Vt_ArrayEditOps::EndIndex);
+}
+
+bool
+ArrayEditFactoryBase::Prepend(VtValue const &elem)
+{
+    return Insert(elem, 0);
+}
+void
+ArrayEditFactoryBase::PrependRef(int64_t srcIndex)
+{
+    InsertRef(srcIndex, 0);
+}
+
+// ArrayEditFactory implementations
+template <class T>
+struct ArrayEditFactory : ArrayEditFactoryBase
+{
+    ~ArrayEditFactory() override = default;
+
+    bool Write(VtValue const &elem, int64_t index) override {
+        return _TypeCheck(elem) &&
+            (_builder.Write(elem.UncheckedGet<T>(), index), true);
+    }
+    void WriteRef(int64_t srcIndex, int64_t dstIndex) override {
+        _builder.WriteRef(srcIndex, dstIndex);
+    }
+        
+    bool Insert(VtValue const &elem, int64_t index) override {
+        return _TypeCheck(elem) &&
+            (_builder.Insert(elem.UncheckedGet<T>(), index), true);
+    }
+    void InsertRef(int64_t srcIndex, int64_t dstIndex) override {
+        _builder.InsertRef(srcIndex, dstIndex);
+    }
+
+    void EraseRef(int64_t index) override {
+        _builder.EraseRef(index);
+    }
+
+    void MinSize(int64_t size) override {
+        _builder.MinSize(size);
+    }
+    bool MinSizeFill(int64_t size, VtValue const &fill) override {
+        return _TypeCheck(fill) &&
+            (_builder.MinSize(size, fill.UncheckedGet<T>()), true);
+    }
+
+    void MaxSize(int64_t size) override {
+        _builder.MaxSize(size);
+    }
+
+    void SetSize(int64_t size) override {
+        _builder.SetSize(size);
+    }
+    bool SetSizeFill(int64_t size, VtValue const &fill) override {
+        return _TypeCheck(fill) &&
+            (_builder.SetSize(size, fill.UncheckedGet<T>()), true);
+    }
+
+    VtValue FinalizeAndReset() override {
+        VtArrayEdit<T> edit = _builder.FinalizeAndReset();
+        return _errMsg.empty() ? VtValue::Take(edit) : VtValue {};
+    }
+
+    std::string GetErrorMessage() const override {
+        return _errMsg;
+    }
+
+private:
+    bool _TypeCheck(VtValue const &val) {
+        if (!val.IsHolding<T>()) {
+            _errMsg = TfStringPrintf("Unexpected value '%s' of type '%s' "
+                                     "building a VtArrayEdit<%s>",
+                                     TfStringify(val).c_str(),
+                                     val.GetTypeName().c_str(),
+                                     ArchGetDemangled<T>().c_str());
+            return false;
+        }
+        return true;
+    }
+        
+    VtArrayEditBuilder<T> _builder;
+    std::string _errMsg;
+};
+
+struct ValueAndArrayEditFactory {
+    ValueFactory valueFactory;
+    ArrayEditFactoryBase *(*makeArrayEditFactory)();
+};
+
+using _ValueFactoryMap = std::map<std::string, ValueAndArrayEditFactory>;
 
 // Walk through types and register factories.
 struct _MakeFactoryMap {
@@ -349,27 +452,36 @@ struct _MakeFactoryMap {
     explicit _MakeFactoryMap(_ValueFactoryMap *factories) :
         _factories(factories) {}
 
-    template <class CppType>
-    void add(const SdfValueTypeName& scalar, const char* alias = NULL)
-    {
-        static const bool isShaped = true;
-
-        const SdfValueTypeName array = scalar.GetArrayType();
+    template <class CppType, bool SupportsArrays=true>
+    void Add(const SdfValueTypeName& scalar, const char* alias = nullptr) {
+        constexpr bool isShaped = true;
 
         const std::string scalarName =
-            alias ? std::string(alias)        : scalar.GetAsToken().GetString();
-        const std::string arrayName =
-            alias ? std::string(alias) + "[]" : array.GetAsToken().GetString();
+            alias ? std::string(alias) : scalar.GetAsToken().GetString();
 
         _ValueFactoryMap &f = *_factories;
-        f[scalarName] = ValueFactory(
+        f[scalarName].valueFactory = ValueFactory(
             scalarName, scalar.GetDimensions(), !isShaped,
             MakeScalarValueTemplate<CppType>);
-        f[arrayName] = ValueFactory(
-            arrayName, array.GetDimensions(), isShaped,
-            MakeShapedValueTemplate<CppType>);
+
+        if constexpr (SupportsArrays) {
+            const SdfValueTypeName array = scalar.GetArrayType();
+
+            const std::string arrayName = alias
+                ? std::string(alias) + "[]"
+                : array.GetAsToken().GetString();
+
+            f[arrayName].valueFactory = ValueFactory(
+                arrayName, array.GetDimensions(), isShaped,
+                MakeShapedValueTemplate<CppType>);
+
+            f[scalarName].makeArrayEditFactory =
+                []() -> ArrayEditFactoryBase * {
+                    return new ArrayEditFactory<CppType>;
+                };
+        }
     }
-    
+
     _ValueFactoryMap *_factories;
 };
 
@@ -389,63 +501,65 @@ TF_MAKE_STATIC_DATA(_ValueFactoryMap, _valueFactories) {
     //            type into a vector of VtValues holding a primitive type.
     //            E.g. a VtValue holding a GfVec3f would return three
     //            VtValues each holding a float.
-    builder.add<bool>(SdfValueTypeNames->Bool);
-    builder.add<uint8_t>(SdfValueTypeNames->UChar);
-    builder.add<int32_t>(SdfValueTypeNames->Int);
-    builder.add<uint32_t>(SdfValueTypeNames->UInt);
-    builder.add<int64_t>(SdfValueTypeNames->Int64);
-    builder.add<uint64_t>(SdfValueTypeNames->UInt64);
-    builder.add<GfHalf>(SdfValueTypeNames->Half);
-    builder.add<float>(SdfValueTypeNames->Float);
-    builder.add<double>(SdfValueTypeNames->Double);
-    builder.add<SdfTimeCode>(SdfValueTypeNames->TimeCode);
-    builder.add<std::string>(SdfValueTypeNames->String);
-    builder.add<TfToken>(SdfValueTypeNames->Token);
-    builder.add<SdfAssetPath>(SdfValueTypeNames->Asset);
-    builder.add<SdfOpaqueValue>(SdfValueTypeNames->Opaque);
-    builder.add<SdfOpaqueValue>(SdfValueTypeNames->Group);
-    builder.add<SdfPathExpression>(SdfValueTypeNames->PathExpression);
+    builder.Add<bool>(SdfValueTypeNames->Bool);
+    builder.Add<uint8_t>(SdfValueTypeNames->UChar);
+    builder.Add<int32_t>(SdfValueTypeNames->Int);
+    builder.Add<uint32_t>(SdfValueTypeNames->UInt);
+    builder.Add<int64_t>(SdfValueTypeNames->Int64);
+    builder.Add<uint64_t>(SdfValueTypeNames->UInt64);
+    builder.Add<GfHalf>(SdfValueTypeNames->Half);
+    builder.Add<float>(SdfValueTypeNames->Float);
+    builder.Add<double>(SdfValueTypeNames->Double);
+    builder.Add<SdfTimeCode>(SdfValueTypeNames->TimeCode);
+    builder.Add<std::string>(SdfValueTypeNames->String);
+    builder.Add<TfToken>(SdfValueTypeNames->Token);
+    builder.Add<SdfAssetPath>(SdfValueTypeNames->Asset);
+    builder.Add<SdfOpaqueValue,
+                /*SupportsArrays=*/false>(SdfValueTypeNames->Opaque);
+    builder.Add<SdfOpaqueValue,
+                /*SupportsArrays=*/false>(SdfValueTypeNames->Group);
+    builder.Add<SdfPathExpression>(SdfValueTypeNames->PathExpression);
 
-    builder.add<GfVec2i>(SdfValueTypeNames->Int2);
-    builder.add<GfVec2h>(SdfValueTypeNames->Half2);
-    builder.add<GfVec2f>(SdfValueTypeNames->Float2);
-    builder.add<GfVec2d>(SdfValueTypeNames->Double2);
-    builder.add<GfVec3i>(SdfValueTypeNames->Int3);
-    builder.add<GfVec3h>(SdfValueTypeNames->Half3);
-    builder.add<GfVec3f>(SdfValueTypeNames->Float3);
-    builder.add<GfVec3d>(SdfValueTypeNames->Double3);
-    builder.add<GfVec4i>(SdfValueTypeNames->Int4);
-    builder.add<GfVec4h>(SdfValueTypeNames->Half4);
-    builder.add<GfVec4f>(SdfValueTypeNames->Float4);
-    builder.add<GfVec4d>(SdfValueTypeNames->Double4);
-    builder.add<GfVec3h>(SdfValueTypeNames->Point3h);
-    builder.add<GfVec3f>(SdfValueTypeNames->Point3f);
-    builder.add<GfVec3d>(SdfValueTypeNames->Point3d);
-    builder.add<GfVec3h>(SdfValueTypeNames->Vector3h);
-    builder.add<GfVec3f>(SdfValueTypeNames->Vector3f);
-    builder.add<GfVec3d>(SdfValueTypeNames->Vector3d);
-    builder.add<GfVec3h>(SdfValueTypeNames->Normal3h);
-    builder.add<GfVec3f>(SdfValueTypeNames->Normal3f);
-    builder.add<GfVec3d>(SdfValueTypeNames->Normal3d);
-    builder.add<GfVec3h>(SdfValueTypeNames->Color3h);
-    builder.add<GfVec3f>(SdfValueTypeNames->Color3f);
-    builder.add<GfVec3d>(SdfValueTypeNames->Color3d);
-    builder.add<GfVec4h>(SdfValueTypeNames->Color4h);
-    builder.add<GfVec4f>(SdfValueTypeNames->Color4f);
-    builder.add<GfVec4d>(SdfValueTypeNames->Color4d);
-    builder.add<GfQuath>(SdfValueTypeNames->Quath);
-    builder.add<GfQuatf>(SdfValueTypeNames->Quatf);
-    builder.add<GfQuatd>(SdfValueTypeNames->Quatd);
-    builder.add<GfMatrix2d>(SdfValueTypeNames->Matrix2d);
-    builder.add<GfMatrix3d>(SdfValueTypeNames->Matrix3d);
-    builder.add<GfMatrix4d>(SdfValueTypeNames->Matrix4d);
-    builder.add<GfMatrix4d>(SdfValueTypeNames->Frame4d);
-    builder.add<GfVec2f>(SdfValueTypeNames->TexCoord2f);
-    builder.add<GfVec2d>(SdfValueTypeNames->TexCoord2d);
-    builder.add<GfVec2h>(SdfValueTypeNames->TexCoord2h);
-    builder.add<GfVec3f>(SdfValueTypeNames->TexCoord3f);
-    builder.add<GfVec3d>(SdfValueTypeNames->TexCoord3d);
-    builder.add<GfVec3h>(SdfValueTypeNames->TexCoord3h);
+    builder.Add<GfVec2i>(SdfValueTypeNames->Int2);
+    builder.Add<GfVec2h>(SdfValueTypeNames->Half2);
+    builder.Add<GfVec2f>(SdfValueTypeNames->Float2);
+    builder.Add<GfVec2d>(SdfValueTypeNames->Double2);
+    builder.Add<GfVec3i>(SdfValueTypeNames->Int3);
+    builder.Add<GfVec3h>(SdfValueTypeNames->Half3);
+    builder.Add<GfVec3f>(SdfValueTypeNames->Float3);
+    builder.Add<GfVec3d>(SdfValueTypeNames->Double3);
+    builder.Add<GfVec4i>(SdfValueTypeNames->Int4);
+    builder.Add<GfVec4h>(SdfValueTypeNames->Half4);
+    builder.Add<GfVec4f>(SdfValueTypeNames->Float4);
+    builder.Add<GfVec4d>(SdfValueTypeNames->Double4);
+    builder.Add<GfVec3h>(SdfValueTypeNames->Point3h);
+    builder.Add<GfVec3f>(SdfValueTypeNames->Point3f);
+    builder.Add<GfVec3d>(SdfValueTypeNames->Point3d);
+    builder.Add<GfVec3h>(SdfValueTypeNames->Vector3h);
+    builder.Add<GfVec3f>(SdfValueTypeNames->Vector3f);
+    builder.Add<GfVec3d>(SdfValueTypeNames->Vector3d);
+    builder.Add<GfVec3h>(SdfValueTypeNames->Normal3h);
+    builder.Add<GfVec3f>(SdfValueTypeNames->Normal3f);
+    builder.Add<GfVec3d>(SdfValueTypeNames->Normal3d);
+    builder.Add<GfVec3h>(SdfValueTypeNames->Color3h);
+    builder.Add<GfVec3f>(SdfValueTypeNames->Color3f);
+    builder.Add<GfVec3d>(SdfValueTypeNames->Color3d);
+    builder.Add<GfVec4h>(SdfValueTypeNames->Color4h);
+    builder.Add<GfVec4f>(SdfValueTypeNames->Color4f);
+    builder.Add<GfVec4d>(SdfValueTypeNames->Color4d);
+    builder.Add<GfQuath>(SdfValueTypeNames->Quath);
+    builder.Add<GfQuatf>(SdfValueTypeNames->Quatf);
+    builder.Add<GfQuatd>(SdfValueTypeNames->Quatd);
+    builder.Add<GfMatrix2d>(SdfValueTypeNames->Matrix2d);
+    builder.Add<GfMatrix3d>(SdfValueTypeNames->Matrix3d);
+    builder.Add<GfMatrix4d>(SdfValueTypeNames->Matrix4d);
+    builder.Add<GfMatrix4d>(SdfValueTypeNames->Frame4d);
+    builder.Add<GfVec2f>(SdfValueTypeNames->TexCoord2f);
+    builder.Add<GfVec2d>(SdfValueTypeNames->TexCoord2d);
+    builder.Add<GfVec2h>(SdfValueTypeNames->TexCoord2h);
+    builder.Add<GfVec3f>(SdfValueTypeNames->TexCoord3f);
+    builder.Add<GfVec3d>(SdfValueTypeNames->TexCoord3d);
+    builder.Add<GfVec3h>(SdfValueTypeNames->TexCoord3h);
 
     // XXX: Backwards compatibility.  These should be removed when
     //      all assets are updated.  At the time of this writing
@@ -455,42 +569,42 @@ TF_MAKE_STATIC_DATA(_ValueFactoryMap, _valueFactories) {
     //      of those tests, testUsdImagingEmptyMesh, uses the prim
     //      type PxVolume which is not in pxr.)  Usd assets outside
     //      pxr must also be updated.
-    builder.add<GfVec2i>(SdfValueTypeNames->Int2, "Vec2i");
-    builder.add<GfVec2h>(SdfValueTypeNames->Half2, "Vec2h");
-    builder.add<GfVec2f>(SdfValueTypeNames->Float2, "Vec2f");
-    builder.add<GfVec2d>(SdfValueTypeNames->Double2, "Vec2d");
-    builder.add<GfVec3i>(SdfValueTypeNames->Int3, "Vec3i");
-    builder.add<GfVec3h>(SdfValueTypeNames->Half3, "Vec3h");
-    builder.add<GfVec3f>(SdfValueTypeNames->Float3, "Vec3f");
-    builder.add<GfVec3d>(SdfValueTypeNames->Double3, "Vec3d");
-    builder.add<GfVec4i>(SdfValueTypeNames->Int4, "Vec4i");
-    builder.add<GfVec4h>(SdfValueTypeNames->Half4, "Vec4h");
-    builder.add<GfVec4f>(SdfValueTypeNames->Float4, "Vec4f");
-    builder.add<GfVec4d>(SdfValueTypeNames->Double4, "Vec4d");
-    builder.add<GfVec3f>(SdfValueTypeNames->Point3f, "PointFloat");
-    builder.add<GfVec3d>(SdfValueTypeNames->Point3d, "Point");
-    builder.add<GfVec3f>(SdfValueTypeNames->Vector3f, "NormalFloat");
-    builder.add<GfVec3d>(SdfValueTypeNames->Vector3d, "Normal");
-    builder.add<GfVec3f>(SdfValueTypeNames->Normal3f, "VectorFloat");
-    builder.add<GfVec3d>(SdfValueTypeNames->Normal3d, "Vector");
-    builder.add<GfVec3f>(SdfValueTypeNames->Color3f, "ColorFloat");
-    builder.add<GfVec3d>(SdfValueTypeNames->Color3d, "Color");
-    builder.add<GfQuath>(SdfValueTypeNames->Quath, "Quath");
-    builder.add<GfQuatf>(SdfValueTypeNames->Quatf, "Quatf");
-    builder.add<GfQuatd>(SdfValueTypeNames->Quatd, "Quatd");
-    builder.add<GfMatrix2d>(SdfValueTypeNames->Matrix2d, "Matrix2d");
-    builder.add<GfMatrix3d>(SdfValueTypeNames->Matrix3d, "Matrix3d");
-    builder.add<GfMatrix4d>(SdfValueTypeNames->Matrix4d, "Matrix4d");
-    builder.add<GfMatrix4d>(SdfValueTypeNames->Frame4d, "Frame");
-    builder.add<GfMatrix4d>(SdfValueTypeNames->Matrix4d, "Transform");
-    builder.add<int>(SdfValueTypeNames->Int, "PointIndex");
-    builder.add<int>(SdfValueTypeNames->Int, "EdgeIndex");
-    builder.add<int>(SdfValueTypeNames->Int, "FaceIndex");
-    builder.add<TfToken>(SdfValueTypeNames->Token, "Schema");
+    builder.Add<GfVec2i>(SdfValueTypeNames->Int2, "Vec2i");
+    builder.Add<GfVec2h>(SdfValueTypeNames->Half2, "Vec2h");
+    builder.Add<GfVec2f>(SdfValueTypeNames->Float2, "Vec2f");
+    builder.Add<GfVec2d>(SdfValueTypeNames->Double2, "Vec2d");
+    builder.Add<GfVec3i>(SdfValueTypeNames->Int3, "Vec3i");
+    builder.Add<GfVec3h>(SdfValueTypeNames->Half3, "Vec3h");
+    builder.Add<GfVec3f>(SdfValueTypeNames->Float3, "Vec3f");
+    builder.Add<GfVec3d>(SdfValueTypeNames->Double3, "Vec3d");
+    builder.Add<GfVec4i>(SdfValueTypeNames->Int4, "Vec4i");
+    builder.Add<GfVec4h>(SdfValueTypeNames->Half4, "Vec4h");
+    builder.Add<GfVec4f>(SdfValueTypeNames->Float4, "Vec4f");
+    builder.Add<GfVec4d>(SdfValueTypeNames->Double4, "Vec4d");
+    builder.Add<GfVec3f>(SdfValueTypeNames->Point3f, "PointFloat");
+    builder.Add<GfVec3d>(SdfValueTypeNames->Point3d, "Point");
+    builder.Add<GfVec3f>(SdfValueTypeNames->Vector3f, "NormalFloat");
+    builder.Add<GfVec3d>(SdfValueTypeNames->Vector3d, "Normal");
+    builder.Add<GfVec3f>(SdfValueTypeNames->Normal3f, "VectorFloat");
+    builder.Add<GfVec3d>(SdfValueTypeNames->Normal3d, "Vector");
+    builder.Add<GfVec3f>(SdfValueTypeNames->Color3f, "ColorFloat");
+    builder.Add<GfVec3d>(SdfValueTypeNames->Color3d, "Color");
+    builder.Add<GfQuath>(SdfValueTypeNames->Quath, "Quath");
+    builder.Add<GfQuatf>(SdfValueTypeNames->Quatf, "Quatf");
+    builder.Add<GfQuatd>(SdfValueTypeNames->Quatd, "Quatd");
+    builder.Add<GfMatrix2d>(SdfValueTypeNames->Matrix2d, "Matrix2d");
+    builder.Add<GfMatrix3d>(SdfValueTypeNames->Matrix3d, "Matrix3d");
+    builder.Add<GfMatrix4d>(SdfValueTypeNames->Matrix4d, "Matrix4d");
+    builder.Add<GfMatrix4d>(SdfValueTypeNames->Frame4d, "Frame");
+    builder.Add<GfMatrix4d>(SdfValueTypeNames->Matrix4d, "Transform");
+    builder.Add<int>(SdfValueTypeNames->Int, "PointIndex");
+    builder.Add<int>(SdfValueTypeNames->Int, "EdgeIndex");
+    builder.Add<int>(SdfValueTypeNames->Int, "FaceIndex");
+    builder.Add<TfToken>(SdfValueTypeNames->Token, "Schema");
 
     // Set up the special None factory.
-    (*_valueFactories)[std::string("None")] = ValueFactory(
-        std::string(""), SdfTupleDimensions(), false, NULL);
+    (*_valueFactories)[std::string("None")].valueFactory = ValueFactory(
+        std::string(), SdfTupleDimensions(), false, NULL);
 
 }
 
@@ -500,14 +614,27 @@ ValueFactory const &GetValueFactoryForMenvaName(std::string const &name,
     _ValueFactoryMap::const_iterator it = _valueFactories->find(name);
     if (it != _valueFactories->end()) {
         *found = true;
-        return it->second;
+        return it->second.valueFactory;
     }
     
     // No factory for given name.
-    static ValueFactory const& none = (*_valueFactories)[std::string("None")];
+    static ValueFactory const& none = (*_valueFactories)["None"].valueFactory;
     *found = false;
     return none;
 }
+
+std::unique_ptr<ArrayEditFactoryBase>
+MakeArrayEditFactoryForMenvaName(std::string const &name)
+{
+    _ValueFactoryMap::const_iterator it = _valueFactories->find(name);
+    if (it != _valueFactories->end() && it->second.makeArrayEditFactory) {
+        return std::unique_ptr<ArrayEditFactoryBase> {
+            it->second.makeArrayEditFactory()
+        };
+    }
+    // No factory.
+    return nullptr;
+}    
 
 } // namespace Sdf_ParserHelpers
 

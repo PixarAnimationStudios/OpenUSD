@@ -21,6 +21,8 @@
 
 #if defined(ARCH_OS_LINUX) && defined(ARCH_CPU_INTEL)
 #include <x86intrin.h>
+#elif defined(ARCH_OS_WASM_VM)
+#include <emscripten.h>
 #elif defined(ARCH_OS_DARWIN)
 #include <mach/mach_time.h>
 #elif defined(ARCH_OS_WINDOWS)
@@ -52,8 +54,16 @@ ArchGetTickTime()
     return __rdtsc();
 #elif defined (ARCH_CPU_ARM)
     uint64_t result;
+    #if defined(ARCH_COMPILER_MSVC)
+    // MSVC does not support inline assembly on ARM64 platforms
+    // 0x5F02 == ARM64_CNTVCT - manually calculated value avoids <windows.h>
+    result = _ReadStatusReg(0x5F02);
+    #else
     __asm __volatile("mrs	%0, CNTVCT_EL0" : "=&r" (result));
+    #endif
     return result;
+#elif defined(ARCH_OS_WASM_VM)
+    return static_cast<int64_t>(emscripten_get_now() * 1e+6);
 #else
 #error Unknown architecture.
 #endif
@@ -68,7 +78,8 @@ inline uint64_t
 ArchGetStartTickTime()
 {
     uint64_t t;
-#if defined (ARCH_OS_DARWIN)
+#if defined (ARCH_OS_DARWIN) || defined(ARCH_OS_WASM_VM) || \
+    (defined (ARCH_CPU_ARM) && defined (ARCH_COMPILER_MSVC))
     return ArchGetTickTime();
 #elif defined (ARCH_CPU_ARM)
     std::atomic_signal_fence(std::memory_order_seq_cst);
@@ -109,7 +120,8 @@ inline uint64_t
 ArchGetStopTickTime()
 {
     uint64_t t;
-#if defined (ARCH_OS_DARWIN)
+#if defined (ARCH_OS_DARWIN) || defined(ARCH_OS_WASM_VM) || \
+    (defined (ARCH_CPU_ARM) && defined (ARCH_COMPILER_MSVC))
     return ArchGetTickTime();
 #elif defined (ARCH_CPU_ARM)
     std::atomic_signal_fence(std::memory_order_seq_cst);

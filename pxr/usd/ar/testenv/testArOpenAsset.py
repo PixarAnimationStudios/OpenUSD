@@ -101,10 +101,16 @@ class TestArOpenAsset(unittest.TestCase):
         """
         Validate that attempting to read a non-existing asset returns None
         """
-        print("test_readingNonExistingAssetResultsInInvalidAsset")
         nonExistingJsonFile = self._getNonExistingTextFilepath()
         self.assertIsNone(
             Ar.GetResolver().OpenAsset(resolvedPath=nonExistingJsonFile))
+
+    def test_openingDirectoryResultsInInvalidAsset(self):
+        """
+        Validate that a directory can not be opened for reading
+        """
+        self.assertIsNone(Ar.GetResolver().OpenAsset(
+            resolvedPath=Ar.ResolvedPath(self._tempDir.name)))
 
     def test_arAssetHasExpectedContentSize(self):
         """

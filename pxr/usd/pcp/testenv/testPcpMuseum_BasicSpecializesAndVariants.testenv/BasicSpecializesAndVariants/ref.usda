@@ -1,0 +1,27 @@
+#usda 1.0
+
+class "Specializes" (
+    variants = {
+        string "v" = "spec_ref"
+    }
+)
+{
+}
+
+def "Ref" (
+    specializes = </Specializes>
+    variantSets = ["v"]
+    variants = {
+        string "v" = "ref"
+    }
+)
+{
+    variantSet "v" = {
+        "ref" {
+        }
+        "spec_ref" {
+        }
+        "spec_root" {
+        }
+    }
+}

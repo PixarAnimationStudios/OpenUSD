@@ -1,3 +1,8 @@
+[rmanUsdValidators:PxrRenderTerminalsAPIRelationships]:
+	Doc: Ensures that RenderSettings prims with PxrRenderTerminalsAPI do not define connection attributes for terminal displayFilters, sampleFilters, and integrators. Relationships should be used instead.
+	Keywords: RmanUsdValidators
+	SchemaTypes: UsdRiPxrRenderTerminalsAPI
+	isSuite: False
 [usdGeomValidators:StageMetadataChecker]:
 	Doc: All stages must declare their 'upAxis' and 'metersPerUnit'.
 	Keywords: UsdGeomValidators
@@ -12,6 +17,26 @@
 	Keywords: UsdGeomValidators, UsdGeomSubset
 	SchemaTypes: UsdGeomSubset
 	isSuite: False
+[usdPhysicsValidators:ArticulationChecker]:
+	Doc: Validates all of the UsdPhysicsArticulationRootAPIs applied to a prim.
+	Keywords: UsdPhysicsValidators, UsdPhysicsArticulationRootAPI
+	SchemaTypes: UsdPhysicsArticulationRootAPI
+	isSuite: False
+[usdPhysicsValidators:ColliderChecker]:
+	Doc: Validates all of the UsdPhysicsCollisionAPIs applied to a prim.
+	Keywords: UsdPhysicsValidators, UsdPhysicsCollisionAPI
+	SchemaTypes: UsdPhysicsCollisionAPI
+	isSuite: False
+[usdPhysicsValidators:PhysicsJointChecker]:
+	Doc: Validates all of the UsdPhysicsJoint prims.
+	Keywords: UsdPhysicsValidators, UsdPhysicsJoint
+	SchemaTypes: UsdPhysicsJoint
+	isSuite: False
+[usdPhysicsValidators:RigidBodyChecker]:
+	Doc: Validates all of the UsdPhysicsRigidBodyAPIs applied to a prim.
+	Keywords: UsdPhysicsValidators, UsdPhysicsRigidBodyAPI
+	SchemaTypes: UsdPhysicsRigidBodyAPI
+	isSuite: False
 [usdShadeValidators:EncapsulationRulesValidator]:
 	Doc: Connectable prims (e.g. Shader, Material, etc) can only be nested inside other Container-like Connectable prims. Container-like prims include Material, NodeGraph, Light, LightFilter. Shader is not a Container-like prim.
 	Keywords: UsdShadeValidators
@@ -23,7 +48,7 @@
 [usdShadeValidators:MaterialBindingCollectionValidator]:
 	Doc: Verify that a collection defining a material binding is well-formed
 	Keywords: UsdShadeValidators
-	SchemaTypes: MaterialBindingAPI
+	SchemaTypes: UsdShadeMaterialBindingAPI
 	isSuite: False
 [usdShadeValidators:MaterialBindingRelationships]:
 	Doc: All properties named 'material:binding' or in that namespace should be relationships.

@@ -1,67 +1,67 @@
-Loading @TrickyClassHierarchy/root.sdf@
+Loading @TrickyClassHierarchy/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Sullivan_1>
 
 Prim Stack:
-    root.sdf             /Sullivan_1
-    root.sdf             /_Class_Sullivan
-    root.sdf             /_Class_Char
-    root.sdf             /_Class_Model
-    Sullivan.sdf         /Sullivan
-    Sullivan.sdf         /_Class_Sullivan
-    Sullivan.sdf         /_Class_Char
-    Sullivan.sdf         /_Class_Model
+    root.usda            /Sullivan_1
+    root.usda            /_Class_Sullivan
+    root.usda            /_Class_Char
+    root.usda            /_Class_Model
+    Sullivan.usda        /Sullivan
+    Sullivan.usda        /_Class_Sullivan
+    Sullivan.usda        /_Class_Char
+    Sullivan.usda        /_Class_Model
 
 Property names:
      ['name']
 
 Property stacks:
 /Sullivan_1.name:
-    root.sdf             /_Class_Sullivan.name
-    root.sdf             /_Class_Char.name
-    root.sdf             /_Class_Model.name
+    root.usda            /_Class_Sullivan.name
+    root.usda            /_Class_Char.name
+    root.usda            /_Class_Model.name
 
 ------------------------------------------------------------------------
 Results for composing </_Class_Sullivan>
 
 Prim Stack:
-    root.sdf             /_Class_Sullivan
+    root.usda            /_Class_Sullivan
 
 Property names:
      ['name']
 
 Property stacks:
 /_Class_Sullivan.name:
-    root.sdf             /_Class_Sullivan.name
+    root.usda            /_Class_Sullivan.name
 
 ------------------------------------------------------------------------
 Results for composing </_Class_Char>
 
 Prim Stack:
-    root.sdf             /_Class_Char
+    root.usda            /_Class_Char
 
 Property names:
      ['name']
 
 Property stacks:
 /_Class_Char.name:
-    root.sdf             /_Class_Char.name
+    root.usda            /_Class_Char.name
 
 ------------------------------------------------------------------------
 Results for composing </_Class_Model>
 
 Prim Stack:
-    root.sdf             /_Class_Model
+    root.usda            /_Class_Model
 
 Property names:
      ['name']
 
 Property stacks:
 /_Class_Model.name:
-    root.sdf             /_Class_Model.name
+    root.usda            /_Class_Model.name
 

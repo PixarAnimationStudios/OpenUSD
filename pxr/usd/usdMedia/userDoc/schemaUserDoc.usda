@@ -1,0 +1,247 @@
+#usda 1.0
+(
+    subLayers = [
+        # Sublayer "parent" user doc to get user doc for inherited properties.
+        #@../../usdGeom/userDoc/schemaUserDoc.usda@,        
+        # Sublayer domain schema.usda to get proper schema inheritance structure 
+        # and property fallback values. User doc is added as overs to schema 
+        # class metadata. 
+        @../schema.usda@
+    ]   
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "usdMedia"
+        string userDocTitle     = "Media"
+    }
+)
+{
+}
+
+over SpatialAudio "SpatialAudio" (
+    customData = {
+        string userDocBrief = """Defines the properties that enable audio 
+playback in the scene."""
+        string userDoc = """Defines the properties that enable audio playback 
+in the scene.
+        
+SpatialAudio specifies which audio should play (`filePath`), the mode in which 
+the audio is played (`auralMode`), and the playback settings (combinations of 
+`startTime`, `endTime`, `playbackMode`, and `mediaOffset`).
+
+The example below shows a typical use case, featuring `Speech` and `Ambient` 
+prims. We can infer from the example the following information:
+- `Speech` spatially plays from the location of the Cube in the scene, whereas 
+`Ambient` is non-spatial and sounds the same regardless of the listener's 
+position.
+- `Speech` is nested under the `Cube` gprim, in case the gprim is ever moved or 
+animated.
+- `Speech` plays for 10 seconds, based on: 
+`endTime` (480) - `startTime` (240) / `timeCodesPerSecond` (24) = 10.
+- The audio from the `mySpeech.mp3` plays from the 10th second of the audio 
+file (`startTime` (240) / `timeCodesPerSecond` (24)) to the 20th second of the 
+audio file (`endTime` (480) / `timeCodesPerSecond` (24)).
+- `Speech` does not loop based on `playbackMode = onceFromStartToEnd`.
+- `Ambient` loops based on `playbackMode = loopFromStage`.
+- `Ambient` plays for all 100 seconds of the scene.
+
+```{code-block} usda
+#usda 1.0
+(
+    defaultPrim = "World"
+    endTimeCode = 2400
+    startTimeCode = 0
+    timeCodesPerSecond = 24
+)
+
+def Xform "World"
+{
+    def Cube "Cube"
+    {
+        double3 xformOp:translate = (1, 5, -2)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def SpatialAudio "Speech"
+        {
+            uniform token auralMode = "spatial"
+            uniform timecode endTime = 480
+            uniform asset filePath = @mySpeech.mp3@
+            uniform token playbackMode = "onceFromStartToEnd"
+            uniform timecode startTime = 240
+        }
+    }
+
+    def SpatialAudio "Ambient"
+    {
+        uniform token auralMode = "nonSpatial"
+        uniform asset filePath = @myAmbientTrack.mp3@
+        uniform token playbackMode = "loopFromStage"
+    }
+}
+```
+
+## SpatialAudio and Layer Offsets 
+
+If a layer has a {ref}`layer offset <usdglossary-layeroffset>`, the 
+layer offset information is applied to timecode-value attributes when you
+obtain their values from the Stage (e.g. calling `Get()` on the attribute in 
+Python). As `startTime` and `endTime` are "timecode" valued 
+attributes, this means SpatialAudio playback is adjusted by layer offset,
+and can be kept "in sync" with time sampled animation in the layer. Note that
+if the layer offset includes a time *scale*, USD does not attempt to apply or
+prescribe any playback dilation of the actual audio media.
+"""
+    }
+) {
+    uniform asset filePath (
+        customData = {
+            string userDocBrief = """Path to the audio file."""
+            string userDoc = """Path to the audio file.
+
+Expected file formats: m4a, mp3, wav
+            """
+        }
+    )
+    uniform token auralMode (
+        customData = {
+            string userDocBrief = """How the audio is played, spatially or not."""
+            string userDoc = """How the audio is played, spatially or not.
+
+Valid values are: 
+ - `spatial`: Audio is playing from the source of the prim or parent prim. 
+ For example this could be used for a character so the audio from the 
+ character always comes from their location.
+ - `nonSpatial`: Does not consider the prim's location, intended to be used 
+ for ambient sounds.
+ """
+        }
+    )
+    uniform token playbackMode (
+        customData = {
+            string userDocBrief = """Determines general rules on the playback 
+of the audio asset. Use this to specify when the audio should start, stop, 
+and if the playback should loop."""
+            string userDoc = """Determines general rules on the playback 
+of the audio asset. Use this to specify when the audio should start, stop, 
+and if the playback should loop.
+
+See the table below for how available values relate to whether the audio 
+loops and when the audio starts / stops.
+| Value                 | Audio Loops?  | StartTime                     | EndTime                                       |
+| --------              | -------       | -------                       | -------                                       |
+| `onceFromStart`       | no            | `startTime` of the prim       | end of audio file                             |
+| `onceFromStartToEnd`  | no            | `startTime` of the prim       | `endTime` of the prim, or end of audio file   |
+| `loopFromStart`       | yes           | `startTime` of the prim       | `endTimeCode` of the stage                    |
+| `loopFromStartToEnd`  | yes           | `startTime` of the prim       | `endTime` of the prim                         |
+| `loopFromStage`       | yes           | `startTimeCode` of the stage  | `endTimeCode` of the stage                    |
+
+"""
+        }
+    )
+    uniform timecode startTime (
+        customData = {
+            string userDocBrief = """Offset from the start of the audio file 
+for when to start playing, in timeCodes."""
+            string userDoc = """Offset from the start of the audio file for 
+when to start playing, in timeCodes.
+
+Given a 10 second audio file, with a stage `timeCodesPerSecond` value of 24, 
+and a `startTime` value of 24.0, audio will start playing 1 second into the 
+audio file."""
+        }
+    )
+    uniform timecode endTime (
+        customData = {
+            string userDocBrief = """Offset from the start of the audio file 
+for when to end playing, in timeCodes."""
+            string userDoc = """Offset from the start of the audio file for 
+when to end playing, in timeCodes.
+
+Given a 10 second audio file, with a stage `timeCodesPerSecond` value of 24, 
+and an `endTime` value of 48.0, audio will end playing 2 seconds into the 
+audio file."""
+        }
+    )
+    uniform double mediaOffset (
+        customData = {
+            string userDocBrief = """Amount, in seconds, the audio is offset 
+when playing."""
+            string userDoc = """Amount, in seconds, the audio is offset when 
+playing.
+
+Given a 10 second audio file, and a `mediaOffset` of 3.0, audio will not play 
+for the first 3 seconds, then will start playing at the beginning of the audio 
+file.
+For looping audio files, this offset is only applied for the first loop.
+"""
+        }
+    )
+    double gain (
+        customData = {
+            string userDocBrief = """Multiplier to the given audio signal."""
+            string userDoc = """Multiplier to the given audio signal.
+
+A value of 0 is expected to mute the audio.
+"""
+        }
+    )
+}
+
+over "AssetPreviewsAPI" (
+    customData = {
+        string userDocBrief = """AssetPreviewsAPI supports providing thumbnail 
+previews for assets."""
+        string userDoc = """AssetPreviewsAPI supports providing thumbnail 
+previews for assets.
+
+One use for `AssetPreviewsAPI` is to provide "preview render" thumbnails for a 
+given asset. These thumbnails can then be used in asset icons or other UX in a 
+DCC tool's asset browser, or in a system asset browser.
+    
+Observe the example below to see how to link thumbnails to an asset.
+
+```{code-block} usda
+
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Xform "World" (
+    prepend apiSchemas = ["AssetPreviewsAPI"]
+    assetInfo = {
+        dictionary previews = {
+            dictionary thumbnails = {
+                dictionary default = {
+                    asset defaultImage = @defaultThumbnail.jpg@
+                }
+                dictionary highResolution = {
+                    asset defaultImage = @highResolution.jpg@
+                }
+                dictionary wireFrame = {
+                    asset defaultImage = @wireFrame.jpg@
+                }
+            }
+        }
+    }
+)
+{
+    def Cube "Cube"
+    {
+    }
+}
+
+```
+
+Note that the `AssetPreviewsAPI` schema must be applied, and consider the 
+structure of how thumbnails are assigned. Multiple thumbnails can be assigned 
+to an asset, with one designated as the default. This allows applications to 
+support different qualities or styles of thumbnails if desired.
+"""
+    }
+)
+{
+}

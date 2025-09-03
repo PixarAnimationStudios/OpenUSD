@@ -20,7 +20,7 @@ class HdContainerSchema : public HdSchema
 public:
 
     HdContainerSchema(HdContainerDataSourceHandle container)
-    : HdSchema(container)
+     : HdSchema(std::move(container))
     {}
 
     HD_API
@@ -38,12 +38,13 @@ public:
 /// arbitrary names but an expected data source type.
 ///
 template<typename T>
-class HdTypedContainerSchema : public HdContainerSchema
+class HdContainerOfTypedSampledDataSourcesSchema : public HdContainerSchema
 {
 public:
 
-    HdTypedContainerSchema(HdContainerDataSourceHandle container)
-    : HdContainerSchema(container)
+    HdContainerOfTypedSampledDataSourcesSchema(
+        HdContainerDataSourceHandle container)
+     : HdContainerSchema(std::move(container))
     {}
 
     typename T::Handle Get(const TfToken &name) const {
@@ -51,16 +52,20 @@ public:
     }
 };
 
+/// \deprecated
+template<typename T>
+using HdTypedContainerSchema = HdContainerOfTypedSampledDataSourcesSchema<T>;
+
 /// Template class for a schema backed by a container whose children have
 /// arbitrary names but an expected schema type.
 ///
 template<typename Schema>
-class HdSchemaBasedContainerSchema : public HdContainerSchema
+class HdContainerOfSchemasSchema : public HdContainerSchema
 {
 public:
 
-    HdSchemaBasedContainerSchema(HdContainerDataSourceHandle container)
-    : HdContainerSchema(container)
+    HdContainerOfSchemasSchema(HdContainerDataSourceHandle container)
+     : HdContainerSchema(std::move(container))
     {}
 
     Schema Get(const TfToken &name) const {
@@ -68,6 +73,10 @@ public:
         return Schema(_GetTypedDataSource<DataSource>(name));
     }
 };
+
+/// \deprecated
+template<typename T>
+using HdSchemaBasedContainerSchema = HdContainerOfSchemasSchema<T>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -1,0 +1,16 @@
+#usda 1.1
+
+def Xform "Prim1"
+{
+    custom double myAttr = 17.12
+    double myAttr.spline = {
+        bezier,
+        pre: linear,
+        post: sloped(0.57),
+        loop: (15, 25, 0, 2, 11.7),
+        7: 5.5 & 7.21; pre (0, 0); post held,
+        15: 8.18; post curve (2, 0, autoEase); { string comment = "climb!" },
+        21: 7.5; pre (2, 0, autoEase); post curve (1.1, -1.4),
+    }
+}
+

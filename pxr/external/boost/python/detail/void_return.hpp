@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/void_return.hpp>
-#else
-
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
 
 struct void_return
@@ -34,5 +30,4 @@ struct returnable
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_VOID_RETURN_HPP

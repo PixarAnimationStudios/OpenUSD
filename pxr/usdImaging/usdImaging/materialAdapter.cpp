@@ -86,6 +86,103 @@ UsdImagingMaterialAdapter::GetImagingSubprimData(
     return nullptr;
 }
 
+// Generate a terminal data source locator using the terminal
+// attribute name.
+HdDataSourceLocator
+_CreateTerminalLocator(const TfToken& output)
+{
+    const std::vector<std::string> baseNameComponents
+        = SdfPath::TokenizeIdentifier(output);
+
+    // If it's not namespaced use the universal token.
+    if (baseNameComponents.size() == 1u) {
+        return HdDataSourceLocator(
+            HdMaterialSchema::GetSchemaToken(),
+            HdMaterialSchemaTokens->universalRenderContext,
+            HdMaterialSchemaTokens->terminals, TfToken(baseNameComponents[0])
+        );
+    }
+    // If it's namespaced (eg. mtlx) include that.
+    else if (baseNameComponents.size() > 1u) {
+        return HdDataSourceLocator(
+            HdMaterialSchema::GetSchemaToken(), TfToken(baseNameComponents[0]),
+            HdMaterialSchemaTokens->terminals,
+            TfToken(SdfPath::StripPrefixNamespace(output, baseNameComponents[0]).first)
+        );
+    }
+
+    // Just point to the whole data source.
+    return HdMaterialSchema::GetDefaultLocator();
+}
+
+// Recusively check nodes starting at the terminal to find the dirty prim.
+// If the dirty prim is the source material also check the specific dirty
+// property.
+bool
+_IsConnectionDirty(
+    const UsdPrim& dirtyPrim,
+    const TfTokenVector& dirtyProperties,
+    const UsdShadeMaterial& material,
+    const UsdShadeConnectionSourceInfo& connection)
+{
+    if (!connection.IsValid())
+        return false;
+
+    // If we reach the root material only dirty if we are connected to the
+    // specific property which is dirty and don't recurse further.
+    if (connection.source.GetPrim() == material.GetPrim()) {
+        if (connection.source.GetPrim() == dirtyPrim) {
+            for (const TfToken& dirtyProperty : dirtyProperties) {
+                if ((connection.sourceType == UsdShadeAttributeType::Output
+                     && dirtyProperty
+                         == connection.source.GetOutput(connection.sourceName)
+                                .GetFullName())
+                    || (connection.sourceType == UsdShadeAttributeType::Input
+                        && dirtyProperty
+                            == connection.source.GetInput(connection.sourceName)
+                                   .GetFullName())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // We are connected to the dirty prim
+    if (connection.source.GetPrim() == dirtyPrim) {
+        return true;
+    }
+
+    // If the output we connected to had a direct connection check this.
+    if (connection.sourceType == UsdShadeAttributeType::Output) {
+        const UsdShadeOutput& output
+            = connection.source.GetOutput(connection.sourceName);
+        if (output) {
+            for (UsdShadeConnectionSourceInfo& outputConnection :
+                 output.GetConnectedSources()) {
+                if (_IsConnectionDirty(
+                        dirtyPrim, dirtyProperties, material,
+                        outputConnection)) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    // Check the input connections on the node.
+    for (UsdShadeInput& input : connection.source.GetInputs()) {
+        for (UsdShadeConnectionSourceInfo& inputConnection :
+             input.GetConnectedSources()) {
+            if (_IsConnectionDirty(
+                    dirtyPrim, dirtyProperties, material, inputConnection)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 HdDataSourceLocatorSet
 UsdImagingMaterialAdapter::InvalidateImagingSubprim(
         UsdPrim const& prim,
@@ -93,12 +190,30 @@ UsdImagingMaterialAdapter::InvalidateImagingSubprim(
         TfTokenVector const& properties,
         const UsdImagingPropertyInvalidationType invalidationType)
 {
-    if (subprim.IsEmpty()) {
-        return UsdImagingDataSourceMaterialPrim::Invalidate(
-            prim, subprim, properties, invalidationType);
+    HdDataSourceLocatorSet result;
+
+    UsdShadeMaterial material(prim);
+    if (!material) {
+        return result;
     }
 
-    return HdDataSourceLocatorSet();
+    // If we dirtied an interface input dirty that terminal
+    for (UsdShadeOutput& output : material.GetOutputs()) {
+        for (UsdShadeConnectionSourceInfo& connection :
+             output.GetConnectedSources()) {
+            if (_IsConnectionDirty(prim, properties, material, connection)) {
+                result.insert(_CreateTerminalLocator(output.GetBaseName()));
+            }
+        }
+    }
+
+    // Otherwise dirty our whole material
+    if (result.IsEmpty() && subprim.IsEmpty()) {
+        result.insert(UsdImagingDataSourceMaterialPrim::Invalidate(
+            prim, subprim, properties, invalidationType));
+    }
+
+    return result;
 }
 
 HdDataSourceLocatorSet
@@ -111,9 +226,26 @@ UsdImagingMaterialAdapter::InvalidateImagingSubprimFromDescendent(
 {
     HdDataSourceLocatorSet result;
 
-    //TODO, Invalidating whole material until we figure out an efficient
-    //      way to determine which render context this node is in (if any)
-    result.insert(HdMaterialSchema::GetDefaultLocator());
+    UsdShadeMaterial material(prim);
+    if (!material) {
+        return result;
+    }
+
+    // Find which terminal (if any) we should dirty
+    for (UsdShadeOutput& output : material.GetOutputs()) {
+        for (UsdShadeConnectionSourceInfo& connection :
+             output.GetConnectedSources()) {
+            if (_IsConnectionDirty(
+                    descendentPrim, properties, material, connection)) {
+                result.insert(_CreateTerminalLocator(output.GetBaseName()));
+            }
+        }
+    }
+
+    // Otherwise dirty our whole material
+    if (result.IsEmpty()) {
+        result.insert(HdMaterialSchema::GetDefaultLocator());
+    }
 
     return result;
 }

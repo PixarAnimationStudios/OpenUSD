@@ -45,48 +45,50 @@ TF_DECLARE_PUBLIC_TOKENS(HdInstancerTopologySchemaTokens, HD_API,
 
 //-----------------------------------------------------------------------------
 
-// Since the instancing schema is complicated:
-//
-// An instancer is a prim at a certain scenegraph location that causes other
-// prims to be duplicated. The instancer can also hold instance-varying data
-// like constant primvars or material relationships.
-//
-// The important things an instancer has is:
-//
-// 1.) Instancer topology, describing how exactly the prims are duplicated;
-//
-// 2.) Instance-rate data, meaning data that varies per instance, such as
-// primvars or material bindings.
-//
-// If an instancer causes prims "/A" and "/B" to be duplicated, we encode that
-// by setting prototypes = ["/A", "/B"]. Note that "/A" and "/B" can be
-// subtrees, not direct gprims. instanceIndices encodes both multiplicity and
-// position in arrays of instance-rate data, per prototype path; if
-// instanceIndices = { [0,2], [1] }, then we draw /A twice (with instance
-// primvar indices 0 and 2); and /B once (with instance primvar index 1). Mask
-// is an auxiliary parameter that can be used to deactivate certain instances;
-// mask = [true, true, false] would disable the second copy of "/A". An empty
-// mask array is the same as all-true.
-//
-// Scenes generally specify instancing in one of two ways:
-//
-// 1.) Explicit instancing: prim /Instancer wants to draw its subtree at an
-// array of locations. This is a data expansion form.
-//
-// 2.) Implicit instancing: prims /X and /Y are marked as being identical, and
-// scene load replaces them with a single prim and an instancer. This is a
-// data coalescing form.
-//
-// For implicit instancing, we want to know the original paths of /X and /Y,
-// for doing things like resolving inheritance. This is encoded in the
-// "instanceLocations" path, while the prototype prims (e.g. /_Prototype/Cube,
-// the deduplicated version of /X/Cube and /Y/Cube) is encoded in the
-// "prototypes" path.
-//
-// For explicit instancing, the "instanceLocations" attribute is meaningless
-// and should be left null.
-//
 
+/// \class HdInstancerTopologySchema
+///
+/// Since the instancing schema is complicated:
+///
+/// An instancer is a prim at a certain scenegraph location that causes other
+/// prims to be duplicated. The instancer can also hold instance-varying data
+/// like constant primvars or material relationships.
+///
+/// The important things an instancer has is:
+///
+/// 1.) Instancer topology, describing how exactly the prims are duplicated;
+///
+/// 2.) Instance-rate data, meaning data that varies per instance, such as
+/// primvars or material bindings.
+///
+/// If an instancer causes prims "/A" and "/B" to be duplicated, we encode that
+/// by setting prototypes = ["/A", "/B"]. Note that "/A" and "/B" can be
+/// subtrees, not direct gprims. instanceIndices encodes both multiplicity and
+/// position in arrays of instance-rate data, per prototype path; if
+/// instanceIndices = { [0,2], [1] }, then we draw /A twice (with instance
+/// primvar indices 0 and 2); and /B once (with instance primvar index 1). Mask
+/// is an auxiliary parameter that can be used to deactivate certain instances;
+/// mask = [true, true, false] would disable the second copy of "/A". An empty
+/// mask array is the same as all-true.
+///
+/// Scenes generally specify instancing in one of two ways:
+///
+/// 1.) Explicit instancing: prim /Instancer wants to draw its subtree at an
+/// array of locations. This is a data expansion form.
+///
+/// 2.) Implicit instancing: prims /X and /Y are marked as being identical, and
+/// scene load replaces them with a single prim and an instancer. This is a
+/// data coalescing form.
+///
+/// For implicit instancing, we want to know the original paths of /X and /Y,
+/// for doing things like resolving inheritance. This is encoded in the
+/// "instanceLocations" path, while the prototype prims (e.g. /_Prototype/Cube,
+/// the deduplicated version of /X/Cube and /Y/Cube) is encoded in the
+/// "prototypes" path.
+///
+/// For explicit instancing, the "instanceLocations" attribute is meaningless
+/// and should be left null.
+///
 class HdInstancerTopologySchema : public HdSchema
 {
 public:

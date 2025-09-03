@@ -77,6 +77,10 @@ UsdImagingDataSourceGprim::UsdImagingDataSourceGprim(
 HdDataSourceBaseHandle
 UsdImagingDataSourceGprim::Get(const TfToken &name)
 {
+    if (!_GetUsdPrim()) {
+        return nullptr;
+    }
+
     HdDataSourceBaseHandle const result = UsdImagingDataSourcePrim::Get(name);
     if (name == HdPrimvarsSchema::GetSchemaToken()) {
         const UsdImagingDataSourceCustomPrimvars::Mappings &mappings = 

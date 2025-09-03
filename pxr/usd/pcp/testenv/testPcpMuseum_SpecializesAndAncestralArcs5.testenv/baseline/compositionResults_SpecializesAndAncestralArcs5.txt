@@ -1,0 +1,79 @@
+Loading @SpecializesAndAncestralArcs5/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Overalls>
+
+Prim Stack:
+    root.usda            /Overalls
+    root.usda            /Overalls_defaultShadingVariant
+    payload.usda         /Overalls
+    payload.usda         /Overalls_defaultShadingVariant
+
+Child names:
+     ['Looks']
+
+------------------------------------------------------------------------
+Results for composing </Overalls/Looks>
+
+Prim Stack:
+    root.usda            /Overalls/Looks
+    root.usda            /Overalls_defaultShadingVariant/Looks
+    payload.usda         /Overalls_defaultShadingVariant/Looks
+
+Child names:
+     ['Cloth_C_Weave_09_Satin', 'Cloth_C_Weave_09']
+
+------------------------------------------------------------------------
+Results for composing </Overalls/Looks/Cloth_C_Weave_09_Satin>
+
+Prim Stack:
+    root.usda            /Overalls/Looks/Cloth_C_Weave_09_Satin
+    root.usda            /Overalls_defaultShadingVariant/Looks/Cloth_C_Weave_09_Satin
+    payload.usda         /Overalls_defaultShadingVariant/Looks/Cloth_C_Weave_09_Satin
+    root.usda            /Overalls/Looks/Cloth_C_Weave_09
+    root.usda            /Overalls_defaultShadingVariant/Looks/Cloth_C_Weave_09
+    payload.usda         /Overalls_defaultShadingVariant/Looks/Cloth_C_Weave_09
+
+------------------------------------------------------------------------
+Results for composing </Overalls/Looks/Cloth_C_Weave_09>
+
+Prim Stack:
+    root.usda            /Overalls/Looks/Cloth_C_Weave_09
+    root.usda            /Overalls_defaultShadingVariant/Looks/Cloth_C_Weave_09
+    payload.usda         /Overalls_defaultShadingVariant/Looks/Cloth_C_Weave_09
+
+------------------------------------------------------------------------
+Results for composing </Overalls_defaultShadingVariant>
+
+Prim Stack:
+    root.usda            /Overalls_defaultShadingVariant
+
+Child names:
+     ['Looks']
+
+------------------------------------------------------------------------
+Results for composing </Overalls_defaultShadingVariant/Looks>
+
+Prim Stack:
+    root.usda            /Overalls_defaultShadingVariant/Looks
+
+Child names:
+     ['Cloth_C_Weave_09_Satin', 'Cloth_C_Weave_09']
+
+------------------------------------------------------------------------
+Results for composing </Overalls_defaultShadingVariant/Looks/Cloth_C_Weave_09_Satin>
+
+Prim Stack:
+    root.usda            /Overalls_defaultShadingVariant/Looks/Cloth_C_Weave_09_Satin
+    root.usda            /Overalls_defaultShadingVariant/Looks/Cloth_C_Weave_09
+
+------------------------------------------------------------------------
+Results for composing </Overalls_defaultShadingVariant/Looks/Cloth_C_Weave_09>
+
+Prim Stack:
+    root.usda            /Overalls_defaultShadingVariant/Looks/Cloth_C_Weave_09
+

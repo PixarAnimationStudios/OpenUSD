@@ -131,7 +131,9 @@ HdStMaterial::_ProcessTextureDescriptors(
         
         // Note about batching hashes:
         // If this is our first sync, try to hash using the asset path.
-        // If we're on our 2nd+ sync, just use the texture prim path.
+        // If we're on our 2nd+ sync, just use the texture prim name + material 
+        // id. (We include the material id to avoid collisions on texture prims 
+        // with the same name.)
         //
         // This will aggressively batch textured prims together as long as
         // they are 100% static; if they are dynamic, we assume that the
@@ -154,10 +156,10 @@ HdStMaterial::_ProcessTextureDescriptors(
         texturesFromStorm->push_back(
             { desc.name,
               desc.type,
-              textureHandle,
-              _isInitialized
-                  ? hash_value(desc.texturePrim)
-                  : _GetTextureHandleHash(textureHandle) });
+              { textureHandle },
+              _isInitialized ? 
+                TfHash::Combine(GetId(), desc.texturePrim)
+                : _GetTextureHandleHash(textureHandle) });
     }
 
     bool const doublesSupported = resourceRegistry->GetHgi()->
@@ -187,7 +189,6 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         return;
     }
 
-    bool needsRprimMaterialStateUpdate = false;
     bool markBatchesDirty = false;
 
     std::string fragmentSource;
@@ -257,25 +258,14 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     _materialNetworkShader->SetFragmentSource(fragmentSource);
     _materialNetworkShader->SetDisplacementSource(displacementSource);
 
-    bool hasDisplacement = !(displacementSource.empty());
+    _hasDisplacement = !(displacementSource.empty());
 
-    if (_hasDisplacement != hasDisplacement) {
-        _hasDisplacement = hasDisplacement;
-        needsRprimMaterialStateUpdate = true;
-    }
-
-    bool hasLimitSurfaceEvaluation =
+    _hasLimitSurfaceEvaluation =
         _GetHasLimitSurfaceEvaluation(materialMetadata);
-
-    if (_hasLimitSurfaceEvaluation != hasLimitSurfaceEvaluation) {
-        _hasLimitSurfaceEvaluation = hasLimitSurfaceEvaluation;
-        needsRprimMaterialStateUpdate = true;
-    }
 
     if (_materialTag != materialTag) {
         _materialTag = materialTag;
         _materialNetworkShader->SetMaterialTag(_materialTag);
-        needsRprimMaterialStateUpdate = true;
 
         // If the material tag changes, we'll need to rebatch.
         markBatchesDirty = true;
@@ -291,7 +281,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     HdBufferSpecVector specs;
     HdBufferSourceSharedPtrVector sources;
 
-    bool hasPtex = false;
+    _hasPtex = false;
     for (HdSt_MaterialParam const & param: params) {
         if (param.IsPrimvarRedirect() || param.IsFallback() || 
             param.IsTransform2d()) {
@@ -301,7 +291,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
             HdSt_MaterialNetworkShader::AddFallbackValueToSpecsAndSources(
                 param, &specs, &sources);
             if (param.textureType == HdStTextureType::Ptex) {
-                hasPtex = true;
+                _hasPtex = true;
             }
         }
     }
@@ -336,26 +326,10 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     _materialNetworkShader->SetBufferSources(
         specs, std::move(sources), resourceRegistry);
 
-    if (_hasPtex != hasPtex) {
-        _hasPtex = hasPtex;
-        needsRprimMaterialStateUpdate = true;
-    }
-
     if (markBatchesDirty && _isInitialized) {
         // Only invalidate batches if this isn't our first round through sync.
         // If this is the initial sync, we haven't formed batches yet.
         HdStMarkDrawBatchesDirty(renderParam);
-    }
-
-    if (needsRprimMaterialStateUpdate && _isInitialized) {
-        // XXX Forcing rprims to have a dirty material id to re-evaluate
-        // their material state as we don't know which rprims are bound to
-        // this one. We can skip this invalidation the first time this
-        // material is Sync'd since any affected Rprim should already be
-        // marked with a dirty material id.
-        HdChangeTracker& changeTracker =
-                         sceneDelegate->GetRenderIndex().GetChangeTracker();
-        changeTracker.MarkAllRprimsDirty(HdChangeTracker::DirtyMaterialId);
     }
 
     _isInitialized = true;

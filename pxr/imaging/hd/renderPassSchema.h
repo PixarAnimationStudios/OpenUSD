@@ -44,6 +44,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdRenderPassSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdRenderPassSchema
+///
 class HdRenderPassSchema : public HdSchema
 {
 public:

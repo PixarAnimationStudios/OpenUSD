@@ -9,12 +9,9 @@
 
 /// \file work/reduce.h
 #include "pxr/pxr.h"
-#include "pxr/base/work/threadLimits.h"
 #include "pxr/base/work/api.h"
-
-#include <tbb/blocked_range.h>
-#include <tbb/parallel_reduce.h>
-#include <tbb/task_group.h>
+#include "pxr/base/work/impl.h"
+#include "pxr/base/work/threadLimits.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -92,35 +89,13 @@ WorkParallelReduceN(
 
     // Don't bother with parallel_reduce, if concurrency is limited to 1.
     if (WorkHasConcurrency()) {
-
-        class Work_Body_TBB
-        {
-        public:
-            Work_Body_TBB(Fn &fn) : _fn(fn) { }
-
-            V operator()(
-                const tbb::blocked_range<size_t> &r,
-                const V &value) const {
-                // Note that we std::forward _fn using Fn in order get the
-                // right operator().
-                // We maintain the right type in this way:
-                //  If Fn is T&, then reference collapsing gives us T& for _fn
-                //  If Fn is T, then std::forward correctly gives us T&& for _fn
-                return std::forward<Fn>(_fn)(r.begin(), r.end(), value);
-            }
-        private:
-            Fn &_fn;
-        };
-
-        // In most cases we do not want to inherit cancellation state from the
-        // parent context, so we create an isolated task group context.
-        tbb::task_group_context ctx(tbb::task_group_context::isolated);
-        return tbb::parallel_reduce(tbb::blocked_range<size_t>(0,n,grainSize),
+        PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
+        return WorkImpl_ParallelReduceN(
             identity,
-            Work_Body_TBB(loopCallback),
+            n,
+            std::forward<Fn>(loopCallback),
             std::forward<Rn>(reductionCallback),
-            tbb::auto_partitioner(),
-            ctx);
+            grainSize);
     }
         
     // If concurrency is limited to 1, execute serially.

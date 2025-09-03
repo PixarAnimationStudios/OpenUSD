@@ -11,6 +11,8 @@
 
 #include "pxr/usdImaging/usdImaging/api.h"
 
+#include "pxr/imaging/hd/dataSource.h"
+
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/type.h"
 
@@ -53,6 +55,42 @@ public:
     virtual HdSceneIndexBaseRefPtr AppendSceneIndex(
         HdSceneIndexBaseRefPtr const &inputScene) = 0;
 
+    /// Clients can register additional HdFlattenedDataSourceProvider's that
+    /// UsdImagingCreateSceneIndices will pass to the flattening scene index.
+    ///
+    /// Clients can use
+    /// HdMakeDataSourceContainingFlattenedDataSourceProvider::Make
+    /// to create the values of the container data source.
+    ///
+    USDIMAGING_API
+    virtual HdContainerDataSourceHandle
+    FlattenedDataSourceProviders();
+
+    /// Clients can register additional names used by the (native) instance
+    /// aggregation scene index when grouping instances.
+    ///
+    /// For example, two instances with different material bindings cannot
+    /// be aggregated together and instantiated by the same instancer.
+    ///
+    /// UsdImagingCreateSceneIndices knows about several such bindings
+    /// already. Here, clients can add additional data sources that should
+    /// be expected by the aggregation scene index. These data sources
+    /// are identified by their name in the prim-level container data
+    /// source.
+    ///
+    USDIMAGING_API
+    virtual TfTokenVector
+    InstanceDataSourceNames();
+
+    /// Clients can register additional names of prim-level data sources
+    /// that should receive path-translation for any path-valued data
+    /// sources that point at instance proxies to point to corresponding
+    /// prototypes.
+    ///
+    USDIMAGING_API
+    virtual TfTokenVector
+    ProxyPathTranslationDataSourceNames();
+
     USDIMAGING_API
     virtual ~UsdImagingSceneIndexPlugin();
 
@@ -84,6 +122,10 @@ public:
         TfType::Define<T, TfType::Bases<UsdImagingSceneIndexPlugin>>()
             .template SetFactory<Factory<T>>();
     }
+
+    /// Get an instance of each registered UsdImagingSceneIndexPlugin.
+    static
+    std::vector<UsdImagingSceneIndexPluginUniquePtr> GetAllSceneIndexPlugins();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

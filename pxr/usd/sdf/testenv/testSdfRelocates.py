@@ -12,7 +12,7 @@ class TestSdfRelocates(unittest.TestCase):
 
     # Create a new layer with a single root prim /Root
     def _CreateTestLayer(self) :
-        layer = Sdf.Layer.CreateAnonymous("test")
+        layer = Sdf.Layer.CreateAnonymous(".usda")
         prim = Sdf.PrimSpec(layer, 'Root', Sdf.SpecifierDef, 'Scope')
         return layer    
 
@@ -27,7 +27,7 @@ class TestSdfRelocates(unittest.TestCase):
              "source3" : "target3"}
 
         # Relocates are written as prim metadata when the layer is written.
-        expectedWriteLayerContents = '''#sdf 1.4.32
+        expectedWriteLayerContents = '''#usda 1.0
 
 def Scope "Root" (
     relocates = {
@@ -131,7 +131,7 @@ def Scope "Root" (
 
         # Write layer; relocates are written as layer metadata when the layer 
         # is written.
-        self.assertEqual(layer.ExportToString(), '''#sdf 1.4.32
+        self.assertEqual(layer.ExportToString(), '''#usda 1.0
 (
     relocates = {
         </Root/source2>: </Root/target2>, 
@@ -224,7 +224,7 @@ def Scope "Root"
     def test_EmptyRelocatesRoundtrip(self):
         # Create and new layer with an explicit empty relocates in the layer 
         # metadata.
-        layerContents = '''#sdf 1.4.32
+        layerContents = '''#usda 1.0
 (
     relocates = {
     }
@@ -235,7 +235,7 @@ def Scope "Root"
 }
 
 '''
-        layer = Sdf.Layer.CreateAnonymous("test")
+        layer = Sdf.Layer.CreateAnonymous(".usda")
         layer.ImportFromString(layerContents)
 
         # The pseudoroot will have a layer relocates field and the returned
@@ -259,7 +259,7 @@ def Scope "Root"
         # Writing the layer will no longer write the relocates as the field is
         # no longer present.
         self.assertEqual(layer.ExportToString(), 
-'''#sdf 1.4.32
+'''#usda 1.0
 
 def Scope "Root"
 {

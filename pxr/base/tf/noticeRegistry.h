@@ -42,12 +42,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// expired), the item is removed from the list IF nobody else is using the
 /// registry.
 ///
-/// Otherwise, the item is left as an inactive item on the list; at some
-/// point, we should maintain a free-list of items that need pruning, and
-/// remove them when the registry's user count indicates it is not being used.
-/// This is left to do: but note that items should accumulate slowly in the
-/// registry, since multiple active traversals (either by different threads,
-/// or because of reentrancy) should be rare.
+/// Otherwise, the item is marked for removal and added to a vector of dead
+/// entries.  The next time a notice is sent and no other callers are using the
+/// registry, these dead entries are cleaned out.
 ///
 class Tf_NoticeRegistry {
     Tf_NoticeRegistry(const Tf_NoticeRegistry&) = delete;

@@ -42,6 +42,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdExtComputationPrimvarsSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdExtComputationPrimvarsSchema
+///
 class HdExtComputationPrimvarsSchema : public HdSchema
 {
 public:

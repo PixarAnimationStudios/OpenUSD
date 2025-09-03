@@ -8,9 +8,11 @@
 #include "pxr/imaging/hdSt/materialXShaderGen.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdMtlx/hdMtlx.h"
+#include "pxr/imaging/hdMtlx/tokens.h"
 #include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/errorMark.h"
 
 #include <MaterialXGenShader/Util.h>
 
@@ -64,40 +66,22 @@ _GetUsdPreviewSurfaceMaterialTag(mx::NodePtr const &terminalNode)
 static TfToken
 _GetMaterialTag(mx::DocumentPtr const& mxDoc)
 {
-    // Find renderable elements in the Mtlx Document.
-    // Note this code also lives in HdSt_GenMaterialXShader()
-    std::vector<mx::TypedElementPtr> renderableElements;
-    mx::findRenderableElements(mxDoc, renderableElements);
-
-    // Should have exactly one renderable element (material).
-    if (renderableElements.size() != 1) {
-        TF_CODING_ERROR("Generated MaterialX Document does not "
-                        "have 1 material");
+    // Find shader element in the mtlx document.
+    const mx::NodePtr shaderNode =
+        mxDoc->getNode(HdMtlxTokens->surfaceshaderName);
+    if (!shaderNode) {
         return HdStMaterialTagTokens->defaultMaterialTag;
-    }
-
-    // Extract out the Surface Shader Node for the Material Node
-    mx::TypedElementPtr renderableElem = renderableElements.at(0);
-    mx::NodePtr node = renderableElem->asA<mx::Node>();
-    if (node && node->getType() == mx::MATERIAL_TYPE_STRING) {
-        // Use auto so can compile against MaterialX 1.38.0 or 1.38.1
-        auto mxShaderNodes =
-            mx::getShaderNodes(node, mx::SURFACE_SHADER_TYPE_STRING);
-        if (!mxShaderNodes.empty()) {
-            renderableElem = *mxShaderNodes.begin();
-        }
     }
 
     // The custom code to handle masked mode prevents MaterialX from 
     // correctly deducing transparency with mx::isTransparentSurface()
-    node = renderableElem->asA<mx::Node>();
-    if (node && node->getCategory() == "UsdPreviewSurface") {
-        return _GetUsdPreviewSurfaceMaterialTag(node);
+    if (shaderNode->getCategory() == "UsdPreviewSurface") {
+        return _GetUsdPreviewSurfaceMaterialTag(shaderNode);
     }
 
     // XXX: Once other material tests are added (eg. glTf) similar helper 
     // helper functions will need to be added to get the correct MaterialTag
-    if (mx::isTransparentSurface(renderableElem)) {
+    if (mx::isTransparentSurface(shaderNode)) {
         return HdStMaterialTagTokens->translucent;
     }
     return HdStMaterialTagTokens->defaultMaterialTag;
@@ -113,7 +97,8 @@ void TestShaderGen(
 
     // Read the mtlx file
     mx::DocumentPtr mxDoc = mx::createDocument();
-    fprintf(stderr, "reading the mtlx file: \n - %s\n", mtlxFilename.asString().c_str());
+    fprintf(stderr, "reading the mtlx file: \n - %s\n", 
+            mtlxFilename.asString().c_str());
 
     try {
         mx::readFromXmlFile(mxDoc, mtlxFilename, searchPaths);
@@ -132,7 +117,11 @@ void TestShaderGen(
         std::cerr << message;
     }
 
-    mxHdInfo->materialTag = _GetMaterialTag(mxDoc);
+    // Custom material tags should already be set below through the config arg:
+    // --config materialTag:<customTagName>
+    if (mxHdInfo->materialTag == HdStMaterialTagTokens->defaultMaterialTag) {
+        mxHdInfo->materialTag = _GetMaterialTag(mxDoc);
+    }
 
     // Generate the HdSt MaterialX Shader
     mx::ShaderPtr glslfx = HdSt_GenMaterialXShader(
@@ -142,6 +131,8 @@ void TestShaderGen(
 
 int main(int argc, char *argv[])
 {
+    TfErrorMark mark;
+
     HdSt_MxShaderGenInfo mxHdInfo;
     mx::FilePath mtlxFile = "standard_surface_default.mtlx";
 
@@ -151,19 +142,9 @@ int main(int argc, char *argv[])
         if (arg == "--filename") {
             mtlxFile = mx::FilePath(argv[++i]);
         }
-        if (arg == "--textureMap") {
-            const std::string textureMap(argv[++i]);
-            auto const& npos = textureMap.find(":");
-            if (npos != std::string::npos) {
-                const std::string mx = textureMap.substr(0, npos);
-                const std::string hd = textureMap.substr(npos + 1);
-                mxHdInfo.textureMap[mx] = hd;
-            }
-            else {
-                std::cerr << "textureMap input not formatted correctly.\n";
-                std::cerr << "--textureMap <mxTextureNodeName>:<HdInptName>\n";
-                return EXIT_FAILURE;
-            }
+        if (arg == "--textureName") {
+            const std::string textureName(argv[++i]);
+            mxHdInfo.textureNames.push_back(textureName);
         }
         if (arg == "--primvarMap") {
             const std::string primvarMap(argv[++i]);
@@ -182,6 +163,28 @@ int main(int argc, char *argv[])
         if (arg == "--bindless") {
             mxHdInfo.bindlessTexturesEnabled = true;
         }
+        if (arg == "--config") {
+            const std::string config(argv[++i]);
+            auto const& npos = config.find(":");
+            if (npos != std::string::npos) {
+                const std::string name = config.substr(0, npos);
+                const std::string tag = config.substr(npos + 1);
+                if (name == "materialTag") {
+                    mxHdInfo.materialTag = tag;
+                }
+            }
+            else {
+                std::cerr << "config input not formatted correctly.\n";
+                std::cerr << "ex: '--config materialTag:<materialTagName>'\n";
+                return EXIT_FAILURE;
+            }
+        }
     }
     TestShaderGen(mtlxFile, &mxHdInfo);
+
+    if (mark.IsClean()) {
+        return EXIT_SUCCESS;
+    } else {
+        return EXIT_FAILURE;
+    }
 }

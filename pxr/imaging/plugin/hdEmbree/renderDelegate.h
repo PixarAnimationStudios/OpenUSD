@@ -13,8 +13,9 @@
 #include "pxr/imaging/plugin/hdEmbree/renderer.h"
 #include "pxr/base/tf/staticTokens.h"
 
+#include <embree4/rtcore.h>
+
 #include <mutex>
-#include <embree3/rtcore.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -22,6 +23,7 @@ class HdEmbreeRenderParam;
 
 #define HDEMBREE_RENDER_SETTINGS_TOKENS \
     (enableAmbientOcclusion)            \
+    (enableLighting)                    \
     (enableSceneColors)                 \
     (ambientOcclusionSamples)           \
     (randomNumberSeed)

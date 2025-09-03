@@ -149,7 +149,11 @@ Garch_GLPlatformDebugWindow::_MsgProc(HWND hWnd, UINT msg,
 {
     Garch_GLPlatformDebugWindow *window
         = Garch_GLPlatformDebugWindow::_GetWindowByHandle(hWnd);
-    if (!TF_VERIFY(window)) {
+
+    // This can be called before hWnd as been registered, e.g. to negotiate
+    // size during window creation, etc. In which case we just delegate to
+    // the default message proc.
+    if (!window) {
         return DefWindowProc(hWnd, msg, wParam, lParam);
     }
 

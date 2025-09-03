@@ -1,0 +1,45 @@
+#usda 1.0
+
+def Prim "Model"
+{
+    class Prim "LocalClass"
+    {
+    	def Prim "ClassChild"
+    	{
+    		def Prim "ClassGrandChild"
+    		{
+    		}
+    	}
+    }
+
+    def Prim "Instance" (
+        add inherits = </Model/LocalClass>
+    )
+    {
+    	def Prim "InstanceChild"
+    	{
+    		def Prim "InstanceGrandChild" 
+    		{
+    		}
+    	}
+    }
+}
+
+def Prim "OtherModel" 
+{
+    def Prim "A" 
+    {
+        def Prim "B"
+        {
+            def Prim "C" 
+            {
+                def Prim "D" 
+                {
+                    def Prim "E" 
+                    {
+                    }
+                }
+            }
+        }
+    }
+}

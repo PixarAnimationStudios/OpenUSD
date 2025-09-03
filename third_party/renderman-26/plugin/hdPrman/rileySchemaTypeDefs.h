@@ -11,24 +11,37 @@
 /* ** defs.py or the (*)Schema.template.h files to make changes.           ** */
 /* ************************************************************************** */
 
-#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_SCHEMA_TYPEDEFS_H
-#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_SCHEMA_TYPEDEFS_H
+#ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_SCHEMA_TYPEDEFS_H
+#define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_SCHEMA_TYPEDEFS_H
 
 #include "hdPrman/api.h"
 
 #include "pxr/imaging/hd/containerSchema.h"
 #include "pxr/imaging/hd/vectorSchema.h"
+#include "pxr/imaging/hd/version.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HdPrmanRileyShadingNodeVectorSchema =
+#if HD_API_VERSION >= 86
+    HdVectorOfSchemasSchema<class HdPrmanRileyShadingNodeSchema>;
+#else
     HdSchemaBasedVectorSchema<class HdPrmanRileyShadingNodeSchema>;
+#endif
 
 using HdPrmanRileyPrimvarContainerSchema =
+#if HD_API_VERSION >= 86
+    HdContainerOfSchemasSchema<class HdPrmanRileyPrimvarSchema>;
+#else
     HdSchemaBasedContainerSchema<class HdPrmanRileyPrimvarSchema>;
+#endif
 
 using HdPrmanRileyParamContainerSchema =
+#if HD_API_VERSION >= 86
+    HdContainerOfSchemasSchema<class HdPrmanRileyParamSchema>;
+#else
     HdSchemaBasedContainerSchema<class HdPrmanRileyParamSchema>;
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

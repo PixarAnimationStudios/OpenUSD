@@ -72,9 +72,12 @@ _GetSdrMetadata(const UsdShadeConnectableAPI &connectable,
         "Fallback shader node generated from the USD %s schema",
         connectable.GetPrim().GetTypeName().GetText());
 
-    metadata[SdrNodeMetadata->Primvars] = 
-        UsdShadeShaderDefUtils::GetPrimvarNamesMetadataString(
-            metadata, connectable);
+    const std::string primvarsStr = 
+        UsdShadeShaderDefUtils::GetPrimvarNamesMetadataString(metadata, 
+                                                              connectable);
+    if (!primvarsStr.empty()) {
+        metadata[SdrNodeMetadata->Primvars] = primvarsStr;
+    }
 
     return metadata;
 }

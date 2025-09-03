@@ -7,6 +7,7 @@
 #ifndef PXR_USD_IMAGING_USD_IMAGING_SCENE_INDICES_H
 #define PXR_USD_IMAGING_USD_IMAGING_SCENE_INDICES_H
 
+#include "pxr/imaging/hd/noticeBatchingSceneIndex.h"
 #include "pxr/pxr.h"
 
 #include "pxr/usdImaging/usdImaging/api.h"
@@ -17,6 +18,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DECLARE_REF_PTRS(HdNoticeBatchingSceneIndex);
 TF_DECLARE_REF_PTRS(UsdStage);
 TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndex);
 TF_DECLARE_REF_PTRS(UsdImagingSelectionSceneIndex);
@@ -34,7 +36,7 @@ struct UsdImagingCreateSceneIndicesInfo
     UsdStageRefPtr stage;
     /// Inputs to UsdImagingStageSceneIndex (note that
     /// includeUnloadedPrims is set automatically when
-    ///displayUnloadedPrimsWithBounds is enabled).
+    /// displayUnloadedPrimsWithBounds is enabled).
     HdContainerDataSourceHandle stageSceneIndexInputArgs;
     /// Add scene index resolving usd draw mode.
     bool addDrawModeSceneIndex = true;
@@ -46,10 +48,11 @@ struct UsdImagingCreateSceneIndicesInfo
 };
 
 /// Some scene indices in the chain of filtering scene indices created
-/// by UsdImagingInstantiateSceneIndices.
+/// by UsdImagingCreateSceneIndices.
 struct UsdImagingSceneIndices
 {
     UsdImagingStageSceneIndexRefPtr stageSceneIndex;
+    HdNoticeBatchingSceneIndexRefPtr postInstancingNoticeBatchingSceneIndex;
     UsdImagingSelectionSceneIndexRefPtr selectionSceneIndex;
     HdSceneIndexBaseRefPtr finalSceneIndex;    
 };

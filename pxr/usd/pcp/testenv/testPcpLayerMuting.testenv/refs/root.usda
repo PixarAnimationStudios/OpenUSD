@@ -1,0 +1,13 @@
+#usda 1.0
+
+def "ReferenceToDef" (
+    references = @./ref.usda@</Def>
+)
+{
+}
+
+def "ReferenceToOver" (
+    references = @./ref.usda@</Over>
+)
+{
+}

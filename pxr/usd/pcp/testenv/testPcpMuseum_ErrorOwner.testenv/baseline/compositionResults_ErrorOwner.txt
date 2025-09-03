@@ -1,29 +1,29 @@
-Loading session @ErrorOwner/session.sdf@
+Loading session @ErrorOwner/session.usda@
 
-Loading @ErrorOwner/root.sdf@
+Loading @ErrorOwner/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     session.sdf
-     root.sdf
-     stronger.sdf
-     owned.sdf
-     weaker.sdf
+     session.usda
+     root.usda
+     stronger.usda
+     owned.usda
+     weaker.usda
 
 ------------------------------------------------------------------------
 Results for composing </Sphere>
 
 Prim Stack:
-    stronger.sdf         /Sphere
-    owned.sdf            /Sphere
-    weaker.sdf           /Sphere
+    stronger.usda        /Sphere
+    owned.usda           /Sphere
+    weaker.usda          /Sphere
 
 Property names:
      ['radius']
 
 Property stacks:
 /Sphere.radius:
-    stronger.sdf         /Sphere.radius
-    owned.sdf            /Sphere.radius
-    weaker.sdf           /Sphere.radius
+    stronger.usda        /Sphere.radius
+    owned.usda           /Sphere.radius
+    weaker.usda          /Sphere.radius
 

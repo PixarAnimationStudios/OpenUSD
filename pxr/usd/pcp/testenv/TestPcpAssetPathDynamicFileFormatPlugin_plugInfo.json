@@ -1,0 +1,40 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "SdfMetadata": {
+                    "TestPcp_assetPath": {
+                        "type": "asset",
+                        "appliesTo": ["prims"],
+                        "documentation:": "Asset type."
+                    },
+                    "TestPcp_assetPathArray": {
+                        "type": "asset[]",
+                        "appliesTo": ["prims"],
+                        "documentation:": "Asset array type."
+                    }
+                },
+
+                "Types": {
+                    "Test_PcpAssetPathDynamicFileFormatPlugin_FileFormat": {
+                        "bases": [
+                            "SdfFileFormat"
+                        ],
+                        "displayName": "Dynamic file format plugin example for testing",
+                        "extensions": [
+                            "testassetpathpcpdynamic"
+                        ],
+                        "formatId": "Test_PcpAssetPathDynamicFileFormat",
+                        "primary": true,
+                        "target": "usd"
+                    }
+                }
+            },
+            "LibraryPath": "@TEST_PLUG_INFO_LIBRARY_PATH@",
+            "Name": "TestPcpAssetPathDynamicFileFormatPlugin",
+            "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@TEST_PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

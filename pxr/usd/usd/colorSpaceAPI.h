@@ -40,10 +40,10 @@ class SdfAssetPath;
 /// \class UsdColorSpaceAPI
 ///
 /// UsdColorSpaceAPI is an API schema that introduces a `colorSpace`
-/// property for authoring color space opinions. It also provides a mechanism 
-/// to determine the applicable color space within a scope through inheritance.
-/// Accordingly, this schema may be applied to any prim to introduce a color 
-/// space at any point in a compositional hierachy.
+/// property for authoring scene referred color space opinions. It also provides
+/// a mechanism to determine the applicable color space within a scope through
+/// inheritance. Accordingly, this schema may be applied to any prim to 
+/// introduce a color space at any point in a compositional hierarchy.
 /// 
 /// Color space resolution involves determining the color space authored on an
 /// attribute by first examining the attribute itself for a color space which
@@ -52,19 +52,18 @@ class SdfAssetPath;
 /// and any color space authored there. If none is found on the attribute's
 /// prim, the prim's ancestors are examined up the hierarchy until an authored
 /// color space is found. If no color space is found, an empty `TfToken` is
-/// returned.
-/// 
-/// Although `ColorSpaceAPI` provides a default color space, that default is not
-/// consulted for color space determination of an attribute, or by any of the 
-/// resolution methods.
+/// returned. When no color space is found, the default color space is linear, 
+/// with Rec709 primaries and D65 white point, corresponding to the GfColorSpace
+/// token `LinearRec709`.
 /// 
 /// For a list of built in color space token values, see `GfColorSpaceNames`.
 /// 
 /// Use a pattern like this when determining an attribute's resolved color space:
 /// 
 /// ```
-/// if (attr.HasColorSpace()) {
-/// return attr.GetColorSpace();
+/// TfToken attrCs = attr.GetColorSpace();
+/// if (!attrCs.IsEmpty()) { 
+/// return attrCs; 
 /// }
 /// auto csAPI = UsdColorSpaceAPI(attr.GetPrim());
 /// return UsdColorSpaceAPI::ComputeColorSpaceName(attr);

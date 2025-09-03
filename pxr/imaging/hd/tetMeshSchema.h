@@ -44,6 +44,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdTetMeshSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdTetMeshSchema
+///
 class HdTetMeshSchema : public HdSchema
 {
 public:

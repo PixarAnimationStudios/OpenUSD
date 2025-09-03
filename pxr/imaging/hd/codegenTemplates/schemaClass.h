@@ -81,9 +81,12 @@ TF_DECLARE_PUBLIC_TOKENS({{SCHEMA_CLASS_NAME}}Tokens,{% if LIBRARY_API%} {{ LIBR
 
 //-----------------------------------------------------------------------------
 
+
+/// \class {{ SCHEMA_CLASS_NAME }}
+///
 {% if DOC is defined -%}
-{{ DOC | expand | makeComment }}
-{%- endif %}
+{{DOC | expand | makeComment -}}
+{%- endif -%}
 class {{ SCHEMA_CLASS_NAME }} : public HdSchema
 {
 public:

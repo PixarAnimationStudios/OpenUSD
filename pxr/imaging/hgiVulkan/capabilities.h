@@ -37,18 +37,24 @@ public:
     int GetShaderVersion() const override;
 
     bool supportsTimeStamps;
-    VkPhysicalDeviceProperties vkDeviceProperties;
-    VkPhysicalDeviceProperties2 vkDeviceProperties2;
+
+    bool supportsNativeInterop;
+
+    VkPhysicalDeviceProperties2 vkDeviceProperties2 {};
     VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT
-        vkVertexAttributeDivisorProperties;
-    VkPhysicalDeviceFeatures vkDeviceFeatures;
-    VkPhysicalDeviceFeatures2 vkDeviceFeatures2;
-    VkPhysicalDeviceVulkan11Features vkVulkan11Features;
-    VkPhysicalDeviceDescriptorIndexingFeaturesEXT vkIndexingFeatures;
+        vkVertexAttributeDivisorProperties {};
+    
+    VkPhysicalDeviceMemoryProperties vkMemoryProperties {};
+
+    VkPhysicalDeviceFeatures2 vkDeviceFeatures2 {};
+    VkPhysicalDeviceVulkan11Features vkVulkan11Features {};
     VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT
-        vkVertexAttributeDivisorFeatures;
-    VkPhysicalDeviceMemoryProperties vkMemoryProperties;
-    VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR vkBarycentricFeatures;
+        vkVertexAttributeDivisorFeatures {};
+    VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR
+        vkBarycentricFeatures {};
+    VkPhysicalDeviceLineRasterizationFeaturesKHR vkLineRasterizationFeatures {};
+
+    VkPhysicalDeviceIDProperties vkPhysicalDeviceIdProperties {};
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

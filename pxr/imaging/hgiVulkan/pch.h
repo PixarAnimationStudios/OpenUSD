@@ -32,6 +32,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <deque>
@@ -48,6 +49,7 @@
 #include <mutex>
 #include <new>
 #include <numeric>
+#include <optional>
 #include <ostream>
 #include <set>
 #include <stdarg.h>
@@ -57,6 +59,7 @@
 #include <string>
 #include <sys/types.h>
 #include <thread>
+#include <tuple>
 #include <type_traits>
 #include <typeindex>
 #include <typeinfo>

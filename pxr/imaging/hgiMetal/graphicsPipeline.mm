@@ -296,12 +296,14 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
     }
 
     stateDesc.sampleCount = _descriptor.multiSampleState.sampleCount;
-    if (_descriptor.multiSampleState.alphaToCoverageEnable) {
+    if (_descriptor.multiSampleState.alphaToCoverageEnable &&
+        _descriptor.multiSampleState.sampleCount > HgiSampleCount1) {
         stateDesc.alphaToCoverageEnabled = YES;
     } else {
         stateDesc.alphaToCoverageEnabled = NO;
     }
-    if (_descriptor.multiSampleState.alphaToOneEnable) {
+    if (_descriptor.multiSampleState.alphaToOneEnable &&
+        _descriptor.multiSampleState.sampleCount > HgiSampleCount1) {
         stateDesc.alphaToOneEnabled = YES;
     } else {
         stateDesc.alphaToOneEnabled = NO;

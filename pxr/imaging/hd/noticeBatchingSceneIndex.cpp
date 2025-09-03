@@ -133,6 +133,8 @@ HdNoticeBatchingSceneIndex::SetBatchingEnabled(bool enabled)
 void
 HdNoticeBatchingSceneIndex::Flush()
 {
+    TRACE_FUNCTION();
+
     for (const std::unique_ptr<_BatchEntry> &batchEntry : _batches) {
         if (_PrimsAddedBatchEntry *typedEntry =
                 dynamic_cast<_PrimsAddedBatchEntry *>(batchEntry.get())) {

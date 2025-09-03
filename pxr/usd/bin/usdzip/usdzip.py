@@ -11,7 +11,7 @@ import glob
 import os
 import sys
 
-from pxr import Ar, Sdf, Tf, Usd, UsdUtils
+from pxr import Ar, Sdf, Tf, UsdUtils
 from contextlib import contextmanager
 
 @contextmanager
@@ -88,7 +88,7 @@ def _CreateUsdzPackage(usdzFile, filesToAdd, recurse, ensureCompliance, verbose)
     if (not usdzFile.endswith('.usdz')):
         return False
 
-    with Usd.ZipFileWriter.CreateNew(usdzFile) as usdzWriter:
+    with Sdf.ZipFileWriter.CreateNew(usdzFile) as usdzWriter:
         # Note that any exception raised here will result in ZipFileWriter's 
         # exit discarding the usdzFile. 
         fileList = []
@@ -285,7 +285,7 @@ def main():
 
     if args.listTarget or args.dumpTarget:
         if os.path.exists(usdzFile):
-            zipFile = Usd.ZipFile.Open(usdzFile)
+            zipFile = Sdf.ZipFile.Open(usdzFile)
             if zipFile:
                 if args.dumpTarget:
                     if args.dumpTarget == usdzFile:

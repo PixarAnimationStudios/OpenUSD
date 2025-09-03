@@ -1,0 +1,8 @@
+#usda 1.0
+#tagged-as-never-update
+
+# This prim has an illegal (empty) name
+def MfScope ""
+{
+}
+

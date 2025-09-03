@@ -16,6 +16,9 @@
 
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticData.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/base/vt/arrayEdit.h"
+#include "pxr/base/vt/value.h"
 
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/plug/plugin.h"
@@ -183,9 +186,24 @@ SdfPropertySpec::SetDefaultValue(const VtValue &defaultValue)
         }
     }
     else {
-        // Otherwise check if defaultValue is castable to valueType
+        // Otherwise check if defaultValue is castable to valueType.
         VtValue value =
             VtValue::CastToTypeid(defaultValue, valueType.GetTypeid());
+
+        // If we failed to cast, but the value type is an array type and the
+        // defaultValue is an array edit with the correct element type, allow
+        // the authoring.
+        if (value.IsEmpty()) {
+            SdfValueTypeName typeName = GetTypeName();
+            if (typeName.IsArray() &&
+                defaultValue.IsArrayEditValued() &&
+                defaultValue.GetElementTypeid() ==
+                typeName.GetDefaultValue().GetElementTypeid()) {
+                // This is authoring an array-edit to an array-valued property.
+                value = defaultValue;
+            }
+        }
+        
         if (!value.IsEmpty()) {
             // If this value is a pathExpression, make all embedded paths
             // absolute using this property's prim path as the anchor.
@@ -204,6 +222,8 @@ SdfPropertySpec::SetDefaultValue(const VtValue &defaultValue)
                             expr = expr.MakeAbsolute(anchor);
                         }
                     });
+//            } else if (value.IsHolding<VtArrayEdit<SdfPathExpression>>()) {
+                // XXX MakeAbsolute() all the literals.
             }
             /*
             // If this value is a path (relationship default-values are paths),
@@ -217,8 +237,9 @@ SdfPropertySpec::SetDefaultValue(const VtValue &defaultValue)
             */
             return SetField(SdfFieldKeys->Default, value);
         }
-        else if (defaultValue.IsHolding<SdfValueBlock>()) {
-            // If we're setting a value block, always allow that.
+        else if (defaultValue.IsHolding<SdfValueBlock>() || 
+                 defaultValue.IsHolding<SdfAnimationBlock>()) {
+            // If we're setting a value or animation block, always allow that.
             return SetField(SdfFieldKeys->Default, defaultValue);
         }
     }

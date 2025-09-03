@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <materialx version="1.38">
 
-  <UsdPreviewSurface name="SR_glass" type="surfaceshader">
+  <UsdPreviewSurface name="Surface" type="surfaceshader">
     <input name="diffuseColor" type="color3" value="0.0, 0.0, 0.0" />
     <input name="useSpecularWorkflow" type="integer" value="0" />
     <input name="metallic" type="float" value="0" />
@@ -12,7 +12,7 @@
   </UsdPreviewSurface>
 
   <surfacematerial name="USD_Glass" type="material">
-    <input name="surfaceshader" type="surfaceshader" nodename="SR_glass" />
+    <input name="surfaceshader" type="surfaceshader" nodename="Surface" />
   </surfacematerial>
   
 </materialx>

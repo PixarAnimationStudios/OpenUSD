@@ -1,6 +1,7 @@
 set(DIRS
     usdValidation
     usdGeomValidators
+    usdPhysicsValidators
     usdShadeValidators
     usdSkelValidators
     usdUtilsValidators

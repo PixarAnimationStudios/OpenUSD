@@ -20,6 +20,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 using SData = TsTest_SplineData;
 using STimes = TsTest_SampleTimes;
 
+// Some of the test values are outside the range of a finite half value.
+// Safely make finite values out of them. Note that any non-zero value
+// will yield a non-zero half value.
+GfHalf MakeHalf(double v)
+{
+    if (v == 0) {
+        return 0;
+    } else if (std::abs(v) < std::numeric_limits<GfHalf>::min()) {
+        v = std::copysign(double(std::numeric_limits<GfHalf>::min()), v);
+    } else if (std::abs(v) > std::numeric_limits<GfHalf>::max()) {
+        v = std::copysign(double(std::numeric_limits<GfHalf>::max()), v);
+    }
+
+    return GfHalf(v);
+}
+    
 static TsExtrapolation _MakeExtrap(
     const SData::Extrapolation extrapIn)
 {
@@ -64,19 +80,34 @@ static TsExtrapolation _MakeExtrap(
 TsSpline TsTest_TsEvaluator::SplineDataToSpline(
     const SData &data) const
 {
+    return SplineDataToSpline(data, TfType::Find<double>());
+}
+
+TsSpline TsTest_TsEvaluator::SplineDataToSpline(
+    const SData &data,
+    const TfType& valueType) const
+{
+    if (!TsSpline::IsSupportedValueType(valueType)) {
+        TF_CODING_ERROR("Unsupported spline value type: '%s'",
+                        valueType.GetTypeName().c_str());
+        return TsSpline();
+    }
+
     const SData::Features features = data.GetRequiredFeatures();
-    if ((features & SData::FeatureHermiteSegments)
-        || (features & SData::FeatureAutoTangents))
+    if (features & SData::FeatureAutoTangents)
     {
         TF_CODING_ERROR("Unsupported spline features");
-        return TsSpline(Ts_GetType<double>());
+        return TsSpline(valueType);
     }
 
     // Don't de-regress.  If the SplineData is regressive, the Spline should be
     // too.
     TsAntiRegressionAuthoringSelector selector(TsAntiRegressionNone);
 
-    TsSpline spline(Ts_GetType<double>());
+    TsSpline spline(valueType);
+    if (data.GetIsHermite()) {
+        spline.SetCurveType(TsCurveTypeHermite);
+    }
 
     spline.SetPreExtrapolation(_MakeExtrap(data.GetPreExtrapolation()));
     spline.SetPostExtrapolation(_MakeExtrap(data.GetPostExtrapolation()));
@@ -85,15 +116,71 @@ TsSpline TsTest_TsEvaluator::SplineDataToSpline(
 
     for (const SData::Knot &dataKnot : dataKnots)
     {
-        TsDoubleKnot knot;
+        TsKnot knot(valueType);
         knot.SetTime(dataKnot.time);
-        knot.SetValue(dataKnot.value);
 
         knot.SetPreTanWidth(dataKnot.preLen);
-        knot.SetPreTanSlope(dataKnot.preSlope);
         knot.SetPostTanWidth(dataKnot.postLen);
-        knot.SetPostTanSlope(dataKnot.postSlope);
 
+        if (valueType == Ts_GetType<double>()) {
+            knot.SetValue(double(dataKnot.value));
+            if (dataKnot.isDualValued)
+            {
+                knot.SetPreValue(double(dataKnot.preValue));
+            }
+
+            knot.SetPreTanSlope(double(dataKnot.preSlope));
+            knot.SetPostTanSlope(double(dataKnot.postSlope));
+
+        } else if (valueType == Ts_GetType<float>()) {
+            knot.SetValue(float(dataKnot.value));
+            if (dataKnot.isDualValued)
+            {
+                knot.SetPreValue(float(dataKnot.preValue));
+            }
+
+            knot.SetPreTanSlope(float(dataKnot.preSlope));
+            knot.SetPostTanSlope(float(dataKnot.postSlope));
+
+        } else if (valueType == Ts_GetType<GfHalf>()) {
+            knot.SetValue(MakeHalf(dataKnot.value));
+            if (dataKnot.isDualValued)
+            {
+                knot.SetPreValue(MakeHalf(dataKnot.preValue));
+            }
+
+            // Adjust tangents while maintaining general magnitude even if the
+            // slope is changed by conversion.
+            //
+            // This is for one particular spline in the Museum that sets almost
+            // vertical tangents. The slope is 1e+12 and the width is 1e-12, so
+            // the tangent vector (1e-12, 1.0), or almost exactly (0, 1). When
+            // the slope is mapped into a GfHalf, it becomes 65504.0. If the
+            // width is not similarly changed, the the tangent would become the
+            // vector (1e-12, 6.5504e-8) or almost exactly (0, 0), which changes
+            // the shape of the curve significantly. This math computes the
+            // tangent vector to be (1.5266e-5, 1.0) which is as close to
+            // vertical as we can get with a GfHalf slope.
+            //
+            // We could apply this same math to float values above, but the range
+            // of float extendes to 1e+/-38 so it hasn't been an issue.
+            double preHeight = dataKnot.preSlope * dataKnot.preLen;
+            GfHalf preSlope = MakeHalf(dataKnot.preSlope);
+            GfHalf preWidth = MakeHalf(preHeight / preSlope);
+            knot.SetPreTanSlope(preSlope);
+            knot.SetPreTanWidth(preWidth);
+
+            double postHeight = dataKnot.postSlope * dataKnot.postLen;
+            GfHalf postSlope = MakeHalf(dataKnot.postSlope);
+            GfHalf postWidth = MakeHalf(postHeight / postSlope);
+            knot.SetPostTanSlope(postSlope);
+            knot.SetPostTanWidth(postWidth);
+        } else {
+            TF_CODING_ERROR("Unimplemented spline value type: '%s'",
+                            valueType.GetTypeName().c_str());
+            return TsSpline(valueType);
+        }
+                            
         switch (dataKnot.nextSegInterpMethod)
         {
             case SData::InterpHeld:
@@ -103,11 +190,6 @@ TsSpline TsTest_TsEvaluator::SplineDataToSpline(
             case SData::InterpCurve:
                 knot.SetNextInterpolation(TsInterpCurve); break;
             default: TF_CODING_ERROR("Unexpected interpolation method");
-        }
-
-        if (dataKnot.isDualValued)
-        {
-            knot.SetPreValue(dataKnot.preValue);
         }
 
         spline.SetKnot(knot);
@@ -178,12 +260,6 @@ TsTest_SplineData
 TsTest_TsEvaluator::SplineToSplineData(
     const TsSpline &splineIn) const
 {
-    if (splineIn.GetValueType() != Ts_GetType<double>())
-    {
-        TF_CODING_ERROR("TsEvaluator: only double-valued splines supported");
-        return SData();
-    }
-
     SData result;
 
     // Convert extrapolation.
@@ -209,12 +285,16 @@ TsTest_TsEvaluator::SplineToSplineData(
     for (const TsKnot &knot : splineIn.GetKnots())
     {
         SData::Knot dataKnot;
+        VtValue value;
         dataKnot.time = knot.GetTime();
-        knot.GetValue(&dataKnot.value);
+        knot.GetValue(&value);
+        dataKnot.value = value.Cast<double>().Get<double>();
         dataKnot.preLen = knot.GetPreTanWidth();
-        knot.GetPreTanSlope(&dataKnot.preSlope);
+        knot.GetPreTanSlope(&value);
+        dataKnot.preSlope = value.Cast<double>().Get<double>();
         dataKnot.postLen = knot.GetPostTanWidth();
         knot.GetPostTanSlope(&dataKnot.postSlope);
+        dataKnot.preSlope = value.Cast<double>().Get<double>();
 
         switch (knot.GetNextInterpolation())
         {
@@ -230,7 +310,8 @@ TsTest_TsEvaluator::SplineToSplineData(
         if (knot.IsDualValued())
         {
             dataKnot.isDualValued = true;
-            knot.GetPreValue(&dataKnot.preValue);
+            knot.GetPreValue(&value);
+            dataKnot.preValue = value.Cast<double>().Get<double>();
         }
 
         result.AddKnot(dataKnot);
@@ -269,5 +350,43 @@ TsTest_TsEvaluator::Eval(
 
     return result;
 }
+
+template <typename SampleData>
+bool
+TsTest_TsEvaluator::Sample(
+    const SData &splineData,
+    const GfInterval& timeInterval,
+    const double timeScale,
+    const double valueScale,
+    const double tolerance,
+    SampleData* splineSamples) const
+{
+    const TsSpline spline = SplineDataToSpline(splineData);
+
+    return spline.Sample(timeInterval,
+                         timeScale,
+                         valueScale,
+                         tolerance,
+                         splineSamples);
+}
+
+// Explicit templated method instantiation.
+template TS_API bool
+TsTest_TsEvaluator::Sample(
+    const SData &splineData,
+    const GfInterval& timeInterval,
+    const double timeScale,
+    const double valueScale,
+    const double tolerance,
+    TsSplineSamples<GfVec2d>* splineSamples) const;
+
+template TS_API bool
+TsTest_TsEvaluator::Sample(
+    const SData &splineData,
+    const GfInterval& timeInterval,
+    const double timeScale,
+    const double valueScale,
+    const double tolerance,
+    TsSplineSamplesWithSources<GfVec2d>* splineSamples) const;
 
 PXR_NAMESPACE_CLOSE_SCOPE

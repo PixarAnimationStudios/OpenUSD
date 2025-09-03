@@ -16,24 +16,31 @@ HdContainerDataSourceHandle
 HdFlattenedPurposeDataSourceProvider::GetFlattenedDataSource(
     const Context &ctx) const
 {
+    // If there is a purpose on this prim, use it.
     HdPurposeSchema inputPurpose(ctx.GetInputDataSource());
     if (inputPurpose.GetPurpose()) {
         return inputPurpose.GetContainer();
     }
 
+    // If there is a parent purpose we can inherit, use that.
     HdPurposeSchema parentPurpose(ctx.GetFlattenedDataSourceFromParentPrim());
-    if (parentPurpose.GetPurpose()) {
-        return parentPurpose.GetContainer();
+    if (HdBoolDataSourceHandle inheritableDs = parentPurpose.GetInheritable()) {
+        if (inheritableDs->GetTypedValue(0.0f)) {
+            // Parent purpose is inheritable.
+            return parentPurpose.GetContainer();
+        }
     }
 
-    static const HdContainerDataSourceHandle identityPurpose =
-        HdPurposeSchema::Builder()
-            .SetPurpose(
-                HdRetainedTypedSampledDataSource<TfToken>::New(
-                    HdRenderTagTokens->geometry))
+    // If there is a fallback purpose, use that.
+    if (HdTokenDataSourceHandle fallbackDs = inputPurpose.GetFallback()) {
+        // Fallback purposes are not inheritable.
+        return HdPurposeSchema::Builder()
+            .SetPurpose(fallbackDs)
             .Build();
+    }
 
-    return identityPurpose;
+    // Pass through the existing data untouched.
+    return inputPurpose.GetContainer();
 }
 
 void

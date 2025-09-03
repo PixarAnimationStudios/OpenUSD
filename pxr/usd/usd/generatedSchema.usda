@@ -4,433 +4,142 @@
 )
 
 class "Typed" (
-    doc = '''The base class for all typed schemas (those that can impart a
+    customData = {
+        string userDocBrief = '''The base class for all typed schemas (those that can impart a
     typeName to a UsdPrim), and therefore the base class for all
-    concrete, instantiable "IsA" schemas.
-       
-    UsdTyped implements a typeName-based query for its override of
-    UsdSchemaBase::_IsCompatible().  It provides no other behavior.'''
+    concrete, instantiable "IsA" schemas.'''
+    }
 )
 {
 }
 
 class "APISchemaBase" (
-    doc = """The base class for all API schemas.
-
-    An API schema provides an interface to a prim's qualities, but does not
-    specify a typeName for the underlying prim. The prim's qualities include 
-    its inheritance structure, attributes, relationships etc. Since it cannot
-    provide a typeName, an API schema is considered to be non-concrete. 
-    
-    To auto-generate an API schema using usdGenSchema, simply leave the 
-    typeName empty and make it inherit from \"/APISchemaBase\" or from another 
-    API schema. See UsdModelAPI, UsdClipsAPI and UsdCollectionAPI for examples.
-    
-    API schemas are classified into applied and non-applied API schemas. 
-    The author of an API schema has to decide on the type of API schema 
-    at the time of its creation by setting customData['apiSchemaType'] in the 
-    schema definition (i.e. in  the associated primSpec inside the schema.usda 
-    file).  UsdAPISchemaBase implements methods that are used to record the 
-    application of an API schema on a USD prim.
-
-    If an API schema only provides an interface to set certain core bits of 
-    metadata (like UsdModelAPI, which sets model kind and UsdClipsAPI, which 
-    sets clips-related metadata) OR if the API schema can apply to any type of 
-    prim or only to a known fixed set of prim types OR if there is no use of 
-    recording the application of the API schema, in such cases, it would be 
-    better to make it a non-applied API schema. Examples of non-applied API 
-    schemas include UsdModelAPI, UsdClipsAPI, UsdShadeConnectableAPI and
-    UsdGeomPrimvarsAPI.
-
-    If there is a need to discover (or record) whether a prim contains or 
-    subscribes to a given API schema, it would be advantageous to make the API 
-    schema be \"applied\". In general, API schemas that add one or more properties 
-    to a prim should be tagged as applied API schemas. A public Apply() method 
-    is generated for applied API schemas by usdGenSchema. An applied API schema 
-    must be applied to a prim via a call to the generated Apply() method, for 
-    the schema object to evaluate to true when converted to a bool using the 
-    explicit bool conversion operator. Examples of applied API schemas include
-    UsdCollectionAPI, UsdGeomModelAPI and UsdGeomMotionAPI
-
-    \\subsection usd_apischemabase_single_vs_multiple_apply Single vs. Multiple Apply API Schemas
-    
-    Applied API schemas can further be classified into single-apply and 
-    multiple-apply API schemas. As the name suggests, a single-apply API schema 
-    can only be applied once to a prim. A multiple-apply API schema can be 
-    applied multiple times with different 'instanceName' values. An example of 
-    a multiple-apply API schema is UsdCollectionAPI, where the API schema is 
-    applied to a prim once for every collection owned by the prim. 
-    
-    \\note An applied API schema can only inherit from another applied API 
-    schema or directly from APISchemaBase. Similarly, a non-applied API schema 
-    can only inherit from a non-applied API Schema or directly from 
-    APISchemaBase. 'usdGenSchema' attempts to issue a warning if it detects 
-    an incompatibility.
-
-    \\note A multiple-apply API schema may not inherit from a single-apply API 
-    schema and vice versa. 
-
-    \\note When the bool-conversion operator is invoked on an applied API 
-    schema, it evaluates to true only if the application of the API schema has
-    been recorded on the prim via a call to the auto-generated Apply() method.
-    
-    """
+    customData = {
+        string userDocBrief = "The base class for all API schemas."
+    }
 )
 {
 }
 
 class "ModelAPI" (
-    doc = """UsdModelAPI is an API schema that provides an interface to a prim's
-    model qualities, if it does, in fact, represent the root prim of a model.
-    
-    The first and foremost model quality is its kind, i.e. the metadata 
-    that establishes it as a model (See KindRegistry).  UsdModelAPI provides
-    various methods for setting and querying the prim's kind, as well as
-    queries (also available on UsdPrim) for asking what category of model
-    the prim is.  See \"Kind and Model-ness\".
-    
-    UsdModelAPI also provides access to a prim's \"assetInfo\"
-    data.  While any prim can host assetInfo, it is common that published
-    (referenced) assets are packaged as models, therefore it is convenient
-    to provide access to the one from the other.
-    
-    \\todo establish an _IsCompatible() override that returns IsModel()
-    \\todo GetModelInstanceName()
-    """
+    customData = {
+        string userDocBrief = """UsdModelAPI is an API schema that provides an interface to a prim's
+    model qualities, if it does, in fact, represent the root prim of a model."""
+    }
 )
 {
 }
 
 class "ColorSpaceAPI" (
-    doc = """UsdColorSpaceAPI is an API schema that introduces a `colorSpace`
-    property for authoring color space opinions. It also provides a mechanism 
-    to determine the applicable color space within a scope through inheritance.
-    Accordingly, this schema may be applied to any prim to introduce a color 
-    space at any point in a compositional hierachy.
-
-    Color space resolution involves determining the color space authored on an
-    attribute by first examining the attribute itself for a color space which
-    may have been authored via `UsdAttribute::SetColorSpace()`. If none is found,
-    the attribute's prim is checked for the existence of the `UsdColorSpaceAPI`,
-    and any color space authored there. If none is found on the attribute's
-    prim, the prim's ancestors are examined up the hierarchy until an authored
-    color space is found. If no color space is found, an empty `TfToken` is
-    returned.
-
-    Although `ColorSpaceAPI` provides a default color space, that default is not
-    consulted for color space determination of an attribute, or by any of the 
-    resolution methods.
-    
-    For a list of built in color space token values, see `GfColorSpaceNames`.
-
-    Use a pattern like this when determining an attribute's resolved color space:
-    
-    ```
-    if (attr.HasColorSpace()) {
-        return attr.GetColorSpace();
+    customData = {
+        string userDocBrief = """UsdColorSpaceAPI is an API schema that introduces a `colorSpace`
+    property for authoring scene referred color space opinions."""
     }
-    auto csAPI = UsdColorSpaceAPI(attr.GetPrim());
-    return UsdColorSpaceAPI::ComputeColorSpaceName(attr);
-    ```
-
-    `GfColorSpace` and its associated utilities can be used to perform color 
-    transformations; some examples:
-
-    ```
-    srcSpace = GfColorSpace(ComputeColorSpaceName(attr))
-    targetSpace = GfColorSpace(targetSpaceName)
-    targetColor = srcSpace.Convert(targetSpace, srcColor)
-    srcSpace.ConvertRGBSpan(targetSpace, colorSpan)
-    ```
-
-    It is recommended that in situations where performance is a concern, an 
-    application should perform conversions infrequently and cache results
-    wherever possible.
-    
-    """
 )
 {
     uniform token colorSpace:name (
-        doc = """The color space that applies to attributes with
-        unauthored color spaces on this prim and its descendents.
-        """
+        customData = {
+            string userDocBrief = """The color space that applies to attributes with
+        unauthored color spaces on this prim and its descendents."""
+        }
     )
 }
 
 class "ColorSpaceDefinitionAPI" (
-    doc = """UsdColorSpaceDefinitionAPI is an API schema for defining a custom
-    color space. Custom color spaces become available for use on prims or for
-    assignment to attributes via the colorSpace:name property on prims that have
-    applied `UsdColorSpaceAPI`. Since color spaces inherit hierarchically, a
-    custom color space defined on a prim will be available to all descendants of
-    that prim, unless overridden by a more local color space definition bearing
-    the same name. Locally redefining color spaces within the same layer could
-    be confusing, so that practice is discouraged.
-
-    The default color space values are equivalent to an identity transform, so
-    applying this schema and invoking `UsdColorSpaceAPI::ComputeColorSpace()`
-    on a prim resolving to a defaulted color definition will return a color
-    space equivalent to the identity transform.
-    """
+    customData = {
+        string userDocBrief = """UsdColorSpaceDefinitionAPI is an API schema for defining a custom
+    color space."""
+    }
 )
 {
     float2 colorSpaceDefinition:__INSTANCE_NAME__:blueChroma = (0, 0) (
-        doc = "Blue chromaticity coordinates"
+        customData = {
+            string userDocBrief = "Blue chromaticity coordinates."
+        }
     )
     float colorSpaceDefinition:__INSTANCE_NAME__:gamma = 1 (
-        doc = "Gamma value of the log section"
+        customData = {
+            string userDocBrief = "Gamma value of the log section."
+        }
     )
     float2 colorSpaceDefinition:__INSTANCE_NAME__:greenChroma = (0, 1) (
-        doc = "Green chromaticity coordinates"
+        customData = {
+            string userDocBrief = "Green chromaticity coordinates."
+        }
     )
     float colorSpaceDefinition:__INSTANCE_NAME__:linearBias = 0 (
-        doc = "Linear bias of the log section"
+        customData = {
+            string userDocBrief = "Linear bias of the log section."
+        }
     )
     uniform token colorSpaceDefinition:__INSTANCE_NAME__:name = "custom" (
-        doc = """The name of the color space defined on this prim.
-        """
+        customData = {
+            string userDocBrief = "The name of the color space defined on this prim."
+        }
     )
     float2 colorSpaceDefinition:__INSTANCE_NAME__:redChroma = (1, 0) (
-        doc = "Red chromaticity coordinates"
+        customData = {
+            string userDocBrief = "Red chromaticity coordinates."
+        }
     )
     float2 colorSpaceDefinition:__INSTANCE_NAME__:whitePoint = (0.33333334, 0.33333334) (
-        doc = "Whitepoint chromaticity coordinates"
+        customData = {
+            string userDocBrief = "Whitepoint chromaticity coordinates."
+        }
     )
 }
 
 class "CollectionAPI" (
-    doc = """A general purpose API schema used to describe a collection of prims
-    and properties within a scene. This API schema can be applied to a prim
-    multiple times with different instance names to define several collections
-    on a single prim.
-
-    A collection's membership is specified one of two ways. The first way uses
-    the built-in relationships `includes` and `excludes`, and the attribute
-    `includeRoot` to determine membership. The second way is termed a
-    pattern-based collection, and uses the built-in attribute
-    `membershipExpression` to determine membership. Here we will refer to
-    collections using `includes`, `excludes` and `includeRoot` as being in
-    *relationship-mode* and those using the `membershipExpression` as being in
-    *expression-mode*.
-
-    A collection is determined to be in *relationship-mode* when either or both
-    of its `includes` and `excludes` relationships have valid targets, or the
-    `includeRoot` attribute is set `true`.  In this case, the pattern-based
-    `membershipExpression` attribute is ignored.  Otherwise, the collection is
-    in *expression-mode* and the `membershipExpression` attribute applies.
-
-    In *relationship-mode* the `includes` and `excludes` relationships specify
-    the collection members as a set of paths to include and a set of paths to
-    exclude.  Whether or not the descendants of an included path belong to a
-    collection is decided by its expansion rule (see below).  If the collection
-    excludes paths that are not descendent to included paths, the collection
-    implicitly includes the root path `</>`.  If such a collection also
-    includes paths that are not descendent to the excluded paths, it is
-    considered invalid since the intent is ambiguous.
-
-    In *expression-mode*, the pattern-based `membershipExpression` attribute is
-    used with the `expansionRule` attribute to determine collection membership.
-    See the detailed descriptions of the built-in properties below for more
-    details.
-
-    Collection API Properties
-
-    The built-in properties for this schema are in the `collection:instanceName`
-    namespace, where `instanceName` is the user-provided applied API schema
-    instance name.
-
-    <ul>
-    <li>`uniform token collection:instanceName:expansionRule` - in
-    *relationship-mode*, specifies how to expand the `includes` and `excludes`
-    relationship targets to determine the collection's members.  In
-    *expression-mode*, specifies how matching scene objects against the
-    `membershipExpression` proceeds.  Possible values include:
-        <ul>
-        <li>`expandPrims` - in *relationship-mode*, all the prims descendent
-        to the `includes` relationship targets (and not descendent to `excludes`
-        relationship targets) belong to the collection.  Any `includes`-targeted
-        property paths also belong to the collection. This is the default
-        behavior. In *expression-mode*, the functions
-        UsdComputeIncludedObjectsFromCollection() and
-        UsdComputeIncludedPathsFromCollection() only test prims against the
-        `membershipExpression` to determine membership.
-        </li>
-        <li>`expandPrimsAndProperties` - like `expandPrims`, but in
-        *relationship-mode*, all properties on all included prims also belong to
-        the collection. In *expression-mode*, the functions
-        UsdComputeIncludedObjectsFromCollection() and
-        UsdComputeIncludedPathsFromCollection() test both prims and
-        properties against the `membershipExpression` to determine membership.
-        </li>
-        <li>`explicitOnly` - in *relationship-mode*, only paths in the
-        `includes` relationship targets and not those in the `excludes`
-        relationship targets belong to the collection. Does not apply to
-        *expression-mode*. If set in *expression-mode*, the functions
-        UsdComputeIncludedObjectsFromCollection() and
-        UsdComputeIncludedPathsFromCollection() return no results.
-        </li>
-        </ul>
-        </li>
-
-    <li>`bool collection:instanceName:includeRoot` - boolean attribute
-    indicating whether the pseudo-root path `</>` should be counted as one
-    of the included target paths in *relationship-mode*. This separate attribute
-    is required because relationships cannot directly target the root. When
-    `expansionRule` is `explicitOnly`, this attribute is ignored. The fallback
-    value is false. When set to `true`, this collection is in
-    *relationship-mode*. This attribute is ignored in *expression-mode*.  </li>
-
-    <li>`rel collection:instanceName:includes` - in *relationship-mode*,
-    specifies a list of targets that are included in the collection. This can
-    target prims or properties directly. A collection can insert the rules of
-    another collection by making its `includes` relationship target the
-    `collection:otherInstanceName` property from the collection to be included
-    (see UsdCollectionAPI::GetCollectionAttr).  Note that including another
-    collection does not guarantee the contents of that collection will be in the
-    final collection; instead, the rules are merged.  This means, for example,
-    an exclude entry may exclude a portion of the included collection.  When a
-    collection includes one or more collections, the order in which targets are
-    added to the includes relationship may become significant, if there are
-    conflicting opinions about the same path. Targets that are added later are
-    considered to be stronger than earlier targets for the same path.  This
-    relationship is ignored in *expression-mode*.</li>
-
-    <li>`rel collection:instanceName:excludes` - in *relationship-mode*,
-    specifies a list of targets that are excluded below the <b>included</b>
-    paths in this collection. This can target prims or properties directly, but
-    <b>cannot target another collection</b>. This is to keep the membership
-    determining logic simple, efficient and easier to reason about. Finally, it
-    is invalid for a collection to exclude paths that are not included in
-    it. The presence of such \"orphaned\" excluded paths will not affect the set
-    of paths included in the collection, but may affect the performance of
-    querying membership of a path in the collection (see
-    UsdCollectionMembershipQuery::IsPathIncluded) or of enumerating the
-    objects belonging to the collection (see
-    UsdCollectionAPI::ComputeIncludedObjects).  This relationship is ignored in
-    *expression-mode*.</li>
-
-    <li>`uniform opaque collection:instanceName` - opaque
-    attribute (meaning it can never have a value) that represents the collection
-    for the purpose of allowing another collection to include it in
-    *relationship-mode*. When this property is targeted by another collection's
-    `includes` relationship, the rules of this collection will be inserted
-    into the rules of the collection that includes it.</li>
-
-    <li>`uniform pathExpression collection:instanceName:membershipExpression` -
-    in *expression-mode*, defines the SdfPathExpression used to test
-    objects for collection membership.</li>
-
-    </ul>
-
-    \\subsection usd_collectionapi_implicit_inclusion Implicit Inclusion
-
-    In some scenarios it is useful to express a collection that includes
-    everything except certain paths.  To support this, a *relationship-mode*
-    collection that has an exclude that is not descendent to any include will
-    include the root path `</>`.
-
-    Creating Collections in C++
-    
-    \\snippet examples_usd.cpp ApplyCollections
-    """
+    customData = {
+        string userDocBrief = """A general purpose API schema used to describe a collection of prims
+    and properties within a scene."""
+    }
 )
 {
     uniform opaque collection:__INSTANCE_NAME__ (
-        doc = """This property represents the collection for the purpose of 
-        allowing another collection to include it. When this property is 
-        targeted by another collection's <i>includes</i> relationship, the rules
-        of this collection will be inserted into the rules of the collection
-        that includes it.
-        """
+        customData = {
+            string userDocBrief = """This property represents the collection for the purpose of 
+        allowing another collection to include it."""
+        }
     )
     rel collection:__INSTANCE_NAME__:excludes (
-        doc = '''Specifies a list of targets that are excluded below
-        the included paths in this collection. This can target prims or
-        properties directly, but cannot target another collection. This is to
-        keep the membership determining logic simple, efficient and easier to
-        reason about. Finally, it is invalid for a collection to exclude
-        paths that are not included in it. The presence of such "orphaned"
-        excluded paths will not affect the set of paths included in the
-        collection, but may affect the performance of querying membership of 
-        a path in the collection (see
-        UsdCollectionAPI::MembershipQuery::IsPathIncluded) 
-        or of enumerating the objects belonging to the collection (see 
-        UsdCollectionAPI::GetIncludedObjects).'''
+        customData = {
+            string userDocBrief = """Specifies a list of targets that are excluded below
+        the included paths in this collection."""
+        }
     )
     uniform token collection:__INSTANCE_NAME__:expansionRule = "expandPrims" (
         allowedTokens = ["explicitOnly", "expandPrims", "expandPrimsAndProperties"]
-        doc = """Specifies how the paths that are included in
+        customData = {
+            string userDocBrief = """Specifies how the paths that are included in
         the collection must be expanded to determine its members."""
+        }
     )
     uniform bool collection:__INSTANCE_NAME__:includeRoot (
-        doc = """Boolean attribute indicating whether the pseudo-root
+        customData = {
+            string userDocBrief = """Boolean attribute indicating whether the pseudo-root
         path `</>` should be counted as one of the included target
-        paths.  The fallback is false.  This separate attribute is
-        required because relationships cannot directly target the root."""
+        paths."""
+        }
     )
     rel collection:__INSTANCE_NAME__:includes (
-        doc = """Specifies a list of targets that are included in the collection.
-        This can target prims or properties directly. A collection can insert
-        the rules of another collection by making its <i>includes</i>
-        relationship target the <b>collection:{collectionName}</b> property on
-        the owning prim of the collection to be included"""
+        customData = {
+            string userDocBrief = "Specifies a list of targets that are included in the collection."
+        }
     )
     uniform pathExpression collection:__INSTANCE_NAME__:membershipExpression (
-        doc = """Specifies a path expression that determines membership in this
+        customData = {
+            string userDocBrief = """Specifies a path expression that determines membership in this
         collection."""
+        }
     )
 }
 
 class "ClipsAPI" (
-    doc = """ UsdClipsAPI is an API schema that provides an interface to
-    a prim's clip metadata. Clips are a \"value resolution\" feature that 
-    allows one to specify a sequence of usd files (clips) to be consulted, 
-    over time, as a source of varying overrides for the prims at and 
-    beneath this prim in namespace.
-            
-    SetClipAssetPaths() establishes the set of clips that can be consulted.
-    SetClipActive() specifies the ordering of clip application over time 
-    (clips can be repeated), while SetClipTimes() specifies time-mapping
-    from stage-time to clip-time for the clip active at a given stage-time,
-    which allows for time-dilation and repetition of clips. 
-    Finally, SetClipPrimPath() determines the path within each clip that will 
-    map to this prim, i.e. the location within the clip at which we will look
-    for opinions for this prim. 
-
-    The clip asset paths, times and active metadata can also be specified 
-    through template clip metadata. This can be desirable when your set of 
-    assets is very large, as the template metadata is much more concise. 
-    SetClipTemplateAssetPath() establishes the asset identifier pattern of the 
-    set of clips to be consulted. SetClipTemplateStride(), 
-    SetClipTemplateEndTime(), and SetClipTemplateStartTime() specify the range 
-    in which USD will search, based on the template. From the set of resolved 
-    asset paths, times and active will be derived internally.
-
-    A prim may have multiple \"clip sets\" -- named sets of clips that each
-    have their own values for the metadata described above. For example, 
-    a prim might have a clip set named \"Clips_1\" that specifies some group
-    of clip asset paths, and another clip set named \"Clips_2\" that uses
-    an entirely different set of clip asset paths. These clip sets are 
-    composed across composition arcs, so clip sets for a prim may be
-    defined in multiple sublayers or references, for example. Individual
-    metadata for a given clip set may be sparsely overridden.
-                
-    Important facts about clips:            
-    - Within the layerstack in which clips are established, the           
-    opinions within the clips will be weaker than any local opinions
-    in the layerstack, but em stronger than varying opinions coming across
-    references and variants.            
-    - We will never look for metadata or default opinions in clips            
-    when performing value resolution on the owning stage, since these           
-    quantities must be time-invariant.          
-            
-    This leads to the common structure in which we reference a model asset
-    on a prim, and then author clips at the same site: the asset reference
-    will provide the topology and unvarying data for the model, while the 
-    clips will provide the time-sampled animation.
-
-    For further information, see \\ref Usd_Page_ValueClips
-    """
+    customData = {
+        string userDocBrief = """UsdClipsAPI is an API schema that provides an interface to
+    a prim's clip metadata."""
+    }
 )
 {
 }

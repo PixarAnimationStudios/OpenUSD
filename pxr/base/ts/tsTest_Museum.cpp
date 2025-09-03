@@ -20,8 +20,10 @@ using SData = TsTest_SplineData;
 TF_REGISTRY_FUNCTION(TfEnum)
 {
     TF_ADD_ENUM_NAME(TsTest_Museum::TwoKnotBezier);
+    TF_ADD_ENUM_NAME(TsTest_Museum::TwoKnotHermite);
     TF_ADD_ENUM_NAME(TsTest_Museum::TwoKnotLinear);
     TF_ADD_ENUM_NAME(TsTest_Museum::FourKnotBezier);
+    TF_ADD_ENUM_NAME(TsTest_Museum::FourKnotHermite);
     TF_ADD_ENUM_NAME(TsTest_Museum::SimpleInnerLoop);
     TF_ADD_ENUM_NAME(TsTest_Museum::InnerLoop2and2);
     TF_ADD_ENUM_NAME(TsTest_Museum::InnerLoopPre);
@@ -81,6 +83,14 @@ static TsTest_SplineData _TwoKnotBezier()
     return data;
 }
 
+static TsTest_SplineData _TwoKnotHermite()
+{
+    // Same as TwoKnotBezier but with Hermite interpolation
+    SData data = _TwoKnotBezier();
+    data.SetIsHermite(true);
+    return data;
+}
+
 static TsTest_SplineData _TwoKnotLinear()
 {
     SData::Knot knot1;
@@ -134,6 +144,14 @@ static TsTest_SplineData _FourKnotBezier()
 
     SData data;
     data.SetKnots({knot1, knot2, knot3, knot4});
+    return data;
+}
+
+static TsTest_SplineData _FourKnotHermite()
+{
+    // Same as FourKnotBezier but with Hermite interpolation
+    SData data = _FourKnotBezier();
+    data.SetIsHermite(true);
     return data;
 }
 
@@ -1134,8 +1152,10 @@ TsTest_Museum::GetData(const DataId id)
     switch (id)
     {
         case TwoKnotBezier: return _TwoKnotBezier();
+        case TwoKnotHermite: return _TwoKnotHermite();
         case TwoKnotLinear: return _TwoKnotLinear();
         case FourKnotBezier: return _FourKnotBezier();
+        case FourKnotHermite: return _FourKnotHermite();
         case SimpleInnerLoop: return _SimpleInnerLoop();
         case InnerLoop2and2: return _InnerLoop2and2();
         case InnerLoopPre: return _InnerLoopPre();

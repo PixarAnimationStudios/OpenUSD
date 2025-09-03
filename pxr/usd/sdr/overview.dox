@@ -4,9 +4,6 @@
 \mainpage Sdr : Shader Definition Registry
 \endif
 
-\note The Ndr library is deprecated and will be deleted soon. Use this
-Sdr library instead.
-
 In the context of Sdr, a "shader" is any program that takes input and produces
 output.
 

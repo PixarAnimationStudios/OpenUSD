@@ -66,22 +66,6 @@ class SdfAssetPath;
 /// it would still be impossible to flatten a stage or layer stack into a single
 /// layer and still retain the composed audio dilation using this schema.
 /// 
-/// #### Inverting startTime and endTime
-/// Although we do not expect it to be common, it is possible to apply a 
-/// negative time scale to USD layers, which mostly has the effect of reversing
-/// animation in the affected composition. If a negative scale is applied to a
-/// composition that contains authored \a startTime and \a endTime, it will
-/// reverse their relative ordering in time. Therefore, we stipulate when
-/// \a playbackMode is "onceFromStartToEnd" or "loopFromStartToEnd", if 
-/// \a endTime is less than \a startTime, then begin playback at \a endTime, 
-/// and continue until \a startTime. When \a startTime and \a endTime are 
-/// inverted, we do not, however, stipulate that playback of the audio media 
-/// itself be inverted, since doing so "successfully" would require perfect 
-/// knowledge of when, within the audio clip, relevant audio ends (so that we 
-/// know how to offset the reversed audio to align it so that we reach the 
-/// "beginning" at \a startTime), and sounds played in reverse are not likely 
-/// to produce desirable results. 
-/// 
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdMediaTokens.

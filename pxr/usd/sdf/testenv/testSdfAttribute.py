@@ -10,8 +10,12 @@
 from pxr import Sdf, Tf, Gf, Vt
 import sys, unittest
 
-class TestSdfAttribute(unittest.TestCase):
+# This class is derived by format-specific test cases below.
+class TestSdfAttributeBase():
 
+    def CreateAnonymous(self):
+        return Sdf.Layer.CreateAnonymous(self.extension)
+    
     def test_Creation(self):
 
         # Test SdPropertySpec abstractness
@@ -19,7 +23,7 @@ class TestSdfAttribute(unittest.TestCase):
             nullProp = Sdf.PropertySpec()
 
         # Test SdAttributeSpec creation and name
-        layer = Sdf.Layer.CreateAnonymous()
+        layer = self.CreateAnonymous()
         prim = Sdf.PrimSpec(layer, "test", Sdf.SpecifierDef, "bogus_type")
         attr = Sdf.AttributeSpec(prim, 'numCrvs', Sdf.ValueTypeNames.Int)
         self.assertEqual(attr.name, 'numCrvs')
@@ -62,7 +66,7 @@ class TestSdfAttribute(unittest.TestCase):
         self.assertEqual(len(layer.pseudoRoot.properties), 0)
 
     def test_Rename(self):
-        layer = Sdf.Layer.CreateAnonymous()
+        layer = self.CreateAnonymous()
         prim = Sdf.PrimSpec(layer, "test", Sdf.SpecifierDef, "bogus_type")
         attr = Sdf.AttributeSpec(prim, 'numCrvs', Sdf.ValueTypeNames.Int)
         attr.name = 'numberOfCurves'
@@ -78,7 +82,7 @@ class TestSdfAttribute(unittest.TestCase):
             self.assertEqual(attr.name, oldName)
 
     def test_InvalidName(self):
-        layer = Sdf.Layer.CreateAnonymous()
+        layer = self.CreateAnonymous()
         prim = Sdf.PrimSpec(layer, "test", Sdf.SpecifierDef, "bogus_type")
         for badName in ['', 'a.b', '<ab>', 'a[]', 'a/']:
             with self.assertRaises(RuntimeError):
@@ -86,7 +90,7 @@ class TestSdfAttribute(unittest.TestCase):
                     prim, badName, Sdf.ValueTypeNames.Int)
 
     def test_Metadata(self):
-        layer = Sdf.Layer.CreateAnonymous()
+        layer = self.CreateAnonymous()
         prim = Sdf.PrimSpec(layer, "test", Sdf.SpecifierDef, "bogus_type")
         attr = Sdf.AttributeSpec(prim, 'numCrvs', Sdf.ValueTypeNames.Int)
 
@@ -194,9 +198,9 @@ class TestSdfAttribute(unittest.TestCase):
         self.assertEqual(attr.displayGroup, '')
 
     def test_ClearUnexpectedField(self):
-        layer = Sdf.Layer.CreateAnonymous("ClearUnexpected")
+        layer = self.CreateAnonymous()
         layer.ImportFromString(
-'''#sdf 1.4.32
+'''#usda 1.0
 def Sphere "Foo"
 {
     double radius (
@@ -212,7 +216,7 @@ def Sphere "Foo"
         self.assertFalse(spec.HasInfo("unrecognized"))
 
     def test_Connections(self):
-        layer = Sdf.Layer.CreateAnonymous()
+        layer = self.CreateAnonymous()
         prim = Sdf.PrimSpec(layer, "test", Sdf.SpecifierDef, "bogus_type")
         attr = Sdf.AttributeSpec(prim, 'numCrvs', Sdf.ValueTypeNames.Int)
 
@@ -370,7 +374,7 @@ def Sphere "Foo"
         attr.connectionPathList.ClearEdits()
 
     def test_Path(self):
-        layer = Sdf.Layer.CreateAnonymous()
+        layer = self.CreateAnonymous()
         prim = Sdf.PrimSpec(layer, "test", Sdf.SpecifierDef, "bogus_type")
         attr = Sdf.AttributeSpec(prim, 'numCrvs', Sdf.ValueTypeNames.Int)
         self.assertEqual(attr.path,
@@ -397,7 +401,7 @@ def Sphere "Foo"
         # only required fields. This is important due to the 'remove if inert'
         # cleanup step that automatically runs after any call to ClearInfo.
 
-        layer = Sdf.Layer.CreateAnonymous()
+        layer = self.CreateAnonymous()
         prim = Sdf.PrimSpec(layer, "test", Sdf.SpecifierDef, "bogus_type")
         attr = Sdf.AttributeSpec(prim, 'testAttr', Sdf.ValueTypeNames.Int)
         self.assertTrue(attr)
@@ -414,9 +418,9 @@ def Sphere "Foo"
 
     def test_TimeSamples(self):
         # Test interaction with time samples on an attribute
-        timeSamplesLayer = Sdf.Layer.CreateAnonymous()
+        timeSamplesLayer = self.CreateAnonymous()
         timeSamplesLayer.ImportFromString(
-'''#sdf 1.4.32
+'''#usda 1.0
 def Scope "Scope"
 {
     custom double empty = 0
@@ -455,11 +459,137 @@ def Scope "Scope"
         self.assertEqual(prim.attributes['desc'].GetNumTimeSamples(), 3)
         self.assertEqual(prim.attributes['desc'].GetBracketingTimeSamples(2.0), (True, 1.23, 3.23))
 
+    def test_Spline(self):
+        splineLayer = self.CreateAnonymous()
+        splineLayer.ImportFromString(
+'''#usda 1.0
+def Xform "Prim"
+{
+    double a.spline = {
+        1: 5; post held,
+        2: 18; post held,
+    }
+    double a2
+    float b.spline = {
+        1: 10; post held,
+    }
+    double c.timeSamples = {
+        6: 5,
+    }
+    int e
+}
+''')
+        # Test GetSpline, SetSpline and ClearSpline works on compatible types
+        self.assertTrue(splineLayer)
+        a = splineLayer.GetAttributeAtPath('/Prim.a')
+        splineA = a.GetSpline()
+        self.assertTrue(splineA)
+        self.assertFalse(splineA.IsEmpty())
+        self.assertEqual(len(splineA.GetKnots()), 2)
+        self.assertEqual(splineA.GetValueTypeName(), "double")
+        self.assertEqual(a.typeName.cppTypeName, "double")
+        a2 = splineLayer.GetAttributeAtPath('/Prim.a2')
+        self.assertTrue(a2)
+        self.assertFalse(a2.HasInfo('spline'))
+        self.assertTrue(a2.GetSpline().IsEmpty())
+        a2.SetSpline(splineA)
+        splineA2 = a2.GetSpline()
+        self.assertTrue(splineA2)
+        self.assertTrue(a2.HasInfo('spline'))
+        self.assertFalse(splineA2.IsEmpty())
+        self.assertEqual(len(splineA2.GetKnots()), 2)
+        b = splineLayer.GetAttributeAtPath('/Prim.b')
+        splineB = b.GetSpline()
+        self.assertTrue(splineB)
+        self.assertTrue(b.HasInfo('spline'))
+        self.assertFalse(splineB.IsEmpty())
+        self.assertEqual(len(splineB.GetKnots()), 1)
+        self.assertEqual(splineB.GetValueTypeName(), "float")
+        self.assertEqual(b.typeName.cppTypeName, "float")
+        a.ClearSpline()
+        b.ClearSpline()
+        self.assertFalse(a.HasInfo('spline'))
+        self.assertFalse(b.HasInfo('spline'))
+
+        # Test that SetSpline results in a coding error when trying to set a 
+        # float spline on a double attribute.
+        self.assertEqual(a.typeName.cppTypeName, "double")
+        with self.assertRaises(Tf.ErrorException):
+            a.SetSpline(splineB)
+        # No spline gets set on a
+        self.assertFalse(a.HasInfo('spline'))
+
+        # Test that HasInfo returns false when spline is not set, yet GetSpline
+        # returns an empty spline.
+        c = splineLayer.GetAttributeAtPath('/Prim.c')
+        self.assertTrue(c)
+        self.assertFalse(c.HasInfo('spline'))
+        self.assertTrue(c.GetSpline().IsEmpty())
+
+        # Test that SetSpline results in a coding error when trying to set a
+        # spline on an attribute that doesn't support splines.
+        from pxr import Ts
+        e = splineLayer.GetAttributeAtPath('/Prim.e')
+        self.assertFalse(Ts.Spline.IsSupportedValueType(e.typeName.type))
+        self.assertFalse(e.HasInfo('spline'))
+        with self.assertRaises(RuntimeError):
+            e.SetSpline(splineA)
+        # No spline was set on e
+        self.assertFalse(e.HasInfo('spline'))
+
+    def test_Limits(self):
+        """
+        Exercise basic API for the limits metadata field
+        """
+        layer = self.CreateAnonymous()
+        layer.ImportFromString(
+'''#usda 1.0
+def Sphere "Foo"
+{
+    double radius (
+        limits = {
+            dictionary "hard" = {
+                double minimum = 0.0
+                double maximum = 10.0
+                string foo = "bar"
+            }
+        }
+    )
+}
+''')
+
+        spec = layer.GetAttributeAtPath("/Foo.radius")
+
+        # Check initial value
+        myLimits = {
+            'hard' : {
+                'minimum' : 0.0,
+                'maximum' : 10.0,
+                'foo' : 'bar'
+            }
+        }
+
+        self.assertTrue(spec.HasLimits())
+        self.assertEqual(spec.limits, myLimits)
+
+        # Modify
+        myLimits['hard']['minimumValue'] = 5.5
+        myLimits['hard']['foo'] = 'baz'
+
+        spec.limits = myLimits
+        self.assertTrue(spec.HasLimits())
+        self.assertEqual(spec.limits, myLimits)
+
+        # Clear
+        spec.ClearLimits()
+        self.assertFalse(spec.HasLimits())
+        self.assertEqual(spec.limits, {})
+
     def test_OpaqueNoAuthoredDefault(self):
         """
         Attempting to set the default value of an opaque attribute should fail.
         """
-        layer = Sdf.Layer.CreateAnonymous()
+        layer = self.CreateAnonymous()
         prim = Sdf.PrimSpec(layer, "Test", Sdf.SpecifierDef, "TestType")
         attr = Sdf.AttributeSpec(prim, "Attr", Sdf.ValueTypeNames.Opaque)
         self.assertEqual(attr.default, None)
@@ -471,13 +601,172 @@ def Scope "Scope"
         """
         Attempting to set the default value of a group attribute should fail.
         """
-        layer = Sdf.Layer.CreateAnonymous()
+        layer = self.CreateAnonymous()
         prim = Sdf.PrimSpec(layer, "Test", Sdf.SpecifierDef, "TestType")
         attr = Sdf.AttributeSpec(prim, "Attr", Sdf.ValueTypeNames.Group)
         self.assertEqual(attr.default, None)
         with self.assertRaises(Tf.ErrorException):
             attr.default = Sdf.OpaqueValue()
         self.assertEqual(attr.default, None)
+
+    def test_ArrayEditAuthoring(self):
+        """
+        Test authoring array edit values.
+        """
+        layer = self.CreateAnonymous()
+
+        prim = Sdf.CreatePrimInLayer(layer, '/prim')
+        
+        ia = Sdf.AttributeSpec(prim, 'ia', Sdf.ValueTypeNames.IntArray)
+        fa = Sdf.AttributeSpec(prim, 'fa', Sdf.ValueTypeNames.FloatArray)
+        sa = Sdf.AttributeSpec(prim, 'sa', Sdf.ValueTypeNames.StringArray)
+        aa = Sdf.AttributeSpec(prim, 'aa', Sdf.ValueTypeNames.AssetArray)
+        p3fa = Sdf.AttributeSpec(prim, 'p3fa', Sdf.ValueTypeNames.Point3fArray)
+
+        # Create values.
+        iaDefault = (Vt.IntArrayEditBuilder()
+                     .Append(123)
+                     .InsertRef(0, -1)
+                     .SetSize(1024)
+                     .FinalizeAndReset())
+        faDefault = (Vt.FloatArrayEditBuilder()
+                     .Append(1.23)
+                     .InsertRef(-1, -2)
+                     .SetSize(99)
+                     .FinalizeAndReset())
+        saDefault = (Vt.StringArrayEditBuilder()
+                     .Append('123')
+                     .InsertRef(-2, 0)
+                     .MinSize(999, 'fill')
+                     .FinalizeAndReset())
+        aaDefault = (Sdf.AssetPathArrayEditBuilder()
+                     .Append(Sdf.AssetPath('woody'))
+                     .Prepend(Sdf.AssetPath('buzz'))
+                     .MaxSize(3)
+                     .FinalizeAndReset())
+        p3faDefault = (Vt.Vec3fArrayEditBuilder()
+                       .Append((1,2,3))
+                       .Insert((2,3,4), 1)
+                       .SetSize(2048, (7,7,7))
+                       .FinalizeAndReset())
+        
+        # Author defaults.
+        ia.default = iaDefault
+        fa.default = faDefault
+        sa.default = saDefault
+        aa.default = aaDefault
+        p3fa.default = p3faDefault
+
+        # Author time samples.
+        iaSample = Vt.IntArrayEditBuilder().Prepend(123).FinalizeAndReset()
+        faSample = Vt.FloatArrayEditBuilder().Insert(
+            1.23, 0).FinalizeAndReset()
+        saSample =  Vt.StringArrayEditBuilder().MinSize(
+            123, '123').FinalizeAndReset()
+        aaSample = Sdf.AssetPathArrayEditBuilder().Prepend(
+            Sdf.AssetPath('123')).FinalizeAndReset()
+        p3faSample = Vt.Vec3fArrayEditBuilder().Prepend(
+            (1,2,3)).FinalizeAndReset()
+        
+        ia.SetTimeSample(1.0, iaSample)
+        fa.SetTimeSample(1.0, faSample)
+        sa.SetTimeSample(1.0, saSample)
+        aa.SetTimeSample(1.0, aaSample)
+        p3fa.SetTimeSample(1.0, p3faSample)
+
+        # Check that authoring didn't modify the values.
+        self.assertEqual(iaDefault, ia.default)
+        self.assertEqual(faDefault, fa.default)
+        self.assertEqual(saDefault, sa.default)
+        self.assertEqual(aaDefault, aa.default)
+        self.assertEqual(p3faDefault, p3fa.default)
+
+        self.assertEqual(iaSample, ia.QueryTimeSample(1.0))
+        self.assertEqual(faSample, fa.QueryTimeSample(1.0))
+        self.assertEqual(saSample, sa.QueryTimeSample(1.0))
+        self.assertEqual(aaSample, aa.QueryTimeSample(1.0))
+        self.assertEqual(p3faSample, p3fa.QueryTimeSample(1.0))
+
+        # Export to file & string, open and compare.
+        fname = 'testSdfAttributeArrayEditAuthoring.' + self.extension
+        layer.Export(fname)
+
+        fileLayer = Sdf.Layer.FindOrOpen(fname)
+        self.assertTrue(fileLayer)
+
+        strLayer = self.CreateAnonymous()
+        self.assertTrue(strLayer.ImportFromString(layer.ExportToString()))
+
+        self.assertEqual(
+            fileLayer.GetAttributeAtPath('/prim.ia').default,
+            ia.default)
+        self.assertEqual(
+            fileLayer.GetAttributeAtPath('/prim.fa').default,
+            fa.default)
+        self.assertEqual(
+            fileLayer.GetAttributeAtPath('/prim.sa').default,
+            sa.default)
+        self.assertEqual(
+            fileLayer.GetAttributeAtPath('/prim.aa').default,
+            aa.default)
+        self.assertEqual(
+            fileLayer.GetAttributeAtPath('/prim.p3fa').default,
+            p3fa.default)
+                         
+        self.assertEqual(
+            fileLayer.GetAttributeAtPath('/prim.ia').QueryTimeSample(1.0),
+            ia.QueryTimeSample(1.0))
+        self.assertEqual(
+            fileLayer.GetAttributeAtPath('/prim.fa').QueryTimeSample(1.0),
+            fa.QueryTimeSample(1.0))
+        self.assertEqual(
+            fileLayer.GetAttributeAtPath('/prim.sa').QueryTimeSample(1.0),
+            sa.QueryTimeSample(1.0))
+        self.assertEqual(
+            fileLayer.GetAttributeAtPath('/prim.aa').QueryTimeSample(1.0),
+            aa.QueryTimeSample(1.0))
+        self.assertEqual(
+            fileLayer.GetAttributeAtPath('/prim.p3fa').QueryTimeSample(1.0),
+            p3fa.QueryTimeSample(1.0))
+
+        self.assertEqual(
+            strLayer.GetAttributeAtPath('/prim.ia').default,
+            ia.default)
+        self.assertEqual(
+            strLayer.GetAttributeAtPath('/prim.fa').default,
+            fa.default)
+        self.assertEqual(
+            strLayer.GetAttributeAtPath('/prim.sa').default,
+            sa.default)
+        self.assertEqual(
+            strLayer.GetAttributeAtPath('/prim.aa').default,
+            aa.default)
+        self.assertEqual(
+            strLayer.GetAttributeAtPath('/prim.p3fa').default,
+            p3fa.default)
+                         
+        self.assertEqual(
+            strLayer.GetAttributeAtPath('/prim.ia').QueryTimeSample(1.0),
+            ia.QueryTimeSample(1.0))
+        self.assertEqual(
+            strLayer.GetAttributeAtPath('/prim.fa').QueryTimeSample(1.0),
+            fa.QueryTimeSample(1.0))
+        self.assertEqual(
+            strLayer.GetAttributeAtPath('/prim.sa').QueryTimeSample(1.0),
+            sa.QueryTimeSample(1.0))
+        self.assertEqual(
+            strLayer.GetAttributeAtPath('/prim.aa').QueryTimeSample(1.0),
+            aa.QueryTimeSample(1.0))
+        self.assertEqual(
+            strLayer.GetAttributeAtPath('/prim.p3fa').QueryTimeSample(1.0),
+            p3fa.QueryTimeSample(1.0))
+
+
+class TestSdfAttributeUsda(TestSdfAttributeBase, unittest.TestCase):
+    extension = 'usda'
+
+class TestSdfAttributeUsdc(TestSdfAttributeBase, unittest.TestCase):
+    extension = 'usdc'
 
 if __name__ == '__main__':
     unittest.main()

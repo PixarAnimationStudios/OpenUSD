@@ -416,8 +416,8 @@ description or if we want to write our own custom data representation.
 \li \b usdRecursivePayloadsExample - This example uses file format arguments to
 recursively generate prims with payloads targeting the same file but with 
 a different set of arguments. It uses the default SdfData representation 
-provided by SdfFileFormat::InitData, just like the text based sdf and usda 
-file formats, and creates prim specs in its Read function through the standard 
+provided by SdfFileFormat::InitData, just like the text based usda 
+file format, and creates prim specs in its Read function through the standard 
 SdfPrimSpec API. The generated scene description is pretty simple and minimal 
 so it doesn't warrant the complexity of a custom SdfAbstractData type. 
 \li \b usdDancingCubesExample - This example generates a cube made up of 

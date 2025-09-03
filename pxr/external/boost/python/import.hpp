@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/import.hpp>
-#else
-
 # include "pxr/external/boost/python/object.hpp"
 # include "pxr/external/boost/python/str.hpp"
 
@@ -31,5 +27,4 @@ object PXR_BOOST_PYTHON_DECL import(str name);
 }
 }
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

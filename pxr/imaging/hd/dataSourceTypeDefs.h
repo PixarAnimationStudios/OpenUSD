@@ -62,6 +62,8 @@ using HdPathArrayDataSourceHandle = HdPathArrayDataSource::Handle;
 
 using HdStringDataSource = HdTypedSampledDataSource<std::string>;
 using HdStringDataSourceHandle = HdStringDataSource::Handle;
+using HdStringArrayDataSource = HdTypedSampledDataSource<VtArray<std::string>>;
+using HdStringArrayDataSourceHandle = HdStringArrayDataSource::Handle;
 
 using HdAssetPathDataSource = HdTypedSampledDataSource<SdfAssetPath>;
 using HdAssetPathDataSourceHandle = HdAssetPathDataSource::Handle;
@@ -110,6 +112,14 @@ using HdVec4dArrayDataSourceHandle = HdVec4dArrayDataSource::Handle;
 using HdQuatfArrayDataSource = HdTypedSampledDataSource<VtArray<GfQuatf>>;
 using HdQuatfArrayDataSourceHandle = HdQuatfArrayDataSource::Handle;
 
+using HdMatrix3fDataSource = HdTypedSampledDataSource<GfMatrix3f>;
+using HdMatrix3fDataSourceHandle = HdMatrix3fDataSource::Handle;
+using HdMatrix3fArrayDataSource = HdTypedSampledDataSource<VtArray<GfMatrix3f>>;
+using HdMatrix3fArrayDataSourceHandle = HdMatrix3fArrayDataSource::Handle;
+using HdMatrix4fDataSource = HdTypedSampledDataSource<GfMatrix4f>;
+using HdMatrix4fDataSourceHandle = HdMatrix4fDataSource::Handle;
+using HdMatrix4fArrayDataSource = HdTypedSampledDataSource<VtArray<GfMatrix4f>>;
+using HdMatrix4fArrayDataSourceHandle = HdMatrix4fArrayDataSource::Handle;
 using HdMatrixDataSource = HdTypedSampledDataSource<GfMatrix4d>;
 using HdMatrixDataSourceHandle = HdMatrixDataSource::Handle;
 using HdMatrixArrayDataSource = HdTypedSampledDataSource<VtArray<GfMatrix4d>>;

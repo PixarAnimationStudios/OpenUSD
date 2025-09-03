@@ -24,7 +24,7 @@ class TestSdfCopyUtils(unittest.TestCase):
         """Tests basic spec copying functionality"""
         srcLayer = Sdf.Layer.CreateAnonymous()
         srcLayerStr = '''\
-        #sdf 1.4.32
+        #usda 1.0
 
         def Scope "Root"
         {
@@ -139,7 +139,7 @@ class TestSdfCopyUtils(unittest.TestCase):
         completely."""
         srcLayer = Sdf.Layer.CreateAnonymous()
         srcLayerStr = '''\
-        #sdf 1.4.32
+        #usda 1.0
 
         def "Empty"
         {
@@ -255,7 +255,7 @@ class TestSdfCopyUtils(unittest.TestCase):
         """Tests that a prim spec can be copied to a variant and vice-versa."""
         srcLayer = Sdf.Layer.CreateAnonymous()
         srcLayerStr = '''\
-        #sdf 1.4.32
+        #usda 1.0
 
         def SourceType "Source"
         {
@@ -593,9 +593,9 @@ class TestSdfCopyUtils(unittest.TestCase):
         srcPrimSpec = Sdf.CreatePrimInLayer(layer, "/Root/Child")
         srcPrimSpec.referenceList.explicitItems = [
             # External reference
-            Sdf.Reference("./test.sdf", "/Ref"), 
+            Sdf.Reference("./test.usda", "/Ref"), 
             # External sub-root reference
-            Sdf.Reference("./test.sdf", "/Root/Ref"), 
+            Sdf.Reference("./test.usda", "/Root/Ref"), 
             # Internal reference
             Sdf.Reference("", "/Ref"),
             # Internal sub-root reference
@@ -609,8 +609,8 @@ class TestSdfCopyUtils(unittest.TestCase):
 
         expectedListOp = Sdf.ReferenceListOp()
         expectedListOp.explicitItems = [
-            Sdf.Reference("./test.sdf", "/Ref"), 
-            Sdf.Reference("./test.sdf", "/Root/Ref"), 
+            Sdf.Reference("./test.usda", "/Ref"), 
+            Sdf.Reference("./test.usda", "/Root/Ref"), 
             Sdf.Reference("", "/Ref"),
             Sdf.Reference("", "/RootCopy/Ref")
         ]
@@ -626,8 +626,8 @@ class TestSdfCopyUtils(unittest.TestCase):
 
         expectedListOp = Sdf.ReferenceListOp()
         expectedListOp.explicitItems = [
-            Sdf.Reference("./test.sdf", "/Ref"), 
-            Sdf.Reference("./test.sdf", "/Root/Ref"), 
+            Sdf.Reference("./test.usda", "/Ref"), 
+            Sdf.Reference("./test.usda", "/Root/Ref"), 
             Sdf.Reference("", "/Ref"),
             Sdf.Reference("", "/Root/Ref")
         ]
@@ -641,9 +641,9 @@ class TestSdfCopyUtils(unittest.TestCase):
         srcPrimSpec = Sdf.CreatePrimInLayer(layer, "/Root/Child")
         srcPrimSpec.payloadList.explicitItems = [
             # External payload
-            Sdf.Payload("./test.sdf", "/Ref"), 
+            Sdf.Payload("./test.usda", "/Ref"), 
             # External sub-root payload
-            Sdf.Payload("./test.sdf", "/Root/Ref"), 
+            Sdf.Payload("./test.usda", "/Root/Ref"), 
             # Internal payload
             Sdf.Payload("", "/Ref"),
             # Internal sub-root payload
@@ -657,8 +657,8 @@ class TestSdfCopyUtils(unittest.TestCase):
 
         expectedListOp = Sdf.PayloadListOp()
         expectedListOp.explicitItems = [
-            Sdf.Payload("./test.sdf", "/Ref"), 
-            Sdf.Payload("./test.sdf", "/Root/Ref"), 
+            Sdf.Payload("./test.usda", "/Ref"), 
+            Sdf.Payload("./test.usda", "/Root/Ref"), 
             Sdf.Payload("", "/Ref"),
             Sdf.Payload("", "/RootCopy/Ref")
         ]
@@ -674,8 +674,8 @@ class TestSdfCopyUtils(unittest.TestCase):
 
         expectedListOp = Sdf.PayloadListOp()
         expectedListOp.explicitItems = [
-            Sdf.Payload("./test.sdf", "/Ref"), 
-            Sdf.Payload("./test.sdf", "/Root/Ref"), 
+            Sdf.Payload("./test.usda", "/Ref"), 
+            Sdf.Payload("./test.usda", "/Root/Ref"), 
             Sdf.Payload("", "/Ref"),
             Sdf.Payload("", "/Root/Ref")
         ]
@@ -702,7 +702,7 @@ class TestSdfCopyUtils(unittest.TestCase):
     def test_Overlapping(self):
         """Tests cases where src & dst overlap in the same layer."""
         initialState = textwrap.dedent("""\
-            #sdf 1.4.32
+            #usda 1.0
             def "A"
             {
                 def "B"

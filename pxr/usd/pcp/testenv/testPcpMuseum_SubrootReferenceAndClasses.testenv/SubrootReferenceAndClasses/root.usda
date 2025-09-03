@@ -1,0 +1,21 @@
+#usda 1.0
+
+over "Inherit"
+{
+    over "Model"
+    {
+    }
+}
+
+over "Specializes"
+{
+    over "Model"
+    {
+    }
+}
+  
+def "SubrootRef" (
+    references = @./set.usda@</Set/Model>
+)
+{
+}

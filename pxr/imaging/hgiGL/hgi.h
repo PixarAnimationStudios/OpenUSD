@@ -156,6 +156,9 @@ public:
     HGIGL_API
     void EndFrame() override;
 
+    HGIGL_API
+    void GarbageCollect() override;
+
     /// ------------------------------------------------------------------------
     // HgiGL specific API
     /// ------------------------------------------------------------------------

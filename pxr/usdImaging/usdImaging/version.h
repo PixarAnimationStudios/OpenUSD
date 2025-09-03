@@ -39,8 +39,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Version 19 - UsdImagingPrimAdapter::InvalidateImagingSubprim takes
 //              invalidationType as argument.
 // Version 20 - Adding UsdImagingCreateSceneIndices.
+// Version 21 - Removes UsdImagingDirectMaterialBindingsSchema and 
+//              UsdImagingCollectionMaterial BindingsSchema in favor of
+//              UsdImagingMaterialBindingsSchema and 
+//              UsdImagingMaterialBindingSchema.
 
-#define USD_IMAGING_API_VERSION 20
+#define USD_IMAGING_API_VERSION 21
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

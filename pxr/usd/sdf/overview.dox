@@ -223,4 +223,6 @@ See \subpage Sdf_Page_FileFormatPlugin for information about creating file forma
 
 See \subpage Sdf_Page_VariableExpressions for information about variable expressions.
 
+\subpage Sdf_Page_BooleanExpressions "&zwnj;"
+
 */

@@ -14,12 +14,11 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TraceAggregateNodeRefPtr
-TraceAggregateNode::Append(Id id, const TfToken &key,
+TraceAggregateNode::Append(const TfToken &key,
                            TimeStamp ts, int c, int xc)
 {
     TraceAggregateNodeRefPtr n = GetChild(key);
     if (n) {
-        n->_id = id;
         n->_ts += ts;
         n->_count += c;
         n->_recursiveCount += c;
@@ -28,7 +27,7 @@ TraceAggregateNode::Append(Id id, const TfToken &key,
         n->_recursiveExclusiveTs += ts;
     }
     else {
-        n = TraceAggregateNode::New(id,key,ts,c,xc);
+        n = TraceAggregateNode::New(key,ts,c,xc);
         _children.push_back(n);
         _childrenByKey[key] = _children.size() - 1;
     }
@@ -45,7 +44,6 @@ void
 TraceAggregateNode::Append(TraceAggregateNodeRefPtr child) {
     TraceAggregateNodeRefPtr n = GetChild(child->GetKey());
     if (n) {
-        n->_id = child->_id;
         n->_ts += child->_ts;
         n->_count += child->_count;
         n->_recursiveCount += child->_count;
@@ -332,7 +330,7 @@ TraceAggregateNode::_MergeRecursive(const TraceAggregateNodeRefPtr &node)
         if (!n)
         {
             // Create an empty node to merge with.
-            n = TraceAggregateNode::New( child->GetId(), child->GetKey(), 
+            n = TraceAggregateNode::New(child->GetKey(), 
                                 child->GetInclusiveTime(), 
                                 0, child->GetExclusiveCount() );
 

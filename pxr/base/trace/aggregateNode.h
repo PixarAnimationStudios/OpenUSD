@@ -46,41 +46,25 @@ public:
 
     using TimeStamp = TraceEvent::TimeStamp;
 
-    // This class is only used for validity checks.
-    // FIXME: This class should be removed.
-    class Id
-    {
-    public:
-        Id() : _valid(false) {}
-        Id(const TraceThreadId&) : _valid(true) {}
-        bool IsValid() const { return _valid; }
-    private:
-        bool _valid;
-    };
-
     static ThisRefPtr New() {
-        return This::New(Id(), TfToken("root"), 0, 0);
+        return This::New(TfToken("root"), 0, 0);
     }
 
-    static ThisRefPtr New(const Id &id,
-                          const TfToken &key,
+    static ThisRefPtr New(const TfToken &key,
                           const TimeStamp ts,
                           const int count = 1,
                           const int exclusiveCount = 1) {
-        return TfCreateRefPtr(new This(id, key, ts, count, exclusiveCount));
+        return TfCreateRefPtr(new This(key, ts, count, exclusiveCount));
     }
 
     TRACE_API TraceAggregateNodeRefPtr 
-    Append(Id id, const TfToken &key, TimeStamp ts,
+    Append(const TfToken &key, TimeStamp ts,
            int c = 1, int xc = 1);
 
     TRACE_API void Append(TraceAggregateNodeRefPtr child);
 
     /// Returns the node's key.
-    TfToken GetKey() { return _key;}
-
-    /// Returns the node's id.
-    const Id &GetId() { return _id;}
+    const TfToken& GetKey() { return _key;}
 
     /// \name Profile Data Accessors
     /// @{
@@ -191,9 +175,9 @@ public:
 
 private:
 
-    TraceAggregateNode(const Id &id, const TfToken &key, TimeStamp ts,
+    TraceAggregateNode(const TfToken &key, TimeStamp ts,
               int count, int exclusiveCount) :
-        _id(id), _key(key), _ts(ts), _exclusiveTs(ts),
+        _key(key), _ts(ts), _exclusiveTs(ts),
         _count(count), _exclusiveCount(exclusiveCount),
         _recursiveCount(count), _recursiveExclusiveTs(ts), _expanded(false), 
         _isRecursionMarker(false), _isRecursionHead(false),
@@ -205,9 +189,7 @@ private:
 
     void _SetAsRecursionMarker(TraceAggregateNodePtr parent);
 
-    Id _id;
-    TfToken _key;
-
+    const TfToken _key;
     TimeStamp _ts;  
     TimeStamp _exclusiveTs;
     int _count;

@@ -58,6 +58,44 @@ bool _FanTriangulate(GfVec3i *dst, int const *src,
     return _FanTriangulate(dst->data(), src, offset, index, size, flip);
 }
 
+/// In the return value, the first value is the number of triangles for the 
+/// triangulated mesh. The second value is true only if the mesh is already all 
+/// triangles.
+static
+std::pair<int, bool>
+_CountTriangles(SdfPath const& id,
+    VtIntArray const& faceVertexCounts,
+    VtIntArray const& holeIndices)
+{
+    const int numFaces = static_cast<int>(faceVertexCounts.size());
+    const int numHoleFaces = static_cast<int>(holeIndices.size());
+    const int * numVertsPtr = faceVertexCounts.cdata();
+    const int * holeFacesPtr = holeIndices.cdata();
+    int numTris = 0;
+    bool invalidTopology = false;
+    bool allTriangles = true;
+    for (int i = 0, holeIndex = 0; i < numFaces; ++i) {
+        const int nv = numVertsPtr[i];
+        if (nv < 3) {
+            // skip degenerated face
+            invalidTopology = true;
+            allTriangles = false;
+        } else if (holeIndex < numHoleFaces && holeFacesPtr[holeIndex] == i) {
+            // skip hole face
+            ++holeIndex;
+            allTriangles = false;
+        } else {
+            numTris += nv - 2;
+            allTriangles &= (nv == 3);
+        }
+    }
+    if (invalidTopology) {
+        TF_WARN("degenerated face found [%s]", id.GetText());
+    }
+
+    return {numTris, allTriangles};
+}
+
 void
 HdMeshUtil::ComputeTriangleIndices(VtVec3iArray *indices,
                                    VtIntArray *primitiveParams,
@@ -77,31 +115,10 @@ HdMeshUtil::ComputeTriangleIndices(VtVec3iArray *indices,
 
     // generate triangle index buffer
 
-    int const * numVertsPtr = _topology->GetFaceVertexCounts().cdata();
-    int const * vertsPtr = _topology->GetFaceVertexIndices().cdata();
-    int const * holeFacesPtr = _topology->GetHoleIndices().cdata();
-    int numFaces = _topology->GetFaceVertexCounts().size();
-    int numVertIndices = _topology->GetFaceVertexIndices().size();
-    int numTris = 0;
-    int numHoleFaces = _topology->GetHoleIndices().size();
-    bool invalidTopology = false;
-    int holeIndex = 0;
-    for (int i=0; i<numFaces; ++i) {
-        int nv = numVertsPtr[i]-2;
-        if (nv < 1) {
-            // skip degenerated face
-            invalidTopology = true;
-        } else if (holeIndex < numHoleFaces && holeFacesPtr[holeIndex] == i) {
-            // skip hole face
-            ++holeIndex;
-        } else {
-            numTris += nv;
-        }
-    }
-    if (invalidTopology) {
-        TF_WARN("degenerated face found [%s]", _id.GetText());
-        invalidTopology = false;
-    }
+    const VtIntArray& faceVertexCounts = _topology->GetFaceVertexCounts();
+    const VtIntArray& holeIndices = _topology->GetHoleIndices();
+    const auto [numTris, allTriangles] =
+        _CountTriangles(_id, faceVertexCounts, holeIndices);
 
     indices->resize(numTris); // vec3 per face
     primitiveParams->resize(numTris); // int per face
@@ -109,16 +126,44 @@ HdMeshUtil::ComputeTriangleIndices(VtVec3iArray *indices,
         edgeIndices->resize(numTris); // int per face
     }
 
-    bool flip = (_topology->GetOrientation() != HdTokens->rightHanded);
+    const bool flip = (_topology->GetOrientation() != HdTokens->rightHanded);
 
-    // reset holeIndex
-    holeIndex = 0;
+    const VtIntArray& faceVertexIndices = _topology->GetFaceVertexIndices();
+    const int * vertsPtr = faceVertexIndices.cdata();
+
+    // Fast path for already triangulated
+    if (allTriangles && !flip) {
+        // We'd really like to reuse the pointer, but unfortunately that can't
+        // be done without violating strict aliasing due to the datatype change.
+        using TriIndices = std::remove_reference_t<decltype(*indices->data())>;
+        using PolyIndices = std::remove_reference_t<decltype(*vertsPtr)>;
+        static_assert(std::is_trivially_copyable_v<TriIndices>);
+        static_assert(std::is_trivially_copyable_v<PolyIndices>);
+        // Casting to void here to prevent an excessively strict warning from
+        // GCC. This memcpy is safe as long as the static asserts above pass.
+        std::memcpy(static_cast<void*>(indices->data()),
+            static_cast<const void*>(vertsPtr), numTris * sizeof(TriIndices));
+        for (int i = 0; i < numTris; ++i) {
+            (*primitiveParams)[i] = EncodeCoarseFaceParam(i, 0);
+            if (edgeIndices) {
+                (*edgeIndices)[i] = 3 * i;
+            }
+        }
+        return;
+    }
+
+    const int * numVertsPtr = faceVertexCounts.cdata();
+    const int * holeFacesPtr = holeIndices.cdata();
+    const int numFaces = static_cast<int>(faceVertexCounts.size());
+    const int numVertIndices = static_cast<int>(faceVertexIndices.size());
+    const int numHoleFaces = static_cast<int>(holeIndices.size());
 
     // i  -> authored face index [0, numFaces)
     // tv -> triangulated face index [0, numTris)
     // v  -> index to the first vertex (index) for face i
     // ev -> edges visited
-    for (int i=0,tv=0,v=0,ev=0; i<numFaces; ++i) {
+    bool invalidTopology = false;
+    for (int i = 0, tv = 0, v = 0, ev = 0, holeIndex = 0; i < numFaces; ++i) {
         int nv = numVertsPtr[i];
         if (nv < 3) {
             // Skip degenerate faces.
@@ -201,10 +246,11 @@ HdMeshUtil::ComputeTriangleIndices(VtVec3iArray *indices,
 // Face-varying triangulation helper function, to deal with type polymorphism.
 template <typename T>
 static
-void _TriangulateFaceVarying(
+HdMeshComputationResult
+_TriangulateFaceVarying(
         SdfPath const& id,
         VtIntArray const &faceVertexCounts,
-        VtIntArray const &holeFaces,
+        VtIntArray const &holeIndices,
         bool flip,
         void const* sourceUntyped,
         int numElements,
@@ -212,39 +258,26 @@ void _TriangulateFaceVarying(
 {
     T const* source = static_cast<T const*>(sourceUntyped);
 
+    const auto [numTris, allTriangles] =
+        _CountTriangles(id, faceVertexCounts, holeIndices);
+
+    // Already triangulated
+    if (allTriangles && !flip) {
+        return HdMeshComputationResult::Unchanged;
+    }
+
     // CPU face-varying triangulation
+    const int numFaces = static_cast<int>(faceVertexCounts.size());
+    const int numHoleFaces = static_cast<int>(holeIndices.size());
+
+    VtArray<T> results(numTris * 3);
     bool invalidTopology = false;
-    int numFVarValues = 0;
-    int holeIndex = 0;
-    int numHoleFaces = holeFaces.size();
-    for (int i = 0; i < (int)faceVertexCounts.size(); ++i) {
-        int nv = faceVertexCounts[i] - 2;
-        if (nv < 1) {
-            // skip degenerated face
-            invalidTopology = true;
-        } else if (holeIndex < numHoleFaces && holeFaces[holeIndex] == i) {
-            // skip hole face
-            ++holeIndex;
-        } else {
-            numFVarValues += 3 * nv;
-        }
-    }
-    if (invalidTopology) {
-        TF_WARN("degenerated face found [%s]", id.GetText());
-        invalidTopology = false;
-    }
-
-    VtArray<T> results(numFVarValues);
-    // reset holeIndex
-    holeIndex = 0;
-
-    int dstIndex = 0;
-    for (int i = 0, v = 0; i < (int)faceVertexCounts.size(); ++i) {
-        int nVerts = faceVertexCounts[i];
+    for (int i = 0, v = 0, holeIndex = 0, dstIndex = 0; i < numFaces; ++i) {
+        const int nVerts = faceVertexCounts[i];
 
         if (nVerts < 3) {
             // Skip degenerate faces.
-        } else if (holeIndex < numHoleFaces && holeFaces[holeIndex] == i) {
+        } else if (holeIndex < numHoleFaces && holeIndices[holeIndex] == i) {
             // Skip hole faces.
             ++holeIndex;
         } else {
@@ -277,9 +310,10 @@ void _TriangulateFaceVarying(
     }
 
     *triangulated = results;
+    return HdMeshComputationResult::Success;
 }
 
-bool
+HdMeshComputationResult
 HdMeshUtil::ComputeTriangulatedFaceVaryingPrimvar(void const* source,
                                                   int numElements,
                                                   HdType dataType,
@@ -289,11 +323,11 @@ HdMeshUtil::ComputeTriangulatedFaceVaryingPrimvar(void const* source,
 
     if (_topology == nullptr) {
         TF_CODING_ERROR("No topology provided for triangulation");
-        return false;
+        return HdMeshComputationResult::Error;
     }
     if (triangulated == nullptr) {
         TF_CODING_ERROR("No output buffer provided for triangulation");
-        return false;
+        return HdMeshComputationResult::Error;
     }
 
     VtIntArray const &faceVertexCounts = _topology->GetFaceVertexCounts();
@@ -308,44 +342,34 @@ HdMeshUtil::ComputeTriangulatedFaceVaryingPrimvar(void const* source,
 
     switch (dataType) {
     case HdTypeFloat:
-        _TriangulateFaceVarying<float>(_id, faceVertexCounts, holeFaces, flip,
+        return _TriangulateFaceVarying<float>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
-        break;
     case HdTypeFloatVec2:
-        _TriangulateFaceVarying<GfVec2f>(_id, faceVertexCounts, holeFaces, flip,
+        return _TriangulateFaceVarying<GfVec2f>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
-        break;
     case HdTypeFloatVec3:
-        _TriangulateFaceVarying<GfVec3f>(_id, faceVertexCounts, holeFaces, flip,
+        return _TriangulateFaceVarying<GfVec3f>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
-        break;
     case HdTypeFloatVec4:
-        _TriangulateFaceVarying<GfVec4f>(_id, faceVertexCounts, holeFaces, flip,
+        return _TriangulateFaceVarying<GfVec4f>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
-        break;
     case HdTypeDouble:
-        _TriangulateFaceVarying<double>(_id, faceVertexCounts, holeFaces, flip,
+        return _TriangulateFaceVarying<double>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
-        break;
     case HdTypeDoubleVec2:
-        _TriangulateFaceVarying<GfVec2d>(_id, faceVertexCounts, holeFaces, flip,
+        return _TriangulateFaceVarying<GfVec2d>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
-        break;
     case HdTypeDoubleVec3:
-        _TriangulateFaceVarying<GfVec3d>(_id, faceVertexCounts, holeFaces, flip,
+        return _TriangulateFaceVarying<GfVec3d>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
-        break;
     case HdTypeDoubleVec4:
-        _TriangulateFaceVarying<GfVec4d>(_id, faceVertexCounts, holeFaces, flip,
+        return _TriangulateFaceVarying<GfVec4d>(_id, faceVertexCounts, holeFaces, flip,
                 source, numElements, triangulated);
-        break;
     default:
         TF_CODING_ERROR("Unsupported primvar type for triangulation [%s]",
                         _id.GetText());
-        return false;
+        return HdMeshComputationResult::Error;
     }
-
-    return true;
 }
 
 //-------------------------------------------------------------------------

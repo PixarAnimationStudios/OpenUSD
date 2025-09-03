@@ -25,6 +25,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_WEAK_PTRS(PcpLayerStack);
 
 class Usd_InterpolatorBase;
+class UsdTimeCode;
 
 /// Returns true if the given scene description metadata \p fieldName is
 /// associated with value clip functionality.
@@ -149,7 +150,7 @@ public:
 
     template <class T>
     bool QueryTimeSample(
-        const SdfPath& path, ExternalTime time, 
+        const SdfPath& path, UsdTimeCode time, 
         Usd_InterpolatorBase* interpolator, T* value) const;
 
     /// Return true if this clip has authored time samples for the attribute
@@ -223,7 +224,7 @@ private:
 
     // Helpers to translate between internal and external time domains.
     InternalTime _TranslateTimeToInternal(
-        ExternalTime extTime) const;
+        UsdTimeCode extTime) const;
     ExternalTime _TranslateTimeToExternal(
         InternalTime clipTime, size_t i1, size_t i2) const;
 

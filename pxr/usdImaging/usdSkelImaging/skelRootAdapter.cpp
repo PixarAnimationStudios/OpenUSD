@@ -5,6 +5,8 @@
 // https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdSkelImaging/skelRootAdapter.h"
+
+#include "pxr/usdImaging/usdSkelImaging/bindingSchema.h"
 #include "pxr/usdImaging/usdSkelImaging/skeletonAdapter.h"
 
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
@@ -14,7 +16,9 @@
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usdGeom/boundable.h"
@@ -64,7 +68,7 @@ UsdSkelImagingSkelRootAdapter::Populate(
     UsdSkelRoot skelRoot(prim);
     UsdSkelCache skelCache;
     skelCache.Populate(skelRoot, predicate);
-    
+
     std::vector<UsdSkelBinding> bindings;
     if (!skelCache.ComputeSkelBindings(skelRoot, &bindings, predicate)) {
         return {};
@@ -212,8 +216,19 @@ UsdSkelImagingSkelRootAdapter::GetImagingSubprimData(
         return nullptr;
     }
 
-    return UsdImagingDataSourcePrim::New(
-        prim.GetPath(), prim, stageGlobals);
+    static HdContainerDataSourceHandle const skelRootDs =
+        HdRetainedContainerDataSource::New(
+            UsdSkelImagingBindingSchema::GetSchemaToken(),
+            HdRetainedContainerDataSource::New(
+                UsdSkelImagingBindingSchemaTokens->hasSkelRoot,
+                HdRetainedTypedSampledDataSource<bool>::New(true)));
+
+    return
+        HdOverlayContainerDataSource::New(
+            UsdImagingDataSourcePrim::New(
+                prim.GetPath(), prim, stageGlobals),
+            skelRootDs);
+
 }
 
 HdDataSourceLocatorSet

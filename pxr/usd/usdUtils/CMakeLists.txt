@@ -10,10 +10,7 @@ pxr_library(usdUtils
         usd
         usdGeom
         usdShade
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
+        TBB::tbb
 
     PUBLIC_CLASSES
         authoring
@@ -74,6 +71,7 @@ pxr_library(usdUtils
 )
 
 pxr_test_scripts(
+    testenv/testUsdUtilsAssetLocalization.py
     testenv/testUsdUtilsAuthoring.py
     testenv/testUsdUtilsCoalescingDiagnosticDelegate.py
     testenv/testUsdUtilsConditionalAbortDiagnosticDelegate.py
@@ -136,6 +134,11 @@ pxr_build_test(testUsdUtilsTimeCodeRangeCpp
         usdUtils
     CPPFILES
         testenv/testUsdUtilsTimeCodeRange.cpp
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsAssetLocalization
+    DEST testUsdUtilsAssetLocalization
 )
 
 pxr_install_test_dir(
@@ -292,6 +295,12 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsUserProcessingFunc
     DEST testUsdUtilsUserProcessingFunc
+)
+
+pxr_register_test(testUsdUtilsAssetLocalization
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsAssetLocalization"
+    EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsAuthoring

@@ -279,7 +279,7 @@ main(int argc, char** argv)
         std::cerr << argv[0] << " root_layer prim_path" << std::endl;
         std::cerr << "\tPrints results of iteration over prim_path in scene "
                   << "with given root_layer" << std::endl;
-        std::cerr << "\tex: " << argv[0] << " root.sdf /Model" << std::endl;
+        std::cerr << "\tex: " << argv[0] << " root.usda /Model" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -300,7 +300,7 @@ main(int argc, char** argv)
     }
 
     // Otherwise, run the normal test suite.
-    std::unique_ptr<PcpCache> cache = _CreateCacheForRootLayer("root.sdf");
+    std::unique_ptr<PcpCache> cache = _CreateCacheForRootLayer("root.usda");
     TF_AXIOM(cache);
 
     SdfPathSet includePayload;

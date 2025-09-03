@@ -45,6 +45,12 @@ public:
     HDX_API
     virtual bool IsConverged() const;
 
+    /// Are all tasks at taskPaths in the render index converged?
+    static
+    HDX_API
+    bool AreTasksConverged(HdRenderIndex * const renderIndex,
+                           const SdfPathVector &taskPaths);
+
     /// We override HdTask::Sync, but make it 'final' to make sure derived
     /// classes can't override it and instead override _Sync.
     /// This 'non-virtual interface'-like pattern allows us to ensure we always

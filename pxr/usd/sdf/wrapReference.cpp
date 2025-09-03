@@ -77,7 +77,7 @@ void wrapReference()
 
     // Note: Since we have no proxy for Sdf.Reference we wrap it as an
     //       immutable type to avoid confusion about code like this
-    //       prim.referenceList.explicitItems[0].assetPath = '//pixar/test.sdf'
+    //       prim.referenceList.explicitItems[0].assetPath = '//pixar/test.usda'
     //       This looks like it's updating the assetPath for the prim's
     //       first explicit reference, but would instead modify a temporary
     //       Sdf.Reference object.

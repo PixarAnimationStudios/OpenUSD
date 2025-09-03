@@ -33,10 +33,17 @@ TF_DEFINE_PUBLIC_TOKENS(UsdImagingCollectionMaterialBindingSchemaTokens,
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdPathDataSourceHandle
-UsdImagingCollectionMaterialBindingSchema::GetCollectionPath() const
+UsdImagingCollectionMaterialBindingSchema::GetCollectionPrimPath() const
 {
     return _GetTypedDataSource<HdPathDataSource>(
-        UsdImagingCollectionMaterialBindingSchemaTokens->collectionPath);
+        UsdImagingCollectionMaterialBindingSchemaTokens->collectionPrimPath);
+}
+
+HdTokenDataSourceHandle
+UsdImagingCollectionMaterialBindingSchema::GetCollectionName() const
+{
+    return _GetTypedDataSource<HdTokenDataSource>(
+        UsdImagingCollectionMaterialBindingSchemaTokens->collectionName);
 }
 
 HdPathDataSourceHandle
@@ -53,20 +60,13 @@ UsdImagingCollectionMaterialBindingSchema::GetBindingStrength() const
         UsdImagingCollectionMaterialBindingSchemaTokens->bindingStrength);
 }
 
-HdPathDataSourceHandle
-UsdImagingCollectionMaterialBindingSchema::GetBindingOriginPath() const
-{
-    return _GetTypedDataSource<HdPathDataSource>(
-        UsdImagingCollectionMaterialBindingSchemaTokens->bindingOriginPath);
-}
-
 /*static*/
 HdContainerDataSourceHandle
 UsdImagingCollectionMaterialBindingSchema::BuildRetained(
-        const HdPathDataSourceHandle &collectionPath,
+        const HdPathDataSourceHandle &collectionPrimPath,
+        const HdTokenDataSourceHandle &collectionName,
         const HdPathDataSourceHandle &materialPath,
-        const HdTokenDataSourceHandle &bindingStrength,
-        const HdPathDataSourceHandle &bindingOriginPath
+        const HdTokenDataSourceHandle &bindingStrength
 )
 {
     TfToken _names[4];
@@ -74,9 +74,14 @@ UsdImagingCollectionMaterialBindingSchema::BuildRetained(
 
     size_t _count = 0;
 
-    if (collectionPath) {
-        _names[_count] = UsdImagingCollectionMaterialBindingSchemaTokens->collectionPath;
-        _values[_count++] = collectionPath;
+    if (collectionPrimPath) {
+        _names[_count] = UsdImagingCollectionMaterialBindingSchemaTokens->collectionPrimPath;
+        _values[_count++] = collectionPrimPath;
+    }
+
+    if (collectionName) {
+        _names[_count] = UsdImagingCollectionMaterialBindingSchemaTokens->collectionName;
+        _values[_count++] = collectionName;
     }
 
     if (materialPath) {
@@ -88,19 +93,22 @@ UsdImagingCollectionMaterialBindingSchema::BuildRetained(
         _names[_count] = UsdImagingCollectionMaterialBindingSchemaTokens->bindingStrength;
         _values[_count++] = bindingStrength;
     }
-
-    if (bindingOriginPath) {
-        _names[_count] = UsdImagingCollectionMaterialBindingSchemaTokens->bindingOriginPath;
-        _values[_count++] = bindingOriginPath;
-    }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
 
 UsdImagingCollectionMaterialBindingSchema::Builder &
-UsdImagingCollectionMaterialBindingSchema::Builder::SetCollectionPath(
-    const HdPathDataSourceHandle &collectionPath)
+UsdImagingCollectionMaterialBindingSchema::Builder::SetCollectionPrimPath(
+    const HdPathDataSourceHandle &collectionPrimPath)
 {
-    _collectionPath = collectionPath;
+    _collectionPrimPath = collectionPrimPath;
+    return *this;
+}
+
+UsdImagingCollectionMaterialBindingSchema::Builder &
+UsdImagingCollectionMaterialBindingSchema::Builder::SetCollectionName(
+    const HdTokenDataSourceHandle &collectionName)
+{
+    _collectionName = collectionName;
     return *this;
 }
 
@@ -120,22 +128,14 @@ UsdImagingCollectionMaterialBindingSchema::Builder::SetBindingStrength(
     return *this;
 }
 
-UsdImagingCollectionMaterialBindingSchema::Builder &
-UsdImagingCollectionMaterialBindingSchema::Builder::SetBindingOriginPath(
-    const HdPathDataSourceHandle &bindingOriginPath)
-{
-    _bindingOriginPath = bindingOriginPath;
-    return *this;
-}
-
 HdContainerDataSourceHandle
 UsdImagingCollectionMaterialBindingSchema::Builder::Build()
 {
     return UsdImagingCollectionMaterialBindingSchema::BuildRetained(
-        _collectionPath,
+        _collectionPrimPath,
+        _collectionName,
         _materialPath,
-        _bindingStrength,
-        _bindingOriginPath
+        _bindingStrength
     );
 }
 

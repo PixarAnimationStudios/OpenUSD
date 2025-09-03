@@ -23,21 +23,11 @@ using namespace pxr_boost::python;
 void wrapUsdShadeShaderDefUtils()
 {
     scope thisScope = class_<UsdShadeShaderDefUtils>("ShaderDefUtils", no_init)
-        .def("GetNodeDiscoveryResults", 
-             &UsdShadeShaderDefUtils::GetNodeDiscoveryResults,
-             (arg("shaderDef"), arg("sourceUri")),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetNodeDiscoveryResults")
         .def("GetDiscoveryResults", 
              &UsdShadeShaderDefUtils::GetDiscoveryResults,
              (arg("shaderDef"), arg("sourceUri")),
              return_value_policy<TfPySequenceToList>())
         .staticmethod("GetDiscoveryResults")
-        .def("GetShaderProperties", 
-             &UsdShadeShaderDefUtils::GetShaderProperties,
-             arg("shaderDef"),
-             return_value_policy<TfPySequenceToList>())
-        .staticmethod("GetShaderProperties")
         .def("GetProperties", 
              &UsdShadeShaderDefUtils::GetProperties,
              arg("shaderDef"),

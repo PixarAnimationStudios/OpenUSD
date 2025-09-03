@@ -28,8 +28,6 @@ UsdPrimDefinition::_IntializeForTypedSchema(
         // the efficiency of value resolution by allowing UsdStage to access
         // fallback metadata from both prims and properties through the same
         // code path without extra conditionals.
-        // Note that API schema prim definitions do not provide prim level
-        // metadata so they exclude this mapping
         _propLayerAndPathMap.emplace(TfToken(), _primLayerAndPath);
     }
 }
@@ -47,7 +45,14 @@ UsdPrimDefinition::_IntializeForAPISchema(
 
     _primLayerAndPath = {get_pointer(schematicsLayer), schematicsPrimPath};
 
-    _MapSchematicsPropertyPaths(propertiesToIgnore);
+    const std::pair<TfToken, TfToken> identifierAndInstance = 
+                UsdSchemaRegistry::GetTypeNameAndInstance(apiSchemaName);
+
+    // Only single apply API schemas are allowed to provide prim metadata.
+    if (_MapSchematicsPropertyPaths(propertiesToIgnore) && 
+        identifierAndInstance.second == TfToken()) {
+        _propLayerAndPathMap.emplace(TfToken(), _primLayerAndPath);
+    }
 }
 
 SdfPropertySpecHandle 
@@ -221,10 +226,13 @@ UsdPrimDefinition::_MapSchematicsPropertyPaths(
     return true;
 }
 
-// Returns true if the property with the given name in these two separate prim
-// definitions have the same type. "Same type" here means that they are both
+// Returns true if the two UsdPrimDefinition::Property objects from two separate 
+// prim definitions have the same type. "Same type" here means that they are both
 // the same kind of property (attribute or relationship) and if they are 
-// attributes, that their attributes type names are the same.
+// attributes, that their attribute's type names are the same.
+// A UsdPrimDefinition::Property can also represent prim metadata, so in that 
+// case, "same type" can also mean that both Property objects represent
+// prim metadata.
 /*static*/
 bool UsdPrimDefinition::_PropertyTypesMatch(
     const Property &strongProp,
@@ -234,12 +242,27 @@ bool UsdPrimDefinition::_PropertyTypesMatch(
         return false;
     }
 
+    // If both properties are prim specs, they represent prim metadata.
+    if (strongProp.GetSpecType() == SdfSpecTypePrim) {
+        if (weakProp.GetSpecType() != SdfSpecTypePrim) {
+            TF_CODING_ERROR("Cannot compose schema specs: Schema prim spec at "
+                    "path '%s' in layer '%s' is a different spec type than "
+                    "spec at path '%s' in layer '%s'.",
+                    strongProp._layerAndPath->path.GetText(),
+                    strongProp._layerAndPath->layer->GetIdentifier().c_str(),
+                    weakProp._layerAndPath->path.GetText(),
+                    weakProp._layerAndPath->layer->GetIdentifier().c_str());
+            return false;
+        }
+        return true;
+    }
+
     if (strongProp.IsRelationship()) {
         // Compare spec types (relationship vs attribute)
         if (!weakProp.IsRelationship()) {
             TF_WARN("Cannot compose schema specs: Schema relationship spec at "
                     "path '%s' in layer '%s' is a different spec type than "
-                    "schema attribute spec at path '%s' in layer '%s'.",
+                    "spec at path '%s' in layer '%s'.",
                     strongProp._layerAndPath->path.GetText(),
                     strongProp._layerAndPath->layer->GetIdentifier().c_str(),
                     weakProp._layerAndPath->path.GetText(),
@@ -258,7 +281,7 @@ bool UsdPrimDefinition::_PropertyTypesMatch(
     if (!weakAttr) {
             TF_WARN("Cannot compose schema specs: Schema attribute spec at "
                     "path '%s' in layer '%s' is a different spec type than "
-                    "schema relationship spec at path '%s' in layer '%s'.",
+                    "spec at path '%s' in layer '%s'.",
                     strongProp._layerAndPath->path.GetText(),
                     strongProp._layerAndPath->layer->GetIdentifier().c_str(),
                     weakProp._layerAndPath->path.GetText(),
@@ -321,8 +344,26 @@ void UsdPrimDefinition::_AddOrComposeProperty(
     const _LayerAndPath &layerAndPath)
 {
     // Note that the prop name may be empty as we use the empty path to
-    // map to the spec containing the prim level metadata. We need to 
-    // make sure we don't add the empty name to properties list if 
+    // map to the spec containing the prim level metadata. If so, and if there
+    // are not already opinions for the prim metadata, set only the allowed 
+    // metadata (the 'propertyOrder' field) in _propLayerAndPathMap. 
+    // This is a special case for prim metadata because the composed prim 
+    // metadata is only allowed to keep the 'propertyOrder' field. This means 
+    // we can't start by inserting it into _propLayerAndPathMap as we do below 
+    // with properties.
+    if ((_propLayerAndPathMap.find(TfToken()) == _propLayerAndPathMap.end()) &&  
+            propName.IsEmpty()) {
+        if (SdfSpecHandle composedPrimSpec = 
+            _CreateComposedPrimOrPropertyIfNeeded(propName, _LayerAndPath(), layerAndPath)) {
+            _LayerAndPath composedMetadata = {
+                get_pointer(composedPrimSpec->GetLayer()), 
+                composedPrimSpec->GetPath()};
+            _propLayerAndPathMap.emplace(TfToken(), composedMetadata);
+        }
+        return;
+    }
+
+    // We need to make sure we don't add the empty name to properties list if 
     // we successfully insert a metadata mapping.
     auto insertResult = _propLayerAndPathMap.emplace(propName, layerAndPath);
     if (insertResult.second){
@@ -334,37 +375,21 @@ void UsdPrimDefinition::_AddOrComposeProperty(
         // composed in from the new weaker property definition so we try to
         // do that here.
         _LayerAndPath &existingProp = insertResult.first->second;
-        if (SdfPropertySpecHandle composedPropSpec = 
-                _CreateComposedPropertyIfNeeded(
+        if (SdfSpecHandle composedSpec = 
+                _CreateComposedPrimOrPropertyIfNeeded(
                     propName, existingProp, layerAndPath)) {
             // If a composed property was created, replace the existing
             // property definition. Otherwise, we just leave the existing 
             // property as is.
             existingProp = {
-                get_pointer(composedPropSpec->GetLayer()), 
-                composedPropSpec->GetPath()};
+                get_pointer(composedSpec->GetLayer()), 
+                composedSpec->GetPath()};
         }
     }
 }
 
-// We limit which fields are allowed to be composed in from a property defined
-// in a weaker prim definition when a prim definition already has a property
-// with the same name. 
-static 
-const TfTokenVector &_GetAllowedComposeFromWeakerPropertyFields()
-{
-    // Right now we only allow the "default" value (of attributes) and the 
-    // "hidden" field to be composed from a weaker property. We may selectively
-    // expand this set of fields if it becomes necessary.
-    static const TfTokenVector fields = {
-        SdfFieldKeys->Default, 
-        SdfFieldKeys->Hidden
-    };
-    return fields;
-}
-
-SdfPropertySpecHandle 
-UsdPrimDefinition::_FindOrCreatePropertySpecForComposition(
+SdfSpecHandle 
+UsdPrimDefinition::_FindOrCreateSpecForComposition(
     const TfToken &propName,
     const _LayerAndPath &srcLayerAndPath)
 {
@@ -373,16 +398,16 @@ UsdPrimDefinition::_FindOrCreatePropertySpecForComposition(
     // don't need unique prim spec names/paths.
     static const SdfPath primPath("/ComposedProperties");
 
-    SdfPropertySpecHandle destProp;
+    SdfSpecHandle destSpec;
 
     // If we have a composed layer, we can check if we've already created
-    // a spec for the composed property and return it if we have. Otherwise, 
+    // a spec for the composed spec and return it if we have. Otherwise, 
     // we create a new layer for this prim definition to write its composed
-    // properties.
+    // properties and metadata.
     if (_composedPropertyLayer) {
-        if (destProp = _composedPropertyLayer->GetPropertyAtPath(
+        if (destSpec = _composedPropertyLayer->GetObjectAtPath(
                 primPath.AppendProperty(propName))) {
-            return destProp;
+            return destSpec;
         }
     } else {
         _composedPropertyLayer = SdfLayer::CreateAnonymous(
@@ -398,79 +423,150 @@ UsdPrimDefinition::_FindOrCreatePropertySpecForComposition(
             _composedPropertyLayer, primPath.GetName(), SdfSpecifierDef);
     }
 
-    // Create a copy of the source attribute or relationship spec. We do this 
-    // manually as the copy utils for Sdf specs are more generalized than what 
-    // we need here.
+    // If srcLayerAndPath is invalid, stop here. This is a special case for 
+    // prim metadata, to create a blank slate in the case that only a weaker
+    // opinion is provided so that it can be composed correctly later.
+    if (!srcLayerAndPath) {
+        return destPrim;
+    }
+
+    // Create a copy of the source spec (attribute, relationship, or prim metadata). 
+    // We do this manually as the copy utils for Sdf specs are more generalized 
+    // than what we need here.
     const Property srcProp(&srcLayerAndPath);
     if (srcProp.IsAttribute()) {
         const Attribute srcAttr(srcProp);
-        destProp = SdfAttributeSpec::New(
+        destSpec = SdfAttributeSpec::New(
             destPrim, 
             propName,
             srcAttr.GetTypeName(), 
             srcAttr.GetVariability());
     } else if (srcProp.IsRelationship()) {
-        destProp = SdfRelationshipSpec::New(
+        destSpec = SdfRelationshipSpec::New(
             destPrim, 
             propName, 
             srcProp.GetVariability());
+    } else if (srcProp.GetSpecType() == SdfSpecTypePrim) {
+        destSpec = destPrim;
     } else {
         TF_CODING_ERROR("Cannot create a property spec from spec at layer "
-            "'%s' and path '%s'. The spec type is not an attribute or "
-            "relationship.",
+            "'%s' and path '%s'. The spec type is not an attribute, "
+            "relationship, or prim spec.",
             srcLayerAndPath.layer->GetIdentifier().c_str(),
             srcLayerAndPath.path.GetText());
-        return destProp;
+        return destSpec;
     }
 
     // Copy all the metadata fields from the source spec to the new spec.
     for (const TfToken &field : srcProp.ListMetadataFields()) {
         VtValue value;
         srcLayerAndPath.HasField(field, &value);
-        destProp->SetField(field, value);
+        destSpec->SetField(field, value);
     }
 
-    return destProp;
+    return destSpec;
 }
 
-SdfPropertySpecHandle 
-UsdPrimDefinition::_CreateComposedPropertyIfNeeded(
+// These fields are not allowed to be composed in from a property defined
+// in a weaker prim definition when a prim definition already has a property
+// with the same name. 
+static const TfTokenVector &_GetDisallowedComposeFromWeakerFields(
+    const SdfSpecType specType)
+{
+    static const TfTokenVector propertyFields = {
+        SdfFieldKeys->Custom, 
+        SdfFieldKeys->Documentation,
+    };
+
+    static const TfTokenVector primFields = {
+        SdfFieldKeys->Documentation
+    };
+
+    // If specType is SdfSpecTypePrim, we are composing prim metadata. 
+    // Otherwise, we are composing property metadata.
+    return specType == SdfSpecTypePrim ? primFields : propertyFields;
+}
+
+SdfSpecHandle 
+UsdPrimDefinition::_CreateComposedPrimOrPropertyIfNeeded(
     const TfToken &propName,
     const _LayerAndPath &strongProp, 
     const _LayerAndPath &weakProp)
 {
-    SdfPropertySpecHandle destProp;
+    SdfSpecHandle destSpec;
 
     // If the property types don't match, then we can't compose the properties
     // together.
-    if (!_PropertyTypesMatch(Property(&strongProp), Property(&weakProp))) {
-        return destProp;
+    if (strongProp && !_PropertyTypesMatch(Property(&strongProp), Property(&weakProp))) {
+        return destSpec;
     }
 
-    for (const TfToken &field : _GetAllowedComposeFromWeakerPropertyFields()) {
-        // If the stronger property already has the field, skip it.
-        if (strongProp.HasField<VtValue>(field, nullptr)) {
+    const TfTokenVector& blockedFields = _GetDisallowedComposeFromWeakerFields(
+        Property(&weakProp).GetSpecType());
+
+    for (const TfToken &field : Property(&weakProp).ListMetadataFields()) {        
+        // Dictionary-valued metadata and the PropertyOrder field are allowed 
+        // to merge with the value from weaker prim definitions. propertyOrder 
+        // from the weaker prim definitions will be appended on to the stronger 
+        // value, while dictionary metadata will be merged recursively.
+        VtValue mergeValue = weakProp.GetField(field);
+        bool allowedMerge = (field == SdfFieldKeys->PropertyOrder) || 
+                            (mergeValue.IsHolding<VtDictionary>());
+        if (!allowedMerge) {
+            // If the stronger property already has the field, skip it.
+            if (strongProp && strongProp.HasField<VtValue>(field, nullptr)) {
+                continue;
+            }
+        }
+
+        // If this field is not allowed to compose from a weaker API, skip it
+        if (std::find(blockedFields.begin(), blockedFields.end(), field) != 
+            blockedFields.end()) {
             continue;
         }
 
-        // Get the field's value from the weaker property. If it doesn't have
-        // the field, we skip it too.
-        VtValue weakValue;
-        if (!weakProp.HasField(field, &weakValue)) {
-            continue;
+        // If the field can merge with a weaker field, copy the stronger field 
+        // value and merge the weaker value into it.
+        if (strongProp && allowedMerge) {
+            VtValue strongValue;
+            if (strongProp.HasField<VtValue>(field, &strongValue)) {
+                if (strongValue.IsHolding<std::vector<TfToken>>()) {
+                    // Append the contents of the weaker value after the stronger values.
+                    std::vector<TfToken> weakVec = mergeValue.Get<std::vector<TfToken>>();
+                    std::vector<TfToken> strongVec = strongValue.Get<std::vector<TfToken>>();
+                    TfToken::Set uniqueElements(strongVec.begin(), strongVec.end());
+
+                    // We don't want duplicates in the combined list of fields, so
+                    // silently skip any we encounter from the weaker list.
+                    for (TfToken& field : weakVec) {
+                        if (uniqueElements.insert(field).second) {
+                            strongVec.push_back(field);
+                        }
+                    }
+
+                    mergeValue.Swap(strongVec);
+                } else if (strongValue.IsHolding<VtDictionary>()) {
+                    // Merge dictionaries.
+                    VtDictionary weakDict = mergeValue.Get<VtDictionary>();
+                    VtDictionary strongDict= strongValue.Get<VtDictionary>();
+                    VtDictionary mergeDict = VtDictionaryOverRecursive(strongDict, weakDict);
+                    mergeValue.Swap(mergeDict);
+                }
+            }
         }
- 
-        // If we get here we need to compose a property definition so create a
-        // a copy of the stronger property if we haven't already and add the
-        // field.
-        if (!destProp) {
-            destProp = _FindOrCreatePropertySpecForComposition(
+
+        // Create a composed property definition by creating a copy of the 
+        // stronger property if we haven't already and adding the field from 
+        // the weaker property.
+        if (!destSpec) {
+            destSpec = _FindOrCreateSpecForComposition(
                 propName, strongProp);
         }
-        destProp->SetField(field, weakValue);
+
+        destSpec->SetField(field, mergeValue); 
     }
 
-    return destProp;
+    return destSpec;
 }
 
 void

@@ -1,0 +1,164 @@
+#usda 1.0
+(
+    """
+    This museum exhibit demonstrates basic payload behavior
+    supported by Pcp.
+    """
+    subLayers = [
+        @./sublayer.usda@
+    ]
+    defaultPrim = "InternalPayload"
+)
+
+def "SimplePayload" (
+    payload = @./payload.usda@</SimplePayload>
+)
+{
+}
+
+def "SimpleSubrootPayload" (
+    payload = @./payload.usda@</SimplePayload/Child>
+)
+{
+}
+
+def Scope "PrimWithPayloads" (
+payload = [
+    @./payload.usda@</SimplePayload>,
+    @./ref.usda@</PayloadPrimA>,
+    @./ref2.usda@</PrimB>
+]
+)
+{
+}
+
+over "PrimB" (
+    """
+    These overs for prims payloaded by PrimWithPayloads above
+    should not factor into composition.
+    """
+)
+{
+    over "PrimB_Child"
+    {
+    }
+}
+
+def Scope "PrimWithSelfPayload" (
+    payload = [
+       @./root.usda@</InternalPayload>,
+       @./sublayer.usda@</InternalSublayerPayload>
+    ]
+)
+{
+}
+
+def Scope "PrimWithInternalPayload" (
+    payload = [
+        </InternalPayload>,
+        </InternalPayload2>
+    ]
+)
+{
+}       
+
+def Scope "InternalPayload"
+{
+    def Scope "InternalPayload_Child"
+    {
+    }
+}
+
+over "InternalSublayerPayload" (
+     """
+     These overs for prims referenced by PrimWithInternalPayload above
+     should not factor into composition.
+     """
+)
+{
+    over "InternalSublayerPayload_Child"
+    {
+    }
+}
+
+def Scope "PrimWithDefaultPayloadTarget" (
+    payload = @./defaultRef.usda@
+)
+{   
+}
+
+def Scope "PrimWithDefaultPayloadTarget2" (
+    payload = <>
+)
+{
+}
+
+def Scope "PayloadPrimWithSubrootInReference" (
+    payload = [
+        @./ref.usda@</RefPrimA/PrimA_Child>,
+        @./ref.usda@</RefPrimA/PrimC_Child>
+    ]
+)
+{
+}    
+
+def Scope "RefPrimWithSubrootInReference" (
+    references = [
+        @./ref.usda@</RefPrimA/PrimA_Child>,
+        @./ref.usda@</RefPrimA/PrimC_Child>
+    ]
+)
+{
+}   
+
+def Scope "PrimWithInternalSubrootPayload" (
+    references = </InternalPayload/InternalPayload_Child>
+)
+{
+}
+
+def Scope "PrimWithPayloadsInVariants" (
+    append variantSets = ["v"]
+    variants = {
+        string "v" = "ref"
+    }
+)
+{
+    variantSet "v" = {
+        "ref" {
+            def "Ref"
+            {
+            }
+
+            def "A" (
+                payload = </PrimWithPayloadsInVariants/Ref>
+            )
+            {
+            }    
+        }
+    }
+
+    def "B" (
+        payload = </PrimWithPayloadsInVariants/Ref>
+    )
+    {
+    }
+}
+
+def Scope "PayloadPrimWithSubrootInPayload" (
+    payload = [
+        @./ref.usda@</PayloadPrimA/PrimA_Child>,
+        @./ref.usda@</PayloadPrimA/PrimC_Child>
+    ]
+)
+{
+}    
+
+def Scope "RefPrimWithSubrootInPayload" (
+    references = [
+        @./ref.usda@</PayloadPrimA/PrimA_Child>,
+        @./ref.usda@</PayloadPrimA/PrimC_Child>
+    ]
+)
+{
+}    

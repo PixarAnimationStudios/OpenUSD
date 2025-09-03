@@ -31,7 +31,7 @@ class "MaterialXConfigAPI" (
     from prior MaterialX versions.
     """
     customData = {
-        token[] apiSchemaCanOnlyApplyTo = ["UsdShadeMaterial"]
+        token[] apiSchemaCanOnlyApplyTo = ["Material"]
     }
 ) {
     string config:mtlx:version = "1.38" (

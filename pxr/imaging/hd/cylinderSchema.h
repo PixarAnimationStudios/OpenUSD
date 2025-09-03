@@ -49,6 +49,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdCylinderSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdCylinderSchema
+///
 class HdCylinderSchema : public HdSchema
 {
 public:
@@ -78,6 +80,9 @@ public:
     HD_API
     HdDoubleDataSourceHandle GetHeight() const;
 
+    /// Deprecated. Only use if no radiusTop or radiusBottom data source.
+    /// Comes from UsdGeom Cylinder which has been deprecated in favor of
+    /// Cylinder_1.
     HD_API
     HdDoubleDataSourceHandle GetRadius() const;
 

@@ -60,62 +60,10 @@ def Xform "World"
     def Camera "main_cam"
     {
         float focalLength = 24
-        vector3f xformOp:translate = (2.5, 2.5, 20)
+        vector3f xformOp:translate = (2.5, 5, 20)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    # def Xform "Prototypes"
-    # {
-    #     token visibility = "invisible"
-        
-    #     def Mesh "Reference"
-    #     {
-    #         float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0.25)]
-    #         point3f[] points = [
-    #             (0, 0, 0.25),
-    #             (0.5, 0.5, 0),
-    #             (-0.5, 0.5, 0),
-    #             (-0.5, -0.5, 0),
-    #             (0.5, -0.5, 0),
-    #             (0, 0, 0)
-    #         ]
-    #         int[] faceVertexCounts = [3, 3, 3, 3, 3, 3, 3, 3]
-    #         int[] faceVertexIndices = [
-    #             5,3,2,
-    #             4,3,5,
-    #             1,4,5,
-    #             1,0,4,
-    #             4,0,3,
-    #             3,0,2,
-    #             0,1,5,
-    #             5,2,0
-    #         ]
-    #         uniform token orientation = "leftHanded"
-    #         uniform token subdivisionScheme = "none"
-    #         color3f[] primvars:displayColor = [(0, 0, 1)]
-    #     }
-        
-    #     def Mesh "Pointer"
-    #     {
-    #         float3[] extent = [(-0.5, 0, 0), (0.5, 0.5, 0.25)]
-    #         point3f[] points = [
-    #             (0, 0, 0.25),
-    #             (0.5, 0.5, 0),
-    #             (-0.5, 0.5, 0),
-    #             (0, 0, 0)
-    #         ]
-    #         int[] faceVertexCounts = [3, 3, 3, 3]
-    #         int[] faceVertexIndices = [
-    #             3, 2, 1,
-    #             0, 1, 2,
-    #             1, 0, 3,
-    #             2, 3, 0]
-    #         uniform token orientation = "leftHanded"
-    #         uniform token subdivisionScheme = "none"
-    #         color3f[] primvars:displayColor = [(0, 1, 1)]
-    #     }
-    # }
-    
     def Xform "OrientationsVelocity"
     {
         def PointInstancer "Reference"
@@ -131,7 +79,7 @@ def Xform "World"
             }
             int[] protoIndices = [0]
             rel prototypes = [</World/OrientationsVelocity/Reference/Prototypes/Reference>]
-            
+
             def Xform "Prototypes"
             {
                 def Mesh "Reference" (
@@ -140,7 +88,7 @@ def Xform "World"
                 { }
             }
         }
-        
+
         def PointInstancer "Pointer"
         {
             point3f[] positions = [(0, 0, 0)]
@@ -153,21 +101,21 @@ def Xform "World"
                 5: [(0, 0, 0)]
             }
             int[] protoIndices = [0]
-            rel prototypes = [</World/OrientationsVelocity/Pointer/Prototypes/Pointer>]      
-            
+            rel prototypes = [</World/OrientationsVelocity/Pointer/Prototypes/Pointer>]
+
             def Xform "Prototypes"
             {
                 def Mesh "Pointer" (
                     inherits = </_Pointer>
                 )
                 { }
-            }      
+            }
         }
-        
-        vector3f xformOp:translate = (2.5, 8, 0)
+
+        vector3f xformOp:translate = (2.5, 10, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
-    
+
     def Xform "PointsAcceleration"
     {
         def Mesh "Reference"
@@ -241,7 +189,7 @@ def Xform "World"
             uniform token subdivisionScheme = "none"
             color3f[] primvars:displayColor = [(0, 0, 1)]
         }
-        
+
         def Mesh "Pointer"
         {
             float3[] extent = [(0, -0.5, 0), (5.5, 0.5, 0.25)]
@@ -268,13 +216,13 @@ def Xform "World"
             uniform token subdivisionScheme = "none"
             color3f[] primvars:displayColor = [(0, 1, 1)]
         }
-        vector3f xformOp:translate = (0, 6, 0)
+        vector3f xformOp:translate = (0, 8, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
-    
+
     def Xform "PositionsAcceleration"
     {
-        
+
         def PointInstancer "Reference"
         {
             float3[] extent = [(-0.5, -0.5, -0.5), (5.5, 0.5, 0.5)]
@@ -333,7 +281,7 @@ def Xform "World"
             }
             int[] protoIndices = [0]
             rel prototypes = [</World/PositionsAcceleration/Reference/Prototypes/Reference>]
-            
+
             def Xform "Prototypes"
             {
                 def Mesh "Reference" (
@@ -342,7 +290,7 @@ def Xform "World"
                 { }
             }
         }
-        
+
         def PointInstancer "Pointer"
         {
             float3[] extent = [(-0.5, -0.5, -0.5), (5.5, 0.5, 0.5)]
@@ -360,7 +308,7 @@ def Xform "World"
             }
             int[] protoIndices = [0]
             rel prototypes = [</World/PositionsAcceleration/Pointer/Prototypes/Pointer>]
-            
+
             def Xform "Prototypes"
             {
                 def Mesh "Pointer" (
@@ -369,11 +317,11 @@ def Xform "World"
                 { }
             }
         }
-        
-        vector3f xformOp:translate = (0, 4, 0)
+
+        vector3f xformOp:translate = (0, 6, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
-    
+
     def Xform "PositionsVelocity"
     {
         def PointInstancer "Reference"
@@ -389,7 +337,7 @@ def Xform "World"
             }
             int[] protoIndices = [0]
             rel prototypes = [</World/PositionsVelocity/Reference/Prototypes/Reference>]
-            
+
             def Xform "Prototypes"
             {
                 def Mesh "Reference" (
@@ -398,7 +346,7 @@ def Xform "World"
                 { }
             }
         }
-        
+
         def PointInstancer "Pointer"
         {
             float3[] extent = [(-0.5, -0.5, -0.5), (5.5, 0.5, 0.5)]
@@ -412,7 +360,7 @@ def Xform "World"
             }
             int[] protoIndices = [0]
             rel prototypes = [</World/PositionsVelocity/Pointer/Prototypes/Pointer>]
-            
+
             def Xform "Prototypes"
             {
                 def Mesh "Pointer" (
@@ -421,11 +369,67 @@ def Xform "World"
                 { }
             }
         }
-        
+
+        vector3f xformOp:translate = (0, 4, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Xform "PositionsVelocityScales"
+    {
+        def PointInstancer "Reference"
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (5.5, 0.5, 0.5)]
+            point3f[] positions.timeSamples = {
+                0: [(0, 0, 0)],
+                1: [(1, 0, 0)],
+                2: [(2, 0, 0)],
+                3: [(3, 0, 0)],
+                4: [(4, 0, 0)],
+                5: [(5, 0, 0)]
+            }
+            int[] protoIndices = [0]
+            rel prototypes = [</World/PositionsVelocityScales/Reference/Prototypes/Reference>]
+
+            def Xform "Prototypes"
+            {
+                def Mesh "Reference" (
+                    inherits = </_Reference>
+                )
+                { }
+            }
+        }
+
+        def PointInstancer "Pointer"
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (5.5, 0.5, 0.5)]
+            point3f[] positions.timeSamples = {
+                0: [(0, 0, 0)],
+                5: [(0, 0, 0)]
+            }
+            vector3f[] velocities.timeSamples = {
+                0: [(24, 0, 0)],
+                5: [(0, 0, 0)]
+            }
+            vector3f[] scales.timeSamples = {
+                0: [(1.0, 1.0, 1)],
+                5: [(2.0, 2.0, 1)]
+            }
+            int[] protoIndices = [0]
+            rel prototypes = [</World/PositionsVelocityScales/Pointer/Prototypes/Pointer>]
+
+            def Xform "Prototypes"
+            {
+                def Mesh "Pointer" (
+                    inherits = </_Pointer>
+                )
+                { }
+            }
+        }
+
         vector3f xformOp:translate = (0, 2, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
-    
+
     def Xform "PointsVelocity"
     {
         def Mesh "Reference"
@@ -454,7 +458,7 @@ def Xform "World"
             uniform token subdivisionScheme = "none"
             color3f[] primvars:displayColor = [(0, 0, 1)]
         }
-        
+
         def Mesh "Pointer"
         {
             float3[] extent = [(0, -0.5, 0), (5.5, 0.5, 0.25)]
@@ -478,5 +482,5 @@ def Xform "World"
             color3f[] primvars:displayColor = [(0, 1, 1)]
         }
     }
-    
+
 }

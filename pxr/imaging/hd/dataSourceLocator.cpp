@@ -15,6 +15,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PUBLIC_TOKENS(HdDataSourceLocatorSentinelTokens,
+                        HD_DATA_SOURCE_LOCATOR_SENTINEL_TOKENS);
+
 const HdDataSourceLocator &
 HdDataSourceLocator::EmptyLocator()
 {

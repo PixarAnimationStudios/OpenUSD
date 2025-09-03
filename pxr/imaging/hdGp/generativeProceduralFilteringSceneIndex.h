@@ -7,6 +7,8 @@
 #ifndef PXR_IMAGING_HD_GP_GENERATIVE_PROCEDURAL_FILTERING_SCENE_INDEX_H
 #define PXR_IMAGING_HD_GP_GENERATIVE_PROCEDURAL_FILTERING_SCENE_INDEX_H
 
+#include "pxr/pxr.h"
+#include "pxr/imaging/hdGp/api.h"
 #include "pxr/imaging/hdGp/generativeProcedural.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/usd/sdf/pathTable.h"
@@ -72,7 +74,10 @@ public:
                 allowedPrimTypeName, skippedPrimTypeName));
     }
 
+    HDGP_API
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
+
+    HDGP_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
 private:

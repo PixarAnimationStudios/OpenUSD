@@ -439,7 +439,7 @@ Sdf_GetExtension(
         return Sdf_GetExtension(Sdf_GetAnonLayerDisplayName(assetPath));
     }
 
-    // XXX: If the asset path is a dot file (e.g. ".sdf"), we append
+    // XXX: If the asset path is a dot file (e.g. ".usda"), we append
     // a temporary name so that the path we pass to Ar is not 
     // interpreted as a directory name. This is legacy behavior that
     // should be fixed.

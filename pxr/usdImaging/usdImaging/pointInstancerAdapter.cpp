@@ -2326,7 +2326,7 @@ UsdImagingPointInstancerAdapter::GetInstanceIndices(
                 if (pathIndex >= indices.size()) {
                     return VtValue();
                 }
-                return VtValue(indices[pathIndex]);
+                return VtValue(indices.AsConst()[pathIndex]);
             }
         }
 

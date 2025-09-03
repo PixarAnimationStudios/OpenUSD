@@ -320,6 +320,13 @@ public:
     PCP_API
     bool HasSpecs() const;
 
+    /// Returns true if this node's site or a namespace ancestor
+    /// has authored value clips.
+    PCP_API
+    void SetHasValueClips(bool hasValueClips);
+    PCP_API
+    bool HasValueClips() const;
+
     /// @}
 
     // Returns a compressed Sd site.  For internal use only.
@@ -340,6 +347,7 @@ private:
     friend class PcpNodeRef_PrivateChildrenConstReverseIterator;
     friend class PcpNodeRef_PrivateSubtreeConstIterator;
     template <class T> friend class Pcp_TraversalCache;
+    friend bool Pcp_IsPropagatedSpecializesNode(const PcpNodeRef& node);
 
     // Private constructor for internal use.
     PcpNodeRef(PcpPrimIndex_Graph* graph, size_t idx)

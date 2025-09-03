@@ -12,6 +12,8 @@
 #include "pxr/imaging/hgiVulkan/api.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 
+#include <mutex>
+#include <unordered_map>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -42,6 +44,15 @@ public:
     /// Returns the vulkan memory allocator.
     HGIVULKAN_API
     VmaAllocator GetVulkanMemoryAllocator() const;
+
+    /// Returns a VMA pool for images that use API Interop.
+    HGIVULKAN_API
+    VmaPool GetVMAPoolForInterop(VkImageCreateInfo imageInfo);
+
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    HGIVULKAN_API
+    HANDLE GetWin32HandleForMemory(VkDeviceMemory memory);
+#endif
 
     /// Returns the command queue which manages command buffers submission.
     HGIVULKAN_API
@@ -74,6 +85,14 @@ public:
 
     /// Device extension function pointers
     PFN_vkCreateRenderPass2KHR vkCreateRenderPass2KHR = 0;
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR = 0;
+    PFN_vkGetSemaphoreWin32HandleKHR vkGetSemaphoreWin32HandleKHR = 0;
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
+    PFN_vkGetMemoryFdKHR vkGetMemoryFdKHR = 0;
+    PFN_vkGetSemaphoreFdKHR vkGetSemaphoreFdKHR = 0;
+#elif defined(VK_USE_PLATFORM_METAL_EXT)
+#endif
     PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT = 0;
     PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabelEXT = 0;
     PFN_vkCmdInsertDebugUtilsLabelEXT vkCmdInsertDebugUtilsLabelEXT = 0;
@@ -91,6 +110,14 @@ private:
     VkDevice _vkDevice;
     std::vector<VkExtensionProperties> _vkExtensions;
     VmaAllocator _vmaAllocator;
+    std::mutex _vmaInteropPoolsLock;
+    std::unordered_map<uint32_t, VmaPool> _vmaInteropPoolsForMemoryType;
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    // A temporary fix until we bump the Vulkan SDK to have VMA v3.2.0+
+    // (Vulkan SDK 1.4.304.0+)
+    std::mutex _vmaInteropWin32HandleLock;
+    std::unordered_map<VkDeviceMemory, HANDLE> _vmaInteropWin32HandleForMemory;
+#endif
     uint32_t _vkGfxsQueueFamilyIndex;
     HgiVulkanCommandQueue* _commandQueue;
     HgiVulkanCapabilities* _capabilities;

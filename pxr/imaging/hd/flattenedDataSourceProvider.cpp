@@ -25,7 +25,7 @@ HdContainerDataSourceHandle
 HdFlattenedDataSourceProvider::Context::
 GetInputDataSource() const
 {
-    return _Get(_inputPrimDataSource, _name);
+    return _Get(_inputPrim.dataSource, _name);
 }
 
 HdContainerDataSourceHandle

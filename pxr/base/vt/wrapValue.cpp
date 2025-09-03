@@ -9,6 +9,7 @@
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/arrayEdit.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/valueFromPython.h"
@@ -301,14 +302,15 @@ void wrapValue()
                        "from-python conversions!");
     }
 
-    // register conversion types in reverse order, because the extractor
-    // iterates through the registered list backwards
-    // Repetitively register conversions for each known class value type.
+    // Register conversion types in reverse order, because the extractor
+    // iterates through the registered list backwards.
 #define REGISTER_VALUE_FROM_PYTHON(unused, elem) \
     VtValueFromPythonLValue< VT_TYPE(elem) >();
-    TF_PP_SEQ_FOR_EACH(REGISTER_VALUE_FROM_PYTHON, ~, VT_ARRAY_VALUE_TYPES)
+    TF_PP_SEQ_FOR_EACH(REGISTER_VALUE_FROM_PYTHON, ~,
+                       VT_ARRAY_EDIT_VALUE_TYPES VT_ARRAY_VALUE_TYPES)
 #undef REGISTER_VALUE_FROM_PYTHON
 
+    // Register conversions for each known class value type.
 #define REGISTER_VALUE_FROM_PYTHON(unused, elem) \
     VtValueFromPython< VT_TYPE(elem) >();
     TF_PP_SEQ_FOR_EACH(REGISTER_VALUE_FROM_PYTHON, ~,

@@ -215,27 +215,26 @@ _GetAuthoredAndExpectedTestCurves(
     };
 
     const VtFloatArray varyingPrimvar = {
-        // 1 segment => 2 varying values
-        0.0f, 0.1f,
+        // 4 verts -> 3 segments -> 4 varying values
+        0.0f, 0.1f, 0.2f, 0.3f,
 
-        // 4 segments => 5 varying values
-        0.2f, 0.3f, 0.4f, 0.5f, 0.6f,
+        // 7 verts -> 6 segments -> 7 varying values
+        0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f,
 
-        // 1 segment => 2 varying values
-        0.7f, 0.8f,
+        // 4 verts -> 3 segments -> 4 varying values
+        1.1f, 1.2f, 1.3f, 1.4f,
 
-        // For the min vert count (2), we still treat it as a segment (from an
-        // authoring point of view) and so, we expect 2 varying values authored.
-        0.9f, 1.0f
+        // 2 verts -> 1 segment -> 2 varying values
+        1.5f, 1.6f
     };
 
     const VtFloatArray indexedVaryingPrimvar {
         0.0f, 0.1f, 0.2f, 0.3f
     };
     const VtIntArray varyingPrimvarIndices = {
-        0, 1,
-        1, 2, 3, 0, 1,
-        2, 3,
+        0, 1, 2, 3,
+        1, 2, 3, 0, 1, 2, 3,
+        2, 3, 0, 1,
         1, 2
     };
 
@@ -361,7 +360,8 @@ _GetAuthoredAndExpectedTestCurves(
                 15, 15, 15, 16, 16, 16
             };
 
-            // Primvars
+            // Vertex primvar: two dupes added at the beginning and end of each
+            // curve (matching the points).
             eVertexPrimvarIndices = {
                 0, 0, 0, 1, 2, 3, 3, 3,
                 1, 1, 1, 2, 3, 0, 1, 2, 3, 3, 3,
@@ -369,24 +369,22 @@ _GetAuthoredAndExpectedTestCurves(
                 1, 1, 1, 2, 2, 2
             };
 
+            // Varying primvar: one dupe added at the beginning and end of each
+            // curve.  The input primvar already includes values for the
+            // 'pinned' segment on each end, but b-spline pinning requires
+            // adding two segments to the 'nonperiodic' topology on each end so
+            // we need one more primvar value per end than was provided.
             eVaryingPrimvar = {
-                // 5 segments (1 authored, 4 added) => 6 varying values
-                0.0f, 0.0f, 0.0f, 0.1f, 0.1f, 0.1f,
-
-                // 8 segments (4 authored, 4 added) => 9 varying values
-                0.2f, 0.2f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.6f, 0.6f,
-
-                // 5 segments (1 authored, 4 added) => 6 varying values
-                0.7f, 0.7f, 0.7f, 0.8f, 0.8f, 0.8f,
-
-                // 3 segments on expansion => 4 varying values
-                0.9f, 0.9f, 1.0f, 1.0f
+                0.0f, 0.0f, 0.1f, 0.2f, 0.3f, 0.3f,
+                0.4f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.0f,
+                1.1f, 1.1f, 1.2f, 1.3f, 1.4f, 1.4f,
+                1.5f, 1.5f, 1.6f, 1.6f
             };
 
             eVaryingPrimvarIndices = {
-                0, 0, 0, 1, 1, 1,
-                1, 1, 1, 2, 3, 0, 1, 1, 1,
-                2, 2, 2, 3, 3, 3,
+                0, 0, 1, 2, 3, 3,
+                1, 1, 2, 3, 0, 1, 2, 3, 3,
+                2, 2, 3, 0, 1, 1,
                 1, 1, 2, 2
             };
         }
@@ -437,7 +435,8 @@ _GetAuthoredAndExpectedTestCurves(
                 15, 15, 16, 16
             };
 
-            // Primvars
+            // Vertex primvar: one dupe added at the beginning and end of each
+            // curve (matching the points).
             eVertexPrimvarIndices = {
                 0, 0, 1, 2, 3, 3,
                 1, 1, 2, 3, 0, 1, 2, 3, 3,
@@ -445,25 +444,21 @@ _GetAuthoredAndExpectedTestCurves(
                 1, 1, 2, 2
             };
 
+            // Varying primvar: matches the input, since the input includes
+            // values for the 'pinned' end segments and this output is being
+            // applied to a 'nonperiodic' topology which has the same number of
+            // logical segments despite having more vertices.
             eVaryingPrimvar = {
-                // 3 segments (1 authored, 2 added) => 4 varying values
-                0.0f, 0.0f, 0.1f, 0.1f,
-
-                // 6 segments (4 authored, 2 added) => 7 varying values
-                0.2f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.6f,
-
-                // 3 segments (1 authored, 2 added) => 4 varying values
-                0.7f, 0.7f, 0.8f, 0.8f,
-
-                // 1 segment on expansion => 2 varying values
-                // (this means that the authored values are not duplicated!)
-                0.9f, 1.0f
+                0.0f, 0.1f, 0.2f, 0.3f,
+                0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f,
+                1.1f, 1.2f, 1.3f, 1.4f,
+                1.5f, 1.6f
             };
 
             eVaryingPrimvarIndices = {
-                0, 0, 1, 1,
-                1, 1, 2, 3, 0, 1, 1,
-                2, 2, 3, 3,
+                0, 1, 2, 3,
+                1, 2, 3, 0, 1, 2, 3,
+                2, 3, 0, 1,
                 1, 2
             };
         }
@@ -502,7 +497,12 @@ _GetAuthoredAndExpectedTestCurves(
                 VtValue(indexedVertexPrimvar),
                 HdPrimvarSchemaTokens->vertex,
                 TfToken("testRole"),
-                eVertexPrimvarIndices});
+                // Note: an indexed vertex primvar's indices get expanded only
+                // if the curve topology itself isn't indexed.  Otherwise the
+                // values would get double-expanded through two sets of expanded
+                // indices.
+                useCurveIndices ?
+                    vertexPrimvarIndices : eVertexPrimvarIndices});
 
             primvars.push_back({
                 TfToken("fooVaryingIndexed"),

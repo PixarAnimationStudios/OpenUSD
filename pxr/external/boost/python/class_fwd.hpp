@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/class_fwd.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/detail/not_specified.hpp"
 
@@ -33,5 +29,4 @@ class class_;
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CLASS_FWD_HPP

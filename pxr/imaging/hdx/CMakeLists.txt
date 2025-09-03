@@ -66,6 +66,7 @@ pxr_library(hdx
         skydomeTask
         task
         taskController
+        taskControllerSceneIndex
         tokens
         types
         visualizeAovTask

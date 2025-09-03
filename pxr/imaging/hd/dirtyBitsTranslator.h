@@ -44,7 +44,8 @@ public:
         HdDataSourceLocatorSet const& set);
     HD_API
     static HdDirtyBits SprimLocatorSetToDirtyBits(TfToken const& primType,
-        HdDataSourceLocatorSet const& set);
+        HdDataSourceLocatorSet const& set,
+        const TfTokenVector& renderContexts = {});
     HD_API
     static HdDirtyBits BprimLocatorSetToDirtyBits(TfToken const& primType,
         HdDataSourceLocatorSet const& set);
@@ -68,6 +69,10 @@ public:
     static void RegisterTranslatorsForCustomSprimType(TfToken const& primType,
         LocatorSetToDirtyBitsFnc sToBFnc, DirtyBitsToLocatorSetFnc bToSFnc);
 
+    /// Allows for customization of translation for rprim types.
+    HD_API
+    static void RegisterTranslatorsForCustomRprimType(TfToken const& primType,
+        LocatorSetToDirtyBitsFnc sToBFnc, DirtyBitsToLocatorSetFnc bToSFnc);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

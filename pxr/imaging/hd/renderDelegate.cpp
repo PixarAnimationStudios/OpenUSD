@@ -61,6 +61,12 @@ HdRenderParam::HasArbitraryValue(const TfToken& key) const
     return false;
 }
 
+bool
+HdRenderParam::IsValid() const
+{
+    return false;
+}
+
 HdRenderDelegate::HdRenderDelegate(HdRenderSettingsMap const& settingsMap)
     : _settingsMap(settingsMap), _settingsVersion(1)
 {

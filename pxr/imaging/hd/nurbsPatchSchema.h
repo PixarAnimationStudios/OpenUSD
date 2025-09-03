@@ -60,6 +60,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdNurbsPatchSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdNurbsPatchSchema
+///
 class HdNurbsPatchSchema : public HdSchema
 {
 public:

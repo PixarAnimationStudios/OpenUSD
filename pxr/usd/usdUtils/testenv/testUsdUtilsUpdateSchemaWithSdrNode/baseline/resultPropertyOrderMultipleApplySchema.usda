@@ -1,0 +1,42 @@
+#usda 1.0
+
+class TestPropertyOrderMultipleApplySchemaAPI "TestPropertyOrderMultipleApplySchemaAPI" (
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["SomeConcreteType", "SomeAbstractType"]
+        token[] apiSchemaCanOnlyApplyTo = ["SomeConcreteType", "SomeAbstractType"]
+    }
+    inherits = </APISchemaBase>
+)
+{
+    uniform token inputs:colorMapGamma (
+        allowedTokens = ["texture"]
+        connectability = "interfaceOnly"
+        customData = {
+            string userDoc = """
+                uniform color mapping for gamma.
+                """
+            string userDocBrief = """
+                uniform color mapping for gamma.
+                """
+        }
+        displayGroup = "Basic"
+        displayName = "Map Gamma"
+    )
+    float inputs:intensity = 1 (
+        connectability = "interfaceOnly"
+        customData = {
+            string userDoc = """
+                intensity: Itensity of the flame thrower.
+                """
+            string userDocBrief = """
+                intensity: Itensity of the flame thrower.
+                """
+        }
+        displayGroup = "Basic"
+        displayName = "Intensity"
+    )
+    int inputs:intNotBool = 0
+    color3f outputs:resultRGB
+    float propNS:testShaderPropWithNS = 0
+}
+

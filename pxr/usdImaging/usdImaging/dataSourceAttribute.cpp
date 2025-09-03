@@ -8,9 +8,77 @@
 
 #include "pxr/imaging/hd/dataSourceLocator.h"
 
+#include "pxr/usd/usdShade/udimUtils.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
+
+// We need to find the first layer that changes the value
+// of the parameter so that we anchor relative paths to that.
+static
+SdfLayerHandle
+_FindLayerHandle(const UsdAttribute& attr, const UsdTimeCode& time) {
+    for (const auto& spec: attr.GetPropertyStack(time)) {
+        if (spec->HasDefaultValue() ||
+            spec->GetLayer()->GetNumTimeSamplesForPath(
+                spec->GetPath()) > 0) {
+            return spec->GetLayer();
+        }
+    }
+    return TfNullPtr;
+}
+
+class UsdImagingDataSourceAssetPathAttribute :
+    public UsdImagingDataSourceAttribute<SdfAssetPath>
+{
+public:
+    HD_DECLARE_DATASOURCE(UsdImagingDataSourceAssetPathAttribute);
+
+    /// Returns the extracted SdfAssetPath value of the attribute at
+    /// \p shutterOffset, with proper handling for UDIM paths.
+    SdfAssetPath
+    GetTypedValue(const HdSampledDataSource::Time shutterOffset) override
+    {
+        using Parent = UsdImagingDataSourceAttribute<SdfAssetPath>;
+        SdfAssetPath result = Parent::GetTypedValue(shutterOffset);
+        if (!UsdShadeUdimUtils::IsUdimIdentifier(result.GetAssetPath())) {
+            return result;
+        }
+        UsdTimeCode time = _stageGlobals.GetTime();
+        if (time.IsNumeric()) {
+            time = UsdTimeCode(time.GetValue() + shutterOffset);
+        }
+        const std::string resolvedPath = UsdShadeUdimUtils::ResolveUdimPath(
+            result.GetAssetPath(),
+            _FindLayerHandle(_usdAttrQuery.GetAttribute(), time));
+        if (!resolvedPath.empty()) {
+            result = SdfAssetPath(result.GetAssetPath(), resolvedPath);
+        }
+        return result;
+    }
+
+protected:
+    UsdImagingDataSourceAssetPathAttribute(
+            const UsdAttribute &usdAttr,
+            const UsdImagingDataSourceStageGlobals &stageGlobals,
+            const SdfPath &sceneIndexPath = SdfPath::EmptyPath(),
+            const HdDataSourceLocator &timeVaryingFlagLocator =
+                    HdDataSourceLocator::EmptyLocator())
+        : UsdImagingDataSourceAttribute<SdfAssetPath>(
+            usdAttr, stageGlobals, sceneIndexPath, timeVaryingFlagLocator)
+    { }
+
+    UsdImagingDataSourceAssetPathAttribute(
+            const UsdAttributeQuery &usdAttrQuery,
+            const UsdImagingDataSourceStageGlobals &stageGlobals,
+            const SdfPath &sceneIndexPath = SdfPath::EmptyPath(),
+            const HdDataSourceLocator &timeVaryingFlagLocator =
+                    HdDataSourceLocator::EmptyLocator())
+        : UsdImagingDataSourceAttribute<SdfAssetPath>(
+            usdAttrQuery, stageGlobals, sceneIndexPath, timeVaryingFlagLocator)
+    { }
+};
 
 typedef HdSampledDataSourceHandle (*_DataSourceFactory)(
         const UsdAttributeQuery &usdAttrQuery,
@@ -29,6 +97,17 @@ HdSampledDataSourceHandle _FactoryImpl(
         const HdDataSourceLocator &timeVaryingFlagLocator)
 {
     return UsdImagingDataSourceAttribute<T>::New(
+            usdAttrQuery, stageGlobals, sceneIndexPath, timeVaryingFlagLocator);
+}
+
+template <>
+HdSampledDataSourceHandle _FactoryImpl<SdfAssetPath>(
+        const UsdAttributeQuery &usdAttrQuery,
+        const UsdImagingDataSourceStageGlobals &stageGlobals,
+        const SdfPath &sceneIndexPath,
+        const HdDataSourceLocator &timeVaryingFlagLocator)
+{
+    return UsdImagingDataSourceAssetPathAttribute::New(
             usdAttrQuery, stageGlobals, sceneIndexPath, timeVaryingFlagLocator);
 }
 

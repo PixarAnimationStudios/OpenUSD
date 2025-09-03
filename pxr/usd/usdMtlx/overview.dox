@@ -55,21 +55,19 @@ get mapped is still undecided.
 7. Custom nodes can be defined either locally or in a shared library. 
     + Locally defined nodes need to have their associated nodedef/nodegraph 
     either in the same mtlx file as the material, or included in the material 
-    mtlx file. 
-    + Custom nodes defined in a shared library do not need to be included in 
-    the material mtlx file, but do need to be defined in a separate mtlx file 
-    such that the nodedef and material mtlx files are not siblings, and whose 
-    containing folder is indicated with the PXR_MTLX_PLUGIN_SEARCH_PATHS 
-    environment variable. 
-    + Library defined custom nodes that use textures need to set the nodegroup
-    on the nodedef to 'texture2d', and make sure the 'filename' typed input is 
-    exposed so renderers can recognize the texture references. 
-    + Custom nodes with an output of type 'surfaceshader' that use textures 
-    also need to expose the 'filename' typed inputs, but can follow the 
-    MaterialX convention of using 'shader' as the nodegroup name. 
-    + Nodegraphs with a 'surfaceshader' output can be defined locally, however
-    custom nodes which are implemented using such a nodegraph need to have both
-    the node and nodegraph defined in a shared library.
+    mtlx file. Note that any mtlx file that contains a nodedef/nodegraph should
+    have no more than one material. 
+    + Custom nodes defined in a shared library need to be defined in a separate 
+    mtlx file such that the nodedef and material mtlx files are not siblings. 
+    The path to the folder containing the custom node nodedefs should also be 
+    indicated with the PXR_MTLX_PLUGIN_SEARCH_PATHS environment variable. 
+    + Library defined custom nodes that use textures need to:
+        - set the nodegroup on the nodedef to 'texture2d'
+        - make sure the 'filename' typed input is exposed so renderers can 
+        recognize the texture references. 
+    + Custom nodes with an output of type 'surfaceshader':
+        - should always be defined in a separate mtlx file from the material 
+        - need to expose the 'filename' typed inputs if they use textures
 
 \section usdMtlx_unsupported Unsupported MaterialX Features
 

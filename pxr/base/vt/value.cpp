@@ -277,7 +277,8 @@ ARCH_CONSTRUCTOR(Vt_CastRegistryInit, 255)
 }
 
 bool
-VtValue::IsArrayValued() const {
+VtValue::IsArrayValued() const
+{
     if (IsEmpty()) {
         return false;
     }
@@ -285,6 +286,12 @@ VtValue::IsArrayValued() const {
         return _info->IsArrayValued(_storage);
     }
     return _info->isArray;
+}
+
+bool
+VtValue::IsArrayEditValued() const
+{
+    return GetElementTypeid() != typeid(void) && !IsArrayValued();
 }
 
 const Vt_ShapeData*

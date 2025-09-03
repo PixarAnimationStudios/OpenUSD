@@ -36,6 +36,10 @@ public:
     ///
     TfToken GetTypedValue(HdSampledDataSource::Time shutterOffset) override
     {
+        if (!_usdAttr) {
+            return {};
+        }
+
         TF_UNUSED(shutterOffset);
         return _usdAttr.GetColorSpace();
     }

@@ -77,7 +77,9 @@ public:
         return _hidden;
     }
 
-    explicit operator bool() const { return _file && _function; }
+    explicit operator bool() const {
+        return _file && _function && *_file && *_function;
+    }
     
   private:
 

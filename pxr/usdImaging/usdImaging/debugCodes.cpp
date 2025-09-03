@@ -19,6 +19,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_COORDSYS,
                                 "Coordinate systems");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_INSTANCER, "Report instancer messages");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_MATERIAL_BINDING_RESOLUTION,
+        "Report material binding resolution messages.");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_PLUGINS, "Report plugin status messages");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_POINT_INSTANCER_PROTO_CREATED,
                                 "Report PI prototype stats as they are created");

@@ -308,6 +308,13 @@ float GetLightingBlendAmount() {
     return 1;
 #endif
 }
+float GetLinearExposure() {
+#if defined(HD_HAS_linearExposure)
+    return HdGet_linearExposure();
+#else
+    return 1;
+#endif
+}
 vec4  GetViewport() {
 #if defined(HD_HAS_viewport)
     return HdGet_viewport();
@@ -608,6 +615,15 @@ float ApplyPointSizeBias(float pointSize)
 {
     if (pointSize <= 0) {
         return 0;
+    }
+
+#ifdef HD_HAS_multisampleCount
+    const uint multisampleCount = HdGet_multisampleCount();
+#else
+    const uint multisampleCount = 1;
+#endif
+    if (multisampleCount == 1) {
+        return pointSize;
     }
 
     // Slightly enlarge the points as the input size reaches 1.
@@ -1421,6 +1437,13 @@ float GetLightingBlendAmount() {
     return 1;
 #endif
 }
+float GetLinearExposure() {
+#if defined(HD_HAS_linearExposure)
+    return HdGet_linearExposure();
+#else
+    return 1;
+#endif
+}
 vec4  GetViewport() {
 #if defined(HD_HAS_viewport)
     return HdGet_viewport();
@@ -1708,6 +1731,9 @@ vec4 ShadingTerminal(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
                                          shadingColor);
 #endif
 
+        // Modify the shaded color by camera exposure.
+        shadingColor.rgb *= GetLinearExposure();
+
         reprColor.rgb = reprStyle.useSurfaceShaderColor ?
                         shadingColor.rgb :
                         reprColor.rgb;
@@ -1773,6 +1799,16 @@ ScalarOverride GetScalarOverride()
 
 void ApplyDiskSampleMask()
 {
+#ifdef HD_HAS_multisampleCount
+    const uint multisampleCount = HdGet_multisampleCount();
+#else
+    const uint multisampleCount = 1;
+#endif
+    if (multisampleCount == 1) {
+        hd_SampleMask = int(hd_SampleMaskIn);
+        return;
+    }
+
     // By using the sample mask directly, don't depend on the
     // alpha-to-coverage or multisampling state.
 
@@ -1791,13 +1827,8 @@ void ApplyDiskSampleMask()
     } else {
         // On the disk edge
         const float edgeSdf = clamp(-pointSdfPx, 0.0, 1.0);
-#ifdef HD_HAS_multisampleCount
-        const int sampleCount = int(round(HdGet_multisampleCount() * edgeSdf));
-#else
-        const int sampleCount = int(round(edgeSdf));
-#endif
-        const int sampleMask = ((1 << sampleCount) - 1);
-        hd_SampleMask = int(hd_SampleMaskIn) & sampleMask;
+        const int sampleCount = int(round(multisampleCount * edgeSdf));
+        hd_SampleMask =  (1 << sampleCount) - 1;
     }
 }
 

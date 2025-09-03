@@ -42,12 +42,15 @@ HdPrman_BasisCurves::GetInitialDirtyBitsMask() const
     return (HdDirtyBits)mask;
 }
 
-RtPrimVarList
-HdPrman_BasisCurves::_ConvertGeometry(HdPrman_RenderParam *renderParam,
-                                      HdSceneDelegate *sceneDelegate,
-                                      const SdfPath &id,
-                                      RtUString *primType,
-                                      std::vector<HdGeomSubset> *geomSubsets)
+bool
+HdPrman_BasisCurves::_ConvertGeometry(
+    HdPrman_RenderParam *renderParam,
+    HdSceneDelegate *sceneDelegate,
+    const SdfPath &id,
+    RtUString *primType,
+    RtPrimVarList *primvars,
+    std::vector<HdGeomSubset> *geomSubsets,
+    std::vector<RtPrimVarList> *geomSubsetPrimvars)
 {
     HdBasisCurvesTopology topology =
         GetBasisCurvesTopology(sceneDelegate);
@@ -83,41 +86,44 @@ HdPrman_BasisCurves::_ConvertGeometry(HdPrman_RenderParam *renderParam,
         }
     } else {
         TF_CODING_ERROR("Unknown curveType %s\n", curveType.GetText());
+        return false;
     }
 
-    RtPrimVarList primvars(
+    *primvars = RtPrimVarList(
          numCurves, /* uniform */
          vertexPrimvarCount, /* vertex */
          varyingPrimvarCount, /* varying */
          facevaryingPrimvarCount /* facevarying */);
 
     if (curveType == HdTokens->cubic) {
-        primvars.SetString(RixStr.k_Ri_type, RixStr.k_cubic);
+        primvars->SetString(RixStr.k_Ri_type, RixStr.k_cubic);
         if (curveBasis == HdTokens->cubic) {
-            primvars.SetString(RixStr.k_Ri_Basis, RixStr.k_cubic);
+            primvars->SetString(RixStr.k_Ri_Basis, RixStr.k_cubic);
         } else if (curveBasis == HdTokens->bSpline) {
-            primvars.SetString(RixStr.k_Ri_Basis, RixStr.k_bspline);
+            primvars->SetString(RixStr.k_Ri_Basis, RixStr.k_bspline);
         } else if (curveBasis == HdTokens->bezier) {
-            primvars.SetString(RixStr.k_Ri_Basis, RixStr.k_bezier);
+            primvars->SetString(RixStr.k_Ri_Basis, RixStr.k_bezier);
         } else if (curveBasis == HdTokens->catmullRom) {
-            primvars.SetString(RixStr.k_Ri_Basis, RixStr.k_catmullrom);
+            primvars->SetString(RixStr.k_Ri_Basis, RixStr.k_catmullrom);
         } else {
             TF_CODING_ERROR("Unknown curveBasis %s\n", curveBasis.GetText());
+            return false;
         }
     } else if (curveType == HdTokens->linear) {
-        primvars.SetString(RixStr.k_Ri_type, RixStr.k_linear);
+        primvars->SetString(RixStr.k_Ri_type, RixStr.k_linear);
     } else {
         TF_CODING_ERROR("Unknown curveType %s\n", curveType.GetText());
+        return false;
     }
     if (curveWrap == HdTokens->periodic) {
-        primvars.SetString(RixStr.k_Ri_wrap, RixStr.k_periodic);
+        primvars->SetString(RixStr.k_Ri_wrap, RixStr.k_periodic);
     } else {
-        primvars.SetString(RixStr.k_Ri_wrap, RixStr.k_nonperiodic);
+        primvars->SetString(RixStr.k_Ri_wrap, RixStr.k_nonperiodic);
     }
 
     // Index data
     int const *nverticesData = (int const *)(&curveVertexCounts[0]);
-    primvars.SetIntegerDetail(RixStr.k_Ri_nvertices, nverticesData,
+    primvars->SetIntegerDetail(RixStr.k_Ri_nvertices, nverticesData,
                                RtDetailType::k_uniform);
 
     // Points
@@ -125,21 +131,21 @@ HdPrman_BasisCurves::_ConvertGeometry(HdPrman_RenderParam *renderParam,
         sceneDelegate,
         id,
         renderParam->GetShutterInterval(),
-        primvars,
+        *primvars,
         vertexPrimvarCount);
 
     // Set element ID.  Overloaded use of "__faceIndex" to support picking...
     std::vector<int32_t> elementId(numCurves);
     std::iota(elementId.begin(), elementId.end(), 0);
-    primvars.SetIntegerDetail(RixStr.k_faceindex, elementId.data(),
+    primvars->SetIntegerDetail(RixStr.k_faceindex, elementId.data(),
                                RtDetailType::k_uniform);
 
     HdPrman_ConvertPrimvars(
-        sceneDelegate, id, primvars, numCurves, vertexPrimvarCount,
+        sceneDelegate, id, *primvars, numCurves, vertexPrimvarCount,
         varyingPrimvarCount, facevaryingPrimvarCount,
         renderParam->GetShutterInterval());
 
-    return primvars;
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

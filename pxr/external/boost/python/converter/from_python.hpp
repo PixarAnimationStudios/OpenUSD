@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/converter/from_python.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
 
@@ -50,5 +46,4 @@ PXR_BOOST_PYTHON_DECL void throw_no_reference_from_python(PyObject*, registratio
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_FROM_PYTHON_HPP

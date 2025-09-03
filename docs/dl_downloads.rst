@@ -39,60 +39,83 @@ SIGGRAPH 2019 Course Notes
 Videos
 ======
 
-.. panels::
-   :column: col-lg-4
+.. grid:: 1 1 1 3
+    :gutter: 3
 
-   `Open Source at Pixar (SIGGRAPH 2022) <https://vimeo.com/752352357>`__
-   ^^^
+    .. grid-item-card:: 
+      :class-card: m-1
+      :shadow: md
 
-   .. image:: https://openusd.org/images/USDOpenSource2022Video.jpg
-      :target: https://vimeo.com/752352357
+      `Open Source at Pixar (SIGGRAPH 2022) <https://vimeo.com/752352357>`__
+      ^^^
 
-   ---
-   `USD: Building Asset Pipelines <https://vimeo.com/211022588>`__
-   ^^^
+      .. image:: https://openusd.org/images/USDOpenSource2022Video.jpg
+         :target: https://vimeo.com/752352357
 
-   .. image:: https://openusd.org/images/USDPipelineAssetsVideo.png
-      :target: https://vimeo.com/211022588
+    .. grid-item-card:: 
+      :class-card: m-1
+      :shadow: md
 
-   ---
-   `Open Source at Pixar (SIGGRAPH 2017) <https://vimeo.com/237018208>`__
-   ^^^
+      `USD: Building Asset Pipelines <https://vimeo.com/211022588>`__
+      ^^^
 
-   .. image:: https://openusd.org/images/USDOpenSource2017Video.png
-      :target: https://vimeo.com/237018208
+      .. image:: https://openusd.org/images/USDPipelineAssetsVideo.png
+         :target: https://vimeo.com/211022588
 
-   ---
-   `USD-Based Pipeline (2016) <https://vimeo.com/188191100>`__   
-   ^^^
+    .. grid-item-card:: 
+      :class-card: m-1
+      :shadow: md
 
-   .. image:: https://openusd.org/images/USDPipeline2016_video.png
-      :target: https://vimeo.com/188191100
+      `Open Source at Pixar (SIGGRAPH 2017) <https://vimeo.com/237018208>`__
+      ^^^
+
+      .. image:: https://openusd.org/images/USDOpenSource2017Video.png
+         :target: https://vimeo.com/237018208
+
+    .. grid-item-card:: 
+      :class-card: m-1
+      :shadow: md
+
+      `USD-Based Pipeline (2016) <https://vimeo.com/188191100>`__   
+      ^^^
+
+      .. image:: https://openusd.org/images/USDPipeline2016_video.png
+         :target: https://vimeo.com/188191100
 
 --------
 
 Assets
 ======
 
-.. panels::
-   :column: col-lg-4
+.. grid:: 1 1 1 3
+    :gutter: 3
 
-   :doc:`Kitchen Set <dl_kitchen_set>`
-   ^^^
-   .. image:: https://openusd.org/images/Kitchen_set_thumb.png
-      :target: dl_kitchen_set.html
+    .. grid-item-card:: 
+      :class-card: m-1
+      :shadow: md
 
-   ---
-   :doc:`City Set <dl_city_set>`
-   ^^^            
-   .. image:: https://openusd.org/images/PointInstancedMedCity.png
-      :target: dl_city_set.html
+      :doc:`Kitchen Set <dl_kitchen_set>`
+      ^^^
+      .. image:: https://openusd.org/images/Kitchen_set_thumb.png
+         :target: dl_kitchen_set.html
 
-   ---
-   :doc:`UsdSkel Examples <dl_usdskel_examples>`
-   ^^^
-   .. image:: https://openusd.org/images/HumanFemale.png
-      :target: dl_usdskel_examples.html
+    .. grid-item-card:: 
+      :class-card: m-1
+      :shadow: md
+
+      :doc:`City Set <dl_city_set>`
+      ^^^            
+      .. image:: https://openusd.org/images/PointInstancedMedCity.png
+         :target: dl_city_set.html
+
+    .. grid-item-card:: 
+      :class-card: m-1
+      :shadow: md
+
+      :doc:`UsdSkel Examples <dl_usdskel_examples>`
+      ^^^
+      .. image:: https://openusd.org/images/HumanFemale.png
+         :target: dl_usdskel_examples.html
 
 Additional Assets
 #################

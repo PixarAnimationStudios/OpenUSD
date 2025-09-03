@@ -13,9 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/object/function_handle.hpp>
-#else
 # include "pxr/external/boost/python/handle.hpp"
 # include "pxr/external/boost/python/detail/caller.hpp"
 # include "pxr/external/boost/python/default_call_policies.hpp"
@@ -53,5 +50,4 @@ handle<> make_function_handle(F f)
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::objects
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_OBJECT_FUNCTION_HANDLE_HPP

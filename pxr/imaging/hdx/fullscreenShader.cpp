@@ -187,6 +187,12 @@ void
 HdxFullscreenShader::SetDepthState(HgiDepthStencilState const& state)
 {
     _depthStencilState = state;
+    // Note: if we're doing meaningful depth testing, we need to load the depth.
+    if (_depthStencilState.depthTestEnabled &&
+        _depthStencilState.depthCompareFn != HgiCompareFunctionNever &&
+        _depthStencilState.depthCompareFn != HgiCompareFunctionAlways) {
+        _depthAttachment.loadOp = HgiAttachmentLoadOpLoad;
+    }
 }
 
 void
@@ -206,15 +212,23 @@ HdxFullscreenShader::SetBlendState(
     _colorAttachment.srcAlphaBlendFactor = srcAlphaBlendFactor;
     _colorAttachment.dstAlphaBlendFactor = dstAlphaBlendFactor;
     _colorAttachment.alphaBlendOp = alphaBlendOp;
+
+    // Note: if we're doing meaningful blending, we need to load the color.
+    if (_colorAttachment.blendEnabled) {
+        _colorAttachment.loadOp = HgiAttachmentLoadOpLoad;
+    }
 }
 
 void
-HdxFullscreenShader::SetAttachmentLoadStoreOp(
-    HgiAttachmentLoadOp attachmentLoadOp,
-    HgiAttachmentStoreOp attachmentStoreOp)
+HdxFullscreenShader::SetClearState(
+    GfVec4f clearColor,
+    GfVec4f clearDepth)
 {
-    _colorAttachment.loadOp = attachmentLoadOp;
-    _colorAttachment.storeOp = attachmentStoreOp;
+    _colorAttachment.clearValue = clearColor;
+    _colorAttachment.loadOp = HgiAttachmentLoadOpClear;
+
+    _depthAttachment.clearValue = clearDepth;
+    _depthAttachment.loadOp = HgiAttachmentLoadOpClear;
 }
 
 void

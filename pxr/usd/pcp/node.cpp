@@ -105,6 +105,7 @@ PCP_DEFINE_GET_API(const PcpMapExpression&, GetMapToParent, mapToParent);
 PCP_DEFINE_GET_API(const PcpMapExpression&, GetMapToRoot, mapToRoot);
 
 PCP_DEFINE_API(bool, HasSymmetry, SetHasSymmetry, smallInts.hasSymmetry);
+PCP_DEFINE_API(bool, HasValueClips, SetHasValueClips, smallInts.hasValueClips);
 PCP_DEFINE_API(SdfPermission, GetPermission, SetPermission, smallInts.permission);
 PCP_DEFINE_API(bool, IsRestricted, _SetRestricted, smallInts.permissionDenied);
 

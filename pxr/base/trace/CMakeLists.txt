@@ -6,10 +6,7 @@ pxr_library(trace
         arch
         js
         tf
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
+        TBB::tbb
 
     PUBLIC_CLASSES
         aggregateTree

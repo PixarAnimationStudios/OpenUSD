@@ -29,6 +29,17 @@
                         "formatId": "test_target_format_B",
                         "primary": false,
                         "target": "B"
+                    },
+                    "TestSdfTargetFileFormat_BigCookie": {
+                        "bases": [
+                            "SdfUsdaFileFormat"
+                        ],
+                        "extensions": [
+                            "test_cookie_format"
+                        ],
+                        "formatId": "Molasssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssses",
+                        "primary": false,
+                        "target": "C"
                     }
                 }
             },

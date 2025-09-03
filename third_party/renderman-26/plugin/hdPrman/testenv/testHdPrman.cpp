@@ -27,6 +27,7 @@
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hdsi/sceneGlobalsSceneIndex.h"
+#include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/sceneIndices.h"
@@ -43,6 +44,7 @@
 #include "pxr/usd/usdRender/var.h"
 
 #include "pxr/base/arch/env.h"
+#include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/stopwatch.h"
@@ -74,7 +76,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((pixelVariance, "ri:Ri:PixelVariance"))
 );
 
-TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_ENABLE_SCENE_INDEX, false,
+TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_ENABLE_SCENE_INDEX, true,
                       "Use Scene Index API for testHdPrman.");
 
 TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_USE_RENDER_SETTINGS_PRIM, true,
@@ -339,10 +341,9 @@ PopulateFallbackRenderSettings(
 
     // Set the Integrator
     {
-        UsdAttribute riIntegratorAttr = stage->GetAttributeAtPath(
-            settings->GetPath().AppendProperty(
-                TfToken("outputs:ri:integrator")));
-        if (!riIntegratorAttr.HasAuthoredConnections()) {
+        UsdRelationship riIntegratorRel =
+            settings->GetPrim().GetRelationship(TfToken("ri:integrator"));
+        if (!riIntegratorRel.HasAuthoredTargets()) {
             fprintf(stdout, "   Add an Integrator Prim.\n");
 
             UsdPrim pxrIntegrator;
@@ -363,13 +364,7 @@ PopulateFallbackRenderSettings(
                         TfToken("inputs:ri:style")));
                 styleAttr.Set(VtValue(TfToken(visualizerStyle)));
             }
-            UsdAttribute integratorOutputAttr = stage->GetAttributeAtPath(
-                pxrIntegrator.GetPath().AppendProperty(
-                    TfToken("outputs:result")));
-
-            const SdfPathVector integratorOutputPath = 
-                { integratorOutputAttr.GetPath() };
-            riIntegratorAttr.SetConnections(integratorOutputPath);
+            riIntegratorRel.SetTargets({pxrIntegrator.GetPath()});
         }
     }
 
@@ -480,7 +475,7 @@ AddVisualizerStyle(
 
         // Note that this can now be represented as an integrator prim that 
         // is connected to the RenderSettings prim through the 
-        // 'outputs:ri:integrator' terminal 
+        // 'ri:integrator' terminal 
         (*settingsMap)[HdPrmanRenderSettingsTokens->integratorName] =
             integratorName;
 
@@ -702,8 +697,21 @@ HydraSetupAndRender(
         UsdImagingSceneIndices sceneIndices =
             UsdImagingCreateSceneIndices(createInfo);
         sceneIndices.stageSceneIndex->SetTime(frameNum);
+
+        HdSceneIndexBaseRefPtr sceneIndex =
+            sceneIndices.finalSceneIndex;
+
+        // Add a displayStyle scene index.
+        if (!cullStyle.empty()) {
+            HdsiLegacyDisplayStyleOverrideSceneIndexRefPtr
+                displayStyleSceneIndex =
+                HdsiLegacyDisplayStyleOverrideSceneIndex::New(sceneIndex);
+            sceneIndex = displayStyleSceneIndex;
+            displayStyleSceneIndex->SetCullStyleFallback(TfToken(cullStyle));
+        }
+            
         hdRenderIndex->InsertSceneIndex(
-            sceneIndices.finalSceneIndex, SdfPath::AbsoluteRootPath());
+            sceneIndex, SdfPath::AbsoluteRootPath());
     } else {
         hdUsdFrontend = std::make_unique<UsdImagingDelegate>(
             hdRenderIndex.get(),
@@ -797,6 +805,9 @@ HydraSetupAndRender(
         fprintf(stdout, "Setting the active render settings prim path to <%s>.\n",
                 renderSettingsPrimPath.GetText());
         sgsi->SetActiveRenderSettingsPrimPath(renderSettingsPrimPath);
+        if (cameraInfo) {
+            sgsi->SetPrimaryCameraPrimPath(cameraInfo->cameraPath);
+        }
     } else {
         renderTags.push_back(HdRenderTagTokens->geometry);
     }
@@ -847,6 +858,10 @@ PrintUsage(const char* cmd, const char *err=nullptr)
 
 int main(int argc, char *argv[])
 {
+    TfInstallTerminateAndCrashHandlers();
+    ArchSetProgramNameForErrors("testHdPrman");
+    ArchSetFatalStackLogging(true);
+
     //////////////////////////////////////////////////////////////////////// 
     //
     // Parse args

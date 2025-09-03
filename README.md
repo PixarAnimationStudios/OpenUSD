@@ -10,10 +10,10 @@ For more details, please visit the web site [here](http://openusd.org).
 Build Status
 ------------
 
-|         |   Linux   |  Windows  |   macOS   |
-|:-------:|:---------:|:---------:|:---------:|
-|   dev   | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=dev&amp;jobName=Linux)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=dev) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=dev&amp;jobName=Windows)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=dev) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=dev&amp;jobName=macOS)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=dev) |
-|  release | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=release&amp;jobName=Linux)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=release) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=release&amp;jobName=Windows)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=release) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_apis/build/status/PixarAnimationStudios.OpenUSD?branchName=release&amp;jobName=macOS)](https://dev.azure.com/PixarAnimationStudios/OpenUSD/_build/latest?definitionId=2&branchName=release) |
+|         |   Status   |
+|:-------:|:---------:|
+|   dev   | [![BuildUSD](https://github.com/PixarAnimationStudios/OpenUSD/actions/workflows/buildusd.yml/badge.svg?branch=dev)](https://github.com/PixarAnimationStudios/OpenUSD/actions/workflows/buildusd.yml) |
+|  release | [![BuildUSD](https://github.com/PixarAnimationStudios/OpenUSD/actions/workflows/buildusd.yml/badge.svg?branch=release)](https://github.com/PixarAnimationStudios/OpenUSD/actions/workflows/buildusd.yml) |
 
 Additional Documentation
 ------------------------
@@ -174,9 +174,14 @@ Or for visionOS:
 
 ##### Windows:
 
-Launch the "x64 Native Tools Command Prompt" for your version of Visual Studio
-and run the script in the opened shell. Make sure to use the 64-bit (x64) 
-command prompt and not the 32-bit (x86) command prompt.
+On Windows, it is possible to compile for either x64, or ARM64.
+**Note**: ARM64EC is not compatible at this time.
+**Note 2**: usdview is not supported on ARM64 at present, due to lack of PySide
+
+Launch the "x64 Native Tools Command Prompt" (or "ARM64 Native Tools Command
+Prompt" where appropriate) for your version of Visual Studio, and run the script
+in the opened shell. Make sure to use the appropriate version of the command
+prompt (e.g. on x64, use the x64 version, not the x86 version).
 
 See https://docs.microsoft.com/en-us/cpp/build/how-to-enable-a-64-bit-visual-cpp-toolset-on-the-command-line for more details.
 

@@ -45,7 +45,7 @@ HgiGLDebugEnabled()
 }
 
 void
-HgiGLPostPendingGLErrors(std::string const & where)
+HgiGLPostPendingGLErrors(std::string const & where, int line)
 {
     bool foundError = false;
     GLenum error;
@@ -66,7 +66,7 @@ HgiGLPostPendingGLErrors(std::string const & where)
         }
 
         if (!where.empty()) {
-            errorMessage << ", reported from " << where;
+            errorMessage << ", reported from " << where << " at line " << line;
         }
 
         TF_DEBUG(HGIGL_DEBUG_ERROR_STACKTRACE).Msg(errorMessage.str() + "\n");

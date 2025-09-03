@@ -7,140 +7,107 @@ class "LightAPI" (
     apiSchemas = ["CollectionAPI:lightLink", "CollectionAPI:shadowLink"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["collection:lightLink:includeRoot", "collection:shadowLink:includeRoot"]
+        string userDocBrief = "This schema adds light capabilities to a prim."
     }
-    doc = """API schema that imparts the quality of being a light onto a prim. 
-
-    A light is any prim that has this schema applied to it.  This is true 
-    regardless of whether LightAPI is included as a built-in API of the prim 
-    type (e.g. RectLight or DistantLight) or is applied directly to a Gprim 
-    that should be treated as a light.
-
-    <b>Linking</b>
-
-    Lights can be linked to geometry.  Linking controls which geometry
-    a light illuminates, and which geometry casts shadows from the light.
-
-    Linking is specified as collections (UsdCollectionAPI) which can
-    be accessed via GetLightLinkCollection() and GetShadowLinkCollection().
-    Note that these collections have their includeRoot set to true,
-    so that lights will illuminate and cast shadows from all objects
-    by default.  To illuminate only a specific set of objects, there
-    are two options.  One option is to modify the collection paths
-    to explicitly exclude everything else, assuming it is known;
-    the other option is to set includeRoot to false and explicitly
-    include the desired objects.  These are complementary approaches
-    that may each be preferable depending on the scenario and how
-    to best express the intent of the light setup.
-    """
 )
 {
-    uniform bool collection:lightLink:includeRoot = 1
-    uniform bool collection:shadowLink:includeRoot = 1
+    uniform bool collection:lightLink:includeRoot = 1 (
+        customData = {
+            string userDocBrief = """The 'include root' setting for the
+lightLink collection for this light, used when configuring light-linking."""
+        }
+    )
+    uniform bool collection:shadowLink:includeRoot = 1 (
+        customData = {
+            string userDocBrief = """The 'include root' setting for the
+shadowLink collection for this light, used when configuring light-linking."""
+        }
+    )
     color3f inputs:color = (1, 1, 1) (
+        customData = {
+            string userDocBrief = """The color of the emitted light, in the
+rendering color space."""
+        }
         displayGroup = "Basic"
         displayName = "Color"
-        doc = "The color of emitted light, in energy-linear terms."
     )
     float inputs:colorTemperature = 6500 (
+        customData = {
+            string userDocBrief = """The color temperature of the light, in
+degrees Kelvin."""
+        }
         displayGroup = "Basic"
         displayName = "Color Temperature"
-        doc = """Color temperature, in degrees Kelvin, representing the
-        white point.  The default is a common white point, D65.  Lower
-        values are warmer and higher values are cooler.  The valid range
-        is from 1000 to 10000. Only takes effect when
-        enableColorTemperature is set to true.  When active, the
-        computed result multiplies against the color attribute.
-        See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
     float inputs:diffuse = 1 (
+        customData = {
+            string userDocBrief = """A multiplier for the effect of this light
+on the diffuse response of materials."""
+        }
         displayGroup = "Refine"
         displayName = "Diffuse Multiplier"
-        doc = """A multiplier for the effect of this light on the diffuse
-        response of materials.  This is a non-physical control."""
     )
     bool inputs:enableColorTemperature = 0 (
+        customData = {
+            string userDocBrief = """Controls whether colorTemperature is
+used."""
+        }
         displayGroup = "Basic"
         displayName = "Enable Color Temperature"
-        doc = "Enables using colorTemperature."
     )
     float inputs:exposure = 0 (
+        customData = {
+            string userDocBrief = """Exposure setting of the light. Scales
+the brightness of the light exponentially."""
+        }
         displayGroup = "Basic"
         displayName = "Exposure"
-        doc = """Scales the power of the light exponentially as a power
-        of 2 (similar to an F-stop control over exposure).  The result
-        is multiplied against the intensity."""
     )
     float inputs:intensity = 1 (
+        customData = {
+            string userDocBrief = """The base intensity of the light. Scales the
+brightness of the light linearly."""
+        }
         displayGroup = "Basic"
         displayName = "Intensity"
-        doc = "Scales the power of the light linearly."
     )
     bool inputs:normalize = 0 (
+        customData = {
+            string userDocBrief = """Controls if the light power should be
+normalized by the surface area of the light. If enabled, the light power 
+remains constant if the light's area or angular size is changed."""
+        }
         displayGroup = "Advanced"
         displayName = "Normalize Power"
-        doc = """Normalizes power by the surface area of the light.
-        This makes it easier to independently adjust the power and shape
-        of the light, by causing the power to not vary with the area or
-        angular size of the light."""
     )
     float inputs:specular = 1 (
+        customData = {
+            string userDocBrief = """A multiplier for the effect of this light 
+on the specular response of materials."""
+        }
         displayGroup = "Refine"
         displayName = "Specular Multiplier"
-        doc = """A multiplier for the effect of this light on the specular
-        response of materials.  This is a non-physical control."""
     )
     rel light:filters (
-        doc = "Relationship to the light filters that apply to this light."
+        customData = {
+            string userDocBrief = """The set of light filters, if any, that 
+apply to this light."""
+        }
     )
     uniform token light:materialSyncMode = "noMaterialResponse" (
         allowedTokens = ["materialGlowTintsLight", "independent", "noMaterialResponse"]
+        customData = {
+            string userDocBrief = """Specifies the lighting response of a 
+material (if any) bound to the prim that has this schema applied."""
+        }
         displayGroup = "Geometry"
         displayName = "Material Sync Mode"
-        doc = """
-        For a LightAPI applied to geometry that has a bound Material, 
-        which is entirely or partly emissive, this specifies the relationship 
-        of the Material response to the lighting response.
-        Valid values are:
-        - materialGlowTintsLight: All primary and secondary rays see the 
-          emissive/glow response as dictated by the bound Material while the 
-          base color seen by light rays (which is then modulated by all of the 
-          other LightAPI controls) is the multiplication of the color feeding 
-          the emission/glow input of the Material (i.e. its surface or volume 
-          shader) with the scalar or pattern input to *inputs:color*.
-          This allows the light's color to tint the geometry's glow color while 
-          preserving access to intensity and other light controls as ways to 
-          further modulate the illumination.
-        - independent: All primary and secondary rays see the emissive/glow 
-          response as dictated by the bound Material, while the base color seen 
-          by light rays is determined solely by *inputs:color*. Note that for 
-          partially emissive geometry (in which some parts are reflective 
-          rather than emissive), a suitable pattern must be connected to the 
-          light's color input, or else the light will radiate uniformly from 
-          the geometry.
-        - noMaterialResponse: The geometry behaves as if there is no Material
-          bound at all, i.e. there is no diffuse, specular, or transmissive 
-          response. The base color of light rays is entirely controlled by the
-          *inputs:color*. This is the standard mode for \"canonical\" lights in 
-          UsdLux and indicates to renderers that a Material will either never 
-          be bound or can always be ignored.
-        """
     )
     uniform token light:shaderId = "" (
+        customData = {
+            string userDocBrief = "The shader ID for this light, if any."
+        }
         displayGroup = "Internal"
-        doc = """Default ID for the light's shader. 
-        This defines the shader ID for this light when a render context specific
-        shader ID is not available. 
-
-        The default shaderId for the intrinsic UsdLux lights (RectLight, 
-        DistantLight, etc.) are set to default to the light's type name. For 
-        each intrinsic UsdLux light, we will always register an SdrShaderNode in
-        the SdrRegistry, with the identifier matching the type name and the 
-        source type \"USD\", that corresponds to the light's inputs.
-        \\see GetShaderId
-        \\see GetShaderIdAttrForRenderContext
-        \\see SdrRegistry::GetShaderNodeByIdentifier
-        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
-        """
     )
 }
 
@@ -148,17 +115,8 @@ class "MeshLightAPI" (
     apiSchemas = ["LightAPI"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["light:materialSyncMode", "light:shaderId"]
+        string userDocBrief = "Applies light behavior to a mesh."
     }
-    doc = '''This is the preferred API schema to apply to 
-    "Mesh" type prims when adding light behaviors to a mesh. 
-    At its base, this API schema has the built-in behavior of applying LightAPI 
-    to the mesh and overriding the default materialSyncMode to allow the 
-    emission/glow of the bound material to affect the color of the light. 
-    But, it additionally serves as a hook for plugins to attach additional 
-    properties to "mesh lights" through the creation of API schemas which are 
-    authored to auto-apply to MeshLightAPI.
-    \\see \\ref Usd_AutoAppliedAPISchemas
-    '''
 )
 {
     uniform token light:materialSyncMode = "materialGlowTintsLight"
@@ -169,17 +127,8 @@ class "VolumeLightAPI" (
     apiSchemas = ["LightAPI"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["light:materialSyncMode", "light:shaderId"]
+        string userDocBrief = "Applies light behavior to a volume."
     }
-    doc = '''This is the preferred API schema to apply to 
-    "Volume" type prims when adding light behaviors to a 
-    volume. At its base, this API schema has the built-in behavior of applying 
-    LightAPI to the volume and overriding the default materialSyncMode to allow 
-    the emission/glow of the bound material to affect the color of the light. 
-    But, it additionally serves as a hook for plugins to attach additional 
-    properties to "volume lights" through the creation of API schemas which are 
-    authored to auto-apply to VolumeLightAPI.
-    \\see \\ref Usd_AutoAppliedAPISchemas
-    '''
 )
 {
     uniform token light:materialSyncMode = "materialGlowTintsLight"
@@ -187,273 +136,161 @@ class "VolumeLightAPI" (
 }
 
 class "LightListAPI" (
-    doc = '''API schema to support discovery and publishing of lights in a scene.
-
-    Discovering Lights via Traversal
-    
-    To motivate this API, consider what is required to discover all
-    lights in a scene.  We must load all payloads and traverse all prims:
-
-    \\code
-    01  // Load everything on the stage so we can find all lights,
-    02  // including those inside payloads
-    03  stage->Load();
-    04  
-    05  // Traverse all prims, checking if they have an applied UsdLuxLightAPI
-    06  // (Note: ignoring instancing and a few other things for simplicity)
-    07  SdfPathVector lights;
-    08  for (UsdPrim prim: stage->Traverse()) {
-    09      if (prim.HasAPI<UsdLuxLightAPI>()) {
-    10          lights.push_back(i->GetPath());
-    11      }
-    12  }
-    \\endcode
-
-    This traversal -- suitably elaborated to handle certain details --
-    is the first and simplest thing UsdLuxLightListAPI provides.
-    UsdLuxLightListAPI::ComputeLightList() performs this traversal and returns
-    all lights in the scene:
-
-    \\code
-    01  UsdLuxLightListAPI listAPI(stage->GetPseudoRoot());
-    02  SdfPathVector lights = listAPI.ComputeLightList();
-    \\endcode
-
-    Publishing a Cached Light List
-
-    Consider a USD client that needs to quickly discover lights but
-    wants to defer loading payloads and traversing the entire scene
-    where possible, and is willing to do up-front computation and
-    caching to achieve that.
-
-    UsdLuxLightListAPI provides a way to cache the computed light list,
-    by publishing the list of lights onto prims in the model
-    hierarchy.  Consider a big set that contains lights:
-
-    \\code
-    01  def Xform "BigSetWithLights" (
-    02      kind = "assembly"
-    03      payload = @BigSetWithLights.usd@   // Heavy payload
-    04  ) {
-    05      // Pre-computed, cached list of lights inside payload
-    06      rel lightList = [
-    07          <./Lights/light_1>,
-    08          <./Lights/light_2>,
-    09          ...
-    10      ]
-    11      token lightList:cacheBehavior = "consumeAndContinue";
-    12  }
-    \\endcode
-
-    The lightList relationship encodes a set of lights, and the
-    lightList:cacheBehavior property provides fine-grained
-    control over how to use that cache.  (See details below.)
-
-    The cache can be created by first invoking
-    ComputeLightList(ComputeModeIgnoreCache) to pre-compute the list
-    and then storing the result with UsdLuxLightListAPI::StoreLightList().
-
-    To enable efficient retrieval of the cache, it should be stored
-    on a model hierarchy prim.  Furthermore, note that while you can
-    use a UsdLuxLightListAPI bound to the pseudo-root prim to query the
-    lights (as in the example above) because it will perform a
-    traversal over descendants, you cannot store the cache back to the
-    pseduo-root prim.
-
-    To consult the cached list, we invoke
-    ComputeLightList(ComputeModeConsultModelHierarchyCache):
-
-    \\code
-    01  // Find and load all lights, using lightList cache where available
-    02  UsdLuxLightListAPI list(stage->GetPseudoRoot());
-    03  SdfPathSet lights = list.ComputeLightList(
-    04      UsdLuxLightListAPI::ComputeModeConsultModelHierarchyCache);
-    05  stage.LoadAndUnload(lights, SdfPathSet());
-    \\endcode
-
-    In this mode, ComputeLightList() will traverse the model
-    hierarchy, accumulating cached light lists.
-
-    Controlling Cache Behavior
-
-    The lightList:cacheBehavior property gives additional fine-grained
-    control over cache behavior:
-
-    - The fallback value, "ignore", indicates that the lightList should
-    be disregarded.  This provides a way to invalidate cache entries.
-    Note that unless "ignore" is specified, a lightList with an empty
-    list of targets is considered a cache indicating that no lights
-    are present.
-
-    - The value "consumeAndContinue" indicates that the cache should
-    be consulted to contribute lights to the scene, and that recursion
-    should continue down the model hierarchy in case additional lights
-    are added as descedants. This is the default value established when
-    StoreLightList() is invoked. This behavior allows the lights within
-    a large model, such as the BigSetWithLights example above, to be
-    published outside the payload, while also allowing referencing and
-    layering to add additional lights over that set.
-
-    - The value "consumeAndHalt" provides a way to terminate recursive
-    traversal of the scene for light discovery. The cache will be
-    consulted but no descendant prims will be examined.
-
-    Instancing
-
-    Where instances are present, UsdLuxLightListAPI::ComputeLightList() will
-    return the instance-unique paths to any lights discovered within
-    those instances.  Lights within a UsdGeomPointInstancer will
-    not be returned, however, since they cannot be referred to
-    solely via paths.
-'''
+    customData = {
+        string userDocBrief = """Facilitates discovery and publishing of lights
+in a scene. Provides a mechanism to create and utilize a cache if needed."""
+    }
 )
 {
     rel lightList (
-        doc = "Relationship to lights in the scene."
+        customData = {
+            string userDocBrief = """A list of relationships to lights, that
+describe the light list for a model hierarchy prim with this schema applied.
+If empty and used as a cached list, this indicates no lights are present."""
+        }
     )
     token lightList:cacheBehavior (
         allowedTokens = ["consumeAndHalt", "consumeAndContinue", "ignore"]
-        doc = """
-        Controls how the lightList should be interpreted.
-        Valid values are:
-        - consumeAndHalt: The lightList should be consulted,
-          and if it exists, treated as a final authoritative statement
-          of any lights that exist at or below this prim, halting
-          recursive discovery of lights.
-        - consumeAndContinue: The lightList should be consulted,
-          but recursive traversal over nameChildren should continue
-          in case additional lights are added by descendants.
-        - ignore: The lightList should be entirely ignored.  This
-          provides a simple way to temporarily invalidate an existing
-          cache.  This is the fallback behavior.
-        """
+        customData = {
+            string userDocBrief = """Controls how the cached light list should
+be interpreted: consumeAndHalt, consumeAndContinue, or ignore."""
+        }
     )
 }
 
 class "ListAPI" (
-    doc = """
-    \\deprecated
-    Use LightListAPI instead
-"""
+    customData = {
+        string userDocBrief = """Facilitates discovery and publishing of lights
+in a scene. This schema is deprecated and LightListAPI should be used instead."""
+    }
 )
 {
     rel lightList (
-        doc = "Relationship to lights in the scene."
+        customData = {
+            string userDocBrief = """A list of relationships to lights, that
+describe the light list for a model hierarchy prim with this schema applied.
+If empty and used as a cached list, this indicates no lights are present."""
+        }
     )
     token lightList:cacheBehavior (
         allowedTokens = ["consumeAndHalt", "consumeAndContinue", "ignore"]
-        doc = """
-        Controls how the lightList should be interpreted.
-        Valid values are:
-        - consumeAndHalt: The lightList should be consulted,
-          and if it exists, treated as a final authoritative statement
-          of any lights that exist at or below this prim, halting
-          recursive discovery of lights.
-        - consumeAndContinue: The lightList should be consulted,
-          but recursive traversal over nameChildren should continue
-          in case additional lights are added by descendants.
-        - ignore: The lightList should be entirely ignored.  This
-          provides a simple way to temporarily invalidate an existing
-          cache.  This is the fallback behavior.
-        """
+        customData = {
+            string userDocBrief = """Controls how the cached light list should
+be interpreted: consumeAndHalt, consumeAndContinue, or ignore."""
+        }
     )
 }
 
 class "ShapingAPI" (
-    doc = "Controls for shaping a light's emission."
+    customData = {
+        string userDocBrief = """Controls for shaping a light's emission, such
+as light cone angle and falloff."""
+    }
 )
 {
     float inputs:shaping:cone:angle = 90 (
+        customData = {
+            string userDocBrief = """Specifies the angular limit off the primary 
+axis to restrict the light spread, in degrees."""
+        }
         displayGroup = "Shaping"
         displayName = "Cone Angle"
-        doc = """Angular limit off the primary axis to restrict the
-        light spread."""
     )
     float inputs:shaping:cone:softness = 0 (
+        customData = {
+            string userDocBrief = """Controls the cutoff softness for the cone 
+angle. Typical range is 0 (hard cut-off) to 1.0 (smooth)."""
+        }
         displayGroup = "Shaping"
         displayName = "Cone Softness"
-        doc = """Controls the cutoff softness for cone angle.
-        TODO: clarify semantics"""
     )
     float inputs:shaping:focus = 0 (
+        customData = {
+            string userDocBrief = """Controls the spread of the light. Higher 
+focus values pull light towards the center and narrow the spread."""
+        }
         displayGroup = "Shaping"
         displayName = "Emission Focus"
-        doc = """A control to shape the spread of light.  Higher focus
-        values pull light towards the center and narrow the spread.
-        Implemented as an off-axis cosine power exponent.
-        TODO: clarify semantics"""
     )
     color3f inputs:shaping:focusTint = (0, 0, 0) (
+        customData = {
+            string userDocBrief = """Controls the tint of the emission in the
+falloff region."""
+        }
         displayGroup = "Shaping"
         displayName = "Emission Focus Tint"
-        doc = """Off-axis color tint.  This tints the emission in the
-        falloff region.  The default tint is black.
-        TODO: clarify semantics"""
     )
     float inputs:shaping:ies:angleScale = 0 (
+        customData = {
+            string userDocBrief = """Specifies a rescaling of the angular
+distribution of the IES profile."""
+        }
         displayGroup = "Shaping"
         displayName = "Profile Scale"
-        doc = """Rescales the angular distribution of the IES profile.
-        TODO: clarify semantics"""
     )
     asset inputs:shaping:ies:file (
+        customData = {
+            string userDocBrief = "Specifies the IES profile file."
+        }
         displayGroup = "Shaping"
         displayName = "IES Profile"
-        doc = """An IES (Illumination Engineering Society) light
-        profile describing the angular distribution of light."""
     )
     bool inputs:shaping:ies:normalize = 0 (
+        customData = {
+            string userDocBrief = """Normalizes the IES profile to affect
+the shaping of the light while preserving the overall energy output."""
+        }
         displayGroup = "Shaping"
         displayName = "Profile Normalization"
-        doc = """Normalizes the IES profile so that it affects the shaping
-        of the light while preserving the overall energy output."""
     )
 }
 
 class "ShadowAPI" (
-    doc = """Controls to refine a light's shadow behavior.  These are
-    non-physical controls that are valuable for visual lighting work."""
+    customData = {
+        string userDocBrief = """Controls to refine a light's shadow casting
+behavior. These are non-physical controls."""
+    }
 )
 {
     color3f inputs:shadow:color = (0, 0, 0) (
+        customData = {
+            string userDocBrief = """Specifies the color of the shadows cast by 
+the light"""
+        }
         displayGroup = "Shadows"
         displayName = "Shadow Color"
-        doc = """The color of shadows cast by the light.  This is a
-        non-physical control.  The default is to cast black shadows."""
     )
     float inputs:shadow:distance = -1 (
+        customData = {
+            string userDocBrief = """Specifies the maximum distance, measured
+between the occluder and the point on a surface, within which shadows are cast."""
+        }
         displayGroup = "Shadows"
         displayName = "Shadow Max Distance"
-        doc = """The maximum distance shadows are cast. The distance is
-        measured as the distance between the point on the surface and the 
-        occluder.
-        The default value (-1) indicates no limit.
-        """
     )
     bool inputs:shadow:enable = 1 (
+        customData = {
+            string userDocBrief = """Enables or disables whether the light
+casts shadows."""
+        }
         displayGroup = "Shadows"
         displayName = "Enable Shadows"
-        doc = "Enables shadows to be cast by this light."
     )
     float inputs:shadow:falloff = -1 (
+        customData = {
+            string userDocBrief = """Specifies the size of the shadow falloff
+zone, within the maximum shadow distance."""
+        }
         displayGroup = "Shadows"
         displayName = "Shadow Falloff"
-        doc = """The size of the shadow falloff zone within the shadow max 
-        distance, which can be used to hide the hard cut-off for shadows seen 
-        stretching past the max distance. The falloff zone is the area that 
-        fades from full shadowing at the beginning of the falloff zone to no 
-        shadowing at the max distance from the occluder. The falloff zone 
-        distance cannot exceed the shadow max distance. A falloff value equal 
-        to or less than zero (with -1 as the default) indicates no falloff. 
-        """
     )
     float inputs:shadow:falloffGamma = 1 (
+        customData = {
+            string userDocBrief = """Controls the rate of falloff within the
+shadow falloff zone specified with `shadow:falloff`."""
+        }
         displayGroup = "Shadows"
         displayName = "Shadow Falloff Gamma"
-        doc = """A gamma (i.e., exponential) control over shadow strength
-        with linear distance within the falloff zone. This controls the rate
-        of the falloff.
-        This requires the use of shadowDistance and shadowFalloff."""
     )
 }
 
@@ -461,227 +298,139 @@ class LightFilter "LightFilter" (
     apiSchemas = ["CollectionAPI:filterLink"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
+        string userDocBrief = """A light filter is used to modify the effect
+of a light."""
     }
-    doc = """A light filter modifies the effect of a light.
-    Lights refer to filters via relationships so that filters may be
-    shared.
-
-    <b>Linking</b>
-
-    Filters can be linked to geometry.  Linking controls which geometry
-    a light-filter affects, when considering the light filters attached
-    to a light illuminating the geometry.
-
-    Linking is specified as a collection (UsdCollectionAPI) which can
-    be accessed via GetFilterLinkCollection().
-    """
 )
 {
-    uniform bool collection:filterLink:includeRoot = 1
+    uniform bool collection:filterLink:includeRoot = 1 (
+        customData = {
+            string userDocBrief = """The 'include root' setting for the
+filterLink collection, used when configuring light-linking."""
+        }
+    )
     uniform token lightFilter:shaderId = "" (
+        customData = {
+            string userDocBrief = """The shader ID for a LightFilter 
+(the fallback value is no shader ID)."""
+        }
         displayGroup = "Internal"
-        doc = """Default ID for the light filter's shader. 
-        This defines the shader ID for this light filter when a render context 
-        specific shader ID is not available. 
-
-        \\see GetShaderId
-        \\see GetShaderIdAttrForRenderContext
-        \\see SdrRegistry::GetShaderNodeByIdentifier
-        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
-        """
     )
     rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
+        purpose="proxy" prim.'''
+        }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a classification of geometry into categories that 
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals.
-
-        See for more detail about how 
-        purpose is computed and used."""
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
     )
     uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        the desired positioning for this prim and its descendant prims."""
+        }
     )
 }
 
 class "BoundableLightBase" (
     apiSchemas = ["LightAPI"]
-    doc = """Base class for intrinsic lights that are boundable.
-
-    The primary purpose of this class is to provide a direct API to the 
-    functions provided by LightAPI for concrete derived light types.
-    """
+    customData = {
+        string userDocBrief = """A base class used by intrinsic lights. Not
+intended to be used directly."""
+    }
 )
 {
     float3[] extent (
-        doc = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e. its own
-        transform not applied), without accounting for any shader-induced
-        displacement. If __any__ extent value has been authored for a given 
-        Boundable, then it should be authored at every timeSample at which 
-        geometry-affecting properties are authored, to ensure correct 
-        evaluation via ComputeExtent(). If __no__ extent value has been 
-        authored, then ComputeExtent() will call the Boundable's registered 
-        ComputeExtentFunction(), which may be expensive, which is why we 
-        strongly encourage proper authoring of extent.
-        \\sa ComputeExtent()
-        \\sa \\ref UsdGeom_Boundable_Extent.
-        
-        An authored extent on a prim which has children is expected to include
-        the extent of all children, as they will be pruned from BBox computation
-        during traversal."""
+        customData = {
+            string userDocBrief = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e."""
+        }
     )
     rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
+        purpose="proxy" prim.'''
+        }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a classification of geometry into categories that 
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals.
-
-        See for more detail about how 
-        purpose is computed and used."""
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
     )
     uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        the desired positioning for this prim and its descendant prims."""
+        }
     )
 }
 
 class "NonboundableLightBase" (
     apiSchemas = ["LightAPI"]
-    doc = """Base class for intrinsic lights that are not boundable.
-
-    The primary purpose of this class is to provide a direct API to the 
-    functions provided by LightAPI for concrete derived light types.
-    """
+    customData = {
+        string userDocBrief = """A base class used by intrinsic lights. Not
+intended to be used directly."""
+    }
 )
 {
     rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
+        purpose="proxy" prim.'''
+        }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a classification of geometry into categories that 
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals.
-
-        See for more detail about how 
-        purpose is computed and used."""
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
     )
     uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        the desired positioning for this prim and its descendant prims."""
+        }
     )
 }
 
@@ -689,74 +438,62 @@ class DistantLight "DistantLight" (
     apiSchemas = ["LightAPI"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["inputs:intensity", "light:shaderId"]
+        string userDocBrief = '''A light that provides light from
+a far distant source, along the -Z axis. Also known as a "directional light".'''
     }
-    doc = """Light emitted from a distant source along the -Z axis.
-    Also known as a directional light."""
 )
 {
     float inputs:angle = 0.53 (
+        customData = {
+            string userDocBrief = """The angular diameter of the light in 
+degrees. The fallback value is 0.53. Higher values make the light rays less 
+parallel, thereby increasing shadow softness, but also increasing the overall 
+amount of light."""
+        }
         displayGroup = "Basic"
         displayName = "Angle Extent"
-        doc = """Angular size of the light in degrees.
-        As an example, the Sun is approximately 0.53 degrees as seen from Earth.
-        Higher values broaden the light and therefore soften shadow edges.
-        """
     )
     float inputs:intensity = 50000 (
-        doc = """Scales the emission of the light linearly.
-        The DistantLight has a high default intensity to approximate the Sun."""
+        customData = {
+            string userDocBrief = """Scales the brightness the DistantLight
+linearly, with a fallback value of 50000 to approximate sunlight."""
+        }
     )
-    uniform token light:shaderId = "DistantLight"
+    uniform token light:shaderId = "DistantLight" (
+        customData = {
+            string userDocBrief = '''The shader ID for a DistantLight 
+("DistantLight").'''
+        }
+    )
     rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
+        purpose="proxy" prim.'''
+        }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a classification of geometry into categories that 
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals.
-
-        See for more detail about how 
-        purpose is computed and used."""
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
     )
     uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        the desired positioning for this prim and its descendant prims."""
+        }
     )
 }
 
@@ -764,85 +501,59 @@ class DiskLight "DiskLight" (
     apiSchemas = ["LightAPI"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["light:shaderId"]
+        string userDocBrief = """A light that emits from one side of a circular
+disk (along the -Z axis), centered in the XY plane."""
     }
-    doc = """Light emitted from one side of a circular disk.
-    The disk is centered in the XY plane and emits light along the -Z axis."""
 )
 {
     float3[] extent (
-        doc = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e. its own
-        transform not applied), without accounting for any shader-induced
-        displacement. If __any__ extent value has been authored for a given 
-        Boundable, then it should be authored at every timeSample at which 
-        geometry-affecting properties are authored, to ensure correct 
-        evaluation via ComputeExtent(). If __no__ extent value has been 
-        authored, then ComputeExtent() will call the Boundable's registered 
-        ComputeExtentFunction(), which may be expensive, which is why we 
-        strongly encourage proper authoring of extent.
-        \\sa ComputeExtent()
-        \\sa \\ref UsdGeom_Boundable_Extent.
-        
-        An authored extent on a prim which has children is expected to include
-        the extent of all children, as they will be pruned from BBox computation
-        during traversal."""
+        customData = {
+            string userDocBrief = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e."""
+        }
     )
     float inputs:radius = 0.5 (
+        customData = {
+            string userDocBrief = "Specifies the radius of the disk."
+        }
         displayGroup = "Geometry"
         displayName = "Radius"
-        doc = "Radius of the disk."
     )
-    uniform token light:shaderId = "DiskLight"
+    uniform token light:shaderId = "DiskLight" (
+        customData = {
+            string userDocBrief = '''The shader ID for a DiskLight 
+("DiskLight").'''
+        }
+    )
     rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
+        purpose="proxy" prim.'''
+        }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a classification of geometry into categories that 
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals.
-
-        See for more detail about how 
-        purpose is computed and used."""
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
     )
     uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        the desired positioning for this prim and its descendant prims."""
+        }
     )
 }
 
@@ -850,98 +561,76 @@ class RectLight "RectLight" (
     apiSchemas = ["LightAPI"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["light:shaderId"]
+        string userDocBrief = """A light that emits from one side of a rectangle
+(along the -Z axis), centered in the XY plane."""
     }
-    doc = """Light emitted from one side of a rectangle.
-    The rectangle is centered in the XY plane and emits light along the -Z axis.
-    The rectangle is 1 unit in length in the X and Y axis.  In the default 
-    position, a texture file's min coordinates should be at (+X, +Y) and 
-    max coordinates at (-X, -Y)."""
 )
 {
     float3[] extent (
-        doc = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e. its own
-        transform not applied), without accounting for any shader-induced
-        displacement. If __any__ extent value has been authored for a given 
-        Boundable, then it should be authored at every timeSample at which 
-        geometry-affecting properties are authored, to ensure correct 
-        evaluation via ComputeExtent(). If __no__ extent value has been 
-        authored, then ComputeExtent() will call the Boundable's registered 
-        ComputeExtentFunction(), which may be expensive, which is why we 
-        strongly encourage proper authoring of extent.
-        \\sa ComputeExtent()
-        \\sa \\ref UsdGeom_Boundable_Extent.
-        
-        An authored extent on a prim which has children is expected to include
-        the extent of all children, as they will be pruned from BBox computation
-        during traversal."""
+        customData = {
+            string userDocBrief = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e."""
+        }
     )
     float inputs:height = 1 (
+        customData = {
+            string userDocBrief = """Specifies the height of the rectangle in 
+the local Y axis."""
+        }
         displayGroup = "Geometry"
         displayName = "Height"
-        doc = "Height of the rectangle, in the local Y axis."
     )
     asset inputs:texture:file (
+        customData = {
+            string userDocBrief = """An optional color texture set on the
+rectangle."""
+        }
         displayGroup = "Basic"
         displayName = "Color Map"
-        doc = "A color texture to use on the rectangle."
     )
     float inputs:width = 1 (
+        customData = {
+            string userDocBrief = """Specifies the width of the rectangle in the 
+local X axis."""
+        }
         displayGroup = "Geometry"
         displayName = "Width"
-        doc = "Width of the rectangle, in the local X axis."
     )
-    uniform token light:shaderId = "RectLight"
+    uniform token light:shaderId = "RectLight" (
+        customData = {
+            string userDocBrief = '''The shader ID for a RectLight 
+("RectLight").'''
+        }
+    )
     rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
+        purpose="proxy" prim.'''
+        }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a classification of geometry into categories that 
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals.
-
-        See for more detail about how 
-        purpose is computed and used."""
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
     )
     uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        the desired positioning for this prim and its descendant prims."""
+        }
     )
 }
 
@@ -949,92 +638,66 @@ class SphereLight "SphereLight" (
     apiSchemas = ["LightAPI"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["light:shaderId"]
+        string userDocBrief = "A light that is emitted outwards from a sphere."
     }
-    doc = "Light emitted outward from a sphere."
 )
 {
     float3[] extent (
-        doc = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e. its own
-        transform not applied), without accounting for any shader-induced
-        displacement. If __any__ extent value has been authored for a given 
-        Boundable, then it should be authored at every timeSample at which 
-        geometry-affecting properties are authored, to ensure correct 
-        evaluation via ComputeExtent(). If __no__ extent value has been 
-        authored, then ComputeExtent() will call the Boundable's registered 
-        ComputeExtentFunction(), which may be expensive, which is why we 
-        strongly encourage proper authoring of extent.
-        \\sa ComputeExtent()
-        \\sa \\ref UsdGeom_Boundable_Extent.
-        
-        An authored extent on a prim which has children is expected to include
-        the extent of all children, as they will be pruned from BBox computation
-        during traversal."""
+        customData = {
+            string userDocBrief = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e."""
+        }
     )
     float inputs:radius = 0.5 (
+        customData = {
+            string userDocBrief = "Specifies the radius of the sphere."
+        }
         displayGroup = "Geometry"
         displayName = "Radius"
-        doc = "Radius of the sphere."
     )
-    uniform token light:shaderId = "SphereLight"
+    uniform token light:shaderId = "SphereLight" (
+        customData = {
+            string userDocBrief = '''The shader ID for a SphereLight 
+("SphereLight").'''
+        }
+    )
     rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
+        purpose="proxy" prim.'''
+        }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a classification of geometry into categories that 
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals.
-
-        See for more detail about how 
-        purpose is computed and used."""
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
     )
     bool treatAsPoint = 0 (
+        customData = {
+            string userDocBrief = """Specifies that renderers can treat this
+light as a zero-radius point light."""
+        }
         displayGroup = "Advanced"
         displayName = "Treat As Point"
-        doc = """A hint that this light can be treated as a 'point'
-        light (effectively, a zero-radius sphere) by renderers that
-        benefit from non-area lighting. Renderers that only support
-        area lights can disregard this."""
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
     )
     uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        the desired positioning for this prim and its descendant prims."""
+        }
     )
 }
 
@@ -1042,100 +705,75 @@ class CylinderLight "CylinderLight" (
     apiSchemas = ["LightAPI"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["light:shaderId"]
+        string userDocBrief = """A light that is emitted outwards from a 
+cylinder."""
     }
-    doc = """Light emitted outward from a cylinder.
-    The cylinder is centered at the origin and has its major axis on the X axis.
-    The cylinder does not emit light from the flat end-caps.
-    """
 )
 {
     float3[] extent (
-        doc = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e. its own
-        transform not applied), without accounting for any shader-induced
-        displacement. If __any__ extent value has been authored for a given 
-        Boundable, then it should be authored at every timeSample at which 
-        geometry-affecting properties are authored, to ensure correct 
-        evaluation via ComputeExtent(). If __no__ extent value has been 
-        authored, then ComputeExtent() will call the Boundable's registered 
-        ComputeExtentFunction(), which may be expensive, which is why we 
-        strongly encourage proper authoring of extent.
-        \\sa ComputeExtent()
-        \\sa \\ref UsdGeom_Boundable_Extent.
-        
-        An authored extent on a prim which has children is expected to include
-        the extent of all children, as they will be pruned from BBox computation
-        during traversal."""
+        customData = {
+            string userDocBrief = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e."""
+        }
     )
     float inputs:length = 1 (
+        customData = {
+            string userDocBrief = """Specifies the length of the cylinder in
+the local X axis."""
+        }
         displayGroup = "Geometry"
         displayName = "Length"
-        doc = "Length of the cylinder, in the local X axis."
     )
     float inputs:radius = 0.5 (
+        customData = {
+            string userDocBrief = "Specifies the radius of the cylinder."
+        }
         displayGroup = "Geometry"
         displayName = "Radius"
-        doc = "Radius of the cylinder."
     )
-    uniform token light:shaderId = "CylinderLight"
+    uniform token light:shaderId = "CylinderLight" (
+        customData = {
+            string userDocBrief = '''The shader ID for a CylinderLight 
+("CylinderLight").'''
+        }
+    )
     rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
+        purpose="proxy" prim.'''
+        }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a classification of geometry into categories that 
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals.
-
-        See for more detail about how 
-        purpose is computed and used."""
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
     )
     bool treatAsLine = 0 (
+        customData = {
+            string userDocBrief = """Specifies that renderers can treat this
+light as a zero-radius line."""
+        }
         displayGroup = "Advanced"
         displayName = "Treat As Line"
-        doc = """A hint that this light can be treated as a 'line'
-        light (effectively, a zero-radius cylinder) by renderers that
-        benefit from non-area lighting. Renderers that only support
-        area lights can disregard this."""
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
     )
     uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        the desired positioning for this prim and its descendant prims."""
+        }
     )
 }
 
@@ -1143,66 +781,52 @@ class GeometryLight "GeometryLight" (
     apiSchemas = ["LightAPI"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["light:shaderId"]
+        string userDocBrief = """A light that emits outwards from a geometric
+prim. Deprecated, use MeshLight instead."""
     }
-    doc = """\\deprecated
-    Light emitted outward from a geometric prim (UsdGeomGprim),
-    which is typically a mesh."""
 )
 {
     rel geometry (
-        doc = "Relationship to the geometry to use as the light source."
+        customData = {
+            string userDocBrief = """Relationship to the geometry to use as the 
+light source."""
+        }
     )
-    uniform token light:shaderId = "GeometryLight"
+    uniform token light:shaderId = "GeometryLight" (
+        customData = {
+            string userDocBrief = '''The shader ID for a GeometryLight 
+("GeometryLight").'''
+        }
+    )
     rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
+        purpose="proxy" prim.'''
+        }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a classification of geometry into categories that 
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals.
-
-        See for more detail about how 
-        purpose is computed and used."""
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
     )
     uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        the desired positioning for this prim and its descendant prims."""
+        }
     )
 }
 
@@ -1210,121 +834,78 @@ class DomeLight "DomeLight" (
     apiSchemas = ["LightAPI"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["light:shaderId"]
+        string userDocBrief = """A light that is emitted inwards from a 
+distant external environment such as a sky or a light environment captured in
+an HDR image used for Image Based Lighting (IBL)."""
     }
-    doc = """Light emitted inward from a distant external environment,
-    such as a sky or IBL light probe.
-    
-    In this version of the dome light, the dome's default orientation is such
-    that its top pole is aligned with the world's +Y axis. This adheres to the
-    OpenEXR specification for latlong environment maps.  From the OpenEXR
-    documentation:
-    
-    -------------------------------------------------------------------------
-    Latitude-Longitude Map:
-    
-    The environment is projected onto the image using polar coordinates
-    (latitude and longitude).  A pixel's x coordinate corresponds to
-    its longitude, and the y coordinate corresponds to its latitude.
-    Pixel (dataWindow.min.x, dataWindow.min.y) has latitude +pi/2 and
-    longitude +pi; pixel (dataWindow.max.x, dataWindow.max.y) has
-    latitude -pi/2 and longitude -pi.
-    
-    In 3D space, latitudes -pi/2 and +pi/2 correspond to the negative and
-    positive y direction.  Latitude 0, longitude 0 points into positive
-    z direction; and latitude 0, longitude pi/2 points into positive x
-    direction.
-    
-    The size of the data window should be 2*N by N pixels (width by height),
-    where N can be any integer greater than 0.
-    -------------------------------------------------------------------------
-"""
 )
 {
     float guideRadius = 100000 (
+        customData = {
+            string userDocBrief = """Specifies the radius of guide geometry to 
+use to visualize the dome light."""
+        }
         displayGroup = "Guides"
         displayName = "Radius"
-        doc = "The radius of guide geometry to use to visualize the dome light.  The default is 1 km for scenes whose metersPerUnit is the USD default of 0.01 (i.e., 1 world unit is 1 cm)."
     )
     asset inputs:texture:file (
+        customData = {
+            string userDocBrief = """Specifies the color texture (typically an 
+HDR image intended for IBL) used by the DomeLight."""
+        }
         displayGroup = "Basic"
         displayName = "Color Map"
-        doc = """A color texture to use on the dome, such as an HDR (high
-        dynamic range) texture intended for IBL (image based lighting)."""
     )
     token inputs:texture:format = "automatic" (
         allowedTokens = ["automatic", "latlong", "mirroredBall", "angular", "cubeMapVerticalCross"]
+        customData = {
+            string userDocBrief = """Specifies the parameterization of the color
+texture. Values include: automatic, latlong, mirroredBall, angular, and 
+cubeMapVerticalCross."""
+        }
         displayGroup = "Basic"
         displayName = "Color Map Format"
-        doc = """
-        Specifies the parameterization of the color map file.
-        Valid values are:
-        - automatic: Tries to determine the layout from the file itself.
-          For example, Renderman texture files embed an explicit
-          parameterization.
-        - latlong: Latitude as X, longitude as Y.
-        - mirroredBall: An image of the environment reflected in a
-          sphere, using an implicitly orthogonal projection.
-        - angular: Similar to mirroredBall but the radial dimension
-          is mapped linearly to the angle, providing better sampling
-          at the edges.
-        - cubeMapVerticalCross: A cube map with faces laid out as a
-          vertical cross.
-        """
     )
-    uniform token light:shaderId = "DomeLight"
+    uniform token light:shaderId = "DomeLight" (
+        customData = {
+            string userDocBrief = '''The shader ID for a DomeLight 
+("DomeLight").'''
+        }
+    )
     rel portals (
-        doc = "Optional portals to guide light sampling."
+        customData = {
+            string userDocBrief = "Optional portals to guide light sampling."
+        }
     )
     rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
+        purpose="proxy" prim.'''
+        }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a classification of geometry into categories that 
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals.
-
-        See for more detail about how 
-        purpose is computed and used."""
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
     )
     uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        the desired positioning for this prim and its descendant prims."""
+        }
     )
 }
 
@@ -1332,147 +913,88 @@ class DomeLight_1 "DomeLight_1" (
     apiSchemas = ["LightAPI"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["light:shaderId"]
+        string userDocBrief = """A light that is emitted inwards from a 
+distant external environment such as a sky or a light environment captured in
+an HDR image used for Image Based Lighting (IBL). Provides additional control
+over the dome's orientation via the poleAxis property."""
     }
-    doc = """Light emitted inward from a distant external environment,
-    such as a sky or IBL light probe.
-    
-    In this version of the dome light, the dome's default orientation is
-    determined by its *poleAxis* property. The fallback value, \"scene\", means
-    that the dome starts with its top pole aligned with the stage's up axis.
-    
-    Note that the rotation necessary to align the dome light with its *poleAxis*
-    is intended to be applied by a renderer to only the dome itself, and *not*
-    to inherit down to any USD namespace children of the dome light prim.
-    
-    If *poleAxis* is set to \"Y\" or \"scene\" and the stage's up axis is \"Y\", the
-    dome's default orientation will adhere to the OpenEXR specification for
-    latlong environment maps.  From the OpenEXR documentation:
-    
-    -------------------------------------------------------------------------
-    Latitude-Longitude Map:
-    
-    The environment is projected onto the image using polar coordinates
-    (latitude and longitude).  A pixel's x coordinate corresponds to
-    its longitude, and the y coordinate corresponds to its latitude.
-    Pixel (dataWindow.min.x, dataWindow.min.y) has latitude +pi/2 and
-    longitude +pi; pixel (dataWindow.max.x, dataWindow.max.y) has
-    latitude -pi/2 and longitude -pi.
-    
-    In 3D space, latitudes -pi/2 and +pi/2 correspond to the negative and
-    positive y direction.  Latitude 0, longitude 0 points into positive
-    z direction; and latitude 0, longitude pi/2 points into positive x
-    direction.
-    
-    The size of the data window should be 2*N by N pixels (width by height),
-    where N can be any integer greater than 0.
-    -------------------------------------------------------------------------
-    
-    If *poleAxis* is set to \"Z\" or \"scene\" and the stage's up axis is \"Z\",
-    latitudes -pi/2 and +pi/2 will instead correspond to the negative and
-    positive Z direction, and latitude 0, longitude 0 will instead point into
-    the negative Y direction in 3D space.
-"""
 )
 {
     float guideRadius = 100000 (
+        customData = {
+            string userDocBrief = """Specifies the radius of guide geometry to 
+use to visualize the dome light."""
+        }
         displayGroup = "Guides"
         displayName = "Radius"
-        doc = "The radius of guide geometry to use to visualize the dome light.  The default is 1 km for scenes whose metersPerUnit is the USD default of 0.01 (i.e., 1 world unit is 1 cm)."
     )
     asset inputs:texture:file (
+        customData = {
+            string userDocBrief = """Specifies the color texture (typically an 
+HDR image intended for IBL) used by the DomeLight."""
+        }
         displayGroup = "Basic"
         displayName = "Color Map"
-        doc = """A color texture to use on the dome, such as an HDR (high
-        dynamic range) texture intended for IBL (image based lighting)."""
     )
     token inputs:texture:format = "automatic" (
         allowedTokens = ["automatic", "latlong", "mirroredBall", "angular", "cubeMapVerticalCross"]
+        customData = {
+            string userDocBrief = """Specifies the parameterization of the color
+texture. Values include: automatic, latlong, mirroredBall, angular, and 
+cubeMapVerticalCross."""
+        }
         displayGroup = "Basic"
         displayName = "Color Map Format"
-        doc = """
-        Specifies the parameterization of the color map file.
-        Valid values are:
-        - automatic: Tries to determine the layout from the file itself.
-          For example, Renderman texture files embed an explicit
-          parameterization.
-        - latlong: Latitude as X, longitude as Y.
-        - mirroredBall: An image of the environment reflected in a
-          sphere, using an implicitly orthogonal projection.
-        - angular: Similar to mirroredBall but the radial dimension
-          is mapped linearly to the angle, providing better sampling
-          at the edges.
-        - cubeMapVerticalCross: A cube map with faces laid out as a
-          vertical cross.
-        """
     )
-    uniform token light:shaderId = "DomeLight"
+    uniform token light:shaderId = "DomeLight" (
+        customData = {
+            string userDocBrief = '''The shader ID for a DomeLight_1 
+("DomeLight").'''
+        }
+    )
     uniform token poleAxis = "scene" (
         allowedTokens = ["scene", "Y", "Z"]
+        customData = {
+            string userDocBrief = """Specifies the starting alignment of the
+dome's top pole."""
+        }
         displayGroup = "Advanced"
         displayName = "Pole Axis"
-        doc = """
-        A token which indicates the starting alignment of the dome
-        light's top pole. This alignment is for the dome itself and is *not*
-        inherited by the namespace children of the dome.
-        Valid values are:
-        - scene: The dome light's top pole is aligned with the stage's up axis.
-        - Y: The dome light's top pole is aligned with the +Y axis.
-        - Z: The dome light's top pole is aligned with the +Z axis.
-        """
     )
     rel portals (
-        doc = "Optional portals to guide light sampling."
+        customData = {
+            string userDocBrief = "Optional portals to guide light sampling."
+        }
     )
     rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
+        purpose="proxy" prim.'''
+        }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a classification of geometry into categories that 
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals.
-
-        See for more detail about how 
-        purpose is computed and used."""
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
     )
     uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        the desired positioning for this prim and its descendant prims."""
+        }
     )
 }
 
@@ -1480,155 +1002,108 @@ class PortalLight "PortalLight" (
     apiSchemas = ["LightAPI"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["light:shaderId"]
+        string userDocBrief = """A rectangular portal in the local XY plane that 
+guides sampling of a dome light (DomeLight, DomeLight_1)."""
     }
-    doc = """A rectangular portal in the local XY plane that guides sampling
-    of a dome light.  Transmits light in the -Z direction.
-    The rectangle is 1 unit in length."""
 )
 {
     float3[] extent (
-        doc = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e. its own
-        transform not applied), without accounting for any shader-induced
-        displacement. If __any__ extent value has been authored for a given 
-        Boundable, then it should be authored at every timeSample at which 
-        geometry-affecting properties are authored, to ensure correct 
-        evaluation via ComputeExtent(). If __no__ extent value has been 
-        authored, then ComputeExtent() will call the Boundable's registered 
-        ComputeExtentFunction(), which may be expensive, which is why we 
-        strongly encourage proper authoring of extent.
-        \\sa ComputeExtent()
-        \\sa \\ref UsdGeom_Boundable_Extent.
-        
-        An authored extent on a prim which has children is expected to include
-        the extent of all children, as they will be pruned from BBox computation
-        during traversal."""
+        customData = {
+            string userDocBrief = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e."""
+        }
     )
     float inputs:height = 1 (
+        customData = {
+            string userDocBrief = """Specifies the height of the portal 
+rectangle in the local Y axis."""
+        }
         displayGroup = "Geometry"
         displayName = "Height"
-        doc = "Height of the portal rectangle in the local Y axis."
     )
     float inputs:width = 1 (
+        customData = {
+            string userDocBrief = """Specifies the width of the portal rectangle 
+in the local X axis."""
+        }
         displayGroup = "Geometry"
         displayName = "Width"
-        doc = "Width of the portal rectangle in the local X axis."
     )
-    uniform token light:shaderId = "PortalLight"
+    uniform token light:shaderId = "PortalLight" (
+        customData = {
+            string userDocBrief = '''The shader ID for a PortalLight 
+("PortalLight").'''
+        }
+    )
     rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
+        purpose="proxy" prim.'''
+        }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a classification of geometry into categories that 
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals.
-
-        See for more detail about how 
-        purpose is computed and used."""
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
     )
     uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        the desired positioning for this prim and its descendant prims."""
+        }
     )
 }
 
 class PluginLight "PluginLight" (
     apiSchemas = ["NodeDefAPI", "LightAPI"]
-    doc = """Light that provides properties that allow it to identify an 
-    external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
-    provided to render delegates without the need to provide a schema 
-    definition for the light's type.
-
-    \\see \\ref usdLux_PluginSchemas
-"""
+    customData = {
+        string userDocBrief = """A light that provides properties to allow it
+to identify an external Sdr shader node."""
+    }
 )
 {
     rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
+        purpose="proxy" prim.'''
+        }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a classification of geometry into categories that 
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals.
-
-        See for more detail about how 
-        purpose is computed and used."""
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
     )
     uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        the desired positioning for this prim and its descendant prims."""
+        }
     )
 }
 
@@ -1636,79 +1111,55 @@ class PluginLightFilter "PluginLightFilter" (
     apiSchemas = ["NodeDefAPI", "CollectionAPI:filterLink"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["collection:filterLink:includeRoot"]
-    }
-    doc = """Light filter that provides properties that allow it to identify an 
+        string userDocBrief = """A Light filter that provides properties that allow it to identify an 
     external SdrShadingNode definition, through UsdShadeNodeDefAPI, that can be 
     provided to render delegates without the need to provide a schema 
-    definition for the light filter's type.
-
-    \\see \\ref usdLux_PluginSchemas
-"""
+    definition for the light filter's type."""
+    }
 )
 {
-    uniform bool collection:filterLink:includeRoot = 1
+    uniform bool collection:filterLink:includeRoot = 1 (
+        customData = {
+            string userDocBrief = """The 'include root' setting for the
+filterLink collection, used when configuring light-linking."""
+        }
+    )
     uniform token lightFilter:shaderId = "" (
+        customData = {
+            string userDocBrief = """The shader ID for a LightFilter 
+(the fallback value is no shader ID)."""
+        }
         displayGroup = "Internal"
-        doc = """Default ID for the light filter's shader. 
-        This defines the shader ID for this light filter when a render context 
-        specific shader ID is not available. 
-
-        \\see GetShaderId
-        \\see GetShaderIdAttrForRenderContext
-        \\see SdrRegistry::GetShaderNodeByIdentifier
-        \\see SdrRegistry::GetShaderNodeByIdentifierAndType
-        """
     )
     rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
+        purpose="proxy" prim.'''
+        }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a classification of geometry into categories that 
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals.
-
-        See for more detail about how 
-        purpose is computed and used."""
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
     )
     uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        the desired positioning for this prim and its descendant prims."""
+        }
     )
 }
 

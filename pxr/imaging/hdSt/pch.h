@@ -40,12 +40,12 @@
 #include <any>
 #include <array>
 #include <atomic>
-#include <cassert>
 #include <cctype>
 #include <cfloat>
 #include <cinttypes>
 #include <climits>
 #include <cmath>
+#include <complex>
 #include <condition_variable>
 #include <cstdarg>
 #include <cstddef>
@@ -108,15 +108,6 @@
 #include <MaterialXRender/LightHandler.h>
 #include <MaterialXRender/Util.h>
 #endif // PXR_MATERIALX_SUPPORT_ENABLED
-#if defined(PXR_PYTHON_SUPPORT_ENABLED) && !defined(PXR_USE_INTERNAL_BOOST_PYTHON)
-#include "pxr/external/boost/python/common.hpp"
-#include <boost/python/object_fwd.hpp>
-#include <boost/python/object_operators.hpp>
-#if defined(__APPLE__) // Fix breakage caused by Python's pyport.h.
-#undef tolower
-#undef toupper
-#endif
-#endif // PXR_PYTHON_SUPPORT_ENABLED && !PXR_USE_INTERNAL_BOOST_PYTHON
 #include <opensubdiv/far/patchTable.h>
 #include <opensubdiv/far/patchTableFactory.h>
 #include <opensubdiv/far/stencilTable.h>

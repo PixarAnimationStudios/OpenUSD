@@ -9,6 +9,7 @@ class "TestSchemaAPI" (
     inherits = </APISchemaBase>
 )
 {
+    reorder properties = ["inputs:colorMapGamma", "inputs:intensity", "inputs:intNotBool", "propNS:testShaderPropWithNS", "outputs:resultRGB"]
     uniform token inputs:colorMapGamma (
         allowedTokens = ["texture"]
         connectability = "interfaceOnly"

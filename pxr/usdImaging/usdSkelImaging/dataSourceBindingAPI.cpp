@@ -12,12 +12,14 @@
 
 #include "pxr/usd/usdSkel/bindingAPI.h"
 
+#include "pxr/imaging/hd/retainedDataSource.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
 HdSampledDataSourceHandle
-_DataSourceAuthoredAttributeFactory(
+_AuthoredAttributeDataSourceFactory(
     const UsdAttribute &usdAttr,
     const UsdImagingDataSourceStageGlobals &stageGlobals,
     const SdfPath &sceneIndexPath,
@@ -32,57 +34,82 @@ _DataSourceAuthoredAttributeFactory(
         std::move(query), stageGlobals, sceneIndexPath, timeVaryingFlagLocator);
 }
 
+HdDataSourceBaseHandle
+_PathFromRelationshipDataSourceFactory(
+    const UsdRelationship &rel,
+    const UsdImagingDataSourceStageGlobals &,
+    const SdfPath &,
+    const HdDataSourceLocator &)
+{
+    if (!rel.HasAuthoredTargets()) {
+        return nullptr;
+    }
+
+    SdfPathVector result;
+    rel.GetForwardedTargets(&result);
+
+    using DS = HdRetainedTypedSampledDataSource<SdfPath>;
+
+    if (result.empty()) {
+        return DS::New(SdfPath());
+    }
+    return DS::New(std::move(result[0]));
+}
+
 std::vector<UsdImagingDataSourceMapped::PropertyMapping>
 _GetPropertyMappings()
 {
-    std::vector<UsdImagingDataSourceMapped::PropertyMapping> result;
-
-    for (const TfToken &usdName :
-             UsdSkelBindingAPI::GetSchemaAttributeNames(
-                 /* includeInherited = */ false)) {
-
-        const std::pair<std::string, bool> nameAndMatch =
-            SdfPath::StripPrefixNamespace(
-                usdName.GetString(), "skel");
-
-        if (nameAndMatch.second) {
-            result.push_back(
-                UsdImagingDataSourceMapped::AttributeMapping{
-                    usdName,
-                    HdDataSourceLocator(TfToken(nameAndMatch.first)),
-                    // The flattening scene index needs to know whether there
-                    // is an authored opinion: if there is none, it needs to
-                    // inherit the value from an ancestor.
-                    // Thus, return nullptr if there is no authored opinion.
-                    _DataSourceAuthoredAttributeFactory});
-        }
-    }
-
-    result.push_back(
+    return {
         UsdImagingDataSourceMapped::RelationshipMapping{
             UsdSkelTokens->skelAnimationSource,
             HdDataSourceLocator(
                 UsdSkelImagingBindingSchemaTokens->animationSource),
-            UsdImagingDataSourceMapped::
-                GetPathFromRelationshipDataSourceFactory()});
+            // Inherited.
+            //
+            // If not authored, this returns a nullptr and thus
+            // the flattening scene index (through
+            // HdFlattenedOverlayDataSourceProvider) picks it up from an
+            // ancestor.
+            //
+            _PathFromRelationshipDataSourceFactory},
 
-    result.push_back(
         UsdImagingDataSourceMapped::RelationshipMapping{
             UsdSkelTokens->skelSkeleton,
             HdDataSourceLocator(
                 UsdSkelImagingBindingSchemaTokens->skeleton),
-            UsdImagingDataSourceMapped::
-                GetPathFromRelationshipDataSourceFactory()});
+            // Inherited.
+            //
+            // Same as for skelAnimationSource applied.
+            _PathFromRelationshipDataSourceFactory},
 
-    result.push_back(
+        UsdImagingDataSourceMapped::AttributeMapping{
+            UsdSkelTokens->skelJoints,
+            HdDataSourceLocator(
+                UsdSkelImagingBindingSchemaTokens->joints),
+            // Inherited.
+            //
+            // If not authored, this returns a nullptr and thus the
+            // flattening scene index picks it up from an ancestor.
+            _AuthoredAttributeDataSourceFactory},
+
+        UsdImagingDataSourceMapped::AttributeMapping{
+            UsdSkelTokens->skelBlendShapes,
+            HdDataSourceLocator(
+                UsdSkelImagingBindingSchemaTokens->blendShapes)
+            // Not inherited
+            //
+            // The default factory always produces a data source.
+            },
+
         UsdImagingDataSourceMapped::RelationshipMapping{
             UsdSkelTokens->skelBlendShapeTargets,
             HdDataSourceLocator(
                 UsdSkelImagingBindingSchemaTokens->blendShapeTargets),
+            // Not inherited.
+            //
+            // The factory always produces a data source.
             UsdImagingDataSourceMapped::
-                GetPathArrayFromRelationshipDataSourceFactory()});
-
-    return result;
+                GetPathArrayFromRelationshipDataSourceFactory()}};
 }
 
 const UsdImagingDataSourceMapped::PropertyMappings &

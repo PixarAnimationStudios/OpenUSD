@@ -1,0 +1,11 @@
+#usda 1.0
+
+def "Ref"
+{
+    def "A"
+    {
+        def "B"
+        {
+        }
+    }
+}

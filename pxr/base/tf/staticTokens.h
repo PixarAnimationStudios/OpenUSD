@@ -53,6 +53,7 @@
 /// PRIVATE, you only need to use the DEFINE macro.
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/token.h"
@@ -78,7 +79,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Macro to define public tokens. This declares a list of tokens that can be
 /// used globally.  Use in conjunction with TF_DEFINE_PUBLIC_TOKENS.
 /// \hideinitializer
+// This macro expansion is disabled for Intellisense to avoid severe
+// slowdowns when using MSVC's non-conforming preprocessor.
+#if defined(ARCH_PREPROCESSOR_MSVC_TRADITIONAL) && defined(__INTELLISENSE__)
+#define TF_DECLARE_PUBLIC_TOKENS(...)
+#else
 #define TF_DECLARE_PUBLIC_TOKENS(...) _TF_DECLARE_PUBLIC_TOKENS_EXPAND( _TF_DECLARE_PUBLIC_TOKENS_EVAL(_TF_DECLARE_PUBLIC_TOKENS_EXPAND( TF_PP_VARIADIC_SIZE(__VA_ARGS__) ))(__VA_ARGS__) )
+#endif
 
 /// Macro to define public tokens.  Use in conjunction with
 /// TF_DECLARE_PUBLIC_TOKENS.

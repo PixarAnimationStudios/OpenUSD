@@ -144,6 +144,14 @@ UsdImagingCollectionAPIAdapter::InvalidateImagingSubprim(
         return HdDataSourceLocatorSet();
     }
 
+    // XXX Code below does not handle updates to referenced collections in
+    //     the collection instance's membership expression.
+    // e.g. If we have
+    // </Foo.collection:abc:membershipExpression> = "//Stuff//" and
+    // </Bar.collection:xyz:membershipExpression> = "/Foo:abc"
+    //
+    // changes to the former won't trigger invalidation of the latter.
+    //
     std::string prefix = TfStringPrintf(
         "collection:%s:", appliedInstanceName.data());
 

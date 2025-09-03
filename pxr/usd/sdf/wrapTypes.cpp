@@ -271,6 +271,18 @@ _SdfValueBlockHash(const SdfValueBlock &self)
     return TfHash{}(self);
 }
 
+static string
+_SdfAnimationBlockRepr(const SdfAnimationBlock &self) 
+{
+    return TF_PY_REPR_PREFIX + "AnimationBlock";
+}
+
+static int
+_SdfAnimationBlockHash(const SdfAnimationBlock &self)
+{
+    return TfHash{}(self);
+}
+
 SdfValueTypeName
 _FindType(const std::string& typeName)
 {
@@ -554,4 +566,11 @@ void wrapTypes()
         .def("__repr__", _SdfValueBlockRepr)
         .def("__hash__", _SdfValueBlockHash);
     VtValueFromPython<SdfValueBlock>();
+
+    class_<SdfAnimationBlock>("AnimationBlock")
+        .def(self == self)
+        .def(self != self)
+        .def("__repr__", _SdfAnimationBlockRepr)
+        .def("__hash__", _SdfAnimationBlockHash);
+    VtValueFromPython<SdfAnimationBlock>();
 }

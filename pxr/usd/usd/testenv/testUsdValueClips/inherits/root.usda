@@ -1,0 +1,56 @@
+#usda 1.0
+(
+    startTimeCode = 0
+    endTimeCode = 24
+    framesPerSecond = 24
+)
+
+class "_firstInherits" 
+(
+)
+{
+    over "Inner" {
+        float attr.timeSamples = {
+                0: -10,
+                1: -20,
+                2: -30
+            }
+    }
+
+    float attr.timeSamples = {
+        0: -1,
+        1: -2,
+        2: -3
+    }
+}
+
+over "_hasClips"
+(
+    clips = {
+        dictionary default = {
+            double2[] active = [(0, 0)]
+            asset[] assetPaths = [@./clips.usda@]
+            asset manifestAssetPath = @./manifest.usda@
+            string primPath = "/Anim"
+            double2[] times = [(0, 0), (1, 12), (2, 24)]
+        }
+    }
+)
+{
+}
+
+def "InheritedClipsClobbered"
+(
+    inherits = [</_firstInherits>, </_hasClips>]
+    append references = @./ref.usda@</Anim>
+)
+{
+}
+
+def "InheritedClips"
+(
+    inherits = </_hasClips>
+    append references = @./ref.usda@</Anim>
+)
+{
+}

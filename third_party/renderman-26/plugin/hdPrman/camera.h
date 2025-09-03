@@ -4,14 +4,16 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_CAMERA_H
-#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_CAMERA_H
+#ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_CAMERA_H
+#define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_CAMERA_H
 
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
 #include "hdPrman/renderParam.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/timeSampleArray.h"
+
+#include <Riley.h>
 
 #include "pxr/base/vt/array.h"
 
@@ -59,6 +61,11 @@ public:
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> const&
     GetTimeSampleXforms() const {
         return _sampleXforms;
+    }
+
+    riley::ShadingNode
+    GetProjectionNode() const {
+        return _projectionNode;
     }
 
 #if HD_API_VERSION < 52
@@ -187,9 +194,11 @@ private:
     float _dofMult;
 
     VtDictionary _params;
+
+    riley::ShadingNode _projectionNode;
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_CAMERA_H
+#endif  // EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_CAMERA_H

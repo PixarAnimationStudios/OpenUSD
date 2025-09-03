@@ -77,6 +77,16 @@ bool
 UsdSkelImagingComputeBoneJointIndices(const UsdSkelTopology& topology,
                                       int* jointIndices, size_t numPoints);
 
+/// Compute mesh points for imaging a single bone of a skeleton.
+///
+/// A bone corresponds to a joint that has a parent joint. The input to this
+/// function is the transform of that joint and parent joint.
+USDSKELIMAGING_API
+void
+UsdSkelImagingComputePointsForSingleBone(const GfMatrix4d& xform,
+                                         const GfMatrix4d& parentXform,
+                                         GfVec3f* points);
+
 /// @}
 
 

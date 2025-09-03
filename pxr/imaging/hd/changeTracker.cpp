@@ -534,7 +534,8 @@ HdChangeTracker::_MarkInstancerDirty(SdfPath const& id, HdDirtyBits bits)
     if (bits & DirtyTransform) {
         toPropagate |= DirtyTransform;
     }
-    if (bits & DirtyInstanceIndex) {
+    // If an instancer is invis'd, we drop all instance indices.
+    if (bits & (DirtyInstanceIndex | DirtyVisibility)) {
         toPropagate |= DirtyInstanceIndex;
         ++_instanceIndicesChangeCount;
     }

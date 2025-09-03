@@ -40,7 +40,10 @@ progAndArgList = [("usdedit", "-h"),
 ("usddumpcrate", "-h"),
 ("sdfdump", "-h"),
 ("sdffilter", "-h"),
-("usdmeasureperformance", "-h")
+("usdmeasureperformance", "-h"),
+("usdGenSchema", "-h"),
+("usdgenschemafromsdr", "-h"),
+("usdInitSchema", "-h")
 ]
 
 #------------------------------------------------------------------------------#

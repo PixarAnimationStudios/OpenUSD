@@ -1,0 +1,12 @@
+#usda 1.0
+(
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName       = "{{libraryName}}"
+        string libraryPath       = "{{libraryPath}}"
+    }
+)
+{
+}

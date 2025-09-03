@@ -84,6 +84,8 @@ public:
     virtual void DeleteRenderDelegate(HdRenderDelegate *renderDelegate) = 0;
 
     ///
+    /// \deprecated Use IsSupported overload below.
+    ///
     /// Returns \c true if this renderer plugin is supported in the running 
     /// process and \c false if not.
     /// 
@@ -92,7 +94,23 @@ public:
     /// parameter indicates if the GPU is available for use by the plugin in
     /// case this information is necessary to make this determination.
     ///
-    virtual bool IsSupported(bool gpuEnabled = true) const = 0;
+    HD_API
+    virtual bool IsSupported(bool gpuEnabled = true) const;
+
+    ///
+    /// Returns \c true if this renderer plugin is supported in the running 
+    /// process and \c false if not.
+    /// 
+    /// This gives the plugin a chance to perform some runtime checks to make
+    /// sure that the system meets minimum requirements.  The 
+    /// \p rendererCreateArgs parameter indicates the resources available when 
+    /// making this determination.
+    /// 
+    /// The \p reasonWhyNot param, when provided, can be filled with the reason
+    /// why the renderer plugin is not supported.
+    virtual bool IsSupported(
+        HdRendererCreateArgs const &rendererCreateArgs,
+        std::string *reasonWhyNot = nullptr) const = 0;
 
 protected:
     HdRendererPlugin() = default;

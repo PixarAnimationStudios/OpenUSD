@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/converter/pyobject_traits.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/converter/pyobject_type.hpp"
 
@@ -55,5 +51,4 @@ PXR_BOOST_PYTHON_BUILTIN_OBJECT_TRAITS(Tuple);
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYOBJECT_TRAITS_HPP

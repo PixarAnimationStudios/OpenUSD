@@ -34,6 +34,7 @@ class PropertyLegend(QtWidgets.QWidget):
         self._ui.propertyLegendColorNoValue.setScene(graphicsScene)
         self._ui.propertyLegendColorValueClips.setScene(graphicsScene)
         self._ui.propertyLegendColorCustom.setScene(graphicsScene)
+        self._ui.propertyLegendColorSpline.setScene(graphicsScene)
 
         # set color of attribute viewer legend boxes
         self._ui.propertyLegendColorFallback.setForegroundBrush(
@@ -48,6 +49,8 @@ class PropertyLegend(QtWidgets.QWidget):
             UIPropertyValueSourceColors.VALUE_CLIPS)
         self._ui.propertyLegendColorCustom.setForegroundBrush(
             UIBaseColors.RED)
+        self._ui.propertyLegendColorSpline.setForegroundBrush(
+            UIPropertyValueSourceColors.SPLINE)
 
         # set color of attribute viewer text items
         legendTextUpdate = lambda t, c: (
@@ -76,12 +79,20 @@ class PropertyLegend(QtWidgets.QWidget):
         customLegend.setText(
             legendTextUpdate(customLegend, UIBaseColors.RED))
 
+        splineLegend = self._ui.propertyLegendLabelSpline
+        splineLegend.setText(
+            legendTextUpdate(splineLegend, UIPropertyValueSourceColors.SPLINE))
+
         interpolatedStr = 'Interpolated'
         tsLabel = self._ui.propertyLegendLabelTimeSample
         tsLabel.setText(ItalicizeLabelText(tsLabel.text(), interpolatedStr))
 
         vcLabel = self._ui.propertyLegendLabelValueClips
         vcLabel.setText(ItalicizeLabelText(vcLabel.text(), interpolatedStr))
+
+        splineLabel = self._ui.propertyLegendLabelSpline
+        splineLabel.setText(
+            ItalicizeLabelText(splineLabel.text(), interpolatedStr))
 
         # Load up and set the icons for the property legend
         self._ui.propertyLegendTargetIcon.setPixmap(

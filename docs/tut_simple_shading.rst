@@ -31,10 +31,13 @@ performs the steps using the USD Python API, as well as showing the resulting
 text :filename:`.usda` outputs.
 
 The relevant scripts and data files reside in the USD distribution in
-:filename:`USD/extras/usd/tutorials/simpleShading`. Run
-:filename:`generate_simpleShading.py` in that directory to generate all of the
-snippets for each step shown below, or examine the pre-generated 
-`simpleShading.usda <https://github.com/PixarAnimationStudios/OpenUSD/tree/release/extras/usd/tutorials/simpleShading/simpleShading.usda>`__ file.
+:filename:`USD/extras/usd/tutorials/simpleShading`. 
+:filename:`generate_simpleShading.py` in that directory captures all the 
+script examples from the tutorial steps below in one script and can be run
+to produce the final version of :filename:`simpleShading.usda`. For convenience
+a pre-generated version of 
+`simpleShading.usda <https://github.com/PixarAnimationStudios/OpenUSD/tree/release/extras/usd/tutorials/simpleShading/simpleShading.usda>`__ that would be 
+produced after following all tutorial steps is also provided.
 
 Making a Model
 ==============

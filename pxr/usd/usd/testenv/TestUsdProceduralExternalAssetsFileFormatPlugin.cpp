@@ -6,13 +6,13 @@
 //
 #include "pxr/pxr.h"
 
-#include "pxr/usd/usd/usdaFileFormat.h"
 #include "pxr/usd/usd/stage.h"
 
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/primSpec.h"
+#include "pxr/usd/sdf/usdaFileFormat.h"
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -187,9 +187,9 @@ Test_UsdProceduralExternalAssetsFileFormatPlugin_FileFormat::WriteToString(
     std::string* str,
     const std::string& comment) const
 {
-    // Write the contents as an sdf text file.
+    // Write the contents as an usda text file.
     return SdfFileFormat::FindById(
-        SdfTextFileFormatTokens->Id)->WriteToString(layer, str, comment);
+        SdfUsdaFileFormatTokens->Id)->WriteToString(layer, str, comment);
 }
 
 bool
@@ -198,9 +198,9 @@ Test_UsdProceduralExternalAssetsFileFormatPlugin_FileFormat::WriteToStream(
     std::ostream& out,
     size_t indent) const
 {
-    // Write the contents as an sdf text file.
+    // Write the contents as an usda text file.
     return SdfFileFormat::FindById(
-        SdfTextFileFormatTokens->Id)->WriteToStream(spec, out, indent);
+        SdfUsdaFileFormatTokens->Id)->WriteToStream(spec, out, indent);
 }
 
 std::set<std::string> 

@@ -21,6 +21,7 @@ constexpr bool HdEmbreeDefaultJitterCamera = true;
 constexpr bool HdEmbreeDefaultUseFaceColors = true;
 constexpr int HdEmbreeDefaultCameraLightIntensity = 300;
 constexpr int HdEmbreeDefaultRandomNumberSeed = -1;
+constexpr bool HdEmbreeDefaultUseLighting = false;
 
 /// \class HdEmbreeConfig
 ///
@@ -88,6 +89,14 @@ public:
     ///
     /// Override with *HDEMBREE_RANDOM_NUMBER_SEED*.
     int randomNumberSeed = HdEmbreeDefaultRandomNumberSeed;
+
+    /// Should the renderpass use scene lights (in particular, UsdLux-compliant
+    /// area lights)?  Note that if scene lights and ambient occlusion are both
+    /// enabled, the renderer will choose scene lights rather than ambient
+    /// occlusion.
+    ///
+    /// Override with *HDEMBREE_USE_LIGHTING*.
+    bool useLighting = HdEmbreeDefaultUseLighting;
 
 private:
     // The constructor initializes the config variables with their

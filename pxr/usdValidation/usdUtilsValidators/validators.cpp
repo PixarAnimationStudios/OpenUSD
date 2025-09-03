@@ -7,7 +7,7 @@
 
 #include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/usd/zipFile.h"
+#include "pxr/usd/sdf/zipFile.h"
 #include "pxr/usd/usdUtils/dependencies.h"
 #include "pxr/usd/usdUtils/userProcessingFunc.h"
 #include "pxr/usdValidation/usdUtilsValidators/validatorTokens.h"
@@ -116,7 +116,7 @@ _FileExtensionValidator(const UsdStagePtr& usdStage,
         TfToken("m4a"), TfToken("mp3"), TfToken("wav")};
 
     const SdfLayerHandle& rootLayer = usdStage->GetRootLayer();
-    const UsdZipFile& zipFile = UsdZipFile::Open(rootLayer->GetRealPath());
+    const SdfZipFile& zipFile = SdfZipFile::Open(rootLayer->GetRealPath());
 
     const std::vector<std::string> fileNames =
         std::vector<std::string>(zipFile.begin(), zipFile.end());
@@ -186,7 +186,7 @@ _MissingReferenceValidator(const UsdStagePtr& usdStage,
 static UsdValidationErrorVector
 _GetUsdzPackageErrors(const SdfLayerHandle &rootLayer)
 {
-    const UsdZipFile zipFile = UsdZipFile::Open(
+    const SdfZipFile zipFile = SdfZipFile::Open(
             rootLayer->GetRealPath().c_str());
     if (!zipFile) {
         return {};
@@ -198,7 +198,7 @@ _GetUsdzPackageErrors(const SdfLayerHandle &rootLayer)
     UsdValidationErrorVector errors;
     for(auto it = zipFile.begin(); it != zipFile.end(); ++it)
     {
-        const UsdZipFile::FileInfo &fileInfo = it.GetFileInfo();
+        const SdfZipFile::FileInfo &fileInfo = it.GetFileInfo();
         if (fileInfo.compressionMethod != 0)
         {
             const std::string &fileName = *it;

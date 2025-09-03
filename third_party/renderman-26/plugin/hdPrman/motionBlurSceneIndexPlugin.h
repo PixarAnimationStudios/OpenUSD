@@ -4,8 +4,8 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MOTION_BLUR_SCENE_INDEX_PLUGIN_H
-#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MOTION_BLUR_SCENE_INDEX_PLUGIN_H
+#ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MOTION_BLUR_SCENE_INDEX_PLUGIN_H
+#define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MOTION_BLUR_SCENE_INDEX_PLUGIN_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/sceneIndexPlugin.h"
@@ -13,7 +13,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdPrman_MotionBlurSceneIndexPlugin
-/// 
+///
 /// Plugin provides a scene index that interprets and reshapes the upstream
 /// scene for motion blur according to Prman's capabilities. This scene index
 /// plugin handles all types of motion blur, including:
@@ -49,4 +49,4 @@ protected:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MOTION_BLUR_SCENE_INDEX_PLUGIN_H
+#endif // EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MOTION_BLUR_SCENE_INDEX_PLUGIN_H

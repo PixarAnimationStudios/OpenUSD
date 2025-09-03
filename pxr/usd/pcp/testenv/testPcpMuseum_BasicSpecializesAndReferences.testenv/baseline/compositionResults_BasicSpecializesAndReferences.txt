@@ -1,15 +1,15 @@
-Loading @BasicSpecializesAndReferences/root.sdf@
+Loading @BasicSpecializesAndReferences/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </ShaderBindings>
 
 Prim Stack:
-    root.sdf             /ShaderBindings
-    root.sdf             /ShaderBindings_defaultShadingVariant
+    root.usda            /ShaderBindings
+    root.usda            /ShaderBindings_defaultShadingVariant
 
 Child names:
      ['ShinyPlastic', 'ShinyPlastic_BlueShinyPlastic']
@@ -18,28 +18,28 @@ Child names:
 Results for composing </ShaderBindings/ShinyPlastic>
 
 Prim Stack:
-    root.sdf             /ShaderBindings_defaultShadingVariant/ShinyPlastic
-    root.sdf             /ShinyPlasticLook
+    root.usda            /ShaderBindings_defaultShadingVariant/ShinyPlastic
+    root.usda            /ShinyPlasticLook
 
 ------------------------------------------------------------------------
 Results for composing </ShaderBindings/ShinyPlastic_BlueShinyPlastic>
 
 Prim Stack:
-    root.sdf             /ShaderBindings_defaultShadingVariant/ShinyPlastic_BlueShinyPlastic
-    root.sdf             /ShaderBindings_defaultShadingVariant/ShinyPlastic
-    root.sdf             /ShinyPlasticLook
+    root.usda            /ShaderBindings_defaultShadingVariant/ShinyPlastic_BlueShinyPlastic
+    root.usda            /ShaderBindings_defaultShadingVariant/ShinyPlastic
+    root.usda            /ShinyPlasticLook
 
 ------------------------------------------------------------------------
 Results for composing </ShinyPlasticLook>
 
 Prim Stack:
-    root.sdf             /ShinyPlasticLook
+    root.usda            /ShinyPlasticLook
 
 ------------------------------------------------------------------------
 Results for composing </ShaderBindings_defaultShadingVariant>
 
 Prim Stack:
-    root.sdf             /ShaderBindings_defaultShadingVariant
+    root.usda            /ShaderBindings_defaultShadingVariant
 
 Child names:
      ['ShinyPlastic', 'ShinyPlastic_BlueShinyPlastic']
@@ -48,22 +48,22 @@ Child names:
 Results for composing </ShaderBindings_defaultShadingVariant/ShinyPlastic>
 
 Prim Stack:
-    root.sdf             /ShaderBindings_defaultShadingVariant/ShinyPlastic
-    root.sdf             /ShinyPlasticLook
+    root.usda            /ShaderBindings_defaultShadingVariant/ShinyPlastic
+    root.usda            /ShinyPlasticLook
 
 ------------------------------------------------------------------------
 Results for composing </ShaderBindings_defaultShadingVariant/ShinyPlastic_BlueShinyPlastic>
 
 Prim Stack:
-    root.sdf             /ShaderBindings_defaultShadingVariant/ShinyPlastic_BlueShinyPlastic
-    root.sdf             /ShaderBindings_defaultShadingVariant/ShinyPlastic
-    root.sdf             /ShinyPlasticLook
+    root.usda            /ShaderBindings_defaultShadingVariant/ShinyPlastic_BlueShinyPlastic
+    root.usda            /ShaderBindings_defaultShadingVariant/ShinyPlastic
+    root.usda            /ShinyPlasticLook
 
 ------------------------------------------------------------------------
 Results for composing </InternalRef>
 
 Prim Stack:
-    root.sdf             /InternalRef
+    root.usda            /InternalRef
 
 Child names:
      ['Metal', 'Brass']
@@ -72,21 +72,21 @@ Child names:
 Results for composing </InternalRef/Metal>
 
 Prim Stack:
-    root.sdf             /InternalRef/Metal
+    root.usda            /InternalRef/Metal
 
 ------------------------------------------------------------------------
 Results for composing </InternalRef/Brass>
 
 Prim Stack:
-    root.sdf             /InternalRef/Brass
-    root.sdf             /InternalRef/Metal
+    root.usda            /InternalRef/Brass
+    root.usda            /InternalRef/Metal
 
 ------------------------------------------------------------------------
 Results for composing </InternalRefAndSpecializes>
 
 Prim Stack:
-    root.sdf             /InternalRefAndSpecializes
-    root.sdf             /InternalRef
+    root.usda            /InternalRefAndSpecializes
+    root.usda            /InternalRef
 
 Child names:
      ['Metal', 'Brass']
@@ -95,24 +95,24 @@ Child names:
 Results for composing </InternalRefAndSpecializes/Metal>
 
 Prim Stack:
-    root.sdf             /InternalRefAndSpecializes/Metal
-    root.sdf             /InternalRef/Metal
+    root.usda            /InternalRefAndSpecializes/Metal
+    root.usda            /InternalRef/Metal
 
 ------------------------------------------------------------------------
 Results for composing </InternalRefAndSpecializes/Brass>
 
 Prim Stack:
-    root.sdf             /InternalRefAndSpecializes/Brass
-    root.sdf             /InternalRef/Brass
-    root.sdf             /InternalRefAndSpecializes/Metal
-    root.sdf             /InternalRef/Metal
+    root.usda            /InternalRefAndSpecializes/Brass
+    root.usda            /InternalRef/Brass
+    root.usda            /InternalRefAndSpecializes/Metal
+    root.usda            /InternalRef/Metal
 
 ------------------------------------------------------------------------
 Results for composing </RemoteRefAndSpecializes>
 
 Prim Stack:
-    root.sdf             /RemoteRefAndSpecializes
-    ref.sdf              /Ref
+    root.usda            /RemoteRefAndSpecializes
+    ref.usda             /Ref
 
 Child names:
      ['Metal', 'Brass']
@@ -121,15 +121,15 @@ Child names:
 Results for composing </RemoteRefAndSpecializes/Metal>
 
 Prim Stack:
-    root.sdf             /RemoteRefAndSpecializes/Metal
-    ref.sdf              /Ref/Metal
+    root.usda            /RemoteRefAndSpecializes/Metal
+    ref.usda             /Ref/Metal
 
 ------------------------------------------------------------------------
 Results for composing </RemoteRefAndSpecializes/Brass>
 
 Prim Stack:
-    root.sdf             /RemoteRefAndSpecializes/Brass
-    ref.sdf              /Ref/Brass
-    root.sdf             /RemoteRefAndSpecializes/Metal
-    ref.sdf              /Ref/Metal
+    root.usda            /RemoteRefAndSpecializes/Brass
+    ref.usda             /Ref/Brass
+    root.usda            /RemoteRefAndSpecializes/Metal
+    ref.usda             /Ref/Metal
 

@@ -597,7 +597,8 @@ HdxVisualizeAovTask::Execute(HdTaskContext* ctx)
     HgiTextureDesc const& aovTexDesc = aovTexture->GetDescriptor();
 
     // Transition from color target layout to shader read layout
-    aovTexture->SubmitLayoutChange(HgiTextureUsageBitsShaderRead);
+    const auto oldLayout =
+        aovTexture->SubmitLayoutChange(HgiTextureUsageBitsShaderRead);
 
     if (!TF_VERIFY(_CreateBufferResources())) {
         return;
@@ -639,7 +640,7 @@ HdxVisualizeAovTask::Execute(HdTaskContext* ctx)
     _ApplyVisualizationKernel(outputTexture);
 
     // Restore the original color target layout
-    aovTexture->SubmitLayoutChange(HgiTextureUsageBitsColorTarget);
+    aovTexture->SubmitLayoutChange(oldLayout);
 
     if (canUseIntermediateAovTexture) {
         // Swap the handles on the task context so that future downstream tasks

@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/type_list_impl.hpp>
-#else
-
 #  include "pxr/external/boost/python/detail/type_list.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { namespace detail { 
@@ -29,5 +25,4 @@ struct type_list
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 # endif // PXR_EXTERNAL_BOOST_PYTHON_DETAIL_TYPE_LIST_IMPL_HPP

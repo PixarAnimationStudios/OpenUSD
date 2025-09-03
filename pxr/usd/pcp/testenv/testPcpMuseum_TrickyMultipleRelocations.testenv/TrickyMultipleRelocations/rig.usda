@@ -1,0 +1,25 @@
+#usda 1.0
+(
+    relocates = {
+        </CharRig/Rig/SubRig/Anim/AnimScope>: </CharRig/Anim/AnimScope>
+    }
+)
+
+def Scope "CharRig"
+{
+    def Scope "Anim"
+    {
+    }
+
+    def Scope "Rig" (
+        doc = "test"
+    )
+    {
+        def "SubRig" (
+            add references = @./subrig.usda@</SubRig>
+        )
+        {
+        }
+    }
+}
+

@@ -7,24 +7,15 @@
 #ifndef PXR_BASE_WORK_DISPATCHER_H
 #define PXR_BASE_WORK_DISPATCHER_H
 
-/// \file work/dispatcher.h
+/// \file
 
 #include "pxr/pxr.h"
-#include "pxr/base/work/threadLimits.h"
 #include "pxr/base/work/api.h"
+#include "pxr/base/work/impl.h"
+#include "pxr/base/work/threadLimits.h"
 
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/errorTransport.h"
-
-// Blocked range is not used in this file, but this header happens to pull in
-// the TBB version header in a way that works in all TBB versions.
-#include <tbb/blocked_range.h>
-#include <tbb/concurrent_vector.h>
-#if TBB_INTERFACE_VERSION_MAJOR >= 12
-#include <tbb/task_group.h>
-#else
-#include <tbb/task.h>
-#endif
 
 #include <functional>
 #include <type_traits>
@@ -32,47 +23,23 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class WorkDispatcher
-///
-/// A work dispatcher runs concurrent tasks.  The dispatcher supports adding
-/// new tasks from within running tasks.  This suits problems that exhibit
-/// hierarchical structured parallelism: tasks that discover additional tasks
-/// during their execution.
-///
-/// Typical use is to create a dispatcher and invoke Run() to begin doing
-/// work, then Wait() for the work to complete.  Tasks may invoke Run() during
-/// their execution as they discover additional tasks to perform.
-///
-/// For example,
-///
-/// \code
-/// WorkDispatcher dispatcher;
-/// for (i = 0; i != N; ++i) {
-///     dispatcher.Run(DoSomeWork, workItem[i]);
-/// }
-/// dispatcher.Wait();
-/// \endcode
-///
-/// Calls to Run() and Cancel() may be made concurrently.  Calls to Wait() may
-/// also be made concurrently.  However, once any calls to Wait() are in-flight,
-/// calls to Run() and Cancel() must only be made by tasks already added by
-/// Run().  This means that users of this class are responsible to synchronize
-/// concurrent calls to Wait() to ensure this requirement is met.
-///
-/// Additionally, Wait() must never be called by a task added by Run(), since
-/// that task could never complete.
-///
-class WorkDispatcher
+// The Work_Dispatcher interface, specialized with a dispatcher impl template
+// argument.
+// 
+// Clients expected to use the WorkDispatcher type instead.
+template <class Impl>
+class Work_Dispatcher
 {
+protected:
+    // Prevent construction of the work dispatcher base class.
+    WORK_API Work_Dispatcher();
+
 public:
-    /// Construct a new dispatcher.
-    WORK_API WorkDispatcher();
-
     /// Wait() for any pending tasks to complete, then destroy the dispatcher.
-    WORK_API ~WorkDispatcher() noexcept;
+    WORK_API ~Work_Dispatcher() noexcept;
 
-    WorkDispatcher(WorkDispatcher const &) = delete;
-    WorkDispatcher &operator=(WorkDispatcher const &) = delete;
+    Work_Dispatcher(Work_Dispatcher const &) = delete;
+    Work_Dispatcher &operator=(Work_Dispatcher const &) = delete;
 
 #ifdef doxygen
 
@@ -93,11 +60,9 @@ public:
 
     template <class Callable>
     inline void Run(Callable &&c) {
-#if TBB_INTERFACE_VERSION_MAJOR >= 12
-        _taskGroup.run(_InvokerTask<typename std::remove_reference<Callable>::type>(std::forward<Callable>(c), &_errors));
-#else
-        _rootTask->spawn(_MakeInvokerTask(std::forward<Callable>(c)));
-#endif
+        _dispatcher.Run(
+            _InvokerTask<typename std::remove_reference<Callable>::type>(
+                std::forward<Callable>(c), &_errors));
     }
 
     template <class Callable, class A0, class ... Args>
@@ -134,7 +99,6 @@ private:
     // Function invoker helper that wraps the invocation with an ErrorMark so we
     // can transmit errors that occur back to the thread that Wait() s for tasks
     // to complete.
-#if TBB_INTERFACE_VERSION_MAJOR >= 12
     template <class Fn>
     struct _InvokerTask {
         explicit _InvokerTask(Fn &&fn, _ErrorTransports *err) 
@@ -152,66 +116,20 @@ private:
             TfErrorMark m;
             _fn();
             if (!m.IsClean())
-                WorkDispatcher::_TransportErrors(m, _errors);
+                Work_Dispatcher::_TransportErrors(m, _errors);
         }
     private:
         Fn _fn;
         _ErrorTransports *_errors;
     };
-#else
-    template <class Fn>
-    struct _InvokerTask : public tbb::task {
-        explicit _InvokerTask(Fn &&fn, _ErrorTransports *err)
-            : _fn(std::move(fn)), _errors(err) {}
-
-        explicit _InvokerTask(Fn const &fn, _ErrorTransports *err)
-            : _fn(fn), _errors(err) {}
-
-        virtual tbb::task* execute() {
-            TfErrorMark m;
-            // In anticipation of OneTBB, ensure that _fn meets OneTBB's
-            // requirement that a task's call operator must be const.
-            const_cast<_InvokerTask const *>(this)->_fn();
-            if (!m.IsClean())
-                WorkDispatcher::_TransportErrors(m, _errors);
-            return NULL;
-        }
-    private:
-        Fn _fn;
-        _ErrorTransports *_errors;
-    };
-
-    // Make an _InvokerTask instance, letting the function template deduce Fn.
-    template <class Fn>
-    _InvokerTask<typename std::remove_reference<Fn>::type>&
-    _MakeInvokerTask(Fn &&fn) { 
-        return *new( _rootTask->allocate_additional_child_of(*_rootTask) )
-            _InvokerTask<typename std::remove_reference<Fn>::type>(
-                std::forward<Fn>(fn), &_errors);
-    }
-#endif
 
     // Helper function that removes errors from \p m and stores them in a new
     // entry in \p errors.
     WORK_API static void
     _TransportErrors(const TfErrorMark &m, _ErrorTransports *errors);
 
-    // Task group context to run tasks in.
-    tbb::task_group_context _context;
-#if TBB_INTERFACE_VERSION_MAJOR >= 12
-    // Custom task group that lets us implement thread safe concurrent wait.
-    class _TaskGroup : public tbb::task_group {
-    public:
-        _TaskGroup(tbb::task_group_context& ctx) : tbb::task_group(ctx) {}
-         inline tbb::detail::d1::wait_context& _GetInternalWaitContext();
-    };
-
-    _TaskGroup _taskGroup;
-#else
-    // Root task that allows us to cancel tasks invoked directly by this
-    // dispatcher.
-    tbb::empty_task* _rootTask;
-#endif
+    // WorkDispatcher implementation
+    Impl _dispatcher;
     std::atomic<bool> _isCancelled;
 
     // The error transports we use to transmit errors in other threads back to
@@ -221,6 +139,41 @@ private:
     // Concurrent calls to Wait() have to serialize certain cleanup operations.
     std::atomic_flag _waitCleanupFlag;
 };
+
+/// \class WorkDispatcher
+/// \extends Work_Dispatcher
+///
+/// A work dispatcher runs concurrent tasks.  The dispatcher supports adding
+/// new tasks from within running tasks.  This suits problems that exhibit
+/// hierarchical structured parallelism: tasks that discover additional tasks
+/// during their execution.
+///
+/// Typical use is to create a dispatcher and invoke Run() to begin doing
+/// work, then Wait() for the work to complete.  Tasks may invoke Run() during
+/// their execution as they discover additional tasks to perform.
+///
+/// For example,
+///
+/// \code
+/// WorkDispatcher dispatcher;
+/// for (i = 0; i != N; ++i) {
+///     dispatcher.Run(DoSomeWork, workItem[i]);
+/// }
+/// dispatcher.Wait();
+/// \endcode
+///
+/// Calls to Run() and Cancel() may be made concurrently. Calls to Wait() may
+/// also be made concurrently.  However, once any calls to Wait() are in-flight,
+/// calls to Run() and Cancel() must only be made by tasks already added by
+/// Run().  This means that users of this class are responsible to synchronize
+/// concurrent calls to Wait() to ensure this requirement is met.
+///
+/// Additionally, Wait() must never be called by a task added by Run(), since
+/// that task could never complete.
+///
+class WorkDispatcher 
+    : public Work_Dispatcher<PXR_WORK_IMPL_NS::WorkImpl_Dispatcher>
+{};
 
 // Wrapper class for non-const tasks.
 template <class Fn>

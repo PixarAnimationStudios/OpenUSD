@@ -107,6 +107,30 @@ _WrapCanApply(const UsdPrim& prim)
 {% endif %}
 {% if useExportAPI %}
 
+{% for schema in appliedSchemas %}
+{% set schemaCls = classes[schema]%}
+{% for attrName in schemaCls.attrOrder -%}
+{% set attr = schemaCls.attrs[attrName] %}
+{# Only emit Create/Get API if apiName is not empty string. #}
+{% if attr.apiName != '' %}
+        
+static UsdAttribute
+_Create{{ Proper(attr.apiName) }}Attr({{ cls.cppClassName }} &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.Create{{ Proper(attr.apiName) }}Attr(
+        UsdPythonToSdfType(defaultVal, {{ attr.usdType }}), writeSparsely);
+}
+{% endif %}
+{% endfor %}
+{% if schemaCls.isMultipleApply and schemaCls.propertyNamespace %}
+
+static bool _WrapIs{{ schemaCls.usdPrimTypeName }}Path(const SdfPath &path) {
+    TfToken collectionName;
+    return {{ schemaCls.cppClassName }}::Is{{ cls.usdPrimTypeName }}Path(
+        path, &collectionName);
+}
+{% endif %}
+{% endfor %}
 } // anonymous namespace
 {% endif %}
 
@@ -239,6 +263,35 @@ void wrap{{ cls.cppClassName }}()
         .def("Create{{ Proper(rel.apiName) }}Rel",
              &This::Create{{ Proper(rel.apiName) }}Rel)
 {% endif %}
+{% endfor %}
+{% for schema in appliedSchemas %}
+{% set schemaCls = classes[schema]%}
+{% for attrName in schemaCls.attrOrder -%}
+{% set attr = schemaCls.attrs[attrName] %}
+{# Only emit Create/Get API if apiName is not empty string. #}
+{% if attr.apiName != '' %}
+        
+        .def("Get{{ Proper(attr.apiName) }}Attr",
+             &This::Get{{ Proper(attr.apiName) }}Attr)
+        .def("Create{{ Proper(attr.apiName) }}Attr",
+             &_Create{{ Proper(attr.apiName) }}Attr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+{% endif %}
+{% endfor %}
+
+{% for relName in schemaCls.relOrder -%}
+{# Only emit Create/Get API and doxygen if apiName is not empty string. #}
+{% set rel = schemaCls.rels[relName] %}
+{% if rel.apiName != '' %}
+        .def("Get{{ Proper(rel.apiName) }}Rel",
+             &This::Get{{ Proper(rel.apiName) }}Rel)
+        .def("Create{{ Proper(rel.apiName) }}Rel",
+             &This::Create{{ Proper(rel.apiName) }}Rel)
+
+{% endif %}
+{% endfor %}
+        .def("{{ schema }}", &This::{{ schema }})
 {% endfor %}
 {% if cls.isMultipleApply and cls.propertyNamespace %}
         .def("Is{{ cls.usdPrimTypeName }}Path", _WrapIs{{ cls.usdPrimTypeName }}Path)

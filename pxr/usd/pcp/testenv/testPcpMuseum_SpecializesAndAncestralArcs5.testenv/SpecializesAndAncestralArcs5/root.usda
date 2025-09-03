@@ -1,0 +1,47 @@
+#usda 1.0
+(
+    """
+    This museum test exercises a combination of ancestral references
+    and payloads with sub-root specializes.
+
+    /Overalls/Looks/Cloth_C_Weave_09_Satin has two specializes arcs
+    from across the ancestral reference and payload on /Overalls
+    that yield the same implied specializes arc at the root layer
+    stack at /Overalls/Looks/Cloth_C_Weave_09. This is expected to
+    be stronger than the propagated specializes arc from the ancestral
+    reference at /Overalls_defaultShadingVariant/Looks/Cloth_C_Weave_09.
+    """
+)
+
+def "Overalls" (
+    references = </Overalls_defaultShadingVariant>
+    payload = @./payload.usda@</Overalls>
+)
+{
+    over "Looks"
+    {
+        over "Cloth_C_Weave_09_Satin"
+        {
+        }
+
+        over "Cloth_C_Weave_09"
+        {
+        }
+    }
+}
+
+def "Overalls_defaultShadingVariant"
+{
+    def "Looks"
+    {
+        def "Cloth_C_Weave_09_Satin" (
+            specializes = </Overalls_defaultShadingVariant/Looks/Cloth_C_Weave_09>
+        )
+        {
+        }
+
+        def "Cloth_C_Weave_09"
+        {
+        }
+    }
+}

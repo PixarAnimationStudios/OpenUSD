@@ -7,7 +7,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/textFileFormat.h"
+#include "pxr/usd/sdf/usdaFileFormat.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -23,13 +23,13 @@ TF_DEFINE_PUBLIC_TOKENS(
     TEST_SDF_EXCEPTION_HANDLING);
 
 /// Simple text file format that throws an exception when read
-class TestSdfExceptionHandlingFileFormat : public SdfTextFileFormat
+class TestSdfExceptionHandlingFileFormat : public SdfUsdaFileFormat
 {
 public:
     SDF_FILE_FORMAT_FACTORY_ACCESS;
 
     TestSdfExceptionHandlingFileFormat()
-        :SdfTextFileFormat(TestSdfExceptionHandling_Tokens->Extension)
+        :SdfUsdaFileFormat(TestSdfExceptionHandling_Tokens->Extension)
     {
         // Do Nothing.
     }
@@ -59,7 +59,7 @@ protected:
 TF_REGISTRY_FUNCTION(TfType)
 {
     SDF_DEFINE_FILE_FORMAT(TestSdfExceptionHandlingFileFormat, 
-                           SdfTextFileFormat);
+                           SdfUsdaFileFormat);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

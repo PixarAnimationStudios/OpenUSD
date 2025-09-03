@@ -392,7 +392,7 @@ _ComputeMaterialNetworkShader(
         params.push_back(param);
 
         namedTextureHandles.push_back(
-            { textureName, textureType, nullptr, desc->fieldId.GetHash() });
+            { textureName, textureType, {}, desc->fieldId.GetHash() });
     }
 
     result->SetNamedTextureHandles(namedTextureHandles);

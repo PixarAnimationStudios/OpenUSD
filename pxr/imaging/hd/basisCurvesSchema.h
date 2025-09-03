@@ -43,6 +43,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdBasisCurvesSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdBasisCurvesSchema
+///
 class HdBasisCurvesSchema : public HdSchema
 {
 public:

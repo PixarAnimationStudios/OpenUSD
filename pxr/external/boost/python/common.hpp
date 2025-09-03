@@ -10,8 +10,6 @@
 
 // Common definitions and utilities included by all headers
 
-#ifdef PXR_USE_INTERNAL_BOOST_PYTHON
-
 #if PXR_USE_NAMESPACES
 #define PXR_BOOST_NAMESPACE PXR_INTERNAL_NS::pxr_boost
 #else
@@ -19,41 +17,5 @@
 #endif
 
 #define PXR_BOOST_PYTHON_NAMESPACE PXR_BOOST_NAMESPACE::python
-
-#else
-
-// Set up a namespace alias so that code that uses pxr_boost::python
-// will automatically pick up boost::python.
-namespace boost::python { }
-
-#if PXR_USE_NAMESPACES
-namespace PXR_INTERNAL_NS::pxr_boost {
-#else
-namespace pxr_boost {
-#endif
-    namespace python = ::boost::python;
-}
-
-#define PXR_BOOST_NAMESPACE boost
-#define PXR_BOOST_PYTHON_NAMESPACE boost::python
-
-#define PXR_BOOST_PYTHON_MODULE BOOST_PYTHON_MODULE
-
-#define PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS
-#define PXR_BOOST_PYTHON_FUNCTION_OVERLOADS BOOST_PYTHON_FUNCTION_OVERLOADS
-
-#ifdef PXR_BOOST_PYTHON_MAX_ARITY
-#ifndef BOOST_PYTHON_MAX_ARITY
-#define BOOST_PYTHON_MAX_ARITY PXR_BOOST_PYTHON_MAX_ARITY
-#endif // BOOST_PYTHON_MAX_ARITY
-#endif // PXR_BOOST_PYTHON_MAX_ARITY
-
-#ifdef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
-#ifndef BOOST_PYTHON_NO_PY_SIGNATURES
-#define BOOST_PYTHON_NO_PY_SIGNATURES
-#endif // BOOST_PYTHON_NO_PY_SIGNATURES
-#endif // PXR_BOOST_PYTHON_NO_PY_SIGNATURES
-
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 
 #endif

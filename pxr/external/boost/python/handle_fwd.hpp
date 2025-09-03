@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/handle_fwd.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 
 namespace PXR_BOOST_NAMESPACE { namespace python { 
@@ -25,5 +21,4 @@ template <class T = PyObject> class handle;
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_HANDLE_FWD_HPP

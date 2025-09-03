@@ -13,32 +13,32 @@ def _modifySettings(appController):
     appController._dataModel.viewSettings.showHUD = False
     appController._dataModel.viewSettings.autoComputeClippingPlanes = True
 
-def _updateDisplayFilterConnection(filterPaths, appController):
+def _updateDisplayFilterTarget(filterPaths, appController):
     stage = appController._dataModel.stage
     layer = stage.GetSessionLayer()
     stage.SetEditTarget(layer)
 
     renderSettings = stage.GetPrimAtPath('/Render/RenderSettings')
-    displayFilterAttr = renderSettings.GetAttribute('outputs:ri:displayFilters')
-    displayFilterAttr.SetConnections(filterPaths)
+    displayFilterRel = renderSettings.GetRelationship('ri:displayFilters')
+    displayFilterRel.SetTargets(filterPaths)
 
-def _updateSampleFilterConnection(filterPaths, appController):
+def _updateSampleFilterTarget(filterPaths, appController):
     stage = appController._dataModel.stage
     layer = stage.GetSessionLayer()
     stage.SetEditTarget(layer)
 
     renderSettings = stage.GetPrimAtPath('/Render/RenderSettings')
-    sampleFilterAttr = renderSettings.GetAttribute('outputs:ri:sampleFilters')
-    sampleFilterAttr.SetConnections(filterPaths)
+    sampleFilterRel = renderSettings.GetRelationship('ri:sampleFilters')
+    sampleFilterRel.SetTargets(filterPaths)
 
 def testUsdviewInputFunction(appController):
     _modifySettings(appController)
 
     appController._takeShot("both.png", waitForConvergence=True)
 
-    _updateDisplayFilterConnection([], appController)
+    _updateDisplayFilterTarget([], appController)
     appController._takeShot("sampleOnly.png", waitForConvergence=True)
 
-    _updateSampleFilterConnection([], appController)
-    _updateDisplayFilterConnection(['/Render/DisplayFilter.outputs:result'], appController)
+    _updateSampleFilterTarget([], appController)
+    _updateDisplayFilterTarget(['/Render/DisplayFilter'], appController)
     appController._takeShot("displayOnly.png", waitForConvergence=True)

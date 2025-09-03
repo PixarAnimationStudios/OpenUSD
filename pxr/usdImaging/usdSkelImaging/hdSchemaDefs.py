@@ -85,6 +85,12 @@
             ('blendShapeTargets', T_PATHARRAY,
              dict(DOC = '''
                   This is not inherited according to the UsdSkel spec.''')),
+
+            ('hasSkelRoot', T_BOOL,
+             dict(DOC = '''
+                  Is this prim a descendant of a SkelRoot?
+                  Does not correspond to Usd attribute and is actually
+                  populated by the SkelRoot and not the SkelBinding.''')),
         ],
         EXTRA_TOKENS = [
             '(skinningMethodPrimvar, "skel:skinningMethod")',
@@ -118,8 +124,6 @@
         SCHEMA_TOKEN = 'skelBlendShape',
         ADD_DEFAULT_LOCATOR = True,
         DOC = '''Corresponds to UsdSkelBlendShape.''',
-        SCHEMA_INCLUDES = [
-            '{{LIBRARY_PATH}}/schemaTypeDefs'],
         MEMBERS = [
             ('ALL_MEMBERS', '', dict(ADD_LOCATOR=True)),
 
@@ -128,6 +132,41 @@
             ('pointIndices', T_INTARRAY, {}),
 
             ('inbetweenShapes', 'UsdSkelImagingInbetweenShapeContainerSchema', {})
+        ],
+    ),
+
+    #--------------------------------------------------------------------------
+    # usdSkelImaging/resolvedSkeleton
+    dict(
+        SCHEMA_NAME = 'ResolvedSkeleton',
+        SCHEMA_TOKEN = 'resolvedSkeleton',
+        ADD_DEFAULT_LOCATOR = True,
+        DOC = '''
+            Resolved data for a skeleton and the targeted skelAnim.
+            Populated by the skeleton resolving scene index.''',
+        MEMBERS = [
+            ('ALL_MEMBERS', '', dict(ADD_LOCATOR=True)),
+
+            ('skelLocalToCommonSpace', T_MATRIX,
+             dict(DOC='''
+                Transform to go from the local space if the skeleton prim to
+                common space (as defined by
+                UsdSkelImagingDataSourceXformResolver).''')),
+
+            ('skinningTransforms', T_MATRIX4FARRAY,
+             dict(DOC='''
+                Passed to the extComputations. Computed from the following:
+                skeleton's joints (determining the topology),
+                and bind and rest (if needed) transforms. skelAnim's joints
+                (determining the remapping) and translations, rotations and
+                scales.''')),
+
+            ('blendShapes', T_TOKENARRAY,
+             dict(DOC='''
+                Just forwarded from the skelAnim's blendShapes.''')),
+            ('blendShapeWeights', T_FLOATARRAY,
+             dict(DOC='''
+                Just forwarded from the skelAnim's blendShapeWeights.'''))
         ],
     ),
 ]

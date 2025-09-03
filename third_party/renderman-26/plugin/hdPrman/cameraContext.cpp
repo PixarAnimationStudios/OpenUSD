@@ -523,14 +523,6 @@ HdPrman_CameraContext::_UpdateRileyCamera(
         return;
     }
 
-    riley::ShadingNode node = riley::ShadingNode {
-        riley::ShadingNode::Type::k_Projection,
-        _ComputeProjectionShader(camera->GetProjection(),
-                                 _projectionNameOverride),
-        s_projectionNodeName,
-        _ComputeNodeParams(camera, _disableDepthOfField)
-    };
-
     RtParamList params = _ComputeCameraParams(screenWindow, camera);
 
     // This method does backward compatibility for older USD versions
@@ -552,8 +544,23 @@ HdPrman_CameraContext::_UpdateRileyCamera(
     params.Inherit(customParams);
     // If any duplicates, the ones in customParamsOverride win
     params.Update(customParamsOverride);
-    node.params.Inherit(customNodeParams);
-    node.params.Update(_projectionParamsOverride);
+
+    riley::ShadingNode node = { riley::ShadingNode::Type::k_Invalid };
+    if (!_projectionNameOverride) {
+        node = camera->GetProjectionNode();
+    }
+
+    if (node.type == riley::ShadingNode::Type::k_Invalid) {
+        node = {
+            riley::ShadingNode::Type::k_Projection,
+            _ComputeProjectionShader(camera->GetProjection(),
+                                     _projectionNameOverride),
+            s_projectionNodeName,
+            _ComputeNodeParams(camera, _disableDepthOfField)
+        };
+        node.params.Inherit(customNodeParams);
+        node.params.Update(_projectionParamsOverride);
+    }
 
     // Coordinate system notes.
     //

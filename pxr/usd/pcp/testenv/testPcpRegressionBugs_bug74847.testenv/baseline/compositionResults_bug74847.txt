@@ -1,15 +1,15 @@
-Loading @bug74847/root.sdf@
+Loading @bug74847/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </A>
 
 Prim Stack:
-    root.sdf             /A
-    payload.sdf          /A
+    root.usda            /A
+    payload.usda         /A
 
 Child names:
      ['B']
@@ -18,8 +18,8 @@ Child names:
 Results for composing </A/B>
 
 Prim Stack:
-    payload.sdf          /A/B
-    ref.sdf              /A
+    payload.usda         /A/B
+    ref.usda             /A
 
 Child names:
      ['B']
@@ -28,8 +28,8 @@ Child names:
 Results for composing </A/B/B>
 
 Prim Stack:
-    ref.sdf              /A/B
-    ref.sdf              /A/B{deformable=off}
+    ref.usda             /A/B
+    ref.usda             /A/B{deformable=off}
 
 Variant Selections:
     {deformable = off}

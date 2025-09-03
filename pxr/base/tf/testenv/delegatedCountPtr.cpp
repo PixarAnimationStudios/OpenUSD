@@ -169,7 +169,10 @@ TestMovingSelf()
         TfDelegatedCountIncrementTag, &stackOwnedValue};
     TF_AXIOM(adopted);
     TF_AXIOM(stackOwnedValue.count == 2);
+    ARCH_PRAGMA_PUSH;
+    ARCH_PRAGMA_SELF_MOVE;
     adopted = std::move(adopted);
+    ARCH_PRAGMA_POP;
     TF_AXIOM(adopted.get() == nullptr);
     TF_AXIOM(stackOwnedValue.count == 1);
     return true;
@@ -225,7 +228,10 @@ TestCopySelfAssignment()
     auto made = TfMakeDelegatedCountPtr<RefCountedValue>(87);
     TF_AXIOM(made);
     TF_AXIOM(made->count == 1);
+    ARCH_PRAGMA_PUSH;
+    ARCH_PRAGMA_SELF_ASSIGN_OVERLOADED;
     made = made;
+    ARCH_PRAGMA_POP;
     TF_AXIOM(made->count == 1);
     TF_AXIOM(made);
     return true;

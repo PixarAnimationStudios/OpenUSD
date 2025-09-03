@@ -1,0 +1,36 @@
+#usda 1.0
+
+def "Model" 
+{
+    def "ToBeDeleted"
+    {
+        def "Child"
+        {
+        }
+    }
+
+    def "ToBeRelocated"
+    {
+        def "Child"
+        {
+        }
+
+        def "ToBeDeletedChild"
+        {
+        }
+    }
+
+    rel relationship1 = </Model/ToBeDeleted/Child> (
+        doc = """This relationship target will be invalid in root.usda
+            when ToBeDeleted is deleted via relocation"""
+    )
+    rel relationship2 = </Model/ToBeRelocated/Child> (
+        doc = """This relationship target will be valid and remapped in
+            root.usda when ToBeRelocated is relocated to Relocated"""
+    )
+    rel relationship3 = </Model/ToBeRelocated/ToBeDeletedChild> (
+        doc = """This relationship target will be invalid in root.usda
+            when its mapped path Relocated/ToBeDeletedChild is deleted
+            via relocation"""
+    )
+}

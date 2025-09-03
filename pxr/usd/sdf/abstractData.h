@@ -336,7 +336,8 @@ public:
 
     SDF_API
     virtual bool
-    GetBracketingTimeSamples(double time, double* tLower, double* tUpper) const = 0;
+    GetBracketingTimeSamples(double time, double* tLower, 
+                             double* tUpper) const = 0;
 
     SDF_API
     virtual size_t
@@ -347,6 +348,23 @@ public:
     GetBracketingTimeSamplesForPath(const SdfPath& path, 
                                     double time,
                                     double* tLower, double* tUpper) const = 0;
+
+    /// Returns the previous time sample authored just before the querying \p 
+    /// time.
+    ///
+    /// If there is no time sample authored just before \p time, this function
+    /// returns false. Otherwise, it returns true and sets \p tPrevious to the
+    /// time of the previous sample.
+    ///
+    /// \note The base class implementation provides an inefficient 
+    /// implementation by searching for bracketing time samples twice, if 
+    /// \p time happens to land on an authored time sample. Its recommended to 
+    /// override this method with a more efficient implementation catering to 
+    /// the specific data representation.
+    SDF_API
+    virtual bool
+    GetPreviousTimeSampleForPath(const SdfPath& path, double time, 
+                                 double* tPrevious) const;
 
     SDF_API
     virtual bool
@@ -409,9 +427,13 @@ public:
         }
         
         isValueBlock = false;
+        isAnimationBlock = false;
         typeMismatch = false;
         if constexpr (std::is_same_v<Type, SdfValueBlock>) {
             isValueBlock = true;
+            return true;
+        } else if constexpr (std::is_same_v<Type, SdfAnimationBlock>) {
+            isAnimationBlock = true;
             return true;
         }
         if (TfSafeTypeCompare(typeid(Type), valueType)) {
@@ -425,6 +447,7 @@ public:
     void* value;
     const std::type_info& valueType;
     bool isValueBlock;
+    bool isAnimationBlock;
     bool typeMismatch;
 
 protected:
@@ -432,6 +455,7 @@ protected:
         : value(value_)
         , valueType(valueType_)
         , isValueBlock(false)
+        , isAnimationBlock(false)
         , typeMismatch(false)
     { }
 
@@ -474,16 +498,24 @@ private:
     bool _StoreVtValueImpl(Value &&v) {
         typeMismatch = false;
         isValueBlock = false;
+        isAnimationBlock = false;
         if (ARCH_LIKELY(std::forward<Value>(v).template IsHolding<T>())) {
             *static_cast<T*>(value) = _Get(std::forward<Value>(v));
-            if (std::is_same_v<T, SdfValueBlock>) {
+            if constexpr (std::is_same_v<T, SdfValueBlock>) {
                 isValueBlock = true;
+            } else if constexpr (std::is_same_v<T, SdfAnimationBlock>) {
+                isAnimationBlock = true;
             }
             return true;
         }
         
         if (std::forward<Value>(v).template IsHolding<SdfValueBlock>()) {
             isValueBlock = true;
+            return true;
+        } 
+        else if (std::forward<Value>(v).template IsHolding<SdfAnimationBlock>()) 
+        {
+            isAnimationBlock = true;
             return true;
         }
 

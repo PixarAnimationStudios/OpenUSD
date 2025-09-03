@@ -34,10 +34,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define USD_IMAGING_COLLECTION_MATERIAL_BINDING_SCHEMA_TOKENS \
     (collectionMaterialBinding) \
-    (collectionPath) \
+    (collectionPrimPath) \
+    (collectionName) \
     (materialPath) \
     (bindingStrength) \
-    (bindingOriginPath) \
 
 TF_DECLARE_PUBLIC_TOKENS(UsdImagingCollectionMaterialBindingSchemaTokens, USDIMAGING_API,
     USD_IMAGING_COLLECTION_MATERIAL_BINDING_SCHEMA_TOKENS);
@@ -72,16 +72,16 @@ public:
     /// @{
 
     USDIMAGING_API
-    HdPathDataSourceHandle GetCollectionPath() const;
+    HdPathDataSourceHandle GetCollectionPrimPath() const;
+
+    USDIMAGING_API
+    HdTokenDataSourceHandle GetCollectionName() const;
 
     USDIMAGING_API
     HdPathDataSourceHandle GetMaterialPath() const;
 
     USDIMAGING_API
-    HdTokenDataSourceHandle GetBindingStrength() const;
-
-    USDIMAGING_API
-    HdPathDataSourceHandle GetBindingOriginPath() const; 
+    HdTokenDataSourceHandle GetBindingStrength() const; 
 
     /// @}
 
@@ -113,10 +113,10 @@ public:
     USDIMAGING_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdPathDataSourceHandle &collectionPath,
+        const HdPathDataSourceHandle &collectionPrimPath,
+        const HdTokenDataSourceHandle &collectionName,
         const HdPathDataSourceHandle &materialPath,
-        const HdTokenDataSourceHandle &bindingStrength,
-        const HdPathDataSourceHandle &bindingOriginPath
+        const HdTokenDataSourceHandle &bindingStrength
     );
 
     /// \class UsdImagingCollectionMaterialBindingSchema::Builder
@@ -129,27 +129,27 @@ public:
     {
     public:
         USDIMAGING_API
-        Builder &SetCollectionPath(
-            const HdPathDataSourceHandle &collectionPath);
+        Builder &SetCollectionPrimPath(
+            const HdPathDataSourceHandle &collectionPrimPath);
+        USDIMAGING_API
+        Builder &SetCollectionName(
+            const HdTokenDataSourceHandle &collectionName);
         USDIMAGING_API
         Builder &SetMaterialPath(
             const HdPathDataSourceHandle &materialPath);
         USDIMAGING_API
         Builder &SetBindingStrength(
             const HdTokenDataSourceHandle &bindingStrength);
-        USDIMAGING_API
-        Builder &SetBindingOriginPath(
-            const HdPathDataSourceHandle &bindingOriginPath);
 
         /// Returns a container data source containing the members set thus far.
         USDIMAGING_API
         HdContainerDataSourceHandle Build();
 
     private:
-        HdPathDataSourceHandle _collectionPath;
+        HdPathDataSourceHandle _collectionPrimPath;
+        HdTokenDataSourceHandle _collectionName;
         HdPathDataSourceHandle _materialPath;
         HdTokenDataSourceHandle _bindingStrength;
-        HdPathDataSourceHandle _bindingOriginPath;
 
     };
 

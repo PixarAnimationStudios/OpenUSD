@@ -1,15 +1,15 @@
-Loading @TrickyVariantInPayload/root.sdf@
+Loading @TrickyVariantInPayload/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </A1>
 
 Prim Stack:
-    root.sdf             /A1
-    model.sdf            /A
+    root.usda            /A1
+    model.usda           /A
 
 Child names:
      ['B']
@@ -18,11 +18,11 @@ Child names:
 Results for composing </A1/B>
 
 Prim Stack:
-    root.sdf             /A1/B
-    model.sdf            /B
-    model.sdf            /B{v=v2}
-    model.sdf            /A/B
-    model.sdf            /A/B{v=v2}
+    root.usda            /A1/B
+    model.usda           /B
+    model.usda           /B{v=v2}
+    model.usda           /A/B
+    model.usda           /A/B{v=v2}
 
 Variant Selections:
     {v = v2}

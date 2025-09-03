@@ -95,14 +95,15 @@ namespace {
 // An entry is kept alive until the last shared_ptr to a resource
 // registry is dropped.
 //
-class _HgiToResourceRegistryMap final
+class _HgiToResourceRegistryMap final :
+    public std::enable_shared_from_this<_HgiToResourceRegistryMap>
 {
 public:
     // Map is a singleton.
     static _HgiToResourceRegistryMap &GetInstance()
     {
-        static _HgiToResourceRegistryMap instance;
-        return instance;
+        static auto instance = std::make_shared<_HgiToResourceRegistryMap>();
+        return *instance;
     }
 
     // Look-up resource registry by Hgi instance, create resource
@@ -112,31 +113,43 @@ public:
         std::lock_guard<std::mutex> guard(_mutex);
 
         // Previous entry exists, use it.
-        auto it = _map.find(hgi);
-        if (it != _map.end()) {
-            HdStResourceRegistryWeakPtr const &registry = it->second;
-            return HdStResourceRegistrySharedPtr(registry);
+        HdStResourceRegistryWeakPtr &registry = _map[hgi];
+        if (HdStResourceRegistrySharedPtr const result = registry.lock()) {
+            return result;
         }
 
         // Create resource registry, custom deleter to remove corresponding
         // entry from map.
-        HdStResourceRegistrySharedPtr const result(
+        HdStResourceRegistrySharedPtr result{
             new HdStResourceRegistry(hgi),
-            [this](HdStResourceRegistry *registry) {
-                this->_Destroy(registry); });
+            [maybeSelf = weak_from_this()](
+                HdStResourceRegistry * const registry) {
+                // If a resource registry has a static lifetime object as its
+                // root owner, then we can encounter a static lifetime ordering
+                // issue, since this registry map also has a static lifetime.
+                // It's possible that due to the unspecified ordering of static
+                // destruction, this map is destroyed before a registry, in
+                // which case calling _Unregister() would be undefined
+                // behaviour. To prevent this we use a weak ownership, and skip
+                // the call when the map is dead because it no longer matters.
+                if (const auto self = maybeSelf.lock()) {
+                    self->_Unregister(registry);
+                }
+                delete registry;
+            }
+        };
 
         // Insert into map.
-        _map.insert({hgi, result});
+        registry = result;
 
         // Also register with HdPerfLog.
-        //
         HdPerfLog::GetInstance().AddResourceRegistry(result.get());
 
         return result;
     }
 
 private:
-    void _Destroy(HdStResourceRegistry * const registry)
+    void _Unregister(HdStResourceRegistry * const registry)
     {
         TRACE_FUNCTION();
 
@@ -145,12 +158,9 @@ private:
         HdPerfLog::GetInstance().RemoveResourceRegistry(registry);
         
         _map.erase(registry->GetHgi());
-        delete registry;
     }
 
     using _Map = std::unordered_map<Hgi*, HdStResourceRegistryWeakPtr>;
-
-    _HgiToResourceRegistryMap() = default;
 
     std::mutex _mutex;
     _Map _map;
@@ -192,6 +202,14 @@ HdStRenderDelegate::HdStRenderDelegate(HdRenderSettingsMap const& settingsMap)
             "Maximum number of lights",
             HdStRenderSettingsTokens->maxLights,
             VtValue(int(TfGetEnvSetting(HDST_MAX_LIGHTS))) },
+        HdRenderSettingDescriptor{
+            "Dome light camera visibility",
+            HdRenderSettingsTokens->domeLightCameraVisibility,
+            VtValue(true) },
+        HdRenderSettingDescriptor{
+            "Enable exposure compensation",
+            HdRenderSettingsTokens->enableExposureCompensation,
+            VtValue(true) }
     };
 
     _PopulateDefaultSettings(_settingDescriptors);
@@ -529,8 +547,15 @@ HdStRenderDelegate::CommitResources(HdChangeTracker *tracker)
 }
 
 bool
-HdStRenderDelegate::IsSupported()
+HdStRenderDelegate::IsSupported(
+    HdRendererCreateArgs const& rendererCreateArgs)
 {
+    if (rendererCreateArgs.hgi) {
+        return rendererCreateArgs.hgi->IsBackendSupported();
+    }
+
+    // If invalid Hgi instance is provided, check support for platform default
+    // Hgi.
     return Hgi::IsSupported();
 }
 

@@ -1,15 +1,15 @@
-Loading @BasicNestedVariants/root.sdf@
+Loading @BasicNestedVariants/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Foo>
 
 Prim Stack:
-    root.sdf             /Foo
-    root.sdf             /Foo{which=A}
+    root.usda            /Foo
+    root.usda            /Foo{which=A}
 
 Variant Selections:
     {which = A}
@@ -21,7 +21,7 @@ Child names:
 Results for composing </Foo/A>
 
 Prim Stack:
-    root.sdf             /Foo{which=A}A
+    root.usda            /Foo{which=A}A
 
 Child names:
      ['Number']
@@ -30,8 +30,8 @@ Child names:
 Results for composing </Foo/A/Number>
 
 Prim Stack:
-    root.sdf             /Foo{which=A}A/Number
-    root.sdf             /Foo{which=A}A/Number{count=one}
+    root.usda            /Foo{which=A}A/Number
+    root.usda            /Foo{which=A}A/Number{count=one}
 
 Variant Selections:
     {count = one}
@@ -43,16 +43,16 @@ Child names:
 Results for composing </Foo/A/Number/one>
 
 Prim Stack:
-    root.sdf             /Foo{which=A}A/Number{count=one}one
+    root.usda            /Foo{which=A}A/Number{count=one}one
 
 ------------------------------------------------------------------------
 Results for composing </DirectlyNestedVariants>
 
 Prim Stack:
-    root.sdf             /DirectlyNestedVariants
-    root.sdf             /DirectlyNestedVariants{standin=anim}
-    root.sdf             /DirectlyNestedVariants{standin=anim}{shadingVariant=spooky}
-    root.sdf             /DirectlyNestedVariants{standin=anim}{shadingVariant=spooky}{standin=anim}
+    root.usda            /DirectlyNestedVariants
+    root.usda            /DirectlyNestedVariants{standin=anim}
+    root.usda            /DirectlyNestedVariants{standin=anim}{shadingVariant=spooky}
+    root.usda            /DirectlyNestedVariants{standin=anim}{shadingVariant=spooky}{standin=anim}
 
 Variant Selections:
     {shadingVariant = spooky}
@@ -65,11 +65,11 @@ Child names:
 Results for composing </DirectlyNestedVariants/anim_spooky_anim_sphere>
 
 Prim Stack:
-    root.sdf             /DirectlyNestedVariants{standin=anim}{shadingVariant=spooky}{standin=anim}anim_spooky_anim_sphere
+    root.usda            /DirectlyNestedVariants{standin=anim}{shadingVariant=spooky}{standin=anim}anim_spooky_anim_sphere
 
 ------------------------------------------------------------------------
 Results for composing </DirectlyNestedVariants/anim_spooky_sphere>
 
 Prim Stack:
-    root.sdf             /DirectlyNestedVariants{standin=anim}{shadingVariant=spooky}anim_spooky_sphere
+    root.usda            /DirectlyNestedVariants{standin=anim}{shadingVariant=spooky}anim_spooky_sphere
 

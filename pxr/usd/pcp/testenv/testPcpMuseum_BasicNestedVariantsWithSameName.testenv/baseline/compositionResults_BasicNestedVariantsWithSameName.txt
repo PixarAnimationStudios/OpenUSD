@@ -1,15 +1,15 @@
-Loading @BasicNestedVariantsWithSameName/root.sdf@
+Loading @BasicNestedVariantsWithSameName/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </foo>
 
 Prim Stack:
-    root.sdf             /foo
-    root.sdf             /foo{commonName=c}
+    root.usda            /foo
+    root.usda            /foo{commonName=c}
 
 Variant Selections:
     {commonName = c}
@@ -21,9 +21,9 @@ Child names:
 Results for composing </foo/bar>
 
 Prim Stack:
-    root.sdf             /foo/bar
-    root.sdf             /foo/bar{commonName=c}
-    root.sdf             /foo{commonName=c}bar
+    root.usda            /foo/bar
+    root.usda            /foo/bar{commonName=c}
+    root.usda            /foo{commonName=c}bar
 
 Variant Selections:
     {commonName = c}
@@ -33,6 +33,6 @@ Property names:
 
 Property stacks:
 /foo/bar.value:
-    root.sdf             /foo/bar.value
-    root.sdf             /foo/bar{commonName=c}.value
+    root.usda            /foo/bar.value
+    root.usda            /foo/bar{commonName=c}.value
 

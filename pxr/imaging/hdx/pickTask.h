@@ -94,7 +94,7 @@ struct HdxPickHit
     GfVec3d worldSpaceHitPoint;
     GfVec3f worldSpaceHitNormal;
     /// normalizedDepth is in the range [0,1].  Nb: the pick depth buffer won't
-    /// contain items drawn with renderTag "widget" for simplicity.
+    /// contain items drawn with materialTag "displayInOverlay" for simplicity.
     float normalizedDepth;
 
     inline bool IsValid() const {
@@ -324,8 +324,8 @@ public:
 private:
     HdxPickTaskParams _params;
     HdxPickTaskContextParams _contextParams;
-    TfTokenVector _allRenderTags;
-    TfTokenVector _nonWidgetRenderTags;
+    TfTokenVector _renderTags;
+    bool _useOverlayPass;
 
     // We need to cache a pointer to the render index so Execute() can
     // map prim ID to paths.
@@ -342,7 +342,8 @@ private:
             HdRenderBuffer const * depthStencilBuffer);
 
     bool _UseOcclusionPass() const;
-    bool _UseWidgetPass() const;
+    bool _UseOverlayPass() const;
+    void _UpdateUseOverlayPass();
 
     void _ClearPickBuffer();
     void _ResolveDeep();
@@ -354,16 +355,16 @@ private:
     HdRenderBuffer const * _FindAovBuffer(TfToken const & aovName) const;
 
     // Create a shared render pass each for pickables, unpickables, and 
-    // widgets (which may draw on top even when occluded).
+    // items in overlay (which may draw on top even when occluded).
     HdRenderPassSharedPtr _pickableRenderPass;
     HdRenderPassSharedPtr _occluderRenderPass;
-    HdRenderPassSharedPtr _widgetRenderPass;
+    HdRenderPassSharedPtr _overlayRenderPass;
 
     // Having separate render pass states allows us to use different
     // shader mixins if we choose to (we don't currently).
     HdRenderPassStateSharedPtr _pickableRenderPassState;
     HdRenderPassStateSharedPtr _occluderRenderPassState;
-    HdRenderPassStateSharedPtr _widgetRenderPassState;
+    HdRenderPassStateSharedPtr _overlayRenderPassState;
 
     Hgi* _hgi;
 
@@ -372,8 +373,8 @@ private:
     HdRenderPassAovBinding _occluderAovBinding;
     size_t _pickableDepthIndex;
     TfToken _depthToken;
-    std::unique_ptr<HdStRenderBuffer> _widgetDepthStencilBuffer;
-    HdRenderPassAovBindingVector _widgetAovBindings;
+    std::unique_ptr<HdStRenderBuffer> _overlayDepthStencilBuffer;
+    HdRenderPassAovBindingVector _overlayAovBindings;
 
     // pick buffer used for deep selection
     HdBufferArrayRangeSharedPtr _pickBuffer;

@@ -9,14 +9,9 @@
 #define PXR_USD_SDR_FILESYSTEM_DISCOVERY_H
 
 /// \file sdr/filesystemDiscovery.h
-///
-/// \note
-/// All Ndr objects are deprecated in favor of the corresponding Sdr objects
-/// in this file. All existing pxr/usd/ndr implementations will be moved to
-/// pxr/usd/sdr.
 
 #include "pxr/pxr.h"
-#include "pxr/usd/ndr/filesystemDiscoveryHelpers.h"
+#include "pxr/usd/sdr/filesystemDiscoveryHelpers.h"
 #include "pxr/usd/sdr/api.h"
 #include "pxr/usd/sdr/discoveryPlugin.h"
 #include <functional>
@@ -58,7 +53,7 @@ public:
     SDR_API
     _SdrFilesystemDiscoveryPlugin();
 
-    /// DiscoverNodes() will pass each result to the given function for
+    /// DiscoverShaderNodes() will pass each result to the given function for
     /// modification.  If the function returns false then the result is
     /// discarded.
     SDR_API

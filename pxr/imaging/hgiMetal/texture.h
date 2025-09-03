@@ -41,9 +41,9 @@ public:
     
     /// This function does not do anything. At the moment there is no need for 
     /// explicit layout transitions for the Metal backend. Hence this function 
-    /// simply returns void. 
+    /// simply returns 0 (none).
     HGIMETAL_API
-    void SubmitLayoutChange(HgiTextureUsage newLayout) override;
+    HgiTextureUsage SubmitLayoutChange(HgiTextureUsage newLayout) override;
 
 protected:
     friend class HgiMetal;

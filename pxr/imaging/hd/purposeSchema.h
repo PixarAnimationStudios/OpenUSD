@@ -34,6 +34,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_PURPOSE_SCHEMA_TOKENS \
     (purpose) \
+    (inheritable) \
+    (fallback) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdPurposeSchemaTokens, HD_API,
     HD_PURPOSE_SCHEMA_TOKENS);
@@ -41,6 +43,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdPurposeSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdPurposeSchema
+///
 class HdPurposeSchema : public HdSchema
 {
 public:
@@ -62,13 +66,33 @@ public:
     /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
+
+    /// Resolve purpose to a TfToken value.
+    /// This applies the fallback value as needed, and ultimately
+    /// uses "geometry" if no other value is provided.
+    HD_API
+    TfToken ResolvePurposeValue();
+
 // --(END CUSTOM CODE: Schema Methods)--
 
     /// \name Member accessor
     /// @{
 
     HD_API
-    HdTokenDataSourceHandle GetPurpose() const; 
+    HdTokenDataSourceHandle GetPurpose() const;
+
+    /// The "inheritable" flag indicates if this purpose schema should be
+    /// inherited by the HdFlattenedPurposeDataSourceProvider.
+    HD_API
+    HdBoolDataSourceHandle GetInheritable() const;
+
+    /// The "purpose" concept in Hydra is modelled after the UsdGeomImageable
+    /// concept, which allows prim types to define a purpose fallback value to
+    /// be used when no purpose value is found on a prim or its ancestors. The
+    /// Hydra schema transports this fallback, if present, to apply it during
+    /// flattening.
+    HD_API
+    HdTokenDataSourceHandle GetFallback() const; 
 
     /// @}
 
@@ -100,7 +124,9 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdTokenDataSourceHandle &purpose
+        const HdTokenDataSourceHandle &purpose,
+        const HdBoolDataSourceHandle &inheritable,
+        const HdTokenDataSourceHandle &fallback
     );
 
     /// \class HdPurposeSchema::Builder
@@ -115,6 +141,12 @@ public:
         HD_API
         Builder &SetPurpose(
             const HdTokenDataSourceHandle &purpose);
+        HD_API
+        Builder &SetInheritable(
+            const HdBoolDataSourceHandle &inheritable);
+        HD_API
+        Builder &SetFallback(
+            const HdTokenDataSourceHandle &fallback);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -122,6 +154,8 @@ public:
 
     private:
         HdTokenDataSourceHandle _purpose;
+        HdBoolDataSourceHandle _inheritable;
+        HdTokenDataSourceHandle _fallback;
 
     };
 

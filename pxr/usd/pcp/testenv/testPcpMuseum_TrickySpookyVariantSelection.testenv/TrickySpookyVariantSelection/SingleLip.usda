@@ -1,0 +1,17 @@
+#usda 1.0
+
+def Scope "LipsRig"
+{
+    def Scope "Anim"
+    {
+        double Lip1
+    }
+
+    def Scope "Rig"
+    {
+        def Scope "Lip1Sculpt"
+        {
+            double amount.connect = </LipsRig/Anim.Lip1>
+        }
+    }
+}

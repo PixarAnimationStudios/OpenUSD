@@ -31,9 +31,9 @@ material.<renderContext>.nodes.<nodePath>.parameters.<inputName>.value
     -> valueDataSource
 
 The scene index identifies which network node parameter to override by using
-the 'interfaceMappings' which are defined at paths like this:
+the material's interface mappings which are defined at paths like this:
 
-material.<renderContext>.interfaceMappings.<publicUIName> 
+material.<renderContext>.interface.parameters.<publicUIName>.mappings 
     -> [(nodePath, inputName), (nodePath, inputName), ...]
 
 Below is a diagram of the expected attributes needed for material overrides
@@ -79,34 +79,46 @@ MaterialPrim
             |                |
             |                +-...       
             |
-            +--interfaceMappings 
-            |    |
-            |    +-publicUIName   
-            |    |     |
-            |    |     +-i0
-            |    |     |  |
-            |    |     |  +----nodePath  
-            |    |     |  |
-            |    |     |  +----inputName  
-            |    |     |
-            |    |     +-i1
-            |    |     |  |
-            |    |     |  +----nodePath  
-            |    |     |  |
-            |    |     |  +----inputName  
-            |    |     |
-            |    |     +-...
-            |    |
-            |    +-publicUIName 
-            |    |     |
-            |    |     +-i0
-            |    |     |
-            |    |     |       ...
-            |    |     |
-            |    |     +-...
-            |    |
-            |    +-...
-            |
+            +--interface
+                 |
+                 +-parameters
+                 |     |
+                 |     +-publicUIName
+                 |     |     |
+                 |     |     +-mappings
+                 |     |         +-i0
+                 |     |         |  |
+                 |     |         |  +----nodePath  
+                 |     |         |  |
+                 |     |         |  +----inputName  
+                 |     |         |
+                 |     |         +-i1
+                 |     |         |  |
+                 |     |         |  +----nodePath  
+                 |     |         |  |
+                 |     |         |  +----inputName  
+                 |     |         |
+                 |     |         +-...
+                 |     |
+                 |     +-publicUIName 
+                 |     |     |
+                 |     |     +-mappings
+                 |     |         +-i0
+                 |     |         |  |
+                 |     |         |  +----nodePath  
+                 |     |         |  |
+                 |     |         |  +----inputName  
+                 |     |         |
+                 |     |         +-i1
+                 |     |         |  |
+                 |     |         |  +----nodePath  
+                 |     |         |  |
+                 |     |         |  +----inputName  
+                 |     |         |
+                 |     |         +-...
+                 |     +-...
+                 |
+                 +-parameterOrder = ...
 */
 
 class HdsiMaterialOverrideResolvingSceneIndex final : 

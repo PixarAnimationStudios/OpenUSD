@@ -22,8 +22,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((sceneIndexPluginName, "HdPrman_CoordSysPrimSceneIndexPlugin"))
 );
 
-static const char * const _pluginDisplayName = "Prman";
-
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdSceneIndexPluginRegistry::Define<

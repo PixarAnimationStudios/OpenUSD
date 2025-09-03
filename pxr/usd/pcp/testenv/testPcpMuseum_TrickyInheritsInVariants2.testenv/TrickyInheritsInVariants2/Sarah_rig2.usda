@@ -1,0 +1,21 @@
+#usda 1.0
+
+def "Sarah"
+{
+    def Scope "FaceRig"
+    {
+        def Scope "EyesRig"
+        {
+            class Scope "SymEyeRig"
+            {
+            }
+    
+            def Scope "LEyeRig" (
+                inherits = <../SymEyeRig>
+                   
+            )
+            {
+            }   
+        }
+    }
+}

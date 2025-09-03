@@ -4,10 +4,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/ptr.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 //
 // Copyright 2024 Pixar
@@ -73,5 +69,4 @@ class unwrap_pointer<pointer_wrapper<T> >
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

@@ -219,6 +219,7 @@ private:
     friend class PcpNodeRef_PrivateChildrenConstReverseIterator;
     friend class PcpNodeRef_PrivateSubtreeConstIterator;
     template <class T> friend class Pcp_TraversalCache;
+    friend bool Pcp_IsPropagatedSpecializesNode(const PcpNodeRef& node);
 
     // NOTE: These accessors assume the consumer will be changing the node
     //       and may cause shared node data to be copied locally.
@@ -238,6 +239,10 @@ private:
     const _Node& _GetNode(const PcpNodeRef& node) const
     {
         return _GetNode(node._GetNodeIndex());
+    }
+
+    inline PcpArcType GetArcType(size_t nodeIdx) const {
+        return _GetNode(nodeIdx).smallInts.arcType;
     }
 
 private:
@@ -270,6 +275,7 @@ private:
             , arcType(PcpArcTypeRoot)
             , permission(SdfPermissionPublic)
             , hasSymmetry(false)
+            , hasValueClips(false)
             , inert(false)
             , permissionDenied(false)
         */
@@ -347,6 +353,11 @@ private:
             // or at any of its namespace ancestors contain symmetry 
             // information.
             bool hasSymmetry:1;
+            // Whether this node may contribute value clips information
+            // during composition. This implies that prims at this node's
+            // site or at any of its namespace ancestors contain value clips
+            // information.
+            bool hasValueClips:1;
             // Whether this node is inert. This is set to true in cases
             // where a node is needed to represent a structural dependency
             // but no opinions are allowed to be added.

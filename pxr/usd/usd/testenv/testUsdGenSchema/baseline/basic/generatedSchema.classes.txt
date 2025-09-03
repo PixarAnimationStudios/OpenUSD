@@ -15,6 +15,10 @@ singleApplyAPI_1
 testHairman
 testHairman_1
 testNoVersion0_2
+testPropertyOrderSingleApplyAPI
+testPropertyOrderTyped
+testReflectedAPIBase
+testReflectedInternalAPI
 tokens
 
 # Python Module Files
@@ -33,6 +37,10 @@ wrapSingleApplyAPI_1.cpp
 wrapTestHairman.cpp
 wrapTestHairman_1.cpp
 wrapTestNoVersion0_2.cpp
+wrapTestPropertyOrderSingleApplyAPI.cpp
+wrapTestPropertyOrderTyped.cpp
+wrapTestReflectedAPIBase.cpp
+wrapTestReflectedInternalAPI.cpp
 wrapTokens.cpp
 
 # Resource Files

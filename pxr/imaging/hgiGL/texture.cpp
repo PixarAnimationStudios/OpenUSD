@@ -11,6 +11,8 @@
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/texture.h"
 
+#include "pxr/imaging/hf/perfLog.h"
+
 #include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -25,6 +27,8 @@ _GlTextureStorageND(
     const GfVec3i &dimensions,
     const GLsizei layerCount)
 {
+    HF_MALLOC_TAG("GL Driver Texture Storage");
+
     switch(textureType) {
     case HgiTextureType1D:
         glTextureStorage1D(texture,
@@ -43,6 +47,12 @@ _GlTextureStorageND(
                            levels,
                            internalformat,
                            dimensions[0], dimensions[1], dimensions[2]);
+        break;
+    case HgiTextureTypeCubemap:
+        glTextureStorage2D(texture,
+                           levels,
+                           internalformat,
+                           dimensions[0], dimensions[1]);
         break;
     case HgiTextureType1DArray:
         glTextureStorage2D(texture,
@@ -99,6 +109,15 @@ _GlTextureSubImageND(
                             level,
                             offsets[0], offsets[1], offsets[2],
                             dimensions[0], dimensions[1], dimensions[2],
+                            format,
+                            type,
+                            pixels);
+        break;
+    case HgiTextureTypeCubemap:
+        glTextureSubImage3D(texture,
+                            level,
+                            offsets[0], offsets[1], offsets[2],
+                            dimensions[0], dimensions[1], layerCount,
                             format,
                             type,
                             pixels);
@@ -440,10 +459,10 @@ HgiGLTexture::GetBindlessHandle()
     return _bindlessHandle;
 }
 
-void 
+HgiTextureUsage
 HgiGLTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
 {
-    return;
+    return 0;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

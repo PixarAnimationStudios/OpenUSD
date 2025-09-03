@@ -46,6 +46,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdBasisCurvesTopologySchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdBasisCurvesTopologySchema
+///
 class HdBasisCurvesTopologySchema : public HdSchema
 {
 public:

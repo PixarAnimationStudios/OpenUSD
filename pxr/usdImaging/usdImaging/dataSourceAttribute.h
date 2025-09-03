@@ -42,6 +42,9 @@ public:
     {
         // Zero-initialization for numerical types.
         T result{};
+        if (!_usdAttrQuery) {
+            return result;
+        }
         UsdTimeCode time = _stageGlobals.GetTime();
         if (time.IsNumeric()) {
             time = UsdTimeCode(time.GetValue() + shutterOffset);
@@ -58,6 +61,10 @@ public:
             HdSampledDataSource::Time endTime,
             std::vector<HdSampledDataSource::Time> *outSampleTimes) override
     {
+        if (!_usdAttrQuery) {
+            return false;
+        }
+
         UsdTimeCode time = _stageGlobals.GetTime();
         if (!_usdAttrQuery.ValueMightBeTimeVarying() ||
             !time.IsNumeric()) {
@@ -106,7 +113,10 @@ public:
         return outSampleTimes->size() > 1;
     }
 
-private:
+protected:
+    /// Constructors and member data are protected instead of private
+    /// for use by a specialized subclass for accessing SdfAssetPath
+    /// attributes which need special handling for UDIMs.
 
     /// Constructs a new UsdImagingDataSourceAttribute for the given \p usdAttr
     ///
@@ -137,7 +147,6 @@ private:
             const HdDataSourceLocator &timeVaryingFlagLocator =
                     HdDataSourceLocator::EmptyLocator());
 
-private:
     UsdAttributeQuery _usdAttrQuery;
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
 };

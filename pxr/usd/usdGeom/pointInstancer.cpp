@@ -1155,8 +1155,7 @@ UsdGeomPointInstancer::_ComputeExtentAtTimePreamble(
     }
 
     // verify that all the protoIndices are in bounds.
-    TF_FOR_ALL(iter, *protoIndices) {
-        const int protoIndex = *iter;
+    for (const int protoIndex : protoIndices->AsConst()){
         if (protoIndex < 0 || 
             static_cast<size_t>(protoIndex) >= protoPaths->size()) {
             TF_WARN("%s -- invalid prototype index: %d. Should be in [0, %zu)",

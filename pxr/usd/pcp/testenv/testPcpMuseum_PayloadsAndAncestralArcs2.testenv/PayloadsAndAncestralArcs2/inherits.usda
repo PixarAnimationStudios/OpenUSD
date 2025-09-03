@@ -1,0 +1,27 @@
+#usda 1.0
+
+def "Payload"
+{
+    def "Class"
+    {
+    }
+
+    def "Child"
+    {
+    }
+}
+
+def "Ref" (
+    payload = </Payload>
+)
+{
+    def "Class"
+    {
+    }
+    
+    def "Child" (
+        inherits = </Ref/Class>
+    )
+    {
+    }
+}

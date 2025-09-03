@@ -2,7 +2,6 @@
 
 # Public Classes
 materialAPI
-renderPassAPI
 splineAPI
 statementsAPI
 tokens
@@ -10,7 +9,6 @@ tokens
 # Python Module Files
 module.cpp
 wrapMaterialAPI.cpp
-wrapRenderPassAPI.cpp
 wrapSplineAPI.cpp
 wrapStatementsAPI.cpp
 wrapTokens.cpp

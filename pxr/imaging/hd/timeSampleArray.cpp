@@ -9,8 +9,11 @@
 
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/matrix2d.h"
+#include "pxr/base/gf/matrix2f.h"
 #include "pxr/base/gf/matrix3d.h"
+#include "pxr/base/gf/matrix3f.h"
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/quatd.h"
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/quath.h"
@@ -99,9 +102,10 @@ HdResampleNeighbors(float alpha, const VtValue& v0, const VtValue& v1)
 
     // The list of supported types to interpolate.
     using _InterpTypes =
-        _TypeList<float, double, GfHalf, GfMatrix2d, GfMatrix3d, GfMatrix4d,
-                  GfVec2d, GfVec2f, GfVec2h, GfVec3d, GfVec3f, GfVec3h, GfVec4d,
-                  GfVec4f, GfVec4h, GfQuatd, GfQuatf, GfQuath>;
+        _TypeList<float, double, GfHalf, GfMatrix2f, GfMatrix3f, GfMatrix4f,
+                  GfMatrix2d, GfMatrix3d, GfMatrix4d, GfVec2d, GfVec2f, GfVec2h,
+                  GfVec3d, GfVec3f, GfVec3h, GfVec4d, GfVec4f, GfVec4h, GfQuatd,
+                  GfQuatf, GfQuath>;
 
     VtValue result;
     _Resample(alpha, v0, v1, t0, &result, _InterpTypes());

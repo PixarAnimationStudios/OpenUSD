@@ -1,15 +1,15 @@
-Loading @ErrorConnectionPermissionDenied/root.sdf@
+Loading @ErrorConnectionPermissionDenied/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </PermissionsAcrossReferences>
 
 Prim Stack:
-    root.sdf             /PermissionsAcrossReferences
-    ref.sdf              /Reference
+    root.usda            /PermissionsAcrossReferences
+    ref.usda             /Reference
 
 Child names:
      ['PrivatePrimFromRef', 'PublicPrimFromRef', 'ChildFromRef', 'PrivatePrimFromRoot', 'PublicPrimFromRoot', 'ChildFromRoot']
@@ -19,38 +19,38 @@ Property names:
 
 Property stacks:
 /PermissionsAcrossReferences.privateAttrFromRef:
-    ref.sdf              /Reference.privateAttrFromRef
+    ref.usda             /Reference.privateAttrFromRef
 /PermissionsAcrossReferences.privateAttrFromRoot:
-    root.sdf             /PermissionsAcrossReferences.privateAttrFromRoot
+    root.usda            /PermissionsAcrossReferences.privateAttrFromRoot
 /PermissionsAcrossReferences.publicAttrFromRef:
-    ref.sdf              /Reference.publicAttrFromRef
+    ref.usda             /Reference.publicAttrFromRef
 /PermissionsAcrossReferences.publicAttrFromRoot:
-    root.sdf             /PermissionsAcrossReferences.publicAttrFromRoot
+    root.usda            /PermissionsAcrossReferences.publicAttrFromRoot
 
 ------------------------------------------------------------------------
 Results for composing </PermissionsAcrossReferences/PrivatePrimFromRef>
 
 Prim Stack:
-    ref.sdf              /Reference/PrivatePrimFromRef
+    ref.usda             /Reference/PrivatePrimFromRef
 
 ------------------------------------------------------------------------
 Results for composing </PermissionsAcrossReferences/PublicPrimFromRef>
 
 Prim Stack:
-    ref.sdf              /Reference/PublicPrimFromRef
+    ref.usda             /Reference/PublicPrimFromRef
 
 ------------------------------------------------------------------------
 Results for composing </PermissionsAcrossReferences/ChildFromRef>
 
 Prim Stack:
-    ref.sdf              /Reference/ChildFromRef
+    ref.usda             /Reference/ChildFromRef
 
 Property names:
      ['relInRef']
 
 Property stacks:
 /PermissionsAcrossReferences/ChildFromRef.relInRef:
-    ref.sdf              /Reference/ChildFromRef.relInRef
+    ref.usda             /Reference/ChildFromRef.relInRef
 
 Relationship targets:
 /PermissionsAcrossReferences/ChildFromRef.relInRef:
@@ -63,26 +63,26 @@ Relationship targets:
 Results for composing </PermissionsAcrossReferences/PrivatePrimFromRoot>
 
 Prim Stack:
-    root.sdf             /PermissionsAcrossReferences/PrivatePrimFromRoot
+    root.usda            /PermissionsAcrossReferences/PrivatePrimFromRoot
 
 ------------------------------------------------------------------------
 Results for composing </PermissionsAcrossReferences/PublicPrimFromRoot>
 
 Prim Stack:
-    root.sdf             /PermissionsAcrossReferences/PublicPrimFromRoot
+    root.usda            /PermissionsAcrossReferences/PublicPrimFromRoot
 
 ------------------------------------------------------------------------
 Results for composing </PermissionsAcrossReferences/ChildFromRoot>
 
 Prim Stack:
-    root.sdf             /PermissionsAcrossReferences/ChildFromRoot
+    root.usda            /PermissionsAcrossReferences/ChildFromRoot
 
 Property names:
      ['relInRoot']
 
 Property stacks:
 /PermissionsAcrossReferences/ChildFromRoot.relInRoot:
-    root.sdf             /PermissionsAcrossReferences/ChildFromRoot.relInRoot
+    root.usda            /PermissionsAcrossReferences/ChildFromRoot.relInRoot
 
 Relationship targets:
 /PermissionsAcrossReferences/ChildFromRoot.relInRoot:
@@ -97,8 +97,8 @@ Relationship targets:
 Results for composing </PermissionsAcrossInherits>
 
 Prim Stack:
-    root.sdf             /PermissionsAcrossInherits
-    ref.sdf              /ReferenceWithLocalClass
+    root.usda            /PermissionsAcrossInherits
+    ref.usda             /ReferenceWithLocalClass
 
 Child names:
      ['Class', 'Instance']
@@ -107,7 +107,7 @@ Child names:
 Results for composing </PermissionsAcrossInherits/Class>
 
 Prim Stack:
-    ref.sdf              /ReferenceWithLocalClass/Class
+    ref.usda             /ReferenceWithLocalClass/Class
 
 Child names:
      ['PrivatePrimFromClass', 'PublicPrimFromClass', 'ChildFromClass']
@@ -117,34 +117,34 @@ Property names:
 
 Property stacks:
 /PermissionsAcrossInherits/Class.privateAttrFromClass:
-    ref.sdf              /ReferenceWithLocalClass/Class.privateAttrFromClass
+    ref.usda             /ReferenceWithLocalClass/Class.privateAttrFromClass
 /PermissionsAcrossInherits/Class.publicAttrFromClass:
-    ref.sdf              /ReferenceWithLocalClass/Class.publicAttrFromClass
+    ref.usda             /ReferenceWithLocalClass/Class.publicAttrFromClass
 
 ------------------------------------------------------------------------
 Results for composing </PermissionsAcrossInherits/Class/PrivatePrimFromClass>
 
 Prim Stack:
-    ref.sdf              /ReferenceWithLocalClass/Class/PrivatePrimFromClass
+    ref.usda             /ReferenceWithLocalClass/Class/PrivatePrimFromClass
 
 ------------------------------------------------------------------------
 Results for composing </PermissionsAcrossInherits/Class/PublicPrimFromClass>
 
 Prim Stack:
-    ref.sdf              /ReferenceWithLocalClass/Class/PublicPrimFromClass
+    ref.usda             /ReferenceWithLocalClass/Class/PublicPrimFromClass
 
 ------------------------------------------------------------------------
 Results for composing </PermissionsAcrossInherits/Class/ChildFromClass>
 
 Prim Stack:
-    ref.sdf              /ReferenceWithLocalClass/Class/ChildFromClass
+    ref.usda             /ReferenceWithLocalClass/Class/ChildFromClass
 
 Property names:
      ['relInClass']
 
 Property stacks:
 /PermissionsAcrossInherits/Class/ChildFromClass.relInClass:
-    ref.sdf              /ReferenceWithLocalClass/Class/ChildFromClass.relInClass
+    ref.usda             /ReferenceWithLocalClass/Class/ChildFromClass.relInClass
 
 Relationship targets:
 /PermissionsAcrossInherits/Class/ChildFromClass.relInClass:
@@ -157,9 +157,9 @@ Relationship targets:
 Results for composing </PermissionsAcrossInherits/Instance>
 
 Prim Stack:
-    root.sdf             /PermissionsAcrossInherits/Instance
-    ref.sdf              /ReferenceWithLocalClass/Instance
-    ref.sdf              /ReferenceWithLocalClass/Class
+    root.usda            /PermissionsAcrossInherits/Instance
+    ref.usda             /ReferenceWithLocalClass/Instance
+    ref.usda             /ReferenceWithLocalClass/Class
 
 Child names:
      ['PrivatePrimFromClass', 'PublicPrimFromClass', 'ChildFromClass']
@@ -169,13 +169,13 @@ Property names:
 
 Property stacks:
 /PermissionsAcrossInherits/Instance.privateAttrFromClass:
-    ref.sdf              /ReferenceWithLocalClass/Class.privateAttrFromClass
+    ref.usda             /ReferenceWithLocalClass/Class.privateAttrFromClass
 /PermissionsAcrossInherits/Instance.publicAttrFromClass:
-    ref.sdf              /ReferenceWithLocalClass/Class.publicAttrFromClass
+    ref.usda             /ReferenceWithLocalClass/Class.publicAttrFromClass
 /PermissionsAcrossInherits/Instance.relInInstance:
-    ref.sdf              /ReferenceWithLocalClass/Instance.relInInstance
+    ref.usda             /ReferenceWithLocalClass/Instance.relInInstance
 /PermissionsAcrossInherits/Instance.relInRootInstance:
-    root.sdf             /PermissionsAcrossInherits/Instance.relInRootInstance
+    root.usda            /PermissionsAcrossInherits/Instance.relInRootInstance
 
 Relationship targets:
 /PermissionsAcrossInherits/Instance.relInInstance:
@@ -189,26 +189,26 @@ Relationship targets:
 Results for composing </PermissionsAcrossInherits/Instance/PrivatePrimFromClass>
 
 Prim Stack:
-    ref.sdf              /ReferenceWithLocalClass/Class/PrivatePrimFromClass
+    ref.usda             /ReferenceWithLocalClass/Class/PrivatePrimFromClass
 
 ------------------------------------------------------------------------
 Results for composing </PermissionsAcrossInherits/Instance/PublicPrimFromClass>
 
 Prim Stack:
-    ref.sdf              /ReferenceWithLocalClass/Class/PublicPrimFromClass
+    ref.usda             /ReferenceWithLocalClass/Class/PublicPrimFromClass
 
 ------------------------------------------------------------------------
 Results for composing </PermissionsAcrossInherits/Instance/ChildFromClass>
 
 Prim Stack:
-    ref.sdf              /ReferenceWithLocalClass/Class/ChildFromClass
+    ref.usda             /ReferenceWithLocalClass/Class/ChildFromClass
 
 Property names:
      ['relInClass']
 
 Property stacks:
 /PermissionsAcrossInherits/Instance/ChildFromClass.relInClass:
-    ref.sdf              /ReferenceWithLocalClass/Class/ChildFromClass.relInClass
+    ref.usda             /ReferenceWithLocalClass/Class/ChildFromClass.relInClass
 
 Relationship targets:
 /PermissionsAcrossInherits/Instance/ChildFromClass.relInClass:
@@ -221,8 +221,8 @@ Relationship targets:
 Results for composing </CulledPermissions_1>
 
 Prim Stack:
-    root.sdf             /CulledPermissions_1
-    culled.sdf           /CulledPermissions_1
+    root.usda            /CulledPermissions_1
+    culled.usda          /CulledPermissions_1
 
 Child names:
      ['Foo']
@@ -232,7 +232,7 @@ Property names:
 
 Property stacks:
 /CulledPermissions_1.rel:
-    culled.sdf           /CulledPermissions_1.rel
+    culled.usda          /CulledPermissions_1.rel
 
 Relationship targets:
 /CulledPermissions_1.rel:
@@ -242,15 +242,15 @@ Relationship targets:
 Results for composing </CulledPermissions_1/Foo>
 
 Prim Stack:
-    culled.sdf           /CulledPermissions_1/Foo
+    culled.usda          /CulledPermissions_1/Foo
 
 ------------------------------------------------------------------------
 Results for composing </CulledPermissions_2>
 
 Prim Stack:
-    root.sdf             /CulledPermissions_2
-    culled.sdf           /CulledPermissions_2_1
-    culled.sdf           /CulledPermissions_2_2
+    root.usda            /CulledPermissions_2
+    culled.usda          /CulledPermissions_2_1
+    culled.usda          /CulledPermissions_2_2
 
 Child names:
      ['Foo']
@@ -260,7 +260,7 @@ Property names:
 
 Property stacks:
 /CulledPermissions_2.rel:
-    culled.sdf           /CulledPermissions_2_2.rel
+    culled.usda          /CulledPermissions_2_2.rel
 
 Relationship targets:
 /CulledPermissions_2.rel:
@@ -270,23 +270,23 @@ Relationship targets:
 Results for composing </CulledPermissions_2/Foo>
 
 Prim Stack:
-    culled.sdf           /CulledPermissions_2_1/Foo
+    culled.usda          /CulledPermissions_2_1/Foo
 
 Property names:
      ['x']
 
 Property stacks:
 /CulledPermissions_2/Foo.x:
-    culled.sdf           /CulledPermissions_2_1/Foo.x
+    culled.usda          /CulledPermissions_2_1/Foo.x
 
 ------------------------------------------------------------------------
 Results for composing </CulledPermissions_3>
 
 Prim Stack:
-    root.sdf             /CulledPermissions_3
-    root.sdf             /CulledPermissions_3{pin=stable}
-    culled_stable.sdf    /CulledModel
-    culled_payload.sdf   /CulledModelPayload
+    root.usda            /CulledPermissions_3
+    root.usda            /CulledPermissions_3{pin=stable}
+    culled_stable.usda   /CulledModel
+    culled_payload.usda  /CulledModelPayload
 
 Variant Selections:
     {pin = stable}
@@ -299,13 +299,13 @@ Property names:
 
 Property stacks:
 /CulledPermissions_3.colliders:
-    culled_stable.sdf    /CulledModel.colliders
+    culled_stable.usda   /CulledModel.colliders
 
 ------------------------------------------------------------------------
 Results for composing </CulledPermissions_3/sim>
 
 Prim Stack:
-    culled_payload.sdf   /CulledModelPayload/sim
+    culled_payload.usda  /CulledModelPayload/sim
 
 Child names:
      ['CollisionRig']
@@ -314,7 +314,7 @@ Child names:
 Results for composing </CulledPermissions_3/sim/CollisionRig>
 
 Prim Stack:
-    culled_payload.sdf   /CulledModelPayload/sim/CollisionRig
+    culled_payload.usda  /CulledModelPayload/sim/CollisionRig
 
 Child names:
      ['FiztCollBody']
@@ -323,5 +323,5 @@ Child names:
 Results for composing </CulledPermissions_3/sim/CollisionRig/FiztCollBody>
 
 Prim Stack:
-    culled_payload.sdf   /CulledModelPayload/sim/CollisionRig/FiztCollBody
+    culled_payload.usda  /CulledModelPayload/sim/CollisionRig/FiztCollBody
 

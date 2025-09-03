@@ -1,0 +1,23 @@
+#usda 1.0
+(
+    """
+    This example has a prim, Root, with payloads to
+    A.usda and B.usda. These payloads will both
+    reference C.usda, forming a 'payload diamond'.
+    This is a legal setup, so we don't want to report
+    errors about cycles in this case.
+    """
+)
+
+def "Root" (
+    payload = [ @./A.usda@</A>, @./B.usda@</B> ]
+)
+{
+}
+
+# This is the same as Root prim setup but the test will leave it unloaded
+def "RootUnloaded" (
+    payload = [ @./A.usda@</A>, @./B.usda@</B> ]
+)
+{
+}

@@ -43,6 +43,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdIntegratorSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdIntegratorSchema
+///
 class HdIntegratorSchema : public HdSchema
 {
 public:

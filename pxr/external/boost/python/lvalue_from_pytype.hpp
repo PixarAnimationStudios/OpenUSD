@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/lvalue_from_pytype.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 #ifndef PXR_BOOST_PYTHON_NO_PY_SIGNATURES
 # include "pxr/external/boost/python/converter/pytype_function.hpp"
@@ -126,5 +122,4 @@ struct lvalue_from_pytype
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_LVALUE_FROM_PYTYPE_HPP

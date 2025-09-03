@@ -34,6 +34,7 @@
 #include <chrono>
 #include <cinttypes>
 #include <cmath>
+#include <complex>
 #include <condition_variable>
 #include <cstdarg>
 #include <cstddef>
@@ -75,27 +76,9 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#if defined(PXR_PYTHON_SUPPORT_ENABLED) && !defined(PXR_USE_INTERNAL_BOOST_PYTHON)
-#include "pxr/external/boost/python/common.hpp"
-#include <boost/python/object_fwd.hpp>
-#include <boost/python/object_operators.hpp>
-#if defined(__APPLE__) // Fix breakage caused by Python's pyport.h.
-#undef tolower
-#undef toupper
-#endif
-#endif // PXR_PYTHON_SUPPORT_ENABLED && !PXR_USE_INTERNAL_BOOST_PYTHON
-#include <embree3/rtcore.h>
-#include <embree3/rtcore_geometry.h>
-#include <embree3/rtcore_ray.h>
-#include <tbb/blocked_range.h>
-#include <tbb/cache_aligned_allocator.h>
-#include <tbb/concurrent_hash_map.h>
-#include <tbb/concurrent_queue.h>
-#include <tbb/enumerable_thread_specific.h>
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_for_each.h>
-#include <tbb/spin_mutex.h>
-#include <tbb/task_group.h>
+#include <embree4/rtcore.h>
+#include <embree4/rtcore_geometry.h>
+#include <embree4/rtcore_ray.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

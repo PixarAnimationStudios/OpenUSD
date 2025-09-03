@@ -7,11 +7,11 @@
 
 #include "pxr/usdImaging/usdAppUtils/frameRecorder.h"
 
-#include "pxr/base/gf/camera.h"
-#include "pxr/base/tf/scoped.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
+#include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hdSt/hioConversions.h"
 #include "pxr/imaging/hdSt/textureUtils.h"
@@ -23,20 +23,43 @@
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usd/usdRender/settings.h"
 #include "pxr/usd/usdRender/product.h"
+#include "pxr/usd/usdRender/settings.h"
 
 #include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/gf/camera.h"
+#include "pxr/base/tf/scoped.h"
+#include "pxr/base/tf/token.h"
 
 #include <string>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
+
+namespace {
+
+UsdImagingGLEngine::Parameters
+_GetParams(
+    const HdDriver& driver,
+    const TfToken& rendererPluginId,
+    bool gpuEnabled,
+    bool enableUsdDrawModes)
+{
+    UsdImagingGLEngine::Parameters params;
+    params.driver = driver;
+    params.rendererPluginId = rendererPluginId;
+    params.gpuEnabled = gpuEnabled;
+    params.enableUsdDrawModes = enableUsdDrawModes;
+    return params;
+}
+
+} // anonymous namespace
 
 UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
     const TfToken& rendererPluginId,
-    bool gpuEnabled) :
-    _imagingEngine(HdDriver(), rendererPluginId, gpuEnabled),
+    bool gpuEnabled,
+    bool enableUsdDrawModes) :
+    _imagingEngine(_GetParams(
+        HdDriver(), rendererPluginId, gpuEnabled, enableUsdDrawModes)),
     _imageWidth(960u),
     _complexity(1.0f),
     _colorCorrectionMode(HdxColorCorrectionTokens->disabled),
@@ -48,7 +71,7 @@ UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
     // using other graphics APIs such as Metal and Vulkan.
     _imagingEngine.SetEnablePresentation(false);
 
-    // Set the interactive to be false on the HdRenderSettingsMap 
+    // Set the interactive to be false on the HdRenderSettingsMap
     _imagingEngine.SetRendererSetting(
         HdRenderSettingsTokens->enableInteractive, VtValue(false));
 }
@@ -62,7 +85,7 @@ UsdAppUtilsFrameRecorder::SetActiveRenderSettingsPrimPath(SdfPath const& path)
     }
 }
 
-void 
+void
 UsdAppUtilsFrameRecorder::SetActiveRenderPassPrimPath(SdfPath const& path)
 {
     _renderPassPrimPath = path;
@@ -105,7 +128,7 @@ UsdAppUtilsFrameRecorder::SetDomeLightVisibility(bool domeLightsVisible)
 }
 
 void
-UsdAppUtilsFrameRecorder::SetIncludedPurposes(const TfTokenVector& purposes) 
+UsdAppUtilsFrameRecorder::SetIncludedPurposes(const TfTokenVector& purposes)
 {
     TfTokenVector  allPurposes = { UsdGeomTokens->render,
                                    UsdGeomTokens->proxy,
@@ -123,6 +146,12 @@ UsdAppUtilsFrameRecorder::SetIncludedPurposes(const TfTokenVector& purposes)
                             p.GetText());
         }
     }
+}
+
+void
+UsdAppUtilsFrameRecorder::SetPrimaryCameraPrimPath(const SdfPath& cameraPath)
+{
+    _imagingEngine.SetCameraPath(cameraPath);
 }
 
 static GfCamera
@@ -158,7 +187,7 @@ _ComputeCameraToFrameStage(const UsdStagePtr& stage, UsdTimeCode timeCode,
     } else {
         distance += dim[1] / 2;
     }
-    // Small objects that fill out their bounding boxes might be clipped by the 
+    // Small objects that fill out their bounding boxes might be clipped by the
     // near-clipping plane (always defaulting to 1 here). Increase the distance
     // to make sure that doesn't happen.
     if (distance < gfCamera.GetClippingRange().GetMin()) {
@@ -228,7 +257,7 @@ public:
 
             const HioImageSharedPtr image = HioImage::OpenForWriting(filename);
             const bool writeSuccess = image && image->Write(storage);
-            
+
             if (!writeSuccess) {
                 TF_RUNTIME_ERROR("Failed to write image to %s",
                     filename.c_str());
@@ -318,9 +347,9 @@ _RenderProductsGenerated(
     }
 
     bool productsGenerated = false;
-    UsdRenderSettings settings = 
+    UsdRenderSettings settings =
         UsdRenderSettings(stage->GetPrimAtPath(renderSettingsPrimPath));
-    
+
     // Each Render Product should generate an image
     SdfPathVector renderProductTargets;
     settings.GetProductsRel().GetForwardedTargets(&renderProductTargets);
@@ -332,7 +361,7 @@ _RenderProductsGenerated(
         product.GetProductNameAttr().Get(&productName);
         if (ArchOpenFile(productName.GetText(), "r")) {
             TF_STATUS("Product '%s' generated from RenderProduct prim <%s> "
-                      "on RenderSettings <%s>", productName.GetText(), 
+                      "on RenderSettings <%s>", productName.GetText(),
                       productPath.GetText(), renderSettingsPrimPath.GetText());
             productsGenerated |= true;
         } else {
@@ -372,7 +401,7 @@ UsdAppUtilsFrameRecorder::Record(
     const GfVec4f SPECULAR_DEFAULT(0.1f, 0.1f, 0.1f, 1.0f);
     const GfVec4f AMBIENT_DEFAULT(0.2f, 0.2f, 0.2f, 1.0f);
     const float   SHININESS_DEFAULT(32.0);
-    
+
     GfCamera gfCamera;
     if (usdCamera) {
         gfCamera = usdCamera.GetCamera(timeCode);
@@ -402,7 +431,7 @@ UsdAppUtilsFrameRecorder::Record(
             frustum.ComputeViewMatrix(),
             frustum.ComputeProjectionMatrix());
     }
-    const GfRect2i dataWindow(GfVec2i(0.0), _imageWidth, imageHeight); 
+    const GfRect2i dataWindow(GfVec2i(0.0), _imageWidth, imageHeight);
     _imagingEngine.SetFraming(CameraUtilFraming(dataWindow));
     _imagingEngine.SetRenderBufferSize(GfVec2i(_imageWidth, imageHeight));
 

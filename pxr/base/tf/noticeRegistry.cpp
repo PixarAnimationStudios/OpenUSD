@@ -11,7 +11,6 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/iterator.h"
-#include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/arch/demangle.h"
 
@@ -156,8 +155,6 @@ _EndDelivery(const std::vector<TfNotice::WeakProbePtr> &probes)
 TfNotice::Key
 Tf_NoticeRegistry::_Register(TfNotice::_DelivererBase* deliverer)
 {
-    TfAutoMallocTag2 tag("Tf", "Tf_NoticeRegistry::_Register");
-
     TfType noticeType = deliverer->GetNoticeType();
     
     if (noticeType.IsUnknown()) {
@@ -189,8 +186,13 @@ Tf_NoticeRegistry::_Revoke(TfNotice::Key& key, bool wait)
             // No need to wait because nothing can be invoking the handler.
             wait = false;
         } else {
-            // Otherwise deactivate it.
-            key._deliverer->_Deactivate();
+            // Otherwise deactivate it and arrange for its removal.
+            TfNotice::_DelivererBase *deliverer = get_pointer(key._deliverer);
+            if (!deliverer->_IsMarkedForRemoval()) {
+                deliverer->_Deactivate();
+                deliverer->_MarkForRemoval();
+                _deadEntries.push_back(key._deliverer);
+            }
             // If we're waiting, we need to ensure that the deliverer survives
             // after we drop the lock above, so it can do the waiting.
             if (wait) {

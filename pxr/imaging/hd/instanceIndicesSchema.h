@@ -43,6 +43,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdInstanceIndicesSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdInstanceIndicesSchema
+///
 class HdInstanceIndicesSchema : public HdSchema
 {
 public:

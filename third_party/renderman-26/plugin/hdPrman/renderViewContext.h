@@ -4,8 +4,8 @@
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
 //
-#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_VIEW_CONTEXT_H
-#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_VIEW_CONTEXT_H
+#ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_VIEW_CONTEXT_H
+#define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_VIEW_CONTEXT_H
 
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
@@ -29,9 +29,10 @@ struct HdPrman_RenderViewDesc
     riley::SampleFilterList sampleFilterList;
     riley::DisplayFilterList displayFilterList;
     GfVec2i resolution;
-    
+
     struct RenderOutputDesc
     {
+        HDPRMAN_API
         RenderOutputDesc();
 
         RtUString name;
@@ -54,7 +55,7 @@ struct HdPrman_RenderViewDesc
 
         std::vector<size_t> renderOutputIndices;
     };
-    
+
     std::vector<DisplayDesc> displayDescs;
 };
 
@@ -64,18 +65,23 @@ struct HdPrman_RenderViewDesc
 class HdPrman_RenderViewContext final
 {
 public:
+    HDPRMAN_API
     HdPrman_RenderViewContext();
 
+    HDPRMAN_API
     void CreateRenderView(
         const HdPrman_RenderViewDesc &desc,
         riley::Riley * riley);
 
+    HDPRMAN_API
     void DeleteRenderView(riley::Riley * riley);
 
+    HDPRMAN_API
     void SetIntegratorId(
         riley::IntegratorId id,
         riley::Riley * riley);
 
+    HDPRMAN_API
     void SetResolution(
         const GfVec2i &resolution,
         riley::Riley * riley);
@@ -93,5 +99,5 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  //EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_VIEW_CONTEXT_H
+#endif  //EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_VIEW_CONTEXT_H
 

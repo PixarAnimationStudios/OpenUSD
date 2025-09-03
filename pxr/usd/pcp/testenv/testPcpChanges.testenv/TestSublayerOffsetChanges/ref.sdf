@@ -1,6 +1,0 @@
-#sdf 1.4.32
-(
-    subLayers = [
-        @./ref-sublayer.sdf@ (offset = 50)
-    ]
-)

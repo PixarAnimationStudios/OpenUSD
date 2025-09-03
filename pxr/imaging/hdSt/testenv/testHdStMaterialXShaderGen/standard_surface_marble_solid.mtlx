@@ -55,14 +55,14 @@
     <output name="out" type="color3" nodename="mix1" />
   </nodegraph>
 
-  <standard_surface name="SR_marble1" type="surfaceshader">
+  <standard_surface name="Surface" type="surfaceshader">
     <input name="base" type="float" value="1" />
     <input name="base_color" type="color3" nodegraph="NG_marble1" output="out" />
     <input name="specular_color" type="color3" value="1, 1, 1" />
     <input name="specular_roughness" type="float" value="0.1" />
   </standard_surface>
   <surfacematerial name="Marble_3D" type="material">
-    <input name="surfaceshader" type="surfaceshader" nodename="SR_marble1" />
+    <input name="surfaceshader" type="surfaceshader" nodename="Surface" />
   </surfacematerial>
   
 </materialx>

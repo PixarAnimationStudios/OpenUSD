@@ -17,10 +17,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/errors.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 #include <functional>
 
@@ -64,5 +60,4 @@ PXR_BOOST_PYTHON_DECL PyObject* pytype_check(PyTypeObject* pytype, PyObject* sou
 
 }} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_ERRORS_HPP

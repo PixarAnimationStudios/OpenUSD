@@ -1,0 +1,13 @@
+#usda 1.0
+#tagged-as-never-update
+
+def MfScope "foo"
+{
+    # test using rel attrs where they are not allowed
+    delete rel badRel = [
+        </foo> {
+            double intensity = 0.5
+        }
+    ]
+}
+

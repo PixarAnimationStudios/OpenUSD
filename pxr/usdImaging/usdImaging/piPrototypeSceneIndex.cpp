@@ -6,20 +6,40 @@
 //
 #include "pxr/usdImaging/usdImaging/piPrototypeSceneIndex.h"
 
+#include "pxr/usdImaging/usdImaging/geomModelSchema.h"
+#include "pxr/usdImaging/usdImaging/prototypeSceneIndexUtils.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/dataSource.h"
+#include "pxr/imaging/hd/dataSourceTypeDefs.h"
+#include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/sceneIndexObserver.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
+#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
+
+#include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/tf/refPtr.h"
+#include "pxr/base/tf/token.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/vt/array.h"
 #include "pxr/base/work/loops.h"
 
+#include "pxr/pxr.h"
+
+#include <cstddef>
 #include <tbb/enumerable_thread_specific.h>
+#include <unordered_set>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace UsdImaging_PrototypeSceneIndexUtils;
 
 namespace
 {
@@ -52,7 +72,7 @@ _ComputeUnderlaySource(const SdfPath &instancer, const SdfPath &prototypeRoot)
             HdInstancedBySchema::Builder()
                 .SetPaths(DataSource::New({ instancer }))
                 .SetPrototypeRoots(DataSource::New({ prototypeRoot }))
-                .Build()); 
+                .Build());
 }
 
 HdContainerDataSourceHandle
@@ -61,15 +81,24 @@ _ComputePrototypeRootOverlaySource(const SdfPath &instancer)
     if (instancer.IsEmpty()) {
         return nullptr;
     }
-    
-    return
+
+    static HdContainerDataSourceHandle const ds =
         HdRetainedContainerDataSource::New(
             HdXformSchema::GetSchemaToken(),
             HdXformSchema::Builder()
                 .SetResetXformStack(
                     HdRetainedTypedSampledDataSource<bool>::New(
                         true))
-            .Build());
+                .Build(),
+            // We ignore the visibility authored on a prototype instanced
+            // by a point instancer in USD.
+            HdVisibilitySchema::GetSchemaToken(),
+            HdVisibilitySchema::Builder()
+                .SetVisibility(
+                    HdRetainedTypedSampledDataSource<bool>::New(
+                        true))
+                .Build());
+    return ds;
 }
 
 bool
@@ -118,12 +147,12 @@ UsdImaging_PiPrototypeSceneIndex::_Populate()
     HdSceneIndexPrimView view(_GetInputSceneIndex(), _prototypeRoot);
     for (auto it = view.begin(); it != view.end(); ++it) {
         const SdfPath &path = *it;
-        
+
         HdSceneIndexPrim const prim = _GetInputSceneIndex()->GetPrim(path);
         if (prim.primType == HdPrimTypeTokens->instancer ||
             _IsOver(prim)) {
             _instancersAndOvers.insert(path);
-            
+
             it.SkipDescendants();
         }
     }
@@ -134,7 +163,7 @@ void
 _MakeUnrenderable(HdSceneIndexPrim * const prim)
 {
     // Force the prim type to empty.
-    prim->primType = TfToken();
+    SetEmptyPrimType(&prim->primType);
 
     if (!prim->dataSource) {
         return;
@@ -153,7 +182,11 @@ _MakeUnrenderable(HdSceneIndexPrim * const prim)
             UsdImagingUsdPrimInfoSchema::GetSchemaToken(),
             HdRetainedContainerDataSource::New(
                 UsdImagingUsdPrimInfoSchemaTokens->niPrototypePath,
-                HdBlockDataSource::New()));
+                HdBlockDataSource::New()),
+            UsdImagingGeomModelSchema::GetSchemaToken(),
+            HdRetainedContainerDataSource::New(
+                UsdImagingGeomModelSchemaTokens->applyDrawMode,
+                HdRetainedTypedSampledDataSource<bool>::New(false)));
     prim->dataSource = HdOverlayContainerDataSource::New(
         overlaySource,
         prim->dataSource);
@@ -191,7 +224,7 @@ UsdImaging_PiPrototypeSceneIndex::GetPrim(const SdfPath &primPath) const
                 prim.dataSource);
         }
     }
-    
+
     return prim;
 }
 
@@ -204,7 +237,7 @@ UsdImaging_PiPrototypeSceneIndex::GetChildPrimPaths(
 
 void
 UsdImaging_PiPrototypeSceneIndex::_PrimsAdded(
-    const HdSceneIndexBase &sender,
+    const HdSceneIndexBase& /*sender*/,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
     TRACE_FUNCTION();
@@ -240,7 +273,7 @@ UsdImaging_PiPrototypeSceneIndex::_PrimsAdded(
         [&](HdSceneIndexObserver::AddedPrimEntry &entry)
     {
         if (_ContainsStrictPrefixOfPath(_instancersAndOvers, entry.primPath)) {
-            entry.primType = TfToken();
+            SetEmptyPrimType(&entry.primType);
         }
     });
 
@@ -256,7 +289,7 @@ UsdImaging_PiPrototypeSceneIndex::_PrimsAdded(
 
 void
 UsdImaging_PiPrototypeSceneIndex::_PrimsDirtied(
-    const HdSceneIndexBase &sender,
+    const HdSceneIndexBase& /*sender*/,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
     _SendPrimsDirtied(entries);
@@ -264,7 +297,7 @@ UsdImaging_PiPrototypeSceneIndex::_PrimsDirtied(
 
 void
 UsdImaging_PiPrototypeSceneIndex::_PrimsRemoved(
-    const HdSceneIndexBase &sender,
+    const HdSceneIndexBase& /*sender*/,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
     TRACE_FUNCTION();

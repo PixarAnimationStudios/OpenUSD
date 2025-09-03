@@ -1,14 +1,14 @@
-Loading @TrickySpookyInheritsInSymmetricBrowRig/root.sdf@
+Loading @TrickySpookyInheritsInSymmetricBrowRig/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </FaceRig>
 
 Prim Stack:
-    root.sdf             /FaceRig
+    root.usda            /FaceRig
 
 Child names:
      ['BrowRig', 'Anim']
@@ -17,8 +17,8 @@ Child names:
 Results for composing </FaceRig/BrowRig>
 
 Prim Stack:
-    root.sdf             /FaceRig/BrowRig
-    BrowRig.sdf          /BrowRig
+    root.usda            /FaceRig/BrowRig
+    BrowRig.usda         /BrowRig
 
 Child names:
      ['SymBrow', 'LBrow', 'RBrow', 'Anim']
@@ -27,8 +27,8 @@ Child names:
 Results for composing </FaceRig/BrowRig/SymBrow>
 
 Prim Stack:
-    root.sdf             /FaceRig/BrowRig/SymBrow
-    BrowRig.sdf          /BrowRig/SymBrow
+    root.usda            /FaceRig/BrowRig/SymBrow
+    BrowRig.usda         /BrowRig/SymBrow
 
 Child names:
      ['Anim']
@@ -37,8 +37,8 @@ Child names:
 Results for composing </FaceRig/BrowRig/SymBrow/Anim>
 
 Prim Stack:
-    root.sdf             /FaceRig/BrowRig/SymBrow/Anim
-    BrowRig.sdf          /BrowRig/SymBrow/Anim
+    root.usda            /FaceRig/BrowRig/SymBrow/Anim
+    BrowRig.usda         /BrowRig/SymBrow/Anim
 
 Child names:
      ['Brow']
@@ -47,17 +47,17 @@ Child names:
 Results for composing </FaceRig/BrowRig/SymBrow/Anim/Brow>
 
 Prim Stack:
-    root.sdf             /FaceRig/BrowRig/SymBrow/Anim/Brow
-    BrowRig.sdf          /BrowRig/SymBrow/Anim/Brow
+    root.usda            /FaceRig/BrowRig/SymBrow/Anim/Brow
+    BrowRig.usda         /BrowRig/SymBrow/Anim/Brow
 
 ------------------------------------------------------------------------
 Results for composing </FaceRig/BrowRig/LBrow>
 
 Prim Stack:
-    root.sdf             /FaceRig/BrowRig/LBrow
-    root.sdf             /FaceRig/BrowRig/SymBrow
-    BrowRig.sdf          /BrowRig/LBrow
-    BrowRig.sdf          /BrowRig/SymBrow
+    root.usda            /FaceRig/BrowRig/LBrow
+    root.usda            /FaceRig/BrowRig/SymBrow
+    BrowRig.usda         /BrowRig/LBrow
+    BrowRig.usda         /BrowRig/SymBrow
 
 Child names:
      ['Anim']
@@ -66,9 +66,9 @@ Child names:
 Results for composing </FaceRig/BrowRig/LBrow/Anim>
 
 Prim Stack:
-    root.sdf             /FaceRig/BrowRig/LBrow/Anim
-    root.sdf             /FaceRig/BrowRig/SymBrow/Anim
-    BrowRig.sdf          /BrowRig/SymBrow/Anim
+    root.usda            /FaceRig/BrowRig/LBrow/Anim
+    root.usda            /FaceRig/BrowRig/SymBrow/Anim
+    BrowRig.usda         /BrowRig/SymBrow/Anim
 
 Prohibited child names:
      ['Brow']
@@ -77,10 +77,10 @@ Prohibited child names:
 Results for composing </FaceRig/BrowRig/RBrow>
 
 Prim Stack:
-    root.sdf             /FaceRig/BrowRig/RBrow
-    root.sdf             /FaceRig/BrowRig/SymBrow
-    BrowRig.sdf          /BrowRig/RBrow
-    BrowRig.sdf          /BrowRig/SymBrow
+    root.usda            /FaceRig/BrowRig/RBrow
+    root.usda            /FaceRig/BrowRig/SymBrow
+    BrowRig.usda         /BrowRig/RBrow
+    BrowRig.usda         /BrowRig/SymBrow
 
 Child names:
      ['Anim']
@@ -89,9 +89,9 @@ Child names:
 Results for composing </FaceRig/BrowRig/RBrow/Anim>
 
 Prim Stack:
-    root.sdf             /FaceRig/BrowRig/RBrow/Anim
-    root.sdf             /FaceRig/BrowRig/SymBrow/Anim
-    BrowRig.sdf          /BrowRig/SymBrow/Anim
+    root.usda            /FaceRig/BrowRig/RBrow/Anim
+    root.usda            /FaceRig/BrowRig/SymBrow/Anim
+    BrowRig.usda         /BrowRig/SymBrow/Anim
 
 Prohibited child names:
      ['Brow']
@@ -100,8 +100,8 @@ Prohibited child names:
 Results for composing </FaceRig/BrowRig/Anim>
 
 Prim Stack:
-    root.sdf             /FaceRig/BrowRig/Anim
-    BrowRig.sdf          /BrowRig/Anim
+    root.usda            /FaceRig/BrowRig/Anim
+    BrowRig.usda         /BrowRig/Anim
 
 Prohibited child names:
      ['LBrow', 'RBrow']
@@ -110,7 +110,7 @@ Prohibited child names:
 Results for composing </FaceRig/Anim>
 
 Prim Stack:
-    root.sdf             /FaceRig/Anim
+    root.usda            /FaceRig/Anim
 
 Child names:
      ['Face']
@@ -119,7 +119,7 @@ Child names:
 Results for composing </FaceRig/Anim/Face>
 
 Prim Stack:
-    root.sdf             /FaceRig/Anim/Face
+    root.usda            /FaceRig/Anim/Face
 
 Child names:
      ['Eyes']
@@ -128,7 +128,7 @@ Child names:
 Results for composing </FaceRig/Anim/Face/Eyes>
 
 Prim Stack:
-    root.sdf             /FaceRig/Anim/Face/Eyes
+    root.usda            /FaceRig/Anim/Face/Eyes
 
 Child names:
      ['LBrow', 'RBrow']
@@ -137,15 +137,15 @@ Child names:
 Results for composing </FaceRig/Anim/Face/Eyes/LBrow>
 
 Prim Stack:
-    root.sdf             /FaceRig/Anim/Face/Eyes/LBrow
-    root.sdf             /FaceRig/BrowRig/SymBrow/Anim/Brow
-    BrowRig.sdf          /BrowRig/SymBrow/Anim/Brow
+    root.usda            /FaceRig/Anim/Face/Eyes/LBrow
+    root.usda            /FaceRig/BrowRig/SymBrow/Anim/Brow
+    BrowRig.usda         /BrowRig/SymBrow/Anim/Brow
 
 ------------------------------------------------------------------------
 Results for composing </FaceRig/Anim/Face/Eyes/RBrow>
 
 Prim Stack:
-    root.sdf             /FaceRig/Anim/Face/Eyes/RBrow
-    root.sdf             /FaceRig/BrowRig/SymBrow/Anim/Brow
-    BrowRig.sdf          /BrowRig/SymBrow/Anim/Brow
+    root.usda            /FaceRig/Anim/Face/Eyes/RBrow
+    root.usda            /FaceRig/BrowRig/SymBrow/Anim/Brow
+    BrowRig.usda         /BrowRig/SymBrow/Anim/Brow
 

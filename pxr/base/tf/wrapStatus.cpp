@@ -29,12 +29,21 @@ _Status(string const &msg, string const& moduleName, string const& functionName,
         string const& fileName, int lineNo)
 {
     TfDiagnosticMgr::
-        StatusHelper(Tf_PythonCallContext(fileName.c_str(), moduleName.c_str(),
-                                          functionName.c_str(), lineNo),
+        StatusHelper(Tf_PythonCallContext(fileName, moduleName,
+                                          functionName, lineNo),
                      TF_DIAGNOSTIC_STATUS_TYPE,
                      TfEnum::GetName(TfEnum(TF_DIAGNOSTIC_STATUS_TYPE)).
                      c_str()).
         Post(msg);
+}
+
+static void
+_QuietStatus(string const& msg)
+{
+    TfDiagnosticMgr::StatusHelper(
+        TfCallContext{},
+        TF_DIAGNOSTIC_STATUS_TYPE,
+        TfEnum::GetName(TfEnum(TF_DIAGNOSTIC_STATUS_TYPE)).c_str()).Post(msg);
 }
 
 static string
@@ -53,6 +62,7 @@ TfStatus__repr__(TfStatus const &self)
 
 void wrapStatus() {
     def("_Status", &_Status);
+    def("_Status", &_QuietStatus);
 
     typedef TfStatus This;
 

@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/detail/translate_exception.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/exception_handler.hpp"
 # include "pxr/external/boost/python/detail/type_traits.hpp"
 
@@ -54,5 +50,4 @@ struct translate_exception
 
 }}} // namespace PXR_BOOST_NAMESPACE::python::detail
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // TRANSLATE_EXCEPTION_DWA2002810_HPP

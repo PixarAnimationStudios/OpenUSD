@@ -1,31 +1,31 @@
-Loading @ErrorPermissionDenied/root.sdf@
+Loading @ErrorPermissionDenied/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Root>
 
 Prim Stack:
-    root.sdf             /Root
-    A.sdf                /A
+    root.usda            /Root
+    A.usda               /A
 
 Property names:
      ['A_attr', 'attr', 'privateRel', 'publicRel', 'localAttr']
 
 Property stacks:
 /Root.A_attr:
-    A.sdf                /A.A_attr
+    A.usda               /A.A_attr
 /Root.attr:
-    A.sdf                /A.attr
+    A.usda               /A.attr
 /Root.localAttr:
-    root.sdf             /Root.localAttr
+    root.usda            /Root.localAttr
 /Root.privateRel:
-    A.sdf                /A.privateRel
+    A.usda               /A.privateRel
 /Root.publicRel:
-    root.sdf             /Root.publicRel
-    A.sdf                /A.publicRel
+    root.usda            /Root.publicRel
+    A.usda               /A.publicRel
 
 Relationship targets:
 /Root.privateRel:
@@ -37,8 +37,8 @@ Relationship targets:
 Results for composing </Parent>
 
 Prim Stack:
-    root.sdf             /Parent
-    A.sdf                /Parent
+    root.usda            /Parent
+    A.usda               /Parent
 
 Child names:
      ['Child']
@@ -47,40 +47,40 @@ Child names:
 Results for composing </Parent/Child>
 
 Prim Stack:
-    A.sdf                /Parent/Child
+    A.usda               /Parent/Child
 
 ------------------------------------------------------------------------
 Results for composing </_PrivateClass>
 
 Prim Stack:
-    root.sdf             /_PrivateClass
+    root.usda            /_PrivateClass
 
 Property names:
      ['attr']
 
 Property stacks:
 /_PrivateClass.attr:
-    root.sdf             /_PrivateClass.attr
+    root.usda            /_PrivateClass.attr
 
 ------------------------------------------------------------------------
 Results for composing </Model>
 
 Prim Stack:
-    root.sdf             /Model
+    root.usda            /Model
 
 Property names:
      ['attr']
 
 Property stacks:
 /Model.attr:
-    root.sdf             /Model.attr
+    root.usda            /Model.attr
 
 ------------------------------------------------------------------------
 Results for composing </VariantsOpinionsOnRestrictedPrim>
 
 Prim Stack:
-    root.sdf             /VariantsOpinionsOnRestrictedPrim
-    ref.sdf              /Ref
+    root.usda            /VariantsOpinionsOnRestrictedPrim
+    ref.usda             /Ref
 
 Child names:
      ['Child']
@@ -89,9 +89,9 @@ Child names:
 Results for composing </VariantsOpinionsOnRestrictedPrim/Child>
 
 Prim Stack:
-    root.sdf             /VariantsOpinionsOnRestrictedPrim/Child
-    root.sdf             /VariantsOpinionsOnRestrictedPrim/Child{child=a}
-    ref.sdf              /Ref/Child
+    root.usda            /VariantsOpinionsOnRestrictedPrim/Child
+    root.usda            /VariantsOpinionsOnRestrictedPrim/Child{child=a}
+    ref.usda             /Ref/Child
 
 Variant Selections:
     {child = a}
@@ -103,7 +103,7 @@ Child names:
 Results for composing </VariantsOpinionsOnRestrictedPrim/Child/Child2>
 
 Prim Stack:
-    ref.sdf              /Ref/Child/Child2
+    ref.usda             /Ref/Child/Child2
 
 Variant Selections:
     {child2 = a}

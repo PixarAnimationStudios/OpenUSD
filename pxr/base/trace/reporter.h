@@ -191,12 +191,6 @@ public:
 
     /// @}
 
-    /// Creates a valid TraceAggregateNode::Id object.
-    /// This should be used by very few clients for certain special cases.
-    /// For most cases, the TraceAggregateNode::Id object should be created and 
-    /// populated internally within the Reporter object itself.
-    TRACE_API static TraceAggregateNode::Id CreateValidEventId();
-
 protected:
 
     TRACE_API TraceReporter(const std::string& label,

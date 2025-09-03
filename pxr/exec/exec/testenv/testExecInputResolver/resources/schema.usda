@@ -1,0 +1,23 @@
+#usda 1.0
+(
+    "Test schema file for testExecInputResolver"
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "testExecInputResolver"
+        string libraryPath      = "pxr/exec/exec"
+        bool skipCodeGeneration = true
+    }
+)
+{
+}
+
+class CustomSchema "CustomSchema" (
+    inherits = </Typed>
+)
+{
+}

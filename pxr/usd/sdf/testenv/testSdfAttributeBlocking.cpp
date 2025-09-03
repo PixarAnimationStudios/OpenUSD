@@ -84,6 +84,10 @@ int main(int argc, char** argv) {
     defAttr->SetDefaultValue(VtValue(SdfValueBlock()));
     TF_AXIOM(defAttr->GetDefaultValue().IsHolding<SdfValueBlock>());
 
+    // test setting AnimationBlock to the default value
+    defAttr->SetDefaultValue(VtValue(SdfAnimationBlock()));
+    TF_AXIOM(defAttr->GetDefaultValue().IsHolding<SdfAnimationBlock>());
+
     // Reset the value
     defAttr->SetDefaultValue(VtValue("visible"));
 

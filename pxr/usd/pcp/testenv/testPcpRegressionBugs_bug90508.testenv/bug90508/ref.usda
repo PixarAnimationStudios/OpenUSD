@@ -1,0 +1,18 @@
+#usda 1.0
+
+class "_class_Model"
+{
+}
+
+def Model "Model" (
+    inherits = </_class_Model>
+)
+{
+    def Scope "Child"
+    {
+        def Scope "Child2"
+        {
+        }
+    }
+}
+

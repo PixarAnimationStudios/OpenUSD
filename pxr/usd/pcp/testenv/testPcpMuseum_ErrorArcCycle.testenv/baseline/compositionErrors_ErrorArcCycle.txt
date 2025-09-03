@@ -2,105 +2,105 @@
 Errors while composing </GroupRoot>
 
 Cycle detected:
-@ErrorArcCycle/root.sdf@</GroupRoot>
+@ErrorArcCycle/root.usda@</GroupRoot>
 references:
-@ErrorArcCycle/A.sdf@</GroupA>
+@ErrorArcCycle/A.usda@</GroupA>
 which references:
-@ErrorArcCycle/B.sdf@</GroupB>
+@ErrorArcCycle/B.usda@</GroupB>
 which CANNOT reference:
-@ErrorArcCycle/A.sdf@</GroupA>
+@ErrorArcCycle/A.usda@</GroupA>
 
 
 ------------------------------------------------------------------------
 Errors while composing </Parent/Child1>
 
 Cycle detected:
-@ErrorArcCycle/root.sdf@</Parent/Child1>
+@ErrorArcCycle/root.usda@</Parent/Child1>
 inherits from:
-@ErrorArcCycle/root.sdf@</Parent/Child2>
+@ErrorArcCycle/root.usda@</Parent/Child2>
 which CANNOT inherit from:
-@ErrorArcCycle/root.sdf@</Parent/Child1>
+@ErrorArcCycle/root.usda@</Parent/Child1>
 
 
 ------------------------------------------------------------------------
 Errors while composing </Parent/Child2>
 
 Cycle detected:
-@ErrorArcCycle/root.sdf@</Parent/Child2>
+@ErrorArcCycle/root.usda@</Parent/Child2>
 inherits from:
-@ErrorArcCycle/root.sdf@</Parent/Child1>
+@ErrorArcCycle/root.usda@</Parent/Child1>
 which CANNOT inherit from:
-@ErrorArcCycle/root.sdf@</Parent/Child2>
+@ErrorArcCycle/root.usda@</Parent/Child2>
 
 
 ------------------------------------------------------------------------
 Errors while composing </AnotherParent/AnotherChild>
 
 Cycle detected:
-@ErrorArcCycle/root.sdf@</AnotherParent/AnotherChild>
+@ErrorArcCycle/root.usda@</AnotherParent/AnotherChild>
 references:
-@ErrorArcCycle/model.sdf@</Model>
+@ErrorArcCycle/model.usda@</Model>
 which CANNOT reference:
-@ErrorArcCycle/root.sdf@</AnotherParent>
+@ErrorArcCycle/root.usda@</AnotherParent>
 
 
 ------------------------------------------------------------------------
 Errors while composing </YetAnotherParent/Child>
 
 Cycle detected:
-@ErrorArcCycle/root.sdf@</YetAnotherParent/Child>
+@ErrorArcCycle/root.usda@</YetAnotherParent/Child>
 CANNOT inherit from:
-@ErrorArcCycle/root.sdf@</YetAnotherParent>
+@ErrorArcCycle/root.usda@</YetAnotherParent>
 
 
 ------------------------------------------------------------------------
 Errors while composing </CoRecursiveParent1/Child1/Child2>
 
 Cycle detected:
-@ErrorArcCycle/root.sdf@</CoRecursiveParent1/Child1/Child2>
+@ErrorArcCycle/root.usda@</CoRecursiveParent1/Child1/Child2>
 inherits from:
-@ErrorArcCycle/root.sdf@</CoRecursiveParent2/Child2>
+@ErrorArcCycle/root.usda@</CoRecursiveParent2/Child2>
 which CANNOT inherit from:
-@ErrorArcCycle/root.sdf@</CoRecursiveParent1>
+@ErrorArcCycle/root.usda@</CoRecursiveParent1>
 
 
 ------------------------------------------------------------------------
 Errors while composing </CoRecursiveParent2/Child2/Child1>
 
 Cycle detected:
-@ErrorArcCycle/root.sdf@</CoRecursiveParent2/Child2/Child1>
+@ErrorArcCycle/root.usda@</CoRecursiveParent2/Child2/Child1>
 inherits from:
-@ErrorArcCycle/root.sdf@</CoRecursiveParent1/Child1>
+@ErrorArcCycle/root.usda@</CoRecursiveParent1/Child1>
 which CANNOT inherit from:
-@ErrorArcCycle/root.sdf@</CoRecursiveParent2>
+@ErrorArcCycle/root.usda@</CoRecursiveParent2>
 
 
 ------------------------------------------------------------------------
 Errors while composing </InheritOfChild>
 
 Cycle detected:
-@ErrorArcCycle/root.sdf@</InheritOfChild>
+@ErrorArcCycle/root.usda@</InheritOfChild>
 CANNOT inherit from:
-@ErrorArcCycle/root.sdf@</InheritOfChild/Child>
+@ErrorArcCycle/root.usda@</InheritOfChild/Child>
 
 
 ------------------------------------------------------------------------
 Errors while composing </RelocatedInheritOfChild/Object>
 
 Cycle detected:
-@ErrorArcCycle/root.sdf@</RelocatedInheritOfChild/Object>
+@ErrorArcCycle/root.usda@</RelocatedInheritOfChild/Object>
 is relocated from:
-@ErrorArcCycle/root.sdf@</RelocatedInheritOfChild/Child>
+@ErrorArcCycle/root.usda@</RelocatedInheritOfChild/Child>
 which CANNOT inherit from:
-@ErrorArcCycle/root.sdf@</RelocatedInheritOfChild/Child/Class>
+@ErrorArcCycle/root.usda@</RelocatedInheritOfChild/Child/Class>
 
 
 ------------------------------------------------------------------------
 Errors while composing </RelocatedInheritOfChild/Child>
 
 Cycle detected:
-@ErrorArcCycle/root.sdf@</RelocatedInheritOfChild/Child>
+@ErrorArcCycle/root.usda@</RelocatedInheritOfChild/Child>
 CANNOT inherit from:
-@ErrorArcCycle/root.sdf@</RelocatedInheritOfChild/Child/Class>
+@ErrorArcCycle/root.usda@</RelocatedInheritOfChild/Child/Class>
 
 

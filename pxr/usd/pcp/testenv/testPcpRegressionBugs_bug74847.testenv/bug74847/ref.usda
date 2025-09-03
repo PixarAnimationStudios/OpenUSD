@@ -1,0 +1,18 @@
+#usda 1.0
+
+def Scope "A" 
+{
+    def Scope "B" (
+        add variantSets = "deformable"
+        variants = {
+            string deformable = "off"
+        }
+    )
+    {
+        variantSet "deformable" = {
+            "off"
+            {
+            }
+        }
+    }
+}

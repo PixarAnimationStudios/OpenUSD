@@ -1,0 +1,13 @@
+#usda 1.0
+(
+    defaultPrim = "Ref2"
+    expressionVariables = {
+        string REF2 = "B"
+    }
+)
+
+def "Ref2" (
+    references = @`"./${REF2}.usda"`@
+)
+{
+}

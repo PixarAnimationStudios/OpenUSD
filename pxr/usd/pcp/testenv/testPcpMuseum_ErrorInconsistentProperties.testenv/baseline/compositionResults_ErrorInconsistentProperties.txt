@@ -1,49 +1,49 @@
-Loading @ErrorInconsistentProperties/root.sdf@
+Loading @ErrorInconsistentProperties/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </InconsistentPropertyType>
 
 Prim Stack:
-    root.sdf             /InconsistentPropertyType
-    ref.sdf              /InconsistentPropType
+    root.usda            /InconsistentPropertyType
+    ref.usda             /InconsistentPropType
 
 Property names:
      ['x']
 
 Property stacks:
 /InconsistentPropertyType.x:
-    ref.sdf              /InconsistentPropType.x
+    ref.usda             /InconsistentPropType.x
 
 ------------------------------------------------------------------------
 Results for composing </InconsistentValueType>
 
 Prim Stack:
-    root.sdf             /InconsistentValueType
-    ref.sdf              /InconsistentValType
+    root.usda            /InconsistentValueType
+    ref.usda             /InconsistentValType
 
 Property names:
      ['x']
 
 Property stacks:
 /InconsistentValueType.x:
-    ref.sdf              /InconsistentValType.x
+    ref.usda             /InconsistentValType.x
 
 ------------------------------------------------------------------------
 Results for composing </InconsistentVariability>
 
 Prim Stack:
-    root.sdf             /InconsistentVariability
-    ref.sdf              /InconsistentVar
+    root.usda            /InconsistentVariability
+    ref.usda             /InconsistentVar
 
 Property names:
      ['x']
 
 Property stacks:
 /InconsistentVariability.x:
-    root.sdf             /InconsistentVariability.x
-    ref.sdf              /InconsistentVar.x
+    root.usda            /InconsistentVariability.x
+    ref.usda             /InconsistentVar.x
 

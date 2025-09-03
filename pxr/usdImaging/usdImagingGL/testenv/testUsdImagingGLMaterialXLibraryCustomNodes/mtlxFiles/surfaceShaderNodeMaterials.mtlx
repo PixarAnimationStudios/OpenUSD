@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+
+    <!-- custom SurfaceShader node using texture coordinates and no textures -->
+    <checkerSurf name="texcoordSurface" type="surfaceshader">
+        <input name="scale" type="vector2" value="6,6"/>
+    </checkerSurf>
+
+    <surfacematerial name="TexcoordMaterial" type="material">
+        <input name="surfaceshader" type="surfaceshader" nodename="texcoordSurface" />
+    </surfacematerial>
+
+    <!-- custom SurfaceShader node using multiple textures -->
+    <ssMultiImage name="texturedSurface" type="surfaceshader">
+        <input name="color_file" type="filename" value="images/brass_color.jpg"/>
+        <input name="roughness_file" type="filename" value="images/brass_roughness.jpg"/>
+    </ssMultiImage>
+
+    <surfacematerial name="TexturedMaterial" type="material">
+        <input name="surfaceshader" type="surfaceshader" nodename="texturedSurface" />
+    </surfacematerial>
+
+</materialx>

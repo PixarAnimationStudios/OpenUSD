@@ -13,10 +13,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/converter/pytype_function.hpp>
-#else
-
 # include "pxr/external/boost/python/detail/prefix.hpp"
 # include "pxr/external/boost/python/converter/registered.hpp"
 #  include "pxr/external/boost/python/detail/unwind_type.hpp"
@@ -143,5 +139,4 @@ struct to_python_target_type_direct
 
 }}} // namespace PXR_BOOST_NAMESPACE::python
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif // PXR_EXTERNAL_BOOST_PYTHON_CONVERTER_PYTYPE_FUNCTION_HPP

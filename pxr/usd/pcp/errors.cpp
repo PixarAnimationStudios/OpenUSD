@@ -1082,10 +1082,10 @@ PcpErrorVariableExpressionError::ToString() const
 {
     // Example error messages:
     // Error evaluating expression "`if(${FOO}, ..."
-    // for sublayer in @foo.sdf@: invalid syntax
+    // for sublayer in @foo.usda@: invalid syntax
     //
     // Error evaluating expression "`if(${FOO}, ..."
-    // for reference at </Foo> in @bar.sdf@: invalid syntax
+    // for reference at </Foo> in @bar.usda@: invalid syntax
     auto makeSourceStr = [this]() {
         std::string result;
         if (!sourcePath.IsAbsoluteRootPath()) {

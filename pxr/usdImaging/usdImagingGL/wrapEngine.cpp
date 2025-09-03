@@ -29,10 +29,10 @@ namespace {
 
 static pxr_boost::python::tuple
 _TestIntersection(
-    UsdImagingGLEngine & self, 
+    UsdImagingGLEngine & self,
     const GfMatrix4d &viewMatrix,
     const GfMatrix4d &projectionMatrix,
-    const UsdPrim& root, 
+    const UsdPrim& root,
     UsdImagingGLRenderParams params)
 {
     GfVec3d hitPoint(0);
@@ -82,12 +82,12 @@ void _SetOverrideWindowPolicy(UsdImagingGLEngine & self,
         self.SetOverrideWindowPolicy(std::nullopt);
     }
 }
-    
-} // anonymous namespace 
+
+} // anonymous namespace
 
 void wrapEngine()
 {
-    { 
+    {
         using Parameters = UsdImagingGLEngine::Parameters;
 
         scope engineScope = class_<UsdImagingGLEngine, noncopyable>(
@@ -111,25 +111,31 @@ void wrapEngine()
             .def("GetRendererPlugins", &UsdImagingGLEngine::GetRendererPlugins,
                  return_value_policy< TfPySequenceToList >())
                 .staticmethod("GetRendererPlugins")
-            .def("GetRendererDisplayName", 
+            .def("GetRendererDisplayName",
                     &UsdImagingGLEngine::GetRendererDisplayName)
                 .staticmethod("GetRendererDisplayName")
-            .def("GetCurrentRendererId", 
+            .def("GetRendererHgiDisplayName",
+                    &UsdImagingGLEngine::GetRendererHgiDisplayName)
+            .def("GetCurrentRendererId",
                     &UsdImagingGLEngine::GetCurrentRendererId)
-            .def("SetRendererPlugin", 
+            .def("SetRendererPlugin",
                     &UsdImagingGLEngine::SetRendererPlugin)
-            .def("GetRendererAovs", 
+            .def("GetRendererAovs",
                     &UsdImagingGLEngine::GetRendererAovs,
                  return_value_policy< TfPySequenceToList >())
-            .def("SetRendererAov", 
+            .def("SetRendererAov",
                     &UsdImagingGLEngine::SetRendererAov)
-            .def("GetRenderStats", 
+            .def("GetRenderStats",
                     &UsdImagingGLEngine::GetRenderStats)
-            .def("GetRendererSettingsList", 
+            .def("GetRendererSettingsList",
                     &UsdImagingGLEngine::GetRendererSettingsList,
                  return_value_policy< TfPySequenceToList >())
             .def("GetRendererSetting", &UsdImagingGLEngine::GetRendererSetting)
             .def("SetRendererSetting", &UsdImagingGLEngine::SetRendererSetting)
+            .def("GetActiveRenderPassPrimPath",
+                 &UsdImagingGLEngine::GetActiveRenderPassPrimPath)
+            .def("GetActiveRenderSettingsPrimPath",
+                 &UsdImagingGLEngine::GetActiveRenderSettingsPrimPath)
             .def("SetActiveRenderPassPrimPath",
                  &UsdImagingGLEngine::SetActiveRenderPassPrimPath)
             .def("SetActiveRenderSettingsPrimPath",
@@ -138,9 +144,9 @@ void wrapEngine()
                  &UsdImagingGLEngine::GetAvailableRenderSettingsPrimPaths,
                  return_value_policy< TfPySequenceToList >())
                  .staticmethod("GetAvailableRenderSettingsPrimPaths")
-            .def("SetColorCorrectionSettings", 
+            .def("SetColorCorrectionSettings",
                     &UsdImagingGLEngine::SetColorCorrectionSettings)
-            .def("IsColorCorrectionCapable", 
+            .def("IsColorCorrectionCapable",
                 &UsdImagingGLEngine::IsColorCorrectionCapable)
                 .staticmethod("IsColorCorrectionCapable")
             .def("GetRendererCommandDescriptors",
@@ -150,11 +156,11 @@ void wrapEngine()
                 &UsdImagingGLEngine::InvokeRendererCommand,
                 (pxr_boost::python::arg("command"),
                  pxr_boost::python::arg("args") = HdCommandArgs()))
-            .def("IsPauseRendererSupported", 
+            .def("IsPauseRendererSupported",
                 &UsdImagingGLEngine::IsPauseRendererSupported)
             .def("PauseRenderer", &UsdImagingGLEngine::PauseRenderer)
             .def("ResumeRenderer", &UsdImagingGLEngine::ResumeRenderer)
-            .def("IsStopRendererSupported", 
+            .def("IsStopRendererSupported",
                 &UsdImagingGLEngine::IsStopRendererSupported)
             .def("StopRenderer", &UsdImagingGLEngine::StopRenderer)
             .def("RestartRenderer", &UsdImagingGLEngine::RestartRenderer)
@@ -163,7 +169,7 @@ void wrapEngine()
             .def("SetOverrideWindowPolicy", _SetOverrideWindowPolicy)
             .def("PollForAsynchronousUpdates",
                 &UsdImagingGLEngine::PollForAsynchronousUpdates)
-            
+
         ;
 
 
@@ -176,11 +182,13 @@ void wrapEngine()
             .def_readwrite("driver", &Parameters::driver)
             .def_readwrite("rendererPluginId", &Parameters::rendererPluginId)
             .def_readwrite("gpuEnabled", &Parameters::gpuEnabled)
-            .def_readwrite("displayUnloadedPrimsWithBounds", 
+            .def_readwrite("displayUnloadedPrimsWithBounds",
                 &Parameters::displayUnloadedPrimsWithBounds)
             .def_readwrite("allowAsynchronousSceneProcessing",
                 &Parameters::allowAsynchronousSceneProcessing)
-            
+            .def_readwrite("enableUsdDrawModes",
+                &Parameters::enableUsdDrawModes)
+
         ;
     }
 
@@ -188,6 +196,6 @@ void wrapEngine()
     scope().attr("ALL_INSTANCES") = UsdImagingDelegate::ALL_INSTANCES;
 
     TfPyContainerConversions::from_python_sequence<
-        std::vector<GlfSimpleLight>, 
+        std::vector<GlfSimpleLight>,
         TfPyContainerConversions::variable_capacity_policy>();
 }

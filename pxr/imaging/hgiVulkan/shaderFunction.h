@@ -9,7 +9,7 @@
 
 #include "pxr/imaging/hgi/shaderFunction.h"
 #include "pxr/imaging/hgiVulkan/api.h"
-#include "pxr/imaging/hgiVulkan/shaderCompiler.h"
+#include "pxr/imaging/hgiVulkan/descriptorSetLayouts.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

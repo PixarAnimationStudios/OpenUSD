@@ -49,6 +49,7 @@ TF_WRAP_MODULE
     TF_WRAP(UsdStagePopulationMask);
 
     // Miscellaenous classes
+    TF_WRAP(UsdAttributeLimits);
     TF_WRAP(UsdAttributeQuery);
     TF_WRAP(UsdCollectionMembershipQuery);
     TF_WRAP(UsdCrateInfo);

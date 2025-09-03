@@ -90,6 +90,9 @@ private:
     // (Note: instance indices are computed per prototype and the rprim owns
     // the bar).
     HdBufferArrayRangeSharedPtr _instancePrimvarRange;
+
+    // Visibility
+    bool _visible;
 };
 
 

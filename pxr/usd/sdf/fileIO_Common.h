@@ -24,14 +24,13 @@
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/variantSpec.h"
 
-#include "pxr/base/ts/spline.h"
-#include "pxr/base/ts/types.h"
-
-#include "pxr/base/vt/dictionary.h"
-#include "pxr/base/vt/value.h"
-
+#include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/ts/spline.h"
+#include "pxr/base/ts/types.h"
+#include "pxr/base/vt/dictionary.h"
+#include "pxr/base/vt/value.h"
 
 #include <algorithm>
 #include <iosfwd>
@@ -57,7 +56,8 @@ public:
 
     // Printf-style formatted string output
     static void Write(Sdf_TextOutput &out,
-                size_t indent, const char *fmt, ...);
+                      size_t indent, const char *fmt, ...)
+        ARCH_PRINTF_FUNCTION(3, 4);
 
     static bool OpenParensIfNeeded(Sdf_TextOutput &out,
                 bool didParens, bool multiLine);
@@ -114,14 +114,34 @@ public:
     // === String production and transformation helpers
 
     /// Quote \p str, adding quotes before and after and escaping
-    /// unprintable characters and the quote character itself.  If
-    /// the string contains newlines it's quoted with triple quotes
-    /// and the newlines are not escaped.
-    static std::string Quote(const std::string &str);
-    static std::string Quote(const TfToken &token);
+    /// unprintable characters and the quote character itself.
+    ///
+    /// If `allowTripleQuotes` is true and the string contains newlines it's
+    /// quoted with triple quotes and the newlines are not escaped.
+    SDF_API
+    static std::string
+    Quote(const std::string &str, bool allowTripleQuotes=true);
+    SDF_API
+    static std::string
+    Quote(const TfToken &token, bool allowTripleQuotes=true);
 
-    // Create a string from a value
-    static std::string StringFromVtValue(const VtValue &value);
+    /// Add @'s around a given path to produce a string representation of
+    /// an asset path. If the path contains @, @@@ will be added around the
+    /// path. If the path contains @@@, the contained @@@ will be escaped.
+    static std::string QuoteAssetPath(const std::string &path);
+
+    // Create a string from a value and return it.  Use this form if you will
+    // eventually write the string to \p eventualOutput.  This function will
+    // call eventualOutput.RequestWriteVersionUpgrade() to upgrade the file
+    // version if necessary.  This function writes nothing to \p eventualOutput.
+    static std::string
+    StringFromVtValue(const VtValue &value, Sdf_TextOutput &eventualOutput);
+
+    // Create a string from a value and return it.  Call the other overload if
+    // the value will eventually be written to an Sdf_TextOutput so that version
+    // upgrading can be handled properly.
+    static std::string
+    StringFromVtValue(const VtValue &value);
 
     // Convert enums to strings for use in sdf text format syntax.
     // Note that in some cases we use empty strings to represent the
@@ -132,6 +152,7 @@ public:
     static const char* Stringify( TsExtrapMode mode );
     static const char* Stringify( TsCurveType curveType );
     static const char* Stringify( TsInterpMode interp );
+    static const char* Stringify( TsTangentAlgorithm algorithm );
 
 private:
 
@@ -287,7 +308,9 @@ Sdf_WriteSimpleField(
         Sdf_FileIOUtility::Write(out, 0, "%s\n", TfStringify(value.Get<bool>()).c_str());
     }
     else {
-        Sdf_FileIOUtility::Write(out, 0, "%s\n", Sdf_FileIOUtility::StringFromVtValue(value).c_str());
+        Sdf_FileIOUtility::Write(
+            out, 0, "%s\n",
+            Sdf_FileIOUtility::StringFromVtValue(value, out).c_str());
     }
 }
 
@@ -926,19 +949,19 @@ Sdf_WriteRelationshipTargetList(
     Sdf_TextOutput &out, size_t indent, Sdf_WriteFlag flags)
 {
     if (targetPaths.size() > 1) {
-        Sdf_FileIOUtility::Write(out, 0," = [\n");
+        Sdf_FileIOUtility::Write(out, 0, " = [\n");
         ++indent;
     } else {
-        Sdf_FileIOUtility::Write(out, 0," = ");
+        Sdf_FileIOUtility::Write(out, 0, " = ");
     }
 
     for (size_t i=0; i < targetPaths.size(); ++i) {
         if (targetPaths.size() > 1) {
-            Sdf_FileIOUtility::Write(out, indent, "");
+            Sdf_FileIOUtility::Puts(out, indent, "");
         }
         Sdf_FileIOUtility::WriteSdfPath( out, 0, targetPaths[i] );
         if (targetPaths.size() > 1) {
-            Sdf_FileIOUtility::Write(out, 0,",\n");
+            Sdf_FileIOUtility::Write(out, 0, ",\n");
         }
     }
 
@@ -947,7 +970,7 @@ Sdf_WriteRelationshipTargetList(
         Sdf_FileIOUtility::Write(out, indent, "]");
     }
     if (!(flags & Sdf_WriteFlagNoLastNewline)) {
-        Sdf_FileIOUtility::Write(out, 0,"\n");
+        Sdf_FileIOUtility::Write(out, 0, "\n");
     }
     return true;
 }

@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    expressionVariables = {
+        string A = "B"
+    }
+)
+
+def "Root1" (
+    references = @./ref1.usda@</Ref1>
+)
+{
+}
+
+def "Root2" (
+    references = @./ref2.usda@</Ref2>
+)
+{
+}

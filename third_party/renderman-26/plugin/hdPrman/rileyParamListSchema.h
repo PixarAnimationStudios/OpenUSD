@@ -15,8 +15,8 @@
 /* **                                                                      ** */
 /* ************************************************************************** */
 
-#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_PARAM_LIST_SCHEMA_H
-#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_PARAM_LIST_SCHEMA_H
+#ifndef EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_PARAM_LIST_SCHEMA_H
+#define EXT_RMANPKG_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_PARAM_LIST_SCHEMA_H
 
 /// \file
 
@@ -42,17 +42,19 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanRileyParamListSchemaTokens, HDPRMAN_API,
 
 //-----------------------------------------------------------------------------
 
-// Schema to describe RtParamList.
-//
-// To obtain an RtParamList from this schema, we call the appropriate
-// RtParamList::SetFOO(name, value) for each name in the container params.
-//
-// The schema HdPrmanRileyParamSchema determines what SetFOO method is called
-// with what value. To resolve what SetFOO method to use, the type of the
-// VtValue from the value data source is used as well as the role token if
-// necessary. The value is coming from the value data source.
-//
 
+/// \class HdPrmanRileyParamListSchema
+///
+/// Schema to describe RtParamList.
+///
+/// To obtain an RtParamList from this schema, we call the appropriate
+/// RtParamList::SetFOO(name, value) for each name in the container params.
+///
+/// The schema HdPrmanRileyParamSchema determines what SetFOO method is called
+/// with what value. To resolve what SetFOO method to use, the type of the
+/// VtValue from the value data source is used as well as the role token if
+/// necessary. The value is coming from the value data source.
+///
 class HdPrmanRileyParamListSchema : public HdSchema
 {
 public:

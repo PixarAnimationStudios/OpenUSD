@@ -105,8 +105,9 @@ void HdStSetMaterialTag(HdSceneDelegate *delegate,
                         HdRenderParam *renderParam,
                         HdDrawItem *drawItem,
                         SdfPath const & materialId,
-                        bool hasDisplayOpacityPrimvar,
-                        bool occludedSelectionShowsThrough);
+                        const bool hasDisplayOpacityPrimvar,
+                        const bool displayInOverlay,
+                        const bool occludedSelectionShowsThrough);
 // Resolves the material network shader for the given prim (using a fallback
 // material as necessary).
 HDST_API
@@ -199,6 +200,12 @@ bool HdStIsPrimvarExistentAndValid(
     HdSceneDelegate *delegate,
     HdPrimvarDescriptorVector const& primvars,
     TfToken const& primvarName);
+
+HDST_API
+bool HdStIsPrimvarValidForDrawItem(
+    const HdStDrawItem *drawItem,
+    TfToken const &primvarName,
+    VtValue const &primvarValue);
 
 // -----------------------------------------------------------------------------
 // Constant primvar processing utilities

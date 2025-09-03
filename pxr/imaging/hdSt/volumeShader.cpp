@@ -271,8 +271,12 @@ _ComputeBBoxAndSampleDistance(
     float sampleDistance = 1000000.0;
 
     for (const HdStShaderCode::NamedTextureHandle &texture : textures) {
+        if (texture.handles.size() > 1) {
+            TF_CODING_ERROR(
+                "Don't support array of textures for field textures");
+        }
         HdStTextureObjectSharedPtr const &textureObject =
-            texture.handle->GetTextureObject();
+            texture.handles[0]->GetTextureObject();
 
         if (const HdStFieldTextureObject * const fieldTex =
                 dynamic_cast<HdStFieldTextureObject *>(
@@ -383,6 +387,10 @@ HdSt_VolumeShader::UpdateTextureHandles(
     // simultaneously.
     for (size_t i = 0; i < textureHandles.size(); i++) {
         // To allocate the texture and update it in the vector ...
+        if (textureHandles[i].handles.size() > 1) {
+            TF_CODING_ERROR(
+                "Don't support array of textures for field textures");
+        }
 
         // use field descriptor to find field prim, ...
         const HdVolumeFieldDescriptor &fieldDesc = _fieldDescriptors[i];
@@ -403,15 +411,25 @@ HdSt_VolumeShader::UpdateTextureHandles(
         static const HdSamplerParameters samplerParams(
             HdWrapBlack, HdWrapBlack, HdWrapBlack,
             HdMinFilterLinear, HdMagFilterLinear);
-        
+
         // allocate texture handle and assign it.
-        textureHandles[i].handle =
-            resourceRegistry->AllocateTextureHandle(
-                textureId,
-                textureType,
-                samplerParams,
-                textureMemory,
-                shared_from_this());
+        if (textureHandles[i].handles.empty()) {
+            textureHandles[i].handles.push_back(
+                resourceRegistry->AllocateTextureHandle(
+                    textureId,
+                    textureType,
+                    samplerParams,
+                    textureMemory,
+                    shared_from_this()));
+        } else {
+            textureHandles[i].handles[0] =
+                resourceRegistry->AllocateTextureHandle(
+                    textureId,
+                    textureType,
+                    samplerParams,
+                    textureMemory,
+                    shared_from_this());
+        }
     }
 
     // And update!

@@ -458,6 +458,7 @@ _HgiTextureCanBeFiltered(HgiTextureDesc const &descriptor)
 
         case HgiTextureType2D:
         case HgiTextureType2DArray:
+        case HgiTextureTypeCubemap:
             return (dims[0] > 1 || dims[1] > 1);
 
         case HgiTextureType3D:

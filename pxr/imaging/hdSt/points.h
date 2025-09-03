@@ -72,6 +72,7 @@ private:
     HdReprSharedPtr _smoothHullRepr;
 
     bool _displayOpacity;
+    bool _displayInOverlay;
 
     enum DrawingCoord {
         InstancePrimvar = HdDrawingCoord::CustomSlotsBegin

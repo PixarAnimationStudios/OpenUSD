@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<materialx version="1.39">
+
+    <!-- Custom Node - Wrapping around an image node -->
+    <nodedef name="ND_wrapImage" node="wrapImage" nodegroup="texture2d">
+        <input name="file_input" type="filename" />
+        <input name="tint" type="color3" value="1,1,1" />
+        <output name="out_color" type="color3" />
+    </nodedef>
+    <nodegraph name="NG_wrapImage" nodedef="ND_wrapImage">
+        <image name="imageNode" type="color3">
+            <input name="file" type="filename" colorspace="g22_rec709" interfacename="file_input" />
+        </image>
+        <multiply name="applyTint" type="color3" >
+            <input name="in1" type="color3" nodename="imageNode" />
+            <input name="in2" type="color3" interfacename="tint" />
+        </multiply>
+        <output name="out_color" type="color3" nodename="applyTint" />
+    </nodegraph>
+
+</materialx>

@@ -566,6 +566,10 @@ _InstancerObserver::PrimsDirtied(const HdSceneIndexBase &sender,
 {
     TRACE_FUNCTION();
 
+    if (_subinstancerObservers.empty()) {
+        return;
+    }
+
     static const HdDataSourceLocator locator =
         HdInstancerTopologySchema::GetDefaultLocator().Append(
             HdInstancerTopologySchemaTokens->prototypes);
@@ -588,6 +592,10 @@ _InstancerObserver::PrimsRemoved(const HdSceneIndexBase &sender,
                                  const RemovedPrimEntries &entries)
 {
     TRACE_FUNCTION();
+
+    if (_subinstancerObservers.empty()) {
+        return;
+    }
 
     HdSceneIndexObserver::RemovedPrimEntries removedInstancers;
 

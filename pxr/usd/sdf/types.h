@@ -599,6 +599,21 @@ private:
 // Write out the string representation of a block.
 SDF_API std::ostream& operator<<(std::ostream&, SdfValueBlock const&); 
 
+/// \class SdfAnimationBlock
+/// A special value type that can be used to explicitly author an
+/// opinion for an attribute's default value that represents having no animation
+/// value and is used to block spline or time samples value on a weaker layer.
+struct SdfAnimationBlock {
+    bool operator==(const SdfAnimationBlock& block) const { return true; }
+    bool operator!=(const SdfAnimationBlock& block) const { return false; }
+
+private:
+    friend inline size_t hash_value(const SdfAnimationBlock &block) { return 0; }
+};
+
+// Write out the string representation of an animation block.
+SDF_API std::ostream& operator<<(std::ostream&, SdfAnimationBlock const&);
+
 // A class that represents a human-readable value.  This is used for the special
 // purpose of producing layers that serialize field values in alternate ways; to
 // produce more human-readable output, for example.

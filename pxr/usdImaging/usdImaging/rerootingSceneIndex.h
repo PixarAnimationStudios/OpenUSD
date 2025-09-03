@@ -15,7 +15,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_REF_PTRS(UsdImagingRerootingSceneIndex);
 
-/// UsdImagingRerootingSceneIndex
+/// \class UsdImagingRerootingSceneIndex
 ///
 /// Drops all prims not under srcPrefix and moves those under srcPrefix to
 /// dstPrefix.

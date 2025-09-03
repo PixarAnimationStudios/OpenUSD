@@ -1,16 +1,16 @@
-Loading @TrickyNonLocalVariantSelection/root.sdf@
+Loading @TrickyNonLocalVariantSelection/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Model>
 
 Prim Stack:
-    root.sdf             /Model
-    model.sdf            /Model
-    model.sdf            /Model{costume=basicCostume}
+    root.usda            /Model
+    model.usda           /Model
+    model.usda           /Model{costume=basicCostume}
 
 Variant Selections:
     {costume = basicCostume}
@@ -20,5 +20,5 @@ Property names:
 
 Property stacks:
 /Model.b:
-    model.sdf            /Model{costume=basicCostume}.b
+    model.usda           /Model{costume=basicCostume}.b
 

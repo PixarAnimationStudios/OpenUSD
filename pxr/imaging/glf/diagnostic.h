@@ -24,11 +24,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// This macro tags the diagnostic errors with the name of the calling
 /// function.
 #define GLF_POST_PENDING_GL_ERRORS() \
-        GlfPostPendingGLErrors(__ARCH_PRETTY_FUNCTION__)
+        GlfPostPendingGLErrors(__ARCH_PRETTY_FUNCTION__, __LINE__)
 
 /// Posts diagnostic errors for all GL errors in the current context.
 GLF_API
-void GlfPostPendingGLErrors(std::string const & where = std::string());
+void GlfPostPendingGLErrors(std::string const & where = std::string(), int line = 0);
 
 /// Registers GlfDefaultDebugOutputMessageCallback as the 
 /// debug message callback for the current GL context.

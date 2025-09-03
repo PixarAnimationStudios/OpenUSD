@@ -133,6 +133,7 @@ void wrapUsdAttributeQuery()
              arg("desiredTime"))
 
         .def("HasValue", &UsdAttributeQuery::HasValue)
+        .def("HasSpline", &UsdAttributeQuery::HasSpline)
         .def("HasAuthoredValueOpinion", 
                 &UsdAttributeQuery::HasAuthoredValueOpinion)
         .def("HasAuthoredValue", &UsdAttributeQuery::HasAuthoredValue)
@@ -142,6 +143,8 @@ void wrapUsdAttributeQuery()
              &UsdAttributeQuery::ValueMightBeTimeVarying)
 
         .def("Get", _Get, arg("time")=UsdTimeCode::Default())
+        .def("GetSpline", &UsdAttributeQuery::GetSpline,
+             return_value_policy<return_by_value>())
          
         ;
 

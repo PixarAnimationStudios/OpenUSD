@@ -7,6 +7,7 @@
 #ifndef PXR_IMAGING_HD_GP_GENERATIVE_PROCEDURAL_H
 #define PXR_IMAGING_HD_GP_GENERATIVE_PROCEDURAL_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdGp/api.h"
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/base/tf/denseHashMap.h"
@@ -54,6 +55,7 @@ public:
     //
     // For a single instance, UpdateDependencies will not be called from
     // multiple threads -- nor concurrent to Update
+    HDGP_API
     virtual DependencyMap UpdateDependencies(
         const HdSceneIndexBaseRefPtr &inputScene) = 0;
 
@@ -94,6 +96,7 @@ public:
     //
     // For a single instance, Update will not be called from
     // multiple threads -- nor concurrent to UpdateDependencies
+    HDGP_API
     virtual ChildPrimTypeMap Update(
         const HdSceneIndexBaseRefPtr &inputScene,
         const ChildPrimTypeMap &previousResult,
@@ -104,12 +107,14 @@ public:
     // added or invalidated from the Update method.
     // 
     // This should expect to be called from multiple threads
+    HDGP_API
     virtual HdSceneIndexPrim GetChildPrim(
         const HdSceneIndexBaseRefPtr &inputScene,
         const SdfPath &childPrimPath) = 0;
 
     // Returns a locator which can be used in the UpdateDependencies result to
     // declare a dependency on the set of immediate children for a prim path.
+    HDGP_API
     static const HdDataSourceLocator &GetChildNamesDependencyKey();
 
 
@@ -129,8 +134,8 @@ public:
     // indicated that they are finished via a return value from AsyncUpdate)
     // are given an opportunity begin asynchronous processing (via receiving
     // another call to this method) following any call to UpdateDependencies.
+    HDGP_API
     virtual bool AsyncBegin(bool asyncEnabled);
-
 
     enum AsyncState
     {
@@ -168,12 +173,11 @@ public:
     // changing. Should a procedural wish to continue receiving the AsyncUpdate
     // call regardless of whether declared dependencies are dirtied, it should
     // return Continuing or ContinuingWithNewChanges;
+    HDGP_API
     virtual AsyncState AsyncUpdate(
         const ChildPrimTypeMap &previousResult,
         ChildPrimTypeMap *outputPrimTypes,
         HdSceneIndexObserver::DirtiedPrimEntries *outputDirtiedPrims);
-
-
 
 protected:
     HDGP_API

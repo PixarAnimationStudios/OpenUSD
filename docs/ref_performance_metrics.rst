@@ -66,9 +66,10 @@ Linux
 =====
 
 * **OS**: CentOS Linux 7
-* **CPU**: 23 cores of Intel(R) Xeon(R) Platinum 8268 CPU @ 2.90GHz
+* **CPU**: AMD EPYC 7763 64-Core Processor, 2450 Mhz
+* **CPU Utilization**: 31 Core(s), 31 Logical Processor(s) (no hyperthreading)
 * **RAM**: 117GB
-* **GPU**: NVIDIA TU102GL (Quadro RTX 6000/8000)
+* **GPU**: NVIDIA RTXA6000-24Q
 
 macOS
 =====
@@ -81,8 +82,9 @@ macOS
 Windows
 =======
 
-* **OS**: Microsoft Windows 10 Enterprise
-* **CPU**: AMD EPYC 7763 64-Core Processor, 2450 Mhz, 31 Core(s), 31 Logical Processor(s)
+* **OS**: Microsoft Windows 11 Enterprise
+* **CPU**: AMD EPYC 7763 64-Core Processor, 2450 Mhz
+* **CPU Utilization**: 31 Core(s), 31 Logical Processor(s) (no hyperthreading)
 * **RAM**: 128GB
 * **GPU**: NVIDIA RTXA6000-24Q
 
@@ -92,7 +94,9 @@ USD Build
 For each of the operating systems and hardware platforms listed previously, we
 build USD with the same build configuration. We use a stock invocation of 
 ``build_usd.py`` with the default options (release build, Python components,
-imaging and USD imaging components, usdview, etc).
+imaging and USD imaging components, usdview, etc). Note that this build uses
+the default system memory allocator, and does not use an alternate allocator 
+(as described in :ref:`maxperf_optimized_allocator`).
 
 *******
 Metrics
@@ -105,9 +109,21 @@ Performance Graphs Per Platform
 
 The following graphs show the time (in seconds) to open and close 
 :program:`usdview` for each asset. Graphs are provided for Linux, macOS, and
-Windows platforms (as described in :ref:`perf_environments`).
+Windows platforms (as described in :ref:`perf_environments`). Performance
+data from the four most recent releases is reported on a rolling basis.
 
 .. note::
+
+    Linux and Windows machine configurations changed as of 25.08; historical
+    numbers have been rerun for consistency.
+
+    For 25.08, the "render first image" metric on macOS is reported. This
+    reported metric does not include platform-specific imaging initialization
+    time, which is included in the corresponding Linux and Windows metrics.
+    For the 25.11 release, historical performance re-evaluations will
+    be performed on all platforms to exclude imaging initialization time from
+    all "render first image" datapoints. The initialization time is roughly
+    constant across all assets, around 0.3-0.4 seconds.
 
     A small increase or decrease in performance metrics over different releases
     may not necessarily indicate an overall performance improvement or
@@ -115,10 +131,6 @@ Windows platforms (as described in :ref:`perf_environments`).
     iterations, but these measurements may still be subject to some variation,
     so use the below results with caution. We are investigating these sources
     of variation.
-
-    Additionally, there are known issues with obtaining the create_first_image
-    metric on macOS. We will update published metrics when this issue is
-    resolved.
 
 .. image:: performance/linux.svg
     :width: 500
@@ -216,7 +228,7 @@ also be run to validate local runtime environments and hardware configurations.
 
 Performance metrics are generating using the :program:`usdmeasureperformance.py`
 script found in ``pxr/extras/performance``. See the 
-`usdmeasureperformance tool docs <toolset>`_ for more 
+:ref:`usdmeasureperformance tool docs <toolset:usdmeasureperformance>` for more 
 information on the different parameters available.
 
 :program:`usdmeasureperformance.py` uses :program:`usdview` and 

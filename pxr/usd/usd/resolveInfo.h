@@ -102,7 +102,19 @@ public:
     bool ValueIsBlocked() const {
         return _valueIsBlocked;
     }
-    
+
+    /// Returns true if the resolve info source might be time-varying; false
+    /// otherwise.
+    ///
+    /// Note that this is different from UsdAttribute::ValueMightBeTimeVarying()
+    /// which provides more granular answer since it has additional context from
+    /// the attribute itself.
+    bool ValueSourceMightBeTimeVarying() const {
+        return _source == UsdResolveInfoSourceTimeSamples ||
+            _source == UsdResolveInfoSourceSpline ||
+            _source == UsdResolveInfoSourceValueClips;
+    }
+
 private:
     /// The LayerStack that provides the strongest value opinion. 
     /// 

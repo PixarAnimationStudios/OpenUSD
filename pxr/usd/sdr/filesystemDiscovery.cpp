@@ -47,18 +47,6 @@ _SdrFilesystemDiscoveryPlugin::_SdrFilesystemDiscoveryPlugin()
     _allowedExtensions = TfStringSplit(
             TfGetEnvSetting(PXR_SDR_FS_PLUGIN_ALLOWED_EXTS), ":");
     _followSymlinks = TfGetEnvSetting(PXR_SDR_FS_PLUGIN_FOLLOW_SYMLINKS);
-
-    SdrStringVec legacySearchPaths = TfStringSplit(
-        TfGetEnvSetting(PXR_NDR_FS_PLUGIN_SEARCH_PATHS),
-        ARCH_PATH_LIST_SEP);
-    _searchPaths.insert(_searchPaths.end(), legacySearchPaths.begin(),
-                        legacySearchPaths.end());
-    SdrStringVec legacyExtensions = TfStringSplit(
-        TfGetEnvSetting(PXR_NDR_FS_PLUGIN_ALLOWED_EXTS), ":");
-    _allowedExtensions.insert(_allowedExtensions.end(),
-                              legacyExtensions.begin(),
-                              legacyExtensions.end());
-    _followSymlinks |= TfGetEnvSetting(PXR_NDR_FS_PLUGIN_FOLLOW_SYMLINKS);
 }
 
 _SdrFilesystemDiscoveryPlugin::_SdrFilesystemDiscoveryPlugin(Filter filter)

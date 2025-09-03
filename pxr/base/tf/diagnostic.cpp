@@ -93,9 +93,13 @@ Tf_FailedVerifyHelper(const TfCallContext &context,
  * Finally, a program may also call std::terminate directly.
  */
 static void
-_BadThrowHandler()
+_TerminateWithoutException()
 {
-    TF_FATAL_ERROR("std::terminate() called without a current exception");
+    TF_FATAL_ERROR(
+        "std::terminate() called without a current exception -- possibilities "
+        "for this include a direct call to std::terminate(), destroying or "
+        "move-assigning a joinable std::thread, or a call to a pure or "
+        "deleted virtual function on libstdc++");
 }
 
 void
@@ -111,7 +115,7 @@ Tf_TerminateHandler()
         /*
          * If there's no exception, we'll end up in the handler above.
          */
-        std::set_terminate(_BadThrowHandler);
+        std::set_terminate(_TerminateWithoutException);
         throw;
     }
     catch (std::bad_alloc const &exc) {
@@ -238,7 +242,11 @@ _fatalSignalHandler(int signo)
     fflush(stderr);
 
     // Simulate the exit status of being killed by signal signo
-    _exit(128 + signo);
+    #ifdef ARCH_OS_WASM_VM
+        emscripten_force_exit(128 + signo);
+    #else
+        _exit(128 + signo);
+    #endif
 }
 
 void

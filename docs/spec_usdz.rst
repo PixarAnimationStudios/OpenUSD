@@ -48,9 +48,9 @@ other formats embedded within the archive. This document provides the
 specification for such a format, for which we will assign the . **usdz**
 extension; we refer to the format as "the usdz format", as we similarly refer to
 the usda and usdc file formats; only when forming the start of a sentence or
-word in a class name do we capitalize it, such as UsdUsdzFileFormat. We refer
+word in a class name do we capitalize it, such as SdfUsdzFileFormat. We refer
 to usdz files as :bi:`packages`, and the design rests on a new Ar-level
-abstraction of a package, of which the UsdUsdzFileFormat is the first
+abstraction of a package, of which the SdfUsdzFileFormat is the first
 implementation, but we retain the architecture required to easily add others in
 the future, if needed.
 
@@ -263,7 +263,7 @@ metadata (see next item).
     FileFormat itself will attempt to pre-resolve any path to other files 
     within the package using a specialzed *ArPackageResolver* , because a
     generic ArResolver cannot "see inside" a package, and therefore cannot
-    resolve to files inside a package.  The behavior of the *UsdUsdzResolver*
+    resolve to files inside a package.  The behavior of the *SdfUsdzResolver*
     can be described as follows:
 
         * First attempt to anchor the path to the layer-within-the-package in

@@ -75,14 +75,8 @@ HgiVulkanShaderFunction::HgiVulkanShaderFunction(
                 debugLabel.c_str());
         }
 
-        // Perform reflection on spirv to create descriptor set info for
-        // this module. This will be needed during pipeline creation when
-        // we know the shader modules, but not the resource bindings.
-        // Hgi does not require resource bindings information to be provided
-        // for its HgiPipeline descriptor, but does provide the shader program.
-        // We mimic Metal where the resource binding info is inferred from the
-        // Metal shader program.
-        _descriptorSetInfo = HgiVulkanGatherDescriptorSetInfo(spirv);
+        // Get descriptor set info.
+        _descriptorSetInfo = shaderGenerator.GetDescriptorSetInfo();
     }
 
     // Clear these pointers in our copy of the descriptor since we

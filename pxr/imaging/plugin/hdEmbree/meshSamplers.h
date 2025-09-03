@@ -12,8 +12,8 @@
 #include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/base/vt/types.h"
 
-#include <embree3/rtcore.h>
-#include <embree3/rtcore_geometry.h>
+#include <embree4/rtcore.h>
+#include <embree4/rtcore_geometry.h>
 
 #include <bitset>
 

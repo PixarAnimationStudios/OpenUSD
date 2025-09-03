@@ -14,7 +14,7 @@ import unittest
 
 class TestPcpRegressionBugs_bug101300(unittest.TestCase):
     def test_Basic(self):
-        rootLayer = Sdf.Layer.FindOrOpen('bug101300/root.sdf')
+        rootLayer = Sdf.Layer.FindOrOpen('bug101300/root.usda')
         pcpCache = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
 
         # Compute the prim index for /Root/A. The relocates authored on /Root/A

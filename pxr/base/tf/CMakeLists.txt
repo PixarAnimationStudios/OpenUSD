@@ -114,10 +114,7 @@ pxr_library(tf
     LIBRARIES
         arch
         ${WINLIBS}
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
+        TBB::tbb
 
     PUBLIC_CLASSES
         anyUniquePtr
@@ -194,7 +191,6 @@ pxr_library(tf
         pyAnnotatedBoolResult
         pyArg
         pyCall
-        pyCallContext
         pyClassMethod
         pyContainerConversions
         pyEnum
@@ -260,6 +256,7 @@ pxr_library(tf
         unicodeCharacterClasses
 
     PYTHON_PRIVATE_CLASSES
+        pyCallContext
         pyErrorInternal
 
     PRIVATE_HEADERS

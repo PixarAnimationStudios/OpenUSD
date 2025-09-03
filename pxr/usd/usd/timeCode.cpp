@@ -9,6 +9,7 @@
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 
 #include <cstdlib>
@@ -33,10 +34,15 @@ std::ostream& operator<<(std::ostream& os, const UsdTimeCode& time)
 {
     if (time.IsDefault()) {
         os << UsdTimeCodeTokens->DEFAULT;
-    } else if (time.IsEarliestTime()) {
-        os << UsdTimeCodeTokens->EARLIEST;
     } else {
-        os << time.GetValue();
+        if (time.IsPreTime()) {
+            os << UsdTimeCodeTokens->PRE_TIME << ' ';
+        }
+        if (time.IsEarliestTime()) {
+            os << UsdTimeCodeTokens->EARLIEST;
+        } else {
+            os << time.GetValue();
+        }
     }
 
     return os;
@@ -46,18 +52,41 @@ std::istream& operator>>(std::istream& is, UsdTimeCode& time)
 {
     std::string valueString;
     is >> valueString;
+
+    bool isPreTime = false;
+    // Check if the token is PRE_TIME
+    if (valueString == UsdTimeCodeTokens->PRE_TIME.GetString()) {
+        isPreTime = true;
+        // read in the next token (the time value)
+        is >> valueString;
+    }
+
     const TfToken valueToken(valueString);
 
     if (valueToken == UsdTimeCodeTokens->DEFAULT) {
+        if (isPreTime) {
+            is.setstate(std::ios::failbit);
+            return is;
+        }
         time = UsdTimeCode::Default();
     } else if (valueToken == UsdTimeCodeTokens->EARLIEST) {
-        time = UsdTimeCode::EarliestTime();
+        time = isPreTime ? 
+            UsdTimeCode::PreTime(UsdTimeCode::EarliestTime().GetValue()) : 
+            UsdTimeCode::EarliestTime();
     } else {
         try {
-            const double value = std::stod(valueString);
-            time = UsdTimeCode(value);
-        } catch (const std::exception& /* e */) {
-            // Leave time unchanged on error.
+            size_t pos = 0;
+            double value = valueString.empty() ? 
+                0.0 : std::stod(valueString, &pos);
+            if (pos != valueString.size()) {
+                is.setstate(std::ios::failbit);
+                return is;
+            }
+            time = isPreTime ? 
+                UsdTimeCode::PreTime(value) : 
+                UsdTimeCode(value);
+        } catch (const std::exception&) {
+            is.setstate(std::ios::failbit);
         }
     }
 

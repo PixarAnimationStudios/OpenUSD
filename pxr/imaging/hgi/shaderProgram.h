@@ -41,12 +41,12 @@ struct HgiShaderProgramDesc
 };
 
 HGI_API
-inline bool operator==(
+bool operator==(
     const HgiShaderProgramDesc& lhs,
     const HgiShaderProgramDesc& rhs);
 
 HGI_API
-inline bool operator!=(
+bool operator!=(
     const HgiShaderProgramDesc& lhs,
     const HgiShaderProgramDesc& rhs);
 

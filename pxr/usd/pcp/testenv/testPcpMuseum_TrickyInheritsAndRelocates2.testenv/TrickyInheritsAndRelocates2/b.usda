@@ -1,0 +1,22 @@
+#usda 1.0
+
+def Scope "Group"
+{
+    def Scope "Char" (
+        inherits = [
+            </_class_A>,
+            </_class_B>
+        ]
+    )
+    {
+    }
+}
+
+class Scope "_class_A"
+{
+}
+
+class Scope "_class_B"
+{
+}
+

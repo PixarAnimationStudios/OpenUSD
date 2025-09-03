@@ -75,8 +75,10 @@ pxr_plugin(${PXR_PACKAGE}
         vt
         gf
         hd
+        hdGp
         hdsi
         hio
+        TBB::tbb
         usdRi
         usdVol
         usdVolImaging
@@ -150,6 +152,7 @@ pxr_plugin(${PXR_PACKAGE}
         debugUtil
         extComputationPrimvarPruningSceneIndexPlugin
         framebuffer
+        generativeProceduralSceneIndexPlugin
         implicitSurfaceSceneIndexPlugin
         materialPrimvarTransferSceneIndexPlugin
         matfiltSceneIndexPlugins
@@ -159,12 +162,12 @@ pxr_plugin(${PXR_PACKAGE}
         renderBuffer
         renderParam
         renderPass
-        renderPassSceneIndex
-        renderPassSceneIndexPlugin
+        renderPassPruneSceneIndexPlugin
+        renderPassVisibilitySceneIndex
+        renderPassVisibilitySceneIndexPlugin
         renderSettingsFilteringSceneIndexPlugin
         renderViewContext
         resourceRegistry
-        retesselationSceneIndexPlugin
         rileyCameraPrim
         rileyCoordinateSystemPrim
         rileyClippingPlanePrim
@@ -187,9 +190,11 @@ pxr_plugin(${PXR_PACKAGE}
         rileySampleFilterPrim
         rileyTypes
         sceneIndexObserverApi
+        worldOffsetSceneIndexPlugin
         updateObjectSettingsSceneIndex
         updateObjectSettingsSceneIndexPlugin
         utils
+        velocityMotionResolvingSceneIndexPlugin
         virtualStructResolvingSceneIndex
 
     PUBLIC_HEADERS

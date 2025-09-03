@@ -1,0 +1,19 @@
+#usda 1.0
+
+def Scope "PayloadPrimA" (
+    add payload = @./ref2.usda@</PrimC>
+)
+{
+    def Scope "PrimA_Child"
+    {
+    }
+}
+
+def Scope "RefPrimA" (
+    add references = @./ref2.usda@</PrimC>
+)
+{
+    def Scope "PrimA_Child"
+    {
+    }
+}

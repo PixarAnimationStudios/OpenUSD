@@ -113,12 +113,22 @@ private:
 };
 
 /// Retreives the active render settings prim path from the input scene index
-/// \p si. Returns true if a data source for the associated locator was found
-/// with the result in \p primPath, and false otherwise.
+/// \p si. Returns true with the result in \p primPath if the path points to
+/// a render settings prim with a valid prim container, and false otherwise.
 ///
 HD_API
 bool
 HasActiveRenderSettingsPrim(
+    const HdSceneIndexBaseRefPtr &si,
+    SdfPath *primPath = nullptr);
+
+/// Retreives the active render pass prim path from the input scene index
+/// \p si. Returns true with the result in \p primPath if the path points to
+/// a render pass prim with a valid prim container, and false otherwise.
+///
+HD_API
+bool
+HasActiveRenderPassPrim(
     const HdSceneIndexBaseRefPtr &si,
     SdfPath *primPath = nullptr);
 

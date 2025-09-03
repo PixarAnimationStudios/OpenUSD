@@ -13,9 +13,8 @@ import unittest
 ########################################################################
 # TfScopeDescription
 class TestTfPyScopeDescription(unittest.TestCase):
-    def test_TfScopeDescription(self):
+    def test_TfScopeDescriptionContextManager(self):
         self.assertEqual(0, len(Tf.GetCurrentScopeDescriptionStack()))
-
         with Tf.ScopeDescription('one') as firstDescription:
             self.assertEqual(1, len(Tf.GetCurrentScopeDescriptionStack()))
             self.assertEqual('one', Tf.GetCurrentScopeDescriptionStack()[-1])
@@ -38,6 +37,38 @@ class TestTfPyScopeDescription(unittest.TestCase):
             self.assertEqual(1, len(Tf.GetCurrentScopeDescriptionStack()))
             self.assertEqual('different', Tf.GetCurrentScopeDescriptionStack()[-1])
 
+        self.assertEqual(0, len(Tf.GetCurrentScopeDescriptionStack()))
+
+    def test_TfScopeDescriptionDecorator(self):
+        @Tf.ScopeDescription('outer')
+        def Outer():
+            self.assertEqual(1, len(Tf.GetCurrentScopeDescriptionStack()))
+            self.assertEqual('outer', Tf.GetCurrentScopeDescriptionStack()[-1])
+
+            Inner()
+
+            self.assertEqual(1, len(Tf.GetCurrentScopeDescriptionStack()))
+            self.assertEqual('outer', Tf.GetCurrentScopeDescriptionStack()[-1])
+
+            Inner()
+
+            self.assertEqual(1, len(Tf.GetCurrentScopeDescriptionStack()))
+            self.assertEqual('outer', Tf.GetCurrentScopeDescriptionStack()[-1])
+
+        @Tf.ScopeDescription('inner')
+        def Inner():
+            self.assertEqual(2, len(Tf.GetCurrentScopeDescriptionStack()))
+            self.assertEqual('inner', Tf.GetCurrentScopeDescriptionStack()[-1])
+
+            with Tf.ScopeDescription('mixed'):
+                self.assertEqual(3, len(Tf.GetCurrentScopeDescriptionStack()))
+                self.assertEqual('mixed', Tf.GetCurrentScopeDescriptionStack()[-1])
+
+            self.assertEqual(2, len(Tf.GetCurrentScopeDescriptionStack()))
+            self.assertEqual('inner', Tf.GetCurrentScopeDescriptionStack()[-1])
+
+        self.assertEqual(0, len(Tf.GetCurrentScopeDescriptionStack()))
+        Outer()
         self.assertEqual(0, len(Tf.GetCurrentScopeDescriptionStack()))
 
 if __name__ == '__main__':

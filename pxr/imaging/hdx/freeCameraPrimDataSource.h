@@ -53,6 +53,11 @@ public:
         HdDataSourceLocatorSet * dirtyLocators = nullptr);
 
     HDX_API
+    void SetClippingPlanes(
+        const std::vector<GfVec4f> &clippingPlanes,
+        HdDataSourceLocatorSet * dirtyLocators = nullptr);
+
+    HDX_API
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
     HDX_API

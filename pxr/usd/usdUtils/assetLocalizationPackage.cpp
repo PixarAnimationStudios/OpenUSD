@@ -13,8 +13,8 @@
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/sdf/usdFileFormat.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/usdFileFormat.h"
 #include "pxr/usd/usdUtils/assetLocalization.h"
 #include "pxr/usd/usdUtils/assetLocalizationDelegate.h"
 #include "pxr/usd/usdUtils/assetLocalizationPackage.h"
@@ -413,9 +413,9 @@ UsdUtils_AssetLocalizationPackage::_AddLayerToPackage(
                 SdfFileFormat::FindByExtension(
                     SdfFileFormat::GetFileExtension(destPath));
 
-        if (TfDynamic_cast<UsdUsdFileFormatConstPtr>(fileFormat)) {
-            args[UsdUsdFileFormatTokens->FormatArg] = 
-                    UsdUsdFileFormat::GetUnderlyingFormatForLayer(
+        if (TfDynamic_cast<SdfUsdFileFormatConstPtr>(fileFormat)) {
+            args[SdfUsdFileFormatTokens->FormatArg] = 
+                    SdfUsdFileFormat::GetUnderlyingFormatForLayer(
                         *get_pointer(layer));
         }
         

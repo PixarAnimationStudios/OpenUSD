@@ -1,8 +1,0 @@
-#sdf 1.4.32
-#tagged-as-never-update
-
-def MfScope "Foo"
-{
-    # bad bool value
-    bad double foo = 3
-}

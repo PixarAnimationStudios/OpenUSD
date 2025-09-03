@@ -23,6 +23,64 @@
                             "sdf"
                         ],
                         "formatId": "sdf"
+                    },
+                    "SdfUsdFileFormat": {
+                        "bases": [
+                            "SdfFileFormat"
+                        ], 
+                        "displayName": "USD File Format", 
+                        "extensions": [
+                            "usd"
+                        ], 
+                        "formatId": "usd", 
+                        "primary": true, 
+                        "target": "usd"
+                    }, 
+                    "SdfUsdaFileFormat": {
+                        "bases": [
+                            "SdfFileFormat"
+                        ], 
+                        "displayName": "USD Text File Format", 
+                        "extensions": [
+                            "usda"
+                        ], 
+                        "formatId": "usda", 
+                        "primary": true, 
+                        "target": "usd"
+                    }, 
+                    "SdfUsdcFileFormat": {
+                        "bases": [
+                            "SdfFileFormat"
+                        ], 
+                        "displayName": "USD Crate File Format", 
+                        "extensions": [
+                            "usdc"
+                        ], 
+                        "formatId": "usdc", 
+                        "primary": true, 
+                        "target": "usd"
+                    }, 
+                    "SdfUsdzFileFormat": {
+                        "bases": [
+                            "SdfFileFormat"
+                        ], 
+                        "displayName": "USDZ File Format", 
+                        "extensions": [
+                            "usdz"
+                        ], 
+                        "formatId": "usdz", 
+                        "primary": true, 
+                        "supportsEditing": false, 
+                        "supportsWriting": false, 
+                        "target": "usd"
+                    }, 
+                    "Sdf_UsdzResolver": {
+                        "bases": [
+                            "ArPackageResolver"
+                        ], 
+                        "extensions": [
+                            "usdz"
+                        ]
                     }
                 }
             },

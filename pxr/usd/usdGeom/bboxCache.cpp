@@ -1274,7 +1274,8 @@ UsdGeomBBoxCache::_ResolvePrim(const _BBoxTask* task,
         VtVec3fArray extent;
         if (boundableObj.ComputeExtent(_time, &extent)) {
             GfBBox3d &bboxForPurpose = (*bboxes)[entry->purposeInfo.purpose];
-            bboxForPurpose.SetRange(GfRange3d(extent[0], extent[1]));
+            const VtVec3fArray &extentConst = extent;
+            bboxForPurpose.SetRange(GfRange3d(extentConst[0], extentConst[1]));
         }
     }
     else {

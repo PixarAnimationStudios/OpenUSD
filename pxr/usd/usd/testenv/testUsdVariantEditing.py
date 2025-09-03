@@ -143,5 +143,83 @@ def TestNewPayloadAutoLoading():
 
 TestNewPayloadAutoLoading()
 
+def TestVariantChangeResyncNotification():
+    """Test that changes to variants only resync prims that actually
+    depend on the variant"""
+
+    # /PrimVariants has a variantSet "primVariant" with two variants 
+    # "one" and "two" but no variant selection set.
+    # 
+    # /Prim1 references /PrimVariants and sets the primVariant variant
+    # selection to "one"
+    #
+    # /Prim2 references /PrimVariants and sets the primVariant variant
+    # selection to "two"
+    layer = Sdf.Layer.CreateAnonymous("layer.usda")
+    layer.ImportFromString('''#usda 1.0
+
+        def "PrimVariants" (
+            variantSets = ["primVariant"]
+        ) {
+            variantSet "primVariant" = {
+                "one" {
+                    def "VariantOneChild" {
+                        int variantOneChildAttr
+                    }
+                }
+                "two" {
+                    def "VariantTwoChild" {
+                        int variantTwoChildAttr
+                    }
+                }
+            }
+        }
+        
+        def "Prim1" (
+            references = </PrimVariants>
+            variants = {
+                string primVariant = "one"
+            }
+        ) {
+        }
+        
+        def "Prim2" (
+            references = </PrimVariants>
+            variants = {
+                string primVariant = "two"
+            }
+        ) {
+        }
+        
+    ''')
+
+    stage = Usd.Stage.Open(layer)
+
+    # Register ObjectsChanged notice handler that prints the resynced paths.
+    resyncedPaths = None
+    def _OnObjectsChanged(notice, sender):
+        nonlocal resyncedPaths
+        resyncedPaths = notice.GetResyncedPaths()
+    objectsChanged = Tf.Notice.RegisterGlobally(
+        Usd.Notice.ObjectsChanged, _OnObjectsChanged)
+
+    # Make changes to the variants in /PrimVariants{primVariant=}
+    primVariantsPrim = layer.GetPrimAtPath("/PrimVariants")
+    vSet = primVariantsPrim.variantSets['primVariant']
+
+    # Add a new variant "three" that isn't selected by any prims. This should
+    # result in no resyncs.
+    resyncedPaths = None
+    Sdf.VariantSpec(vSet, "three")
+    assert resyncedPaths == []
+
+    # Delete the varint "one" which is selected by /Prim1. /Prim1 only should
+    # be resynced.
+    resyncedPaths = None
+    vSet.RemoveVariant( vSet.variants["one"])
+    assert resyncedPaths == ["/Prim1"]
+
+TestVariantChangeResyncNotification()
+
 print('OK')
 

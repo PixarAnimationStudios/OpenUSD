@@ -1021,6 +1021,7 @@ private:
     friend class Sdf_PathNode;
     friend class Sdfext_PathAccess;
     friend class SdfPathAncestorsRange;
+    friend class Sdf_PathInitAccess;
 
     SdfPath _ReplacePrimPrefix(SdfPath const &oldPrefix,
                                SdfPath const &newPrefix) const;

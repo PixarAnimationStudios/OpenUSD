@@ -28,13 +28,13 @@ class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
         stage = Usd.Stage.Open(assetFile)
         self.assertTrue(stage)
         shaderDef = UsdShade.Shader.Get(stage, shaderDefPrimPath)
-        results = UsdShade.ShaderDefUtils.GetNodeDiscoveryResults(shaderDef, 
+        results = UsdShade.ShaderDefUtils.GetDiscoveryResults(shaderDef, 
                 stage.GetRootLayer().realPath)
         self.assertEqual(len(results), 1)
-        node = UsdShade.ShaderDefParserPlugin().Parse(results[0])
+        node = UsdShade.ShaderDefParserPlugin().ParseShaderNode(results[0])
         self.assertTrue(node)
         return node
-    
+
     def test_APISchemaGen(self):
         if self.ErrorHandlingTest:
             self.skipTest("Running Error Handling Test, skipping.");
@@ -83,6 +83,32 @@ class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
                 "/TestDuplicatePropsAPI")
         self.assertTrue(sdrNode)
         resultLayer = Sdf.Layer.CreateNew("./duplicatePropTypeMisMatch.usda")
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
+
+    def test_PropertyOrder(self):
+        # Param order from the source shader should be maintained in the
+        # output schema via the `propertyOrder` metadata field
+        if self.ErrorHandlingTest:
+            self.skipTest("Running Error Handling Test, skipping.");
+            return
+        sdrNode = self._GetSdrNode("testPropertyOrder.usda",
+                "/TestPropertyOrderAPI")
+        self.assertTrue(sdrNode)
+        resultLayer = Sdf.Layer.CreateNew("./resultPropertyOrder.usda")
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
+
+    def test_PropertyOrderMultipleApplySchema(self):
+        # usdGenSchema does not allow multiple-apply schemas to specify
+        # `propertyOrder` metadata. Verify UpdateSchemaWithSdrNode doesn't try
+        # to author it in this case.
+        if self.ErrorHandlingTest:
+            self.skipTest("Running Error Handling Test, skipping.");
+            return
+        sdrNode = self._GetSdrNode("testPropertyOrderMultipleApplySchema.usda",
+                "/TestPropertyOrderMultipleApplySchemaAPI")
+        self.assertTrue(sdrNode)
+        resultLayer = Sdf.Layer.CreateNew(
+            "./resultPropertyOrderMultipleApplySchema.usda")
         UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
     def test_rmanConcreteSchema(self):

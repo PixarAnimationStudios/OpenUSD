@@ -137,12 +137,11 @@ _PrintNodeTimes(
     ostream &s,
     TraceAggregateNodeRefPtr node,
     int indent, 
-    int iterationCount)
+    int iterationCount,
+    bool isRoot=true)
 {
-    // The root of the tree has id == -1, no useful stats there.
-
-    if (node->GetId().IsValid()) {
-
+    // The root of the tree has no useful stats
+    if (!isRoot) {
         if (node->IsRecursionMarker()) {
             _PrintRecursionMarker(s, _GetKeyName(node->GetKey()), indent);
             return;
@@ -161,7 +160,7 @@ _PrintNodeTimes(
     }
     
     for (const TraceAggregateNodeRefPtr& it : sortedKids) {
-        _PrintNodeTimes(s, it, indent+2, iterationCount);
+        _PrintNodeTimes(s, it, indent+2, iterationCount, /* isRoot = */ false);
     }
 }
 
@@ -358,7 +357,6 @@ TraceReporter::LoadReport(
         // Sample count may be a double if there's >1 iterations.
         const int samples = std::round(currentIters*TfStringToDouble(match[3]));
         stack.push(parent->Append(
-            TraceReporter::CreateValidEventId(),
             /* key */ TfToken(match[5].str()),
             /* timestamp */ ArchSecondsToTicks(
                 currentIters*TfStringToDouble(match[1])/1000.0),
@@ -402,13 +400,12 @@ TraceReporter::_RebuildEventAndAggregateTrees()
     TraceAggregateNodePtr root = _aggregateTree->GetRoot();
     if (root && !root->GetChildrenRef().empty() && 
         TfMallocTag::IsInitialized()) {
-        root->Append(TraceAggregateNode::Id(), 
-                          TfToken(
-                              TraceReporterTokens->warningString.GetString() +
-                              " MallocTags enabled"),
-                          0,
-                          1   /* count */,
-                          1   /* exclusive count */);
+        root->Append( TfToken(
+                        TraceReporterTokens->warningString.GetString() +
+                        " MallocTags enabled"),
+                      0,
+                      1   /* count */,
+                      1   /* exclusive count */);
     }
 }
 
@@ -497,13 +494,6 @@ bool
 TraceReporter::ShouldAdjustForOverheadAndNoise() const
 {
     return _shouldAdjustForOverheadAndNoise;
-}
-
-/* static */
-TraceAggregateNode::Id
-TraceReporter::CreateValidEventId() 
-{
-    return TraceAggregateNode::Id(TraceGetThreadId());
 }
 
 void

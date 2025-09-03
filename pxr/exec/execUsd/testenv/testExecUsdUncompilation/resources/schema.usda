@@ -1,0 +1,23 @@
+#usda 1.0
+(
+    "Test schema file for testExecUsdUncompilation"
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "testExecUsdUncompilation"
+        string libraryPath      = "pxr/exec/exec"
+        bool skipCodeGeneration = true
+    }
+)
+{
+}
+
+class CustomSchema "CustomSchema" (
+    inherits = </Typed>
+)
+{
+}

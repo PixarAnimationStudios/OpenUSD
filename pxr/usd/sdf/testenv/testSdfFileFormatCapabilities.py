@@ -21,14 +21,14 @@ class TestSdfCapabilities(unittest.TestCase):
     # sanity check for existing file formats which specify nothing in the
     # plugInfo.json file.
     def test_StaticDefault(self):
-        ext = '.sdf'
+        ext = '.usda'
         self.assertTrue(Sdf.FileFormat.FormatSupportsReading(ext))
         self.assertTrue(Sdf.FileFormat.FormatSupportsWriting(ext))
         self.assertTrue(Sdf.FileFormat.FormatSupportsEditing(ext))
 
     def test_StaticUnwritable(self):
         ext = '.unwritable'
-        target = 'sdf'
+        target = 'usd'
         self.assertTrue(Sdf.FileFormat.FormatSupportsReading(ext))
         self.assertFalse(Sdf.FileFormat.FormatSupportsWriting(ext))
         self.assertTrue(Sdf.FileFormat.FormatSupportsEditing(ext))
@@ -61,7 +61,7 @@ class TestSdfCapabilities(unittest.TestCase):
         self.assertFalse(Sdf.FileFormat.FormatSupportsEditing(ext, target))
 
     def test_InstanceDefault(self):
-        sdfFileFormat = Sdf.FileFormat.FindByExtension('.sdf')
+        sdfFileFormat = Sdf.FileFormat.FindByExtension('.usda')
         self.assertIsNotNone(sdfFileFormat)
         self.assertTrue(sdfFileFormat.SupportsReading())
         self.assertTrue(sdfFileFormat.SupportsWriting())

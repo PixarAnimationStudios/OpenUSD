@@ -13,9 +13,9 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/usdFileFormat.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/stagePopulationMask.h"
-#include "pxr/usd/usd/usdFileFormat.h"
 #include "pxr/usd/usdUtils/authoring.h"
 #include "pxr/usd/usdUtils/flattenLayerStack.h"
 
@@ -174,7 +174,7 @@ static int UsdCat(const Args &args) {
 
     std::map<std::string, std::string> formatArgs;
     if (!args.usdFormat.empty()) {
-        formatArgs[UsdUsdFileFormatTokens->FormatArg] = args.usdFormat;
+        formatArgs[SdfUsdFileFormatTokens->FormatArg] = args.usdFormat;
     }
 
     for (auto &input: args.inputFiles) {

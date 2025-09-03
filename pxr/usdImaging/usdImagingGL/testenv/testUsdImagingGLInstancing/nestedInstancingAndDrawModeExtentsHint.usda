@@ -1,0 +1,109 @@
+#usda 1.0
+(
+    upAxis = "Y"
+    """
+    This test file exercises several features in combination:
+    - native instancing
+    - point instancing
+    - UsdGeomModelAPI drawMode
+    """
+)
+
+over "SpherePrototype"
+{
+    def Sphere "Sphere"
+    {
+        double radius = 0.5
+    }
+}
+
+def Xform "Set" (
+    apiSchemas = ["GeomModelAPI"]
+    kind = "set"
+)
+{
+    uniform token model:cardGeometry = "cross"
+
+    def Xform "Group" (
+        kind = "group"
+    )
+    {
+        def Xform "DrawableSiblingPrototype" (
+            active = true
+            apiSchemas = ["GeomModelAPI"]
+            instanceable = true
+            kind = "prop"
+            add references = </SpherePrototype>
+        )
+        {
+            # This prim draws independently as a sphere.
+            #
+            # When used as a prototype by PointInstancer, it will also
+            # render as sphere geometry -- despite the presence of
+            # drawMode = "cards" on the PointInstancer -- due to
+            # inheritance semantics:
+            #
+            # As special cases, prims within PointInstancer prototypes
+            # inherit transform and visibility opinions up to their
+            # prototype root, and then from the PointInstancer using
+            # the prototype.
+            #
+            # For all other opinions, including those relating to drawMode,
+            # prototypes inherit down namespace as normal.  Consequently,
+            # a prototype defined outside the PointInstancer, such as this,
+            # will not inherit drawMode from a PointInstancer.
+        }
+
+        def PointInstancer "PointInstancer" (
+            apiSchemas = ["GeomModelAPI"]
+            kind = "dress_group"
+        )
+        {
+            uniform token model:drawMode = "cards"
+            point3f[] positions = [(-1, 1, 0), (1, 1, 0)]
+            int[] protoIndices = [0, 1]
+            rel prototypes = [
+                </Set/Group/PointInstancer/prototypes/ChildPrototype>,
+                </Set/Group/DrawableSiblingPrototype>
+            ]
+
+            def "prototypes" (
+                kind = "group"
+            )
+            {
+                def Xform "ChildPrototype" (
+                    active = true
+                    apiSchemas = ["GeomModelAPI"]
+                    instanceable = true
+                    kind = "prop"
+                    add references = </SpherePrototype>
+                )
+                {
+                    float3[] extentsHint = [(-0.5,-0.5,-0.5),(0.5,0.5,0.5)]
+
+                    # Kind "prop" is-a component. This can can be
+                    # confirmed by the following Python:
+                    #
+                    #   >>> Kind.Registry().GetBaseKind('prop')
+                    #   'component'
+                    #
+                    # Note that components are treated as implicitly having
+                    # model:applyDrawMode = 1, per UsdGeomModelAPI,
+                    # therefore the following is not necessary:
+                    #
+                    #   bool model:applyDrawMode = 1
+                    #
+
+                    # XXX Bug:
+                    # In scene index mode, the instance of this prototype
+                    # does not render at all.
+                    # PIPRototypePropagatingSceneIndex adds the propagated
+                    # prototype as a child of this prim, then DrawModeSceneIndex
+                    # replaces this prim's children with draw mode standin
+                    # mesh and materials. The point instancer still points to
+                    # the now-clobbered propagated prototype.
+                }
+            }
+        }
+    }
+}

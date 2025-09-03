@@ -17,7 +17,6 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/value.h"
-#include "pxr/usd/sdf/data.h"
 #include "pxr/usd/sdf/debugCodes.h"
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/path.h"
@@ -79,7 +78,10 @@ struct Utf8NoEolf : PEGTL_NS::minus<Utf8, Eol> {};
 
 // keyword
 struct KeywordAdd : PXR_PEGTL_KEYWORD("add") {};
+struct KeywordAnimationBlock : PXR_PEGTL_KEYWORD("AnimationBlock") {};
 struct KeywordAppend : PXR_PEGTL_KEYWORD("append") {};
+struct KeywordAt : PXR_PEGTL_KEYWORD("at") {};
+struct KeywordAutoEase : PXR_PEGTL_KEYWORD("autoEase") {};
 struct KeywordBezier: PXR_PEGTL_KEYWORD("bezier") {};
 struct KeywordClass : PXR_PEGTL_KEYWORD("class") {};
 struct KeywordConfig : PXR_PEGTL_KEYWORD("config") {};
@@ -93,12 +95,18 @@ struct KeywordDelete : PXR_PEGTL_KEYWORD("delete") {};
 struct KeywordDictionary : PXR_PEGTL_KEYWORD("dictionary") {};
 struct KeywordDisplayUnit : PXR_PEGTL_KEYWORD("displayUnit") {};
 struct KeywordDoc : PXR_PEGTL_KEYWORD("doc") {};
+struct KeywordEdit : PXR_PEGTL_KEYWORD("edit") {};
+struct KeywordErase : PXR_PEGTL_KEYWORD("erase") {};
+struct KeywordFill : PXR_PEGTL_KEYWORD("fill") {};
 struct KeywordHeld : PXR_PEGTL_KEYWORD("held") {};
 struct KeywordHermite : PXR_PEGTL_KEYWORD("hermite") {};
 struct KeywordInherits : PXR_PEGTL_KEYWORD("inherits") {};
+struct KeywordInsert : PXR_PEGTL_KEYWORD("insert") {};
 struct KeywordKind : PXR_PEGTL_KEYWORD("kind") {};
 struct KeywordLinear : PXR_PEGTL_KEYWORD("linear") {};
 struct KeywordLoop : PXR_PEGTL_KEYWORD("loop") {};
+struct KeywordMaxsize : PXR_PEGTL_KEYWORD("maxsize") {};
+struct KeywordMinsize : PXR_PEGTL_KEYWORD("minsize") {};
 struct KeywordNameChildren : PXR_PEGTL_KEYWORD("nameChildren") {};
 struct KeywordNone : PXR_PEGTL_KEYWORD("None") {};
 struct KeywordNone_LC : PXR_PEGTL_KEYWORD("none") {};
@@ -116,6 +124,7 @@ struct KeywordReferences : PXR_PEGTL_KEYWORD("references") {};
 struct KeywordRelocates : PXR_PEGTL_KEYWORD("relocates") {};
 struct KeywordRel : PXR_PEGTL_KEYWORD("rel") {};
 struct KeywordReorder : PXR_PEGTL_KEYWORD("reorder") {};
+struct KeywordResize : PXR_PEGTL_KEYWORD("resize") {};
 struct KeywordRootPrims : PXR_PEGTL_KEYWORD("rootPrims") {};
 struct KeywordRepeat : PXR_PEGTL_KEYWORD("repeat") {};
 struct KeywordReset : PXR_PEGTL_KEYWORD("reset") {};
@@ -128,14 +137,17 @@ struct KeywordSpline : PXR_PEGTL_KEYWORD("spline") {};
 struct KeywordSymmetryArguments : PXR_PEGTL_KEYWORD("symmetryArguments") {};
 struct KeywordSymmetryFunction : PXR_PEGTL_KEYWORD("symmetryFunction") {};
 struct KeywordTimeSamples : PXR_PEGTL_KEYWORD("timeSamples") {};
+struct KeywordTo : PXR_PEGTL_KEYWORD("to") {};
 struct KeywordUniform : PXR_PEGTL_KEYWORD("uniform") {};
 struct KeywordVariantSet : PXR_PEGTL_KEYWORD("variantSet") {};
 struct KeywordVariantSets : PXR_PEGTL_KEYWORD("variantSets") {};
 struct KeywordVariants : PXR_PEGTL_KEYWORD("variants") {};
 struct KeywordVarying : PXR_PEGTL_KEYWORD("varying") {};
+struct KeywordWrite: PXR_PEGTL_KEYWORD("write") {};
 
 struct Keywords : PEGTL_NS::sor<
 KeywordAdd,
+KeywordAnimationBlock,
 KeywordAppend,
 KeywordBezier,
 KeywordClass,
@@ -293,6 +305,12 @@ struct Number : PEGTL_NS::sor<
                       NumberLeadingDot,
                       MathKeywordInf>>,
     MathKeywordNan> {};
+
+// Integer = (-)? (Digit)+
+struct Integer : PEGTL_NS::seq<
+    PEGTL_NS::opt<Minus>,
+    PEGTL_NS::plus<Digit>
+    > {};
 
 // strings
 // EscapedDoubleQuote = \"
@@ -528,6 +546,82 @@ struct DictionaryValue : PEGTL_NS::if_must<
                       MultilinePadding>,
     DictionaryValueClose> {};
 
+template <int N>
+struct ArrayEditReferenceIndex : Integer {};
+
+template <int N>
+struct ArrayEditReference : PEGTL_NS::if_must<
+    LeftBracket,
+    PEGTL_NS::pad<ArrayEditReferenceIndex<N>, InlinePadding>,
+    RightBracket> {};
+
+struct ArrayEditLiteral : PEGTL_NS::sor<
+    AtomicValue,
+    TypedTupleValue
+    > {};
+
+struct ArrayEditReference0OrLiteral : PEGTL_NS::sor<
+    ArrayEditReference<0>, ArrayEditLiteral> {};
+
+struct ArrayEditPrepend : PEGTL_NS::if_must<
+    KeywordPrepend,
+    PEGTL_NS::pad<ArrayEditReference0OrLiteral, InlinePadding>> {};
+
+struct ArrayEditAppend : PEGTL_NS::if_must<
+    KeywordAppend,
+    PEGTL_NS::pad<ArrayEditReference0OrLiteral, InlinePadding>> {};
+
+struct ArrayEditWrite : PEGTL_NS::if_must<
+    KeywordWrite,
+    PEGTL_NS::pad<ArrayEditReference0OrLiteral, InlinePadding>,
+    KeywordTo,
+    PEGTL_NS::pad<ArrayEditReference<1>, InlinePadding>> {};
+
+struct ArrayEditInsert : PEGTL_NS::if_must<
+    KeywordInsert,
+    PEGTL_NS::pad<ArrayEditReference0OrLiteral, InlinePadding>,
+    KeywordAt,
+    PEGTL_NS::pad<ArrayEditReference<1>, InlinePadding>> {};
+
+struct ArrayEditErase : PEGTL_NS::if_must<
+    KeywordErase,
+    PEGTL_NS::pad<ArrayEditReference<0>, InlinePadding>> {};
+
+struct ArrayEditSizeArg : Integer {};
+
+struct ArrayEditMinSize : PEGTL_NS::if_must<
+    KeywordMinsize, PEGTL_NS::pad<ArrayEditSizeArg, InlinePadding>,
+    PEGTL_NS::opt_must<
+        KeywordFill, PEGTL_NS::pad<ArrayEditLiteral, InlinePadding>>
+    > {};
+
+struct ArrayEditResize : PEGTL_NS::if_must<
+    KeywordResize, PEGTL_NS::pad<ArrayEditSizeArg, InlinePadding>,
+    PEGTL_NS::opt_must<
+        KeywordFill, PEGTL_NS::pad<ArrayEditLiteral, InlinePadding>>
+    > {};
+
+struct ArrayEditMaxSize : PEGTL_NS::if_must<
+    KeywordMaxsize, PEGTL_NS::pad<ArrayEditSizeArg, InlinePadding>> {};
+
+struct ArrayEditInstruction : PEGTL_NS::sor<
+    ArrayEditPrepend,
+    ArrayEditAppend,
+    ArrayEditWrite,
+    ArrayEditInsert,
+    ArrayEditErase,
+    ArrayEditMinSize,
+    ArrayEditResize,
+    ArrayEditMaxSize
+    > {};
+
+struct ArrayEditValue : PEGTL_NS::if_must<
+    KeywordEdit,
+    PEGTL_NS::pad<LeftBracket, InlinePadding>,
+    PEGTL_NS::pad_opt<StatementSequenceOf<ArrayEditInstruction>,
+                      MultilinePadding>,
+    RightBracket> {};
+
 // shared metadata
 // MetadataOpen = LeftParen
 // MetadataClose = RightParen
@@ -675,6 +769,7 @@ struct TimeSample : PEGTL_NS::seq<
     PEGTL_NS::pad<NamespaceSeparator, InlinePadding>,
     PEGTL_NS::sor<
         KeywordNone,
+        ArrayEditValue,
         TypedValue>> {};
 
 // TimeSampleMap = { (NewLines)? ((TokenSeparator)? TimeSample 
@@ -693,10 +788,10 @@ struct SplineCurveTypeItem : PEGTL_NS::sor<
     KeywordBezier> {};
 
 struct SlopeValue : Number {};
-// SplineExtrapolationType = NONE / HELD / LINEAR / 
-// SLOPED '(' (TokenSeparator)? SloveValue (TokenSeparator)? ')' / 
-// LOOP TokenSeparator REPEAT / LOOP TokenSeparator RESET / 
-// LOOP TokenSeparator OSCILLATE
+// SplineExtrapolationType = NONE / HELD / LINEAR /
+// SLOPED (InlinePadding)* '(' (InlinePadding)* SlopeValue (InlinePadding)* ')' /
+// LOOP TokenSeparator REPEAT / LOOP TokenSeparator RESET / LOOP
+// TokenSeparator OSCILLATE
 struct SplineExtrapolationType : PEGTL_NS::sor<
     KeywordNone_LC,
     KeywordHeld,
@@ -710,14 +805,14 @@ struct SplineExtrapolationType : PEGTL_NS::sor<
     PEGTL_NS::seq<KeywordLoop, TokenSeparator, KeywordOscillate>> {};
 
 // SplinePreExtrapItem = pre (TokenSeparator)? Colon (TokenSeparator)? 
-// SplineExtrapolation
+// SplineExtrapolationType
 struct SplinePreExtrapItem : PEGTL_NS::seq<
     KeywordPre,
     PEGTL_NS::pad<Colon, InlinePadding>,
     SplineExtrapolationType> {};
 
 // SplinePostExtrapItem = post (TokenSeparator)? Colon (TokenSeparator)? 
-// SplineExtrapolation
+// SplineExtrapolationType
 struct SplinePostExtrapItem : PEGTL_NS::seq<
     KeywordPost,
     PEGTL_NS::pad<Colon, InlinePadding>,
@@ -751,33 +846,54 @@ struct SplineLoopItem : PEGTL_NS::seq<
     PEGTL_NS::pad<SplineLoopItemValueOffset, InlinePadding>,
     RightParen> {};
 
-struct SplineTangentValue : Number {};
 struct SplineTangentWidth : Number {};
-// Helper rule to parse SplineTangentWithWidth
-// SplineTangentWithWidthValue = Number (TokenSeparator)? ListSeparator 
-// (TokenSeparator)? Number
-struct SplineTangentWithWidthValue : PEGTL_NS::seq<
+struct SplineTangentSlope : Number {};
+struct SplineTangentAlgorithm : PEGTL_NS::sor<
+    KeywordCustom,
+    KeywordAutoEase> {};
+// Helper rule to parse SplineTangent
+// SplineTangentWidthSlopeAlgorithmItem = SplineTangentWidth (InlinePadding)?
+//                                        ListSeparator (InlinePadding)?
+//                                        SplineTangentSlope (InlinePadding)?
+//                                        ListSeparator (InlinePadding)?
+//                                        AlgorithmName
+struct SplineTangentWidthSlopeAlgorithmItem : PEGTL_NS::seq<
     SplineTangentWidth,
     PEGTL_NS::pad<ListSeparator, InlinePadding>,
-    SplineTangentValue> {};
-// SplineTangentWithoutWidthValue = Number (TokenSeparator)? 
-// (not at SplineKnotPreValueSeparator)
-struct SplineTangentWithoutWidthValue : PEGTL_NS::seq<
-    PEGTL_NS::pad<SplineTangentValue, InlinePadding>,
-    PEGTL_NS::not_at<ListSeparator>> {};
+    SplineTangentSlope,
+    PEGTL_NS::pad<ListSeparator, InlinePadding>,
+    SplineTangentAlgorithm> {};
+// SplineTangentWidthSlopeItem = SplineTangentWidth (InlinePadding)?
+//                               ListSeparator (InlinePadding)?
+//                               SplineTangentSlope
+struct SplineTangentWidthSlopeItem : PEGTL_NS::seq<
+    SplineTangentWidth,
+    PEGTL_NS::pad<ListSeparator, InlinePadding>,
+    SplineTangentSlope> {};
+// SplineTangentSlopeAlgorithmItem = SplineTangentSlope (InlinePadding)?
+//                                   ListSeparator (InlinePadding)?
+//                                   AlgorithmName
+struct SplineTangentSlopeAlgorithmItem : PEGTL_NS::seq<
+    SplineTangentSlope,
+    PEGTL_NS::pad<ListSeparator, InlinePadding>,
+    SplineTangentAlgorithm> {};
+// SplineTangentSlopeItem = SplineTangentSlope
+struct SplineTangentSlopeItem : SplineTangentSlope {};
 
-// SplineTangent = ( (TokenSeparator)?
-//                   SplineTangentWithoutWidthValue
-//                   (TokenSeparator)? ) /
-//                 ( (TokenSeparator)? 
-//                   SplineTangentWithWidthValue
-//                   (TokenSeparator)? )
-struct SplineTangent : PEGTL_NS::sor<
+// SplineTangent = ( (InlinePadding)?
+//                   (SplineTangentWidthSlopeAlgorithmItem /
+//                    SplineTangentWidthSlopeItem /
+//                    SplineTangentSlopeAlgorithmItem /
+//                    SplineTangentSlopeItem)
+//                   (InlinePadding)? )
+struct SplineTangent : PEGTL_NS::seq<
     PEGTL_NS::seq<PEGTL_NS::pad<LeftParen, InlinePadding>,
-                  PEGTL_NS::pad<SplineTangentWithoutWidthValue, InlinePadding>,
-                  RightParen>,
-    PEGTL_NS::seq<PEGTL_NS::pad<LeftParen, InlinePadding>,
-                  PEGTL_NS::pad<SplineTangentWithWidthValue, InlinePadding>,
+                  PEGTL_NS::pad<
+                      PEGTL_NS::sor<SplineTangentWidthSlopeAlgorithmItem,
+                                    SplineTangentWidthSlopeItem,
+                                    SplineTangentSlopeAlgorithmItem,
+                                    SplineTangentSlopeItem>,
+                      InlinePadding>,
                   RightParen>> {};
 
 // SplineInterpMode = NONE / HELD / LINEAR / CURVE
@@ -789,7 +905,7 @@ struct SplineInterpMode : PEGTL_NS::sor<
 
 // SplinePreTan = pre TokenSeparator SplineTangent
 struct SplinePreTan : PEGTL_NS::seq<
-    KeywordPre, 
+    KeywordPre,
     TokenSeparator,
     SplineTangent> {};
 
@@ -797,8 +913,9 @@ struct SplinePreTan : PEGTL_NS::seq<
 // (SplineTangent)?
 struct SplinePostShaping : PEGTL_NS::seq<
     KeywordPost,
-    PEGTL_NS::pad<SplineInterpMode, InlinePadding>,
-    PEGTL_NS::opt<SplineTangent>> {};
+    TokenSeparator,
+    SplineInterpMode,
+    PEGTL_NS::opt<InlinePadding, SplineTangent>> {};
 
 // SplineKnotParam = SplinePreTan / SplinePostShaping / DictionaryValue
 struct SplineKnotParam : PEGTL_NS::sor<
@@ -815,7 +932,7 @@ struct SplineKnotParamList : PEGTL_NS::opt<
         PEGTL_NS::seq<
             PEGTL_NS::pad<
                 StatementSequenceOf<SplineKnotParam>, InlinePadding>,
-            PEGTL_NS::not_at<StatementSeparator>>>> {};
+            PEGTL_NS::not_at<SplineKnotParamSeparator>>>> {};
 
 struct SplineKnotValue : Number {};
 struct SplineKnotPreValue : Number {};
@@ -826,8 +943,8 @@ struct SplineKnotValueWithoutPreValue : PEGTL_NS::seq<
     SplineKnotValue,
     PEGTL_NS::pad<PEGTL_NS::not_at<SplineKnotPreValueSeparator>, 
         InlinePadding>> {};
-// SplineKnotValueWithPreValue = SplineKnotPreValue (TokenSeparator)? 
-// SplineKnotPreValueSeparator SplineKnotValue
+// SplineKnotValueWithPreValue = SplineKnotPreValue InlinePadding 
+// SplineKnotPreValueSeparator InlinePadding SplineKnotValue
 struct SplineKnotValueWithPreValue : PEGTL_NS::seq<
     SplineKnotPreValue,
     PEGTL_NS::pad<SplineKnotPreValueSeparator, InlinePadding>,
@@ -857,7 +974,7 @@ struct SplineItem : PEGTL_NS::sor<
     SplineLoopItem,
     SplineKnotItem> {};
 
-// SplineValue = { (TokenSeparator)? (SplineItem (TokenSeparator)?)* }
+// SplineValue = { (MultilinePadding)? (SplineItem (MultilinePadding)?)* }
 struct SplineValue : PEGTL_NS::if_must<
     LeftBrace,
     PEGTL_NS::pad<ListOf<SplineItem>, MultilinePadding>,
@@ -905,13 +1022,16 @@ struct AttributeDeclaration : PEGTL_NS::seq<
     TokenSeparator,
     NamespacedName> {};
 
-// AttributeValue = None / TypedValue
+// AttributeValue = None / AnimationBlock / ArrayEditValue / TypedValue
 // AttributeAssignment = Assignment AttributeValue
 struct AttributeAssignment : PEGTL_NS::seq<
     Assignment,
     PEGTL_NS::sor<
         KeywordNone,
-        TypedValue>> {};
+        KeywordAnimationBlock,
+        ArrayEditValue,
+        TypedValue
+        >> {};
 struct AttributeAssignmentOptional : PEGTL_NS::opt<
     AttributeAssignment> {};
 
@@ -1586,6 +1706,16 @@ struct TextParserControlValues
 template <typename Rule>
 using TextParserControl = 
     TextParserDefaultErrorControl<TextParserControlValues>::control<Rule>;
+
+/// Attempt to parse a VtValue from a string representing a value
+/// given the expected sdf type. The parse follows the expectations of
+/// the .usda file format. On success, returns true and populates outputValue.
+/// On failure, returns false and issues TfError(s).
+bool Sdf_ParseValueFromString(
+    const std::string& input,
+    const SdfValueTypeName& sdfType,
+    VtValue* outputValue
+);
 
 } // end namespace Sdf_TextFileFormatParser
 

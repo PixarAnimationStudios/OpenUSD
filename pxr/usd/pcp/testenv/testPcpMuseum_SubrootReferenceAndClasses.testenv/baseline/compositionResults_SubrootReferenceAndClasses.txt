@@ -1,14 +1,14 @@
-Loading @SubrootReferenceAndClasses/root.sdf@
+Loading @SubrootReferenceAndClasses/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Inherit>
 
 Prim Stack:
-    root.sdf             /Inherit
+    root.usda            /Inherit
 
 Child names:
      ['Model']
@@ -17,13 +17,13 @@ Child names:
 Results for composing </Inherit/Model>
 
 Prim Stack:
-    root.sdf             /Inherit/Model
+    root.usda            /Inherit/Model
 
 ------------------------------------------------------------------------
 Results for composing </Specializes>
 
 Prim Stack:
-    root.sdf             /Specializes
+    root.usda            /Specializes
 
 Child names:
      ['Model']
@@ -32,16 +32,16 @@ Child names:
 Results for composing </Specializes/Model>
 
 Prim Stack:
-    root.sdf             /Specializes/Model
+    root.usda            /Specializes/Model
 
 ------------------------------------------------------------------------
 Results for composing </SubrootRef>
 
 Prim Stack:
-    root.sdf             /SubrootRef
-    root.sdf             /Inherit/Model
-    set.sdf              /Set/Model
-    set.sdf              /Inherit/Model
-    root.sdf             /Specializes/Model
-    set.sdf              /Specializes/Model
+    root.usda            /SubrootRef
+    root.usda            /Inherit/Model
+    set.usda             /Set/Model
+    set.usda             /Inherit/Model
+    root.usda            /Specializes/Model
+    set.usda             /Specializes/Model
 

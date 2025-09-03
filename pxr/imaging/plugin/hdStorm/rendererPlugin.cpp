@@ -38,13 +38,21 @@ HdStormRendererPlugin::DeleteRenderDelegate(HdRenderDelegate *renderDelegate)
 }
 
 bool
-HdStormRendererPlugin::IsSupported(bool gpuEnabled) const
+HdStormRendererPlugin::IsSupported(
+    HdRendererCreateArgs const &rendererCreateArgs,
+    std::string * reasonWhyNot) const
 {
-    const bool support = gpuEnabled && HdStRenderDelegate::IsSupported();
+    const bool gpuEnabled = rendererCreateArgs.gpuEnabled;
+
+    const bool support = gpuEnabled &&
+        HdStRenderDelegate::IsSupported(rendererCreateArgs);
     if (!support) {
         TF_DEBUG(HD_RENDERER_PLUGIN).Msg(
             "hdStorm renderer plugin unsupported: %s\n",
             gpuEnabled ? "hgi unsupported" : "no gpu");
+        if (reasonWhyNot) {
+            *reasonWhyNot = gpuEnabled ? "Hgi unsupported" : "No GPU";
+        }
     }
     return support;
 }

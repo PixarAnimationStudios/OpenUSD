@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2025 Pixar
 //
 // Licensed under the terms set forth in the LICENSE.txt file available at
 // https://openusd.org/license.
@@ -21,16 +21,18 @@
 /// \file
 
 #include "pxr/usdImaging/usdSkelImaging/api.h"
-#include "pxr/usdImaging/usdSkelImaging/schemaTypeDefs.h"
 
 #include "pxr/imaging/hd/schema.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
+#include "pxr/imaging/hd/containerSchema.h"
 // --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 // --(BEGIN CUSTOM CODE: Declares)--
+using UsdSkelImagingInbetweenShapeContainerSchema =
+    HdSchemaBasedContainerSchema<class UsdSkelImagingInbetweenShapeSchema>;
 // --(END CUSTOM CODE: Declares)--
 
 #define USD_SKEL_IMAGING_BLEND_SHAPE_SCHEMA_TOKENS \
@@ -45,9 +47,11 @@ TF_DECLARE_PUBLIC_TOKENS(UsdSkelImagingBlendShapeSchemaTokens, USDSKELIMAGING_AP
 
 //-----------------------------------------------------------------------------
 
-// Corresponds to UsdSkelBlendShape.
-//
 
+/// \class UsdSkelImagingBlendShapeSchema
+///
+/// Corresponds to UsdSkelBlendShape.
+///
 class UsdSkelImagingBlendShapeSchema : public HdSchema
 {
 public:

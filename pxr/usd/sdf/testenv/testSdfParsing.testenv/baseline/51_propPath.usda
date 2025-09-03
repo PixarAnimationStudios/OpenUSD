@@ -1,0 +1,7 @@
+#usda 1.0
+
+def MfScope "foo"
+{
+    string a1.connect = </Foo>
+}
+

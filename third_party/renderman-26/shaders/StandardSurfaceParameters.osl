@@ -38,8 +38,8 @@ void mx_luminance_color3(color in, color lumacoeffs, output color result)
 shader StandardSurfaceParameters
 (
     // Inputs
-    float base = 0.8,
-    color base_color = color(1.0, 1.0, 1.0),
+    float base = 1.0,
+    color base_color = color(0.8, 0.8, 0.8),
     float diffuse_roughness = 0.0,
     
     float metalness = 0.0,

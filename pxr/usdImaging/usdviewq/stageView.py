@@ -809,6 +809,10 @@ class StageView(QGLWidget):
         return self._rendererDisplayName
 
     @property
+    def rendererHgiDisplayName(self):
+        return self._rendererHgiDisplayName
+
+    @property
     def rendererAovName(self):
         return self._rendererAovName
 
@@ -872,7 +876,7 @@ class StageView(QGLWidget):
         # prep HUD regions
         self._hud = HUD()
         self._hud.addGroup("TopLeft",     250, 160)  # subtree
-        self._hud.addGroup("TopRight",    140, 32)   # Hydra: Enabled
+        self._hud.addGroup("TopRight",    140, 48)   # Hydra: Enabled
         self._hud.addGroup("BottomLeft",  250, 160)  # GPU stats
         self._hud.addGroup("BottomRight", 210, 32)   # Camera, Complexity
 
@@ -940,6 +944,14 @@ class StageView(QGLWidget):
         self._allowAsync = False
         self._bboxstandin = False
 
+        # The original window size before scaling.
+        # Due to rounding errors, this might be different
+        # from self.size() * self.devicePixelRatioF().
+        # If not set, then computed from the device-independent
+        # window size and device pixel ratio as shown above.
+        # Use GetPhysicalWindowSize() to get the correct value.
+        self._physicalWindowSize = None
+
         # Update all properties for the current stage.
         self._stageReplaced()
 
@@ -962,6 +974,8 @@ class StageView(QGLWidget):
 
     def _handleRendererChanged(self, rendererId):
         self._rendererDisplayName = self.GetRendererDisplayName(rendererId)
+        self._rendererHgiDisplayName = (
+            self.GetRendererHgiDisplayName())
         self._rendererAovName = "color"
         self._renderPauseState = False
         self._renderStopState = False
@@ -987,6 +1001,12 @@ class StageView(QGLWidget):
     def GetRendererDisplayName(self, plugId):
         if self._renderer:
             return self._renderer.GetRendererDisplayName(plugId)
+        else:
+            return ""
+
+    def GetRendererHgiDisplayName(self):
+        if self._renderer:
+            return self._renderer.GetRendererHgiDisplayName()
         else:
             return ""
 
@@ -1370,6 +1390,7 @@ class StageView(QGLWidget):
         self._rendererSelectionNeedsUpdate = True
         self.update()
 
+    @Tf.CatchAndRepostErrors()
     def _processSelection(self):
         if not self._rendererSelectionNeedsUpdate:
             return
@@ -1396,11 +1417,13 @@ class StageView(QGLWidget):
                     renderer.AddSelected(
                         prim.GetPath(), UsdImagingGL.ALL_INSTANCES)
         except Tf.ErrorException as e:
-            # If we encounter an error, we want to continue running. Just log 
-            # the error and continue.
+            # If we encounter an error, we want to continue running. Just log
+            # the error and continue.  The CatchAndRepostErrors decorator will
+            # halt exception propagation but retain the Tf.Errors.
             sys.stderr.write(
                 "ERROR: Usdview encountered an error while updating selection."
                 "{}\n".format(e))
+            raise
         finally:
             # Make sure not to leak a reference to the renderer
             renderer = None
@@ -1431,6 +1454,7 @@ class StageView(QGLWidget):
                 bbox = Gf.BBox3d.Combine(bbox, primBBox)
         return bbox
 
+    @Tf.CatchAndRepostErrors()
     def renderSinglePass(self, renderMode, renderSelHighlights):
         if not self._dataModel.stage:
             return
@@ -1481,14 +1505,16 @@ class StageView(QGLWidget):
             renderer.Render(pseudoRoot, self._renderParams)
         except Tf.ErrorException as e:
             # If we encounter an error during a render, we want to continue
-            # running. Just log the error and continue.
-            sys.stderr.write(
-                "ERROR: Usdview encountered an error while rendering.{}\n".format(e))
+            # running. Just log the error and continue.  The
+            # CatchAndRepostErrors decorator will halt exception propagation but
+            # retain the Tf.Errors.
+            sys.stderr.write("ERROR: Usdview encountered an error "
+                             "while rendering.{}\n".format(e))
+            raise
         finally:
             # Make sure not to leak a reference to the renderer
             renderer = None
         self._forceRefresh = False
-
 
     def initializeGL(self):
         if not self.isValid():
@@ -1530,9 +1556,7 @@ class StageView(QGLWidget):
         
         if self.hasLockedAspectRatio():
             if self._cropImageToCameraViewport:
-                targetAspect = (
-                    float(self.size().width()) / max(1.0, self.size().height()))
-
+                targetAspect = self.aspectRatio()
                 if targetAspect < cameraAspectRatio:
                     windowPolicy =  CameraUtil.MatchHorizontally
             else:
@@ -1540,13 +1564,27 @@ class StageView(QGLWidget):
                     windowPolicy =  CameraUtil.Fit
         
         return windowPolicy
-    
-    def computeWindowSize(self):
+
+    def SetPhysicalWindowSize(self, width, height):
+        self._physicalWindowSize = (width, height)
+        # Round up so we can always crop out a pixel in each dimension
+        # from the framebuffer to get the exact physical size.
+        ratio = self.devicePixelRatioF()
+        self.setFixedSize(ceil(width / ratio), ceil(height / ratio))
+
+    def GetPhysicalWindowSize(self):
+        if self._physicalWindowSize:
+            return self._physicalWindowSize
+
         size = self.size() * self.devicePixelRatioF()
-        return (int(size.width()), int(size.height()))
+        return size.width(), size.height()
+
+    def aspectRatio(self):
+        width, height = self.GetPhysicalWindowSize()
+        return float(width) / max(1.0, height)
 
     def computeWindowViewport(self):
-        return (0, 0) + self.computeWindowSize()
+        return (0, 0) + self.GetPhysicalWindowSize()
 
     def resolveCamera(self):
         """Returns a tuple of the camera to use for rendering (either a scene
@@ -1574,7 +1612,7 @@ class StageView(QGLWidget):
 
         # Conform the camera's frustum to the window viewport, if necessary.
         if not self._cropImageToCameraViewport:
-            targetAspect = float(self.size().width()) / max(1.0, self.size().height())
+            targetAspect = self.aspectRatio()
             if self._fitCameraInViewport:
                 CameraUtil.ConformWindow(gfCam, CameraUtil.Fit, targetAspect)
             else:
@@ -1593,13 +1631,12 @@ class StageView(QGLWidget):
         # Conform the camera viewport to the camera's aspect ratio,
         # and center the camera viewport in the window viewport.
         windowPolicy = CameraUtil.MatchVertically
-        targetAspect = (
-          float(self.size().width()) / max(1.0, self.size().height()))
+        targetAspect = self.aspectRatio()
         if targetAspect < cameraAspectRatio:
             windowPolicy = CameraUtil.MatchHorizontally
 
         viewport = Gf.Range2d(Gf.Vec2d(0, 0),
-                              Gf.Vec2d(self.computeWindowSize()))
+                              Gf.Vec2d(self.GetPhysicalWindowSize()))
         viewport = CameraUtil.ConformedWindow(viewport, windowPolicy, cameraAspectRatio)
 
         viewport = (viewport.GetMin()[0], viewport.GetMin()[1],
@@ -1636,6 +1673,211 @@ class StageView(QGLWidget):
 
         self.update()
 
+    def _paintGLWithRenderer(self, renderer):
+        from OpenGL import GL
+
+        if self._dataModel.viewSettings.showHUD_GPUstats:
+            if self._glPrimitiveGeneratedQuery is None:
+                self._glPrimitiveGeneratedQuery = Glf.GLQueryObject()
+            if self._glTimeElapsedQuery is None:
+                self._glTimeElapsedQuery = Glf.GLQueryObject()
+            self._glPrimitiveGeneratedQuery.BeginPrimitivesGenerated()
+            self._glTimeElapsedQuery.BeginTimeElapsed()
+
+        if not UsdImagingGL.Engine.IsColorCorrectionCapable():
+            from OpenGL.GL.EXT.framebuffer_sRGB import GL_FRAMEBUFFER_SRGB_EXT
+            GL.glEnable(GL_FRAMEBUFFER_SRGB_EXT)
+
+        # Clear the default FBO associated with the widget/context to
+        # fully transparent and *not* the bg color.
+        # The bg color is used as the clear color for the aov, and the
+        # results of rendering are composited over the FBO (and not blit).
+        GL.glClearColor(*Gf.Vec4f(0,0,0,0))
+
+        GL.glEnable(GL.GL_DEPTH_TEST)
+        GL.glDepthFunc(GL.GL_LESS)
+
+        GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
+        GL.glEnable(GL.GL_BLEND)
+
+        # Note: camera lights and camera guides require the
+        # resolved (adjusted) camera viewProjection matrix, which is
+        # why we resolve the camera above always.
+        (gfCamera, cameraAspect) = self.resolveCamera()
+        frustum = gfCamera.frustum
+        cameraViewport = self.computeCameraViewport(cameraAspect)
+
+        viewport = self.computeWindowViewport()
+        windowViewport = viewport
+        if self._cropImageToCameraViewport:
+            viewport = cameraViewport
+
+        renderBufferSize = Gf.Vec2i(self.GetPhysicalWindowSize())
+
+        renderer.SetRenderBufferSize(
+            renderBufferSize)
+        renderer.SetFraming(
+            _ComputeCameraFraming(viewport, renderBufferSize))
+        renderer.SetOverrideWindowPolicy(
+            self.computeWindowPolicy(cameraAspect))
+
+        sceneCam = self.getActiveSceneCamera()
+        if sceneCam:
+            # When using a USD camera, simply set it as the active camera.
+            # Window policy conformance is handled in the engine/hydra.
+            renderer.SetCameraPath(sceneCam.GetPath())
+        else:
+        # When using the free cam (which isn't currently backed on the
+        # USD stage), we send the camera matrices to the engine.
+            renderer.SetCameraState(frustum.ComputeViewMatrix(),
+                                    frustum.ComputeProjectionMatrix())
+
+        viewProjectionMatrix = Gf.Matrix4f(frustum.ComputeViewMatrix()
+                                        * frustum.ComputeProjectionMatrix())
+
+        # Workaround an apparent bug in some recent versions of PySide6
+        GL.glDepthMask(GL.GL_TRUE)
+
+        GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
+
+        # ensure viewport is right for the camera framing
+        GL.glViewport(*viewport)
+
+        # Set the clipping planes.
+        self._renderParams.clipPlanes = [Gf.Vec4d(i) for i in
+                                        gfCamera.clippingPlanes]
+
+        if len(self._dataModel.selection.getLCDPrims()) > 0:
+            cam_pos = frustum.position
+            sceneAmbient = (0.01, 0.01, 0.01, 1.0)
+            material = Glf.SimpleMaterial()
+            lights = []
+            # for renderModes that need lights
+            if self._dataModel.viewSettings.renderMode in ShadedRenderModes:
+
+                # ambient light located at the camera
+                if self._dataModel.viewSettings.ambientLightOnly:
+                    l = Glf.SimpleLight()
+                    l.ambient = (0, 0, 0, 0)
+                    l.position = (cam_pos[0], cam_pos[1], cam_pos[2], 1)
+                    l.transform = frustum.ComputeViewInverse()
+                    lights.append(l)
+
+                # Default Dome Light
+                if self._dataModel.viewSettings.domeLightEnabled:
+                    l = Glf.SimpleLight()
+                    l.isDomeLight = True
+                    if self._stageIsZup:
+                        l.transform = Gf.Matrix4d().SetRotate(
+                                Gf.Rotation(Gf.Vec3d.XAxis(), 90))
+                    lights.append(l)
+
+                kA = self._dataModel.viewSettings.defaultMaterialAmbient
+                kS = self._dataModel.viewSettings.defaultMaterialSpecular
+                material.ambient = (kA, kA, kA, 1.0)
+                material.specular = (kS, kS, kS, 1.0)
+                material.shininess = 32.0
+
+            # modes that want no lighting simply leave lights as an empty list
+            renderer.SetLightingState(lights, material, sceneAmbient)
+
+            if self._dataModel.viewSettings.renderMode == RenderModes.HIDDEN_SURFACE_WIREFRAME:
+                GL.glEnable( GL.GL_POLYGON_OFFSET_FILL )
+                GL.glPolygonOffset( 1.0, 1.0 )
+                GL.glPolygonMode( GL.GL_FRONT_AND_BACK, GL.GL_FILL )
+
+                self.renderSinglePass( 
+                    UsdImagingGL.DrawMode.DRAW_GEOM_ONLY, False)
+
+                GL.glDisable( GL.GL_POLYGON_OFFSET_FILL )
+
+                # Use display space for the second clear when color 
+                # correction is performed by the engine because we
+                # composite the framebuffer contents with the
+                # color-corrected (i.e., display space) aov contents.
+                clearColor = Gf.ConvertLinearToDisplay(Gf.Vec4f(
+                    self._dataModel.viewSettings.clearColor))
+
+                if not UsdImagingGL.Engine.IsColorCorrectionCapable():
+                    # Use linear color when using the sRGB extension
+                    clearColor = Gf.Vec4f(
+                        self._dataModel.viewSettings.clearColor)
+
+                GL.glClearColor(*clearColor)
+                GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+
+            highlightMode = self._dataModel.viewSettings.selHighlightMode
+            if self._dataModel.playing:
+                # Highlight mode must be ALWAYS to draw highlights during playback.
+                drawSelHighlights = (
+                    highlightMode == SelectionHighlightModes.ALWAYS)
+            else:
+                # Highlight mode can be ONLY_WHEN_PAUSED or ALWAYS to draw
+                # highlights when paused.
+                drawSelHighlights = (
+                    highlightMode != SelectionHighlightModes.NEVER)
+
+            self.renderSinglePass(
+                self._renderModeDict[self._dataModel.viewSettings.renderMode],
+                drawSelHighlights)
+
+            if not UsdImagingGL.Engine.IsColorCorrectionCapable():
+                GL.glDisable(GL_FRAMEBUFFER_SRGB_EXT)
+
+            self.DrawAxis(viewProjectionMatrix)
+
+            # XXX:
+            # Draw camera guides-- no support for toggling guide visibility on
+            # individual cameras until we move this logic directly into
+            # usdImaging.
+            if self._dataModel.viewSettings.displayCameraOracles:
+                self.DrawCameraGuides(viewProjectionMatrix)
+        else:
+            GL.glClear(GL.GL_COLOR_BUFFER_BIT)
+
+        if self._dataModel.viewSettings.showHUD_GPUstats:
+            self._glPrimitiveGeneratedQuery.End()
+            self._glTimeElapsedQuery.End()
+
+        # reset the viewport for 2D and HUD drawing
+        uiTasks = [ Prim2DSetupTask(self.computeWindowViewport()) ]
+        if self._dataModel.viewSettings.showMask:
+            color = self._dataModel.viewSettings.cameraMaskColor
+            if self._dataModel.viewSettings.showMask_Opaque:
+                color = color[0:3] + (1.0,)
+            else:
+                color = color[0:3] + (color[3] * 0.45,)
+            self._mask.updateColor(color)
+            self._mask.updatePrims(cameraViewport, self)
+            uiTasks.append(self._mask)
+        if self._dataModel.viewSettings.showMask_Outline:
+            self._maskOutline.updatePrims(cameraViewport, self)
+            uiTasks.append(self._maskOutline)
+        if self.showReticles:
+            color = self._dataModel.viewSettings.cameraReticlesColor
+            color = color[0:3] + (color[3] * 0.85,)
+            self._reticles.updateColor(color)
+            self._reticles.updatePrims(cameraViewport, self,
+                    self._dataModel.viewSettings.showReticles_Inside, self._dataModel.viewSettings.showReticles_Outside)
+            uiTasks.append(self._reticles)
+
+        for task in uiTasks:
+            task.Sync(None)
+        for task in uiTasks:
+            task.Execute(None)
+
+        # check current state of renderer -- (not IsConverged()) means renderer is running
+        if self._renderStopState and (not renderer.IsConverged()):
+            self._renderStopState = False
+
+        # ### DRAW HUD ### #
+        if self._dataModel.viewSettings.showHUD:
+            self.drawHUD(renderer)
+
+        if (not self._dataModel.playing) & (not renderer.IsConverged()):
+            QtCore.QTimer.singleShot(5, self.update)
+
+    @Tf.CatchAndRepostErrors()
     def paintGL(self):
         if not self._dataModel.stage:
             return
@@ -1645,215 +1887,27 @@ class StageView(QGLWidget):
             return
 
         try:
-            from OpenGL import GL
+            with self._makeTimer("create first image",
+                                 printTiming=self._isFirstImage) as t:
+                # NOTE: This timing context doesn't include platform-specific
+                # imaging initialization time and also only truly captures
+                # the true "time to first image" for non-progressive renderers
+                # like Storm.
+                self._isFirstImage = False
+                self._paintGLWithRenderer(renderer)
+ 
+            self._renderTime = t.interval
 
-            if self._dataModel.viewSettings.showHUD_GPUstats:
-                if self._glPrimitiveGeneratedQuery is None:
-                    self._glPrimitiveGeneratedQuery = Glf.GLQueryObject()
-                if self._glTimeElapsedQuery is None:
-                    self._glTimeElapsedQuery = Glf.GLQueryObject()
-                self._glPrimitiveGeneratedQuery.BeginPrimitivesGenerated()
-                self._glTimeElapsedQuery.BeginTimeElapsed()
-
-            if not UsdImagingGL.Engine.IsColorCorrectionCapable():
-                from OpenGL.GL.EXT.framebuffer_sRGB import GL_FRAMEBUFFER_SRGB_EXT
-                GL.glEnable(GL_FRAMEBUFFER_SRGB_EXT)
-
-            # Clear the default FBO associated with the widget/context to
-            # fully transparent and *not* the bg color.
-            # The bg color is used as the clear color for the aov, and the
-            # results of rendering are composited over the FBO (and not blit).
-            GL.glClearColor(*Gf.Vec4f(0,0,0,0))
-
-            GL.glEnable(GL.GL_DEPTH_TEST)
-            GL.glDepthFunc(GL.GL_LESS)
-
-            GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
-            GL.glEnable(GL.GL_BLEND)
-
-            # Note: camera lights and camera guides require the
-            # resolved (adjusted) camera viewProjection matrix, which is
-            # why we resolve the camera above always.
-            (gfCamera, cameraAspect) = self.resolveCamera()
-            frustum = gfCamera.frustum
-            cameraViewport = self.computeCameraViewport(cameraAspect)
-
-            viewport = self.computeWindowViewport()
-            windowViewport = viewport
-            if self._cropImageToCameraViewport:
-                viewport = cameraViewport
-
-            renderBufferSize = Gf.Vec2i(self.computeWindowSize())
-
-            renderer.SetRenderBufferSize(
-                renderBufferSize)
-            renderer.SetFraming(
-                _ComputeCameraFraming(viewport, renderBufferSize))
-            renderer.SetOverrideWindowPolicy(
-                self.computeWindowPolicy(cameraAspect))
-
-            sceneCam = self.getActiveSceneCamera()
-            if sceneCam:
-                # When using a USD camera, simply set it as the active camera.
-                # Window policy conformance is handled in the engine/hydra.
-                renderer.SetCameraPath(sceneCam.GetPath())
-            else:
-            # When using the free cam (which isn't currently backed on the
-            # USD stage), we send the camera matrices to the engine.
-                renderer.SetCameraState(frustum.ComputeViewMatrix(),
-                                        frustum.ComputeProjectionMatrix())
-
-            viewProjectionMatrix = Gf.Matrix4f(frustum.ComputeViewMatrix()
-                                            * frustum.ComputeProjectionMatrix())
-
-            # Workaround an apparent bug in some recent versions of PySide6
-            GL.glDepthMask(GL.GL_TRUE)
-
-            GL.glClear(GL.GL_COLOR_BUFFER_BIT|GL.GL_DEPTH_BUFFER_BIT)
-
-            # ensure viewport is right for the camera framing
-            GL.glViewport(*viewport)
-
-            # Set the clipping planes.
-            self._renderParams.clipPlanes = [Gf.Vec4d(i) for i in
-                                            gfCamera.clippingPlanes]
-
-            if len(self._dataModel.selection.getLCDPrims()) > 0:
-                cam_pos = frustum.position
-                sceneAmbient = (0.01, 0.01, 0.01, 1.0)
-                material = Glf.SimpleMaterial()
-                lights = []
-                # for renderModes that need lights
-                if self._dataModel.viewSettings.renderMode in ShadedRenderModes:
-
-                    # ambient light located at the camera
-                    if self._dataModel.viewSettings.ambientLightOnly:
-                        l = Glf.SimpleLight()
-                        l.ambient = (0, 0, 0, 0)
-                        l.position = (cam_pos[0], cam_pos[1], cam_pos[2], 1)
-                        l.transform = frustum.ComputeViewInverse()
-                        lights.append(l)
-
-                    # Default Dome Light
-                    if self._dataModel.viewSettings.domeLightEnabled:
-                        l = Glf.SimpleLight()
-                        l.isDomeLight = True
-                        if self._stageIsZup:
-                            l.transform = Gf.Matrix4d().SetRotate(
-                                    Gf.Rotation(Gf.Vec3d.XAxis(), 90))
-                        lights.append(l)
-
-                    kA = self._dataModel.viewSettings.defaultMaterialAmbient
-                    kS = self._dataModel.viewSettings.defaultMaterialSpecular
-                    material.ambient = (kA, kA, kA, 1.0)
-                    material.specular = (kS, kS, kS, 1.0)
-                    material.shininess = 32.0
-
-                # modes that want no lighting simply leave lights as an empty list
-                renderer.SetLightingState(lights, material, sceneAmbient)
-
-                if self._dataModel.viewSettings.renderMode == RenderModes.HIDDEN_SURFACE_WIREFRAME:
-                    GL.glEnable( GL.GL_POLYGON_OFFSET_FILL )
-                    GL.glPolygonOffset( 1.0, 1.0 )
-                    GL.glPolygonMode( GL.GL_FRONT_AND_BACK, GL.GL_FILL )
-
-                    self.renderSinglePass( 
-                        UsdImagingGL.DrawMode.DRAW_GEOM_ONLY, False)
-
-                    GL.glDisable( GL.GL_POLYGON_OFFSET_FILL )
-
-                    # Use display space for the second clear when color 
-                    # correction is performed by the engine because we
-                    # composite the framebuffer contents with the
-                    # color-corrected (i.e., display space) aov contents.
-                    clearColor = Gf.ConvertLinearToDisplay(Gf.Vec4f(
-                        self._dataModel.viewSettings.clearColor))
-
-                    if not UsdImagingGL.Engine.IsColorCorrectionCapable():
-                        # Use linear color when using the sRGB extension
-                        clearColor = Gf.Vec4f(
-                            self._dataModel.viewSettings.clearColor)
-
-                    GL.glClearColor(*clearColor)
-                    GL.glClear(GL.GL_COLOR_BUFFER_BIT)
-
-                highlightMode = self._dataModel.viewSettings.selHighlightMode
-                if self._dataModel.playing:
-                    # Highlight mode must be ALWAYS to draw highlights during playback.
-                    drawSelHighlights = (
-                        highlightMode == SelectionHighlightModes.ALWAYS)
-                else:
-                    # Highlight mode can be ONLY_WHEN_PAUSED or ALWAYS to draw
-                    # highlights when paused.
-                    drawSelHighlights = (
-                        highlightMode != SelectionHighlightModes.NEVER)
-
-                self.renderSinglePass(
-                    self._renderModeDict[self._dataModel.viewSettings.renderMode],
-                    drawSelHighlights)
-
-                if not UsdImagingGL.Engine.IsColorCorrectionCapable():
-                    GL.glDisable(GL_FRAMEBUFFER_SRGB_EXT)
-
-                self.DrawAxis(viewProjectionMatrix)
-
-                # XXX:
-                # Draw camera guides-- no support for toggling guide visibility on
-                # individual cameras until we move this logic directly into
-                # usdImaging.
-                if self._dataModel.viewSettings.displayCameraOracles:
-                    self.DrawCameraGuides(viewProjectionMatrix)
-            else:
-                GL.glClear(GL.GL_COLOR_BUFFER_BIT)
-
-            if self._dataModel.viewSettings.showHUD_GPUstats:
-                self._glPrimitiveGeneratedQuery.End()
-                self._glTimeElapsedQuery.End()
-
-            # reset the viewport for 2D and HUD drawing
-            uiTasks = [ Prim2DSetupTask(self.computeWindowViewport()) ]
-            if self._dataModel.viewSettings.showMask:
-                color = self._dataModel.viewSettings.cameraMaskColor
-                if self._dataModel.viewSettings.showMask_Opaque:
-                    color = color[0:3] + (1.0,)
-                else:
-                    color = color[0:3] + (color[3] * 0.45,)
-                self._mask.updateColor(color)
-                self._mask.updatePrims(cameraViewport, self)
-                uiTasks.append(self._mask)
-            if self._dataModel.viewSettings.showMask_Outline:
-                self._maskOutline.updatePrims(cameraViewport, self)
-                uiTasks.append(self._maskOutline)
-            if self.showReticles:
-                color = self._dataModel.viewSettings.cameraReticlesColor
-                color = color[0:3] + (color[3] * 0.85,)
-                self._reticles.updateColor(color)
-                self._reticles.updatePrims(cameraViewport, self,
-                        self._dataModel.viewSettings.showReticles_Inside, self._dataModel.viewSettings.showReticles_Outside)
-                uiTasks.append(self._reticles)
-
-            for task in uiTasks:
-                task.Sync(None)
-            for task in uiTasks:
-                task.Execute(None)
-
-            # check current state of renderer -- (not IsConverged()) means renderer is running
-            if self._renderStopState and (not renderer.IsConverged()):
-                self._renderStopState = False
-
-            # ### DRAW HUD ### #
-            if self._dataModel.viewSettings.showHUD:
-                self.drawHUD(renderer)
-
-            if (not self._dataModel.playing) & (not renderer.IsConverged()):
-                QtCore.QTimer.singleShot(5, self.update)
-        
         except Exception as e:
-            # If we encounter an error during a render, we want to continue 
-            # running. Just log the error and continue.
+            # If we encounter an error during a render, we want to continue
+            # running. Just log the error and continue.  The
+            # CatchAndRepostErrors decorator will halt exception propagation but
+            # retain the Tf.Errors.
             sys.stderr.write(
                 "ERROR: Usdview encountered an error while rendering."
                 "{}\n".format(e))
+            if isinstance(e, Tf.ErrorException):
+                raise
 
         finally:
             # Make sure not to leak a reference to the renderer
@@ -1906,7 +1960,10 @@ class StageView(QGLWidget):
             toPrint = {"Hydra": "(stopped)"}
         else:
             toPrint = {"Hydra": self._rendererDisplayName}
-            
+
+        if self._rendererHgiDisplayName:
+            toPrint["  Hgi"] = self._rendererHgiDisplayName
+
         if self._rendererAovName != "color":
             toPrint["  AOV"] = self._rendererAovName
         self._hud.updateGroup("TopRight", self.width()-160, 14, col,
@@ -2088,7 +2145,7 @@ class StageView(QGLWidget):
                     freeCam.AdjustDistance(1 + zoomDelta)
 
             elif self._cameraMode == "truck":
-                height = float(self.size().height())
+                height = float(self.GetPhysicalWindowSize()[1])
                 pixelsToWorld = freeCam.ComputePixelsToWorldFactor(height)
 
                 self._dataModel.viewSettings.freeCamera.Truck(
@@ -2238,6 +2295,7 @@ class StageView(QGLWidget):
 
         return (inImageBounds, cameraFrustum.ComputeNarrowedFrustum(point, size))
 
+    @Tf.CatchAndRepostErrors()
     def pickObject(self, x, y, button, modifiers):
         '''
         Render stage into fbo with each piece as a different color.
@@ -2281,43 +2339,15 @@ class StageView(QGLWidget):
                     selectedPrimPath, selectedInstanceIndex, selectedTLPath,
                     selectedTLIndex, selectedPoint, modifiers)
         except Tf.ErrorException as e:
-            # If we encounter an error, we want to continue running. Just log 
-            # the error and continue.
+            # If we encounter an error, we want to continue running. Just log
+            # the error and continue.  The CatchAndRepostErrors decorator will
+            # halt exception propagation but retain the Tf.Errors.
             sys.stderr.write(
                 "ERROR: Usdview encountered an error while picking."
                 "{}\n".format(e))
+            raise
         finally:
             renderer = None
-
-    def glDraw(self):
-        # override glDraw so we can time it.
-
-        # If this is the first time an image is being drawn, report how long it
-        # took to do so.
-        with self._makeTimer("create first image",
-                             printTiming=self._isFirstImage) as t:
-
-            # This needs to be done before invoking QGLWidget.glDraw, since it
-            # seems we get recursion??
-            self._isFirstImage = False
-
-            QGLWidget.glDraw(self)
-
-            # Render creation is a deferred operation, so the render may not
-            # be initialized on entry to the function.
-            #
-            # This function itself can not create the render, as to create the
-            # renderer we need a valid GL context, which QT has not made current
-            # yet.
-            #
-            # So instead check that the render has been created after the fact.
-            # The point is to avoid reporting an invalid first image time.
-            if not self._renderer:
-                # error has already been issued -- mark the timer invalid.
-                t.Invalidate()
-                return
-
-        self._renderTime = t.interval
 
     def SetForceRefresh(self, val):
         self._forceRefresh = val or self._forceRefresh
@@ -2396,3 +2426,19 @@ class StageView(QGLWidget):
             return False
 
         return self._renderer.PollForAsynchronousUpdates()
+    
+    def GetActiveRenderSettingsPrimPath(self):
+        # This queries the terminal scene index to get the currently active
+        # render settings prim path.
+        return self._getRenderer().GetActiveRenderSettingsPrimPath()
+    
+    def GetActiveRenderPassPrimPath(self):
+        # This queries the terminal scene index to get the currently active
+        # render pass prim path.
+        return self._getRenderer().GetActiveRenderPassPrimPath()
+
+    def SetActiveRenderSettingsPrim(self, prim):
+        self._getRenderer().SetActiveRenderSettingsPrimPath(prim.GetPath())
+
+    def SetActiveRenderPassPrim(self, prim):
+        self._getRenderer().SetActiveRenderPassPrimPath(prim.GetPath())

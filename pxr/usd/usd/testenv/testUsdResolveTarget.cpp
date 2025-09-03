@@ -54,20 +54,22 @@ static void _VerifyResolveTargetSite(
 }
 
 // Helper for _VerifyResolveTarget
-static void _VerifyResolverTargetLayer(
+static void _VerifyResolveTargetLayer(
     const SdfLayerHandle &layer, 
     const std::string &expectedLayerName)
 {
-    std::string layerName = TfGetBaseName(layer->GetIdentifier());
     // Special case for expecting the session layer as the session layer created
     // in this test will be an anonymous layer without a consistent identifier
     // between runs. But it will always end in "root-session.usda"
     if (expectedLayerName == "session") {
-        TF_VERIFY(TfStringEndsWith(layerName, "root-session.usda"),
-            "Layer name '%s' does not end with expected session layer suffix "
+        TF_VERIFY(
+            layer->IsAnonymous() &&
+            TfStringEndsWith(layer->GetIdentifier(), "root-session.usda"),
+            "Layer '%s' does not end with expected session layer suffix "
             "'root-session.usda'",
-            layerName.c_str());
+            layer->GetIdentifier().c_str());
     } else {
+        std::string layerName = TfGetBaseName(layer->GetIdentifier());
         TF_VERIFY(layerName == expectedLayerName,
             "Layer name '%s' does not match expected layer name '%s'",
             layerName.c_str(), 
@@ -85,13 +87,13 @@ static void _VerifyResolveTarget(
 {
     _VerifyResolveTargetSite(
         resolveTarget.GetStartNode(), expectedStart.first);
-    _VerifyResolverTargetLayer(
+    _VerifyResolveTargetLayer(
         resolveTarget.GetStartLayer(), expectedStart.second);
 
     if (expectedStop) {
         _VerifyResolveTargetSite(
             resolveTarget.GetStopNode(), expectedStop->first);
-        _VerifyResolverTargetLayer(
+        _VerifyResolveTargetLayer(
             resolveTarget.GetStopLayer(), expectedStop->second);
     } else {
         TF_VERIFY(!resolveTarget.GetStopNode());

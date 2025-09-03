@@ -59,6 +59,7 @@ public:
                 TEXTURE_UDIM_LAYOUT,  // non-bindless udim layout
                 TEXTURE_PTEX_TEXEL,   // non-bindless ptex texels
                 TEXTURE_PTEX_LAYOUT,  // non-bindless ptex layout
+                TEXTURE_CUBEMAP,      // non-bindless cubemap texture
                 BINDLESS_TEXTURE_2D,          // bindless uv texture
                 BINDLESS_ARRAY_OF_TEXTURE_2D, // bindless array of uv textures
                 BINDLESS_TEXTURE_FIELD,       // bindless field texture
@@ -67,6 +68,7 @@ public:
                 BINDLESS_TEXTURE_UDIM_LAYOUT, // bindless udim layout
                 BINDLESS_TEXTURE_PTEX_TEXEL,  // bindless ptex texels
                 BINDLESS_TEXTURE_PTEX_LAYOUT, // bindless ptex layout
+                BINDLESS_TEXTURE_CUBEMAP,     // bindless cubemap texture
                 PRIMVAR_REDIRECT,    // primvar redirection
                 FIELD_REDIRECT, // accesses a field texture by name and
                                 // uses fallbackValue if no accessor for

@@ -680,6 +680,9 @@ TF_API void TfEscapeStringReplaceChar(const char** in, char** out);
 /// Tokenize the input strings using a '/' delimiter. Look for '..' tokens in
 /// the suffix and construct the appropriate result.
 ///
+/// A trailing '/' character will be stripped from the result if the input
+/// contained one.
+///
 /// Examples:
 /// 
 /// \li TfStringCatPaths( "foo/bar", "jive" ) => "foo/bar/jive"

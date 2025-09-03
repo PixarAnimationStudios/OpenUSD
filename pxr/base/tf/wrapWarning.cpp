@@ -30,8 +30,8 @@ _Warn(string const &msg, string const& moduleName, string const& functionName,
       string const& fileName, int lineNo)
 {
     TfDiagnosticMgr::
-        WarningHelper(Tf_PythonCallContext(fileName.c_str(), moduleName.c_str(),
-                                           functionName.c_str(), lineNo),
+        WarningHelper(Tf_PythonCallContext(fileName, moduleName,
+                                           functionName, lineNo),
                       TF_DIAGNOSTIC_WARNING_TYPE,
                       TfEnum::GetName(TfEnum(TF_DIAGNOSTIC_WARNING_TYPE)).
                       c_str()).

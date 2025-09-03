@@ -18,43 +18,6 @@ using namespace pxr_boost::python;
 
 namespace {
 
-static SdfPrimSpecHandleVector
-_GetPrimStack(const PcpPrimIndex& self)
-{
-    SdfPrimSpecHandleVector primStack;
-
-    if (self.IsUsd()) {
-        // Prim ranges are not cached in USD so GetPrimRange will always 
-        // be empty. But since getting the primStack from prim index's prim 
-        // range is python only API, we can build the prim stack that matches
-        // what the prim range would be if we computed and cached it.
-        const PcpNodeRange nodeRange = self.GetNodeRange();
-        for (auto it = nodeRange.first; it != nodeRange.second; ++it) {
-            const PcpNodeRef &node = *it;
-            if (!node.CanContributeSpecs()) {
-                continue;
-            }
-            const SdfLayerRefPtrVector &layers = 
-                node.GetLayerStack()->GetLayers();
-            for (const auto &layer : layers) {
-                if (SdfPrimSpecHandle primSpec = 
-                        layer->GetPrimAtPath(node.GetPath())) {
-                    primStack.push_back(std::move(primSpec));
-                }
-            }
-        }
-    } else {
-        const PcpPrimRange primRange = self.GetPrimRange();
-
-        primStack.reserve(std::distance(primRange.first, primRange.second));
-        for(const auto &path : primRange) {
-            primStack.push_back(SdfGetPrimAtPath(path));
-        }
-    }
-
-    return primStack;
-}
-
 static pxr_boost::python::tuple
 _ComputePrimChildNames( PcpPrimIndex &index )
 {
@@ -82,7 +45,7 @@ void wrapPrimIndex()
 
     class_<This>("PrimIndex", "", no_init)
         .add_property("primStack", 
-                      make_function(&_GetPrimStack,
+                      make_function(&PcpComputePrimStackForPrimIndex,
                                     return_value_policy<TfPySequenceToList>()))
         .add_property("rootNode", &This::GetRootNode)
         .add_property("hasAnyPayloads", &This::HasAnyPayloads)

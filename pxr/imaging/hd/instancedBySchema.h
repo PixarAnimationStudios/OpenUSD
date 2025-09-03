@@ -42,26 +42,28 @@ TF_DECLARE_PUBLIC_TOKENS(HdInstancedBySchemaTokens, HD_API,
 
 //-----------------------------------------------------------------------------
 
-// A schema marking a prim as instanced by another prim.
-//
-// Many renderers need to know not what prototypes an instancer has, but
-// rather what instancers a prototype has; this is encoded in "instancedBy". A
-// prim is "instancedBy" /Instancer if /Instancer has a prototype path that's
-// a parent of the prim. A complicating exception is if /A instances /A/B,
-// which instances /A/B/C, we don't consider /A to be instancing /A/B/C
-// directly; this is to support nested explicit instancing of things like
-// leaves/trees/forests.
-//
-// This value is computed based on the instancer topology of instancer prims
-// in the scene.
-//
-// Note: if multiple instancers reference a prototype, it's possible for
-// instancedBy to contain multiple entries. Some renderers may be able to read
-// this directly, but some may need to duplicate prims with an op so that each
-// prim has a single instancer, depending on how the renderer exposes
-// instancing.
-//
 
+/// \class HdInstancedBySchema
+///
+/// A schema marking a prim as instanced by another prim.
+///
+/// Many renderers need to know not what prototypes an instancer has, but
+/// rather what instancers a prototype has; this is encoded in "instancedBy". A
+/// prim is "instancedBy" /Instancer if /Instancer has a prototype path that's
+/// a parent of the prim. A complicating exception is if /A instances /A/B,
+/// which instances /A/B/C, we don't consider /A to be instancing /A/B/C
+/// directly; this is to support nested explicit instancing of things like
+/// leaves/trees/forests.
+///
+/// This value is computed based on the instancer topology of instancer prims
+/// in the scene.
+///
+/// Note: if multiple instancers reference a prototype, it's possible for
+/// instancedBy to contain multiple entries. Some renderers may be able to read
+/// this directly, but some may need to duplicate prims with an op so that each
+/// prim has a single instancer, depending on how the renderer exposes
+/// instancing.
+///
 class HdInstancedBySchema : public HdSchema
 {
 public:

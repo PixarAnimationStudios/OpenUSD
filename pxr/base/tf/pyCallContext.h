@@ -9,12 +9,14 @@
 
 #include "pxr/base/tf/callContext.h"
 
+#include <string>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_API TfCallContext
-Tf_PythonCallContext(char const *fileName,
-                     char const *moduleName,
-                     char const *functionName,
+Tf_PythonCallContext(std::string fileName,
+                     std::string moduleName,
+                     std::string functionName,
                      size_t line);
 
 PXR_NAMESPACE_CLOSE_SCOPE

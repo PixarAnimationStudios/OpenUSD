@@ -29,7 +29,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \addtogroup group_arch_Math
 ///@{
 
-#if defined (ARCH_CPU_INTEL) || defined (ARCH_CPU_ARM) || defined (doxygen)
+#if defined (ARCH_CPU_INTEL) || defined (ARCH_CPU_ARM) ||  \
+    defined(ARCH_OS_WASM_VM) || defined (doxygen)
 
 /// This is the smallest value e such that 1+e^2 == 1, using floats.
 /// True for all IEEE754 chipsets.
@@ -96,7 +97,8 @@ inline void ArchSinCosf(float v, float *s, float *c) { sincosf(v, s, c); }
 /// Computes the sine and cosine of the specified value as a double.
 inline void ArchSinCos(double v, double *s, double *c) { sincos(v, s, c); }
 
-#elif defined(ARCH_OS_DARWIN) || defined(ARCH_OS_WINDOWS)
+#elif defined(ARCH_OS_DARWIN) || defined(ARCH_OS_WINDOWS) || \
+      defined(ARCH_OS_WASM_VM)
 
 inline void ArchSinCosf(float v, float *s, float *c) {
     *s = std::sin(v);
@@ -117,7 +119,8 @@ inline void ArchSinCos(double v, double *s, double *c) {
 inline int
 ArchCountTrailingZeros(uint64_t x)
 {
-#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
+#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG) && \
+    !defined(ARCH_OS_WASM_VM)
     return __builtin_ctzl(x);
 #elif defined(ARCH_COMPILER_MSVC)
     unsigned long index;

@@ -22,7 +22,7 @@ function(prman_osl SHADER_NAME SHADER_DIR)
     )
 endfunction()
 
-set(shader_dir "${PROJECT_SOURCE_DIR}/pxr/usdImaging/plugin/usdShaders/shaders")
+set(shader_dir "${PROJECT_SOURCE_DIR}/pxr/usd/plugin/usdShaders/shaders")
 prman_osl(UsdPreviewSurfaceParameters ${CMAKE_CURRENT_SOURCE_DIR})
 if (${PXR_ENABLE_MATERIALX_SUPPORT})
 prman_osl(StandardSurfaceParameters ${CMAKE_CURRENT_SOURCE_DIR})

@@ -216,7 +216,7 @@ _RegisterDrawItem(
         /*hasMirroredTransform=*/false,
         /*hasInstancer=*/false,
         /*enableScalarOverride=*/ true,
-        /*isWidget*/ false,
+        /*pointsShadingEnabled=*/ false,
         /* forceOpaqueEdges */ true,
         /* surfaceEdgeIds */ true,
         /* nativeRoundPoints */ true);

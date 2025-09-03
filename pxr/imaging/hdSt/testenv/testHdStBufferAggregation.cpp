@@ -11,7 +11,6 @@
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
 #include "pxr/imaging/hdSt/vboSimpleMemoryManager.h"
-#include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -823,15 +822,14 @@ OverAggregationTest(HdStResourceRegistry *registry)
     bufferSpecs.emplace_back(HdTokens->points,
                              HdTupleType {HdTypeFloatVec3, 1});
 
-    // 10M points (~114MB)
-    VtArray<GfVec3f> points(10000000);
+    // one buffer that uses ~1/8 of the HD_MAX_VBO_SIZE
+    static size_t vboMaxSize = TfGetEnvSetting(HD_MAX_VBO_SIZE);
+    VtArray<GfVec3f> points(vboMaxSize / (8 * sizeof(GfVec3f)));
     for (size_t i = 0; i < points.size(); ++i) {
         points[i] = GfVec3f(i);
     }
 
-    // * 50
-    //   8 entries = 915MB
-    //   split into 7 buffers.
+    // that buffer copied 50 times: 8 entries, split into 7 buffers.
     static constexpr size_t count = 50;
     static constexpr size_t countPerCommit = count / 2;
     std::vector<HdBufferArrayRangeSharedPtr> ranges;
@@ -919,7 +917,6 @@ OverAggregationTest(HdStResourceRegistry *registry)
     // Relocation count depends on the VBO max size. Smaller size means more relocations.
     // If it's the default 2^30, there will be 9 relocations. But smaller can have much more:
     // For example Lavapipe limits the size to 2^27 and has 51 relocations.
-    static constexpr size_t vboMaxSize = 1 << 30; // default for HD_MAX_VBO_SIZE
     const size_t storageMaxSize =
         registry->GetHgi()->GetCapabilities()->GetMaxShaderStorageBlockSize();
     const size_t rangesPerBuffer = std::min(storageMaxSize, vboMaxSize) /

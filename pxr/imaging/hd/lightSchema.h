@@ -41,6 +41,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdLightSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdLightSchema
+///
 class HdLightSchema : public HdSchema
 {
 public:

@@ -10,6 +10,7 @@
 
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/imaging/hgi/enums.h"
 #include "pxr/imaging/hgi/shaderSection.h"
 #include "pxr/imaging/hgi/shaderFunction.h"
 #include "pxr/imaging/hgiMetal/api.h"
@@ -183,9 +184,8 @@ public:
         const HgiMetalSamplerShaderSection *samplerShaderSectionDependency,
         uint32_t dimensions,
         HgiFormat format,
-        bool textureArray,
+        HgiShaderTextureType textureType,
         uint32_t arrayOfTexturesSize,
-        bool shadow,
         bool writable,
         const std::string &defaultValue = std::string());
 
@@ -215,9 +215,8 @@ private:
     const HgiMetalSamplerShaderSection* const _samplerShaderSectionDependency;
     const uint32_t _dimensionsVar;
     const HgiFormat _format;
-    const bool _textureArray;
+    const HgiShaderTextureType _textureType;
     const uint32_t _arrayOfTexturesSize;
-    const bool _shadow;
     const bool _writable;
     std::string _baseType;
     std::string _returnType;

@@ -36,10 +36,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_SCENE_GLOBALS_SCHEMA_TOKENS \
     (sceneGlobals) \
+    (primaryCameraPrim) \
     (activeRenderPassPrim) \
     (activeRenderSettingsPrim) \
     (startTimeCode) \
     (endTimeCode) \
+    (timeCodesPerSecond) \
     (currentFrame) \
     (sceneStateId) \
 
@@ -48,19 +50,22 @@ TF_DECLARE_PUBLIC_TOKENS(HdSceneGlobalsSchemaTokens, HD_API,
 
 //-----------------------------------------------------------------------------
 
-// The HdSceneGlobalsSchema encapsulates "global" state to orchestrate a
-// render. It currently houses the active render settings and pass prim paths
-// that describe the information necessary to generate images from a single
-// invocation of a renderer, and the active time sample range and current
-// frame number that may be relevant to downstream scene indices (e.g.
-// procedural evaluation).
-//
-// We shall use the convention of a container data source at the root prim of
-// the scene index that is populated with this global state. The renderer and
-// downstream scene indices can query it to configure their behavior as
-// necessary.
-//
 
+/// \class HdSceneGlobalsSchema
+///
+/// The HdSceneGlobalsSchema encapsulates "global" state to orchestrate a
+/// render. It currently houses the active render settings and pass prim paths
+/// that describe the information necessary to generate images from a single
+/// invocation of a renderer, the active time sample range and current frame
+/// number that may be relevant to downstream scene indices (e.g. procedural
+/// evaluation), the time codes per second (sometimes informally referred to as
+/// FPS), and the primary camera.
+///
+/// We shall use the convention of a container data source at the root prim of
+/// the scene index that is populated with this global state. The renderer and
+/// downstream scene indices can query it to configure their behavior as
+/// necessary.
+///
 class HdSceneGlobalsSchema : public HdSchema
 {
 public:
@@ -107,6 +112,9 @@ public:
     /// @{
 
     HD_API
+    HdPathDataSourceHandle GetPrimaryCameraPrim() const;
+
+    HD_API
     HdPathDataSourceHandle GetActiveRenderPassPrim() const;
 
     HD_API
@@ -117,6 +125,9 @@ public:
 
     HD_API
     HdDoubleDataSourceHandle GetEndTimeCode() const;
+
+    HD_API
+    HdDoubleDataSourceHandle GetTimeCodesPerSecond() const;
 
     HD_API
     HdDoubleDataSourceHandle GetCurrentFrame() const;
@@ -150,6 +161,10 @@ public:
     /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
     /// @{
 
+    /// Prim-level relative data source locator to locate primaryCameraPrim.
+    HD_API
+    static const HdDataSourceLocator &GetPrimaryCameraPrimLocator();
+
     /// Prim-level relative data source locator to locate activeRenderPassPrim.
     HD_API
     static const HdDataSourceLocator &GetActiveRenderPassPrimLocator();
@@ -165,6 +180,10 @@ public:
     /// Prim-level relative data source locator to locate endTimeCode.
     HD_API
     static const HdDataSourceLocator &GetEndTimeCodeLocator();
+
+    /// Prim-level relative data source locator to locate timeCodesPerSecond.
+    HD_API
+    static const HdDataSourceLocator &GetTimeCodesPerSecondLocator();
 
     /// Prim-level relative data source locator to locate currentFrame.
     HD_API
@@ -188,10 +207,12 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
+        const HdPathDataSourceHandle &primaryCameraPrim,
         const HdPathDataSourceHandle &activeRenderPassPrim,
         const HdPathDataSourceHandle &activeRenderSettingsPrim,
         const HdDoubleDataSourceHandle &startTimeCode,
         const HdDoubleDataSourceHandle &endTimeCode,
+        const HdDoubleDataSourceHandle &timeCodesPerSecond,
         const HdDoubleDataSourceHandle &currentFrame,
         const HdIntDataSourceHandle &sceneStateId
     );
@@ -206,6 +227,9 @@ public:
     {
     public:
         HD_API
+        Builder &SetPrimaryCameraPrim(
+            const HdPathDataSourceHandle &primaryCameraPrim);
+        HD_API
         Builder &SetActiveRenderPassPrim(
             const HdPathDataSourceHandle &activeRenderPassPrim);
         HD_API
@@ -218,6 +242,9 @@ public:
         Builder &SetEndTimeCode(
             const HdDoubleDataSourceHandle &endTimeCode);
         HD_API
+        Builder &SetTimeCodesPerSecond(
+            const HdDoubleDataSourceHandle &timeCodesPerSecond);
+        HD_API
         Builder &SetCurrentFrame(
             const HdDoubleDataSourceHandle &currentFrame);
         HD_API
@@ -229,10 +256,12 @@ public:
         HdContainerDataSourceHandle Build();
 
     private:
+        HdPathDataSourceHandle _primaryCameraPrim;
         HdPathDataSourceHandle _activeRenderPassPrim;
         HdPathDataSourceHandle _activeRenderSettingsPrim;
         HdDoubleDataSourceHandle _startTimeCode;
         HdDoubleDataSourceHandle _endTimeCode;
+        HdDoubleDataSourceHandle _timeCodesPerSecond;
         HdDoubleDataSourceHandle _currentFrame;
         HdIntDataSourceHandle _sceneStateId;
 

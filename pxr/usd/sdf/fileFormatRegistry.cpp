@@ -12,6 +12,8 @@
 #include "pxr/usd/sdf/fileFormatRegistry.h"
 #include "pxr/usd/sdf/debugCodes.h"
 #include "pxr/usd/sdf/fileFormat.h"
+#include "pxr/usd/sdf/textFileFormat.h"
+#include "pxr/usd/sdf/usdcFileFormat.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/trace/trace.h"
@@ -263,16 +265,24 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
 
     TRACE_FUNCTION();
 
-    TF_DEBUG(SDF_FILE_FORMAT).Msg("Sdf_FileFormatRegistry::_RegisterFormatPlugins");
+    TF_DEBUG(SDF_FILE_FORMAT).Msg(
+        "Sdf_FileFormatRegistry::_RegisterFormatPlugins");
 
     PlugRegistry& reg = PlugRegistry::GetInstance();
 
     TF_DESCRIBE_SCOPE("Registering file format plugins");
 
+    // Demand that we find the plugin for the built-in SdfTextFileFormat and
+    // SdfUsdcFileFormat (which are in this library).  These calls will abort if
+    // the plugin isn't found.
+    reg.DemandPluginForType(TfType::Find<SdfTextFileFormat>());
+    reg.DemandPluginForType(TfType::Find<SdfUsdcFileFormat>());
+
     std::set<TfType> formatTypes;
     TfType formatBaseType = TfType::Find<SdfFileFormat>();
-    if (TF_VERIFY(!formatBaseType.IsUnknown()))
+    if (TF_VERIFY(!formatBaseType.IsUnknown())) {
         PlugRegistry::GetAllDerivedTypes(formatBaseType, &formatTypes);
+    }
 
     for (auto formatType : formatTypes) {
 

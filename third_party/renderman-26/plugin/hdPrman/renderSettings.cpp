@@ -28,6 +28,8 @@
 #include "pxr/imaging/hd/utils.h"
 #include "pxr/imaging/hdsi/renderSettingsFilteringSceneIndex.h"
 
+#include "pxr/usdImaging/usdImaging/renderSettingsAdapter.h"
+
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/envSetting.h"
 
@@ -53,6 +55,10 @@ TF_DEFINE_ENV_SETTING(HD_PRMAN_RENDER_SETTINGS_BUNDLE_RENDER_PRODUCTS, false,
 
 TF_DEFINE_PRIVATE_TOKENS(
     _renderTerminalTokens, // properties in PxrRenderTerminalsAPI
+    ((riIntegrator, "ri:integrator"))
+    ((riSampleFilters, "ri:sampleFilters"))
+    ((riDisplayFilters, "ri:displayFilters"))
+    // Legacy terminal connections. Remove in a future USD version.
     ((outputsRiIntegrator, "outputs:ri:integrator"))
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
     ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
@@ -100,10 +106,13 @@ _GenerateParamList(VtDictionary const &settings)
         // Skip render terminal connections.
         const std::string &name = pair.first;
         const TfToken tokenName(name);
-        if (tokenName == _renderTerminalTokens->outputsRiIntegrator    ||
+        if (tokenName == _renderTerminalTokens->riIntegrator ||
+            tokenName == _renderTerminalTokens->riSampleFilters ||
+            tokenName == _renderTerminalTokens->riDisplayFilters ||
+            // Legacy terminal connections. Remove in a future USD version.
+            tokenName == _renderTerminalTokens->outputsRiIntegrator ||
             tokenName == _renderTerminalTokens->outputsRiSampleFilters ||
             tokenName == _renderTerminalTokens->outputsRiDisplayFilters) {
-
             continue;
         }
 
@@ -433,6 +442,9 @@ HdPrman_RenderSettings::UpdateAndRender(
         //     per-product.
         _UpdateCameraContextFromProduct(product, &cameraContext);
 
+        // Some camera params may override values on the integrator. 
+        param->UpdateIntegrator(renderIndex);
+
         // This _cannot_ be moved to Sync since the camera Sprim wouldn't have
         // been updated.
         _UpdateRileyCamera(
@@ -568,7 +580,20 @@ void HdPrman_RenderSettings::_Sync(
         *dirtyBits & HdRenderSettings::DirtyNamespacedSettings) {
         _UpdateFrame(terminalSi, &_settingsOptions);
     }
+#else
+    // Ignore the frame here for older usd versions.
+    // It doesn't get updated properly, but if we leave it here,
+    // it will win in composition in HdPrman_RenderParam::SetRileyOptions().
+    _settingsOptions.Remove(RixStr.k_Ri_Frame);
 #endif
+
+    // If threads has default value, remove it so fallback value,
+    // which has a reasonable value for interactive, will be used.
+    int nthreads = 0;
+    _settingsOptions.GetInteger(RixStr.k_limits_threads, nthreads);
+    if(nthreads == 0) {
+        _settingsOptions.Remove(RixStr.k_limits_threads);
+    }
 
     // XXX Preserve existing data flow for clients that don't populate the
     //     sceneGlobals.activeRenderSettingsPrim locator at the root prim of the
@@ -630,36 +655,100 @@ HdPrman_RenderSettings::_ProcessRenderTerminals(
 {
     const VtDictionary& namespacedSettings = GetNamespacedSettings();
 
-    // Set the integrator connected to this Render Settings prim
+#if _PRMANAPI_VERSION_MAJOR_ <= 26
+    const bool rsSchemaHasRelationships = false;
+#else
+    const bool rsSchemaHasRelationships = true;
+#endif
+
+#if PXR_VERSION >= 2505
+    const bool terminalsWarn =
+        TfGetEnvSetting(LEGACY_PXR_RENDER_TERMINALS_API_ALLOWED_AND_WARN);
+#else
+    const bool terminalsWarn = true;
+#endif
+
+    // Set the integrator on this Render Settings prim
     {
         // XXX Should use SdfPath rather than a vector.
-        const SdfPathVector paths = VtDictionaryGet<SdfPathVector>(
-            namespacedSettings,
-            _renderTerminalTokens->outputsRiIntegrator.GetString(),
-            VtDefault = SdfPathVector());
+        SdfPathVector paths;
+        if (rsSchemaHasRelationships) {
+            paths = VtDictionaryGet<SdfPathVector>(
+                namespacedSettings,
+                _renderTerminalTokens->riIntegrator.GetString(),
+                VtDefault = SdfPathVector());
+        }
+
+        // Fallback to legacy terminal connection
+        // (Remove in a future USD version)
+        if (paths.empty() && (!rsSchemaHasRelationships || terminalsWarn)) {
+            paths = VtDictionaryGet<SdfPathVector>(
+                namespacedSettings,
+                _renderTerminalTokens->outputsRiIntegrator.GetString(),
+                VtDefault = SdfPathVector());
+
+            if (!paths.empty() && rsSchemaHasRelationships && terminalsWarn) {
+                TF_WARN("outputs:ri:integrator on RenderSettings is "
+                        "deprecated in favor of ri:integrator.");
+            }
+        }
 
         param->SetRenderSettingsIntegratorPath(sceneDelegate,
             paths.empty()? SdfPath::EmptyPath() : paths.front());
     }
 
-    // Set the SampleFilters connected to this Render Settings prim
+    // Set the SampleFilters on this Render Settings prim
     {
-        const SdfPathVector paths = VtDictionaryGet<SdfPathVector>(
-            namespacedSettings,
-            _renderTerminalTokens->outputsRiSampleFilters.GetString(),
-            VtDefault = SdfPathVector());
+        SdfPathVector paths;
+        if (rsSchemaHasRelationships) {
+            paths = VtDictionaryGet<SdfPathVector>(
+                namespacedSettings,
+                _renderTerminalTokens->riSampleFilters.GetString(),
+                VtDefault = SdfPathVector());
+        }
+        
+        // Fallback to legacy terminal connection
+        // (Remove in a future USD version)
+        if (paths.empty() && (!rsSchemaHasRelationships || terminalsWarn)) {
+            paths = VtDictionaryGet<SdfPathVector>(
+                namespacedSettings,
+                _renderTerminalTokens->outputsRiSampleFilters.GetString(),
+                VtDefault = SdfPathVector());
 
-        param->SetConnectedSampleFilterPaths(sceneDelegate, paths);
+            if (!paths.empty() && rsSchemaHasRelationships && terminalsWarn) {
+                TF_WARN("outputs:ri:sampleFilters on RenderSettings is "
+                        "deprecated in favor of ri:sampleFilters.");
+            }
+        }
+
+        param->SetSampleFilterPaths(sceneDelegate, paths);
     }
 
-    // Set the DisplayFilters connected to this Render Settings prim
+    // Set the DisplayFilters on this Render Settings prim
     {
-        const SdfPathVector paths = VtDictionaryGet<SdfPathVector>(
-            namespacedSettings,
-            _renderTerminalTokens->outputsRiDisplayFilters.GetString(),
-            VtDefault = SdfPathVector());
+        SdfPathVector paths;
+        if (rsSchemaHasRelationships) {
+            paths = VtDictionaryGet<SdfPathVector>(
+                namespacedSettings,
+                _renderTerminalTokens->riDisplayFilters.GetString(),
+                VtDefault = SdfPathVector());
+        }
 
-        param->SetConnectedDisplayFilterPaths(sceneDelegate, paths);
+        // Fallback to legacy terminal connection
+        // (Remove in a future USD version)
+        if (paths.empty() && (!rsSchemaHasRelationships || terminalsWarn)) {
+            paths = VtDictionaryGet<SdfPathVector>(
+                namespacedSettings,
+                _renderTerminalTokens->outputsRiDisplayFilters.GetString(),
+                VtDefault = SdfPathVector());
+
+            if (!paths.empty() && rsSchemaHasRelationships && terminalsWarn) {
+                TF_WARN("outputs:ri:displayFilters on RenderSettings is "
+                        "deprecated in favor of ri:displayFilters.");
+            }
+        }
+
+        param->SetDisplayFilterPaths(sceneDelegate, paths);
     }
 }
 

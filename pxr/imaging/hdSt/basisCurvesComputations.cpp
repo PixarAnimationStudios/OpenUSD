@@ -311,6 +311,8 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildCubicIndexArray()
     for (const int &count : vertexCounts) {
         if (count < 2) {
             // Minimum vertex count is 2 for pinned curves and 4 otherwise.
+            vertexIndex += count;
+            curveIndex++;
             continue;
         }
 

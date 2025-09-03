@@ -44,8 +44,8 @@ class "Base" (
     apiSchemas = ["BuiltinAPI"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["overrideBaseTrueDerivedFalse", "overrideBaseTrueDerivedNone", "overrideBaseTrueDerivedTrue"]
+        string userDocBrief = 'This doc should only exist on the "Base" class.'
     }
-    doc = 'This doc should only exist on the "Base" class.'
 )
 {
     asset asset = @asset@
@@ -108,15 +108,21 @@ class "Base" (
     matrix4d[] matrix4dArray
     custom double myDouble
     uniform bool myUniformBool = 0 (
-        doc = "Uniform bool, default false"
+        customData = {
+            string userDocBrief = "Uniform bool, default false."
+        }
     )
     token myVaryingToken = "VariableTokenDefault" (
         allowedTokens = ["VariableTokenAllowed1", "VariableTokenAllowed2", "VariableTokenAllowed<3>", ""]
-        doc = "VariableToken attribute docs."
+        customData = {
+            string userDocBrief = "VariableToken attribute docs."
+        }
     )
     uniform token[] myVaryingTokenArray = ["VariableTokenArrayAllowed1", ""] (
         allowedTokens = ["VariableTokenArrayAllowed1", "VariableTokenArrayAllowed2", "VariableTokenArrayAllowed<3>", ""]
-        doc = "VariableTokenArray attribute docs."
+        customData = {
+            string userDocBrief = "VariableTokenArray attribute docs."
+        }
     )
     normal3d normal3d = (0, 0, 0)
     normal3d[] normal3dArray
@@ -125,40 +131,34 @@ class "Base" (
     normal3h normal3h = (0, 0, 0)
     normal3h[] normal3hArray
     int overrideBaseFalseDerivedFalse = 1 (
-        doc = """API schema override explicitly set to False in Base.
-        API schema override explicitly set to False in Derived.
-        Generates API functions in Base. (1/3)
-        """
+        customData = {
+            string userDocBrief = "API schema override explicitly set to False in Base."
+        }
     )
     int overrideBaseFalseDerivedNone = 1 (
-        doc = """API schema override explicitly set to False in Base.
-        API schema override has no opinion in Derived.
-        Generates API functions in Base. (2/3)
-        """
+        customData = {
+            string userDocBrief = "API schema override explicitly set to False in Base."
+        }
     )
     int overrideBaseNoneDerivedFalse = 1 (
-        doc = """API schema override has no opinion in Base.
-        API schema override explicitly set to False in Derived.
-        Generates API functions in Base. (3/3)
-        """
+        customData = {
+            string userDocBrief = "API schema override has no opinion in Base."
+        }
     )
     int overrideBaseTrueDerivedFalse = 1 (
-        doc = """API schema override explicitly set to True in Base.
-        API schema override explicitly set to False in Derived.
-        Does not generate API functions in Base.
-        """
+        customData = {
+            string userDocBrief = "API schema override explicitly set to True in Base."
+        }
     )
     int overrideBaseTrueDerivedNone = 1 (
-        doc = """API schema override explicitly set to True in Base.
-        API schema override has no opinion in Derived.
-        Does not generate API functions in Base.
-        """
+        customData = {
+            string userDocBrief = "API schema override explicitly set to True in Base."
+        }
     )
     int overrideBaseTrueDerivedTrue = 1 (
-        doc = """API schema override explicitly set to True in Base.
-        API schema override explicitly set to True in Derived.
-        Does not generate API functions in Base.
-        """
+        customData = {
+            string userDocBrief = "API schema override explicitly set to True in Base."
+        }
     )
     point3d point3d = (0, 0, 0)
     point3d[] point3dArray
@@ -194,14 +194,16 @@ class Derived "Derived" (
     apiSchemas = ["BuiltinAPI"]
     customData = {
         token[] apiSchemaOverridePropertyNames = ["overrideBaseTrueDerivedTrue"]
+        string userDocBrief = "Emphasized! Test Section."
     }
-    doc = "Emphasized! Test Section"
 )
 {
     asset asset = @asset@
     asset[] assetArray
     rel binding (
-        doc = "This is my awesome relationship."
+        customData = {
+            string userDocBrief = "This is my awesome relationship."
+        }
     )
     bool bool = 1
     bool[] boolArray
@@ -218,20 +220,23 @@ class Derived "Derived" (
     color4h color4h = (0, 0, 0, 0)
     color4h[] color4hArray
     int[] cornerIndices = [] (
-        doc = "The vertex indices of all vertices that are sharp corners."
+        customData = {
+            string userDocBrief = "The vertex indices of all vertices that are sharp corners."
+        }
     )
     float[] cornerSharpnesses = [] (
-        doc = """The sharpness values for corners: each corner gets a single
+        customData = {
+            string userDocBrief = """The sharpness values for corners: each corner gets a single
         sharpness value (Usd.Mesh.SHARPNESS_INFINITE for a perfectly sharp
         corner), so the size of this array must match that of
-        'cornerIndices'"""
+        'cornerIndices'."""
+        }
     )
     int[] creaseLengths = [] (
-        doc = """The length of this array specifies the number of creases on the
-        surface. Each element gives the number of (must be adjacent) vertices in
-        each crease, whose indices are linearly laid out in the 'creaseIndices'
-        attribute. Since each crease must be at least one edge long, each
-        element of this array should be greater than one."""
+        customData = {
+            string userDocBrief = """The length of this array specifies the number of creases on the
+        surface."""
+        }
     )
     double double = 0
     double2 double2 = (0, 0)
@@ -260,8 +265,10 @@ class Derived "Derived" (
     half4[] half4Array
     half[] halfArray
     int[] holeIndices = [] (
-        doc = """The face indices (indexing into the 'faceVertexCounts'
+        customData = {
+            string userDocBrief = """The face indices (indexing into the 'faceVertexCounts'
         attribute) of all faces that should be made invisible."""
+        }
     )
     int int = 0
     int2 int2 = (0, 0)
@@ -274,7 +281,9 @@ class Derived "Derived" (
     int64[] int64Array
     int[] intArray
     token justDefault = "newToken" (
-        doc = "newToken should be included in the global token set."
+        customData = {
+            string userDocBrief = "newToken should be included in the global token set."
+        }
     )
     matrix2d matrix2d = ( (1, 0), (0, 1) )
     matrix2d[] matrix2dArray
@@ -284,15 +293,21 @@ class Derived "Derived" (
     matrix4d[] matrix4dArray
     custom double myDouble
     uniform bool myUniformBool = 0 (
-        doc = "Uniform bool, default false"
+        customData = {
+            string userDocBrief = "Uniform bool, default false."
+        }
     )
     token myVaryingToken = "VariableTokenDefault" (
         allowedTokens = ["VariableTokenAllowed1", "VariableTokenAllowed2", "VariableTokenAllowed<3>", ""]
-        doc = "VariableToken attribute docs."
+        customData = {
+            string userDocBrief = "VariableToken attribute docs."
+        }
     )
     uniform token[] myVaryingTokenArray = ["VariableTokenArrayAllowed1", ""] (
         allowedTokens = ["VariableTokenArrayAllowed1", "VariableTokenArrayAllowed2", "VariableTokenArrayAllowed<3>", ""]
-        doc = "VariableTokenArray attribute docs."
+        customData = {
+            string userDocBrief = "VariableTokenArray attribute docs."
+        }
     )
     float3[] myVecfArray
     float namespaced:property = 1
@@ -303,46 +318,39 @@ class Derived "Derived" (
     normal3h normal3h = (0, 0, 0)
     normal3h[] normal3hArray
     int overrideBaseFalseDerivedFalse = 1 (
-        doc = """API schema override explicitly set to False in Base.
-        API schema override explicitly set to False in Derived.
-        Generates API functions in Derived. (3/5)
-        """
+        customData = {
+            string userDocBrief = "API schema override explicitly set to False in Base."
+        }
     )
     int overrideBaseFalseDerivedNone = 1 (
-        doc = """API schema override explicitly set to False in Base.
-        API schema override has no opinion in Derived (defaults to False).
-        Generates API functions in Derived. (4/5)
-        """
+        customData = {
+            string userDocBrief = "API schema override explicitly set to False in Base."
+        }
     )
     int overrideBaseNoneDerivedFalse = 1 (
-        doc = """API schema override has no opinion in Base.
-        API schema override explicitly set to False in Derived.
-        Generates API functions in Derived. (5/5)
-        """
+        customData = {
+            string userDocBrief = "API schema override has no opinion in Base."
+        }
     )
     int overrideBaseTrueDerivedFalse = 1 (
-        doc = """API schema override explicitly set to True in Base.
-        API schema override explicitly set to False in Derived.
-        Generates API functions in Derived. (1/5)
-        """
+        customData = {
+            string userDocBrief = "API schema override explicitly set to True in Base."
+        }
     )
     int overrideBaseTrueDerivedNone = 1 (
-        doc = """API schema override explicitly set to True in Base.
-        API schema override has no opinion in Derived (defaults to False).
-        Generates API functions in Derived. (2/5)
-        """
+        customData = {
+            string userDocBrief = "API schema override explicitly set to True in Base."
+        }
     )
     int overrideBaseTrueDerivedTrue = 1 (
-        doc = """API schema override explicitly set to True in Base.
-        API schema override explicitly set to True in Derived.
-        Does not generate API functions in Derived.
-        """
+        customData = {
+            string userDocBrief = "API schema override explicitly set to True in Base."
+        }
     )
     float3 pivotPosition = (0, 0, 0) (
-        doc = """Rotation pivot position for this prim's transformation. 
-         Provided as advisory data only for use by authoring applications,
-         and should have no effect on the transformation encoded in the
-         'transform' attribute."""
+        customData = {
+            string userDocBrief = "Rotation pivot position for this prim's transformation."
+        }
     )
     point3d point3d = (0, 0, 0)
     point3d[] point3dArray
@@ -362,8 +370,10 @@ class Derived "Derived" (
     token token = "token"
     token[] tokenArray
     matrix4d transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) ) (
-        doc = """Double-precision transformation matrix, which should encode
+        customData = {
+            string userDocBrief = """Double-precision transformation matrix, which should encode
         the entire local transformation for a prim."""
+        }
     )
     uchar uchar = 0
     uchar[] ucharArray
@@ -382,13 +392,19 @@ class Derived "Derived" (
 class TestPxHairman "TestPxHairman"
 {
     float attrWithoutGeneratedAccessorAPI (
-        doc = "This exercises empty apiName to skip accessor generation."
+        customData = {
+            string userDocBrief = "This exercises empty apiName to skip accessor generation."
+        }
     )
     rel relCanShareApiNameWithAttr (
-        doc = "This exercises custom API naming."
+        customData = {
+            string userDocBrief = "This exercises custom API naming."
+        }
     )
     float riStatements:attributes:user:Gofur_GeomOnHairdensity (
-        doc = "This exercises custom API naming."
+        customData = {
+            string userDocBrief = "This exercises custom API naming."
+        }
     )
     custom float temp
 }
@@ -417,5 +433,35 @@ class "MultipleApplyAPI_1"
 
 class UsdContrivedNoAlias "UsdContrivedNoAlias"
 {
+}
+
+class "TestReflectedAPIBase" (
+    apiSchemas = ["TestReflectedInternalAPI", "TestReflectedExternalAPI"]
+)
+{
+}
+
+class "TestReflectedInternalAPI" (
+    apiSchemas = ["BuiltinAPI"]
+)
+{
+    int testAttrDuplicate
+    int testAttrInternal
+    rel testRelDuplicate
+    rel testRelInternal
+}
+
+class "TestPropertyOrderTyped"
+{
+    reorder properties = ["testAttrTwo", "testAttrOne"]
+    int testAttrOne
+    int testAttrTwo
+}
+
+class "TestPropertyOrderSingleApplyAPI"
+{
+    reorder properties = ["testAttrTwo", "testAttrOne"]
+    int testAttrOne
+    int testAttrTwo
 }
 

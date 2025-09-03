@@ -1,0 +1,54 @@
+#usda 1.0
+
+over "_shared_HumanHair"
+{
+    over "Hair_Chiang_Head_Chiang_Hair"
+    {
+        over "Class"
+        {
+        }
+
+        over "Inner"
+        {
+        }
+    }
+
+    over "Hair_Chiang"
+    {
+        over "Class"
+        {
+        }
+
+        over "Inner"
+        {
+        }
+    }
+}
+
+def "HumanMaleStdHair" (
+    add references = @./ref.usda@</HumanMaleStdHair>
+)
+{
+    over "Hair_Chiang_Head_Chiang_Hair"
+    {
+        over "Class"
+        {
+        }
+
+        over "Inner"
+        {
+        }
+    }
+
+    over "Hair_Chiang"
+    {
+        over "Class"
+        {
+        }
+
+        over "Inner"
+        {
+        }
+    }
+}
+

@@ -1,0 +1,9 @@
+#usda 1.0
+#tagged-as-never-update
+
+def MfScope "Test"
+{
+    # Can't change variability
+    double foo = 10
+    uniform double foo.connect = None
+}

@@ -1,0 +1,13 @@
+#usda 1.0
+(
+    subLayers = [
+        @./ss.usda@ (offset = 10; scale = 2.0),
+        @./ss_48tcps.usda@ (offset = 10; scale = 2.0),
+        @./ss_24tcps_12fps.usda@ (offset = 10; scale = 2.0),
+        @./ss_12fps.usda@ (offset = 10; scale = 2.0)
+    ]
+)
+
+def "S1" 
+{
+}

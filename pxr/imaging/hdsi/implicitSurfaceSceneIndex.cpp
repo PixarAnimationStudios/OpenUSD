@@ -1641,23 +1641,30 @@ HdsiImplicitSurfaceSceneIndex::_PrimsAdded(
         return;
     }
     
-    TRACE_FUNCTION();
-
     std::vector<size_t> indices;
-    for (size_t i = 0; i < entries.size(); i++) {
-        if ((entries[i].primType == HdPrimTypeTokens->cube &&
-             _cubeMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) ||
-            (entries[i].primType == HdPrimTypeTokens->cone &&
-             _coneMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) ||
-            (entries[i].primType == HdPrimTypeTokens->cylinder &&
-             _cylinderMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) ||
-            (entries[i].primType == HdPrimTypeTokens->sphere &&
-             _sphereMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) ||
-            (entries[i].primType == HdPrimTypeTokens->capsule &&
-             _capsuleMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) ||
-            (entries[i].primType == HdPrimTypeTokens->plane &&
-             _planeMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh)) {
-            indices.push_back(i);
+    {
+        TRACE_FUNCTION_SCOPE("Scanning entries");
+
+        for (size_t i = 0; i < entries.size(); i++) {
+            const TfToken &primType = entries[i].primType;
+            const bool convertToMesh =
+                    (primType == HdPrimTypeTokens->cube &&
+                     _cubeMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh)
+                ||  (primType == HdPrimTypeTokens->cone &&
+                     _coneMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh)
+                ||  (primType == HdPrimTypeTokens->cylinder &&
+                     _cylinderMode ==
+                        HdsiImplicitSurfaceSceneIndexTokens->toMesh)
+                || (primType == HdPrimTypeTokens->sphere &&
+                    _sphereMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh)
+                || (primType == HdPrimTypeTokens->capsule &&
+                    _capsuleMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh)
+                || (primType == HdPrimTypeTokens->plane &&
+                    _planeMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh);
+
+            if (convertToMesh) {
+                indices.push_back(i);
+            }
         }
     }
 

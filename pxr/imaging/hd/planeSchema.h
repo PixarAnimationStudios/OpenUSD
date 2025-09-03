@@ -48,6 +48,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdPlaneSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdPlaneSchema
+///
 class HdPlaneSchema : public HdSchema
 {
 public:

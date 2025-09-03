@@ -42,12 +42,12 @@ int main(int argc, char** argv)
     }
 
     const int64_t fileSize = ArchGetFileLength(f.get());
-    printf("Reading %s (%zu bytes)...\n", filename.c_str(), fileSize);
+    printf("Reading %s (%+" PRId64 " bytes)...\n", filename.c_str(), fileSize);
 
     std::unique_ptr<char[]> fileContents(new char[fileSize]);
     const int64_t numRead = ArchPRead(f.get(), fileContents.get(), fileSize, 0);
     if (numRead != fileSize) {
-        printf("ERROR: Read %zu bytes, expected %zu\n", numRead, fileSize);
+        printf("ERROR: Read %+" PRId64 " bytes, expected %+" PRId64 "\n", numRead, fileSize);
         return 1;
     }
 

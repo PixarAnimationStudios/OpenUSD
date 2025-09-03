@@ -42,8 +42,8 @@ _RaiseCodingError(string const &msg,
                  string const& fileName, int lineNo)
 {
     TfDiagnosticMgr::
-        ErrorHelper(Tf_PythonCallContext(fileName.c_str(), moduleName.c_str(),
-                                          functionName.c_str(), lineNo),
+        ErrorHelper(Tf_PythonCallContext(fileName, moduleName,
+                                          functionName, lineNo),
                     TF_DIAGNOSTIC_CODING_ERROR_TYPE,
                     TfEnum::GetName(TfEnum(TF_DIAGNOSTIC_CODING_ERROR_TYPE)).
                     c_str()).
@@ -56,8 +56,8 @@ _RaiseRuntimeError(string const &msg,
                  string const& fileName, int lineNo)                  
 {
     TfDiagnosticMgr::
-        ErrorHelper(Tf_PythonCallContext(fileName.c_str(), moduleName.c_str(),
-                                          functionName.c_str(), lineNo),
+        ErrorHelper(Tf_PythonCallContext(fileName, moduleName,
+                                          functionName, lineNo),
                     TF_DIAGNOSTIC_RUNTIME_ERROR_TYPE,
                     TfEnum::GetName(TfEnum(TF_DIAGNOSTIC_RUNTIME_ERROR_TYPE)).c_str()).
         Post("Python runtime error: " + msg);
@@ -68,8 +68,8 @@ static void
 _Fatal(string const &msg, string const& moduleName, string const& functionName,
       string const& fileName, int lineNo)
 {
-    TfDiagnosticMgr::FatalHelper(Tf_PythonCallContext(fileName.c_str(), moduleName.c_str(),
-                                                      functionName.c_str(), lineNo),
+    TfDiagnosticMgr::FatalHelper(Tf_PythonCallContext(fileName, moduleName,
+                                                      functionName, lineNo),
          TF_DIAGNOSTIC_FATAL_ERROR_TYPE). Post("Python Fatal Error: " + msg);
 }
 // CODE_COVERAGE_ON
@@ -94,6 +94,15 @@ static vector<TfError>
 _GetErrors( const TfErrorMark & mark )
 {
     return vector<TfError>(mark.GetBegin(), mark.GetEnd());
+}
+
+static void
+_RaiseIfNotClean(const TfErrorMark &mark)
+{
+    if (!mark.IsClean()) {
+        TfPyConvertTfErrorsToPythonException(mark);
+        pxr_boost::python::throw_error_already_set();
+    }
 }
 
 // Repost any errors contained in exc to the TfError system.  This is used for
@@ -207,6 +216,9 @@ void wrapError() {
         .def("GetErrors", &_GetErrors,
             return_value_policy<TfPySequenceToList>(),
              "A list of the errors held by this mark.")
+        .def("RaiseIfNotClean", &_RaiseIfNotClean,
+             "If this mark is not clean, raise a Tf.ErrorException with "
+             "the contained errors, otherwise do nothing.")
         ;
     
 }

@@ -19,14 +19,13 @@ pxr_library(usdRiPxrImaging
         usdImaging
         usdVol
         ar
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
+        projectionSchema
         pxrAovLightAdapter
         pxrCameraAPIAdapter
+        pxrCameraProjectionAdapter
+        pxrCameraProjectionAPIAdapter
         pxrDisplayFilterAdapter
         pxrIntegratorAdapter
         pxrSampleFilterAdapter

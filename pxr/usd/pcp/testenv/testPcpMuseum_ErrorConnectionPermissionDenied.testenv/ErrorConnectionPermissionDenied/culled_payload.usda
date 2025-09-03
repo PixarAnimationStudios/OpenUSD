@@ -1,0 +1,16 @@
+#usda 1.0
+
+def Scope "CulledModelPayload"
+{
+    def Scope "sim"
+    {
+        def Scope "CollisionRig" (
+            permission = private
+        )
+        {
+            def Scope "FiztCollBody"
+            {
+            }
+        }
+    }
+}

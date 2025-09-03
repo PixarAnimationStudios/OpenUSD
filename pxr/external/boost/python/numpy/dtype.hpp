@@ -15,10 +15,6 @@
 #include "pxr/pxr.h"
 #include "pxr/external/boost/python/common.hpp"
 
-#ifndef PXR_USE_INTERNAL_BOOST_PYTHON
-#include <boost/python/numpy/dtype.hpp>
-#else
-
 /**
  *  @file boost/python/numpy/dtype.hpp
  *  @brief Object manager for Python's numpy.dtype class.
@@ -125,5 +121,4 @@ namespace converter {
 NUMPY_OBJECT_MANAGER_TRAITS(numpy::dtype);
 }}} // namespace PXR_BOOST_NAMESPACE::python::converter
 
-#endif // PXR_USE_INTERNAL_BOOST_PYTHON
 #endif

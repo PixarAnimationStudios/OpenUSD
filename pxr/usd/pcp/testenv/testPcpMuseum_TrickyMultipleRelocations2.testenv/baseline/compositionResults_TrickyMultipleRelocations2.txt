@@ -1,15 +1,15 @@
-Loading @TrickyMultipleRelocations2/root.sdf@
+Loading @TrickyMultipleRelocations2/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </ModelGroup>
 
 Prim Stack:
-    root.sdf             /ModelGroup
-    group.sdf            /Group
+    root.usda            /ModelGroup
+    group.usda           /Group
 
 Child names:
      ['Model_2']
@@ -22,7 +22,7 @@ Property names:
 
 Property stacks:
 /ModelGroup.groupRel:
-    root.sdf             /ModelGroup.groupRel
+    root.usda            /ModelGroup.groupRel
 
 Relationship targets:
 /ModelGroup.groupRel:
@@ -32,8 +32,8 @@ Relationship targets:
 Results for composing </ModelGroup/Model_2>
 
 Prim Stack:
-    root.sdf             /ModelGroup/Model_2
-    group.sdf            /Group/Model
+    root.usda            /ModelGroup/Model_2
+    group.usda           /Group/Model
 
 Child names:
      ['Anim', 'Rig']
@@ -43,7 +43,7 @@ Property names:
 
 Property stacks:
 /ModelGroup/Model_2.modelRel:
-    root.sdf             /ModelGroup/Model_2.modelRel
+    root.usda            /ModelGroup/Model_2.modelRel
 
 Relationship targets:
 /ModelGroup/Model_2.modelRel:
@@ -53,7 +53,7 @@ Relationship targets:
 Results for composing </ModelGroup/Model_2/Anim>
 
 Prim Stack:
-    group.sdf            /Group/Model/Anim
+    group.usda           /Group/Model/Anim
 
 Child names:
      ['Collider']
@@ -62,14 +62,14 @@ Child names:
 Results for composing </ModelGroup/Model_2/Anim/Collider>
 
 Prim Stack:
-    rig.sdf              /Rig/Collider
+    rig.usda             /Rig/Collider
 
 Property names:
      ['colliderRel']
 
 Property stacks:
 /ModelGroup/Model_2/Anim/Collider.colliderRel:
-    rig.sdf              /Rig/Collider.colliderRel
+    rig.usda             /Rig/Collider.colliderRel
 
 Relationship targets:
 /ModelGroup/Model_2/Anim/Collider.colliderRel:
@@ -79,8 +79,8 @@ Relationship targets:
 Results for composing </ModelGroup/Model_2/Rig>
 
 Prim Stack:
-    root.sdf             /ModelGroup/Model_2/Rig
-    rig.sdf              /Rig
+    root.usda            /ModelGroup/Model_2/Rig
+    rig.usda             /Rig
 
 Prohibited child names:
      ['Collider']
@@ -90,7 +90,7 @@ Property names:
 
 Property stacks:
 /ModelGroup/Model_2/Rig.rigRel:
-    rig.sdf              /Rig.rigRel
+    rig.usda             /Rig.rigRel
 
 Relationship targets:
 /ModelGroup/Model_2/Rig.rigRel:

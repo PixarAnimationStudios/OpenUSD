@@ -37,13 +37,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// HdStMesh::Sync with the HdChangeTracker::DirtyMaterialId dirty bit set so
 /// the mesh will re-evaluate whether the bound material is using any ptex
 /// texture.
-/// Note that this was previously achieved by HdStMaterial::Sync calling
-/// HdChangeTracker::MarkAllRprimsDirty when a material has changed in such a
-/// way that the _hasPtex flag has changed.
-/// HdChangeTracker::MarkAllRprimsDirty, however, only works for prims
-/// originating from a scene delegate (that is, being added to the legacy
-/// retained scene index used by emulation). Furthermore, that call did
-/// do a potentially massive overinvalidation.
 ///
 class HdSt_DependencySceneIndexPlugin : public HdSceneIndexPlugin
 {

@@ -58,6 +58,18 @@ struct HdQuadInfo {
     std::vector<int> verts;     // vertex indices of non-quads
 };
 
+/// Return status for a computation
+enum class [[nodiscard]] HdMeshComputationResult
+{
+    /// Computation failed
+    Error,
+    /// Computation succeeded and a result was produced
+    Success,
+    /// Computation succeeded but no result was produced,
+    /// because it is the same as the input.
+    Unchanged
+};
+
 /// \class HdMeshUtil
 /// A collection of utility algorithms for generating triangulation
 /// and quadrangulation of an input topology.
@@ -100,16 +112,17 @@ public:
                                 VtIntArray *primitiveParams,
                                 VtIntArray *edgeIndices = nullptr) const;
 
-    /// Return a triangulation of a face-varying primvar. source is
+    /// Perform a triangulation of a face-varying primvar. source is
     /// a buffer of size numElements and type corresponding to dataType
     /// (e.g. HdTypeFloatVec3); the result is a VtArray<T> of the
-    /// correct type written to the variable "triangulated".
-    /// This function returns false if it can't resolve dataType.
+    /// correct type written to the variable "triangulated", unless the
+    /// result is not "Success", in which case the argument is unmodified.
     HD_API
-    bool ComputeTriangulatedFaceVaryingPrimvar(void const* source,
-                                               int numElements,
-                                               HdType dataType,
-                                               VtValue *triangulated) const;
+    HdMeshComputationResult ComputeTriangulatedFaceVaryingPrimvar(
+        void const* source,
+        int numElements,
+        HdType dataType,
+        VtValue *triangulated) const;
 
     /// @}
 

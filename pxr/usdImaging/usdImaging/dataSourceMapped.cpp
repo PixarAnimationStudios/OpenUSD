@@ -142,6 +142,10 @@ UsdImagingDataSourceMapped::GetNames()
 HdDataSourceBaseHandle
 UsdImagingDataSourceMapped::Get(const TfToken &name)
 {
+    if (!_usdPrim) {
+        return nullptr;
+    }
+
     // Look for name in hdNames.
 
     const auto itName = std::lower_bound(

@@ -270,14 +270,29 @@ public:
     /// \name Task Support
     // ---------------------------------------------------------------------- //
 
+    /// \deprecated
+    ///
+    /// In Hydra 2.0, tasks are managed by a scene index such as the
+    /// HdxTaskControllerSceneIndex (reimplementing HdxTaskController).
+    ///
     /// Inserts a new task into the render index with an identifier of \p id.
     template <typename T>
     void InsertTask(HdSceneDelegate* delegate, SdfPath const& id);
 
+    /// \deprecated
+    ///
+    /// In Hydra 2.0, tasks are managed by a scene index such as the
+    /// HdxTaskControllerSceneIndex (reimplementing HdxTaskController).
+    ///
     /// Removes the given task from the RenderIndex.
     HD_API
     void RemoveTask(SdfPath const& id);
 
+    /// \deprecated
+    ///
+    /// In Hydra 2.0, tasks are managed by a scene index such as the
+    /// HdxTaskControllerSceneIndex (reimplementing HdxTaskController).
+    ///
     /// Returns true if a task exists in the index with the given \p id.
     bool HasTask(SdfPath const& id) {
         return _taskMap.find(id) != _taskMap.end();

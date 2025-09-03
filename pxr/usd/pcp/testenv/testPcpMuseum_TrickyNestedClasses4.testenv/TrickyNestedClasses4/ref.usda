@@ -1,0 +1,23 @@
+#usda 1.0
+
+def Scope "CharRig"
+{
+    class Scope "_Class_ToesRig"
+    {
+        def Scope "_Class_Toe"
+        {
+        }
+    }
+
+    class Scope "SymToesRig" (
+        inherits = </CharRig/_Class_ToesRig>
+    )
+    {
+    }
+
+    def Scope "LToesRig" (
+        inherits = </CharRig/SymToesRig>
+    )
+    {
+    }
+}

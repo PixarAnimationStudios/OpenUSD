@@ -148,12 +148,16 @@ private:
 
     // Population
     void _Populate();
-    void _PopulateSubtree(UsdPrim subtreeRoot);
+    void _PopulateSubtree(UsdPrim subtreeRoot,
+        HdSceneIndexObserver::AddedPrimEntries *addedPrims);
 
     // Edit processing
     void _OnUsdObjectsChanged(UsdNotice::ObjectsChanged const& notice,
                               UsdStageWeakPtr const& sender);
     TfNotice::Key _objectsChangedNoticeKey;
+
+    // Keep track of populated paths for use in _ApplyPendingResyncs().
+    SdfPathSet _populatedPaths;
 
     // Note: resync paths mean we remove the whole subtree and repopulate.
     SdfPathVector _usdPrimsToResync;

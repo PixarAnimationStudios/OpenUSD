@@ -39,7 +39,8 @@ def _GetContextMenuItems(item, dataModel):
 
              # Individual/multi target selection menus
              CopyTargetPathMenuItem(dataModel, item),
-             SelectTargetPathMenuItem(dataModel, item)]
+             SelectTargetPathMenuItem(dataModel, item),
+             ViewSplineMenuItem(dataModel, item),]
 
 def _selectPrimsAndProps(dataModel, paths):
     prims = []
@@ -245,3 +246,62 @@ class CopyAllTargetPathsMenuItem(SelectAllTargetPathsMenuItem):
         cb = QtWidgets.QApplication.clipboard()
         cb.setText(value, QtGui.QClipboard.Selection)
         cb.setText(value, QtGui.QClipboard.Clipboard)
+
+class ViewSplineMenuItem(AttributeViewContextMenuItem):
+    _viewerByAttrPath = {}
+
+    def ShouldDisplay(self):
+        # Only show for attributes (not connections or targets)
+        return self._role == PropertyViewDataRoles.ATTRIBUTE
+
+    def IsEnabled(self):
+        from pxr import Usd
+        # Check if this attributes has a spline value source
+        attr = self._getUsdAttribute()
+        return (
+            attr and 
+            attr.GetResolveInfo().GetSource() == Usd.ResolveInfoSourceSpline)
+
+    def GetText(self):
+        return "View Spline"
+
+    def RunCommand(self):
+        from .splineViewer import SplineViewer
+        attr = self._getUsdAttribute()
+        if not attr:
+            return
+
+        # Activate existing spline viewer if one exists for this spline values
+        # attribute
+        pathStr = str(attr.GetPath())
+        if viewer := self._viewerByAttrPath.get(pathStr):
+            viewer.raise_()
+            viewer.activateWindow()
+            return
+
+        # Show a minimal dialog box with info
+        splineViewer = SplineViewer(
+            attr, currentFrame = self._dataModel.currentFrame)
+        splineViewer.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        splineViewer.SetStartAndEndTime(
+            self._dataModel.frameRangeBegin,
+            self._dataModel.frameRangeEnd)
+        # Store the viewer in a dictionary to keep it alive
+        # until the user closes it
+        self._viewerByAttrPath[pathStr] = splineViewer
+        self._dataModel.currentFrameChanged.connect(
+            splineViewer.SetCurrentFrame)
+        self._dataModel.frameRangeChanged.connect(
+            splineViewer.SetStartAndEndTime)
+        # Remove the viewer from the dictionary when it is closed
+        splineViewer.destroyed.connect(
+            lambda: self._viewerByAttrPath.pop(pathStr, None))
+        splineViewer.show()
+
+
+    def _getUsdAttribute(self):
+        stage = self._dataModel.stage
+        if len(self._dataModel.selection.getPropPaths()) != 1:
+            return None
+        path = self._dataModel.selection.getPropPaths()[0]
+        return stage.GetAttributeAtPath(path)

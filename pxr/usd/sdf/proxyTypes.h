@@ -54,6 +54,14 @@ typedef SdfMapEditProxy<SdfVariantSelectionMap> SdfVariantSelectionProxy;
 typedef SdfMapEditProxy<SdfRelocatesMap,
                         SdfRelocatesMapProxyValuePolicy> SdfRelocatesMapProxy;
 
+
+/// Returns a name list editor proxy for the name list op in the given
+/// \p nameField on \p spec.  If the value doesn't exist or \p spec is 
+/// invalid then this returns an invalid list editor.
+SdfNameEditorProxy
+SdfGetNameEditorProxy(
+    const SdfSpecHandle& spec, const TfToken& nameField);
+
 /// Returns a path list editor proxy for the path list op in the given
 /// \p pathField on \p spec.  If the value doesn't exist or \p spec is 
 /// invalid then this returns an invalid list editor.

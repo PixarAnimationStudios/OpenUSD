@@ -319,6 +319,15 @@ _GetBracketingTimeSamplesForPath(const SdfLayerHandle & layer,
     return pxr_boost::python::make_tuple(found, tLower, tUpper);
 }
 
+static tuple
+_GetPreviousTimeSampleForPath(const SdfLayerHandle &layer,
+                              const SdfPath &path, double time)
+{
+    double tPrevious = 0;
+    bool found = layer->GetPreviousTimeSampleForPath(path, time, &tPrevious);
+    return pxr_boost::python::make_tuple(found, tPrevious);
+}
+
 static void
 _SetTimeSample(const SdfLayerHandle& layer, const SdfPath& path,
                double time, const VtValue& value)
@@ -646,6 +655,9 @@ void wrapLayer()
 
         .def("ScheduleRemoveIfInert", &This::ScheduleRemoveIfInert)
 
+        .def("RemovePropertyIfHasOnlyRequiredFields",
+             &This::RemovePropertyIfHasOnlyRequiredFields)
+
         .def("RemoveInertSceneDescription", &This::RemoveInertSceneDescription)
 
         .def("UpdateExternalReference", &This::UpdateExternalReference)
@@ -721,6 +733,12 @@ void wrapLayer()
              &This::HasDefaultPrim)
         .def("ClearDefaultPrim",
              &This::ClearDefaultPrim)
+        .def("ConvertDefaultPrimTokenToPath",
+             &This::ConvertDefaultPrimTokenToPath)
+            .staticmethod("ConvertDefaultPrimTokenToPath")
+        .def("ConvertDefaultPrimPathToToken",
+             &This::ConvertDefaultPrimPathToToken)
+            .staticmethod("ConvertDefaultPrimPathToToken")
 
         .add_property("customLayerData",
            &This::GetCustomLayerData,
@@ -941,6 +959,8 @@ void wrapLayer()
              &_GetBracketingTimeSamples)
         .def("GetBracketingTimeSamplesForPath",
              &_GetBracketingTimeSamplesForPath)
+        .def("GetPreviousTimeSampleForPath",
+             &_GetPreviousTimeSampleForPath)
         .def("QueryTimeSample",
              &_QueryTimeSample)
         .def("SetTimeSample", &_SetTimeSample)

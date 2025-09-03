@@ -1,492 +1,492 @@
-Loading session @TimeCodesPerSecond/session.sdf@
+Loading session @TimeCodesPerSecond/session.usda@
 
-Loading @TimeCodesPerSecond/root_12fps.sdf@
+Loading @TimeCodesPerSecond/root_12fps.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     session.sdf
-     sess_s.sdf
-     sess_s_48tcps.sdf
-     sess_s_24tcps_12fps.sdf
-     sess_s_12fps.sdf
-     root_12fps.sdf
-     s.sdf
-     ss.sdf
-     ss_48tcps.sdf
-     ss_24tcps_12fps.sdf
-     ss_12fps.sdf
-     s_48tcps.sdf
-     ss.sdf
-     ss_48tcps.sdf
-     ss_24tcps_12fps.sdf
-     ss_12fps.sdf
-     s_24tcps_12fps.sdf
-     ss.sdf
-     ss_48tcps.sdf
-     ss_24tcps_12fps.sdf
-     ss_12fps.sdf
-     s_12fps.sdf
-     ss.sdf
-     ss_48tcps.sdf
-     ss_24tcps_12fps.sdf
-     ss_12fps.sdf
+     session.usda
+     sess_s.usda
+     sess_s_48tcps.usda
+     sess_s_24tcps_12fps.usda
+     sess_s_12fps.usda
+     root_12fps.usda
+     s.usda
+     ss.usda
+     ss_48tcps.usda
+     ss_24tcps_12fps.usda
+     ss_12fps.usda
+     s_48tcps.usda
+     ss.usda
+     ss_48tcps.usda
+     ss_24tcps_12fps.usda
+     ss_12fps.usda
+     s_24tcps_12fps.usda
+     ss.usda
+     ss_48tcps.usda
+     ss_24tcps_12fps.usda
+     ss_12fps.usda
+     s_12fps.usda
+     ss.usda
+     ss_48tcps.usda
+     ss_24tcps_12fps.usda
+     ss_12fps.usda
 
 ------------------------------------------------------------------------
 Results for composing </SS4>
 
 Prim Stack:
-    ss_12fps.sdf         /SS4
-    ss_12fps.sdf         /SS4
-    ss_12fps.sdf         /SS4
-    ss_12fps.sdf         /SS4
-    ref.sdf              /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_48tcps.sdf       /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_24tcps_12fps.sdf /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_12fps.sdf        /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
+    ss_12fps.usda        /SS4
+    ss_12fps.usda        /SS4
+    ss_12fps.usda        /SS4
+    ss_12fps.usda        /SS4
+    ref.usda             /Ref
+    ref_s.usda           /Ref
+    ref_s_48tcps.usda    /Ref
+    ref_s_24tcps_12fps.usda /Ref
+    ref_s_12fps.usda     /Ref
+    ref_48tcps.usda      /Ref
+    ref_s.usda           /Ref
+    ref_s_48tcps.usda    /Ref
+    ref_s_24tcps_12fps.usda /Ref
+    ref_s_12fps.usda     /Ref
+    ref_24tcps_12fps.usda /Ref
+    ref_s.usda           /Ref
+    ref_s_48tcps.usda    /Ref
+    ref_s_24tcps_12fps.usda /Ref
+    ref_s_12fps.usda     /Ref
+    ref_12fps.usda       /Ref
+    ref_s.usda           /Ref
+    ref_s_48tcps.usda    /Ref
+    ref_s_24tcps_12fps.usda /Ref
+    ref_s_12fps.usda     /Ref
 
 Time Offsets:
-    session.sdf          /SS4            root       (offset=0.00, scale=1.00)
-        session.sdf                      sublayer   (offset=0.00, scale=0.50)
-        sess_s.sdf                       sublayer   (offset=5.00, scale=1.00)
-        sess_s_48tcps.sdf                sublayer   (offset=5.00, scale=0.50)
-        sess_s_24tcps_12fps.sdf          sublayer   (offset=5.00, scale=1.00)
-        sess_s_12fps.sdf                 sublayer   (offset=5.00, scale=2.00)
-        s.sdf                            sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_48tcps.sdf                     sublayer   (offset=10.00, scale=0.50)
-        ss.sdf                           sublayer   (offset=15.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=15.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=15.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=15.00, scale=4.00)
-        s_24tcps_12fps.sdf               sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_12fps.sdf                      sublayer   (offset=10.00, scale=2.00)
-        ss.sdf                           sublayer   (offset=30.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=30.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=30.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=30.00, scale=4.00)
-    ref.sdf              /Ref            reference  (offset=60.00, scale=4.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_48tcps.sdf       /Ref            reference  (offset=60.00, scale=2.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=2.00)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=2.00)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=4.00)
-    ref_24tcps_12fps.sdf /Ref            reference  (offset=60.00, scale=4.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_12fps.sdf        /Ref            reference  (offset=60.00, scale=8.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=0.50)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.25)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=0.50)
+    session.usda         /SS4            root       (offset=0.00, scale=1.00)
+        session.usda                     sublayer   (offset=0.00, scale=0.50)
+        sess_s.usda                      sublayer   (offset=5.00, scale=1.00)
+        sess_s_48tcps.usda               sublayer   (offset=5.00, scale=0.50)
+        sess_s_24tcps_12fps.usda         sublayer   (offset=5.00, scale=1.00)
+        sess_s_12fps.usda                sublayer   (offset=5.00, scale=2.00)
+        s.usda                           sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_48tcps.usda                    sublayer   (offset=10.00, scale=0.50)
+        ss.usda                          sublayer   (offset=15.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=15.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=15.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=15.00, scale=4.00)
+        s_24tcps_12fps.usda              sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_12fps.usda                     sublayer   (offset=10.00, scale=2.00)
+        ss.usda                          sublayer   (offset=30.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=30.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=30.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=30.00, scale=4.00)
+    ref.usda             /Ref            reference  (offset=60.00, scale=4.00)
+        ref_s_48tcps.usda                sublayer   (offset=0.00, scale=0.50)
+        ref_s_12fps.usda                 sublayer   (offset=0.00, scale=2.00)
+    ref_48tcps.usda      /Ref            reference  (offset=60.00, scale=2.00)
+        ref_s.usda                       sublayer   (offset=0.00, scale=2.00)
+        ref_s_24tcps_12fps.usda          sublayer   (offset=0.00, scale=2.00)
+        ref_s_12fps.usda                 sublayer   (offset=0.00, scale=4.00)
+    ref_24tcps_12fps.usda /Ref            reference  (offset=60.00, scale=4.00)
+        ref_s_48tcps.usda                sublayer   (offset=0.00, scale=0.50)
+        ref_s_12fps.usda                 sublayer   (offset=0.00, scale=2.00)
+    ref_12fps.usda       /Ref            reference  (offset=60.00, scale=8.00)
+        ref_s.usda                       sublayer   (offset=0.00, scale=0.50)
+        ref_s_48tcps.usda                sublayer   (offset=0.00, scale=0.25)
+        ref_s_24tcps_12fps.usda          sublayer   (offset=0.00, scale=0.50)
 
 ------------------------------------------------------------------------
 Results for composing </SS3>
 
 Prim Stack:
-    ss_24tcps_12fps.sdf  /SS3
-    ss_24tcps_12fps.sdf  /SS3
-    ss_24tcps_12fps.sdf  /SS3
-    ss_24tcps_12fps.sdf  /SS3
-    ref.sdf              /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_48tcps.sdf       /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_24tcps_12fps.sdf /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_12fps.sdf        /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
+    ss_24tcps_12fps.usda /SS3
+    ss_24tcps_12fps.usda /SS3
+    ss_24tcps_12fps.usda /SS3
+    ss_24tcps_12fps.usda /SS3
+    ref.usda             /Ref
+    ref_s.usda           /Ref
+    ref_s_48tcps.usda    /Ref
+    ref_s_24tcps_12fps.usda /Ref
+    ref_s_12fps.usda     /Ref
+    ref_48tcps.usda      /Ref
+    ref_s.usda           /Ref
+    ref_s_48tcps.usda    /Ref
+    ref_s_24tcps_12fps.usda /Ref
+    ref_s_12fps.usda     /Ref
+    ref_24tcps_12fps.usda /Ref
+    ref_s.usda           /Ref
+    ref_s_48tcps.usda    /Ref
+    ref_s_24tcps_12fps.usda /Ref
+    ref_s_12fps.usda     /Ref
+    ref_12fps.usda       /Ref
+    ref_s.usda           /Ref
+    ref_s_48tcps.usda    /Ref
+    ref_s_24tcps_12fps.usda /Ref
+    ref_s_12fps.usda     /Ref
 
 Time Offsets:
-    session.sdf          /SS3            root       (offset=0.00, scale=1.00)
-        session.sdf                      sublayer   (offset=0.00, scale=0.50)
-        sess_s.sdf                       sublayer   (offset=5.00, scale=1.00)
-        sess_s_48tcps.sdf                sublayer   (offset=5.00, scale=0.50)
-        sess_s_24tcps_12fps.sdf          sublayer   (offset=5.00, scale=1.00)
-        sess_s_12fps.sdf                 sublayer   (offset=5.00, scale=2.00)
-        s.sdf                            sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_48tcps.sdf                     sublayer   (offset=10.00, scale=0.50)
-        ss.sdf                           sublayer   (offset=15.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=15.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=15.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=15.00, scale=4.00)
-        s_24tcps_12fps.sdf               sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_12fps.sdf                      sublayer   (offset=10.00, scale=2.00)
-        ss.sdf                           sublayer   (offset=30.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=30.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=30.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=30.00, scale=4.00)
-    ref.sdf              /Ref            reference  (offset=40.00, scale=4.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_48tcps.sdf       /Ref            reference  (offset=40.00, scale=2.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=2.00)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=2.00)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=4.00)
-    ref_24tcps_12fps.sdf /Ref            reference  (offset=40.00, scale=4.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_12fps.sdf        /Ref            reference  (offset=40.00, scale=8.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=0.50)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.25)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=0.50)
+    session.usda         /SS3            root       (offset=0.00, scale=1.00)
+        session.usda                     sublayer   (offset=0.00, scale=0.50)
+        sess_s.usda                      sublayer   (offset=5.00, scale=1.00)
+        sess_s_48tcps.usda               sublayer   (offset=5.00, scale=0.50)
+        sess_s_24tcps_12fps.usda         sublayer   (offset=5.00, scale=1.00)
+        sess_s_12fps.usda                sublayer   (offset=5.00, scale=2.00)
+        s.usda                           sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_48tcps.usda                    sublayer   (offset=10.00, scale=0.50)
+        ss.usda                          sublayer   (offset=15.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=15.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=15.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=15.00, scale=4.00)
+        s_24tcps_12fps.usda              sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_12fps.usda                     sublayer   (offset=10.00, scale=2.00)
+        ss.usda                          sublayer   (offset=30.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=30.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=30.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=30.00, scale=4.00)
+    ref.usda             /Ref            reference  (offset=40.00, scale=4.00)
+        ref_s_48tcps.usda                sublayer   (offset=0.00, scale=0.50)
+        ref_s_12fps.usda                 sublayer   (offset=0.00, scale=2.00)
+    ref_48tcps.usda      /Ref            reference  (offset=40.00, scale=2.00)
+        ref_s.usda                       sublayer   (offset=0.00, scale=2.00)
+        ref_s_24tcps_12fps.usda          sublayer   (offset=0.00, scale=2.00)
+        ref_s_12fps.usda                 sublayer   (offset=0.00, scale=4.00)
+    ref_24tcps_12fps.usda /Ref            reference  (offset=40.00, scale=4.00)
+        ref_s_48tcps.usda                sublayer   (offset=0.00, scale=0.50)
+        ref_s_12fps.usda                 sublayer   (offset=0.00, scale=2.00)
+    ref_12fps.usda       /Ref            reference  (offset=40.00, scale=8.00)
+        ref_s.usda                       sublayer   (offset=0.00, scale=0.50)
+        ref_s_48tcps.usda                sublayer   (offset=0.00, scale=0.25)
+        ref_s_24tcps_12fps.usda          sublayer   (offset=0.00, scale=0.50)
 
 ------------------------------------------------------------------------
 Results for composing </SS2>
 
 Prim Stack:
-    ss_48tcps.sdf        /SS2
-    ss_48tcps.sdf        /SS2
-    ss_48tcps.sdf        /SS2
-    ss_48tcps.sdf        /SS2
-    ref.sdf              /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_48tcps.sdf       /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_24tcps_12fps.sdf /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_12fps.sdf        /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
+    ss_48tcps.usda       /SS2
+    ss_48tcps.usda       /SS2
+    ss_48tcps.usda       /SS2
+    ss_48tcps.usda       /SS2
+    ref.usda             /Ref
+    ref_s.usda           /Ref
+    ref_s_48tcps.usda    /Ref
+    ref_s_24tcps_12fps.usda /Ref
+    ref_s_12fps.usda     /Ref
+    ref_48tcps.usda      /Ref
+    ref_s.usda           /Ref
+    ref_s_48tcps.usda    /Ref
+    ref_s_24tcps_12fps.usda /Ref
+    ref_s_12fps.usda     /Ref
+    ref_24tcps_12fps.usda /Ref
+    ref_s.usda           /Ref
+    ref_s_48tcps.usda    /Ref
+    ref_s_24tcps_12fps.usda /Ref
+    ref_s_12fps.usda     /Ref
+    ref_12fps.usda       /Ref
+    ref_s.usda           /Ref
+    ref_s_48tcps.usda    /Ref
+    ref_s_24tcps_12fps.usda /Ref
+    ref_s_12fps.usda     /Ref
 
 Time Offsets:
-    session.sdf          /SS2            root       (offset=0.00, scale=1.00)
-        session.sdf                      sublayer   (offset=0.00, scale=0.50)
-        sess_s.sdf                       sublayer   (offset=5.00, scale=1.00)
-        sess_s_48tcps.sdf                sublayer   (offset=5.00, scale=0.50)
-        sess_s_24tcps_12fps.sdf          sublayer   (offset=5.00, scale=1.00)
-        sess_s_12fps.sdf                 sublayer   (offset=5.00, scale=2.00)
-        s.sdf                            sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_48tcps.sdf                     sublayer   (offset=10.00, scale=0.50)
-        ss.sdf                           sublayer   (offset=15.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=15.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=15.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=15.00, scale=4.00)
-        s_24tcps_12fps.sdf               sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_12fps.sdf                      sublayer   (offset=10.00, scale=2.00)
-        ss.sdf                           sublayer   (offset=30.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=30.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=30.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=30.00, scale=4.00)
-    ref.sdf              /Ref            reference  (offset=30.00, scale=4.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_48tcps.sdf       /Ref            reference  (offset=30.00, scale=2.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=2.00)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=2.00)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=4.00)
-    ref_24tcps_12fps.sdf /Ref            reference  (offset=30.00, scale=4.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_12fps.sdf        /Ref            reference  (offset=30.00, scale=8.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=0.50)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.25)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=0.50)
+    session.usda         /SS2            root       (offset=0.00, scale=1.00)
+        session.usda                     sublayer   (offset=0.00, scale=0.50)
+        sess_s.usda                      sublayer   (offset=5.00, scale=1.00)
+        sess_s_48tcps.usda               sublayer   (offset=5.00, scale=0.50)
+        sess_s_24tcps_12fps.usda         sublayer   (offset=5.00, scale=1.00)
+        sess_s_12fps.usda                sublayer   (offset=5.00, scale=2.00)
+        s.usda                           sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_48tcps.usda                    sublayer   (offset=10.00, scale=0.50)
+        ss.usda                          sublayer   (offset=15.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=15.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=15.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=15.00, scale=4.00)
+        s_24tcps_12fps.usda              sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_12fps.usda                     sublayer   (offset=10.00, scale=2.00)
+        ss.usda                          sublayer   (offset=30.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=30.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=30.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=30.00, scale=4.00)
+    ref.usda             /Ref            reference  (offset=30.00, scale=4.00)
+        ref_s_48tcps.usda                sublayer   (offset=0.00, scale=0.50)
+        ref_s_12fps.usda                 sublayer   (offset=0.00, scale=2.00)
+    ref_48tcps.usda      /Ref            reference  (offset=30.00, scale=2.00)
+        ref_s.usda                       sublayer   (offset=0.00, scale=2.00)
+        ref_s_24tcps_12fps.usda          sublayer   (offset=0.00, scale=2.00)
+        ref_s_12fps.usda                 sublayer   (offset=0.00, scale=4.00)
+    ref_24tcps_12fps.usda /Ref            reference  (offset=30.00, scale=4.00)
+        ref_s_48tcps.usda                sublayer   (offset=0.00, scale=0.50)
+        ref_s_12fps.usda                 sublayer   (offset=0.00, scale=2.00)
+    ref_12fps.usda       /Ref            reference  (offset=30.00, scale=8.00)
+        ref_s.usda                       sublayer   (offset=0.00, scale=0.50)
+        ref_s_48tcps.usda                sublayer   (offset=0.00, scale=0.25)
+        ref_s_24tcps_12fps.usda          sublayer   (offset=0.00, scale=0.50)
 
 ------------------------------------------------------------------------
 Results for composing </SS1>
 
 Prim Stack:
-    ss.sdf               /SS1
-    ss.sdf               /SS1
-    ss.sdf               /SS1
-    ss.sdf               /SS1
-    ref.sdf              /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_48tcps.sdf       /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_24tcps_12fps.sdf /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
-    ref_12fps.sdf        /Ref
-    ref_s.sdf            /Ref
-    ref_s_48tcps.sdf     /Ref
-    ref_s_24tcps_12fps.sdf /Ref
-    ref_s_12fps.sdf      /Ref
+    ss.usda              /SS1
+    ss.usda              /SS1
+    ss.usda              /SS1
+    ss.usda              /SS1
+    ref.usda             /Ref
+    ref_s.usda           /Ref
+    ref_s_48tcps.usda    /Ref
+    ref_s_24tcps_12fps.usda /Ref
+    ref_s_12fps.usda     /Ref
+    ref_48tcps.usda      /Ref
+    ref_s.usda           /Ref
+    ref_s_48tcps.usda    /Ref
+    ref_s_24tcps_12fps.usda /Ref
+    ref_s_12fps.usda     /Ref
+    ref_24tcps_12fps.usda /Ref
+    ref_s.usda           /Ref
+    ref_s_48tcps.usda    /Ref
+    ref_s_24tcps_12fps.usda /Ref
+    ref_s_12fps.usda     /Ref
+    ref_12fps.usda       /Ref
+    ref_s.usda           /Ref
+    ref_s_48tcps.usda    /Ref
+    ref_s_24tcps_12fps.usda /Ref
+    ref_s_12fps.usda     /Ref
 
 Time Offsets:
-    session.sdf          /SS1            root       (offset=0.00, scale=1.00)
-        session.sdf                      sublayer   (offset=0.00, scale=0.50)
-        sess_s.sdf                       sublayer   (offset=5.00, scale=1.00)
-        sess_s_48tcps.sdf                sublayer   (offset=5.00, scale=0.50)
-        sess_s_24tcps_12fps.sdf          sublayer   (offset=5.00, scale=1.00)
-        sess_s_12fps.sdf                 sublayer   (offset=5.00, scale=2.00)
-        s.sdf                            sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_48tcps.sdf                     sublayer   (offset=10.00, scale=0.50)
-        ss.sdf                           sublayer   (offset=15.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=15.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=15.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=15.00, scale=4.00)
-        s_24tcps_12fps.sdf               sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_12fps.sdf                      sublayer   (offset=10.00, scale=2.00)
-        ss.sdf                           sublayer   (offset=30.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=30.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=30.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=30.00, scale=4.00)
-    ref.sdf              /Ref            reference  (offset=40.00, scale=4.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_48tcps.sdf       /Ref            reference  (offset=40.00, scale=2.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=2.00)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=2.00)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=4.00)
-    ref_24tcps_12fps.sdf /Ref            reference  (offset=40.00, scale=4.00)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.50)
-        ref_s_12fps.sdf                  sublayer   (offset=0.00, scale=2.00)
-    ref_12fps.sdf        /Ref            reference  (offset=40.00, scale=8.00)
-        ref_s.sdf                        sublayer   (offset=0.00, scale=0.50)
-        ref_s_48tcps.sdf                 sublayer   (offset=0.00, scale=0.25)
-        ref_s_24tcps_12fps.sdf           sublayer   (offset=0.00, scale=0.50)
+    session.usda         /SS1            root       (offset=0.00, scale=1.00)
+        session.usda                     sublayer   (offset=0.00, scale=0.50)
+        sess_s.usda                      sublayer   (offset=5.00, scale=1.00)
+        sess_s_48tcps.usda               sublayer   (offset=5.00, scale=0.50)
+        sess_s_24tcps_12fps.usda         sublayer   (offset=5.00, scale=1.00)
+        sess_s_12fps.usda                sublayer   (offset=5.00, scale=2.00)
+        s.usda                           sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_48tcps.usda                    sublayer   (offset=10.00, scale=0.50)
+        ss.usda                          sublayer   (offset=15.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=15.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=15.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=15.00, scale=4.00)
+        s_24tcps_12fps.usda              sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_12fps.usda                     sublayer   (offset=10.00, scale=2.00)
+        ss.usda                          sublayer   (offset=30.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=30.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=30.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=30.00, scale=4.00)
+    ref.usda             /Ref            reference  (offset=40.00, scale=4.00)
+        ref_s_48tcps.usda                sublayer   (offset=0.00, scale=0.50)
+        ref_s_12fps.usda                 sublayer   (offset=0.00, scale=2.00)
+    ref_48tcps.usda      /Ref            reference  (offset=40.00, scale=2.00)
+        ref_s.usda                       sublayer   (offset=0.00, scale=2.00)
+        ref_s_24tcps_12fps.usda          sublayer   (offset=0.00, scale=2.00)
+        ref_s_12fps.usda                 sublayer   (offset=0.00, scale=4.00)
+    ref_24tcps_12fps.usda /Ref            reference  (offset=40.00, scale=4.00)
+        ref_s_48tcps.usda                sublayer   (offset=0.00, scale=0.50)
+        ref_s_12fps.usda                 sublayer   (offset=0.00, scale=2.00)
+    ref_12fps.usda       /Ref            reference  (offset=40.00, scale=8.00)
+        ref_s.usda                       sublayer   (offset=0.00, scale=0.50)
+        ref_s_48tcps.usda                sublayer   (offset=0.00, scale=0.25)
+        ref_s_24tcps_12fps.usda          sublayer   (offset=0.00, scale=0.50)
 
 ------------------------------------------------------------------------
 Results for composing </S4>
 
 Prim Stack:
-    s_12fps.sdf          /S4
+    s_12fps.usda         /S4
 
 Time Offsets:
-    session.sdf          /S4             root       (offset=0.00, scale=1.00)
-        session.sdf                      sublayer   (offset=0.00, scale=0.50)
-        sess_s.sdf                       sublayer   (offset=5.00, scale=1.00)
-        sess_s_48tcps.sdf                sublayer   (offset=5.00, scale=0.50)
-        sess_s_24tcps_12fps.sdf          sublayer   (offset=5.00, scale=1.00)
-        sess_s_12fps.sdf                 sublayer   (offset=5.00, scale=2.00)
-        s.sdf                            sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_48tcps.sdf                     sublayer   (offset=10.00, scale=0.50)
-        ss.sdf                           sublayer   (offset=15.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=15.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=15.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=15.00, scale=4.00)
-        s_24tcps_12fps.sdf               sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_12fps.sdf                      sublayer   (offset=10.00, scale=2.00)
-        ss.sdf                           sublayer   (offset=30.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=30.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=30.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=30.00, scale=4.00)
+    session.usda         /S4             root       (offset=0.00, scale=1.00)
+        session.usda                     sublayer   (offset=0.00, scale=0.50)
+        sess_s.usda                      sublayer   (offset=5.00, scale=1.00)
+        sess_s_48tcps.usda               sublayer   (offset=5.00, scale=0.50)
+        sess_s_24tcps_12fps.usda         sublayer   (offset=5.00, scale=1.00)
+        sess_s_12fps.usda                sublayer   (offset=5.00, scale=2.00)
+        s.usda                           sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_48tcps.usda                    sublayer   (offset=10.00, scale=0.50)
+        ss.usda                          sublayer   (offset=15.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=15.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=15.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=15.00, scale=4.00)
+        s_24tcps_12fps.usda              sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_12fps.usda                     sublayer   (offset=10.00, scale=2.00)
+        ss.usda                          sublayer   (offset=30.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=30.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=30.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=30.00, scale=4.00)
 
 ------------------------------------------------------------------------
 Results for composing </S3>
 
 Prim Stack:
-    s_24tcps_12fps.sdf   /S3
+    s_24tcps_12fps.usda  /S3
 
 Time Offsets:
-    session.sdf          /S3             root       (offset=0.00, scale=1.00)
-        session.sdf                      sublayer   (offset=0.00, scale=0.50)
-        sess_s.sdf                       sublayer   (offset=5.00, scale=1.00)
-        sess_s_48tcps.sdf                sublayer   (offset=5.00, scale=0.50)
-        sess_s_24tcps_12fps.sdf          sublayer   (offset=5.00, scale=1.00)
-        sess_s_12fps.sdf                 sublayer   (offset=5.00, scale=2.00)
-        s.sdf                            sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_48tcps.sdf                     sublayer   (offset=10.00, scale=0.50)
-        ss.sdf                           sublayer   (offset=15.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=15.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=15.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=15.00, scale=4.00)
-        s_24tcps_12fps.sdf               sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_12fps.sdf                      sublayer   (offset=10.00, scale=2.00)
-        ss.sdf                           sublayer   (offset=30.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=30.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=30.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=30.00, scale=4.00)
+    session.usda         /S3             root       (offset=0.00, scale=1.00)
+        session.usda                     sublayer   (offset=0.00, scale=0.50)
+        sess_s.usda                      sublayer   (offset=5.00, scale=1.00)
+        sess_s_48tcps.usda               sublayer   (offset=5.00, scale=0.50)
+        sess_s_24tcps_12fps.usda         sublayer   (offset=5.00, scale=1.00)
+        sess_s_12fps.usda                sublayer   (offset=5.00, scale=2.00)
+        s.usda                           sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_48tcps.usda                    sublayer   (offset=10.00, scale=0.50)
+        ss.usda                          sublayer   (offset=15.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=15.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=15.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=15.00, scale=4.00)
+        s_24tcps_12fps.usda              sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_12fps.usda                     sublayer   (offset=10.00, scale=2.00)
+        ss.usda                          sublayer   (offset=30.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=30.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=30.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=30.00, scale=4.00)
 
 ------------------------------------------------------------------------
 Results for composing </S2>
 
 Prim Stack:
-    s_48tcps.sdf         /S2
+    s_48tcps.usda        /S2
 
 Time Offsets:
-    session.sdf          /S2             root       (offset=0.00, scale=1.00)
-        session.sdf                      sublayer   (offset=0.00, scale=0.50)
-        sess_s.sdf                       sublayer   (offset=5.00, scale=1.00)
-        sess_s_48tcps.sdf                sublayer   (offset=5.00, scale=0.50)
-        sess_s_24tcps_12fps.sdf          sublayer   (offset=5.00, scale=1.00)
-        sess_s_12fps.sdf                 sublayer   (offset=5.00, scale=2.00)
-        s.sdf                            sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_48tcps.sdf                     sublayer   (offset=10.00, scale=0.50)
-        ss.sdf                           sublayer   (offset=15.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=15.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=15.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=15.00, scale=4.00)
-        s_24tcps_12fps.sdf               sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_12fps.sdf                      sublayer   (offset=10.00, scale=2.00)
-        ss.sdf                           sublayer   (offset=30.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=30.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=30.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=30.00, scale=4.00)
+    session.usda         /S2             root       (offset=0.00, scale=1.00)
+        session.usda                     sublayer   (offset=0.00, scale=0.50)
+        sess_s.usda                      sublayer   (offset=5.00, scale=1.00)
+        sess_s_48tcps.usda               sublayer   (offset=5.00, scale=0.50)
+        sess_s_24tcps_12fps.usda         sublayer   (offset=5.00, scale=1.00)
+        sess_s_12fps.usda                sublayer   (offset=5.00, scale=2.00)
+        s.usda                           sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_48tcps.usda                    sublayer   (offset=10.00, scale=0.50)
+        ss.usda                          sublayer   (offset=15.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=15.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=15.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=15.00, scale=4.00)
+        s_24tcps_12fps.usda              sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_12fps.usda                     sublayer   (offset=10.00, scale=2.00)
+        ss.usda                          sublayer   (offset=30.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=30.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=30.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=30.00, scale=4.00)
 
 ------------------------------------------------------------------------
 Results for composing </S1>
 
 Prim Stack:
-    s.sdf                /S1
+    s.usda               /S1
 
 Time Offsets:
-    session.sdf          /S1             root       (offset=0.00, scale=1.00)
-        session.sdf                      sublayer   (offset=0.00, scale=0.50)
-        sess_s.sdf                       sublayer   (offset=5.00, scale=1.00)
-        sess_s_48tcps.sdf                sublayer   (offset=5.00, scale=0.50)
-        sess_s_24tcps_12fps.sdf          sublayer   (offset=5.00, scale=1.00)
-        sess_s_12fps.sdf                 sublayer   (offset=5.00, scale=2.00)
-        s.sdf                            sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_48tcps.sdf                     sublayer   (offset=10.00, scale=0.50)
-        ss.sdf                           sublayer   (offset=15.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=15.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=15.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=15.00, scale=4.00)
-        s_24tcps_12fps.sdf               sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_12fps.sdf                      sublayer   (offset=10.00, scale=2.00)
-        ss.sdf                           sublayer   (offset=30.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=30.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=30.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=30.00, scale=4.00)
+    session.usda         /S1             root       (offset=0.00, scale=1.00)
+        session.usda                     sublayer   (offset=0.00, scale=0.50)
+        sess_s.usda                      sublayer   (offset=5.00, scale=1.00)
+        sess_s_48tcps.usda               sublayer   (offset=5.00, scale=0.50)
+        sess_s_24tcps_12fps.usda         sublayer   (offset=5.00, scale=1.00)
+        sess_s_12fps.usda                sublayer   (offset=5.00, scale=2.00)
+        s.usda                           sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_48tcps.usda                    sublayer   (offset=10.00, scale=0.50)
+        ss.usda                          sublayer   (offset=15.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=15.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=15.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=15.00, scale=4.00)
+        s_24tcps_12fps.usda              sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_12fps.usda                     sublayer   (offset=10.00, scale=2.00)
+        ss.usda                          sublayer   (offset=30.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=30.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=30.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=30.00, scale=4.00)
 
 ------------------------------------------------------------------------
 Results for composing </Root>
 
 Prim Stack:
-    session.sdf          /Root
-    sess_s.sdf           /Root
-    sess_s_48tcps.sdf    /Root
-    sess_s_24tcps_12fps.sdf /Root
-    sess_s_12fps.sdf     /Root
-    root_12fps.sdf       /Root
+    session.usda         /Root
+    sess_s.usda          /Root
+    sess_s_48tcps.usda   /Root
+    sess_s_24tcps_12fps.usda /Root
+    sess_s_12fps.usda    /Root
+    root_12fps.usda      /Root
 
 Time Offsets:
-    session.sdf          /Root           root       (offset=0.00, scale=1.00)
-        session.sdf                      sublayer   (offset=0.00, scale=0.50)
-        sess_s.sdf                       sublayer   (offset=5.00, scale=1.00)
-        sess_s_48tcps.sdf                sublayer   (offset=5.00, scale=0.50)
-        sess_s_24tcps_12fps.sdf          sublayer   (offset=5.00, scale=1.00)
-        sess_s_12fps.sdf                 sublayer   (offset=5.00, scale=2.00)
-        s.sdf                            sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_48tcps.sdf                     sublayer   (offset=10.00, scale=0.50)
-        ss.sdf                           sublayer   (offset=15.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=15.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=15.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=15.00, scale=4.00)
-        s_24tcps_12fps.sdf               sublayer   (offset=10.00, scale=1.00)
-        ss.sdf                           sublayer   (offset=20.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=20.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=20.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=20.00, scale=4.00)
-        s_12fps.sdf                      sublayer   (offset=10.00, scale=2.00)
-        ss.sdf                           sublayer   (offset=30.00, scale=2.00)
-        ss_48tcps.sdf                    sublayer   (offset=30.00, scale=1.00)
-        ss_24tcps_12fps.sdf              sublayer   (offset=30.00, scale=2.00)
-        ss_12fps.sdf                     sublayer   (offset=30.00, scale=4.00)
+    session.usda         /Root           root       (offset=0.00, scale=1.00)
+        session.usda                     sublayer   (offset=0.00, scale=0.50)
+        sess_s.usda                      sublayer   (offset=5.00, scale=1.00)
+        sess_s_48tcps.usda               sublayer   (offset=5.00, scale=0.50)
+        sess_s_24tcps_12fps.usda         sublayer   (offset=5.00, scale=1.00)
+        sess_s_12fps.usda                sublayer   (offset=5.00, scale=2.00)
+        s.usda                           sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_48tcps.usda                    sublayer   (offset=10.00, scale=0.50)
+        ss.usda                          sublayer   (offset=15.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=15.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=15.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=15.00, scale=4.00)
+        s_24tcps_12fps.usda              sublayer   (offset=10.00, scale=1.00)
+        ss.usda                          sublayer   (offset=20.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=20.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=20.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=20.00, scale=4.00)
+        s_12fps.usda                     sublayer   (offset=10.00, scale=2.00)
+        ss.usda                          sublayer   (offset=30.00, scale=2.00)
+        ss_48tcps.usda                   sublayer   (offset=30.00, scale=1.00)
+        ss_24tcps_12fps.usda             sublayer   (offset=30.00, scale=2.00)
+        ss_12fps.usda                    sublayer   (offset=30.00, scale=4.00)
 

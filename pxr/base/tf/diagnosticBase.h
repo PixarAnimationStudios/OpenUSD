@@ -55,7 +55,10 @@ public:
 
     /// Return the source file name that the diagnostic message was posted from.
     std::string GetSourceFileName() const {
-        return _context.GetFile();
+        if (_context.GetFile()) {
+            return _context.GetFile();
+        }
+        return std::string();
     }
 
     /// Return the source line number that the diagnostic message was posted
@@ -71,8 +74,11 @@ public:
 
     /// Return the source function that the diagnostic message was posted from.
     std::string GetSourceFunction() const {
-        return ArchGetPrettierFunctionName(_context.GetFunction(),
-                                           _context.GetPrettyFunction());
+        if (_context.GetFunction() && _context.GetPrettyFunction()) {
+            return ArchGetPrettierFunctionName(_context.GetFunction(),
+                                               _context.GetPrettyFunction());
+        }
+        return std::string();
     }
 
     /// Add to the commentary string describing this diagnostic message.

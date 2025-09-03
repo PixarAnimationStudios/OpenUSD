@@ -702,6 +702,59 @@ list: :usda:`[ @file1.usd@, @file3.usd@ ]`
    {
    }
 
+.. _usdglossary-inputparameters:
+
+Computation Input Parameters
+****************************
+
+An :ref:`OpenExec <usdglossary-openexec>` *computation input parameter* is a 
+specification of an input data source for a 
+:ref:`computation <usdglossary-computation>`. Input parameters are 
+used by computations to ingest source data from resolved attribute values or 
+output values from other computations. 
+
+Input parameters can source values from the outputs of other computations, and 
+sourced computations need not be published on the same scene object as the 
+consuming computation. OpenExec may need to, for example, traverse a 
+relationship, or look up or down the namespace hierarchy, to properly resolve 
+the source for the input parameter. Input parameters encode information used to 
+resolve input sources, such as a computation name, the scene object used to look 
+up the computation by name, and the input value data type, which must match the 
+data type of the output value returned from the source computation or resolved 
+attribute value.
+
+Every input parameter provides zero or more input values to the computation 
+callback. A relationship-targeted input may not resolve to any source 
+computations if the specified relationship does not have authored targets, or if 
+the targeted objects do not publish a computation with the specified name or 
+result type. Conversely, the input parameter can resolve to more than one source 
+computation if there are multiple authored targets.
+
+See :ref:`openexec_computation_input_parameters` for more information on 
+computation input parameters.
+
+.. _usdglossary-computation:
+
+Computation
+***********
+
+An :ref:`OpenExec <usdglossary-openexec>` *computation* is a function, 
+provided by a scene object, that computes one or more output values from a set 
+of input values.
+
+A computation will take zero or more 
+:ref:`input parameters <usdglossary-inputparameters>` (typically 
+at least one), and a C++ computation callback responsible for reading input 
+values, performing the computational work, and outputting the result values 
+(typically one). A computation instance is also associated with a computation 
+provider, a scene object used as an anchor for sourcing input values. 
+
+Computations can be **Built-in computations** (provided by USD schemas) or 
+**Plugin computations** (custom computations registered as part of the schema
+registration process)
+
+See :ref:`openexec_computations` for more information on computations.
+
 .. _usdglossary-connection:
 
 Connection
@@ -1956,6 +2009,27 @@ trees beneath them. To facilitate traversal and processing of a Stage's
 namespace of prims, each Stage possesses a `PseudoRoot
 <#usdglossary-pseudoroot>`_ prim that is the parent of all authored root prims,
 represented by the path :sdfpath:`/`.
+
+.. _usdglossary-openexec:
+
+OpenExec
+********
+
+*OpenExec* is a general-purpose framework for expressing and evaluating 
+computational behaviors in a USD scene. This framework is built on top of USD 
+and includes a fast, multi-threaded evaluation engine, and data management 
+features for automatically caching and invalidating computed values. 
+
+OpenExec introduces new features, such as
+:ref:`named computations <usdglossary-computation>` and
+:ref:`input parameters <usdglossary-inputparameters>`, that can be associated 
+with USD scene objects.
+
+Behind the scenes, OpenExec builds and maintains a dataflow network with 
+computational tasks encoded as nodes within this network, and data traveling 
+between computations encoded as edges. 
+
+See :ref:`intro_to_openexec` for more details.
 
 .. _usdglossary-opinions:
 
@@ -3523,7 +3597,7 @@ the same time-remapping that TimeSample coordinates do. Such timeCode-valued
 attributes can serve as "timing curves" that maintain their accuracy through 
 composed layer offsets.
 
-.. _usdglossary-timecodes-scaled
+.. _usdglossary-timecodes-scaled:
 
 TimeCodes Scaled to Real Time
 *****************************

@@ -219,7 +219,7 @@ HgiVulkanResourceBindings::HgiVulkanResourceBindings(
     // Setup limits for each resource type
     //
     VkPhysicalDeviceProperties const& devProps =
-        _device->GetDeviceCapabilities().vkDeviceProperties;
+        _device->GetDeviceCapabilities().vkDeviceProperties2.properties;
     VkPhysicalDeviceLimits const& limits = devProps.limits;
 
     uint32_t bindLimits[HgiBindResourceTypeCount][2] = {

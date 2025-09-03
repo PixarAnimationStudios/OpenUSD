@@ -98,6 +98,8 @@ _GetParamPrefix(const RtParamList::ParamInfo& info)
         case RtDataType::k_samplefilter: out += "samplefilter"; break;
         case RtDataType::k_displayfilter: out += "displayfilter"; break;
         case RtDataType::k_struct: out += "struct"; break;
+        default:
+            TF_WARN("Unknown type %d", static_cast<int>(info.type));
     }
     if (info.array) {
         out += TfStringPrintf("[%u]", info.length);
@@ -569,6 +571,10 @@ _FormatParam(
                 }
             }
             break;
+        }
+        default:
+        {
+            TF_WARN("Unknown type %d", static_cast<int>(info.type));
         }
     }
     return prefix + val;

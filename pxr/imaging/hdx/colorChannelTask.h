@@ -58,9 +58,6 @@ private:
     // Returns true if the values were updated. False if unchanged.
     bool _UpdateParameterBuffer(float screenSizeX, float screenSizeY);
 
-    /// Apply the color channel filtering.
-    void _ApplyColorChannel();
-
     // This struct must match ParameterBuffer in colorChannel.glslfx.
     // Be careful to remember the std430 rules.
     struct _ParameterBuffer

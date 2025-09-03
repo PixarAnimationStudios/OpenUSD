@@ -42,7 +42,13 @@ _RemoveUnsupportedInstanceLayers(
             [name = lay](const VkLayerProperties& p) 
             { return strcmp(p.layerName, name) == 0; })) {
             layers.push_back(lay);
-        } else if (HgiVulkanIsDebugEnabled()) {
+        } else if (HgiVulkanIsDebugEnabled() &&
+                   strcmp(lay, "VK_LAYER_KHRONOS_validation") == 0) {
+            // Special handling for the validation layer, which we always want
+            // to be available.
+            TF_CODING_ERROR("Instance layer %s is not available, skipping it",
+                lay);
+        } else {
             TF_STATUS("Instance layer %s is not available, skipping it", lay);
         }
     }
@@ -120,9 +126,25 @@ HgiVulkanInstance::HgiVulkanInstance()
     };
 
     std::vector<const char*> layers;
+
+    // Additional validation layer settings.
+    const VkBool32 layerSettingVal = VK_TRUE;
+    const std::vector<VkLayerSettingEXT> layerSettings {
+        // Turn on synchronization validation
+        { "VK_LAYER_KHRONOS_validation", "validate_sync",
+          VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &layerSettingVal },
+    };
+    VkLayerSettingsCreateInfoEXT layerSettingsCreateInfo {
+        VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT,
+        nullptr,
+        static_cast<uint32_t>(layerSettings.size()),
+        layerSettings.data()
+    };
+
     if (HgiVulkanIsDebugEnabled()) {
         layers.push_back("VK_LAYER_KHRONOS_validation");
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        createInfo.pNext = &layerSettingsCreateInfo;
     }
 
     layers = _RemoveUnsupportedInstanceLayers(layers);

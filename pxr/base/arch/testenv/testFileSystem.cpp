@@ -96,9 +96,22 @@ int main()
     // Open a file, check that the file path from FILE* handle is matched.
     ARCH_AXIOM((firstFile = ArchOpenFile(firstName.c_str(), "rb")) != NULL);
     std::string filePath = ArchGetFileName(firstFile);
+#if defined(ARCH_OS_WINDOWS)
+    ARCH_AXIOM(std::filesystem::equivalent(ArchWindowsUtf8ToUtf16(filePath),
+                   ArchWindowsUtf8ToUtf16(firstName)));
+#else
     ARCH_AXIOM(std::filesystem::equivalent(filePath, firstName));
+#endif
     fclose(firstFile);
-
+    
+    // Test utf-8 path
+    std::string secondName = ArchMakeTmpFileName("测试");
+    ARCH_AXIOM((firstFile = ArchOpenFile(secondName.c_str(), "w")) != NULL);
+    filePath = ArchGetFileName(firstFile);
+    ARCH_AXIOM(std::filesystem::equivalent(std::filesystem::u8path(filePath),
+               std::filesystem::u8path(secondName)));
+    fclose(firstFile);
+    
     // Map the file and assert the bytes are what we expect they are.
     ARCH_AXIOM((firstFile = ArchOpenFile(firstName.c_str(), "rb")) != NULL);
     ArchConstFileMapping cfm = ArchMapFileReadOnly(firstFile);

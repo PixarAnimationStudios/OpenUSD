@@ -87,6 +87,20 @@ class SdfAssetPath;
 /// to objects associated with the render settings, such as image
 /// post-processing filters, even when UsdGeomVisibilityAPI may apply.
 /// 
+/// \anchor usd_cameraVisibility
+/// The cameraVisibility collection defines which scene objects should
+/// be directly visible in camera.  Objects that are not in this
+/// collection should still participate in other light paths such
+/// as shadowing, reflections, and refraction.  By default everything in
+/// the scene should be visible to camera, so this collection sets
+/// includeRoot to 1.
+/// 
+/// \anchor usd_matte
+/// The matte collection defines scene objects that should act as
+/// matte objects.  Matte objects render with zero alpha.  By
+/// default, everything in the scene should render normally, so
+/// this collection sets includeRoot to 0.
+/// 
 /// \anchor usdRender_pruning
 /// The prune collection specifies a collection of objects to be removed
 /// ("pruned") from the scene prior to rendering.  Whereas visibility

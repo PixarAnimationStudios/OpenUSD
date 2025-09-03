@@ -24,13 +24,18 @@ struct _StyleInfo
     /// Retained data source storing refineLevel (or null ptr if empty optional
     /// value) to avoid allocating a data source for every prim.
     HdDataSourceBaseHandle refineLevelDs;
+
+    TfToken cullStyleFallback;
+    /// Retained data source storing cullStyleFallback (or null ptr if empty optional
+    /// value) to avoid allocating a data source for every prim.
+    HdDataSourceBaseHandle cullStyleFallbackDS;
 };
 
-/// Data source for locator displayStyle.
-class _LegacyDisplayStyleDataSource : public HdContainerDataSource
+/// Data source for locator displayStyle that provides refineLevel.
+class _RefineLevelDataSource : public HdContainerDataSource
 {
 public:
-    HD_DECLARE_DATASOURCE(_LegacyDisplayStyleDataSource);
+    HD_DECLARE_DATASOURCE(_RefineLevelDataSource);
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
     {
@@ -50,7 +55,39 @@ public:
     }
 
 private:
-    _LegacyDisplayStyleDataSource(_StyleInfoSharedPtr const &styleInfo)
+    _RefineLevelDataSource(_StyleInfoSharedPtr const &styleInfo)
+      : _styleInfo(styleInfo)
+    {
+    }
+
+    _StyleInfoSharedPtr _styleInfo;
+};
+
+/// Data source for locator displayStyle that provides cullStyle.
+class _CullStyleFallbackDataSource : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_CullStyleFallbackDataSource);
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        if (name == HdLegacyDisplayStyleSchemaTokens->cullStyle) {
+            return _styleInfo->cullStyleFallbackDS;
+        }
+        return nullptr;
+    }
+
+    TfTokenVector GetNames() override
+    {
+        static const TfTokenVector names = {
+            HdLegacyDisplayStyleSchemaTokens->cullStyle
+        };
+
+        return names;
+    }
+
+private:
+    _CullStyleFallbackDataSource(_StyleInfoSharedPtr const &styleInfo)
       : _styleInfo(styleInfo)
     {
     }
@@ -79,7 +116,11 @@ HdsiLegacyDisplayStyleOverrideSceneIndex(
   , _overlayDs(
       HdRetainedContainerDataSource::New(
           HdLegacyDisplayStyleSchemaTokens->displayStyle,
-          _LegacyDisplayStyleDataSource::New(_styleInfo)))
+          _RefineLevelDataSource::New(_styleInfo)))
+  , _underlayDs(
+      HdRetainedContainerDataSource::New(
+          HdLegacyDisplayStyleSchemaTokens->displayStyle,
+          _CullStyleFallbackDataSource::New(_styleInfo)))
 {
 }
 
@@ -91,7 +132,7 @@ HdsiLegacyDisplayStyleOverrideSceneIndex::GetPrim(
     if (prim.dataSource) {
         prim.dataSource =
             HdOverlayContainerDataSource::New(
-                _overlayDs, prim.dataSource);
+                _overlayDs, prim.dataSource, _underlayDs);
     }
     return prim;
 }
@@ -101,6 +142,30 @@ HdsiLegacyDisplayStyleOverrideSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
     return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+}
+
+
+void
+HdsiLegacyDisplayStyleOverrideSceneIndex::SetCullStyleFallback(
+    const TfToken &cullStyleFallback)
+{
+    if (cullStyleFallback == _styleInfo->cullStyleFallback) {
+        return;
+    }
+
+    _styleInfo->cullStyleFallback = cullStyleFallback;
+    _styleInfo->cullStyleFallbackDS =
+        !cullStyleFallback.IsEmpty()
+        ? HdRetainedTypedSampledDataSource<TfToken>::New(cullStyleFallback)
+        : nullptr;
+
+    static const HdDataSourceLocatorSet locators(
+        HdLegacyDisplayStyleSchema::GetDefaultLocator() );
+    // XXX We get insufficient invalidation if we append the
+    // cullStyleFallback locator:
+    // .Append(HdLegacyDisplayStyleSchemaTokens->cullStyleFallback));
+
+    _DirtyAllPrims(locators);
 }
 
 void

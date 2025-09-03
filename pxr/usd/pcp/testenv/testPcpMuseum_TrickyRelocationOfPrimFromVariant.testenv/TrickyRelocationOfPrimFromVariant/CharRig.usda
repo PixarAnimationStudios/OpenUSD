@@ -1,0 +1,61 @@
+#usda 1.0
+(
+    framesPerSecond = 24
+    framePrecision = 3
+    relocates = {
+        </CharRig/TailRig/Tail>: </CharRig/Anim/Tail>, 
+        </CharRig2/TailRig/Tail>: </CharRig2/Anim/Tail>
+    }
+)
+
+def Scope "CharRig" (
+    variantSets = ["TailRigVersion"]
+    variants = {
+        string TailRigVersion = "None"    
+    }
+)
+{
+    def Scope "Anim"
+    {
+    }
+
+    variantSet "TailRigVersion" = {
+        "None" {
+
+        }
+        "Standard" {
+            def MfScope "TailRig" (
+                references = @./TailRig.usda@</TailRig>
+            )
+            {
+            }
+        }
+    }   
+}
+
+def Scope "CharRig2" (
+    variantSets = ["TailRigVersion"]
+    variants = {
+        string TailRigVersion = "Standard"    
+    }
+)
+{
+    def Scope "Anim"
+    {
+    }
+
+    variantSet "TailRigVersion" = {
+        "None" {
+
+        }
+        "Standard"
+        {
+            def MfScope "TailRig" (
+                references = @./TailRig.usda@</TailRig>
+            )
+            {
+            }
+        }
+    }   
+}
+

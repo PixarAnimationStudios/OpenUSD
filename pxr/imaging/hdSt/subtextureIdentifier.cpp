@@ -163,4 +163,33 @@ HdStPtexSubtextureIdentifier::_Hash() const
         GetPremultiplyAlpha());
 }
 
+////////////////////////////////////////////////////////////////////////////
+// HdStDynamicCubemapSubtextureIdentifier
+
+HdStDynamicCubemapSubtextureIdentifier::HdStDynamicCubemapSubtextureIdentifier()
+    = default;
+
+HdStDynamicCubemapSubtextureIdentifier::~HdStDynamicCubemapSubtextureIdentifier()
+    = default;
+
+std::unique_ptr<HdStSubtextureIdentifier>
+HdStDynamicCubemapSubtextureIdentifier::Clone() const
+{
+    return std::make_unique<HdStDynamicCubemapSubtextureIdentifier>();
+}
+
+HdStSubtextureIdentifier::ID
+HdStDynamicCubemapSubtextureIdentifier::_Hash() const
+{
+    static ID typeHash =
+        TfHash()(std::string("HdStDynamicCubemapSubtextureIdentifier"));
+    return typeHash;
+}
+
+HdStDynamicCubemapTextureImplementation *
+HdStDynamicCubemapSubtextureIdentifier::GetTextureImplementation() const
+{
+    return nullptr;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

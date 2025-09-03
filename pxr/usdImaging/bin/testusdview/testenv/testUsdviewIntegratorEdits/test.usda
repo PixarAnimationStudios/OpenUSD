@@ -140,7 +140,7 @@ def Scope "Render"
 {
     def RenderSettings "RenderSettings"
     {
-        token outputs:ri:integrator.connect = </Render/DirectLightingIntegrator.outputs:result>
+        rel ri:integrator = </Render/DirectLightingIntegrator>
         bool ri:hider:jitter = 0
         float ri:Ri:PixelVariance = 0.0
         int ri:hider:minsamples = 32

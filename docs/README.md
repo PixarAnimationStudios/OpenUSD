@@ -15,10 +15,10 @@ is published on [openusd.org](https://openusd.org/release/index.html).
 USD's Sphinx build uses the following Sphinx extensions:
 
 * [ReadTheDocs theme](https://sphinx-rtd-theme.readthedocs.io/en/stable/)
-* [Sphinx Panels](https://sphinx-panels.readthedocs.io/en/latest/)
 * [Doxylink](https://github.com/sphinx-contrib/doxylink)
 * [MyST](https://myst-parser.readthedocs.io/en/v0.17.1/index.html)
 * [Datatemplates](https://sphinxcontribdatatemplates.readthedocs.io/en/latest/index.html)
+* [Sphinx Design](https://sphinx-design.readthedocs.io/en/rtd-theme/index.html)
 
 See "Sphinx Setup" below for how to install Sphinx and the necessary extensions.
 
@@ -96,12 +96,6 @@ Myst markdown files using a [different syntax](https://myst-parser.readthedocs.i
     * `:code:` for inline code that is ambiguous with respect to language and
       does not link to the USD doxygen documentation
 
-
-## Content Notes
-
-1. The `contributors.rst` file references a `contributors.html` file, which is 
-   maintained by Pixar internally, and cannot receive pull requests.
-
 ## Building Documentation Locally
 
 `build_usd.py` can be used to build the USD doxygen API documentation, but not 
@@ -116,12 +110,12 @@ Depending on your development platform, there are several ways to install Sphinx
 as described in [Installing Sphinx](https://www.sphinx-doc.org/en/master/usage/installation.html).
 
 Once you have Sphinx installed, ensure you have the  `sphinx-rtd-theme`, 
-`sphinx_panels`, `sphinxcontrib-doxylink`, and `myst_parser`extension packages 
+`sphinx_design`, `sphinxcontrib-doxylink`, and `myst_parser`extension packages 
 installed. Depending on your local Python environment, use either conda or pip 
 to install the extensions. The following command uses pip to install __both__ 
 Sphinx and the required extensions:
 ```
-pip3 install --user sphinx sphinx-rtd-theme sphinx_panels sphinxcontrib-doxylink myst-parser
+pip3 install --user sphinx sphinx-rtd-theme sphinx_design sphinxcontrib-doxylink myst-parser
 ```
 
 Make sure to add Sphinx to your path:

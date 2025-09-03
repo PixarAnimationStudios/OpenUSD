@@ -13,6 +13,7 @@
 
 #include "pxr/usd/sdf/path.h"
 
+#include "pxr/base/tf/spinMutex.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 
@@ -31,6 +32,15 @@ class HdSceneDelegate;
 
 TF_DECLARE_PUBLIC_TOKENS(HdLegacyPrimTypeTokens, HD_API, 
                          HD_LEGACY_PRIMTYPE_TOKENS);
+
+/// Instancers from scene delegates ignore visibility.
+/// This fixes that usdImaging does not update the visibility of an instancer
+/// properly.
+#define HD_LEGACY_FLAG_TOKENS \
+    (isLegacyInstancer)
+
+TF_DECLARE_PUBLIC_TOKENS(HdLegacyFlagTokens, HD_API, 
+                         HD_LEGACY_FLAG_TOKENS);
 
 /// \class HdDataSourceLegacyPrim
 ///
@@ -89,6 +99,7 @@ protected:
 
 private:
     std::atomic_bool _primvarsBuilt;
+    TfSpinMutex _primvarsMutex;
     bool _extComputationPrimvarsBuilt : 1;
 
     HdContainerDataSourceAtomicHandle _primvars;

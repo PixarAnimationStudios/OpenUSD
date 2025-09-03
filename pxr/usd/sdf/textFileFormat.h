@@ -8,6 +8,8 @@
 #define PXR_USD_SDF_TEXT_FILE_FORMAT_H
 
 /// \file sdf/textFileFormat.h
+///
+/// \deprecated in favor of usdaFileFormat.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
@@ -38,10 +40,17 @@ class ArAsset;
 ///
 /// Sdf text file format
 ///
+/// \deprecated in favor of SdfUsdaFileFormat. .sdf will be
+/// replaced by .usda.
+///
 class SdfTextFileFormat : public SdfFileFormat
 {
 public:
     // SdfFileFormat overrides.
+    SDF_API
+    virtual SdfAbstractDataRefPtr InitData(
+        const FileFormatArguments& args) const override;
+
     SDF_API
     virtual bool CanRead(const std::string &file) const override;
 

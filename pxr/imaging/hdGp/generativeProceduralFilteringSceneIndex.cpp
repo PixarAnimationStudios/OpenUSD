@@ -9,6 +9,7 @@
 
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
+#include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -92,9 +93,14 @@ HdGpGenerativeProceduralFilteringSceneIndex::_PrimsAdded(
         return;
     }
 
+    TRACE_FUNCTION();
+
     // Apply filtering
     HdSceneIndexObserver::AddedPrimEntries filteredEntries = entries;
     for (HdSceneIndexObserver::AddedPrimEntry &entry : filteredEntries) {
+        if (entry.primType != _targetPrimTypeName) {
+            continue;
+        }
         const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(entry.primPath);
         switch (_ShouldSkipPrim(prim)) {
             case _ShouldSkipResult::Ignore: {

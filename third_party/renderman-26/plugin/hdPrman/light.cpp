@@ -30,6 +30,14 @@
 #include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/version.h"
 
+#if HD_API_VERSION >= 58
+#include "pxr/imaging/hdsi/version.h"
+#if HDSI_API_VERSION >= 16
+#include "pxr/imaging/hdsi/domeLightCameraVisibilitySceneIndex.h"
+#define HDPRMAN_HDSI_HAS_DOME_LIGHT_SCENE_INDEX
+#endif
+#endif
+
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
@@ -151,6 +159,21 @@ _PopulateNodesFromMaterialResource(HdSceneDelegate *sceneDelegate,
         TF_WARN("Failed to convert HdMaterialNetwork to Renderman shading "
                 "nodes for '%s'", id.GetText());
         return false;
+    }
+
+    static const RtUString us_PxrEnvDayLight("PxrEnvDayLight");
+    if (result->back().name == us_PxrEnvDayLight) {
+        // USD and RenderMan docs describe "sunDirection" as being
+        // +Y-as-zenith but the RenderMan implementation treats it as
+        // +Z-as-zenith. We compensate here.
+
+        // NB: Node conversion may have elided the default
+        // (0, 1, 0), which we must also transform.
+        static const RtUString us_sunDirection("sunDirection");
+        RtVector3 direction { 0., 1., 0. };
+        result->back().params.GetVector(us_sunDirection, direction);
+        direction = { -direction.z, direction.x, direction.y };
+        result->back().params.SetVector(us_sunDirection, direction);
     }
 
     return true;
@@ -792,14 +815,26 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         // Check if the dome light should be camera visible
         if (_lightShaderType == us_PxrDomeLight ||
             _lightShaderType == us_PxrEnvDayLight) {
-            const bool domeLightCamVis = sceneDelegate->GetRenderIndex()
-                .GetRenderDelegate()->GetRenderSetting<bool>(
-#if HD_API_VERSION < 47
-                    TfToken("domeLightCameraVisibility"),
+
+            const bool domeLightCamVis =
+                sceneDelegate
+#ifdef HDPRMAN_HDSI_HAS_DOME_LIGHT_SCENE_INDEX
+                    ->GetLightParamValue(
+                        id,
+                        HdsiDomeLightCameraVisibilitySceneIndexTokens
+                            ->cameraVisibility)
+                    .GetWithDefault<bool>(true);
 #else
-                    HdRenderSettingsTokens->domeLightCameraVisibility,
+                    ->GetRenderIndex()
+                    .GetRenderDelegate()
+                    ->GetRenderSetting<bool>(
+#if HD_API_VERSION < 47
+                        TfToken("domeLightCameraVisibility"),
+#else
+                        HdRenderSettingsTokens->domeLightCameraVisibility,
 #endif
-                    true);
+                        true);
+#endif
             if (!domeLightCamVis) {
                 attrs.SetInteger(RixStr.k_visibility_camera, 0);
             }
@@ -923,8 +958,11 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
             _lightShaderType == us_PxrEnvDayLight) {
             // Transform Dome to match OpenEXR spec for environment maps
             // Rotate -90 X, Rotate 90 Y
+            // For PxrEnvDayLight, we also need to flip the X axis so that the
+            // sun rises in the East (+X) and sets in the West (-X).
+            double flipX = _lightShaderType == us_PxrEnvDayLight ? 1.0 : -1.0;
             orientMat = GfMatrix4d( 0.0, 0.0, -1.0, 0.0,
-                                   -1.0, 0.0,  0.0, 0.0,
+                                  flipX, 0.0,  0.0, 0.0,
                                     0.0, 1.0,  0.0, 0.0,
                                     0.0, 0.0,  0.0, 1.0);
 

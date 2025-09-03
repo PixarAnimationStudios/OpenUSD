@@ -19,6 +19,8 @@
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyResultConversions.h"
 
+#include "pxr/base/ts/spline.h"
+
 #include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -168,9 +170,9 @@ void wrapAttributeSpec()
             "value or as a set of list editing operations.  See GdListEditor "
             "for more information.")
 
-	.add_property("allowedTokens",
-	    &_WrapGetAllowedTokens,
-	    &_WrapSetAllowedTokens,
+        .add_property("allowedTokens",
+            &_WrapGetAllowedTokens,
+            &_WrapSetAllowedTokens,
 	    "The allowed value tokens for this property")
 
         .add_property("colorSpace",
@@ -180,6 +182,14 @@ void wrapAttributeSpec()
 
         .def("HasColorSpace", &This::HasColorSpace)
         .def("ClearColorSpace", &This::ClearColorSpace)
+
+        .add_property("limits",
+            &This::GetLimits,
+            &This::SetLimits,
+            "The limits dictionary for this attribute.")
+
+        .def("HasLimits", &This::HasLimits)
+        .def("ClearLimits", &This::ClearLimits)
 
         .def("ListTimeSamples", &_ListTimeSamples,
              return_value_policy<TfPySequenceToList>())
@@ -191,6 +201,14 @@ void wrapAttributeSpec()
         .def("SetTimeSample", &_SetTimeSample)
         .def("EraseTimeSample", &_EraseTimeSample)
 
+        .def("GetSpline",
+             &This::GetSpline,
+             return_value_policy<return_by_value>())
+        .def("SetSpline",
+             &This::SetSpline, arg("spline"))
+        .def("ClearSpline",
+             &This::ClearSpline)
+
         // property keys
         // XXX DefaultValueKey are actually
         //     implemented on PropertySpec, but are only exposed on
@@ -199,5 +217,6 @@ void wrapAttributeSpec()
         
         .setattr("ConnectionPathsKey", SdfFieldKeys->ConnectionPaths)
         .setattr("DisplayUnitKey", SdfFieldKeys->DisplayUnit)
+        .setattr("LimitsKey", SdfFieldKeys->Limits)
         ;
 }

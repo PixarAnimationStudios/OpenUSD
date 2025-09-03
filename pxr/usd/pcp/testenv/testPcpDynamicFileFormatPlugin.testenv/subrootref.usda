@@ -1,0 +1,17 @@
+#usda 1.0
+
+# Tests a reference to a dynamic subroot prim of another dynamically generated
+# prim
+def "Root" (
+references = [@./root.usda@</RootMulti/Xform_Pl1_2_0>]
+)
+{
+}
+
+# Tests a reference to a subroot prim that is not itself dynamic but is 
+# created by a dynamically generated ancestor prim.
+def "SubrootGeomRef" (
+references = [@./root.usda@</RootMulti/geom>]
+)
+{
+}

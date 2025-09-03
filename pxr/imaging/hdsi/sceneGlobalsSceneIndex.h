@@ -22,8 +22,9 @@ TF_DECLARE_WEAK_AND_REF_PTRS(HdsiSceneGlobalsSceneIndex);
 
 /// \class HdsiSceneGlobalsSceneIndex
 ///
-/// Scene index that populates a "sceneGlobals" data source as modeled
+/// Scene index that populates the "sceneGlobals" data source as modeled
 /// by HdSceneGlobalsSchema and provides public API to mutate it.
+/// This provides a way for applications to control high-level scene behavior.
 ///
 class HdsiSceneGlobalsSceneIndex : public HdSingleInputFilteringSceneIndexBase
 {
@@ -47,10 +48,21 @@ public:
     ///
     HDSI_API
     void SetActiveRenderSettingsPrimPath(const SdfPath &);
-
-    ///
+    
+    /// Set the path to use as the primaryCameraPrim in the scene
+    /// globals schema.
     HDSI_API
-    void SetCurrentFrame(const double &);
+    void SetPrimaryCameraPrimPath(const SdfPath &);
+
+    /// Set the frame number to use the as the currentFrame in the
+    /// scene globals schema.
+    HDSI_API
+    void SetCurrentFrame(double);
+
+    /// Set the timeCodesPerSecond to use the as the currentFrame in the
+    /// scene globals schema.
+    HDSI_API
+    void SetTimeCodesPerSecond(double);
 
     /// Injects an arbitrary value that identifies the state of the input scene
     /// at that point in time. This value ends up in the render index scene
@@ -58,7 +70,7 @@ public:
     /// client to identify when certain scene edits have been processed by
     /// Hydra.
     HDSI_API
-    void SetSceneStateId(const int &);
+    void SetSceneStateId(int);
 
     // ------------------------------------------------------------------------
     // Satisfying HdSceneIndexBase
@@ -98,7 +110,9 @@ private:
 
     SdfPath _activeRenderPassPrimPath;
     std::optional<SdfPath> _activeRenderSettingsPrimPath;
+    std::optional<SdfPath> _primaryCameraPrimPath;
     double _time = std::numeric_limits<double>::quiet_NaN();
+    double _timeCodesPerSecond = 24.0;
     int _sceneStateId = 0;
 };
 

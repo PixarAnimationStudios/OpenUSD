@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    defaultPrim = "Ref3"
+
+    # Override the REF2 expression variable used in ref2.usda
+    expressionVariables = {
+        string REF2 = "A"
+    }
+)
+
+def "Ref3" (
+    references = @./ref2.usda@
+)
+{
+}

@@ -135,7 +135,9 @@ _IsHardcodedPublicUniform(const mx::TypeDesc& varType)
 
 template<typename Base>
 void
-HdStMaterialXShaderGen<Base>::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
+HdStMaterialXShaderGen<Base>::_EmitGlslfxHeader(
+    mx::GenContext& mxContext,
+    mx::ShaderStage& mxStage) const
 {
     // Glslfx version and configuration
     emitLine("-- glslfx version 0.1", mxStage, false);
@@ -164,7 +166,7 @@ HdStMaterialXShaderGen<Base>::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
         for (mx::StringMap::const_reference primvarPair : _mxHdPrimvarMap) {
             const std::string type =
                 HdStMaterialXHelpers::MxGetTypeString(
-                    Base::_syntax, primvarPair.second);
+                    Base::_syntax, mxContext, primvarPair.second);
             if (type.empty() ) {
                 TF_WARN("MaterialX geomprop '%s' has unknown type '%s'",
                         primvarPair.first.c_str(), primvarPair.second.c_str());
@@ -180,12 +182,12 @@ HdStMaterialXShaderGen<Base>::_EmitGlslfxHeader(mx::ShaderStage& mxStage) const
         Base::emitString(R"(    }, )""\n", mxStage);
     }
     // insert texture information if needed
-    if (!_mxHdTextureMap.empty()) {
+    if (!_mxHdTextureNames.empty()) {
         Base::emitString(R"(    "textures": {)" "\n", mxStage);
         std::string line = ""; unsigned int i = 0;
-        for (mx::StringMap::const_reference texturePair : _mxHdTextureMap) {
-            line += "        \"" + texturePair.second + "\": {\n        }";
-            line += (i < _mxHdTextureMap.size() - 1) ? ",\n" : "\n";
+        for (std::string const& textureName : _mxHdTextureNames) {
+            line += "        \"" + textureName + "\": {\n        }";
+            line += (i < _mxHdTextureNames.size() - 1) ? ",\n" : "\n";
             i++;
         }
         Base::emitString(line, mxStage);
@@ -452,14 +454,15 @@ HdStMaterialXShaderGen<Base>::_EmitMxInitFunction(
     Base::emitLineBreak(mxStage);
 
     // Initialize MaterialX Texture samplers with HdGetSampler equivalents
-    if (_bindlessTexturesEnabled && !_mxHdTextureMap.empty()) {
+    if (_bindlessTexturesEnabled && !_mxHdTextureNames.empty()) {
         Base::emitComment("Initialize Material Textures", mxStage);
-        for (mx::StringMap::const_reference texturePair : _mxHdTextureMap) {
-            if (texturePair.first == "domeLightFallback") {
+        for (std::string const& textureName : _mxHdTextureNames) {
+            if (textureName == "domeLightFallback") {
                 continue;
             }
-            emitLine(texturePair.first + " = "
-                    "HdGetSampler_" + texturePair.second + "()", mxStage);
+            emitLine(TfStringPrintf("%s = HdGetSampler_%s()",
+                        textureName.c_str(), textureName.c_str()),
+                mxStage);
         }
         Base::emitLineBreak(mxStage);
     }
@@ -672,9 +675,8 @@ HdStMaterialXShaderGen<Base>::emitLine(
     // 'occlusion' represents shadow occlusion. We don't use MaterialX's
     // shadow implementation (hwShadowMap is false). Instead, use our own 
     // per-light occlusion value calculated in mxInit() and stored in lightData.
-    // Note: Metal uses float3, Glsl uses vec3, in the line we're looking for.
-    if (_emittingSurfaceNode && (str == "vec3 L = lightShader.direction" ||
-                                 str == "float3 L = lightShader.direction" )) {
+    if (_emittingSurfaceNode &&
+        TfStringEndsWith(str, "L = lightShader.direction")) {
         emitLine(
             "occlusion = u_lightData[activeLightIndex].shadowOcclusion", stage);
     }
@@ -879,8 +881,14 @@ namespace {
 template<>
 HdStMaterialXShaderGen<mx::GlslShaderGenerator>::HdStMaterialXShaderGen(
     HdSt_MxShaderGenInfo const& mxHdInfo)
+#if (MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38) || \
+    (MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 39 && \
+     MATERIALX_BUILD_VERSION <= 2)
     : mx::GlslShaderGenerator(),
-      _mxHdTextureMap(mxHdInfo.textureMap),
+#else
+    : mx::GlslShaderGenerator(mx::TypeSystem::create()),
+#endif
+      _mxHdTextureNames(mxHdInfo.textureNames),
       _mxHdPrimvarMap(mxHdInfo.primvarMap),
       _mxHdPrimvarDefaultValueMap(mxHdInfo.primvarDefaultValueMap),
       _materialTag(mxHdInfo.materialTag),
@@ -935,7 +943,7 @@ HdStMaterialXShaderGenGlsl::_EmitGlslfxShader(
     addStageUniform(mx::HW::LIGHT_DATA, mx::Type::FLOAT,
         "shadowOcclusion", mxStage);
 
-    _EmitGlslfxHeader(mxStage);
+    _EmitGlslfxHeader(mxContext, mxStage);
     _EmitMxFunctions(mxGraph, mxContext, mxStage);
     _EmitMxSurfaceShader(mxGraph, mxContext, mxStage);
 }
@@ -978,16 +986,14 @@ HdStMaterialXShaderGenGlsl::_EmitMxFunctions(
         emitLineBreak(mxStage);
 
         // Define mappings for the MaterialX Textures
-        if (!_mxHdTextureMap.empty()) {
+        if (!_mxHdTextureNames.empty()) {
             emitComment("Define MaterialX to Hydra Sampler mappings", mxStage);
-            for (mx::StringMap::const_reference texturePair : _mxHdTextureMap) {
-                if (texturePair.first == "domeLightFallback") {
+            for (std::string const& textureName : _mxHdTextureNames) {
+                if (textureName == "domeLightFallback") {
                     continue;
                 }
-                emitLine(TfStringPrintf(
-                    "#define %s HdGetSampler_%s()",
-                        texturePair.first.c_str(),
-                        texturePair.second.c_str()),
+                emitLine(TfStringPrintf("#define %s HdGetSampler_%s()",
+                        textureName.c_str(), textureName.c_str()),
                     mxStage, false);
             }
             emitLineBreak(mxStage);
@@ -1032,8 +1038,14 @@ namespace {
 template<>
 HdStMaterialXShaderGen<mx::VkShaderGenerator>::HdStMaterialXShaderGen(
     HdSt_MxShaderGenInfo const& mxHdInfo)
+#if (MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38) || \
+    (MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 39 && \
+     MATERIALX_BUILD_VERSION <= 2)
     : mx::VkShaderGenerator(),
-      _mxHdTextureMap(mxHdInfo.textureMap),
+#else
+    : mx::VkShaderGenerator(mx::TypeSystem::create()),
+#endif
+      _mxHdTextureNames(mxHdInfo.textureNames),
       _mxHdPrimvarMap(mxHdInfo.primvarMap),
       _mxHdPrimvarDefaultValueMap(mxHdInfo.primvarDefaultValueMap),
       _materialTag(mxHdInfo.materialTag),
@@ -1088,7 +1100,7 @@ HdStMaterialXShaderGenVkGlsl::_EmitGlslfxShader(
     addStageUniform(mx::HW::LIGHT_DATA, mx::Type::FLOAT,
         "shadowOcclusion", mxStage);
 
-    _EmitGlslfxHeader(mxStage);
+    _EmitGlslfxHeader(mxContext, mxStage);
     _EmitMxFunctions(mxGraph, mxContext, mxStage);
     _EmitMxSurfaceShader(mxGraph, mxContext, mxStage);
 }
@@ -1130,16 +1142,14 @@ HdStMaterialXShaderGenVkGlsl::_EmitMxFunctions(
         emitLineBreak(mxStage);
 
         // Define mappings for the MaterialX Textures
-        if (!_mxHdTextureMap.empty()) {
+        if (!_mxHdTextureNames.empty()) {
             emitComment("Define MaterialX to Hydra Sampler mappings", mxStage);
-            for (mx::StringMap::const_reference texturePair : _mxHdTextureMap) {
-                if (texturePair.first == "domeLightFallback") {
+            for (std::string const& textureName : _mxHdTextureNames) {
+                if (textureName == "domeLightFallback") {
                     continue;
                 }
-                emitLine(TfStringPrintf(
-                    "#define %s HdGetSampler_%s()",
-                        texturePair.first.c_str(),
-                        texturePair.second.c_str()),
+                emitLine(TfStringPrintf("#define %s HdGetSampler_%s()",
+                        textureName.c_str(), textureName.c_str()),
                     mxStage, false);
             }
             emitLineBreak(mxStage);
@@ -1184,8 +1194,14 @@ namespace {
 template<>
 HdStMaterialXShaderGen<mx::MslShaderGenerator>::HdStMaterialXShaderGen(
     HdSt_MxShaderGenInfo const& mxHdInfo)
+#if (MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38) || \
+    (MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 39 && \
+     MATERIALX_BUILD_VERSION <= 2)
     : mx::MslShaderGenerator(),
-      _mxHdTextureMap(mxHdInfo.textureMap),
+#else
+    : mx::MslShaderGenerator(mx::TypeSystem::create()),
+#endif
+      _mxHdTextureNames(mxHdInfo.textureNames),
       _mxHdPrimvarMap(mxHdInfo.primvarMap),
       _mxHdPrimvarDefaultValueMap(mxHdInfo.primvarDefaultValueMap),
       _materialTag(mxHdInfo.materialTag),
@@ -1293,7 +1309,7 @@ HdStMaterialXShaderGenMsl::_EmitGlslfxMetalHeader(
     mx::GenContext& mxContext,
     mx::ShaderStage& mxStage) const
 {
-    _EmitGlslfxHeader(mxStage);
+    _EmitGlslfxHeader(mxContext, mxStage);
     emitLineBreak(mxStage);
     emitLineBreak(mxStage);
     emitLine("//Metal Shading Language version " + getVersion(), mxStage, false);
@@ -1310,11 +1326,11 @@ HdStMaterialXShaderGenMsl::_EmitMxFunctions(
     mx::ShaderStage& mxStage) const
 {
     mx::ShaderGenerator::emitLibraryInclude(
-        "pbrlib/" + mx::GlslShaderGenerator::TARGET
-        + "/lib/mx_microfacet.glsl", mxContext, mxStage);
-    mx::ShaderGenerator::emitLibraryInclude(
         "stdlib/" + mx::MslShaderGenerator::TARGET
         + "/lib/mx_math.metal", mxContext, mxStage);
+    mx::ShaderGenerator::emitLibraryInclude(
+        "pbrlib/" + mx::GlslShaderGenerator::TARGET
+        + "/lib/mx_microfacet.glsl", mxContext, mxStage);
     _EmitConstantsUniformsAndTypeDefs(
         mxContext, mxStage,_syntax->getConstantQualifier());
 
@@ -1342,17 +1358,17 @@ HdStMaterialXShaderGenMsl::_EmitMxFunctions(
         emitLineBreak(mxStage);
 
         // Define mappings for the MaterialX Textures
-        if (!_mxHdTextureMap.empty()) {
+        if (!_mxHdTextureNames.empty()) {
             emitComment("Define MaterialX to Hydra Sampler mappings", mxStage);
-            for (mx::StringMap::const_reference texturePair : _mxHdTextureMap) {
-                if (texturePair.first == "domeLightFallback") {
+            for (std::string const &textureName : _mxHdTextureNames) {
+                if (textureName == "domeLightFallback") {
                     continue;
                 }
                 emitLine(TfStringPrintf(
                     "#define %s MetalTexture{HdGetSampler_%s(), samplerBind_%s}",
-                        texturePair.first.c_str(),
-                        texturePair.second.c_str(),
-                        texturePair.second.c_str()),
+                        textureName.c_str(),
+                        textureName.c_str(),
+                        textureName.c_str()),
                     mxStage, false);
             }
             emitLineBreak(mxStage);
@@ -1407,15 +1423,20 @@ HdStMaterialXHelpers::GetMxTypeDesc(const mx::ShaderPort* port)
 
 const std::string 
 HdStMaterialXHelpers::MxGetTypeString(
-    mx::SyntaxPtr mxSyntax, const std::string& typeName)
+    mx::SyntaxPtr mxSyntax,
+    const mx::GenContext& mxContext,
+    const std::string& typeName)
 {
 #if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION <= 38
     const mx::TypeDesc* mxType = mx::TypeDesc::get(typeName);
     if (!mxType) {
         return mx::Type::NONE->getName();
     }
+#elif MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 39 && \
+    MATERIALX_BUILD_VERSION <=2
+     const mx::TypeDesc mxType = mx::TypeDesc::get(typeName);
 #else
-    const mx::TypeDesc mxType = mx::TypeDesc::get(typeName);
+    const mx::TypeDesc mxType = mxContext.getTypeDesc(typeName);
 #endif
     return mxSyntax->getTypeName(mxType);
 }

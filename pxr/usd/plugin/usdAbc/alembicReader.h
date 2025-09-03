@@ -130,6 +130,13 @@ public:
         static bool Bracket(const T&, double usdTime,
                             double* tLower, double* tUpper);
 
+        /// Returns the preceding time sample for the \p time.
+        bool PreviousTime(double usdTime, double* tPrevious) const;
+
+        /// Returns the preceding time sample for the \p time.
+        template <class T>
+        bool PreviousTime(const T&, double usdTime, double* tPrevious) const;
+
     private:
         // The monotonically increasing Usd times.
         _UsdTimeCodes _times;

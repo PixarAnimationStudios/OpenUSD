@@ -1038,32 +1038,39 @@ TestVulkanComputeCmds(HgiVulkan& hgiVulkan)
     HgiShaderFunctionDesc csDesc;
     csDesc.shaderStage = HgiShaderStageCompute;
     csDesc.shaderCode = 
-        "#extension GL_EXT_nonuniform_qualifier : require \n"
-        "#extension GL_EXT_scalar_block_layout : require \n"
-        ""
-        "layout(push_constant) uniform PushConstantBuffer { \n"
-        "    layout(offset = 0) int index; \n"
-        "} pushConstants; \n"
-        ""
-        "layout (scalar, set=0, binding=0) uniform ParamsIn { \n"
-        "    float offset; \n"
-        "} paramsIn; \n"
-        ""
-        "layout (scalar, set=0, binding=1) buffer StorageBufferIn { \n"
-        "    vec4 value[]; \n"
-        "} storageBufferIn; \n"
-        ""
-        "layout (scalar, set=0, binding=2) buffer StorageBufferOut { \n"
-        "    vec4 value[]; \n"
-        "} storageBufferOut; \n"
-        ""
-        "layout (rgba32f, set=0, binding=3) uniform image2D ImageIn; \n"
-        ""
         "void main() { \n"
-        "    vec4 v = storageBufferIn.value[pushConstants.index]; \n"
-        "    v *= paramsIn.offset; \n"
-        "    storageBufferOut.value[pushConstants.index] = v; \n"
+        "    vec4 v = valueIn[index]; \n"
+        "    v *= offset; \n"
+        "    valueOut[index] = v; \n"
         "} \n";
+
+    // Declare resources used by the program
+    HgiShaderFunctionAddConstantParam(
+        &csDesc,
+        /*name=*/"index",
+        /*type=*/"int");
+    HgiShaderFunctionAddBuffer(
+        &csDesc,
+        /*name=*/"offset",
+        /*type=*/"float",
+        /*bindingIndex=*/0,
+        /*binding=*/HgiBindingTypeUniformValue);
+    HgiShaderFunctionAddBuffer(
+        &csDesc,
+        /*name=*/"valueIn",
+        /*type=*/"vec4",
+        /*bindingIndex=*/1,
+        /*binding=*/HgiBindingTypePointer);
+    HgiShaderFunctionAddWritableBuffer(
+        &csDesc,
+        /*name=*/"valueOut",
+        /*type=*/"vec4",
+        /*bindingIndex=*/2);
+    HgiShaderFunctionAddWritableTexture(
+        &csDesc,
+        /*name=*/"ImageIn",
+        /*bindIndex=*/0,
+        /*dimensions=*/2);
 
     csDesc.debugName = "debug cs shader";
     HgiShaderFunctionHandle cs = hgiVulkan.CreateShaderFunction(csDesc);

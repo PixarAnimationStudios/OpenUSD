@@ -16,6 +16,7 @@
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/gf/interval.h"
 
@@ -25,8 +26,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 class UsdAttribute;
+class UsdAttributeLimits;
 class TsSpline;
 
 /// A std::vector of UsdAttributes.
@@ -151,11 +152,14 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// \section Usd_AssetPathValuedAttributes Attributes of type SdfAssetPath and UsdAttribute::Get()
 ///
 /// If an attribute's value type is SdfAssetPath or SdfAssetPathArray, Get()
-/// performs extra work to compute the resolved asset paths, using the layer
-/// that has the strongest value opinion as the anchor for "relative" asset
-/// paths.  Both the unresolved and resolved results are available through
-/// SdfAssetPath::GetAssetPath() and SdfAssetPath::GetResolvedPath(),
-/// respectively.
+/// does extra work to perform variable expression evaluation and compute
+/// resolved asset paths. The layer that has the strongest value opinion is 
+/// used as the anchor for "relative" asset paths.  The unresolved results are
+/// available through SdfAssetPath::GetAssetPath. The fully resolved path
+/// (including any substitutions) can be retrieved with
+/// SdfAssetPath::GetResolvedPath. The authored or evaluated paths may
+/// be explicitly retrieved through SdfAssetPath::GetAuthoredPath and 
+/// SdfAssetPath::GetEvaluatedPath respectively.
 ///
 /// Clients that call Get() on many asset-path-valued attributes may wish to
 /// employ an ArResolverScopedCache to improve asset path resolution
@@ -393,10 +397,34 @@ public:
     /// stage's interpolation type.
     /// See \ref Usd_AttributeInterpolation.
     ///
+    /// An attribute's value may be discontinuous at time samples. This happens 
+    /// when the stage is in held interpolation mode or when the sample values
+    /// are not interpolatable. To obtain the attribute's value immediately
+    /// before a given time sample, use 
+    /// \link UsdTimeCode::PreTime() UsdTimeCode::PreTime(time)\endlink. This 
+    /// evaluates the limit of the attribute's value as time approaches the 
+    /// given \p time from the left. 
+    ///
+    /// For example, if a string-valued attribute has time samples 
+    /// `{1.0: "foo", 2.0: "bar"}`, calling Get() with UsdTimeCode(2.0) 
+    /// returns "bar", whereas calling Get() with UsdTimeCode::PreTime(2.0) 
+    /// returns "foo". However, if the attribute's values are interpolatable, 
+    /// such as `{1.0: 3.0, 2.0: 4.0}`, then calling Get() with UsdTimeCode(2.0)  
+    /// and UsdTimeCode::PreTime(2.0) will both return 4.0, since the value 
+    /// is continuous at time=2.0.
+    ///
     /// If no value is authored and no fallback value is provided by the 
     /// schema for this attribute, this function will return false. If the 
     /// consumer's use-case requires a default value, the consumer will need
     /// to provide one, possibly using GetTypeName().GetDefaultValue().
+    ///
+    /// Value resolution first needs to determine the source of the strongest
+    /// value opinion for this attribute at the requested UsdTimeCode \p time.
+    /// But often (i.e. unless the attribute is affected by 
+    /// \ref Usd_Page_ValueClips "Value Clips") the source of the resolved value
+    /// does not vary over time. UsdAttributeQuery finds the source opinion and 
+    /// saves it so that repeated calls to UsdAttributeQuery::Get() avoid 
+    /// redundant work.
     ///
     /// This templated accessor is designed for high performance data-streaming
     /// applications, allowing one to fetch data into the same container
@@ -461,7 +489,9 @@ public:
     ///
     /// \return false and generate an error if type \c T does not match
     /// this attribute's defined scene description type <b>exactly</b>,
-    /// or if there is no existing definition for the attribute.
+    /// or if there is no existing definition for the attribute, or if the
+    /// \p time is pre-time, which is only used to for querying for values at 
+    /// the limit when the time is approached from the left.
     template <typename T>
     bool Set(const T& value, UsdTimeCode time = UsdTimeCode::Default()) const {
         static_assert(!std::is_pointer<T>::value, "");
@@ -480,17 +510,15 @@ public:
     USD_API
     bool Set(const VtValue& value, UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    /// Returns true if the attribute has a spline as a value source.
-    ///
-    /// That is if a stronger default value is authored over weaker spline
-    /// value, the default value will hide the spline value and return false.
+    /// Returns true if this attribute has a spline as the strongest value
+    /// source.
     USD_API
     bool HasSpline() const;
 
-    /// Returns a copy of the spline.
+    /// Returns a copy of the resolved spline if the spline is the strongest value
+    /// source.
     ///
-    /// If a stronger default value is authored over weaker spline value, the
-    /// default value will hide the spline value.
+    /// If the strongest opinion is not a spline, returns an empty spline.
     USD_API
     TsSpline GetSpline() const;
 
@@ -514,6 +542,10 @@ public:
     ///
     /// Calling clear when either no value is authored or no spec is present,
     /// is a silent no-op returning true. 
+    ///
+    /// Issue a coding error if \p time is a pre-time, which is only used to
+    /// for querying for values at the limit when the time is approached from
+    /// the left.
     USD_API
     bool ClearAtTime(UsdTimeCode time) const;
 
@@ -649,6 +681,125 @@ public:
     /// \sa SetColorSpace()
     USD_API
     bool ClearColorSpace() const;
+
+    /// @}
+
+    /// \name Limits Dictionary
+    ///
+    /// The limits dictionary contains minimum and maximum values for the
+    /// attribute, organized by purpose into sub-dictionaries (see, e.g.,
+    /// UsdAttribute::GetSoftLimits() and UsdAttribute::GetHardLimits()).
+    ///
+    /// Each sub-dictionary can store a minimum and maximum value for a
+    /// different purpose (encoded under the \c UsdLimitsKeys->Minimum and
+    /// \c UsdLimitsKeys->Maximum keys, respectively). For example the "soft"
+    /// sub-dictionary is for limits which usually hold but can be exceeded
+    /// as necessary.
+    ///
+    /// Limits sub-dictionaries may store additional related values as well (see
+    /// UsdAttributeLimits::Set()).
+    ///
+    /// For example, a limits dictionary might look like the following:
+    /// \code
+    /// def "MyPrim"
+    /// {
+    ///     int attr = 7 (
+    ///         limits = {
+    ///             dictionary soft = {
+    ///                 int minimum = 5
+    ///                 int maximum = 10
+    ///                 bool customKey = 1
+    ///             }
+    ///             dictionary hard = {
+    ///                 int minimum = 0
+    ///                 int maximum = 15
+    ///             }
+    ///             dictionary customLimits = {
+    ///                 int maximum = 25
+    ///             }
+    ///         }
+    ///     )
+    /// }
+    /// \endcode
+    ///
+    /// UsdAttribute's value authoring API does not enforce limits constraints,
+    /// but authored values that lie outside the hard limits will trigger
+    /// validation errors.
+
+    ///
+    /// @{
+
+    /// Return the composed limits dictionary for the attribute.
+    ///
+    /// \sa GetSoftLimits()(), GetHardLimits()
+    USD_API
+    VtDictionary GetLimits() const;
+
+    /// Set the limits dictionary for the attribute to \p limits, at the current
+    /// edit target. Return \c true on success.
+    ///
+    /// Limits values must be nested inside sub-dictionaries, and the types of
+    /// encoded minimum and maximum values must match the value type of the
+    /// attribute.
+    ///
+    /// Note that since this field is dictionary-valued, its composed value will
+    /// be the combination of all its entries as specified across all relevant
+    /// opinions. Overrides occur per-entry rather than the dictionary as a
+    /// whole.
+    ///
+    /// \sa GetSoftLimits(), GetHardLimits() for more convenient validation,
+    /// editing, and look-up API
+    USD_API
+    bool SetLimits(const VtDictionary& limits) const;
+
+    /// Return whether a limits dictionary is authored for the attribute.
+    USD_API
+    bool HasAuthoredLimits() const;
+
+    /// Clear the authored limits dictionary for the attribute, at the current
+    /// edit target.
+    ///
+    /// Note that since this field is dictionary-valued, clearing it at the
+    /// current edit target will not necessarily result in clearing the entire
+    /// composed value.
+    USD_API
+    bool ClearLimits() const;
+
+    /// Return a UsdAttributeLimits object configured to edit the attribute's
+    /// soft limits sub-dictionary.
+    ///
+    /// Soft limits are intended to provide a value range that is typical or
+    /// useful for most purposes, but which may be exceeded as necessary.
+    ///
+    /// UsdAttribute's value authoring API does not enforce soft limits.
+    ///
+    /// \sa GetHardLimits()
+    USD_API
+    UsdAttributeLimits GetSoftLimits() const;
+
+    /// Return a UsdAttributeLimits object configured to edit the attribute's
+    /// hard limits sub-dictionary.
+    ///
+    /// Hard limits are intended to provide a strict range that the attribute's
+    /// value is expected to conform to.
+    ///
+    /// UsdAttribute's value authoring API does not enforce hard limits, but an
+    /// authored value that lies outside the hard limits will trigger a
+    /// validation error.
+    ///
+    /// \sa GetSoftLimits()
+    USD_API
+    UsdAttributeLimits GetHardLimits() const;
+
+    /// Return a UsdAttributeLimits object configured to edit the attribute's
+    /// limits sub-dictionary given by \p key.
+    ///
+    /// Custom limits values are for use by clients for their own specific
+    /// purposes. UsdAttribute's value API does not enforce them.
+    ///
+    /// \sa GetSoftLimits(), GetHardLimits()
+    USD_API
+    UsdAttributeLimits GetLimits(const TfToken& key) const;
 
     /// @}
 

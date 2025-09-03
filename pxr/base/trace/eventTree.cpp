@@ -44,8 +44,8 @@ TraceEventTree::Merge(const TraceEventTreeRefPtr& tree)
     for(TraceEventNodeRefPtr newThreadNode 
             : tree->GetRoot()->GetChildrenRef()) {
 
-        const TraceEventNodeRefPtrVector& threadNodes =
-            _root->GetChildrenRef();
+        const TfSpan<const TraceEventNodeRefPtr>
+            threadNodes = _root->GetChildrenRef();
 
         // Find if the tree already has a node for child thread.
         auto it = std::find_if(

@@ -188,8 +188,6 @@ const TfToken &
 {
     return {{SCHEMA_CLASS_NAME}}Tokens->{{SCHEMA_TOKEN}};
 }
-{%- endif -%}
-
 {%- if ADD_DEFAULT_LOCATOR is defined %}
 
 /*static*/
@@ -205,6 +203,9 @@ const HdDataSourceLocator &
     return locator;
 }
 {%- endif -%}
+
+{%- endif -%}
+
 
 {%- if MEMBERS is defined -%}
 {%- for name, type_name, opt_dict in MEMBERS -%}

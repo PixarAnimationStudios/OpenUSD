@@ -5,7 +5,10 @@
 // https://openusd.org/license.
 //
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/assetPath.h"
+#include "pxr/usd/sdf/layerUtils.h"
+#include "pxr/usd/sdf/variableExpression.h" 
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/registryManager.h"
@@ -14,6 +17,7 @@
 #include "pxr/base/tf/type.h"
 
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/arrayEdit.h"
 #include "pxr/base/vt/value.h"
 
 #include <ostream>
@@ -26,6 +30,7 @@ TF_REGISTRY_FUNCTION(TfType)
 {
     TfType::Define<SdfAssetPath>();
     TfType::Define<VtArray<SdfAssetPath>>();
+    TfType::Define<VtArrayEdit<SdfAssetPath>>();
 }
 
 TF_REGISTRY_FUNCTION(VtValue)
@@ -122,21 +127,33 @@ SdfAssetPath::SdfAssetPath()
 {
 }
 
-SdfAssetPath::SdfAssetPath(const std::string &path)
-    : _assetPath(path)
-{
-    if (!_ValidateAssetPathString(path.c_str())) {
+SdfAssetPath::SdfAssetPath(const std::string &authoredPath)
+    : _authoredPath(authoredPath)
+{   
+    if (!_ValidateAssetPathString(authoredPath.c_str())) {
         *this = SdfAssetPath();
     }
 }
 
-SdfAssetPath::SdfAssetPath(const std::string &path,
+SdfAssetPath::SdfAssetPath(const std::string &authoredPath,
                            const std::string &resolvedPath)
-    : _assetPath(path)
+    : _authoredPath(authoredPath)
     , _resolvedPath(resolvedPath)
 {
-    if (!_ValidateAssetPathString(path.c_str()) ||
+    if (!_ValidateAssetPathString(authoredPath.c_str()) ||
         !_ValidateAssetPathString(resolvedPath.c_str())) {
+        *this = SdfAssetPath();
+    }
+}
+
+SdfAssetPath::SdfAssetPath(const SdfAssetPathParams &params)
+    : _authoredPath(params.authoredPath)
+    , _evaluatedPath(params.evaluatedPath)
+    , _resolvedPath(params.resolvedPath)
+{
+    if (!_ValidateAssetPathString(params.authoredPath.c_str()) ||
+        !_ValidateAssetPathString(params.evaluatedPath.c_str()) ||
+        !_ValidateAssetPathString(params.resolvedPath.c_str())) {
         *this = SdfAssetPath();
     }
 }
@@ -144,18 +161,87 @@ SdfAssetPath::SdfAssetPath(const std::string &path,
 bool
 SdfAssetPath::operator<(const SdfAssetPath &rhs) const
 {
-    if (_assetPath < rhs._assetPath)
-        return true;
-    if (rhs._assetPath < _assetPath)
-        return false;
-
-    return _resolvedPath < rhs._resolvedPath;
+    return std::tie(_authoredPath, _resolvedPath, _evaluatedPath) < 
+           std::tie(rhs._authoredPath, rhs._resolvedPath, rhs._evaluatedPath);
 }
 
 std::ostream& 
 operator<<(std::ostream& out, const SdfAssetPath& ap)
 {
     return out << Delimiter << ap.GetAssetPath() << Delimiter;
+}
+
+static void
+_AnchorOrResolveAssetPaths(const SdfLayerHandle &anchor,
+                                const VtDictionary &exprVars,
+                                TfSpan<SdfAssetPath> assetPaths,
+                                bool setResolvedPath,
+                                std::vector<std::string> *errors)
+{
+    for (size_t i = 0; i != assetPaths.size(); ++i) {
+
+        if (SdfVariableExpression::IsExpression(assetPaths[i].GetAuthoredPath())) {
+            SdfVariableExpression::Result r = 
+                SdfVariableExpression(assetPaths[i].GetAuthoredPath())
+                .EvaluateTyped<std::string>(exprVars);
+
+            if (!r.errors.empty()) {
+                errors->insert(errors->end(), r.errors.begin(), r.errors.end());
+                continue;
+            }
+
+            if (r.value.IsHolding<std::string>()) {
+                assetPaths[i].SetEvaluatedPath(
+                    r.value.UncheckedGet<std::string>());
+            }
+        }
+
+        if (setResolvedPath) {
+            assetPaths[i].SetResolvedPath(SdfResolveAssetPathRelativeToLayer(
+                anchor, assetPaths[i].GetAssetPath())
+            );
+        }
+        else {
+            // If the resolver can't handle this path 
+            // (e.g., it's a URI and no associated URI resolver is registered),
+            // the result of anchoring may be non-sensical. We try to detect this 
+            // by comparing the anchored result to the unanchored identifier.  
+            // If they're the same, then we assume the path is absolute since the 
+            // anchor had no effect, and we can just leave the path as-is.
+            if (assetPaths[i].GetAssetPath().empty() ||
+                SdfLayer::IsAnonymousLayerIdentifier(assetPaths[i].GetAssetPath())) {
+                return;
+            }
+
+            const std::string anchoredPath = SdfComputeAssetPathRelativeToLayer(
+                    anchor, assetPaths[i].GetAssetPath());
+
+            const std::string unanchoredPath = ArGetResolver().CreateIdentifier(
+                    assetPaths[i].GetAssetPath());
+
+            if (anchoredPath != unanchoredPath) {
+                assetPaths[i] = SdfAssetPath(anchoredPath);
+            }
+        }
+    }
+}
+
+void
+SdfAnchorAssetPaths(const SdfLayerHandle &anchor,
+                    const VtDictionary &exprVars,
+                    TfSpan<SdfAssetPath> assetPaths,
+                    std::vector<std::string> *errors)
+{
+    _AnchorOrResolveAssetPaths(anchor, exprVars, assetPaths, false, errors);
+}
+
+void
+SdfResolveAssetPaths(const SdfLayerHandle &anchor,
+                        const VtDictionary &exprVars,
+                        TfSpan<SdfAssetPath> assetPaths,
+                        std::vector<std::string> *errors)
+{
+    _AnchorOrResolveAssetPaths(anchor, exprVars, assetPaths, true, errors);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -26,6 +26,7 @@ namespace HdFlatteningSceneIndex_Impl
 constexpr uint32_t _smallVectorSize = 8;
 using _DataSourceLocatorSetVector =
     TfSmallVector<HdDataSourceLocatorSet, _smallVectorSize>;
+class _PrimLevelWrappingDataSource;
 }
 
 TF_DECLARE_REF_PTRS(HdFlatteningSceneIndex);
@@ -100,6 +101,8 @@ protected:
             const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;
 
 private:
+    friend class HdFlatteningSceneIndex_Impl::_PrimLevelWrappingDataSource;
+    
     using _DataSourceLocatorSetVector =
         HdFlatteningSceneIndex_Impl::_DataSourceLocatorSetVector;
 

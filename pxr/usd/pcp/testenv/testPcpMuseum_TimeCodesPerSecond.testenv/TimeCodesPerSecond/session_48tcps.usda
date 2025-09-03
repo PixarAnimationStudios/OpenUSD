@@ -1,0 +1,14 @@
+#usda 1.0
+(
+    subLayers = [
+        @./sess_s.usda@ (offset = 10; scale = 2.0),
+        @./sess_s_48tcps.usda@ (offset = 10; scale = 2.0),
+        @./sess_s_24tcps_12fps.usda@ (offset = 10; scale = 2.0),
+        @./sess_s_12fps.usda@ (offset = 10; scale = 2.0)
+    ]
+    timeCodesPerSecond = 48
+)
+
+over "Root" 
+{
+}

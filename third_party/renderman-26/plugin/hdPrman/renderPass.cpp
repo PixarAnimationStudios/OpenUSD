@@ -32,6 +32,7 @@
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/token.h"
+#include "hdPrman/worldOffsetSceneIndexPlugin.h"
 
 #include <Riley.h>
 
@@ -53,7 +54,6 @@ HdPrman_RenderPass::HdPrman_RenderPass(
 , _lastRenderedVersion(0)
 , _lastTaskRenderTagsVersion(0)
 , _lastRprimRenderTagVersion(0)
-, _projection(HdPrmanProjectionTokens->PxrPerspective)
 , _quickIntegrateTime(0.2f)
 {
     TF_VERIFY(_renderParam);
@@ -512,7 +512,7 @@ HdPrman_RenderPass::_Execute(
     
     if (driveWithRenderSettingsPrim) {
         HdPrman_RenderParam * const param = _renderParam.get();
-        
+
         const bool success =
             rsPrim->UpdateAndRender(GetRenderIndex(), isInteractive, param);
 
@@ -526,6 +526,17 @@ HdPrman_RenderPass::_Execute(
                 _MarkBindingsAsConverged(aovBindings, GetRenderIndex());
             }
             _converged = true;
+
+            // Write the id info for batch renders if the render pass contains 
+            // an idMap product.
+            if (!isInteractive) {
+                TfToken idMapProductName =
+                    _renderParam->GetIdMapProductName(rsPrim);
+                if (!idMapProductName.IsEmpty()) {
+                    _renderParam->WriteIdMap(
+                        GetRenderIndex(), idMapProductName);
+                }
+            }
 
             return;
         }
@@ -575,6 +586,33 @@ HdPrman_RenderPass::_Execute(
     const bool frameChanged = _renderParam->frame != frame;
     _renderParam->frame = frame;
 
+    // Update World Offset
+    {
+        // Although it's incorrect we are defaulting to world origin as world
+        // (instead of camera) to try and avoid slow camera movement.
+        const std::string worldOrigin
+            = renderDelegate->GetRenderSetting<std::string>(
+                HdPrmanRenderSettingsTokens->worldOrigin, "world");
+        GfVec3d worldOffset = (worldOrigin != "world")
+            ? renderDelegate->GetRenderSetting<GfVec3d>(
+                HdPrmanRenderSettingsTokens->worldOffset,
+                GfVec3d(0.0, 0.0, 0.0))
+            : GfVec3d(0.0, 0.0, 0.0);
+        SdfPath renderCamera = (worldOrigin == "camera")
+            ? cameraContext.GetCameraPath()
+            : SdfPath::EmptyPath();
+
+        if (worldOffset != HdPrman_WorldOffsetSceneIndexPlugin::GetWorldOffset()
+        || renderCamera != HdPrman_WorldOffsetSceneIndexPlugin::GetRenderCamera()) {
+            HdPrman_WorldOffsetSceneIndexPlugin::SetWorldOffset(worldOffset);
+            HdPrman_WorldOffsetSceneIndexPlugin::SetRenderCamera(renderCamera);
+            // Mark Some Prims Dirty To Trigger Re-Cook
+            GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
+                cameraContext.GetCameraPath(), HdChangeTracker::DirtyTransform);
+            GetRenderIndex()->GetChangeTracker().MarkAllRprimsDirty(
+                HdChangeTracker::DirtyTransform);
+        }
+    }
 
     //
     // ------------------------------------------------------------------------
@@ -636,7 +674,7 @@ HdPrman_RenderPass::_Execute(
         return;
     }
 
-    if (resolutionChanged || camChanged) {
+    if (resolutionChanged) {
         rvCtx.SetResolution(resolution, _renderParam->AcquireRiley());
     }
     //
@@ -703,18 +741,22 @@ HdPrman_RenderPass::_Execute(
         _renderParam->UpdateLegacyOptions();
 
         // Set Projection Settings
-        _projection = renderDelegate->GetRenderSetting<std::string>(
+        std::string projection = renderDelegate->GetRenderSetting<std::string>(
             HdPrmanRenderSettingsTokens->projectionName,
-            _projection);
+            "");
 
-        RtParamList projectionParams;
-        _renderParam->SetProjectionParamsFromRenderSettings(
-            (HdPrmanRenderDelegate*)renderDelegate,
-            _projection,
-             projectionParams);
+        if (!projection.empty()) {
+            RtParamList projectionParams;
+            _renderParam->SetProjectionParamsFromRenderSettings(
+                (HdPrmanRenderDelegate*)renderDelegate,
+                projection,
+                projectionParams);
 
-        cameraContext.SetProjectionOverride(RtUString(_projection.c_str()),
-                                            projectionParams);
+            if (projectionParams.GetNumParams() != 0) {
+                cameraContext.SetProjectionOverride(
+                    RtUString(projection.c_str()), projectionParams);
+            }
+        }
 
         // Set Resolution, Crop Window, Pixel Aspect Ratio,
         // and update camera settings.

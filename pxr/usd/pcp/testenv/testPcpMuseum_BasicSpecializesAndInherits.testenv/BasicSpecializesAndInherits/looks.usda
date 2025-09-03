@@ -1,0 +1,20 @@
+#usda 1.0
+
+def "Looks"
+{
+    def "BaseMaterial"
+    {
+    }
+
+    def "Material" (inherits = </Looks/BaseMaterial>)
+    {
+    }
+
+    def "Metal" (inherits = </Looks/Material>)
+    {
+    }
+
+    def "Brass" (specializes = </Looks/Metal>)
+    {
+    }
+}

@@ -66,25 +66,39 @@ void
 HduiSceneObserver::FlushBatchedUpdates()
 {
     // Adds and removes (and moves/renames)
-    Q_EMIT PrimsAddedOrRemoved(_batchedAddedPrims, _batchedRemovedPrims);
+    // Q_EMIT PrimsAddedOrRemoved(_batchedAddedPrimEntries, _batchedRemovedPrimEntries);
+    Q_EMIT PrimsMarkedAdded(_batchedAddedPrimEntries);
+    Q_EMIT PrimsMarkedRemoved(_batchedRemovedPrimEntries);
+    Q_EMIT PrimsMarkedRenamed(_batchedRenamedPrimEntries);
 
-    _batchedAddedPrims.clear();
-    _batchedRemovedPrims.clear();
+    // For batched dirty entries, aggregate entries by prim path. So, if we have
+    // multiple entries for the same prim, we will only emit one entry with
+    // the union of the dirty locators.
+    //
+    {
+        std::map<SdfPath, HdDataSourceLocatorSet> dirtyPrimMap;
+        for (const auto& [primPath, dirtyLocators] :
+                _batchedDirtiedPrimEntries) {
 
-    // Prim dirties
-    DirtiedPrimEntries dirtyEntries;
-    dirtyEntries.reserve(_batchedDirtiedPrims.size());
+            dirtyPrimMap[primPath].insert(dirtyLocators);;
+        }
 
-    for (const auto& it : _batchedDirtiedPrims) {
-        const SdfPath& primPath = it.first;
-        const HdDataSourceLocatorSet& dirtyLocators = it.second;
-        dirtyEntries.push_back({ primPath, dirtyLocators });
+        DirtiedPrimEntries dirtyEntries;
+        dirtyEntries.reserve(dirtyPrimMap.size());
+        
+        for (const auto& [primPath, dirtyLocators] : dirtyPrimMap) {
+            dirtyEntries.push_back({ primPath, dirtyLocators });
+        }
+        
+        Q_EMIT PrimsMarkedDirty(dirtyEntries);
     }
-
-    Q_EMIT PrimsMarkedDirty(dirtyEntries);
-
-    _batchedDirtiedPrims.clear();
+    
+    _ClearBatchedChanges();
 }
+
+// ----------------------------------------------------------------------------
+// Qt Signals
+//
 
 void
 HduiSceneObserver::PrimsAdded(
@@ -94,20 +108,13 @@ HduiSceneObserver::PrimsAdded(
     TRACE_FUNCTION();
 
     if (_batching) {
-        for (const AddedPrimEntry& entry : entries) {
-            _BatchAddedPrim(entry.primPath);
-        }
+        _batchedAddedPrimEntries.insert(
+            _batchedAddedPrimEntries.end(), entries.begin(), entries.end());
 
         Q_EMIT ChangeBatched();
     }
     else {
-        SdfPathSet addedPaths;
-
-        for (const AddedPrimEntry& entry : entries) {
-            addedPaths.insert(entry.primPath);
-        }
-
-        Q_EMIT PrimsAddedOrRemoved(addedPaths, SdfPathSet());
+        Q_EMIT PrimsMarkedAdded(entries);
     }
 }
 
@@ -119,37 +126,13 @@ HduiSceneObserver::PrimsRemoved(
     TRACE_FUNCTION();
 
     if (_batching) {
-        for (const RemovedPrimEntry& entry : entries) {
-            _BatchRemovedPrim(entry.primPath);
-        }
+        _batchedRemovedPrimEntries.insert(
+            _batchedRemovedPrimEntries.end(), entries.begin(), entries.end());
 
         Q_EMIT ChangeBatched();
     }
     else {
-        SdfPathSet removedPaths;
-
-        for (const RemovedPrimEntry& entry : entries) {
-            removedPaths.insert(entry.primPath);
-        }
-
-        Q_EMIT PrimsAddedOrRemoved(SdfPathSet(), removedPaths);
-    }
-}
-
-void
-HduiSceneObserver::PrimsDirtied(
-    const HdSceneIndexBase&,
-    const DirtiedPrimEntries& entries)
-{
-    if (_batching) {
-        for (const DirtiedPrimEntry& entry : entries) {
-            _BatchDirtiedPrim(entry.primPath, entry.dirtyLocators);
-        }
-
-        Q_EMIT ChangeBatched();
-    }
-    else {
-        Q_EMIT PrimsMarkedDirty(entries);
+        Q_EMIT PrimsMarkedRemoved(entries);
     }
 }
 
@@ -161,54 +144,46 @@ HduiSceneObserver::PrimsRenamed(
     TRACE_FUNCTION();
 
     if (_batching) {
-        for (const RenamedPrimEntry& entry : entries) {
-            _BatchRemovedPrim(entry.oldPrimPath);
-            _BatchAddedPrim(entry.newPrimPath);
-        }
+        TRACE_SCOPE("Batching send");
+        _batchedRenamedPrimEntries.insert(
+            _batchedRenamedPrimEntries.end(), entries.begin(), entries.end());
 
         Q_EMIT ChangeBatched();
     }
     else {
-        SdfPathSet addedPaths;
-        SdfPathSet removedPaths;
-
-        for (const RenamedPrimEntry& entry : entries) {
-            addedPaths.insert(entry.newPrimPath);
-            removedPaths.insert(entry.oldPrimPath);
-        }
-
-        Q_EMIT PrimsAddedOrRemoved(addedPaths, removedPaths);
+        Q_EMIT PrimsMarkedRenamed(entries);
     }
 }
 
 void
-HduiSceneObserver::_BatchAddedPrim(
-    const SdfPath& primPath)
+HduiSceneObserver::PrimsDirtied(
+    const HdSceneIndexBase&,
+    const DirtiedPrimEntries& entries)
 {
-    _batchedAddedPrims.insert(primPath);
+    if (_batching) {
+
+        TRACE_SCOPE("Batching send");
+
+        _batchedDirtiedPrimEntries.insert(
+            _batchedDirtiedPrimEntries.end(), entries.begin(), entries.end());
+
+        Q_EMIT ChangeBatched();
+    }
+    else {
+        Q_EMIT PrimsMarkedDirty(entries);
+    }
 }
 
-void
-HduiSceneObserver::_BatchRemovedPrim(
-    const SdfPath& primPath)
-{
-    _batchedRemovedPrims.insert(primPath);
-}
-
-void
-HduiSceneObserver::_BatchDirtiedPrim(
-    const SdfPath& primPath,
-    const HdDataSourceLocatorSet& dirtyLocators)
-{
-    _batchedDirtiedPrims[primPath].insert(dirtyLocators);
-}
+//
+// ----------------------------------------------------------------------------
 
 void
 HduiSceneObserver::_ClearBatchedChanges()
 {
-    _batchedAddedPrims.clear();
-    _batchedRemovedPrims.clear();
-    _batchedDirtiedPrims.clear();
+    _batchedAddedPrimEntries.clear();
+    _batchedRemovedPrimEntries.clear();
+    _batchedRenamedPrimEntries.clear();
+    _batchedDirtiedPrimEntries.clear();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

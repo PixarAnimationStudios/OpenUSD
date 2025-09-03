@@ -5,6 +5,7 @@
 // https://openusd.org/license.
 //
 #include "pxr/imaging/hd/dataSource.h"
+#include "pxr/imaging/hd/timeSampleArray.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -77,40 +78,38 @@ HdGetMergedContributingSampleTimesForInterval(
     TRACE_FUNCTION();
 
     bool result = false;
+
+    std::vector<HdSampledDataSource::Time> sampleTimes;
+
     for (size_t i = 0; i < count; i++) {
         if (!inputDataSources[i]) {
             continue;
         }
         std::vector<HdSampledDataSource::Time> times;
         if (!inputDataSources[i]->GetContributingSampleTimesForInterval(
-                startTime, endTime, &times)) {
-            continue;
-        }
-        if (times.empty()) {
+                startTime, endTime, outSampleTimes ? &times : nullptr)) {
             continue;
         }
         result = true;
         if (!outSampleTimes) {
             continue;
         }
-        if (outSampleTimes->empty()) {
-            *outSampleTimes = std::move(times);
+        if (sampleTimes.empty()) {
+            sampleTimes = std::move(times);
         } else {
-            *outSampleTimes = _Union(*outSampleTimes, times);
+            sampleTimes = _Union(sampleTimes, times);
         }
     }
 
-    // TODO:
-    //
-    // We can potentially drop sample times outside of startTime and endTime.
-    // For example, assume that startTime = 0 and endTime = 1 and that we
-    // have two input data sources.
-    // Furthermore, assume that the first input data source gives samples for
-    // -1 and 1 and second for -2 and 1.
-    // Currently, the function would return -2, -1 and 1 as times. But both
-    // -2 and -1 are before the startTime, so we can drop -2.
+    if (!result) {
+        return false;
+    }
 
-    return result;
+    return
+        HdGetContributingSampleTimesForInterval(
+            sampleTimes.size(), sampleTimes.data(),
+            startTime, endTime,
+            outSampleTimes);
 }
 
 void

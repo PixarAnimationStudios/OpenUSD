@@ -60,6 +60,11 @@ TF_DEFINE_ENV_SETTING(
         " default) will allow the implementation to set a value that varies"
         " from invocation to invocation and thread to thread.");
 
+TF_DEFINE_ENV_SETTING(
+    HDEMBREE_USE_LIGHTING,
+    HdEmbreeDefaultUseLighting,
+    "Should HdEmbree use scene lights while rendering?");
+
 TF_DEFINE_ENV_SETTING(HDEMBREE_PRINT_CONFIGURATION,
     false,
     "Should HdEmbree print configuration on startup?");
@@ -78,6 +83,7 @@ HdEmbreeConfig::HdEmbreeConfig()
     cameraLightIntensity = (std::max(100,
             TfGetEnvSetting(HDEMBREE_CAMERA_LIGHT_INTENSITY)) / 100.0f);
     randomNumberSeed = TfGetEnvSetting(HDEMBREE_RANDOM_NUMBER_SEED);
+    useLighting = (TfGetEnvSetting(HDEMBREE_USE_LIGHTING));
 
     if (TfGetEnvSetting(HDEMBREE_PRINT_CONFIGURATION)) {
         std::cout
@@ -96,6 +102,8 @@ HdEmbreeConfig::HdEmbreeConfig()
             <<    cameraLightIntensity    << "\n"
             << "  randomNumberSeed          = "
             <<    randomNumberSeed        << "\n"
+            << "  useLighting               = "
+            <<    useLighting             << "\n"
             ;
     }
 }

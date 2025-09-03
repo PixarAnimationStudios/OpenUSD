@@ -46,7 +46,8 @@ std::string TfRealPath(std::string const& path,
 ///
 /// This canonicalizes paths, removing any double slashes, and eliminiating
 /// '.', and '..' components of the path.  This emulates the behavior of
-/// os.path.normpath in Python.
+/// os.path.normpath in Python. A trailing '/' character will be stripped from 
+/// the result if the input contained one.
 ///
 /// On Windows, all backslashes are converted to forward slashes and drive
 /// specifiers (e.g., "C:") are lower-cased. If \p stripDriveSpecifier

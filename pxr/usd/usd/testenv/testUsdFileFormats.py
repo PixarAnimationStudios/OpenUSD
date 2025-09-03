@@ -73,7 +73,7 @@ class TestUsdFileFormats(unittest.TestCase):
             # underlying file format matches what we expect.
             self.assertTrue(layer.Save())
             self.assertEqual(
-                Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer),
+                Sdf.UsdFileFormat.GetUnderlyingFormatForLayer(layer),
                 expectedFileFormat)
 
         usdFileFormat = Sdf.FileFormat.FindById('usd')
@@ -104,14 +104,14 @@ class TestUsdFileFormats(unittest.TestCase):
             shutil.copyfile(srcFilename, dstFilename)
             layer = Sdf.Layer.FindOrOpen(dstFilename)
             self.assertEqual(
-                Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer),
+                Sdf.UsdFileFormat.GetUnderlyingFormatForLayer(layer),
                 expectedFileFormat)
 
             Sdf.PrimSpec(layer, 'TestUsdLayerSave', Sdf.SpecifierDef)
             self.assertTrue(layer.Save())
 
             self.assertEqual(
-                Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer),
+                Sdf.UsdFileFormat.GetUnderlyingFormatForLayer(layer),
                 expectedFileFormat)
 
         asciiFile = 'ascii.usd'
@@ -134,7 +134,7 @@ class TestUsdFileFormats(unittest.TestCase):
             # Exporting to a new .usd file should produce a binary file,
             # since that's the default format for .usd.
             self.assertEqual(
-                Usd.UsdFileFormat.GetUnderlyingFormatForLayer(exportedLayer), 
+                Sdf.UsdFileFormat.GetUnderlyingFormatForLayer(exportedLayer), 
                 "usdc")
 
             # The contents of the exported layer should equal to the
@@ -223,7 +223,7 @@ class TestUsdFileFormats(unittest.TestCase):
         shutil.copyfile('ascii.usd', 'test_replace.usd')
         layer = Sdf.Layer.FindOrOpen('test_replace.usd')
         self.assertEqual(
-            Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer), 
+            Sdf.UsdFileFormat.GetUnderlyingFormatForLayer(layer), 
             'usda')
 
         shutil.copyfile('crate.usd', 'test_replace.usd')
@@ -233,13 +233,13 @@ class TestUsdFileFormats(unittest.TestCase):
         self.assertTrue(layer.Reload(force=True))
 
         self.assertEqual(
-            Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer), 
+            Sdf.UsdFileFormat.GetUnderlyingFormatForLayer(layer), 
             'usdc')
 
     def test_Tokens(self):
         '''Test basic token wrapping'''
-        self.assertEqual(Usd.UsdFileFormat.Tokens.Target, 'usd')
-        self.assertEqual(Usd.UsdFileFormat.Tokens.FormatArg, 'format')
+        self.assertEqual(Sdf.UsdFileFormat.Tokens.Target, 'usd')
+        self.assertEqual(Sdf.UsdFileFormat.Tokens.FormatArg, 'format')
 
 if __name__ == "__main__":
     unittest.main()

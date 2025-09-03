@@ -28,6 +28,8 @@ TF_DEFINE_ENV_SETTING(HGIGL_ENABLE_SHADER_DRAW_PARAMETERS, true,
                       "Use GL shader draw params if available (OpenGL 4.5+)");
 TF_DEFINE_ENV_SETTING(HGIGL_ENABLE_BINDLESS_TEXTURE, false,
                       "Use GL bindless texture extension");
+TF_DEFINE_ENV_SETTING(HGIGL_ENABLE_NATIVE_ROUND_POINTS, false,
+                      "Use GL builtin smooth points");
 TF_DEFINE_ENV_SETTING(HGIGL_GLSL_VERSION, 0,
                       "GLSL version");
 
@@ -62,6 +64,7 @@ HgiGLCapabilities::_LoadCapabilities()
     bool builtinBarycentricsEnabled   = false;
     bool shaderDrawParametersEnabled  = false;
     bool conservativeRasterEnabled    = false;
+    bool nativeRoundPointsEnabled     = true;
 
     const char *glVendorStr = (const char*)glGetString(GL_VENDOR);
     const char *glRendererStr = (const char*)glGetString(GL_RENDERER);
@@ -163,6 +166,9 @@ HgiGLCapabilities::_LoadCapabilities()
     if (!TfGetEnvSetting(HGIGL_ENABLE_SHADER_DRAW_PARAMETERS)) {
         shaderDrawParametersEnabled = false;
     }
+    if (!TfGetEnvSetting(HGIGL_ENABLE_NATIVE_ROUND_POINTS)) {
+        nativeRoundPointsEnabled = false;
+    }
 
     // For debugging and unit testing
     if (TfGetEnvSetting(HGIGL_GLSL_VERSION) > 0) {
@@ -192,7 +198,7 @@ HgiGLCapabilities::_LoadCapabilities()
     _SetFlag(HgiDeviceCapabilitiesBitsCustomDepthRange,
         true);
     _SetFlag(HgiDeviceCapabilitiesBitsRoundPoints,
-        true);
+        nativeRoundPointsEnabled);
 
     if (TfDebug::IsEnabled(HGI_DEBUG_DEVICE_CAPABILITIES)) {
         std::cout

@@ -98,15 +98,26 @@ HdEmbreeRenderPass::_Execute(HdRenderPassStateSharedPtr const& renderPassState,
             renderDelegate->GetRenderSetting<int>(
                 HdRenderSettingsTokens->convergedSamplesPerPixel, 1));
 
-        bool enableAmbientOcclusion =
+        bool enableLighting =
             renderDelegate->GetRenderSetting<bool>(
-                HdEmbreeRenderSettingsTokens->enableAmbientOcclusion, false);
-        if (enableAmbientOcclusion) {
-            _renderer->SetAmbientOcclusionSamples(
-                renderDelegate->GetRenderSetting<int>(
-                    HdEmbreeRenderSettingsTokens->ambientOcclusionSamples, 0));
-        } else {
+                HdEmbreeRenderSettingsTokens->enableLighting, false);
+        if (enableLighting) {
+            _renderer->SetEnableLighting(true);
             _renderer->SetAmbientOcclusionSamples(0);
+        } else {
+            _renderer->SetEnableLighting(false);
+            bool enableAmbientOcclusion =
+                renderDelegate->GetRenderSetting<bool>(
+                    HdEmbreeRenderSettingsTokens->enableAmbientOcclusion,
+                    false);
+            if (enableAmbientOcclusion) {
+                _renderer->SetAmbientOcclusionSamples(
+                    renderDelegate->GetRenderSetting<int>(
+                        HdEmbreeRenderSettingsTokens->ambientOcclusionSamples,
+                        0));
+            } else {
+                _renderer->SetAmbientOcclusionSamples(0);
+            }
         }
 
         _renderer->SetEnableSceneColors(

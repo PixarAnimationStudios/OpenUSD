@@ -287,4 +287,28 @@ HdStUdimSamplerObject::~HdStUdimSamplerObject()
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Cubemap sampler
+
+// Wrap modes are not relevant when using seamless cubemap sampling.
+
+HdStCubemapSamplerObject::HdStCubemapSamplerObject(
+    HdStCubemapTextureObject const &texture,
+    HdSamplerParameters const &samplerParameters,
+    HdSt_SamplerObjectRegistry * const samplerObjectRegistry)
+  : HdStSamplerObject(samplerObjectRegistry)
+  , _sampler(
+      _GenSampler(
+          samplerObjectRegistry,
+          samplerParameters))
+{
+}
+
+HdStCubemapSamplerObject::~HdStCubemapSamplerObject()
+{
+    if (Hgi * hgi = _GetHgi()) {
+        hgi->DestroySampler(&_sampler);
+    }
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -90,6 +90,7 @@ public:
             UsdImagingPropertyInvalidationType invalidationType);
 
 private:
+    USDIMAGING_API
     UsdImagingDataSourceMaterialPrim(
         const SdfPath &sceneIndexPath,
         const UsdPrim &usdPrim,

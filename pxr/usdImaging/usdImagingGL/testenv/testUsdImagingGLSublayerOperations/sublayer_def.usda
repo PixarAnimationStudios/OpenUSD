@@ -7,7 +7,7 @@ over "Spheres"
 {
     def Sphere "BlueSphere"
     {
-        float radius = 1.0
+        double radius = 1.0
         color3f[] primvars:displayColor = [(0.0, 0.0, 1.0)]
         double3 xformOp:translate = (4.0, 0.0, 0.0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
@@ -15,7 +15,7 @@ over "Spheres"
 
     def Sphere "OverriddenSphere"
     {
-        float radius = 1.0
+        double radius = 1.0
         color3f[] primvars:displayColor = [(0.0, 1.0, 0.0)]
         double3 xformOp:translate = (0.0, 4.0, 0.0)
         uniform token[] xformOpOrder = ["xformOp:translate"]

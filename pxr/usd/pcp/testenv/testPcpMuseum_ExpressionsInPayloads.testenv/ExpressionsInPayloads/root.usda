@@ -1,0 +1,51 @@
+#usda 1.0
+(
+    """
+    This museum case demonstrates the behavior of variable expressions
+    authored in payload arcs.
+    """
+    expressionVariables = {
+        string REF = "A"
+    }
+)
+
+def "SinglePayload" (
+    """
+    Example showing a payload referring to an expression variable
+    in the same layer stack.
+    """
+    payload = @`"./${REF}.usda"`@
+)
+{
+}
+
+def "ChainedPayload" (
+    """
+    Example where a prim in a payload layer stack contains another
+    payload that uses an expression variable, and the value of that
+    variable is authored in that payloaded layer stack.
+    """
+    payload = @./ref2.usda@
+)
+{
+}
+
+def "ChainedPayloadOverride" (
+    """
+    Similar to /ChainedPayload, but the value of the expression variable used
+    in ref2.usda is overridden by the value authored in ref3.usda.
+    """
+    payload = @./ref3.usda@
+)
+{
+}
+
+def "MultiPayload" (
+    """
+    Example with multiple payloads demonstrating that variables authored
+    across a payload arc don't affect sibling payload arcs.
+    """
+    payload = [@./ref3.usda@, @./ref2.usda@]
+)
+{
+}

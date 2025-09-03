@@ -1,14 +1,14 @@
-Loading @TrickyInheritsAndRelocates4/root.sdf@
+Loading @TrickyInheritsAndRelocates4/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </FergusCloak>
 
 Prim Stack:
-    root.sdf             /FergusCloak
+    root.usda            /FergusCloak
 
 Child names:
      ['rig', 'Anim']
@@ -17,7 +17,7 @@ Child names:
 Results for composing </FergusCloak/rig>
 
 Prim Stack:
-    root.sdf             /FergusCloak/rig
+    root.usda            /FergusCloak/rig
 
 Child names:
      ['LArmRig']
@@ -26,10 +26,10 @@ Child names:
 Results for composing </FergusCloak/rig/LArmRig>
 
 Prim Stack:
-    root.sdf             /FergusCloak/rig/LArmRig
-    root.sdf             /_class_MultiLevelCurveRig
-    CurveTrackRig.sdf    /CurveTrackRig
-    CurveTrackRig.sdf    /_class_MultiLevelCurveRig
+    root.usda            /FergusCloak/rig/LArmRig
+    root.usda            /_class_MultiLevelCurveRig
+    CurveTrackRig.usda   /CurveTrackRig
+    CurveTrackRig.usda   /_class_MultiLevelCurveRig
 
 Child names:
      ['rig', 'Anim']
@@ -38,9 +38,9 @@ Child names:
 Results for composing </FergusCloak/rig/LArmRig/rig>
 
 Prim Stack:
-    root.sdf             /_class_MultiLevelCurveRig/rig
-    CurveTrackRig.sdf    /CurveTrackRig/rig
-    CurveTrackRig.sdf    /_class_MultiLevelCurveRig/rig
+    root.usda            /_class_MultiLevelCurveRig/rig
+    CurveTrackRig.usda   /CurveTrackRig/rig
+    CurveTrackRig.usda   /_class_MultiLevelCurveRig/rig
 
 Child names:
      ['ConstRig']
@@ -49,10 +49,10 @@ Child names:
 Results for composing </FergusCloak/rig/LArmRig/rig/ConstRig>
 
 Prim Stack:
-    root.sdf             /_class_MultiLevelCurveRig/rig/ConstRig
-    CurveTrackRig.sdf    /CurveTrackRig/rig/ConstRig
-    CurveTrackRig.sdf    /_class_MultiLevelCurveRig/rig/ConstRig
-    ConstraintRig.sdf    /ConstraintRig
+    root.usda            /_class_MultiLevelCurveRig/rig/ConstRig
+    CurveTrackRig.usda   /CurveTrackRig/rig/ConstRig
+    CurveTrackRig.usda   /_class_MultiLevelCurveRig/rig/ConstRig
+    ConstraintRig.usda   /ConstraintRig
 
 Child names:
      ['Anim']
@@ -61,9 +61,9 @@ Child names:
 Results for composing </FergusCloak/rig/LArmRig/rig/ConstRig/Anim>
 
 Prim Stack:
-    root.sdf             /_class_MultiLevelCurveRig/rig/ConstRig/Anim
-    CurveTrackRig.sdf    /_class_MultiLevelCurveRig/rig/ConstRig/Anim
-    ConstraintRig.sdf    /ConstraintRig/Anim
+    root.usda            /_class_MultiLevelCurveRig/rig/ConstRig/Anim
+    CurveTrackRig.usda   /_class_MultiLevelCurveRig/rig/ConstRig/Anim
+    ConstraintRig.usda   /ConstraintRig/Anim
 
 Prohibited child names:
      ['Const']
@@ -72,7 +72,7 @@ Prohibited child names:
 Results for composing </FergusCloak/rig/LArmRig/Anim>
 
 Prim Stack:
-    CurveTrackRig.sdf    /CurveTrackRig/Anim
+    CurveTrackRig.usda   /CurveTrackRig/Anim
 
 Prohibited child names:
      ['Curve']
@@ -81,7 +81,7 @@ Prohibited child names:
 Results for composing </FergusCloak/Anim>
 
 Prim Stack:
-    root.sdf             /FergusCloak/Anim
+    root.usda            /FergusCloak/Anim
 
 Child names:
      ['LArm']
@@ -90,7 +90,7 @@ Child names:
 Results for composing </FergusCloak/Anim/LArm>
 
 Prim Stack:
-    CurveTrackRig.sdf    /CurveTrackRig/Anim/Curve
+    CurveTrackRig.usda   /CurveTrackRig/Anim/Curve
 
 Child names:
      ['Const']
@@ -99,15 +99,15 @@ Child names:
 Results for composing </FergusCloak/Anim/LArm/Const>
 
 Prim Stack:
-    root.sdf             /_class_MultiLevelCurveRig/rig/ConstRig/Anim/Const
-    CurveTrackRig.sdf    /_class_MultiLevelCurveRig/rig/ConstRig/Anim/Const
-    ConstraintRig.sdf    /ConstraintRig/Anim/Const
+    root.usda            /_class_MultiLevelCurveRig/rig/ConstRig/Anim/Const
+    CurveTrackRig.usda   /_class_MultiLevelCurveRig/rig/ConstRig/Anim/Const
+    ConstraintRig.usda   /ConstraintRig/Anim/Const
 
 ------------------------------------------------------------------------
 Results for composing </_class_MultiLevelCurveRig>
 
 Prim Stack:
-    root.sdf             /_class_MultiLevelCurveRig
+    root.usda            /_class_MultiLevelCurveRig
 
 Child names:
      ['rig']
@@ -116,7 +116,7 @@ Child names:
 Results for composing </_class_MultiLevelCurveRig/rig>
 
 Prim Stack:
-    root.sdf             /_class_MultiLevelCurveRig/rig
+    root.usda            /_class_MultiLevelCurveRig/rig
 
 Child names:
      ['ConstRig']
@@ -125,7 +125,7 @@ Child names:
 Results for composing </_class_MultiLevelCurveRig/rig/ConstRig>
 
 Prim Stack:
-    root.sdf             /_class_MultiLevelCurveRig/rig/ConstRig
+    root.usda            /_class_MultiLevelCurveRig/rig/ConstRig
 
 Child names:
      ['Anim']
@@ -134,7 +134,7 @@ Child names:
 Results for composing </_class_MultiLevelCurveRig/rig/ConstRig/Anim>
 
 Prim Stack:
-    root.sdf             /_class_MultiLevelCurveRig/rig/ConstRig/Anim
+    root.usda            /_class_MultiLevelCurveRig/rig/ConstRig/Anim
 
 Child names:
      ['Const']
@@ -143,5 +143,5 @@ Child names:
 Results for composing </_class_MultiLevelCurveRig/rig/ConstRig/Anim/Const>
 
 Prim Stack:
-    root.sdf             /_class_MultiLevelCurveRig/rig/ConstRig/Anim/Const
+    root.usda            /_class_MultiLevelCurveRig/rig/ConstRig/Anim/Const
 

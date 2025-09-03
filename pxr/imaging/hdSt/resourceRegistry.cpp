@@ -133,6 +133,7 @@ HdStResourceRegistry::~HdStResourceRegistry()
     // they cleanup all GPU resources. Since that mechanism isn't in place
     // yet, we call GarbageCollect to emulate this behavior.
     GarbageCollect();
+    _hgi->GarbageCollect();
 }
 
 void HdStResourceRegistry::InvalidateShaderRegistry()

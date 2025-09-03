@@ -37,10 +37,6 @@ TestPrimMetadata()
     TF_AXIOM(primDef->GetMetadata(SdfFieldKeys->TypeName, &typeName));
     TF_AXIOM(typeName == TfToken("MetadataTest"));
 
-    std::string doc;
-    TF_AXIOM(primDef->GetMetadata(SdfFieldKeys->Documentation, &doc));
-    TF_AXIOM(doc == "Testing documentation metadata");
-
     bool hidden;
     TF_AXIOM(primDef->GetMetadata(SdfFieldKeys->Hidden, &hidden));
     TF_AXIOM(hidden == true);

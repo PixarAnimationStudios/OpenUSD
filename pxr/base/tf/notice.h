@@ -14,6 +14,7 @@
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/anyWeakPtr.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/arch/demangle.h"
@@ -343,12 +344,14 @@ public:
     template <class LPtr, class MethodPtr>
     static TfNotice::Key
     Register(LPtr const &listener, MethodPtr method) {
+        TfAutoMallocTag tag("Tf", "Tf_NoticeRegistry::_Register");
         return _Register(_MakeDeliverer(listener, method));
     }
 
     template <class LPtr, class MethodPtr, class SenderPtr>
     static TfNotice::Key
     Register(LPtr const &listener, MethodPtr method, SenderPtr const &sender) {
+        TfAutoMallocTag tag("Tf", "Tf_NoticeRegistry::_Register");
         return _Register(_MakeDeliverer(listener, method, sender));
     }
 
@@ -356,6 +359,7 @@ public:
     static TfNotice::Key
     Register(LPtr const &listener, MethodPtr method,
              const TfType &noticeType, const TfAnyWeakPtr &sender) {
+        TfAutoMallocTag tag("Tf", "Tf_NoticeRegistry::_Register");
         return _Register(_MakeDeliverer(noticeType, listener, method, sender));
     }
     

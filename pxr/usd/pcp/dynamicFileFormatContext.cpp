@@ -7,6 +7,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/dynamicFileFormatContext.h"
+#include "pxr/usd/pcp/expressionVariables.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/node_Iterator.h"
 #include "pxr/usd/pcp/primIndex_StackFrame.h"
@@ -83,9 +84,46 @@ private:
         for (const auto &layer : node.GetLayerStack()->GetLayers()) {
             VtValue value;
             if (layer->HasField(path, fieldName, &value)) {
-                // Process the value and mark found
+                // If the value is an asset path, resolve it.
+                if (value.IsHolding<SdfAssetPath>() ||
+                    value.IsHolding<VtArray<SdfAssetPath>>()) {
+
+                    const PcpExpressionVariables &exprVars =
+                        node.GetLayerStack()->GetExpressionVariables();
+
+                    std::vector<std::string> errors;
+                    if (value.IsHolding<SdfAssetPath>()) {
+                        SdfAssetPath assetPath;
+                        value.UncheckedSwap(assetPath);
+                        SdfResolveAssetPaths(
+                            layer, exprVars.GetVariables(), TfSpan<SdfAssetPath>(&assetPath, 1), &errors);
+                        value.UncheckedSwap(assetPath);
+                            
+                    }
+                    else if (value.IsHolding<VtArray<SdfAssetPath>>()) {
+                        VtArray<SdfAssetPath> assetPaths;
+                        value.UncheckedSwap(assetPaths);
+                        SdfResolveAssetPaths(
+                            layer, exprVars.GetVariables(), TfSpan<SdfAssetPath>(assetPaths.data(), 
+                            assetPaths.size()), &errors);
+                        value.UncheckedSwap(assetPaths);
+                    }
+
+                    if (!errors.empty()) {
+                        // XXX: Ideally we surface these as composition errors
+                        // instead of as a TF_WARN
+                        for (const auto& err : errors) {
+                            TF_WARN("Encountered error when resolving asset" 
+                                "paths for dynamic payload in node %s: %s", 
+                                node.GetPath().GetText(), err.c_str());
+                        }
+                    }
+                }
+
+                // Process the value and mark found.
                 composeFunc(std::move(value));
                 _foundValue = true;
+
                 // Stop if we only need the strongest opinion.
                 if (_strongestOpinionOnly) {
                     return true;
