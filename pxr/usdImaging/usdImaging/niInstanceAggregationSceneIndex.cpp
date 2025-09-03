@@ -220,6 +220,13 @@ public:
     }
 
     HdDataSourceBaseHandle operator()(const VtValue &v) const {
+        // There are some types that VtVisitValue can't handle (i.e., they
+        // don't appear in VT_VALUE_TYPES) that we still care about, so check
+        // for them explicitly here.   
+        if (v.IsHolding<SdfAssetPath>()) {
+            return _PrimvarValueDataSource<SdfAssetPath>::New(
+                _inputSceneIndex, _instances, _primvarName);
+        }
         return nullptr;
     }
 
