@@ -238,6 +238,19 @@ def main() -> int:
             'Will have no effect if MallocTags are not supported in the '
             'USD installation.'))
 
+    parser.add_argument('--drawMode', action='store', type=str,
+        default='SmoothShaded',
+        help=(
+            'Render mode ("Points", "Wireframe", "WireframeOnSurface", "Flat Shaded", '
+            '"Smooth Shaded", "Geom Only", "Geom Flat", "Geom Smooth").'))
+
+    # Note: The argument passed via the command line (disableSceneMaterials)
+    # is inverted from the variable in which it is stored (sceneMaterialsEnabled)
+    parser.add_argument('--disableSceneMaterials', action='store_false',
+        dest='sceneMaterialsEnabled',
+        help=(
+            'Disable scene materials for rendering.'))
+
     args = parser.parse_args()
 
     args.imageWidth = max(args.imageWidth, 1)
@@ -366,6 +379,8 @@ def main() -> int:
     frameRecorder.SetIncludedPurposes(purposes)
     frameRecorder.SetDomeLightVisibility(args.domeLightVisibility)
     frameRecorder.SetPrimaryCameraPrimPath(usdCamera.GetPath())
+    frameRecorder.SetDrawMode(args.drawMode)
+    frameRecorder.SetSceneMaterialsEnabled(args.sceneMaterialsEnabled)
 
     _Msg('Camera: %s' % usdCamera.GetPath().pathString)
     _Msg('Renderer plugin: %s' % frameRecorder.GetCurrentRendererId())

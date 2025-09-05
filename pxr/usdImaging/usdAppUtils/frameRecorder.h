@@ -164,6 +164,12 @@ public:
             const UsdTimeCode timeCode,
             const std::string& outputImagePath);
 
+    USDAPPUTILS_API
+    void SetDrawMode(const TfToken& drawMode);
+    
+    USDAPPUTILS_API
+    void SetSceneMaterialsEnabled(bool enabled);
+
 private:
     UsdImagingGLEngine _imagingEngine;
     size_t _imageWidth;
@@ -174,6 +180,8 @@ private:
     SdfPath _renderSettingsPrimPath;
     bool _cameraLightEnabled;
     bool _domeLightsVisible;
+    UsdImagingGLDrawMode _drawMode;
+    bool _sceneMaterialsEnabled;
 };
 
 
