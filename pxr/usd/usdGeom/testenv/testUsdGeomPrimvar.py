@@ -715,5 +715,24 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         self.assertEqual(primvar, meshPrimvarsAPI.GetPrimvar("pv"))
         self.assertEqual(hash(primvar), hash(meshPrimvarsAPI.GetPrimvar("pv")))
 
+    def test_FlattenAssetPaths(self):
+        stage = Usd.Stage.CreateInMemory()
+        mesh = UsdGeom.Mesh.Define(stage, '/mesh')
+        pv_api = UsdGeom.PrimvarsAPI(mesh)
+
+        vals = [Sdf.AssetPath('foo.png'), Sdf.AssetPath('bar.png')]
+        indices = [1, 0, 1]
+
+        primvar = pv_api.CreateIndexedPrimvar(
+            "assetprimvar", Sdf.ValueTypeNames.AssetArray,
+            vals, indices, UsdGeom.Tokens.vertex)
+
+        self.assertEqual(primvar.ComputeFlattened(), [
+            Sdf.AssetPath("bar.png"),
+            Sdf.AssetPath("foo.png"),
+            Sdf.AssetPath("bar.png")
+        ])
+
+
 if __name__ == "__main__":
     unittest.main()
