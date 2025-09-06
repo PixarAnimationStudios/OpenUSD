@@ -89,14 +89,20 @@ _AdditionalStageSceneIndexInputArgs(
     return ds;
 }
 
-// Use extentsHint (of models) for purpose geometry
+// Use extentsHint (of models) for purpose geometry, render, and proxy. If
+// we don't include all purposes, setting an extent-based draw mode on a
+// prim with only some extent purposes authored may return invalid extents.
 static
 HdContainerDataSourceHandle
 _ExtentResolvingSceneIndexInputArgs()
 {
     HdDataSourceBaseHandle const purposeDataSources[] = {
         HdRetainedTypedSampledDataSource<TfToken>::New(
-            HdTokens->geometry) };
+            HdRenderTagTokens->geometry),
+        HdRetainedTypedSampledDataSource<TfToken>::New(
+            HdRenderTagTokens->render),
+        HdRetainedTypedSampledDataSource<TfToken>::New(
+            HdRenderTagTokens->proxy) };
 
     return
         HdRetainedContainerDataSource::New(
