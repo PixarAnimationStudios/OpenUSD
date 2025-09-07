@@ -11,6 +11,9 @@ def "Sarah_Ref" (
 )
 {
     custom color3d color = (1, 1, 1)
+    def "Child_Will_Be_Moved"
+    {
+    }
 }
 
 class "_class_Sarah_Ref"
