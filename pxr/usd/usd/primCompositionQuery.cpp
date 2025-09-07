@@ -474,6 +474,9 @@ _TestArcType(const UsdPrimCompositionQueryArc &compArc,
     case ArcTypeFilter::Variant:
         arcMask = 1 << PcpArcTypeVariant;
         break;
+    case ArcTypeFilter::Relocate:
+        arcMask = 1 << PcpArcTypeRelocate;
+        break;
     case ArcTypeFilter::ReferenceOrPayload:
         arcMask = (1 << PcpArcTypeReference) | (1 << PcpArcTypePayload);
         break;
@@ -488,6 +491,9 @@ _TestArcType(const UsdPrimCompositionQueryArc &compArc,
         break;
     case ArcTypeFilter::NotVariant:
         arcMask = ~(1 << PcpArcTypeVariant);
+        break;
+    case ArcTypeFilter::NotRelocate:
+        arcMask = ~(1 << PcpArcTypeRelocate);
         break;
     }
 

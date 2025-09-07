@@ -271,6 +271,7 @@ public:
         Inherit,
         Specialize,
         Variant,
+        Relocate,
 
         // Related arc types
         ReferenceOrPayload,
@@ -279,7 +280,8 @@ public:
         // Inverse of related arc types
         NotReferenceOrPayload,
         NotInheritOrSpecialize,
-        NotVariant
+        NotVariant,
+        NotRelocate
     };
 
     /// Choices for filtering composition arcs on dependency type. This can
