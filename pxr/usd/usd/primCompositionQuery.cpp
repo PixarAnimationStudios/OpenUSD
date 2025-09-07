@@ -398,9 +398,9 @@ UsdPrimCompositionQuery::UsdPrimCompositionQuery(const UsdPrim & prim,
     _prim.ComputeExpandedPrimIndex().Swap(*_expandedPrimIndex);
 
     // Compute the unfiltered list of composition arcs from all non-inert nodes.
-    // We still skip inert nodes in the unfiltered query so we don't pick up
-    // things like the original copies of specialize nodes that have been
-    // moved for strength ordering purposes. 
+    // We still skip inert nodes in the unfiltered query, with the exception
+    // of relocates, to avoid picking up things like the original copies of
+    // specialize nodes that have been moved for strength ordering purposes.
     for(const PcpNodeRef &node: _expandedPrimIndex->GetNodeRange()) { 
         if (!node.IsInert() || node.GetArcType() == PcpArcTypeRelocate) {
             _unfilteredArcs.push_back(UsdPrimCompositionQueryArc(node));
