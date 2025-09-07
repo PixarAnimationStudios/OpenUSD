@@ -716,6 +716,14 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
                                if arc.GetArcType() != Pcp.ArcTypeRelocate]
         self.assertEqual(len(notRelocateArcs), 25)
 
+        # Apply the NotRelocate filter and confirm we get the same result as the manual filtering above
+        qFilter = Usd.PrimCompositionQuery.Filter()
+        qFilter.arcTypeFilter = Usd.PrimCompositionQuery.ArcTypeFilter.NotRelocate
+        query.filter = qFilter
+        filteredNotRelocateArcs = query.GetCompositionArcs()
+        self.assertEqual(len(filteredNotRelocateArcs), 25)
+        self.assertFalse(any([arc for arc in filteredNotRelocateArcs if arc.GetArcType() == Pcp.ArcTypeRelocate]))
+
         # test to make sure c++ objects are propertly destroyed when
         # PrimCollectionQuery instance is garbage collection
         stage = Usd.Stage.CreateInMemory("testCreationAndGarbageCollect.usda")
