@@ -490,7 +490,6 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
 
         filteredExpectedValues = [d for d in expectedValues
                                     if d['arcType'] == Pcp.ArcTypeVariant]
-        print(filteredExpectedValues)
         self.assertEqual(len(filteredExpectedValues), 5) 
         CheckWithFilter(
             filteredExpectedValues,
@@ -690,9 +689,9 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
         # 26 arcs total with only 1 being ArcTypeRelocate
         self.assertEqual(len(arcs), 26)
 
-        relocatesArcs = [arc for arc in arcs
-                             if arc.GetArcType() == Pcp.ArcTypeRelocate]
-        self.assertEqual(len(relocatesArcs), 1)
+        relocateArcs = [arc for arc in arcs
+                            if arc.GetArcType() == Pcp.ArcTypeRelocate]
+        self.assertEqual(len(relocateArcs), 1)
 
         filteredExpectedValues = [
             {'nodeLayerStack': Sdf.Find('test.usda'),
@@ -713,9 +712,9 @@ class TestUsdPrimCompositionQuery(unittest.TestCase):
             filteredExpectedValues,
             arcTypeFilter=Usd.PrimCompositionQuery.ArcTypeFilter.Relocate)
 
-        notRelocatesArcs = [arc for arc in arcs
-                                if arc.GetArcType() != Pcp.ArcTypeRelocate]
-        self.assertEqual(len(notRelocatesArcs), 25)
+        notRelocateArcs = [arc for arc in arcs
+                               if arc.GetArcType() != Pcp.ArcTypeRelocate]
+        self.assertEqual(len(notRelocateArcs), 25)
 
         # test to make sure c++ objects are propertly destroyed when
         # PrimCollectionQuery instance is garbage collection
