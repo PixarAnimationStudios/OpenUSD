@@ -79,6 +79,11 @@ HgiMetalGraphicsPipeline::_CreateVertexDescriptor()
             _vertexDescriptor.layouts[index].stepFunction =
                 MTLVertexStepFunctionPerPatchControlPoint;
             _vertexDescriptor.layouts[index].stepRate = 1;
+        } else if (vbo.vertexStepFunction ==
+                HgiVertexBufferStepFunctionPerInstance) {
+            _vertexDescriptor.layouts[index].stepFunction =
+                MTLVertexStepFunctionPerInstance;
+            _vertexDescriptor.layouts[index].stepRate = 1;
         }
         else {
             _vertexDescriptor.layouts[index].stepFunction =
