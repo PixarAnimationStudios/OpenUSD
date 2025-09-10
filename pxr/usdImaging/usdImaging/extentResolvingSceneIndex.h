@@ -41,7 +41,7 @@ public:
     
     // Datasource purposes at inputArgs is supposed to be a vector data source
     // of token data sources. These tokens are hydra purposes (in particular,
-    // use HdTokens->geometry rather than the corresponding
+    // use HdRenderTagTokens->geometry rather than the corresponding
     // UsdGeomTokens->default_).
     USDIMAGING_API
     static UsdImagingExtentResolvingSceneIndexRefPtr

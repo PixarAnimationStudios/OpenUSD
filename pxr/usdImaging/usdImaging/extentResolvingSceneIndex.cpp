@@ -24,7 +24,7 @@ namespace UsdImagingExtentResolvingSceneIndex_Impl
 TfToken::HashSet
 _GetPurposes(HdContainerDataSourceHandle const &inputArgs)
 {
-    static const TfToken defaultTokens[] = { HdTokens->geometry };
+    static const TfToken defaultTokens[] = { HdRenderTagTokens->geometry };
     static const TfToken::HashSet defaultSet{ std::begin(defaultTokens),
                                               std::end(defaultTokens) };
 
