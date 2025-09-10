@@ -127,15 +127,15 @@ BasicTest()
             TfTokenVector({HdRenderTagTokens->guide}),
             HdReprSelectorVector({surface}));
 
-        _VerifyDirtyListSize(&dl, numGeometryPrims + numGuidePrims);
-        _VerifyCounter(&perfLog, HdPerfTokens->dirtyListsRebuilt, 2);
+        _VerifyDirtyListSize(&dl, numGuidePrims);
+        _VerifyCounter(&perfLog, HdPerfTokens->dirtyListsRebuilt, 1);
 
         // guide -> geometry : Dirty list will be rebuilt to just the varying
         // ones (which is none).
         dl.UpdateRenderTagsAndReprSelectors(
             TfTokenVector({HdRenderTagTokens->geometry}),
             HdReprSelectorVector({surface}));
-        _VerifyDirtyListSize(&dl, 0);
+        _VerifyDirtyListSize(&dl, 2);
         _VerifyCounter(&perfLog, HdPerfTokens->dirtyListsRebuilt, 3);
     }
 
@@ -148,7 +148,7 @@ BasicTest()
         delegate.AddCube(SdfPath("/cube4"), GfMatrix4f());
         numGeometryPrims++;
 
-        _VerifyDirtyListSize(&dl, numGeometryPrims + numGuidePrims);
+        _VerifyDirtyListSize(&dl, numGeometryPrims);
         _VerifyCounter(&perfLog, HdPerfTokens->dirtyListsRebuilt, 1);
     }
 
@@ -168,7 +168,7 @@ BasicTest()
         tracker.MarkRprimDirty(SdfPath("/cube1"), HdChangeTracker::DirtyPrimvar);
         tracker.MarkRprimDirty(SdfPath("/cube3"), HdChangeTracker::DirtyPoints);
 
-        _VerifyDirtyListSize(&dl, 2);
+        _VerifyDirtyListSize(&dl, 1);
         _VerifyCounter(&perfLog, HdPerfTokens->dirtyListsRebuilt, 1);
 
         // Querying the dirty ids again when nothing has changed should return
