@@ -691,6 +691,11 @@ function(_pxr_add_rpath rpathRef target)
 endfunction()
 
 function(_pxr_install_rpath rpathRef NAME)
+    if (PXR_BUILD_APPLE_FRAMEWORK)
+        # Apple Frameworks already fix the install path at the end
+        # so this maks things faster and reduces duplication errors
+        return()
+    endif()
     # Get and remove the origin.
     list(GET ${rpathRef} 0 origin)
     set(rpath ${${rpathRef}})
@@ -1538,3 +1543,39 @@ function(_pxr_library NAME)
         endif()
     endif()
 endfunction() # _pxr_library
+
+function(pxr_create_apple_framework)
+    # This function is used to create a framework build after the primary build is complete
+    # We could optionally have used the FRAMEWORK CMAKE Property (https://cmake.org/cmake/help/latest/prop_tgt/FRAMEWORK.html)
+    # However, the changes to make it work with the OpenUSD install process would have been significantly more
+    # invasive to orchestrate all the post-install steps that USD does.
+    # In the future, we can work towards making this
+
+    # CMake can have a lot of different boolean representations,
+    # that need to be narrowed down to a constant form for zsh
+    if (PXR_APPLE_EMBEDDED)
+        set(EMBEDDED_BUILD "true")
+    else()
+        set(EMBEDDED_BUILD "false")
+    endif()
+
+    if (PXR_APPLE_PREFIX_FRAMEWORK_HEADERS)
+        set(APPLY_HEADER_PREFIX "true")
+    else()
+        set(APPLY_HEADER_PREFIX "false")
+    endif()
+
+    _get_library_prefix(LIB_PREFIX)
+    if(TARGET usd_ms)
+        set(FRAMEWORK_ROOT_LIBRARY_NAME "${LIB_PREFIX}usd_ms.dylib")
+    else()
+        set(FRAMEWORK_ROOT_LIBRARY_NAME "${LIB_PREFIX}usd.dylib")
+    endif()
+
+    # Install the Info.plist and shell script
+    configure_file(cmake/resources/Info.plist.in "${PROJECT_BINARY_DIR}/Info.plist" @ONLY)
+    configure_file(cmake/resources/AppleFrameworkBuild.zsh.in "${PROJECT_BINARY_DIR}/AppleFrameworkBuild.zsh" @ONLY)
+
+    # Run the shell script for the primary configuration
+    install(CODE "execute_process(COMMAND zsh ${PROJECT_BINARY_DIR}/AppleFrameworkBuild.zsh )")
+endfunction() # pxr_create_apple_framework

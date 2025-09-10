@@ -70,6 +70,21 @@ if(APPLE)
             set(PXR_ENABLE_OPENVDB_SUPPORT OFF)
         endif()
     endif ()
+
+    option(PXR_BUILD_APPLE_FRAMEWORK "Builds an Apple Framework." ${PXR_APPLE_EMBEDDED})
+    option(PXR_APPLE_PREFIX_FRAMEWORK_HEADERS "Prefix the headers in framework builds" OFF )
+    set(PXR_APPLE_FRAMEWORK_NAME "OpenUSD" CACHE STRING "Name to provide Apple Framework build")
+    set(PXR_APPLE_IDENTIFIER_DOMAIN "org.openusd" CACHE STRING "Name to provide Apple Framework build")
+    if (${PXR_BUILD_APPLE_FRAMEWORK})
+        if(${PXR_BUILD_USD_TOOLS})
+            MESSAGE(STATUS "Setting PXR_BUILD_USD_TOOLS=OFF because PXR_BUILD_APPLE_FRAMEWORK is enabled.")
+        endif()
+        set(PXR_BUILD_USD_TOOLS OFF)
+        if(${PXR_ENABLE_PYTHON_SUPPORT})
+            MESSAGE(STATUS "Setting PXR_ENABLE_PYTHON_SUPPORT=OFF because PXR_BUILD_APPLE_FRAMEWORK is enabled.")
+        endif ()
+        set(PXR_ENABLE_PYTHON_SUPPORT OFF)
+    endif()
 endif()
 
 
@@ -165,7 +180,21 @@ set(PXR_EXTRA_PLUGINS ""
     CACHE
     INTERNAL
     "Aggregation of extra plugin directories containing a plugInfo.json.")
+set(PXR_EXTRA_BINARY_RELATIVE_RESOURCES ""
+        CACHE
+        STRING
+        "An optional resources folder relative to the binary to look for resources.")
 
+if (${PXR_BUILD_APPLE_FRAMEWORK})
+    MESSAGE(STATUS "Framework build requires monolithic builds.")
+    set(PXR_BUILD_MONOLITHIC ON)
+    set(BUILD_SHARED_LIBS OFF)
+    if(PXR_APPLE_EMBEDDED)
+        set(PXR_EXTRA_BINARY_RELATIVE_RESOURCES "Assets")
+    else()
+        set(PXR_EXTRA_BINARY_RELATIVE_RESOURCES "Resources")
+    endif()
+endif ()
 # Resolve options that depend on one another so that subsequent .cmake scripts
 # all have the final value for these options.
 if (${PXR_BUILD_USD_IMAGING} AND NOT ${PXR_BUILD_IMAGING})

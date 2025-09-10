@@ -1077,6 +1077,9 @@ def InstallTBB_MacOS(context, force, buildArgs):
             if MacOSTargetEmbedded(context):
                 env["SDKROOT"] = apple_utils.GetSDKRoot(context)
                 buildArgs.append(f' compiler=clang arch=arm64 extra_inc=big_iron.inc target={context.buildTarget.lower()}')
+            if context.buildAppleFramework:
+                # Force build of static libs as well
+                buildArgs.append(f" extra_inc=big_iron.inc ")
             makeTBBCmd = 'make -j{procs} arch={arch} {buildArgs}'.format(
                 arch=arch, procs=context.numJobs,
                 buildArgs=" ".join(buildArgs))
@@ -1543,9 +1546,7 @@ MATERIALX_URL = "https://github.com/AcademySoftwareFoundation/MaterialX/archive/
 
 def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
-        cmakeOptions = ['-DMATERIALX_BUILD_SHARED_LIBS=ON',
-                        '-DMATERIALX_BUILD_TESTS=OFF'
-        ]
+        cmakeOptions = ['-DMATERIALX_BUILD_TESTS=OFF']
 
         if MacOSTargetEmbedded(context):
             # The materialXShaderGen in hdSt assumes the GLSL shadergen is
@@ -1565,6 +1566,10 @@ def InstallMaterialX(context, force, buildArgs):
                         '        add_subdirectory(source/MaterialXRenderGlsl)\n' +
                         '    endif()')
                        ], multiLineMatches=True)
+        if MacOS() and context.buildAppleFramework:
+            cmakeOptions.extend(["-DMATERIALX_BUILD_SHARED_LIBS=OFF"])
+        else:
+            cmakeOptions.extend(["-DMATERIALX_BUILD_SHARED_LIBS=ON"])
 
         cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
@@ -1818,6 +1823,9 @@ def InstallUSD(context, force, buildArgs):
         if Windows():
             # Increase the precompiled header buffer limit.
             extraArgs.append('-DCMAKE_CXX_FLAGS="/Zm150"')
+        if MacOS():
+            extraArgs.append(f"-DPXR_BUILD_APPLE_FRAMEWORK={'ON' if context.buildAppleFramework else 'OFF'}")
+            extraArgs.append(f"-DPXR_APPLE_PREFIX_FRAMEWORK_HEADERS={'ON' if context.prefixFrameworkHeaders else 'OFF'}")
 
         # Make sure to use boost installed by the build script and not any
         # system installed boost
@@ -1945,6 +1953,14 @@ if MacOS():
                        help=("Build target for macOS cross compilation. "
                              "(default: {})".format(
                                 apple_utils.GetBuildTargetDefault())))
+    subgroup = group.add_mutually_exclusive_group()
+    subgroup.add_argument("--build-apple-framework", dest="build_apple_framework", action="store_true",
+                          help="Build USD as an Apple Framework (Default if using embedded platforms)")
+    subgroup.add_argument("--no-build-apple-framework", dest="no_build_apple_framework", action="store_true",
+                          help="Do not build USD as an Apple Framework (Default if macOS)")
+    group.add_argument("--prefix-framework-headers", dest="prefix_framework_headers", action="store_true",
+                          help="Add the Framework as a prefix to header includes so that they can automatically be included.")
+
     if apple_utils.IsHostArm():
         # Intel Homebrew stores packages in /usr/local which unfortunately can
         # be where a lot of other things are too. So we only add this flag on arm macs.
@@ -2293,6 +2309,13 @@ class InstallContext:
                  else False)
             if apple_utils.IsHostArm() and args.ignore_homebrew:
                 self.ignorePaths.append("/opt/homebrew")
+
+            self.buildAppleFramework = ((args.build_apple_framework or MacOSTargetEmbedded(self))
+                                        and not args.no_build_apple_framework)
+            self.prefixFrameworkHeaders = args.prefix_framework_headers and self.buildAppleFramework
+            if self.buildAppleFramework and not args.build_type:
+                    self.buildShared = False
+                    self.buildMonolithic = True
         else:
             self.buildTarget = ""
 
@@ -2305,7 +2328,7 @@ class InstallContext:
         self.forceBuild = [dep.lower() for dep in args.force_build]
 
         # Some components are disabled for embedded build targets
-        embedded = MacOSTargetEmbedded(self)
+        embedded = (MacOS() and (MacOSTargetEmbedded(self) or self.buildAppleFramework))
 
         # Optional components
         self.buildTests = args.build_tests and not embedded
@@ -2642,6 +2665,11 @@ if context.useCXX11ABI is not None:
     Use C++11 ABI               {useCXX11ABI}
 """
 
+if MacOS():
+    summaryMsg += """\
+    Framework Build             {buildAppleFramework}
+""".format(buildAppleFramework=("On" if context.buildAppleFramework else "Off"))
+
 summaryMsg += """\
     Variant                     {buildVariant}
     Target                      {buildTarget}
@@ -2839,3 +2867,13 @@ if context.buildPython or context.buildTools:
 if context.buildPrman:
     Print("See documentation at http://openusd.org/docs/RenderMan-USD-Imaging-Plugin.html "
           "for setting up the RenderMan plugin.\n")
+
+if MacOS() and context.buildAppleFramework:
+    Print("""
+        Add the following framework to your Xcode Project:
+        OpenUSD.framework
+    """)
+    if not context.prefixFrameworkHeaders:
+        Print("""
+        Configure the SYSTEM_HEADER_SEARCH_PATHS in your Xcode Build Settings to point to the header files within your framework.
+        """)

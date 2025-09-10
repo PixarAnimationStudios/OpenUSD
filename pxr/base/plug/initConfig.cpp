@@ -104,6 +104,11 @@ ARCH_CONSTRUCTOR(Plug_InitConfig, 2)
     _AppendPathList(&result, buildLocation, binaryPath);
     _AppendPathList(&result, pluginBuildLocation, binaryPath);
 
+#ifdef PXR_EXTRA_BINARY_RELATIVE_RESOURCES
+    std::string relativeResourcePath = std::string(TF_PP_STRINGIZE(PXR_EXTRA_BINARY_RELATIVE_RESOURCES)) + "/usd";
+    _AppendPathList(&result, relativeResourcePath, binaryPath);
+#endif
+
 #ifdef PXR_INSTALL_LOCATION
     _AppendPathList(&result, installLocation, binaryPath);
 #endif // PXR_INSTALL_LOCATION
