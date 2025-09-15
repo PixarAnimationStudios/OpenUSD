@@ -63,6 +63,10 @@
 #define ARCH_COMPILER_CLANG_MAJOR __clang_major__
 #define ARCH_COMPILER_CLANG_MINOR __clang_minor__
 #define ARCH_COMPILER_CLANG_PATCHLEVEL __clang_patchlevel__
+#if defined(_MSC_VER)
+    #define ARCH_COMPILER_MSVC
+    #define ARCH_COMPILER_MSVC_VERSION _MSC_VER
+#endif
 #elif defined(__GNUC__)
 #define ARCH_COMPILER_GCC
 #define ARCH_COMPILER_GCC_MAJOR __GNUC__
@@ -95,7 +99,7 @@
 // custom versions of macros.
 // See here for more detail about MSVC's preprocessors:
 // https://learn.microsoft.com/en-us/cpp/preprocessor/preprocessor-experimental-overview
-#if defined(ARCH_COMPILER_MSVC)
+#if defined(ARCH_COMPILER_MSVC) && !defined(ARCH_COMPILER_CLANG)
     #if !defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL
     #define ARCH_PREPROCESSOR_MSVC_TRADITIONAL
     #endif

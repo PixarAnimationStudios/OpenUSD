@@ -217,7 +217,7 @@ bool
 ArchIsStlAllocatorOff()
 {
 #if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_ICC) || \
-    defined(ARCH_COMPILER_CLANG)
+    (defined(ARCH_COMPILER_CLANG) && !defined(ARCH_COMPILER_MSVC))
     // I'm assuming that ICC compiles will use the gcc STL library.
 
     /*

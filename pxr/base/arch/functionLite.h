@@ -21,14 +21,14 @@
 #define __ARCH_FUNCTION__ __func__
 
 #if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_ICC) || \
-    defined(ARCH_COMPILER_CLANG)
+    (defined(ARCH_COMPILER_CLANG) && !defined(ARCH_COMPILER_MSVC))
 #    define __ARCH_PRETTY_FUNCTION__ __PRETTY_FUNCTION__
 #elif defined(ARCH_COMPILER_MSVC)
 #    define __ARCH_PRETTY_FUNCTION__ __FUNCSIG__
 #else
 #    define __ARCH_PRETTY_FUNCTION__ __ARCH_FUNCTION__
 #endif /* defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_ICC) ||
-          defined(ARCH_COMPILER_CLANG)*/
+          (defined(ARCH_COMPILER_CLANG) && !defined(ARCH_COMPILER_MSVC)) */
 
 #if defined(BUILD_COMPONENT_SRC_PREFIX)
 #    define __ARCH_FILE__ BUILD_COMPONENT_SRC_PREFIX __FILE__

@@ -19,7 +19,7 @@
 /// outcome of bool-expr to a very high degree of certainty.  For example,
 /// fatal-error cases, invariants, first-time initializations, etc.
 
-#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
+#if defined(ARCH_COMPILER_GCC) || (defined(ARCH_COMPILER_CLANG) && !defined(ARCH_COMPILER_MSVC))
 
 #define ARCH_LIKELY(x) (__builtin_expect((bool)(x), true))
 #define ARCH_UNLIKELY(x) (__builtin_expect((bool)(x), false))

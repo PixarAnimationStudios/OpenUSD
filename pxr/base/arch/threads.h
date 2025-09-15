@@ -35,13 +35,13 @@ ARCH_API std::thread::id ArchGetMainThreadId();
 
 /// ARCH_SPIN_PAUSE -- 'pause' on x86, 'yield' on arm.
 #if defined(ARCH_CPU_INTEL)
-#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
+#if defined(ARCH_COMPILER_GCC) || (defined(ARCH_COMPILER_CLANG) && !defined(ARCH_COMPILER_MSVC))
 #define ARCH_SPIN_PAUSE() __builtin_ia32_pause()
 #elif defined(ARCH_COMPILER_MSVC)
 #define ARCH_SPIN_PAUSE() _mm_pause()
 #endif
 #elif defined(ARCH_CPU_ARM)
-#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
+#if defined(ARCH_COMPILER_GCC) || (defined(ARCH_COMPILER_CLANG) && !defined(ARCH_COMPILER_MSVC))
 #define ARCH_SPIN_PAUSE() asm volatile ("yield" ::: "memory")
 #elif defined(ARCH_COMPILER_MSVC)
 #define ARCH_SPIN_PAUSE() __yield();
