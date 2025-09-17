@@ -1,25 +1,8 @@
 #
 # Copyright 2016 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 #
 # Usage: testWrapper.py <options> <cmd>
@@ -107,6 +90,9 @@ def _parseArgs():
     parser.add_argument('--tempdirprefix', metavar='PREFIX', type=str,
             help='temp directory names will begin with PREFIX',
             default=None)
+    parser.add_argument('--test-runner', type=str,
+            help=('Application that will run the test. '
+                  'Currently used for emscripten builds.'))
     parser.add_argument('--expected-return-code', type=int, default=0,
             help='Expected return code of this test.')
     parser.add_argument('--env-var', dest='envVars', default=[], type=str, 
@@ -148,7 +134,7 @@ def _stripPath(f, pathPattern):
             return m.group(1).replace('\\', '/')
         pathPattern = pathPattern.replace('\\', '/')
         pathPattern = pathPattern.replace('/', '[/\\\\]')
-        pathPattern = pathPattern + '(\S*)'
+        pathPattern = pathPattern + r'(\S*)'
         repl = _windowsReplacement
 
     # Read entire file and perform substitution.
@@ -174,11 +160,21 @@ def _diff(fileName, baselineDir, verbose, failuresDir=None):
     # Use the diff program or equivalent, rather than filecmp or similar
     # because it's possible we might want to specify other diff programs
     # in the future.
+
     import platform
-    if platform.system() == 'Windows':
-        diff = 'fc.exe'
-    else:
-        diff = '/usr/bin/diff'
+    isWindows = platform.system() == 'Windows'
+
+    diffTool = shutil.which('diff')
+    diffToolBaseArgs = ['--strip-trailing-cr']
+    if not diffTool and isWindows:
+        diffTool = 'fc.exe'
+        diffToolBaseArgs = ['/t']
+
+    if not diffTool:
+        sys.stderr.write(
+            "Error: could not find \"diff\" or \"fc.exe\" tool. "
+            "Make sure it's in your PATH.\n")
+        return False
 
     filesToDiff = glob.glob(fileName)
     if not filesToDiff:
@@ -188,7 +184,7 @@ def _diff(fileName, baselineDir, verbose, failuresDir=None):
 
     for fileToDiff in filesToDiff:
         baselineFile = _resolvePath(baselineDir, fileToDiff)
-        cmd = [diff, baselineFile, fileToDiff]
+        cmd = [diffTool, *diffToolBaseArgs, baselineFile, fileToDiff]
         if verbose:
             print("diffing with {0}".format(cmd))
 
@@ -391,8 +387,9 @@ if __name__ == '__main__':
     if args.pre_command:
         _runCommand(args.pre_command, args.pre_command_stdout_redirect,
                     args.pre_command_stderr_redirect, env, 0)
-        
-    _runCommand(args.cmd, args.stdout_redirect, args.stderr_redirect,
+
+    testCommand = f'{args.test_runner} {args.cmd}' if args.test_runner else args.cmd
+    _runCommand(testCommand, args.stdout_redirect, args.stderr_redirect,
                 env, args.expected_return_code)
 
     if args.post_command:

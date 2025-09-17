@@ -1,0 +1,31 @@
+#usda 1.0
+
+over "FishPlateA_defaultShadingVariant"
+{
+    def Material "Test"
+    {
+        custom color3f inputs:albedo = (0.18280926, 0.64653915, 0.12051717)
+    }
+
+    def Material "Test_Child" (
+        specializes = </FishPlateA_defaultShadingVariant/Test>
+    )
+    {
+    }
+}
+
+over "FishPlateA" (
+    prepend references = [</Blue>, </FishPlateA_defaultShadingVariant>]
+)
+{
+}
+
+over "Blue" (
+    prepend references = </FishPlateA_defaultShadingVariant>
+)
+{
+    over "Test"
+    {
+        color3f inputs:albedo = (0.06452223, 0.054943334, 0.7829422)
+    }
+}

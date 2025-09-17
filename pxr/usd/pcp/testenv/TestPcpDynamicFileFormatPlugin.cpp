@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/base/tf/envSetting.h"
@@ -30,7 +13,7 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/primSpec.h"
-#include "pxr/usd/sdf/textFileFormat.h"
+#include "pxr/usd/sdf/usdaFileFormat.h"
 #include "pxr/usd/pcp/dynamicFileFormatContext.h"
 #include "pxr/usd/pcp/dynamicFileFormatInterface.h"
 
@@ -75,16 +58,16 @@ TF_DEFINE_ENV_SETTING(TEST_PCP_DYNAMIC_FILE_FORMAT_TOKENS_USE_ATTRIBUTE_INPUTS,
 /// related to generating dynamic content from composed metadata fields in scene
 /// description through payloads.
 /// 
-/// This contents of a file of this format are expected to be the same as sdf
+/// This contents of a file of this format are expected to be the same as usda
 /// file content. If the file is opened with file format arguments for "num" and
 /// "depth" that are greater than 0, then it will generate a ring of Xform prim
 /// children that will each have a payload to this file again but with depth-1.
 /// It will also adds a "geom" child that references the payload asset file
-/// with no parameters, just reading it as an sdf file and referencing the 
+/// with no parameters, just reading it as an usda file and referencing the 
 /// default prim. Thus we end up with a recursively generated set of prims 
 /// containing the contents of the dynamic file.
 /// 
-/// As an example if you have the following prim defined in an sdf file:
+/// As an example if you have the following prim defined in an usda file:
 ///   
 ///     def Xform "Root" (
 ///         payload = @cone.testpcpdyanic@ num=2 depth=3 radius = 20.0) {}
@@ -289,15 +272,15 @@ Test_PcpDynamicFileFormatPlugin_FileFormat::Read(
         &payloadId);
 
     // At depth 0, we're done recursing. just read in the contents of our file 
-    // as an sdf text file format into the layer. 
+    // as an usda text file format into the layer. 
     if (depth <= 0) {
         const SdfFileFormatConstPtr fileFormat = 
-            SdfFileFormat::FindById(SdfTextFileFormatTokens->Id);
+            SdfFileFormat::FindById(SdfUsdaFileFormatTokens->Id);
         return fileFormat->Read(layer, resolvedPath, metadataOnly);
     }
 
     // Otherwise, here we generate new file content.
-    SdfLayerRefPtr genLayer = SdfLayer::CreateAnonymous(".sdf");
+    SdfLayerRefPtr genLayer = SdfLayer::CreateAnonymous(".usda");
     SdfChangeBlock block;
 
     // Create a "Root" Xform prim at the root of the genLayer. 
@@ -411,9 +394,9 @@ Test_PcpDynamicFileFormatPlugin_FileFormat::WriteToString(
     std::string* str,
     const std::string& comment) const
 {
-    // Write the contents as an sdf text file.
+    // Write the contents as an usda text file.
     return SdfFileFormat::FindById(
-        SdfTextFileFormatTokens->Id)->WriteToString(layer, str, comment);
+        SdfUsdaFileFormatTokens->Id)->WriteToString(layer, str, comment);
 }
 
 bool
@@ -422,9 +405,9 @@ Test_PcpDynamicFileFormatPlugin_FileFormat::WriteToStream(
     std::ostream& out,
     size_t indent) const
 {
-    // Write the contents as an sdf text file.
+    // Write the contents as an usda text file.
     return SdfFileFormat::FindById(
-        SdfTextFileFormatTokens->Id)->WriteToStream(spec, out, indent);
+        SdfUsdaFileFormatTokens->Id)->WriteToStream(spec, out, indent);
 }
 
 // Helper for extracting a value by name from an already computed argument 
@@ -578,6 +561,8 @@ Test_PcpDynamicFileFormatPlugin_FileFormat::ComposeFieldsForFileFormatArguments(
         if (depth < 1) {
             return;
         }
+        (*args)[Test_PcpDynamicFileFormatPlugin_FileFormatTokens->Depth] = 
+        TfStringify(depth);
     }
     int num = 0;
     if (_ExtractArg(Test_PcpDynamicFileFormatPlugin_FileFormatTokens->Num, 
@@ -585,11 +570,9 @@ Test_PcpDynamicFileFormatPlugin_FileFormat::ComposeFieldsForFileFormatArguments(
         if (num < 1) {
             return;
         }
-    }
-    (*args)[Test_PcpDynamicFileFormatPlugin_FileFormatTokens->Depth] = 
-        TfStringify(depth);
-    (*args)[Test_PcpDynamicFileFormatPlugin_FileFormatTokens->Num] = 
+        (*args)[Test_PcpDynamicFileFormatPlugin_FileFormatTokens->Num] = 
         TfStringify(num);
+    }
 
     // Compose the radius and height metadata and add them as well.
     double radius = 10.0;

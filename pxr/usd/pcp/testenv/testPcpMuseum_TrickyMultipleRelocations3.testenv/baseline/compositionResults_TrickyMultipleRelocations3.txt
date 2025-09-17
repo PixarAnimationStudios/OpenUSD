@@ -1,15 +1,15 @@
-Loading @TrickyMultipleRelocations3/root.sdf@
+Loading @TrickyMultipleRelocations3/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Group>
 
 Prim Stack:
-    root.sdf             /Group
-    group.sdf            /Group
+    root.usda            /Group
+    group.usda           /Group
 
 Child names:
      ['Subgroup']
@@ -18,8 +18,8 @@ Child names:
 Results for composing </Group/Subgroup>
 
 Prim Stack:
-    root.sdf             /Group/Subgroup
-    group.sdf            /Group/Subgroup
+    root.usda            /Group/Subgroup
+    group.usda           /Group/Subgroup
 
 Child names:
      ['Char_Renamed']
@@ -31,8 +31,8 @@ Prohibited child names:
 Results for composing </Group/Subgroup/Char_Renamed>
 
 Prim Stack:
-    root.sdf             /Group/Subgroup/Char_Renamed
-    group.sdf            /Group/Subgroup/Char
+    root.usda            /Group/Subgroup/Char_Renamed
+    group.usda           /Group/Subgroup/Char
 
 Child names:
      ['Rig_Renamed']
@@ -44,7 +44,7 @@ Prohibited child names:
 Results for composing </Group/Subgroup/Char_Renamed/Rig_Renamed>
 
 Prim Stack:
-    group.sdf            /Group/Subgroup/Char/Rig
-    group.sdf            /ClassA
-    group.sdf            /ClassB
+    group.usda           /Group/Subgroup/Char/Rig
+    group.usda           /ClassA
+    group.usda           /ClassB
 

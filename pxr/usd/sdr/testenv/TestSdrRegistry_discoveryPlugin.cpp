@@ -1,51 +1,35 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
-#include "pxr/usd/ndr/discoveryPlugin.h"
+#include "pxr/usd/sdr/discoveryPlugin.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// A simple test-only discovery plugin that directly returns the nodes in the
 /// test's testenv folder.
-class _NdrTestDiscoveryPlugin : public NdrDiscoveryPlugin
+class _SdrTestDiscoveryPlugin : public SdrDiscoveryPlugin
 {
 public:
-    _NdrTestDiscoveryPlugin() {
+    _SdrTestDiscoveryPlugin() {
         _searchPaths.push_back("/TestSearchPath");
     }
 
-    ~_NdrTestDiscoveryPlugin() { }
+    ~_SdrTestDiscoveryPlugin() { }
 
-    NdrNodeDiscoveryResultVec DiscoverNodes(const Context&) override
+    SdrShaderNodeDiscoveryResultVec DiscoverShaderNodes(
+        const Context&) override
     {
         return {
-            NdrNodeDiscoveryResult(
+            SdrShaderNodeDiscoveryResult(
                 // Identifier
                 TfToken("TestNodeARGS"),
 
                 // Version
-                NdrVersion().GetAsDefault(),
+                SdrVersion().GetAsDefault(),
 
                 // Name
                 "TestNodeARGS",
@@ -65,9 +49,9 @@ public:
                 // Resolved URI
                 "TestNodeARGS.args"
             ),
-            NdrNodeDiscoveryResult(
+            SdrShaderNodeDiscoveryResult(
                 TfToken("TestNodeOSL"),
-                NdrVersion().GetAsDefault(),
+                SdrVersion().GetAsDefault(),
                 "TestNodeOSL",
                 TfToken(),
                 TfToken("oso"),
@@ -78,9 +62,9 @@ public:
                 // Test specifying an invalid encoding
                 {{TfToken("sdrUsdEncodingVersion"), std::string("foobar")}}
             ),
-            NdrNodeDiscoveryResult(
+            SdrShaderNodeDiscoveryResult(
                 TfToken("TestNodeSameName"),
-                NdrVersion().GetAsDefault(),
+                SdrVersion().GetAsDefault(),
                 "TestNodeSameName",
                 TfToken(),
                 TfToken("args"),
@@ -88,9 +72,9 @@ public:
                 "TestNodeSameName.args",
                 "TestNodeSameName.args"
             ),
-            NdrNodeDiscoveryResult(
+            SdrShaderNodeDiscoveryResult(
                 TfToken("TestNodeSameName"),
-                NdrVersion().GetAsDefault(),
+                SdrVersion().GetAsDefault(),
                 "TestNodeSameName",
                 TfToken(),
                 TfToken("oso"),
@@ -105,35 +89,36 @@ public:
     }
 
     /// Gets the paths that this plugin is searching for nodes in.
-    const NdrStringVec& GetSearchURIs() const override { return _searchPaths; }
+    const SdrStringVec& GetSearchURIs() const override { return _searchPaths; }
 
 private:
     /// The paths (abs) indicating where the plugin should search for nodes.
-    NdrStringVec _searchPaths;
+    SdrStringVec _searchPaths;
 };
 
-NDR_REGISTER_DISCOVERY_PLUGIN(_NdrTestDiscoveryPlugin)
+SDR_REGISTER_DISCOVERY_PLUGIN(_SdrTestDiscoveryPlugin)
 
 /// A second simple test-only discovery plugin that directly returns the nodes
 /// in the test's testenv folder.
-class _NdrTestDiscoveryPlugin2 : public NdrDiscoveryPlugin
+class _SdrTestDiscoveryPlugin2 : public SdrDiscoveryPlugin
 {
 public:
-    _NdrTestDiscoveryPlugin2() {
+    _SdrTestDiscoveryPlugin2() {
         _searchPaths.push_back("/TestSearchPath2");
     }
 
-    ~_NdrTestDiscoveryPlugin2() { }
+    ~_SdrTestDiscoveryPlugin2() { }
 
-    NdrNodeDiscoveryResultVec DiscoverNodes(const Context&) override
+    SdrShaderNodeDiscoveryResultVec DiscoverShaderNodes(
+        const Context&) override
     {
         return {
-            NdrNodeDiscoveryResult(
+            SdrShaderNodeDiscoveryResult(
                 // Identifier
                 TfToken("TestNodeARGS2"),
 
                 // Version
-                NdrVersion().GetAsDefault(),
+                SdrVersion().GetAsDefault(),
 
                 // Name
                 "TestNodeARGS2",
@@ -153,9 +138,9 @@ public:
                 // Resolved URI
                 "TestNodeARGS2.args"
             ),
-            NdrNodeDiscoveryResult(
+            SdrShaderNodeDiscoveryResult(
                 TfToken("TestNodeGLSLFX"),
-                NdrVersion().GetAsDefault(),
+                SdrVersion().GetAsDefault(),
                 "TestNodeGLSLFX",
                 TfToken(),
                 TfToken("glslfx"),
@@ -167,13 +152,13 @@ public:
     }
 
     /// Gets the paths that this plugin is searching for nodes in.
-    const NdrStringVec& GetSearchURIs() const override { return _searchPaths; }
+    const SdrStringVec& GetSearchURIs() const override { return _searchPaths; }
 
 private:
     /// The paths (abs) indicating where the plugin should search for nodes.
-    NdrStringVec _searchPaths;
+    SdrStringVec _searchPaths;
 };
 
-NDR_REGISTER_DISCOVERY_PLUGIN(_NdrTestDiscoveryPlugin2)
+SDR_REGISTER_DISCOVERY_PLUGIN(_SdrTestDiscoveryPlugin2)
 
 PXR_NAMESPACE_CLOSE_SCOPE

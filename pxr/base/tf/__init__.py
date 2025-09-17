@@ -1,25 +1,8 @@
 #
 # Copyright 2016 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 """
 Tf -- Tools Foundation
@@ -172,8 +155,10 @@ def GetCodeLocation(framesUp):
     i.e. the function someCode()."""
     import sys
     f_back = sys._getframe(framesUp).f_back
-    return (f_back.f_globals['__name__'], f_back.f_code.co_name,
-            f_back.f_code.co_filename, f_back.f_lineno)
+    return (f_back.f_globals.get('__name__', '<unknown>'),
+            f_back.f_code.co_name,
+            f_back.f_code.co_filename,
+            f_back.f_lineno)
 
 PreparePythonModule()
 
@@ -205,7 +190,7 @@ def Status(msg, verbose=True):
         codeInfo = GetCodeLocation(framesUp=1)
         _Status(msg, codeInfo[0], codeInfo[1], codeInfo[2], codeInfo[3])
     else:
-        _Status(msg, "", "", "", 0)
+        _Status(msg)
 
 def RaiseCodingError(msg):
     """Raise a coding error to the Tf Diagnostic system."""
@@ -259,3 +244,60 @@ class NamedTemporaryFile(object):
     def name(self):
         """The path for the temporary file created.""" 
         return self._name
+
+# Extend Tf.ScopeDescription using ContextDecorator so that it can also be
+# used to decorate functions/methods.
+import contextlib
+
+class ScopeDescription(_ScopeDescription, contextlib.ContextDecorator):
+    """This class lets us expose TfScopeDescription to python for use as a
+    "context manager" object, for use with the 'with'-statement. For example:
+
+        with Tf.ScopeDescription("Solving the halting problem"):
+            # Code that solves the halting problem.
+
+    It can also be used as a decorator for an entire function or method, for
+    convenience:
+
+        @Tf.ScopeDescription("Solving the halting problem");
+        def SolveHaltingProblem():
+            # Code that solves the halting problem.
+
+    Note that the description passed to the decorator is an expression that is
+    evaluated only once at declaration time. If a dynamic description is
+    needed, use the with-statement pattern instead.
+    """
+    pass
+
+class CatchAndRepostErrors(contextlib.ContextDecorator):
+    """This context manager & decorator can be used to catch Tf.ErrorException
+    and repost its held errors to the thread's Tf.Error list without raising a
+    Python exception, halting unwinding.  For example, the following will raise
+    a Tf.ErrorException containing the "test" Coding Error.  This will be
+    caught by the CatchAndRepostErrors object, and the "test" Error will be
+    re-posted to the thread's error list.  Then exception propagation will
+    cease and ordinary control flow will continue.
+
+        with Tf.CatchAndRepostErrors():
+            Tf.RaiseCodingError('test')
+
+    This can be useful to sidestep SIP's virtual function bindings from
+    blocking exceptions, retaining Tf.Errors so they can propagate to callers.
+    Here, the `paintGL()` virtual override can capture any Tf.ErrorExceptions
+    raised during its execution, and by reposting the errors to the Tf.Error
+    list, callers can observe them later.
+
+        @Tf.CatchAndRepostErrors():
+        def paintGL(self):
+            self._renderer.Render()
+    """
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, excType, excValue, tb):
+        return (RepostErrors(excValue)
+                if isinstance(excValue, ErrorException)
+                else False)
+
+del contextlib

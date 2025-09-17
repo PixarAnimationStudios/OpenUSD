@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdImaging/dataSourceNurbsPatch.h"
 
@@ -43,18 +26,20 @@ _ToLocator(const TfToken &name)
     return HdDataSourceLocator(tokens.size(), tokens.data());
 }
     
-std::vector<UsdImagingDataSourceMapped::AttributeMapping>
-_GetAttributeMappings()
+std::vector<UsdImagingDataSourceMapped::PropertyMapping>
+_GetPropertyMappings()
 {
-    std::vector<UsdImagingDataSourceMapped::AttributeMapping> result;
+    std::vector<UsdImagingDataSourceMapped::PropertyMapping> result;
 
     // Pick up from UsdGeomGprim
     result.push_back(
-        {UsdGeomTokens->doubleSided,
-         HdDataSourceLocator(HdNurbsPatchSchemaTokens->doubleSided)});
+        UsdImagingDataSourceMapped::AttributeMapping{
+            UsdGeomTokens->doubleSided,
+            HdDataSourceLocator(HdNurbsPatchSchemaTokens->doubleSided)});
     result.push_back(
-        {UsdGeomTokens->orientation,
-         HdDataSourceLocator(HdNurbsPatchSchemaTokens->orientation)});
+        UsdImagingDataSourceMapped::AttributeMapping{
+            UsdGeomTokens->orientation,
+            HdDataSourceLocator(HdNurbsPatchSchemaTokens->orientation)});
     
     for (const TfToken &usdName :
              UsdGeomNurbsPatch::GetSchemaAttributeNames(
@@ -65,16 +50,18 @@ _GetAttributeMappings()
             continue;
         }
 
-        result.push_back({ usdName, _ToLocator(usdName)});
+        result.push_back(
+            UsdImagingDataSourceMapped::AttributeMapping{
+                usdName, _ToLocator(usdName)});
     }
 
     return result;
 }
 
-const UsdImagingDataSourceMapped::AttributeMappings &
+const UsdImagingDataSourceMapped::PropertyMappings &
 _GetMappings() {
-    static const UsdImagingDataSourceMapped::AttributeMappings result(
-        _GetAttributeMappings(), HdNurbsPatchSchema::GetDefaultLocator());
+    static const UsdImagingDataSourceMapped::PropertyMappings result(
+        _GetPropertyMappings(), HdNurbsPatchSchema::GetDefaultLocator());
     return result;
 }
     

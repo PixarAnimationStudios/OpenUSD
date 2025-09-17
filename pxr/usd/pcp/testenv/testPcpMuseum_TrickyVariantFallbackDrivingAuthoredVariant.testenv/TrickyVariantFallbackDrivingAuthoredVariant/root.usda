@@ -1,0 +1,65 @@
+#usda 1.0
+(
+    """
+    This example exercises a case with two sibling variant sets,
+    where a fallback applied to one introduces an authored selection
+    for the other.  Since they are on the same node/site this
+    requires restarting the variant evaluation process.
+    """
+)
+
+def "A" (
+    add variantSets = ["vset1", "vset2"]
+)
+{
+    variantSet "vset1" = {
+        "fallback" (
+            variants = {
+                string vset2 = "authored"
+            }
+        ) {
+        }
+    }
+    variantSet "vset2" = {
+        "authored" (
+        ) {
+            def "vset2_authored_child"
+            {
+            }
+        }
+    }
+}
+
+def "A_Ancestral" (
+    references = </A/vset2_authored_child>
+)
+{
+}
+
+def "B" (
+    add variantSets = ["vset2", "vset1"]
+)
+{
+    variantSet "vset1" = {
+        "fallback" (
+            variants = {
+                string vset2 = "authored"
+            }
+        ) {
+        }
+    }
+    variantSet "vset2" = {
+        "authored" (
+        ) {
+            def "vset2_authored_child"
+            {
+            }
+        }
+    }
+}
+
+def "B_Ancestral" (
+    references = </B/vset2_authored_child>
+)
+{
+}

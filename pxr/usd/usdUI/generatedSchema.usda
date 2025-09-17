@@ -4,121 +4,120 @@
 )
 
 class "NodeGraphNodeAPI" (
-    doc = """
-    This api helps storing information about nodes in node graphs.
-    """
+    customData = {
+        string userDocBrief = """NodeGraphNodeAPI stores information about nodes 
+within a node graph. This information includes node display UI hints (node 
+color, icon, etc.) and layout hits (node position and size)."""
+    }
 )
 {
     uniform color3f ui:nodegraph:node:displayColor (
-        doc = """
-        This hint defines what tint the node should have in the node graph.
-        """
+        customData = {
+            string userDocBrief = "The color of the node."
+        }
+    )
+    uniform string ui:nodegraph:node:docURI (
+        customData = {
+            string userDocBrief = """A URI formatted link that points to 
+documentation for the node."""
+        }
+        displayGroup = "Help"
+        displayName = "Doc Link"
     )
     uniform token ui:nodegraph:node:expansionState (
         allowedTokens = ["open", "closed", "minimized"]
-        doc = """ 
-        The current expansionState of the node in the ui. 
-        'open' = fully expanded
-        'closed' = fully collapsed
-        'minimized' = should take the least space possible
-        """
+        customData = {
+            string userDocBrief = """Shows the current size or status of the 
+node. Either open, closed, or minimized."""
+        }
     )
     uniform asset ui:nodegraph:node:icon (
-        doc = """
-        This points to an image that should be displayed on the node.  It is 
-        intended to be useful for summary visual classification of nodes, rather
-        than a thumbnail preview of the computed result of the node in some
-        computational system.
-        """
+        customData = {
+            string userDocBrief = "An image to classify the node."
+        }
     )
     uniform float2 ui:nodegraph:node:pos (
-        doc = """
-        Declared relative position to the parent in a node graph.
-        X is the horizontal position.
-        Y is the vertical position. Higher numbers correspond to lower positions 
-        (coordinates are Qt style, not cartesian).
-
-        These positions are not explicitly meant in pixel space, but rather
-        assume that the size of a node is approximately 1.0x1.0. Where size-x is
-        the node width and size-y height of the node. Depending on 
-        graph UI implementation, the size of a node may vary in each direction.
-
-        Example: If a node's width is 300 and it is position is at 1000, we
-        store for x-position: 1000 * (1.0/300)
-        """
+        customData = {
+            string userDocBrief = """An x,y coordinate pair expressing the 
+location of the node."""
+        }
     )
     uniform float2 ui:nodegraph:node:size (
-        doc = """
-        Optional size hint for a node in a node graph.
-        X is the width.
-        Y is the height.
-
-        This value is optional, because node size is often determined 
-        based on the number of in- and outputs of a node.
-        """
+        customData = {
+            string userDocBrief = "Optional x,y dimensions for the node."
+        }
     )
     uniform int ui:nodegraph:node:stackingOrder (
-        doc = """
-        This optional value is a useful hint when an application cares about 
-        the visibility of a node and whether each node overlaps another.
-        
-        Nodes with lower stacking order values are meant to be drawn below 
-        higher ones. Negative values are meant as background. Positive values
-        are meant as foreground.
-        Undefined values should be treated as 0. 
-
-        There are no set limits in these values.
-        """
+        customData = {
+            string userDocBrief = """The order in which a node should be 
+displayed in the case of overlapping nodes."""
+        }
     )
 }
 
 class "SceneGraphPrimAPI" (
-    doc = """
-    Utility schema for display properties of a prim
-    """
+    customData = {
+        string userDocBrief = """SceneGraphPrimAPI provides a way to add 
+descriptive information to the node graph."""
+    }
 )
 {
     uniform token ui:displayGroup (
-        doc = """When publishing a nodegraph or a material, it can be useful to
-        provide an optional display group, for organizational purposes and 
-        readability. This is because often the usd shading hierarchy is rather
-        flat while we want to display it in organized groups.
-        """
+        customData = {
+            string userDocBrief = """A descriptive name for the group to which 
+the node belongs, potentially distinct from any other USD grouping feature
+name."""
+        }
     )
     uniform token ui:displayName (
-        doc = """When publishing a nodegraph or a material, it can be useful to
-        provide an optional display name, for readability.
-        """
+        customData = {
+            string userDocBrief = """A descriptive name for the node, 
+potentially distinct from its UsdPrim displayName."""
+        }
     )
 }
 
 class Backdrop "Backdrop" (
-    doc = """Provides a 'group-box' for the purpose of node graph organization.
-
-    Unlike containers, backdrops do not store the Shader nodes inside of them.
-    Backdrops are an organizational tool that allows Shader nodes to be visually 
-    grouped together in a node-graph UI, but there is no direct relationship 
-    between a Shader node and a Backdrop. 
-
-    The guideline for a node-graph UI is that a Shader node is considered part 
-    of a Backdrop when the Backdrop is the smallest Backdrop a Shader node's 
-    bounding-box fits inside.
-
-    Backdrop objects are contained inside a NodeGraph, similar to how Shader 
-    objects are contained inside a NodeGraph.
-
-    Backdrops have no shading inputs or outputs that influence the rendered
-    results of a NodeGraph. Therefore they can be safely ignored during import.
-
-    Like Shaders and NodeGraphs, Backdrops subscribe to the NodeGraphNodeAPI to 
-    specify position and size.
-    """
+    customData = {
+        string userDocBrief = """Backdrop is a visual indication of a grouping 
+of nodes."""
+    }
 )
 {
     uniform token ui:description (
-        doc = """The text label that is displayed on the backdrop in the node
-        graph. This help-description explains what the nodes in a backdrop do.
-        """
+        customData = {
+            string userDocBrief = "A description for the backdrop."
+        }
+    )
+}
+
+class "AccessibilityAPI" (
+    customData = {
+        string userDocBrief = """Specifies accessibility information for a 
+prim, usable in tools that support accessibility features such as 
+voice controls or screen readers."""
+    }
+)
+{
+    string accessibility:__INSTANCE_NAME__:description (
+        customData = {
+            string userDocBrief = """An extended description of the prim to 
+provide more details."""
+        }
+    )
+    string accessibility:__INSTANCE_NAME__:label (
+        customData = {
+            string userDocBrief = """A short label to concisely describe the 
+prim."""
+        }
+    )
+    uniform token accessibility:__INSTANCE_NAME__:priority = "standard" (
+        allowedTokens = ["low", "standard", "high"]
+        customData = {
+            string userDocBrief = """A hint to the accessibility runtime of how 
+to prioritize this instance's label and description, relative to others.
+Allowed tokens are \"low\", \"standard\", and \"high\"."""
+        }
     )
 }
 

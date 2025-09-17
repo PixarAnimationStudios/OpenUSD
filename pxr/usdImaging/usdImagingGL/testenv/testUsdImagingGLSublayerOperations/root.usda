@@ -1,0 +1,19 @@
+#usda 1.0
+(
+    upAxis = "Y"
+    subLayers = [
+        @./sublayer_over.usda@,
+        @./sublayer_def.usda@,
+        @./sublayer_with_sub.usda@
+    ]
+)
+
+def "Spheres" 
+{
+    def Sphere "RedSphere"
+    {
+        double radius = 1.0
+        color3f[] primvars:displayColor = [(1.0, 0.0, 0.0)]
+    }
+}
+

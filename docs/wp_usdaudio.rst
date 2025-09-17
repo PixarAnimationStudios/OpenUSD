@@ -202,7 +202,7 @@ values. Note that the only non-uniform (i.e. animatable) property is :bi:`gain`.
       ratios of signal, not an absolute scale factor, except theoretically as
       :math:`- inf` dB. Further, given the intended use of SpatialAudio for
       content delivery in usdz assets, the commonality with the `Web Audio API
-      <https://webaudio.github.io/web-audio-api/#gainnode>`_ seems relevant.
+      <https://www.w3.org/TR/webaudio/#GainNode>`_ seems relevant.
 
 USD Sample 
 ==========

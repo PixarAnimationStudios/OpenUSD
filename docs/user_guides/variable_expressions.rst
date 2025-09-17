@@ -250,7 +250,7 @@ characters.
 
     # The following expression evaluates to "C:\USD\test.usd" or "D:\USD\test.usd" 
     # (depending on if COND evaluates to true or false) due to escaped backslashes
-    `if(${COND}, "C:\\USD\\test.usd", "D:\\USD\test.usd")`  
+    `if(${COND}, "C:\\USD\\test.usd", "D:\\USD\\test.usd")`  
 
     # The following evaluates to "escaped_var_${X}". No substitutions occur due 
     # to the escaped "$".

@@ -1,0 +1,11 @@
+#usda 1.0
+
+def "Model" (
+    high = @example:geo/high.usd@
+    lod = "low"
+    low = @example:geo/low.usd@
+    payload = @example:geo/payload.usdc@</model>
+)
+{
+}
+

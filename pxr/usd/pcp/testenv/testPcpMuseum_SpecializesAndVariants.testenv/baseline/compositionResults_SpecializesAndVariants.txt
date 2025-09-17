@@ -1,0 +1,43 @@
+Loading @SpecializesAndVariants/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </A>
+
+Prim Stack:
+    root.usda            /A
+    root.usda            /A{nestedVariantSet=nestedVariant}
+
+Variant Selections:
+    {nestedVariantSet = nestedVariant}
+
+Property names:
+     ['test']
+
+Property stacks:
+/A.test:
+    root.usda            /A{nestedVariantSet=nestedVariant}.test
+
+------------------------------------------------------------------------
+Results for composing </B>
+
+Prim Stack:
+    root.usda            /B
+    root.usda            /B{introducingVariantSet=introducingVariant}
+    root.usda            /A
+    root.usda            /A{nestedVariantSet=nestedVariant}
+
+Variant Selections:
+    {introducingVariantSet = introducingVariant}
+    {nestedVariantSet = nestedVariant}
+
+Property names:
+     ['test']
+
+Property stacks:
+/B.test:
+    root.usda            /A{nestedVariantSet=nestedVariant}.test
+

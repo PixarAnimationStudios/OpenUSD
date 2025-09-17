@@ -1,0 +1,18 @@
+#usda 1.0
+
+def "Model" (
+    variantSets = "v"
+    variants = {
+        string "v" = "x"
+    }
+)
+{
+    variantSet "v" = {
+        "x" {
+            custom string modelAttr = "v=x"
+        }
+        "y" {
+            custom string modelAttr = "v=y"
+        }
+    }
+}

@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -30,17 +13,17 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/enum.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/overloads.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/tuple.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/copy_const_reference.hpp"
+#include "pxr/external/boost/python/enum.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/overloads.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -74,7 +57,7 @@ GetPerspectiveHelper( const GfFrustum &self, bool isFovVertical ) {
     bool result = self.GetPerspective( isFovVertical, 
                                        &fov, &aspect, &nearDist, &farDist );
     return result ?
-        boost::python::make_tuple( fov, aspect, nearDist, farDist ) : object();
+        pxr_boost::python::make_tuple( fov, aspect, nearDist, farDist ) : object();
 }
 
 static tuple
@@ -83,7 +66,7 @@ GetOrthographicHelper( const GfFrustum &self ) {
     bool result =
         self.GetOrthographic( &left, &right, &bottom, &top, &near, &far );
     return result ?
-        boost::python::
+        pxr_boost::python::
         make_tuple( left, right, bottom, top, near, far ) : tuple();
 }
 
@@ -91,11 +74,11 @@ static tuple
 ComputeViewFrameHelper( const GfFrustum &self ) {
     GfVec3d side, up, view;
     self.ComputeViewFrame( &side, &up, &view );
-    return boost::python::make_tuple( side, up, view );
+    return pxr_boost::python::make_tuple( side, up, view );
 }
 
 
-BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( FitToSphere_overloads,
+PXR_BOOST_PYTHON_MEMBER_FUNCTION_OVERLOADS( FitToSphere_overloads,
                                         FitToSphere, 2, 3 );
 
 } // anonymous namespace 

@@ -14,7 +14,9 @@ Generating New Schema Classes
        * usdGenSchema, our tool for generating C++ classes from a schema.usda
          file requires the `jinja2 template substitution module
          <https://github.com/mitsuhiko/jinja2>`_ and argparse modules be
-         installed and available in your python syspath.
+         installed and available in your python syspath. If these dependencies
+         are not available when USD is built/installed, usdGenSchema will not be
+         installed.
    
        * Ensure that you have setup your python environment properly, so it can
          find USD python modules. We'll refer to the install location of your 
@@ -356,7 +358,10 @@ if they already exist).
 Building the Schema
 ###################
 
-To rebuild the plugin, simply go to the root of your build directory and run.
+Your USD install location contains a build directory with the build results for
+USD and build results for all the dependencies that needed to be built for your
+USD build. To rebuild the plugin, simply go to the root of your USD build 
+directory (<install location>/build/USD) and run:
 
 .. code-block:: console
    :caption: Build plugin using cmake
@@ -365,8 +370,10 @@ To rebuild the plugin, simply go to the root of your build directory and run.
 
 Using the Schema Classes
 ########################
-.. note:: Because this schema is an external plugin, the USD build must be told
-   where to find it before it can be used. This can be done by either:
+.. note:: 
+
+    Because this schema is an external plugin, the USD build must be told
+    where to find it before it can be used. This can be done by either:
       
     * Setting the :filename:`PXR_PLUGINPATH_NAME` environment variable to 
       the location of the plugin's :filename:`resources` directory. For 
@@ -376,7 +383,13 @@ Using the Schema Classes
    
     * Copying :filename:`usdSchemaExamples.so` (on Windows, 
       :filename:`usdSchemaExamples.dll` and :filename:`.lib`) and the 
-      :filename:`usdSchemaExamples` directory to :filename`<prefix>/plugin/usd`
+      :filename:`usdSchemaExamples` directory to :filename:`<prefix>/plugin/usd`
+
+    You may encounter "ImportError DLL load failed" when running from
+    Python 3.8+ on Windows. This is due to the DLL directory not being added to
+    trusted locations and can be resolved by manually adding the 
+    :filename:`resources` directory before import via 
+    :mono:`os.add_dll_directory("/path/to/plugin/resources/directory")`.
    
 Create a usd file named Test.usda with the following content:
 

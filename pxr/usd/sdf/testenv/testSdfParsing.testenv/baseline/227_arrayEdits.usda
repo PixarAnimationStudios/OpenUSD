@@ -1,0 +1,19 @@
+#usda 1.2
+
+over "foo"
+{
+    asset[] asattr = edit [prepend @@@assetwith/an/@/within@@@; append @asset/path@]
+    bool[] battr = edit [write 1 to [0]; write 0 to [1]; write [1] to [2]; write 1 to [-1]; write 0 to [-2]; prepend 1; append 0; prepend [0]; append [1]; erase [3]; erase [3]; minsize 100 fill 1; resize 200 fill 0; maxsize 150; minsize 300; maxsize 10]
+    int[] iattr = edit [write [0] to [1]; write 123 to [0]; append [-1]; append 234; append 56; append 80; prepend [63]]
+    point3d[] points.timeSamples = {
+        0: [(0, 158.785, 79.57), (-67.82, 75.581, 80.12)],
+        1: [(1, 158.785, 79.57), (-67.82, 75.581, 80.12)],
+        2: [(2, 158.785, 79.57), (-67.82, 75.581, 80.12)],
+        3: edit [write (1, 2, 3) to [0]; append (2, 3, 4); append (5, 6, 7)],
+        4: [(1.23, 2.34, 3.45)],
+    }
+    string[] sattr = edit [minsize 1024; append "hello world"; append 'with "quotes"'; append """foo
+with newlines
+"""]
+}
+

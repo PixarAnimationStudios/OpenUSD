@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/dataSourceAttribute.h"
@@ -119,23 +102,54 @@ UsdImagingDataSourcePurpose::GetNames()
 {
     return {
         HdPurposeSchemaTokens->purpose,
+        HdPurposeSchemaTokens->inheritable,
+        HdPurposeSchemaTokens->fallback,
     };
+}
+
+static HdDataSourceBaseHandle
+_PurposeTokenToDataSource(const TfToken &purpose)
+{
+    if (purpose == UsdGeomTokens->default_) {
+        // Hydra's default purpose is 'geometry'.
+        static HdDataSourceBaseHandle const ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(
+                HdTokens->geometry);
+        return ds;
+    }
+    return HdRetainedTypedSampledDataSource<TfToken>::New(purpose);
 }
 
 HdDataSourceBaseHandle
 UsdImagingDataSourcePurpose::Get(const TfToken &name)
 {
     if (name == HdPurposeSchemaTokens->purpose) {
-        TfToken purpose;
-        // Purpose is uniform, so just use a retained data source.
-        if (_purposeQuery.Get<TfToken>(&purpose)) {
-            if (purpose == UsdGeomTokens->default_) {
-                static HdDataSourceBaseHandle const ds =
-                    HdRetainedTypedSampledDataSource<TfToken>::New(
-                        HdTokens->geometry);
-                return ds;
+        if (_purposeQuery.HasAuthoredValue()) {
+            TfToken purpose;
+            if (_purposeQuery.Get<TfToken>(&purpose)) {
+                return _PurposeTokenToDataSource(purpose);
             }
-            return HdRetainedTypedSampledDataSource<TfToken>::New(purpose);
+        }
+        return nullptr;
+    }
+
+    if (name == HdPurposeSchemaTokens->fallback) {
+        if (!_purposeQuery.HasAuthoredValue()) {
+            TfToken purpose;
+            if (_purposeQuery.Get<TfToken>(&purpose)) {
+                return _PurposeTokenToDataSource(purpose);
+            }
+        }
+        return nullptr;
+    }
+
+    if (name == HdPurposeSchemaTokens->inheritable) {
+        if (_purposeQuery.HasAuthoredValue()) {
+            // An authored purpose value is not a fallback, and
+            // is therefore inheritable.
+            static HdDataSourceBaseHandle const ds =
+                HdRetainedTypedSampledDataSource<bool>::New(true);
+            return ds;
         }
     }
 
@@ -534,6 +548,9 @@ public:
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
+    // Return true if this data source should be provided for the prim.
+    static bool HasData(const UsdPrim &prim);
+
 private:
     UsdImagingDataSourcePrim_ModelAPI(const UsdModelAPI &model);
     const UsdModelAPI _model;
@@ -545,6 +562,20 @@ UsdImagingDataSourcePrim_ModelAPI::UsdImagingDataSourcePrim_ModelAPI(
         const UsdModelAPI &model)
   : _model(model)
 {
+}
+
+bool
+UsdImagingDataSourcePrim_ModelAPI::HasData(const UsdPrim &prim)
+{
+    // UsdImagingModelSchema corresponds to UsdModelAPI, so provide
+    // it when the prim has the relevant data -- i.e., assetInfo.
+    //
+    // Note that this is not the same as querying IsModel():
+    // USD model hierarchy rules dictate that an embedded model reference
+    // that is not part of the model hierarchy will return IsModel()==false.
+    // Nonetheless, we still want to reflect UsdModelAPI to Hydra,
+    // since the assetInfo may be required for texture asset resolution.
+    return prim.HasAssetInfo();
 }
 
 TfTokenVector
@@ -657,7 +688,8 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         }
 
         UsdGeomXformable::XformQuery xformQuery(xformable);
-        if (xformQuery.HasNonEmptyXformOpOrder()) {
+        if (xformQuery.HasNonEmptyXformOpOrder() ||
+            xformQuery.GetResetXformStack()) {
             return UsdImagingDataSourceXform::New(
                     xformQuery, _sceneIndexPath, _GetStageGlobals());
         } else {
@@ -667,7 +699,6 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         return UsdImagingDataSourcePrimvars::New(
                 _GetSceneIndexPath(),
                 _GetUsdPrim(),
-                UsdGeomPrimvarsAPI(_GetUsdPrim()),
                 _GetStageGlobals());
     } else if (name == HdVisibilitySchema::GetSchemaToken()) {
         UsdGeomImageable imageable(_GetUsdPrim());
@@ -687,14 +718,9 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         if (!imageable) {
             return nullptr;
         }
-
-        UsdAttributeQuery purposeQuery(imageable.GetPurposeAttr());
-        if (purposeQuery.HasAuthoredValue()) {
-            return UsdImagingDataSourcePurpose::New(
-                    purposeQuery, _GetStageGlobals());
-        } else {
-            return nullptr;
-        }
+        return UsdImagingDataSourcePurpose::New(
+            UsdAttributeQuery(imageable.GetPurposeAttr()),
+            _GetStageGlobals());
     } else if (name == HdExtentSchema::GetSchemaToken()) {
         UsdGeomBoundable boundable(_GetUsdPrim());
         if (!boundable) {
@@ -725,7 +751,7 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         }
     } else if (name == UsdImagingModelSchema::GetSchemaToken()) {
         if (UsdModelAPI model = UsdModelAPI(_GetUsdPrim())) {
-            if (model.IsModel()) {
+            if (UsdImagingDataSourcePrim_ModelAPI::HasData(_usdPrim)) {
                 return UsdImagingDataSourcePrim_ModelAPI::New(model);
             }
         }

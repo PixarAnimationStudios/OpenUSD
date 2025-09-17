@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdx/oitRenderTask.h"
 #include "pxr/imaging/hdx/package.h"
@@ -36,14 +19,30 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static const HioGlslfxSharedPtr &
+_GetRenderPassOitGlslfx()
+{
+    static const HioGlslfxSharedPtr glslfx =
+        std::make_shared<HioGlslfx>(HdxPackageRenderPassOitShader());
+    return glslfx;
+}
+
+static const HioGlslfxSharedPtr &
+_GetRenderPassOitOpaqueGlslfx()
+{
+    static const HioGlslfxSharedPtr glslfx =
+        std::make_shared<HioGlslfx>(HdxPackageRenderPassOitOpaqueShader());
+    return glslfx;
+}
+
 HdxOitRenderTask::HdxOitRenderTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdxRenderTask(delegate, id)
     , _oitTranslucentRenderPassShader(
         std::make_shared<HdStRenderPassShader>(
-            HdxPackageRenderPassOitShader()))
+            _GetRenderPassOitGlslfx()))
     , _oitOpaqueRenderPassShader(
         std::make_shared<HdStRenderPassShader>(
-            HdxPackageRenderPassOitOpaqueShader()))
+            _GetRenderPassOitOpaqueGlslfx()))
     , _isOitEnabled(HdxOitBufferAccessor::IsOitEnabled())
 {
 }
@@ -79,6 +78,16 @@ HdxOitRenderTask::Prepare(HdTaskContext* ctx,
     }
 }
 
+static
+bool
+_HasColorAov(HdRenderPassAovBindingVector const& aovBindings)
+{
+    return std::find_if(aovBindings.begin(), aovBindings.end(),
+        [](HdRenderPassAovBinding const& binding){
+            return binding.aovName == HdAovTokens->color; })
+                != aovBindings.end();
+}
+
 void
 HdxOitRenderTask::Execute(HdTaskContext* ctx)
 {
@@ -91,6 +100,23 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
         return;
     }
     
+    HdRenderPassStateSharedPtr renderPassState = _GetRenderPassState(ctx);
+    if (!TF_VERIFY(renderPassState)) return;
+
+    HdStRenderPassState* extendedState =
+        dynamic_cast<HdStRenderPassState*>(renderPassState.get());
+    if (!TF_VERIFY(extendedState, "OIT only works with HdSt")) {
+        return;
+    }
+    
+    // If there are aovs, but none of them are color, skip rendering for this 
+    // task.
+    HdRenderPassAovBindingVector const& aovBindings =
+        renderPassState->GetAovBindings();
+    if (!aovBindings.empty() && !_HasColorAov(aovBindings)) {
+        return;
+    }
+
     //
     // Pre Execute Setup
     //
@@ -105,15 +131,6 @@ HdxOitRenderTask::Execute(HdTaskContext* ctx)
                 "No OIT buffers allocated but needed by OIT render task");
             return;
         }
-    }
-
-    HdRenderPassStateSharedPtr renderPassState = _GetRenderPassState(ctx);
-    if (!TF_VERIFY(renderPassState)) return;
-
-    HdStRenderPassState* extendedState =
-        dynamic_cast<HdStRenderPassState*>(renderPassState.get());
-    if (!TF_VERIFY(extendedState, "OIT only works with HdSt")) {
-        return;
     }
 
     // Render pass state overrides

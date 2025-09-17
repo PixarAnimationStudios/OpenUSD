@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdImaging/lightFilterAdapter.h"
 
@@ -51,7 +34,7 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdImagingLightFilterAdapter::~UsdImagingLightFilterAdapter() 
+UsdImagingLightFilterAdapter::~UsdImagingLightFilterAdapter()
 {
 }
 
@@ -63,7 +46,7 @@ UsdImagingLightFilterAdapter::IsSupported(UsdImagingIndexProxy const* index) con
 }
 
 SdfPath
-UsdImagingLightFilterAdapter::Populate(UsdPrim const& prim, 
+UsdImagingLightFilterAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
@@ -80,11 +63,11 @@ UsdImagingLightFilterAdapter::_RemovePrim(SdfPath const& cachePath,
     index->RemoveSprim(HdPrimTypeTokens->lightFilter, cachePath);
 }
 
-void 
+void
 UsdImagingLightFilterAdapter::TrackVariability(UsdPrim const& prim,
                                         SdfPath const& cachePath,
                                         HdDirtyBits* timeVaryingBits,
-                                        UsdImagingInstancerContext const* 
+                                        UsdImagingInstancerContext const*
                                             instancerContext) const
 {
     // Discover time-varying transforms.
@@ -98,7 +81,7 @@ UsdImagingLightFilterAdapter::TrackVariability(UsdPrim const& prim,
         *timeVaryingBits |= HdLight::DirtyBits::DirtyResource;
     }
 
-    // If any of the light attributes is time varying 
+    // If any of the light attributes is time varying
     // we will assume all light params are time-varying.
     const std::vector<UsdAttribute> &attrs = prim.GetAttributes();
     for (UsdAttribute const& attr : attrs) {
@@ -125,19 +108,19 @@ UsdImagingLightFilterAdapter::TrackVariability(UsdPrim const& prim,
 
 // Thread safe.
 //  * Populate dirty bits for the given \p time.
-void 
+void
 UsdImagingLightFilterAdapter::UpdateForTime(UsdPrim const& prim,
-                               SdfPath const& cachePath, 
+                               SdfPath const& cachePath,
                                UsdTimeCode time,
                                HdDirtyBits requestedBits,
-                               UsdImagingInstancerContext const* 
+                               UsdImagingInstancerContext const*
                                    instancerContext) const
 {
 }
 
 HdDirtyBits
 UsdImagingLightFilterAdapter::ProcessPropertyChange(UsdPrim const& prim,
-                                      SdfPath const& cachePath, 
+                                      SdfPath const& cachePath,
                                       TfToken const& propertyName)
 {
     if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(propertyName)) {
@@ -170,12 +153,13 @@ UsdImagingLightFilterAdapter::MarkVisibilityDirty(UsdPrim const& prim,
                                             SdfPath const& cachePath,
                                             UsdImagingIndexProxy* index)
 {
-    // TBD
+    // "DirtyParam" is the catch-all bit for light params.
+    index->MarkSprimDirty(cachePath, HdLight::DirtyBits::DirtyParams);
 }
 
-VtValue 
+VtValue
 UsdImagingLightFilterAdapter::GetMaterialResource(UsdPrim const &prim,
-                                                  SdfPath const& cachePath, 
+                                                  SdfPath const& cachePath,
                                                   UsdTimeCode time) const
 {
     if (!_GetSceneLightsEnabled()) {
@@ -198,7 +182,7 @@ UsdImagingLightFilterAdapter::GetMaterialResource(UsdPrim const &prim,
     HdMaterialNetworkMap networkMap;
 
     UsdImagingBuildHdMaterialNetworkFromTerminal(
-        prim, 
+        prim,
         HdMaterialTerminalTokens->lightFilter,
         _GetShaderSourceTypes(),
         _GetMaterialRenderContexts(),
@@ -240,7 +224,7 @@ UsdImagingLightFilterAdapter::GetImagingSubprimData(
     // other needed data like xform and visibility.
     return HdOverlayContainerDataSource::New(
         HdRetainedContainerDataSource::New(
-            HdPrimTypeTokens->material,
+            HdMaterialSchema::GetSchemaToken(),
             UsdImagingDataSourceMaterial::New(
                 prim,
                 stageGlobals,
@@ -257,12 +241,13 @@ UsdImagingLightFilterAdapter::InvalidateImagingSubprim(
         TfTokenVector const& properties,
         const UsdImagingPropertyInvalidationType invalidationType)
 {
-    if (subprim.IsEmpty()) {
-        return UsdImagingDataSourcePrim::Invalidate(
-            prim, subprim, properties, invalidationType);
+    HdDataSourceLocatorSet result = UsdImagingDataSourcePrim::Invalidate(
+        prim, subprim, properties, invalidationType);
+
+    if (!subprim.IsEmpty()) {
+        return result;
     }
 
-    HdDataSourceLocatorSet result;
     for (const TfToken &propertyName : properties) {
         if (TfStringStartsWith(propertyName.GetString(), "inputs:")) {
             // NOTE: since we don't have access to the prim itself and our

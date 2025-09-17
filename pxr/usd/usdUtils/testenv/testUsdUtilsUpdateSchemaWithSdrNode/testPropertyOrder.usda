@@ -1,0 +1,77 @@
+#usda 1.0
+
+# Input USD File to test that the source parameter order is reproduced in the
+# output schema
+
+def Shader "TestPropertyOrderAPI" (
+    sdrMetadata = {
+        token schemaName = "TestPropertyOrderAPI"
+        token schemaKind = "singleApply"
+        token schemaBase = "APISchemaBase"
+        token apiSchemaAutoApplyTo = "SomeConcreteType|SomeAbstractType"
+        token apiSchemaCanOnlyApplyTo = "SomeConcreteType|SomeAbstractType"
+        token apiSchemasForAttrPruning = "BaseOneAPI|BaseTwoAPI"
+    }
+)
+{
+    # Add some test properties
+    float inputs:foo = 1.0
+    float outputs:bar
+
+    # These will be pruned from the output schema since they are present in the
+    # apiSchemasForAttrPruning, but they should still show up in its
+    # propertyOrder field
+    float inputs:one = 1.0
+    int inputs:two = 2.0
+
+    # Impart a non-default property order so we can verify that it gets carried
+    # through to the output schema
+    reorder properties = ["inputs:foo", "inputs:two", "inputs:one", "outputs:resultRGB", "outputs:bar",]
+
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @testDummy.glslfx@
+
+    float inputs:intensity = 1.0 (
+        connectability = "interfaceOnly"
+        sdrMetadata = {
+            token label = "Intensity"
+            token page = "Basic"
+            token help = """
+                intensity: Itensity of the flame thrower.
+                """
+        }
+    )
+
+    int inputs:intNotBool = 0.0 (
+    )
+    string inputs:colorMapGamma (
+        connectability = "interfaceOnly"
+        sdrMetadata = {
+            token label = "Map Gamma"
+            token page = "Basic"
+            token usdVariability = "Uniform"
+            token options = "texture"
+            token help = """
+                uniform color mapping for gamma.
+                """
+        }
+    )
+    color3f inputs:textureColor (
+        connectability = "interfaceOnly"
+        sdrMetadata = {
+            token label = "Texture Color"
+            token options = "texture"
+            token usdSuppressProperty = "True"
+            token help = """
+                uniform color mapping for gamma.
+                """
+        }
+    )
+    float inputs:testShaderPropWithNS = 0.0 (
+        sdrMetadata = {
+            token propertyNSPrefixOverride = "propNS"
+        }
+    )
+
+    color3f outputs:resultRGB
+}

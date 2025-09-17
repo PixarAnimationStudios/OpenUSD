@@ -6,6 +6,7 @@ def Scope "Prop"
     {
         double x = 1.0
         rel y
+        pathExpression pathExpr = "//foo ../anim//*bar"
     }
 
     def Scope "anim"

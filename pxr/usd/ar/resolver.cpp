@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/asset.h"
@@ -52,6 +35,7 @@
 #include "pxr/base/tf/unicodeUtils.h"
 
 #include <tbb/concurrent_hash_map.h>
+#include <tbb/enumerable_thread_specific.h>
 
 #include <memory>
 #include <mutex>
@@ -87,12 +71,6 @@ TF_DEFINE_ENV_SETTING(
 TF_DEFINE_ENV_SETTING(
     PXR_AR_DISABLE_PLUGIN_URI_RESOLVERS, false,
     "Disables plugin URI/IRI resolver implementations.");
-
-TF_DEFINE_ENV_SETTING(
-    PXR_AR_DISABLE_STRICT_SCHEME_VALIDATION, false,
-    "Disables strict validation for URI/IRI schemes. In future releases, "
-    "strict validation will be enforced."
-);
 
 static TfStaticData<std::string> _preferredResolver;
 
@@ -230,6 +208,12 @@ _FindMetadataValueOnTypeOrBase(const TfToken& metadata, const TfType& t)
 std::vector<_ResolverInfo> 
 _GetAvailableResolvers()
 {
+    // Demand that we find the type & plugin for the default resolver, which is
+    // provided by this library.  We cannot operate without it.  This call will
+    // terminate the program if the plugin is not found.
+    PlugRegistry::GetInstance().
+        DemandPluginForType(TfType::Find<ArDefaultResolver>());
+    
     std::vector<TfType> sortedResolverTypes;
     {
         std::set<TfType> resolverTypes;
@@ -1178,32 +1162,19 @@ private:
                         uriScheme.c_str(), 
                         (*existingResolver)->GetType().GetTypeName().c_str());
                 }
+                else if (const auto validation =
+                            _ValidateResourceIdentifierScheme(uriScheme);
+                         !validation.first) {
+                    TF_WARN(
+                        "ArGetResolver(): '%s' for '%s' is not a valid "
+                        "resource identifier scheme: %s. Paths with this "
+                        "prefix will be handled by other resolvers.",
+                        uriScheme.c_str(),
+                        resolverInfo.type.GetTypeName().c_str(),
+                        validation.second.c_str());
+                }
                 else {
-                    const auto validation =
-                        _ValidateResourceIdentifierScheme(uriScheme);
-                    if (validation.first) {
-                        uriSchemes.push_back(uriScheme);
-                    }
-                    else if (TfGetEnvSetting(
-                                PXR_AR_DISABLE_STRICT_SCHEME_VALIDATION)){
-                        uriSchemes.push_back(uriScheme);
-                        TF_WARN("'%s' for '%s' is not a valid "
-                                "resource identifier scheme and "
-                                "will be restricted in future releases: %s",
-                                 uriScheme.c_str(),
-                                 resolverInfo.type.GetTypeName().c_str(),
-                                 validation.second.c_str());
-                    } else{
-                        TF_WARN(
-                            "'%s' for '%s' is not a valid resource identifier "
-                            "scheme: %s. Paths with this prefix will be "
-                            "handled by other resolvers. Set "
-                            "PXR_AR_DISABLE_STRICT_SCHEME_VALIDATION to "
-                            "disable strict scheme validation.",
-                            uriScheme.c_str(),
-                            resolverInfo.type.GetTypeName().c_str(),
-                            validation.second.c_str());
-                    }
+                    uriSchemes.push_back(uriScheme);
                 }
             }
 

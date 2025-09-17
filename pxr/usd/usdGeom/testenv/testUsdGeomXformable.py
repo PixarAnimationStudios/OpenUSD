@@ -2,25 +2,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 from pxr import Gf, Tf, Sdf, Usd, UsdGeom, Vt
 import unittest, math
@@ -46,10 +29,81 @@ class TestUsdGeomXformable(unittest.TestCase):
         self.assertEqual(getTranslateOp.GetOpType(), UsdGeom.XformOp.TypeTranslate)
         self.assertEqual(translateOp.GetAttr(), getTranslateOp.GetAttr())
 
+        # Do a scalar translation on Y X and Z and checks that the
+        # computed xform (xform2) is same as the xform above.
+        # Clear xformOpOrder
+        x.ClearXformOpOrder()
+        translateY = 20.
+        translateX = 10.
+        translateZ = 30.
+        x.AddTranslateYOp().Set(translateY)
+        x.AddTranslateXOp().Set(translateX)
+        x.AddTranslateZOp().Set(translateZ)
+        self.assertEqual(x.GetXformOpOrderAttr().Get(), 
+                    Vt.TokenArray(('xformOp:translateY', 'xformOp:translateX', 
+                                   'xformOp:translateZ')))
+        xform2 = x.GetLocalTransformation(Usd.TimeCode.Default())
+        # xform and xform2 should be same
+        self._AssertCloseXf(xform, xform2)
+
+    def test_TranslateXOp(self):
+        s = Usd.Stage.CreateInMemory()
+        x = UsdGeom.Xform.Define(s, '/World')
+        translateX = 10.
+        translateXOp = x.AddTranslateXOp()
+        translateXOp.Set(translateX)
+        xform = x.GetLocalTransformation(Usd.TimeCode.Default())
+        self._AssertCloseXf(xform, Gf.Matrix4d(1.0).SetTranslate(
+            Gf.Vec3d(translateX, 0, 0)))
+        self.assertEqual(x.GetXformOpOrderAttr().Get(), 
+                    Vt.TokenArray(('xformOp:translateX', )))
+        
+        getTranslateXOp = x.GetTranslateXOp()
+        self.assertEqual(getTranslateXOp.GetOpName(), 'xformOp:translateX')
+        self.assertEqual(getTranslateXOp.GetOpType(),
+                         UsdGeom.XformOp.TypeTranslateX)
+        self.assertEqual(translateXOp.GetAttr(), getTranslateXOp.GetAttr())
+
+    def test_TranslateYOp(self):
+        s = Usd.Stage.CreateInMemory()
+        x = UsdGeom.Xform.Define(s, '/World')
+        translateY = 20.
+        translateYOp = x.AddTranslateYOp()
+        translateYOp.Set(translateY)
+        xform = x.GetLocalTransformation(Usd.TimeCode.Default())
+        self._AssertCloseXf(xform, Gf.Matrix4d(1.0).SetTranslate(
+            Gf.Vec3d(0, translateY, 0)))
+        self.assertEqual(x.GetXformOpOrderAttr().Get(), 
+                    Vt.TokenArray(('xformOp:translateY', )))
+        
+        getTranslateYOp = x.GetTranslateYOp()
+        self.assertEqual(getTranslateYOp.GetOpName(), 'xformOp:translateY')
+        self.assertEqual(getTranslateYOp.GetOpType(),
+                         UsdGeom.XformOp.TypeTranslateY)
+        self.assertEqual(translateYOp.GetAttr(), getTranslateYOp.GetAttr())
+
+    def test_TranslateZOp(self):
+        s = Usd.Stage.CreateInMemory()
+        x = UsdGeom.Xform.Define(s, '/World')
+        translateZ = 30.
+        translateZOp = x.AddTranslateZOp()
+        translateZOp.Set(translateZ)
+        xform = x.GetLocalTransformation(Usd.TimeCode.Default())
+        self._AssertCloseXf(xform, Gf.Matrix4d(1.0).SetTranslate(
+            Gf.Vec3d(0, 0, translateZ)))
+        self.assertEqual(x.GetXformOpOrderAttr().Get(), 
+                    Vt.TokenArray(('xformOp:translateZ', )))
+        
+        getTranslateZOp = x.GetTranslateZOp()
+        self.assertEqual(getTranslateZOp.GetOpName(), 'xformOp:translateZ')
+        self.assertEqual(getTranslateZOp.GetOpType(),
+                         UsdGeom.XformOp.TypeTranslateZ)
+        self.assertEqual(translateZOp.GetAttr(), getTranslateZOp.GetAttr())
+
     def test_ScaleOp(self):
         s = Usd.Stage.CreateInMemory()
         x = UsdGeom.Xform.Define(s, '/World')
-        scaleVec = Gf.Vec3f(1., 2., 3.)
+        scaleVec = Gf.Vec3f(10., 20., 30.)
         scaleOp = x.AddScaleOp()
         scaleOp.Set(scaleVec)
         xform = x.GetLocalTransformation(Usd.TimeCode.Default())
@@ -61,6 +115,77 @@ class TestUsdGeomXformable(unittest.TestCase):
         self.assertEqual(getScaleOp.GetOpName(), 'xformOp:scale')
         self.assertEqual(getScaleOp.GetOpType(), UsdGeom.XformOp.TypeScale)
         self.assertEqual(scaleOp.GetAttr(), getScaleOp.GetAttr())
+
+        # Do a scalar scale on Y X and Z and checks that the
+        # computed xform (xform2) is same as the xform above.
+        # Clear xformOpOrder
+        x.ClearXformOpOrder()
+
+        # Scale is commutative, so check that computing in the order YXZ yields 
+        # the same result as above."
+        scaleY = 20.
+        scaleX = 10.
+        scaleZ = 30.
+        x.AddScaleYOp().Set(scaleY)
+        x.AddScaleXOp().Set(scaleX)
+        x.AddScaleZOp().Set(scaleZ)
+        self.assertEqual(x.GetXformOpOrderAttr().Get(),
+                    Vt.TokenArray(('xformOp:scaleY', 'xformOp:scaleX',
+                                   'xformOp:scaleZ')))
+        xform2 = x.GetLocalTransformation(Usd.TimeCode.Default())
+        # xform and xform2 should be same
+        self._AssertCloseXf(xform, xform2)
+
+    def test_ScaleXOp(self):
+        s = Usd.Stage.CreateInMemory()
+        x = UsdGeom.Xform.Define(s, '/World')
+        scaleX = 10.
+        scaleXOp = x.AddScaleXOp()
+        scaleXOp.Set(scaleX)
+        xform = x.GetLocalTransformation(Usd.TimeCode.Default())
+        self._AssertCloseXf(xform, Gf.Matrix4d(1.0).SetScale(
+            Gf.Vec3d(scaleX, 1.0, 1.0)))
+        self.assertEqual(x.GetXformOpOrderAttr().Get(), 
+                    Vt.TokenArray(('xformOp:scaleX', )))
+        
+        getScaleXOp = x.GetScaleXOp()
+        self.assertEqual(getScaleXOp.GetOpName(), 'xformOp:scaleX')
+        self.assertEqual(getScaleXOp.GetOpType(), UsdGeom.XformOp.TypeScaleX)
+        self.assertEqual(scaleXOp.GetAttr(), getScaleXOp.GetAttr())
+
+    def test_ScaleYOp(self):
+        s = Usd.Stage.CreateInMemory()
+        x = UsdGeom.Xform.Define(s, '/World')
+        scaleY = 20.
+        scaleYOp = x.AddScaleYOp()
+        scaleYOp.Set(scaleY)
+        xform = x.GetLocalTransformation(Usd.TimeCode.Default())
+        self._AssertCloseXf(xform, Gf.Matrix4d(1.0).SetScale(
+            Gf.Vec3d(1.0, scaleY, 1.0)))
+        self.assertEqual(x.GetXformOpOrderAttr().Get(), 
+                    Vt.TokenArray(('xformOp:scaleY', )))
+        
+        getScaleYOp = x.GetScaleYOp()
+        self.assertEqual(getScaleYOp.GetOpName(), 'xformOp:scaleY')
+        self.assertEqual(getScaleYOp.GetOpType(), UsdGeom.XformOp.TypeScaleY)
+        self.assertEqual(scaleYOp.GetAttr(), getScaleYOp.GetAttr())
+
+    def test_ScaleZOp(self):
+        s = Usd.Stage.CreateInMemory()
+        x = UsdGeom.Xform.Define(s, '/World')
+        scaleZ = 30.
+        scaleZOp = x.AddScaleZOp()
+        scaleZOp.Set(scaleZ)
+        xform = x.GetLocalTransformation(Usd.TimeCode.Default())
+        self._AssertCloseXf(xform, Gf.Matrix4d(1.0).SetScale(
+            Gf.Vec3d(1.0, 1.0, scaleZ)))
+        self.assertEqual(x.GetXformOpOrderAttr().Get(), 
+                    Vt.TokenArray(('xformOp:scaleZ', )))
+        
+        getScaleZOp = x.GetScaleZOp()
+        self.assertEqual(getScaleZOp.GetOpName(), 'xformOp:scaleZ')
+        self.assertEqual(getScaleZOp.GetOpType(), UsdGeom.XformOp.TypeScaleZ)
+        self.assertEqual(scaleZOp.GetAttr(), getScaleZOp.GetAttr())
 
     def test_ScalarRotateOps(self):
         s = Usd.Stage.CreateInMemory()

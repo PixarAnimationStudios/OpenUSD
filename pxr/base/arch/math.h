@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_ARCH_MATH_H
 #define PXR_BASE_ARCH_MATH_H
@@ -46,7 +29,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \addtogroup group_arch_Math
 ///@{
 
-#if defined (ARCH_CPU_INTEL) || defined (ARCH_CPU_ARM) || defined (doxygen)
+#if defined (ARCH_CPU_INTEL) || defined (ARCH_CPU_ARM) ||  \
+    defined(ARCH_OS_WASM_VM) || defined (doxygen)
 
 /// This is the smallest value e such that 1+e^2 == 1, using floats.
 /// True for all IEEE754 chipsets.
@@ -113,7 +97,8 @@ inline void ArchSinCosf(float v, float *s, float *c) { sincosf(v, s, c); }
 /// Computes the sine and cosine of the specified value as a double.
 inline void ArchSinCos(double v, double *s, double *c) { sincos(v, s, c); }
 
-#elif defined(ARCH_OS_DARWIN) || defined(ARCH_OS_WINDOWS)
+#elif defined(ARCH_OS_DARWIN) || defined(ARCH_OS_WINDOWS) || \
+      defined(ARCH_OS_WASM_VM)
 
 inline void ArchSinCosf(float v, float *s, float *c) {
     *s = std::sin(v);
@@ -134,7 +119,8 @@ inline void ArchSinCos(double v, double *s, double *c) {
 inline int
 ArchCountTrailingZeros(uint64_t x)
 {
-#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
+#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG) && \
+    !defined(ARCH_OS_WASM_VM)
     return __builtin_ctzl(x);
 #elif defined(ARCH_COMPILER_MSVC)
     unsigned long index;

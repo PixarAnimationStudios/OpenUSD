@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hgiVulkan/instance.h"
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
@@ -28,16 +11,89 @@
 #include "pxr/base/tf/iterator.h"
 
 #include <vector>
+#include <algorithm>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static
+std::vector<const char*>
+_RemoveUnsupportedInstanceLayers(
+    const std::vector<const char*>& desiredLayers)
+{
+    // Determine available instance layers.
+    uint32_t numAvailableLayers = 0u;
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vkEnumerateInstanceLayerProperties(&numAvailableLayers, nullptr)
+    );
+    std::vector<VkLayerProperties> availableLayers;
+    availableLayers.resize(numAvailableLayers);
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vkEnumerateInstanceLayerProperties(
+            &numAvailableLayers,
+            availableLayers.data())
+    );
+
+    std::vector<const char*> layers;
+
+    // Only add layers to the list if they're available.
+    for (const auto& lay : desiredLayers) {
+        if (std::any_of(availableLayers.begin(), availableLayers.end(),
+            [name = lay](const VkLayerProperties& p) 
+            { return strcmp(p.layerName, name) == 0; })) {
+            layers.push_back(lay);
+        } else if (HgiVulkanIsDebugEnabled() &&
+                   strcmp(lay, "VK_LAYER_KHRONOS_validation") == 0) {
+            // Special handling for the validation layer, which we always want
+            // to be available.
+            TF_CODING_ERROR("Instance layer %s is not available, skipping it",
+                lay);
+        } else {
+            TF_STATUS("Instance layer %s is not available, skipping it", lay);
+        }
+    }
+
+    return layers;
+}
+
+static
+std::vector<const char*>
+_RemoveUnsupportedInstanceExtensions(
+    const std::vector<const char*>& desiredExtensions)
+{
+    // Determine available instance extensions.
+    uint32_t numAvailableExtensions = 0u;
+    HGIVULKAN_VERIFY_VK_RESULT(vkEnumerateInstanceExtensionProperties(
+        nullptr, &numAvailableExtensions, nullptr));
+    std::vector<VkExtensionProperties> availableExtensions;
+    availableExtensions.resize(numAvailableExtensions);
+    HGIVULKAN_VERIFY_VK_RESULT(vkEnumerateInstanceExtensionProperties(
+        nullptr, &numAvailableExtensions,
+        availableExtensions.data()));
+
+    std::vector<const char*> extensions;
+
+    // Only add extensions to the list if they're available.
+    for (const auto& ext : desiredExtensions) {
+        if (std::any_of(availableExtensions.begin(), availableExtensions.end(),
+            [name = ext](const VkExtensionProperties& p) 
+            { return strcmp(p.extensionName, name) == 0; })) {
+            extensions.push_back(ext);
+        } else {
+            TF_STATUS("Instance extension %s is not available, skipping it",
+                ext);
+        }
+    }
+
+    return extensions;
+}
 
 HgiVulkanInstance::HgiVulkanInstance()
     : vkDebugMessenger(nullptr)
     , vkCreateDebugUtilsMessengerEXT(nullptr)
     , vkDestroyDebugUtilsMessengerEXT(nullptr)
     , _vkInstance(nullptr)
+    , _hasPresentation(false)
 {
     VkApplicationInfo appInfo = {VK_STRUCTURE_TYPE_APPLICATION_INFO};
     appInfo.apiVersion = VK_API_VERSION_1_3;
@@ -54,8 +110,10 @@ HgiVulkanInstance::HgiVulkanInstance()
             VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
         #elif defined(VK_USE_PLATFORM_XLIB_KHR)
             VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
-        #elif defined(VK_USE_PLATFORM_MACOS_MVK)
-            VK_MVK_MACOS_SURFACE_EXTENSION_NAME,
+        #elif defined(VK_USE_PLATFORM_METAL_EXT)
+            VK_EXT_METAL_SURFACE_EXTENSION_NAME,
+            // See: https://github.com/KhronosGroup/MoltenVK/blob/main/Docs/MoltenVK_Runtime_UserGuide.md#interacting-with-the-moltenvk-runtime
+            VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
         #else
             #error Unsupported Platform
         #endif
@@ -67,25 +125,56 @@ HgiVulkanInstance::HgiVulkanInstance()
         VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
     };
 
-    // Enable validation layers extension.
-    // Requires VK_LAYER_PATH to be set.
-    const char* debugLayers[] = {
-        "VK_LAYER_KHRONOS_validation"
+    std::vector<const char*> layers;
+
+    // Additional validation layer settings.
+    const VkBool32 layerSettingVal = VK_TRUE;
+    const std::vector<VkLayerSettingEXT> layerSettings {
+        // Turn on synchronization validation
+        { "VK_LAYER_KHRONOS_validation", "validate_sync",
+          VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1, &layerSettingVal },
     };
+    VkLayerSettingsCreateInfoEXT layerSettingsCreateInfo {
+        VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT,
+        nullptr,
+        static_cast<uint32_t>(layerSettings.size()),
+        layerSettings.data()
+    };
+
     if (HgiVulkanIsDebugEnabled()) {
+        layers.push_back("VK_LAYER_KHRONOS_validation");
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-        createInfo.ppEnabledLayerNames = debugLayers;
-        createInfo.enabledLayerCount = (uint32_t)  TfArraySize(debugLayers);
+        createInfo.pNext = &layerSettingsCreateInfo;
     }
 
-    createInfo.ppEnabledExtensionNames = extensions.data();
-    createInfo.enabledExtensionCount = (uint32_t) extensions.size();
+    layers = _RemoveUnsupportedInstanceLayers(layers);
+    extensions = _RemoveUnsupportedInstanceExtensions(extensions);
 
-    TF_VERIFY(
+    _hasPresentation = std::any_of(extensions.begin(), extensions.end(),
+        [](const char* extensionName) {
+            return strcmp(extensionName, VK_KHR_SURFACE_EXTENSION_NAME) == 0;
+        });
+
+    createInfo.ppEnabledLayerNames = layers.data();
+    createInfo.enabledLayerCount = static_cast<uint32_t>(layers.size());
+    createInfo.ppEnabledExtensionNames = extensions.data();
+    createInfo.enabledExtensionCount =
+        static_cast<uint32_t>(extensions.size());
+
+    #if defined(VK_USE_PLATFORM_METAL_EXT)
+        if (std::find(extensions.begin(), extensions.end(),
+                VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME) !=
+                extensions.end()) {
+            createInfo.flags |=
+                VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+        }
+    #endif
+
+    HGIVULKAN_VERIFY_VK_RESULT(
         vkCreateInstance(
             &createInfo,
             HgiVulkanAllocator(),
-            &_vkInstance) == VK_SUCCESS
+            &_vkInstance)
     );
 
     HgiVulkanCreateDebug(this);

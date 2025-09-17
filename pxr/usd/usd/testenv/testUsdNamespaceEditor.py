@@ -2,30 +2,57 @@
 #
 # Copyright 2023 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 import sys, os, unittest
 from pxr import Sdf, Usd, Tf, Plug
 
 class TestUsdNamespaceEditor(unittest.TestCase):
+
+    # Assign the Objects changed PrimResyncType enum to reduce namespace
+    # clutter in the test cases.
+    PrimResyncType = Usd.Notice.ObjectsChanged.PrimResyncType
+
+    # Calls CanApplyEdits and ApplyEdits on the given editor and verifies both
+    # succeed. If expectedResyncNotices is provided, this also verifies that 
+    # listening the ObjectsChanged notice will hold the expected resyncs of the
+    # expected resync types specified.
+    def _ApplyEditWithVerification(self, editor, expectedResyncNotices = None):
+
+        # receivedObjectsChanged is used for sanity checking that the notice
+        # handler was indeed called as expected.
+        receivedObjectsChanged = False
+        def _OnObjectsChangedVerifyStageResyncNotices(notice, sender):
+            nonlocal receivedObjectsChanged
+            receivedObjectsChanged = True
+
+            if expectedResyncNotices is not None:
+                # Convert the list of resynced paths from the notice into a 
+                # dictionary of the path (as string) to the prim resync type for 
+                # that path. This is what we verify against the expected resyncs
+                # dictionary.
+                resyncedObjects = {
+                    str(resyncedPath) : notice.GetPrimResyncType(resyncedPath)
+                        for resyncedPath in notice.GetResyncedPaths()
+                }
+                self.assertEqual(resyncedObjects, expectedResyncNotices)
+
+        # Register the ObjectsChange listener; we revoke it after applying the
+        # edits
+        objectsChanged = Tf.Notice.RegisterGlobally(
+            Usd.Notice.ObjectsChanged, 
+            _OnObjectsChangedVerifyStageResyncNotices
+        )
+
+        try:
+            # Verify CanApply and Apply
+            self.assertTrue(editor.CanApplyEdits())
+            self.assertTrue(editor.ApplyEdits())
+            # Sanity check on the notice listener being called.
+            self.assertTrue(receivedObjectsChanged)
+        finally:
+            objectsChanged.Revoke()
 
     # Verifies children, properties, and metadata of the prim named "A" when
     # the basic test stage is loaded.
@@ -146,8 +173,9 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                 self.assertTrue(editor.DeletePrim(primA))
             self.assertTrue(primA)
 
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = {
+                    '/C/B/A' : (self.PrimResyncType.Delete, Sdf.Path())})
             self.assertFalse(primA)
             self.assertFalse(stage.GetPrimAtPath("/C/B/A"))
             
@@ -157,8 +185,9 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                 self.assertTrue(editor.DeletePrimAtPath("/C/B"))
             else:
                 self.assertTrue(editor.DeletePrim(primB))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = {
+                    '/C/B' : (self.PrimResyncType.Delete, Sdf.Path())})
             self.assertFalse(primB)
             self.assertFalse(stage.GetPrimAtPath("/C/B"))
             
@@ -168,8 +197,9 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                 self.assertTrue(editor.DeletePrimAtPath("/C"))
             else:
                 self.assertTrue(editor.DeletePrim(primC))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = {
+                    '/C' : (self.PrimResyncType.Delete, Sdf.Path())})
             self.assertFalse(primC)
             self.assertFalse(stage.GetPrimAtPath("/C"))
 
@@ -187,8 +217,9 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                 self.assertTrue(editor.DeletePrimAtPath("/C"))
             else:
                 self.assertTrue(editor.DeletePrim(primC))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = {
+                    '/C' : (self.PrimResyncType.Delete, Sdf.Path())})
             self.assertFalse(primC)
             self.assertFalse(primB)
             self.assertFalse(primA)
@@ -227,8 +258,12 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                     editor.MovePrimAtPath("/C/B/A", "/C/B/NewA"))
             else:        
                 self.assertTrue(editor.RenamePrim(primA, "NewA"))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = {
+                    '/C/B/A' : (self.PrimResyncType.RenameSource, 
+                                Sdf.Path('/C/B/NewA')),
+                    '/C/B/NewA' : (self.PrimResyncType.RenameDestination, 
+                                   Sdf.Path('/C/B/A'))})
             self.assertFalse(primA)
             primA = stage.GetPrimAtPath("/C/B/NewA")
             self._VerifyBasicStagePrimAValues(primA)
@@ -244,8 +279,12 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                 self.assertTrue(editor.MovePrimAtPath("/C/B", "/C/NewB"))
             else:        
                 self.assertTrue(editor.RenamePrim(primB, "NewB"))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = {
+                    '/C/B' : (self.PrimResyncType.RenameSource, 
+                              Sdf.Path('/C/NewB')),
+                    '/C/NewB' : (self.PrimResyncType.RenameDestination, 
+                                 Sdf.Path('/C/B'))})
             self.assertFalse(primB)
             primB = stage.GetPrimAtPath("/C/NewB")
             self._VerifyBasicStagePrimBValues(primB)
@@ -270,8 +309,12 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                 self.assertTrue(editor.MovePrimAtPath("/C", "/NewC"))
             else:        
                 self.assertTrue(editor.RenamePrim(primC, "NewC"))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = {
+                    '/C' : (self.PrimResyncType.RenameSource, 
+                            Sdf.Path('/NewC')),
+                    '/NewC' : (self.PrimResyncType.RenameDestination, 
+                               Sdf.Path('/C'))})
             self.assertFalse(primC)
             primC = stage.GetPrimAtPath("/NewC")
             self._VerifyBasicStagePrimCValues(primC)
@@ -332,8 +375,12 @@ class TestUsdNamespaceEditor(unittest.TestCase):
             else:
                 self.assertTrue(
                     editor.ReparentPrim(primA, stage.GetPseudoRoot()))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = {
+                    '/C/B/A' : (self.PrimResyncType.ReparentSource, 
+                                Sdf.Path('/A')),
+                    '/A' : (self.PrimResyncType.ReparentDestination, 
+                            Sdf.Path('/C/B/A'))})
             self.assertFalse(primA)
             primA = stage.GetPrimAtPath("/A")
             self._VerifyBasicStagePrimAValues(primA)
@@ -362,8 +409,12 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                 self.assertTrue(editor.MovePrimAtPath("/C/B", "/A/B"))
             else:
                 self.assertTrue(editor.ReparentPrim(primB, primA))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = {
+                    '/C/B' : (self.PrimResyncType.ReparentSource, 
+                              Sdf.Path('/A/B')),
+                    '/A/B' : (self.PrimResyncType.ReparentDestination, 
+                              Sdf.Path('/C/B'))})
             self.assertFalse(primB)
             primB = stage.GetPrimAtPath("/A/B")
             self._VerifyBasicStagePrimBValues(primB)
@@ -394,8 +445,12 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                 self.assertTrue(editor.MovePrimAtPath("/C", "/A/B/C"))
             else:
                 self.assertTrue(editor.ReparentPrim(primC, primB))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = {
+                    '/C' : (self.PrimResyncType.ReparentSource, 
+                            Sdf.Path('/A/B/C')),
+                    '/A/B/C' : (self.PrimResyncType.ReparentDestination, 
+                                Sdf.Path('/C'))})
             self.assertFalse(primC)
             primC = stage.GetPrimAtPath("/A/B/C")
             self._VerifyBasicStagePrimCValues(primC)
@@ -435,8 +490,12 @@ class TestUsdNamespaceEditor(unittest.TestCase):
             else:
                 self.assertTrue(
                     editor.ReparentPrim(primC, stage.GetPseudoRoot()))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = {
+                    '/A/B/C' : (self.PrimResyncType.ReparentSource, 
+                                Sdf.Path('/C')),
+                    '/C' : (self.PrimResyncType.ReparentDestination, 
+                            Sdf.Path('/A/B/C'))})
             self.assertFalse(primC)
             primC = stage.GetPrimAtPath("/C")
             self._VerifyBasicStagePrimCValues(primC)
@@ -469,8 +528,12 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                 self.assertTrue(editor.MovePrimAtPath("/A/B", "/C/B"))
             else:
                 self.assertTrue(editor.ReparentPrim(primB, primC))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = {
+                    '/A/B' : (self.PrimResyncType.ReparentSource, 
+                              Sdf.Path('/C/B')),
+                    '/C/B' : (self.PrimResyncType.ReparentDestination, 
+                              Sdf.Path('/A/B'))})
             self.assertFalse(primB)
             primB = stage.GetPrimAtPath("/C/B")
             self._VerifyBasicStagePrimBValues(primB)
@@ -500,8 +563,12 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                 self.assertTrue(editor.MovePrimAtPath("/A", "/C/B/A"))
             else:
                 self.assertTrue(editor.ReparentPrim(primA, primB))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = {
+                    '/A' : (self.PrimResyncType.ReparentSource, 
+                            Sdf.Path('/C/B/A')),
+                    '/C/B/A' : (self.PrimResyncType.ReparentDestination, 
+                                Sdf.Path('/A'))})
             self.assertFalse(primA)
             primA = stage.GetPrimAtPath("/C/B/A")
             self._VerifyBasicStagePrimAValues(primA)
@@ -558,8 +625,12 @@ class TestUsdNamespaceEditor(unittest.TestCase):
             else:
                 self.assertTrue(
                     editor.ReparentPrim(primA, stage.GetPseudoRoot(), "NewA"))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = {
+                    '/C/B/A' : (self.PrimResyncType.RenameAndReparentSource, 
+                                Sdf.Path('/NewA')),
+                    '/NewA' : (self.PrimResyncType.RenameAndReparentDestination,
+                               Sdf.Path('/C/B/A'))})
             self.assertFalse(primA)
             primA = stage.GetPrimAtPath("/NewA")
             self._VerifyBasicStagePrimAValues(primA)
@@ -589,8 +660,12 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                     editor.MovePrimAtPath("/C/B", "/NewA/NewB"))
             else:
                 self.assertTrue(editor.ReparentPrim(primB, primA, "NewB"))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = {
+                    '/C/B' : (self.PrimResyncType.RenameAndReparentSource, 
+                              Sdf.Path('/NewA/NewB')),
+                    '/NewA/NewB' : (self.PrimResyncType.RenameAndReparentDestination, 
+                                    Sdf.Path('/C/B'))})
             self.assertFalse(primB)
             primB = stage.GetPrimAtPath("/NewA/NewB")
             self._VerifyBasicStagePrimBValues(primB)
@@ -623,8 +698,12 @@ class TestUsdNamespaceEditor(unittest.TestCase):
                     editor.MovePrimAtPath("/C", "/NewA/NewB/NewC"))
             else:
                 self.assertTrue(editor.ReparentPrim(primC, primB, "NewC"))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = {
+                    '/C' : (self.PrimResyncType.RenameAndReparentSource, 
+                            Sdf.Path('/NewA/NewB/NewC')),
+                    '/NewA/NewB/NewC' : (self.PrimResyncType.RenameAndReparentDestination,
+                                         Sdf.Path('/C'))})
             self.assertFalse(primC)
             primC = stage.GetPrimAtPath("/NewA/NewB/NewC")
             self._VerifyBasicStagePrimCValues(primC)
@@ -917,7 +996,7 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         # identifier regardless of platform
         def getFormattedCwd():
             drive, tail = os.path.splitdrive(os.getcwd())
-            return drive.lower() + tail.replace('\\', '/')
+            return drive + tail.replace('\\', '/')
 
         # Cannot delete or rename /C (there are no valid reparent targets for 
         # /C on this stage currently regardless of layer permission)
@@ -943,9 +1022,10 @@ class TestUsdNamespaceEditor(unittest.TestCase):
 
         # Simple helper for verifying that the edits to primA were performed
         # followed by resetting the stage for the next edit.
-        def _VerifyPrimAWasEditedAndReset(newPathAfterMove = None):
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+        def _VerifyPrimAWasEditedAndReset(newPathAfterMove = None, 
+                                          expectedResyncNotices = None):
+            self._ApplyEditWithVerification(editor, 
+                expectedResyncNotices = expectedResyncNotices)
 
             # The edit will have changed the root layer (where /C/B/A's spec) is
             # defined but will not have touched the sublayers.
@@ -970,30 +1050,57 @@ class TestUsdNamespaceEditor(unittest.TestCase):
 
         # Can delete primA
         self.assertTrue(editor.DeletePrim(primA))
-        _VerifyPrimAWasEditedAndReset()
+        _VerifyPrimAWasEditedAndReset(
+            expectedResyncNotices = {
+                '/C/B/A' : (self.PrimResyncType.Delete, Sdf.Path())})
 
         # Can rename primA
         self.assertTrue(editor.RenamePrim(primA, "NewA"))
-        _VerifyPrimAWasEditedAndReset(newPathAfterMove = "/C/B/NewA")
+        _VerifyPrimAWasEditedAndReset(newPathAfterMove = "/C/B/NewA",
+            expectedResyncNotices = {
+                '/C/B/A' : (self.PrimResyncType.RenameSource, 
+                            Sdf.Path('/C/B/NewA')),
+                '/C/B/NewA' : (self.PrimResyncType.RenameDestination, 
+                               Sdf.Path('/C/B/A'))})
 
         # Can reparent primA to root.
         self.assertTrue(editor.ReparentPrim(primA, stage.GetPseudoRoot()))
-        _VerifyPrimAWasEditedAndReset(newPathAfterMove = "/A")
+        _VerifyPrimAWasEditedAndReset(newPathAfterMove = "/A",
+            expectedResyncNotices = {
+                '/C/B/A' : (self.PrimResyncType.ReparentSource, 
+                            Sdf.Path('/A')),
+                '/A' : (self.PrimResyncType.ReparentDestination, 
+                        Sdf.Path('/C/B/A'))})
 
         # Can reparent primA to root and rename it..
         self.assertTrue(
             editor.ReparentPrim(primA, stage.GetPseudoRoot(), "NewA"))
-        _VerifyPrimAWasEditedAndReset(newPathAfterMove = "/NewA")
+        _VerifyPrimAWasEditedAndReset(newPathAfterMove = "/NewA",
+            expectedResyncNotices = {
+                '/C/B/A' : (self.PrimResyncType.RenameAndReparentSource, 
+                            Sdf.Path('/NewA')),
+                '/NewA' : (self.PrimResyncType.RenameAndReparentDestination, 
+                           Sdf.Path('/C/B/A'))})
 
         # Can reparent primA under primC even though primC cannnot be namespace
         # edited.
         self.assertTrue(editor.ReparentPrim(primA, primC))
-        _VerifyPrimAWasEditedAndReset(newPathAfterMove = "/C/A")
+        _VerifyPrimAWasEditedAndReset(newPathAfterMove = "/C/A",
+            expectedResyncNotices = {
+                '/C/B/A' : (self.PrimResyncType.ReparentSource, 
+                            Sdf.Path('/C/A')),
+                '/C/A' : (self.PrimResyncType.ReparentDestination, 
+                          Sdf.Path('/C/B/A'))})
 
         # Can reparent and rename primA under primC even though primC cannnot be
         # namespace edited.
         self.assertTrue(editor.ReparentPrim(primA, primC, "NewA"))
-        _VerifyPrimAWasEditedAndReset(newPathAfterMove = "/C/NewA")
+        _VerifyPrimAWasEditedAndReset(newPathAfterMove = "/C/NewA",
+            expectedResyncNotices = {
+                '/C/B/A' : (self.PrimResyncType.RenameAndReparentSource, 
+                            Sdf.Path('/C/NewA')),
+                '/C/NewA' : (self.PrimResyncType.RenameAndReparentDestination, 
+                             Sdf.Path('/C/B/A'))})
 
         subLayer1.SetPermissionToEdit(True)
 
@@ -1091,16 +1198,32 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         # Helper to verify that the prim at that path can be successfully
         # deleted. Resets the stage to be unedited afterward and returns
         # the original prim.
-        def _VerifyCanDeletePrimAtPath(primPath):
+        def _VerifyCanDeletePrimAtPath(primPath, expectedResyncNotices = None):
             # Verify the prim actually exists first
             prim = stage.GetPrimAtPath(primPath)
             self.assertTrue(prim)
 
+            # We have to account for this function being called on instance 
+            # prims. If the prim is an instance and its prim index was chosen
+            # to be used for the prototype, then the prototype has to be 
+            # recomposed to use a remaining instance's prim index instead
+            # and we end up with a resync notifications for the prototype path
+            # as well. We account for that here by adding the prototype resync
+            # to the expected resync notices if necessary. Note that which
+            # instance is chosen to represent the prototype is nondeterministic.
+            if expectedResyncNotices is not None and prim.IsInstance():
+                prototypePrim = prim.GetPrototype()
+                # Check if the prototype prim index matches this instance's
+                # prim index; we expect a prototype resync if it does.
+                if prototypePrim._GetSourcePrimIndex().rootNode.path == primPath:
+                    expectedResyncNotices[str(prototypePrim.GetPath())] = \
+                         (self.PrimResyncType.Other, Sdf.Path())
+
             # Verify that we can delete the prim, delete it, and make sure it
             # no longer exists on the stage.
             self.assertTrue(editor.DeletePrim(prim))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor,
+                expectedResyncNotices = expectedResyncNotices)
             self.assertFalse(stage.GetPrimAtPath(primPath))
 
             # Reset the stage for the next case.
@@ -1112,16 +1235,33 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         # Helper to verify that the prim at that path can be successfully moved
         # to a new path. Resets the stage to be unedited afterward and returns
         # the original prim.
-        def _VerifyCanMovePrimAtPath(primPath, newPrimPath):
+        def _VerifyCanMovePrimAtPath(primPath, newPrimPath, 
+                                     expectedResyncNotices = None):
             # Verify the prim actually exists first
             prim = stage.GetPrimAtPath(primPath)
             self.assertTrue(prim)
 
+            # We have to account for this function being called on instance 
+            # prims. If the prim is an instance and its prim index was chosen
+            # to be used for the prototype, then the prototype has to be 
+            # recomposed and we end up with a resync notifications for the 
+            # prototype path as well. We account for that here by adding the
+            # prototype resync to the expected resync notices if necessary. Note
+            # that which instance is chosen to represent the prototype is
+            # nondeterministic.
+            if expectedResyncNotices is not None and prim.IsInstance():
+                prototypePrim = prim.GetPrototype()
+                # Check if the prototype prim index matches this instance's
+                # prim index; we expect a prototype resync if it does.
+                if prototypePrim._GetSourcePrimIndex().rootNode.path == primPath:
+                    expectedResyncNotices[str(prototypePrim.GetPath())] = \
+                         (self.PrimResyncType.Other, Sdf.Path())
+
             # Verify that we can move the prim, move it, and make sure it
             # no longer exists at the old path but does exist at the new path.
             self.assertTrue(editor.MovePrimAtPath(primPath, newPrimPath))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor,
+                expectedResyncNotices = expectedResyncNotices)
             self.assertFalse(stage.GetPrimAtPath(primPath))
             self.assertTrue(stage.GetPrimAtPath(newPrimPath))
 
@@ -1138,64 +1278,126 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         editor = Usd.NamespaceEditor(stage)
         
         # We can delete any of the instance and non-instance prims.
-        instance1 = _VerifyCanDeletePrimAtPath("/Instance1")
-        instance2 = _VerifyCanDeletePrimAtPath("/Instance2")
-        nonInstancePrim = _VerifyCanDeletePrimAtPath("/NonInstancePrim")
+        instance1 = _VerifyCanDeletePrimAtPath("/Instance1",
+            expectedResyncNotices = {
+                '/Instance1' : (self.PrimResyncType.Delete, Sdf.Path())}
+            )
+        instance2 = _VerifyCanDeletePrimAtPath("/Instance2",
+            expectedResyncNotices = {
+                '/Instance2' : (self.PrimResyncType.Delete, Sdf.Path())}
+            )
+        nonInstancePrim = _VerifyCanDeletePrimAtPath("/NonInstancePrim",
+            expectedResyncNotices = {
+                '/NonInstancePrim' : (self.PrimResyncType.Delete, Sdf.Path())})
 
         # But we can't delete any of the children of the instance prims as they
-        # are proxies from the prototype. We also can't delete a child of the 
-        # non-instance prim but for a different reason as it is defined across a
-        # reference and we don't yet support deactivation as delete.
+        # are proxies from the prototype. 
         _VerifyCannotApplyDeletePrim(instance1.GetChild("B"), 
             "The prim to edit is a prototype proxy descendant of an instance "
             "prim")
         _VerifyCannotApplyDeletePrim(instance2.GetChild("B"), 
             "The prim to edit is a prototype proxy descendant of an instance "
             "prim")
-        _VerifyCannotApplyDeletePrim(nonInstancePrim.GetChild("B"), 
-            "The prim to delete must be deactivated rather than deleted since "
-            "it composes opinions introduced by ancestral composition arcs; "
-            "deletion via deactivation is not yet supported")
+        # We can delete a child of the non-instance prim but only if relocates
+        # authoring is allowed as it is defined across a reference.
+        _VerifyCanDeletePrimAtPath("/NonInstancePrim/B",
+            expectedResyncNotices = {
+                # XXX: While it would be expected that the only resync notice
+                # would be a removal of /NonInstancePrim/B, that's not the case
+                # here because the edit adds the first relocates arc to the 
+                # layer stack. When a first relocates is added we resync the
+                # absolute root so that all prim index map functions can be 
+                # rebuilt to account for possible relocates.
+                #
+                # '/NonInstancePrim/B' : (self.PrimResyncType.Delete, 
+                #                         Sdf.Path())
+                '/' : (self.PrimResyncType.Other, Sdf.Path())})
 
         # Like with delete, we can rename any of the instance and non-instance 
         # prims (as long as the new name is valid).
-        instance1 = _VerifyCanMovePrimAtPath("/Instance1", "/NewInstance1")
-        instance2 = _VerifyCanMovePrimAtPath("/Instance2", "/NewInstance2")
+        instance1 = _VerifyCanMovePrimAtPath("/Instance1", "/NewInstance1",
+            expectedResyncNotices = {
+                '/Instance1' : (self.PrimResyncType.RenameSource, 
+                                Sdf.Path('/NewInstance1')),
+                '/NewInstance1' : (self.PrimResyncType.RenameDestination, 
+                                   Sdf.Path('/Instance1'))})
+        instance2 = _VerifyCanMovePrimAtPath("/Instance2", "/NewInstance2",
+            expectedResyncNotices = {
+                '/Instance2' : (self.PrimResyncType.RenameSource, 
+                                Sdf.Path('/NewInstance2')),
+                '/NewInstance2' : (self.PrimResyncType.RenameDestination, 
+                                   Sdf.Path('/Instance2'))})
         nonInstancePrim = _VerifyCanMovePrimAtPath(
-            "/NonInstancePrim", "/NewNonInstancePrim")
+            "/NonInstancePrim", "/NewNonInstancePrim",
+            expectedResyncNotices = {
+                '/NonInstancePrim' : (self.PrimResyncType.RenameSource, 
+                                      Sdf.Path('/NewNonInstancePrim')),
+                '/NewNonInstancePrim' : (self.PrimResyncType.RenameDestination, 
+                                         Sdf.Path('/NonInstancePrim'))})
 
         # And just like with delete, we can't rename any of the children of the 
-        # instance prims because they are proxies into the prototype. The 
-        # non-instanced prim can't be renamed because relocates aren't supported
-        # yet.
+        # instance prims because they are proxies into the prototype.
         _VerifyCannotApplyRenamePrim(instance1.GetChild("B"), "NewB", 
             "The prim to edit is a prototype proxy descendant of an instance "
             "prim")
         _VerifyCannotApplyRenamePrim(instance2.GetChild("B"), "NewB", 
             "The prim to edit is a prototype proxy descendant of an instance "
             "prim")
-        _VerifyCannotApplyRenamePrim(nonInstancePrim.GetChild("B"), "NewB", 
-            "The prim to move requires authoring relocates since it composes "
-            "opinions introduced by ancestral composition arcs; authoring "
-            "relocates is not yet supported")
+        # But we can rename a child of the non-instance prim but only if 
+        # relocates authoring is allowed as it is defined across a reference.
+        _VerifyCanMovePrimAtPath(
+            "/NonInstancePrim/B", "/NonInstancePrim/NewB",
+            expectedResyncNotices = {
+                # XXX: While it would be expected that the only resync notices
+                # would be a rename of /NonInstancePrim/B, that's not the case
+                # here because the edit adds the first relocates arc to the 
+                # layer stack. When a first relocates is added we resync the
+                # absolute root so that all prim index map functions can be 
+                # rebuilt to account for possible relocates.
+                #
+                # '/NonInstancePrim/B' : (self.PrimResyncType.RenameSource, 
+                #                         Sdf.Path('/NonInstancePrim/NewB')),
+                # '/NonInstancePrim/NewB' : (self.PrimResyncType.RenameDestination,
+                #                            Sdf.Path('/NonInstancePrim/B')),
+                '/' : (self.PrimResyncType.Other, Sdf.Path())})
 
         # We can reparent an instance prim under a non-instance prim
         instance1 = _VerifyCanMovePrimAtPath(
-            "/Instance1", "/NonInstancePrim/Instance1")
+            "/Instance1", "/NonInstancePrim/Instance1",
+            expectedResyncNotices = {
+                '/Instance1' : (self.PrimResyncType.ReparentSource, 
+                                Sdf.Path('/NonInstancePrim/Instance1')),
+                '/NonInstancePrim/Instance1' : (self.PrimResyncType.ReparentDestination, 
+                                                Sdf.Path('/Instance1'))})
 
         # We can reparent and rename an instance prim under a non-instance prim
         instance2 = _VerifyCanMovePrimAtPath(
-            "/Instance2", "/NonInstancePrim/NewInstance2")
+            "/Instance2", "/NonInstancePrim/NewInstance2",
+            expectedResyncNotices = {
+                '/Instance2' : (self.PrimResyncType.RenameAndReparentSource,
+                                Sdf.Path('/NonInstancePrim/NewInstance2')),
+                '/NonInstancePrim/NewInstance2' : (self.PrimResyncType.RenameAndReparentDestination, 
+                                                   Sdf.Path('/Instance2'))})
 
         # We can also reparent an instance prim under a child of a non-instance
         # prim
         instance1 = _VerifyCanMovePrimAtPath(
-            "/Instance1", "/NonInstancePrim/B/Instance1")
+            "/Instance1", "/NonInstancePrim/B/Instance1",
+            expectedResyncNotices = {
+                '/Instance1' : (self.PrimResyncType.ReparentSource, 
+                                Sdf.Path('/NonInstancePrim/B/Instance1')),
+                '/NonInstancePrim/B/Instance1' : (self.PrimResyncType.ReparentDestination,
+                                                  Sdf.Path('/Instance1'))})
 
         # As well as reparent and rename an instance prim under a child of a
         # non-instance prim
         instance2 = _VerifyCanMovePrimAtPath(
-            "/Instance2", "/NonInstancePrim/B/NewInstance2")
+            "/Instance2", "/NonInstancePrim/B/NewInstance2",
+            expectedResyncNotices = {
+                '/Instance2' : (self.PrimResyncType.RenameAndReparentSource,
+                                Sdf.Path('/NonInstancePrim/B/NewInstance2')),
+                '/NonInstancePrim/B/NewInstance2' : (self.PrimResyncType.RenameAndReparentDestination,
+                                                     Sdf.Path('/Instance2'))})
 
         # But we cannot reparent any prims under an another instance prim 
         # regardless of whether they're instanced on non-instanced
@@ -1225,32 +1427,61 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         _VerifyCannotApplyReparentPrim(nonInstancePrim, prototypePrim.GetChild("B"), 
             "The new parent prim belongs to a prototype prim")
 
-    def test_EditPrimsWithCompositionArcs(self):
-        """Tests namespace edit operations on prims with specs that contribute
-        opinions across composition arcs.
-        """
+    def _RunEditPrimsWithCompositionArcs(self, allowRelocatesAuthoring, 
+                                         forceInitialRelocates=True):
+
+        # Work around so that we can test both the behavior of making an edit
+        # that requires relocates in both the case where are no relocates to
+        # begin with and when the layer stack already has at least one relocate.
+        # We use a session layer with a bogus relocate to force the "already has
+        # relocates case".
+        sessionLayer = None
+        if forceInitialRelocates:
+            # We write the session layer as a real layer on disk so that we 
+            # can reload the stage without wiping its contents.
+            sessionLayer = Sdf.Layer.FindOrOpen("runtime-session-layer.usda")
+            if not sessionLayer:
+                sessionLayer = Sdf.Layer.CreateNew("runtime-session-layer.usda")
+                sessionLayer.ImportFromString('''#usda 1.0
+                    (
+                        relocates = {
+                            </bogus/nonexistant/path> : <>
+                        }
+                    )
+                ''')
+                sessionLayer.Save()
 
         # This stage has few variety of composition arcs on the root prims.
-        stage = Usd.Stage.Open("composition_arcs/root.usda")
+        rootLayer = Sdf.Layer.FindOrOpen("composition_arcs/root.usda")
+        stage = Usd.Stage.Open(rootLayer, sessionLayer)
         self.assertTrue(stage)
 
-        editor = Usd.NamespaceEditor(stage)
+        editOptions = Usd.NamespaceEditor.EditOptions()
+        editOptions.allowRelocatesAuthoring = allowRelocatesAuthoring
+        editor = Usd.NamespaceEditor(stage, editOptions)
 
         # Helper functions for testing prims that we expect to be able to 
         # successfully edit.
 
         # Helper to verify that the prim at that path can be successfully
         # deleted.
-        def _VerifyCanDeletePrimAtPath(primPath):
+        def _VerifyCanDeletePrimAtPath(primPath, expectNewRelocates):
             # Verify the prim actually exists first
             prim = stage.GetPrimAtPath(primPath)
             self.assertTrue(prim)
 
+            if expectNewRelocates:
+                expectedResyncNotices = {
+                    '/' : (self.PrimResyncType.Other, Sdf.Path())}
+            else:
+                expectedResyncNotices = {
+                    str(primPath) : (self.PrimResyncType.Delete, Sdf.Path())}
+
             # Verify that we can delete the prim, delete it, and make sure it
             # no longer exists on the stage.
             self.assertTrue(editor.DeletePrim(prim))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor,
+                expectedResyncNotices = expectedResyncNotices)
             self.assertFalse(stage.GetPrimAtPath(primPath))
 
             # Reset the stage for the next case.
@@ -1258,16 +1489,41 @@ class TestUsdNamespaceEditor(unittest.TestCase):
 
         # Helper to verify that the prim at that path can be successfully moved
         # to a new path.
-        def _VerifyCanMovePrimAtPath(primPath, newPrimPath):
+        def _VerifyCanMovePrimAtPath(primPath, newPrimPath, expectNewRelocates):
             # Verify the prim actually exists first
             prim = stage.GetPrimAtPath(primPath)
             self.assertTrue(prim)
 
+            if expectNewRelocates:
+                # XXX: This is a workaround for an unfortunate side effect of
+                # adding a relocates to a PcpCache that did not have them
+                # to start with. Due to a memory optimization related to Pcp map 
+                # functions in caches without relocates, adding a relocates for
+                # the first time will always trigger a full resync of the 
+                # PcpCache from the root. This full resync does not occur if the
+                # cache already had relocates.
+                expectedResyncNotices = {
+                    '/' : (self.PrimResyncType.Other, Sdf.Path())}
+            else:
+                if (Sdf.Path(newPrimPath).GetParentPath() == \
+                        Sdf.Path(primPath).GetParentPath()):
+                    expectedResyncNotices = {
+                        str(primPath) : (self.PrimResyncType.RenameSource, 
+                                         Sdf.Path(newPrimPath)),
+                        str(newPrimPath) : (self.PrimResyncType.RenameDestination,
+                                            Sdf.Path(primPath))}
+                else:
+                    expectedResyncNotices = {
+                        str(primPath) : (self.PrimResyncType.RenameAndReparentSource,
+                                         Sdf.Path(newPrimPath)),
+                        str(newPrimPath) : (self.PrimResyncType.RenameAndReparentDestination,
+                                            Sdf.Path(primPath))}
+
             # Verify that we can move the prim, move it, and make sure it
             # no longer exists at the old path but does exist at the new path.
             self.assertTrue(editor.MovePrimAtPath(primPath, newPrimPath))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor,
+                expectedResyncNotices = expectedResyncNotices)
             self.assertFalse(stage.GetPrimAtPath(primPath))
             self.assertTrue(stage.GetPrimAtPath(newPrimPath))
 
@@ -1275,9 +1531,11 @@ class TestUsdNamespaceEditor(unittest.TestCase):
             stage.Reload()
 
         # Helper to verify that the prim can be both deleted and moved.
-        def _VerifyCanEditPrimAtPath(primPath):
-            _VerifyCanDeletePrimAtPath(primPath)
-            _VerifyCanMovePrimAtPath(primPath, "/Foo")
+        def _VerifyCanEditPrimAtPath(primPath, expectNewRelocates = False):
+            _VerifyCanDeletePrimAtPath(primPath, 
+                                       expectNewRelocates = expectNewRelocates)
+            _VerifyCanMovePrimAtPath(primPath, "/Foo", 
+                                     expectNewRelocates = expectNewRelocates)
 
         # Helper functions for testing prims that we expect to NOT be able to 
         # successfully edit.
@@ -1342,15 +1600,12 @@ class TestUsdNamespaceEditor(unittest.TestCase):
 
         # Helper to verify that the prim cannot be deleted nor moved.
         def _VerifyCannotEditPrimAtPath(primPath):
-            _VerifyCannotApplyDeletePrimAtPath(primPath,
-                "The prim to delete must be deactivated rather than deleted "
-                "since it composes opinions introduced by ancestral "
-                "composition arcs; deletion via deactivation is not yet "
-                "supported")
-            _VerifyCannotApplyMovePrimAtPath(primPath, "/Foo",
-                "The prim to move requires authoring relocates since it "
-                "composes opinions introduced by ancestral composition arcs; "
-                "authoring relocates is not yet supported")
+            expectedMessage = "The prim to edit requires authoring relocates " \
+                "since it composes opinions introduced by ancestral " \
+                "composition arcs; relocates authoring must be enabled to " \
+                "perform this edit"
+            _VerifyCannotApplyDeletePrimAtPath(primPath, expectedMessage)
+            _VerifyCannotApplyMovePrimAtPath(primPath, "/Foo", expectedMessage)
 
         # A prim with a direct reference to another prim can be edited.
         _VerifyCanEditPrimAtPath("/PrimWithReference")
@@ -1358,9 +1613,17 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         # But children of the prim which were defined across the reference 
         # (i.e. brought in by an ancestral reference) cannot be edited without
         # relocates.
-        _VerifyCannotEditPrimAtPath("/PrimWithReference/ClassChild")
-        _VerifyCannotEditPrimAtPath("/PrimWithReference/B")
-        _VerifyCannotEditPrimAtPath("/PrimWithReference/B/A")
+        if allowRelocatesAuthoring:
+            _VerifyCanEditPrimAtPath("/PrimWithReference/ClassChild",
+                                     expectNewRelocates = not forceInitialRelocates)
+            _VerifyCanEditPrimAtPath("/PrimWithReference/B",
+                                     expectNewRelocates = not forceInitialRelocates)
+            _VerifyCanEditPrimAtPath("/PrimWithReference/B/A",
+                                     expectNewRelocates = not forceInitialRelocates)
+        else:
+            _VerifyCannotEditPrimAtPath("/PrimWithReference/ClassChild")
+            _VerifyCannotEditPrimAtPath("/PrimWithReference/B")
+            _VerifyCannotEditPrimAtPath("/PrimWithReference/B/A")
 
         # But a child prim that was added entirely in the root layer stack, even
         # though its parent is defined across the reference, can still be edited
@@ -1370,7 +1633,11 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         # A prim with a subroot prim reference behaves the same way as a prim
         # with a root prim reference.
         _VerifyCanEditPrimAtPath("/PrimWithSubrootReference")
-        _VerifyCannotEditPrimAtPath("/PrimWithSubrootReference/A")
+        if allowRelocatesAuthoring:
+            _VerifyCanEditPrimAtPath("/PrimWithSubrootReference/A",
+                                     expectNewRelocates = not forceInitialRelocates)
+        else:
+            _VerifyCannotEditPrimAtPath("/PrimWithSubrootReference/A")
         _VerifyCanEditPrimAtPath("/PrimWithSubrootReference/A/A_Root_Child")
 
         # A prim with a variant selection can be edited given the variant is 
@@ -1379,14 +1646,234 @@ class TestUsdNamespaceEditor(unittest.TestCase):
 
         # But children of the prim which were defined across the reference 
         # within the selected variant cannot be edited without relocates.
-        _VerifyCannotEditPrimAtPath("/PrimWithVariant/ClassChild")
-        _VerifyCannotEditPrimAtPath("/PrimWithVariant/B")
-        _VerifyCannotEditPrimAtPath("/PrimWithVariant/B/A")
+        if allowRelocatesAuthoring:
+            _VerifyCanEditPrimAtPath("/PrimWithVariant/ClassChild",
+                                     expectNewRelocates = not forceInitialRelocates)
+            _VerifyCanEditPrimAtPath("/PrimWithVariant/B",
+                                     expectNewRelocates = not forceInitialRelocates)
+            _VerifyCanEditPrimAtPath("/PrimWithVariant/B/A",
+                                     expectNewRelocates = not forceInitialRelocates)
+        else:
+            _VerifyCannotEditPrimAtPath("/PrimWithVariant/ClassChild")
+            _VerifyCannotEditPrimAtPath("/PrimWithVariant/B")
+            _VerifyCannotEditPrimAtPath("/PrimWithVariant/B/A")
 
         # But also a child defined fully in the root layer stack but inside
         # the variant self still cannot be edited without relocates or edit 
         # target support as it has specs across an ancestral variant arc.
-        _VerifyCannotEditPrimAtPath("/PrimWithVariant/V1_Root_Child")
+        if allowRelocatesAuthoring:
+            _VerifyCanEditPrimAtPath("/PrimWithVariant/V1_Root_Child",
+                                     expectNewRelocates = not forceInitialRelocates)
+        else:
+            _VerifyCannotEditPrimAtPath("/PrimWithVariant/V1_Root_Child")
+
+    def test_EditPrimsWithCompositionArcs(self):
+        """Tests namespace edit operations on prims with specs that contribute
+        opinions across composition arcs.
+        """
+        
+        # Run with allowing relocates twice, once with initial relocates on the
+        # stage and once without. The behavior is the same in both case with
+        # the exception that prim resyncs that result from the edits (as 
+        # reported by ObjectsChanged) will be different.
+        self._RunEditPrimsWithCompositionArcs(allowRelocatesAuthoring=True,
+                                              forceInitialRelocates=False)
+        self._RunEditPrimsWithCompositionArcs(allowRelocatesAuthoring=True, 
+                                              forceInitialRelocates=True)
+        # Run without allowing relocates.
+        self._RunEditPrimsWithCompositionArcs(allowRelocatesAuthoring=False)
+
+    def test_RelocatesAndProhibitedChildren(self):
+        """Tests how relocates and prohibited children affect allowed namespace
+        edits."""
+        
+        # Layer with a prim with two children
+        ref2Layer = Sdf.Layer.CreateAnonymous("ref2.usda")
+        ref2Layer.ImportFromString('''#usda 1.0
+                                   
+            def "Ref2Prim" 
+            {
+                def MadeUpTypeName_2 "ChildInRef2"
+                {
+                    float a = 2.5
+                }
+                
+                def MadeUpTypeName_1 "Child" {
+                    int foo = 3
+                }
+            }
+            ''')
+
+        # Layer with a prim that references the above layer and relocates
+        # one the prim's children (with over opinions.)
+        ref1Layer = Sdf.Layer.CreateAnonymous("ref1.usda")
+        ref1Layer.ImportFromString('''#usda 1.0
+            (
+                relocates = {
+                    </Ref1Prim/ChildInRef2> : </Ref1Prim/RelocatedFromRef2>
+                }
+            )
+
+            def "Ref1Prim" (
+                references = @''' + ref2Layer.identifier + '''@</Ref2Prim>
+            ) {
+                over "RelocatedFromRef2" {
+                    string b = "hello"
+                }
+            }
+            ''')
+
+        # Root layer with a prim that references the above layer
+        rootLayer = Sdf.Layer.CreateAnonymous("root.usda")
+        rootLayer .ImportFromString('''#usda 1.0
+
+            def "PrimWithReference" (
+                references = @''' + ref1Layer.identifier + '''@</Ref1Prim>
+            ) {
+                over "Child" {
+                    int bar = 5
+                }
+                
+                def "RootChild" {
+                }
+            }
+            ''')
+
+        # Create our test stage and namespace editor which allows relocates (by
+        # default).
+        stage = Usd.Stage.Open(rootLayer)
+        editor = Usd.NamespaceEditor(stage)
+
+        # Helper for verifying the contents on the composed 
+        # /PrimWithReference/Child as we move it around. Tested on the initial
+        # prim
+        def _VerifyChildContents(prim):
+            self.assertEqual(prim.GetTypeName(), "MadeUpTypeName_1")
+            self.assertEqual(prim.GetPropertyNames(),
+                ["bar", "foo"])
+            self.assertEqual(prim.GetAttribute("foo").Get(), 3)
+            self.assertEqual(prim.GetAttribute("bar").Get(), 5)
+        _VerifyChildContents(stage.GetPrimAtPath('/PrimWithReference/Child'))
+
+        # Helper for verifying the contents on the composed 
+        # /PrimWithReference/RelocatedFromRef2 as we move it around. Tested on
+        # the initial prim
+        def _VerifyRelocatedFromRef2Contents(prim):
+            self.assertEqual(prim.GetTypeName(), "MadeUpTypeName_2")
+            self.assertEqual(prim.GetPropertyNames(),
+                ["a", "b"])
+            self.assertEqual(prim.GetAttribute("a").Get(), 2.5)
+            self.assertEqual(prim.GetAttribute("b").Get(), "hello")
+        _VerifyRelocatedFromRef2Contents(
+            stage.GetPrimAtPath('/PrimWithReference/RelocatedFromRef2'))
+
+        # Performs and verifies the move of the prim at primPath to newPrimPath.
+        # Runs to the given verifyContentsFunc to confirm the composed prim was
+        # indeed moved in its entirety
+        def _VerifyCanMovePrimAtPath(primPath, newPrimPath, verifyContentsFunc):
+            # Verify the initial prim exists has the expected contents.
+            prim = stage.GetPrimAtPath(primPath)
+            self.assertTrue(prim)
+            verifyContentsFunc(prim)
+
+            # Verify the new path does not exist.
+            self.assertFalse(stage.GetPrimAtPath(newPrimPath))
+
+            # Apply the move edit.
+            self.assertTrue(editor.MovePrimAtPath(primPath, newPrimPath))
+            self._ApplyEditWithVerification(editor)
+
+            # Verify that no prim exists at the original path.
+            self.assertFalse(stage.GetPrimAtPath(primPath))
+
+            # Verify the prim does exist at the new path and has the expected
+            # contents
+            newPrim = stage.GetPrimAtPath(newPrimPath)
+            self.assertTrue(newPrim)
+            verifyContentsFunc(newPrim)
+
+        # Verifies that the prim at primPath cannot be moved to newPrimPath
+        # because the new path is a prohibited child of its parent
+        def _VerifyCannotApplyMovePrimAtPath(primPath, newPrimPath):
+            # Verify the prim actually exists first
+            prim = stage.GetPrimAtPath(primPath)
+            self.assertTrue(prim)
+
+            # Verify that we cannot move the prim for the expected reason
+            self.assertTrue(editor.MovePrimAtPath(primPath, newPrimPath))
+            self._VerifyFalseResult(editor.CanApplyEdits(), 
+                'The new path is a prohibited child of its parent path because '
+                'of existing relocates.')
+            with self.assertRaises(Tf.ErrorException):
+                editor.ApplyEdits()
+   
+        # We can move a child prim from across a reference with local relocates.
+        self.assertEqual(rootLayer.relocates, [])
+        _VerifyCanMovePrimAtPath(
+            '/PrimWithReference/Child', '/MovedChild', _VerifyChildContents)
+        self.assertEqual(rootLayer.relocates, [
+            (Sdf.Path('/PrimWithReference/Child'), Sdf.Path('/MovedChild'))
+            ])
+
+        # We cannot move a different prim to the now empty pre-relocation path
+        # even though there is no prim there. This is because relocation
+        # tombstones do not allow a prim to exist at this path.
+        _VerifyCannotApplyMovePrimAtPath(
+            '/PrimWithReference/RootChild', '/PrimWithReference/Child')
+
+        # We can move the moved prim again to another loacation. This updates 
+        # the relocation.
+        _VerifyCanMovePrimAtPath(
+            '/MovedChild', '/RenamedMovedChild', _VerifyChildContents)
+        self.assertEqual(rootLayer.relocates, [
+            (Sdf.Path('/PrimWithReference/Child'), Sdf.Path('/RenamedMovedChild'))
+            ])
+
+        # And we can move the locally relocated prim back to its original path.
+        # This is the only prim that be moved to this tombstone location and is
+        # accomplished by removing the local relocate.
+        _VerifyCanMovePrimAtPath(
+            '/RenamedMovedChild', '/PrimWithReference/Child',
+            _VerifyChildContents)
+        self.assertEqual(rootLayer.relocates, [])
+
+        # Now try a prim that has been relocated within the reference itself. 
+        # This prim can still be moved in the local layer stack using local
+        # relocates.
+        _VerifyCanMovePrimAtPath(
+            '/PrimWithReference/RelocatedFromRef2', '/MovedRelocatedFromRef2',
+             _VerifyRelocatedFromRef2Contents)
+        self.assertEqual(rootLayer.relocates, [
+            (Sdf.Path('/PrimWithReference/RelocatedFromRef2'), 
+                Sdf.Path('/MovedRelocatedFromRef2'))
+            ])
+
+        # We cannnot move a different prim to the now empty pre-relocation path.
+        _VerifyCannotApplyMovePrimAtPath(
+            '/PrimWithReference/RootChild', 
+            '/PrimWithReference/RelocatedFromRef2')
+
+        # We also cannot move a prim into a location that would be the path of
+        # RelocatedFromRef2 if it were not relocated in the reference layer
+        # itself (namely ChildInRef2). This is because pre-relocation 
+        # tombstones are propagated through composition arcs.    
+        _VerifyCannotApplyMovePrimAtPath(
+            '/PrimWithReference/RootChild', '/PrimWithReference/ChildInRef2')
+
+        # We can move the locally relocated prim back to its original 
+        # path within the local layer stack, RelocatedFromRef2, because we
+        # can undo that relocation locally.
+        _VerifyCanMovePrimAtPath(
+            '/MovedRelocatedFromRef2', '/PrimWithReference/RelocatedFromRef2',
+            _VerifyRelocatedFromRef2Contents)
+        self.assertEqual(rootLayer.relocates, [])
+
+        # But we cannot move this prim back to it's pre-relocation path from 
+        # within the reference as we can't undo the reference's relocates in the
+        # local layer stack.
+        _VerifyCannotApplyMovePrimAtPath(
+            '/PrimWithReference/RelocatedFromRef2', 
+            '/PrimWithReference/ChildInRef2')
 
 if __name__ == '__main__':
     unittest.main()

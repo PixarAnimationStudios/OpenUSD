@@ -8,12 +8,7 @@ pxr_library(plug
         js
         trace
         work
-        ${Boost_PYTHON_LIBRARY}
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
-        ${TBB_INCLUDE_DIRS}
+        TBB::tbb
 
     PUBLIC_CLASSES
         interfaceFactory
@@ -33,9 +28,6 @@ pxr_library(plug
 
     CPPFILES
         initConfig.cpp
-
-    PYTHON_CPPFILES
-        moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp

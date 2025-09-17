@@ -1,0 +1,26 @@
+digraph network {
+	rankdir=TB;
+	page="8.5, 11";
+
+	node [shape=plaintext];
+		"VdfTestUtils::DependencyCallbackNode tn2" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD PORT="axis" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#9999cc">axis</FONT></TD><TD PORT="moves" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#99cc99">moves</FONT></TD></TR>
+			<TR><TD COLSPAN="2"> VdfTestUtils::DependencyCallbackNode tn2 </TD></TR>
+		</TABLE>>];
+	node [shape=plaintext];
+		"VdfTestUtils::DependencyCallbackNode mon" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD PORT="axis" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#9999cc">axis</FONT></TD><TD PORT="moves" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#9999cc">moves</FONT></TD></TR>
+			<TR><TD COLSPAN="2"> VdfTestUtils::DependencyCallbackNode mon </TD></TR>
+			<TR><TD PORT="out1" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#cc9999">out1</FONT></TD><TD PORT="out2" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#cc9999">out2</FONT></TD></TR>
+		</TABLE>>];
+	node [shape=plaintext];
+		"VdfTestUtils::DependencyCallbackNode gn2" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD COLSPAN="1"> VdfTestUtils::DependencyCallbackNode gn2 </TD></TR>
+		</TABLE>>];
+		"VdfTestUtils::DependencyCallbackNode mon":"out2" -> "VdfTestUtils::DependencyCallbackNode tn2":"axis":n[  label = "01"];
+		"VdfTestUtils::DependencyCallbackNode gn2" -> "VdfTestUtils::DependencyCallbackNode tn2":"moves":n[  label = "1x100"];
+		"VdfTestUtils::DependencyCallbackNode gn2" -> "VdfTestUtils::DependencyCallbackNode mon":"moves":n[  label = "1x100"];
+}

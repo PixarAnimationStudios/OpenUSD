@@ -7,7 +7,6 @@ pxr_library(pxOsd
         gf
         vt
         ${OPENSUBDIV_OSDCPU_LIBRARY}
-        ${Boost_PYTHON_LIBRARY}
 
     INCLUDE_DIRS
         ${OPENSUBDIV_INCLUDE_DIR}
@@ -21,9 +20,6 @@ pxr_library(pxOsd
         refinerFactory
         subdivTags
         tokens
-
-    PYTHON_CPPFILES
-        moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp

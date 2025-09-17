@@ -1,0 +1,6 @@
+#usda 1.0
+
+def DifferentPrimType "C" 
+{
+    custom double C_attr
+}

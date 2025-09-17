@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_PLUGIN_HD_EMBREE_MESH_H
 #define PXR_IMAGING_PLUGIN_HD_EMBREE_MESH_H
@@ -32,13 +15,13 @@
 
 #include "pxr/imaging/plugin/hdEmbree/meshSamplers.h"
 
-#include <embree3/rtcore.h>
-#include <embree3/rtcore_ray.h>
+#include <embree4/rtcore.h>
+#include <embree4/rtcore_ray.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdEmbreePrototypeContext;
-class HdEmbreeInstanceContext;
+struct HdEmbreePrototypeContext;
+struct HdEmbreeInstanceContext;
 
 /// \class HdEmbreeMesh
 ///
@@ -116,6 +99,11 @@ public:
     ///                      embree state.
     virtual void Finalize(HdRenderParam *renderParam) override;
 
+    bool EmbreeMeshIsDoubleSided() const
+    {
+        return _doubleSided;
+    }
+
 protected:
     // Initialize the given representation of this Rprim.
     // This is called prior to syncing the prim, the first time the repr
@@ -188,7 +176,7 @@ private:
 
 private:
     // Every HdEmbreeMesh is treated as instanced; if there's no instancer,
-    // the prototype has a single identity istance. The prototype is stored
+    // the prototype has a single identity instance. The prototype is stored
     // as _rtcMeshId, in _rtcMeshScene.
     unsigned _rtcMeshId;
     RTCScene _rtcMeshScene;

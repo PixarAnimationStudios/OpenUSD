@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -178,7 +161,7 @@ PlugPluginPtr
 PlugRegistry::GetPluginForType(TfType t) const
 {
     if (t.IsUnknown()) {
-        TF_CODING_ERROR("Unknown base type");
+        TF_CODING_ERROR("Unknown type");
         return TfNullPtr;
     }
     return PlugPlugin::_GetPluginForType(t);
@@ -277,6 +260,51 @@ Plug_SetPaths(const std::vector<std::string>& paths,
     pathsInfo.debugMessages = debugMessages;
     pathsInfo.pathsAreOrdered = pathsAreOrdered;
 }
+
+
+PlugPluginPtr
+PlugRegistry::DemandPluginForType(TfType t) const
+{
+    auto issueError = [&]() {
+        std::string msg;
+        PathsInfo &info = Plug_GetPathsInfo();
+        msg += TfStringPrintf(
+            "Failed to find the plugInfo.json file that declares the "
+            "plugin for %s.\n",
+            t.IsUnknown() ? "unknown type" : t.GetTypeName().c_str());
+        msg += "Check the plugin search path configuration and run with "
+            "TF_DEBUG=PLUG_INFO_SEARCH to debug.\n";
+        if (info.paths.empty()) {
+            msg += "No plugin search paths.\n";
+        }
+        else {
+            msg += "Plugin search paths:\n";
+            for (std::string const &dirName: info.paths) {
+                msg += TfStringPrintf("    %s\n", dirName.c_str());
+            }
+        }
+        if (!info.debugMessages.empty()) {
+            msg += "Plugin debug info:\n";
+            for (std::string const &debugMsg: info.debugMessages) {
+                // These already have newlines appended, oddly.
+                msg += TfStringPrintf("    %s", debugMsg.c_str());
+            }
+        }
+        TF_FATAL_ERROR("%s", msg.c_str());
+    };
+    
+    if (t.IsUnknown()) {
+        issueError();
+    }
+    else if (PlugPluginPtr plugin = PlugPlugin::_GetPluginForType(t)) {
+        return plugin;
+    }
+    else {
+        issueError();
+    }
+    return TfNullPtr;
+}
+
 
 // This is here so plugin.cpp doesn't have to include info.h or registry.h.
 void

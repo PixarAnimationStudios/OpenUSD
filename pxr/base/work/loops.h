@@ -1,38 +1,20 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_WORK_LOOPS_H
 #define PXR_BASE_WORK_LOOPS_H
 
 /// \file work/loops.h
 #include "pxr/pxr.h"
-#include "pxr/base/work/threadLimits.h"
 #include "pxr/base/work/api.h"
+#include "pxr/base/work/dispatcher.h"
+#include "pxr/base/work/impl.h"
+#include "pxr/base/work/threadLimits.h"
 
-#include <tbb/blocked_range.h>
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_for_each.h>
-#include <tbb/task_group.h>
+#include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -79,37 +61,11 @@ WorkParallelForN(size_t n, Fn &&callback, size_t grainSize)
 
     // Don't bother with parallel_for, if concurrency is limited to 1.
     if (WorkHasConcurrency()) {
-
-        class Work_ParallelForN_TBB 
-        {
-        public:
-            Work_ParallelForN_TBB(Fn &fn) : _fn(fn) { }
-
-            void operator()(const tbb::blocked_range<size_t> &r) const {
-                // Note that we std::forward _fn using Fn in order get the
-                // right operator().
-                // We maintain the right type in this way:
-                //  If Fn is T&, then reference collapsing gives us T& for _fn 
-                //  If Fn is T, then std::forward correctly gives us T&& for _fn
-                std::forward<Fn>(_fn)(r.begin(), r.end());
-            }
-
-        private:
-            Fn &_fn;
-        };
-
-        // In most cases we do not want to inherit cancellation state from the
-        // parent context, so we create an isolated task group context.
-        tbb::task_group_context ctx(tbb::task_group_context::isolated);
-        tbb::parallel_for(tbb::blocked_range<size_t>(0,n,grainSize),
-            Work_ParallelForN_TBB(callback),
-            ctx);
-
+        PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
+        WorkImpl_ParallelForN(n, std::forward<Fn>(callback), grainSize);
     } else {
-
         // If concurrency is limited to 1, execute serially.
         WorkSerialForN(n, std::forward<Fn>(callback));
-
     }
 }
 
@@ -133,6 +89,79 @@ WorkParallelForN(size_t n, Fn &&callback)
 
 ///////////////////////////////////////////////////////////////////////////////
 ///
+/// WorkParallelForTBBRange(const RangeType &r, Fn &&callback)
+///
+/// Runs \p callback in parallel over a RangeType that adheres to TBB's
+/// splittable range requirements: 
+/// https://oneapi-spec.uxlfoundation.org/specifications/oneapi/latest/elements/onetbb/source/named_requirements/algorithms/range
+///
+/// Callback must be of the form:
+///
+///     void LoopCallback(RangeType range);
+///
+///
+template <typename RangeType, typename Fn>
+void
+WorkParallelForTBBRange(const RangeType &range, Fn &&callback)
+{
+    // Don't bother with parallel_for, if concurrency is limited to 1.
+    if (WorkHasConcurrency()) {
+        PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
+        // Use the work backend's ParallelForTBBRange if one exists
+        // otherwise use the default implementation below that builds off of the 
+        // dispatcher.
+#if defined WORK_IMPL_HAS_PARALLEL_FOR_TBB_RANGE
+        WorkImpl_ParallelForTBBRange(range, std::forward<Fn>(callback));
+#else
+        // The parallel task responsible for recursively sub-dividing the range
+        // and invoking the callback on the sub-ranges.
+        class _RangeTask
+        {
+        public:
+            _RangeTask(
+                WorkDispatcher &dispatcher,
+                RangeType &&range,
+                const Fn &callback)
+            : _dispatcher(dispatcher)
+            , _range(std::move(range))
+            , _callback(callback) {}
+
+            void operator()() const {
+                // Subdivide the given range until it is no longer divisible, and
+                // recursively spawn _RangeTasks for the right side of the split.
+                RangeType &leftRange = _range;
+                while (leftRange.is_divisible()) {
+                    RangeType rightRange(leftRange, tbb::split());
+                    _dispatcher.Run(_RangeTask(
+                        _dispatcher, std::move(rightRange), _callback));
+                }
+
+                // If there are any more entries remaining in the left-most side
+                // of the given range, invoke the callback on the left-most range.
+                if (!leftRange.empty()) {
+                    std::invoke(_callback, leftRange);
+                }
+            }
+
+        private:
+            WorkDispatcher &_dispatcher;
+            mutable RangeType _range;
+            const Fn &_callback;
+        };
+
+        WorkDispatcher dispatcher;
+        RangeType range = range;
+        dispatcher.Run(_RangeTask(
+            dispatcher, range, std::forward<Fn>(callback)));
+#endif
+    } else {
+        // If concurrency is limited to 1, execute serially.
+        std::forward<Fn>(callback)(range);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///
 /// WorkParallelForEach(Iterator first, Iterator last, CallbackType callback)
 ///
 /// Callback must be of the form:
@@ -143,14 +172,17 @@ WorkParallelForN(size_t n, Fn &&callback)
 /// argument.
 ///
 /// 
-///
 template <typename InputIterator, typename Fn>
 inline void
 WorkParallelForEach(
     InputIterator first, InputIterator last, Fn &&fn)
 {
-    tbb::task_group_context ctx(tbb::task_group_context::isolated);
-    tbb::parallel_for_each(first, last, std::forward<Fn>(fn), ctx);
+    if (WorkHasConcurrency()) {
+        PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
+        WorkImpl_ParallelForEach(first, last, std::forward<Fn>(fn));
+    } else {
+        std::for_each(first, last, std::forward<Fn>(fn));
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

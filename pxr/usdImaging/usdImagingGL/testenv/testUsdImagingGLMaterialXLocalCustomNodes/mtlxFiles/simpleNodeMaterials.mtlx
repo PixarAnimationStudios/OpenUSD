@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<materialx version="1.39">
+
+    <!-- TestMaterial uses the colorMix custom node defined in the included 
+    colorMixNode.mtlx file -->
+    <xi:include href="colorMixNode.mtlx" />
+
+    <nodegraph name="TestNodegraph">
+        <colorMix name="myColor" type="color3" >
+            <input name="color1" type="color3" value="1,0,0" />
+            <input name="color2" type="color3" value="0,0,1" />
+            <input name="color1_amt" type="float" value="0.5" />
+        </colorMix>
+        <constant name="green" type="color3">
+            <input name="value" type="color3" value="0,1,0" />
+        </constant>
+        <output name="diffuse_output" type="color3" nodename="myColor" />
+        <output name="specular_output" type="color3" nodename="green" />
+    </nodegraph>
+    <UsdPreviewSurface name="TestSurface" type="surfaceshader">
+        <input name="diffuseColor" type="color3" output="diffuse_output" nodegraph="TestNodegraph" />
+        <input name="useSpecularWorkflow" type="integer" value="1" />
+        <input name="specularColor" type="color3" output="specular_output" nodegraph="TestNodegraph" />
+        <input name="roughness" type="float" value="0.15" />
+        <input name="ior" type="float" value=".9" />
+    </UsdPreviewSurface>
+    <surfacematerial name="TestMaterial" type="material">
+        <input name="surfaceshader" type="surfaceshader" nodename="TestSurface" />
+    </surfacematerial>
+
+
+    <!-- TexturedMaterial uses the wrapImage custom node that is a wrapping a 
+    stdlib texture node and is defined in the included wrapImageNode.mtlx file-->
+    <xi:include href="wrapImageNode.mtlx" />
+
+    <nodegraph name="NG_ImageNode" >
+        <wrapImage name="diffColor" type="color3">
+            <input name="file_input" type="filename" value="images/grid.png" />
+            <input name="tint" type="color3" value="0,1,0" />
+        </wrapImage>
+        <output name="diffuse_output" type="color3" nodename="diffColor" />
+    </nodegraph>
+    <UsdPreviewSurface name="TexturedSurface" type="surfaceshader">
+        <input name="diffuseColor" type="color3" output="diffuse_output" nodegraph="NG_ImageNode" />
+        <input name="useSpecularWorkflow" type="integer" value="0" />
+        <input name="specularColor" type="color3" value=".9, .9, .9" />
+        <input name="roughness" type="float" value="0.25" />
+        <input name="ior" type="float" value=".9" />
+    </UsdPreviewSurface>
+    <surfacematerial name="TexturedMaterial" type="material">
+        <input name="surfaceshader" type="surfaceshader" nodename="TexturedSurface" />
+    </surfacematerial>
+</materialx>

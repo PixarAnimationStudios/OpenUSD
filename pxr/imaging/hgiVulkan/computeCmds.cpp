@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hgiVulkan/computeCmds.h"
 #include "pxr/imaging/hgiVulkan/commandBuffer.h"
@@ -130,17 +113,15 @@ HgiVulkanComputeCmds::Dispatch(int dimX, int dimY)
 
     const int threadsPerGroupX = _localWorkGroupSize[0];
     const int threadsPerGroupY = _localWorkGroupSize[1];
-    int numWorkGroupsX = (dimX + (threadsPerGroupX - 1)) / threadsPerGroupX;
-    int numWorkGroupsY = (dimY + (threadsPerGroupY - 1)) / threadsPerGroupY;
+    uint32_t numWorkGroupsX = (dimX + (threadsPerGroupX - 1)) / threadsPerGroupX;
+    uint32_t numWorkGroupsY = (dimY + (threadsPerGroupY - 1)) / threadsPerGroupY;
+
 
     // Determine device's num compute work group limits
-    const VkPhysicalDeviceLimits limits = 
-        _hgi->GetCapabilities()->vkDeviceProperties.limits;
-    const GfVec3i maxNumWorkGroups = GfVec3i(
-        limits.maxComputeWorkGroupCount[0],
-        limits.maxComputeWorkGroupCount[1],
-        limits.maxComputeWorkGroupCount[2]);
+    const VkPhysicalDeviceLimits &limits =
+        _hgi->GetCapabilities()->vkDeviceProperties2.properties.limits;
 
+    const uint32_t (&maxNumWorkGroups)[3] = limits.maxComputeWorkGroupCount;
     if (numWorkGroupsX > maxNumWorkGroups[0]) {
         TF_WARN("Max number of work group available from device is %i, larger "
                 "than %i", maxNumWorkGroups[0], numWorkGroupsX);
@@ -154,8 +135,8 @@ HgiVulkanComputeCmds::Dispatch(int dimX, int dimY)
 
     vkCmdDispatch(
         _commandBuffer->GetVulkanCommandBuffer(),
-        (uint32_t) numWorkGroupsX,
-        (uint32_t) numWorkGroupsY,
+        numWorkGroupsX,
+        numWorkGroupsY,
         1);
 }
 

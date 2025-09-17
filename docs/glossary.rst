@@ -71,6 +71,106 @@ metadatum can be overridden to *true* in a stronger layer, which would cause
        # other siblings of "Child1" ...
    }
 
+.. _usdglossary-animatedvalue:
+
+Animated Value
+**************
+
+An *animated value* is an :ref:`Attribute <usdglossary-attribute>` value that
+varies over time. Instead of (or in addition to) a single 
+:ref:`default value <usdglossary-defaultvalue>`, you can author an animated
+value using :ref:`TimeSamples <usdglossary-timesample>` or 
+:ref:`Spline data <usdglossary-spline>`. The value for the attribute at a 
+specific :ref:`timecode <usdglossary-timecode>` will be determined based on the 
+authored animated value, using interpolation if necessary. 
+
+The following example defines a Sphere with an animated value for 
+:usda:`radius` that uses timeSamples.
+
+.. code-block:: usda
+
+    def Sphere "SphereWithTimeSamples"
+    {
+        double radius.timeSamples = {
+            1: 100,
+            20: 500,
+            50: 250
+        }
+    }
+
+Similarly, the following example defines a Sphere with an animated value for
+:usda:`radius` using a spline.
+
+.. code-block:: usda
+
+    def Sphere "SphereWithSpline"
+    {
+        double radius.spline = {
+            bezier,
+            1: 10; pre (0, 0); post curve (5, 0.0125),
+            30: 20; pre (10, -0.001); post curve (10, 0.001),
+            60: 10; pre (5, -0.005); post curve (0, 0),
+        }
+    }
+
+As described in :ref:`Attribute <usdglossary-attribute>`, an attribute may have
+both a default value and an animated value authored. It is also possible to have
+a default value, timeSamples, and spline data authored on the same attribute at 
+the same spec level, however only one value source will be used for evaluation,
+as described in :ref:`Value Resolution <usdglossary-valueresolution>`.
+
+.. _usdglossary-animationblock:
+
+Animation Block
+***************
+
+An *animation block* blocks any 
+:ref:`animated values <usdglossary-animatedvalue>` for an 
+:ref:`attribute <usdglossary-attribute>`. This is similar to an 
+:ref:`attribute block <usdglossary-attributeblock>` but only blocks 
+animated values (:ref:`TimeSamples <usdglossary-timesample>` and 
+:ref:`Splines <usdglossary-spline>`) and *not* 
+:ref:`default values <usdglossary-defaultvalue>`. Use an animation block when 
+you want to block animated values from weaker opinions in your scene, but you 
+still want the default value from weaker layers to come through. For example,
+in a VFX pipeline you might have assets with animated values authored by one 
+department that a different department needs to block, but the authored default 
+values are still needed.
+
+In the following example, "BigBallWithoutAnimation" blocks the animated value of
+:usda:`radius` referenced from "BigBall", causing :usda:`radius`'s
+value to resolve to the default value (100) from "BigBall".
+
+.. code-block:: usda
+
+    def Sphere "BigBall"
+    {
+        double radius = 100
+        double radius.timeSamples = {
+            1: 100,
+            24: 500,
+        }
+    }
+
+    def "BigBallWithoutAnimation" (
+        references = </BigBall>
+    )
+    {
+        double radius = AnimationBlock
+    }
+
+If an attribute block was used instead of the animation block in the above
+example, the default value from "BigBall" would also be blocked, and the
+value would resolve to the :ref:`schema fallback value <usdglossary-fallback>` 
+for :usda:`radius`.
+
+.. note:: 
+
+  You can only use animation blocks to completely block an attribute's 
+  animated value. You cannot use animation blocks on individual 
+  timeSamples or spline knots, unlike attribute blocks that support this 
+  functionality.
+
 .. _usdglossary-apischema:
 
 API Schema
@@ -303,18 +403,19 @@ Attribute
 authored in most USD scenes. An attribute can take on exactly one of the legal
 `attribute typeNames <api/_usd__page__datatypes.html>`_
 USD provides, and can take on both a `default value <#usdglossary-defaultvalue>`_
-**and** a value each at any number of `timeSamples <#usdglossary-timesample>`_.
+**and** an :ref:`animated value <usdglossary-animatedvalue>`.
 `Resolving <#usdglossary-valueresolution>`_ an attribute at any given
 `timeCode <#usdglossary-timecode>`_ will yield either a single value or no
 value. Attributes resolve according to "strongest wins" rules, so all values
 for any given attribute will be fetched from the strongest `PrimSpec
 <#usdglossary-primspec>`_ that provides **either** a default value or
-timeSamples. Note that this simple rule is somewhat more complicated in the
-presence of authored `clips <#usdglossary-valueclips>`_. One interacts with
-attributes through the :usdcpp:`UsdAttribute` API.
+an animated value. Note that this simple rule is 
+somewhat more complicated in the presence of authored 
+`value clips <#usdglossary-valueclips>`_. One interacts with attributes through 
+the :usdcpp:`UsdAttribute` API.
 
-A simple example of an attribute that has both an authored default and two
-timeSamples in the same primSpec:
+A simple example of an attribute that has both an authored default and an
+animated value (using two timeSamples) in the same primSpec:
 
 .. code-block:: usda
    :caption: An attribute with both Default and TimeSamples
@@ -335,14 +436,15 @@ Attribute Block
 
 Similarly to how `prims can be deactivated <#usdglossary-active-inactive>`_
 through composing overriding opinions, the value that an attribute produces can
-be **blocked** by an overriding opinion of :usda:`None`, which can be authored using
-:usdcpp:`UsdAttribute::Block`.  A block itself can, of course be overridden by
-an even stronger opinion. The following example extends the previous attribute
-example, adding a :usda:`DefaultBall` prim that blocks the value of
-:usda:`radius` it references from :usda:`BigBall`, causing :usda:`radius`'s
-value to resolve back to `its fallback <#usdglossary-fallback>`_ at
-:cpp:`UsdTimeCode` :mono:`t` (any blocked attribute that has no fallback will
-report that it has no value when we invoke :usdcpp:`UsdAttribute::Get`):
+be **blocked** by an overriding opinion of :usda:`None`, which can be authored 
+using :usdcpp:`UsdAttribute::Block() <UsdAttribute::Block>`. A block itself can, 
+of course be overridden by an even stronger opinion. The following example 
+extends the previous attribute example, adding a :usda:`DefaultBall` prim that 
+blocks the value of :usda:`radius` it references from :usda:`BigBall`, causing 
+:usda:`radius`'s value to resolve back to 
+`its fallback <#usdglossary-fallback>`_ at :cpp:`UsdTimeCode` :mono:`t` (any 
+blocked attribute that has no fallback will report that it has no value when we 
+invoke :usdcpp:`UsdAttribute::Get() <UsdAttribute::Get>`):
 
 .. code-block:: usda
    :caption: :usda:`DefaultBall` **Blocks** the radius values referenced from :usda:`BigBall`
@@ -364,7 +466,7 @@ report that it has no value when we invoke :usdcpp:`UsdAttribute::Get`):
    }
 
 In addition to completely blocking an attribute's value, sub time-ranges can be
-separately blocked, by blocking individual time samples. Consider the following
+separately blocked, by blocking individual timeSamples. Consider the following
 examples:
 
 **Example 1:**
@@ -433,6 +535,34 @@ For the attribute :usda:`radius` on :usda:`DefaultBall`:
 
   * :python:`Usd.Attribute.Get(t)` will return :mono:`None` for
     :python:`Usd.TimeCode` :mono:`t` in (-|infin|, |infin|).
+
+Attribute blocks can also be used to block segments of a 
+:ref:`usdglossary-spline`, similar to blocking individual timeSamples.
+In the following example, we start blocking from the knot at timecode 30
+(note the "none" interpolation mode) to the knot at timecode 60.
+
+.. code-block:: usda
+
+    def Sphere "Sphere"
+    {
+        double radius.spline = {
+            bezier,
+            1: 10; pre (0, 0); post curve (5, 0.0125),
+            20: 20; pre (0, 0); post curve (0, 0),
+            30: 0; pre (0, 0); post none,
+            60: 10; post curve (0, 0),
+        }
+    }
+
+:python:`Usd.Attribute.Get(t)` will return :mono:`None` for 
+:python:`Usd.TimeCode` :mono:`t` in [30, 60)
+
+Note that setting an empty spline (with no knots) for an attribute will result
+in the attribute being completely blocked.
+
+OpenUSD also provides a way to just block animated data (timesamples and 
+splines) but not default values for an attribute, using an 
+:ref:`Animation Block <usdglossary-animationblock>`.
 
 .. _usdglossary-attributeconnection:
 
@@ -571,6 +701,10 @@ down the asset into meaningful groups) with other collections.
 
 We create and query Collections using :usdcpp:`UsdCollectionAPI`.
 
+For more details on Collections, including pattern-based collections that use
+a path expression to determine collection membership, 
+see :ref:`collections_and_patterns`.`
+
 .. _usdglossary-component:
 
 Component
@@ -697,6 +831,59 @@ list: :usda:`[ @file1.usd@, @file3.usd@ ]`
    )
    {
    }
+
+.. _usdglossary-inputparameters:
+
+Computation Input Parameters
+****************************
+
+An :ref:`OpenExec <usdglossary-openexec>` *computation input parameter* is a 
+specification of an input data source for a 
+:ref:`computation <usdglossary-computation>`. Input parameters are 
+used by computations to ingest source data from resolved attribute values or 
+output values from other computations. 
+
+Input parameters can source values from the outputs of other computations, and 
+sourced computations need not be published on the same scene object as the 
+consuming computation. OpenExec may need to, for example, traverse a 
+relationship, or look up or down the namespace hierarchy, to properly resolve 
+the source for the input parameter. Input parameters encode information used to 
+resolve input sources, such as a computation name, the scene object used to look 
+up the computation by name, and the input value data type, which must match the 
+data type of the output value returned from the source computation or resolved 
+attribute value.
+
+Every input parameter provides zero or more input values to the computation 
+callback. A relationship-targeted input may not resolve to any source 
+computations if the specified relationship does not have authored targets, or if 
+the targeted objects do not publish a computation with the specified name or 
+result type. Conversely, the input parameter can resolve to more than one source 
+computation if there are multiple authored targets.
+
+See :ref:`openexec_computation_input_parameters` for more information on 
+computation input parameters.
+
+.. _usdglossary-computation:
+
+Computation
+***********
+
+An :ref:`OpenExec <usdglossary-openexec>` *computation* is a function, 
+provided by a scene object, that computes one or more output values from a set 
+of input values.
+
+A computation will take zero or more 
+:ref:`input parameters <usdglossary-inputparameters>` (typically 
+at least one), and a C++ computation callback responsible for reading input 
+values, performing the computational work, and outputting the result values 
+(typically one). A computation instance is also associated with a computation 
+provider, a scene object used as an anchor for sourcing input values. 
+
+Computations can be **Built-in computations** (provided by USD schemas) or 
+**Plugin computations** (custom computations registered as part of the schema
+registration process)
+
+See :ref:`openexec_computations` for more information on computations.
 
 .. _usdglossary-connection:
 
@@ -849,25 +1036,27 @@ Default Value
 
 Many assets consist entirely of a static (with respect to time) definition,
 which really exists "outside time". When encoding such assets in a format that
-only allows `timeSamples <#usdglossary-timesample>`_, one must choose a
-"sentinel" time ordinate at which to record static data, and hope that no other
+only allows animated values associated with time coordinates, one must choose a
+"sentinel" time coordinate at which to record static data, and hope that no other
 application uses that sentinel time for any other purpose. This can be fragile,
 and also lead to the "static" definition becoming overshadowed and not easily
 accessible when overridden in a stronger layer.
 
 USD addresses this problem by providing a completely separate field for each
 attribute, called its *default*. This field can be authored and resolved in
-isolation of any authored timeSamples anywhere in an attribute's `index
-<#usdglossary-index>`_, by using the universal, reserved sentinel
-:usdcpp:`UsdTimeCode::Default` as the (implicit or explicit) time ordinate to
-:usdcpp:`UsdAttribute::Get` and :usdcpp:`UsdAttribute::Set`.  When
-`resolving an attribute's value <#usdglossary-valueresolution>`_ at a
+isolation of any authored :ref:`animated value <usdglossary-animatedvalue>` 
+anywhere in an attribute's `index <#usdglossary-index>`_, by using the 
+universal, reserved sentinel 
+:usdcpp:`UsdTimeCode::Default() <UsdTimeCode::Default>` as the (implicit or 
+explicit) time coordinate to :usdcpp:`UsdAttribute::Get() <UsdAttribute::Get>` 
+and :usdcpp:`UsdAttribute::Set() <UsdAttribute::Set>`. 
+When `resolving an attribute's value <#usdglossary-valueresolution>`_ at a
 non-Default time, defaults still participate, but within a given `primSpec
-<#usdglossary-primspec>`_, an authored default is always weaker than authored
-timeSamples. However, an authored default in a stronger layer/primSpec **is
-stronger** than timeSamples authored in a weaker layer. In text USD layers, the
-default value is the single value that can be assigned directly to an attribute
-in the attribute declaration line:
+<#usdglossary-primspec>`_, an authored default is always weaker than an authored
+animated value. However, an authored default in a stronger 
+layer/primSpec **is stronger** than an animated value authored in a weaker 
+layer. In text USD layers, the default value is the single value that can be 
+assigned directly to an attribute in the attribute declaration line:
 
 .. code-block:: usda
    :caption: Overriding the default value of a Ball's radius
@@ -1190,7 +1379,7 @@ A good way to understand inherits is to start by understanding `references
 the results will be indistinguishable from each other! Within a `layerStack
 <#usdglossary-layerstack>`_ (and ignoring any interaction with `variantSets
 <#usdglossary-variantset>`_ since VariantSets come between Inherits and
-References in `LIVRPS <#usdglossary-livrpsstrengthordering>`_) inherits are
+References in `LIVERPS <#usdglossary-livrpsstrengthordering>`_) inherits are
 indistinguishable in effect from *local* references. **The key difference
 between references and inherits** is that references fully encapsulate their
 targets, and therefore "disappear" when composed through another layer of
@@ -1409,6 +1598,11 @@ Interpolation
   function that maps stage-time to the time of the layer in which the timeSamples
   were authored is not easily accessible.
 
+  If an attribute has authored :ref:`spline data <usdglossary-spline>`, 
+  values will be interpolated based on the spline definition (curve type,
+  interpolation mode for the appropriate spline segment, knot tangents for 
+  Bezier and Hermite curve types, etc.).
+
 * **Spatial Interpolation** of `Primvar <#usdglossary-primvar>`_ values across a
   `gprim <#usdglossary-gprim>`_. 
 
@@ -1419,8 +1613,7 @@ Interpolation
   :usda:`Mesh` primitive, a primitive can contain a single value to be held across
   the entire mesh, one value per-face, one value per-point to be interpolated
   either linearly or with the mesh's subdivision basis function, or one value per
-  face-vertex. For more information, see `Interpolation of Primitive
-  Variables. <api/class_usd_geom_primvar.html#Usd_InterpolationVals>`_
+  face-vertex. For more information, see :ref:`primvars`.
 
 .. _usdglossary-isaschema:
 
@@ -1725,35 +1918,36 @@ applied to references. See also the FAQ on deleting items with list ops:
 
 .. _usdglossary-livrpsstrengthordering:
 
-LIVRPS Strength Ordering
-************************
+LIVERPS Strength Ordering
+*************************
 
-LIVRPS is an acronym for **Local, Inherits, VariantSets, References, Payload,
-Specializes**, and is the fundamental rubric for understanding how `opinions
-<#usdglossary-opinions>`_ and `namespace <#usdglossary-namespace>`_ compose in
-USD. **LIVRPS** describes the strength ordering in which the various composition
-arcs combine, **within each** `LayerStack <#usdglossary-layerstack>`_. For
-example, when we are trying to determine the value of an `attribute
-<#usdglossary-attribute>`_ or `metadatum <#usdglossary-metadata>`_ on a stage at
-*path* that subscribes to the `value resolution <#usdglossary-valueresolution>`_
-policy that "strongest opinion wins" (which is all attributes and most
-metadata), we iterate through `PrimSpecs <#usdglossary-primspec>`_ in the
-following order looking for an opinion for the requested datum:
+LIVERPS is an acronym for **Local, Inherits, VariantSets, Relocates, References, 
+Payload, Specializes**, and is the fundamental rubric for understanding how 
+:ref:`opinions <usdglossary-opinions>` and 
+:ref:`namespace <usdglossary-namespace>` compose in USD. **LIVERPS** describes 
+the strength ordering in which the various composition arcs combine, 
+**within each** :ref:`LayerStack <usdglossary-layerstack>`. For example, when we 
+are trying to determine the value of an :ref:`attribute <usdglossary-attribute>` 
+or :ref:`metadatum <usdglossary-metadata>` on a stage at *path* that subscribes 
+to the :ref:`value resolution <usdglossary-valueresolution>` policy that 
+"strongest opinion wins" (which is all attributes and most metadata), we iterate 
+through :ref:`PrimSpecs <usdglossary-primspec>` in the following order looking 
+for an opinion for the requested datum:
 
     #. **Local**: 
 
        Iterate through all the layers in the local LayerStack
        looking for opinions on the PrimSpec at *path* in each layer - recall
        that according to the definition of LayerStack, this is where the effect
-       of direct opinions in all `SubLayers <#usdglossary-sublayers>`_ of the
+       of direct opinions in all :ref:`SubLayers <usdglossary-sublayers>` of the
        root layer of the LayerStack will be consulted. If no opinion is found,
        then...
 
     #. **Inherits**: 
        
-       Resolve the `Inherits <#usdglossary-inherits>`_ affecting
+       Resolve the :ref:`Inherits <usdglossary-inherits>` affecting
        the prim at *path*, and iterate through the resulting targets. For
-       each target, **recursively apply** **LIVRP** **evaluation** on
+       each target, **recursively apply** **LIVERP** **evaluation** on
        the targeted LayerStack - **Note that the "S" is not present** - we
        ignore Specializes arcs while recursing . If no opinion is found,
        then...
@@ -1761,33 +1955,42 @@ following order looking for an opinion for the requested datum:
     #. **VariantSets**: 
 
        Apply the resolved variant selections to all
-       `VariantSets <#usdglossary-variantset>`_ that affect the PrimSpec at
-       *path* in the LayerStack, and iterate through the selected `Variants
-       <#usdglossary-variant>`_ on each VariantSet. For each target,
-       **recursively apply** **LIVRP** **evaluation** on the targeted
+       :ref:`VariantSets <usdglossary-variantset>` that affect the PrimSpec at
+       *path* in the LayerStack, and iterate through the selected 
+       :ref:`Variants <usdglossary-variant>` on each VariantSet. For each 
+       target, **recursively apply** **LIVERP** **evaluation** on the targeted
        LayerStack - **Note that the "S" is not present** - we ignore Specializes
        arcs while recursing. If no opinion is found, then...
 
+    #. **r(E)locates**:
+
+       Resolve any :ref:`Relocates <usdglossary-relocates>` target path 
+       affecting the prim at *path*, and iterate through the resulting relocates 
+       source. For each source, **recursively apply** **LIVERP** **evaluation** 
+       on the source's remote LayerStack - **Note that the "S" is not present** 
+       - we ignore Specializes arcs while recursing. If no opinion is found, 
+       then...
+
     #. **References**:
 
-       Resolve the `References <#usdglossary-references>`_
+       Resolve the :ref:`References <usdglossary-references>`
        affecting the prim at *path*, and iterate through the resulting
-       targets. For each target, **recursively apply** **LIVRP** **evaluation**
+       targets. For each target, **recursively apply** **LIVERP** **evaluation**
        on the targeted LayerStack - **Note that the "S" is not present** - we
        ignore Specializes arcs while recursing. If no opinion is found, then...
 
     #. **Payload**: 
 
-       Resolve the `Payload <#usdglossary-payload>`_
+       Resolve the :ref:`Payload <usdglossary-payload>`
        arcs affecting the prim at *path*; if *path* has been **loaded on
        the stage,** iterate through the resulting targets just as we would
        references from step 4. If no opinion is found, then...
 
     #. **Specializes**: 
 
-       Resolve the `Specializes <#usdglossary-specializes>`_
+       Resolve the :ref:`Specializes <usdglossary-specializes>`
        affecting the prim at *path*, and iterate through the resulting
-       targets, **recursively applying *full* LIVRPS evaluation** on each target
+       targets, **recursively applying *full* LIVERPS evaluation** on each target
        prim. If no opinion is found, then...
 
     #. Indicate that we could find no authored opinion
@@ -1795,21 +1998,18 @@ following order looking for an opinion for the requested datum:
 We have omitted some details, such as how, for any composition arc in the above
 recipe, we order arcs applied directly on the PrimSpec in relation to the same
 kind of arc authored on an *ancestral* PrimSpec in the LayerStack - the short
-answer is that `"ancestral arcs" are weaker than "direct arcs"
-<#usdglossary-directopinion>`_, and why we ignore the "S" when we recurse for
-the other arcs, which we discuss more in the entry for `Specializes
-<#usdglossary-specializes>`_. It may sound like a great deal of work to need
-to perform for every value lookup, and it absolutely would be if we followed all
-the steps as described above, during `value resolution
-<#usdglossary-valueresolution>`_. This is the reason that we compute and cache
-an `Index <#usdglossary-index>`_ for every prim on the Stage: the Index
-"pre-applies" the above algorithm to find all the PrimSpecs that contribute any
-opinions to the prim, and caches the list in a recursive data structure that can
-be very efficiently processed whenever we need to resolve some value on the
-prim.
+answer is that "ancestral arcs" are weaker than "direct arcs" (see 
+:ref:`usdglossary-directopinion`). Additionally, we skip over "S" during 
+recursion for other arcs, as explained further in the entry for 
+:ref:`Specializes <usdglossary-specializes>`. Performing every step as described 
+above for each value lookup would be very costly. This is why we compute and 
+cache an :ref:`Index <usdglossary-index>` for every prim on the Stage. The Index 
+"pre-applies" the full algorithm to gather all PrimSpecs contributing opinions 
+to a prim, caching the list in a recursive data structure that allows efficient 
+processing whenever a value on the prim needs to be resolved.
 
 The algorithm for computing the namespace of the stage (i.e. what prims are
-present and where) are slightly more involved, but still follows the LIVRPS
+present and where) are slightly more involved, but still follows the LIVERPS
 recipe.
 
 .. _usdglossary-load-unload:
@@ -1947,6 +2147,27 @@ namespace of prims, each Stage possesses a `PseudoRoot
 <#usdglossary-pseudoroot>`_ prim that is the parent of all authored root prims,
 represented by the path :sdfpath:`/`.
 
+.. _usdglossary-openexec:
+
+OpenExec
+********
+
+*OpenExec* is a general-purpose framework for expressing and evaluating 
+computational behaviors in a USD scene. This framework is built on top of USD 
+and includes a fast, multi-threaded evaluation engine, and data management 
+features for automatically caching and invalidating computed values. 
+
+OpenExec introduces new features, such as
+:ref:`named computations <usdglossary-computation>` and
+:ref:`input parameters <usdglossary-inputparameters>`, that can be associated 
+with USD scene objects.
+
+Behind the scenes, OpenExec builds and maintains a dataflow network with 
+computational tasks encoded as nodes within this network, and data traveling 
+between computations encoded as edges. 
+
+See :ref:`intro_to_openexec` for more details.
+
 .. _usdglossary-opinions:
 
 Opinions
@@ -1957,7 +2178,7 @@ Opinions
 Metadatum, Attribute, or Relationship, you are expressing an *opinion* for that
 object in a PrimSpec in a particular Layer. On a composed Stage, any object
 may be affected by multiple opinions from different layers; the ordering of
-these opinions is determined by the `LIVRPS strength ordering
+these opinions is determined by the `LIVERPS strength ordering
 <#usdglossary-livrpsstrengthordering>`_.
 
 .. _usdglossary-over:
@@ -2292,7 +2513,7 @@ surface/volume of the primitive. In USD, you create and retrieve primvars using
 the :usdcpp:`UsdGeomImageable` schema, and interact with the special primvar
 encoding using the :usdcpp:`UsdGeomPrimvar` schema.
 
-There are two key aspects of Primvar identity:
+There are two key aspects of Primvars:
 
     * Primvars define a value that can vary across the primitive on which they
       are defined, via `prescribed interpolation rules
@@ -2300,11 +2521,15 @@ There are two key aspects of Primvar identity:
 
        ..
 
-    * Taken collectively on a prim, its Primvars describe the "per-primitive
-      overrides" to the shader(s) to which the prim is bound. Different
-      renderers may communicate the variables to the shaders using different
-      mechanisms over which Usd has no control; Primvars simply provide the
-      classification that any renderer should use to locate potential overrides.
+    * Taken collectively on a prim, its Primvars describe "per-primitive 
+      overrides" used to communicate variables to consumers, such as providing
+      providing joint influences for UsdSkel schemas, or shader variables for
+      renderers. In the shader use-case, different renderers may communicate the 
+      variables to the shaders using different mechanisms over which USD has no 
+      control; Primvars simply provide the classification that any renderer 
+      should use to locate potential overrides.
+
+For examples of primvars and primvar interpolation modes, see :ref:`primvars`.
 
 .. _usdglossary-property:
 
@@ -2352,8 +2577,9 @@ any piece of `metadata <#usdglossary-metadata>`_ authorable on properties,
 including its value. For `Relationships <#usdglossary-relationship>`_, the value
 a PropertySpec can contain is its *targets* , which is an
 :usdcpp:`SdfListOp\<SdfPath> <SdfListOp>` For `Attributes
-<#usdglossary-attribute>`_, each PropertySpec can contain two independent
-values: a timeless `Default Value <#usdglossary-defaultvalue>`_, and a freely
+<#usdglossary-attribute>`_, each PropertySpec can contain three independent
+values: a timeless `Default Value <#usdglossary-defaultvalue>`_, a 
+:ref:`spline <usdglossary-spline>`, and a freely
 varying, ordered collection of `TimeSamples <#usdglossary-timesample>`_.
 
 .. _usdglossary-propertystack:
@@ -2362,11 +2588,12 @@ PropertyStack
 *************
 
 A *PropertyStack* is a list of `PropertySpecs <#usdglossary-propertyspec>`_ that
-contribute a `default <#usdglossary-defaultvalue>`_ or `timeSample
-<#usdglossary-timesample>`_ (for `Attributes <#usdglossary-attribute>`_) or
-target (for `relationships <#usdglossary-relationship>`_), *or* any piece of
-`metadata <#usdglossary-metadata>`_, for a given `property
-<#usdglossary-property>`_. The information returned by
+contribute a `default <#usdglossary-defaultvalue>`_ or 
+:ref:`animated value <usdglossary-animatedvalue>` (for 
+`Attributes <#usdglossary-attribute>`_) or target (for 
+`relationships <#usdglossary-relationship>`_), *or* any piece of
+`metadata <#usdglossary-metadata>`_, for a given 
+`property <#usdglossary-property>`_. The information returned by
 :usdcpp:`UsdProperty::GetPropertyStack` **should only be used for
 debugging/diagnostic purposes, not for** `value resolution
 <#usdglossary-valueresolution>`_, because:
@@ -2378,10 +2605,10 @@ debugging/diagnostic purposes, not for** `value resolution
         ..
 
     #. A PropertyStack does not contain the proper time-offsets that must be
-       applied to the PrimSpecs to retrieve the correct timeSample when there
+       applied to the PrimSpecs to retrieve the correct animated value when there
        are authored `Layer Offsets <#usdglossary-layeroffset>`_ on `references
        <#usdglossary-references>`_, `subLayers <#usdglossary-sublayers>`_, or
-       `clips <#usdglossary-valueclips>`_.
+       `value clips <#usdglossary-valueclips>`_.
 
 If your goal is to optimize repeated value resolutions on attributes, retain a
 :usdcpp:`UsdAttributeQuery` instead, which is designed for exactly this purpose.
@@ -2676,6 +2903,451 @@ we will get:
 
 as the result, even though that was not the authored value in :filename:`Marble.usd`.
 
+.. _usdglossary-relocates:
+
+Relocates
+*********
+
+*Relocates* is a :ref:`composition arc <usdglossary-compositionarcs>` that maps 
+a prim :ref:`path <usdglossary-path>` defined in a remote 
+:ref:`LayerStack <usdglossary-layerstack>` (i.e. across a composition arc) to a 
+new path location in the local namespace. 
+
+Relocates are defined in layer metadata, as a list of source path to target
+path mappings. Note that these paths can only be prim paths, not property paths.
+
+.. code-block:: usda
+    :caption: example relocates defined in layer metadata
+
+    #usda 1.0
+    (
+        relocates = {
+            </CharANewVersion/Clothing> : </CharACurrent/TestClothing>, 
+            </EnvA/Trees> : </AlternateEnv/ParkA/Trees>
+        }
+    )    
+
+Relocates let you rename or reparent prims in situations where you would not be 
+able to edit the prims directly. Normally, prims with underlying PrimSpecs from 
+composition arcs cannot be directly reparented. While it's possible to reparent 
+the underlying "composition source" prims directly, such a change would be a 
+destructive change that would affect all other instances that share that scene 
+description. Relocates provides a way to *non-destructively* reparent or rename 
+prims by specifying a mapping of source namespace paths to target namespace 
+paths in the local namespace, ensuring that the source of the composition arc is 
+not modified.
+
+As an example, if you had layer :filename:`refLayer.usda` with the following 
+prims:
+
+.. code-block:: usda
+    :caption: refLayer.usda
+
+    def "PrimA" ()
+    {
+        def "PrimAChild" ()
+        {
+            uniform string testString = "test"
+            float childValue = 3.5
+        }
+    }
+
+In another layer, :filename:`main.usda`, "PrimA" is referenced:
+
+.. code-block:: usda
+    :caption: main.usda
+
+    def "MainPrim" (
+        prepend references = @refLayer.usda@</PrimA>
+    )
+    {
+    }
+
+You cannot directly rename or reparent :sdfpath:`/MainPrim/PrimAChild`. However, 
+you can provide a relocates mapping (in :filename:`main.usda`) of 
+:sdfpath:`MainPrim/PrimAChild` to another path in the local namespace:
+
+.. code-block:: usda
+    :caption: relocates added to main.usda
+
+    #usda 1.0
+    (
+        relocates = {
+            </MainPrim/PrimAChild> : </MainPrim/RenamedPrimAChild>
+        }
+    )
+
+This renames :sdfpath:`/MainPrim/PrimAChild` to 
+:sdfpath:`/MainPrim/RenamedPrimAChild` without affecting the 
+:filename:`refLayer.usda` layer.
+
+You could then add an override for :sdfpath:`/MainPrim/RenamedPrimAChild` in 
+:filename:`main.usda`. Note that the override uses the *relocated path*:
+
+.. code-block:: usda
+    :caption: override added to main.usda
+
+    def "MainPrim" (
+        prepend references = @refLayer.usda@</PrimA>
+    )
+    {
+        over RenamedPrimAChild 
+        {
+            float childValue = 5.2
+        }
+    }
+
+The resulting stage composition will apply the override to the relocated prim
+reference:
+
+.. code-block:: usda
+    :caption: flattened main.usda
+ 
+    def "MainPrim"
+    {
+        def "RenamedPrimAChild"
+        {
+            float childValue = 5.2
+            uniform string testString = "test"
+        }
+    }
+
+**Things to note:**
+
+    * You cannot relocate a root prim. In other words, the source path for a 
+      relocates cannot be a root prim. This is because it's impossible for a 
+      root prim to be introduced by an ancestral composition arc, and relocates
+      can only used to map prims introduced via composition arcs. 
+
+    * When a source path is relocated, that original source path is considered 
+      *no longer valid in the current namespace*. Any local opinions authored
+      on a source path will generate a "invalid option at relocation source
+      path" error. See 
+      :ref:`local opinions not allowed at source paths <usdglossary-relocates-source-invalid>` 
+      below for more details.
+
+    * Source and target paths must be complete scene paths. Paths with variant 
+      selections (e.g. :sdfpath:`/Prim{var=sel}Child`) are not supported.  
+
+    * Relocates that would create invalid or conflicting namespace paths are not 
+      allowed, such as:
+
+        * Relocating a prim to an existing ancestor: 
+          :sdfpath:`Prim/Child/Grandchild` : :sdfpath:`Prim/Child` is not 
+          allowed.
+
+        * Relocating a prim to a descendant of the source path: 
+          :sdfpath:`/Prim/Child` : :sdfpath:`/Prim/Child/Grandchild` is not 
+          allowed.
+
+        * Relocating the same source path to multiple targets, or relocating 
+          multiple source paths to the same target.
+
+        * Relocating a prim to the source path of a different relocate in the
+          same namespace: 
+          :sdfpath:`/Prim/Prim1` : :sdfpath:`/Prim/Prim2`, 
+          :sdfpath:`/Prim/Prim2` : :sdfpath:`/Prim/Prim3` is not allowed. 
+          "Transitive" relocates must be collapsed into the smallest relocation,
+          e.g. for the previous example, 
+          :sdfpath:`/Prim/Prim1` : :sdfpath:`/Prim/Prim3` should be used instead.
+          This applies to relocates in the same LayerStack.
+
+    * If a relocate has "ancestral relocates" (e.g. an ancestor prim that has 
+      also been relocated), the relocate source path must use the ancestral 
+      relocated path. For example, if you have :sdfpath:`/Root` referencing 
+      :sdfpath:`/Ref`, and :sdfpath:`/Ref` also references :sdfpath:`/Ref2`, 
+      if :sdfpath:`/Root/Ref` is relocated to :sdfpath:`/Root/RefRelocated`, 
+      any additional relocate that would use :sdfpath:`/Root/Ref/Ref2` as a 
+      source path must use the relocated path 
+      :sdfpath:`/Root/RefRelocated/Ref2`.
+
+With respect to 
+:ref:`composition strength ordering <usdglossary-livrpsstrengthordering>`, 
+relocates is stronger than :ref:`usdglossary-references`, but weaker than 
+:ref:`usdglossary-variantset`. In the previous example, if we had an authored 
+opinion at a relocates target location that used the :ref:`usdglossary-inherits` 
+composition arc (which is stronger than relocates) we might have a 
+:filename:`main.usda` layer that looks like the following: 
+
+.. code-block:: usda
+    :caption: main.usda with added class and inherits
+
+    #usda 1.0
+    (
+        relocates = {
+            </MainPrim/PrimAChild> : </MainPrim/RenamedPrimAChild>
+        }
+    )
+
+    class "WorkClass"
+    {
+        float childValue = 20.5
+        uniform string testString = "from WorkClass"
+    }
+
+    def "MainPrim" (
+        prepend references = @refLayer.usda@</PrimA>
+    )
+    {
+        def "RenamedPrimAChild"
+        (
+            inherits = </WorkClass>
+        )
+        {
+        }
+    }
+
+When the stage is composed, the inherited opinions for 
+:sdfpath:`MainPrim/RenamedPrimAChild` will be stronger:
+
+.. code-block:: usda
+    :caption: flattened main.usda with inherits and relocates applied
+
+    def "MainPrim"
+    {
+        def "RenamedPrimAChild"
+        {
+            float childValue = 20.5
+            uniform string testString = "from WorkClass"
+        }
+    }
+
+**Relocates and inherits**
+
+A relocated prim will still inherit the same opinions it would have had it not 
+been relocated. This can result in some subtle composition behavior.
+
+For example, we have a layer :filename:`model.usda` that defines 
+:sdfpath:`/ClassA` and has prim :sdfpath:`/Model` that inherits from 
+:sdfpath:`/ClassA`. It also has a relocate for :sdfpath:`/Model/Rig/LRig` to 
+:sdfpath:`/Model/Anim/LAnim`:
+
+.. code-block:: usda
+    :caption: model.usda with ClassA and Model that inherits from ClassA
+
+    #usda 1.0
+    (
+        relocates = {
+            </Model/Rig/LRig>: </Model/Anim/LAnim>
+        }    
+    )
+
+    class "ClassA"
+    {
+        def "Rig"
+        {
+            def "LRig"
+            {
+                uniform token modelClassALRig = "test"          
+            }
+        }
+
+        def "Anim"
+        {
+            def "LAnim"
+            {
+                uniform token modelClassALAnim = "test"                     
+            }
+        }    
+    }
+
+    def "Model" (
+        inherits = </ClassA>
+    )
+    {
+    }
+
+We reference :sdfpath:`/Model` in another layer, :filename:`root.usda`, which
+also has a :sdfpath:`/ClassA` class:
+
+.. code-block:: usda
+    :caption: root.usda
+
+    def "Model_1" (
+        references = @./model.usda@</Model>
+    )
+    {
+    }
+
+    class "ClassA"
+    {
+        def "Rig"
+        {
+            def "LRig"
+            {
+                uniform token rootClassALRig = "test"
+            }
+        }
+
+        def "Anim"
+        {
+            def "LAnim"
+            {
+                uniform token rootClassALAnim = "test"
+            }
+        }
+    }  
+
+If we load :filename:`root.usda` and inspect the flattened stage,
+:sdfpath:`/Model/Rig/LRig` in :filename:`model.usda` has inherited from 
+:sdfpath:`/ClassA/Rig/LRig` even though it was relocated to 
+:sdfpath:`/Model/Anim/LAnim` in that layer, and does *not* inherit opinions from
+:sdfpath:`/ClassA/Anim/LAnim`. However, note that :sdfpath:`/Model_1/Anim/LAnim`
+in the :filename:`root.usda` layer does inherit from the layer's 
+:sdfpath:`/ClassA/Anim/LAnim`.
+
+.. code-block:: usda
+    :caption: flattened root.usda
+
+    def "Model_1"
+    {
+        def "Rig"
+        {
+        }
+
+        def "Anim"
+        {
+            def "LAnim"
+            {
+                uniform token modelClassALRig = "test"
+                uniform token rootClassALAnim = "test"
+                uniform token rootClassALRig = "test"
+            }
+        }
+    }
+
+
+**Relocates and ancestral arcs during composition**
+
+One aspect of relocates and composition is that relocates will *ignore* 
+all ancestral arcs *except variant arcs* when we build the 
+:ref:`PrimIndex <usdglossary-index>` for a prim. So, if you had a layer that
+relocates a prim to be the child of a prim with an ancestral inherits arc:
+
+.. code-block:: usda
+    :caption: layer with ancestral inherits and relocates
+
+    #usda 1.0
+    (
+        relocates = {
+            </PrimA/Child>: </PrimWithInherits/Child>
+        }    
+    )
+
+    def "ClassA"
+    (
+    )
+    {
+        def "Child"
+        {
+            uniform token testString = "from ClassA/Child"
+            uniform token classAChildString = "test"
+        }
+    }
+
+    def "RefPrim"
+    (
+    )
+    {
+        def "Child"
+        {
+            uniform token testString = "from RefPrim/Child"
+            uniform token refPrimChildString = "test"
+        }
+    }
+
+    def "PrimA"
+    (
+        prepend references = </RefPrim>
+    )
+    {
+    }
+
+
+    def "PrimWithInherits"
+    (
+        inherits = </ClassA>
+    )
+    {
+    }
+
+With the relocates for :sdfpath:`/PrimA/Child` to 
+:sdfpath:`/PrimWithInherits/Child`, the ancestral opinions from 
+:sdfpath:`/ClassA/Child` are ignored. 
+
+.. code-block:: usda
+    :caption: flattened PrimWithInherits
+
+    def "PrimWithInherits"
+    {
+        def "Child"
+        {
+            uniform token refPrimChildString = "test"
+            uniform token testString = "from RefPrim/Child"
+        }
+    }
+
+However, as mentioned earlier, ancestral *variant* arcs will still compose with
+relocates. If we introduce ancestral opinions from a variant in 
+:sdfpath:`/PrimWithInherits` instead of using inherits:
+
+.. code-block:: usda
+    :caption: replace inherits with variantset in PrimWithInherits
+
+    def "PrimWithInherits"
+    (
+        # Removed inherits of ClassA
+        # Added variantSet and selection with authored Child opinions
+        variants = {
+            string varSet = "Set1"
+        }
+        prepend variantSets = "varSet"    
+    )
+    {
+        variantSet "varSet" = {
+            "Set1" ()
+            {
+                def "Child"
+                {                
+                    uniform token testString = "from varSet Child"
+                    uniform token varChildString = "test"
+                }
+            }
+            "Set2" ()
+            {
+            }
+        }
+    }
+
+The ancestral opinions from the selected variant will be applied:
+
+.. code-block:: usda
+    :caption: flattened PrimWithInherits with ancestral variant opinions
+
+    def "PrimWithInherits"
+    {
+        def "Child"
+        {
+            uniform token refPrimChildString = "test"
+            uniform token testString = "from varSet Child"
+            uniform token varChildString = "test"
+        }
+    }
+
+See :ref:`composition strength ordering <usdglossary-livrpsstrengthordering>` 
+for more details on relocates and composition.
+
+**Local opinions not allowed at source paths**
+
+.. _usdglossary-relocates-source-invalid:
+
+When a source path is relocated, that original source path is considered 
+no longer valid in the current namespace. So, if you relocated 
+:sdfpath:`/PrimA/Child` to :sdfpath:`/PrimA/NewChild`, you cannot have any 
+local opinions authored at :sdfpath:`/PrimA/Child`. This avoids ambiguity and
+ensures there's exactly one location (the target path) in the namespace to 
+express opinions about a given object.
+
 .. _usdglossary-rootlayerstack:
 
 Root LayerStack
@@ -2913,6 +3585,61 @@ the prim. The most common, default traversals, which are meant to be used for
 rendering and other common scenegraph processing, will visit only **defined**,
 **non-abstract** prims.
 
+.. _usdglossary-spline:
+
+Spline
+******
+
+A *spline* provides a curve that defines a scalar value that varies over time. 
+The spline is primarily defined by its collection of *knots*. Mathematically, 
+a spline is a piecewise curve made up of knots and the *curve segments* between 
+them. 
+
+Each knot has a time and a value (and an optional pre-value) and information 
+about how to interpolate the value over the segments between it and its 
+neighboring knots. This interpolation can be a curve (Bezier or Hermite 
+depending on the spline), linear, flat, or even a 
+:ref:`value block <usdglossary-attributeblock>` (no value at all).
+For curved segments, the knots provide tangents which control and shape the 
+curve. 
+
+In addition to its knots, a spline also contains the type of the value 
+(double, float, or half), type of curved segments (Bezier or Hermite), how 
+to extrapolate beyond the times controlled by the knots, and how a section of 
+the knots can be repeated with looping. For more details on splines see 
+:usdcpp:`TsSpline`.
+
+In OpenUSD, splines can be used as a source of 
+:ref:`animated values <usdglossary-animatedvalue>` for an 
+:ref:`Attribute <usdglossary-attribute>`, similar to 
+:ref:`TimeSamples <usdglossary-timesample>`. Each 
+:ref:`PropertySpec <usdglossary-propertyspec>` for an 
+Attribute can contain a collection called *spline* that maps 
+:ref:`TimeCode <usdglossary-timecode>` coordinates to a knot value of the 
+Attribute's type, along with any knot configuration.
+
+The following simple example shows a Bezier spline source for the *radius* 
+attribute, with three knots (and associated tangents) at TimeCodes 1, 30, and 
+60.
+
+.. code-block:: usda
+
+    def "PrimA"
+    {
+        double radius.spline = {
+            bezier,
+            1: 10; pre (0, 0); post curve (5, 0.0125),
+            30: 20; pre (10, -0.001); post curve (10, 0.001),
+            60: 10; pre (5, -0.005); post curve (0, 0),
+        }
+    }
+
+.. image:: glossary_radiusSpline.png
+    :width: 500
+
+See :ref:`usdglossary-valueresolution` for additional details on how splines 
+are used during value resolution.
+
 .. _usdglossary-stage:
 
 Stage
@@ -3045,17 +3772,111 @@ offset and scale time-varying data contained in the sub-layer(s)
 TimeCode
 ********
 
-*TimeCodes* are the unit-less time ordinate in USD. A :usdcpp:`UsdTimeCode` can
-encode the ordinate for a `TimeSample <#usdglossary-timesample>`_ in
-double-precision floating point, but can also encode the ordinate that maps to
-an attribute's `Default Value <#usdglossary-defaultvalue>`_. For any given
-composed scene, defined by its root layer, the TimeCode ordinates of the
-TimeSamples contained in the scene are scaled to seconds by the root layer's
+*TimeCodes* are the unit-less time coordinate in USD. A :usdcpp:`UsdTimeCode` 
+can encode the coordinate for a `TimeSample <#usdglossary-timesample>`_ (or
+:ref:`Spline knot <usdglossary-spline>`) in double-precision floating point, 
+but can also encode the coordinate that maps to an attribute's 
+`Default Value <#usdglossary-defaultvalue>`_. For any given composed scene, 
+defined by its root layer, the TimeCode coordinates of the TimeSamples 
+or Spline data contained in the scene are 
+:ref:`scaled to seconds <usdglossary-timecodes-scaled>` by the root layer's
 :usda:`timeCodesPerSecond` metadata, which can be retrieved with
-:usdcpp:`UsdStage::GetTimeCodesPerSecond`.  This allows clients great
-flexibility to encode their TimeSamples within the range and scale that makes
-the most sense for their application, while retaining a robust mapping to "real
-time" for decoding and playback.
+:usdcpp:`UsdStage::GetTimeCodesPerSecond`. This allows clients great
+flexibility to encode their time-varying data within the range and scale that 
+makes the most sense for their application, while retaining a robust mapping to 
+"real time" for decoding and playback.
+
+TimeCodes can also appear in USD scenes as the :usda:`timeCode` metadata or 
+attribute value type, and when they do, queried attribute *values* will receive 
+the same time-remapping that TimeSample/Spline knot coordinates do. Such 
+timeCode-valued attributes can serve as "timing curves" that maintain their 
+accuracy through composed layer offsets.
+
+.. _usdglossary-timecodes-scaled:
+
+TimeCodes Scaled to Real Time
+*****************************
+
+For a composed scene, :ref:`TimeCode <usdglossary-timecode>` coordinate values 
+from :ref:`animated values <usdglossary-animatedvalue>` are scaled to real-time 
+seconds by the root layer's (or session layer's) :usda:`timeCodesPerSecond` 
+metadata. In the following example layer, the translation TimeSample on Sphere 
+at TimeCode 240 corresponds to 10 seconds of real time, based on the layer's 
+:usda:`timeCodesPerSecond` of 24.
+
+.. code-block:: usda 
+
+  #usda 1.0
+  (
+      timeCodesPerSecond = 24
+      endTimeCode = 240
+      startTimeCode = 1
+  )
+
+  def Xform "Asset"
+  {
+      def Sphere "Sphere"
+      {
+          double3 xformOp:translate.timeSamples = {
+              1: (0, 5.0, 0),
+              240: (0, -5.0, 0),
+          }
+          uniform token[] xformOpOrder = ["xformOp:translate"]
+      }
+  }
+
+
+If a layer specifies :usda:`timeCodesPerSecond` and is sublayered or referenced 
+into another layer, the TimeCode values and animated value coordinates in the 
+sublayered/referenced layer are automatically scaled to map into the timing 
+defined by the root layer's :usda:`timeCodesPerSecond`. If the previous example 
+layer was referenced into another layer that specified a 
+:usda:`timeCodesPerSecond` value of 48, the TimeSamples on Sphere would be 
+scaled accordingly. For example, the TimeSample at TimeCode 240 would be scaled 
+to TimeCode 480 to ensure that the translation still occurs at 10 seconds of 
+real time.
+
+USD also provides the :usda:`framesPerSecond` layer metadata, however this is 
+not used to directly scale TimeCodes, but instead used as an indication of the 
+desired play-back rate when the animation is viewed in a playback device 
+(DCC tool, usdview, etc). If the previous example layer specified a 
+:usda:`framesPerSecond` of 12, this would *not* change the scaling of the 
+TimeSample at TimeCode 240, and instead change the playback rate in a playback 
+device to march forward by two TimeCodes for each consecutive rendered frame, 
+which will be held for 1/12 of a second.
+
+.. code-block:: usda
+
+  #usda 1.0
+  (
+      timeCodesPerSecond = 24
+      framesPerSecond = 12
+      endTimeCode = 240
+      startTimeCode = 1
+  )
+
+Note that :usda:`framesPerSecond` can be used indirectly to scale TimeCodes, 
+because it is used as a fallback value for :usda:`timeCodesPerSecond` if 
+:usda:`timeCodesPerSecond` is not set. The order of precedence USD uses for 
+determining the :usda:`timeCodesPerSecond` to use is: 
+
+* :usda:`timeCodesPerSecond` from session layer
+* :usda:`timeCodesPerSecond` from root layer
+* :usda:`framesPerSecond` from session layer
+* :usda:`framesPerSecond` from root layer
+* fallback value of 24 
+
+The general best practice is to use :usda:`timeCodesPerSecond` to specify how 
+TimeCodes are scaled to real time, and :usda:`framesPerSecond` if you need to 
+encode a specific playback rate on playback devices, regardless of how many 
+samples per second are recorded in the USD scene.
+
+.. note::
+
+    We provide the information about :usda:`framesPerSecond` as fallback for 
+    :usda:`timeCodesPerSecond` primarily as a debugging aid, should you observe 
+    unexpected time-scaling. The fallback behavior derives only from USD's 
+    relationship to Pixar's Presto animation system.
 
 .. _usdglossary-timesample:
 
@@ -3065,20 +3886,21 @@ TimeSample
 The term *timeSample* is used in two related contexts in USD:
 
     * **TimeSamples as source for** `Value Resolution
-      <#usdglossary-valueresolution>`_ 
+      <#usdglossary-valueresolution>`_ as an 
+      :ref:`animated value <usdglossary-animatedvalue>`
       
       Each `PropertySpec <#usdglossary-propertyspec>`_ for an `Attribute
       <#usdglossary-attribute>`_ can contain a collection called *timeSamples*
-      that maps `TimeCode <#usdglossary-timecode>`_ ordinates to values of the
+      that maps `TimeCode <#usdglossary-timecode>`_ coordinates to values of the
       Attribute's type.
 
-    * **The time-ordinate for an Attribute** 
+    * **The time-coordinate for an Attribute** 
 
-      USD API sometimes refers to just the ordinate of a time-varying value as a
-      TimeSample; for example, :usdcpp:`UsdAttribute::GetTimeSamples` and
+      USD API sometimes refers to just the coordinate of a time-varying value as 
+      a TimeSample; for example, :usdcpp:`UsdAttribute::GetTimeSamples` and
       :usdcpp:`UsdAttribute::GetTimeSamplesInInterval` return
-      a simple vector of time ordinates at which samples may be resolved on the
-      attribute.
+      a simple vector of time coordinates at which samples may be resolved on 
+      the attribute.
 
 .. _usdglossary-typedschema:
 
@@ -3108,16 +3930,16 @@ Value Clips
 ***********
 
 *Value Clips* are a feature that allows one to partition varying attribute
-`timeSample <#usdglossary-timesample>`_ overrides into multiple files, and
-combine them in a manner similar to how non-linear video editing tools allow
-one to combine video clips. Clips are especially useful for solving two
+`TimeSample <#usdglossary-timesample>`_ overrides into multiple files, and 
+combine them in a manner similar to how non-linear video editing tools allow 
+one to combine video clips. Value clips are especially useful for solving two 
 important problems in computer graphics production pipelines:
 
     #. **Crowd/background animation at scale** 
 
        Crowd animators will often create animation clips that can apply to many
        background characters, and be sequenced and cycled to generate a large
-       variety of animation. USD clips provide the ability to encode the
+       variety of animation. Value clips provide the ability to encode the
        sequencing and non-uniform time-mapping of baked animation clips that
        this task requires.
 
@@ -3126,7 +3948,7 @@ important problems in computer graphics production pipelines:
        The results of some simulations and other types of sequentially-generated
        special effects generate so much data that it is most practical for the
        simulator to write out each time-step or frame's worth of data into a
-       different file. USD Clips make it possible to stitch all of these files
+       different file. Value clips make it possible to stitch all of these files
        together into a continuous (even though the data may itself be
        topologically varying over time) animation, without needing to move,
        merge, or perturb the files that the simulator produced. The USD toolset
@@ -3134,32 +3956,33 @@ important problems in computer graphics production pipelines:
        assembles a sequence of file-per-frame layers into a Value Clips
        representation.
 
-The key advantage of the clips feature is that the resulting resolved animation
-on a :cpp:`UsdStage` is indistinguishable from data collected or aggregated into
-a single layer. In other words, consuming clients can be completely unaware of
-the existence of clips: there is no special schema or API required to access the
-data. The disadvantages of using clips are:
+The key advantage of the value clips feature is that the resulting resolved 
+animation on a :cpp:`UsdStage` is indistinguishable from data collected or 
+aggregated into a single layer. In other words, consuming clients can be 
+completely unaware of the existence of value clips: there is no special schema 
+or API required to access the data. The disadvantages of using value clips are:
 
-    #. Encoding clips on a stage is more complicated than simply recording
+    #. Encoding value clips on a stage is more complicated than simply recording
        samples on attributes, or adding references (see :usdcpp:`UsdClipsAPI`
        for details on encoding)
 
         ..
 
-    #. There is some performance overhead associated with the use of clips, both
-       in the number of files that must be opened to play back animation (but
-       that's what we asked for in using clips!), and also in extra overhead in
+    #. There is some performance overhead associated with the use of value 
+       clips, both in the number of files that must be opened to play back 
+       animation (but that's what we asked for in using clips!), and also in 
+       extra overhead in
        `resolving attribute values <#usdglossary-valueresolution>`_ in the
-       presence of clips. Clips are the reason that
+       presence of clips. Value clips are the reason that
        :usdcpp:`UsdProperty::GetPropertyStack` requires a :cpp:`timeCode`
        argument, because the set of layers that contribute to an attribute's
-       value can change over time when it is affected by clips.
+       value can change over time when it is affected by value clips.
 
 .. note::
 
    For performance and scalability reasons, a :cpp:`UsdStage` will ignore any
-   composition arcs contained in a "clip" USD file, which means that clips can
-   only *usefully* contain direct (local) opinions about the attributes they
+   composition arcs contained in a "clip" USD file, which means that value clips 
+   can only *usefully* contain direct (local) opinions about the attributes they
    wish to modify.  For more information on value clip behavior and how clips
    are encoded, see `Sequenceable, Re-timeable Animated Value Clips
    <api/_usd__page__value_clips.html>`_ in the USD Manual.
@@ -3247,14 +4070,18 @@ unique in three ways:
 
     #. **Time Offsets** 
 
-       :usdcpp:`UsdAttribute::Get` is a function of time, so all queries except
-       those evaluated at :usdcpp:`UsdTimeCode::Default` are affected by
-       time-scaling operators such as `Layer Offsets
+       :usdcpp:`UsdAttribute::Get() <UsdAttribute::Get>` is a function of time, 
+       so all queries except those evaluated at 
+       :usdcpp:`UsdTimeCode::Default() <UsdTimeCode::Default>` are affected 
+       by time-scaling operators such as `Layer Offsets
        <#usdglossary-layeroffset>`_.
 
     #. **Interpolation** 
 
-       If the requested time ordinate falls between two samples, and the
+       For :ref:`animated values <usdglossary-animatedvalue>`, value resolution
+       at a specific time coordinate may involve interpolation.
+
+       If the requested time coordinate falls between two TimeSamples, and the
        :usdcpp:`stage is configured for linear interpolation
        <UsdStage::SetInterpolationType>` (which it
        is by default), then we will `attempt to apply linear interpolation of
@@ -3262,35 +4089,93 @@ unique in three ways:
        <api/class_usd_attribute.html#Usd_AttributeInterpolation>`_, before
        falling back to holding the earlier of the two timeSamples.
 
-    #. **Three value sources for each site** 
+       If the requested time coordinate falls between two knots for a 
+       :ref:`Spline <usdglossary-spline>`, then we will interpolate the value 
+       based on the Spline's curve segment.
+
+    #. **Four value sources for each site** 
        
        For each site in a prim's Index that may affect a metadatum or
        relationship, there is just a single place to look for a value - if none
        is found, we move on to the next site looking for values. For attributes,
-       however, we must examine **three** possible sources for a value for each
+       however, we must examine **four** possible sources for a value for each
        site, before moving on to the next site in strong-to-weak order:
 
-       #. `Value Clips <#usdglossary-valueclips>`_ that are anchored at the site
-          or an ancestor site in namespace. If no clips are found, or if clips
-          do not provide a value for the attribute, then...
-
-       #. `TimeSamples <#usdglossary-timesample>`_ authored directly at the
+       #. :ref:`TimeSamples <usdglossary-timesample>` authored directly at the
           site. If there are no TimeSamples, then...
 
-       #. `Default Value <#usdglossary-defaultvalue>`_ authored directly at the
-          site
+       #. :ref:`Splines <usdglossary-spline>` authored directly at the site. If 
+          there are no Splines, then... 
+
+       #. :ref:`Default Value <usdglossary-defaultvalue>` authored directly at 
+          the site. If there is no authored default, then...
+
+       #. :ref:`Value Clips <usdglossary-valueclips>` that are anchored at the 
+          site or an ancestor site in namespace. 
+
+       .. note:: 
+
+           For attributes that are defined in a schema, there is a potential
+           fifth source, which is the 
+           :ref:`fallback value <usdglossary-fallback>` for the attribute 
+           specified by the schema. The fallback value will be used if no 
+           other value sources have been authored, or if there is an 
+           :ref:`attribute block <usdglossary-attributeblock>` at the requested
+           time coordinate. 
+
+       In the following abbreviated example, the authored TimeSample values will
+       be used over the Spline, Default, and Value Clip values.
+
+       .. code-block:: usda
+
+           #usda 1.0
+           (
+               endTimeCode = 100
+               startTimeCode = 1
+           )
+
+           def "PrimA"
+           (
+               # A clip set for this prim, that points to clip data and clip 
+               # manifest information (omitted for brevity) that contains
+               # time varying values for radius.
+               clips = {
+                   dictionary default = {
+                       asset[] assetPaths = [@./satav_clip1.usda@]
+                       asset manifestAssetPath = @./satav_manifest.usda@
+                       double2[] active = [(1,0)]
+                       string primPath = "/Clip"
+                       double2[] times = [(1,1), (30, 30)]    
+                   }
+               }
+           )
+           {
+               double radius = 7.0
+               double radius.timeSamples = {
+                   1: 1.0,
+                   30: 3.0
+               }
+               double radius.spline = {
+                   bezier,
+                   1: 10; pre (0, 0); post curve (0, 0),
+                   30: 30; pre (0, 0); post curve (0, 0),
+               }
+           }       
 
 .. admonition:: Effective use of UsdAttribute::Get()
 
-   The default :cpp:`UsdTimeCode` value for :cpp:`UsdAttribute::Get()` is
-   :cpp:`UsdTimeCode::Default()`, which is almost always a poor choice when
-   resolving values on a stage that contains animation. When writing code that
-   extracts attribute values from a stage, if the codesite is not provided an
-   explicit querying time, you should use :cpp:`UsdTimeCode::EarliestTime()`,
+   The default :cpp:`UsdTimeCode` value for 
+   :usdcpp:`UsdAttribute::Get() <UsdAttribute::Get>` is
+   :usdcpp:`UsdTimeCode::Default() <UsdTimeCode::Default>`, which is almost 
+   always a poor choice when resolving values on a stage that contains 
+   animation. When writing code that extracts attribute values from a stage, 
+   if the codesite is not provided an explicit querying time, you should use 
+   :usdcpp:`UsdTimeCode::EarliestTime() <UsdTimeCode::EarliestTime>`,
    which will ensure that if there is *any* timeSample authored for the
    attribute, it will provide the value, rather than the *default*, which is all
-   that is consulted when :cpp:`UsdTimeCode::Default()` is the given time
-   ordinate.
+   that is consulted when 
+   :usdcpp:`UsdTimeCode::Default() <UsdTimeCode::Default>` is the given time
+   coordinate.
 
 .. _usdglossary-variability:
 
@@ -3300,8 +4185,10 @@ Variability
 `Attributes <#usdglossary-attribute>`_ possess a special piece of `metadata
 <#usdglossary-metadata>`_ called *variability* that serves as a statement of
 intent (typically by a `schema <#usdglossary-schema>`_) of whether the
-attribute's value should have `timeSamples <#usdglossary-timesample>`_ that can
-vary its value over time, or whether it should be restricted to having only a
+attribute's value can be authored with an 
+:ref:`animated value <usdglossary-animatedvalue>` (or 
+:ref:`value clip <usdglossary-valueclips>`) that can vary its value over 
+time, or whether it should be restricted to having only a 
 `default value <#usdglossary-defaultvalue>`_. Variability can have two values:
 :usda:`varying` and :usda:`uniform`; by default, a newly created attribute is
 varying (unless you explicitly specify otherwise), and varying attributes appear
@@ -3314,7 +4201,7 @@ resolution, in order to keep those operations fast. It appears in
 :usdcpp:`schema-generated documentation <UsdGeomMesh::GetSubdivisionSchemeAttr>`,
 and can be used for validation by higher-level authoring code, and as a hint
 to clients that the value is not expected to change over time. See also
-:usdcpp:`UsdAttribute::GetVariability`
+:usdcpp:`UsdAttribute::GetVariability() <UsdAttribute::GetVariability>`.
 
 .. code-block:: usda
    :caption: usda of the uniform attribute "subdivisionScheme" in the Mesh schema
@@ -3590,8 +4477,9 @@ neither the prim itself nor any prims in the subtree rooted at the prim should
 be rendered - this is what we mean by "pruning invisibility", since invisible
 subtrees are definitively pruned in their entirety. If the resolve value is
 **inherited**, it means that the *computed visibility* (as provided by
-:usdcpp:`UsdGeomImageable::ComputeVisibility`) of the prim will be whatever the
-computed value of the prim's namespace parent is.
+:usdcpp:`UsdGeomImageable::ComputeVisibility() <UsdGeomImageable::ComputeVisibility>`) 
+of the prim will be whatever the computed value of the prim's namespace parent 
+is.
 
 Visibility may be animated, allowing a sub-tree of geometry to be renderable for
 some segment of a shot, and absent from others; unlike the action of

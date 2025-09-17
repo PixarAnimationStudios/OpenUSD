@@ -1,24 +1,24 @@
-Loading @TrickyVariantWeakerSelection2/root.sdf@
+Loading @TrickyVariantWeakerSelection2/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </_class_geotype>
 
 Prim Stack:
-    root.sdf             /_class_geotype
+    root.usda            /_class_geotype
 
 ------------------------------------------------------------------------
 Results for composing </bob>
 
 Prim Stack:
-    root.sdf             /bob
-    root.sdf             /_class_geotype
-    root.sdf             /_class_geotype{geotype_selector=select_cube}
-    root.sdf             /bob{geotype=cube}
-    geo.sdf              /bob_root_cube
+    root.usda            /bob
+    root.usda            /_class_geotype
+    root.usda            /_class_geotype{geotype_selector=select_cube}
+    root.usda            /bob{geotype=cube}
+    geo.usda             /bob_root_cube
 
 Variant Selections:
     {geotype = cube}
@@ -31,5 +31,5 @@ Child names:
 Results for composing </bob/bob_body>
 
 Prim Stack:
-    geo.sdf              /bob_root_cube/bob_body
+    geo.usda             /bob_root_cube/bob_body
 

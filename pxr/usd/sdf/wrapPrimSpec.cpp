@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 /// \file wrapPrimSpec.cpp
 
@@ -40,12 +23,12 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/python.hpp>
-#include <boost/python/stl_iterator.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
+#include "pxr/external/boost/python/stl_iterator.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -118,6 +101,13 @@ _SetSymmetryArguments(const SdfPrimSpec& self,
                       VtDictionary const &dictionary)
 {
     self.GetSymmetryArguments() = dictionary;
+}
+
+static void
+_SetClips(const SdfPrimSpec& self,
+          VtDictionary const &dictionary)
+{
+    self.GetClips() = dictionary;
 }
 
 static void
@@ -222,7 +212,7 @@ void wrapPrimSpec()
     to_python_converter<SdfVariantSetSpecHandleMap,
                         TfPySequenceToPython<SdfVariantSetSpecHandleMap> >();
 
-    class_<This, SdfHandle<This>, bases<SdfSpec>, boost::noncopyable>
+    class_<This, SdfHandle<This>, bases<SdfSpec>, noncopyable>
         ("PrimSpec", no_init)
         .def(SdfPySpec())
 
@@ -285,6 +275,24 @@ void wrapPrimSpec()
             &This::SetPermission,
             "The prim's permission restriction.\n"
             "The default value is SdfPermissionPublic.")
+
+        .add_property("clipSetsList",
+            &This::GetClipSetsList,
+            "A StringListEditor for the prim's value clip sets.\n\n"
+            "The list of the clip sets for this prim may be "
+            "modified with this NameListEditor.\n\n"
+            "A NameListEditor may express a list either as an explicit "
+            "value or as a set of list editing operations.  See NameListEditor "
+            "for more information.")
+
+        .add_property("clips",
+            &This::GetClips,
+            &_SetClips,
+            "Dictionary with value clips information.")
+
+        .add_property("hasClipSets",
+            &This::HasClipSets,
+            "Returns true if this prim has clipSets set.")
 
         .add_property("symmetryFunction",
             &This::GetSymmetryFunction,
@@ -494,6 +502,14 @@ void wrapPrimSpec()
         .add_property("hasPayloads",
             &This::HasPayloads,
             "Returns true if this prim has payloads set.")
+
+        .add_property("hasInheritPaths",
+            &This::HasInheritPaths,
+            "Returns true if this prim has inherits set.")
+
+        .add_property("hasSpecializes",
+            &This::HasSpecializes,
+            "Returns true if this prim has specializes set.")
 
         .add_property("relocates",
             &This::GetRelocates,

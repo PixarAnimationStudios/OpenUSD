@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_TF_PY_OBJECT_FINDER_H
 #define PXR_BASE_TF_PY_OBJECT_FINDER_H
@@ -29,8 +12,8 @@
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/pyIdentity.h"
 
-#include <boost/python/handle.hpp>
-#include <boost/python/object.hpp>
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/object.hpp"
 
 #include <typeinfo>
 
@@ -38,14 +21,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 struct Tf_PyObjectFinderBase {
     TF_API virtual ~Tf_PyObjectFinderBase();
-    virtual boost::python::object Find(void const *objPtr) const = 0;
+    virtual pxr_boost::python::object Find(void const *objPtr) const = 0;
 };
 
 template <class T, class PtrType>
 struct Tf_PyObjectFinder : public Tf_PyObjectFinderBase {
     virtual ~Tf_PyObjectFinder() {}
-    virtual boost::python::object Find(void const *objPtr) const {
-        using namespace boost::python;
+    virtual pxr_boost::python::object Find(void const *objPtr) const {
+        using namespace pxr_boost::python;
         TfPyLock lock;
         void *p = const_cast<void *>(objPtr);
         PyObject *obj = Tf_PyGetPythonIdentity(PtrType(static_cast<T *>(p)));
@@ -63,7 +46,7 @@ void Tf_RegisterPythonObjectFinder() {
                                           new Tf_PyObjectFinder<T, PtrType>());
 }
 
-TF_API boost::python::object
+TF_API pxr_boost::python::object
 Tf_FindPythonObject(void const *objPtr, std::type_info const &type);
 
 PXR_NAMESPACE_CLOSE_SCOPE

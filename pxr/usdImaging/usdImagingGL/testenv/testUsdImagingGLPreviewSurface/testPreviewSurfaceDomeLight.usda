@@ -1,0 +1,390 @@
+#usda 1.0
+(
+    defaultPrim = "Scene"
+    endTimeCode = 1
+    startTimeCode = 1
+    upAxis = "Y"
+)
+
+def Xform "Scene" (
+    kind = "component"
+)
+{
+    def Scope "Looks"
+    {
+        def Material "Material"
+        {
+            token outputs:surface.connect = </Scene/Looks/Material/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0.0310843475, 1, 0.3368039)
+                float inputs:opacity = 1
+                color3f inputs:emissiveColor = (0, 0, 0)
+                int inputs:useSpecularWorkflow = 0
+                token outputs:surface
+            }
+        }
+
+        def Material "Material_33_Roughness_100_Metallic" (
+            inherits = </Scene/Looks/Material>
+        )
+        {
+            over "PreviewSurface"
+            {
+                float inputs:roughness = 0.33
+                float inputs:metallic = 1
+            }
+        }
+
+        def Material "Material_50_Roughness_100_Metallic" (
+            inherits = </Scene/Looks/Material>
+        )
+        {
+            over "PreviewSurface"
+            {
+                float inputs:roughness = 0.5
+                float inputs:metallic = 1
+            }
+        }
+
+        def Material "Material_67_Roughness_100_Metallic" (
+            inherits = </Scene/Looks/Material>
+        )
+        {
+            over "PreviewSurface"
+            {
+                float inputs:roughness = 0.67
+                float inputs:metallic = 1
+            }
+        }
+
+        def Material "Material_83_Roughness_100_Metallic" (
+            inherits = </Scene/Looks/Material>
+        )
+        {
+            over "PreviewSurface"
+            {
+                float inputs:roughness = 0.83
+                float inputs:metallic = 1
+            }
+        }
+
+        def Material "Material_33_Roughness_83_Metallic" (
+            inherits = </Scene/Looks/Material>
+        )
+        {
+            over "PreviewSurface"
+            {
+                float inputs:roughness = 0.33
+                float inputs:metallic = 0.83
+            }
+        }
+
+        def Material "Material_50_Roughness_83_Metallic" (
+            inherits = </Scene/Looks/Material>
+        )
+        {
+            over "PreviewSurface"
+            {
+                float inputs:roughness = 0.5
+                float inputs:metallic = 0.83
+            }
+        }
+
+        def Material "Material_67_Roughness_83_Metallic" (
+            inherits = </Scene/Looks/Material>
+        )
+        {
+            over "PreviewSurface"
+            {
+                float inputs:roughness = 0.67
+                float inputs:metallic = 0.83
+            }
+        }
+
+        def Material "Material_83_Roughness_83_Metallic" (
+            inherits = </Scene/Looks/Material>
+        )
+        {
+            over "PreviewSurface"
+            {
+                float inputs:roughness = 0.83
+                float inputs:metallic = 0.83
+            }
+        }
+
+        def Material "Material_33_Roughness_67_Metallic" (
+            inherits = </Scene/Looks/Material>
+        )
+        {
+            over "PreviewSurface"
+            {
+                float inputs:roughness = 0.33
+                float inputs:metallic = 0.67
+            }
+        }
+
+        def Material "Material_50_Roughness_67_Metallic" (
+            inherits = </Scene/Looks/Material>
+        )
+        {
+            over "PreviewSurface"
+            {
+                float inputs:roughness = 0.5
+                float inputs:metallic = 0.67
+            }
+        }
+
+        def Material "Material_67_Roughness_67_Metallic" (
+            inherits = </Scene/Looks/Material>
+        )
+        {
+            over "PreviewSurface"
+            {
+                float inputs:roughness = 0.67
+                float inputs:metallic = 0.67
+            }
+        }
+
+        def Material "Material_83_Roughness_67_Metallic" (
+            inherits = </Scene/Looks/Material>
+        )
+        {
+            over "PreviewSurface"
+            {
+                float inputs:roughness = 0.83
+                float inputs:metallic = 0.67
+            }
+        }
+
+        def Material "Material_33_Roughness_50_Metallic" (
+            inherits = </Scene/Looks/Material>
+        )
+        {
+            over "PreviewSurface"
+            {
+                float inputs:roughness = 0.33
+                float inputs:metallic = 0.5
+            }
+        }
+
+        def Material "Material_50_Roughness_50_Metallic" (
+            inherits = </Scene/Looks/Material>
+        )
+        {
+            over "PreviewSurface"
+            {
+                float inputs:roughness = 0.5
+                float inputs:metallic = 0.5
+            }
+        }
+
+        def Material "Material_67_Roughness_50_Metallic" (
+            inherits = </Scene/Looks/Material>
+        )
+        {
+            over "PreviewSurface"
+            {
+                float inputs:roughness = 0.67
+                float inputs:metallic = 0.5
+            }
+        }
+
+        def Material "Material_83_Roughness_50_Metallic" (
+            inherits = </Scene/Looks/Material>
+        )
+        {
+            over "PreviewSurface"
+            {
+                float inputs:roughness = 0.83
+                float inputs:metallic = 0.5
+            }
+        }
+    }
+
+    def Xform "Geom"
+    {
+        def "Sphere11" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( -1.875, 0, -1.875)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_33_Roughness_100_Metallic>
+        }
+
+        def "Sphere12" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( -0.625, 0, -1.875)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_50_Roughness_100_Metallic>
+        }
+
+        def "Sphere13" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( 0.625, 0, -1.875)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_67_Roughness_100_Metallic>
+        }
+
+        def "Sphere14" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( 1.875, 0, -1.875)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_83_Roughness_100_Metallic>
+        }
+
+        def "Sphere21" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( -1.875, 0, -0.625)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_33_Roughness_83_Metallic>
+        }
+
+        def "Sphere22" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( -0.625, 0, -0.625)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_50_Roughness_83_Metallic>
+        }
+
+        def "Sphere23" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( 0.625, 0, -0.625)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_67_Roughness_83_Metallic>
+        }
+
+        def "Sphere24" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( 1.875, 0, -0.625)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_83_Roughness_83_Metallic>
+        }
+
+        def "Sphere31" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( -1.875, 0, 0.625)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_33_Roughness_67_Metallic>
+        }
+
+        def "Sphere32" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( -0.625, 0, 0.625)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_50_Roughness_67_Metallic>
+        }
+
+        def "Sphere33" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( 0.625, 0, 0.625)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_67_Roughness_67_Metallic>
+        }
+
+        def "Sphere34" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( 1.875, 0, 0.625)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_83_Roughness_67_Metallic>
+        }
+
+        def "Sphere41" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( -1.875, 0, 1.875)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_33_Roughness_50_Metallic>
+        }
+
+        def "Sphere42" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( -0.625, 0, 1.875)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_50_Roughness_50_Metallic>
+        }
+
+        def "Sphere43" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( 0.625, 0, 1.875)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_67_Roughness_50_Metallic>
+        }
+
+        def "Sphere44" (
+            references = @sphere.usda@
+        )
+        {
+            double3 xformOp:translate = ( 1.875, 0, 1.875)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+
+            rel material:binding = </Scene/Looks/Material_83_Roughness_50_Metallic>
+        }
+    }
+
+    def Camera "Top"
+    {
+        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 9, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+        float2 clippingRange = (4.527752, 11.299989)
+        float focalLength = 5
+        float focusDistance = 0
+        float horizontalAperture = 4.4291983
+        float verticalAperture = 3.152989
+        token projection = "perspective"
+    }
+
+    def Xform "Lights"
+    {
+        def DomeLight "DomeLight"
+        {
+            asset inputs:texture:file = @StinsonBeach.hdr@
+        }
+    }
+}
+

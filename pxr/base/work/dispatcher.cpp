@@ -1,65 +1,40 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
 #include "pxr/base/work/dispatcher.h"
 
+PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-WorkDispatcher::WorkDispatcher()
-    : _context(
-        tbb::task_group_context::isolated,
-        tbb::task_group_context::concurrent_wait | 
-        tbb::task_group_context::default_traits)
+template <class Impl>
+Work_Dispatcher<Impl>::Work_Dispatcher()
+    : _isCancelled(false)
 {
     _waitCleanupFlag.clear();
-    
-    // The concurrent_wait flag used with the task_group_context ensures
-    // the ref count will remain at 1 after all predecessor tasks are
-    // completed, so we don't need to keep resetting it in Wait().
-    _rootTask = new(tbb::task::allocate_root(_context)) tbb::empty_task;
-    _rootTask->set_ref_count(1);
 }
 
-WorkDispatcher::~WorkDispatcher()
+template <class Impl>
+Work_Dispatcher<Impl>::~Work_Dispatcher() noexcept
 {
     Wait();
-    tbb::task::destroy(*_rootTask);
 }
 
+template <class Impl>
 void
-WorkDispatcher::Wait()
+Work_Dispatcher<Impl>::Wait()
 {
     // Wait for tasks to complete.
-    _rootTask->wait_for_all();
+    _dispatcher.Wait();
 
     // If we take the flag from false -> true, we do the cleanup.
     if (_waitCleanupFlag.test_and_set() == false) {
-        // Reset the context if canceled.
-        if (_context.is_group_execution_cancelled()) {
-            _context.reset();
-        }
+        _dispatcher.Reset();
 
         // Post all diagnostics to this thread's list.
         for (auto &et: _errors) {
@@ -67,22 +42,39 @@ WorkDispatcher::Wait()
         }
         _errors.clear();
         _waitCleanupFlag.clear();
+        _isCancelled = false;
     }
 }
 
-void
-WorkDispatcher::Cancel()
+template <class Impl>
+bool
+Work_Dispatcher<Impl>::IsCancelled() const
 {
-    _context.cancel_group_execution();
+    return _isCancelled;
+}
+
+template <class Impl>
+void
+Work_Dispatcher<Impl>::Cancel()
+{
+    _isCancelled = true;
+    _dispatcher.Cancel();
 }
 
 /* static */
+template <class Impl>
 void
-WorkDispatcher::_TransportErrors(const TfErrorMark &mark,
+Work_Dispatcher<Impl>::_TransportErrors(const TfErrorMark &mark,
                                  _ErrorTransports *errors)
 {
     TfErrorTransport transport = mark.Transport();
     errors->grow_by(1)->swap(transport);
 }
+
+// Explicitly instantiate Work_Dispatchers
+template class Work_Dispatcher<PXR_WORK_IMPL_NS::WorkImpl_Dispatcher>;
+#if defined WORK_IMPL_HAS_ISOLATING_DISPATCHER
+template class Work_Dispatcher<PXR_WORK_IMPL_NS::WorkImpl_IsolatingDispatcher>;
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

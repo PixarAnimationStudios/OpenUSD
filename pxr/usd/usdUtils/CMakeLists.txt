@@ -10,10 +10,7 @@ pxr_library(usdUtils
         usd
         usdGeom
         usdShade
-        ${Boost_PYTHON_LIBRARY}
-
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
+        TBB::tbb
 
     PUBLIC_CLASSES
         authoring
@@ -41,9 +38,6 @@ pxr_library(usdUtils
     PUBLIC_HEADERS
         api.h
         userProcessingFunc.h
-
-    PYTHON_CPPFILES
-        moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp
@@ -77,6 +71,7 @@ pxr_library(usdUtils
 )
 
 pxr_test_scripts(
+    testenv/testUsdUtilsAssetLocalization.py
     testenv/testUsdUtilsAuthoring.py
     testenv/testUsdUtilsCoalescingDiagnosticDelegate.py
     testenv/testUsdUtilsConditionalAbortDiagnosticDelegate.py
@@ -139,6 +134,11 @@ pxr_build_test(testUsdUtilsTimeCodeRangeCpp
         usdUtils
     CPPFILES
         testenv/testUsdUtilsTimeCodeRange.cpp
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsAssetLocalization
+    DEST testUsdUtilsAssetLocalization
 )
 
 pxr_install_test_dir(
@@ -228,6 +228,16 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdUtilsDependencyExtractor
+    DEST testUsdUtilsDependencyExtractor6
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsDependencyExtractor
+    DEST testUsdUtilsDependencyExtractor7
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdUtilsFlattenLayerStack
     DEST testUsdUtilsFlattenLayerStack
 )
@@ -285,6 +295,12 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsUserProcessingFunc
     DEST testUsdUtilsUserProcessingFunc
+)
+
+pxr_register_test(testUsdUtilsAssetLocalization
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsAssetLocalization"
+    EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdUtilsAuthoring
@@ -566,6 +582,20 @@ pxr_register_test(testUsdUtilsDependencyExtractor5
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdUtilsDependencyExtractor6
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor udims/root.usda udims.txt"
+    DIFF_COMPARE udims.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsDependencyExtractor7
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor --resolve-udim-paths udims/root.usda udims-resolved.txt"
+    DIFF_COMPARE udims-resolved.txt
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdUtilsFlattenLayerStack
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsFlattenLayerStack"
@@ -595,7 +625,9 @@ pxr_register_test(testUsdUtilsLocalizeAssetUdims
 pxr_register_test(testUsdUtilsModifyAssetPaths
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsModifyAssetPaths layer.usda modified.usda"
-    DIFF_COMPARE modified.usda duplicates.usda removal.usda ref_layer_mod.usda ref_unmodified.usda
+    DIFF_COMPARE
+        modified.usda duplicates.usda removal.usda removal_preserve_length.usda
+        ref_layer_mod.usda ref_unmodified.usda preserve_metadata.usda
     EXPECTED_RETURN_CODE 0
 )
 

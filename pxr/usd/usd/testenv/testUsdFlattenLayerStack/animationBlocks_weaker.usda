@@ -1,0 +1,12 @@
+#usda 1.0
+
+over "Human"
+{
+    # Because of AnimationBlock in the strongest layer, this weaker default will
+    # shine through and block the time samples in the middle weak layer.
+    int c = 1
+
+    # Because of AnimationBlock in the strongest layer, this weaker default will
+    # shine through and block the spline in the middle weak layer.
+    double d = 2.0
+}

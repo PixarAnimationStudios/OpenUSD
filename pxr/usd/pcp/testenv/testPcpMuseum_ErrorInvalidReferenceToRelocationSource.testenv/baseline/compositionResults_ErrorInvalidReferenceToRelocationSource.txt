@@ -1,0 +1,86 @@
+Loading @ErrorInvalidReferenceToRelocationSource/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </Bad_ReloOfPreRelo>
+
+Prim Stack:
+
+------------------------------------------------------------------------
+Results for composing </Good_ReloOfRelocated>
+
+Prim Stack:
+    char.usda            /Char/Relocated
+    model.usda           /Model/PreRelo
+
+Child names:
+     ['ModelChild', 'RelocatedChild']
+
+------------------------------------------------------------------------
+Results for composing </Good_ReloOfRelocated/ModelChild>
+
+Prim Stack:
+    model.usda           /Model/PreRelo/ModelChild
+
+------------------------------------------------------------------------
+Results for composing </Good_ReloOfRelocated/RelocatedChild>
+
+Prim Stack:
+    char.usda            /Char/Relocated/RelocatedChild
+
+------------------------------------------------------------------------
+Results for composing </Good_RefToRelocated>
+
+Prim Stack:
+    root.usda            /Good_RefToRelocated
+    char.usda            /Char/Relocated
+    model.usda           /Model/PreRelo
+
+Child names:
+     ['ModelChild', 'RelocatedChild']
+
+------------------------------------------------------------------------
+Results for composing </Good_RefToRelocated/ModelChild>
+
+Prim Stack:
+    model.usda           /Model/PreRelo/ModelChild
+
+------------------------------------------------------------------------
+Results for composing </Good_RefToRelocated/RelocatedChild>
+
+Prim Stack:
+    char.usda            /Char/Relocated/RelocatedChild
+
+------------------------------------------------------------------------
+Results for composing </Good_RefToChildOfRelocated>
+
+Prim Stack:
+    root.usda            /Good_RefToChildOfRelocated
+    model.usda           /Model/PreRelo/ModelChild
+
+------------------------------------------------------------------------
+Results for composing </Bad_RefToPreRelo>
+
+Prim Stack:
+    root.usda            /Bad_RefToPreRelo
+
+------------------------------------------------------------------------
+Results for composing </Bad_RefToChildOfPreRelo>
+
+Prim Stack:
+    root.usda            /Bad_RefToChildOfPreRelo
+
+------------------------------------------------------------------------
+Results for composing </ReferencedChar>
+
+Prim Stack:
+    root.usda            /ReferencedChar
+    char.usda            /Char
+    model.usda           /Model
+
+Prohibited child names:
+     ['PreRelo', 'Relocated']
+

@@ -1,0 +1,22 @@
+#usda 1.0
+
+def GprimPivot "Rig" (
+    variantSets = "Style"
+)
+{
+    class Scope "SymRig"
+    {
+    }
+
+    def Scope "LRig" (
+        inherits = </Rig/SymRig>
+    )
+    {
+    }
+
+    def Scope "RRig" (
+        inherits = </Rig/SymRig>
+    )
+    {
+    }
+}

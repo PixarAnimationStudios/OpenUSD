@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    defaultPrim = "Ref1"
+    expressionVariables = {
+    	string "X" = "localLayer"
+    }
+)
+
+def "Ref1" (
+	TestPcp_assetPath = @`"./${X}.usda"`@
+	TestPcp_assetPathArray = [@`"./${X}.usda"`@, @localLayer.usda@]
+) {
+	asset TestPcp_assetPath = @`"./${X}.usda"`@
+	asset[] TestPcp_assetPathArray = [@`"./${X}.usda"`@, @localLayer.usda@]
+}

@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -49,13 +32,6 @@ TF_DEFINE_PUBLIC_TOKENS(HdExtComputationInputComputationSchemaTokens,
 // --(BEGIN CUSTOM CODE: Schema Methods)--
 // --(END CUSTOM CODE: Schema Methods)--
 
-HdTokenDataSourceHandle
-HdExtComputationInputComputationSchema::GetName() const
-{
-    return _GetTypedDataSource<HdTokenDataSource>(
-        HdExtComputationInputComputationSchemaTokens->name);
-}
-
 HdPathDataSourceHandle
 HdExtComputationInputComputationSchema::GetSourceComputation() const
 {
@@ -73,20 +49,14 @@ HdExtComputationInputComputationSchema::GetSourceComputationOutputName() const
 /*static*/
 HdContainerDataSourceHandle
 HdExtComputationInputComputationSchema::BuildRetained(
-        const HdTokenDataSourceHandle &name,
         const HdPathDataSourceHandle &sourceComputation,
         const HdTokenDataSourceHandle &sourceComputationOutputName
 )
 {
-    TfToken _names[3];
-    HdDataSourceBaseHandle _values[3];
+    TfToken _names[2];
+    HdDataSourceBaseHandle _values[2];
 
     size_t _count = 0;
-
-    if (name) {
-        _names[_count] = HdExtComputationInputComputationSchemaTokens->name;
-        _values[_count++] = name;
-    }
 
     if (sourceComputation) {
         _names[_count] = HdExtComputationInputComputationSchemaTokens->sourceComputation;
@@ -98,14 +68,6 @@ HdExtComputationInputComputationSchema::BuildRetained(
         _values[_count++] = sourceComputationOutputName;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
-}
-
-HdExtComputationInputComputationSchema::Builder &
-HdExtComputationInputComputationSchema::Builder::SetName(
-    const HdTokenDataSourceHandle &name)
-{
-    _name = name;
-    return *this;
 }
 
 HdExtComputationInputComputationSchema::Builder &
@@ -128,7 +90,6 @@ HdContainerDataSourceHandle
 HdExtComputationInputComputationSchema::Builder::Build()
 {
     return HdExtComputationInputComputationSchema::BuildRetained(
-        _name,
         _sourceComputation,
         _sourceComputationOutputName
     );

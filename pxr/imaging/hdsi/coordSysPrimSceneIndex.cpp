@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 
 #include "pxr/imaging/hdsi/coordSysPrimSceneIndex.h"
 
@@ -34,12 +17,13 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/tf/scopeDescription.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((coordSysPrimName, "__coordSys"))
+    ((coordSysPrimPrefix, "__coordSys_"))
     (xformDependency)
 );
 
@@ -61,20 +45,18 @@ _IgnoreBinding(const SdfPath &targetedPrimPath)
 // Path for coord sys prim we need to create under a prim targeted
 // by coord sys binding with given name.
 //
-// E.g. /PATH.__coordSys:FOO.
+// E.g. </PATH/__coordSys_FOO>
 SdfPath
 _PathForCoordSysPrim(const SdfPath &targetedPrimPath,
                      const TfToken &name)
 {
-    const TfToken propName(
-        SdfPath::JoinIdentifier(
-            TfTokenVector{_tokens->coordSysPrimName, name}));
-
-    return targetedPrimPath.AppendProperty(propName);
+    const TfToken childPrimName(
+        _tokens->coordSysPrimPrefix.GetString() + name.GetString());
+    return targetedPrimPath.AppendChild(childPrimName);
 }
 
 // Data source for locator coordSys:FOO on a prim
-// /PATH.__coordSys:FOO where /PATH is a path targeted by a
+// </PATH/__coordSys_FOO> where </PATH> is a path targeted by a
 // coord sys binding and FOO is the name of the binding.
 //
 class _CoordSysPrimDataSource : public HdContainerDataSource
@@ -256,7 +238,7 @@ HdsiCoordSysPrimSceneIndex::_GetCoordSysPrimSource(
 
     const std::string &primName = primPath.GetName();
 
-    static const std::string &prefix = _tokens->coordSysPrimName.GetString();
+    static const std::string &prefix = _tokens->coordSysPrimPrefix.GetString();
     if (!TfStringStartsWith(primName, prefix)) {
         return nullptr;
     }
@@ -268,7 +250,8 @@ HdsiCoordSysPrimSceneIndex::_GetCoordSysPrimSource(
         return nullptr;
     }
     
-    const TfToken coordSysName(SdfPath::StripNamespace(primName));
+    const TfToken coordSysName(
+        primName.substr( _tokens->coordSysPrimPrefix.size() ));
     const auto it2 = it->second.find(coordSysName);
     if (it2 == it->second.end()) {
         return nullptr;
@@ -426,6 +409,7 @@ HdsiCoordSysPrimSceneIndex::_PrimsAdded(
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
     TRACE_FUNCTION();
+    TF_DESCRIBE_SCOPE("Processing coordinate systems");
 
     const bool isObserved = _IsObserved();
 
@@ -461,6 +445,7 @@ HdsiCoordSysPrimSceneIndex::_PrimsDirtied(
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
     TRACE_FUNCTION();
+    TF_DESCRIBE_SCOPE("Processing coordinate systems");
 
     const bool isObserved = _IsObserved();
 

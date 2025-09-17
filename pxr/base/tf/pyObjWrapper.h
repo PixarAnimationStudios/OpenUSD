@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_TF_PY_OBJ_WRAPPER_H
 #define PXR_BASE_TF_PY_OBJ_WRAPPER_H
@@ -34,9 +17,8 @@
 // for build issues when including Python.h
 #include "pxr/base/tf/pySafePython.h"
 
-#include <boost/functional/hash.hpp>
-#include <boost/python/object_fwd.hpp>
-#include <boost/python/object_operators.hpp>
+#include "pxr/external/boost/python/object_fwd.hpp"
+#include "pxr/external/boost/python/object_operators.hpp"
 
 #include <iosfwd>
 #include <memory>
@@ -69,33 +51,33 @@ private:
 ///
 /// Boost Python object wrapper.
 ///
-/// Provides a wrapper around boost::python::object that works correctly for the
+/// Provides a wrapper around pxr_boost::python::object that works correctly for the
 /// following basic operations regardless of the GIL state: default construction,
 /// copy construction, assignment, (in)equality comparison, hash_value(), and
 /// destruction.
 ///
 /// None of those work correctly in the presence of an unlocked GIL for
-/// boost::python::object.  This class only actually acquires the GIL for default
+/// pxr_boost::python::object.  This class only actually acquires the GIL for default
 /// construction, destruction and for some (in)equality comparisons.  The other
 /// operations do not require taking the GIL.
 ///
-/// This is primarily useful in cases where a boost::python::object might be
+/// This is primarily useful in cases where a pxr_boost::python::object might be
 /// destroyed without a locked GIL by a client blind to that fact.  This occurs
 /// when a registry, for example, holds type-erased objects.  If one
 /// of the type-erased objects in the registry happens to hold a
-/// boost::python::object, that type-erased object must be destroyed while the
+/// pxr_boost::python::object, that type-erased object must be destroyed while the
 /// GIL is held but it's unreasonable to require that the registry know that.
 /// This class helps solve that problem.
 ///
-/// This class also provides many of the operators that boost::python::object
-/// provides, by virtue of deriving from boost::python::api::object_operators<T>.
+/// This class also provides many of the operators that pxr_boost::python::object
+/// provides, by virtue of deriving from pxr_boost::python::api::object_operators<T>.
 /// However it is important to note that callers must ensure the GIL is held
 /// before using these operators!
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 class TfPyObjWrapper
-    : public boost::python::api::object_operators<TfPyObjWrapper>
+    : public pxr_boost::python::api::object_operators<TfPyObjWrapper>
 {
-    typedef boost::python::object object;
+    typedef pxr_boost::python::object object;
 
 public:
 
@@ -145,8 +127,8 @@ public:
 private:
 
     // Befriend object_operators to allow it access to implicit conversion to
-    // boost::python::object.
-    friend class boost::python::api::object_operators<TfPyObjWrapper>;
+    // pxr_boost::python::object.
+    friend class pxr_boost::python::api::object_operators<TfPyObjWrapper>;
     operator object const &() const {
         return Get();
     }

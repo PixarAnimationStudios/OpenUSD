@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_ARCH_DEFINES_H
 #define PXR_BASE_ARCH_DEFINES_H
@@ -27,8 +10,9 @@
 //
 // OS
 //
-
-#if defined(__linux__)
+#if defined(__EMSCRIPTEN__)
+#define ARCH_OS_WASM_VM
+#elif defined(__linux__)
 #define ARCH_OS_LINUX
 #elif defined(__APPLE__)
 #include "TargetConditionals.h"
@@ -52,7 +36,8 @@
 #if defined(i386) || defined(__i386__) || defined(__x86_64__) || \
     defined(_M_IX86) || defined(_M_X64)
 #define ARCH_CPU_INTEL
-#elif defined(__arm__) || defined(__aarch64__) || defined(_M_ARM)
+#elif defined(__arm__) || defined(__aarch64__) || defined(_M_ARM) || \
+    defined(_M_ARM64)
 #define ARCH_CPU_ARM
 #endif
 
@@ -60,8 +45,11 @@
 // Bits
 //
 
-#if defined(__x86_64__) || defined(__aarch64__) || defined(_M_X64)
+#if defined(__x86_64__) || defined(__aarch64__) || defined(_M_X64) || \
+    defined(_M_ARM64) || defined(__wasm64__)
 #define ARCH_BITS_64
+#elif defined(__wasm32__)
+#define ARCH_BITS_32
 #else
 #error "Unsupported architecture.  x86_64 or ARM64 required."
 #endif
@@ -96,15 +84,21 @@
 #define ARCH_HAS_GNU_STL_EXTENSIONS
 #endif
 
-// The current version of Apple clang does not support the thread_local
-// keyword.
-#if !(defined(ARCH_OS_DARWIN) && defined(ARCH_COMPILER_CLANG))
-#define ARCH_HAS_THREAD_LOCAL
-#endif
-
 // The MAP_POPULATE flag for mmap calls only exists on Linux platforms.
 #if defined(ARCH_OS_LINUX)
 #define ARCH_HAS_MMAP_MAP_POPULATE
+#endif
+
+// When using MSVC, provide an easy way to detect whether the older
+// "traditional" preprocessor is being used as opposed to the newer, more
+// standards-conforming preprocessor. The traditional preprocessor may require
+// custom versions of macros.
+// See here for more detail about MSVC's preprocessors:
+// https://learn.microsoft.com/en-us/cpp/preprocessor/preprocessor-experimental-overview
+#if defined(ARCH_COMPILER_MSVC)
+    #if !defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL
+    #define ARCH_PREPROCESSOR_MSVC_TRADITIONAL
+    #endif
 #endif
 
 #endif // PXR_BASE_ARCH_DEFINES_H 

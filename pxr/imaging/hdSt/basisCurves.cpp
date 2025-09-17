@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 
@@ -61,6 +44,7 @@ HdStBasisCurves::HdStBasisCurves(SdfPath const& id)
     , _customDirtyBitsInUse(0)
     , _refineLevel(0)
     , _displayOpacity(false)
+    , _displayInOverlay(false)
     , _occludedSelectionShowsThrough(false)
     , _pointsShadingEnabled(false)
 {
@@ -376,6 +360,10 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
         resourceRegistry->GetHgi()->GetCapabilities()->
             IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
 
+    bool const nativeRoundPoints =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+            IsSet(HgiDeviceCapabilitiesBitsRoundPoints);
+
     HdSt_BasisCurvesShaderKey shaderKey(curveType,
                                         curveBasis,
                                         drawStyle,
@@ -385,7 +373,8 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
                                         shadingTerminal,
                                         hasAuthoredTopologicalVisiblity,
                                         _pointsShadingEnabled,
-                                        hasMetalTessellation);
+                                        hasMetalTessellation,
+                                        nativeRoundPoints);
 
     TF_DEBUG(HD_RPRIM_UPDATED).
             Msg("HdStBasisCurves(%s) - Shader Key PrimType: %s\n ",
@@ -603,7 +592,7 @@ HdStBasisCurves::_UpdateMaterialTagsForAllReprs(HdSceneDelegate *sceneDelegate,
 
             HdStSetMaterialTag(sceneDelegate, renderParam, drawItem, 
                 this->GetMaterialId(), _displayOpacity, 
-                _occludedSelectionShowsThrough);
+                _displayInOverlay, _occludedSelectionShowsThrough);
         }
     }
 }
@@ -628,6 +617,7 @@ HdStBasisCurves::_PopulateTopology(HdSceneDelegate *sceneDelegate,
     if (*dirtyBits & HdChangeTracker::DirtyDisplayStyle) {
         HdDisplayStyle ds = GetDisplayStyle(sceneDelegate);
         _refineLevel = ds.refineLevel;
+        _displayInOverlay = ds.displayInOverlay;
         _occludedSelectionShowsThrough = ds.occludedSelectionShowsThrough;
         _pointsShadingEnabled = ds.pointsShadingEnabled;
     }
@@ -902,13 +892,14 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
 
         //assert name not in range.bufferArray.GetResources()
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
-        if (!value.IsEmpty()) {
-            ProcessVertexOrVaryingPrimvar(id, primvar.name,
-                HdInterpolationVertex, value, _topology, &sources);
+        if (!HdStIsPrimvarValidForDrawItem(drawItem, primvar.name, value)) {
+            continue;
+        }
+        ProcessVertexOrVaryingPrimvar(id, primvar.name,
+            HdInterpolationVertex, value, _topology, &sources);
 
-            if (primvar.name == HdTokens->displayOpacity) {
-                _displayOpacity = true;
-            }
+        if (primvar.name == HdTokens->displayOpacity) {
+            _displayOpacity = true;
         }
     }
 
@@ -1018,13 +1009,14 @@ HdStBasisCurves::_PopulateVaryingPrimvars(HdSceneDelegate *sceneDelegate,
 
         //assert name not in range.bufferArray.GetResources()
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
-        if (!value.IsEmpty()) {
-            ProcessVertexOrVaryingPrimvar(id, primvar.name, 
-                HdInterpolationVarying, value, _topology, &sources);
+        if (!HdStIsPrimvarValidForDrawItem(drawItem, primvar.name, value)) {
+            continue;
+        }
+        ProcessVertexOrVaryingPrimvar(id, primvar.name, 
+            HdInterpolationVarying, value, _topology, &sources);
 
-            if (primvar.name == HdTokens->displayOpacity) {
-                _displayOpacity = true;
-            }
+        if (primvar.name == HdTokens->displayOpacity) {
+            _displayOpacity = true;
         }
     }
  
@@ -1097,24 +1089,25 @@ HdStBasisCurves::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
             continue;
 
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
-        if (!value.IsEmpty()) {
-            HdBufferSourceSharedPtr source =
-                std::make_shared<HdVtBufferSource>(primvar.name, value);
+        if (!HdStIsPrimvarValidForDrawItem(drawItem, primvar.name, value)) {
+            continue;
+        }
+        HdBufferSourceSharedPtr source =
+            std::make_shared<HdVtBufferSource>(primvar.name, value);
 
-            // verify primvar length
-            if (source->GetNumElements() != numCurves) {
-                HF_VALIDATION_WARN(id,
-                    "# of curves mismatch (%d != %d) for uniform primvar %s",
-                    (int)source->GetNumElements(), (int)numCurves, 
-                    primvar.name.GetText());
-                continue;
-            }
-           
-            sources.push_back(source);
+        // verify primvar length
+        if (source->GetNumElements() != numCurves) {
+            HF_VALIDATION_WARN(id,
+                "# of curves mismatch (%d != %d) for uniform primvar %s",
+                (int)source->GetNumElements(), (int)numCurves, 
+                primvar.name.GetText());
+            continue;
+        }
+        
+        sources.push_back(source);
 
-            if (primvar.name == HdTokens->displayOpacity) {
-                 _displayOpacity = true;
-            }
+        if (primvar.name == HdTokens->displayOpacity) {
+            _displayOpacity = true;
         }
     }
 

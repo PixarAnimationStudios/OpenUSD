@@ -1,14 +1,14 @@
-Loading @TrickyConnectionToRelocatedAttribute/root.sdf@
+Loading @TrickyConnectionToRelocatedAttribute/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </HumanRig>
 
 Prim Stack:
-    root.sdf             /HumanRig
+    root.usda             /HumanRig
 
 Child names:
      ['Anim', 'rig']
@@ -17,7 +17,7 @@ Child names:
 Results for composing </HumanRig/Anim>
 
 Prim Stack:
-    root.sdf             /HumanRig/Anim
+    root.usda             /HumanRig/Anim
 
 Child names:
      ['Face']
@@ -26,7 +26,7 @@ Child names:
 Results for composing </HumanRig/Anim/Face>
 
 Prim Stack:
-    face_rig.sdf         /FaceRig/Anim
+    face_rig.usda         /FaceRig/Anim
 
 Child names:
      ['LEye', 'REye']
@@ -35,39 +35,39 @@ Child names:
 Results for composing </HumanRig/Anim/Face/LEye>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig/Anim
-    eye_rig.sdf          /EyeRig/Anim
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig/Anim
+    eye_rig.usda          /EyeRig/Anim
 
 Property names:
      ['foo', 'baz']
 
 Property stacks:
 /HumanRig/Anim/Face/LEye.baz:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig/Anim.baz
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig/Anim.baz
 /HumanRig/Anim/Face/LEye.foo:
-    eye_rig.sdf          /EyeRig/Anim.foo
+    eye_rig.usda          /EyeRig/Anim.foo
 
 ------------------------------------------------------------------------
 Results for composing </HumanRig/Anim/Face/REye>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig/Anim
-    eye_rig.sdf          /EyeRig/Anim
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig/Anim
+    eye_rig.usda          /EyeRig/Anim
 
 Property names:
      ['foo', 'baz']
 
 Property stacks:
 /HumanRig/Anim/Face/REye.baz:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig/Anim.baz
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig/Anim.baz
 /HumanRig/Anim/Face/REye.foo:
-    eye_rig.sdf          /EyeRig/Anim.foo
+    eye_rig.usda          /EyeRig/Anim.foo
 
 ------------------------------------------------------------------------
 Results for composing </HumanRig/rig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig
+    root.usda             /HumanRig/rig
 
 Child names:
      ['Face']
@@ -76,8 +76,8 @@ Child names:
 Results for composing </HumanRig/rig/Face>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face
-    face_rig.sdf         /FaceRig
+    root.usda             /HumanRig/rig/Face
+    face_rig.usda         /FaceRig
 
 Child names:
      ['rig']
@@ -89,8 +89,8 @@ Prohibited child names:
 Results for composing </HumanRig/rig/Face/rig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/rig
-    face_rig.sdf         /FaceRig/rig
+    root.usda             /HumanRig/rig/Face/rig
+    face_rig.usda         /FaceRig/rig
 
 Child names:
      ['SymEyeRig', 'LEyeRig', 'REyeRig']
@@ -99,9 +99,9 @@ Child names:
 Results for composing </HumanRig/rig/Face/rig/SymEyeRig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig
-    face_rig.sdf         /FaceRig/rig/SymEyeRig
-    eye_rig.sdf          /EyeRig
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig
+    face_rig.usda         /FaceRig/rig/SymEyeRig
+    eye_rig.usda          /EyeRig
 
 Child names:
      ['Anim', 'rig']
@@ -110,24 +110,24 @@ Child names:
 Results for composing </HumanRig/rig/Face/rig/SymEyeRig/Anim>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig/Anim
-    eye_rig.sdf          /EyeRig/Anim
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig/Anim
+    eye_rig.usda          /EyeRig/Anim
 
 Property names:
      ['foo', 'baz']
 
 Property stacks:
 /HumanRig/rig/Face/rig/SymEyeRig/Anim.baz:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig/Anim.baz
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig/Anim.baz
 /HumanRig/rig/Face/rig/SymEyeRig/Anim.foo:
-    eye_rig.sdf          /EyeRig/Anim.foo
+    eye_rig.usda          /EyeRig/Anim.foo
 
 ------------------------------------------------------------------------
 Results for composing </HumanRig/rig/Face/rig/SymEyeRig/rig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig/rig
-    eye_rig.sdf          /EyeRig/rig
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig/rig
+    eye_rig.usda          /EyeRig/rig
 
 Child names:
      ['Mover']
@@ -136,16 +136,16 @@ Child names:
 Results for composing </HumanRig/rig/Face/rig/SymEyeRig/rig/Mover>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig/rig/Mover
-    eye_rig.sdf          /EyeRig/rig/Mover
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig/rig/Mover
+    eye_rig.usda          /EyeRig/rig/Mover
 
 Property names:
      ['bar']
 
 Property stacks:
 /HumanRig/rig/Face/rig/SymEyeRig/rig/Mover.bar:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig/rig/Mover.bar
-    eye_rig.sdf          /EyeRig/rig/Mover.bar
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig/rig/Mover.bar
+    eye_rig.usda          /EyeRig/rig/Mover.bar
 
 Attribute connections:
 /HumanRig/rig/Face/rig/SymEyeRig/rig/Mover.bar:
@@ -156,10 +156,10 @@ Attribute connections:
 Results for composing </HumanRig/rig/Face/rig/LEyeRig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig
-    face_rig.sdf         /FaceRig/rig/LEyeRig
-    face_rig.sdf         /FaceRig/rig/SymEyeRig
-    eye_rig.sdf          /EyeRig
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig
+    face_rig.usda         /FaceRig/rig/LEyeRig
+    face_rig.usda         /FaceRig/rig/SymEyeRig
+    eye_rig.usda          /EyeRig
 
 Child names:
      ['rig']
@@ -171,8 +171,8 @@ Prohibited child names:
 Results for composing </HumanRig/rig/Face/rig/LEyeRig/rig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig/rig
-    eye_rig.sdf          /EyeRig/rig
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig/rig
+    eye_rig.usda          /EyeRig/rig
 
 Child names:
      ['Mover']
@@ -181,16 +181,16 @@ Child names:
 Results for composing </HumanRig/rig/Face/rig/LEyeRig/rig/Mover>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig/rig/Mover
-    eye_rig.sdf          /EyeRig/rig/Mover
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig/rig/Mover
+    eye_rig.usda          /EyeRig/rig/Mover
 
 Property names:
      ['bar']
 
 Property stacks:
 /HumanRig/rig/Face/rig/LEyeRig/rig/Mover.bar:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig/rig/Mover.bar
-    eye_rig.sdf          /EyeRig/rig/Mover.bar
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig/rig/Mover.bar
+    eye_rig.usda          /EyeRig/rig/Mover.bar
 
 Attribute connections:
 /HumanRig/rig/Face/rig/LEyeRig/rig/Mover.bar:
@@ -201,10 +201,10 @@ Attribute connections:
 Results for composing </HumanRig/rig/Face/rig/REyeRig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig
-    face_rig.sdf         /FaceRig/rig/REyeRig
-    face_rig.sdf         /FaceRig/rig/SymEyeRig
-    eye_rig.sdf          /EyeRig
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig
+    face_rig.usda         /FaceRig/rig/REyeRig
+    face_rig.usda         /FaceRig/rig/SymEyeRig
+    eye_rig.usda          /EyeRig
 
 Child names:
      ['rig']
@@ -216,8 +216,8 @@ Prohibited child names:
 Results for composing </HumanRig/rig/Face/rig/REyeRig/rig>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig/rig
-    eye_rig.sdf          /EyeRig/rig
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig/rig
+    eye_rig.usda          /EyeRig/rig
 
 Child names:
      ['Mover']
@@ -226,16 +226,16 @@ Child names:
 Results for composing </HumanRig/rig/Face/rig/REyeRig/rig/Mover>
 
 Prim Stack:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig/rig/Mover
-    eye_rig.sdf          /EyeRig/rig/Mover
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig/rig/Mover
+    eye_rig.usda          /EyeRig/rig/Mover
 
 Property names:
      ['bar']
 
 Property stacks:
 /HumanRig/rig/Face/rig/REyeRig/rig/Mover.bar:
-    root.sdf             /HumanRig/rig/Face/rig/SymEyeRig/rig/Mover.bar
-    eye_rig.sdf          /EyeRig/rig/Mover.bar
+    root.usda             /HumanRig/rig/Face/rig/SymEyeRig/rig/Mover.bar
+    eye_rig.usda          /EyeRig/rig/Mover.bar
 
 Attribute connections:
 /HumanRig/rig/Face/rig/REyeRig/rig/Mover.bar:

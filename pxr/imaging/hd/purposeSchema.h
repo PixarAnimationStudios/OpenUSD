@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -51,6 +34,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HD_PURPOSE_SCHEMA_TOKENS \
     (purpose) \
+    (inheritable) \
+    (fallback) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdPurposeSchemaTokens, HD_API,
     HD_PURPOSE_SCHEMA_TOKENS);
@@ -58,6 +43,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdPurposeSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdPurposeSchema
+///
 class HdPurposeSchema : public HdSchema
 {
 public:
@@ -79,13 +66,33 @@ public:
     /// @}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
+
+    /// Resolve purpose to a TfToken value.
+    /// This applies the fallback value as needed, and ultimately
+    /// uses "geometry" if no other value is provided.
+    HD_API
+    TfToken ResolvePurposeValue();
+
 // --(END CUSTOM CODE: Schema Methods)--
 
     /// \name Member accessor
     /// @{
 
     HD_API
-    HdTokenDataSourceHandle GetPurpose() const; 
+    HdTokenDataSourceHandle GetPurpose() const;
+
+    /// The "inheritable" flag indicates if this purpose schema should be
+    /// inherited by the HdFlattenedPurposeDataSourceProvider.
+    HD_API
+    HdBoolDataSourceHandle GetInheritable() const;
+
+    /// The "purpose" concept in Hydra is modelled after the UsdGeomImageable
+    /// concept, which allows prim types to define a purpose fallback value to
+    /// be used when no purpose value is found on a prim or its ancestors. The
+    /// Hydra schema transports this fallback, if present, to apply it during
+    /// flattening.
+    HD_API
+    HdTokenDataSourceHandle GetFallback() const; 
 
     /// @}
 
@@ -117,7 +124,9 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdTokenDataSourceHandle &purpose
+        const HdTokenDataSourceHandle &purpose,
+        const HdBoolDataSourceHandle &inheritable,
+        const HdTokenDataSourceHandle &fallback
     );
 
     /// \class HdPurposeSchema::Builder
@@ -132,6 +141,12 @@ public:
         HD_API
         Builder &SetPurpose(
             const HdTokenDataSourceHandle &purpose);
+        HD_API
+        Builder &SetInheritable(
+            const HdBoolDataSourceHandle &inheritable);
+        HD_API
+        Builder &SetFallback(
+            const HdTokenDataSourceHandle &fallback);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -139,6 +154,8 @@ public:
 
     private:
         HdTokenDataSourceHandle _purpose;
+        HdBoolDataSourceHandle _inheritable;
+        HdTokenDataSourceHandle _fallback;
 
     };
 

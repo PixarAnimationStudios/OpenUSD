@@ -5,7 +5,7 @@
                 "Types": {
                     "Test_PcpStreamingLayerReload_FileFormat": {
                         "bases": [
-                            "SdfTextFileFormat"
+                            "SdfUsdaFileFormat"
                         ],
                         "displayName": "Format to test reloading streaming layers",
                         "extensions": [

@@ -2,25 +2,8 @@
 #
 # Copyright 2019 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 import unittest, shutil
 from pxr import Sdf, Usd
@@ -77,19 +60,19 @@ class TestUsdCrateForPayloadLists(unittest.TestCase):
 
     # Verifies a crate file is the pre-payload list op 0.7.0 crate version
     def _VerifyCrateVersion07(self, filename):
-        info = Usd.CrateInfo.Open(filename)
+        info = Sdf.CrateInfo.Open(filename)
         self.assertEqual(info.GetFileVersion(), '0.7.0')
 
-    # Verifies a crate file is the 0.8.0 crate version that introduce payload
+    # Verifies a crate file is the 0.8.0 crate version that introduced payload
     # list ops.
     def _VerifyCrateVersion08(self, filename):
-        info = Usd.CrateInfo.Open(filename)
+        info = Sdf.CrateInfo.Open(filename)
         self.assertEqual(info.GetFileVersion(), '0.8.0')
 
-    # Verifies a crate file is the 0.9.0 crate version that requires the payload
-    # list ops from 0.8.0 only because it came after
+    # Verifies a crate file is the 0.9.0 crate version that introduced timecode
+    # value types.
     def _VerifyCrateVersion09(self, filename):
-        info = Usd.CrateInfo.Open(filename)
+        info = Sdf.CrateInfo.Open(filename)
         self.assertEqual(info.GetFileVersion(), '0.9.0')
 
     def test_ExportPayloadCrate(self):
@@ -104,9 +87,9 @@ class TestUsdCrateForPayloadLists(unittest.TestCase):
         self._VerifyLayerPrims(usdaLayer)
 
         # Export the this layer to a usdc file and verify that it is exported
-        # using the 0.9.0 crate file version as new files start at 0.9.0.
+        # using version 0.8.0.
         self.assertTrue(usdaLayer.Export(singlePayloadCrateFilename))
-        self._VerifyCrateVersion09(singlePayloadCrateFilename)
+        self._VerifyCrateVersion08(singlePayloadCrateFilename)
 
         # Open the crate layer and verify that it has the same prims and
         # payloads.
@@ -120,11 +103,10 @@ class TestUsdCrateForPayloadLists(unittest.TestCase):
             Sdf.Payload('PayloadNew1.usda', Sdf.Path('/Parent')),
             Sdf.Payload('PayloadNew2.usda', Sdf.Path('/Parent'))]
 
-        # Export layer to a new crate file and verify that it uses the 0.9.0
-        # crate version as this can not be represented in prior versions (and 
-        # also it's now the default version for new crate files).
+        # Export layer to a new crate file and verify that it uses the 0.8.0
+        # crate version since it now has payload listops.
         self.assertTrue(usdaLayer.Export(listPayloadCrateFilename))
-        self._VerifyCrateVersion09(listPayloadCrateFilename)
+        self._VerifyCrateVersion08(listPayloadCrateFilename)
 
         # Similar to the generic _VerifyLayerPrims but instead verifies that
         # '/PayloadRefNone' has two payloads instead.
@@ -178,10 +160,10 @@ class TestUsdCrateForPayloadLists(unittest.TestCase):
         usdaPayloadNoOpinion = usdaLayer.GetPrimAtPath('/PayloadNoOpinion')
         usdaPayloadNoOpinion.payloadList.explicitItems = [Sdf.Payload("","/PayloadRef1")]
 
-        # Export layer to a new crate file and verify that it uses the 0.9.0
-        # crate version as this can not be represented in prior versions.
+        # Export layer to a new crate file and verify that it uses the 0.8.0
+        # crate version.
         self.assertTrue(usdaLayer.Export(internalPayloadCrateFilename))
-        self._VerifyCrateVersion09(internalPayloadCrateFilename)
+        self._VerifyCrateVersion08(internalPayloadCrateFilename)
 
         # Similar to the generic _VerifyLayerPrims but instead verifies that
         # '/PayloadRefNoOpinion' has a single internal payload instead.
@@ -233,10 +215,10 @@ class TestUsdCrateForPayloadLists(unittest.TestCase):
         usdaPayloadRef1.payloadList.explicitItems = [
             Sdf.Payload('Payload.usda', Sdf.Path('/Parent'), Sdf.LayerOffset(12.0, 1.0))]
 
-        # Export layer to a new crate file and verify that it uses the 0.9.0
-        # crate version as this can not be represented in prior versions.
+        # Export layer to a new crate file and verify that it uses the 0.8.0
+        # crate version or newer.
         self.assertTrue(usdaLayer.Export(exportCrateFilename))
-        self._VerifyCrateVersion09(exportCrateFilename)
+        self._VerifyCrateVersion08(exportCrateFilename)
 
         # Similar to the generic _VerifyLayerPrims but instead verifies that
         # '/PayloadRef1' has a layer offset.
@@ -372,7 +354,7 @@ class TestUsdCrateForPayloadLists(unittest.TestCase):
         attr.default = Sdf.TimeCode(10)
         self.assertEqual(attr.default, 10)
 
-        # Save the layer and verify the 0.9 version
+        # Save the layer and verify the 0.9 version.
         self.assertTrue(layer.Save())
         self._VerifyCrateVersion09(filename)
 

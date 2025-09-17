@@ -1,14 +1,14 @@
-Loading @SpecializesAndAncestralArcs/root.sdf@
+Loading @SpecializesAndAncestralArcs/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Specializes>
 
 Prim Stack:
-    root.sdf             /Specializes
+    root.usda            /Specializes
 
 Child names:
      ['Child']
@@ -17,22 +17,22 @@ Child names:
 Results for composing </Specializes/Child>
 
 Prim Stack:
-    root.sdf             /Specializes/Child
+    root.usda            /Specializes/Child
 
 ------------------------------------------------------------------------
 Results for composing </Class>
 
 Prim Stack:
-    root.sdf             /Class
+    root.usda            /Class
 
 ------------------------------------------------------------------------
 Results for composing </AncestralReference>
 
 Prim Stack:
-    root.sdf             /AncestralReference
-    ref.sdf              /Ref
-    root.sdf             /Specializes
-    ref.sdf              /Specializes
+    root.usda            /AncestralReference
+    ref.usda             /Ref
+    root.usda            /Specializes
+    ref.usda             /Specializes
 
 Child names:
      ['Child']
@@ -41,13 +41,13 @@ Child names:
 Results for composing </AncestralReference/Child>
 
 Prim Stack:
-    root.sdf             /AncestralReference/Child
-    ref.sdf              /Ref/Child
-    root.sdf             /Specializes/Child
-    root.sdf             /Class
-    ref.sdf              /Specializes/Child
-    ref.sdf              /ChildRef
-    ref.sdf              /Class
-    ref2.sdf             /Ref2
-    ref2.sdf             /Class
+    root.usda            /AncestralReference/Child
+    ref.usda             /Ref/Child
+    root.usda            /Specializes/Child
+    root.usda            /Class
+    ref.usda             /Specializes/Child
+    ref.usda             /ChildRef
+    ref.usda             /Class
+    ref2.usda            /Ref2
+    ref2.usda            /Class
 

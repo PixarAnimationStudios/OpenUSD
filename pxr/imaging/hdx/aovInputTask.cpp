@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdx/aovInputTask.h"
 #include "pxr/imaging/hdx/hgiConversions.h"
@@ -255,10 +238,10 @@ HdxAovInputTask::_UpdateTexture(
     HdFormat hdFormat = buffer->GetFormat();
     // HgiFormatFloat32Vec3 not a supported texture format for Vulkan. Convert
     // data to vec4 format.
+    std::vector<float> float4Data;
     if (hdFormat == HdFormatFloat32Vec3) {
         hdFormat = HdFormatFloat32Vec4;
         const size_t numValues = 3 * dim[0] * dim[1] * dim[2];
-        std::vector<float> float4Data;
         _ConvertRGBtoRGBA(
             reinterpret_cast<const float*>(pixelData), numValues, &float4Data);
         pixelData = reinterpret_cast<const void*>(float4Data.data());

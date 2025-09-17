@@ -2,39 +2,19 @@ set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdLux)
 
 pxr_library(usdLux
+    INCLUDE_SCHEMA_FILES
+
     LIBRARIES
         tf
         vt
-        ndr
         sdf
+        sdr
         usd
         usdGeom
         usdShade
 
     PUBLIC_CLASSES
         blackbody
-        boundableLightBase
-        cylinderLight
-        diskLight
-        distantLight
-        domeLight
-        domeLight_1
-        geometryLight
-        lightAPI
-        lightFilter
-        lightListAPI
-        listAPI
-        meshLightAPI
-        nonboundableLightBase
-        pluginLight
-        pluginLightFilter
-        portalLight
-        rectLight
-        shadowAPI
-        shapingAPI
-        sphereLight
-        tokens
-        volumeLightAPI
 
     PUBLIC_HEADERS
         api.h
@@ -43,41 +23,8 @@ pxr_library(usdLux
         discoveryPlugin
         lightDefParser
 
-    PYTHON_CPPFILES
-        moduleDeps.cpp
-
-    PYMODULE_CPPFILES
-        module.cpp
-        wrapBoundableLightBase.cpp
-        wrapCylinderLight.cpp
-        wrapDiskLight.cpp
-        wrapDistantLight.cpp
-        wrapDomeLight.cpp
-        wrapDomeLight_1.cpp
-        wrapGeometryLight.cpp
-        wrapLightAPI.cpp
-        wrapLightFilter.cpp
-        wrapLightListAPI.cpp
-        wrapListAPI.cpp
-        wrapMeshLightAPI.cpp
-        wrapNonboundableLightBase.cpp
-        wrapPluginLight.cpp
-        wrapPluginLightFilter.cpp
-        wrapPortalLight.cpp
-        wrapRectLight.cpp
-        wrapShadowAPI.cpp
-        wrapShapingAPI.cpp
-        wrapSphereLight.cpp
-        wrapTokens.cpp
-        wrapVolumeLightAPI.cpp
-
     PYMODULE_FILES 
         __init__.py
-
-    RESOURCE_FILES
-        plugInfo.json
-        generatedSchema.usda
-        schema.usda:usdLux/schema.usda
 
     DOXYGEN_FILES
         overview.dox

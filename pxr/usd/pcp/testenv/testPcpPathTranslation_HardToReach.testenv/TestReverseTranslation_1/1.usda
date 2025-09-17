@@ -1,0 +1,15 @@
+#usda 1.0
+
+def __AnyType__ "M_1" (
+    add references = @./2.usda@</M_2>
+)
+{
+    over "B"
+    {
+    }
+
+    def Scope "C"
+    {
+        custom rel foo = </M_1/B>
+    }
+}

@@ -1,37 +1,17 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_WORK_REDUCE_H
 #define PXR_BASE_WORK_REDUCE_H
 
 /// \file work/reduce.h
 #include "pxr/pxr.h"
-#include "pxr/base/work/threadLimits.h"
 #include "pxr/base/work/api.h"
-
-#include <tbb/blocked_range.h>
-#include <tbb/parallel_reduce.h>
-#include <tbb/task_group.h>
+#include "pxr/base/work/impl.h"
+#include "pxr/base/work/threadLimits.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -109,35 +89,13 @@ WorkParallelReduceN(
 
     // Don't bother with parallel_reduce, if concurrency is limited to 1.
     if (WorkHasConcurrency()) {
-
-        class Work_Body_TBB
-        {
-        public:
-            Work_Body_TBB(Fn &fn) : _fn(fn) { }
-
-            V operator()(
-                const tbb::blocked_range<size_t> &r,
-                const V &value) const {
-                // Note that we std::forward _fn using Fn in order get the
-                // right operator().
-                // We maintain the right type in this way:
-                //  If Fn is T&, then reference collapsing gives us T& for _fn
-                //  If Fn is T, then std::forward correctly gives us T&& for _fn
-                return std::forward<Fn>(_fn)(r.begin(), r.end(), value);
-            }
-        private:
-            Fn &_fn;
-        };
-
-        // In most cases we do not want to inherit cancellation state from the
-        // parent context, so we create an isolated task group context.
-        tbb::task_group_context ctx(tbb::task_group_context::isolated);
-        return tbb::parallel_reduce(tbb::blocked_range<size_t>(0,n,grainSize),
+        PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
+        return WorkImpl_ParallelReduceN(
             identity,
-            Work_Body_TBB(loopCallback),
+            n,
+            std::forward<Fn>(loopCallback),
             std::forward<Rn>(reductionCallback),
-            tbb::auto_partitioner(),
-            ctx);
+            grainSize);
     }
         
     // If concurrency is limited to 1, execute serially.

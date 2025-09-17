@@ -3,25 +3,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 import sys, unittest
 from pxr import Sdf,Usd,Tf
@@ -446,6 +429,70 @@ class TestUsdStage(unittest.TestCase):
             # Should get an invalid prim if passed an empty path
             assert(not s.GetPrimAtPath(Sdf.Path.emptyPath))
 
+    def test_StageCompositionErrors(self):
+        layer = Sdf.Layer.CreateAnonymous('.usda')
+        layer.ImportFromString('''
+        #usda 1.0
+        (
+            subLayers = [
+                @missingLayer.usda@
+            ]
+        )
+
+        def "World"
+        {
+            def "Inst1" (
+                instanceable = true
+                prepend references = </Main>
+            )
+            {
+            }
+            def "Inst2" (
+                instanceable = true
+                prepend references = </Main>
+            )
+            {
+            }
+        }
+
+        def "Main" (
+        )
+        {
+            def "First" (
+                add references = </Main/Second>
+            )
+            {
+            }
+
+            def "Second" (
+                add references = </Main/First>
+            )
+            {
+            }
+        }'''.strip())
+        s = Usd.Stage.Open(layer.identifier)
+        errors = s.GetCompositionErrors()
+        # Make sure composition errors are always in a specific order, to test
+        # the error types below
+        errors = sorted(errors, key=lambda error: error.rootSite.path)
+        self.assertEqual(len(errors), 5)
+        
+        # Find out whats the source path for the instances, for which errors
+        # will be reported.
+        srcPrimPath = s.GetPrototypes()[0]._GetSourcePrimIndex().rootNode.path
+        
+        from pxr import Pcp
+        expectedErrors = [ (Pcp.ErrorType_InvalidSublayerPath, "/"),
+                               (Pcp.ErrorType_ArcCycle, "/Main/First"),
+                               (Pcp.ErrorType_ArcCycle, "/Main/Second"),
+                               (Pcp.ErrorType_ArcCycle, 
+                                srcPrimPath.AppendChild("First").pathString),
+                               (Pcp.ErrorType_ArcCycle, 
+                                srcPrimPath.AppendChild("Second").pathString) ]
+        for i in range(5):
+            self.assertEqual(expectedErrors[i][0], errors[i].errorType)
+            self.assertEqual(expectedErrors[i][1], errors[i].rootSite.path)
+
     def test_GetAtPath(self):
         for fmt in allFormats:
             s = Usd.Stage.CreateInMemory('GetAtPath.'+fmt)
@@ -458,20 +505,30 @@ class TestUsdStage(unittest.TestCase):
             self.assertTrue(x)
 
             self.assertEqual(foo, s.GetPrimAtPath('/Foo'))
+            self.assertEqual(foo, s.GetObjectAtPath('/Foo'))
             self.assertEqual(y, s.GetPropertyAtPath('/Foo.y'))
+            self.assertEqual(y, s.GetObjectAtPath('/Foo.y'))
             self.assertEqual(x, s.GetPropertyAtPath('/Foo.x'))
+            self.assertEqual(x, s.GetObjectAtPath('/Foo.x'))
             self.assertEqual(y, s.GetRelationshipAtPath('/Foo.y'))
+            self.assertEqual(y, s.GetObjectAtPath('/Foo.y'))
             self.assertEqual(x, s.GetAttributeAtPath('/Foo.x'))
-    
-            self.assertFalse(s.GetPropertyAtPath('/Foo'))
+            self.assertEqual(x, s.GetObjectAtPath('/Foo.x'))
+
             self.assertFalse(s.GetAttributeAtPath('/Foo.y'))
             self.assertFalse(s.GetRelationshipAtPath('/Foo.x'))
+
+            # This previously returned `/Foo.x` due to a bug.
+            self.assertFalse(s.GetObjectAtPath('/Foo.rel[/targ].x'))
 
             self.assertFalse(s.GetAttributeAtPath(Sdf.Path.emptyPath))
             self.assertFalse(s.GetRelationshipAtPath(Sdf.Path.emptyPath))
             self.assertFalse(s.GetPropertyAtPath(Sdf.Path.emptyPath))
             self.assertFalse(s.GetPrimAtPath(Sdf.Path.emptyPath))
             self.assertFalse(s.GetObjectAtPath(Sdf.Path.emptyPath))
+
+            self.assertEqual(s.GetPseudoRoot(), s.GetPrimAtPath('/'))
+            self.assertEqual(s.GetPseudoRoot(), s.GetObjectAtPath('/'))
 
     def test_Save(self):
         for fmt in allFormats:

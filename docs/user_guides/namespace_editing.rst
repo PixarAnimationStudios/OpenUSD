@@ -10,19 +10,26 @@ A namespace edit is an operation that removes or changes the namespace path of
 a **composed** prim or property on a stage. Edit operations currently include 
 deleting and moving (renaming and/or reparenting) a composed prim or property.
 
-While it is possible to do some of these operations using Sdf or UsdStage APIs, 
-these APIs can only edit prims or properties on a single layer. Namespace 
-editing handles edits for prims and properties that are composed from multiple 
-layers or other composition arcs. Using namespace editing lets you robustly
-delete and move prims that have opinions throughout a LayerStack that you have
-the authority to edit. Namespace editing also allows "non-destructive" 
-deletion and moving of prims defined in LayerStacks that you don't have the 
-authority to edit.
+While it is possible to do some of these operations using Sdf or UsdStage APIs,
+these APIs can only edit prims or properties on a single layer. Additionally, 
+any paths targeting the moved or deleted objects will need to be manually fixed. 
+Use namespace editing to easily and safely delete or move prims and properties
+across the :ref:`LayerStack <usdglossary-layerstack>`. Namespace editing handles 
+edits for objects composed from multiple layers and handles changing 
+:ref:`EditTargets <usdglossary-edittarget>` or fixing paths targeting the 
+edited objects, automatically.
+
+Namespace also provides non-destructive editing of prims defined across 
+composition arcs by adding the **relocates** composition arc if needed.
+By using relocates, namespace editing ensures non-destructive edits by *not*
+modifying the source of a composition arc. This is necessary for workflows where
+you might not be able to make changes to the source of the composition 
+arc directly (e.g. you're referencing prims from assets maintained by a 
+different department that are also being referenced elsewhere).
 
 As a simple example, if you had :filename:`model.usda` with various prims:
 
 .. code-block:: usda
-    :caption: model.usda
 
     #usda 1.0 
     (
@@ -39,10 +46,9 @@ As a simple example, if you had :filename:`model.usda` with various prims:
     }
 
 And :filename:`main.usda`, which has :filename:`model.usda` as a sublayer and
-overs for :sdfpath:`/modelScope` and :sdfpath:`/modelScope/model1`:
+overrides for :sdfpath:`/modelScope` and :sdfpath:`/modelScope/model1`:
 
 .. code-block:: usda
-    :caption: main.usda
 
     #usda 1.0 
     (
@@ -60,15 +66,16 @@ overs for :sdfpath:`/modelScope` and :sdfpath:`/modelScope/model1`:
     }
 
 After loading :filename:`main.usda` into your stage, if you wanted to fully 
-remove :sdfpath:`/modelScope/model1` from your composed stage, using UsdStage 
+remove :sdfpath:`/modelScope/model1` from your composed stage using UsdStage 
 APIs, you'd have to delete it twice: once in :filename:`main.usda`, and then, 
-after changing edit targets, again in the :filename:`model.usda` layer:
+after changing :ref:`EditTargets <usdglossary-edittarget>`, again in the 
+:filename:`model.usda` layer:
 
 .. code-block:: python
 
     stage = Usd.Stage.Open("main.usda")
 
-    # This only removes model1 in model.usda, not
+    # This only removes model1 in main.usda, not
     # model1 in the model.usda layer
     removeResult = stage.RemovePrim("/modelScope/model1")  
 
@@ -77,8 +84,8 @@ after changing edit targets, again in the :filename:`model.usda` layer:
     # set the edit target to the model.usda layer and call RemovePrim() again
 
 Whereas using namespace editing will properly handle removing the prim from
-both :filename:`main.usda` and :filename:`model.usda`, handling edit target
-changes for you:
+both :filename:`main.usda` and :filename:`model.usda` in a single edit 
+operation, handling edit target changes for you:
 
 .. code-block:: python
 
@@ -86,19 +93,19 @@ changes for you:
     removeResult = editor.DeletePrimAtPath("/modelScope/model1")
     editor.ApplyEdits()
 
-Namespace editing also handles issues such as making sure that paths to 
-and overrides of edited objects are still valid after renaming or reparenting 
+Namespace editing handles issues such as making sure that paths targeting 
+edited objects and overrides are still valid after renaming or reparenting 
 prims. Namespace editing tries to fix any existing composition arcs, 
 relationship targets, attribute connections, and overrides that used paths to 
 renamed or reparented prims to use the new paths.
 
-Namespace editing in a future update will also use **relocates** for more 
-complex edit scenarios. Relocates are another composition arc that maps a prim 
-path in a namespace to a new path location. For example, if you were referencing 
-a prim from :filename:`refModel.usda`:
+Namespace editing will also use **relocates** for more complex edit scenarios. 
+Relocates are another composition arc that maps a prim path defined in a remote 
+:ref:`LayerStack <usdglossary-layerstack>` (i.e. across a composition arc) to a 
+new path location in the local namespace. For an example of how namespace 
+editing uses relocates, if you had :filename:`refModel.usda`: 
 
 .. code-block:: usda
-    :caption: refModel.usda
 
     def "modelA" ()
     {
@@ -107,16 +114,19 @@ a prim from :filename:`refModel.usda`:
         }
     }
 
+Which is referenced in :filename:`main.usda`:
+
 .. code-block:: usda
-    :caption: main.usda
 
     def "mainModelA" (
         prepend references = @refModel.usda@</modelA>
     )
     {
 
-You will be able to use namespace editing to move or rename 
-:sdfpath:`/mainModelA/modelAChild` using relocates. 
+You might want to use namespace editing to move or rename 
+:sdfpath:`/mainModelA/modelAChild`. Because :sdfpath:`/mainModelA/modelAChild`
+is composed across a reference composition arc, it can't be directly edited,
+so namespace editing will use relocates to create the edit.
 
 .. code-block:: python
 
@@ -124,6 +134,31 @@ You will be able to use namespace editing to move or rename
     # Namespace editing will use relocates for this edit
     removeResult = editor.MovePrimAtPath("/mainModelA/modelAChild", "/mainModelA/renamedChild")
     editor.ApplyEdits()
+
+The resulting stage root layer for :file:`main.usda` will look like:
+
+.. code-block:: usda
+
+    #usda 1.0
+    (
+        relocates = {
+            </mainModelA/modelAChild>: </mainModelA/renamedChild>
+        }
+    )
+
+    def "mainModelA" (
+        prepend references = @refModel.usda@</modelA>
+    )
+    {
+    }
+
+.. note::
+
+    **relocates** is a new composition arc for USD that is a separate feature
+    from namespace editing, and can be used independently of namespace editing.
+    See :ref:`usdglossary-relocates` for more details.
+
+.. _nsedit_using_usdnamespaceeditor:
 
 ************************
 Using UsdNamespaceEditor
@@ -147,7 +182,7 @@ rename or reparent prims and properties using :usdcpp:`UsdPrim` and
 When you call a :usdcpp:`UsdNamespaceEditor` edit operation, the operation paths 
 are validated (e.g. the paths passed to :code:`MovePrimAtPath()` are checked to 
 make sure they are valid paths), and then the operation is queued (to support 
-batches of operations, see :ref:`namespace_editing_batch_edits` below). To 
+batches of operations, see :ref:`nsedit_batch_edits` below). To 
 execute individual edit operations, as the following examples do, call 
 :code:`ApplyEdits()` after each operation call.
 
@@ -203,6 +238,82 @@ methods to rename and reparent :usdcpp:`UsdPrims <UsdPrim>` or
 Note that after renaming or reparenting a :usdcpp:`UsdPrim` or 
 :usdcpp:`UsdProperty`, the :usdcpp:`UsdPrim` or :usdcpp:`UsdProperty` reference 
 used in the operation will no longer be valid, as the path has changed. 
+
+.. _nsedit_setting_editor_options:
+
+Setting Editor Options
+======================
+
+When you create a namespace editor, you can optionally provide edit options
+that control editor behavior. The current set of options are:
+
+* **allowRelocatesAuthoring**: If :code:`True` the namespace editor will use 
+  relocates when needed to make edits. If :code:`False`, the namespace editor 
+  will not use relocates and will issue errors when applying or validating edits 
+  that require relocates. The default is :code:`True`.
+
+The following example creates the :code:`noRelocatesEditOptions` edit options,
+disables :code:`noRelocatesEditOptions.allowRelocatesAuthoring`, and creates
+a namespace editor for :code:`stage` with these options.
+
+.. code-block:: python
+
+    noRelocatesEditOptions = Usd.NamespaceEditor.EditOptions()
+    noRelocatesEditOptions.allowRelocatesAuthoring = False
+
+    # Create/use namespace editor that will not use relocates
+    noRelocatesEditor = Usd.NamespaceEditor(stage, noRelocatesEditOptions)
+
+.. _nsedit_working_with_relocates:
+
+Working With Relocates
+======================
+
+As mentioned earlier, namespace editing will use **relocates** if necessary
+for edit operations across composition arcs. Namespace editing will add or
+update relocates in the appropriate layer's metadata relocates list. The
+following example shows layer metadata with a relocate added by a namespace
+editing operation to rename :sdfpath:`/mainModelA/modelAChild` to 
+:sdfpath:`/mainModelA/renamedChild`:
+
+.. code-block:: usda
+
+    #usda 1.0
+    (
+        relocates = {
+            </mainModelA/modelAChild>: </mainModelA/renamedChild>
+        }
+    )
+
+For delete operations that require using relocates, namespace editing will
+create a relocates mapping that maps a prim or property to a "deleted" target:
+
+.. code-block:: python
+
+    # Delete a referenced prim, which will add a new relocates
+    editor.DeletePrimAtPath('/RootPrim/ChildInRef')
+    editor.ApplyEdits()
+
+.. code-block:: 
+
+    #usda 1.0
+    (
+        relocates = {
+            </RootPrim/ChildInRef>: <>
+        }
+    )
+
+Note that the way in which relocates must "transfer" composed opinions prevents 
+you from re-defining a new prim at the deleted or moved target location:
+
+.. code-block:: python
+
+    # Continuing from the earlier Python code, now try and define a prim at the
+    # deleted /RootPrim/ChildInRef path. This will result in a 
+    # "Failed to define UsdPrim" error.
+    stage.DefinePrim('/RootPrim/ChildInRef')
+
+.. _nsedit_fixing_paths_for_moved_objects:
 
 Fixing Paths For Moved Objects
 ==============================
@@ -318,16 +429,108 @@ With the flattened results looking like:
         }
     }
 
-.. note:: 
-    Currently, direct edits across composition arcs, such as renaming just 
-    :sdfpath:`/Shot1/shotAsset/assetChild` in the above example, is not supported 
-    via namespace editing and will result in the following error (from 
-    :code:`CanApplyEdits()` or :code:`ApplyEdits()`): "The prim to move requires 
-    authoring relocates since it composes opinions introduced by ancestral 
-    composition arcs; authoring relocates is not yet supported". Relocates will 
-    be available in a future update.
+.. _nsedit_fixing_edits_with_dependent_stages:
 
-.. _namespace_editing_batch_edits:
+Applying Edits to Dependent Stages
+==================================
+
+In some situations, a namespace edit applied to one stage can impact other
+**dependent stages**. A dependent stage is any additional stage open in the 
+current session that has a composition dependency on any layer edits made for 
+the editor's primary stage. For example, you might have a stage that has
+references to prims in the editor's primary stage, and you might have edits
+that rename or delete the referenced prims.
+
+By default, an editor only makes edits and fixes to the editor's primary stage.
+However, you can add dependent stages to an editor via 
+:code:`AddDependentStage()` and the editor will make any necessary additional 
+edits in those dependent stages to update the composition dependencies 
+appropriately.
+
+For example, we might have the layer :filename:`layer1.usda`, which will get 
+composed into the stage for which we'll create a namespace editor.
+
+.. code-block:: usda
+
+    #usda 1.0
+    (
+    )                
+
+    def "Prim1" {
+        def "Child" {
+        }
+    }
+
+    def "InternalRef1" (
+        references = </Prim1>
+    ) {
+        over "Child" {
+            int overChildAttr
+        }
+    }
+
+We also have an additional layer :filename:`layer2.usda` that references prims 
+in :filename:`layer1.usda`:
+
+.. code-block:: usda
+
+    #usda 1.0
+    (
+    )                
+
+    def "OtherStageRef2" (
+        references = @layer1.usda@</Prim1/Child>
+    ) {
+        int overChildAttr
+    }    
+
+We can open both layers in separate stages, create a namespace editor for the
+stage containing layer1, and add the stage containing layer2 as a dependent 
+stage.
+
+.. code-block:: python
+
+    stage1 = Usd.Stage.Open("layer1.usda")
+    stage2 = Usd.Stage.Open("layer2.usda")
+
+    # Create a namespace editor for stage1
+    editor = Usd.NamespaceEditor(stage1)
+
+    # Add stage2 as a dependent stage for our stage1 editor
+    editor.AddDependentStage(stage2)
+
+    # Move /Prim1/Child to /Prim1/RenamedChild. This will not only 
+    # update the prims and references in stage1, but also update the
+    # OtherStageRef2 reference in stage2
+    editor.MovePrimAtPath('/Prim1/Child', '/Prim1/RenamedChild')
+    editor.ApplyEdits()
+
+After the edit, the root layer of stage2 looks like:
+
+.. code-block:: usda
+
+    #usda 1.0
+
+    def "OtherStageRef2" (
+        references = @layer1.usda@</Prim1/RenamedChild>
+    )
+    {
+        int overChildAttr
+    }
+
+You can use :code:`RemoveDependentStage()` to remove any added dependent stages
+before making a namespace edit, when you do not want the dependent stage
+dependencies updated. 
+
+If you have several dependent stages, you can set a list of dependent stages on
+an editor using :code:`SetDependentStages()`. 
+
+Note that namespace editing finds dependencies in dependent stages based on 
+what is currently loaded in those stages. If a stage has dependencies in 
+unloaded payloads, load mask filtered prims, unselected variants, or children of
+inactive prims, the namespace editor cannot find and update those dependencies.
+
+.. _nsedit_batch_edits:
 
 Batch Edits
 ===========
@@ -370,11 +573,15 @@ Executing batches of edits will usually be more efficient than applying each
 edit individually. USD will process the list of edits in a batch to determine 
 the most efficient way to apply them.
 
+.. _nsedit_editing_best_practices:
+
 ********************************
 Namespace Editing Best Practices
 ********************************
 
 The following are some general best practices and caveats for namespace editing.
+
+.. _nsedit_canapplyedits_validate_operations:
 
 Use CanApplyEdits() To Validate Edit Operations
 ===============================================
@@ -404,6 +611,8 @@ indicating the path does not resolve to a valid prim.
     else:
         # Handle error, using canApplyResult.whyNot as needed, etc.
 
+.. _nsedit_builtin_properties_not_editable:
+
 Built-In Properties From Schemas Are Not Editable
 =================================================
 
@@ -429,3 +638,35 @@ would fail.
 
     editor.DeletePropertyAtPath("/testSphere/customProp")  # This is allowed
     editor.DeletePropertyAtPath("/testSphere/radius")  # This is not allowed and will cause an error
+
+.. _nsedit_relocates_performance_impact:
+
+Be Aware of Relocates Performance Impact
+========================================
+
+If your namespace editing operations result in adding **relocates** to your 
+stage, this can increase the number of composition arcs in your stage, which
+could impact stage composition performance.
+
+If you want to test whether a namespace edit will add relocates, you can
+use an editor configured to disallow authoring relocates, and use 
+:code:`CanApplyEdits()` looking for any errors that indicate relocates would 
+be needed.  
+
+.. code-block:: python
+
+    # Create/use namespace editor that will not use relocates
+    noRelocatesEditOptions = Usd.NamespaceEditor.EditOptions()
+    noRelocatesEditOptions.allowRelocatesAuthoring = False
+    noRelocatesEditor = Usd.NamespaceEditor(stage, noRelocatesEditOptions)
+
+    # Rename /mainModelA/modelAChild to /mainModelA/renamedChild
+    # This editor is configured to not use relocates, so an error will be shown
+    removeResult = noRelocatesEditor.MovePrimAtPath("/mainModelA/modelAChild", "/mainModelA/renamedChild")
+    applyResult = noRelocatesEditor.CanApplyEdits()
+    if applyResult is not True:
+        # We should get a "The prim to edit requires authoring relocates since 
+        # it composes opinions introduced by ancestral composition arcs; 
+        # relocates authoring must be enabled to perform this edit" error
+        print ("noRelocatesEditor: Cannot apply edits, reason: " + applyResult.whyNot)
+ 

@@ -1,43 +1,118 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/plugin/hdEmbree/renderer.h"
 
-#include "pxr/imaging/plugin/hdEmbree/renderBuffer.h"
 #include "pxr/imaging/plugin/hdEmbree/config.h"
-#include "pxr/imaging/plugin/hdEmbree/context.h"
+#include "pxr/imaging/plugin/hdEmbree/light.h"
+#include "pxr/imaging/plugin/hdEmbree/lightSamplers.h"
 #include "pxr/imaging/plugin/hdEmbree/mesh.h"
+#include "pxr/imaging/plugin/hdEmbree/renderBuffer.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 
 #include "pxr/base/gf/matrix3f.h"
-#include "pxr/base/gf/vec2f.h"
 #include "pxr/base/work/loops.h"
+#include "pxr/base/work/threadLimits.h"
 
 #include "pxr/base/tf/hash.h"
 
+#include <embree4/rtcore_common.h>
+#include <embree4/rtcore_geometry.h>
+#include <embree4/rtcore_scene.h>
+
+#include <algorithm>
 #include <chrono>
+#include <limits>
+#include <stdint.h>
 #include <thread>
+
+// -------------------------------------------------------------------------
+// Old TBB workaround - we plan to remove this once OpenUSD adopts
+// oneTBB as a min spec. This applies the "Work" thread limit to the
+// render thread if "Work" is using old TBB, but won't affect other "Work"
+// implementations.  Note that it may affect Embree TBB usage as well.
+//
+// Note: The TBB version macro is located in different headers in legacy TBB.
+// -------------------------------------------------------------------------
+#if __has_include(<tbb/tbb_stddef.h>)
+#include <tbb/tbb_stddef.h>
+#elif __has_include(<tbb/version.h>)
+#include <tbb/version.h>
+#endif
+
+#ifndef TBB_INTERFACE_VERSION_MAJOR
+#error "TBB version macro TBB_INTERFACE_VERSION_MAJOR not found"
+#endif
+
+#if TBB_INTERFACE_VERSION_MAJOR < 12
+
+#include <optional>
+#include <tbb/task_scheduler_init.h>
+
+namespace {
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+// Make the calling context respect PXR_WORK_THREAD_LIMIT, if run from a thread
+// other than the main thread (ie, the renderThread)
+class _ScopedThreadScheduler {
+public:
+    _ScopedThreadScheduler() {
+        auto limit = WorkGetConcurrencyLimitSetting();
+        if (limit != 0) {
+            _tbbTaskSchedInit.emplace(limit);
+        }
+    }
+
+    std::optional<tbb::task_scheduler_init> _tbbTaskSchedInit;
+};
+
+} // anonymous namespace
+
+#endif  // TBB_INTERFACE_VERSION_MAJOR < 12
+
+
+namespace {
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+// -------------------------------------------------------------------------
+// Constants
+// -------------------------------------------------------------------------
+
+template <typename T>
+constexpr T _pi = static_cast<T>(M_PI);
+
+constexpr float _rayHitContinueBias = 0.001f;
+
+constexpr float _minLuminanceCutoff = 1e-9f;
+
+constexpr GfVec3f _invalidColor = GfVec3f(-std::numeric_limits<float>::infinity());
+
+// -------------------------------------------------------------------------
+// General Ray Utilities
+// -------------------------------------------------------------------------
+
+inline GfVec3f
+_CalculateHitPosition(RTCRayHit const& rayHit)
+{
+    return GfVec3f(rayHit.ray.org_x + rayHit.ray.tfar * rayHit.ray.dir_x,
+                   rayHit.ray.org_y + rayHit.ray.tfar * rayHit.ray.dir_y,
+                   rayHit.ray.org_z + rayHit.ray.tfar * rayHit.ray.dir_z);
+}
+
+// Dot product, but set to 0 if less than 0 - ie, 0 for backward-facing rays
+inline float
+_DotZeroClip(GfVec3f const& a, GfVec3f const& b)
+{
+    return std::max(0.0f, GfDot(a, b));
+}
+
+}  // anonymous namespace
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -56,6 +131,7 @@ HdEmbreeRenderer::HdEmbreeRenderer()
     , _samplesToConvergence(0)
     , _ambientOcclusionSamples(0)
     , _enableSceneColors(false)
+    , _enableLighting(false)
     , _completedSamples(0)
 {
 }
@@ -84,6 +160,18 @@ void
 HdEmbreeRenderer::SetEnableSceneColors(bool enableSceneColors)
 {
     _enableSceneColors = enableSceneColors;
+}
+
+void
+HdEmbreeRenderer::SetEnableLighting(bool enableLighting)
+{
+    _enableLighting = enableLighting;
+}
+
+void
+HdEmbreeRenderer::SetRandomNumberSeed(int randomNumberSeed)
+{
+    _randomNumberSeed = randomNumberSeed;
 }
 
 void
@@ -121,6 +209,22 @@ HdEmbreeRenderer::SetAovBindings(
 
     // Re-validate the attachments.
     _aovBindingsNeedValidation = true;
+}
+
+
+void
+HdEmbreeRenderer::AddLight(SdfPath const& lightPath,
+                           HdEmbree_Light* light)
+{
+    ScopedLock lightsWriteLock(_lightsWriteMutex);
+    _lightMap[lightPath] = light;
+}
+
+void
+HdEmbreeRenderer::RemoveLight(SdfPath const& lightPath, HdEmbree_Light* light)
+{
+    ScopedLock lightsWriteLock(_lightsWriteMutex);
+    _lightMap.erase(lightPath);
 }
 
 bool
@@ -364,7 +468,7 @@ _IsContained(const GfRect2i &rect, int width, int height)
 }
 
 void
-HdEmbreeRenderer::Render(HdRenderThread *renderThread)
+HdEmbreeRenderer::_PreRenderSetup()
 {
     _completedSamples.store(0);
 
@@ -415,9 +519,18 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
         if (!_IsContained(_dataWindow, _width, _height)) {
             TF_CODING_ERROR(
                 "dataWindow is larger than render buffer");
-        
         }
     }
+}
+
+void
+HdEmbreeRenderer::Render(HdRenderThread *renderThread)
+{
+#if TBB_INTERFACE_VERSION_MAJOR < 12
+    _ScopedThreadScheduler scheduler;
+#endif
+
+    _PreRenderSetup();
 
     // Render the image. Each pass through the loop adds a sample per pixel
     // (with jittered ray direction); the longer the loop runs, the less noisy
@@ -449,8 +562,8 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
         // Always pass the renderThread to _RenderTiles to allow the first frame
         // to be interrupted.
         WorkParallelForN(numTilesX*numTilesY,
-            std::bind(&HdEmbreeRenderer::_RenderTiles, this, renderThread,
-                std::placeholders::_1, std::placeholders::_2));
+            std::bind(&HdEmbreeRenderer::_RenderTiles, this,
+                renderThread, i, std::placeholders::_1, std::placeholders::_2));
 
         // After the first pass, mark the single-sampled attachments as
         // converged and unmap them. If there are no multisampled attachments,
@@ -489,7 +602,7 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 }
 
 void
-HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
+HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread, int sampleNum,
                                size_t tileStart, size_t tileEnd)
 {
     const unsigned int minX = _dataWindow.GetMinX();
@@ -514,13 +627,21 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
 
     // Initialize the RNG for this tile (each tile creates one as
     // a lazy way to do thread-local RNGs).
-    size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
+    size_t seed;
+    if (_randomNumberSeed == -1) {
+        seed = std::chrono::system_clock::now().time_since_epoch().count();
+    } else {
+        seed = static_cast<size_t>(_randomNumberSeed);
+    }
     seed = TfHash::Combine(seed, tileStart);
+    seed = TfHash::Combine(seed, sampleNum);
     std::default_random_engine random(seed);
 
     // Create a uniform distribution for jitter calculations.
     std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
-    std::function<float()> uniform_float = std::bind(uniform_dist, random);
+    auto uniform_float = [&random, &uniform_dist]() {
+        return uniform_dist(random);
+    };
 
     // _RenderTiles gets a range of tiles; iterate through them.
     for (unsigned int tile = tileStart; tile < tileEnd; ++tile) {
@@ -544,7 +665,6 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
         // Loop over pixels casting rays.
         for (unsigned int y = y0; y < y1; ++y) {
             for (unsigned int x = x0; x < x1; ++x) {
-
                 // Jitter the camera ray direction.
                 GfVec2f jitter(0.0f, 0.0f);
                 if (HdEmbreeConfig::GetInstance().jitterCamera) {
@@ -558,30 +678,31 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
                 const float h(_dataWindow.GetHeight());
 
                 const GfVec3f ndc(
-                    2 * ((x + jitter[0] - minX) / w) - 1,
-                    2 * ((y + jitter[1] - minY) / h) - 1,
-                    -1);
-                const GfVec3f nearPlaneTrace = _inverseProjMatrix.Transform(ndc);
+                    2.0f * ((x + jitter[0] - minX) / w) - 1.0f,
+                    2.0f * ((y + jitter[1] - minY) / h) - 1.0f,
+                    -1.0f);
+                const GfVec3f nearPlaneTrace(_inverseProjMatrix.Transform(ndc));
 
                 GfVec3f origin;
                 GfVec3f dir;
 
-                const bool isOrthographic = round(_projMatrix[3][3]) == 1;
+                const bool isOrthographic = round(_projMatrix[3][3]) == 1.0;
                 if (isOrthographic) {
                     // During orthographic projection: trace parallel rays
                     // from the near plane trace.
                     origin = nearPlaneTrace;
-                    dir = GfVec3f(0,0,-1);
+                    dir = GfVec3f(0.0f, 0.0f, -1.0f);
                 } else {
                     // Otherwise, assume this is a perspective projection;
                     // project from the camera origin through the
                     // near plane trace.
-                    origin = GfVec3f(0,0,0);
+                    origin = GfVec3f(0.0f, 0.0f, 0.0f);
                     dir = nearPlaneTrace;
                 }
                 // Transform camera rays to world space.
-                origin = _inverseViewMatrix.Transform(origin);
-                dir = _inverseViewMatrix.TransformDir(dir).GetNormalized();
+                origin = GfVec3f(_inverseViewMatrix.Transform(origin));
+                dir = GfVec3f(
+                    _inverseViewMatrix.TransformDir(dir)).GetNormalized();
 
                 // Trace the ray.
                 _TraceRay(x, y, origin, dir, random);
@@ -593,7 +714,9 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
 /// Fill in an RTCRay structure from the given parameters.
 static void
 _PopulateRay(RTCRay *ray, GfVec3f const& origin, 
-             GfVec3f const& dir, float nearest)
+             GfVec3f const& dir, float nearest,
+             float furthest = std::numeric_limits<float>::infinity(),
+             HdEmbree_RayMask mask = HdEmbree_RayMask::All)
 {
     ray->org_x = origin[0];
     ray->org_y = origin[1];
@@ -605,24 +728,25 @@ _PopulateRay(RTCRay *ray, GfVec3f const& origin,
     ray->dir_z = dir[2];
     ray->time = 0.0f;
 
-    ray->tfar = std::numeric_limits<float>::infinity();
-    ray->mask = -1;
+    ray->tfar = furthest;
+    ray->mask = static_cast<uint32_t>(mask);
 }
 
 /// Fill in an RTCRayHit structure from the given parameters.
 // note this containts a Ray and a RayHit
 static void
 _PopulateRayHit(RTCRayHit* rayHit, GfVec3f const& origin,
-             GfVec3f const& dir, float nearest)
+             GfVec3f const& dir, float nearest,
+             float furthest = std::numeric_limits<float>::infinity(),
+             HdEmbree_RayMask mask = HdEmbree_RayMask::All)
 {
     // Fill in defaults for the ray
-    _PopulateRay(&rayHit->ray, origin, dir, nearest);
+    _PopulateRay(&rayHit->ray, origin, dir, nearest, furthest, mask);
 
     // Fill in defaults for the hit
     rayHit->hit.primID = RTC_INVALID_GEOMETRY_ID;
     rayHit->hit.geomID = RTC_INVALID_GEOMETRY_ID;
 }
-
 
 /// Generate a random cosine-weighted direction ray (in the hemisphere
 /// around <0,0,1>).  The input is a pair of uniformly distributed random
@@ -634,7 +758,7 @@ static GfVec3f
 _CosineWeightedDirection(GfVec2f const& uniform_float)
 {
     GfVec3f dir;
-    float theta = 2.0f * M_PI * uniform_float[0];
+    float theta = 2.0f * _pi<float> * uniform_float[0];
     float eta = uniform_float[1];
     float sqrteta = sqrtf(eta);
     dir[0] = cosf(theta) * sqrteta;
@@ -651,25 +775,11 @@ HdEmbreeRenderer::_TraceRay(unsigned int x, unsigned int y,
     // Intersect the camera ray.
     RTCRayHit rayHit; // EMBREE_FIXME: use RTCRay for occlusion rays
     rayHit.ray.flags = 0;
-    _PopulateRayHit(&rayHit, origin, dir, 0.0f);
+    _PopulateRayHit(&rayHit, origin, dir, 0.0f,
+                    std::numeric_limits<float>::max(),
+                    HdEmbree_RayMask::Camera);
     {
-      RTCIntersectContext context;
-      rtcInitIntersectContext(&context);
-      rtcIntersect1(_scene, &context, &rayHit);
-      //
-      // there is something odd about how this is used in Embree. Is it reversed
-      // here and then when it it used in
-      //      _ComputeNormal
-      //      _ComputeColor
-      // but not when it is used in
-      //      _EmbreeCullFacess
-      // this should probably all made to be consistent. What would make most
-      // sense would be to remove this reversal, and then just change the test
-      // in _EmbreeCullFaces. this would be the most performant solution.
-      //
-      rayHit.hit.Ng_x = -rayHit.hit.Ng_x;
-      rayHit.hit.Ng_y = -rayHit.hit.Ng_y;
-      rayHit.hit.Ng_z = -rayHit.hit.Ng_z;
+      rtcIntersect1(_scene, &rayHit);
     }
 
     // Write AOVs to attachments that aren't converged.
@@ -732,11 +842,13 @@ HdEmbreeRenderer::_ComputeId(RTCRayHit const& rayHit, TfToken const& idType,
     // flatten everything in hydra. So instID[0] should always be correct.
     const HdEmbreeInstanceContext *instanceContext =
         static_cast<HdEmbreeInstanceContext*>(
-            rtcGetGeometryUserData(rtcGetGeometry(_scene, rayHit.hit.instID[0])));
+            rtcGetGeometryUserData(rtcGetGeometry(_scene,
+                                                  rayHit.hit.instID[0])));
 
     const HdEmbreePrototypeContext *prototypeContext =
         static_cast<HdEmbreePrototypeContext*>(
-            rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,rayHit.hit.geomID)));
+            rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,
+                                                  rayHit.hit.geomID)));
 
     if (idType == HdAovTokens->primId) {
         *id = prototypeContext->rprim->GetPrimId();
@@ -766,12 +878,10 @@ HdEmbreeRenderer::_ComputeDepth(RTCRayHit const& rayHit,
     }
 
     if (clip) {
-        GfVec3f hitPos = GfVec3f(rayHit.ray.org_x + rayHit.ray.tfar * rayHit.ray.dir_x,
-            rayHit.ray.org_y + rayHit.ray.tfar * rayHit.ray.dir_y,
-            rayHit.ray.org_z + rayHit.ray.tfar * rayHit.ray.dir_z);
+        GfVec3f hitPos = _CalculateHitPosition(rayHit);
 
-        hitPos = _viewMatrix.Transform(hitPos);
-        hitPos = _projMatrix.Transform(hitPos);
+        hitPos = GfVec3f(_viewMatrix.Transform(hitPos));
+        hitPos = GfVec3f(_projMatrix.Transform(hitPos));
 
         // For the depth range transform, we assume [0,1].
         *depth = (hitPos[2] + 1.0f) / 2.0f;
@@ -794,13 +904,16 @@ HdEmbreeRenderer::_ComputeNormal(RTCRayHit const& rayHit,
     // flatten everything in hydra. So instID[0] should always be correct.
     const HdEmbreeInstanceContext *instanceContext =
         static_cast<HdEmbreeInstanceContext*>(
-                rtcGetGeometryUserData(rtcGetGeometry(_scene,rayHit.hit.instID[0])));
+                rtcGetGeometryUserData(rtcGetGeometry(_scene,
+                                                      rayHit.hit.instID[0])));
 
     const HdEmbreePrototypeContext *prototypeContext =
         static_cast<HdEmbreePrototypeContext*>(
-                rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,rayHit.hit.geomID)));
+                rtcGetGeometryUserData(
+                    rtcGetGeometry(instanceContext->rootScene,
+                                   rayHit.hit.geomID)));
 
-    GfVec3f n = -GfVec3f(rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z);
+    GfVec3f n = GfVec3f(rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z);
     auto it = prototypeContext->primvarMap.find(HdTokens->normals);
     if (it != prototypeContext->primvarMap.end()) {
         it->second->Sample(rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, &n);
@@ -808,7 +921,7 @@ HdEmbreeRenderer::_ComputeNormal(RTCRayHit const& rayHit,
 
     n = instanceContext->objectToWorldMatrix.TransformDir(n);
     if (eye) {
-        n = _viewMatrix.TransformDir(n);
+        n = GfVec3f(_viewMatrix.TransformDir(n));
     }
     n.Normalize();
 
@@ -829,32 +942,56 @@ HdEmbreeRenderer::_ComputePrimvar(RTCRayHit const& rayHit,
     // flatten everything in hydra. So instID[0] should always be correct.
     const HdEmbreeInstanceContext *instanceContext =
         static_cast<HdEmbreeInstanceContext*>(
-                rtcGetGeometryUserData(rtcGetGeometry(_scene,rayHit.hit.instID[0])));
+                rtcGetGeometryUserData(rtcGetGeometry(_scene,
+                                                      rayHit.hit.instID[0])));
 
     const HdEmbreePrototypeContext *prototypeContext =
         static_cast<HdEmbreePrototypeContext*>(
-                rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,rayHit.hit.geomID)));
+                rtcGetGeometryUserData(
+                    rtcGetGeometry(instanceContext->rootScene,
+                                   rayHit.hit.geomID)));
 
     // XXX: This is a little clunky, although sample will early out if the
     // types don't match.
     auto it = prototypeContext->primvarMap.find(primvar);
     if (it != prototypeContext->primvarMap.end()) {
         const HdEmbreePrimvarSampler *sampler = it->second;
-        if (sampler->Sample(rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, value)) {
+        if (sampler->Sample(rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
+                            value)) {
             return true;
         }
         GfVec2f v2;
-        if (sampler->Sample(rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, &v2)) {
+        if (sampler->Sample(rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
+                            &v2)) {
             value->Set(v2[0], v2[1], 0.0f);
             return true;
         }
         float v1;
-        if (sampler->Sample(rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, &v1)) {
+        if (sampler->Sample(rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
+                            &v1)) {
             value->Set(v1, 0.0f, 0.0f);
             return true;
         }
     }
     return false;
+}
+
+float
+HdEmbreeRenderer::_Visibility(
+    GfVec3f const& position, GfVec3f const& direction, float dist) const
+{
+    RTCRay shadow;
+    shadow.flags = 0;
+    _PopulateRay(&shadow, position, direction, 0.001f, dist,
+                 HdEmbree_RayMask::Shadow);
+    {
+        rtcOccluded1(_scene,&shadow);
+    }
+    // XXX: what do we do about shadow visibility (continuation) here?
+    // probably need to use rtcIntersect instead of rtcOccluded
+
+    // occluded sets tfar < 0 if the ray hit anything
+    return shadow.tfar > 0.0f;
 }
 
 GfVec4f
@@ -871,20 +1008,22 @@ HdEmbreeRenderer::_ComputeColor(RTCRayHit const& rayHit,
     // flatten everything in hydra. So instID[0] should always be correct.
     const HdEmbreeInstanceContext *instanceContext =
         static_cast<HdEmbreeInstanceContext*>(
-                rtcGetGeometryUserData(rtcGetGeometry(_scene,rayHit.hit.instID[0])));
+                rtcGetGeometryUserData(rtcGetGeometry(_scene,
+                                                      rayHit.hit.instID[0])));
 
     const HdEmbreePrototypeContext *prototypeContext =
         static_cast<HdEmbreePrototypeContext*>(
-                rtcGetGeometryUserData(rtcGetGeometry(instanceContext->rootScene,rayHit.hit.geomID)));
+                rtcGetGeometryUserData(
+                    rtcGetGeometry(instanceContext->rootScene,
+                                   rayHit.hit.geomID)));
 
     // Compute the worldspace location of the rayHit hit.
-    GfVec3f hitPos = GfVec3f(rayHit.ray.org_x + rayHit.ray.tfar * rayHit.ray.dir_x,
-            rayHit.ray.org_y + rayHit.ray.tfar * rayHit.ray.dir_y,
-            rayHit.ray.org_z + rayHit.ray.tfar * rayHit.ray.dir_z);
+    GfVec3f hitPos = _CalculateHitPosition(rayHit);
 
     // If a normal primvar is present (e.g. from smooth shading), use that
     // for shading; otherwise use the flat face normal.
-    GfVec3f normal = -GfVec3f(rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z);
+    GfVec3f normal = GfVec3f(rayHit.hit.Ng_x, rayHit.hit.Ng_y,
+                             rayHit.hit.Ng_z);
     auto it = prototypeContext->primvarMap.find(HdTokens->normals);
     if (it != prototypeContext->primvarMap.end()) {
         it->second->Sample(
@@ -893,12 +1032,12 @@ HdEmbreeRenderer::_ComputeColor(RTCRayHit const& rayHit,
 
     // If a color primvar is present, use that as diffuse color; otherwise,
     // use flat grey.
-    GfVec3f color = GfVec3f(0.5f, 0.5f, 0.5f);
+    GfVec3f materialColor = _invalidColor;
     if (_enableSceneColors) {
         auto it = prototypeContext->primvarMap.find(HdTokens->displayColor);
         if (it != prototypeContext->primvarMap.end()) {
             it->second->Sample(
-                rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, &color);
+                rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v, &materialColor);
         }
     }
 
@@ -908,38 +1047,61 @@ HdEmbreeRenderer::_ComputeColor(RTCRayHit const& rayHit,
     // Make sure the normal is unit-length.
     normal.Normalize();
 
-    // Lighting model: (camera dot normal), i.e. diffuse-only point light
-    // centered on the camera.
-    GfVec3f dir = GfVec3f(rayHit.ray.dir_x, rayHit.ray.dir_y, rayHit.ray.dir_z);
-    float diffuseLight = fabs(GfDot(-dir, normal)) *
-        HdEmbreeConfig::GetInstance().cameraLightIntensity;
+    GfVec3f lightingColor(0.0f);
 
-    // Lighting gets modulated by an ambient occlusion term.
-    float aoLightIntensity =
-        _ComputeAmbientOcclusion(hitPos, normal, random);
+    // If direct lighting is turned off, fall back to the camera light + AO path
+    if (!_enableLighting)
+    {
+        // For ambient occlusion, default material is flat 50% gray
+        if (materialColor == _invalidColor) {
+            materialColor = GfVec3f(.5f);
+        }
 
-    // XXX: We should support opacity here...
+        // Lighting model: (camera dot normal), i.e. diffuse-only point light
+        // centered on the camera.
+        GfVec3f dir = GfVec3f(rayHit.ray.dir_x, rayHit.ray.dir_y,
+                              rayHit.ray.dir_z);
+        float diffuseLight = fabs(GfDot(-dir, normal)) *
+            HdEmbreeConfig::GetInstance().cameraLightIntensity;
 
-    // Return color * diffuseLight * aoLightIntensity.
-    GfVec3f finalColor = color * diffuseLight * aoLightIntensity;
+        // Lighting gets modulated by an ambient occlusion term.
+        float aoLightIntensity =
+            _ComputeAmbientOcclusion(hitPos, normal, random);
 
-    // Clamp colors to [0,1].
+        // XXX: We should support opacity here...
+        lightingColor = GfVec3f(diffuseLight * aoLightIntensity);
+    }
+    else
+    {
+        // For lighting, default material is 100% white
+        if (materialColor == _invalidColor) {
+            materialColor = GfVec3f(1.0f);
+        }
+
+        lightingColor = _ComputeLighting(
+            hitPos, normal,random, prototypeContext);
+    }
+    const GfVec3f finalColor = GfCompMult(materialColor, lightingColor);
+
+    // Clamp colors to > 0
     GfVec4f output;
-    output[0] = std::max(0.0f, std::min(1.0f, finalColor[0]));
-    output[1] = std::max(0.0f, std::min(1.0f, finalColor[1]));
-    output[2] = std::max(0.0f, std::min(1.0f, finalColor[2]));
+    output[0] = std::max(0.0f, finalColor[0]);
+    output[1] = std::max(0.0f, finalColor[1]);
+    output[2] = std::max(0.0f, finalColor[2]);
     output[3] = 1.0f;
     return output;
 }
 
 float
 HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
-                                           GfVec3f const& normal,
-                                           std::default_random_engine &random)
+                                            GfVec3f const& normal,
+                                            std::default_random_engine &random)
 {
     // Create a uniform random distribution for AO calculations.
     std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
-    std::function<float()> uniform_float = std::bind(uniform_dist, random);
+    auto uniform_float = [&random, &uniform_dist]() {
+        return uniform_dist(random);
+    };
 
     // 0 ambient occlusion samples means disable the ambient occlusion term.
     if (_ambientOcclusionSamples < 1) {
@@ -952,12 +1114,12 @@ HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
     // point. For the purposes of _CosineWeightedDirection, the normal needs
     // to map to (0,0,1), but since the distribution is radially symmetric
     // we don't care about the other axes.
-    GfMatrix3f basis(1);
+    GfMatrix3f basis(1.0f);
     GfVec3f xAxis;
-    if (fabsf(GfDot(normal, GfVec3f(0,0,1))) < 0.9f) {
-        xAxis = GfCross(normal, GfVec3f(0,0,1));
+    if (fabsf(GfDot(normal, GfVec3f(0.0f,0.0f,1.0f))) < 0.9f) {
+        xAxis = GfCross(normal, GfVec3f(0.0f,0.0f,1.0f));
     } else {
-        xAxis = GfCross(normal, GfVec3f(0,1,0));
+        xAxis = GfCross(normal, GfVec3f(0.0f,1.0f,0.0f));
     }
     GfVec3f yAxis = GfCross(normal, xAxis);
     basis.SetColumn(0, xAxis.GetNormalized());
@@ -995,9 +1157,7 @@ HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
         shadow.flags = 0;
         _PopulateRay(&shadow, position, shadowDir, 0.001f);
         {
-          RTCIntersectContext context;
-          rtcInitIntersectContext(&context);
-          rtcOccluded1(_scene,&context,&shadow);
+          rtcOccluded1(_scene, &shadow);
         }
 
         // Record this AO ray's contribution to the occlusion factor: a
@@ -1012,6 +1172,69 @@ HdEmbreeRenderer::_ComputeAmbientOcclusion(GfVec3f const& position,
     occlusionFactor /= _ambientOcclusionSamples;
 
     return occlusionFactor;
+}
+
+GfVec3f
+HdEmbreeRenderer::_ComputeLighting(
+    GfVec3f const& position,
+    GfVec3f const& normal,
+    std::default_random_engine &random,
+    HdEmbreePrototypeContext const* prototypeContext) const
+{
+    std::uniform_real_distribution<float> uniform_dist(0.0f, 1.0f);
+    auto uniform_float = [&random, &uniform_dist]() {
+        return uniform_dist(random);
+    };
+
+    GfVec3f finalColor(0.0f);
+    // For now just a 100% reflective diffuse BRDF
+    float brdf = 1.0f / _pi<float>;
+
+    // For now just iterate over all lights
+    /// XXX: simple uniform sampling may be better here
+    for (auto const& it : _lightMap)
+    {
+        auto const& light = it.second->LightData();
+        // Skip light if it's hidden
+        if (!light.visible)
+        {
+            continue;
+        }
+
+        // Sample the light
+        HdEmbreeLightSampler::LightSample ls =
+            HdEmbreeLightSampler::GetLightSample(
+            light, position, normal, uniform_float(), uniform_float());
+        if (GfIsClose(ls.Li, GfVec3f(0.0f), _minLuminanceCutoff)) {
+            continue;
+        }
+
+        // Trace shadow
+        float vis = _Visibility(position, ls.wI, ls.dist * 0.99f);
+
+        // Add exitant luminance
+        float cosOffNormal = GfDot(ls.wI, normal);
+        if (cosOffNormal < 0.0f) {
+            bool doubleSided = false;
+            HdEmbreeMesh *mesh =
+                dynamic_cast<HdEmbreeMesh*>(prototypeContext->rprim);
+            if (mesh) {
+                doubleSided = mesh->EmbreeMeshIsDoubleSided();
+            }
+
+            if (doubleSided) {
+                cosOffNormal *= -1.0f;
+            } else {
+                cosOffNormal = 0.0f;
+            }
+        }
+        finalColor += ls.Li
+            * cosOffNormal
+            * brdf
+            * vis
+            * ls.invPdfW;
+    }
+    return finalColor;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

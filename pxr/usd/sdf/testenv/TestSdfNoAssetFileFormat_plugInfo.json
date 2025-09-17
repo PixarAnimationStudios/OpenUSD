@@ -5,15 +5,15 @@
                 "Types": {
                     "TestSdfNoAssetFileFormat": {
                         "bases": [
-                            "SdfTextFileFormat"
+                            "SdfUsdaFileFormat"
                         ],
                         "displayName": "Dynamic file format plugin example for testing",
                         "extensions": [
-                            "testsdfnoasset"
+                            "testusdanoasset"
                         ],
                         "formatId": "TestSdfNoAssetFileFormat",
                         "primary": true,
-                        "target": "sdf"
+                        "target": "usd"
                     }
                 }
             },

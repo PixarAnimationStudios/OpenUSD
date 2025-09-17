@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdSt/material.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
@@ -123,7 +106,8 @@ _GetTextureHandleHash(
         samplerParams.magFilter,
         samplerParams.borderColor,
         samplerParams.enableCompare,
-        samplerParams.compareFunction);
+        samplerParams.compareFunction,
+        samplerParams.maxAnisotropy);
 }
 
 void
@@ -147,7 +131,9 @@ HdStMaterial::_ProcessTextureDescriptors(
         
         // Note about batching hashes:
         // If this is our first sync, try to hash using the asset path.
-        // If we're on our 2nd+ sync, just use the texture prim path.
+        // If we're on our 2nd+ sync, just use the texture prim name + material 
+        // id. (We include the material id to avoid collisions on texture prims 
+        // with the same name.)
         //
         // This will aggressively batch textured prims together as long as
         // they are 100% static; if they are dynamic, we assume that the
@@ -170,10 +156,10 @@ HdStMaterial::_ProcessTextureDescriptors(
         texturesFromStorm->push_back(
             { desc.name,
               desc.type,
-              textureHandle,
-              _isInitialized
-                  ? hash_value(desc.texturePrim)
-                  : _GetTextureHandleHash(textureHandle) });
+              { textureHandle },
+              _isInitialized ? 
+                TfHash::Combine(GetId(), desc.texturePrim)
+                : _GetTextureHandleHash(textureHandle) });
     }
 
     bool const doublesSupported = resourceRegistry->GetHgi()->
@@ -203,11 +189,9 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         return;
     }
 
-    bool needsRprimMaterialStateUpdate = false;
     bool markBatchesDirty = false;
 
     std::string fragmentSource;
-    std::string geometrySource;
     std::string displacementSource;
     std::string volumeSource;
     VtDictionary materialMetadata;
@@ -224,7 +208,6 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
                                                     resourceRegistry.get());
             fragmentSource = _networkProcessor.GetFragmentCode();
             volumeSource = _networkProcessor.GetVolumeCode();
-            geometrySource = _networkProcessor.GetGeometryCode();
             displacementSource = _networkProcessor.GetDisplacementCode();
             materialMetadata = _networkProcessor.GetMetadata();
             materialTag = _networkProcessor.GetMaterialTag();
@@ -234,16 +217,12 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     }
 
     // Use fallback shader when there is no source for
-    // fragment and geometry and displacement shader.
+    // fragment and displacement shader.
     if (fragmentSource.empty() &&
-        geometrySource.empty() &&
         displacementSource.empty()) {
 
         _InitFallbackShader();
         fragmentSource = _fallbackGlslfx->GetSurfaceSource();
-        // Note that we don't want displacement on purpose for the 
-        // fallback material.
-        geometrySource = std::string();
         materialMetadata = _fallbackGlslfx->GetMetadata();
     }
 
@@ -266,42 +245,27 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    // If we're updating the fragment or geometry source, we need to
+    // If we're updating the fragment or displacement source, we need to
     // rebatch anything that uses this material.
     std::string const& oldFragmentSource = 
         _materialNetworkShader->GetSource(HdShaderTokens->fragmentShader);
-    std::string const& oldGeometrySource = 
-        _materialNetworkShader->GetSource(HdShaderTokens->geometryShader);
     std::string const& oldDisplacementSource =
         _materialNetworkShader->GetSource(HdShaderTokens->displacementShader);
 
     markBatchesDirty |= (oldFragmentSource!=fragmentSource) || 
-                        (oldGeometrySource!=geometrySource) ||
                         (oldDisplacementSource!=displacementSource);
 
     _materialNetworkShader->SetFragmentSource(fragmentSource);
-    _materialNetworkShader->SetGeometrySource(geometrySource);
     _materialNetworkShader->SetDisplacementSource(displacementSource);
 
-    bool hasDisplacement = !(displacementSource.empty());
+    _hasDisplacement = !(displacementSource.empty());
 
-    if (_hasDisplacement != hasDisplacement) {
-        _hasDisplacement = hasDisplacement;
-        needsRprimMaterialStateUpdate = true;
-    }
-
-    bool hasLimitSurfaceEvaluation =
+    _hasLimitSurfaceEvaluation =
         _GetHasLimitSurfaceEvaluation(materialMetadata);
-
-    if (_hasLimitSurfaceEvaluation != hasLimitSurfaceEvaluation) {
-        _hasLimitSurfaceEvaluation = hasLimitSurfaceEvaluation;
-        needsRprimMaterialStateUpdate = true;
-    }
 
     if (_materialTag != materialTag) {
         _materialTag = materialTag;
         _materialNetworkShader->SetMaterialTag(_materialTag);
-        needsRprimMaterialStateUpdate = true;
 
         // If the material tag changes, we'll need to rebatch.
         markBatchesDirty = true;
@@ -317,7 +281,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     HdBufferSpecVector specs;
     HdBufferSourceSharedPtrVector sources;
 
-    bool hasPtex = false;
+    _hasPtex = false;
     for (HdSt_MaterialParam const & param: params) {
         if (param.IsPrimvarRedirect() || param.IsFallback() || 
             param.IsTransform2d()) {
@@ -327,7 +291,7 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
             HdSt_MaterialNetworkShader::AddFallbackValueToSpecsAndSources(
                 param, &specs, &sources);
             if (param.textureType == HdStTextureType::Ptex) {
-                hasPtex = true;
+                _hasPtex = true;
             }
         }
     }
@@ -362,26 +326,10 @@ HdStMaterial::Sync(HdSceneDelegate *sceneDelegate,
     _materialNetworkShader->SetBufferSources(
         specs, std::move(sources), resourceRegistry);
 
-    if (_hasPtex != hasPtex) {
-        _hasPtex = hasPtex;
-        needsRprimMaterialStateUpdate = true;
-    }
-
     if (markBatchesDirty && _isInitialized) {
         // Only invalidate batches if this isn't our first round through sync.
         // If this is the initial sync, we haven't formed batches yet.
         HdStMarkDrawBatchesDirty(renderParam);
-    }
-
-    if (needsRprimMaterialStateUpdate && _isInitialized) {
-        // XXX Forcing rprims to have a dirty material id to re-evaluate
-        // their material state as we don't know which rprims are bound to
-        // this one. We can skip this invalidation the first time this
-        // material is Sync'd since any affected Rprim should already be
-        // marked with a dirty material id.
-        HdChangeTracker& changeTracker =
-                         sceneDelegate->GetRenderIndex().GetChangeTracker();
-        changeTracker.MarkAllRprimsDirty(HdChangeTracker::DirtyMaterialId);
     }
 
     _isInitialized = true;

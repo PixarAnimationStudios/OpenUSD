@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ///
 /// \file usdUtils/usdzPackage.cpp
@@ -31,9 +14,9 @@
 
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/sdf/assetPath.h"
+#include "pxr/usd/sdf/usdcFileFormat.h"
+#include "pxr/usd/sdf/zipFile.h"
 #include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/usdcFileFormat.h"
-#include "pxr/usd/usd/zipFile.h"
 
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
@@ -49,7 +32,7 @@ public:
     Write(
         const std::string &usdzFilePath) override
     {
-        _writer = UsdZipFileWriter::CreateNew(usdzFilePath);
+        _writer = SdfZipFileWriter::CreateNew(usdzFilePath);
 
         const bool success = 
             UsdUtils_AssetLocalizationPackage::Write(usdzFilePath);
@@ -69,7 +52,7 @@ protected:
     }
 
     private:
-        UsdZipFileWriter _writer;
+        SdfZipFileWriter _writer;
 };
 
 static 
@@ -134,19 +117,27 @@ UsdUtilsCreateNewARKitUsdzPackage(
     // the composition of the stage.
     std::vector<std::string> sublayers, references, payloads;
 
+    // We are explicitly setting the UDIM path resolution option to false
+    // here because the following logic only cares if the root layer contains
+    // any external references and does reason about the contents of the
+    // results.  UDIM path resolution has the potential to be expensive, for
+    // example in the case of network filesystem paths.
+    UsdUtilsExtractExternalReferencesParams params;
+    params.SetResolveUdimPaths(false);
+
     UsdUtils_ExtractExternalReferences(resolvedPath, 
         UsdUtils_LocalizationContext::ReferenceType::CompositionOnly,
-        &sublayers, &references, &payloads);
+        &sublayers, &references, &payloads, params);
 
     // Ensure that the root layer has the ".usdc" extension.
     std::string targetBaseName = firstLayerName.empty() ? 
         TfGetBaseName(assetPath.GetAssetPath()) : firstLayerName;
     const std::string &fileExt = resolver.GetExtension(targetBaseName);
     bool renamingRootLayer = false;
-    if (fileExt != UsdUsdcFileFormatTokens->Id) {
+    if (fileExt != SdfUsdcFileFormatTokens->Id) {
         renamingRootLayer = true;
         targetBaseName = targetBaseName.substr(0, targetBaseName.rfind(".")+1) +  
-                UsdUsdcFileFormatTokens->Id.GetString();
+                SdfUsdcFileFormatTokens->Id.GetString();
     }
 
     // If there are no external dependencies needed for composition, we can 

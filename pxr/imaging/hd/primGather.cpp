@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/primGather.h"
@@ -215,64 +198,76 @@ HdPrimGather::_FilterRange(const SdfPathVector &paths,
                             size_t end,
                             bool isIncludeRange)
 {
-    // If filter list is empty, we are done processing.
-    if (_filterList.empty()) {
-        if (isIncludeRange) {
-            _gatheredRanges.emplace_back(start, end);
+    std::vector< std::pair<_Range, bool> > ranges;
+    ranges.push_back({{start, end}, isIncludeRange});
+
+    while (!ranges.empty()) {
+        // Pop the current range from the stack.
+        start = ranges.back().first._start;
+        end = ranges.back().first._end;
+        isIncludeRange = ranges.back().second;
+        ranges.pop_back();
+
+        // If filter list is empty, we are done processing.
+        if (_filterList.empty()) {
+            if (isIncludeRange) {
+                _gatheredRanges.emplace_back(start, end);
+            }
+            // Continue on to next range.
+            continue;
         }
-        return;
-    }
 
-    // Take copy as we are going to pop_back before we use the filter.
-    const _PathFilter currentFilter = _filterList.back();
+        // Take copy as we are going to pop_back before we use the filter.
+        const _PathFilter currentFilter = _filterList.back();
 
-    // Check to see if the top of the filter stack is beyond the
-    // end of the range.  If it is, we are done processing this range.
-    if (currentFilter._path > paths[end]) {
-        if (isIncludeRange) {
-            _gatheredRanges.emplace_back(start, end);
+        // Check to see if the top of the filter stack is beyond the
+        // end of the range.  If it is, we are done processing this range.
+        if (currentFilter._path > paths[end]) {
+            if (isIncludeRange) {
+                _gatheredRanges.emplace_back(start, end);
+            }
+            // Continue on to next range.
+            continue;
         }
-        return;
-    }
 
-    // Need to process the filter, so remove it.
-    _filterList.pop_back();
+        // Need to process the filter, so remove it.
+        _filterList.pop_back();
 
-    // If the type of filter matches the range, it's a no-op.
-    // Filter the same range again with the next filter.
+        // If the type of filter matches the range, it's a no-op.
+        // Filter the same range again with the next filter.
 
-    bool skipFilter = currentFilter._includePath == isIncludeRange;
+        bool skipFilter = currentFilter._includePath == isIncludeRange;
 
-    // Is filter before the start of the range?
-    skipFilter |= (paths[start] > currentFilter._path) &&
-                  (!paths[start].HasPrefix(currentFilter._path));
+        // Is filter before the start of the range?
+        skipFilter |= (paths[start] > currentFilter._path) &&
+                      (!paths[start].HasPrefix(currentFilter._path));
 
-    if (skipFilter) {
-        _FilterRange(paths, start, end, isIncludeRange);
-    } else {
+        if (skipFilter) {
+            // Continue to process this range with the next filter.
+            ranges.push_back({{start, end}, isIncludeRange});
+            continue;
+        }
+
         // We need to split the range.
-
-        size_t lowerBound = _FindLowerBound(paths,
+        const size_t lowerBound = _FindLowerBound(paths,
                                             start,
                                             end,
                                             currentFilter._path);
 
-        size_t upperBound = _FindUpperBound(paths,
+        const size_t upperBound = _FindUpperBound(paths,
                                             lowerBound,
                                             end,
                                             currentFilter._path);
 
-        // And filter the new ranges.
-        if (start < lowerBound) {
-            _FilterRange(paths, start, lowerBound - 1, isIncludeRange);
+        // Push the ranges to process onto the stack.
+        if (upperBound < end) {
+            ranges.push_back({{upperBound+1, end}, isIncludeRange});
         }
-
         // Note: The type of range is inverted, because this is the
         // area that hit the filter.
-        _FilterRange(paths, lowerBound, upperBound, !isIncludeRange);
-
-        if (upperBound < end) {
-            _FilterRange(paths, upperBound + 1, end, isIncludeRange);
+        ranges.push_back({{lowerBound, upperBound}, !isIncludeRange});
+        if (start < lowerBound) {
+            ranges.push_back({{start, lowerBound-1}, isIncludeRange});
         }
     }
 }

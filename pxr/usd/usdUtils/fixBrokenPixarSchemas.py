@@ -1,25 +1,8 @@
 #
 # Copyright 2022 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 
 class FixBrokenPixarSchemas(object):
@@ -193,3 +176,44 @@ class FixBrokenPixarSchemas(object):
             self._layerUpdated = True
             usdStage.SetMetadata(UsdGeom.Tokens.upAxis, 
                 UsdGeom.GetFallbackUpAxis())
+
+
+    def FixupRenderSettingsTerminalsAPI(self):
+        """Makes sure that RenderSettings terminals targeting display filters,
+        integrators, and sample filters are relationships instead of output
+        connections. Marks the layer as updated if fixes are applied.
+        """
+        replaceAttrs = ["outputs:ri:displayFilters",
+                        "outputs:ri:sampleFilters",
+                        "outputs:ri:integrator"]
+
+        def _RenderSettingsTerminalAPIUsesRelationships(path):
+            if not path.IsPrimPath():
+                return
+        
+            from pxr import Usd, Sdf
+            primSpec = self._usdLayer.GetPrimAtPath(path)
+            if primSpec.typeName != "RenderSettings":
+                return
+
+            registry = Usd.SchemaRegistry()
+            primDef = registry.FindConcretePrimDefinition(primSpec.typeName)
+            if "PxrRenderTerminalsAPI" not in primDef.GetAppliedAPISchemas():
+                return
+
+            for attr in primSpec.attributes:
+                attrName = attr.name
+                if attrName in replaceAttrs:
+                    conns = attr.connectionPathList.GetAppliedItems()
+                    if conns:
+                        self._layerUpdated = True
+                        relName = attrName.replace("outputs:", "")
+                        relPath = primSpec.path.AppendProperty(relName)
+                        rel = Sdf.CreateRelationshipInLayer(self._usdLayer,
+                            relPath, Sdf.VariabilityUniform, attr.custom)
+                        rel.targetPathList.ClearEditsAndMakeExplicit()
+                        primPaths = [p.GetPrimPath() for p in conns]
+                        rel.targetPathList.explicitItems = primPaths
+                        primSpec.RemoveProperty(attr)
+
+        self._usdLayer.Traverse("/", _RenderSettingsTerminalAPIUsesRelationships)

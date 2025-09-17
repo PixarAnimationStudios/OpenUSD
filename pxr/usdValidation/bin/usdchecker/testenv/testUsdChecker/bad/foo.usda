@@ -1,0 +1,45 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def "foo" (
+    variants = {
+        string set2 = "B"
+        string set3 = "D"
+    }
+    add variantSets = ["set2", "set3"]
+)
+{
+    def Material "material"
+    {
+        def Shader "PreviewShader"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+        }
+    }
+    
+    variantSet "set2" = {
+        "A" {
+            def "PrimA" {
+                rel material:binding = </foo/material/PreviewShader>
+            }
+        }
+        "B" {
+            def "PrimB" { }
+        }
+    }
+
+    variantSet "set3" = {
+        "C" {
+            def "PrimC" { }
+        }
+        "D" {
+            def "PrimD" {
+                rel material:binding = </foo/material/PreviewShader>
+            }
+        }
+    }
+}

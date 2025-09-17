@@ -1,0 +1,24 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Validators": {
+                    "CompositionErrorTest": {
+                        "doc": "Validator aims at providing all composition errors, which were generated while composing the stage."
+                    }, 
+                    "StageMetadataChecker": {
+                        "doc": "Stages that can be consumed as referenceable assets must have a valid 'defaultPrim' specified."
+                    }, 
+                    "keywords": [
+                        "UsdCoreValidators"
+                    ]
+                }
+            }, 
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@", 
+            "Name": "usdValidation", 
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@", 
+            "Root": "@PLUG_INFO_ROOT@", 
+            "Type": "library"
+        }
+    ]
+}

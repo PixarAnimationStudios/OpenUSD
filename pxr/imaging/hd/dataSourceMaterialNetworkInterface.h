@@ -1,25 +1,8 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef HD_DATA_SOURCE_MATERIAL_NETWORK_INTERFACE_H
 #define HD_DATA_SOURCE_MATERIAL_NETWORK_INTERFACE_H
@@ -67,6 +50,11 @@ public:
     }
 
     HD_API
+    TfTokenVector GetMaterialConfigKeys() const override;
+    HD_API
+    VtValue GetMaterialConfigValue(const TfToken& key) const override;
+
+    HD_API
     std::string GetModelAssetName() const override;
 
     HD_API
@@ -107,10 +95,19 @@ public:
     HD_API
     void DeleteNode(const TfToken &nodeName) override;
 
+    /// Set the nodeType for the shader node with the given \p nodeName. 
+    /// If \p nodeType is empty then the nodeType attribute will be removed
+    /// from the node's dataSource.
     HD_API
     void SetNodeType(
         const TfToken &nodeName,
         const TfToken &nodeType) override;
+
+    HD_API
+    void SetNodeTypeInfoValue(
+        const TfToken &nodeName,
+        const TfToken &key,
+        const VtValue &value) override;
 
     HD_API
     void SetNodeParameterValue(
@@ -160,12 +157,28 @@ public:
     HdContainerDataSourceHandle Finish();
 
 private:
+
+    /// Return the nodeTypeInfo dataSource, if it exists, for the specified 
+    /// \p nodeName. Does NOT take into account any overrides of the nodeType 
+    /// data that may have been authored by SetNodeTypeInfoValue().
+    HdContainerDataSourceHandle _GetOriginalNodeTypeInfo(
+            const TfToken& nodeName) const;
+
+    /// Return the nodeTypeInfo dataSource for the supplied \p nodeName,  
+    /// taking into account any overrides that may have been authored.
     HdContainerDataSourceHandle _GetNodeTypeInfo(
             const TfToken& nodeName) const;
 
     using _OverrideMap =
         std::unordered_map<HdDataSourceLocator, HdDataSourceBaseHandle,
             TfHash>;
+
+    using _HdContainerDataSourceEditorSharedPtr = 
+        std::shared_ptr<class HdContainerDataSourceEditor>;
+
+    using _NodeTypeInfoMap = 
+        std::unordered_map<TfToken, _HdContainerDataSourceEditorSharedPtr, 
+            TfToken::HashFunctor>;
 
     using _TokenSet = std::unordered_set<TfToken, TfHash>;
 
@@ -176,6 +189,7 @@ private:
     SdfPath _materialPrimPath;
     mutable HdMaterialNetworkSchema _networkSchema;
     HdContainerDataSourceEditor _networkEditor;
+    _NodeTypeInfoMap _nodeTypeInfoOverrides;
     HdContainerDataSourceHandle _primContainer;
     _OverrideMap _existingOverrides;
     _TokenSet _overriddenNodes;

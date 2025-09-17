@@ -2,25 +2,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 from __future__ import print_function
 from __future__ import division
@@ -150,20 +133,32 @@ def BuildReferenceOffsets(rootLyr, testLyr, makePayloads=False):
         ('/Scale_2', 0.0, 2.0),
         ('/Scale_1p5', 0.0, 1.5),
         ('/Scale_half', 0.0, 0.5),
-        ('/Scale_negHalf', 0.0, -0.5),
 
         #
         # Combined offset and scale tests:
         #
         ('/Scale_half_Offset_1', 1.0, 0.5),
         ('/Scale_half_Offset_neg1', -1.0, 0.5),
-        ('/Scale_negHalf_Offset_1', 1.0, -0.5),
-        ('/Scale_negHalf_Offset_neg1', -1.0, -0.5)
         ]
 
     adjPrims = [MakePrim(stage, testLyr, path=c[0], offset=c[1], scale=c[2],
                          makePayload=makePayloads)
                 for c in cases]
+
+    compositionErrors = stage.GetCompositionErrors()
+    assert compositionErrors == []
+    # Following cases should result in composition errors when applying layer
+    # offsets with negative scales.
+    cases = [
+        ('/Scale_negHalf', 0.0, -0.5),
+        ('/Scale_negHalf_Offset_1', 1.0, -0.5),
+        ('/Scale_negHalf_Offset_neg1', -1.0, -0.5)
+    ]
+    for c in cases:
+        MakePrim(stage, testLyr, path=c[0], offset=c[1], scale=c[2],
+                 makePayload=makePayloads)
+    compositionErrors = stage.GetCompositionErrors()
+    assert len(compositionErrors) == len(cases)
 
     # If the layers have different tcps values, this will be factored in as an
     # additional scale in the composed layer offset.

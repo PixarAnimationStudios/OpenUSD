@@ -2,30 +2,24 @@ set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usdShade)
 
 pxr_library(usdShade
+    INCLUDE_SCHEMA_FILES
+
     LIBRARIES
         tf
         vt
         js
         sdf
-        ndr
         sdr
         usd
         usdGeom
-
+        TBB::tbb
+    
     PUBLIC_CLASSES
-        connectableAPI
         connectableAPIBehavior
-        coordSysAPI
         input
-        material
-        materialBindingAPI
-        nodeDefAPI
         output
-        shader
         shaderDefParser
         shaderDefUtils
-        nodeGraph
-        tokens
         udimUtils
         utils
 
@@ -33,34 +27,17 @@ pxr_library(usdShade
         api.h
         types.h
 
-    PYTHON_CPPFILES
-        moduleDeps.cpp
-
     PYMODULE_CPPFILES
-        module.cpp
-        wrapConnectableAPI.cpp
-        wrapCoordSysAPI.cpp
         wrapInput.cpp
-        wrapMaterial.cpp
-        wrapMaterialBindingAPI.cpp
-        wrapNodeDefAPI.cpp
-        wrapNodeGraph.cpp
         wrapOutput.cpp
-        wrapShader.cpp
         wrapShaderDefParser.cpp
         wrapShaderDefUtils.cpp
-        wrapTokens.cpp
         wrapTypes.cpp
         wrapUdimUtils.cpp
         wrapUtils.cpp
 
     PYMODULE_FILES
         __init__.py
-
-    RESOURCE_FILES
-        plugInfo.json
-        generatedSchema.usda
-        schema.usda:usdShade/schema.usda
 
     DOXYGEN_FILES
         overview.dox

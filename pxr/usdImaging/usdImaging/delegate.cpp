@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
@@ -142,23 +125,20 @@ UsdImagingDelegate::~UsdImagingDelegate()
 {
     TfNotice::Revoke(_objectsChangedNoticeKey);
 
-    // Remove all prims from the render index.
-
-    // Even though this delegate is going out of scope
-    // the render index may not be.  So, need to make
-    // sure we properly remove all prims from the
-    // render index.
-    //
-    // Note: This is not going through the adapters
-    // as we are destroying the whole delegate.  It is
-    // assumed that adapters are not shared between delegates.
-    HdRenderIndex& index = GetRenderIndex();
-    index.RemoveSubtree(GetDelegateID(), this);
-
-    _refineLevelMap.clear();
-    _hdPrimInfoMap.clear();
-    _dependencyInfo.clear();
-    _adapterMap.clear();
+    if (_stage) {
+        // Remove all prims conteributed by this delegate
+        // from the render index.
+        //
+        // Even though this delegate is going out of scope
+        // the render index may not be.  So, need to make
+        // sure we properly remove all prims from the
+        // render index.
+        //
+        // Note: This is not going through the adapters
+        // as we are destroying the whole delegate.  It is
+        // assumed that adapters are not shared between delegates.
+        GetRenderIndex().RemoveSubtree(GetDelegateID(), this);
+    }
 }
 
 
@@ -1207,6 +1187,22 @@ _HasConnectionChanged(const SdfPath &path, const PathRange &pathRange)
     return false;
 }
 
+// Helper function to check if a path entry has relationship target did change
+// notice
+bool
+_HasRelationshipTargetsChanged(const SdfPath &path, const PathRange &pathRange)
+{
+    PathRange::const_iterator itr = pathRange.find(path);
+    if (itr != pathRange.end()) {
+        for (const SdfChangeList::Entry *entry : itr.GetBase()->second) {
+            if (entry->flags.didChangeRelationshipTargets) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void 
 UsdImagingDelegate::_OnUsdObjectsChanged(
     UsdNotice::ObjectsChanged const& notice,
@@ -1226,8 +1222,9 @@ UsdImagingDelegate::_OnUsdObjectsChanged(
     // and repopulate those trees.
     const PathRange pathsToResync = notice.GetResyncedPaths();
     for (const auto& path : pathsToResync) {
-        if (path.IsPrimPropertyPath() && 
-                _HasConnectionChanged(path, pathsToResync)) {
+        if (path.IsPrimPropertyPath() &&
+                (_HasConnectionChanged(path, pathsToResync) ||
+                 _HasRelationshipTargetsChanged(path, pathsToResync))) {
             // Resync the prim path instead of the property path:
             _usdPathsToResync.emplace_back(path.GetPrimPath());
         } else {
@@ -2800,6 +2797,12 @@ UsdImagingDelegate::GetCategories(SdfPath const &id)
     // collection cache has no way to identify prototype paths, we must do the
     // check here where we have access to the adapter. Instances will receive
     // the correct list of collections via GetInstanceCategories().
+    //
+    // Note the IsChildPath clause below. This will produce categories for
+    // point instancer prims (but not native instancers).
+    // Targeting prototype prims under the point instancer prim (but not the
+    // point instancer prim itself) is not supported.
+    //
     _HdPrimInfo* primInfo = _GetHdPrimInfo(cachePath);
     if (primInfo &&
         primInfo->adapter &&
@@ -2817,6 +2820,11 @@ UsdImagingDelegate::GetInstanceCategories(SdfPath const &instancerId)
     SdfPath cachePath = ConvertIndexPathToCachePath(instancerId);
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo)) {
+        // GetInstanceCategories is implemented by the native instancing
+        // adapter, but *not* the point instancer adapter.
+        // GetCategories will return the categories for light linking
+        // collections that target the point instancer prim. See above.
+        //
         return primInfo->adapter
             ->GetInstanceCategories(primInfo->usdPrim);
     }

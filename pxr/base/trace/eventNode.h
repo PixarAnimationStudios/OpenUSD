@@ -1,25 +1,8 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #ifndef PXR_BASE_TRACE_EVENT_NODE_H
@@ -31,12 +14,13 @@
 #include "pxr/base/trace/event.h"
 #include "pxr/base/trace/eventData.h"
 
+#include "pxr/base/tf/declarePtrs.h"
+#include "pxr/base/tf/pointerAndBits.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/refPtr.h"
+#include "pxr/base/tf/smallVector.h"
+#include "pxr/base/tf/span.h"
 #include "pxr/base/tf/token.h"
-#include "pxr/base/tf/declarePtrs.h"
-
-#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -50,7 +34,7 @@ TF_DECLARE_REF_PTRS(TraceEventNode);
 /// useful for timeline views of a trace.
 ///
 
-class TraceEventNode : public TfRefBase {
+class TraceEventNode : public TfSimpleRefBase {
 public:
 
     using TimeStamp = TraceEvent::TimeStamp;
@@ -59,11 +43,8 @@ public:
 
     /// Creates a new root node.
     ///
-    static TraceEventNodeRefPtr New() {
-        return TraceEventNode::New(
-            TfToken("root"), TraceCategory::Default, 0.0, 0.0, {}, false);
-    }
-
+    TRACE_API static TraceEventNodeRefPtr New();
+    
     /// Creates a new node with \p key, \p category, \p beginTime and 
     /// \p endTime.
     static TraceEventNodeRefPtr New(const TfToken &key,
@@ -84,56 +65,62 @@ public:
 
     /// Appends a new child node with \p key, \p category, \p beginTime and 
     /// \p endTime.
-    TraceEventNodeRefPtr Append(const TfToken &key, 
-                                      TraceCategoryId category,
-                                      TimeStamp beginTime,
-                                      TimeStamp endTime,
-                                      bool separateEvents);
-
+    TRACE_API TraceEventNodeRefPtr Append(const TfToken &key, 
+                                          TraceCategoryId category,
+                                          TimeStamp beginTime,
+                                          TimeStamp endTime,
+                                          bool separateEvents);
+    
     /// Appends \p node as a child node.
-    void Append(TraceEventNodeRefPtr node);
-
+    TRACE_API void Append(TraceEventNodeRefPtr node);
+    
     /// Returns the name of this node.
-    TfToken GetKey() { return _key;}
+    const TfToken &GetKey() const { return _key; }
 
     /// Returns the category of this node.
     TraceCategoryId GetCategory() const { return _category; }
 
     /// Sets this node's begin and end time to the time extents of its direct 
     /// children.
-    void SetBeginAndEndTimesFromChildren();
+    TRACE_API void SetBeginAndEndTimesFromChildren();
 
     /// \name Profile Data Accessors
     /// @{
 
     /// Returns the time that this scope started.
-    TimeStamp GetBeginTime() { return _beginTime; }
+    TimeStamp GetBeginTime() const { return _beginTime; }
 
     /// Returns the time that this scope ended.
-    TimeStamp GetEndTime()   { return _endTime; }
+    TimeStamp GetEndTime() const { return _endTime; }
 
     /// @}
 
     /// \name Children Accessors
     /// @{
 
-    /// Returns references to the children of this node.
-    const TraceEventNodeRefPtrVector &GetChildrenRef() {
+    /// Returns a TfSpan of references to the children of this node.
+    TfSpan<const TraceEventNodeRefPtr> GetChildrenRef() const {
         return _children;
     }
 
     /// @}
 
     /// Return the data associated with this node.
-    const AttributeMap& GetAttributes() const { return _attributes; }
+    TRACE_API const AttributeMap& GetAttributes() const;
 
     /// Add data to this node.
-    void AddAttribute(const TfToken& key, const AttributeData& attr);
+    TRACE_API void AddAttribute(const TfToken& key, AttributeData&& attr);
 
     /// Returns whether this node was created from a Begin-End pair or a single
     /// Timespan event.
     bool IsFromSeparateEvents() const {
-        return _fromSeparateEvents;
+        return _attributesAndSeparateEvents.BitsAs<bool>();
+    }
+
+    ~TraceEventNode() {
+        if (AttributeMap *attrMap = _attributesAndSeparateEvents.Get()) {
+            _DeleteAttrMap(attrMap);
+        }
     }
 
 private:
@@ -146,23 +133,27 @@ private:
         TraceEventNodeRefPtrVector&& children,
         bool separateEvents)
 
-        : _key(key)
-        , _category(category)
+        : _category(category)
+        , _key(key)
         , _beginTime(beginTime)
         , _endTime(endTime)
-        , _children(std::move(children))
-        , _fromSeparateEvents(separateEvents)
-    {}
+        , _children(std::make_move_iterator(children.begin()),
+                    std::make_move_iterator(children.end()))
+        , _attributesAndSeparateEvents(nullptr, separateEvents)
+    {
+    }
 
+    // Out-of-line to avoid inlining the multimap dtor code.
+    TRACE_API void _DeleteAttrMap(AttributeMap *attrMap);
 
-    TfToken _key;
-    TraceCategoryId _category;
+    // _category (4 bytes) is first so it packs with TfRefBase's 4-byte count.
+    const TraceCategoryId _category;
+    const TfToken _key;
     TimeStamp _beginTime;
     TimeStamp _endTime;
-    TraceEventNodeRefPtrVector _children;
-    bool _fromSeparateEvents;
-
-    AttributeMap _attributes;
+    // Empirical results show ~85% of nodes have < 2 children.
+    TfSmallVector<TraceEventNodeRefPtr, 1> _children;
+    TfPointerAndBits<AttributeMap> _attributesAndSeparateEvents;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

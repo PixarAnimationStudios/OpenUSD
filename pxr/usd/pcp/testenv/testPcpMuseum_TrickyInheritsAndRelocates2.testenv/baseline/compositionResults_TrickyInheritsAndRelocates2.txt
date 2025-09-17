@@ -1,15 +1,15 @@
-Loading @TrickyInheritsAndRelocates2/root.sdf@
+Loading @TrickyInheritsAndRelocates2/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Group>
 
 Prim Stack:
-    root.sdf             /Group
-    b.sdf                /Group
+    root.usda            /Group
+    b.usda               /Group
 
 Child names:
      ['Char_Named']
@@ -21,11 +21,11 @@ Prohibited child names:
 Results for composing </Group/Char_Named>
 
 Prim Stack:
-    root.sdf             /_class_A
-    root.sdf             /_class_B
-    b.sdf                /Group/Char
-    b.sdf                /_class_A
-    b.sdf                /_class_B
+    root.usda            /_class_A
+    root.usda            /_class_B
+    b.usda               /Group/Char
+    b.usda               /_class_A
+    b.usda               /_class_B
 
 Child names:
      ['PrimFromClassB', 'PrimFromClassA']
@@ -34,19 +34,19 @@ Child names:
 Results for composing </Group/Char_Named/PrimFromClassB>
 
 Prim Stack:
-    root.sdf             /_class_B/PrimFromClassB
+    root.usda            /_class_B/PrimFromClassB
 
 ------------------------------------------------------------------------
 Results for composing </Group/Char_Named/PrimFromClassA>
 
 Prim Stack:
-    root.sdf             /_class_A/PrimFromClassA
+    root.usda            /_class_A/PrimFromClassA
 
 ------------------------------------------------------------------------
 Results for composing </_class_A>
 
 Prim Stack:
-    root.sdf             /_class_A
+    root.usda            /_class_A
 
 Child names:
      ['PrimFromClassA']
@@ -55,13 +55,13 @@ Child names:
 Results for composing </_class_A/PrimFromClassA>
 
 Prim Stack:
-    root.sdf             /_class_A/PrimFromClassA
+    root.usda            /_class_A/PrimFromClassA
 
 ------------------------------------------------------------------------
 Results for composing </_class_B>
 
 Prim Stack:
-    root.sdf             /_class_B
+    root.usda            /_class_B
 
 Child names:
      ['PrimFromClassB']
@@ -70,5 +70,5 @@ Child names:
 Results for composing </_class_B/PrimFromClassB>
 
 Prim Stack:
-    root.sdf             /_class_B/PrimFromClassB
+    root.usda            /_class_B/PrimFromClassB
 

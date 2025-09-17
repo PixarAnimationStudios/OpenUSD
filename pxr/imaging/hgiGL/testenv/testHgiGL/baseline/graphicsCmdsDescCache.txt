@@ -1,0 +1,123 @@
+Case 1: Add 42 framebuffer entries
+----------------------------------
+_FramebufferCache: {
+    _FramebufferDesc: {colorTexture0 dimensions:(1, 1, 1), colorTexture1 dimensions:(1, 1, 1), depthFormat 10depthTexture dimensions:(1, 1, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(2, 2, 1), colorTexture1 dimensions:(2, 2, 1), depthFormat 10depthTexture dimensions:(2, 2, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(3, 3, 1), colorTexture1 dimensions:(3, 3, 1), depthFormat 10depthTexture dimensions:(3, 3, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(4, 4, 1), colorTexture1 dimensions:(4, 4, 1), depthFormat 10depthTexture dimensions:(4, 4, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(5, 5, 1), colorTexture1 dimensions:(5, 5, 1), depthFormat 10depthTexture dimensions:(5, 5, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(6, 6, 1), colorTexture1 dimensions:(6, 6, 1), depthFormat 10depthTexture dimensions:(6, 6, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(7, 7, 1), colorTexture1 dimensions:(7, 7, 1), depthFormat 10depthTexture dimensions:(7, 7, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(8, 8, 1), colorTexture1 dimensions:(8, 8, 1), depthFormat 10depthTexture dimensions:(8, 8, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(9, 9, 1), colorTexture1 dimensions:(9, 9, 1), depthFormat 10depthTexture dimensions:(9, 9, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(10, 10, 1), colorTexture1 dimensions:(10, 10, 1), depthFormat 10depthTexture dimensions:(10, 10, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(11, 11, 1), colorTexture1 dimensions:(11, 11, 1), depthFormat 10depthTexture dimensions:(11, 11, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(12, 12, 1), colorTexture1 dimensions:(12, 12, 1), depthFormat 10depthTexture dimensions:(12, 12, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(13, 13, 1), colorTexture1 dimensions:(13, 13, 1), depthFormat 10depthTexture dimensions:(13, 13, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(14, 14, 1), colorTexture1 dimensions:(14, 14, 1), depthFormat 10depthTexture dimensions:(14, 14, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(15, 15, 1), colorTexture1 dimensions:(15, 15, 1), depthFormat 10depthTexture dimensions:(15, 15, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(16, 16, 1), colorTexture1 dimensions:(16, 16, 1), depthFormat 10depthTexture dimensions:(16, 16, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(17, 17, 1), colorTexture1 dimensions:(17, 17, 1), depthFormat 10depthTexture dimensions:(17, 17, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(18, 18, 1), colorTexture1 dimensions:(18, 18, 1), depthFormat 10depthTexture dimensions:(18, 18, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(19, 19, 1), colorTexture1 dimensions:(19, 19, 1), depthFormat 10depthTexture dimensions:(19, 19, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(20, 20, 1), colorTexture1 dimensions:(20, 20, 1), depthFormat 10depthTexture dimensions:(20, 20, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(21, 21, 1), colorTexture1 dimensions:(21, 21, 1), depthFormat 10depthTexture dimensions:(21, 21, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(22, 22, 1), colorTexture1 dimensions:(22, 22, 1), depthFormat 10depthTexture dimensions:(22, 22, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(23, 23, 1), colorTexture1 dimensions:(23, 23, 1), depthFormat 10depthTexture dimensions:(23, 23, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(24, 24, 1), colorTexture1 dimensions:(24, 24, 1), depthFormat 10depthTexture dimensions:(24, 24, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(25, 25, 1), colorTexture1 dimensions:(25, 25, 1), depthFormat 10depthTexture dimensions:(25, 25, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(26, 26, 1), colorTexture1 dimensions:(26, 26, 1), depthFormat 10depthTexture dimensions:(26, 26, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(27, 27, 1), colorTexture1 dimensions:(27, 27, 1), depthFormat 10depthTexture dimensions:(27, 27, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(28, 28, 1), colorTexture1 dimensions:(28, 28, 1), depthFormat 10depthTexture dimensions:(28, 28, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(29, 29, 1), colorTexture1 dimensions:(29, 29, 1), depthFormat 10depthTexture dimensions:(29, 29, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(30, 30, 1), colorTexture1 dimensions:(30, 30, 1), depthFormat 10depthTexture dimensions:(30, 30, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(31, 31, 1), colorTexture1 dimensions:(31, 31, 1), depthFormat 10depthTexture dimensions:(31, 31, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(32, 32, 1), colorTexture1 dimensions:(32, 32, 1), depthFormat 10depthTexture dimensions:(32, 32, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(33, 33, 1), colorTexture1 dimensions:(33, 33, 1), depthFormat 10depthTexture dimensions:(33, 33, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(34, 34, 1), colorTexture1 dimensions:(34, 34, 1), depthFormat 10depthTexture dimensions:(34, 34, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(35, 35, 1), colorTexture1 dimensions:(35, 35, 1), depthFormat 10depthTexture dimensions:(35, 35, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(36, 36, 1), colorTexture1 dimensions:(36, 36, 1), depthFormat 10depthTexture dimensions:(36, 36, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(37, 37, 1), colorTexture1 dimensions:(37, 37, 1), depthFormat 10depthTexture dimensions:(37, 37, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(38, 38, 1), colorTexture1 dimensions:(38, 38, 1), depthFormat 10depthTexture dimensions:(38, 38, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(39, 39, 1), colorTexture1 dimensions:(39, 39, 1), depthFormat 10depthTexture dimensions:(39, 39, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(40, 40, 1), colorTexture1 dimensions:(40, 40, 1), depthFormat 10depthTexture dimensions:(40, 40, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(41, 41, 1), colorTexture1 dimensions:(41, 41, 1), depthFormat 10depthTexture dimensions:(41, 41, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(42, 42, 1), colorTexture1 dimensions:(42, 42, 1), depthFormat 10depthTexture dimensions:(42, 42, 1)}
+}
+
+
+Case 2: Delete every other framebuffer's textures
+-------------------------------------------------
+_FramebufferCache: {
+    _FramebufferDesc: {colorTexture0 dimensions:(2, 2, 1), colorTexture1 dimensions:(2, 2, 1), depthFormat 10depthTexture dimensions:(2, 2, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(4, 4, 1), colorTexture1 dimensions:(4, 4, 1), depthFormat 10depthTexture dimensions:(4, 4, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(6, 6, 1), colorTexture1 dimensions:(6, 6, 1), depthFormat 10depthTexture dimensions:(6, 6, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(8, 8, 1), colorTexture1 dimensions:(8, 8, 1), depthFormat 10depthTexture dimensions:(8, 8, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(10, 10, 1), colorTexture1 dimensions:(10, 10, 1), depthFormat 10depthTexture dimensions:(10, 10, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(12, 12, 1), colorTexture1 dimensions:(12, 12, 1), depthFormat 10depthTexture dimensions:(12, 12, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(14, 14, 1), colorTexture1 dimensions:(14, 14, 1), depthFormat 10depthTexture dimensions:(14, 14, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(16, 16, 1), colorTexture1 dimensions:(16, 16, 1), depthFormat 10depthTexture dimensions:(16, 16, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(18, 18, 1), colorTexture1 dimensions:(18, 18, 1), depthFormat 10depthTexture dimensions:(18, 18, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(20, 20, 1), colorTexture1 dimensions:(20, 20, 1), depthFormat 10depthTexture dimensions:(20, 20, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(22, 22, 1), colorTexture1 dimensions:(22, 22, 1), depthFormat 10depthTexture dimensions:(22, 22, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(24, 24, 1), colorTexture1 dimensions:(24, 24, 1), depthFormat 10depthTexture dimensions:(24, 24, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(26, 26, 1), colorTexture1 dimensions:(26, 26, 1), depthFormat 10depthTexture dimensions:(26, 26, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(28, 28, 1), colorTexture1 dimensions:(28, 28, 1), depthFormat 10depthTexture dimensions:(28, 28, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(30, 30, 1), colorTexture1 dimensions:(30, 30, 1), depthFormat 10depthTexture dimensions:(30, 30, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(32, 32, 1), colorTexture1 dimensions:(32, 32, 1), depthFormat 10depthTexture dimensions:(32, 32, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(34, 34, 1), colorTexture1 dimensions:(34, 34, 1), depthFormat 10depthTexture dimensions:(34, 34, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(36, 36, 1), colorTexture1 dimensions:(36, 36, 1), depthFormat 10depthTexture dimensions:(36, 36, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(38, 38, 1), colorTexture1 dimensions:(38, 38, 1), depthFormat 10depthTexture dimensions:(38, 38, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(40, 40, 1), colorTexture1 dimensions:(40, 40, 1), depthFormat 10depthTexture dimensions:(40, 40, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(42, 42, 1), colorTexture1 dimensions:(42, 42, 1), depthFormat 10depthTexture dimensions:(42, 42, 1)}
+}
+
+
+Case 3: Set custom context arena and add 10 framebuffer entries
+---------------------------------------------------------------
+_FramebufferCache: {
+    _FramebufferDesc: {colorTexture0 dimensions:(1, 1, 1), colorTexture1 dimensions:(1, 1, 1), depthFormat 10depthTexture dimensions:(1, 1, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(2, 2, 1), colorTexture1 dimensions:(2, 2, 1), depthFormat 10depthTexture dimensions:(2, 2, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(3, 3, 1), colorTexture1 dimensions:(3, 3, 1), depthFormat 10depthTexture dimensions:(3, 3, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(4, 4, 1), colorTexture1 dimensions:(4, 4, 1), depthFormat 10depthTexture dimensions:(4, 4, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(5, 5, 1), colorTexture1 dimensions:(5, 5, 1), depthFormat 10depthTexture dimensions:(5, 5, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(6, 6, 1), colorTexture1 dimensions:(6, 6, 1), depthFormat 10depthTexture dimensions:(6, 6, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(7, 7, 1), colorTexture1 dimensions:(7, 7, 1), depthFormat 10depthTexture dimensions:(7, 7, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(8, 8, 1), colorTexture1 dimensions:(8, 8, 1), depthFormat 10depthTexture dimensions:(8, 8, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(9, 9, 1), colorTexture1 dimensions:(9, 9, 1), depthFormat 10depthTexture dimensions:(9, 9, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(10, 10, 1), colorTexture1 dimensions:(10, 10, 1), depthFormat 10depthTexture dimensions:(10, 10, 1)}
+}
+
+
+Case 4: Switch back to default arena
+------------------------------------
+_FramebufferCache: {
+    _FramebufferDesc: {colorTexture0 dimensions:(2, 2, 1), colorTexture1 dimensions:(2, 2, 1), depthFormat 10depthTexture dimensions:(2, 2, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(4, 4, 1), colorTexture1 dimensions:(4, 4, 1), depthFormat 10depthTexture dimensions:(4, 4, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(6, 6, 1), colorTexture1 dimensions:(6, 6, 1), depthFormat 10depthTexture dimensions:(6, 6, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(8, 8, 1), colorTexture1 dimensions:(8, 8, 1), depthFormat 10depthTexture dimensions:(8, 8, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(10, 10, 1), colorTexture1 dimensions:(10, 10, 1), depthFormat 10depthTexture dimensions:(10, 10, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(12, 12, 1), colorTexture1 dimensions:(12, 12, 1), depthFormat 10depthTexture dimensions:(12, 12, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(14, 14, 1), colorTexture1 dimensions:(14, 14, 1), depthFormat 10depthTexture dimensions:(14, 14, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(16, 16, 1), colorTexture1 dimensions:(16, 16, 1), depthFormat 10depthTexture dimensions:(16, 16, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(18, 18, 1), colorTexture1 dimensions:(18, 18, 1), depthFormat 10depthTexture dimensions:(18, 18, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(20, 20, 1), colorTexture1 dimensions:(20, 20, 1), depthFormat 10depthTexture dimensions:(20, 20, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(22, 22, 1), colorTexture1 dimensions:(22, 22, 1), depthFormat 10depthTexture dimensions:(22, 22, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(24, 24, 1), colorTexture1 dimensions:(24, 24, 1), depthFormat 10depthTexture dimensions:(24, 24, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(26, 26, 1), colorTexture1 dimensions:(26, 26, 1), depthFormat 10depthTexture dimensions:(26, 26, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(28, 28, 1), colorTexture1 dimensions:(28, 28, 1), depthFormat 10depthTexture dimensions:(28, 28, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(30, 30, 1), colorTexture1 dimensions:(30, 30, 1), depthFormat 10depthTexture dimensions:(30, 30, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(32, 32, 1), colorTexture1 dimensions:(32, 32, 1), depthFormat 10depthTexture dimensions:(32, 32, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(34, 34, 1), colorTexture1 dimensions:(34, 34, 1), depthFormat 10depthTexture dimensions:(34, 34, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(36, 36, 1), colorTexture1 dimensions:(36, 36, 1), depthFormat 10depthTexture dimensions:(36, 36, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(38, 38, 1), colorTexture1 dimensions:(38, 38, 1), depthFormat 10depthTexture dimensions:(38, 38, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(40, 40, 1), colorTexture1 dimensions:(40, 40, 1), depthFormat 10depthTexture dimensions:(40, 40, 1)}
+    _FramebufferDesc: {colorTexture0 dimensions:(42, 42, 1), colorTexture1 dimensions:(42, 42, 1), depthFormat 10depthTexture dimensions:(42, 42, 1)}
+}
+
+
+Case 5: Destroy custom context arena
+------------------------------------
+SUCCESS
+
+

@@ -1,0 +1,21 @@
+#usda 1.0
+
+def "CrowdGroup" (
+    references = @./groups.usda@</Groups/CrowdGroup>
+)
+{
+    over "_class_Char"
+    {
+    }
+
+    over "Char"
+    {
+    }
+}
+
+def "CharGroup"
+{
+    over "_class_Char"
+    {
+    }
+}

@@ -1,0 +1,50 @@
+#usda 1.0
+(
+    upAxis = "Z"
+    doc = """ This file is intended to capture different custom nodes that 
+            use texture coordinates/textures. """
+)
+
+def "Sphere_texcoords" (
+    references = @texturedSphere.usda@
+)
+{
+    rel material:binding = </MaterialX/Materials/TexcoordMaterial>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+    double3 xformOp:translate = (-10, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def "Sphere_textured" (
+    references = @texturedSphere.usda@
+)
+{
+    rel material:binding = </MaterialX/Materials/TexturedMaterial>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+    double3 xformOp:translate = (10, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Scope "MaterialX"(
+    references = @./mtlxFiles/texcoordNodeMaterials.mtlx@</MaterialX>
+    )
+{
+}
+
+def Xform "lights" 
+{
+    def DomeLight "DomeLight"
+    {
+        asset inputs:texture:file = @./images/StinsonBeach.hdr@
+        float xformOp:rotateX:Zup = 90
+        float inputs:intensity = 2
+        uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
+    }
+}
+
+def Camera "Camera"
+{
+    double3 xformOp:translate = (0, 0, 125)
+    float xformOp:rotateX:Zup = 90
+    uniform token[] xformOpOrder = ["xformOp:rotateX:Zup","xformOp:translate"]
+}

@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef USDUI_TOKENS_H
 #define USDUI_TOKENS_H
@@ -58,14 +41,50 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Use UsdUITokens like so:
 ///
 /// \code
-///     gprim.GetMyTokenValuedAttr().Set(UsdUITokens->closed);
+///     gprim.GetMyTokenValuedAttr().Set(UsdUITokens->accessibility);
 /// \endcode
 struct UsdUITokensType {
     USDUI_API UsdUITokensType();
+    /// \brief "accessibility"
+    /// 
+    /// Property namespace prefix for the UsdUIAccessibilityAPI schema.
+    const TfToken accessibility;
+    /// \brief "accessibility:__INSTANCE_NAME__:description"
+    /// 
+    /// UsdUIAccessibilityAPI
+    const TfToken accessibility_MultipleApplyTemplate_Description;
+    /// \brief "accessibility:__INSTANCE_NAME__:label"
+    /// 
+    /// UsdUIAccessibilityAPI
+    const TfToken accessibility_MultipleApplyTemplate_Label;
+    /// \brief "accessibility:__INSTANCE_NAME__:priority"
+    /// 
+    /// UsdUIAccessibilityAPI
+    const TfToken accessibility_MultipleApplyTemplate_Priority;
     /// \brief "closed"
     /// 
     /// Possible value for UsdUINodeGraphNodeAPI::GetExpansionStateAttr()
     const TfToken closed;
+    /// \brief "default"
+    /// 
+    /// Name of the anonymous instance name for the schema
+    const TfToken default_;
+    /// \brief "description"
+    /// 
+    /// Name of the description attribute
+    const TfToken description;
+    /// \brief "high"
+    /// 
+    /// Possible value for UsdUIAccessibilityAPI::GetPriorityAttr()
+    const TfToken high;
+    /// \brief "label"
+    /// 
+    /// Name of the label attribute
+    const TfToken label;
+    /// \brief "low"
+    /// 
+    /// Possible value for UsdUIAccessibilityAPI::GetPriorityAttr()
+    const TfToken low;
     /// \brief "minimized"
     /// 
     /// Possible value for UsdUINodeGraphNodeAPI::GetExpansionStateAttr()
@@ -74,6 +93,14 @@ struct UsdUITokensType {
     /// 
     /// Possible value for UsdUINodeGraphNodeAPI::GetExpansionStateAttr()
     const TfToken open;
+    /// \brief "priority"
+    /// 
+    /// Name of the priority attribute
+    const TfToken priority;
+    /// \brief "standard"
+    /// 
+    /// Fallback value for UsdUIAccessibilityAPI::GetPriorityAttr()
+    const TfToken standard;
     /// \brief "ui:description"
     /// 
     /// UsdUIBackdrop
@@ -90,6 +117,10 @@ struct UsdUITokensType {
     /// 
     /// UsdUINodeGraphNodeAPI
     const TfToken uiNodegraphNodeDisplayColor;
+    /// \brief "ui:nodegraph:node:docURI"
+    /// 
+    /// UsdUINodeGraphNodeAPI
+    const TfToken uiNodegraphNodeDocURI;
     /// \brief "ui:nodegraph:node:expansionState"
     /// 
     /// UsdUINodeGraphNodeAPI
@@ -110,6 +141,10 @@ struct UsdUITokensType {
     /// 
     /// UsdUINodeGraphNodeAPI
     const TfToken uiNodegraphNodeStackingOrder;
+    /// \brief "AccessibilityAPI"
+    /// 
+    /// Schema identifer and family for UsdUIAccessibilityAPI
+    const TfToken AccessibilityAPI;
     /// \brief "Backdrop"
     /// 
     /// Schema identifer and family for UsdUIBackdrop

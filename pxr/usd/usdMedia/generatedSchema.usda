@@ -4,228 +4,91 @@
 )
 
 class SpatialAudio "SpatialAudio" (
-    doc = """The SpatialAudio primitive defines basic properties for encoding 
-    playback of an audio file or stream within a USD Stage. The SpatialAudio 
-    schema derives from UsdGeomXformable since it can support full spatial 
-    audio while also supporting non-spatial mono and stereo sounds. One or 
-    more SpatialAudio prims can be placed anywhere in the namespace, though it 
-    is advantageous to place truly spatial audio prims under/inside the models 
-    from which the sound emanates, so that the audio prim need only be 
-    transformed relative to the model, rather than copying its animation.
-
-    Timecode Attributes and Time Scaling
-    \\a startTime and \\a endTime are \"timecode\" valued 
-    attributes which gives them the special behavior that 
-    \"layer offsets\" affecting the layer in 
-    which one of these values is authored are applied to the attribute's value 
-    itself during value resolution. This allows audio playback to be kept in 
-    sync with time sampled animation as the animation is affected by 
-    \"layer offsets\" in the composition. But this behavior 
-    brings with it some interesting edge cases and caveats when it comes to 
-    \"layer offsets\" that include scale.
-
-    ####  Layer Offsets do not affect Media Dilation
-    Although authored layer offsets may have a time scale which can scale the
-    duration between an authored \\a startTime and \\a endTime, we make no 
-    attempt to infer any playback dilation of the actual audio media itself. 
-    Given that \\a startTime and \\a endTime can be independently authored in 
-    different layers with differing time scales, it is not possible, in general,
-    to define an \"original timeframe\" from which we can compute a dilation to 
-    composed stage-time. Even if we could compute a composed dilation this way,
-    it would still be impossible to flatten a stage or layer stack into a single
-    layer and still retain the composed audio dilation using this schema.
-
-    #### Inverting startTime and endTime
-    Although we do not expect it to be common, it is possible to apply a 
-    negative time scale to USD layers, which mostly has the effect of reversing
-    animation in the affected composition. If a negative scale is applied to a
-    composition that contains authored \\a startTime and \\a endTime, it will
-    reverse their relative ordering in time. Therefore, we stipulate when
-    \\a playbackMode is \"onceFromStartToEnd\" or \"loopFromStartToEnd\", if 
-    \\a endTime is less than \\a startTime, then begin playback at \\a endTime, 
-    and continue until \\a startTime. When \\a startTime and \\a endTime are 
-    inverted, we do not, however, stipulate that playback of the audio media 
-    itself be inverted, since doing so \"successfully\" would require perfect 
-    knowledge of when, within the audio clip, relevant audio ends (so that we 
-    know how to offset the reversed audio to align it so that we reach the 
-    \"beginning\" at \\a startTime), and sounds played in reverse are not likely 
-    to produce desirable results. 
-    """
+    customData = {
+        string userDocBrief = """Defines the properties that enable audio 
+playback in the scene."""
+    }
 )
 {
     uniform token auralMode = "spatial" (
         allowedTokens = ["spatial", "nonSpatial"]
-        doc = """Determines how audio should be played.
-        Valid values are:
-        - spatial: Play the audio in 3D space if the device can support spatial
-          audio. if not, fall back to mono.
-        - nonSpatial: Play the audio without regard to the SpatialAudio prim's 
-          position. If the audio media contains any form of stereo or other 
-          multi-channel sound, it is left to the application to determine 
-          whether the listener's position should be taken into account. We 
-          expect nonSpatial to be the choice for ambient sounds and music 
-          sound-tracks.
-        """
+        customData = {
+            string userDocBrief = "How the audio is played, spatially or not."
+        }
     )
     uniform timecode endTime = 0 (
-        doc = """Expressed in the timeCodesPerSecond of the containing stage, 
-        \\a endTime specifies when the audio stream will cease playing during 
-        animation playback if the length of the referenced audio clip is 
-        longer than desired. This only applies if \\a playbackMode is set to 
-        onceFromStartToEnd or loopFromStartToEnd, otherwise the \\a endTimeCode 
-        of the stage is used instead of \\a endTime.
-        If \\a endTime is less than \\a startTime, it is expected that the audio 
-        will instead be played from \\a endTime to \\a startTime.
-        Note that \\a endTime is expressed as a timecode so that the stage can 
-        properly apply layer offsets when resolving its value.
-        See for more details and caveats.
-        """
+        customData = {
+            string userDocBrief = """Offset from the start of the audio file 
+for when to end playing, in timeCodes."""
+        }
     )
     uniform asset filePath = @@ (
-        doc = '''Path to the audio file.
-        In general, the formats allowed for audio files is no more constrained 
-        by USD than is image-type. As with images, however, usdz has stricter 
-        requirements based on DMA and format support in browsers and consumer 
-        devices. The allowed audio filetypes for usdz are M4A, MP3, WAV 
-        (in order of preference).
-        \\sa <a href="https://openusd.org/release/spec_usdz.html">Usdz Specification</a>
-        '''
+        customData = {
+            string userDocBrief = "Path to the audio file."
+        }
     )
     double gain = 1 (
-        doc = '''Multiplier on the incoming audio signal. A value of 0 "mutes" 
-        the signal. Negative values will be clamped to 0. 
-        '''
+        customData = {
+            string userDocBrief = "Multiplier to the given audio signal."
+        }
     )
     uniform double mediaOffset = 0 (
-        doc = """Expressed in seconds, \\a mediaOffset specifies the offset from 
-        the referenced audio file's beginning at which we should begin playback 
-        when stage playback reaches the time that prim's audio should start.
-        If the prim's \\a playbackMode is a looping mode, \\a mediaOffset is 
-        applied only to the first run-through of the audio clip; the second and 
-        all other loops begin from the start of the audio clip.
-        """
+        customData = {
+            string userDocBrief = """Amount, in seconds, the audio is offset 
+when playing."""
+        }
     )
     uniform token playbackMode = "onceFromStart" (
         allowedTokens = ["onceFromStart", "onceFromStartToEnd", "loopFromStart", "loopFromStartToEnd", "loopFromStage"]
-        doc = """Along with \\a startTime and \\a endTime, determines when the 
-        audio playback should start and stop during the stage's animation 
-        playback and whether the audio should loop during its duration. 
-        Valid values are:
-        - onceFromStart: Play the audio once, starting at \\a startTime, 
-          continuing until the audio completes.
-        - onceFromStartToEnd: Play the audio once beginning at \\a startTime, 
-          continuing until \\a endTime or until the audio completes, whichever 
-          comes first.
-        - loopFromStart: Start playing the audio at \\a startTime and continue 
-          looping through to the stage's authored \\a endTimeCode.
-        - loopFromStartToEnd: Start playing the audio at \\a startTime and 
-          continue looping through, stopping the audio at \\a endTime.
-        - loopFromStage: Start playing the audio at the stage's authored 
-          \\a startTimeCode and continue looping through to the stage's authored 
-          \\a endTimeCode. This can be useful for ambient sounds that should always 
-          be active.
-        """
+        customData = {
+            string userDocBrief = """Determines general rules on the playback 
+of the audio asset. Use this to specify when the audio should start, stop, 
+and if the playback should loop."""
+        }
     )
     rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
+        purpose="proxy" prim.'''
+        }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a classification of geometry into categories that 
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals.
-
-        See for more detail about how 
-        purpose is computed and used."""
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
     )
     uniform timecode startTime = 0 (
-        doc = """Expressed in the timeCodesPerSecond of the containing stage, 
-        \\a startTime specifies when the audio stream will start playing during 
-        animation playback. This value is ignored when \\a playbackMode is set 
-        to loopFromStage as, in this mode, the audio will always start at the 
-        stage's authored \\a startTimeCode.
-        Note that \\a startTime is expressed as a timecode so that the stage can 
-        properly apply layer offsets when resolving its value. See 
-        for more details and caveats.
-        """
+        customData = {
+            string userDocBrief = """Offset from the start of the audio file 
+for when to start playing, in timeCodes."""
+        }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
     )
     uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        the desired positioning for this prim and its descendant prims."""
+        }
     )
 }
 
 class "AssetPreviewsAPI" (
-    doc = """AssetPreviewsAPI is the interface for authoring and accessing 
-    precomputed, lightweight previews of assets.  It is an applied schema, 
-    which means that an arbitrary number of prims on a stage can have the schema 
-    applied and therefore can contain previews; however, to access a stage's 
-    \"default\" previews, one consults 
-    the stage's `defaultPrim`.
-    
-    AssetPreviewsAPI supports the following kinds of previews:
-    - **thumbnails** : a set of pre-rendered images of the asset.  There is no 
-      prescribed size for thumbnail images, but care should be taken to ensure
-      their inclusion does not substantially increase the overall size of an
-      asset, as, for example, when packaged into USDZ.
-    
-    Although the UsdMediaAssetPreviewsAPI class can be used to interrogate any
-    prim, no query in the API will succeed unless the schema has been applied
-    to the prim.  This schema deals only with asset paths, and clients wishing
-    to directly consume the returned data must do so by retrieving an ArAsset
-    from the session's ArAssetResolver.
-    
-    The schema defines no properties or metadata fallback values.  Rather, 
-    Asset Previews are encoded as part of a prim's `assetInfo` metadata.  A 
-    default thumbnail image would look like:
-    ```
-1.    assetInfo = {
-2.      dictionary previews = {
-3.          dictionary thumbnails = {
-4.              dictionary default = {
-5.                  asset defaultImage = @chair_thumb.jpg@
-6.              }
-7.          }
-8.      }
-9.    }
-    ```
-
-    """
+    customData = {
+        string userDocBrief = """AssetPreviewsAPI supports providing thumbnail 
+previews for assets."""
+    }
 )
 {
 }

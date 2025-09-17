@@ -1,6 +1,5 @@
 set(DIRS
     usdcat
-    usdchecker
     usddiff
     usddumpcrate
     usdgenschemafromsdr

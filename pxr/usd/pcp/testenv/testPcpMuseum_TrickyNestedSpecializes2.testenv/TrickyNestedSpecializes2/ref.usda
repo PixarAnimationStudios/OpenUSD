@@ -1,0 +1,23 @@
+#usda 1.0
+
+class "Class_1"
+{
+    over "Child"
+    {
+    }
+}
+
+class "Class_2"
+{
+}
+
+def "Ref" (
+    specializes = </Class_1>
+)
+{
+    def "Child" (
+        specializes = </Class_2>
+    )
+    {
+    }
+}

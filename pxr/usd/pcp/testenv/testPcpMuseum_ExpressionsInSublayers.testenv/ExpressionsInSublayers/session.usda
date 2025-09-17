@@ -1,0 +1,23 @@
+#usda 1.0
+(
+    expressionVariables = {
+        string B = "B"
+    }
+    subLayers = [
+        # This expression uses the value of A authored in the
+        # root layer.
+        @`"${A}_session.usda"`@,
+
+        # This expression uses the value of B authored above, which
+        # overrides the value of B authored in the root layer.
+        @`"${B}_session.usda"`@,
+
+        # Expressions that return an empty string or no result should
+        # be silently ignored.
+        @`""`@
+    ]
+)
+
+over "Root"
+{
+}

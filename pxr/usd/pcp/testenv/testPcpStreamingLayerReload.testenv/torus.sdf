@@ -1,9 +1,0 @@
-#sdf 1.4.32
-
-def "torus1"
-{
-    def Mesh "mesh_0"
-    {
-    }
-}
-

@@ -59,6 +59,11 @@ pxr_install_test_dir(
     DEST testUsdRecordSmallObject
 )
 
+pxr_install_test_dir(
+    SRC testenv/MotionBlurTest
+    DEST testUsdRecordMotionBlur
+)
+
 # Versions of the the above tests using the new stage scene index
 pxr_install_test_dir(
     SRC testenv/RecordTest
@@ -78,6 +83,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/SmallObjectTest
     DEST testUsdRecordSmallObject_SceneIndex
+)
+
+pxr_install_test_dir(
+    SRC testenv/MotionBlurTest
+    DEST testUsdRecordMotionBlur_SceneIndex
 )
 
 pxr_register_test(testUsdRecordSingleFrame
@@ -158,7 +168,7 @@ pxr_register_test(testUsdRecordSessionLayer
 
 pxr_register_test(testUsdRecordSmallObject
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord test.usda out.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --enableDomeLightVisibility test.usda out.png"
     IMAGE_DIFF_COMPARE
         out.png
     FAIL 0.5
@@ -168,6 +178,24 @@ pxr_register_test(testUsdRecordSmallObject
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdRecordSmallObject
 )
+
+# XXX: Temporarily disable test due to intermittent failures
+# if (PXR_BUILD_PRMAN_PLUGIN)
+#     pxr_register_test(testUsdRecordMotionBlur
+#         PYTHON
+#         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord motionBlur.usda motionBlur.exr -cam /first_cam -r Prman"
+#         IMAGE_DIFF_COMPARE
+#             motionBlur.exr
+#         FAIL 0.5
+#         FAIL_PERCENT 0.005
+#         WARN 0.05
+#         WARN_PERCENT 0.0075
+#         EXPECTED_RETURN_CODE 0
+#         TESTENV testUsdRecordMotionBlur
+#         ENV
+#             RMANTREE=${RENDERMAN_LOCATION}
+#     )
+# endif()
 
 
 # Versions of the the above tests using the new stage scene index
@@ -255,7 +283,7 @@ pxr_register_test(testUsdRecordSessionLayer_SceneIndex
 
 pxr_register_test(testUsdRecordSmallObject_SceneIndex
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord test.usda out.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord --enableDomeLightVisibility test.usda out.png"
     IMAGE_DIFF_COMPARE
         out.png
     FAIL 0.5
@@ -268,3 +296,21 @@ pxr_register_test(testUsdRecordSmallObject_SceneIndex
         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
+# XXX: Temporarily disable test due to intermittent failures
+# if (PXR_BUILD_PRMAN_PLUGIN)
+#     pxr_register_test(testUsdRecordMotionBlur_SceneIndex
+#         PYTHON
+#         COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdrecord motionBlur.usda motionBlur_SI.exr -cam /first_cam -r Prman"
+#         IMAGE_DIFF_COMPARE
+#             motionBlur_SI.exr
+#         FAIL 0.5
+#         FAIL_PERCENT 0.005
+#         WARN 0.05
+#         WARN_PERCENT 0.0075
+#         EXPECTED_RETURN_CODE 0
+#         TESTENV testUsdRecordMotionBlur
+#         ENV
+#             USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+#             RMANTREE=${RENDERMAN_LOCATION}
+#     )
+# endif()

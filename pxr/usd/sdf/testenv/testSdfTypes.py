@@ -2,25 +2,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 from pxr import Sdf, Vt, Gf, Tf
 import unittest
@@ -290,7 +273,7 @@ class TestSdfTypes(unittest.TestCase):
         # correctly.
         layer = Sdf.Layer.CreateAnonymous()
         layer.ImportFromString(
-    '''#sdf 1.4.32
+    '''#usda 1.0
     over "Prim" {
         float attrf = 18446744073709551616
         double attrd = 340282366920938463463374607431768211456
@@ -307,7 +290,7 @@ class TestSdfTypes(unittest.TestCase):
     def test_ValueTypeNameBackwardsCompatibility(self):
         layer = Sdf.Layer.CreateAnonymous()
         layer.ImportFromString(\
-    """#sdf 1.4.32
+    """#usda 1.0
     
     def "OldAttrTest"
     {

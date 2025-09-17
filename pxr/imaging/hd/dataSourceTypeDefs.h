@@ -1,25 +1,8 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_DATASOURCETYPEDEFS_H
 #define PXR_IMAGING_HD_DATASOURCETYPEDEFS_H
@@ -79,6 +62,8 @@ using HdPathArrayDataSourceHandle = HdPathArrayDataSource::Handle;
 
 using HdStringDataSource = HdTypedSampledDataSource<std::string>;
 using HdStringDataSourceHandle = HdStringDataSource::Handle;
+using HdStringArrayDataSource = HdTypedSampledDataSource<VtArray<std::string>>;
+using HdStringArrayDataSourceHandle = HdStringArrayDataSource::Handle;
 
 using HdAssetPathDataSource = HdTypedSampledDataSource<SdfAssetPath>;
 using HdAssetPathDataSourceHandle = HdAssetPathDataSource::Handle;
@@ -102,6 +87,8 @@ using HdVec3iDataSource = HdTypedSampledDataSource<GfVec3i>;
 using HdVec3iDataSourceHandle = HdVec3iDataSource::Handle;
 using HdVec3iArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec3i>>;
 using HdVec3iArrayDataSourceHandle = HdVec3iArrayDataSource::Handle;
+using HdVec3hArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec3h>>;
+using HdVec3hArrayDataSourceHandle = HdVec3hArrayDataSource::Handle;
 using HdVec3fDataSource = HdTypedSampledDataSource<GfVec3f>;
 using HdVec3fDataSourceHandle = HdVec3fDataSource::Handle;
 using HdVec3fArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec3f>>;
@@ -117,9 +104,22 @@ using HdVec4iArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec4i>>;
 using HdVec4iArrayDataSourceHandle = HdVec4iArrayDataSource::Handle;
 using HdVec4fDataSource = HdTypedSampledDataSource<GfVec4f>;
 using HdVec4fDataSourceHandle = HdVec4fDataSource::Handle;
+using HdVec4fArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec4f>>;
+using HdVec4fArrayDataSourceHandle = HdVec4fArrayDataSource::Handle;
 using HdVec4dArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec4d>>;
 using HdVec4dArrayDataSourceHandle = HdVec4dArrayDataSource::Handle;
 
+using HdQuatfArrayDataSource = HdTypedSampledDataSource<VtArray<GfQuatf>>;
+using HdQuatfArrayDataSourceHandle = HdQuatfArrayDataSource::Handle;
+
+using HdMatrix3fDataSource = HdTypedSampledDataSource<GfMatrix3f>;
+using HdMatrix3fDataSourceHandle = HdMatrix3fDataSource::Handle;
+using HdMatrix3fArrayDataSource = HdTypedSampledDataSource<VtArray<GfMatrix3f>>;
+using HdMatrix3fArrayDataSourceHandle = HdMatrix3fArrayDataSource::Handle;
+using HdMatrix4fDataSource = HdTypedSampledDataSource<GfMatrix4f>;
+using HdMatrix4fDataSourceHandle = HdMatrix4fDataSource::Handle;
+using HdMatrix4fArrayDataSource = HdTypedSampledDataSource<VtArray<GfMatrix4f>>;
+using HdMatrix4fArrayDataSourceHandle = HdMatrix4fArrayDataSource::Handle;
 using HdMatrixDataSource = HdTypedSampledDataSource<GfMatrix4d>;
 using HdMatrixDataSourceHandle = HdMatrixDataSource::Handle;
 using HdMatrixArrayDataSource = HdTypedSampledDataSource<VtArray<GfMatrix4d>>;

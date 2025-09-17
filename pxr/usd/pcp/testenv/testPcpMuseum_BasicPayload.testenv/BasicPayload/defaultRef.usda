@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    defaultPrim = "Default"
+)
+
+def Scope "Default"
+{
+    def Scope "Default_Child"
+    {
+    }
+}
+
+def Scope "NotDefault"
+{
+    def Scope "NotDefault_Child"
+    {
+    }
+}

@@ -1,0 +1,178 @@
+#usda 1.0
+
+def Scope "Looks"
+{
+    def Material "Material_Opacity_Texture"
+    {
+        token outputs:surface.connect = </Looks/Material_Opacity_Texture/PreviewSurface.outputs:surface>
+
+        def Shader "PreviewSurface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </Looks/Material_Opacity_Texture/Texture.outputs:rgb>
+            float inputs:opacity.connect = </Looks/Material_Opacity_Texture/Texture.outputs:a>
+            color3f inputs:emissiveColor = (0, 0, 0)
+            float inputs:roughness = 1
+            float inputs:metallic = 0
+            int inputs:useSpecularWorkflow = 0
+            token outputs:surface
+        }
+
+        def Shader "uvReader_st"
+        {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            token inputs:varname = "st"
+            float2 inputs:fallback = (0.0, 0.0)
+            float2 outputs:result
+        }
+
+        def Shader "Texture"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @Cloud.png@
+            token inputs:sourceColorSpace = "sRGB"
+            float2 inputs:st.connect = </Looks/Material_Opacity_Texture/uvReader_st.outputs:result>
+            token inputs:wrapS = "repeat"
+            token inputs:wrapT = "repeat"
+            float3 outputs:rgb
+            float outputs:a
+        }
+    }
+
+    def Material "Material_0_Opacity_Texture" (
+        inherits = </Looks/Material_Opacity_Texture>
+    )
+    {
+        over "Texture"
+        {
+            float4 inputs:scale = (1, 1, 1, 0)
+        }
+    }
+
+    def Material "Material_10_Opacity_Texture" (
+        inherits = </Looks/Material_Opacity_Texture>
+    )
+    {
+        over "Texture"
+        {
+            float4 inputs:scale = (1, 1, 1, 0.1)
+        }
+    }
+
+    def Material "Material_25_Opacity_Texture" (
+        inherits = </Looks/Material_Opacity_Texture>
+    )
+    {
+        over "Texture"
+        {
+            float4 inputs:scale = (1, 1, 1, 0.25)
+        }
+    }
+
+    def Material "Material_50_Opacity_Texture" (
+        inherits = </Looks/Material_Opacity_Texture>
+    )
+    {
+        over "Texture"
+        {
+            float4 inputs:scale = (1, 1, 1, 0.5)
+        }
+    }
+
+    def Material "Material_75_Opacity_Texture" (
+        inherits = </Looks/Material_Opacity_Texture>
+    )
+    {
+        over "Texture"
+        {
+            float4 inputs:scale = (1, 1, 1, 0.75)
+        }
+    }
+
+    def Material "Material_100_Opacity_Texture" (
+        inherits = </Looks/Material_Opacity_Texture>
+    )
+    {
+        over "Texture"
+        {
+            float4 inputs:scale = (1, 1, 1, 1)
+        }
+    }
+
+    def Material "Material_Opacity"
+    {
+        token outputs:surface.connect = </Looks/Material_Opacity/PreviewSurface.outputs:surface>
+
+        def Shader "PreviewSurface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0.0310843475, 1, 0.3368039)
+            color3f inputs:emissiveColor = (0, 0, 0)
+            float inputs:roughness = 0
+            float inputs:metallic = 0
+            int inputs:useSpecularWorkflow = 0
+            token outputs:surface
+        }
+    }
+
+    def Material "Material_0_Opacity" (
+        inherits = </Looks/Material_Opacity>
+    )
+    {
+        over "PreviewSurface"
+        {
+            float inputs:opacity = 0
+        }
+    }
+
+    def Material "Material_10_Opacity" (
+        inherits = </Looks/Material_Opacity>
+    )
+    {
+        over "PreviewSurface"
+        {
+            float inputs:opacity = 0.1
+        }
+    }
+
+    def Material "Material_25_Opacity" (
+        inherits = </Looks/Material_Opacity>
+    )
+    {
+        over "PreviewSurface"
+        {
+            float inputs:opacity = 0.25
+        }
+    }
+
+    def Material "Material_50_Opacity" (
+        inherits = </Looks/Material_Opacity>
+    )
+    {
+        over "PreviewSurface"
+        {
+            float inputs:opacity = 0.5
+        }
+    }
+
+    def Material "Material_75_Opacity" (
+        inherits = </Looks/Material_Opacity>
+    )
+    {
+        over "PreviewSurface"
+        {
+            float inputs:opacity = 0.75
+        }
+    }
+
+    def Material "Material_100_Opacity" (
+        inherits = </Looks/Material_Opacity>
+    )
+    {
+        over "PreviewSurface"
+        {
+            float inputs:opacity = 1
+        }
+    }
+}
+

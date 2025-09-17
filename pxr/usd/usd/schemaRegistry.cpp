@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/schemaRegistry.h"
@@ -88,6 +71,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (apiSchemaCanOnlyApplyTo)
     (apiSchemaAllowedInstanceNames)
     (apiSchemaInstances)
+    (schemaIdentifier)
     (schemaKind)
     (nonAppliedAPI)
     (singleApplyAPI)
@@ -103,6 +87,23 @@ using _TypeToTokenVecMap =
     TfHashMap<TfType, TfTokenVector, TfHash>;
 using _TokenToTokenMap = 
     TfHashMap<TfToken, TfToken, TfToken::HashFunctor>;
+
+static JsObject
+_GetMetadataFromPlugin(const TfType &schemaType)
+{
+    TRACE_FUNCTION();
+    PlugPluginPtr plugin =
+        PlugRegistry::GetInstance().GetPluginForType(schemaType);
+    if (!plugin) {
+        // XXX: This should be a coding error, but due to incorrectly registered
+        // schema classes  (diyajoy)
+        // TF_CODING_ERROR("Failed to find plugin for schema type '%s'",
+        //                 schemaType.GetTypeName().c_str());
+        return JsObject();
+    }
+ 
+    return plugin->GetMetadataForType(schemaType);
+}
 
 static UsdSchemaKind 
 _GetSchemaKindFromMetadata(const JsObject &dict)
@@ -133,19 +134,14 @@ _GetSchemaKindFromMetadata(const JsObject &dict)
     return UsdSchemaKind::Invalid;
 }
 
-static UsdSchemaKind
-_GetSchemaKindFromPlugin(const TfType &schemaType)
+static string 
+_GetSchemaIdentifierFromMetadata(const JsObject &dict)
 {
-    TRACE_FUNCTION();
-    PlugPluginPtr plugin =
-        PlugRegistry::GetInstance().GetPluginForType(schemaType);
-    if (!plugin) {
-        TF_CODING_ERROR("Failed to find plugin for schema type '%s'",
-                        schemaType.GetTypeName().c_str());
-        return UsdSchemaKind::Invalid;
+    const JsValue *identifierValue = TfMapLookupPtr(dict, _tokens->schemaIdentifier);
+    if (!identifierValue) {
+        return "";
     }
-
-    return _GetSchemaKindFromMetadata(plugin->GetMetadataForType(schemaType));
+    return identifierValue->GetString();
 }
 
 namespace {
@@ -161,16 +157,33 @@ struct _TypeMapCache {
         types.insert(schemaBaseType);
 
         for (const TfType &type : types) {
-            // The schema's identifier is the type's alias under UsdSchemaBase. 
-            // All schemas should have a type name alias.
-            const vector<string> aliases = schemaBaseType.GetAliases(type);
-            if (aliases.size() != 1) {
+            JsObject metadata = _GetMetadataFromPlugin(type);
+            if (metadata.empty()) {
+                continue;
+            }
+
+            // The schema's identifier is the "schemaIdentifier" field.
+            // If not present, we use the type's alias under UsdSchemaBase
+            // to maintain backwards compatibility. 
+            string identifier = _GetSchemaIdentifierFromMetadata(metadata);
+            if(identifier.empty()) {
+                const vector<string> aliases = schemaBaseType.GetAliases(type);
+                if (aliases.size() == 1) {
+                    identifier = aliases.front();
+                }
+            }
+
+            // Check if a valid identifier was found
+            if (identifier.empty()) {
+                TF_CODING_ERROR("Registration failed for schema type %s. "
+                "Schema types must have a single valid identifier.", 
+                type.GetTypeName().c_str());
                 continue;
             }
 
             // Generate all the components of the schema info.
-            const TfToken schemaIdentifier(aliases.front(), TfToken::Immortal);
-            const UsdSchemaKind schemaKind = _GetSchemaKindFromPlugin(type);
+            const TfToken schemaIdentifier(identifier, TfToken::Immortal);
+            const UsdSchemaKind schemaKind = _GetSchemaKindFromMetadata(metadata);
             const std::pair<TfToken, UsdSchemaVersion> familyAndVersion = 
                 UsdSchemaRegistry::ParseSchemaFamilyAndVersionFromIdentifier(
                     schemaIdentifier);
@@ -185,8 +198,16 @@ struct _TypeMapCache {
                     schemaKind});
 
             // Add secondary mapping of schema info pointer by identifier.
-            schemaInfoByIdentifier.emplace(
+            auto insertedByIdentifier = schemaInfoByIdentifier.emplace(
                 schemaIdentifier, &inserted.first->second);
+            if (!insertedByIdentifier.second) { 
+                schemaInfoByType.erase(type);
+                TF_CODING_ERROR("Duplicate schema identifiers are not allowed, "
+                    "failed to register TfType %s with identifier %s due to "
+                    "existing TfType %s registered under the same identifier.", 
+                    type.GetTypeName().c_str(), schemaIdentifier.GetText(),
+                    insertedByIdentifier.first->second->type.GetTypeName().c_str());
+            }
         }
     }
 
@@ -1153,9 +1174,6 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
         });
 
     for (const SdfLayerRefPtr& generatedSchema : generatedSchemas) {
-        VtDictionary customDataDict = generatedSchema->GetCustomLayerData();
-
-        bool hasErrors = false;
 
         // Schema generation will have added any defined fallback prim 
         // types as a dictionary in layer metadata which will be composed
@@ -1175,13 +1193,6 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
                         generatedSchema->GetRealPath().c_str());
                 }
             }
-        }
-
-        if (hasErrors) {
-            TF_CODING_ERROR(
-                "Encountered errors in layer metadata from generated "
-                "schema file '%s'. This schema must be regenerated.",
-                generatedSchema->GetRealPath().c_str());
         }
     }
 }
@@ -1618,6 +1629,7 @@ UsdSchemaRegistry::IsDisallowedField(const TfToken &fieldName)
         disallowedFields->insert(SdfFieldKeys->Active);
         disallowedFields->insert(SdfFieldKeys->Instanceable);
         disallowedFields->insert(SdfFieldKeys->TimeSamples);
+        disallowedFields->insert(SdfFieldKeys->Spline);
         disallowedFields->insert(SdfFieldKeys->ConnectionPaths);
         disallowedFields->insert(SdfFieldKeys->TargetPaths);
 

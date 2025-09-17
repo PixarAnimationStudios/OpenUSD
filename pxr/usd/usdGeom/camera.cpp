@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usd/schemaRegistry.h"
@@ -341,6 +324,74 @@ UsdGeomCamera::CreateExposureAttr(VtValue const &defaultValue, bool writeSparsel
                        writeSparsely);
 }
 
+UsdAttribute
+UsdGeomCamera::GetExposureIsoAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->exposureIso);
+}
+
+UsdAttribute
+UsdGeomCamera::CreateExposureIsoAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->exposureIso,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomCamera::GetExposureTimeAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->exposureTime);
+}
+
+UsdAttribute
+UsdGeomCamera::CreateExposureTimeAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->exposureTime,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomCamera::GetExposureFStopAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->exposureFStop);
+}
+
+UsdAttribute
+UsdGeomCamera::CreateExposureFStopAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->exposureFStop,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdGeomCamera::GetExposureResponsivityAttr() const
+{
+    return GetPrim().GetAttribute(UsdGeomTokens->exposureResponsivity);
+}
+
+UsdAttribute
+UsdGeomCamera::CreateExposureResponsivityAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdGeomTokens->exposureResponsivity,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -372,6 +423,10 @@ UsdGeomCamera::GetSchemaAttributeNames(bool includeInherited)
         UsdGeomTokens->shutterOpen,
         UsdGeomTokens->shutterClose,
         UsdGeomTokens->exposure,
+        UsdGeomTokens->exposureIso,
+        UsdGeomTokens->exposureTime,
+        UsdGeomTokens->exposureFStop,
+        UsdGeomTokens->exposureResponsivity,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -579,6 +634,25 @@ UsdGeomCamera::SetFromCamera(const GfCamera &camera, const UsdTimeCode &time)
 
     GetFStopAttr().Set(camera.GetFStop(), time);
     GetFocusDistanceAttr().Set(camera.GetFocusDistance(), time);
+}
+
+float
+UsdGeomCamera::ComputeLinearExposureScale(UsdTimeCode time) const 
+{   
+    float exposureTime = 1.0f;
+    float exposureIso = 100.0f;
+    float exposureFStop = 1.0f;
+    float exposureResponsivity = 1.0f;
+    float exposureExponent = 0.0f;
+
+    GetExposureTimeAttr().Get(&exposureTime, time);
+    GetExposureIsoAttr().Get(&exposureIso, time);
+    GetExposureFStopAttr().Get(&exposureFStop, time);
+    GetExposureResponsivityAttr().Get(&exposureResponsivity, time);
+    GetExposureAttr().Get(&exposureExponent, time);
+
+    return (exposureTime * exposureIso * powf(2.0f, exposureExponent) * 
+            exposureResponsivity) / (100.0f * exposureFStop * exposureFStop);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -1,25 +1,8 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 #ifndef PXR_USD_IMAGING_USD_IMAGING_DRAW_MODE_SCENE_INDEX_H
 #define PXR_USD_IMAGING_USD_IMAGING_DRAW_MODE_SCENE_INDEX_H
 
@@ -98,14 +81,14 @@ private:
         const HdSceneIndexPrim &prim,
         HdSceneIndexObserver::AddedPrimEntries *entries);
 
-    // Finds prim or ancestor of prim with non-default drawmode in _prims map.
-    // relPathLen indicates whether the found entry is for the prim itself (0),
-    // an immediate parent (1) or further ancestor (2 or larger).
+    // Finds prim or ancestor of prim with non-trivial drawmode in _prims map.
+    // isPathDescendant is set to true if the given path is a descendant of such
+    // a prim (but not the prim itself).
     UsdImaging_DrawModeStandinSharedPtr
     _FindStandinForPrimOrAncestor(
-        const SdfPath &path, size_t * const relPathLen) const;
+        const SdfPath &path, bool * isPathDescendant = nullptr) const;
 
-    // For prims with non-default drawmode, store a DrawModeStandin object
+    // For prims with applyDrawMode, store a DrawModeStandin object
     // that can be queried for the stand-in geometry.
     // No path in the map is a prefix of any other path in the map.
     std::map<SdfPath, UsdImaging_DrawModeStandinSharedPtr> _prims;

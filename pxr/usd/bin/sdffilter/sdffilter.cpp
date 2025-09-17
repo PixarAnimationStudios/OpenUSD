@@ -1,25 +1,8 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/base/arch/attributes.h"
@@ -43,7 +26,8 @@ ARCH_PRAGMA_POP
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/types.h"
-#include "pxr/usd/sdf/textFileFormat.h"
+#include "pxr/usd/sdf/usdFileFormat.h"
+#include "pxr/usd/sdf/usdaFileFormat.h"
 
 #include <cstdio>
 #include <cstdarg>
@@ -69,16 +53,16 @@ using std::unordered_set;
 // A file format for the human readable "pseudoLayer" output.  We use this so
 // that the terse human-readable output we produce is not a valid layer nor may
 // be mistaken for one.
-class SdfFilterPseudoFileFormat : public SdfTextFileFormat
+class SdfFilterPseudoFileFormat : public SdfUsdaFileFormat
 {
 private:
     SDF_FILE_FORMAT_FACTORY_ACCESS;
 
 public:
     SdfFilterPseudoFileFormat(string description="<< human readable >>")
-        : SdfTextFileFormat(TfToken("pseudosdf"),
+        : SdfUsdaFileFormat(TfToken("pseudousda"),
                             TfToken(description),
-                            SdfTextFileFormatTokens->Target) {}
+                            SdfUsdFileFormatTokens->Target) {}
 private:
 
     virtual ~SdfFilterPseudoFileFormat() {}
@@ -86,7 +70,7 @@ private:
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    SDF_DEFINE_FILE_FORMAT(SdfFilterPseudoFileFormat, SdfTextFileFormat);
+    SDF_DEFINE_FILE_FORMAT(SdfFilterPseudoFileFormat, SdfUsdaFileFormat);
 }
 
 namespace {
@@ -645,7 +629,7 @@ void Process(SdfLayerHandle layer, ReportParams const &p)
                 new SdfFilterPseudoFileFormat(
                     TfStringPrintf("from @%s@",
                                    layer->GetIdentifier().c_str())));
-            outputLayer = SdfLayer::CreateAnonymous(".pseudosdf", fmt);
+            outputLayer = SdfLayer::CreateAnonymous(".pseudousda", fmt);
         } else {
             SdfLayer::FileFormatArguments formatArgs;
             if (!p.outputFormat.empty()) {
@@ -749,12 +733,18 @@ main(int argc, char const *argv[])
         "--outputType", outputType,
         "Specify output format; 'summary' reports overall statistics,\n"
         "'outline' is a flat text report of paths and fields,\n"
-        "'pseudoLayer' is similar to the sdf file format but with truncated\n"
+        "'pseudoLayer' is similar to the usda file format but with truncated\n"
         "array values and timeSamples for human readability, and 'layer' is\n"
-        "true layer output, with the format controlled by the 'outputFile'\n"
+        "true layer output, with the format controlled by the 'out'\n"
         "and 'outputFormat' arguments. Default: outline")
         ->transform(CLI::CheckedTransformer(outputTypeMap, CLI::ignore_case))
         ->option_text("validity|summary|outline|pseudoLayer|layer");
+
+    app.add_option(
+        "--outputFormat", outputFormat,
+        "Supply this as the 'format' entry of SdfFileFormatArguments for\n"
+        "'layer' output to a file.  Requires both 'layer' output and a\n"
+        "specified output file.");
 
     const std::map<std::string, SortKey> sortKeyMap{
         {"path", SortByPath}, {"field", SortByField}

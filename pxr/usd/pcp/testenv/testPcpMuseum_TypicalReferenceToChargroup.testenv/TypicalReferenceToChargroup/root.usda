@@ -1,0 +1,20 @@
+#usda 1.0
+(
+    """
+    This layer references in a ModelGroup and sets its standin to sim.
+    The group should internally select the correspond sim standin on
+    its model children.
+    """
+)
+
+def "Group" (
+    add references = @./group.usda@</Group>
+    variants = {
+        string standin = "sim"
+    }
+)
+{
+    over "Model" 
+    {
+    }
+}

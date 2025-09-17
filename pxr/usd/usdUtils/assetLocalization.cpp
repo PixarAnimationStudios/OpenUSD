@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ///
 /// \file usdUtils/assetLocalization.cpp
@@ -246,7 +229,8 @@ UsdUtils_LocalizationContext::_ProcessMetadata(
             _delegate->BeginProcessValue(layer, value);
 
             _ProcessAssetValue(layer, infoKey, value, 
-                /*processingMetadata*/ true);
+                /*processingMetadata*/ true,
+                /*processingDictionary*/ false);
             _delegate->EndProcessValue(
                 layer, primSpec->GetPath(), infoKey, value);
         }
@@ -457,9 +441,10 @@ void
 UsdUtils_LocalizationContext::_ProcessAssetValue(
     const SdfLayerRefPtr& layer,
     const VtValue &val,
-    bool processingMetadata)
+    bool processingMetadata,
+    bool processingDictionary)
 {
-    _ProcessAssetValue(layer, std::string(), val, processingMetadata);
+    _ProcessAssetValue(layer, std::string(), val, processingMetadata, processingDictionary);
 }
 
 void
@@ -467,7 +452,8 @@ UsdUtils_LocalizationContext::_ProcessAssetValue(
     const SdfLayerRefPtr& layer,
     const std::string &keyPath,
     const VtValue &val,
-    bool processingMetadata) 
+    bool processingMetadata,
+    bool processingDictionary)
 {
     if (_ShouldFilterAssetPath(keyPath, processingMetadata)) {
         return;
@@ -477,17 +463,16 @@ UsdUtils_LocalizationContext::_ProcessAssetValue(
         auto assetPath = val.UncheckedGet<SdfAssetPath>();
         const std::string& rawAssetPath = assetPath.GetAssetPath();
 
-        if (!rawAssetPath.empty()) {
-            const std::vector<std::string> dependencies = 
-                _GetDependencies(layer, rawAssetPath);
+        const std::vector<std::string> dependencies = 
+            _GetDependencies(layer, rawAssetPath);
 
-            const std::vector<std::string> processedDeps = 
-                _delegate->ProcessValuePath(
-                        layer, keyPath, rawAssetPath, dependencies);
-            
-            _EnqueueDependency(layer, rawAssetPath);
-            _EnqueueDependencies(layer, processedDeps);
-        }
+        const std::vector<std::string> processedDeps = 
+            _delegate->ProcessValuePath(
+                    layer, keyPath, rawAssetPath, dependencies,
+                    processingMetadata, processingDictionary);
+        
+        _EnqueueDependency(layer, rawAssetPath);
+        _EnqueueDependencies(layer, processedDeps);
     } else if (val.IsHolding<VtArray<SdfAssetPath>>()) {
         const VtArray<SdfAssetPath>& originalArray = 
             val.UncheckedGet< VtArray<SdfAssetPath> >();
@@ -499,17 +484,15 @@ UsdUtils_LocalizationContext::_ProcessAssetValue(
 
         for (const SdfAssetPath& assetPath : originalArray) {                
             const std::string& rawAssetPath = assetPath.GetAssetPath();
-            if (!rawAssetPath.empty()) {
-                const std::vector<std::string> dependencies = 
-                    _GetDependencies(layer, rawAssetPath);
+            const std::vector<std::string> dependencies = 
+                _GetDependencies(layer, rawAssetPath);
 
-                const std::vector<std::string> processedDeps = 
-                    _delegate->ProcessValuePathArrayElement(
-                            layer, keyPath, rawAssetPath, dependencies);
-                
-                _EnqueueDependency(layer, rawAssetPath);
-                _EnqueueDependencies(layer, processedDeps);
-            }
+            const std::vector<std::string> processedDeps = 
+                _delegate->ProcessValuePathArrayElement(
+                        layer, keyPath, rawAssetPath, dependencies);
+            
+            _EnqueueDependency(layer, rawAssetPath);
+            _EnqueueDependencies(layer, processedDeps);
         }
 
         _delegate->EndProcessingValuePathArray(layer, keyPath);
@@ -525,7 +508,9 @@ UsdUtils_LocalizationContext::_ProcessAssetValue(
         for (const auto& p : originalDict) {
             const std::string dictKey = 
                 keyPath.empty() ? p.first : keyPath + ':' + p.first;
-            _ProcessAssetValue(layer, dictKey, p.second, processingMetadata);
+            _ProcessAssetValue(
+                layer, dictKey, p.second,
+                processingMetadata, /*processingDictionary*/true);
 
         }
     }
@@ -548,7 +533,7 @@ UsdUtils_LocalizationContext::_GetUdimTiles(
 {
     std::vector<std::string> additionalPaths;
 
-    if (!UsdShadeUdimUtils::IsUdimIdentifier(assetPath)) {
+    if (!_resolveUdimPaths || !UsdShadeUdimUtils::IsUdimIdentifier(assetPath)) {
         return additionalPaths;
     }
 
@@ -652,7 +637,8 @@ void UsdUtils_ExtractExternalReferences(
     const UsdUtils_LocalizationContext::ReferenceType refTypesToInclude,
     std::vector<std::string>* outSublayers,
     std::vector<std::string>* outReferences,
-    std::vector<std::string>* outPayloads)
+    std::vector<std::string>* outPayloads,
+    const UsdUtilsExtractExternalReferencesParams& params)
 {
     TRACE_FUNCTION();
 
@@ -664,6 +650,7 @@ void UsdUtils_ExtractExternalReferences(
     UsdUtils_LocalizationContext context(&delegate);
     context.SetRefTypesToInclude(refTypesToInclude);
     context.SetRecurseLayerDependencies(false);
+    context.SetResolveUdimPaths(params.GetResolveUdimPaths());
 
     context.Process(SdfLayer::FindOrOpen(filePath));
     client.SortAndRemoveDuplicates();

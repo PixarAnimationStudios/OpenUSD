@@ -1,34 +1,17 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/usdImaging/usdAppUtils/frameRecorder.h"
 
-#include "pxr/base/gf/camera.h"
-#include "pxr/base/tf/scoped.h"
+#include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
+#include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hdSt/hioConversions.h"
 #include "pxr/imaging/hdSt/textureUtils.h"
@@ -40,31 +23,55 @@
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usd/usdRender/settings.h"
 #include "pxr/usd/usdRender/product.h"
+#include "pxr/usd/usdRender/settings.h"
 
 #include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/gf/camera.h"
+#include "pxr/base/tf/scoped.h"
+#include "pxr/base/tf/token.h"
 
 #include <string>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
+
+namespace {
+
+UsdImagingGLEngine::Parameters
+_GetParams(
+    const HdDriver& driver,
+    const TfToken& rendererPluginId,
+    bool gpuEnabled,
+    bool enableUsdDrawModes)
+{
+    UsdImagingGLEngine::Parameters params;
+    params.driver = driver;
+    params.rendererPluginId = rendererPluginId;
+    params.gpuEnabled = gpuEnabled;
+    params.enableUsdDrawModes = enableUsdDrawModes;
+    return params;
+}
+
+} // anonymous namespace
 
 UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
     const TfToken& rendererPluginId,
-    bool gpuEnabled) :
-    _imagingEngine(HdDriver(), rendererPluginId, gpuEnabled),
+    bool gpuEnabled,
+    bool enableUsdDrawModes) :
+    _imagingEngine(_GetParams(
+        HdDriver(), rendererPluginId, gpuEnabled, enableUsdDrawModes)),
     _imageWidth(960u),
     _complexity(1.0f),
     _colorCorrectionMode(HdxColorCorrectionTokens->disabled),
     _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy}),
-    _cameraLightEnabled(true)
+    _cameraLightEnabled(true),
+    _domeLightsVisible(false)
 {
     // Disable presentation to avoid the need to create an OpenGL context when
     // using other graphics APIs such as Metal and Vulkan.
     _imagingEngine.SetEnablePresentation(false);
 
-    // Set the interactive to be false on the HdRenderSettingsMap 
+    // Set the interactive to be false on the HdRenderSettingsMap
     _imagingEngine.SetRendererSetting(
         HdRenderSettingsTokens->enableInteractive, VtValue(false));
 }
@@ -78,7 +85,7 @@ UsdAppUtilsFrameRecorder::SetActiveRenderSettingsPrimPath(SdfPath const& path)
     }
 }
 
-void 
+void
 UsdAppUtilsFrameRecorder::SetActiveRenderPassPrimPath(SdfPath const& path)
 {
     _renderPassPrimPath = path;
@@ -115,7 +122,13 @@ UsdAppUtilsFrameRecorder::SetCameraLightEnabled(bool cameraLightEnabled)
 }
 
 void
-UsdAppUtilsFrameRecorder::SetIncludedPurposes(const TfTokenVector& purposes) 
+UsdAppUtilsFrameRecorder::SetDomeLightVisibility(bool domeLightsVisible)
+{
+    _domeLightsVisible = domeLightsVisible;
+}
+
+void
+UsdAppUtilsFrameRecorder::SetIncludedPurposes(const TfTokenVector& purposes)
 {
     TfTokenVector  allPurposes = { UsdGeomTokens->render,
                                    UsdGeomTokens->proxy,
@@ -133,6 +146,12 @@ UsdAppUtilsFrameRecorder::SetIncludedPurposes(const TfTokenVector& purposes)
                             p.GetText());
         }
     }
+}
+
+void
+UsdAppUtilsFrameRecorder::SetPrimaryCameraPrimPath(const SdfPath& cameraPath)
+{
+    _imagingEngine.SetCameraPath(cameraPath);
 }
 
 static GfCamera
@@ -168,7 +187,7 @@ _ComputeCameraToFrameStage(const UsdStagePtr& stage, UsdTimeCode timeCode,
     } else {
         distance += dim[1] / 2;
     }
-    // Small objects that fill out their bounding boxes might be clipped by the 
+    // Small objects that fill out their bounding boxes might be clipped by the
     // near-clipping plane (always defaulting to 1 here). Increase the distance
     // to make sure that doesn't happen.
     if (distance < gfCamera.GetClippingRange().GetMin()) {
@@ -238,7 +257,7 @@ public:
 
             const HioImageSharedPtr image = HioImage::OpenForWriting(filename);
             const bool writeSuccess = image && image->Write(storage);
-            
+
             if (!writeSuccess) {
                 TF_RUNTIME_ERROR("Failed to write image to %s",
                     filename.c_str());
@@ -328,9 +347,9 @@ _RenderProductsGenerated(
     }
 
     bool productsGenerated = false;
-    UsdRenderSettings settings = 
+    UsdRenderSettings settings =
         UsdRenderSettings(stage->GetPrimAtPath(renderSettingsPrimPath));
-    
+
     // Each Render Product should generate an image
     SdfPathVector renderProductTargets;
     settings.GetProductsRel().GetForwardedTargets(&renderProductTargets);
@@ -342,7 +361,7 @@ _RenderProductsGenerated(
         product.GetProductNameAttr().Get(&productName);
         if (ArchOpenFile(productName.GetText(), "r")) {
             TF_STATUS("Product '%s' generated from RenderProduct prim <%s> "
-                      "on RenderSettings <%s>", productName.GetText(), 
+                      "on RenderSettings <%s>", productName.GetText(),
                       productPath.GetText(), renderSettingsPrimPath.GetText());
             productsGenerated |= true;
         } else {
@@ -382,7 +401,7 @@ UsdAppUtilsFrameRecorder::Record(
     const GfVec4f SPECULAR_DEFAULT(0.1f, 0.1f, 0.1f, 1.0f);
     const GfVec4f AMBIENT_DEFAULT(0.2f, 0.2f, 0.2f, 1.0f);
     const float   SHININESS_DEFAULT(32.0);
-    
+
     GfCamera gfCamera;
     if (usdCamera) {
         gfCamera = usdCamera.GetCamera(timeCode);
@@ -412,7 +431,7 @@ UsdAppUtilsFrameRecorder::Record(
             frustum.ComputeViewMatrix(),
             frustum.ComputeProjectionMatrix());
     }
-    const GfRect2i dataWindow(GfVec2i(0.0), _imageWidth, imageHeight); 
+    const GfRect2i dataWindow(GfVec2i(0.0), _imageWidth, imageHeight);
     _imagingEngine.SetFraming(CameraUtilFraming(dataWindow));
     _imagingEngine.SetRenderBufferSize(GfVec2i(_imageWidth, imageHeight));
 
@@ -435,6 +454,10 @@ UsdAppUtilsFrameRecorder::Record(
     material.SetShininess(SHININESS_DEFAULT);
 
     _imagingEngine.SetLightingState(lights, material, SCENE_AMBIENT);
+
+    _imagingEngine.SetRendererSetting(
+        HdRenderSettingsTokens->domeLightCameraVisibility,
+        VtValue(_domeLightsVisible));
 
     UsdImagingGLRenderParams renderParams;
     renderParams.frame = timeCode;

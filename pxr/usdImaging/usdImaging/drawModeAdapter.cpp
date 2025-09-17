@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdImaging/drawModeAdapter.h"
 
@@ -300,8 +283,8 @@ UsdImagingDrawModeAdapter::Populate(UsdPrim const& prim,
 
         // Note that because population happens only once, any faces that need
         // time-varying textures should begin with some texture applied, and
-        // no face should ever transition between textured and untextured 
-        // states. The addition or subtraction of an entire face texture over 
+        // no face should ever transition between textured and untextured
+        // states. The addition or subtraction of an entire face texture over
         // time is not supported.
         uint8_t mask = _GetAxesMask(prim, UsdTimeCode::EarliestTime());
 
@@ -330,8 +313,8 @@ UsdImagingDrawModeAdapter::Populate(UsdPrim const& prim,
                     !index->IsPopulated(materialPath)) {
                     index->InsertSprim(
                         HdPrimTypeTokens->material,
-                        materialPath, 
-                        prim, 
+                        materialPath,
+                        prim,
                         shared_from_this()
                     );
                     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
@@ -488,8 +471,8 @@ UsdImagingDrawModeAdapter::_ComputeGeometryData(
     SdfPath const& cachePath,
     UsdTimeCode time,
     TfToken const& drawMode,
-    VtValue* topology, 
-    VtValue* points, 
+    VtValue* topology,
+    VtValue* points,
     GfRange3d* extent,
     VtValue* uv) const
 {
@@ -537,7 +520,7 @@ UsdImagingDrawModeAdapter::_ComputeGeometryData(
                 axes_mask = xAxis | yAxis | zAxis;
                 // generateSubsets = false;
             }
-    
+
             // Generate UVs.
             _GenerateTextureCoordinates(uv, axes_mask);
 
@@ -563,7 +546,7 @@ UsdImagingDrawModeAdapter::_ComputeGeometryData(
     }
 }
 
-/*virtual*/ 
+/*virtual*/
 VtValue
 UsdImagingDrawModeAdapter::GetTopology(UsdPrim const& prim,
                                          SdfPath const& cachePath,
@@ -583,16 +566,16 @@ UsdImagingDrawModeAdapter::GetTopology(UsdPrim const& prim,
     VtValue uv;
     GfRange3d extent;
     _ComputeGeometryData(
-        prim, cachePath, time, drawMode, &topology, 
+        prim, cachePath, time, drawMode, &topology,
         &points, &extent, &uv
     );
     return topology;
 }
 
 /*virtual*/
-GfRange3d 
-UsdImagingDrawModeAdapter::GetExtent(UsdPrim const& prim, 
-                                       SdfPath const& cachePath, 
+GfRange3d
+UsdImagingDrawModeAdapter::GetExtent(UsdPrim const& prim,
+                                       SdfPath const& cachePath,
                                        UsdTimeCode time) const
 {
     TRACE_FUNCTION();
@@ -609,7 +592,7 @@ UsdImagingDrawModeAdapter::GetExtent(UsdPrim const& prim,
     VtValue uv;
     GfRange3d extent;
     _ComputeGeometryData(
-        prim, cachePath, time, drawMode, &topology, 
+        prim, cachePath, time, drawMode, &topology,
         &points, &extent, &uv
     );
     return extent;
@@ -617,16 +600,16 @@ UsdImagingDrawModeAdapter::GetExtent(UsdPrim const& prim,
 
 /*virtual*/
 bool
-UsdImagingDrawModeAdapter::GetDoubleSided(UsdPrim const& prim, 
-                                            SdfPath const& cachePath, 
+UsdImagingDrawModeAdapter::GetDoubleSided(UsdPrim const& prim,
+                                            SdfPath const& cachePath,
                                             UsdTimeCode time) const
 {
     return false;
 }
 
 /*virtual*/
-VtValue 
-UsdImagingDrawModeAdapter::Get(UsdPrim const& prim, 
+VtValue
+UsdImagingDrawModeAdapter::Get(UsdPrim const& prim,
                                  SdfPath const& cachePath,
                                  TfToken const& key,
                                  UsdTimeCode time,
@@ -673,7 +656,7 @@ UsdImagingDrawModeAdapter::Get(UsdPrim const& prim,
         VtValue uv;
         GfRange3d extent;
         _ComputeGeometryData(
-            prim, cachePath, time, drawMode, &topology, 
+            prim, cachePath, time, drawMode, &topology,
             &points, &extent, &uv
         );
         return points;
@@ -691,7 +674,7 @@ UsdImagingDrawModeAdapter::Get(UsdPrim const& prim,
         VtValue uv;
         GfRange3d extent;
         _ComputeGeometryData(
-            prim, cachePath, time, drawMode, &topology, 
+            prim, cachePath, time, drawMode, &topology,
             &points, &extent, &uv
         );
         return uv;
@@ -705,8 +688,8 @@ UsdImagingDrawModeAdapter::Get(UsdPrim const& prim,
 
 /*virtual*/
 SdfPath
-UsdImagingDrawModeAdapter::GetMaterialId(UsdPrim const& prim, 
-                                           SdfPath const& cachePath, 
+UsdImagingDrawModeAdapter::GetMaterialId(UsdPrim const& prim,
+                                           SdfPath const& cachePath,
                                            UsdTimeCode time) const
 {
     // Because there may be many materials associated with a single prim,
@@ -717,8 +700,8 @@ UsdImagingDrawModeAdapter::GetMaterialId(UsdPrim const& prim,
 
 /*virtual*/
 VtValue
-UsdImagingDrawModeAdapter::GetMaterialResource(UsdPrim const& prim, 
-                            SdfPath const& cachePath, 
+UsdImagingDrawModeAdapter::GetMaterialResource(UsdPrim const& prim,
+                            SdfPath const& cachePath,
                             UsdTimeCode time) const
 {
     if (!_IsMaterialPath(cachePath)) {
@@ -799,7 +782,7 @@ UsdImagingDrawModeAdapter::GetMaterialResource(UsdPrim const& prim,
             uvPrimvarNode.parameters[_tokens->varname] = _tokens->cardsUv;
             network.nodes.emplace_back(std::move(uvPrimvarNode));
 
-            // Insert connection between UV primvar reader node 
+            // Insert connection between UV primvar reader node
             // and texture st input
             HdMaterialRelationship uvPrimvarRel;
             uvPrimvarRel.inputId = uvPrimvarNodePath;
@@ -916,7 +899,7 @@ UsdImagingDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
     UsdImagingPrimvarDescCache* primvarDescCache = _GetPrimvarDescCache();
 
     // Geometry aspect
-    HdPrimvarDescriptorVector& primvars = 
+    HdPrimvarDescriptorVector& primvars =
         primvarDescCache->GetPrimvars(cachePath);
 
     if (requestedBits & HdChangeTracker::DirtyWidths) {
@@ -949,7 +932,7 @@ UsdImagingDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
         GfRange3d extent;
         VtValue points;
         VtValue uv;
-        _ComputeGeometryData(prim, cachePath, time, drawMode, &topology, 
+        _ComputeGeometryData(prim, cachePath, time, drawMode, &topology,
             &points, &extent, &uv);
 
         if (drawMode == UsdGeomTokens->cards) {
@@ -958,12 +941,12 @@ UsdImagingDrawModeAdapter::UpdateForTime(UsdPrim const& prim,
                 HdInterpolationVertex);
 
             // XXX: backdoor into the material system.
-            _MergePrimvar(&primvars, _tokens->displayRoughness, 
+            _MergePrimvar(&primvars, _tokens->displayRoughness,
                 HdInterpolationConstant);
         }
 
         // Merge "points" primvar
-        _MergePrimvar(&primvars, 
+        _MergePrimvar(&primvars,
             HdTokens->points,
             HdInterpolationVertex,
             HdPrimvarRoleTokens->point);
@@ -1086,7 +1069,7 @@ UsdImagingDrawModeAdapter::_GenerateBoundsGeometry(
 void
 UsdImagingDrawModeAdapter::_GenerateCardsGeometry(
         VtValue *topo, VtValue *points, GfRange3d const& extents,
-        uint8_t axes_mask, TfToken cardGeometry, bool generateSubsets, 
+        uint8_t axes_mask, TfToken cardGeometry, bool generateSubsets,
         UsdPrim const& prim) const
 {
     // Generate one face per axis direction, for included axes.
@@ -1100,6 +1083,10 @@ UsdImagingDrawModeAdapter::_GenerateCardsGeometry(
     GfVec3f min = GfVec3f(extents.GetMin()),
             max = GfVec3f(extents.GetMax()),
             mid = (min+max)/2.0f;
+
+    // We need a small gap between the + and - cards when using cross
+    // geometry to prevent coplanarity, which can cause floppiness in Prman.
+    static const float eps(0x1.0p-23); // 1.0 * 2^-23, approx 1.19e-7
 
     VtVec3fArray pt = VtVec3fArray(numFaces * 4);
     int ptIdx = 0;
@@ -1128,7 +1115,7 @@ UsdImagingDrawModeAdapter::_GenerateCardsGeometry(
 
     if (axes_mask & xAxis) {
         // +X
-        float x = cross ? mid[0] : max[0];
+        float x = cross ? mid[0] + eps : max[0];
         pt[ptIdx++] = GfVec3f(x, max[1], max[2]);
         pt[ptIdx++] = GfVec3f(x, min[1], max[2]);
         pt[ptIdx++] = GfVec3f(x, min[1], min[2]);
@@ -1138,7 +1125,7 @@ UsdImagingDrawModeAdapter::_GenerateCardsGeometry(
         }
 
         // -X
-        x = cross ? mid[0] : min[0];
+        x = cross ? mid[0] - eps : min[0];
         pt[ptIdx++] = GfVec3f(x, min[1], max[2]);
         pt[ptIdx++] = GfVec3f(x, max[1], max[2]);
         pt[ptIdx++] = GfVec3f(x, max[1], min[2]);
@@ -1150,7 +1137,7 @@ UsdImagingDrawModeAdapter::_GenerateCardsGeometry(
 
     if (axes_mask & yAxis) {
         // +Y
-        float y = cross ? mid[1] : max[1];
+        float y = cross ? mid[1] + eps : max[1];
         pt[ptIdx++] = GfVec3f(min[0], y, max[2]);
         pt[ptIdx++] = GfVec3f(max[0], y, max[2]);
         pt[ptIdx++] = GfVec3f(max[0], y, min[2]);
@@ -1160,7 +1147,7 @@ UsdImagingDrawModeAdapter::_GenerateCardsGeometry(
         }
 
         // -Y
-        y = cross ? mid[1] : min[1];
+        y = cross ? mid[1] - eps : min[1];
         pt[ptIdx++] = GfVec3f(max[0], y, max[2]);
         pt[ptIdx++] = GfVec3f(min[0], y, max[2]);
         pt[ptIdx++] = GfVec3f(min[0], y, min[2]);
@@ -1172,7 +1159,7 @@ UsdImagingDrawModeAdapter::_GenerateCardsGeometry(
 
     if (axes_mask & zAxis) {
         // +Z
-        float z = cross ? mid[2] : max[2];
+        float z = cross ? mid[2] + eps: max[2];
         pt[ptIdx++] = GfVec3f(max[0], max[1], z);
         pt[ptIdx++] = GfVec3f(min[0], max[1], z);
         pt[ptIdx++] = GfVec3f(min[0], min[1], z);
@@ -1182,7 +1169,7 @@ UsdImagingDrawModeAdapter::_GenerateCardsGeometry(
         }
 
         // -Z
-        z = cross ? mid[2] : min[2];
+        z = cross ? mid[2] - eps : min[2];
         pt[ptIdx++] = GfVec3f(min[0], max[1], z);
         pt[ptIdx++] = GfVec3f(max[0], max[1], z);
         pt[ptIdx++] = GfVec3f(max[0], min[1], z);
@@ -1290,7 +1277,7 @@ UsdImagingDrawModeAdapter::_GenerateCardsFromTextureGeometry(
     static const std::array<GfVec3f, 4> corners = {
         GfVec3f(-1, -1,  0), GfVec3f(-1,  1,  0),
         GfVec3f( 1,  1,  0), GfVec3f( 1, -1,  0) };
-    static const std::array<GfVec2f, 4> std_uvs = 
+    static const std::array<GfVec2f, 4> std_uvs =
         std::array<GfVec2f, 4>(
             {GfVec2f(0,1), GfVec2f(0,0), GfVec2f(1,0), GfVec2f(1,1) });
 
@@ -1301,7 +1288,7 @@ UsdImagingDrawModeAdapter::_GenerateCardsFromTextureGeometry(
         arr_assign[i] = faces[i].second;
         for (size_t j = 0; j < 4; ++j) {
             faceIndices[i*4+j] = i*4+j;
-            arr_pt[i*4+j] = screenToWorld.Transform(corners[j]);
+            arr_pt[i*4+j] = GfVec3f(screenToWorld.Transform(corners[j]));
             arr_uv[i*4+j] = std_uvs[j];
         }
 
@@ -1402,7 +1389,7 @@ UsdImagingDrawModeAdapter::_GetMatrixFromImageMetadata(
     // XXX: OpenImageIO >= 2.2 no longer flips 'worldtoscreen' with 'worldToNDC'
     // on read and write, so assets where 'worldtoscreen' was written with > 2.2
     // have 'worldToNDC' actually in the metadata, and OIIO < 2.2 would read
-    // and return 'worldToNDC' from the file in response to a request for 
+    // and return 'worldToNDC' from the file in response to a request for
     // 'worldtoscreen'. OIIO >= 2.2 no longer does either, so 'worldtoscreen'
     // gets written as 'worldtoscreen' and returned when asked for
     // 'worldtoscreen'. Issues only arise when trying to read 'worldtoscreen'
@@ -1430,7 +1417,7 @@ UsdImagingDrawModeAdapter::_GetMatrixFromImageMetadata(
             return false;
         }
     }
-    
+
     if (worldtoscreen.IsHolding<std::vector<float>>()) {
         return _ConvertToMatrix(
             worldtoscreen.UncheckedGet<std::vector<float>>(), mat);
@@ -1565,7 +1552,7 @@ UsdImagingDrawModeAdapter::_ComputeExtent(UsdPrim const& prim,
 }
 
 /*virtual*/
-HdCullStyle 
+HdCullStyle
 UsdImagingDrawModeAdapter::GetCullStyle(UsdPrim const& prim,
                                           SdfPath const& cachePath,
                                           UsdTimeCode time) const
@@ -1574,8 +1561,8 @@ UsdImagingDrawModeAdapter::GetCullStyle(UsdPrim const& prim,
 }
 
 /*virtual*/
-GfMatrix4d 
-UsdImagingDrawModeAdapter::GetTransform(UsdPrim const& prim, 
+GfMatrix4d
+UsdImagingDrawModeAdapter::GetTransform(UsdPrim const& prim,
                                           SdfPath const& cachePath,
                                           UsdTimeCode time,
                                           bool ignoreRootTransform) const

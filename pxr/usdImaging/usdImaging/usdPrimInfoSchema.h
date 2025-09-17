@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -51,11 +34,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define USD_IMAGING_USD_PRIM_INFO_SCHEMA_TOKENS \
     (__usdPrimInfo) \
+    (specifier) \
+    (typeName) \
+    (isLoaded) \
+    (apiSchemas) \
+    (kind) \
     (niPrototypePath) \
     (isNiPrototype) \
-    (specifier) \
     (piPropagatedPrototypes) \
-    (isLoaded) \
     (def) \
     (over) \
     ((class_, "class")) \
@@ -93,19 +79,28 @@ public:
     /// @{
 
     USDIMAGING_API
+    HdTokenDataSourceHandle GetSpecifier() const;
+
+    USDIMAGING_API
+    HdTokenDataSourceHandle GetTypeName() const;
+
+    USDIMAGING_API
+    HdBoolDataSourceHandle GetIsLoaded() const;
+
+    USDIMAGING_API
+    HdTokenArrayDataSourceHandle GetApiSchemas() const;
+
+    USDIMAGING_API
+    HdTokenDataSourceHandle GetKind() const;
+
+    USDIMAGING_API
     HdPathDataSourceHandle GetNiPrototypePath() const;
 
     USDIMAGING_API
     HdBoolDataSourceHandle GetIsNiPrototype() const;
 
     USDIMAGING_API
-    HdTokenDataSourceHandle GetSpecifier() const;
-
-    USDIMAGING_API
-    HdContainerDataSourceHandle GetPiPropagatedPrototypes() const;
-
-    USDIMAGING_API
-    HdBoolDataSourceHandle GetIsLoaded() const; 
+    HdContainerDataSourceHandle GetPiPropagatedPrototypes() const; 
 
     /// @}
 
@@ -151,11 +146,14 @@ public:
     USDIMAGING_API
     static HdContainerDataSourceHandle
     BuildRetained(
+        const HdTokenDataSourceHandle &specifier,
+        const HdTokenDataSourceHandle &typeName,
+        const HdBoolDataSourceHandle &isLoaded,
+        const HdTokenArrayDataSourceHandle &apiSchemas,
+        const HdTokenDataSourceHandle &kind,
         const HdPathDataSourceHandle &niPrototypePath,
         const HdBoolDataSourceHandle &isNiPrototype,
-        const HdTokenDataSourceHandle &specifier,
-        const HdContainerDataSourceHandle &piPropagatedPrototypes,
-        const HdBoolDataSourceHandle &isLoaded
+        const HdContainerDataSourceHandle &piPropagatedPrototypes
     );
 
     /// \class UsdImagingUsdPrimInfoSchema::Builder
@@ -168,31 +166,43 @@ public:
     {
     public:
         USDIMAGING_API
+        Builder &SetSpecifier(
+            const HdTokenDataSourceHandle &specifier);
+        USDIMAGING_API
+        Builder &SetTypeName(
+            const HdTokenDataSourceHandle &typeName);
+        USDIMAGING_API
+        Builder &SetIsLoaded(
+            const HdBoolDataSourceHandle &isLoaded);
+        USDIMAGING_API
+        Builder &SetApiSchemas(
+            const HdTokenArrayDataSourceHandle &apiSchemas);
+        USDIMAGING_API
+        Builder &SetKind(
+            const HdTokenDataSourceHandle &kind);
+        USDIMAGING_API
         Builder &SetNiPrototypePath(
             const HdPathDataSourceHandle &niPrototypePath);
         USDIMAGING_API
         Builder &SetIsNiPrototype(
             const HdBoolDataSourceHandle &isNiPrototype);
         USDIMAGING_API
-        Builder &SetSpecifier(
-            const HdTokenDataSourceHandle &specifier);
-        USDIMAGING_API
         Builder &SetPiPropagatedPrototypes(
             const HdContainerDataSourceHandle &piPropagatedPrototypes);
-        USDIMAGING_API
-        Builder &SetIsLoaded(
-            const HdBoolDataSourceHandle &isLoaded);
 
         /// Returns a container data source containing the members set thus far.
         USDIMAGING_API
         HdContainerDataSourceHandle Build();
 
     private:
+        HdTokenDataSourceHandle _specifier;
+        HdTokenDataSourceHandle _typeName;
+        HdBoolDataSourceHandle _isLoaded;
+        HdTokenArrayDataSourceHandle _apiSchemas;
+        HdTokenDataSourceHandle _kind;
         HdPathDataSourceHandle _niPrototypePath;
         HdBoolDataSourceHandle _isNiPrototype;
-        HdTokenDataSourceHandle _specifier;
         HdContainerDataSourceHandle _piPropagatedPrototypes;
-        HdBoolDataSourceHandle _isLoaded;
 
     };
 

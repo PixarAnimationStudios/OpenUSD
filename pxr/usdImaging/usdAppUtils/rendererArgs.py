@@ -1,26 +1,11 @@
 #
 # Copyright 2019 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
-#
+
+import argparse
 
 def GetAllPluginArguments():
     """
@@ -41,7 +26,7 @@ def GetPluginIdFromArgument(argumentString):
 
     from pxr import UsdImagingGL
     for p in UsdImagingGL.Engine.GetRendererPlugins():
-        if argumentString == UsdImagingGL.Engine.GetRendererDisplayName(p):
+        if argumentString == UsdImagingGL.Engine.GetRendererDisplayName(p) or argumentString == p:
             return p
     return None
 
@@ -58,11 +43,31 @@ def AddCmdlineArgs(argsParser, altHelpText=''):
     helpText = altHelpText
     if not helpText:
         helpText = (
-            'Hydra renderer plugin to use when generating images')
+            'Hydra renderer plugin to use when generating images. "GL" and '
+            '"Storm" currently alias to the same renderer, Storm.')
 
-    renderers = GetAllPluginArguments()
+    class RendererChoices(list):
+        def __contains__(self, other):
+            return super().__contains__(other) or UsdImagingGL.Engine.GetRendererPlugins().__contains__(other)
 
-    argsParser.add_argument('--renderer', '-r', action='store',
+    renderers = RendererChoices(GetAllPluginArguments())
+    # "GL" is still (unfortunately) the offical display name for Storm, but 
+    # we've hacked UsdImagingGLEngine::GetRendererDisplayName to instead 
+    # return "Storm" for the HdStormRendererPlugin. We still wish to support 
+    # "GL" as an argument here, however. Both "GL" and "Storm" refer to the 
+    # Storm renderer.
+    renderers.append('GL')
+
+    class ResolveStormAlias(argparse.Action):
+        def __call__(self, parser, namespace, value, option_string):
+            if value == 'Storm':
+                setattr(namespace, self.dest, 'GL')
+            else:
+                setattr(namespace, self.dest, value)
+
+    argsParser.add_argument('--renderer', '-r',
         dest='rendererPlugin',
         choices=renderers,
-        help=helpText)
+        help=helpText,
+        action=ResolveStormAlias)
+    

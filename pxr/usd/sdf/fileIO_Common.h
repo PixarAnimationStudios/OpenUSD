@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_SDF_FILE_IO_COMMON_H
 #define PXR_USD_SDF_FILE_IO_COMMON_H
@@ -41,11 +24,13 @@
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/variantSpec.h"
 
-#include "pxr/base/vt/dictionary.h"
-#include "pxr/base/vt/value.h"
-
+#include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/ts/spline.h"
+#include "pxr/base/ts/types.h"
+#include "pxr/base/vt/dictionary.h"
+#include "pxr/base/vt/value.h"
 
 #include <algorithm>
 #include <iosfwd>
@@ -71,7 +56,8 @@ public:
 
     // Printf-style formatted string output
     static void Write(Sdf_TextOutput &out,
-                size_t indent, const char *fmt, ...);
+                      size_t indent, const char *fmt, ...)
+        ARCH_PRINTF_FUNCTION(3, 4);
 
     static bool OpenParensIfNeeded(Sdf_TextOutput &out,
                 bool didParens, bool multiLine);
@@ -99,6 +85,9 @@ public:
     static bool WriteTimeSamples(Sdf_TextOutput &out,
                 size_t indent, const SdfPropertySpec &);
 
+    static void WriteSpline(Sdf_TextOutput &out,
+                size_t indent, const TsSpline &spline);
+
     static bool WriteRelocates(Sdf_TextOutput &out,
                 size_t indent, bool multiLine,
                 const SdfRelocates &relocates);
@@ -125,14 +114,34 @@ public:
     // === String production and transformation helpers
 
     /// Quote \p str, adding quotes before and after and escaping
-    /// unprintable characters and the quote character itself.  If
-    /// the string contains newlines it's quoted with triple quotes
-    /// and the newlines are not escaped.
-    static std::string Quote(const std::string &str);
-    static std::string Quote(const TfToken &token);
+    /// unprintable characters and the quote character itself.
+    ///
+    /// If `allowTripleQuotes` is true and the string contains newlines it's
+    /// quoted with triple quotes and the newlines are not escaped.
+    SDF_API
+    static std::string
+    Quote(const std::string &str, bool allowTripleQuotes=true);
+    SDF_API
+    static std::string
+    Quote(const TfToken &token, bool allowTripleQuotes=true);
 
-    // Create a string from a value
-    static std::string StringFromVtValue(const VtValue &value);
+    /// Add @'s around a given path to produce a string representation of
+    /// an asset path. If the path contains @, @@@ will be added around the
+    /// path. If the path contains @@@, the contained @@@ will be escaped.
+    static std::string QuoteAssetPath(const std::string &path);
+
+    // Create a string from a value and return it.  Use this form if you will
+    // eventually write the string to \p eventualOutput.  This function will
+    // call eventualOutput.RequestWriteVersionUpgrade() to upgrade the file
+    // version if necessary.  This function writes nothing to \p eventualOutput.
+    static std::string
+    StringFromVtValue(const VtValue &value, Sdf_TextOutput &eventualOutput);
+
+    // Create a string from a value and return it.  Call the other overload if
+    // the value will eventually be written to an Sdf_TextOutput so that version
+    // upgrading can be handled properly.
+    static std::string
+    StringFromVtValue(const VtValue &value);
 
     // Convert enums to strings for use in sdf text format syntax.
     // Note that in some cases we use empty strings to represent the
@@ -140,6 +149,10 @@ public:
     static const char* Stringify( SdfPermission val );
     static const char* Stringify( SdfSpecifier val );
     static const char* Stringify( SdfVariability val );
+    static const char* Stringify( TsExtrapMode mode );
+    static const char* Stringify( TsCurveType curveType );
+    static const char* Stringify( TsInterpMode interp );
+    static const char* Stringify( TsTangentAlgorithm algorithm );
 
 private:
 
@@ -295,7 +308,9 @@ Sdf_WriteSimpleField(
         Sdf_FileIOUtility::Write(out, 0, "%s\n", TfStringify(value.Get<bool>()).c_str());
     }
     else {
-        Sdf_FileIOUtility::Write(out, 0, "%s\n", Sdf_FileIOUtility::StringFromVtValue(value).c_str());
+        Sdf_FileIOUtility::Write(
+            out, 0, "%s\n",
+            Sdf_FileIOUtility::StringFromVtValue(value, out).c_str());
     }
 }
 
@@ -796,6 +811,7 @@ Sdf_WriteAttribute(
     bool hasCustomDeclaration = attr.IsCustom();
     bool hasConnections       = attr.HasField(SdfFieldKeys->ConnectionPaths);
     bool hasTimeSamples       = attr.HasField(SdfFieldKeys->TimeSamples);
+    bool hasSpline            = attr.HasSpline();
 
     std::string typeName =
         SdfValueTypeNames->GetSerializationName(attr.GetTypeName()).GetString();
@@ -816,7 +832,7 @@ Sdf_WriteAttribute(
     // Write the basic line if we have info or a default or if we
     // have nothing else to write.
     if (hasInfo || hasDefault || hasCustomDeclaration ||
-        (!hasConnections && !hasTimeSamples))
+        (!hasConnections && !hasTimeSamples && !hasSpline))
     {
         VtValue value;
 
@@ -890,6 +906,16 @@ Sdf_WriteAttribute(
         Sdf_FileIOUtility::Puts(out, indent, "}\n");
     }
 
+    if (hasSpline) {
+        const TsSpline spline = attr.GetSpline();
+
+        Sdf_FileIOUtility::Write(out, indent, "%s%s %s.spline = {\n",
+                                 variabilityStr.c_str(),
+                                 typeName.c_str(), attr.GetName().c_str() );
+        Sdf_FileIOUtility::WriteSpline(out, indent, spline);
+        Sdf_FileIOUtility::Puts(out, indent, "}\n");
+    }
+
     if (hasConnections) {
         Sdf_WriteConnectionList(out, indent, attr.GetConnectionPathList(),
                                variabilityStr, typeName,
@@ -917,19 +943,19 @@ Sdf_WriteRelationshipTargetList(
     Sdf_TextOutput &out, size_t indent, Sdf_WriteFlag flags)
 {
     if (targetPaths.size() > 1) {
-        Sdf_FileIOUtility::Write(out, 0," = [\n");
+        Sdf_FileIOUtility::Write(out, 0, " = [\n");
         ++indent;
     } else {
-        Sdf_FileIOUtility::Write(out, 0," = ");
+        Sdf_FileIOUtility::Write(out, 0, " = ");
     }
 
     for (size_t i=0; i < targetPaths.size(); ++i) {
         if (targetPaths.size() > 1) {
-            Sdf_FileIOUtility::Write(out, indent, "");
+            Sdf_FileIOUtility::Puts(out, indent, "");
         }
         Sdf_FileIOUtility::WriteSdfPath( out, 0, targetPaths[i] );
         if (targetPaths.size() > 1) {
-            Sdf_FileIOUtility::Write(out, 0,",\n");
+            Sdf_FileIOUtility::Write(out, 0, ",\n");
         }
     }
 
@@ -938,7 +964,7 @@ Sdf_WriteRelationshipTargetList(
         Sdf_FileIOUtility::Write(out, indent, "]");
     }
     if (!(flags & Sdf_WriteFlagNoLastNewline)) {
-        Sdf_FileIOUtility::Write(out, 0,"\n");
+        Sdf_FileIOUtility::Write(out, 0, "\n");
     }
     return true;
 }
@@ -971,7 +997,6 @@ Sdf_WriteRelationship(
     bool hasComment           = !rel.GetComment().empty();
     bool hasTargets           = rel.HasField(SdfFieldKeys->TargetPaths);
     bool hasDefaultValue      = rel.HasField(SdfFieldKeys->Default);
-    bool hasTimeSamples       = rel.HasField(SdfFieldKeys->TimeSamples);
 
     bool hasCustom            = rel.IsCustom();
 
@@ -1121,14 +1146,6 @@ Sdf_WriteRelationship(
                 varyingStr.c_str(), rel.GetName().c_str());
             Sdf_WriteRelationshipTargetList(rel, targetPaths, out, indent, Sdf_WriteFlagDefault);
         }
-    }
-
-    if (hasTimeSamples) {
-        Sdf_FileIOUtility::Write(out, indent, "%srel %s.timeSamples = {\n",
-                                 varyingStr.c_str(),
-                                 rel.GetName().c_str());
-        Sdf_FileIOUtility::WriteTimeSamples(out, indent, rel);
-        Sdf_FileIOUtility::Puts(out, indent, "}\n");
     }
 
     // Write out the default value for the relationship if we have one...

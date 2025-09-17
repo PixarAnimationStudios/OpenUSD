@@ -269,6 +269,14 @@ class robin_set {
   size_type erase(const key_type& key) { return m_ht.erase(key); }
 
   /**
+   * Erase the element at position 'pos'. In contrast to the regular erase()
+   * function, erase_fast() does not return an iterator. This allows it to be
+   * faster especially in hash sets with a low load factor, where finding the
+   * next nonempty bucket would be costly.
+   */
+  void erase_fast(iterator pos) { return m_ht.erase_fast(pos); }
+
+  /**
    * Use the hash value 'precalculated_hash' instead of hashing the key. The
    * hash value should be the same as hash_function()(key). Useful to speed-up
    * the lookup to the value if you already have the hash.

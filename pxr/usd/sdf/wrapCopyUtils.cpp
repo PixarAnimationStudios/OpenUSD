@@ -1,28 +1,11 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
-//
-#include <boost/python/def.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -37,9 +20,9 @@
 
 #include <functional>
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace
 {
@@ -47,7 +30,7 @@ namespace
 VtValue
 _GetValueForField(
     const SdfLayerHandle& layer, const TfToken& field, 
-    const boost::python::object& obj)
+    const pxr_boost::python::object& obj)
 {
     // Need to disambiguate certain types from Python.
     //
@@ -66,7 +49,7 @@ _GetValueForField(
 }
 
 using Py_SdfShouldCopyValueSig = 
-    boost::python::object(
+    pxr_boost::python::object(
         SdfSpecType, const TfToken&,
         const SdfLayerHandle&, const SdfPath&, bool,
         const SdfLayerHandle&, const SdfPath&, bool);
@@ -74,7 +57,7 @@ using Py_SdfShouldCopyValueSig =
 using Py_SdfShouldCopyValueFn = std::function<Py_SdfShouldCopyValueSig>;
 
 using Py_SdfShouldCopyChildrenSig =
-    boost::python::object(
+    pxr_boost::python::object(
         const TfToken&,
         const SdfLayerHandle&, const SdfPath&, bool,
         const SdfLayerHandle&, const SdfPath&, bool);

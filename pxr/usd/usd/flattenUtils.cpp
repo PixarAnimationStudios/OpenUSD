@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/flattenUtils.h"
@@ -195,6 +178,19 @@ _Reduce(const VtValue &lhs, const VtValue &rhs, const TfToken &field)
         // if the weaker value is a block, return the stronger value.
         return lhs;
     }
+    if (lhs.IsHolding<SdfAnimationBlock>() && 
+            (rhs.IsHolding<SdfTimeSampleMap>() || rhs.IsHolding<TsSpline>())) {
+        // If stronger is an animation block and weaker is a time sample map or
+        // spline, return the stronger value, that is, the animation block.
+        return lhs;
+    }
+    if (lhs.IsHolding<SdfAnimationBlock>() &&
+            !(rhs.IsHolding<SdfTimeSampleMap>() || rhs.IsHolding<TsSpline>())) {
+        // If the stronger value is an animation block and the weaker value is
+        // not a time sample map or spline (default values), return the
+        // weaker default value.
+        return rhs;
+    }
     if (lhs.GetType() != rhs.GetType()) {
         // If the types do not match, there is no reduction rule for
         // combining them, so just use the stronger value.
@@ -225,6 +221,7 @@ _Reduce(const VtValue &lhs, const VtValue &rhs, const TfToken &field)
     TYPE_DISPATCH(VtDictionary);
     TYPE_DISPATCH(SdfRelocates);
     TYPE_DISPATCH(SdfTimeSampleMap);
+    TYPE_DISPATCH(TsSpline);
     TYPE_DISPATCH(SdfVariantSelectionMap);
 #undef TYPE_DISPATCH
 
@@ -481,6 +478,8 @@ TF_MAKE_STATIC_DATA(std::set<TfToken>, _fieldsToSkip) {
     _fieldsToSkip->insert(SdfFieldKeys->SubLayerOffsets);
     // TimeSamples may be masked by Defaults, so handle them separately.
     _fieldsToSkip->insert(SdfFieldKeys->TimeSamples);
+    // Splines may also be masked by Defaults, so handle them separately.
+    _fieldsToSkip->insert(SdfFieldKeys->Spline);
 }
 
 static VtValue
@@ -546,18 +545,26 @@ _FlattenFields(const PcpLayerStackRefPtr &layerStack,
         targetSpec->GetLayer()->SetField(path, field, val);
     }
     if (specType == SdfSpecTypeAttribute) {
-        // Only flatten TimeSamples if not masked by stronger Defaults.
-        for (size_t i=0; i < layers.size(); ++i) {
-            if (layers[i]->HasField(path, SdfFieldKeys->TimeSamples)) {
-                VtValue val = _ReduceField(
-                        layerStack, targetSpec, SdfFieldKeys->TimeSamples, 
-                        resolveAssetPathFn);
-                targetSpec->GetLayer()
-                    ->SetField(path, SdfFieldKeys->TimeSamples, val);
+        // Only flatten TimeSamples or Spline if not masked by stronger 
+        // Defaults.
+        for (const SdfLayerRefPtr& layer : layers) {
+            auto _ProcessField = 
+                [&layerStack, &targetSpec, &resolveAssetPathFn, &path,
+                    &layer](const TfToken& field) {
+                if (layer->HasField(path, field)) {
+                    VtValue val = _ReduceField(
+                        layerStack, targetSpec, field, resolveAssetPathFn);
+                    targetSpec->GetLayer()->SetField(path, field, val);
+                    return true;
+                }
+                return false;
+            };
+            if (_ProcessField(SdfFieldKeys->TimeSamples) ||
+                _ProcessField(SdfFieldKeys->Spline)) {
                 break;
-            } else if (layers[i]->HasField(path, SdfFieldKeys->Default)) {
+            } else if (layer->HasField(path, SdfFieldKeys->Default)) {
                 // This layer has defaults that mask any underlying
-                // TimeSamples in weaker layers.
+                // TimeSamples or Spline in weaker layers.
                 break;
             }
         }

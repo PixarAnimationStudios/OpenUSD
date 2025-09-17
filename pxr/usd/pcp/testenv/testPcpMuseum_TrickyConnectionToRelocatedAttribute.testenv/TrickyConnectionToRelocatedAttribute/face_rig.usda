@@ -1,0 +1,38 @@
+#usda 1.0
+(
+    framesPerSecond = 24
+    framePrecision = 3
+    relocates = {
+        </FaceRig/rig/LEyeRig/Anim>: </FaceRig/Anim/LEye>, 
+        </FaceRig/rig/REyeRig/Anim>: </FaceRig/Anim/REye>
+    }
+)
+
+def Scope "FaceRig"
+{
+    def Scope "Anim"
+    {
+    }
+
+    def Scope "rig"
+    {
+        class Scope "SymEyeRig" (
+            references = @./eye_rig.usda@</EyeRig>
+        )
+        {
+        }
+
+        def Scope "LEyeRig" (
+            inherits = </FaceRig/rig/SymEyeRig>
+        )
+        {
+        }
+
+        def Scope "REyeRig" (
+            inherits = </FaceRig/rig/SymEyeRig>
+        )
+        {
+        }
+    }
+}
+

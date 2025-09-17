@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_TF_PY_CONTAINER_CONVERSIONS_H
 #define PXR_BASE_TF_PY_CONTAINER_CONVERSIONS_H
@@ -44,14 +27,15 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/python/list.hpp>
-#include <boost/python/tuple.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/to_python_converter.hpp>
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/to_python_converter.hpp"
 
 #include <deque>
 #include <list>
 #include <set>
+#include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -62,11 +46,11 @@ struct TfPySequenceToPython
 {
     static PyObject* convert(ContainerType const &c)
     {
-        boost::python::list result;
+        pxr_boost::python::list result;
         TF_FOR_ALL(i, c) {
             result.append(*i);
         }
-        return boost::python::incref(result.ptr());
+        return pxr_boost::python::incref(result.ptr());
     }
 };
 
@@ -78,7 +62,7 @@ struct TfPySequenceToPythonSet
     {
         PyObject* result = PySet_New(nullptr);
         for (const auto &elem : c) {
-            PySet_Add(result, boost::python::object(elem).ptr());
+            PySet_Add(result, pxr_boost::python::object(elem).ptr());
         }
         return result;
     }
@@ -89,7 +73,7 @@ struct TfPyMapToPythonDict
 {
     static PyObject* convert(ContainerType const &c)
     {
-        return boost::python::incref(TfPyCopyMapToDictionary(c).ptr());
+        return pxr_boost::python::incref(TfPyCopyMapToDictionary(c).ptr());
     }    
 };
 
@@ -100,12 +84,12 @@ namespace TfPyContainerConversions {
   {
     static PyObject* convert(ContainerType const& a)
     {
-      boost::python::list result;
+      pxr_boost::python::list result;
       typedef typename ContainerType::const_iterator const_iter;
       for(const_iter p=a.begin();p!=a.end();p++) {
-        result.append(boost::python::object(*p));
+        result.append(pxr_boost::python::object(*p));
       }
-      return boost::python::incref(boost::python::tuple(result).ptr());
+      return pxr_boost::python::incref(pxr_boost::python::tuple(result).ptr());
     }
   };
 
@@ -113,9 +97,22 @@ namespace TfPyContainerConversions {
   struct to_tuple<std::pair<First, Second> > {
     static PyObject* convert(std::pair<First, Second> const& a)
     {
-      boost::python::tuple result =
-        boost::python::make_tuple(a.first, a.second);
-      return boost::python::incref(result.ptr());
+      pxr_boost::python::tuple result =
+        pxr_boost::python::make_tuple(a.first, a.second);
+      return pxr_boost::python::incref(result.ptr());
+    }
+  };
+
+  template <typename... T>
+  struct to_tuple<std::tuple<T...>> {
+    static PyObject* convert(std::tuple<T...> const& a)
+    {
+      return std::apply(
+        [](T const&... v) {
+          pxr_boost::python::tuple result =
+            pxr_boost::python::make_tuple(v...);
+          return pxr_boost::python::incref(result.ptr());
+        }, a);
     }
   };
 
@@ -124,13 +121,13 @@ namespace TfPyContainerConversions {
     static bool check_convertibility_per_element() { return false; }
 
     template <typename ContainerType>
-    static bool check_size(boost::type<ContainerType>, std::size_t sz)
+    static bool check_size(ContainerType*, std::size_t sz)
     {
       return true;
     }
 
     template <typename ContainerType>
-    static void assert_size(boost::type<ContainerType>, std::size_t sz) {}
+    static void assert_size(ContainerType*, std::size_t sz) {}
 
     template <typename ContainerType>
     static void reserve(ContainerType& a, std::size_t sz) {}
@@ -141,18 +138,18 @@ namespace TfPyContainerConversions {
     static bool check_convertibility_per_element() { return true; }
 
     template <typename ContainerType>
-    static bool check_size(boost::type<ContainerType>, std::size_t sz)
+    static bool check_size(ContainerType*, std::size_t sz)
     {
       return ContainerType::size() == sz;
     }
 
     template <typename ContainerType>
-    static void assert_size(boost::type<ContainerType>, std::size_t sz)
+    static void assert_size(ContainerType* c, std::size_t sz)
     {
-      if (!check_size(boost::type<ContainerType>(), sz)) {
+      if (!check_size(c, sz)) {
         PyErr_SetString(PyExc_RuntimeError,
           "Insufficient elements for fixed-size array.");
-        boost::python::throw_error_already_set();
+        pxr_boost::python::throw_error_already_set();
       }
     }
 
@@ -162,7 +159,7 @@ namespace TfPyContainerConversions {
       if (sz > ContainerType::size()) {
         PyErr_SetString(PyExc_RuntimeError,
           "Too many elements for fixed-size array.");
-        boost::python::throw_error_already_set();
+        pxr_boost::python::throw_error_already_set();
       }
     }
 
@@ -198,7 +195,7 @@ namespace TfPyContainerConversions {
   struct fixed_capacity_policy : variable_capacity_policy
   {
     template <typename ContainerType>
-    static bool check_size(boost::type<ContainerType>, std::size_t sz)
+    static bool check_size(ContainerType*, std::size_t sz)
     {
       return ContainerType::max_size() >= sz;
     }
@@ -229,10 +226,10 @@ namespace TfPyContainerConversions {
 
     from_python_sequence()
     {
-      boost::python::converter::registry::push_back(
+      pxr_boost::python::converter::registry::push_back(
         &convertible,
         &construct,
-        boost::python::type_id<ContainerType>());
+        pxr_boost::python::type_id<ContainerType>());
     }
 
     static void* convertible(PyObject* obj_ptr)
@@ -253,8 +250,8 @@ namespace TfPyContainerConversions {
                          "Boost.Python.class") != 0)
                 && PyObject_HasAttrString(obj_ptr, "__len__")
                 && PyObject_HasAttrString(obj_ptr, "__getitem__")))) return 0;
-      boost::python::handle<> obj_iter(
-        boost::python::allow_null(PyObject_GetIter(obj_ptr)));
+      pxr_boost::python::handle<> obj_iter(
+        pxr_boost::python::allow_null(PyObject_GetIter(obj_ptr)));
       if (!obj_iter.get()) { // must be convertible to an iterator
         PyErr_Clear();
         return 0;
@@ -266,7 +263,7 @@ namespace TfPyContainerConversions {
           return 0;
         }
         if (!ConversionPolicy::check_size(
-          boost::type<ContainerType>(), obj_size)) return 0;
+          (ContainerType*)nullptr, obj_size)) return 0;
         bool is_range = PyRange_Check(obj_ptr);
         std::size_t i=0;
         if (!all_elements_convertible(obj_iter, is_range, i)) return 0;
@@ -279,20 +276,20 @@ namespace TfPyContainerConversions {
     // Internal Compiler Error.
     static bool
     all_elements_convertible(
-      boost::python::handle<>& obj_iter,
+      pxr_boost::python::handle<>& obj_iter,
       bool is_range,
       std::size_t& i)
     {
       for(;;i++) {
-        boost::python::handle<> py_elem_hdl(
-          boost::python::allow_null(PyIter_Next(obj_iter.get())));
+        pxr_boost::python::handle<> py_elem_hdl(
+          pxr_boost::python::allow_null(PyIter_Next(obj_iter.get())));
         if (PyErr_Occurred()) {
           PyErr_Clear();
           return false;
         }
         if (!py_elem_hdl.get()) break; // end of iteration
-        boost::python::object py_elem_obj(py_elem_hdl);
-        boost::python::extract<container_element_type>
+        pxr_boost::python::object py_elem_obj(py_elem_hdl);
+        pxr_boost::python::extract<container_element_type>
           elem_proxy(py_elem_obj);
         if (!elem_proxy.check()) return false;
         if (is_range) break; // in a range all elements are of the same type
@@ -302,50 +299,50 @@ namespace TfPyContainerConversions {
 
     static void construct(
       PyObject* obj_ptr,
-      boost::python::converter::rvalue_from_python_stage1_data* data)
+      pxr_boost::python::converter::rvalue_from_python_stage1_data* data)
     {
-      boost::python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
+      pxr_boost::python::handle<> obj_iter(PyObject_GetIter(obj_ptr));
       void* storage = (
-        (boost::python::converter::rvalue_from_python_storage<ContainerType>*)
+        (pxr_boost::python::converter::rvalue_from_python_storage<ContainerType>*)
           data)->storage.bytes;
       new (storage) ContainerType();
       data->convertible = storage;
       ContainerType& result = *((ContainerType*)storage);
       std::size_t i=0;
       for(;;i++) {
-        boost::python::handle<> py_elem_hdl(
-          boost::python::allow_null(PyIter_Next(obj_iter.get())));
-        if (PyErr_Occurred()) boost::python::throw_error_already_set();
+        pxr_boost::python::handle<> py_elem_hdl(
+          pxr_boost::python::allow_null(PyIter_Next(obj_iter.get())));
+        if (PyErr_Occurred()) pxr_boost::python::throw_error_already_set();
         if (!py_elem_hdl.get()) break; // end of iteration
-        boost::python::object py_elem_obj(py_elem_hdl);
-        boost::python::extract<container_element_type> elem_proxy(py_elem_obj);
+        pxr_boost::python::object py_elem_obj(py_elem_hdl);
+        pxr_boost::python::extract<container_element_type> elem_proxy(py_elem_obj);
         ConversionPolicy::set_value(result, i, elem_proxy());
       }
-      ConversionPolicy::assert_size(boost::type<ContainerType>(), i);
+      ConversionPolicy::assert_size((ContainerType*)nullptr, i);
     }
   };
 
-  template <typename PairType>
-  struct from_python_tuple_pair {
-    typedef typename PairType::first_type first_type;
-    typedef typename PairType::second_type second_type;
+  template <typename Indexes, typename TupleType, typename... T>
+  struct from_python_tuple_impl;
 
-    from_python_tuple_pair()
+  template <size_t... I, typename TupleType, typename... T>
+  struct from_python_tuple_impl<std::index_sequence<I...>, TupleType, T...>
+  {
+    from_python_tuple_impl()
     {
-      boost::python::converter::registry::push_back(
+      pxr_boost::python::converter::registry::push_back(
         &convertible,
         &construct,
-        boost::python::type_id<PairType>());
+        pxr_boost::python::type_id<TupleType>());
     }
 
     static void* convertible(PyObject* obj_ptr)
     {
-      if (!PyTuple_Check(obj_ptr) || PyTuple_Size(obj_ptr) != 2) {
+      if (!PyTuple_Check(obj_ptr) || PyTuple_Size(obj_ptr) != sizeof...(T)) {
         return 0;
       }
-      boost::python::extract<first_type> e1(PyTuple_GetItem(obj_ptr, 0));
-      boost::python::extract<second_type> e2(PyTuple_GetItem(obj_ptr, 1));
-      if (!e1.check() || !e2.check()) {
+      if ((!pxr_boost::python::extract<T>(
+             PyTuple_GetItem(obj_ptr, I)).check() || ...)) {
         return 0;
       }
       return obj_ptr;
@@ -353,23 +350,42 @@ namespace TfPyContainerConversions {
 
     static void construct(
       PyObject* obj_ptr,
-      boost::python::converter::rvalue_from_python_stage1_data* data)
+      pxr_boost::python::converter::rvalue_from_python_stage1_data* data)
     {
       void* storage = (
-        (boost::python::converter::rvalue_from_python_storage<PairType>*)
+        (pxr_boost::python::converter::rvalue_from_python_storage<TupleType>*)
           data)->storage.bytes;
-      boost::python::extract<first_type>  e1(PyTuple_GetItem(obj_ptr, 0));
-      boost::python::extract<second_type> e2(PyTuple_GetItem(obj_ptr, 1));
-      new (storage) PairType(e1(), e2());
+      new (storage) TupleType(
+        pxr_boost::python::extract<T>(PyTuple_GetItem(obj_ptr, I))()...);
       data->convertible = storage;
     }
+  };
+
+  template <typename PairType>
+  struct from_python_tuple_pair
+    : from_python_tuple_impl<
+        std::make_index_sequence<2>, PairType, 
+        typename PairType::first_type, typename PairType::second_type
+      >
+  {
+  };
+
+  template <typename TupleType>
+  struct from_python_tuple;
+
+  template <typename... T>
+  struct from_python_tuple<std::tuple<T...>>
+    : from_python_tuple_impl<
+        std::index_sequence_for<T...>, std::tuple<T...>, T...
+      >
+  {
   };
 
   template <typename ContainerType>
   struct to_tuple_mapping
   {
     to_tuple_mapping() {
-      boost::python::to_python_converter<
+      pxr_boost::python::to_python_converter<
         ContainerType,
         to_tuple<ContainerType> >();
     }
@@ -429,7 +445,7 @@ namespace TfPyContainerConversions {
   struct tuple_mapping_pair
   {
     tuple_mapping_pair() {
-      boost::python::to_python_converter<
+      pxr_boost::python::to_python_converter<
         ContainerType,
         to_tuple<ContainerType> >();
       from_python_tuple_pair<ContainerType>();

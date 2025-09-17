@@ -1,25 +1,8 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/base/trace/aggregateNode.h"
@@ -31,12 +14,11 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TraceAggregateNodeRefPtr
-TraceAggregateNode::Append(Id id, const TfToken &key,
+TraceAggregateNode::Append(const TfToken &key,
                            TimeStamp ts, int c, int xc)
 {
     TraceAggregateNodeRefPtr n = GetChild(key);
     if (n) {
-        n->_id = id;
         n->_ts += ts;
         n->_count += c;
         n->_recursiveCount += c;
@@ -45,7 +27,7 @@ TraceAggregateNode::Append(Id id, const TfToken &key,
         n->_recursiveExclusiveTs += ts;
     }
     else {
-        n = TraceAggregateNode::New(id,key,ts,c,xc);
+        n = TraceAggregateNode::New(key,ts,c,xc);
         _children.push_back(n);
         _childrenByKey[key] = _children.size() - 1;
     }
@@ -62,7 +44,6 @@ void
 TraceAggregateNode::Append(TraceAggregateNodeRefPtr child) {
     TraceAggregateNodeRefPtr n = GetChild(child->GetKey());
     if (n) {
-        n->_id = child->_id;
         n->_ts += child->_ts;
         n->_count += child->_count;
         n->_recursiveCount += child->_count;
@@ -349,7 +330,7 @@ TraceAggregateNode::_MergeRecursive(const TraceAggregateNodeRefPtr &node)
         if (!n)
         {
             // Create an empty node to merge with.
-            n = TraceAggregateNode::New( child->GetId(), child->GetKey(), 
+            n = TraceAggregateNode::New(child->GetKey(), 
                                 child->GetInclusiveTime(), 
                                 0, child->GetExclusiveCount() );
 

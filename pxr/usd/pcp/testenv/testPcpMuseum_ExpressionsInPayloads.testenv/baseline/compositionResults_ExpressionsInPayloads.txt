@@ -1,41 +1,41 @@
-Loading @ExpressionsInPayloads/root.sdf@
+Loading @ExpressionsInPayloads/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </SinglePayload>
 
 Prim Stack:
-    root.sdf             /SinglePayload
-    A.sdf                /A
+    root.usda            /SinglePayload
+    A.usda               /A
 
 ------------------------------------------------------------------------
 Results for composing </ChainedPayload>
 
 Prim Stack:
-    root.sdf             /ChainedPayload
-    ref2.sdf             /Ref2
-    B.sdf                /B
+    root.usda            /ChainedPayload
+    ref2.usda            /Ref2
+    B.usda               /B
 
 ------------------------------------------------------------------------
 Results for composing </ChainedPayloadOverride>
 
 Prim Stack:
-    root.sdf             /ChainedPayloadOverride
-    ref3.sdf             /Ref3
-    ref2.sdf             /Ref2
-    A.sdf                /A
+    root.usda            /ChainedPayloadOverride
+    ref3.usda            /Ref3
+    ref2.usda            /Ref2
+    A.usda               /A
 
 ------------------------------------------------------------------------
 Results for composing </MultiPayload>
 
 Prim Stack:
-    root.sdf             /MultiPayload
-    ref3.sdf             /Ref3
-    ref2.sdf             /Ref2
-    A.sdf                /A
-    ref2.sdf             /Ref2
-    B.sdf                /B
+    root.usda            /MultiPayload
+    ref3.usda            /Ref3
+    ref2.usda            /Ref2
+    A.usda               /A
+    ref2.usda            /Ref2
+    B.usda               /B
 

@@ -2,25 +2,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 import os, sys, unittest
 from pxr import Gf, Tf, Sdf, Pcp, Usd
@@ -313,6 +296,55 @@ class TestUsdEditTarget(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             with Usd.EditContext(None):
                 pass
+
+    def test_BugRegressionTest_VariantEditTargetCrash(self):
+        '''Regression test for github issue #2844 -
+        Crash on namespace edit inside a variant edit target'''
+
+        # Create a stage with a root xform
+        stage = Usd.Stage.CreateInMemory()
+        prim = stage.DefinePrim("/root", "Xform")
+
+        # Add variant set
+        variant_sets = prim.GetVariantSets()
+        variant_set = variant_sets.AddVariantSet("model")
+
+        # Add some variants
+        variant_set.AddVariant("main")
+        variant_set.AddVariant("damaged")
+        variant_set.AddVariant("ice")
+
+        # Set the variant selection
+        variant_set.SetVariantSelection("main")
+
+        edit_target = variant_set.GetVariantEditTarget()
+        stage.SetEditTarget(edit_target)
+
+        child = stage.DefinePrim("/root/child", "Xform")
+        # there is only one prim spec in this case, it's in the variant set
+        spec = next(iter(child.GetPrimStack()))  
+        self.assertEqual(spec.path, '/root{model=main}child')
+
+        # Rename, keep parent
+        edit = Sdf.NamespaceEdit.Rename(
+            spec.path,
+            "new_name"
+        )
+
+        layer = spec.layer
+        batch_edit = Sdf.BatchNamespaceEdit()
+        batch_edit.Add(edit)
+        layer.Apply(batch_edit)
+
+        child = stage.GetPrimAtPath("/root/new_name")
+        self.assertTrue(child, msg="Renamed child must exist")
+        self.assertFalse(stage.GetPrimAtPath("/root/child"), 
+                         msg="Old prim name must not exist")
+
+        # However, accessing the prim stack for the renamed prim would have 
+        # crash before this bug was fixed
+        prim_stack = child.GetPrimStack()  # USED TO CRASH
+        self.assertEqual(prim_stack[0].path, '/root{model=main}new_name')
 
 if __name__ == "__main__":
     unittest.main()

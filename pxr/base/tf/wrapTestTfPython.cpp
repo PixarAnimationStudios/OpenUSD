@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -43,27 +26,28 @@
 #include "pxr/base/tf/pyArg.h"
 #include "pxr/base/tf/pyPolymorphic.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/make_constructor.hpp>
-#include <boost/python/manage_new_object.hpp>
-#include <boost/python/pure_virtual.hpp>
-#include <boost/python/register_ptr_to_python.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/make_constructor.hpp"
+#include "pxr/external/boost/python/manage_new_object.hpp"
+#include "pxr/external/boost/python/pure_virtual.hpp"
+#include "pxr/external/boost/python/register_ptr_to_python.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 #include <functional>
 #include <string>
 #include <vector>
 
-using namespace boost::python;
 using std::string;
 using std::vector;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 // Base
 typedef TfWeakPtr<class Tf_TestBase> Tf_TestBasePtr;
@@ -130,7 +114,7 @@ static tuple TakesBase(Tf_TestBasePtr base) {
     base->Virtual3("hello from TakesConstBase");
     base->Virtual2();
     bool isDerived = TfDynamic_cast<Tf_TestDerivedPtr>(base);
-    return boost::python::make_tuple(isDerived, base->Virtual());
+    return pxr_boost::python::make_tuple(isDerived, base->Virtual());
 }
 
 static string TakesDerived(Tf_TestDerivedPtr derived) {
@@ -529,7 +513,7 @@ public:
 static tuple
 _TestClassMethod( object & pyClassObj, const object & callable )
 {
-    return boost::python::make_tuple(
+    return pxr_boost::python::make_tuple(
         pyClassObj, TfPyCall<object>(callable)() );
 }
 
@@ -689,7 +673,7 @@ void wrapTf_TestTfPython()
         return_value_policy<TfPyRefPtrFactory<> >());
     
     class_<polymorphic_Tf_TestBase<>,
-        TfWeakPtr<polymorphic_Tf_TestBase<> >, boost::noncopyable>
+        TfWeakPtr<polymorphic_Tf_TestBase<> >, noncopyable>
         ("_TestBase", no_init)
         .def(TfPyRefAndWeakPtr())
         .def(TfMakePyConstructor(__Ref_init__<polymorphic_Tf_TestBase<> >))
@@ -703,7 +687,7 @@ void wrapTf_TestTfPython()
  
     class_<polymorphic_Tf_TestDerived<>,
         TfWeakPtr<polymorphic_Tf_TestDerived<> >,
-        bases<Tf_TestBase>, boost::noncopyable>
+        bases<Tf_TestBase>, noncopyable>
         ("_TestDerived", no_init)
         .def(TfPyRefAndWeakPtr())
         .def("__init__",

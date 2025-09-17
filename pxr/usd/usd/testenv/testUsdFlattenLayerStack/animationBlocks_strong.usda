@@ -1,0 +1,16 @@
+#usda 1.0
+
+over "Human"
+{
+    #stronger layer has spline, and animation block corresponding to this in
+    #weaker layer. Spline should win.
+    double b = AnimationBlock
+    double b.spline = {
+        1: 10; post held,
+        2: 20; post held,
+    }
+
+    int c = AnimationBlock
+
+    double d = AnimationBlock
+}

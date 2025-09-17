@@ -1,0 +1,16 @@
+#usda 1.0
+(
+    relocates = {
+        </Group/CHARACTER>: </Group/Character>
+    }
+)
+
+over "Group" (
+    references = @./chargroup.usda@</CHARGROUP>
+)
+{
+    over "Character"
+    {
+    }
+}
+

@@ -1,0 +1,35 @@
+#usda 1.0
+(
+    relocates = {
+        </Char/PreRelo>: </Char/Relocated>, 
+    }
+)
+
+def "Char" (
+    references = @model.usda@</Model>
+) 
+{
+    over "Relocated" 
+    (
+        doc = """Valid opinion at post-relocation path"""
+    )
+    {
+        def "RelocatedChild" 
+        {
+        }
+    }
+
+
+    over "PreRelo" 
+    (
+        doc = """Invalid opinion at pre-relocation path"""
+    )
+    {
+        def "PreReloChild" 
+        {
+        }
+    }
+    
+}
+
+

@@ -1,18 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License atNAMESPACE
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdImaging/dataSourceRenderPrims.h"
 
@@ -29,6 +19,7 @@
 
 #include "pxr/imaging/hd/renderPassSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/utils.h"
 
 #include "pxr/base/tf/token.h"
 
@@ -36,23 +27,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-static HdContainerDataSourceHandle
-_ToContainerDS(const VtDictionary &dict)
-{
-    std::vector<TfToken> names;
-    std::vector<HdDataSourceBaseHandle> values;
-    const size_t numDictEntries = dict.size();
-    names.reserve(numDictEntries);
-    values.reserve(numDictEntries);
-
-    for (const auto &pair : dict) {
-        names.push_back(TfToken(pair.first));
-        values.push_back(
-            HdRetainedSampledDataSource::New(pair.second));
-    }
-    return HdRetainedContainerDataSource::New(
-        names.size(), names.data(), values.data());
-}
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (RenderSettings)
+    ((riIntegrator, "ri:integrator"))
+    ((riSampleFilters, "ri:sampleFilters"))
+    ((riDisplayFilters, "ri:displayFilters"))
+);
 
 inline TfTokenVector
 _Concat(const TfTokenVector &a, const TfTokenVector &b)
@@ -64,14 +45,41 @@ _Concat(const TfTokenVector &a, const TfTokenVector &b)
     return result;
 }
 
+// XXX: We explicitly populate PxrRenderTerminalsAPI relationships
+// to RenderSettings, avoiding populating all relationships; this
+// should be moved to renderman-specific code in a future change.
+// https://jira.pixar.com/browse/HYD-3280
+void
+_StripRelsFromSettings(
+    UsdPrim const& prim,
+    VtDictionary *settings)
+{
+    std::vector<std::string> toErase;
+    for (const auto& it : *settings) {
+        const TfToken name = TfToken(it.first);
+        UsdRelationship rel = prim.GetRelationship(name);
+        if (rel && name != _tokens->riIntegrator
+                && name != _tokens->riSampleFilters
+                && name != _tokens->riDisplayFilters) {
+            toErase.push_back(it.first);
+        }
+    }
+
+    for (const std::string& name : toErase) {
+        settings->erase(name);
+    }
+}
+
 VtDictionary
 _ComputeNamespacedSettings(const UsdPrim &prim)
 {
     // Note that we don't filter by namespaces (as we do in the 1.0 API;
     // see UsdImagingRenderSettingsAdapter::Get). A downstream renderer-specific
     // scene index plugin will provide the necessary filtering instead.
-    return UsdRenderComputeNamespacedSettings(
+    VtDictionary settings = UsdRenderComputeNamespacedSettings(
             prim, /* namespaces */ TfTokenVector());
+    _StripRelsFromSettings(prim, &settings);
+    return settings;
 }
 
 }
@@ -244,7 +252,7 @@ public:
             VtDictionary settingsDict =
                 _ComputeNamespacedSettings(_usdRenderSettings.GetPrim());
 
-            return _ToContainerDS(settingsDict);
+            return HdUtils::ConvertVtDictionaryToContainerDS(settingsDict);
         }
 
         if (name == UsdImagingUsdRenderSettingsSchemaTokens->camera) {
@@ -406,7 +414,7 @@ public:
             VtDictionary settingsDict =
                 _ComputeNamespacedSettings(_usdRenderProduct.GetPrim());
 
-            return _ToContainerDS(settingsDict);
+            return HdUtils::ConvertVtDictionaryToContainerDS(settingsDict);
         }
 
         if (name == UsdImagingUsdRenderProductSchemaTokens->camera) {
@@ -581,7 +589,7 @@ public:
             VtDictionary settingsDict =
                 _ComputeNamespacedSettings(_usdRenderVar.GetPrim());
 
-            return _ToContainerDS(settingsDict);
+            return HdUtils::ConvertVtDictionaryToContainerDS(settingsDict);
 
         }
 

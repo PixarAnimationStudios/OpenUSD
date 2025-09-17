@@ -1,0 +1,91 @@
+#usda 1.0
+(
+    endTimeCode = 1
+    framesPerSecond = 24
+    metersPerUnit = 1
+    startTimeCode = 1
+    timeCodesPerSecond = 24
+    upAxis = "Y"
+)
+
+# Test scene with 3 spheres with material bindings set to a material prim that
+# isn't instanced (left), is an instance of a USD prototype (middle), and is
+# a nested instance (right). The expected result is that all three spheres
+# look identical (red).
+#
+def Xform "sphere1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </materials/mtlxmaterial>
+
+    def Sphere "sphere"
+    {
+        double radius = 1
+        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+
+def Xform "sphere2" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </instanced_materials/i_mtlxmaterial/mtlxmaterial>
+
+    def Sphere "sphere"
+    {
+        double radius = 1
+        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+
+def Xform "sphere3" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </nested_instanced_materials/i_mtlxmaterial/mtlxmaterial>
+
+    def Sphere "sphere"
+    {
+        double radius = 1
+        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (3, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+
+def Scope "materials"
+{
+    def Material "mtlxmaterial"
+    {
+        token outputs:mtlx:surface.connect = </materials/mtlxmaterial/mtlxstandard_surface.outputs:out>
+
+        def Shader "mtlxstandard_surface"
+        {
+            uniform token info:id = "ND_standard_surface_surfaceshader"
+            color3f inputs:base_color = (1, 0, 0) 
+            token outputs:out
+        }
+    }
+}
+
+def Scope "instanced_materials"
+{
+    def "i_mtlxmaterial" (
+        instanceable = true
+        prepend references = </materials>
+    )
+    { }
+}
+
+def Scope "nested_instanced_materials" (
+    instanceable = true
+    prepend references = </instanced_materials>
+)
+{}
+
+def DomeLight "Light"
+{
+    asset inputs:texture:file = @lightGray.png@
+}

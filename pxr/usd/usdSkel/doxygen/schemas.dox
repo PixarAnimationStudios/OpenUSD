@@ -125,6 +125,13 @@ their own skinned extents. These extents are made available to renders
 to enable operations like out-of-camera culling, without requiring that
 skinned geometry be computed first.
 
+UsdSkelRoot provides an extent computation which determines approximate extents
+for the skinned geometry based on the Skeleton primitives and
+UsdSkelSkinningQuery::ComputeExtentsPadding(). Since this computation may be
+expensive at runtime, it is recommended to explicitly author the SkelRoot's
+extents. For example, the extents could be authored from the result of \c
+skelRootPrim.ComputeExtentFromPlugins() at each time sample of the animation.
+
 A SkelRoot additionally gives DCC apps a way of identifying which parts of a
 scene graph require skeletal processing, so that they can take different code
 paths, as is often required to consume skeletal data.
@@ -134,9 +141,9 @@ to either enable or disable skeletal processing. For example:
 
 \code{.cpp}
     // Enable skeletal processing by setting the type to UsdSkelRoot.
-    UsdSkel.Root.Define(prim.GetStage(), prim.GetPath());
+    UsdSkelRoot::Define(prim.GetStage(), prim.GetPath());
     // Disable skeletal processing by changing the type to a normal transform.
-    UsdGeomTransform.Define(prim.GetStage(), prim.GetPath());
+    UsdGeomXform::Define(prim.GetStage(), prim.GetPath());
 \endcode
 
 \section UsdSkel_Skeleton Skeleton Schema

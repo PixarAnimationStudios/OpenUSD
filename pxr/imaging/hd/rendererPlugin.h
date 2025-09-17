@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_RENDERER_PLUGIN_H
 #define PXR_IMAGING_HD_RENDERER_PLUGIN_H
@@ -65,6 +48,12 @@ public:
     TfToken GetPluginId() const;
 
     ///
+    /// Look-up display name in plugin registry.
+    ///
+    HD_API
+    std::string GetDisplayName() const;
+
+    ///
     /// Clients should use CreateDelegate since this method
     /// will eventually become protected, use CreateRenderDelegateHandle
     /// instead.
@@ -95,6 +84,8 @@ public:
     virtual void DeleteRenderDelegate(HdRenderDelegate *renderDelegate) = 0;
 
     ///
+    /// \deprecated Use IsSupported overload below.
+    ///
     /// Returns \c true if this renderer plugin is supported in the running 
     /// process and \c false if not.
     /// 
@@ -103,7 +94,23 @@ public:
     /// parameter indicates if the GPU is available for use by the plugin in
     /// case this information is necessary to make this determination.
     ///
-    virtual bool IsSupported(bool gpuEnabled = true) const = 0;
+    HD_API
+    virtual bool IsSupported(bool gpuEnabled = true) const;
+
+    ///
+    /// Returns \c true if this renderer plugin is supported in the running 
+    /// process and \c false if not.
+    /// 
+    /// This gives the plugin a chance to perform some runtime checks to make
+    /// sure that the system meets minimum requirements.  The 
+    /// \p rendererCreateArgs parameter indicates the resources available when 
+    /// making this determination.
+    /// 
+    /// The \p reasonWhyNot param, when provided, can be filled with the reason
+    /// why the renderer plugin is not supported.
+    virtual bool IsSupported(
+        HdRendererCreateArgs const &rendererCreateArgs,
+        std::string *reasonWhyNot = nullptr) const = 0;
 
 protected:
     HdRendererPlugin() = default;

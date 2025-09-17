@@ -1,0 +1,12 @@
+#usda 1.0
+
+def "PermissionsRef_2"
+{
+    double PrivateProp = 1.0 (permission = private)
+
+    def "PrivateChild" (
+        permission = private
+    )
+    {
+    }
+}

@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 // Types.cpp
 
@@ -70,6 +53,7 @@ TF_REGISTRY_FUNCTION(TfType)
         ;
     TfType::Define<SdfUnregisteredValue>();
     TfType::Define<SdfValueBlock>(); 
+    TfType::Define<SdfAnimationBlock>();
 }
 
 // Max units is computed by running `TF_PP_SEQ_SIZE`
@@ -553,7 +537,7 @@ bool _PySeqToVtArray(VtValue *value,
     VtArray<T> result(len);
     ElemType *elem = result.data();
     for (Py_ssize_t i = 0; i != len; ++i) {
-        boost::python::handle<> h(PySequence_ITEM(obj.ptr(), i));
+        pxr_boost::python::handle<> h(PySequence_ITEM(obj.ptr(), i));
         if (!h) {
             if (PyErr_Occurred()) {
                 PyErr_Clear();
@@ -564,14 +548,14 @@ bool _PySeqToVtArray(VtValue *value,
                                _GetKeyPathText(*keyPath).c_str()));
             allValid = false;
         }
-        boost::python::extract<ElemType> e(h.get());
+        pxr_boost::python::extract<ElemType> e(h.get());
         if (!e.check()) {
             errMsgs->push_back(
                 TfStringPrintf("failed to cast sequence element "
                                "%s: %s%s to <%s>",
                                TfStringify(i).c_str(),
                                _GetDiagnosticStringForValue(
-                                   boost::python::extract<VtValue>(
+                                   pxr_boost::python::extract<VtValue>(
                                        h.get())).c_str(),
                                _GetKeyPathText(*keyPath).c_str(),
                                ArchGetDemangled<ElemType>().c_str()));
@@ -646,7 +630,7 @@ _PyObjToAnyVtArray(VtValue *value, std::vector<std::string> *errMsgs,
     }
     // Pull the type from the first element, and try to invoke the conversion
     // function to convert all elements.
-    boost::python::handle<> h(PySequence_ITEM(obj.ptr(), 0));
+    pxr_boost::python::handle<> h(PySequence_ITEM(obj.ptr(), 0));
     if (!h) {
         if (PyErr_Occurred()) {
             PyErr_Clear();
@@ -657,7 +641,7 @@ _PyObjToAnyVtArray(VtValue *value, std::vector<std::string> *errMsgs,
         *value = VtValue();
         return false;
     }
-    boost::python::extract<VtValue> e(h.get());
+    pxr_boost::python::extract<VtValue> e(h.get());
     if (!e.check()) {
         errMsgs->push_back(
             TfStringPrintf("failed to obtain first element from sequence%s",
@@ -855,6 +839,12 @@ std::ostream&
 operator<<(std::ostream& ostr, SdfValueBlock const& block)
 { 
     return ostr << "None"; 
+}
+
+std::ostream&
+operator<<(std::ostream& ostr, SdfAnimationBlock const& /*block*/)
+{
+    return ostr << "AnimationBlock";
 }
 
 std::ostream &

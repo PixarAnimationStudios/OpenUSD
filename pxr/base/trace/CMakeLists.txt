@@ -6,12 +6,7 @@ pxr_library(trace
         arch
         js
         tf
-        ${Boost_PYTHON_LIBRARY}
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
-        ${TBB_INCLUDE_DIRS}
+        TBB::tbb
 
     PUBLIC_CLASSES
         aggregateTree
@@ -49,9 +44,6 @@ pxr_library(trace
         concurrentList.h
         stringHash.h
         trace.h
-
-    PYTHON_CPPFILES
-        moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp

@@ -1,25 +1,8 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_CONTAINER_DATA_SOURCE_EDITOR_H
 #define PXR_IMAGING_HD_CONTAINER_DATA_SOURCE_EDITOR_H
@@ -30,7 +13,69 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// utility for lazily constructing and composing data source hierarchies
+/// Utility for lazily constructing and composing data source hierarchies.
+///
+/// \note
+/// Scene indices can use this facility to override/overlay data sources at
+/// various data source locators for a prim.
+///
+/// Example:
+/// Let's say we have a scene index that updates the color of a prim </Foo>
+/// based on the frame number.
+///
+/// \code
+///
+/// MyColorfulFilteringSceneIndex::GetPrim(const SdfPath &primPath) {
+///    HdSceneIndexPrim prim = ...;
+///    if (primPath == SdfPath("/Foo")) {
+///        size_t frameNumber = ...; // Query scene index for the frame number
+///        HdContainerDataSourceEditor editor(prim.dataSource);
+///        editor.Set(HdDataSourceLocator("primvars", "color", "primvarValue"),
+///                   HdRetainedTypedSampledDataSource<GfVec4f>(
+///                     ComputeColor(frameNumber)));
+///        prim.dataSource = editor.Finish();
+///    )
+///    return prim;
+/// }
+/// \endcode
+///
+/// Because Finish() returns a new prim container handle each time, any scene
+/// index using this facility to set/overlay *retained data sources* needs to
+/// provide the necessary invalidation so that downstream observers can see the
+/// new value(s).
+///
+/// So, in the example above, we would need to send a dirty notice invalidating
+/// the chain of container handles leading to the data source, as well as the
+/// contents of that data source.
+///
+/// \code
+/// // Determine if the frameNumber data source was invalidated.
+/// const bool dirtyFrameNumber = ...;
+/// if (dirtyFrameNumber) {
+///     HdDataSourceLocatorSet dirtyLocators;
+///     dirtyLocators.insert(
+///         // Prim container handle needs to be refetched.
+///         HdDataSourceLocator(
+///             HdDataSourceSentinelTokens->container),
+///         // primvars container handle needs to be refetched.
+///         HdDataSourceLocator(
+///             "primvars", HdDataSourceSentinelTokens->container),
+///         // primvars/color container handle needs to be refetched.
+///         HdDataSourceLocator(
+///             "primvars", "color", HdDataSourceSentinelTokens->container),
+///         // Data source at primvars/color/primvarValue needs to be refetched.
+///         HdDataSourceLocator(
+///             "primvars", "color", "primvarValue")
+///     );
+///
+///     _SendPrimsDirtied(
+///         HdSceneIndexObserver::DirtiedPrimEntries{
+///             { SdfPath("/Foo"), dirtyLocators } });
+/// }
+///
+/// This may be easily accomplished using the utility function
+/// ComputeDirtyLocators(locatorSet).
+///
 class HdContainerDataSourceEditor
 {
 public:
@@ -58,6 +103,13 @@ public:
     // Returns final container data source with all edits applied.
     HD_API
     HdContainerDataSourceHandle Finish();
+
+    /// Computes the set of locators that need to be invalidated given
+    /// \param locatorSet which is the set of locators for which data sources
+    /// are being set or overlaid.
+    HD_API
+    static HdDataSourceLocatorSet ComputeDirtyLocators(
+        const HdDataSourceLocatorSet &locatorSet);
 
 private:
     HdContainerDataSourceHandle _FinishWithNoInitialContainer();

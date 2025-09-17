@@ -18,7 +18,7 @@ function(add_py_dll_link_test)
 
     # early return if python target is not built! (No python build enabled or
     # doing a static build, etc)
-    if (NOT TARGET python)
+    if (NOT TARGET python_modules)
         return()
     endif()
 
@@ -60,7 +60,7 @@ function(add_py_dll_link_test)
     add_library(testTfPyDllLinkModule SHARED
         "testenv/testTfPyDllLinkModule.c"
     )
-    add_dependencies(python testTfPyDllLinkModule)
+    add_dependencies(python_modules testTfPyDllLinkModule)
 
     set(module_name testTfPyDllLinkModule)
     if (PXR_USE_DEBUG_PYTHON)
@@ -114,21 +114,16 @@ pxr_library(tf
     LIBRARIES
         arch
         ${WINLIBS}
-        ${PYTHON_LIBRARIES}
-        ${Boost_PYTHON_LIBRARY}
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${PYTHON_INCLUDE_DIRS}
-        ${Boost_INCLUDE_DIRS}
-        ${TBB_INCLUDE_DIRS}
+        TBB::tbb
 
     PUBLIC_CLASSES
         anyUniquePtr
         anyWeakPtr
         atomicOfstreamWrapper
         bigRWMutex
+        bits
         bitUtils
+        compressedBits
         debug
         debugNotice
         denseHashMap
@@ -196,7 +191,6 @@ pxr_library(tf
         pyAnnotatedBoolResult
         pyArg
         pyCall
-        pyCallContext
         pyClassMethod
         pyContainerConversions
         pyEnum
@@ -262,6 +256,7 @@ pxr_library(tf
         unicodeCharacterClasses
 
     PYTHON_PRIVATE_CLASSES
+        pyCallContext
         pyErrorInternal
 
     PRIVATE_HEADERS
@@ -292,9 +287,6 @@ pxr_library(tf
         pxrDoubleConversion/string-to-double.cc
         pxrDoubleConversion/strtod.cc
         pxrLZ4/lz4.cpp
-
-    PYTHON_CPPFILES
-        moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp
@@ -361,7 +353,6 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     pxr_build_test(testTfPyFunction
         LIBRARIES
             tf
-            ${Boost_PYTHON_LIBRARY}
         CPPFILES
             testenv/testTfPyFunction.cpp
     ) 
@@ -383,7 +374,6 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     pxr_build_test(testTfPyLock
         LIBRARIES
             tf
-            ${Boost_PYTHON_LIBRARY}
         CPPFILES
             testenv/testTfPyLock.cpp
     )
@@ -391,7 +381,6 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     pxr_build_test(testTfPyResultConversions
         LIBRARIES
             tf
-            ${Boost_PYTHON_LIBRARY}
         CPPFILES
             testenv/testTfPyResultConversions.cpp
     )
@@ -446,7 +435,9 @@ pxr_build_test(testTf
         testenv/main.cpp
         testenv/anyUniquePtr.cpp
         testenv/atomicOfstreamWrapper.cpp
+        testenv/bits.cpp
         testenv/bitUtils.cpp
+        testenv/compressedBits.cpp
         testenv/debug.cpp
         testenv/denseHashMap.cpp
         testenv/delegate.cpp
@@ -497,6 +488,7 @@ pxr_build_test(testTf
 pxr_test_scripts(
     testenv/testTfCrashHandler.py
     testenv/testTfFileUtils.py
+    testenv/testTfMallocTagReport.py
     testenv/testTfNamedTemporaryFile.py
     testenv/testTfPathUtils.py
     testenv/testTfPython.py
@@ -542,17 +534,50 @@ pxr_install_test_dir(
     DEST testTfScriptModuleLoader/baseline
 )
 
+# These tests are disabled for emscripten due to filesystem related operations,
+# dynamic library, or environment related requirements.
+if (NOT EMSCRIPTEN)
+    pxr_register_test(TfAtomicOfstreamWrapper
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfAtomicOfstreamWrapper"
+    )
+    pxr_register_test(TfDl
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDl"
+    )
+    pxr_register_test(TfEnvSetting
+        ENV
+            TF_TEST_BOOL_ENV_SETTING=1
+            TF_TEST_INT_ENV_SETTING=123
+            TF_TEST_STRING_ENV_SETTING=alpha
+            TF_ENV_SETTING_ALERTS_ENABLED=0
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfEnvSetting"
+        STDERR_REDIRECT debugTfEnvSettingStderr.txt
+        DIFF_COMPARE debugTfEnvSettingStderr.txt
+    )
+    pxr_register_test(TfException
+        ENV TF_FATAL_THROW=0
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfException"
+    )
+    pxr_register_test(TfFileUtils
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfFileUtils"
+    )
+    pxr_register_test(TfPathUtils
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPathUtils"
+    )
+    pxr_register_test(TfSafeOutputFile
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfSafeOutputFile"
+    )
+endif()
 pxr_register_test(TfAnyUniquePtr
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfAnyUniquePtr"
 )
-pxr_register_test(TfAtomicOfstreamWrapper
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfAtomicOfstreamWrapper"
+pxr_register_test(TfBits
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfBits"
 )
 pxr_register_test(TfBitUtils
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfBitUtils"
 )
-pxr_register_test(TfDl
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDl"
+pxr_register_test(TfCompressedBits
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfCompressedBits"
 )
 pxr_register_test(TfDebug
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfDebug"
@@ -599,23 +624,6 @@ pxr_register_test(TfError
 pxr_register_test(TfErrorThreadTransport
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfErrorThreadTransport"
 )
-pxr_register_test(TfEnvSetting
-    ENV
-        TF_TEST_BOOL_ENV_SETTING=1
-        TF_TEST_INT_ENV_SETTING=123
-        TF_TEST_STRING_ENV_SETTING=alpha
-        TF_ENV_SETTING_ALERTS_ENABLED=0
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfEnvSetting"
-    STDERR_REDIRECT debugTfEnvSettingStderr.txt
-    DIFF_COMPARE debugTfEnvSettingStderr.txt
-)
-pxr_register_test(TfException
-    ENV TF_FATAL_THROW=0
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfException"
-)
-pxr_register_test(TfFileUtils
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfFileUtils"
-)
 pxr_register_test(TfFileUtils_Python
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfFileUtils"
@@ -650,6 +658,10 @@ pxr_register_test(TfEnum
     STDOUT_REDIRECT enum.out
     DIFF_COMPARE enum.out
 )
+pxr_register_test(TfMallocTagReport
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfMallocTagReport"
+)
 pxr_register_test(TfNotice
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfNotice"
     STDOUT_REDIRECT notice.out
@@ -658,9 +670,6 @@ pxr_register_test(TfNotice
 pxr_register_test(TfNamedTemporaryFile
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTfNamedTemporaryFile"
-)
-pxr_register_test(TfPathUtils
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfPathUtils"
 )
 pxr_register_test(TfPathUtils_Python
     PYTHON
@@ -699,9 +708,6 @@ pxr_register_test(TfRegTest_TfScoped
 pxr_register_test(TfRegTest_TfUndefinedTest
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfUndefinedTest"
     EXPECTED_RETURN_CODE 3
-)
-pxr_register_test(TfSafeOutputFile
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfSafeOutputFile"
 )
 pxr_register_test(TfScopeDescription
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfScopeDescription"

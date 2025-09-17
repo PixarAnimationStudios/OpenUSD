@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HGIVULKAN_COMMAND_BUFFER_H
 #define PXR_IMAGING_HGIVULKAN_COMMAND_BUFFER_H
@@ -44,9 +27,35 @@ using HgiVulkanCompletedHandlerVector = std::vector<HgiVulkanCompletedHandler>;
 /// Represents a primary command buffer in Vulkan.
 /// Command buffers are managed by the CommandQueue.
 ///
+/// It has the following lifecycle:
+///   +-> Initial: Reset=T, InFlight=F, Submitted=F
+///   |            \/
+///   |   BeginCommandBuffer(): Reset=F, InFlight=T, Submitted=F
+///   |            \/
+///   |   EndCommandBuffer(): Reset=F, InFlight=T, Submitted=T
+///   |            \/
+///   |   *UpdateInFlightStatus(): Reset=F, InFlight=F, Submitted=T
+///   |            \/
+///   +-- *†ResetIfConsumedByGPU(): Reset=T, InFlight=F, Submitted=F
+///
+/// *Only if execution finished or waited on.
+/// †Also internally called by ResetIfConsumedByGPU().
+///
 class HgiVulkanCommandBuffer final
 {
 public:
+    /// \enum InFlightUpdateResult
+    ///
+    /// The result from calling UpdateInFlightStatus().
+    /// This captures the state transition from in-flight
+    /// to not in-flight as "FinishedFlight".
+    ///
+    enum InFlightUpdateResult {
+        InFlightUpdateResultNotInFlight,
+        InFlightUpdateResultStillInFlight,
+        InFlightUpdateResultFinishedFlight
+    };
+
     HGIVULKAN_API
     HgiVulkanCommandBuffer(HgiVulkanDevice* device, VkCommandPool pool);
 
@@ -65,8 +74,14 @@ public:
     HGIVULKAN_API
     void EndCommandBuffer();
 
+    /// Returns true if the command buffer was reset and is ready for re-use,
+    /// otherwise false. The initial state is true.
+    HGIVULKAN_API
+    bool IsReset() const;
+
     /// Returns true if the command buffer is recording commands or being
-    /// consumed by the GPU. Returns false if command buffer is available.
+    /// consumed by the GPU. Returns false if command buffer is ready for reset,
+    /// using ResetIfConsumedByGPU()
     HGIVULKAN_API
     bool IsInFlight() const;
 
@@ -87,6 +102,14 @@ public:
     /// has been completed in the queue.
     HGIVULKAN_API
     VkSemaphore GetVulkanSemaphore() const;
+
+    /// Update the command buffer in-flight status. If the status was 
+    /// StillInFlight on the last update, the result will be FinishedFlight if 
+    /// the device has finished consuming the buffer. Otherwise if not 
+    /// consumed, it will be StillInFlight. Finally if the buffer had finished 
+    /// flight or was not in flight, it will be NotInFlight.
+    HGIVULKAN_API
+    InFlightUpdateResult UpdateInFlightStatus(HgiSubmitWaitType wait);
 
     /// Resets the cmd buffer if it has been consumed by the GPU.
     /// Returns true if the command buffer was reset, false if it was not reset.
@@ -137,6 +160,7 @@ private:
 
     HgiVulkanCompletedHandlerVector _completedHandlers;
 
+    bool _isReset;
     bool _isInFlight;
     bool _isSubmitted;
     uint8_t _inflightId;

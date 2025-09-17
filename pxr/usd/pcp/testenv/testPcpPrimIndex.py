@@ -2,25 +2,8 @@
 #
 # Copyright 2023 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 import unittest
 
@@ -79,7 +62,7 @@ class TestPcpPrimIndex(unittest.TestCase):
         
         layer = Sdf.Layer.CreateAnonymous()
         layer.ImportFromString('''
-        #sdf 1.4.32
+        #usda 1.0
 
         def "Class"
         {
@@ -153,7 +136,7 @@ class TestPcpPrimIndex(unittest.TestCase):
 
         layer = Sdf.Layer.CreateAnonymous()
         layer.ImportFromString('''
-        #sdf 1.4.32
+        #usda 1.0
 
         def "Ref"
         {
@@ -198,7 +181,7 @@ class TestPcpPrimIndex(unittest.TestCase):
 
         layer = Sdf.Layer.CreateAnonymous()
         layer.ImportFromString('''
-        #sdf 1.4.32
+        #usda 1.0
 
         def "Ref" (
             specializes = </Specialize>
@@ -295,7 +278,7 @@ class TestPcpPrimIndex(unittest.TestCase):
         permission restrictions."""
         layer = Sdf.Layer.CreateAnonymous()
         layer.ImportFromString('''
-        #sdf 1.4.32
+        #usda 1.0
 
         def "Ref" (
             specializes = </Specialize>
@@ -353,7 +336,7 @@ class TestPcpPrimIndex(unittest.TestCase):
         
         layer = Sdf.Layer.CreateAnonymous()
         layer.ImportFromString('''
-        #sdf 1.4.32
+        #usda 1.0
 
         def "Ref" (
             specializes = </Specialize>
@@ -424,7 +407,7 @@ class TestPcpPrimIndex(unittest.TestCase):
 
         layer = Sdf.Layer.CreateAnonymous()
         layer.ImportFromString('''
-        #sdf 1.4.32
+        #usda 1.0
 
         def "Ref"
         {
@@ -480,7 +463,7 @@ class TestPcpPrimIndex(unittest.TestCase):
 
         layer = Sdf.Layer.CreateAnonymous()
         layer.ImportFromString('''
-        #sdf 1.4.32
+        #usda 1.0
 
         def "Ref3"
         {
@@ -569,7 +552,7 @@ class TestPcpPrimIndex(unittest.TestCase):
         """Tests node culling optimization with specializes arcs"""
         refLayer = Sdf.Layer.CreateAnonymous("ref")
         refLayer.ImportFromString('''
-        #sdf 1.4.32
+        #usda 1.0
 
         def "SpecRefA"
         {
@@ -597,7 +580,7 @@ class TestPcpPrimIndex(unittest.TestCase):
 
         rootLayer = Sdf.Layer.CreateAnonymous("root")
         rootLayer.ImportFromString(f'''
-        #sdf 1.4.32
+        #usda 1.0
 
         def "Root" (
             references = @{refLayer.identifier}@</Ref>
@@ -671,7 +654,7 @@ class TestPcpPrimIndex(unittest.TestCase):
         to subroot prims"""
         refLayer = Sdf.Layer.CreateAnonymous("ref")
         refLayer.ImportFromString('''
-        #sdf 1.4.32
+        #usda 1.0
 
         def "SpecRefA"
         {
@@ -702,7 +685,7 @@ class TestPcpPrimIndex(unittest.TestCase):
 
         rootLayer = Sdf.Layer.CreateAnonymous("root")
         rootLayer.ImportFromString(f'''
-        #sdf 1.4.32
+        #usda 1.0
 
         def "Root" (
             references = @{refLayer.identifier}@</Ref>
@@ -783,7 +766,7 @@ class TestPcpPrimIndex(unittest.TestCase):
 
         rootLayer = Sdf.Layer.CreateAnonymous()
         rootLayer.ImportFromString('''
-        #sdf 1.4.32
+        #usda 1.0
 
         def "Ref"
         {
@@ -837,15 +820,11 @@ class TestPcpPrimIndex(unittest.TestCase):
                         (Pcp.ArcTypeReference, rootLayer, "/Ref/Instance"), [
                             # Specializes from /Ref/Instance -> /Ref/SpecA
                             (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecA"), [
-                                # Specializes from /Ref/SpecA -> /Ref/SpecB
-                                (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecB"), []
                             ]
                         ],
 
                         # Implied specializes due to /Ref/Instance -> /Ref/SpecA
                         (Pcp.ArcTypeSpecialize, rootLayer, "/RefA/SpecA"), [
-                            (Pcp.ArcTypeSpecialize, rootLayer, "/RefA/SpecB"), [
-                            ]
                         ]
                     ],
 
@@ -855,10 +834,15 @@ class TestPcpPrimIndex(unittest.TestCase):
                     ],
 
                     # Propagated specializes due to implied /RefA/SpecA
-                    (Pcp.ArcTypeSpecialize, rootLayer, "/RefA/SpecA"), [],
+                    (Pcp.ArcTypeSpecialize, rootLayer, "/RefA/SpecA"), [
+                        (Pcp.ArcTypeSpecialize, rootLayer, "/RefA/SpecB"), []
+                    ],
 
                     # Propagated specializes due to /Ref/Instance -> /Ref/SpecA
-                    (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecA"), [],
+                    (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecA"), [
+                        # Specializes from /Ref/SpecA -> /Ref/SpecB
+                        (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecB"), [],
+                    ],
 
                     # Propagated specializes due to implied /Root/SpecB
                     (Pcp.ArcTypeSpecialize, rootLayer, "/Root/SpecB"), [],
@@ -882,18 +866,21 @@ class TestPcpPrimIndex(unittest.TestCase):
                     (Pcp.ArcTypeReference, rootLayer, "/RefA/Instance/Child"), [
                         # Reference from /RefA -> /Ref
                         (Pcp.ArcTypeReference, rootLayer, "/Ref/Instance/Child"), [
-                            # The propagated specializes subtree for
-                            # /Ref/SpecA/Child is culled, but the propagated subtree
-                            # for /Ref/SpecB/Child is not. That prevents the origin
-                            # subtree for /Ref/SpecA/Child from being culled.
-                            (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecA/Child"), [
-                                (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecB/Child"), []
-                            ]
+                            # This placeholder node is not culled because it's
+                            # the origin for the propagated specializes node
+                            # for /Ref/SpecA/Child below.
+                            (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecA/Child"), []
                         ],
                     ],
 
                     # Propagated specializes due to /Ref/SpecA -> /Ref/SpecB.
-                    (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecA/Child"), [],
+                    (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecA/Child"), [
+                        # The propagated subtree /Ref/SpecB/Child is not culled.
+                        # That prevents this node from being culled, which
+                        # prevents the entire subtree for /Ref/SpecA/Child from
+                        # being culled.
+                        (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecB/Child"), []
+                    ],
 
                     # Propagated specializes due to /Ref/SpecA -> /Ref/SpecB.
                     (Pcp.ArcTypeSpecialize, rootLayer, "/Ref/SpecB/Child"), []
@@ -907,7 +894,7 @@ class TestPcpPrimIndex(unittest.TestCase):
         but has not been removed from the prim index."""
         rootLayer = Sdf.Layer.CreateAnonymous()
         rootLayer.ImportFromString('''
-        #sdf 1.4.32
+        #usda 1.0
 
         def "RefB"
         {
@@ -965,6 +952,35 @@ class TestPcpPrimIndex(unittest.TestCase):
                 ]
             ])
 
+    def test_RecursivePrimIndexComputationLocalErrors(self):
+        """Test to make sure recursive primIndex computation correctly stores 
+        composition errors"""
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootLayer.ImportFromString('''
+        #usda 1.0
+
+        def "Main" (
+        )
+        {
+            def "First" (
+                prepend references = </Main/Second>
+            )
+            {
+            }
+
+            def "Second" (
+                prepend references = </Main/First>
+            )
+            {
+            }
+        }
+        '''.strip())
+        pcp = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
+        pi, errs = pcp.ComputePrimIndex('/Main/First')
+        self.assertEqual(len(errs), 1)
+        self.assertEqual(len(errs), len(pi.localErrors))
+        self.assertEqual(str(errs[0]), str(pi.localErrors[0]))
+
     def test_TestInvalidPcpNodeRef(self):
         """Test to ensure that a invalid PcpNodeRef will return false
             when cast to a bool"""
@@ -972,6 +988,39 @@ class TestPcpPrimIndex(unittest.TestCase):
         nullPcpNodeRef =  Pcp._GetInvalidPcpNode()
         self.assertFalse(bool(nullPcpNodeRef))
 
+    def test_UnresolvedPrimPathError_Variants(self):
+        """Test to ensure unresolved prim path errors are handles correctly
+            when the node path includes a variant selection"""
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootLayer.ImportFromString('''
+        #usda 1.0
+
+        def "scene" (
+            prepend variantSets = "MatVars1"
+            variants = {
+                string "MatVars1" = "red"
+            }
+        )
+        {
+            variantSet "MatVars1" = {
+                "red" {
+                    over "Cubes_materials"
+                    {
+                        over "TexTarget" (
+                            prepend references = </scene/Cubes_materials/red>
+                        )
+                        {
+                        }
+                    }
+                }
+            }
+        }
+        '''.strip())
+
+        pcp = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
+        _, errs = pcp.ComputePrimIndex('/scene/Cubes_materials/TexTarget')
+        self.assertEqual(len(errs), 1)
+        self.assertTrue('Unresolved reference prim path' in str(errs[0]))
 
 if __name__ == "__main__":
     unittest.main()

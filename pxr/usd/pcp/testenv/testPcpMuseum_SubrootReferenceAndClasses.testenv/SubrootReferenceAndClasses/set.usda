@@ -1,0 +1,25 @@
+#usda 1.0
+
+class "Inherit"
+{
+    over "Model"
+    {
+    }
+}
+
+class "Specializes"
+{
+    over "Model"
+    {
+    }
+}
+  
+def "Set" (
+    inherits = </Inherit>
+    specializes = </Specializes>
+)
+{
+    def "Model"
+    {
+    }
+}

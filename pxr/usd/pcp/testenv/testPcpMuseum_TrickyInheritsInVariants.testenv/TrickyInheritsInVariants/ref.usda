@@ -1,0 +1,15 @@
+#usda 1.0
+
+def Scope "RefFromHighClass"
+{
+    def Scope "RefFromHighClassStuff"
+    {
+    }
+}
+
+def Scope "RefFromHighScope"
+{
+    def Scope "RefFromHighScopeStuff"
+    {
+    }
+}

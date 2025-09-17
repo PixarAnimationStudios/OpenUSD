@@ -1,0 +1,59 @@
+#usda 1.0
+(
+    customLayerData = {
+        string colorSpace = "lin_rec709"
+    }
+)
+
+def "MaterialX"
+{
+    def "NodeGraphs"
+    {
+        def NodeGraph "ND_addColor"
+        {
+            color3f inputs:blue
+            color3f inputs:inColor
+            color3f outputs:out.connect = </MaterialX/NodeGraphs/ND_addColor/add.outputs:out>
+
+            def Shader "add"
+            {
+                uniform token info:id = "ND_add_color3"
+                color3f inputs:in1.connect = </MaterialX/NodeGraphs/ND_addColor.inputs:inColor>
+                color3f inputs:in2.connect = </MaterialX/NodeGraphs/ND_addColor.inputs:blue>
+                color3f outputs:out
+            }
+        }
+
+        def NodeGraph "ND_vis_texcoords"
+        {
+            color3f inputs:blueColor
+            color3f outputs:out.connect = </MaterialX/NodeGraphs/ND_vis_texcoords/addColor.outputs:out>
+
+            def Shader "texcoord"
+            {
+                uniform token info:id = "ND_texcoord_vector2"
+                int inputs:index = 0
+                float2 outputs:out
+            }
+
+            def Shader "toColor3"
+            {
+                uniform token info:id = "ND_convert_vector2_color3"
+                float2 inputs:in.connect = </MaterialX/NodeGraphs/ND_vis_texcoords/texcoord.outputs:out>
+                color3f outputs:out
+            }
+
+            def Shader "addColor"
+            {
+                uniform token info:id = "ND_addColor"
+                uniform token info:implementationSource = "sourceAsset"
+                uniform asset info:mtlx:sourceAsset = @NestedLocalCustomNodes.mtlx@
+                uniform token info:mtlx:sourceAsset:subIdentifier = "ND_addColor"
+                color3f inputs:blue.connect = </MaterialX/NodeGraphs/ND_vis_texcoords.inputs:blueColor>
+                color3f inputs:inColor.connect = </MaterialX/NodeGraphs/ND_vis_texcoords/toColor3.outputs:out>
+                color3f outputs:out
+            }
+        }
+    }
+}
+

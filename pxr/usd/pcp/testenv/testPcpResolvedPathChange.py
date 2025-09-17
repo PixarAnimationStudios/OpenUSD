@@ -2,25 +2,8 @@
 #
 # Copyright 2021 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 import contextlib
 import os
@@ -86,22 +69,22 @@ class TestPcpResolvedPathChange(unittest.TestCase):
         absolute sublayer paths.'''
 
         # Create test directory structure and assets.
-        CreateLayer('absRef.sdf', 
+        CreateLayer('absRef.usda', 
             '''\
-            #sdf 1.4.32
+            #usda 1.0
             def "Ref" { }
             '''
         )
 
-        CreateLayer('absSublayer.sdf',
+        CreateLayer('absSublayer.usda',
             '''\
-            #sdf 1.4.32
+            #usda 1.0
             '''
         )
 
-        CreateLayer('v1/root.sdf',
+        CreateLayer('v1/root.usda',
             '''\
-            #sdf 1.4.32
+            #usda 1.0
             (
                 subLayers = [
                     @{sublayerPath}@
@@ -115,47 +98,47 @@ class TestPcpResolvedPathChange(unittest.TestCase):
             }}
 
             def "RelativeReference" (
-                references = @./ref.sdf@</Ref>
+                references = @./ref.usda@</Ref>
             )
             {{
             }}
             '''.format(
-                sublayerPath=os.path.abspath('absSublayer.sdf'),
-                absRefPath=os.path.abspath('absRef.sdf'))
+                sublayerPath=os.path.abspath('absSublayer.usda'),
+                absRefPath=os.path.abspath('absRef.usda'))
         )
 
-        CreateLayer('v1/ref.sdf',
+        CreateLayer('v1/ref.usda',
             '''\
-            #sdf 1.4.32
+            #usda 1.0
             def "Ref" { }
             '''
         )
 
         # Create PcpCache using a resolver context that searches
-        # v2/ first, then v1/. Note that we use a search path for root.sdf.
-        # Since v2/root.sdf doesn't exist yet, we should find v1/root.sdf
+        # v2/ first, then v1/. Note that we use a search path for root.usda.
+        # Since v2/root.usda doesn't exist yet, we should find v1/root.usda
         # as our root layer.
-        pcpCache = CreatePcpCache("root.sdf",
+        pcpCache = CreatePcpCache("root.usda",
             Ar.DefaultResolverContext(
                 searchPaths=[os.path.abspath('v2'), os.path.abspath('v1')]))
 
         # All relative asset paths in references/sublayers/etc. should be
-        # anchored to v1/root.sdf initially.
+        # anchored to v1/root.usda initially.
         pi, err = pcpCache.ComputePrimIndex('/AbsoluteReference')
         self.assertFalse(err)
-        self.assertReferenceNode(pi.rootNode.children[0], ['absRef.sdf'])
+        self.assertReferenceNode(pi.rootNode.children[0], ['absRef.usda'])
 
         pi, err = pcpCache.ComputePrimIndex('/RelativeReference')
         self.assertFalse(err)
-        self.assertReferenceNode(pi.rootNode.children[0], ['v1/ref.sdf'])
+        self.assertReferenceNode(pi.rootNode.children[0], ['v1/ref.usda'])
 
         self.assertEqual(
             pcpCache.layerStack.layers,
-            [Sdf.Layer.Find('v1/root.sdf'), Sdf.Layer.Find('absSublayer.sdf')])
+            [Sdf.Layer.Find('v1/root.usda'), Sdf.Layer.Find('absSublayer.usda')])
 
         # Copy v1/ to v2/ and reload. This should cause the resolved path of
-        # root.sdf to change to v2/root.sdf. Any prims with references that were
-        # relative to root.sdf need to be resynced since those references now
+        # root.usda to change to v2/root.usda. Any prims with references that were
+        # relative to root.usda need to be resynced since those references now
         # target a different layer.
         shutil.copytree('v1', 'v2')
 
@@ -170,10 +153,10 @@ class TestPcpResolvedPathChange(unittest.TestCase):
 
         pi, err = pcpCache.ComputePrimIndex('/RelativeReference')
         self.assertFalse(err)
-        self.assertReferenceNode(pi.rootNode.children[0], ['v2/ref.sdf'])
+        self.assertReferenceNode(pi.rootNode.children[0], ['v2/ref.usda'])
 
         self.assertLayerStack(
-            pcpCache.layerStack, ['v2/root.sdf', 'absSublayer.sdf'])
+            pcpCache.layerStack, ['v2/root.usda', 'absSublayer.usda'])
 
     @cwd('referencingWithRelSublayers')
     def test_ReferencingLayerWithRelativeSublayerPaths(self):
@@ -182,27 +165,27 @@ class TestPcpResolvedPathChange(unittest.TestCase):
         relative sublayer paths.'''
 
         # Create test directory structure and assets.
-        CreateLayer('absRef.sdf', 
+        CreateLayer('absRef.usda', 
             '''\
-            #sdf 1.4.32
+            #usda 1.0
             def "Ref" { }
             '''
         )
 
-        CreateLayer('v1/root.sdf',
+        CreateLayer('v1/root.usda',
             '''\
-            #sdf 1.4.32
+            #usda 1.0
             (
                 subLayers = [
-                    @./sublayer.sdf@
+                    @./sublayer.usda@
                 ]
             )
             '''
         )
 
-        CreateLayer('v1/sublayer.sdf',
+        CreateLayer('v1/sublayer.usda',
             '''\
-            #sdf 1.4.32
+            #usda 1.0
 
             def "AbsoluteReference" (
                 references = @{absRefPath}@</Ref>
@@ -211,44 +194,44 @@ class TestPcpResolvedPathChange(unittest.TestCase):
             }}
 
             def "RelativeReference" (
-                references = @./ref.sdf@</Ref>
+                references = @./ref.usda@</Ref>
             )
             {{
             }}
             '''.format(
-                absRefPath=os.path.abspath('absRef.sdf'))
+                absRefPath=os.path.abspath('absRef.usda'))
         )
 
-        CreateLayer('v1/ref.sdf',
+        CreateLayer('v1/ref.usda',
             '''\
-            #sdf 1.4.32
+            #usda 1.0
             def "Ref" { }
             '''
         )
 
         # Create PcpCache using a resolver context that searches
-        # v2/ first, then v1/. Note that we use a search path for root.sdf.
-        # Since v2/root.sdf doesn't exist yet, we should find v1/root.sdf
+        # v2/ first, then v1/. Note that we use a search path for root.usda.
+        # Since v2/root.usda doesn't exist yet, we should find v1/root.usda
         # as our root layer.
-        pcpCache = CreatePcpCache("root.sdf",
+        pcpCache = CreatePcpCache("root.usda",
             Ar.DefaultResolverContext(
                 searchPaths=[os.path.abspath('v2'), os.path.abspath('v1')]))
 
         # All relative asset paths in references/sublayers/etc. should be
-        # anchored to v1/root.sdf initially.
+        # anchored to v1/root.usda initially.
         pi, err = pcpCache.ComputePrimIndex('/AbsoluteReference')
         self.assertFalse(err)
-        self.assertReferenceNode(pi.rootNode.children[0], ['absRef.sdf'])
+        self.assertReferenceNode(pi.rootNode.children[0], ['absRef.usda'])
 
         pi, err = pcpCache.ComputePrimIndex('/RelativeReference')
         self.assertFalse(err)
-        self.assertReferenceNode(pi.rootNode.children[0], ['v1/ref.sdf'])
+        self.assertReferenceNode(pi.rootNode.children[0], ['v1/ref.usda'])
 
         self.assertLayerStack(
-            pcpCache.layerStack, ['v1/root.sdf', 'v1/sublayer.sdf'])
+            pcpCache.layerStack, ['v1/root.usda', 'v1/sublayer.usda'])
 
         # Copy v1/ to v2/ and reload. This should cause the resolved path of
-        # root.sdf to change to v2/root.sdf. Because this layer had a sublayer
+        # root.usda to change to v2/root.usda. Because this layer had a sublayer
         # with a relative asset path, the entire layer stack needs to be
         # recomputed. Since this recomputation could add/remove opinions
         # arbitrarily, any prims that depend on the layer stack need to be
@@ -265,14 +248,14 @@ class TestPcpResolvedPathChange(unittest.TestCase):
 
         pi, err = pcpCache.ComputePrimIndex('/AbsoluteReference')
         self.assertFalse(err)
-        self.assertReferenceNode(pi.rootNode.children[0], ['absRef.sdf'])
+        self.assertReferenceNode(pi.rootNode.children[0], ['absRef.usda'])
 
         pi, err = pcpCache.ComputePrimIndex('/RelativeReference')
         self.assertFalse(err)
-        self.assertReferenceNode(pi.rootNode.children[0], ['v2/ref.sdf'])
+        self.assertReferenceNode(pi.rootNode.children[0], ['v2/ref.usda'])
 
         self.assertLayerStack(
-            pcpCache.layerStack, ['v2/root.sdf', 'v2/sublayer.sdf'])
+            pcpCache.layerStack, ['v2/root.usda', 'v2/sublayer.usda'])
 
     @cwd('referencedWithRelSublayers')
     def test_ReferencedWithRelativeSublayerPaths(self):
@@ -280,12 +263,12 @@ class TestPcpResolvedPathChange(unittest.TestCase):
         changes and that layer contains relative sublayer paths.'''
 
         # Create test directory structure and assets.
-        CreateLayer('root.sdf',
+        CreateLayer('root.usda',
             '''\
-            #sdf 1.4.32
+            #usda 1.0
 
             def "SearchPathRef" (
-                references = @ref.sdf@</Ref>
+                references = @ref.usda@</Ref>
             )
             {
             }
@@ -296,28 +279,28 @@ class TestPcpResolvedPathChange(unittest.TestCase):
             '''
         )
         
-        CreateLayer('v1/ref.sdf',
+        CreateLayer('v1/ref.usda',
             '''\
-            #sdf 1.4.32
+            #usda 1.0
             (
                 subLayers = [
-                    @./sublayer.sdf@
+                    @./sublayer.usda@
                 ]
             )
             '''
         )
 
-        CreateLayer('v1/sublayer.sdf',
+        CreateLayer('v1/sublayer.usda',
             '''\
-            #sdf 1.4.32
+            #usda 1.0
             def "Ref" { }
             '''
         )
 
         # Create PcpCache using a resolver context that searches
-        # v2/ first, then v1/. The search path reference to ref.sdf should
-        # resolve to v1/ref.sdf since v2/ doesn't exist yet.
-        pcpCache = CreatePcpCache("root.sdf",
+        # v2/ first, then v1/. The search path reference to ref.usda should
+        # resolve to v1/ref.usda since v2/ doesn't exist yet.
+        pcpCache = CreatePcpCache("root.usda",
             Ar.DefaultResolverContext(
                 searchPaths=[os.path.abspath('v2'), os.path.abspath('v1')]))
 
@@ -327,10 +310,10 @@ class TestPcpResolvedPathChange(unittest.TestCase):
         pi, err = pcpCache.ComputePrimIndex('/SearchPathRef')
         self.assertFalse(err)
         self.assertReferenceNode(
-            pi.rootNode.children[0], ['v1/ref.sdf', 'v1/sublayer.sdf'])
+            pi.rootNode.children[0], ['v1/ref.usda', 'v1/sublayer.usda'])
 
         # Copy v1/ to v2/ and reload. This should cause the resolved path of
-        # ref.sdf to change to v2/ref.sdf, but no other scene description
+        # ref.usda to change to v2/ref.usda, but no other scene description
         # is changed because v1/ and v2/ are exactly the same.
         # 
         # Because we had a sublayer with a relative path, we need to recompute
@@ -349,7 +332,7 @@ class TestPcpResolvedPathChange(unittest.TestCase):
         pi, err = pcpCache.ComputePrimIndex('/SearchPathRef')
         self.assertFalse(err)
         self.assertReferenceNode(
-            pi.rootNode.children[0], ['v2/ref.sdf', 'v2/sublayer.sdf'])
+            pi.rootNode.children[0], ['v2/ref.usda', 'v2/sublayer.usda'])
 
     @cwd('referencedWithAbsSublayers')
     def test_ReferencedWithAbsoluteSublayerPaths(self):
@@ -357,12 +340,12 @@ class TestPcpResolvedPathChange(unittest.TestCase):
         changes and that layer contains absolute sublayer paths.'''
 
         # Create test directory structure and assets.
-        CreateLayer('root.sdf',
+        CreateLayer('root.usda',
             '''\
-            #sdf 1.4.32
+            #usda 1.0
 
             def "SearchPathRef" (
-                references = @ref.sdf@</Ref>
+                references = @ref.usda@</Ref>
             )
             {
             }
@@ -373,28 +356,28 @@ class TestPcpResolvedPathChange(unittest.TestCase):
             '''
         )
 
-        CreateLayer('absSublayer.sdf',
+        CreateLayer('absSublayer.usda',
             '''\
-            #sdf 1.4.32
+            #usda 1.0
             def "Ref" {}
             '''
         )
         
-        CreateLayer('v1/ref.sdf',
+        CreateLayer('v1/ref.usda',
             '''\
-            #sdf 1.4.32
+            #usda 1.0
             (
                 subLayers = [
                     @{absSublayerPath}@
                 ]
             )
-            '''.format(absSublayerPath=os.path.abspath('absSublayer.sdf'))
+            '''.format(absSublayerPath=os.path.abspath('absSublayer.usda'))
         )
 
         # Create PcpCache using a resolver context that searches
-        # v2/ first, then v1/. The search path reference to ref.sdf should
-        # resolve to v1/ref.sdf since v2/ doesn't exist yet.
-        pcpCache = CreatePcpCache("root.sdf",
+        # v2/ first, then v1/. The search path reference to ref.usda should
+        # resolve to v1/ref.usda since v2/ doesn't exist yet.
+        pcpCache = CreatePcpCache("root.usda",
             Ar.DefaultResolverContext(
                 searchPaths=[os.path.abspath('v2'), os.path.abspath('v1')]))
 
@@ -404,10 +387,10 @@ class TestPcpResolvedPathChange(unittest.TestCase):
         pi, err = pcpCache.ComputePrimIndex('/SearchPathRef')
         self.assertFalse(err)
         self.assertReferenceNode(
-            pi.rootNode.children[0], ['v1/ref.sdf', 'absSublayer.sdf'])
+            pi.rootNode.children[0], ['v1/ref.usda', 'absSublayer.usda'])
 
         # Copy v1/ to v2/ and reload. This should cause the resolved path of
-        # ref.sdf to change to v2/ref.sdf, but no other scene description is
+        # ref.usda to change to v2/ref.usda, but no other scene description is
         # changed because v1/ and v2/ are exactly the same.
         #
         # Even though the root layer of the referenced layer stack has changed

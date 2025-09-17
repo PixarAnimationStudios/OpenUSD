@@ -1,0 +1,51 @@
+#usda 1.0
+(
+    """
+    This museum case demonstrates the behavior of variable expressions
+    authored in reference arcs.
+    """
+    expressionVariables = {
+        string REF = "A"
+    }
+)
+
+def "SingleRef" (
+    """
+    Example showing a reference referring to an expression variable
+    in the same layer stack.
+    """
+    references = @`"./${REF}.usda"`@
+)
+{
+}
+
+def "ChainedRef" (
+    """
+    Example where a prim in a referenced layer stack contains another
+    reference that uses an expression variable, and the value of that
+    variable is authored in that referenced layer stack.
+    """
+    references = @./ref2.usda@
+)
+{
+}
+
+def "ChainedRefOverride" (
+    """
+    Similar to /ChainedRef, but the value of the expression variable used
+    in ref2.usda is overridden by the value authored in ref3.usda.
+    """
+    references = @./ref3.usda@
+)
+{
+}
+
+def "MultiRef" (
+    """
+    Example with multiple references demonstrating that variables authored
+    across a reference arc don't affect sibling reference arcs.
+    """
+    references = [@./ref3.usda@, @./ref2.usda@]
+)
+{
+}

@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>654</width>
-    <height>151</height>
+    <height>176</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -23,25 +23,8 @@
    <string>
      Copyright 2017 Pixar                                                                   
                                                                                             
-     Licensed under the Apache License, Version 2.0 (the &quot;Apache License&quot;)      
-     with the following modification; you may not use this file except in                   
-     compliance with the Apache License and the following modification to it:               
-     Section 6. Trademarks. is deleted and replaced with:                                   
-                                                                                            
-     6. Trademarks. This License does not grant permission to use the trade                 
-        names, trademarks, service marks, or product names of the Licensor                  
-        and its affiliates, except as required to comply with Section 4(c) of               
-        the License and to reproduce the content of the NOTICE file.                        
-                                                                                            
-     You may obtain a copy of the Apache License at                                         
-                                                                                            
-         http://www.apache.org/licenses/LICENSE-2.0                                         
-                                                                                            
-     Unless required by applicable law or agreed to in writing, software                    
-     distributed under the Apache License with the above modification is                    
-     distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY   
-     KIND, either express or implied. See the Apache License for the specific               
-     language governing permissions and limitations under the Apache License.               
+     Licensed under the terms set forth in the LICENSE.txt file available at
+     https://openusd.org/license.
   </string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
@@ -276,6 +259,47 @@
        </item>
        <item>
         <spacer name="horizontalSpacer_13">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
+     <item row="2" column="2">
+      <layout class="QHBoxLayout" name="horizontalLayout_15">
+       <item>
+        <widget class="QGraphicsView" name="propertyLegendColorSpline">
+         <property name="maximumSize">
+          <size>
+           <width>20</width>
+           <height>15</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="propertyLegendLabelSpline">
+         <property name="font">
+          <font>
+           <weight>50</weight>
+           <italic>false</italic>
+           <bold>false</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Spline (Interpolated)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_16">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>

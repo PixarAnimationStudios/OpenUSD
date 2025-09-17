@@ -1,15 +1,15 @@
-Loading @TrickyMultipleRelocations/root.sdf@
+Loading @TrickyMultipleRelocations/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Char>
 
 Prim Stack:
-    root.sdf             /Char
-    rig.sdf              /CharRig
+    root.usda            /Char
+    rig.usda             /CharRig
 
 Child names:
      ['Anim2', 'Rig2']
@@ -21,8 +21,8 @@ Prohibited child names:
 Results for composing </Char/Anim2>
 
 Prim Stack:
-    root.sdf             /Char/Anim2
-    rig.sdf              /CharRig/Anim
+    root.usda            /Char/Anim2
+    rig.usda             /CharRig/Anim
 
 Child names:
      ['AnimScope']
@@ -31,21 +31,21 @@ Child names:
 Results for composing </Char/Anim2/AnimScope>
 
 Prim Stack:
-    subrig.sdf           /SubRig/Anim/AnimScope
+    subrig.usda          /SubRig/Anim/AnimScope
 
 Property names:
      ['x']
 
 Property stacks:
 /Char/Anim2/AnimScope.x:
-    subrig.sdf           /SubRig/Anim/AnimScope.x
+    subrig.usda          /SubRig/Anim/AnimScope.x
 
 ------------------------------------------------------------------------
 Results for composing </Char/Rig2>
 
 Prim Stack:
-    root.sdf             /Char/Rig2
-    rig.sdf              /CharRig/Rig
+    root.usda            /Char/Rig2
+    rig.usda             /CharRig/Rig
 
 Child names:
      ['SubRig2']
@@ -57,9 +57,9 @@ Prohibited child names:
 Results for composing </Char/Rig2/SubRig2>
 
 Prim Stack:
-    root.sdf             /Char/Rig2/SubRig2
-    rig.sdf              /CharRig/Rig/SubRig
-    subrig.sdf           /SubRig
+    root.usda            /Char/Rig2/SubRig2
+    rig.usda             /CharRig/Rig/SubRig
+    subrig.usda          /SubRig
 
 Child names:
      ['Anim', 'Rig2']
@@ -71,7 +71,7 @@ Prohibited child names:
 Results for composing </Char/Rig2/SubRig2/Anim>
 
 Prim Stack:
-    subrig.sdf           /SubRig/Anim
+    subrig.usda          /SubRig/Anim
 
 Prohibited child names:
      ['AnimScope']
@@ -80,7 +80,7 @@ Prohibited child names:
 Results for composing </Char/Rig2/SubRig2/Rig2>
 
 Prim Stack:
-    subrig.sdf           /SubRig/Rig
+    subrig.usda          /SubRig/Rig
 
 Child names:
      ['RigScope']
@@ -89,14 +89,14 @@ Child names:
 Results for composing </Char/Rig2/SubRig2/Rig2/RigScope>
 
 Prim Stack:
-    subrig.sdf           /SubRig/Rig/RigScope
+    subrig.usda          /SubRig/Rig/RigScope
 
 Property names:
      ['x']
 
 Property stacks:
 /Char/Rig2/SubRig2/Rig2/RigScope.x:
-    subrig.sdf           /SubRig/Rig/RigScope.x
+    subrig.usda          /SubRig/Rig/RigScope.x
 
 Attribute connections:
 /Char/Rig2/SubRig2/Rig2/RigScope.x:

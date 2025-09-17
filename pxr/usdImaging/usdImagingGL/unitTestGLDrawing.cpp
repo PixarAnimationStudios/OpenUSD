@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 
@@ -277,7 +260,6 @@ UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
     , _testLighting(false)
     , _sceneLights(false)
     , _cameraLight(false)
-    , _testIdRender(false)
     , _enableSceneMaterials(true)
     , _unloadedAsBounds(false)
     , _complexity(1.0f)
@@ -290,6 +272,7 @@ UsdImagingGL_UnitTestGLDrawing::UsdImagingGL_UnitTestGLDrawing()
     , _showProxy(UsdImagingGLRenderParams().showProxy)
     , _presentComposite(false)
     , _presentDisabled(false)
+    , _numErrorsAllowed(0)
 {
 }
 
@@ -437,7 +420,7 @@ static void Usage(int argc, char *argv[])
 {
     static const char usage[] =
 "%s [-stage filePath] [-write filePath]\n"
-"                           [-offscreen] [-lighting] [-idRender]\n"
+"                           [-offscreen] [-lighting]\n"
 "                           [-disableSceneMaterials]\n"
 "                           [-camera pathToCamera]\n"
 "                           [-complexity complexity]\n"
@@ -464,7 +447,6 @@ static void Usage(int argc, char *argv[])
 "  -sceneLights        use in combination with -lighting to utilize the lights \n"
 "                      defined in the scene\n"
 "  -camLight           use a single camera light\n"
-"  -idRender           ID rendering\n"
 "  -disableSceneMaterials\n"
 "                      Disable scene materials\n"
 "  -complexity complexity\n"
@@ -512,6 +494,7 @@ static void Usage(int argc, char *argv[])
 "  -windowPolicy [matchVertically|matchHorizontally|fit|crop|dontConform]\n"
 "                      Forces the window policy\n"
 "                      (defaults to matchVertically to match usdview)\n"
+"  -numErrorsAllowed n Number of errors allowed before test fails (default 0)"
 ;
 
     Die(usage, TfGetBaseName(argv[0]).c_str());
@@ -549,6 +532,24 @@ static double ParseDouble(int& i, int argc, char *argv[],
         ParseError(argv[0], "invalid parameter for '%s': %s",
                    argv[i], argv[i + 1]);
     }
+    ++i;
+    if (invalid) {
+        *invalid = false;
+    }
+    return result;
+}
+
+
+static int ParseInt(int& i, int argc, char *argv[], bool* invalid = nullptr)
+{
+    if (i + 1 == argc) {
+        if (invalid) {
+            *invalid = true;
+            return 0.0;
+        }
+        ParseError(argv[0], "missing parameter for '%s'", argv[i]);
+    }
+    int result = atoi(argv[i + 1]);
     ++i;
     if (invalid) {
         *invalid = false;
@@ -611,13 +612,37 @@ ParseDoubleVector(
     }
 }
 
+static bool ParseBool(int& i, int argc, char *argv[])
+{
+    if (i + 1 == argc) {
+        ParseError(argv[0], "missing parameter for '%s'", argv[i]);
+        return false;
+    }
+
+    bool result = false;
+    if (strcmp(argv[i + 1], "true") == 0) {
+        result = true;
+    } else if (strcmp(argv[i + 1], "false") == 0) {
+        result = false;
+    } else {
+        ParseError(argv[0], "invalid parameter for '%s': %s. Must be either "
+                            "'true' or 'false'",
+                   argv[i], argv[i + 1]);
+    }
+
+    ++i;
+    return result;
+}
+
 static VtValue ParseVtValue(int &i, int argc, char *argv[])
 {
     const char * const typeString = ParseString(i, argc, argv);
-
     if (strcmp(typeString, "float") == 0) {
         CheckForMissingArguments(i, 1, argc, argv);
         return VtValue(float(ParseDouble(i, argc, argv)));
+    } else if (strcmp(typeString, "bool") == 0) {
+        CheckForMissingArguments(i, 1, argc, argv);
+        return VtValue(ParseBool(i, argc, argv));
     } else {
         ParseError(argv[0], "unknown type '%s'", typeString);
         return VtValue();
@@ -653,9 +678,6 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         else if (strcmp(argv[i], "-camera") == 0) {
             CheckForMissingArguments(i, 1, argc, argv);
             _cameraPath = argv[++i];
-        }
-        else if (strcmp(argv[i], "-idRender") == 0) {
-            _testIdRender = true;
         }
         else if (strcmp(argv[i], "-disableSceneMaterials") == 0) {
             _enableSceneMaterials = false;
@@ -785,6 +807,10 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
         }
         else if (strcmp(argv[i], "-presentDisabled") == 0) {
             _presentDisabled = true;
+        }
+        else if (strcmp(argv[i], "-numErrorsAllowed") == 0) {
+            // CheckForMissingArguments(i, 1, argc, argv);
+            _numErrorsAllowed = ParseInt(i, argc, argv);
         }
         else {
             ParseError(argv[0], "unknown argument %s", argv[i]);

@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_SDF_PARSER_HELPERS_H
 #define PXR_USD_SDF_PARSER_HELPERS_H
@@ -269,11 +252,7 @@ struct Value
     // std::bad_variant_access.
     template <class T>
     typename _GetImpl<T>::ResultType Get() const {
-        try {
-            return _GetImpl<T>().Visit(_variant);
-        } catch (std::bad_variant_access& e) {
-            throw std::bad_variant_access();
-        }
+        return _GetImpl<T>().Visit(_variant);
     }
 
     // Hopefully short-lived API that applies an external visitor to the held
@@ -328,7 +307,44 @@ struct ValueFactory {
 
 ValueFactory const &GetValueFactoryForMenvaName(std::string const &name,
                                                 bool *found);
-}
+
+// Base class for building VtArrayEdit instances from type-erased values.
+struct ArrayEditFactoryBase {
+
+    virtual ~ArrayEditFactoryBase() = 0;
+
+    bool Append(VtValue const &elem);
+    void AppendRef(int64_t srcIndex);
+    
+    bool Prepend(VtValue const &elem);
+    void PrependRef(int64_t srcIndex);
+    
+    virtual bool Write(VtValue const &elem, int64_t index) = 0;
+    virtual void WriteRef(int64_t srcIndex, int64_t dstIndex) = 0;
+    virtual bool Insert(VtValue const &elem, int64_t index) = 0;
+    virtual void InsertRef(int64_t srcIndex, int64_t dstIndex) = 0;
+
+    virtual void EraseRef(int64_t index) = 0;
+
+    virtual void MinSize(int64_t size) = 0;
+    virtual bool MinSizeFill(int64_t size, VtValue const &fill) = 0;
+
+    virtual void MaxSize(int64_t size) = 0;
+
+    virtual void SetSize(int64_t size) = 0;
+    virtual bool SetSizeFill(int64_t size, VtValue const &fill) = 0;
+
+    virtual VtValue FinalizeAndReset() = 0;
+
+    virtual std::string GetErrorMessage() const = 0;
+};
+
+// Create a new ArrayEditFactory for menva type name \p name (same as in
+// GetValueFactoryForMenvaName()).  Return nullptr if not found.
+std::unique_ptr<ArrayEditFactoryBase>
+MakeArrayEditFactoryForMenvaName(std::string const &name);
+
+} // Sdf_ParserHelpers
 
 /// Converts a string to a bool.
 /// Accepts case insensitive "yes", "no", "false", true", "0", "1".

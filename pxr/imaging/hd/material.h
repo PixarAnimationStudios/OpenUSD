@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_MATERIAL_H
 #define PXR_IMAGING_HD_MATERIAL_H
@@ -29,6 +12,7 @@
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/usd/sdr/declare.h"
+#include "pxr/base/vt/dictionary.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -44,7 +28,10 @@ public:
         // XXX: Got to skip varying and force sync bits for now
         DirtyParams           = 1 << 2,
         DirtyResource         = 1 << 3,
-        AllDirty              = (DirtyParams | DirtyResource)
+        DirtySurface          = 1 << 4,
+        DirtyDisplacement     = 1 << 5,
+        DirtyVolume           = 1 << 6,
+        AllDirty              = (DirtyParams | DirtyResource | DirtySurface | DirtyDisplacement | DirtyVolume)
     };
 
     HD_API
@@ -129,6 +116,7 @@ struct HdMaterialNetworkMap
 {
     std::map<TfToken, HdMaterialNetwork> map;
     std::vector<SdfPath> terminals;
+    VtDictionary config;
 };
 
 
@@ -179,11 +167,13 @@ struct HdMaterialNetwork2
     std::map<SdfPath, HdMaterialNode2> nodes;
     std::map<TfToken, HdMaterialConnection2> terminals;
     TfTokenVector primvars;
+    VtDictionary config;
 
     bool operator==(const HdMaterialNetwork2 & rhs) const {
         return nodes == rhs.nodes 
             && terminals == rhs.terminals
-            && primvars == rhs.primvars;
+            && primvars == rhs.primvars
+            && config == rhs.config;
     }
 };
 
@@ -197,10 +187,20 @@ HdMaterialNetwork2 HdConvertToHdMaterialNetwork2(
 /// present.  Otherwise extracts the sampler parameters from the SdrNode.
 HD_API
 HdSamplerParameters HdGetSamplerParameters(
-    const SdfPath& nodePath,
     const HdMaterialNode2& node,
-    const SdrShaderNodeConstPtr& sdrNode);
+    const SdrShaderNodeConstPtr& sdrNode,
+    const SdfPath& nodePath = SdfPath::EmptyPath());
 
+/// Extract HdSamplerParameters from the given parameter map for the given node
+/// type id.  Functionally this works essentially the same as the other
+/// HdGetSamplerParameters that operates on an HdMaterialNode2, but this allows
+/// extracting sampler parameters from the map without requiring an
+/// HdMaterialNode2.
+HD_API
+HdSamplerParameters HdGetSamplerParameters(
+    const TfToken& nodeTypeId,
+    const std::map<TfToken, VtValue>& parameters,
+    const SdfPath& nodePath = SdfPath::EmptyPath());
 
 // VtValue requirements
 HD_API

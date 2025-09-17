@@ -2,25 +2,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 # pylint: disable=dict-keys-not-iterating
 
@@ -31,6 +14,7 @@ import unittest
 
 stage = Usd.Stage.Open("./Test.usda")
 testPrim = stage.GetPrimAtPath("/CollectionTest")
+testExprPrim = stage.GetPrimAtPath("/CollectionExprTest")
 
 geom = stage.GetPrimAtPath("/CollectionTest/Geom")
 box = stage.GetPrimAtPath("/CollectionTest/Geom/Box")
@@ -177,6 +161,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         expandPrimsColl = Usd.CollectionAPI.Apply(testPrim, 
                 "testExpandPrimsColl")
         expandPrimsColl.CreateIncludesRel().AddTarget(geom.GetPath())
+        self.assertTrue(expandPrimsColl.IsInRelationshipsMode())
         expandPrimsCollMquery = expandPrimsColl.ComputeMembershipQuery()
         self.checkQuery(expandPrimsCollMquery, stage)
         
@@ -213,6 +198,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
                 Usd.Tokens.expandPrimsAndProperties)
         expandPrimsAndPropertiesColl.CreateIncludesRel().AddTarget(
                 shapes.GetPath())
+        self.assertTrue(expandPrimsAndPropertiesColl.IsInRelationshipsMode())
         expandPnPCollMquery = expandPrimsAndPropertiesColl.ComputeMembershipQuery()
         self.checkQuery(expandPnPCollMquery, stage)
         expandPnPCollObjects = Usd.CollectionAPI.ComputeIncludedObjects(
@@ -234,6 +220,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
             expandPrimsAndPropertiesColl.GetCollectionPath())
         combinedColl.CreateIncludesRel().AddTarget(
             explicitColl.GetCollectionPath())
+        self.assertTrue(combinedColl.IsInRelationshipsMode())
 
         combinedMquery = combinedColl.ComputeMembershipQuery()
         self.checkQuery(combinedMquery, stage)
@@ -273,6 +260,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
             "geom")
         self.assertTrue(geomCollection.IncludePath(shapes.GetPath()))
         self.assertTrue(geomCollection.ExcludePath(sphere.GetPath()))
+        self.assertTrue(geomCollection.IsInRelationshipsMode())
 
         query = geomCollection.ComputeMembershipQuery()
         self.checkQuery(query, stage)
@@ -334,6 +322,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
 
     def test_testReadCollection(self):
         leafGeom = Usd.CollectionAPI(testPrim, "leafGeom")
+        self.assertTrue(leafGeom.IsInRelationshipsMode())
         (valid, reason) = leafGeom.Validate()
         self.assertTrue(valid)
 
@@ -671,11 +660,13 @@ class TestUsdCollectionAPI(unittest.TestCase):
         collections = Usd.CollectionAPI.GetAll(testPrim)
         self.assertTrue(len(collections) > 1)
 
-        # Each of their membership queries should be equal to itself,
-        # and unequal to the others.  Same for their hashes -- although
-        # note that the hashes are not, in general, guaranteed to be
-        # distinct due to the pigeonhole principle.
+        # Each of their membership queries should be equal to itself, and
+        # unequal to the others.  Same for their hashes -- although note that
+        # the hashes are not, in general, guaranteed to be distinct due to the
+        # pigeonhole principle.  Queries that do not use the rule map (i.e. they
+        # use a membershipExpression) do not compare or hash equal.
         mqueries = [c.ComputeMembershipQuery() for c in collections]
+        mqueries = [q for q in mqueries if q.UsesPathExpansionRuleMap()]
         for i in range(len(mqueries)):
             for j in range(i, len(mqueries)):
                 if i == j:
@@ -762,6 +753,57 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertEqual(
             Usd.ComputeIncludedPathsFromCollection(query, stage), [])
 
+    def test_MembershipExpressions(self):
+        withMembershipExpr = Usd.CollectionAPI.Get(
+            testPrim, 'withMembershipExpr')
+        self.assertTrue(withMembershipExpr.IsInExpressionMode())
+
+        query = withMembershipExpr.ComputeMembershipQuery()
+        self.assertFalse(query.UsesPathExpansionRuleMap())
+
+        self.assertEqual(
+            Usd.ComputeIncludedPathsFromCollection(query, stage),
+            [Sdf.Path('/CollectionTest'),
+             Sdf.Path('/CollectionTest/Geom/Box'),
+             Sdf.Path('/CollectionTest/Geom/Shapes/Cone'),
+             Sdf.Path('/CollectionTest/Geom/Shapes/Cube'),
+             Sdf.Path('/CollectionTest/Geom/Shapes/Cylinder'),
+             Sdf.Path('/CollectionTest/Geom/Shapes/Sphere/Hemisphere1'),
+             Sdf.Path('/CollectionTest/Geom/Shapes/Sphere/Hemisphere2')])
+
+        # Test ResolveCompleteMembershipExpression.
+        self.assertEqual(
+            withMembershipExpr.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression("/CollectionTest/Geom//C* //{model} //Box "
+                               "/CollectionTest/Geom/Shapes//H*"))
+
+        expressionRef = Usd.CollectionAPI.Get(
+            testPrim, 'expressionRef') 
+        query = expressionRef.ComputeMembershipQuery()
+        self.assertFalse(query.UsesPathExpansionRuleMap())
+        self.assertEqual(
+            Usd.ComputeIncludedPathsFromCollection(query, stage),
+            [Sdf.Path('/CollectionTest/Geom/Shapes/Sphere/Hemisphere1'),
+             Sdf.Path('/CollectionTest/Geom/Shapes/Sphere/Hemisphere2')])
+
+        # Test that `//` leading exprs translate across references.
+        srcStage = Usd.Stage.CreateInMemory()
+        dstStage = Usd.Stage.CreateInMemory()
+
+        src = srcStage.DefinePrim('/src')
+        dst = dstStage.DefinePrim('/dst')
+
+        dstCapi = Usd.CollectionAPI.Apply(dst, 'testRef')
+        dstCapi.GetMembershipExpressionAttr().Set(Sdf.PathExpression('//'))
+        
+        src.GetReferences().AddReference(
+            dstStage.GetRootLayer().identifier, '/dst')
+
+        srcCapi = Usd.CollectionAPI.Get(src, 'testRef')
+        self.assertTrue(srcCapi)
+        self.assertEqual(srcCapi.GetMembershipExpressionAttr().Get(),
+                         Sdf.PathExpression('//'))
+
     def test_HashMembershipQuery(self):
         self.assertEqual(
             hash(Usd.UsdCollectionMembershipQuery()),
@@ -771,6 +813,90 @@ class TestUsdCollectionAPI(unittest.TestCase):
             hash(Usd.CollectionAPI.Get(testPrim, 'allGeom').ComputeMembershipQuery()),
             hash(Usd.CollectionAPI.Get(testPrim, 'allGeom').ComputeMembershipQuery())
         )
+
+    def test_ExpressionCyclesBlockAndReset(self):
+        rootC = Usd.CollectionAPI.Get(testExprPrim, 'root')
+        ref1C = Usd.CollectionAPI.Get(testExprPrim, 'ref1')
+        ref2C = Usd.CollectionAPI.Get(testExprPrim, 'ref2')
+
+        self.assertTrue(rootC)
+        self.assertTrue(ref1C)
+        self.assertTrue(ref2C)
+
+        self.assertTrue(rootC.IsInExpressionMode())
+        self.assertTrue(ref1C.IsInExpressionMode())
+        self.assertTrue(ref2C.IsInExpressionMode())
+
+        # root references ref1, ref1 references ref2, and ref2 references root
+        # again, forming a cycle.  The expectation is that when a reference is
+        # encountered a second time (and a cycle detected) then the empty
+        # expression is substituted.  These calls emit expected warnings.
+        self.assertEqual(
+            rootC.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/root (/ref1 /ref2) - /ref2'))
+
+        self.assertEqual(
+            ref1C.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/ref1 (/ref2 /root)'))
+        
+        self.assertEqual(
+            ref2C.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/ref2 (/root /ref1)'))
+
+        # Check that blocking 'ref2' leaves it with no possibility of included
+        # paths, and that it breaks the cycle.
+        with Usd.EditContext(stage, stage.GetSessionLayer()):
+            self.assertTrue(ref2C.BlockCollection())
+
+        self.assertTrue(ref2C.HasNoIncludedPaths())
+
+        self.assertEqual(
+            rootC.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/root /ref1'))
+
+        self.assertEqual(
+            ref1C.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/ref1'))
+        
+        self.assertEqual(
+            ref2C.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression())
+
+        # Calling ResetCollection on the session layer should clear the block
+        # and return us to the original state.
+        with Usd.EditContext(stage, stage.GetSessionLayer()):
+            self.assertTrue(ref2C.ResetCollection())
+
+        self.assertEqual(
+            rootC.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/root (/ref1 /ref2) - /ref2'))
+
+        self.assertEqual(
+            ref1C.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/ref1 (/ref2 /root)'))
+        
+        self.assertEqual(
+            ref2C.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/ref2 (/root /ref1)'))
+
+        # Calling ResetCollection on the root layer should clear the opinion
+        # for 'membershipExpression'.
+        self.assertTrue(ref2C.ResetCollection())
+
+        self.assertTrue(ref2C.HasNoIncludedPaths())
+
+        self.assertEqual(
+            rootC.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/root /ref1'))
+
+        self.assertEqual(
+            ref1C.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression('/ref1'))
+        
+        self.assertEqual(
+            ref2C.ResolveCompleteMembershipExpression(),
+            Sdf.PathExpression())
+        
 
 if __name__ == "__main__":
     unittest.main()

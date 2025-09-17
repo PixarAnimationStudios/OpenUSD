@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -70,19 +53,20 @@ _GetOriginRootNode(const PcpNodeRef& node)
 static bool
 _OriginsAreNestedArcs(const PcpNodeRef& a, const PcpNodeRef& b)
 {
-    for (PcpNodeRef n = a; n; n = n.GetParentNode()) {
-        if (n == b) {
-            return true;
-        }
-    }
+    auto isNestedUnder = [](const PcpNodeRef& x, const PcpNodeRef& y)
+     {
+         for (PcpNodeRef n = x; n;) {
+             if (n == y) {
+                 return true;
+             }
 
-    for (PcpNodeRef n = b; n; n = n.GetParentNode()) {
-        if (n == a) {
-            return true;
-        }
-    }
+             n = Pcp_IsPropagatedSpecializesNode(n) ?
+                 n.GetOriginNode() : n.GetParentNode();
+         }
+         return false;
+    };
 
-    return false;
+    return isNestedUnder(a, b) || isNestedUnder(b, a);
 }
 
 // Returns the namespace depth of the node that inherits or specializes
@@ -232,11 +216,11 @@ PcpCompareSiblingNodeStrength(
             // For example, consider a simple chain of references with
             // a specializes arc at the end:
             //
-            // @root.sdf@</A> -ref-> @ref.sdf@</Ref_1> 
-            //                -ref-> @ref2.sdf@</Ref_2>
-            //                -ref-> @ref3.sdf@</Ref_3> -spec-> @ref3.sdf@</S>
+            // @root.usda@</A> -ref-> @ref.usda@</Ref_1> 
+            //                -ref-> @ref2.usda@</Ref_2>
+            //                -ref-> @ref3.usda@</Ref_3> -spec-> @ref3.usda@</S>
             //
-            // The implied opinions due to @ref3.sdf@</S> are:
+            // The implied opinions due to @ref3.usda@</S> are:
             //
             // @ref2.usda@</S> (origin = @ref3.usda@</S>, 
             //                  distance from origin root = 1)
@@ -391,6 +375,38 @@ PcpCompareNodeStrength(
     const PcpNodeRefVector aNodes = _CollectNodesFromNodeToRoot(a);
     const PcpNodeRefVector bNodes = _CollectNodesFromNodeToRoot(b);
     return _CompareNodeStrength(a, aNodes, b, bNodes);
+}
+
+int
+PcpCompareSiblingPayloadNodeStrength(const PcpNodeRef& payloadParent, 
+    int payloadArcNum, const PcpNodeRef& siblingNode) {
+    if (payloadParent != siblingNode.GetParentNode()) {
+        TF_CODING_ERROR("Nodes are not siblings");
+        return 0;
+    }
+
+    // ArcType.
+    // We rely on the enum values being in strength order.
+    if (PcpArcTypePayload < siblingNode.GetArcType())
+        return -1;
+    if (PcpArcTypePayload > siblingNode.GetArcType())
+        return 1;
+
+    // Origin namespace depth.
+    // Higher values (deeper opinions) are stronger.
+    if (payloadParent.GetNamespaceDepth() > siblingNode.GetNamespaceDepth())
+        return -1;
+    if (payloadParent.GetNamespaceDepth() < siblingNode.GetNamespaceDepth())
+        return 1;
+
+    // Origin sibling arc number.
+    // Lower numbers are stronger.
+    if (payloadArcNum < siblingNode.GetSiblingNumAtOrigin())
+        return -1;
+    if (payloadArcNum > siblingNode.GetSiblingNumAtOrigin())
+        return 1;
+
+    return 0;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

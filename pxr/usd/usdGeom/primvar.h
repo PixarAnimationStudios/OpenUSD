@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_USD_GEOM_PRIMVAR_H
 #define PXR_USD_USD_GEOM_PRIMVAR_H
@@ -222,11 +205,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// primvar.SetInterpolation(UsdGeomTokens->varying);
 /// \endcode
 /// 
-/// Reprinted and adapted from <a HREF="http://renderman.pixar.com/resources/current/rps/appnote.22.html#classSpecifiers">
-/// the RPS documentation</a>, which contains further details, \em interpolation
-/// describes how the Primvar will be interpolated over the uv parameter
-/// space of a surface primitive (or curve or pointcloud).  The possible
-/// values are:
+/// \em Interpolation describes how the Primvar will be interpolated over the 
+/// uv parameter space of a surface primitive (or Curves, Points, or 
+/// PointInstancer schemas). The possible values are:
 /// \li <b>constant</b> One value remains constant over the entire surface 
 ///     primitive.
 /// \li <b>uniform</b> One value remains constant for each uv patch segment of 
@@ -240,6 +221,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \li <b>faceVarying</b> For polygons and subdivision surfaces, four values 
 ///     are interpolated over each face of the mesh. Bilinear interpolation 
 ///     is used for interpolation between the four values.
+///
+/// See <a href="https://openusd.org/release/user_guides/primvars.html">Primvars</a> 
+/// for visual examples and details on the different interpolation modes. Also,
+/// see the schema documentation for non-surface schemas for details on how 
+/// the interpolation modes are interpreted for those schemas.
 ///
 /// \section Usd_Extending_UsdObject_Classes UsdGeomPrimvar As Example of Attribute Schema
 ///

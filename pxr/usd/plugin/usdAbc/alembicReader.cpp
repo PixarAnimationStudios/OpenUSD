@@ -1,41 +1,29 @@
 //
 // Copyright 2016-2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 /// \file alembicReader.cpp
 
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/resolvedPath.h"
+#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/plugin/usdAbc/alembicReader.h"
 #include "pxr/usd/plugin/usdAbc/alembicUtil.h"
 #include "pxr/usd/usdGeom/hermiteCurves.h"
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/sdf/schema.h"
+#include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/work/threadLimits.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/ostreamMethods.h"
+#include "pxr/base/tf/fileUtils.h"
 #include <Alembic/Abc/ArchiveInfo.h>
 #include <Alembic/Abc/IArchive.h>
 #include <Alembic/Abc/IObject.h>
@@ -818,6 +806,8 @@ private:
                    const ISampleSelector& selector,
                    const UsdAbc_AlembicDataAny& value) const;
 
+    std::string _OpenAndGetMappedFilePath(const std::string& filePath);
+
     // Custom auto-lock that safely ignores a NULL pointer.
     class _Lock {
     public:
@@ -870,6 +860,10 @@ private:
     _PrimMap _prims;
     Prim* _pseudoRoot;
     UsdAbc_TimeSamples _allTimeSamples;
+
+    // Asset holders to keep a reference alive so that resolver doesn't 
+    // attempt to cleanup asset until the asset is no longer in use.
+    std::vector<std::shared_ptr<ArAsset>> _assetHolders;
 };
 
 static
@@ -889,6 +883,36 @@ _ReaderContext::_ReaderContext() :
     // Do nothing
 }
 
+std::string
+_ReaderContext::_OpenAndGetMappedFilePath(const std::string& filePath)
+{
+    // Return as it is if it's a local path or symlink.
+    if (!TfIsFile(filePath, true))
+    {
+        // Open asset with Ar to support URLs other than local paths.
+        std::shared_ptr<ArAsset> asset =
+            ArGetResolver().OpenAsset(ArResolvedPath(filePath));
+        if (asset)
+        {
+            FILE* fileHandle; size_t fileOffset;
+            std::tie(fileHandle, fileOffset) = asset->GetFileUnsafe();
+            // Check file offset also to ensure that the .abc file
+            // we're looking at isn't embedded in a .usdz or other package
+            if (fileHandle && fileOffset == 0)
+            {
+                // If file handle is presented, use mapped file path instead of original one.
+                const std::string mappedFilePath = ArchGetFileName(fileHandle);
+                _assetHolders.emplace_back(std::move(asset));
+
+                return mappedFilePath;
+            }
+        }
+    }
+
+    // Otherwise, fallback to original asset path.
+    return filePath;
+}
+
 bool
 _ReaderContext::Open(const std::string& filePath, std::string* errorLog,
                      const SdfFileFormat::FileFormatArguments& args)
@@ -900,11 +924,11 @@ _ReaderContext::Open(const std::string& filePath, std::string* errorLog,
         auto abcLayers = args.find("abcLayers");
         if (abcLayers != args.end()) {
             for (auto&& l : TfStringSplit(abcLayers->second, ",")) {
-                layeredABC.emplace_back(std::move(l));
+                layeredABC.emplace_back(_OpenAndGetMappedFilePath(l));
             }
         }
     }
-    layeredABC.emplace_back(filePath);
+    layeredABC.emplace_back(_OpenAndGetMappedFilePath(filePath));
 
 #if PXR_HDF5_SUPPORT_ENABLED && !H5_HAVE_THREADSAFE
     // HDF5 may not be thread-safe.
@@ -1524,6 +1548,7 @@ _ReaderContext::_Clear()
     _allTimeSamples.clear();
     _instanceSources.clear();
     _instances.clear();
+    _assetHolders.clear();
 }
 
 const _ReaderContext::Prim*
@@ -4122,6 +4147,30 @@ UsdAbc_AlembicDataReader::TimeSamples::Bracket(
     return true;
 }
 
+template <class T>
+bool
+UsdAbc_AlembicDataReader::TimeSamples::PreviousTime(
+    const T& samples, double usdTime, double* tPrevious) const
+{
+    if (samples.empty() || usdTime <= *(samples.begin())) {
+        // No samples or
+        // can't get preceding samples for time before first sample
+        return false;
+    } else if (usdTime > *(samples.rbegin())) {
+        // last sample is the preceding time sample, as time is greater than the
+        // last sample time.
+        *tPrevious = *(samples.rbegin());
+    } else {
+        typename T::const_iterator i = UsdAbc_lower_bound(samples, usdTime);
+        // We need to back up one sample to get the preceding sample from the
+        // lower_bound. If the lower_bound is the first sample, we would have
+        // returned false above.
+        TF_VERIFY(i != samples.begin());
+        *tPrevious = *std::prev(i);
+    }
+    return true;
+}
+
 // Instantiate for UsdAbc_TimeSamples.
 template
 bool
@@ -4134,6 +4183,19 @@ UsdAbc_AlembicDataReader::TimeSamples::Bracket(
     double usdTime, double* tLower, double* tUpper) const
 {
     return Bracket(_times, usdTime, tLower, tUpper);
+}
+
+template
+bool
+UsdAbc_AlembicDataReader::TimeSamples::PreviousTime(
+    const UsdAbc_TimeSamples& samples, double usdTime, 
+    double* tPPrevious) const;
+
+bool
+UsdAbc_AlembicDataReader::TimeSamples::PreviousTime(
+    double usdTime, double* tPrevious) const
+{
+    return PreviousTime(_times, usdTime, tPrevious);
 }
 
 //

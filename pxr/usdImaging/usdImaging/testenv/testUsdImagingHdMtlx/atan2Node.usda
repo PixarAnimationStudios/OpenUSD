@@ -1,0 +1,35 @@
+#usda 1.0
+
+def "MaterialX"
+{
+    def "Materials"
+    {
+        def Material "Atan2Example" (
+            prepend apiSchemas = ["MaterialXConfigAPI"]
+        )
+        {
+            string config:mtlx:version = "1.38"
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/Atan2Example/UsdPreviewSurface.outputs:surface>
+
+            def Shader "UsdPreviewSurface" 
+            {
+                uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+                color3f inputs:diffuseColor = (0.10470402, 0.24188282, 0.818)
+                float inputs:metallic.connect = </MaterialX/Materials/Atan2Example/NodeGraphs/atan2.outputs:out>
+                token outputs:surface
+            }
+
+            def "NodeGraphs"
+            {
+                def Shader "atan2"
+                {
+                    uniform token info:id = "ND_atan2_float"
+                    float inputs:in1 = 0.2
+                    float inputs:in2 = 0.7
+                    float outputs:out
+                }
+            }
+        }
+    }
+}
+

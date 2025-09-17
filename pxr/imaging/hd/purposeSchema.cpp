@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -39,6 +22,7 @@
 #include "pxr/base/trace/trace.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
+#include "pxr/imaging/hd/tokens.h"
 // --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -47,6 +31,22 @@ TF_DEFINE_PUBLIC_TOKENS(HdPurposeSchemaTokens,
     HD_PURPOSE_SCHEMA_TOKENS);
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
+
+TfToken
+HdPurposeSchema::ResolvePurposeValue()
+{
+    if (IsDefined()) {
+        if (HdTokenDataSourceHandle purposeDs = GetPurpose()) {
+            return purposeDs->GetTypedValue(0);
+        }
+        if (HdTokenDataSourceHandle fallbackDs = GetFallback()) {
+            return fallbackDs->GetTypedValue(0);
+        }
+    }
+    // Hydra's default purpose.
+    return HdRenderTagTokens->geometry;
+}
+
 // --(END CUSTOM CODE: Schema Methods)--
 
 HdTokenDataSourceHandle
@@ -56,20 +56,46 @@ HdPurposeSchema::GetPurpose() const
         HdPurposeSchemaTokens->purpose);
 }
 
+HdBoolDataSourceHandle
+HdPurposeSchema::GetInheritable() const
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        HdPurposeSchemaTokens->inheritable);
+}
+
+HdTokenDataSourceHandle
+HdPurposeSchema::GetFallback() const
+{
+    return _GetTypedDataSource<HdTokenDataSource>(
+        HdPurposeSchemaTokens->fallback);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdPurposeSchema::BuildRetained(
-        const HdTokenDataSourceHandle &purpose
+        const HdTokenDataSourceHandle &purpose,
+        const HdBoolDataSourceHandle &inheritable,
+        const HdTokenDataSourceHandle &fallback
 )
 {
-    TfToken _names[1];
-    HdDataSourceBaseHandle _values[1];
+    TfToken _names[3];
+    HdDataSourceBaseHandle _values[3];
 
     size_t _count = 0;
 
     if (purpose) {
         _names[_count] = HdPurposeSchemaTokens->purpose;
         _values[_count++] = purpose;
+    }
+
+    if (inheritable) {
+        _names[_count] = HdPurposeSchemaTokens->inheritable;
+        _values[_count++] = inheritable;
+    }
+
+    if (fallback) {
+        _names[_count] = HdPurposeSchemaTokens->fallback;
+        _values[_count++] = fallback;
     }
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
@@ -82,11 +108,29 @@ HdPurposeSchema::Builder::SetPurpose(
     return *this;
 }
 
+HdPurposeSchema::Builder &
+HdPurposeSchema::Builder::SetInheritable(
+    const HdBoolDataSourceHandle &inheritable)
+{
+    _inheritable = inheritable;
+    return *this;
+}
+
+HdPurposeSchema::Builder &
+HdPurposeSchema::Builder::SetFallback(
+    const HdTokenDataSourceHandle &fallback)
+{
+    _fallback = fallback;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdPurposeSchema::Builder::Build()
 {
     return HdPurposeSchema::BuildRetained(
-        _purpose
+        _purpose,
+        _inheritable,
+        _fallback
     );
 }
 

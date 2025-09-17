@@ -1,31 +1,18 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_MERGING_SCENE_H
 #define PXR_IMAGING_HD_MERGING_SCENE_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
+#include "pxr/usd/sdf/pathTable.h"
+#include "pxr/base/tf/smallVector.h"
+
+#include <limits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,12 +34,46 @@ public:
         return TfCreateRefPtr(new HdMergingSceneIndex);
     }
 
+    /// Entry to add a scene to the merging scene index.
+    struct InputScene
+    {
+        /// The scene to add.
+        HdSceneIndexBaseRefPtr scene;
+        /// The shallowest path at which prims in the scene should be
+        /// considered. This is an optional optimization to avoid having to
+        /// query multiple inputs when it's known in advance which might be
+        /// relevant for a given prim.
+        SdfPath activeInputSceneRoot = SdfPath::AbsoluteRootPath();
+        /// The position where to insert the scene.
+        ///
+        /// By default (or when larger when current number of scenes in the
+        /// merging scene index), inserts new scene after the last scene in the
+        /// merging scene index.
+        size_t pos = std::numeric_limits<size_t>::max();
+    };
+
+    /// Adds given scenes.
+    HD_API
+    void InsertInputScenes(
+        const std::vector<InputScene> &inputScenes);
+
+    /// Removes given scenes.
+    HD_API
+    void RemoveInputScenes(
+        const std::vector<HdSceneIndexBaseRefPtr> &sceneIndices);
+
     /// Adds a scene with activeInputSceneRoot specifying the shallowest path
-    /// at which prims should be considered. This is an optional optimization
-    /// to avoid having to query multiple inputs when it's known in advance
-    /// which might be relevant for a given prim.
+    /// at which prims should be considered.
+    ///
+    /// Equivalent to `InsertInputScenes({inputScene, activeInputSceneRoot})`.
     HD_API
     void AddInputScene(
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const SdfPath &activeInputSceneRoot);
+
+    HD_API
+    void InsertInputScene(
+        size_t pos,
         const HdSceneIndexBaseRefPtr &inputScene,
         const SdfPath &activeInputSceneRoot);
 
@@ -89,6 +110,11 @@ private:
         const HdSceneIndexObserver::DirtiedPrimEntries &entries);
 
     friend class _Observer;
+
+    // Rebuild _inputsPathTable from the current contents of _inputs.
+    void _RebuildInputsPathTable();
+
+    bool _HasPrim(const SdfPath &path);
 
     class _Observer : public HdSceneIndexObserver
     {
@@ -131,9 +157,21 @@ private:
         }
     };
 
-    using _InputEntries = std::vector<_InputEntry>;
+    // We observe that most merging scene indexes have few inputs, such as 2.
+    // However, in the case of merging USD native instance prototypes in
+    // UsdImaging, we may have hundreds of inputs with non-overlapping
+    // sceneRoots .  To avoid an O(N) scan over all inputs when N grows
+    // large, we use an SdfPathTable to store ordered sub-list of inputs
+    // that pertain to an input prim path or input ancestor path.
+    using _InputEntries = TfSmallVector<_InputEntry, 4>;
+    using _InputEntriesByPathTable = SdfPathTable<_InputEntries>;
+
+    // Look up the input entries potentially relevant to the given path.
+    const _InputEntries &_GetInputEntriesByPath(SdfPath const& path) const;
 
     _InputEntries _inputs;
+    _InputEntriesByPathTable _inputsPathTable;
+
 };
 
 

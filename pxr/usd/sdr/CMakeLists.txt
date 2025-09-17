@@ -3,53 +3,78 @@ set(PXR_PACKAGE sdr)
 
 pxr_library(sdr
     LIBRARIES
+        arch
+        plug
+        trace
         tf
         vt
+        work
         ar
-        ndr
         sdf
-        ${Boost_PYTHON_LIBRARY}
-
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
 
     PUBLIC_HEADERS
         api.h
-        declare.h
+        shaderNodeDiscoveryResult.h
 
     PUBLIC_CLASSES
         debugCodes
+        declare
+        discoveryPlugin
+        filesystemDiscovery
+        filesystemDiscoveryHelpers
+        parserPlugin
         registry
+        sdfTypeIndicator
         shaderMetadataHelpers
         shaderNode
         shaderProperty
 
-    PYTHON_CPPFILES
-        moduleDeps.cpp
-
     PYMODULE_CPPFILES
         module.cpp
+        wrapDeclare.cpp
+        wrapDiscoveryPlugin.cpp
+        wrapFilesystemDiscovery.cpp
+        wrapFilesystemDiscoveryHelpers.cpp
         wrapRegistry.cpp
+        wrapSdfTypeIndicator.cpp
+        wrapShaderMetadataHelpers.cpp
         wrapShaderNode.cpp
+        wrapShaderNodeDiscoveryResult.cpp
         wrapShaderProperty.cpp
 
     PYMODULE_FILES
         __init__.py
         shaderParserTestUtils.py
 
+    RESOURCE_FILES
+        plugInfo.json
+
     DOXYGEN_FILES
         overview.dox
 )
 
 pxr_test_scripts(
+    testenv/testSdrFilesystemDiscovery.py
     testenv/testSdrRegistry.py
+    testenv/testSdrShownIfConversion.py
+    testenv/testSdrVersion.py
+)
+
+pxr_install_test_dir(
+    SRC testenv/testSdrFilesystemDiscovery.testenv
+    DEST testSdrFilesystemDiscovery
+)
+
+pxr_register_test(testSdrFilesystemDiscovery
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdrFilesystemDiscovery"
+    EXPECTED_RETURN_CODE 0
 )
 
 pxr_build_test_shared_lib(TestSdrRegistry
     INSTALL_PREFIX SdrPlugins
     LIBRARIES
         tf
-        ndr
         sdr
     CPPFILES
         testenv/TestSdrRegistry_argsParserPlugin.cpp
@@ -57,10 +82,43 @@ pxr_build_test_shared_lib(TestSdrRegistry
         testenv/TestSdrRegistry_oslParserPlugin.cpp
 )
 
+pxr_build_test(testSdrParseValue
+    LIBRARIES
+        gf
+        sdf
+        sdr
+        tf
+        vt
+    CPPFILES
+        testenv/testSdrParseValue.cpp
+)
+
+pxr_register_test(testSdrParseValue
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdrParseValue"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testSdrRegistry
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdrRegistry"
     ENV
-        PXR_NDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY=1
-        PXR_NDR_SKIP_PARSER_PLUGIN_DISCOVERY=1
+        PXR_SDR_SKIP_DISCOVERY_PLUGIN_DISCOVERY=1
+        PXR_SDR_SKIP_PARSER_PLUGIN_DISCOVERY=1
+)
+
+pxr_install_test_dir(
+    SRC testenv/testSdrShownIfConversion.testenv
+    DEST testSdrShownIfConversion
+)
+
+pxr_register_test(testSdrShownIfConversion
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdrShownIfConversion"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testSdrVersion
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdrVersion"
+    EXPECTED_RETURN_CODE 0
 )

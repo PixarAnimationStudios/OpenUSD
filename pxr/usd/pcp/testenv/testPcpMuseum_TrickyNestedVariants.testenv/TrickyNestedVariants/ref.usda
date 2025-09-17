@@ -1,0 +1,41 @@
+#usda 1.0
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "RAx"
+{
+    def MfScope "B"
+    {
+        def MfScope "C"
+        {
+        }
+    }
+}
+
+def MfScope "RB"
+{
+    def MfScope "C"
+    {
+    }
+}
+
+def MfScope "RBxy"
+{
+    def MfScope "C"
+    {
+    }
+}
+
+def MfScope "RC"
+{
+}
+
+def MfScope "RCx"
+{
+}
+
+def MfScope "RCxyz"
+{
+}

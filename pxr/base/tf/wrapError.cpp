@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -36,20 +19,20 @@
 
 #include "pxr/base/tf/pyErrorInternal.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/errors.hpp>
-#include <boost/python/return_by_value.hpp>
-#include <boost/python/return_value_policy.hpp>
-#include <boost/python/scope.hpp>
-#include <boost/python/tuple.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/errors.hpp"
+#include "pxr/external/boost/python/return_by_value.hpp"
+#include "pxr/external/boost/python/return_value_policy.hpp"
+#include "pxr/external/boost/python/scope.hpp"
+#include "pxr/external/boost/python/tuple.hpp"
 
 using std::string;
 using std::vector;
 
-using namespace boost::python;
-
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -59,8 +42,8 @@ _RaiseCodingError(string const &msg,
                  string const& fileName, int lineNo)
 {
     TfDiagnosticMgr::
-        ErrorHelper(Tf_PythonCallContext(fileName.c_str(), moduleName.c_str(),
-                                          functionName.c_str(), lineNo),
+        ErrorHelper(Tf_PythonCallContext(fileName, moduleName,
+                                          functionName, lineNo),
                     TF_DIAGNOSTIC_CODING_ERROR_TYPE,
                     TfEnum::GetName(TfEnum(TF_DIAGNOSTIC_CODING_ERROR_TYPE)).
                     c_str()).
@@ -73,8 +56,8 @@ _RaiseRuntimeError(string const &msg,
                  string const& fileName, int lineNo)                  
 {
     TfDiagnosticMgr::
-        ErrorHelper(Tf_PythonCallContext(fileName.c_str(), moduleName.c_str(),
-                                          functionName.c_str(), lineNo),
+        ErrorHelper(Tf_PythonCallContext(fileName, moduleName,
+                                          functionName, lineNo),
                     TF_DIAGNOSTIC_RUNTIME_ERROR_TYPE,
                     TfEnum::GetName(TfEnum(TF_DIAGNOSTIC_RUNTIME_ERROR_TYPE)).c_str()).
         Post("Python runtime error: " + msg);
@@ -85,8 +68,8 @@ static void
 _Fatal(string const &msg, string const& moduleName, string const& functionName,
       string const& fileName, int lineNo)
 {
-    TfDiagnosticMgr::FatalHelper(Tf_PythonCallContext(fileName.c_str(), moduleName.c_str(),
-                                                      functionName.c_str(), lineNo),
+    TfDiagnosticMgr::FatalHelper(Tf_PythonCallContext(fileName, moduleName,
+                                                      functionName, lineNo),
          TF_DIAGNOSTIC_FATAL_ERROR_TYPE). Post("Python Fatal Error: " + msg);
 }
 // CODE_COVERAGE_ON
@@ -113,12 +96,21 @@ _GetErrors( const TfErrorMark & mark )
     return vector<TfError>(mark.GetBegin(), mark.GetEnd());
 }
 
+static void
+_RaiseIfNotClean(const TfErrorMark &mark)
+{
+    if (!mark.IsClean()) {
+        TfPyConvertTfErrorsToPythonException(mark);
+        pxr_boost::python::throw_error_already_set();
+    }
+}
+
 // Repost any errors contained in exc to the TfError system.  This is used for
 // those python clients that do not intend to handle errors themselves, but need
 // to continue executing.  This pushes them back on the TfError list for the
 // next client to handle them, or it reports them, if there are no TfErrorMarks.
 static bool
-_RepostErrors(boost::python::object exc)
+_RepostErrors(pxr_boost::python::object exc)
 {
     // XXX: Must use the string-based name until bug XXXXX is fixed.
     const bool TF_ERROR_MARK_TRACKING =
@@ -217,13 +209,16 @@ void wrapError() {
         .def("__repr__", TfError__repr__)
         ;
 
-    class_<TfErrorMark, boost::noncopyable>("Mark")
+    class_<TfErrorMark, noncopyable>("Mark")
         .def("SetMark", &TfErrorMark::SetMark)
         .def("IsClean", &TfErrorMark::IsClean)
         .def("Clear", &TfErrorMark::Clear)
         .def("GetErrors", &_GetErrors,
             return_value_policy<TfPySequenceToList>(),
              "A list of the errors held by this mark.")
+        .def("RaiseIfNotClean", &_RaiseIfNotClean,
+             "If this mark is not clean, raise a Tf.ErrorException with "
+             "the contained errors, otherwise do nothing.")
         ;
     
 }

@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 //todo: cleanup: TF_DEFINE_PRIVATE_TOKENS, should use the public versions
 //todo: cleanup: document each macro extensively
@@ -70,6 +53,7 @@
 /// PRIVATE, you only need to use the DEFINE macro.
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/token.h"
@@ -95,7 +79,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Macro to define public tokens. This declares a list of tokens that can be
 /// used globally.  Use in conjunction with TF_DEFINE_PUBLIC_TOKENS.
 /// \hideinitializer
+// This macro expansion is disabled for Intellisense to avoid severe
+// slowdowns when using MSVC's non-conforming preprocessor.
+#if defined(ARCH_PREPROCESSOR_MSVC_TRADITIONAL) && defined(__INTELLISENSE__)
+#define TF_DECLARE_PUBLIC_TOKENS(...)
+#else
 #define TF_DECLARE_PUBLIC_TOKENS(...) _TF_DECLARE_PUBLIC_TOKENS_EXPAND( _TF_DECLARE_PUBLIC_TOKENS_EVAL(_TF_DECLARE_PUBLIC_TOKENS_EXPAND( TF_PP_VARIADIC_SIZE(__VA_ARGS__) ))(__VA_ARGS__) )
+#endif
 
 /// Macro to define public tokens.  Use in conjunction with
 /// TF_DECLARE_PUBLIC_TOKENS.

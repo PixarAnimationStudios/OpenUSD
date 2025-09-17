@@ -1,0 +1,21 @@
+#usda 1.0
+
+def Scope "ArmsRig"
+{
+    class MfScope "_Class_ArmRig"
+    {
+    }
+
+    class MfScope "SymArmRig" (
+        inherits = </ArmsRig/_Class_ArmRig>
+    )
+    {
+    }
+
+    def Scope "LArmRig" (
+        inherits = </ArmsRig/SymArmRig>
+    )
+    {
+    }
+}
+

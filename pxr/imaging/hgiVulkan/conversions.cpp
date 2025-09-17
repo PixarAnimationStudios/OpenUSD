@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 #include "pxr/imaging/hgiVulkan/conversions.h"
@@ -187,8 +170,10 @@ static_assert(HgiPolygonModeCount==3, "");
 static const uint32_t
 _WindingTable[HgiWindingCount][2] =
 {
-    {HgiWindingClockwise,        VK_FRONT_FACE_CLOCKWISE},
-    {HgiWindingCounterClockwise, VK_FRONT_FACE_COUNTER_CLOCKWISE}
+    // We flip the winding order in HgiVulkan. See
+    // HgiVulkanGraphicsCmds::SetViewport for details.
+    {HgiWindingClockwise,        VK_FRONT_FACE_COUNTER_CLOCKWISE},
+    {HgiWindingCounterClockwise, VK_FRONT_FACE_CLOCKWISE}
 };
 static_assert(HgiWindingCount==2, "");
 
@@ -261,10 +246,11 @@ _textureTypeTable[HgiTextureTypeCount][2] =
     {HgiTextureType1D,      VK_IMAGE_TYPE_1D},
     {HgiTextureType2D,      VK_IMAGE_TYPE_2D},
     {HgiTextureType3D,      VK_IMAGE_TYPE_3D},
+    {HgiTextureTypeCubemap, VK_IMAGE_TYPE_2D},
     {HgiTextureType1DArray, VK_IMAGE_TYPE_1D},
     {HgiTextureType2DArray, VK_IMAGE_TYPE_2D}
 };
-static_assert(HgiTextureTypeCount==5, "");
+static_assert(HgiTextureTypeCount==6, "");
 
 static const uint32_t
 _textureViewTypeTable[HgiTextureTypeCount][2] =
@@ -272,10 +258,11 @@ _textureViewTypeTable[HgiTextureTypeCount][2] =
     {HgiTextureType1D,      VK_IMAGE_VIEW_TYPE_1D},
     {HgiTextureType2D,      VK_IMAGE_VIEW_TYPE_2D},
     {HgiTextureType3D,      VK_IMAGE_VIEW_TYPE_3D},
+    {HgiTextureTypeCubemap, VK_IMAGE_VIEW_TYPE_CUBE},
     {HgiTextureType1DArray, VK_IMAGE_VIEW_TYPE_1D_ARRAY},
     {HgiTextureType2DArray, VK_IMAGE_VIEW_TYPE_2D_ARRAY}
 };
-static_assert(HgiTextureTypeCount==5, "");
+static_assert(HgiTextureTypeCount==6, "");
 
 static const uint32_t
 _samplerAddressModeTable[HgiSamplerAddressModeCount][2] =
@@ -390,8 +377,12 @@ HgiVulkanConversions::GetFormat(HgiFormat inFormat, bool depthFormat)
 
     // Special case for float32 depth format not properly handled by
     // _FormatTable
-    if (depthFormat && inFormat == HgiFormatFloat32) {
-        vkFormat = VK_FORMAT_D32_SFLOAT;
+    if (depthFormat) {
+        if (inFormat == HgiFormatFloat32) {
+            vkFormat = VK_FORMAT_D32_SFLOAT;
+        } else if (inFormat == HgiFormatFloat32UInt8) {
+            vkFormat = VK_FORMAT_D32_SFLOAT_S8_UINT;
+        }
     }
 
     return vkFormat;

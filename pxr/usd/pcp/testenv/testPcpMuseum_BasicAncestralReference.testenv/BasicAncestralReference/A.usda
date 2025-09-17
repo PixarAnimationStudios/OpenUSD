@@ -1,0 +1,11 @@
+#usda 1.0
+
+def Prim "A"
+{
+    custom double A_attr
+
+    def Prim "B"
+    {
+        custom double B_attr
+    }
+}

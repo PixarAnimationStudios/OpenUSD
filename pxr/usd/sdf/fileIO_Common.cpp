@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 //
 // FileIO_Common.cpp
@@ -30,8 +13,14 @@
 #include "pxr/usd/sdf/pathExpression.h"
 
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/ts/valueTypeDispatch.h"
+#include "pxr/base/vt/array.h"
+#include "pxr/base/vt/arrayEdit.h"
+#include "pxr/base/vt/value.h"
 
 #include <cctype>
+#include <functional>
+#include <sstream>
 
 using std::map;
 using std::ostream;
@@ -154,7 +143,7 @@ _StringFromValue(const TfToken& s)
 static string
 _StringFromValue(const SdfAssetPath& assetPath)
 {
-    return _StringFromAssetPath(assetPath.GetAssetPath());
+    return _StringFromAssetPath(assetPath.GetAuthoredPath());
 }
 
 static string
@@ -182,11 +171,24 @@ _StringFromVtArray(
     valueStr->append("]");
 }
 
+template <class T>
+static void
+_StringFromVtArrayEdit(
+    string *valueStr,
+    const VtArrayEdit<T> &arrayEdit)
+{
+    std::stringstream sstr;
+    arrayEdit.StreamCustom(
+        sstr, [&](T const &elem) { return _StringFromValue(elem); });
+    *valueStr = sstr.str();
+}
+
 // Helper for creating strings for VtValues holding certain types
 // that can't use TfStringify, and arrays of those types.
-template <class T>
+template <class T, class UpgradeFn>
 static bool
-_StringFromVtValueHelper(string* valueStr, const VtValue& value)
+_StringFromVtValueHelper(string* valueStr, const VtValue& value,
+                         UpgradeFn &&requestUpgrade)
 {
     if (value.IsHolding<T>()) {
         *valueStr = _StringFromValue(value.UncheckedGet<T>());
@@ -197,7 +199,27 @@ _StringFromVtValueHelper(string* valueStr, const VtValue& value)
         _StringFromVtArray(valueStr,valArray);
         return true;
     }
+    else if (value.IsHolding<VtArrayEdit<T>>()) {
+        std::forward<UpgradeFn>(requestUpgrade)(
+            SdfFileVersion(1,2,0),
+            "A VtArrayEdit instance was detected which requires usda "
+            "version 1.2.");
+        const VtArrayEdit<T> &arrayEdit = value.UncheckedGet<VtArrayEdit<T>>();
+        _StringFromVtArrayEdit(valueStr, arrayEdit);
+        return true;
+    }
     return false;
+}
+
+template <class T>
+static bool
+_StringFromVtValueHelper(Sdf_TextOutput &out,
+                         string* valueStr, const VtValue& value)
+{
+    return _StringFromVtValueHelper<T>(
+        valueStr, value, [&out](SdfFileVersion ver, char const *msg) {
+            out.RequestWriteVersionUpgrade(ver, msg);
+        });
 }
 
 // ------------------------------------------------------------
@@ -276,7 +298,7 @@ struct _ListOpWriter<SdfReference>
     {
         bool multiLineRefMetaData = !ref.GetCustomData().empty();
     
-        Sdf_FileIOUtility::Write(out, indent, "");
+        Sdf_FileIOUtility::Puts(out, indent, "");
 
         if (!ref.GetAssetPath().empty()) {
             Sdf_FileIOUtility::WriteAssetPath(out, 0, ref.GetAssetPath());
@@ -317,7 +339,7 @@ struct _ListOpWriter<SdfPayload>
     static void Write(
         Sdf_TextOutput& out, size_t indent, const SdfPayload& payload)
     {
-        Sdf_FileIOUtility::Write(out, indent, "");
+        Sdf_FileIOUtility::Puts(out, indent, "");
 
         if (!payload.GetAssetPath().empty()) {
             Sdf_FileIOUtility::WriteAssetPath(out, 0, payload.GetAssetPath());
@@ -489,7 +511,7 @@ Sdf_FileIOUtility::WriteDefaultValue(
     }
 
     // General case value to string conversion and write-out.
-    std::string valueString = Sdf_FileIOUtility::StringFromVtValue(value);
+    std::string valueString = Sdf_FileIOUtility::StringFromVtValue(value, out);
     Sdf_FileIOUtility::Write(out, 0, " = %s", valueString.c_str());
 }
 
@@ -547,7 +569,7 @@ Sdf_FileIOUtility::WriteTimeSamples(
             if (i->second.IsHolding<SdfPath>()) {
                 WriteSdfPath(out, 0, i->second.Get<SdfPath>() );
             } else {
-                Puts(out, 0, StringFromVtValue( i->second ));
+                Puts(out, 0, StringFromVtValue(i->second, out));
             }
             Puts(out, 0, ",\n");
         }
@@ -558,6 +580,200 @@ Sdf_FileIOUtility::WriteTimeSamples(
                           UncheckedGet<SdfHumanReadableValue>()).c_str());
     }
     return true;
+}
+
+static void _WriteSplineExtrapolation(
+    Sdf_TextOutput &out,
+    size_t indent,
+    const char *label,
+    const TsExtrapolation &extrap)
+{
+    if (extrap == TsExtrapolation()) {
+        return;
+    }
+
+    if (extrap.mode == TsExtrapSloped) {
+        Sdf_FileIOUtility::Write(out, indent + 1, "%s: %s(%s),\n",
+            label,
+            Sdf_FileIOUtility::Stringify(extrap.mode),
+            TfStringify(extrap.slope).c_str());
+    } else {
+        Sdf_FileIOUtility::Write(out, indent + 1, "%s: %s,\n",
+            label,
+            Sdf_FileIOUtility::Stringify(extrap.mode));
+    }
+}
+
+namespace
+{
+    template <typename T>
+    struct _SplineKnotWriter
+    {
+        void operator()(
+            Sdf_TextOutput &out,
+            const size_t indent,
+            const TsKnotMap &knotMap,
+            const TsCurveType curveType)
+        {
+            // On the pre-side of the first knot, there is no segment and no
+            // interpolation.  But start with Curve just so that if there's a
+            // pre-tangent on the first knot, we record it.
+            TsInterpMode interp = TsInterpCurve;
+
+            for (const TsKnot &knot : knotMap) {
+                // Time.
+                Sdf_FileIOUtility::Write(out, indent + 1, "%s:",
+                    TfStringify(knot.GetTime()).c_str());
+
+                // Pre-value, if any.
+                if (knot.IsDualValued()) {
+                    T preValue = 0;
+                    knot.GetPreValue(&preValue);
+                    Sdf_FileIOUtility::Write(out, 0, " %s &",
+                        TfStringify(preValue).c_str());
+                }
+
+                // Value.
+                T value = 0;
+                knot.GetValue(&value);
+                Sdf_FileIOUtility::Write(out, 0, " %s",
+                    TfStringify(value).c_str());
+
+                // We write tangents even when they're not significant due to
+                // facing an extrapolation region.  If more knots are added,
+                // these tangents may become significant, so we record them.
+
+                // Pre-tangent, if any.
+                if (interp == TsInterpCurve) {
+                    const bool isBez = (curveType == TsCurveTypeBezier);
+
+                    T slope = 0;
+                    knot.GetPreTanSlope(&slope);
+                    TsTime width = knot.GetPreTanWidth();
+                    TsTangentAlgorithm algo = knot.GetPreTanAlgorithm();
+
+                    _WriteTangent(
+                        out, "pre", isBez, width, slope, algo);
+                }
+
+                // Pre-segment finished.  Switch to post-segment.
+                interp = knot.GetNextInterpolation();
+
+                // Post-tangent, if any.
+                if (interp == TsInterpCurve) {
+                    const bool isBez = (curveType == TsCurveTypeBezier);
+
+                    T slope = 0;
+                    knot.GetPostTanSlope(&slope);
+                    TsTime width = knot.GetPostTanWidth();
+                    TsTangentAlgorithm algo = knot.GetPostTanAlgorithm();
+
+                    _WriteTangent(
+                        out, "post curve", isBez, width, slope, algo);
+                }
+
+                // If no post-tangent, write next segment interp method.
+                else {
+                    Sdf_FileIOUtility::Write(out, 0, "; post %s",
+                        Sdf_FileIOUtility::Stringify(interp));
+                }
+
+                // Custom data.
+                const VtDictionary customData = knot.GetCustomData();
+                if (!customData.empty()) {
+                    Sdf_FileIOUtility::Write(out, 0, "; ");
+                    Sdf_FileIOUtility::WriteDictionary(
+                        out, 0, /* multiline = */ false, customData,
+                        /* stringValuesOnly = */ false);
+                }
+
+                Sdf_FileIOUtility::Write(out, 0, ",\n");
+            }
+        }
+
+        void _WriteTangent(
+            Sdf_TextOutput &out,
+            const char* const label,
+            const bool isBez,
+            const TsTime width,
+            const T slope,
+            const TsTangentAlgorithm algo)
+        {
+            if (isBez) {
+                // Bezier, standard form: width and slope.
+                Sdf_FileIOUtility::Write(
+                    out, 0, "; %s (%s, %s",
+                    label,
+                    TfStringify(width).c_str(),
+                    TfStringify(slope).c_str());
+            } else {
+                // Hermite, standard form: slope.
+                Sdf_FileIOUtility::Write(
+                    out, 0, "; %s (%s",
+                    label,
+                    TfStringify(slope).c_str());
+            }
+            if (algo != TsTangentAlgorithmNone) {
+                out.RequestWriteVersionUpgrade(
+                    SdfFileVersion(1,1,0),
+                    "A tangent algorithm was detected which requires usda"
+                    " version 1.1.");
+                Sdf_FileIOUtility::Write(
+                    out, 0, ", %s)", Sdf_FileIOUtility::Stringify(algo));
+            } else {
+                Sdf_FileIOUtility::Write(out, 0, ")");
+            }
+        }
+    };
+}
+
+void
+Sdf_FileIOUtility::WriteSpline(
+    Sdf_TextOutput &out, const size_t indent, const TsSpline &spline)
+{
+    // Example:
+    //
+    //   varying double myAttr.spline = {
+    //       bezier,
+    //       pre: linear,
+    //       post: sloped(0.57),
+    //       loop: (15, 25, 0, 2, 11.7),
+    //       7: 5.5 & 7.21; post held,
+    //       15: 8.18; post curve (2.49, 1.17); { string comment = "climb!" },
+    //       20: 14.72; pre (3.77, -1.4); post curve (1.1, -1.4),
+    //   }
+
+    const TsKnotMap knotMap = spline.GetKnots();
+
+    // Spline type, if significant.
+    if (knotMap.HasCurveSegments() ||
+        spline.GetCurveType() == TsCurveTypeHermite)
+    {
+        Write(out, indent + 1, "%s,\n",
+            Stringify(spline.GetCurveType()));
+    }
+
+    // Extrapolations, if different from default (held).
+    _WriteSplineExtrapolation(
+        out, indent, "pre", spline.GetPreExtrapolation());
+    _WriteSplineExtrapolation(
+        out, indent, "post", spline.GetPostExtrapolation());
+
+    // Inner loop params, if present.
+    if (spline.GetInnerLoopParams() != TsLoopParams()) {
+        const TsLoopParams lp = spline.GetInnerLoopParams();
+        Write(out, indent + 1, "loop: (%s, %s, %d, %d, %s),\n",
+            TfStringify(lp.protoStart).c_str(),
+            TfStringify(lp.protoEnd).c_str(),
+            lp.numPreLoops,
+            lp.numPostLoops,
+            TfStringify(lp.valueOffset).c_str());
+    }
+
+    // Knots.
+    TsDispatchToValueTypeTemplate<_SplineKnotWriter>(
+        spline.GetValueType(),
+        std::ref(out), indent, std::ref(knotMap), spline.GetCurveType());
 }
 
 template <class RelocatesContainer> 
@@ -638,7 +854,7 @@ Sdf_FileIOUtility::_WriteDictionary(
             // Put quotes around the keyName if it is not a valid identifier
             string keyName = *(i->first);
             if (!TfIsValidIdentifier(keyName)) {
-                keyName = "\"" + keyName + "\"";
+                keyName = Quote(keyName);
             }
             if (value.IsHolding<VtDictionary>()) {
                 Write(out, multiLine ? indent+1 : 0, "dictionary %s = ",
@@ -660,9 +876,9 @@ Sdf_FileIOUtility::_WriteDictionary(
                 // XXX: The logic here is very similar to that in
                 //      WriteDefaultValue. WBN to refactor.
                 string str;
-                if (_StringFromVtValueHelper<string>(&str, value) || 
-                    _StringFromVtValueHelper<TfToken>(&str, value) ||
-                    _StringFromVtValueHelper<SdfAssetPath>(&str, value)) {
+                if (_StringFromVtValueHelper<string>(out, &str, value) || 
+                    _StringFromVtValueHelper<TfToken>(out, &str, value) ||
+                    _StringFromVtValueHelper<SdfAssetPath>(out, &str, value)) {
                     Puts(out, 0, str);
                 } else {
                     Puts(out, 0, TfStringify(value));
@@ -772,10 +988,8 @@ Sdf_FileIOUtility::WriteLayerOffset(
 }
 
 string
-Sdf_FileIOUtility::Quote(const string &str)
+Sdf_FileIOUtility::Quote(const string &str, const bool allowTripleQuotes)
 {
-    const bool allowTripleQuotes = true;
-
     string result;
 
     // Choose quotes, double quote preferred.
@@ -859,19 +1073,30 @@ Sdf_FileIOUtility::Quote(const string &str)
 }
 
 string 
-Sdf_FileIOUtility::Quote(const TfToken &token)
+Sdf_FileIOUtility::Quote(const TfToken &token, const bool allowTripleQuotes)
 {
-    return Quote(token.GetString());
+    return Quote(token.GetString(), allowTripleQuotes);
 }
 
 string
-Sdf_FileIOUtility::StringFromVtValue(const VtValue &value)
+Sdf_FileIOUtility::QuoteAssetPath(const string &path)
+{
+    return _StringFromAssetPath(path);
+}
+
+template <class Fn>
+static string
+_StringFromVtValueImpl(const VtValue &value, Fn &&upgrade)
 {
     string s;
-    if (_StringFromVtValueHelper<string>(&s, value) || 
-        _StringFromVtValueHelper<TfToken>(&s, value) ||
-        _StringFromVtValueHelper<SdfAssetPath>(&s, value) ||
-        _StringFromVtValueHelper<SdfPathExpression>(&s, value)) {
+    if (_StringFromVtValueHelper<string>(
+            &s, value, std::forward<Fn>(upgrade)) || 
+        _StringFromVtValueHelper<TfToken>(
+            &s, value, std::forward<Fn>(upgrade)) ||
+        _StringFromVtValueHelper<SdfAssetPath>(
+            &s, value, std::forward<Fn>(upgrade)) ||
+        _StringFromVtValueHelper<SdfPathExpression>(
+            &s, value, std::forward<Fn>(upgrade))) {
         return s;
     }
     
@@ -886,6 +1111,28 @@ Sdf_FileIOUtility::StringFromVtValue(const VtValue &value)
     }
 
     return TfStringify(value);
+}
+
+string
+Sdf_FileIOUtility::StringFromVtValue(
+    const VtValue &value,
+    Sdf_TextOutput &eventualOutput)
+{
+    return _StringFromVtValueImpl(
+        value,
+        [&eventualOutput](SdfFileVersion ver, char const *msg) {
+            eventualOutput.RequestWriteVersionUpgrade(ver, msg);
+        });
+}
+
+string
+Sdf_FileIOUtility::StringFromVtValue(const VtValue &value)
+{
+    return _StringFromVtValueImpl(
+        value,
+        [](SdfFileVersion, char const *) {
+            /* do nothing */
+        });
 }
 
 const char* Sdf_FileIOUtility::Stringify( SdfPermission val )
@@ -928,6 +1175,58 @@ const char* Sdf_FileIOUtility::Stringify( SdfVariability val )
         TF_CODING_ERROR("unknown value");
         return "";
     }
+}
+
+const char* Sdf_FileIOUtility::Stringify(TsExtrapMode mode)
+{
+    switch (mode) {
+        case TsExtrapValueBlock: return "none";
+        case TsExtrapHeld: return "held";
+        case TsExtrapLinear: return "linear";
+        case TsExtrapSloped: return "sloped";
+        case TsExtrapLoopRepeat: return "loop repeat";
+        case TsExtrapLoopReset: return "loop reset";
+        case TsExtrapLoopOscillate: return "loop oscillate";
+    }
+
+    TF_CODING_ERROR("unknown value");
+    return "";
+}
+
+const char* Sdf_FileIOUtility::Stringify(TsCurveType curveType)
+{
+    switch (curveType) {
+        case TsCurveTypeBezier: return "bezier";
+        case TsCurveTypeHermite: return "hermite";
+    }
+
+    TF_CODING_ERROR("unknown value");
+    return "";
+}
+
+const char* Sdf_FileIOUtility::Stringify(TsInterpMode interp)
+{
+    switch (interp) {
+        case TsInterpValueBlock: return "none";
+        case TsInterpHeld: return "held";
+        case TsInterpLinear: return "linear";
+        case TsInterpCurve: return "curve";
+    }
+
+    TF_CODING_ERROR("unknown value");
+    return "";
+}
+
+const char* Sdf_FileIOUtility::Stringify(TsTangentAlgorithm algorithm)
+{
+    switch (algorithm) {
+      case TsTangentAlgorithmNone: return "none";
+      case TsTangentAlgorithmCustom: return "custom";
+      case TsTangentAlgorithmAutoEase: return "autoEase";
+    }
+
+    TF_CODING_ERROR("unknown tangent algorithm value");
+    return "";
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

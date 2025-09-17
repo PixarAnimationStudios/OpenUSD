@@ -1,0 +1,27 @@
+#usda 1.0
+(
+    "Test schema file for testExecUsdRequestInvalidation"
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "testExecUsdRequestInvalidation"
+        string libraryPath      = "pxr/exec/execUsd"
+        bool skipCodeGeneration = true
+    }
+)
+{
+}
+
+class ComputedTransform "ComputedTransform" (
+    inherits = </Typed>
+    hidden = true
+)
+{
+    matrix4d xf = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+    double scale = 1
+}

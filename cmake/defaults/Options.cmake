@@ -1,25 +1,8 @@
 #
 # Copyright 2016 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 option(PXR_STRICT_BUILD_MODE "Turn on additional warnings. Enforce all warnings as errors." OFF)
 option(PXR_VALIDATE_GENERATED_CODE "Validate script generated code" OFF)
@@ -31,8 +14,13 @@ option(PXR_BUILD_USD_TOOLS "Build commandline tools" ON)
 option(PXR_BUILD_IMAGING "Build imaging components" ON)
 option(PXR_BUILD_EMBREE_PLUGIN "Build embree imaging plugin" OFF)
 option(PXR_BUILD_OPENIMAGEIO_PLUGIN "Build OpenImageIO plugin" OFF)
+if(APPLE)
+    option(PXR_BUILD_IMAGEIO_PLUGIN "Build the ImageIO.framework plugin for Apple platforms" ON)
+endif()
 option(PXR_BUILD_OPENCOLORIO_PLUGIN "Build OpenColorIO plugin" OFF)
 option(PXR_BUILD_USD_IMAGING "Build USD imaging components" ON)
+option(PXR_BUILD_USD_VALIDATION "Build USD validation library and core USD validators" ON)
+option(PXR_BUILD_EXEC "Build the Exec libraries" ON)
 option(PXR_BUILD_USDVIEW "Build usdview" ON)
 option(PXR_BUILD_ALEMBIC_PLUGIN "Build the Alembic plugin for USD" OFF)
 option(PXR_BUILD_DRACO_PLUGIN "Build the Draco plugin for USD" OFF)
@@ -69,10 +57,18 @@ if(APPLE)
             MESSAGE(STATUS "Setting PXR_BUILD_USD_TOOLS=OFF because they are not supported on Apple embedded platforms")
             set(PXR_BUILD_USD_TOOLS OFF)
         endif()
-        if (${PXR_BUILD_IMAGING})
-            MESSAGE(STATUS "Setting PXR_BUILD_USD_IMAGING=OFF because it is not supported on Apple embedded platforms")
-            set(PXR_BUILD_IMAGING OFF)
-        endif ()
+        if(${PXR_BUILD_OPENCOLORIO_PLUGIN})
+            MESSAGE(STATUS "Setting PXR_BUILD_OPENCOLORIO_PLUGIN=OFF because it is not supported on Apple embedded platforms")
+            set(PXR_BUILD_OPENCOLORIO_PLUGIN OFF)
+        endif()
+        if(${PXR_BUILD_OPENIMAGEIO_PLUGIN})
+            MESSAGE(STATUS "Setting PXR_BUILD_OPENIMAGEIO_PLUGIN=OFF because it is not supported on Apple embedded platforms")
+            set(PXR_BUILD_OPENIMAGEIO_PLUGIN OFF)
+        endif()
+        if(${PXR_ENABLE_OPENVDB_SUPPORT})
+            MESSAGE(STATUS "Setting PXR_ENABLE_OPENVDB_SUPPORT=OFF because it is not supported on Apple embedded platforms")
+            set(PXR_ENABLE_OPENVDB_SUPPORT OFF)
+        endif()
     endif ()
 endif()
 
@@ -97,6 +93,12 @@ set(PXR_PRECOMPILED_HEADER_NAME "pch.h"
     CACHE
     STRING
     "Default name of precompiled header files"
+)
+
+set(PXR_WORK_IMPL ""
+    CACHE
+    STRING
+    "Name of CMake package containing custom implementation for libWork."
 )
 
 set(PXR_INSTALL_LOCATION ""
@@ -246,5 +248,20 @@ if (${PXR_BUILD_PYTHON_DOCUMENTATION})
             "Setting PXR_BUILD_PYTHON_DOCUMENTATION=OFF because "
             "PXR_ENABLE_PYTHON_SUPPORT=OFF")
         set(PXR_BUILD_PYTHON_DOCUMENTATION "OFF" CACHE BOOL "" FORCE)
+    endif()
+endif()
+
+if (EMSCRIPTEN)
+    if (${PXR_BUILD_EXEC})
+        MESSAGE(STATUS "Setting PXR_BUILD_EXEC=OFF because it is not supported "
+                        "when targeting Wasm")
+        set(PXR_BUILD_EXEC "OFF")
+    endif()
+
+    if (${BUILD_SHARED_LIBS})
+        MESSAGE(STATUS 
+            "Setting BUILD_SHARED_LIBS=OFF because shared libs are not "
+            "supported when targeting wasm")
+        set(BUILD_SHARED_LIBS "OFF")
     endif()
 endif()

@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    defaultPrim = "Ref2"
+)
+
+def "Ref2" (
+	TestPcp_assetPath = "localLayer.usda"
+	TestPcp_assetPathArray = ["./localLayer.usda", "localLayer.usda"]
+) {
+	asset TestPcp_assetPath = "localLayer.usda"
+	asset[] TestPcp_assetPathArray = ["./localLayer.usda", "localLayer.usda"]
+}

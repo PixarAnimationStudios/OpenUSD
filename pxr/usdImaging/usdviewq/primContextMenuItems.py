@@ -1,25 +1,8 @@
 #
 # Copyright 2016 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 from __future__ import print_function
 
@@ -50,7 +33,9 @@ def _GetContextMenuItems(appController, item):
             CopyModelPathMenuItem(appController, item),
             SeparatorMenuItem(appController, item),
             IsolateAssetMenuItem(appController, item),
-            SetAsActiveCamera(appController, item)]
+            SetAsActiveCamera(appController, item),
+            SetAsActiveRenderSettings(appController, item),
+            SetAsActiveRenderPassPrim(appController, item)]
 
 #
 # The base class for per-prim context menu items.
@@ -426,8 +411,7 @@ class SetAsActiveCamera(PrimContextMenuItem):
         if len(self._selectionDataModel.getPrims()) == 1:
             prim = self._selectionDataModel.getPrims()[0]
             from pxr import UsdGeom
-            cam = UsdGeom.Camera(prim)
-            if cam:
+            if UsdGeom.Camera(prim):
                 if prim != appController.getActiveCamera():
                     self._nonActiveCameraPrim = prim
 
@@ -439,3 +423,59 @@ class SetAsActiveCamera(PrimContextMenuItem):
 
     def RunCommand(self):
         self._appController._cameraSelectionChanged(self._nonActiveCameraPrim)
+
+#
+# If the selected prim is a render settings prim and not the currently active
+# render settings prim, display an enabled menu item to set it as the active
+# render settings prim.
+#
+class SetAsActiveRenderSettings(PrimContextMenuItem):
+
+    def __init__(self, appController, item):
+        PrimContextMenuItem.__init__(self, appController, item)
+
+        self._nonActiveRenderSettingsPrim = None
+        if len(self._selectionDataModel.getPrims()) == 1:
+            prim = self._selectionDataModel.getPrims()[0]
+            from pxr import UsdRender
+            if UsdRender.Settings(prim):
+                if prim != appController.getActiveRenderSettingsPrim():
+                    self._nonActiveRenderSettingsPrim = prim
+
+    def IsEnabled(self):
+        return self._nonActiveRenderSettingsPrim
+
+    def GetText(self):
+        return "Set As Active Render Settings"
+
+    def RunCommand(self):
+        self._appController.setActiveRenderSettingsPrim(
+            self._nonActiveRenderSettingsPrim)
+
+#
+# If the selected prim is a render pass prim and not the currently active
+# render pass prim, display an enabled menu item to set it as the active
+# render pass prim.
+#
+class SetAsActiveRenderPassPrim(PrimContextMenuItem):
+
+    def __init__(self, appController, item):
+        PrimContextMenuItem.__init__(self, appController, item)
+
+        self._nonActiveRenderPassPrim = None
+        if len(self._selectionDataModel.getPrims()) == 1:
+            prim = self._selectionDataModel.getPrims()[0]
+            from pxr import UsdRender
+            if UsdRender.Pass(prim):
+                if prim != appController.getActiveRenderPassPrim():
+                    self._nonActiveRenderPassPrim = prim
+
+    def IsEnabled(self):
+        return self._nonActiveRenderPassPrim
+
+    def GetText(self):
+        return "Set As Active Render Pass Prim"
+
+    def RunCommand(self):
+        self._appController.setActiveRenderPassPrim(
+            self._nonActiveRenderPassPrim)

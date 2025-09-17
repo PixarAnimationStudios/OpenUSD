@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usd/usdSkel/utils.h"
 
@@ -832,7 +815,7 @@ UsdSkelComputeJointsExtent(TfSpan<const Matrix4> xforms,
     for (size_t i = 0; i < xforms.size(); ++i) {
         const GfVec3f pivot(xforms[i].ExtractTranslation());
         extent->UnionWith(rootXform ?
-                          rootXform->TransformAffine(pivot) : pivot);
+                          GfVec3f(rootXform->TransformAffine(pivot)) : pivot);
     }
     const GfVec3f padVec(pad);
     extent->SetMin(extent->GetMin()-padVec);
@@ -1370,7 +1353,7 @@ _SkinPointsLBS(const Matrix4& geomBindTransform,
         {
             for (size_t pi = start; pi < end; ++pi) {
 
-                const GfVec3f initialP = geomBindTransform.Transform(points[pi]);
+                const GfVec3f initialP(geomBindTransform.Transform(points[pi]));
                 GfVec3f p(0,0,0);
                 
                 for (int wi = 0; wi < numInfluencesPerPoint; ++wi) {
@@ -1387,8 +1370,8 @@ _SkinPointsLBS(const Matrix4& geomBindTransform,
                             // encode non-affine transforms, except for the rest
                             // pose (which, according to the schema, should
                             // be affine!). Safe to assume affine transforms.
-                            p += jointXforms[jointIdx].TransformAffine(
-                                initialP)*w;
+                            p += GfVec3f(jointXforms[jointIdx].TransformAffine(
+                                             initialP))*w;
                         }
 
                         // XXX: Possible optimization at this point:
@@ -1459,7 +1442,7 @@ _SkinPointsDQS(const Matrix4& geomBindTransform,
         {
             for (size_t pi = start; pi < end; ++pi) {
 
-                const GfVec3f initialP = geomBindTransform.Transform(points[pi]);
+                const GfVec3f initialP(geomBindTransform.Transform(points[pi]));
                 GfVec3f scaledP(0, 0, 0);
 
                 GfQuatd pivotQuat(0.0);
@@ -1913,7 +1896,7 @@ _SkinNormalsLBS(const Matrix3& geomBindTransform,
             
             for (size_t ni = start; ni < end; ++ni) {
                 
-                const GfVec3f initialN = normals[ni]*geomBindTransform;
+                const GfVec3f initialN(normals[ni]*geomBindTransform);
                 // Determine the point to read the influences from. This is not
                 // the same as the normal's index if there is faceVarying
                 // interpolation.
@@ -1930,7 +1913,7 @@ _SkinNormalsLBS(const Matrix3& geomBindTransform,
 
                         const float w = influenceFn.GetWeight(influenceIdx);
                         if (w != 0.0f) {
-                            n += (initialN*jointXforms[jointIdx])*w;
+                            n += GfVec3f(initialN*jointXforms[jointIdx])*w;
                         }
                     } else {
                         // XXX: Generally, if one joint index is bad, an asset
@@ -1994,7 +1977,7 @@ _SkinNormalsDQS(const Matrix3& geomBindTransform,
 
             for (size_t ni = start; ni < end; ++ni) {
 
-                const GfVec3f initialN = normals[ni]*geomBindTransform;
+                const GfVec3f initialN(normals[ni]*geomBindTransform);
                 // Determine the point to read the influences from. This is not
                 // the same as the normal's index if there is faceVarying
                 // interpolation.
@@ -2022,7 +2005,8 @@ _SkinNormalsDQS(const Matrix3& geomBindTransform,
                         if (w != 0.0f) {
                             // Apply scale using LBS, if any of jointScales is not identity
                             if (hasJointScale) {
-                                scaledN += (initialN*jointScales[jointIdx])*w;
+                                scaledN +=
+                                    GfVec3f(initialN*jointScales[jointIdx])*w;
                             }
 
                             // Apply rotation using DQS
@@ -2460,7 +2444,8 @@ UsdSkel_SkinTransformLBS(const Matrix4& geomBindTransform,
                 if (w != 0.0f) {
                     // XXX: See the notes from _SkinPointsLBS():
                     // affine transforms should be okay.
-                    p += jointXforms[jointIdx].TransformAffine(initialP)*w;
+                    p += GfVec3f(
+                        jointXforms[jointIdx].TransformAffine(initialP))*w;
                 }
             } else {
                 TF_WARN("Out of range joint index %d at index %zu"

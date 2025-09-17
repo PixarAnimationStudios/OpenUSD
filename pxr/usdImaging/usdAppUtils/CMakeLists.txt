@@ -17,10 +17,6 @@ pxr_library(usdAppUtils
         usd
         usdGeom
         usdImagingGL
-        ${Boost_PYTHON_LIBRARY}
-
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
 
     PUBLIC_HEADERS
         api.h
@@ -28,9 +24,6 @@ pxr_library(usdAppUtils
     PUBLIC_CLASSES
         camera
         frameRecorder
-
-    PYTHON_CPPFILES
-        moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp
@@ -66,6 +59,11 @@ pxr_register_test(testUsdAppUtilsCamera
     EXPECTED_RETURN_CODE 0
 )
 
+
+pxr_install_test_dir(
+    SRC testenv/CmdlineArgsTest
+    DEST testUsdAppUtilsCmdlineArgs
+)
 pxr_register_test(testUsdAppUtilsCmdlineArgs
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAppUtilsCmdlineArgs"

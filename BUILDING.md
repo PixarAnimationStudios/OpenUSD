@@ -36,7 +36,6 @@ Some examples:
 cmake                                       \
 -DTBB_ROOT_DIR=/path/to/tbb                 \
 -DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
--DBOOST_ROOT=/path/to/boost                 \
 /path/to/USD/source
 
 cmake --build . --target install -- -j <NUM_CORES>
@@ -51,7 +50,6 @@ cmake                                       \
 -G "Xcode"                                  \
 -DTBB_ROOT_DIR=/path/to/tbb                 \
 -DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
--DBOOST_ROOT=/path/to/boost                 \
 /path/to/USD/source
 
 cmake --build . --target install -- -j <NUM_CORES>
@@ -67,7 +65,6 @@ build USD.
 -G "Visual Studio 15 2017 Win64"            ^
 -DTBB_ROOT_DIR=C:\path\to\tbb               ^
 -DOPENSUBDIV_ROOT_DIR=C:\path\to\opensubdiv ^
--DBOOST_ROOT=C:\path\to\boost               ^
 \path\to\USD\source
 
 cmake --build . --target install -- /m:%NUMBER_OF_PROCESSORS%
@@ -336,9 +333,9 @@ Alembic library specified in ALEMBIC_DIR.
 
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 
-Support for Alembic files using the HDF5 backend is enabled by default but can be
-disabled by specifying the cmake flag `PXR_ENABLE_HDF5_SUPPORT=FALSE`. HDF5
-support requires the following dependencies:
+Support for Alembic files using the HDF5 backend can be enabled by specifying
+the cmake flag `PXR_ENABLE_HDF5_SUPPORT=TRUE`. HDF5 support requires the
+following dependencies:
 
 | Dependency Name    | Description     |
 | ------------------ |---------------- |
@@ -395,6 +392,26 @@ ${CMAKE_BINARY_DIR}/Testing/Failed-Diffs/<ctest_run_timestamp>/${TEST_NAME}/${fi
 ```
 
 ## Other Build Options
+
+##### Custom Task Management System
+
+USD uses task-based parallelism to improve scalability and performance. This foundation for this is located in the
+"work" library in pxr/base/work. By default, this library is implemented using the Intel TBB or oneAPI oneTBB
+library.
+
+Users may substitute their own task management system by providing a custom implementation for the work library.
+To do so, set the cmake variable `PXR_WORK_IMPL` to the name of the CMake package providing the custom implementation.
+USD must be able to locate a package with that name via a call to `find_package(${PXR_WORK_IMPL}` CONFIG)`, which
+may require specifying additional CMake variables. The package must provide a library target named
+`${PXR_WORK_IMPL}::${PXR_WORK_IMPL}` that specifies interface definitions (include directories, shared libraries,
+etc.) needed to use that library. The library must implement the required functions and classes and have a header
+named `impl.h` that supplies their declarations (either directly or in header files included in `impl.h`). This
+header must be able to be included via `#include <${PXR_WORK_IMPL}/impl.h>`.
+
+For example, a custom work implementation named `workExample` must provide a `workExampleConfig.cmake` file
+specifying a library target named `workExample::workExample`. This library must at minimum provide an `impl.h`
+header with the required implementations and set up interface include directories so that the header can
+be located via an include statement like `#include <workExample/impl.h>`.
 
 ##### Plugin Metadata Location
 
@@ -471,25 +488,6 @@ pxr/pxr.h, which facilitates using namespaces:
 | PXR_NAMESPACE_CLOSE_SCOPE      | Closes the namespace.                                                |
 | PXR_NS                         | Explicit qualification on items, e.g. `PXR_NS::TfToken foo = ...`|
 | PXR_NAMESPACE_USING_DIRECTIVE  | Enacts a using-directive, e.g. `using namespace PXR_NS;`         |
-
-##### ASCII Parser Editing/Validation
-
-There is an ASCII parser for the USD file format, which can be found in
-[sdf](pxr/usd/sdf). Most users will not have a need to edit the parser, but
-for the adventurous ones, there are a couple additional requirements.
-
-If you choose to edit the ASCII parsers, make sure
-`PXR_VALIDATE_GENERATED_CODE` is set to `TRUE`.  This flag enables tests
-that check the generated code in [sdf](pxr/usd/lib/sdf) and
-[gf](pxr/base/lib/gf).
-
-| Dependency Name    | Description                                             |
-| ------------------ | ------------------------------------------------------- |
-| FLEX_EXECUTABLE    | Path to [flex](http://flex.sourceforge.net/) executable |
-| BISON_EXECUTABLE   | Path to [bison](https://www.gnu.org/software/bison/) executable  |
-
-See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
-
 
 ##### USD Schema Generation
 
@@ -695,16 +693,34 @@ Note that this flag has no effect on Windows, see
 [here for more info](https://docs.python.org/3/extending/windows.html)
     
 
+## Spline Options
+
+Splines (keyframe animation) are implemented by the library `pxr/base/ts`.
+
+#### Default Anti-Regression Authoring Mode
+
+A `Ts` spline provides a function from time to attribute value.  Bezier math
+permits long tangents to create shapes that go backwards in time, resulting in
+non-functions.  This is typically prevented at authoring time, and there are
+several strategies available.  See
+[pxr/base/ts/doxygen/regression.md](./pxr/base/ts/doxygen/regression.md) for
+details of the different choices.
+
+The hard-coded default is `TsAntiRegressionKeepRatio`.  To set a different
+default:
+
+* With `build_usd.py`:
+`--build-args USD,"-DPXR_TS_DEFAULT_ANTI_REGRESSION_AUTHORING_MODE=TsAntiRegression..."`
+
+* With cmake:
+`-DPXR_TS_DEFAULT_ANTI_REGRESSION_AUTHORING_MODE=TsAntiRegression...`
+
+Client code can also override the default as needed.
+
+
 ## Build Issues FAQ
 
-1. Boost_NO_BOOST_CMAKE: 
-We currently set Boost_NO_BOOST_CMAKE=ON explicitly in USD builds for all 
-platforms to avoid issues with Boost config files (introduced in Boost version 
-1.70) and python, program options component requirements. If the user wants 
-to use Boost specified config files for their USD build, specify 
--DBoost_NO_BOOST_CMAKE=OFF when running cmake.
-
-2. Windows and Python 3.8+ (non-Anaconda)
+1. Windows and Python 3.8+ (non-Anaconda)
 Python 3.8 and later on Windows will no longer search PATH for DLL dependencies.
 Instead, clients can call `os.add_dll_directory(p)` to set paths to search.
 By default on that platform USD will iterate over PATH and add all paths using

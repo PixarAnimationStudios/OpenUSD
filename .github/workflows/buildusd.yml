@@ -1,0 +1,196 @@
+name: BuildUSD
+
+on:
+  push:
+    branches:
+      - dev
+      - release
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - '**'
+      - '!.github/workflows/**'
+
+jobs:
+  Validation:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    outputs:
+      validation-failed: ${{ steps.changed-workflows.outputs.any_changed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Check workflows directory
+        id: changed-workflows
+        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c #v46
+        with:
+          files: |
+            .github/workflows/**
+
+  Linux:
+    needs:
+      - Validation
+    if: ${{ (github.event_name == 'pull_request' && needs.Validation.outputs.validation-failed != 'true') || github.event_name == 'push' }}
+    runs-on: ubuntu-22.04
+    env:
+      PYTHON_VERSION: "3.9"
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Restore cached artifacts
+        id: cache-usd-build-dependency
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            USDinst
+          key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION }}-${{ hashFiles('build_scripts/**/*') }}
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          check-latest: false
+      - name: Install dependencies
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get install -y python3-setuptools libglew-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev
+          pip install --upgrade pip
+          pip install PySide2 PyOpenGL
+      - name: Build USD
+        run: |
+          # Not using '--tests' to avoid building extra dependencies that are unneeded for headless tests
+          python3 build_scripts/build_usd.py --no-materialx --build USDgen/build --src USDgen/src USDinst --build-args USD,"-DPXR_HEADLESS_TEST_MODE=ON -DPXR_BUILD_TESTS=ON" -v
+      - name: Save build artifacts to cache
+        if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            USDinst
+          key: ${{ steps.cache-usd-build-dependency.outputs.cache-primary-key }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: usd-linux
+          path: USDinst
+      - name: Test USD
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          ctest -V -C Release --exclude-regex "testExecGeomXformable_Perf_Large"
+
+  macOS:
+    needs:
+      - Validation
+    if: ${{ (github.event_name == 'pull_request' && needs.Validation.outputs.validation-failed != 'true') || github.event_name == 'push' }}
+    runs-on: macos-15
+    env:
+      PYTHON_VERSION: "3.11"
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Restore cached artifacts
+        id: cache-usd-build-dependency
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            USDinst
+          key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION }}-${{ hashFiles('build_scripts/**/*') }}
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          check-latest: false
+      - name: Install dependencies
+        run: |
+          export PATH=/Applications/CMake.app/Contents/bin:$PATH
+          sudo xcode-select -s /Applications/Xcode_16.app/Contents/Developer
+          # Set SYSTEM_VERSION_COMPAT while installing Python packages to
+          # accommodate the macOS version numbering change from 10.x to 11
+          export SYSTEM_VERSION_COMPAT=1
+          pip install PySide6 PyOpenGL setuptools
+          export -n SYSTEM_VERSION_COMPAT
+      - name: Build USD
+        run: |
+          # Not using '--tests' to avoid building extra dependencies that are unneeded for headless tests
+          export PATH=/Applications/CMake.app/Contents/bin:$PATH
+          python3 build_scripts/build_usd.py --no-materialx --generator Xcode --build USDgen/build --src USDgen/src USDinst --build-args USD,"-DPXR_HEADLESS_TEST_MODE=ON -DPXR_BUILD_TESTS=ON" -v
+      - name: Save build artifacts to cache
+        if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            USDinst
+          key: ${{ steps.cache-usd-build-dependency.outputs.cache-primary-key }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: usd-macOS
+          path: USDinst
+      - name: Test USD
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          export PATH=/Applications/CMake.app/Contents/bin:$PATH
+          ctest -V -C Release --exclude-regex "testExecGeomXformable_Perf_Large"
+
+  Windows:
+    needs:
+      - Validation
+    if: ${{ (github.event_name == 'pull_request' && needs.Validation.outputs.validation-failed != 'true') || github.event_name == 'push' }}
+    runs-on: windows-2022
+    env:
+      PYTHON_VERSION: "3.9"
+    timeout-minutes: 120
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Restore cached artifacts
+        id: cache-usd-build-dependency
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            USDinst
+          key: ${{ runner.os }}-BuildUSD-py${{ env.PYTHON_VERSION }}-${{ hashFiles('build_scripts/**/*') }}
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          check-latest: false
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install PyOpenGL PySide2
+      - name: Build USD
+        run: |
+          # Not using '--tests' to avoid building extra dependencies that are unneeded for headless tests
+          python build_scripts/build_usd.py --no-materialx --generator "Visual Studio 17 2022" --build USDgen/build --src USDgen/src USDinst --build-args USD,"-DPXR_ENABLE_PRECOMPILED_HEADERS=OFF -DPXR_HEADLESS_TEST_MODE=ON -DPXR_BUILD_TESTS=ON" -v
+        shell: cmd
+      - name: Save build artifacts to cache
+        if: steps.cache-usd-build-dependency.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            USDinst
+          key: ${{ steps.cache-usd-build-dependency.outputs.cache-primary-key }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: usd-win64
+          path: USDinst
+      - name: Test USD
+        working-directory: ./USDgen/build/OpenUSD
+        run: |
+          call set PATH=${{ github.workspace }}\USDinst\bin;${{ github.workspace }}\USDinst\lib;${{ github.workspace }}\USDinst\share\usd\examples\plugin;${{ github.workspace }}\USDinst\plugin\usd;%PATH%
+          call set PYTHONPATH=${{ github.workspace }}\USDinst\lib\python;%PYTHONPATH%
+          # Internal ticket USD-8035
+          ctest -V -C Release --exclude-regex "TfPathUtils|testExecGeomXformable_Perf_Large"
+        shell: cmd
+

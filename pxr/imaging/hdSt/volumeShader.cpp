@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdSt/volumeShader.h"
 
@@ -288,8 +271,12 @@ _ComputeBBoxAndSampleDistance(
     float sampleDistance = 1000000.0;
 
     for (const HdStShaderCode::NamedTextureHandle &texture : textures) {
+        if (texture.handles.size() > 1) {
+            TF_CODING_ERROR(
+                "Don't support array of textures for field textures");
+        }
         HdStTextureObjectSharedPtr const &textureObject =
-            texture.handle->GetTextureObject();
+            texture.handles[0]->GetTextureObject();
 
         if (const HdStFieldTextureObject * const fieldTex =
                 dynamic_cast<HdStFieldTextureObject *>(
@@ -400,6 +387,10 @@ HdSt_VolumeShader::UpdateTextureHandles(
     // simultaneously.
     for (size_t i = 0; i < textureHandles.size(); i++) {
         // To allocate the texture and update it in the vector ...
+        if (textureHandles[i].handles.size() > 1) {
+            TF_CODING_ERROR(
+                "Don't support array of textures for field textures");
+        }
 
         // use field descriptor to find field prim, ...
         const HdVolumeFieldDescriptor &fieldDesc = _fieldDescriptors[i];
@@ -420,15 +411,25 @@ HdSt_VolumeShader::UpdateTextureHandles(
         static const HdSamplerParameters samplerParams(
             HdWrapBlack, HdWrapBlack, HdWrapBlack,
             HdMinFilterLinear, HdMagFilterLinear);
-        
+
         // allocate texture handle and assign it.
-        textureHandles[i].handle =
-            resourceRegistry->AllocateTextureHandle(
-                textureId,
-                textureType,
-                samplerParams,
-                textureMemory,
-                shared_from_this());
+        if (textureHandles[i].handles.empty()) {
+            textureHandles[i].handles.push_back(
+                resourceRegistry->AllocateTextureHandle(
+                    textureId,
+                    textureType,
+                    samplerParams,
+                    textureMemory,
+                    shared_from_this()));
+        } else {
+            textureHandles[i].handles[0] =
+                resourceRegistry->AllocateTextureHandle(
+                    textureId,
+                    textureType,
+                    samplerParams,
+                    textureMemory,
+                    shared_from_this());
+        }
     }
 
     // And update!

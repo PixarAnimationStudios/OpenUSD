@@ -1,15 +1,15 @@
-Loading @SpecializesAndAncestralArcs3/root.sdf@
+Loading @SpecializesAndAncestralArcs3/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Root>
 
 Prim Stack:
-    root.sdf             /Root
-    ref.sdf              /RefRoot
+    root.usda            /Root
+    ref.usda             /RefRoot
 
 Child names:
      ['Child', 'SpecializesChild', 'InheritsChild']
@@ -18,7 +18,7 @@ Child names:
 Results for composing </Root/Child>
 
 Prim Stack:
-    ref.sdf              /RefRoot/Child
+    ref.usda             /RefRoot/Child
 
 Child names:
      ['GrandChild']
@@ -27,8 +27,8 @@ Child names:
 Results for composing </Root/Child/GrandChild>
 
 Prim Stack:
-    ref.sdf              /RefRoot/Child/GrandChild
-    ref2.sdf             /Ref2Root/Ref2Child
+    ref.usda             /RefRoot/Child/GrandChild
+    ref2.usda            /Ref2Root/Ref2Child
 
 Child names:
      ['Ref2GrandChild']
@@ -37,14 +37,14 @@ Child names:
 Results for composing </Root/Child/GrandChild/Ref2GrandChild>
 
 Prim Stack:
-    ref2.sdf             /Ref2Root/Ref2Child/Ref2GrandChild
+    ref2.usda            /Ref2Root/Ref2Child/Ref2GrandChild
 
 ------------------------------------------------------------------------
 Results for composing </Root/SpecializesChild>
 
 Prim Stack:
-    ref.sdf              /RefRoot/SpecializesChild
-    ref.sdf              /RefRoot/Child
+    ref.usda             /RefRoot/SpecializesChild
+    ref.usda             /RefRoot/Child
 
 Child names:
      ['GrandChild']
@@ -53,8 +53,8 @@ Child names:
 Results for composing </Root/SpecializesChild/GrandChild>
 
 Prim Stack:
-    ref.sdf              /RefRoot/Child/GrandChild
-    ref2.sdf             /Ref2Root/Ref2Child
+    ref.usda             /RefRoot/Child/GrandChild
+    ref2.usda            /Ref2Root/Ref2Child
 
 Child names:
      ['Ref2GrandChild']
@@ -63,14 +63,14 @@ Child names:
 Results for composing </Root/SpecializesChild/GrandChild/Ref2GrandChild>
 
 Prim Stack:
-    ref2.sdf             /Ref2Root/Ref2Child/Ref2GrandChild
+    ref2.usda            /Ref2Root/Ref2Child/Ref2GrandChild
 
 ------------------------------------------------------------------------
 Results for composing </Root/InheritsChild>
 
 Prim Stack:
-    ref.sdf              /RefRoot/InheritsChild
-    ref.sdf              /RefRoot/Child
+    ref.usda             /RefRoot/InheritsChild
+    ref.usda             /RefRoot/Child
 
 Child names:
      ['GrandChild']
@@ -79,8 +79,8 @@ Child names:
 Results for composing </Root/InheritsChild/GrandChild>
 
 Prim Stack:
-    ref.sdf              /RefRoot/Child/GrandChild
-    ref2.sdf             /Ref2Root/Ref2Child
+    ref.usda             /RefRoot/Child/GrandChild
+    ref2.usda            /Ref2Root/Ref2Child
 
 Child names:
      ['Ref2GrandChild']
@@ -89,5 +89,5 @@ Child names:
 Results for composing </Root/InheritsChild/GrandChild/Ref2GrandChild>
 
 Prim Stack:
-    ref2.sdf             /Ref2Root/Ref2Child/Ref2GrandChild
+    ref2.usda            /Ref2Root/Ref2Child/Ref2GrandChild
 

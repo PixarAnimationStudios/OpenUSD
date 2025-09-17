@@ -1,0 +1,24 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Validators": {
+                    "PxrRenderTerminalsAPIRelationships": {
+                        "doc": "Ensures that RenderSettings prims with PxrRenderTerminalsAPI do not define connection attributes for terminal displayFilters, sampleFilters, and integrators. Relationships should be used instead.",
+                        "schemaTypes": [
+                             "UsdRiPxrRenderTerminalsAPI"
+                         ]
+                    },
+                    "keywords": [
+                        "RmanUsdValidators"
+                    ]
+                }
+            }, 
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@", 
+            "Name": "rmanUsdValidators", 
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@", 
+            "Root": "@PLUG_INFO_ROOT@", 
+            "Type": "library"
+        }
+    ]
+}

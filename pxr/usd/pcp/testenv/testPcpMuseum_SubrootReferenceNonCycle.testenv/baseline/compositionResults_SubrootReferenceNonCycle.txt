@@ -1,14 +1,14 @@
-Loading @SubrootReferenceNonCycle/root.sdf@
+Loading @SubrootReferenceNonCycle/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </ImplNoCycle>
 
 Prim Stack:
-    root.sdf             /ImplNoCycle
+    root.usda            /ImplNoCycle
 
 Child names:
      ['A']
@@ -17,7 +17,7 @@ Child names:
 Results for composing </ImplNoCycle/A>
 
 Prim Stack:
-    root.sdf             /ImplNoCycle/A
+    root.usda            /ImplNoCycle/A
 
 Child names:
      ['B', 'D']
@@ -26,7 +26,7 @@ Child names:
 Results for composing </ImplNoCycle/A/B>
 
 Prim Stack:
-    root.sdf             /ImplNoCycle/A/B
+    root.usda            /ImplNoCycle/A/B
 
 Child names:
      ['C']
@@ -35,14 +35,14 @@ Child names:
 Results for composing </ImplNoCycle/A/B/C>
 
 Prim Stack:
-    root.sdf             /ImplNoCycle/A/B/C
+    root.usda            /ImplNoCycle/A/B/C
 
 ------------------------------------------------------------------------
 Results for composing </ImplNoCycle/A/D>
 
 Prim Stack:
-    root.sdf             /ImplNoCycle/A/D
-    root.sdf             /ImplNoCycle/A/B
+    root.usda            /ImplNoCycle/A/D
+    root.usda            /ImplNoCycle/A/B
 
 Child names:
      ['C']
@@ -51,14 +51,14 @@ Child names:
 Results for composing </ImplNoCycle/A/D/C>
 
 Prim Stack:
-    root.sdf             /ImplNoCycle/A/B/C
+    root.usda            /ImplNoCycle/A/B/C
 
 ------------------------------------------------------------------------
 Results for composing </PrimNoCycle>
 
 Prim Stack:
-    root.sdf             /PrimNoCycle
-    root.sdf             /ImplNoCycle
+    root.usda            /PrimNoCycle
+    root.usda            /ImplNoCycle
 
 Child names:
      ['A']
@@ -67,7 +67,7 @@ Child names:
 Results for composing </PrimNoCycle/A>
 
 Prim Stack:
-    root.sdf             /ImplNoCycle/A
+    root.usda            /ImplNoCycle/A
 
 Child names:
      ['B', 'D']
@@ -76,7 +76,7 @@ Child names:
 Results for composing </PrimNoCycle/A/B>
 
 Prim Stack:
-    root.sdf             /ImplNoCycle/A/B
+    root.usda            /ImplNoCycle/A/B
 
 Child names:
      ['C']
@@ -85,14 +85,14 @@ Child names:
 Results for composing </PrimNoCycle/A/B/C>
 
 Prim Stack:
-    root.sdf             /ImplNoCycle/A/B/C
+    root.usda            /ImplNoCycle/A/B/C
 
 ------------------------------------------------------------------------
 Results for composing </PrimNoCycle/A/D>
 
 Prim Stack:
-    root.sdf             /ImplNoCycle/A/D
-    root.sdf             /ImplNoCycle/A/B
+    root.usda            /ImplNoCycle/A/D
+    root.usda            /ImplNoCycle/A/B
 
 Child names:
      ['C']
@@ -101,13 +101,13 @@ Child names:
 Results for composing </PrimNoCycle/A/D/C>
 
 Prim Stack:
-    root.sdf             /ImplNoCycle/A/B/C
+    root.usda            /ImplNoCycle/A/B/C
 
 ------------------------------------------------------------------------
 Results for composing </ImplCycle>
 
 Prim Stack:
-    root.sdf             /ImplCycle
+    root.usda            /ImplCycle
 
 Child names:
      ['A']
@@ -116,7 +116,7 @@ Child names:
 Results for composing </ImplCycle/A>
 
 Prim Stack:
-    root.sdf             /ImplCycle/A
+    root.usda            /ImplCycle/A
 
 Child names:
      ['B', 'D']
@@ -125,7 +125,7 @@ Child names:
 Results for composing </ImplCycle/A/B>
 
 Prim Stack:
-    root.sdf             /ImplCycle/A/B
+    root.usda            /ImplCycle/A/B
 
 Child names:
      ['C']
@@ -134,20 +134,20 @@ Child names:
 Results for composing </ImplCycle/A/B/C>
 
 Prim Stack:
-    root.sdf             /ImplCycle/A/B/C
+    root.usda            /ImplCycle/A/B/C
 
 ------------------------------------------------------------------------
 Results for composing </ImplCycle/A/D>
 
 Prim Stack:
-    root.sdf             /ImplCycle/A/D
+    root.usda            /ImplCycle/A/D
 
 ------------------------------------------------------------------------
 Results for composing </PrimCycle>
 
 Prim Stack:
-    root.sdf             /PrimCycle
-    root.sdf             /ImplCycle
+    root.usda            /PrimCycle
+    root.usda            /ImplCycle
 
 Child names:
      ['A']
@@ -156,7 +156,7 @@ Child names:
 Results for composing </PrimCycle/A>
 
 Prim Stack:
-    root.sdf             /ImplCycle/A
+    root.usda            /ImplCycle/A
 
 Child names:
      ['B', 'D']
@@ -165,7 +165,7 @@ Child names:
 Results for composing </PrimCycle/A/B>
 
 Prim Stack:
-    root.sdf             /ImplCycle/A/B
+    root.usda            /ImplCycle/A/B
 
 Child names:
      ['C']
@@ -174,11 +174,11 @@ Child names:
 Results for composing </PrimCycle/A/B/C>
 
 Prim Stack:
-    root.sdf             /ImplCycle/A/B/C
+    root.usda            /ImplCycle/A/B/C
 
 ------------------------------------------------------------------------
 Results for composing </PrimCycle/A/D>
 
 Prim Stack:
-    root.sdf             /ImplCycle/A/D
+    root.usda            /ImplCycle/A/D
 

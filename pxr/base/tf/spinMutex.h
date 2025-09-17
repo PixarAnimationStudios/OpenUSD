@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_TF_SPIN_MUTEX_H
 #define PXR_BASE_TF_SPIN_MUTEX_H
@@ -67,14 +50,12 @@ public:
     struct ScopedLock {
 
         /// Construct a scoped lock for mutex \p m and acquire a lock.
-        explicit ScopedLock(TfSpinMutex &m)
-            : _mutex(&m)
-            , _acquired(false) {
+        explicit ScopedLock(TfSpinMutex &m) : _mutex(&m) {
             Acquire();
         }
 
         /// Construct a scoped lock not associated with a \p mutex.
-        ScopedLock() : _mutex(nullptr), _acquired(false) {}
+        ScopedLock() = default;
 
         /// If this scoped lock is acquired, Release() it.
         ~ScopedLock() {
@@ -87,24 +68,44 @@ public:
             Release();
             _mutex = &m;
             Acquire();
-        }            
+        }
 
         /// Release the currently required lock on the associated mutex.  If
-        /// this lock is not currently acquired, silently do nothing.
+        /// this lock is not currently acquired, do nothing.
         void Release() {
             if (_acquired) {
                 _Release();
             }
         }
-        
+
         /// Acquire a lock on this lock's associated mutex.  This lock must not
         /// already be acquired when calling \p Acquire().
         void Acquire() {
+            TF_DEV_AXIOM(_mutex);
             TF_DEV_AXIOM(!_acquired);
             _mutex->Acquire();
             _acquired = true;
         }
 
+        /// If the current scoped lock is acquired, Release() it, then associate
+        /// this lock with \p m and try to acquire a lock.  Return true if the
+        /// lock was successfully acquired, false if not.
+        bool TryAcquire(TfSpinMutex &m) {
+            Release();
+            _mutex = &m;
+            return TryAcquire();
+        }
+
+        /// Try to acquire a lock on this lock's associated mutex.  The lock
+        /// must not already be acquired when calling \p TryAcquire().  Return
+        /// true if the lock was successfully acquired, false if not.
+        bool TryAcquire() {
+            TF_DEV_AXIOM(_mutex);
+            TF_DEV_AXIOM(!_acquired);
+            _acquired = _mutex->TryAcquire();
+            return _acquired;
+        }
+        
     private:
 
         void _Release() {
@@ -113,8 +114,8 @@ public:
             _acquired = false;
         }
 
-        TfSpinMutex *_mutex;
-        bool _acquired;
+        TfSpinMutex *_mutex = nullptr;
+        bool _acquired = false;
     };
 
     /// Acquire a lock on this mutex if it is not currently held by another

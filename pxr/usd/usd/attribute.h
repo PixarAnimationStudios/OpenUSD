@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_USD_ATTRIBUTE_H
 #define PXR_USD_USD_ATTRIBUTE_H
@@ -33,6 +16,7 @@
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/gf/interval.h"
 
@@ -42,8 +26,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 class UsdAttribute;
+class UsdAttributeLimits;
+class TsSpline;
 
 /// A std::vector of UsdAttributes.
 typedef std::vector<UsdAttribute> UsdAttributeVector;
@@ -51,7 +36,7 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// \class UsdAttribute
 ///
 /// Scenegraph object for authoring and retrieving numeric, string, and array
-/// valued data, sampled over time.
+/// valued data, sampled over time, or animated by a spline
 ///
 /// The allowed value types for UsdAttribute are dictated by the Sdf
 /// ("Scene Description Foundations") core's data model, which we summarize in
@@ -62,15 +47,15 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// In addition to its value type, an Attribute has two other defining
 /// qualities:
 /// \li <b>Variability</b> Expresses whether an attribute is intended to
-/// have time samples (GetVariability() == \c SdfVariabilityVarying), or only
-/// a default (GetVariability() == \c SdfVariabilityUniform).  For more on
-/// reasoning about time samples, 
+/// have time samples or a spline (GetVariability() == \c SdfVariabilityVarying), 
+/// or only a default (GetVariability() == \c SdfVariabilityUniform).  For more 
+/// on reasoning about time samples, 
 /// see \ref Usd_AttributeValueMethods "Value & Time-Sample Accessors".
 ///
 /// \li <b>Custom</b> Determines whether an attribute belongs to a
 /// schema (IsCustom() == \c false), or is a user-defined, custom attribute.
 /// schema attributes will always be defined on a prim of the schema type,
-/// ans may possess fallback values from the schema, whereas custom 
+/// and may possess fallback values from the schema, whereas custom 
 /// attributes must always first be authored in order to be defined.  Note
 /// that \em custom is actually an aspect of UsdProperty, as UsdRelationship
 /// can also be custom or provided by a schema.
@@ -105,6 +90,10 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// attribute values at times where no value is explicitly authored.
 /// The desired behavior may be specified via UsdStage::SetInterpolationType.
 /// That behavior will be used for all calls to UsdAttribute::Get.
+///
+/// Note that for attributes with spline value sources, the interpolation
+/// behavior is determined by the spline itself, and the interpolation type
+/// set on the stage is ignored.
 ///
 /// The supported interpolation types are:
 ///
@@ -160,19 +149,37 @@ typedef std::vector<UsdAttribute> UsdAttributeVector;
 /// *true* (because they do not and cannot consider time-varying blocks), but
 /// Get() may yet return *false* over some intervals.
 ///
+/// \subsection Usd_AttributeAnimationBlocking Attribute Animation Blocking
+///
+/// In addition to blocking all authored values, one can block only the 
+/// animation (time samples and spline) on an attribute in the intermediate
+/// layers, allowing default values from the weaker layers to shine through.
+///
+/// One blocks an attribute's animation using UsdAttribute::BlockAnimation(),
+///
 /// \section Usd_AssetPathValuedAttributes Attributes of type SdfAssetPath and UsdAttribute::Get()
 ///
 /// If an attribute's value type is SdfAssetPath or SdfAssetPathArray, Get()
-/// performs extra work to compute the resolved asset paths, using the layer
-/// that has the strongest value opinion as the anchor for "relative" asset
-/// paths.  Both the unresolved and resolved results are available through
-/// SdfAssetPath::GetAssetPath() and SdfAssetPath::GetResolvedPath(),
-/// respectively.
+/// does extra work to perform variable expression evaluation and compute
+/// resolved asset paths. The layer that has the strongest value opinion is 
+/// used as the anchor for "relative" asset paths.  The unresolved results are
+/// available through SdfAssetPath::GetAssetPath. The fully resolved path
+/// (including any substitutions) can be retrieved with
+/// SdfAssetPath::GetResolvedPath. The authored or evaluated paths may
+/// be explicitly retrieved through SdfAssetPath::GetAuthoredPath and 
+/// SdfAssetPath::GetEvaluatedPath respectively.
 ///
 /// Clients that call Get() on many asset-path-valued attributes may wish to
 /// employ an ArResolverScopedCache to improve asset path resolution
 /// performance.
 ///
+/// \section Usd_AttributeArraySizeConstraint Array Size Constraint
+///
+/// For array-valued attributes, the value returned by GetArraySizeConstraint()
+/// encodes information about the expected number of elements as well as the
+/// tuple-length (i.e., column count). See \ref
+/// Usd_AttributeArraySizeConstraintAPI "Array Size Constraint" for details of
+/// the encoding.
 class UsdAttribute : public UsdProperty {
 public:
     /// Construct an invalid attribute.
@@ -185,8 +192,8 @@ public:
     /// @{
 
     /// An attribute's variability expresses whether it is intended to have
-    /// time-samples (\c SdfVariabilityVarying), or only a single default 
-    /// value (\c SdfVariabilityUniform).
+    /// time-samples or splines (\c SdfVariabilityVarying), or only a single 
+    /// default value (\c SdfVariabilityUniform).
     ///
     /// Variability is required meta-data of all attributes, and its fallback
     /// value is SdfVariabilityVarying.
@@ -390,9 +397,10 @@ public:
     /// If this function returns false, it is certain that this attribute's
     /// value remains constant over time.
     ///
-    /// This function is equivalent to checking if GetNumTimeSamples() > 1,
-    /// but may be more efficient since it does not actually need to get a
-    /// full count of all time samples.
+    /// This function checks if the attribute either has more than 1 time
+    /// samples or is spline valued. Which is more efficient than actually
+    /// counting the time samples or evaluating the spline, both of which
+    /// are potentially expensive operations.
     USD_API
     bool ValueMightBeTimeVarying() const;
 
@@ -404,10 +412,34 @@ public:
     /// stage's interpolation type.
     /// See \ref Usd_AttributeInterpolation.
     ///
+    /// An attribute's value may be discontinuous at time samples. This happens 
+    /// when the stage is in held interpolation mode or when the sample values
+    /// are not interpolatable. To obtain the attribute's value immediately
+    /// before a given time sample, use 
+    /// \link UsdTimeCode::PreTime() UsdTimeCode::PreTime(time)\endlink. This 
+    /// evaluates the limit of the attribute's value as time approaches the 
+    /// given \p time from the left. 
+    ///
+    /// For example, if a string-valued attribute has time samples 
+    /// `{1.0: "foo", 2.0: "bar"}`, calling Get() with UsdTimeCode(2.0) 
+    /// returns "bar", whereas calling Get() with UsdTimeCode::PreTime(2.0) 
+    /// returns "foo". However, if the attribute's values are interpolatable, 
+    /// such as `{1.0: 3.0, 2.0: 4.0}`, then calling Get() with UsdTimeCode(2.0)  
+    /// and UsdTimeCode::PreTime(2.0) will both return 4.0, since the value 
+    /// is continuous at time=2.0.
+    ///
     /// If no value is authored and no fallback value is provided by the 
     /// schema for this attribute, this function will return false. If the 
     /// consumer's use-case requires a default value, the consumer will need
     /// to provide one, possibly using GetTypeName().GetDefaultValue().
+    ///
+    /// Value resolution first needs to determine the source of the strongest
+    /// value opinion for this attribute at the requested UsdTimeCode \p time.
+    /// But often (i.e. unless the attribute is affected by 
+    /// \ref Usd_Page_ValueClips "Value Clips") the source of the resolved value
+    /// does not vary over time. UsdAttributeQuery finds the source opinion and 
+    /// saves it so that repeated calls to UsdAttributeQuery::Get() avoid 
+    /// redundant work.
     ///
     /// This templated accessor is designed for high performance data-streaming
     /// applications, allowing one to fetch data into the same container
@@ -472,12 +504,15 @@ public:
     ///
     /// \return false and generate an error if type \c T does not match
     /// this attribute's defined scene description type <b>exactly</b>,
-    /// or if there is no existing definition for the attribute.
+    /// or if there is no existing definition for the attribute, or if the
+    /// \p time is pre-time, which is only used to for querying for values at 
+    /// the limit when the time is approached from the left.
     template <typename T>
     bool Set(const T& value, UsdTimeCode time = UsdTimeCode::Default()) const {
         static_assert(!std::is_pointer<T>::value, "");
         static_assert(SdfValueTypeTraits<T>::IsValueType ||
-                      std::is_same<T, SdfValueBlock>::value, "");
+                      std::is_same<T, SdfValueBlock>::value ||
+                      std::is_same<T, SdfAnimationBlock>::value, "");
         return _Set(value, time);
     }
 
@@ -491,7 +526,23 @@ public:
     USD_API
     bool Set(const VtValue& value, UsdTimeCode time = UsdTimeCode::Default()) const;
 
-    /// Clears the authored default value and all time samples for this
+    /// Returns true if this attribute has a spline as the strongest value
+    /// source.
+    USD_API
+    bool HasSpline() const;
+
+    /// Returns a copy of the resolved spline if the spline is the strongest value
+    /// source.
+    ///
+    /// If the strongest opinion is not a spline, returns an empty spline.
+    USD_API
+    TsSpline GetSpline() const;
+
+    /// Set the spline using the current edit target.
+    USD_API
+    bool SetSpline(const TsSpline &spline);
+
+    /// Clears the authored default value, all time samples and spline for this
     /// attribute at the current EditTarget and returns true on success.
     ///
     /// Calling clear when either no value is authored or no spec is present,
@@ -507,6 +558,10 @@ public:
     ///
     /// Calling clear when either no value is authored or no spec is present,
     /// is a silent no-op returning true. 
+    ///
+    /// Issue a coding error if \p time is a pre-time, which is only used to
+    /// for querying for values at the limit when the time is approached from
+    /// the left.
     USD_API
     bool ClearAtTime(UsdTimeCode time) const;
 
@@ -514,7 +569,7 @@ public:
     USD_API
     bool ClearDefault() const;
 
-    /// Remove all time samples on an attribute and author a *block*
+    /// Remove all time samples or spline on an attribute and author a *block*
     /// \c default value. This causes the attribute to resolve as 
     /// if there were no authored value opinions in weaker layers.
     ///
@@ -522,6 +577,17 @@ public:
     /// information on time-varying blocking.
     USD_API
     void Block() const;
+
+    /// Remove any timeSamples or spline on an attribute and authors an
+    /// *AnimationBlock* \c default value.
+    ///
+    /// This causes the attribute to resolve as if there were no authored
+    /// animation (time samples or spline) opinions but still allows default
+    /// values shine through.
+    ///
+    /// See \ref Usd_AttributeAnimationBlocking for more information.
+    USD_API
+    void BlockAnimation() const;
 
     /// @}
 
@@ -596,35 +662,210 @@ public:
     /// \name ColorSpace API
     /// 
     /// The color space in which a given color or texture valued attribute is 
-    /// authored is set as token-valued metadata 'colorSpace' on the attribute. 
+    /// authored is set as token-valued metadata 'colorSpace' on the attribute.
+    /// Please refer to GfColorSpaceNames for a list of built in color space
+    /// token values.
+    ///
     /// For color or texture attributes that don't have an authored 'colorSpace'
-    /// value, the fallback color-space is gleaned from whatever color 
-    /// management system is specified by UsdStage::GetColorManagementSystem().
-    /// 
+    /// value, the fallback color space may be authored on the owning prim,
+    /// and determined using the UsdColorSpaceAPI applied schema.
+    ///
+    /// \ref GfColorSpaceNames "Standard color space names"
+    ///
     /// @{
     // ---------------------------------------------------------------------- //
 
-    /// Gets the color space in which the attribute is authored.
+    /// Gets the color space in which the attribute is authored if it has been
+    /// explicitly set. If the color space is not authored, any color space
+    /// set on the attribute's prim definiton will be returned.
+    /// Use \ref UsdColorSpaceAPI in order to compute the color space taking
+    /// into account any inherited color spaces.
+    ///
     /// \sa SetColorSpace()
-    /// \ref Usd_ColorConfigurationAPI "UsdStage Color Configuration API"
+    /// \ref GfColorSpaceNames "Standard color space names"
+    /// \ref UsdColorSpaceAPI "Usd Prim Color Space API"
     USD_API
     TfToken GetColorSpace() const;
 
     /// Sets the color space of the attribute to \p colorSpace.
+    /// \param colorSpace The target color space for this attribute.
+    ///
+    /// \ref UsdColorSpaceAPI "Usd Prim Color Space API" provides methods 
+    /// to compute an attribute's resolved color, considering any inherited 
+    /// colorspaces. Standard color space names are listed in 
+    /// \ref GfColorSpaceNames.
+    ///
     /// \sa GetColorSpace()
-    /// \ref Usd_ColorConfigurationAPI "UsdStage Color Configuration API"
     USD_API
     void SetColorSpace(const TfToken &colorSpace) const;
 
-    /// Returns whether color-space is authored on the attribute.
+    /// Returns whether color space is authored on the attribute.
     /// \sa GetColorSpace()
     USD_API
     bool HasColorSpace() const;
 
-    /// Clears authored color-space value on the attribute.
+    /// Clears authored color space value on the attribute.
     /// \sa SetColorSpace()
     USD_API
     bool ClearColorSpace() const;
+
+    /// @}
+
+    /// \name Limits Dictionary
+    ///
+    /// The limits dictionary contains minimum and maximum values for the
+    /// attribute, organized by purpose into sub-dictionaries (see, e.g.,
+    /// UsdAttribute::GetSoftLimits() and UsdAttribute::GetHardLimits()).
+    ///
+    /// Each sub-dictionary can store a minimum and maximum value for a
+    /// different purpose (encoded under the \c UsdLimitsKeys->Minimum and
+    /// \c UsdLimitsKeys->Maximum keys, respectively). For example the "soft"
+    /// sub-dictionary is for limits which usually hold but can be exceeded
+    /// as necessary.
+    ///
+    /// Limits sub-dictionaries may store additional related values as well (see
+    /// UsdAttributeLimits::Set()).
+    ///
+    /// For example, a limits dictionary might look like the following:
+    /// \code
+    /// def "MyPrim"
+    /// {
+    ///     int attr = 7 (
+    ///         limits = {
+    ///             dictionary soft = {
+    ///                 int minimum = 5
+    ///                 int maximum = 10
+    ///                 bool customKey = 1
+    ///             }
+    ///             dictionary hard = {
+    ///                 int minimum = 0
+    ///                 int maximum = 15
+    ///             }
+    ///             dictionary customLimits = {
+    ///                 int maximum = 25
+    ///             }
+    ///         }
+    ///     )
+    /// }
+    /// \endcode
+    ///
+    /// UsdAttribute's value authoring API does not enforce limits constraints,
+    /// but authored values that lie outside the hard limits will trigger
+    /// validation errors.
+    ///
+    /// @{
+
+    /// Return the composed limits dictionary for the attribute.
+    ///
+    /// \sa GetSoftLimits()(), GetHardLimits()
+    USD_API
+    VtDictionary GetLimits() const;
+
+    /// Set the limits dictionary for the attribute to \p limits, at the current
+    /// edit target. Return \c true on success.
+    ///
+    /// Limits values must be nested inside sub-dictionaries, and the types of
+    /// encoded minimum and maximum values must match the value type of the
+    /// attribute.
+    ///
+    /// Note that since this field is dictionary-valued, its composed value will
+    /// be the combination of all its entries as specified across all relevant
+    /// opinions. Overrides occur per-entry rather than the dictionary as a
+    /// whole.
+    ///
+    /// \sa GetSoftLimits(), GetHardLimits() for more convenient validation,
+    /// editing, and look-up API
+    USD_API
+    bool SetLimits(const VtDictionary& limits) const;
+
+    /// Return whether a limits dictionary is authored for the attribute.
+    USD_API
+    bool HasAuthoredLimits() const;
+
+    /// Clear the authored limits dictionary for the attribute, at the current
+    /// edit target.
+    ///
+    /// Note that since this field is dictionary-valued, clearing it at the
+    /// current edit target will not necessarily result in clearing the entire
+    /// composed value.
+    USD_API
+    bool ClearLimits() const;
+
+    /// Return a UsdAttributeLimits object configured to edit the attribute's
+    /// soft limits sub-dictionary.
+    ///
+    /// Soft limits are intended to provide a value range that is typical or
+    /// useful for most purposes, but which may be exceeded as necessary.
+    ///
+    /// UsdAttribute's value authoring API does not enforce soft limits.
+    ///
+    /// \sa GetHardLimits()
+    USD_API
+    UsdAttributeLimits GetSoftLimits() const;
+
+    /// Return a UsdAttributeLimits object configured to edit the attribute's
+    /// hard limits sub-dictionary.
+    ///
+    /// Hard limits are intended to provide a strict range that the attribute's
+    /// value is expected to conform to.
+    ///
+    /// UsdAttribute's value authoring API does not enforce hard limits, but an
+    /// authored value that lies outside the hard limits will trigger a
+    /// validation error.
+    ///
+    /// \sa GetSoftLimits()
+    USD_API
+    UsdAttributeLimits GetHardLimits() const;
+
+    /// Return a UsdAttributeLimits object configured to edit the attribute's
+    /// limits sub-dictionary given by \p key.
+    ///
+    /// Custom limits values are for use by clients for their own specific
+    /// purposes. UsdAttribute's value API does not enforce them.
+    ///
+    /// \sa GetSoftLimits(), GetHardLimits()
+    USD_API
+    UsdAttributeLimits GetLimits(const TfToken& key) const;
+
+    /// @}
+
+    /// \anchor Usd_AttributeArraySizeConstraintAPI
+    /// \name Array Size Constraint
+    ///
+    /// For array-valued attributes, the array size constraint value encodes
+    /// information about the expected number of elements and the tuple-length
+    /// (i.e., column count):
+    ///
+    /// \li If the value is 0 (the fallback), the array is dynamic and its size
+    /// is unrestricted.
+    /// \li If the value is greater than 0, it indicates the exact, fixed size
+    /// of the array.
+    /// \li If the value is less than 0, its absolute value is the array's
+    /// tuple-length. The array's size is unrestricted, but must be a multiple
+    /// of this tuple-length.
+    ///
+    /// UsdAttribute's value authoring API does not enforce these constraints,
+    /// but violating them will trigger validation errors.
+    ///
+    /// @{
+
+    /// Return the array size constraint value for this attribute.
+    USD_API
+    int64_t GetArraySizeConstraint() const;
+
+    /// Set the array size constraint value for this attribute.
+    USD_API
+    bool SetArraySizeConstraint(int64_t constraint) const;
+
+    /// Return whether an array size constraint value is authored on this
+    /// attribute.
+    USD_API
+    bool HasAuthoredArraySizeConstraint() const;
+
+    /// Clear the authored array size constraint value for this attribute at
+    /// the current edit target.
+    USD_API
+    bool ClearArraySizeConstraint() const;
 
     /// @}
 

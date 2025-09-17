@@ -1,30 +1,14 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2024 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
 #include "pxr/base/ts/tsTest_AnimXEvaluator.h"
-
+#include "pxr/base/ts/tsTest_SplineData.h"
+#include "pxr/base/ts/tsTest_SampleTimes.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -70,7 +54,9 @@ namespace
             _postInfinity = _GetInfinity(data.GetPostExtrapolation());
 
             if (data.GetKnots().empty())
+            {
                 return;
+            }
 
             int i = 0;
             adsk::TangentType tanType = adsk::TangentType::Global;
@@ -185,11 +171,16 @@ namespace
             const int index, adsk::Keyframe &keyOut) const override
         {
             if (index < 0 || size_t(index) >= _kfs.size())
+            {
                 return false;
+            }
 
             auto it = _kfs.begin();
             for (int i = 0; i < index; i++)
+            {
                 it++;
+            }
+
             keyOut = it->second;
             return true;
         }
@@ -215,7 +206,9 @@ namespace
         bool first(adsk::Keyframe &keyOut) const override
         {
             if (_kfs.empty())
+            {
                 return false;
+            }
 
             keyOut = _kfs.begin()->second;
             return true;
@@ -224,7 +217,9 @@ namespace
         bool last(adsk::Keyframe &keyOut) const override
         {
             if (_kfs.empty())
+            {
                 return false;
+            }
 
             keyOut = _kfs.rbegin()->second;
             return true;
@@ -262,17 +257,27 @@ namespace
         {
             // Non-looped modes.
             if (extrap.method == SData::ExtrapHeld)
+            {
                 return adsk::InfinityType::Constant;
+            }
             if (extrap.method == SData::ExtrapLinear)
+            {
                 return adsk::InfinityType::Linear;
+            }
 
             // Looped modes.
             if (extrap.loopMode == SData::LoopRepeat)
+            {
                 return adsk::InfinityType::CycleRelative;
+            }
             if (extrap.loopMode == SData::LoopReset)
+            {
                 return adsk::InfinityType::Cycle;
+            }
             if (extrap.loopMode == SData::LoopOscillate)
+            {
                 return adsk::InfinityType::Oscillate;
+            }
 
             TF_CODING_ERROR("Unexpected extrapolation");
             return adsk::InfinityType::Constant;
@@ -350,7 +355,9 @@ TsTest_AnimXEvaluator::Eval(
         // be understood as a small delta rather than an instantaneous change.
         double time = sampleTime.time;
         if (sampleTime.pre)
+        {
             time -= 1e-5;
+        }
 
         const double value = adsk::evaluateCurve(time, curve);
         result.push_back(TsTest_Sample(time, value));

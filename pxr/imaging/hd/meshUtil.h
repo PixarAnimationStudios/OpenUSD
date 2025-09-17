@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_MESH_UTIL_H
 #define PXR_IMAGING_HD_MESH_UTIL_H
@@ -75,6 +58,18 @@ struct HdQuadInfo {
     std::vector<int> verts;     // vertex indices of non-quads
 };
 
+/// Return status for a computation
+enum class [[nodiscard]] HdMeshComputationResult
+{
+    /// Computation failed
+    Error,
+    /// Computation succeeded and a result was produced
+    Success,
+    /// Computation succeeded but no result was produced,
+    /// because it is the same as the input.
+    Unchanged
+};
+
 /// \class HdMeshUtil
 /// A collection of utility algorithms for generating triangulation
 /// and quadrangulation of an input topology.
@@ -117,16 +112,17 @@ public:
                                 VtIntArray *primitiveParams,
                                 VtIntArray *edgeIndices = nullptr) const;
 
-    /// Return a triangulation of a face-varying primvar. source is
+    /// Perform a triangulation of a face-varying primvar. source is
     /// a buffer of size numElements and type corresponding to dataType
     /// (e.g. HdTypeFloatVec3); the result is a VtArray<T> of the
-    /// correct type written to the variable "triangulated".
-    /// This function returns false if it can't resolve dataType.
+    /// correct type written to the variable "triangulated", unless the
+    /// result is not "Success", in which case the argument is unmodified.
     HD_API
-    bool ComputeTriangulatedFaceVaryingPrimvar(void const* source,
-                                               int numElements,
-                                               HdType dataType,
-                                               VtValue *triangulated) const;
+    HdMeshComputationResult ComputeTriangulatedFaceVaryingPrimvar(
+        void const* source,
+        int numElements,
+        HdType dataType,
+        VtValue *triangulated) const;
 
     /// @}
 
@@ -208,8 +204,13 @@ public:
     /// face triangulation or quadrangulation (which typically skips
     /// over hole faces) as well as for refined surfaces which take into
     /// account faces tagged as holes as well as other non-manifold faces.
+    /// Optionally, records the first edge index for each face.
+    /// Subsequent edge indices for each face are implicitly assigned
+    /// sequentially following the first edge index.
     HD_API
-    void EnumerateEdges(std::vector<GfVec2i> * edgeVerticesOut) const;
+    void EnumerateEdges(
+        std::vector<GfVec2i> * edgeVerticesOut,
+        std::vector<int> * firstEdgeIndexForFacesOut = nullptr) const;
 
     // --------------------------------------------------------------------
     /// \anchor PrimitiveParamEncoding
@@ -312,17 +313,26 @@ private:
 class HdMeshEdgeIndexTable
 {
 public:
+    HD_API
     explicit HdMeshEdgeIndexTable(HdMeshTopology const * topology);
+    HD_API
     ~HdMeshEdgeIndexTable();
 
+    HD_API
     bool GetVerticesForEdgeIndex(int edgeId, GfVec2i * edgeVerticesOut) const;
 
+    HD_API
     bool GetVerticesForEdgeIndices(
         std::vector<int> const & edgeIndices,
         std::vector<GfVec2i> * edgeVerticesOut) const;
 
+    HD_API
     bool GetEdgeIndices(GfVec2i const & edgeVertices,
                         std::vector<int> * edgeIndicesOut) const;
+
+    /// Returns the edge indices for all faces in faceIndices.
+    HD_API
+    VtIntArray CollectFaceEdgeIndices(VtIntArray const &faceIndices) const;
 
 private:
     struct _Edge{
@@ -361,6 +371,9 @@ private:
             return x + (y * (y + 1)) / 2;
         }
     };
+
+    HdMeshTopology const *_topology;
+    std::vector<int> _firstEdgeIndexForFaces;
 
     std::vector<GfVec2i> _edgeVertices;
     std::vector<_Edge> _edgesByIndex;

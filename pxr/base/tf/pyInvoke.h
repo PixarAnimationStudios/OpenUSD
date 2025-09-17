@@ -1,25 +1,8 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_TF_PY_INVOKE_H
 #define PXR_BASE_TF_PY_INVOKE_H
@@ -36,10 +19,10 @@
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/pyObjWrapper.h"
 
-#include <boost/python/dict.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/list.hpp>
-#include <boost/python/object.hpp>
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/list.hpp"
+#include "pxr/external/boost/python/object.hpp"
 
 #include <cstddef>
 #include <memory>
@@ -53,15 +36,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #ifndef doxygen
 
-// Convert any type to boost::python::object.
+// Convert any type to pxr_boost::python::object.
 template <typename T>
-boost::python::object Tf_ArgToPy(const T &value)
+pxr_boost::python::object Tf_ArgToPy(const T &value)
 {
-    return boost::python::object(value);
+    return pxr_boost::python::object(value);
 }
 
 // Convert nullptr to None.
-TF_API boost::python::object Tf_ArgToPy(const std::nullptr_t &value);
+TF_API pxr_boost::python::object Tf_ArgToPy(const std::nullptr_t &value);
 
 #endif // !doxygen
 
@@ -89,7 +72,7 @@ struct TfPyKwArg
     TfPyKwArg(const std::string &nameIn, const T &valueIn)
         : name(nameIn)
     {
-        // Constructing boost::python::object requires the GIL.
+        // Constructing pxr_boost::python::object requires the GIL.
         TfPyLock lock;
 
         // The object constructor throws if the type is not convertible.
@@ -107,13 +90,13 @@ struct TfPyKwArg
 
 // Variadic helper: trivial base case.
 TF_API void Tf_BuildPyInvokeKwArgs(
-    boost::python::dict *kwArgsOut);
+    pxr_boost::python::dict *kwArgsOut);
 
 // Poisoned variadic template helper that provides an error message when
 // non-keyword args are used after keyword args.
 template <typename Arg, typename... RestArgs>
 void Tf_BuildPyInvokeKwArgs(
-    boost::python::dict *kwArgsOut,
+    pxr_boost::python::dict *kwArgsOut,
     const Arg &kwArg,
     RestArgs... rest)
 {
@@ -127,7 +110,7 @@ void Tf_BuildPyInvokeKwArgs(
 // Recursive variadic template helper for keyword args.
 template <typename... RestArgs>
 void Tf_BuildPyInvokeKwArgs(
-    boost::python::dict *kwArgsOut,
+    pxr_boost::python::dict *kwArgsOut,
     const TfPyKwArg &kwArg,
     RestArgs... rest)
 {
@@ -140,14 +123,14 @@ void Tf_BuildPyInvokeKwArgs(
 
 // Variadic helper: trivial base case.
 TF_API void Tf_BuildPyInvokeArgs(
-    boost::python::list *posArgsOut,
-    boost::python::dict *kwArgsOut);
+    pxr_boost::python::list *posArgsOut,
+    pxr_boost::python::dict *kwArgsOut);
 
 // Recursive general-purpose variadic template helper.
 template <typename Arg, typename... RestArgs>
 void Tf_BuildPyInvokeArgs(
-    boost::python::list *posArgsOut,
-    boost::python::dict *kwArgsOut,
+    pxr_boost::python::list *posArgsOut,
+    pxr_boost::python::dict *kwArgsOut,
     const Arg &arg,
     RestArgs... rest)
 {
@@ -162,8 +145,8 @@ void Tf_BuildPyInvokeArgs(
 // Recursive variadic template helper for keyword args.
 template <typename... RestArgs>
 void Tf_BuildPyInvokeArgs(
-    boost::python::list *posArgsOut,
-    boost::python::dict *kwArgsOut,
+    pxr_boost::python::list *posArgsOut,
+    pxr_boost::python::dict *kwArgsOut,
     const TfPyKwArg &kwArg,
     RestArgs... rest)
 {
@@ -184,16 +167,16 @@ void Tf_BuildPyInvokeArgs(
 TF_API bool Tf_PyInvokeImpl(
     const std::string &moduleName,
     const std::string &callableExpr,
-    const boost::python::list &posArgs,
-    const boost::python::dict &kwArgs,
-    boost::python::object *resultObjOut);
+    const pxr_boost::python::list &posArgs,
+    const pxr_boost::python::dict &kwArgs,
+    pxr_boost::python::object *resultObjOut);
 
 // Forward declaration.
 template <typename... Args>
 bool TfPyInvokeAndReturn(
     const std::string &moduleName,
     const std::string &callableExpr,
-    boost::python::object *resultOut,
+    pxr_boost::python::object *resultOut,
     Args... args);
 
 #endif // !doxygen
@@ -263,14 +246,14 @@ bool TfPyInvokeAndExtract(
     TfPyInitialize();
     TfPyLock lock;
 
-    boost::python::object resultObj;
+    pxr_boost::python::object resultObj;
     if (!TfPyInvokeAndReturn(
             moduleName, callableExpr, &resultObj, args...)) {
         return false;
     }
 
     // Extract return value.
-    boost::python::extract<Result> extractor(resultObj);
+    pxr_boost::python::extract<Result> extractor(resultObj);
     if (!extractor.check()) {
         TF_CODING_ERROR("Result type mismatched or not convertible");
         return false;
@@ -281,14 +264,14 @@ bool TfPyInvokeAndExtract(
 }
 
 /// A version of TfPyInvokeAndExtract that provides the Python function's return
-/// value as a \c boost::python::object, rather than extracting a particular C++
+/// value as a \c pxr_boost::python::object, rather than extracting a particular C++
 /// type from it.
 ///
 template <typename... Args>
 bool TfPyInvokeAndReturn(
     const std::string &moduleName,
     const std::string &callableExpr,
-    boost::python::object *resultOut,
+    pxr_boost::python::object *resultOut,
     Args... args)
 {
     if (!resultOut) {
@@ -302,8 +285,8 @@ bool TfPyInvokeAndReturn(
 
     try {
         // Convert args to Python and store in list+dict form.
-        boost::python::list posArgs;
-        boost::python::dict kwArgs;
+        pxr_boost::python::list posArgs;
+        pxr_boost::python::dict kwArgs;
         Tf_BuildPyInvokeArgs(&posArgs, &kwArgs, args...);
 
         // Import, find callable, and call.
@@ -312,7 +295,7 @@ bool TfPyInvokeAndReturn(
             return false;
         }
     }
-    catch (boost::python::error_already_set const &) {
+    catch (pxr_boost::python::error_already_set const &) {
         // Handle exceptions.
         TfPyConvertPythonExceptionToTfErrors();
         PyErr_Clear();
@@ -335,7 +318,7 @@ bool TfPyInvoke(
     TfPyInitialize();
     TfPyLock lock;
 
-    boost::python::object ignoredResult;
+    pxr_boost::python::object ignoredResult;
     return TfPyInvokeAndReturn(
         moduleName, callableExpr, &ignoredResult, args...);
 }

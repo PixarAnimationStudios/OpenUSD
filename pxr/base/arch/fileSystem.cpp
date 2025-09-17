@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/base/arch/fileSystem.h"
@@ -38,6 +21,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cerrno>
+#include <filesystem>
 #include <memory>
 #include <utility>
 
@@ -159,7 +143,8 @@ int ArchRmDir(const char* path)
 bool
 ArchStatIsWritable(const ArchStatType *st)
 {
-#if defined(ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN)
+#if defined(ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN) || \
+    defined(ARCH_OS_WASM_VM)
     if (st) {
         return (st->st_mode & S_IWOTH) || 
             ((getegid() == st->st_gid) && (st->st_mode & S_IWGRP)) ||
@@ -196,7 +181,7 @@ ArchGetModificationTime(const char* pathname, double* time)
 double
 ArchGetModificationTime(const ArchStatType& st)
 {
-#if defined(ARCH_OS_LINUX)
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_WASM_VM)
     return st.st_mtim.tv_sec + 1e-9*st.st_mtim.tv_nsec;
 #elif defined(ARCH_OS_DARWIN)
     return st.st_mtimespec.tv_sec + 1e-9*st.st_mtimespec.tv_nsec;
@@ -378,15 +363,10 @@ ArchNormPath(const string& inPath, bool stripDriveSpecifier)
 
     // Extract the drive specifier.  Note that we don't correctly handle
     // UNC paths or paths that start with \\? (which allow longer paths).
-    //
-    // Also make sure drive letters are always lower-case out of ArchNormPath
-    // on Windows -- this is so that we can be sure we can reliably use the
-    // paths as keys in tables, etc.
     string prefix;
     if (path.size() >= 2 && path[1] == ':') {
         if (!stripDriveSpecifier) {
-            prefix.assign(2, ':');
-            prefix[0] = std::tolower(path[0]);
+            prefix = path.substr(0,2);
         }
         path.erase(0, 2);
     }
@@ -453,7 +433,7 @@ ArchGetStatMode(const char *pathname, int *mode)
 double
 ArchGetAccessTime(const struct stat& st)
 {
-#if defined(ARCH_OS_LINUX)
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_WASM_VM)
     return st.st_atim.tv_sec + 1e-9*st.st_atim.tv_nsec;
 #elif defined(ARCH_OS_DARWIN)
     return st.st_atimespec.tv_sec + 1e-9*st.st_atimespec.tv_nsec;
@@ -468,7 +448,7 @@ ArchGetAccessTime(const struct stat& st)
 double
 ArchGetStatusChangeTime(const struct stat& st)
 {
-#if defined(ARCH_OS_LINUX)
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_WASM_VM)
     return st.st_ctim.tv_sec + 1e-9*st.st_ctim.tv_nsec;
 #elif defined(ARCH_OS_DARWIN)
     return st.st_ctimespec.tv_sec + 1e-9*st.st_ctimespec.tv_nsec;
@@ -498,7 +478,8 @@ ArchGetFileLength(FILE *file)
 {
     if (!file)
         return -1;
-#if defined (ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN)
+#if defined (ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN) || \
+    defined(ARCH_OS_WASM_VM)
     struct stat buf;
     return fstat(fileno(file), &buf) < 0 ? -1 :
         static_cast<int64_t>(buf.st_size);
@@ -512,7 +493,8 @@ ArchGetFileLength(FILE *file)
 int64_t
 ArchGetFileLength(const char* fileName)
 {
-#if defined (ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN)
+#if defined (ARCH_OS_LINUX) || defined (ARCH_OS_DARWIN) || \
+    defined(ARCH_OS_WASM_VM)
     struct stat buf;
     return stat(fileName, &buf) < 0 ? -1 : static_cast<int64_t>(buf.st_size);
 #elif defined (ARCH_OS_WINDOWS)
@@ -536,7 +518,7 @@ ArchGetFileLength(const char* fileName)
 string
 ArchGetFileName(FILE *file)
 {
-#if defined (ARCH_OS_LINUX)
+#if defined (ARCH_OS_LINUX) || defined(ARCH_OS_WASM_VM)
     string result;
     char buf[PATH_MAX];
     ssize_t r = readlink(
@@ -554,24 +536,27 @@ ArchGetFileName(FILE *file)
     }
     return result;
 #elif defined (ARCH_OS_WINDOWS)
-    static constexpr DWORD bufSize =
-        sizeof(FILE_NAME_INFO) + sizeof(WCHAR) * 4096;
-    HANDLE hfile = _FileToWinHANDLE(file);
-    auto fileNameInfo = reinterpret_cast<PFILE_NAME_INFO>(malloc(bufSize));
     string result;
-    if (GetFileInformationByHandleEx(
-            hfile, FileNameInfo, static_cast<void *>(fileNameInfo), bufSize)) {
-        size_t outSize = WideCharToMultiByte(
-            CP_UTF8, 0, fileNameInfo->FileName,
-            fileNameInfo->FileNameLength/sizeof(WCHAR),
-            NULL, 0, NULL, NULL);
-        result.resize(outSize);
-        WideCharToMultiByte(
-            CP_UTF8, 0, fileNameInfo->FileName,
-            fileNameInfo->FileNameLength/sizeof(WCHAR),
-            &result.front(), outSize, NULL, NULL);
+    std::vector<WCHAR> filePath(MAX_PATH);
+    HANDLE hfile = _FileToWinHANDLE(file);
+    DWORD dwSize = GetFinalPathNameByHandleW(hfile, filePath.data(), MAX_PATH, VOLUME_NAME_DOS);
+    // * dwSize == 0. Fail.
+    // * dwSize < MAX_PATH. Success, and dwSize returns the size without null terminator.
+    // * dwSize >= MAX_PATH. Buffer is too small, and dwSize returns the size with null terminator.
+    if (dwSize >= MAX_PATH) {
+        filePath.resize(dwSize);
+        dwSize = GetFinalPathNameByHandleW(hfile, filePath.data(), dwSize, VOLUME_NAME_DOS);
     }
-    free(fileNameInfo);
+
+    if (dwSize != 0) {
+        // Strip path prefix if necessary.
+        // See https://learn.microsoft.com/en-us/dotnet/standard/io/file-path-formats
+        // for format of DOS device paths.
+        
+        auto canonicalPath = std::filesystem::canonical(
+            std::filesystem::path(filePath.begin(), filePath.begin() + dwSize));
+        result = ArchWindowsUtf16ToUtf8(canonicalPath.wstring());
+    }
     return result;                                        
 #else
 #error Unknown system architecture
@@ -755,6 +740,10 @@ Arch_InitTmpDir()
     } else {
 #if defined(ARCH_OS_DARWIN)
         _TmpDir = "/tmp";
+#elif defined(ARCH_OS_WASM_VM)
+        // Note: WASM will always mount the in memory filesystem to this path.
+        // All data will be lost when the VM is shut down.
+        _TmpDir = "/";
 #else
         _TmpDir = "/var/tmp";
 #endif
@@ -1234,8 +1223,11 @@ std::string ArchReadLink(const char* path)
                                unsigned char[MAX_REPARSE_DATA_SIZE]);
     REPARSE_DATA_BUFFER* reparse = (REPARSE_DATA_BUFFER*)buffer.get();
 
+    // The windows API documentation for DeviceIoControl states the if the
+    // lpOverlapped parameter is NULL, lpBytesReturned cannot be NULL.
+    DWORD unusedBytesReturned = 0;
     if (!DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, NULL, 0, reparse,
-                         MAX_REPARSE_DATA_SIZE, NULL, NULL)) {
+                         MAX_REPARSE_DATA_SIZE, &unusedBytesReturned, NULL)) {
         CloseHandle(handle);
         return std::string();
     }
@@ -1386,5 +1378,40 @@ void ArchFileAdvise(
     }
 #endif
 }
+
+
+#if defined(ARCH_OS_WINDOWS)
+
+std::string ArchWindowsUtf16ToUtf8(const std::wstring &wstr)
+{
+    if (wstr.empty()) return std::string();
+    // first call is only to get required size for string
+    int size = WideCharToMultiByte(
+        CP_UTF8, 0, wstr.data(), (int)wstr.size(), NULL, 0, NULL, NULL);
+    if (size == 0) return std::string();
+    std::string str(size, 0);
+    if (WideCharToMultiByte(CP_UTF8, 0, wstr.data(), (int)wstr.size(),
+                            &str[0], size, NULL, NULL) == 0) {
+        return std::string();
+    }
+    return str;
+}
+
+std::wstring ArchWindowsUtf8ToUtf16(const std::string &str)
+{
+    if (str.empty()) return std::wstring();
+    // first call is only to get required size for wstring
+    int size = MultiByteToWideChar(
+        CP_UTF8, 0, str.data(), (int)str.size(), NULL, 0);
+    if (size == 0) return std::wstring();
+    std::wstring wstr(size, 0);
+    if(MultiByteToWideChar(
+           CP_UTF8, 0, str.data(), (int)str.size(), &wstr[0], size) == 0) {
+        return std::wstring();
+    }
+    return wstr;
+}
+
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

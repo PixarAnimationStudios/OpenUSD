@@ -1,32 +1,17 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_GP_GENERATIVE_PROCEDURAL_RESOLVING_SCENE_INDEX_H
 #define PXR_IMAGING_HD_GP_GENERATIVE_PROCEDURAL_RESOLVING_SCENE_INDEX_H
 
+#include "pxr/pxr.h"
+#include "pxr/imaging/hdGp/api.h"
 #include "pxr/imaging/hdGp/generativeProcedural.h"
-#include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/base/tf/denseHashSet.h"
+#include "pxr/imaging/hd/filteringSceneIndex.h"
 
 #include <tbb/concurrent_unordered_map.h>
 #include <mutex>
@@ -63,7 +48,6 @@ class HdGpGenerativeProceduralResolvingSceneIndex
     : public HdSingleInputFilteringSceneIndexBase
 {
 public:
-
     static HdGpGenerativeProceduralResolvingSceneIndexRefPtr New(
             const HdSceneIndexBaseRefPtr &inputScene) {
         return TfCreateRefPtr(
@@ -80,14 +64,19 @@ public:
 
     /// SATISFYING HdSceneIndexBase ///////////////////////////////////////////
 
+    HDGP_API
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
+
+    HDGP_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
 protected:
 
+    HDGP_API
     HdGpGenerativeProceduralResolvingSceneIndex(
         const HdSceneIndexBaseRefPtr &inputScene);
 
+    HDGP_API
     HdGpGenerativeProceduralResolvingSceneIndex(
         const HdSceneIndexBaseRefPtr &inputScene,
         const TfToken &targetPrimTypeName);
@@ -124,8 +113,9 @@ private:
 
     static void _CombinePathArrays(const _DensePathSet &s, SdfPathVector *v);
 
-    struct _ProcEntry : public TfWeakBase
+    class _ProcEntry : public TfWeakBase
     {
+    public:
         enum State : unsigned char {
             StateUncooked = 0,
             StateDependenciesCooking,
@@ -204,7 +194,8 @@ private:
     // MEMBER FUNCTIONS ///////////////////////////////////////////////////////
 
     _ProcEntry * _UpdateProceduralDependencies(
-        const SdfPath &proceduralPrimPath) const;
+        const SdfPath &proceduralPrimPath,
+        _Notices* outputNotices) const;
 
     _ProcEntry * _UpdateProcedural(
         const SdfPath &proceduralPrimPath,
@@ -249,7 +240,7 @@ private:
     mutable _MapMutex _dependenciesMutex;
     mutable _MapMutex _proceduralsMutex;
 
-    TfToken _targetPrimTypeName;
+    const TfToken _targetPrimTypeName;
 
     bool _attemptAsync;
 };

@@ -24,13 +24,14 @@ def Xform "lights"
     def DomeLight "DomeLight"
     {
         asset inputs:texture:file = @./StinsonBeach.hdr@
+        float inputs:intensity = 2
         float xformOp:rotateX:Zup = 90
         uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
     }
     def SphereLight "Light"
     {
         float inputs:radius = 5
-        float inputs:intensity = 5
+        float inputs:intensity = 2
         Vec3f xformOp:translate = (0, -20, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }

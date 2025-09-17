@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usd/usd/collectionMembershipQuery.h"
 #include "pxr/usd/usd/collectionPredicateLibrary.h"
@@ -58,135 +41,141 @@ _ComputeIncludedImpl(
 
     std::set<UsdObject> result;
 
-    const UsdCollectionMembershipQuery::PathExpansionRuleMap& pathExpRuleMap =
-        query.GetAsPathExpansionRuleMap();
-    const bool hasExcludes = query.HasExcludes();
-
-    // Helper function to get the UsdProperty object associated with a given
-    // property path.
-    auto GetPropertyAtPath = [stage](const SdfPath &path) {
-        if (const UsdPrim p = stage->GetPrimAtPath(path.GetPrimPath())) {
-            return p.GetProperty(path.GetNameToken());
-        }
-        return UsdProperty();
-    };
-
-    // Returns true if a property is excluded in the PathExpansionRuleMap.
-    auto IsPropertyExplicitlyExcluded = [hasExcludes,pathExpRuleMap](
-            const SdfPath &propPath) {
-        if (!hasExcludes) {
-            return false;
-        }
-        auto it = pathExpRuleMap.find(propPath);
-        if (it != pathExpRuleMap.end()) {
-            return it->second == UsdTokens->exclude;
-        }
-        return false;
-    };
-
     auto AppendIncludedObject = [includedObjects, includedPaths](
-            const UsdObject &obj) {
+        const UsdObject &obj) {
         if (includedObjects) {
             includedObjects->insert(obj);
         } else if (includedPaths) {
             includedPaths->insert(obj.GetPath());
         }
     };
+    
+    if (query.UsesPathExpansionRuleMap()) {
+           
+        const UsdCollectionMembershipQuery::PathExpansionRuleMap&
+            pathExpRuleMap = query.GetAsPathExpansionRuleMap();
+        const bool hasExcludes = query.HasExcludes();
 
-    // Iterate through all the entries in the PathExpansionRuleMap.
-    for (const auto &pathAndExpansionRule : pathExpRuleMap) {
-        const TfToken &expansionRule = pathAndExpansionRule.second;
-
-        // Skip excluded paths.
-        if (expansionRule == UsdTokens->exclude) {
-            continue;
-        }
-
-        const SdfPath &path = pathAndExpansionRule.first;
-
-        if (expansionRule == UsdTokens->explicitOnly) {
-            if (path.IsPrimPath()) {
-                UsdPrim p = stage->GetPrimAtPath(path);
-                if (p && pred(p)) {
-                    AppendIncludedObject(p);
-                }
-            } else if (path.IsPropertyPath()) {
-                if (UsdProperty property = GetPropertyAtPath(path)) {
-                    AppendIncludedObject(property.As<UsdObject>());
-                }
-            } else {
-                TF_CODING_ERROR("Unknown path type in membership-map.");
+        // Helper function to get the UsdProperty object associated with a given
+        // property path.
+        auto GetPropertyAtPath = [stage](const SdfPath &path) {
+            if (const UsdPrim p = stage->GetPrimAtPath(path.GetPrimPath())) {
+                return p.GetProperty(path.GetNameToken());
             }
-        }
+            return UsdProperty();
+        };
 
-        else if (expansionRule == UsdTokens->expandPrims ||
-                 expansionRule == UsdTokens->expandPrimsAndProperties)
-        {
-            if (path.IsPropertyPath()) {
-                if (UsdProperty property = GetPropertyAtPath(path)) {
-                    AppendIncludedObject(property.As<UsdObject>());
+        // Returns true if a property is excluded in the PathExpansionRuleMap.
+        auto IsPropertyExplicitlyExcluded = [hasExcludes,pathExpRuleMap](
+                const SdfPath &propPath) {
+            if (!hasExcludes) {
+                return false;
+            }
+            auto it = pathExpRuleMap.find(propPath);
+            if (it != pathExpRuleMap.end()) {
+                return it->second == UsdTokens->exclude;
+            }
+            return false;
+        };
+
+        // Iterate through all the entries in the PathExpansionRuleMap.
+        for (const auto &pathAndExpansionRule : pathExpRuleMap) {
+            const TfToken &expansionRule = pathAndExpansionRule.second;
+
+            // Skip excluded paths.
+            if (expansionRule == UsdTokens->exclude) {
+                continue;
+            }
+
+            const SdfPath &path = pathAndExpansionRule.first;
+
+            if (expansionRule == UsdTokens->explicitOnly) {
+                if (path.IsPrimPath()) {
+                    UsdPrim p = stage->GetPrimAtPath(path);
+                    if (p && pred(p)) {
+                        AppendIncludedObject(p);
+                    }
+                } else if (path.IsPropertyPath()) {
+                    if (UsdProperty property = GetPropertyAtPath(path)) {
+                        AppendIncludedObject(property.As<UsdObject>());
+                    }
+                } else {
+                    TF_CODING_ERROR("Unknown path type in membership-map.");
                 }
-            } else if (UsdPrim prim = stage->GetPrimAtPath(path)) {
+            }
 
-                UsdPrimRange range(prim, pred);
-                // If this prim is the stage's pseudo-root, increment the
-                // range's begin iterator to skip it.  This happens when the
-                // collection has 'includeRoot' set to include '/'.  This fixup
-                // is necessary since the below test of query.IsPathIncluded()
-                // will return false for '/' since only prims and properties can
-                // be included, but that will thwart the remainder of the
-                // iteration descendant to '/'.
-                if (prim == stage->GetPseudoRoot()) {
-                    range.increment_begin();
-                }
-                
-                auto iter = range.begin();
-                for (; iter != range.end() ; ++iter) {
-                    const UsdPrim &descendantPrim = *iter;
+            else if (expansionRule == UsdTokens->expandPrims ||
+                     expansionRule == UsdTokens->expandPrimsAndProperties)
+            {
+                if (path.IsPropertyPath()) {
+                    if (UsdProperty property = GetPropertyAtPath(path)) {
+                        AppendIncludedObject(property.As<UsdObject>());
+                    }
+                } else if (UsdPrim prim = stage->GetPrimAtPath(path)) {
 
-                    // Skip the descendant prim and its subtree
-                    // if it's excluded.
-                    // If an object below the excluded object is included,
-                    // it will have a separate entry in the
-                    // path<->expansionRule map.
-                    if (hasExcludes && !query.IsPathIncluded(
-                            descendantPrim.GetPath())) {
-                        iter.PruneChildren();
-                        continue;
+                    UsdPrimRange range(prim, pred);
+                    // If this prim is the stage's pseudo-root, increment the
+                    // range's begin iterator to skip it.  This happens when the
+                    // collection has 'includeRoot' set to include '/'.  This
+                    // fixup is necessary since the below test of
+                    // query.IsPathIncluded() will return false for '/' since
+                    // only prims and properties can be included, but that will
+                    // thwart the remainder of the iteration descendant to '/'.
+                    if (prim == stage->GetPseudoRoot()) {
+                        range.increment_begin();
                     }
 
-                    AppendIncludedObject(descendantPrim.As<UsdObject>());
+                    auto iter = range.begin();
+                    for (; iter != range.end() ; ++iter) {
+                        const UsdPrim &descendantPrim = *iter;
 
-                    if (expansionRule != UsdTokens->expandPrimsAndProperties) {
-                        continue;
-                    }
-
-                    // Call GetProperties() on the prim (which is known to be
-                    // slow), only when the client is interested in property
-                    // objects.
-                    //
-                    // Call GetPropertyNames() otherwise.
-                    if (includedObjects) {
-                        std::vector<UsdProperty> properties =
-                            descendantPrim.GetProperties();
-                        for (const auto &property : properties) {
-                            // Add the property to the result only if it's
-                            // not explicitly excluded.
-                            if (!IsPropertyExplicitlyExcluded(
-                                    property.GetPath())) {
-                                AppendIncludedObject(property.As<UsdObject>());
-                            }
+                        // Skip the descendant prim and its subtree
+                        // if it's excluded.
+                        // If an object below the excluded object is included,
+                        // it will have a separate entry in the
+                        // path<->expansionRule map.
+                        if (hasExcludes && !query.IsPathIncluded(
+                                descendantPrim.GetPath())) {
+                            iter.PruneChildren();
+                            continue;
                         }
-                    } else {
-                        for (const auto &propertyName :
-                                descendantPrim.GetPropertyNames()) {
-                            SdfPath propertyPath =
-                                descendantPrim.GetPath().AppendProperty(
-                                    propertyName);
-                            if (!IsPropertyExplicitlyExcluded(propertyPath)) {
-                                // Can't call IncludeObject here since we're
-                                // avoiding creation of the object.
-                                includedPaths->insert(propertyPath);
+
+                        AppendIncludedObject(descendantPrim.As<UsdObject>());
+
+                        if (expansionRule !=
+                            UsdTokens->expandPrimsAndProperties) {
+                            continue;
+                        }
+
+                        // Call GetProperties() on the prim (which is known to
+                        // be slow), only when the client is interested in
+                        // property objects.
+                        //
+                        // Call GetPropertyNames() otherwise.
+                        if (includedObjects) {
+                            std::vector<UsdProperty> properties =
+                                descendantPrim.GetProperties();
+                            for (const auto &property : properties) {
+                                // Add the property to the result only if it's
+                                // not explicitly excluded.
+                                if (!IsPropertyExplicitlyExcluded(
+                                        property.GetPath())) {
+                                    AppendIncludedObject(
+                                        property.As<UsdObject>());
+                                }
+                            }
+                        } else {
+                            for (const auto &propertyName :
+                                    descendantPrim.GetPropertyNames()) {
+                                SdfPath propertyPath =
+                                    descendantPrim.GetPath().AppendProperty(
+                                        propertyName);
+                                if (!IsPropertyExplicitlyExcluded(
+                                        propertyPath)) {
+                                    // Can't call IncludeObject here since we're
+                                    // avoiding creation of the object.
+                                    includedPaths->insert(propertyPath);
+                                }
                             }
                         }
                     }
@@ -194,67 +183,70 @@ _ComputeIncludedImpl(
             }
         }
     }
-
-    // Walk everything according to \p pred, and do incremental search.
-    TfToken expansionRule = query.GetTopExpansionRule();
-    if (query.HasExpression() &&
-        (expansionRule == UsdTokens->expandPrims ||
-         expansionRule == UsdTokens->expandPrimsAndProperties)) {
-
-        bool searchProperties =
-            (expansionRule == UsdTokens->expandPrimsAndProperties);
-
-        ExpressionEvaluator::IncrementalSearcher
-            searcher = query.GetExpressionEvaluator().MakeIncrementalSearcher();
+    else { // !query.UsesPathExpansionRuleMap()
         
-        UsdPrimRange range = stage->Traverse(pred);
-        
-        for (auto iter = range.begin(),
-                 end = range.end(); iter != end; ++iter) {
+        // Walk everything according to \p pred, and do incremental search.
+        TfToken expansionRule = query.GetTopExpansionRule();
+        if (query.HasExpression() &&
+            (expansionRule == UsdTokens->explicitOnly ||
+             expansionRule == UsdTokens->expandPrims ||
+             expansionRule == UsdTokens->expandPrimsAndProperties)) {
 
-            SdfPredicateFunctionResult r = searcher.Next(iter->GetPath());
-            bool didProps = false;
-            if (r) {
-                // With a positive result that's constant over descendants, we
-                // can copy everything until the next sibling.
-                if (r.IsConstant()) {
-                    auto subtreeIter = iter;
-                    auto subtreeEnd = subtreeIter;
-                    subtreeEnd.PruneChildren();
-                    ++subtreeEnd;
-                    for (; subtreeIter != subtreeEnd; ++subtreeIter) {
-                        AppendIncludedObject(*subtreeIter);
-                        if (searchProperties) {
-                            didProps = true;
-                            for (UsdProperty const &prop:
-                                     subtreeIter->GetProperties()) {
-                                AppendIncludedObject(prop);
+            bool searchProperties =
+                (expansionRule == UsdTokens->expandPrimsAndProperties);
+
+            ExpressionEvaluator::IncrementalSearcher searcher =
+                query.GetExpressionEvaluator().MakeIncrementalSearcher();
+
+            UsdPrimRange range = stage->Traverse(pred);
+
+            for (auto iter = range.begin(),
+                     end = range.end(); iter != end; ++iter) {
+
+                SdfPredicateFunctionResult r = searcher.Next(iter->GetPath());
+                bool didProps = false;
+                if (r) {
+                    // With a positive result that's constant over descendants,
+                    // we can copy everything until the next sibling.
+                    if (r.IsConstant()) {
+                        auto subtreeIter = iter;
+                        auto subtreeEnd = subtreeIter;
+                        subtreeEnd.PruneChildren();
+                        ++subtreeEnd;
+                        for (; subtreeIter != subtreeEnd; ++subtreeIter) {
+                            AppendIncludedObject(*subtreeIter);
+                            if (searchProperties) {
+                                didProps = true;
+                                for (UsdProperty const &prop:
+                                         subtreeIter->GetProperties()) {
+                                    AppendIncludedObject(prop);
+                                }
                             }
                         }
                     }
-                }
-                // We have a positive result on this object, but we have to keep
-                // searching descendants, since results may vary.
-                else {
-                    AppendIncludedObject(*iter);
-                }
-            }
-
-            // If we're searching properties and didn't already do properties
-            // above, do them here.  Constancy doesn't matter here since we
-            // don't search descendants of properties.
-            if (searchProperties && !didProps && !(r && !r.IsConstant())) {
-                for (UsdProperty const &prop: iter->GetProperties()) {
-                    if (searcher.Next(prop.GetPath())) {
-                        AppendIncludedObject(prop);
+                    // We have a positive result on this object, but we have to
+                    // keep searching descendants, since results may vary.
+                    else {
+                        AppendIncludedObject(*iter);
                     }
                 }
-            }
 
-            // If we have a constant result (either positive or negative), we
-            // can skip the subtree.
-            if (r.IsConstant()) {
-                iter.PruneChildren();
+                // If we're searching properties and didn't already do
+                // properties above, do them here.  Constancy doesn't matter
+                // here since we don't search descendants of properties.
+                if (searchProperties && !didProps && !(r && !r.IsConstant())) {
+                    for (UsdProperty const &prop: iter->GetProperties()) {
+                        if (searcher.Next(prop.GetPath())) {
+                            AppendIncludedObject(prop);
+                        }
+                    }
+                }
+
+                // If we have a constant result (either positive or negative),
+                // we can skip the subtree.
+                if (r.IsConstant()) {
+                    iter.PruneChildren();
+                }
             }
         }
     }

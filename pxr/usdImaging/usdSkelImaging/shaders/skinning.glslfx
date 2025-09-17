@@ -1,5 +1,12 @@
 -- glslfx version 0.1
 
+//
+// Copyright 2019 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
 -- configuration
 {
     "techniques": {
@@ -23,9 +30,6 @@ const float EPS = 1e-5;
 
 void compute(int index)
 {
-    // model space -> bind space
-    mat4 geomBindXform = HdGet_geomBindXform();
-
     vec3 restP = HdGet_restPoints(index);
 
     // apply blend shapes
@@ -39,11 +43,14 @@ void compute(int index)
             restP += offset.xyz * weight;
         }
     }
-    vec4 initP = geomBindXform * vec4(restP, 1);
-    
+
     int numInfluencesPerComponent = HdGet_numInfluencesPerComponent();
     vec3 p;
     if (numInfluencesPerComponent > 0) {
+        // model space -> bind space
+        mat4 geomBindXform = HdGet_geomBindXform();
+        vec4 initP = geomBindXform * vec4(restP, 1);
+
         p = vec3(0,0,0);
 
         bool constantPointInfluence = HdGet_hasConstantInfluences();
@@ -60,16 +67,16 @@ void compute(int index)
                 p += ((skinningXform * initP) * jointWeight).xyz;
             }
         }
-    } else {
-        p = initP.xyz;
-    }
 
-    // skel space -> world space -> model space
-    // XXX: Casts to mat4 below are necessary because the matrices passed
-    // down use doubles and not floats.
-    mat4 skelToPrimLocal = mat4( HdGet_primWorldToLocal() ) *
-                           mat4( HdGet_skelLocalToWorld() );
-    p = (skelToPrimLocal * vec4(p,1)).xyz;
+        // skel space -> world space -> model space
+        // XXX: Casts to mat4 below are necessary because the matrices passed
+        // down use doubles and not floats.
+        mat4 skelToPrimLocal = mat4( HdGet_primWorldToLocal() ) *
+                               mat4( HdGet_skelLocalToWorld() );
+        p = (skelToPrimLocal * vec4(p,1)).xyz;
+    } else {
+        p = restP;
+    }
 
     HdSet_skinnedPoints(index, p);
 }
@@ -135,9 +142,6 @@ vec3 GetDualQuaternionTranslation(vec4 real, vec4 dual)
 
 void compute(int index)
 {
-    // model space -> bind space
-    mat4 geomBindXform = HdGet_geomBindXform();
-
     vec3 restP = HdGet_restPoints(index);
 
     // apply blend shapes
@@ -151,11 +155,13 @@ void compute(int index)
             restP += offset.xyz * weight;
         }
     }
-    vec3 initP = (geomBindXform * vec4(restP, 1)).xyz;
 
     int numInfluencesPerComponent = HdGet_numInfluencesPerComponent();
     vec3 p;
     if (numInfluencesPerComponent > 0) {
+        // model space -> bind space
+        mat4 geomBindXform = HdGet_geomBindXform();
+        vec3 initP = (geomBindXform * vec4(restP, 1)).xyz;
 
 #ifdef HD_HAS_skinningScaleXforms
         vec3 scaledP = vec3(0, 0, 0);
@@ -220,16 +226,16 @@ void compute(int index)
         p = TransformByQuaternion(weightedSumDQReal, initP)
             + GetDualQuaternionTranslation(weightedSumDQReal, weightedSumDQDual);
 #endif
-    } else {
-        p = initP;
-    }
 
-    // skel space -> world space -> model space
-    // XXX: Casts to mat4 below are necessary because the matrices passed
-    // down use doubles and not floats.
-    mat4 skelToPrimLocal = mat4(HdGet_primWorldToLocal()) *
-                           mat4(HdGet_skelLocalToWorld());
-    p = (skelToPrimLocal * vec4(p,1)).xyz;
+        // skel space -> world space -> model space
+        // XXX: Casts to mat4 below are necessary because the matrices passed
+        // down use doubles and not floats.
+        mat4 skelToPrimLocal = mat4(HdGet_primWorldToLocal()) *
+                               mat4(HdGet_skelLocalToWorld());
+        p = (skelToPrimLocal * vec4(p,1)).xyz;
+    } else {
+        p = restP;
+    }
 
     HdSet_skinnedPoints(index, p);
 }

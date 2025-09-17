@@ -1,0 +1,19 @@
+#usda 1.0
+(
+    relocates = {
+        </M_3/A>: </M_3/B>
+    }
+)
+
+def __AnyType__ "M_3" (
+    add references = @./4.usda@</M_4>
+)
+{
+    over "B"
+    {
+    }
+
+    over "C"
+    {
+    }
+}

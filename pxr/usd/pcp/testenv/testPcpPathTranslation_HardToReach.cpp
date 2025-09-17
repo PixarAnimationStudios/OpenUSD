@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -106,7 +89,7 @@ TestReverseTranslation_1()
 {
     std::cout << "========== TestReverseTranslation_1..."  << std::endl;
 
-    const std::string rootLayer = "TestReverseTranslation_1/1.sdf";
+    const std::string rootLayer = "TestReverseTranslation_1/1.usda";
     std::unique_ptr<PcpCache> pcpCache = _CreateCacheForRootLayer(rootLayer);
     if (!pcpCache) {
         TF_FATAL_ERROR("Unable to open @%s@", rootLayer.c_str());
@@ -130,8 +113,8 @@ TestReverseTranslation_1()
     TF_AXIOM(_IsExpectedNode(
             *nodeRange.first, PcpArcTypeRelocate, SdfPath("/M_1/A")));
 
-    // Next node is reference to @2.sdf@</M_2/B>. Note that this is before
-    // the relocation of A -> B in 3.sdf, so we expect that not to have any
+    // Next node is reference to @2.usda@</M_2/B>. Note that this is before
+    // the relocation of A -> B in 3.usda, so we expect that not to have any
     // effect on the path translation.
     ++nodeRange.first;
     TF_AXIOM(_IsExpectedNode(
@@ -144,7 +127,7 @@ TestReverseTranslation_1()
     TF_AXIOM(_IsExpectedNode(
             *nodeRange.first, PcpArcTypeRelocate, SdfPath("/M_2/A")));
 
-    // Next is the reference to @3.sdf@</M_3/B>. Although this is in the 
+    // Next is the reference to @3.usda@</M_3/B>. Although this is in the 
     // layer stack where the relocation of A -> B is specified, this is still 
     // before the relocation node in the prim index, so that relocation should
     // still have no effect.
@@ -168,7 +151,7 @@ TestReverseTranslation_1()
     // _TestReverseTranslation(index, *nodeRange.first, 
     //     /* target */ SdfPath("/M_1/B"), /* expected*/ SdfPath("/M_3/A"));
 
-    // Next, the reference node to @4.sdf@</M_4/A>. This is on the 
+    // Next, the reference node to @4.usda@</M_4/A>. This is on the 
     // other side of the relocation, so reverse translating to this node
     // should translate B to A.
     ++nodeRange.first;
@@ -177,7 +160,7 @@ TestReverseTranslation_1()
     _TestReverseTranslation(index, *nodeRange.first, 
         /* target */ SdfPath("/M_1/B"), /* expected*/ SdfPath("/M_4/A"));
 
-    // Lastly, the reference node to @4.sdf@</M_4/B>. This node shouldn't
+    // Lastly, the reference node to @4.usda@</M_4/B>. This node shouldn't
     // contribute opinions to the index because it is superceded by opinions
     // at the relocation source </M_4/A>, but we include it for completeness.
     // Note that if culling is enabled, this node is culled from the graph,
@@ -185,7 +168,7 @@ TestReverseTranslation_1()
     //
     // XXX: This particular case doesn't currently give the expected answer.
     //      Instead, it gives /M_4/A -- it's applied the relocation from
-    //      3.sdf even though it's not on the other side of the relocation
+    //      3.usda even though it's not on the other side of the relocation
     //      arc. Since this isn't a valid source of opinions anyway, we
     //      shouldn't ever run into this situation in real usage, so I'm
     //      commenting this test case out.
@@ -213,7 +196,7 @@ TestReverseTranslation_2()
     std::cout << "========== TestReverseTranslation_2..."  
               << std::endl;
 
-    const std::string rootLayer = "TestReverseTranslation_1/1.sdf";
+    const std::string rootLayer = "TestReverseTranslation_1/1.usda";
     std::unique_ptr<PcpCache> pcpCache = _CreateCacheForRootLayer(rootLayer);
     if (!pcpCache) {
         TF_FATAL_ERROR("Unable to open @%s@", rootLayer.c_str());
@@ -232,8 +215,8 @@ TestReverseTranslation_2()
     _TestReverseTranslation(index, *nodeRange.first, 
         /* target */ SdfPath("/M_1/B"), /* expected */ SdfPath("/M_1/B"));
     
-    // Next node is reference to @2.sdf@</M_2/C>. Note that this is before
-    // the relocation of A -> B in 3.sdf, so we expect that not to have any
+    // Next node is reference to @2.usda@</M_2/C>. Note that this is before
+    // the relocation of A -> B in 3.usda, so we expect that not to have any
     // effect on the path translation.
     ++nodeRange.first;
     TF_AXIOM(_IsExpectedNode(
@@ -241,7 +224,7 @@ TestReverseTranslation_2()
     _TestReverseTranslation(index, *nodeRange.first, 
         /* target */ SdfPath("/M_1/B"), /* expected */ SdfPath("/M_2/B"));
 
-    // Next is the reference to @3.sdf@</M_3/C>. Since this is the layer 
+    // Next is the reference to @3.usda@</M_3/C>. Since this is the layer 
     // stack where the relocation of A -> B is authored, we expect 
     // reverse translation to this node to still refer to B.
     ++nodeRange.first;
@@ -250,7 +233,7 @@ TestReverseTranslation_2()
     _TestReverseTranslation(index, *nodeRange.first, 
         /* target */ SdfPath("/M_1/B"), /* expected*/ SdfPath("/M_3/B"));
 
-    // Lastly, the reference node to @4.sdf@</M_4/C>. This is on the 
+    // Lastly, the reference node to @4.usda@</M_4/C>. This is on the 
     // other side of the relocation, so reverse translating to this node
     // should translate B to A.
     ++nodeRange.first;
@@ -271,7 +254,7 @@ TestReverseTranslation_3()
 {
     std::cout << "========== TestReverseTranslation_3..." << std::endl;
 
-    const std::string rootLayer = "TestReverseTranslation_3/root.sdf";
+    const std::string rootLayer = "TestReverseTranslation_3/root.usda";
     std::unique_ptr<PcpCache> pcpCache = _CreateCacheForRootLayer(rootLayer);
     if (!pcpCache) {
         TF_FATAL_ERROR("Unable to open @%s@", rootLayer.c_str());

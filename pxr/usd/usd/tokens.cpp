@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usd/usd/tokens.h"
 
@@ -36,6 +19,16 @@ UsdTokensType::UsdTokensType() :
     collection_MultipleApplyTemplate_IncludeRoot("collection:__INSTANCE_NAME__:includeRoot", TfToken::Immortal),
     collection_MultipleApplyTemplate_Includes("collection:__INSTANCE_NAME__:includes", TfToken::Immortal),
     collection_MultipleApplyTemplate_MembershipExpression("collection:__INSTANCE_NAME__:membershipExpression", TfToken::Immortal),
+    colorSpaceDefinition("colorSpaceDefinition", TfToken::Immortal),
+    colorSpaceDefinition_MultipleApplyTemplate_BlueChroma("colorSpaceDefinition:__INSTANCE_NAME__:blueChroma", TfToken::Immortal),
+    colorSpaceDefinition_MultipleApplyTemplate_Gamma("colorSpaceDefinition:__INSTANCE_NAME__:gamma", TfToken::Immortal),
+    colorSpaceDefinition_MultipleApplyTemplate_GreenChroma("colorSpaceDefinition:__INSTANCE_NAME__:greenChroma", TfToken::Immortal),
+    colorSpaceDefinition_MultipleApplyTemplate_LinearBias("colorSpaceDefinition:__INSTANCE_NAME__:linearBias", TfToken::Immortal),
+    colorSpaceDefinition_MultipleApplyTemplate_Name("colorSpaceDefinition:__INSTANCE_NAME__:name", TfToken::Immortal),
+    colorSpaceDefinition_MultipleApplyTemplate_RedChroma("colorSpaceDefinition:__INSTANCE_NAME__:redChroma", TfToken::Immortal),
+    colorSpaceDefinition_MultipleApplyTemplate_WhitePoint("colorSpaceDefinition:__INSTANCE_NAME__:whitePoint", TfToken::Immortal),
+    colorSpaceName("colorSpace:name", TfToken::Immortal),
+    custom("custom", TfToken::Immortal),
     exclude("exclude", TfToken::Immortal),
     expandPrims("expandPrims", TfToken::Immortal),
     expandPrimsAndProperties("expandPrimsAndProperties", TfToken::Immortal),
@@ -44,6 +37,8 @@ UsdTokensType::UsdTokensType() :
     APISchemaBase("APISchemaBase", TfToken::Immortal),
     ClipsAPI("ClipsAPI", TfToken::Immortal),
     CollectionAPI("CollectionAPI", TfToken::Immortal),
+    ColorSpaceAPI("ColorSpaceAPI", TfToken::Immortal),
+    ColorSpaceDefinitionAPI("ColorSpaceDefinitionAPI", TfToken::Immortal),
     ModelAPI("ModelAPI", TfToken::Immortal),
     Typed("Typed", TfToken::Immortal),
     allTokens({
@@ -57,6 +52,16 @@ UsdTokensType::UsdTokensType() :
         collection_MultipleApplyTemplate_IncludeRoot,
         collection_MultipleApplyTemplate_Includes,
         collection_MultipleApplyTemplate_MembershipExpression,
+        colorSpaceDefinition,
+        colorSpaceDefinition_MultipleApplyTemplate_BlueChroma,
+        colorSpaceDefinition_MultipleApplyTemplate_Gamma,
+        colorSpaceDefinition_MultipleApplyTemplate_GreenChroma,
+        colorSpaceDefinition_MultipleApplyTemplate_LinearBias,
+        colorSpaceDefinition_MultipleApplyTemplate_Name,
+        colorSpaceDefinition_MultipleApplyTemplate_RedChroma,
+        colorSpaceDefinition_MultipleApplyTemplate_WhitePoint,
+        colorSpaceName,
+        custom,
         exclude,
         expandPrims,
         expandPrimsAndProperties,
@@ -65,6 +70,8 @@ UsdTokensType::UsdTokensType() :
         APISchemaBase,
         ClipsAPI,
         CollectionAPI,
+        ColorSpaceAPI,
+        ColorSpaceDefinitionAPI,
         ModelAPI,
         Typed
     })

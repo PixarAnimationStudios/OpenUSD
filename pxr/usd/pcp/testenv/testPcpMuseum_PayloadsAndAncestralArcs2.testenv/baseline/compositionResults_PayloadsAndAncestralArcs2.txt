@@ -1,16 +1,16 @@
-Loading @PayloadsAndAncestralArcs2/root.sdf@
+Loading @PayloadsAndAncestralArcs2/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </SubrootInherits>
 
 Prim Stack:
-    root.sdf             /SubrootInherits
-    inherits.sdf         /Ref
-    inherits.sdf         /Payload
+    root.usda            /SubrootInherits
+    inherits.usda        /Ref
+    inherits.usda        /Payload
 
 Child names:
      ['Class', 'Child']
@@ -19,28 +19,28 @@ Child names:
 Results for composing </SubrootInherits/Class>
 
 Prim Stack:
-    root.sdf             /SubrootInherits/Class
-    inherits.sdf         /Ref/Class
-    inherits.sdf         /Payload/Class
+    root.usda            /SubrootInherits/Class
+    inherits.usda        /Ref/Class
+    inherits.usda        /Payload/Class
 
 ------------------------------------------------------------------------
 Results for composing </SubrootInherits/Child>
 
 Prim Stack:
-    root.sdf             /SubrootInherits/Child
-    root.sdf             /SubrootInherits/Class
-    inherits.sdf         /Ref/Child
-    inherits.sdf         /Ref/Class
-    inherits.sdf         /Payload/Class
-    inherits.sdf         /Payload/Child
+    root.usda            /SubrootInherits/Child
+    root.usda            /SubrootInherits/Class
+    inherits.usda        /Ref/Child
+    inherits.usda        /Ref/Class
+    inherits.usda        /Payload/Class
+    inherits.usda        /Payload/Child
 
 ------------------------------------------------------------------------
 Results for composing </Relocates>
 
 Prim Stack:
-    root.sdf             /Relocates
-    relocates.sdf        /Ref
-    relocates.sdf        /Payload
+    root.usda            /Relocates
+    relocates.usda       /Ref
+    relocates.usda       /Payload
 
 Child names:
      ['Child']
@@ -52,7 +52,7 @@ Prohibited child names:
 Results for composing </Relocates/Child>
 
 Prim Stack:
-    root.sdf             /Relocates/Child
-    relocates.sdf        /Ref/Child
-    relocates.sdf        /Payload/PayloadChild
+    root.usda            /Relocates/Child
+    relocates.usda       /Ref/Child
+    relocates.usda       /Payload/PayloadChild
 

@@ -1,0 +1,12 @@
+#usda 1.0
+(
+    expressionVariables = {
+        string REF_VAR_SEL = "x"
+    }
+)
+
+def "OverrideRef" (
+    references = @./ref.usda@</Ref>
+)
+{
+}

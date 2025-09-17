@@ -1,0 +1,26 @@
+#usda 1.0
+
+def "MaterialX"
+{
+    def "Materials"
+    {
+        def Material "USD_CarPaint" (
+            prepend apiSchemas = ["MaterialXConfigAPI"]
+        )
+        {
+            string config:mtlx:version = "1.38"
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/USD_CarPaint/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface" 
+            {
+                uniform token info:id = "ND_UsdPreviewSurface_surfaceshader"
+                float inputs:clearcoat = 1
+                float inputs:clearcoatRoughness = 0
+                color3f inputs:diffuseColor = (0.0518895, 0.29606, 0.425324)
+                float inputs:roughness = 0.4
+                token outputs:surface
+            }
+        }
+    }
+}
+

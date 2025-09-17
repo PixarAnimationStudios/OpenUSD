@@ -1,0 +1,52 @@
+digraph network {
+	rankdir=TB;
+	page="8.5, 11";
+
+	node [shape=plaintext];
+		"0x7fdf34a41700" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD COLSPAN="1"> EfTimeInputNode / [__computeTime] </TD></TR>
+		</TABLE>>];
+	node [shape=plaintext];
+		"0x7fdf341c5700" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD PORT="0x7fdf3400e3d0" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#9999cc">time</FONT></TD></TR>
+			<TR><TD COLSPAN="1"> Exec_AttributeInputNode /Prim2.customAttr [__computeValue] </TD></TR>
+		</TABLE>>];
+	node [shape=plaintext];
+		"0x7fdf34011ae0" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD PORT="0x7fdf341fe8f0" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#9999cc">customAttr</FONT></TD></TR>
+			<TR><TD COLSPAN="1"> Exec_CallbackNode /Prim1 [computeUsingCustomAttr] </TD></TR>
+		</TABLE>>];
+	node [shape=plaintext];
+		"0x7fdf34033ad0" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD PORT="0x7fdf341fe950" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#9999cc">in</FONT></TD></TR>
+			<TR><TD COLSPAN="1"> EfLeafNode /Prim1 [computeUsingCustomAttr] </TD></TR>
+		</TABLE>>];
+	node [shape=plaintext];
+		"0x7fdf341c5600" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD PORT="0x7fdf3400eb80" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#9999cc">time</FONT></TD></TR>
+			<TR><TD COLSPAN="1"> Exec_AttributeInputNode /Prim1.customAttr [__computeValue] </TD></TR>
+		</TABLE>>];
+	node [shape=plaintext];
+		"0x7fdf34011990" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD PORT="0x7fdf341fea10" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#9999cc">customAttr</FONT></TD></TR>
+			<TR><TD COLSPAN="1"> Exec_CallbackNode /Prim2 [computeUsingCustomAttr] </TD></TR>
+		</TABLE>>];
+	node [shape=plaintext];
+		"0x7fdf34069e80" [label=<
+		<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD PORT="0x7fdf341fea70" COLSPAN="1"><FONT POINT-SIZE="10" FACE="Arial" COLOR="#9999cc">in</FONT></TD></TR>
+			<TR><TD COLSPAN="1"> EfLeafNode /Prim2 [computeUsingCustomAttr] </TD></TR>
+		</TABLE>>];
+		"0x7fdf34a41700" -> "0x7fdf341c5700":"0x7fdf3400e3d0":n;
+		"0x7fdf341c5600" -> "0x7fdf34011ae0":"0x7fdf341fe8f0":n;
+		"0x7fdf34011ae0" -> "0x7fdf34033ad0":"0x7fdf341fe950":n;
+		"0x7fdf34a41700" -> "0x7fdf341c5600":"0x7fdf3400eb80":n;
+		"0x7fdf341c5700" -> "0x7fdf34011990":"0x7fdf341fea10":n;
+		"0x7fdf34011990" -> "0x7fdf34069e80":"0x7fdf341fea70":n;
+}

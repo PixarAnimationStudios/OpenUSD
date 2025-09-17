@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -32,6 +15,8 @@
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/usd/usd/references.h"
+
+#include "pxr/base/ts/spline.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -75,6 +60,102 @@ _GenerateStage(const string& fmt) {
     localRefAttr.Block();
 
     return std::make_tuple(stage, defAttr, sampleAttr, localRefAttr);
+}
+
+tuple<UsdStageRefPtr, UsdAttribute>
+_GenerateStageForSpline(const string& fmt) {
+    const TfToken splineAttrTk = TfToken("points");
+    const SdfPath primPath = SdfPath("/Sphere");
+
+    auto stage = UsdStage::CreateInMemory("testSpline" + fmt);
+    auto prim = stage->DefinePrim(primPath);
+
+    auto splineAttr = prim.CreateAttribute(splineAttrTk, 
+                                           SdfValueTypeNames->Double);
+
+    TsSpline spline;
+    for (size_t i = TIME_SAMPLE_BEGIN; i < TIME_SAMPLE_END; ++i) {
+        const auto sample = static_cast<double>(i);
+        TsKnot knot;
+        knot.SetTime(sample);
+        knot.SetValue(sample);
+        knot.SetNextInterpolation(TsInterpHeld);
+        spline.SetKnot(knot);
+    }
+    splineAttr.SetSpline(spline);
+
+    return std::make_tuple(stage, splineAttr);
+}
+
+UsdStageRefPtr
+_GenerateStageForAnimationBlock(const string& fmt) {
+    // Weaker Layer
+    SdfLayerRefPtr weakerLayer = 
+        SdfLayer::CreateAnonymous("animationBlocks_weaker");
+    weakerLayer->ImportFromString(R"(#usda 1.0
+over "Human"
+{
+    int c = 1
+    double d = 2.0
+}
+)");
+
+    // Weak middle layer
+    SdfLayerRefPtr weakLayer = 
+        SdfLayer::CreateAnonymous("animationBlocks_weak");
+    weakLayer->ImportFromString(R"(#usda 1.0
+over "Human"
+{
+    int a = AnimationBlock
+    int a.timeSamples = {
+        1: 5,
+        2: 18,
+    }
+
+    double b.spline = {
+        1: 5; post held,
+        2: 18; post held,
+    }
+
+    int c.timeSamples = {
+        0: 456,
+        1: 789
+    }
+
+    double d.spline = {
+        1: 5; post held,
+        2: 18; post held,
+    }
+}
+)");
+
+    // Stronger layer
+    SdfLayerRefPtr strongerLayer = 
+        SdfLayer::CreateAnonymous("animationBlocks_strong");
+    strongerLayer->ImportFromString(R"(#usda 1.0
+def Xform "Human"
+{
+    double b = AnimationBlock
+    double b.spline = {
+        1: 10; post held,
+        2: 20; post held,
+    }
+
+    double d = AnimationBlock
+
+    double e = AnimationBlock
+}
+)");
+    SdfLayerRefPtr rootLayer = SdfLayer::CreateAnonymous("test" + fmt);
+    rootLayer->SetSubLayerPaths(
+        {strongerLayer->GetIdentifier(),
+         weakLayer->GetIdentifier(),
+         weakerLayer->GetIdentifier()});
+    auto stage = UsdStage::Open(rootLayer);
+    auto attrC = stage->GetAttributeAtPath(SdfPath("/Human.c"));
+    TF_AXIOM(attrC);
+    attrC.BlockAnimation();
+    return stage;
 }
 
 template <typename T>
@@ -142,6 +223,199 @@ _CheckSampleBlocked(UsdAttribute& attr, const double time)
     TF_AXIOM(!query.Get<T>(&value, time));
     TF_AXIOM(!attr.Get(&untypedValue, time));
     TF_AXIOM(!query.Get(&untypedValue, time));
+}
+
+void
+_CheckSplineBlocking(UsdAttribute& splineAttr)
+{
+    // Initially nothing should be blocked.
+    TsTime t0 = TIME_SAMPLE_BEGIN;
+    TsTime t1 = TIME_SAMPLE_END;
+
+    double value;
+    for (TsTime t = t0; t < t1; t += 0.5) {
+        TF_AXIOM(splineAttr.Get(&value, t));
+    }
+    // Test extrapolation blocking
+    TsSpline spline = splineAttr.GetSpline();
+
+    auto extrap = TsExtrapolation(TsExtrapValueBlock);
+    spline.SetPreExtrapolation(extrap);
+    spline.SetPostExtrapolation(extrap);
+
+    TF_AXIOM(splineAttr.Get(&value, t0 - 1));
+    TF_AXIOM(splineAttr.Get(&value, t1 + 1));
+
+    splineAttr.SetSpline(spline);
+
+    TF_AXIOM(!splineAttr.Get(&value, t0 - 1));
+    TF_AXIOM(!splineAttr.Get(&value, t1 + 1));
+
+    // Test interpolation blocking. Every other knot is a block
+    for (TsTime t = t0; t < t1; t += 2) {
+        TsKnot knot;
+        TF_AXIOM(spline.GetKnot(t, &knot));
+        knot.SetNextInterpolation(TsInterpValueBlock);
+        spline.SetKnot(knot);
+    }
+
+    splineAttr.SetSpline(spline);
+
+    // Test the value-blocked knots
+    for (TsTime t = t0; t < t1; t += 2) {
+        TF_AXIOM(!splineAttr.Get(&value, t));
+        TF_AXIOM(!splineAttr.Get(&value, t + 0.5));
+    }
+
+    // Test the non-value-blocked knots
+    for (TsTime t = t0 + 1; t < t1; t += 2) {
+        TF_AXIOM(splineAttr.Get(&value, t));
+        TF_AXIOM(splineAttr.Get(&value, t + 0.5));
+    }
+
+    // An empty spline is effectively a value block, it has no value
+    // at all times.
+    spline = TsSpline(TfType::Find<double>());
+    splineAttr.SetSpline(spline);
+
+    // Note that ValueIsBlocked() only returns true if there is a default whose
+    // value is blocked. If the attribute's value is time-dependent (either a
+    // spline or timeSamples) then ValueIsBlocked() always returns false; the
+    // time-dependent value is not examined.
+    TF_AXIOM(!splineAttr.GetResolveInfo().ValueIsBlocked());
+
+    for (TsTime t = t0 - 1; t < t1 + 1; t += 0.5) {
+        TF_AXIOM(!splineAttr.Get(&value, t));
+    }
+}
+
+void
+_CheckAnimationBlock(UsdStageRefPtr stage)
+{
+    UsdPrim prim = stage->GetPrimAtPath(SdfPath("/Human"));
+    // Since attribute "a"'s strongest time samples are not blocked by an
+    // animation block, its time samples shine through. Also even though it has
+    // a default animation block, but its weaker and hence doesn't affect its
+    // stronger time samples.
+    // do also note that default Animation block in the same layer, doesn't
+    // affect time samples in the same layer, time samples still win.
+    // only default is animtion block
+    {
+        UsdAttribute attr = prim.GetAttribute(TfToken("a"));
+        // source is time samples
+        TF_AXIOM(attr.GetResolveInfo().GetSource() == 
+                    UsdResolveInfoSource::UsdResolveInfoSourceTimeSamples);
+        VtValue untypedValue;
+        TF_AXIOM(!attr.Get(&untypedValue));
+        TF_AXIOM(untypedValue.IsEmpty());
+        // time samples shine through
+        TF_AXIOM(attr.Get(&untypedValue, 1.0));
+        TF_AXIOM(untypedValue.UncheckedGet<int>() == 5);
+
+        int value;
+        TF_AXIOM(!attr.Get(&value));
+        TF_AXIOM(attr.Get(&value, 1.0));
+        TF_AXIOM(value == 5);
+    }
+
+    // Since attribute "b"'s strongest spline values are not blocked by an
+    // animation block, its spline values shine through. Also even though it has
+    // a default animation block, but its weaker and hence doesn't affect its
+    // strongest spline values.
+    // do also note that default Animation block in the same stronger layer, 
+    // doesn't affect spline values in the same layer, splines still win.
+    {
+        UsdAttribute attr = prim.GetAttribute(TfToken("b"));
+        // source is spline
+        TF_AXIOM(attr.GetResolveInfo().GetSource() == 
+                    UsdResolveInfoSource::UsdResolveInfoSourceSpline);
+        VtValue untypedValue;
+        // default is animtion block
+        TF_AXIOM(!attr.Get(&untypedValue));
+        TF_AXIOM(untypedValue.IsEmpty());
+        // stronger spline value shine through (and not the weaker spline or
+        // animation block)
+        TF_AXIOM(attr.Get(&untypedValue, 1.0));
+        TF_AXIOM(untypedValue.UncheckedGet<double>() == 10.0);
+
+        double value;
+        TF_AXIOM(!attr.Get(&value));
+        TF_AXIOM(attr.Get(&value, 1.0));
+        TF_AXIOM(value == 10.0);
+    }
+
+    // Since attribute "c"'s strongest value is an Animation block, its blocks
+    // any time sample, and results in any non-animation block default value to
+    // shine through from the weaker layer.
+    // default is 1 and not animation block
+    {
+        UsdAttribute attr = prim.GetAttribute(TfToken("c"));
+        // source is default
+        TF_AXIOM(attr.GetResolveInfo().GetSource() == 
+                    UsdResolveInfoSource::UsdResolveInfoSourceDefault);
+        {
+            VtValue untypedValue;
+            TF_AXIOM(attr.Get(&untypedValue));
+            TF_AXIOM(untypedValue.UncheckedGet<int>() == 1);
+
+            int value;
+            TF_AXIOM(attr.Get<int>(&value));
+            TF_AXIOM(value == 1);
+        }
+        // time samples is animation blocked and default shines through
+        {
+            VtValue untypedValue;
+            TF_AXIOM(attr.Get(&untypedValue, 1.0));
+            TF_AXIOM(untypedValue.UncheckedGet<int>() == 1);
+
+            int value;
+            TF_AXIOM(attr.Get(&value, 1.0));
+            TF_AXIOM(value == 1);
+        }
+    }
+
+    // Since attribute "d"'s strongest value is an Animation block, its blocks
+    // any spline, and results in any non-animation block default value to
+    // shine through from the weaker layer.
+    // default is 2.0 and not animation block
+    {
+        UsdAttribute attr = prim.GetAttribute(TfToken("d"));
+        // source is default
+        TF_AXIOM(attr.GetResolveInfo().GetSource() == 
+                    UsdResolveInfoSource::UsdResolveInfoSourceDefault);
+        {
+            VtValue untypedValue;
+            TF_AXIOM(attr.Get(&untypedValue));
+            TF_AXIOM(untypedValue.UncheckedGet<double>() == 2.0);
+
+            double value;
+            TF_AXIOM(attr.Get(&value));
+            TF_AXIOM(value == 2.0);
+        }
+        // spline is animation blocked and default shines through
+        {
+            VtValue untypedValue;
+            TF_AXIOM(attr.Get(&untypedValue, 1.0));
+            TF_AXIOM(untypedValue.UncheckedGet<double>() == 2.0);
+
+            double value;
+            TF_AXIOM(attr.Get(&value, 1.0));
+            TF_AXIOM(value == 2.0);
+        }
+    }
+    // Attr with just animation block, we should get an empty default value with
+    // resolve info source as None
+    {
+        UsdAttribute attr = prim.GetAttribute(TfToken("e"));
+        // source is none
+        TF_AXIOM(attr.GetResolveInfo().GetSource() == 
+                    UsdResolveInfoSource::UsdResolveInfoSourceNone);
+        {
+            VtValue untypedValue;
+            TF_AXIOM(!attr.Get(&untypedValue));
+            TF_AXIOM(untypedValue.IsEmpty());
+        }
+    }
 }
 
 int main(int argc, char** argv) {
@@ -253,6 +527,13 @@ int main(int argc, char** argv) {
                 _CheckSampleNotBlocked(sampleAttr, sample+1.0, sample+1.0);
             }
         }
+
+        UsdAttribute splineAttr;
+        std::tie(stage, splineAttr) = _GenerateStageForSpline(fmt);
+        _CheckSplineBlocking(splineAttr);
+
+        std::cout << "Testing animation block" << std::endl;
+        _CheckAnimationBlock(_GenerateStageForAnimationBlock(fmt));
         std::cout << "+------------------------------------------+" << std::endl;
     }
 

@@ -1,31 +1,16 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_GEOM_UTIL_MESH_GENERATOR_BASE_H
 #define PXR_IMAGING_GEOM_UTIL_MESH_GENERATOR_BASE_H
 
 #include "pxr/imaging/geomUtil/api.h"
 
+#include "pxr/base/arch/math.h"
+#include "pxr/base/gf/math.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
@@ -106,12 +91,13 @@ protected:
     {};
 
     // Helper struct to provide iterator type erasure, allowing subclasses to
-    // implement their GeneratePoints methods privately.  Usage doesn't require
-    // any heap allocation or virtual dispatch/runtime typing.  In addition to
-    // erasing the iterator type, this also provides a convenient way to allow
-    // subclasses to offer GeneratePoints methods that can apply an additional
-    // frame transform without having to actually plumb that detail into the
-    // guts of their point generator code.
+    // implement their GeneratePoints and GenerateNormals methods privately.
+    //  Usage doesn't require any heap allocation or virtual dispatch/runtime
+    // typing.  In addition to erasing the iterator type, this also provides a
+    // convenient way to allow subclasses to offer GeneratePoints and
+    // GenerateNormals methods that can apply an additional frame transform
+    // without having to actually plumb that detail into the guts of their point
+    // generator code.
     //
     // Note: Ensuring the interoperability of the PointType with the IterType
     // used at construction is the responsibility of the client.  It's typically
@@ -125,6 +111,7 @@ protected:
         _PointWriter(
             IterType& iter)
             : _writeFnPtr(&_PointWriter<PointType>::_WritePoint<IterType>)
+            , _writeDirFnPtr(&_PointWriter<PointType>::_WriteDir<IterType>)
             , _untypedIterPtr(static_cast<void*>(&iter))
         {}
 
@@ -134,6 +121,8 @@ protected:
             const GfMatrix4d* const framePtr)
             : _writeFnPtr(
                 &_PointWriter<PointType>::_TransformAndWritePoint<IterType>)
+            , _writeDirFnPtr(
+                &_PointWriter<PointType>::_TransformAndWriteDir<IterType>)
             , _untypedIterPtr(static_cast<void*>(&iter))
             , _framePtr(framePtr)
         {}
@@ -142,6 +131,34 @@ protected:
             const PointType& pt) const
         {
             (this->*_writeFnPtr)(pt);
+        }
+
+        void WriteArc(
+            const typename PointType::ScalarType scaleXY,
+            const std::vector<std::array<
+                typename PointType::ScalarType, 2>>& arcXY,
+            const typename PointType::ScalarType arcZ) const
+        {
+            for (const auto& xy : arcXY) {
+                Write(PointType(scaleXY * xy[0], scaleXY * xy[1], arcZ));
+            }
+        }
+
+        void WriteDir(
+            const PointType& dir) const
+        {
+            (this->*_writeDirFnPtr)(dir);
+        }
+
+        void WriteArcDir(
+            const typename PointType::ScalarType scaleXY,
+            const std::vector<std::array<
+                typename PointType::ScalarType, 2>>& arcXY,
+            const typename PointType::ScalarType arcZ) const
+        {
+            for (const auto& xy : arcXY) {
+                WriteDir(PointType(scaleXY * xy[0], scaleXY * xy[1], arcZ));
+            }
         }
 
     private:
@@ -159,13 +176,34 @@ protected:
             const PointType& pt) const
         {
             IterType& iter = *static_cast<IterType*>(_untypedIterPtr);
-            *iter = _framePtr->Transform(pt);
+            using OutType = typename std::remove_reference_t<decltype(*iter)>;
+            *iter = static_cast<OutType>(_framePtr->Transform(pt));
+            ++iter;
+        }
+
+        template<class IterType>
+        void _WriteDir(
+            const PointType& pt) const
+        {
+            IterType& iter = *static_cast<IterType*>(_untypedIterPtr);
+            *iter = pt;
+            ++iter;
+        }
+
+        template<class IterType>
+        void _TransformAndWriteDir(
+            const PointType& dir) const
+        {
+            IterType& iter = *static_cast<IterType*>(_untypedIterPtr);
+            using OutType = typename std::remove_reference_t<decltype(*iter)>;
+            *iter = static_cast<OutType>(_framePtr->TransformDir(dir));
             ++iter;
         }
 
         using _WriteFnPtr =
             void (_PointWriter<PointType>::*)(const PointType &) const;
         _WriteFnPtr _writeFnPtr;
+        _WriteFnPtr _writeDirFnPtr;
         void* _untypedIterPtr;
         const GfMatrix4d* _framePtr;
     };
@@ -219,6 +257,42 @@ protected:
         const size_t numRadial,
         const bool closedSweep);
 
+    // Subclasses that use the topology helper method above must generate points
+    // forming circular arcs and this method will compute the total number of
+    // points required for the topology generated using these same parameters.
+    static size_t _ComputeNumCappedQuadTopologyPoints(
+        const size_t numRadial,
+        const size_t numQuadStrips,
+        const _CapStyle bottomCapStyle,
+        const _CapStyle topCapStyle,
+        const bool closedSweep);
+
+    // Subclasses can use this helper method to generate a unit circular arc
+    // in the XY plane that can then be passed into _PointWriter::WriteArc to
+    // write out the points of circular arcs using varying radii.
+    template<typename ScalarType>
+    static std::vector<std::array<ScalarType, 2>> _GenerateUnitArcXY(
+        const size_t numRadial,
+        const ScalarType sweepDegrees)
+    {
+        constexpr ScalarType twoPi = 2.0 * M_PI;
+        const ScalarType sweepRadians = GfDegreesToRadians(sweepDegrees);
+        const ScalarType sweep = GfClamp(sweepRadians, -twoPi, twoPi);
+        const bool closedSweep = GfIsClose(GfAbs(sweep), twoPi, 1e-6);
+        const size_t numPts = _ComputeNumRadialPoints(numRadial, closedSweep);
+
+        // Construct a circular arc of unit radius in the XY plane.
+        std::vector<std::array<ScalarType, 2>> result(numPts);
+        for (size_t radIdx = 0; radIdx < numPts; ++radIdx) {
+            // Longitude range: [0, sweep]
+            const ScalarType longAngle =
+                (ScalarType(radIdx) / ScalarType(numRadial)) * sweep;
+            result[radIdx][0] = cos(longAngle);
+            result[radIdx][1] = sin(longAngle);
+        }
+        return result;
+    }
+
 public:
 
     // This template provides a "fallback" for GeneratePoints(...) calls that
@@ -232,6 +306,24 @@ public:
              typename Enabled =
                 typename _EnableIfNotGfVec3Iterator<PointIterType>::type>
     static void GeneratePoints(
+        PointIterType iter, ...)
+    {
+        static_assert(_IsGfVec3Iterator<PointIterType>::value,
+            "This function only supports iterators to GfVec3f or GfVec3d "
+            "objects.");
+    }
+
+    // This template provides a "fallback" for GenerateNormals(...) calls that
+    // do not meet the SFINAE requirement that the given point-container-
+    // iterator must dereference to a GfVec3f or GfVec3d.  This version
+    // generates a helpful compile time assertion in such a scenario.  As noted
+    // earlier, subclasses should explicitly add a "using" statement with
+    // this method to include it in overload resolution.
+    //
+    template<typename PointIterType,
+             typename Enabled =
+                typename _EnableIfNotGfVec3Iterator<PointIterType>::type>
+    static void GenerateNormals(
         PointIterType iter, ...)
     {
         static_assert(_IsGfVec3Iterator<PointIterType>::value,

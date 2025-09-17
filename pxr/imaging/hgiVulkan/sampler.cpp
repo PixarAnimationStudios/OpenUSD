@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/base/tf/diagnostic.h"
 
@@ -27,6 +10,7 @@
 #include "pxr/imaging/hgiVulkan/conversions.h"
 #include "pxr/imaging/hgiVulkan/device.h"
 #include "pxr/imaging/hgiVulkan/sampler.h"
+#include "pxr/imaging/hgiVulkan/diagnostic.h"
 
 #include <float.h>
 
@@ -61,23 +45,30 @@ HgiVulkanSampler::HgiVulkanSampler(
     sampler.mipLodBias = 0.0f;
     sampler.mipmapMode = HgiVulkanConversions::GetMipFilter(desc.mipFilter);
     sampler.minLod = 0.0f;
-    sampler.maxLod = FLT_MAX;
+    sampler.maxLod = desc.mipFilter == HgiMipFilterNotMipmapped
+        ? 0.25 : VK_LOD_CLAMP_NONE;
+    // 0.25 if not mipmapped, to emulate OpenGL
+    // See https://registry.khronos.org/vulkan/specs/latest/man/html/VkSamplerCreateInfo.html#_description
 
     if ((desc.minFilter != HgiSamplerFilterNearest ||
          desc.mipFilter == HgiMipFilterLinear) &&
          desc.magFilter != HgiSamplerFilterNearest) {
         HgiVulkanCapabilities const& caps = device->GetDeviceCapabilities();
-        sampler.anisotropyEnable = caps.vkDeviceFeatures.samplerAnisotropy;
+        sampler.anisotropyEnable =
+            caps.vkDeviceFeatures2.features.samplerAnisotropy;
         sampler.maxAnisotropy = sampler.anisotropyEnable ?
-            caps.vkDeviceProperties.limits.maxSamplerAnisotropy : 1.0f; 
+            std::min<float>({
+                caps.vkDeviceProperties2.properties.limits.maxSamplerAnisotropy,
+                static_cast<float>(desc.maxAnisotropy),
+                static_cast<float>(TfGetEnvSetting(HGI_MAX_ANISOTROPY))}) : 1.0f;
     }
 
-    TF_VERIFY(
+    HGIVULKAN_VERIFY_VK_RESULT(
         vkCreateSampler(
             device->GetVulkanDevice(),
             &sampler,
             HgiVulkanAllocator(),
-            &_vkSampler) == VK_SUCCESS
+            &_vkSampler)
     );
 }
 

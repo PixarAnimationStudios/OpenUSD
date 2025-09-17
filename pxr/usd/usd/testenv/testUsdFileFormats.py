@@ -2,25 +2,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 import shutil, os, unittest
 from pxr import Sdf, Usd, Tf
@@ -90,7 +73,7 @@ class TestUsdFileFormats(unittest.TestCase):
             # underlying file format matches what we expect.
             self.assertTrue(layer.Save())
             self.assertEqual(
-                Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer),
+                Sdf.UsdFileFormat.GetUnderlyingFormatForLayer(layer),
                 expectedFileFormat)
 
         usdFileFormat = Sdf.FileFormat.FindById('usd')
@@ -121,14 +104,14 @@ class TestUsdFileFormats(unittest.TestCase):
             shutil.copyfile(srcFilename, dstFilename)
             layer = Sdf.Layer.FindOrOpen(dstFilename)
             self.assertEqual(
-                Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer),
+                Sdf.UsdFileFormat.GetUnderlyingFormatForLayer(layer),
                 expectedFileFormat)
 
             Sdf.PrimSpec(layer, 'TestUsdLayerSave', Sdf.SpecifierDef)
             self.assertTrue(layer.Save())
 
             self.assertEqual(
-                Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer),
+                Sdf.UsdFileFormat.GetUnderlyingFormatForLayer(layer),
                 expectedFileFormat)
 
         asciiFile = 'ascii.usd'
@@ -151,7 +134,7 @@ class TestUsdFileFormats(unittest.TestCase):
             # Exporting to a new .usd file should produce a binary file,
             # since that's the default format for .usd.
             self.assertEqual(
-                Usd.UsdFileFormat.GetUnderlyingFormatForLayer(exportedLayer), 
+                Sdf.UsdFileFormat.GetUnderlyingFormatForLayer(exportedLayer), 
                 "usdc")
 
             # The contents of the exported layer should equal to the
@@ -240,7 +223,7 @@ class TestUsdFileFormats(unittest.TestCase):
         shutil.copyfile('ascii.usd', 'test_replace.usd')
         layer = Sdf.Layer.FindOrOpen('test_replace.usd')
         self.assertEqual(
-            Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer), 
+            Sdf.UsdFileFormat.GetUnderlyingFormatForLayer(layer), 
             'usda')
 
         shutil.copyfile('crate.usd', 'test_replace.usd')
@@ -250,13 +233,13 @@ class TestUsdFileFormats(unittest.TestCase):
         self.assertTrue(layer.Reload(force=True))
 
         self.assertEqual(
-            Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer), 
+            Sdf.UsdFileFormat.GetUnderlyingFormatForLayer(layer), 
             'usdc')
 
     def test_Tokens(self):
         '''Test basic token wrapping'''
-        self.assertEqual(Usd.UsdFileFormat.Tokens.Target, 'usd')
-        self.assertEqual(Usd.UsdFileFormat.Tokens.FormatArg, 'format')
+        self.assertEqual(Sdf.UsdFileFormat.Tokens.Target, 'usd')
+        self.assertEqual(Sdf.UsdFileFormat.Tokens.FormatArg, 'format')
 
 if __name__ == "__main__":
     unittest.main()

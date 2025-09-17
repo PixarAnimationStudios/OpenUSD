@@ -1,25 +1,8 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_SCENE_INDEX_H
 #define PXR_IMAGING_HD_SCENE_INDEX_H
@@ -52,6 +35,12 @@ struct HdSceneIndexPrim
 {
     TfToken primType;
     HdContainerDataSourceHandle dataSource;
+
+    /// Does this prim returned by \ref HdSceneIndex::GetPrim exist in the
+    /// scene index?
+    bool IsDefined() const { return bool(dataSource); }
+    /// Same as IsDefined.
+    operator bool() const { return IsDefined(); }
 };
 
 ///
@@ -95,22 +84,32 @@ public:
     // Scene Data API
     // ------------------------------------------------------------------------
 
-    /// Returns a pair of (prim type, datasource) for the object at
-    /// \p primPath. If no such object exists, the type will be the empty
-    /// token and the datasource will be null. This function is expected to
-    /// be threadsafe.
+    /// Returns a pair of (prim type, datasource). A prim exists at
+    /// \a primPath if and only if datasource is a non-null pointer.
+    /// In particular, we consider the prim to exist even if the prim type
+    /// or the container that datasource points to is empty.
+    ///
+    /// Note that we require \ref GetChildPrimPaths to be consistent with this
+    /// notion of prim existence. That is, unless \a primPath is the absolute
+    /// root path, the prim at \p primPath exists if and only if \p primPath is
+    /// contained in \ref GetChildPrimPaths of the parent path.
+    ///
+    /// This function is expected to be threadsafe.
     virtual HdSceneIndexPrim GetPrim(const SdfPath &primPath) const = 0;
 
     /// Returns the paths of all scene index prims located immediately below
-    /// \p primPath. This function can be used to traverse
-    /// the scene by recursing from \p SdfPath::AbsoluteRootPath(); such a
-    /// traversal is expected to give the same set of prims as the
-    /// flattening of the scene index's \p PrimsAdded and \p PrimsRemoved
-    /// messages. This function is expected to be threadsafe.
+    /// \a primPath. This function can be used to traverse
+    /// the scene by recursing from \ref SdfPath::AbsoluteRootPath.
+    /// The traveral is expected to give exactly the set of paths where
+    /// prim exists as defined in \ref GetPrim. The traversal is also expected
+    /// to give the same set of prims as the flattening of the scene index's
+    /// \p PrimsAdded and \p PrimsRemoved messages.
+    ///
+    /// This function is expected to be threadsafe.
     virtual SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const = 0;
 
-    /// A convenience function: look up the object at \p primPath, and if
-    /// successful return the datasource at \p locator within that prim. This
+    /// A convenience function: look up the object at \a primPath, and if
+    /// successful return the datasource at \a locator within that prim. This
     /// is equivalent to calling \p GetPrim(primPath), and then calling
     /// \p HdContainerDataSource::Get(prim.dataSource, locator).
     HdDataSourceBaseHandle GetDataSource(
@@ -178,7 +177,7 @@ protected:
 
     /// Notify attached observers of prims added to the scene. The set of
     /// scene prims compiled from added/removed notices should match the set
-    /// from a traversal based on \p GetChildPrimNames. Each prim has a path
+    /// from a traversal based on \p GetChildPrimPaths. Each prim has a path
     /// and type. It's possible for \p PrimsAdded to be called for prims that
     /// already exist; in that case, observers should be sure to update the
     /// prim type, in case it changed, and resync the prim. This function is

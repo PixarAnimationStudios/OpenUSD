@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    upAxis = "Y"
+    subLayers = [
+        @./sublayer_sub.usda@
+    ]
+)
+
+over "Spheres"
+{
+    def Sphere "BrownSphere"
+    {
+        double radius = 1.0
+        color3f[] primvars:displayColor = [(0.54, 0.27, 0.07)]
+        double3 xformOp:translate = (4.0, -4.0, 0.0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}

@@ -1,15 +1,15 @@
-Loading @SubrootInheritsAndVariants/root.sdf@
+Loading @SubrootInheritsAndVariants/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Group>
 
 Prim Stack:
-    root.sdf             /Group
-    root.sdf             /Group{v=z}
+    root.usda            /Group
+    root.usda            /Group{v=z}
 
 Variant Selections:
     {v = z}
@@ -21,39 +21,39 @@ Child names:
 Results for composing </Group/Model>
 
 Prim Stack:
-    root.sdf             /Group{v=z}Model
+    root.usda            /Group{v=z}Model
 
 Property names:
      ['a']
 
 Property stacks:
 /Group/Model.a:
-    root.sdf             /Group{v=z}Model.a
+    root.usda            /Group{v=z}Model.a
 
 ------------------------------------------------------------------------
 Results for composing </SubrootInheritRef>
 
 Prim Stack:
-    root.sdf             /SubrootInheritRef
-    root.sdf             /Group{v=z}Model
-    group.sdf            /SubrootInherit
-    group.sdf            /Group{v=y}Model
+    root.usda            /SubrootInheritRef
+    root.usda            /Group{v=z}Model
+    group.usda           /SubrootInherit
+    group.usda           /Group{v=y}Model
 
 Property names:
      ['a']
 
 Property stacks:
 /SubrootInheritRef.a:
-    root.sdf             /Group{v=z}Model.a
-    group.sdf            /Group{v=y}Model.a
+    root.usda            /Group{v=z}Model.a
+    group.usda           /Group{v=y}Model.a
 
 ------------------------------------------------------------------------
 Results for composing </Root>
 
 Prim Stack:
-    root.sdf             /Root
-    model.sdf            /Model
-    model.sdf            /Model{v=x}
+    root.usda            /Root
+    model.usda           /Model
+    model.usda           /Model{v=x}
 
 Variant Selections:
     {v = x}
@@ -66,19 +66,19 @@ Property names:
 
 Property stacks:
 /Root.modelAttr:
-    model.sdf            /Model{v=x}.modelAttr
+    model.usda           /Model{v=x}.modelAttr
 
 ------------------------------------------------------------------------
 Results for composing </Root/Child>
 
 Prim Stack:
-    root.sdf             /Root/Child
-    root.sdf             /Group{v=z}Model
+    root.usda            /Root/Child
+    root.usda            /Group{v=z}Model
 
 Property names:
      ['a']
 
 Property stacks:
 /Root/Child.a:
-    root.sdf             /Group{v=z}Model.a
+    root.usda            /Group{v=z}Model.a
 

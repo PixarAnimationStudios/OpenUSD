@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_PCP_DEPENDENCIES_H
 #define PXR_USD_PCP_DEPENDENCIES_H
@@ -153,7 +136,42 @@ public:
                 }
             }
         }
-        if (includeAncestral) {
+
+        if (!includeAncestral) {
+            return;
+        }
+
+        if (siteLayerStack->IsUsd()) {
+            // If the site is a prim selection path, the parent path does not
+            // represent an ancestral dependency as variant selection paths are
+            // not namespace children when it comes to prim indexes.
+            if (sitePath.IsPrimVariantSelectionPath()) {
+                return;
+            }
+            for (SdfPath ancestorSitePath = sitePath.GetParentPath();
+                !ancestorSitePath.IsEmpty();
+                ancestorSitePath = ancestorSitePath.GetParentPath())
+            {
+                _SiteDepMap::const_iterator j =
+                    siteDepMap.find(ancestorSitePath);
+                if (j != siteDepMap.end()) {
+                    for(const SdfPath &ancestorPrimIndexPath: j->second) {
+                        fn(ancestorPrimIndexPath, ancestorSitePath);
+                    }
+                }
+
+                // We stop walking up the namespace if we hit a variant 
+                // selection as its not a namespace child of its parent.
+                if (ancestorSitePath.IsPrimVariantSelectionPath()) {
+                    break;
+                }
+            }
+        } else {
+            // XXX: For non-USD mode we unfortunately have to continue to use
+            // the old buggy behavior of ancestors of variant selection paths 
+            // being treated as ancestral dependencies do due downstream code 
+            // that still depends on this behavior. Hopefully this can be 
+            // removed to conform with USD in the future.
             for (SdfPath ancestorSitePath = sitePath.GetParentPath();
                  !ancestorSitePath.IsEmpty();
                  ancestorSitePath = ancestorSitePath.GetParentPath())

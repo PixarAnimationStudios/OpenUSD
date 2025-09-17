@@ -1,25 +1,8 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/base/trace/reporter.h"
@@ -154,12 +137,11 @@ _PrintNodeTimes(
     ostream &s,
     TraceAggregateNodeRefPtr node,
     int indent, 
-    int iterationCount)
+    int iterationCount,
+    bool isRoot=true)
 {
-    // The root of the tree has id == -1, no useful stats there.
-
-    if (node->GetId().IsValid()) {
-
+    // The root of the tree has no useful stats
+    if (!isRoot) {
         if (node->IsRecursionMarker()) {
             _PrintRecursionMarker(s, _GetKeyName(node->GetKey()), indent);
             return;
@@ -178,7 +160,7 @@ _PrintNodeTimes(
     }
     
     for (const TraceAggregateNodeRefPtr& it : sortedKids) {
-        _PrintNodeTimes(s, it, indent+2, iterationCount);
+        _PrintNodeTimes(s, it, indent+2, iterationCount, /* isRoot = */ false);
     }
 }
 
@@ -375,7 +357,6 @@ TraceReporter::LoadReport(
         // Sample count may be a double if there's >1 iterations.
         const int samples = std::round(currentIters*TfStringToDouble(match[3]));
         stack.push(parent->Append(
-            TraceReporter::CreateValidEventId(),
             /* key */ TfToken(match[5].str()),
             /* timestamp */ ArchSecondsToTicks(
                 currentIters*TfStringToDouble(match[1])/1000.0),
@@ -419,13 +400,12 @@ TraceReporter::_RebuildEventAndAggregateTrees()
     TraceAggregateNodePtr root = _aggregateTree->GetRoot();
     if (root && !root->GetChildrenRef().empty() && 
         TfMallocTag::IsInitialized()) {
-        root->Append(TraceAggregateNode::Id(), 
-                          TfToken(
-                              TraceReporterTokens->warningString.GetString() +
-                              " MallocTags enabled"),
-                          0,
-                          1   /* count */,
-                          1   /* exclusive count */);
+        root->Append( TfToken(
+                        TraceReporterTokens->warningString.GetString() +
+                        " MallocTags enabled"),
+                      0,
+                      1   /* count */,
+                      1   /* exclusive count */);
     }
 }
 
@@ -514,13 +494,6 @@ bool
 TraceReporter::ShouldAdjustForOverheadAndNoise() const
 {
     return _shouldAdjustForOverheadAndNoise;
-}
-
-/* static */
-TraceAggregateNode::Id
-TraceReporter::CreateValidEventId() 
-{
-    return TraceAggregateNode::Id(TraceGetThreadId());
 }
 
 void

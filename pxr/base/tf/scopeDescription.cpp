@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -28,11 +11,11 @@
 #include "pxr/base/tf/scopeDescriptionPrivate.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/spinMutex.h"
 
+#include "pxr/base/arch/export.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/arch/threads.h"
-
-#include <tbb/spin_mutex.h>
 
 #include <algorithm>
 #include <chrono>
@@ -46,7 +29,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace {
 
 // A 2 MB buffer for generating the crash message, and a lock.
-tbb::spin_mutex messageMutex;
+TfSpinMutex messageMutex;
 constexpr size_t MaxMessageBytes = 2*1024*1024;
 char message[MaxMessageBytes];
 
@@ -129,12 +112,12 @@ struct _StackRegistry
 
     // Register \p stack as the stack for \p id.
     void Add(std::thread::id id, _Stack *stack) {
-        tbb::spin_mutex::scoped_lock lock(_stacksMutex);
+        TfSpinMutex::ScopedLock lock(_stacksMutex);
         _stacks.push_back({ id, TfStringify(id), stack });
     }
     // Remove \p stack from the registry.
     void Remove(_Stack *stack) {
-        tbb::spin_mutex::scoped_lock lock(_stacksMutex);
+        TfSpinMutex::ScopedLock lock(_stacksMutex);
         auto it = std::find_if(
             _stacks.begin(), _stacks.end(),
             [stack](_StackEntry const &e) {
@@ -148,7 +131,7 @@ struct _StackRegistry
     // associated with \p id if one exists, otherwise return a StackLock with a
     // nullptr stack.
     StackLock LockThread(std::thread::id id) {
-        _stacksMutex.lock();
+        _stacksMutex.Acquire();
         auto it = std::find_if(
             _stacks.begin(), _stacks.end(),
             [id](_StackEntry const &e) {
@@ -158,13 +141,14 @@ struct _StackRegistry
     }    
 private:
     // Give access to the crash reporter facility.
-    friend char const *_ComputeAndLockScopeDescriptionStackMsg();
+    friend char const *
+    _ComputeAndLockScopeDescriptionStackMsg(TfSpinMutex::ScopedLock *, int);
     
     void _UnlockThread() {
-        _stacksMutex.unlock();
+        _stacksMutex.Release();
     }
     
-    tbb::spin_mutex _stacksMutex;
+    TfSpinMutex _stacksMutex;
     std::vector<_StackEntry> _stacks;
 };
 
@@ -191,7 +175,7 @@ struct _Stack
     // The head of the description stack (nullptr if empty);
     TfScopeDescription *head;
     // Thread-local lock for this stack.
-    tbb::spin_mutex mutex;
+    TfSpinMutex mutex;
 };
 
 // A helper struct for thread_local that uses nullptr initialization as a
@@ -212,18 +196,24 @@ struct _FastThreadLocalBase
 };
 struct _LocalStack : _FastThreadLocalBase<_Stack> {};
 
-static bool _TimedTryAcquire(tbb::spin_mutex::scoped_lock &lock,
-                             tbb::spin_mutex &mutex,
-                             int msecToTry = 10)
+static bool
+_TimedTryAcquire(TfSpinMutex::ScopedLock &lock,
+                 TfSpinMutex &mutex,
+                 int msecToTry = 10)
 {
-    if (lock.try_acquire(mutex))
+    if (lock.TryAcquire(mutex)) {
         return true;
-
+    }
+    
+    if (msecToTry <= 0) {
+        return false;
+    }
+    
     auto start = std::chrono::high_resolution_clock::now();
     int msec = 0;
     do {
         std::this_thread::yield();
-        if (lock.try_acquire(mutex))
+        if (lock.TryAcquire(mutex))
             return true;
         msec = std::chrono::duration_cast<
             std::chrono::milliseconds>(
@@ -233,17 +223,20 @@ static bool _TimedTryAcquire(tbb::spin_mutex::scoped_lock &lock,
 }
 
 char const *
-_ComputeAndLockScopeDescriptionStackMsg()
+_ComputeAndLockScopeDescriptionStackMsg(TfSpinMutex::ScopedLock *lock,
+                                        int msecToTry=10)
 {
-    // Lock the message mutex.
-    messageMutex.lock();
+    // Try to lock the message mutex, if it fails, just bail.
+    if (!lock->TryAcquire(messageMutex)) {
+        return nullptr;
+    }
     
     _MessageWriter writer;
 
     // Try to lock the _StackRegistry mutex -- if we fail, bail.
     auto &reg = GetRegistry();
-    tbb::spin_mutex::scoped_lock regLock;
-    if (!_TimedTryAcquire(regLock, reg._stacksMutex)) {
+    TfSpinMutex::ScopedLock regLock;
+    if (!_TimedTryAcquire(regLock, reg._stacksMutex, msecToTry)) {
         writer.Write("Error: cannot generate TfScopeDescription stacks - "
                      "failed to acquire lock on stack registry mutex.\n");
         return message;
@@ -276,8 +269,8 @@ _ComputeAndLockScopeDescriptionStackMsg()
     for (size_t i = 0; i != numEntries; ++i) {
         _StackRegistry::_StackEntry *e = entries[i];
         // Try to lock this entry's mutex, if we fail or if empty stack, bail.
-        tbb::spin_mutex::scoped_lock stackLock;
-        if (!_TimedTryAcquire(stackLock, e->stack->mutex)) {
+        TfSpinMutex::ScopedLock stackLock;
+        if (!_TimedTryAcquire(stackLock, e->stack->mutex, msecToTry)) {
             writer.Write("Error: cannot write TfScopeDescription stack "
                          "for thread ");
             writer.Write(e->idStr.c_str());
@@ -326,7 +319,7 @@ TfScopeDescription::_Push()
     _Stack &stack = _LocalStack::Get();
     _prev = stack.head;
     _localStack = &stack;
-    tbb::spin_mutex::scoped_lock lock(stack.mutex);
+    TfSpinMutex::ScopedLock lock(stack.mutex);
     stack.head = this;
 }
 
@@ -337,7 +330,7 @@ TfScopeDescription::_Pop() const
     // safely here.
     _Stack &stack = *static_cast<_Stack *>(_localStack);
     TF_AXIOM(stack.head == this);
-    tbb::spin_mutex::scoped_lock lock(stack.mutex);
+    TfSpinMutex::ScopedLock lock(stack.mutex);
     stack.head = _prev;
 }
 
@@ -376,7 +369,7 @@ TfScopeDescription::SetDescription(std::string const &msg)
 {
     _Stack &stack = *static_cast<_Stack *>(_localStack);
     {
-        tbb::spin_mutex::scoped_lock lock(stack.mutex);
+        TfSpinMutex::ScopedLock lock(stack.mutex);
         _description = msg.c_str();
     }
     _ownedString = std::nullopt;
@@ -386,7 +379,7 @@ void
 TfScopeDescription::SetDescription(std::string &&msg)
 {
     _Stack &stack = *static_cast<_Stack *>(_localStack);
-    tbb::spin_mutex::scoped_lock lock(stack.mutex);
+    TfSpinMutex::ScopedLock lock(stack.mutex);
     _ownedString = std::move(msg);
     _description = _ownedString->c_str();
 }
@@ -396,7 +389,7 @@ TfScopeDescription::SetDescription(char const *msg)
 {
     _Stack &stack = *static_cast<_Stack *>(_localStack);
     {
-        tbb::spin_mutex::scoped_lock lock(stack.mutex);
+        TfSpinMutex::ScopedLock lock(stack.mutex);
         _description = msg;
     }
     _ownedString = std::nullopt;
@@ -410,7 +403,7 @@ _GetScopeDescriptionStack(std::thread::id id)
     {
         auto lock = GetRegistry().LockThread(id);
         if (_Stack *stack = lock.Get()) {
-            tbb::spin_mutex::scoped_lock lock(stack->mutex);
+            TfSpinMutex::ScopedLock lock(stack->mutex);
             for (TfScopeDescription *cur = stack->head; cur;
                  cur = Tf_GetPreviousScopeDescription(cur)) {
                 result.emplace_back(Tf_GetScopeDescriptionText(cur));
@@ -436,14 +429,26 @@ TfGetThisThreadScopeDescriptionStack()
 
 // From scopeDescriptionPrivate.h
 
-Tf_ScopeDescriptionStackReportLock::Tf_ScopeDescriptionStackReportLock()
-    : _msg(_ComputeAndLockScopeDescriptionStackMsg())
+Tf_ScopeDescriptionStackReportLock
+::Tf_ScopeDescriptionStackReportLock(int lockWaitMsec)
+    : _msg(_ComputeAndLockScopeDescriptionStackMsg(&_lock, lockWaitMsec))
 {
 }
 
-Tf_ScopeDescriptionStackReportLock::~Tf_ScopeDescriptionStackReportLock()
+static char const *
+_GetScopeDescriptionStackReportDebugUnsafeImpl()
 {
-    messageMutex.unlock();
+    Tf_ScopeDescriptionStackReportLock reportLock;
+    return reportLock.GetMessage();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+extern "C" {
+ARCH_EXPORT
+char const *
+Tf_GetScopeDescriptionStackReportDebugUnsafe()
+{
+    return PXR_NS::_GetScopeDescriptionStackReportDebugUnsafeImpl();
+}
+}

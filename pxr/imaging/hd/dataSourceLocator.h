@@ -1,25 +1,8 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_DATASOURCELOCATOR_H
 #define PXR_IMAGING_HD_DATASOURCELOCATOR_H
@@ -27,6 +10,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/smallVector.h"
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/hash.h"
 
 #include "pxr/imaging/hd/api.h"
@@ -34,6 +18,36 @@
 #include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+#define HD_DATA_SOURCE_LOCATOR_SENTINEL_TOKENS      \
+    ((container, "__containerDataSource"))
+
+/// Special tokens in a data source locator.
+///
+/// HdDataSourceLocatorSentinelTokens->container indicates that
+/// the container data source needs to be refetched even though none of
+/// its contained data sources have changed unless indicated by another
+/// data source locator.
+///
+/// For example, assume that MyFilteringSceneIndex::GetPrim("/MyPrim")
+/// previously returned the result from the input scene index but now
+/// returns
+///     HdContainerDataSourceEditor(_GetInputScene()->GetPrim("/MyPrim"))
+///         .Set(HdDataSourceLocator("foo", "bar", "mySource"), mySource)
+///         .Finish().
+/// Then it needs to send prims dirtied with
+///     HdDataSourceLocatorSet{
+///         HdDataSourceLocator(
+///             HdDataSourceLocatorSentinelTokens->container),
+///         HdDataSourceLocator(
+///             "foo", HdDataSourceLocatorSentinelTokens->container),
+///         HdDataSourceLocator(
+///             "foo", "bar", HdDataSourceLocatorSentinelTokens->container),
+///         HdDataSourceLocator(
+///             "foo", "bar", "mySource")}.
+///
+TF_DECLARE_PUBLIC_TOKENS(HdDataSourceLocatorSentinelTokens, HD_API,
+                         HD_DATA_SOURCE_LOCATOR_SENTINEL_TOKENS);
 
 /// \class HdDataSourceLocator
 ///
@@ -241,7 +255,7 @@ public:
     using const_iterator = typename _Locators::const_iterator;
 
     /// The empty set.
-    explicit HdDataSourceLocatorSet() {}
+    HdDataSourceLocatorSet() {}
 
     /// The set containing everything.
     HD_API

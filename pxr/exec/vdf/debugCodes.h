@@ -1,0 +1,46 @@
+//
+// Copyright 2025 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+#ifndef PXR_EXEC_VDF_DEBUG_CODES_H
+#define PXR_EXEC_VDF_DEBUG_CODES_H
+
+/// \file
+
+#include "pxr/pxr.h"
+
+#include "pxr/base/tf/debug.h"
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+/// TF_DEBUG codes for Vdf execution.
+///
+TF_DEBUG_CODES(
+    VDF_MUNG_BUFFER_LOCKING,
+    VDF_SPARSE_INPUT_PATH_FINDER,
+    VDF_SCHEDULING
+);
+
+// Debugging Symbols for tracing executor engines.
+//
+// Executor engine performance is a high priority so these debug flags are
+// compiled out by default.  They can be turned on at compile time by setting
+// the first argument value to `true`.
+
+// Pull-based Executor Engine debug output
+TF_CONDITIONALLY_COMPILE_TIME_ENABLED_DEBUG_CODES(
+    false,
+    VDF_PBEE_TRACE
+);
+
+// Speculation Executor Engine debug output
+TF_CONDITIONALLY_COMPILE_TIME_ENABLED_DEBUG_CODES(
+    false,
+    VDF_SEE_TRACE
+);
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif

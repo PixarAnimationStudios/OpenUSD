@@ -1,41 +1,23 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 // threadLimits.cpp
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/work/impl.h"
 #include "pxr/base/work/threadLimits.h"
 
 #include "pxr/base/tf/envSetting.h"
-
-#include <tbb/task_scheduler_init.h>
-#include <tbb/task_arena.h>
 
 #include <algorithm>
 #include <atomic>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+PXR_WORK_IMPL_NAMESPACE_USING_DIRECTIVE;
 
 // The environment variable used to limit the number of threads the application
 // may spawn:
@@ -58,34 +40,30 @@ TF_DEFINE_ENV_SETTING(
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// We create a task_scheduler_init instance at static initialization time if
-// PXR_WORK_THREAD_LIMIT is set to a nonzero value.  Otherwise this stays NULL.
-static tbb::task_scheduler_init *_tbbTaskSchedInit;
-
 unsigned
 WorkGetPhysicalConcurrencyLimit()
 {
-    // Use TBB here, since it pays attention to the affinity mask on Linux and
+    // Careful to pay attention to the affinity mask on Linux and
     // Windows.
-    return tbb::task_scheduler_init::default_num_threads();
+    return WorkImpl_GetPhysicalConcurrencyLimit();
 }
 
-// This function always returns an actual thread count >= 1.
+// This function always returns either 0 (meaning "no change") or >= 1
 static unsigned
 Work_NormalizeThreadCount(const int n)
 {
     // Zero means "no change", and n >= 1 means exactly n threads, so simply
     // pass those values through unchanged.
     // For negative integers, subtract the absolute value from the total number
-    // of available cores (denoting all but n cores). If n == number of cores,
+    // of available cores (denoting all but n cores). If |n| >= number of cores,
     // clamp to 1 to set single-threaded mode.
     return n >= 0 ? n : std::max<int>(1, n + WorkGetPhysicalConcurrencyLimit());
 }
 
 // Returns the normalized thread limit value from the environment setting. Note
 // that 0 means "no change", i.e. the environment setting does not apply.
-static unsigned
-Work_GetConcurrencyLimitSetting()
+unsigned
+WorkGetConcurrencyLimitSetting()
 {
     return Work_NormalizeThreadCount(TfGetEnvSetting(PXR_WORK_THREAD_LIMIT));
 }
@@ -105,7 +83,7 @@ Work_InitializeThreading()
 {
     // Get the thread limit from the environment setting. Note that this value
     // can be 0, i.e. the environment setting does not apply.
-    const unsigned settingVal = Work_GetConcurrencyLimitSetting();
+    const unsigned settingVal = WorkGetConcurrencyLimitSetting();
 
     // Threading is initialized with maximum physical concurrency.
     const unsigned physicalLimit = WorkGetPhysicalConcurrencyLimit();
@@ -123,7 +101,7 @@ Work_InitializeThreading()
     // previously initialized by the hosting environment (e.g. if we are running
     // as a plugin to another application.)
     if (settingVal) {
-        _tbbTaskSchedInit = new tbb::task_scheduler_init(threadLimit);
+        WorkImpl_InitializeThreading(threadLimit);
     }
 }
 static int _forceInitialization = (Work_InitializeThreading(), 0);
@@ -141,7 +119,7 @@ WorkSetConcurrencyLimit(unsigned n)
     if (n) {
         // Get the thread limit from the environment setting. Note this value
         // may be 0 (default).
-        const unsigned settingVal = Work_GetConcurrencyLimitSetting();
+        const unsigned settingVal = WorkGetConcurrencyLimitSetting();
 
         // Override n with the environment setting. This will make sure that the
         // setting always wins over the specified value n, but only if the
@@ -152,22 +130,7 @@ WorkSetConcurrencyLimit(unsigned n)
         // Use the current thread limit.
         threadLimit = WorkGetConcurrencyLimit();
     }
-
-    // Note that we need to do some performance testing and decide if it's
-    // better here to simply delete the task_scheduler_init object instead
-    // of re-initializing it.  If we decide that it's better to re-initialize
-    // it, then we have to make sure that when this library is opened in 
-    // an application (e.g., Maya) that already has initialized its own 
-    // task_scheduler_init object, that the limits of those are respected.
-    // According to the documentation that should be the case, but we should
-    // make sure.  If we do decide to delete it, we have to make sure to 
-    // note that it has already been initialized.
-    if (_tbbTaskSchedInit) {
-        _tbbTaskSchedInit->terminate();
-        _tbbTaskSchedInit->initialize(threadLimit);
-    } else {
-        _tbbTaskSchedInit = new tbb::task_scheduler_init(threadLimit);
-    }
+    WorkImpl_SetConcurrencyLimit(threadLimit);
 }
 
 void 
@@ -185,13 +148,19 @@ WorkSetConcurrencyLimitArgument(int n)
 unsigned
 WorkGetConcurrencyLimit()
 {
-    return tbb::this_task_arena::max_concurrency();
+    return WorkImpl_GetConcurrencyLimit();
 }
 
 bool
 WorkHasConcurrency()
 {
     return WorkGetConcurrencyLimit() > 1;
+}
+
+bool
+WorkSupportsGranularThreadLimits()
+{
+    return WorkImpl_SupportsGranularThreadLimits();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

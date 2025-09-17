@@ -1,33 +1,17 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HDUI_SCENE_OBSERVER_H
 #define PXR_IMAGING_HDUI_SCENE_OBSERVER_H
 
+#include "pxr/pxr.h"
+
 #include "pxr/imaging/hd/sceneIndexObserver.h"
 
 #include <QObject>
-#include <boost/noncopyable.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,13 +20,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// As the observed Hydra scene changes, it notifies this object which forwards
 /// those changes as Qt signals, or queues them for later processing.
 class HduiSceneObserver :
-    public QObject, public HdSceneIndexObserver, boost::noncopyable
+    public QObject, public HdSceneIndexObserver
 {
     Q_OBJECT;
 
 public:
     HduiSceneObserver();
     ~HduiSceneObserver() override;
+
+    HduiSceneObserver(const HduiSceneObserver&) = delete;
+    HduiSceneObserver& operator=(const HduiSceneObserver&) = delete;
 
     /// Start reporting change notifications for the Hydra scene produced by
     /// \p sceneIndex. The previous observed scene, if any, is unsubscribed.
@@ -90,17 +77,18 @@ private:
         const RenamedPrimEntries&) override;
 
 Q_SIGNALS:
-    /// Sent when prims in the observed scene are added, removed, or moved
-    /// (including renames).
+    /// Sent when prims in the observed scene are added, removed, renamed or
+    /// dirtied. Details described by \p entries.
     ///
-    /// For moves, the original and new paths are included in \p removedPaths
-    /// and \p addedPaths, respectively.
-    void PrimsAddedOrRemoved(
-        const SdfPathSet& addedPaths,
-        const SdfPathSet& removedPaths);
-
-    /// Sent when prims in the observed scene are dirtied, indicating one or
-    /// more of their data sources have changed. Details described by \p entries.
+    /// \note The signature of the signals below mimics the scene index observer
+    /// structures because we want to keep processing costs minimal when we're
+    /// not in batching mode. The object associated with the slot (connected to
+    /// one of the signals below) may not be visible, and processing the entries
+    /// to generate a list of prim paths would be wasteful.
+    ///
+    void PrimsMarkedAdded(const AddedPrimEntries& entries);
+    void PrimsMarkedRemoved(const RemovedPrimEntries& entries);
+    void PrimsMarkedRenamed(const RenamedPrimEntries& entries);
     void PrimsMarkedDirty(const DirtiedPrimEntries& entries);
 
     /// Sent when a change to the observed scene is queued while in batching
@@ -108,19 +96,16 @@ Q_SIGNALS:
     void ChangeBatched();
 
 private:
-    void _BatchAddedPrim(const SdfPath&);
-    void _BatchRemovedPrim(const SdfPath&);
-    void _BatchDirtiedPrim(const SdfPath&, const HdDataSourceLocatorSet&);
-
     void _ClearBatchedChanges();
 
 private:
     HdSceneIndexBasePtr _index;
 
     bool _batching;
-    SdfPathSet _batchedAddedPrims;
-    SdfPathSet _batchedRemovedPrims;
-    std::map<SdfPath, HdDataSourceLocatorSet> _batchedDirtiedPrims;
+    AddedPrimEntries _batchedAddedPrimEntries;
+    RemovedPrimEntries _batchedRemovedPrimEntries;
+    RenamedPrimEntries _batchedRenamedPrimEntries;
+    DirtiedPrimEntries _batchedDirtiedPrimEntries;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

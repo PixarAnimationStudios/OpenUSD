@@ -77,8 +77,9 @@ release = version
 extensions = [
     'sphinx.ext.autosectionlabel',
     'sphinxcontrib.doxylink',
-    'sphinx_panels',
-    'myst_parser'
+    'myst_parser',
+    'sphinxcontrib.datatemplates',
+    'sphinx_design'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -90,7 +91,7 @@ master_doc = 'index'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store', 'doxygen/architecture-guides/color_programmers_guide.md']
 
 autosectionlabel_prefix_document = True
 
@@ -135,7 +136,7 @@ html_theme_options = {
     'display_version': False,
     'collapse_navigation': False,
     'sticky_navigation': False,
-    'navigation_depth': 3,
+    'navigation_depth': 4,
     'style_nav_header_background': '#606060'
 }
 

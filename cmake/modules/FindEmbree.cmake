@@ -1,25 +1,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 #=============================================================================
 #
@@ -37,11 +20,11 @@
 #=============================================================================
 
 if (APPLE)
-    set (EMBREE_LIB_NAME libembree3.dylib)
+    set (EMBREE_LIB_NAME libembree4.dylib)
 elseif (UNIX)
-    set (EMBREE_LIB_NAME libembree3.so)
+    set (EMBREE_LIB_NAME libembree4.so)
 elseif (WIN32)
-    set (EMBREE_LIB_NAME embree3.lib)
+    set (EMBREE_LIB_NAME embree4.lib)
 endif()
 
 find_library(EMBREE_LIBRARY
@@ -56,7 +39,7 @@ find_library(EMBREE_LIBRARY
 )
 
 find_path(EMBREE_INCLUDE_DIR
-    embree3/rtcore.h
+    embree4/rtcore.h
 HINTS
     "${EMBREE_LOCATION}/include"
     "$ENV{EMBREE_LOCATION}/include"
@@ -64,12 +47,12 @@ DOC
     "Embree headers path"
 )
 
-if (EMBREE_INCLUDE_DIR AND EXISTS "${EMBREE_INCLUDE_DIR}/embree3/rtcore_version.h" )
-    file(STRINGS "${EMBREE_INCLUDE_DIR}/embree3/rtcore_version.h" TMP REGEX "^#define RTC_VERSION_MAJOR.*$")
+if (EMBREE_INCLUDE_DIR AND EXISTS "${EMBREE_INCLUDE_DIR}/embree4/rtcore_config.h" )
+    file(STRINGS "${EMBREE_INCLUDE_DIR}/embree4/rtcore_config.h" TMP REGEX "^#define RTC_VERSION_MAJOR.*$")
     string(REGEX MATCHALL "[0-9]+" MAJOR ${TMP})
-    file(STRINGS "${EMBREE_INCLUDE_DIR}/embree3/rtcore_version.h" TMP REGEX "^#define RTC_VERSION_MINOR.*$")
+    file(STRINGS "${EMBREE_INCLUDE_DIR}/embree4/rtcore_config.h" TMP REGEX "^#define RTC_VERSION_MINOR.*$")
     string(REGEX MATCHALL "[0-9]+" MINOR ${TMP})
-    file(STRINGS "${EMBREE_INCLUDE_DIR}/embree3/rtcore_version.h" TMP REGEX "^#define RTC_VERSION_PATCH.*$")
+    file(STRINGS "${EMBREE_INCLUDE_DIR}/embree4/rtcore_config.h" TMP REGEX "^#define RTC_VERSION_PATCH.*$")
     string(REGEX MATCHALL "[0-9]+" PATCH ${TMP})
 
     set (EMBREE_VERSION ${MAJOR}.${MINOR}.${PATCH})

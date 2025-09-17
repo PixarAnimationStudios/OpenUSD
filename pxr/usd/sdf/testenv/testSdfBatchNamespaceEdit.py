@@ -2,25 +2,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 from __future__ import print_function
 
@@ -120,8 +103,8 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
 
         print('\nTest Process()')
 
-        layer = Sdf.Layer.FindOrOpen('testSdfBatchNamespaceEdit.testenv/test.sdf')
-        final = Sdf.Layer.FindOrOpen('testSdfBatchNamespaceEdit.testenv/final.sdf')
+        layer = Sdf.Layer.FindOrOpen('testSdfBatchNamespaceEdit.testenv/test.usda')
+        final = Sdf.Layer.FindOrOpen('testSdfBatchNamespaceEdit.testenv/final.usda')
         self.assertTrue(layer is not None)
         self.assertTrue(final is not None)
 
@@ -156,6 +139,8 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
 
         edit.Add('/S', '/T')                        # Rename prim used in targets
 
+        edit.Add('/V{v=three}.x', '/V{v2=three}.x') # Same variant name
+        edit.Add('/V{v=three}X', '/V{v2=three}X')   # Same variant name
         edit.Add('/V{v=one}U', '/V{v=two}W/U')      # Variant prim reparent/rename
         edit.Add('/V{v=two}W', Sdf.Path.emptyPath)  # Variant prim remove
         edit.Add('/V{v=one}.u', '/V{v=two}.u')      # Variant property reparent/rename
@@ -256,6 +241,8 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
         edit.Add('/P.i', '/Q.h')            # Prim property reparent/rename
         edit.Add('/P.x', Sdf.Path.emptyPath)# Prim property remove
 
+        edit.Add('/V{v=three}.x', '/V{v2=three}.x') # Same variant name
+        edit.Add('/V{v=three}X', '/V{v2=three}X')   # Same variant name
         edit.Add('/V{v=one}U', '/V{v=two}W/U')      # Variant prim reparent/rename
         edit.Add('/V{v=two}W', Sdf.Path.emptyPath)  # Variant prim remove
         edit.Add('/V{v=one}.u', '/V{v=two}.u')      # Variant property reparent/rename
@@ -274,7 +261,7 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
         moved.
         """
         layer = Sdf.Layer.CreateAnonymous()
-        layer.ImportFromString("""#sdf 1.4.32
+        layer.ImportFromString("""#usda 1.0
             def Prim "A" {
                 custom double a
                 def Prim "B" {
@@ -303,7 +290,7 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
         should know that the child's former path is still empty ("deadspace").
         """
         layer = Sdf.Layer.CreateAnonymous()
-        layer.ImportFromString("""#sdf 1.4.32
+        layer.ImportFromString("""#usda 1.0
             def Prim "A" {
                 custom double a
                 def Prim "B" {
@@ -340,7 +327,7 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
         itself." Instead, it should fail with "New parent was removed."
         """
         layer = Sdf.Layer.CreateAnonymous()
-        layer.ImportFromString("""#sdf 1.4.32
+        layer.ImportFromString("""#usda 1.0
             def Prim "A" {
                 def Prim "B" {}
             }

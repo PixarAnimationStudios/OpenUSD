@@ -1,25 +1,8 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/types.h"
@@ -126,9 +109,10 @@ HdSamplerParameters::HdSamplerParameters()
 
 HdSamplerParameters::HdSamplerParameters(
     HdWrap wrapS, HdWrap wrapT, HdWrap wrapR, 
-    HdMinFilter minFilter, HdMagFilter magFilter, 
+    HdMinFilter minFilter, HdMagFilter magFilter,
     HdBorderColor borderColor,
-    bool enableCompare, HdCompareFunction compareFunction)
+    bool enableCompare, HdCompareFunction compareFunction,
+    uint32_t maxAnisotropy)
     : wrapS(wrapS)
     , wrapT(wrapT)
     , wrapR(wrapR)
@@ -137,6 +121,7 @@ HdSamplerParameters::HdSamplerParameters(
     , borderColor(borderColor)
     , enableCompare(enableCompare)
     , compareFunction(compareFunction)
+    , maxAnisotropy(maxAnisotropy)
 {}
 
 bool
@@ -150,7 +135,8 @@ HdSamplerParameters::operator==(const HdSamplerParameters &other) const
         (magFilter == other.magFilter) &&
         (borderColor == other.borderColor) &&
         (enableCompare == other.enableCompare) &&
-        (compareFunction == other.compareFunction);
+        (compareFunction == other.compareFunction) &&
+        (maxAnisotropy == other.maxAnisotropy);
 }
 
 bool
@@ -438,13 +424,23 @@ HdFormat HdGetComponentFormat(HdFormat f)
     case HdFormatFloat32Vec3:
     case HdFormatFloat32Vec4:
         return HdFormatFloat32;
-    case HdFormatFloat32UInt8:
-        return HdFormatFloat32UInt8; // treat as a single component
+    case HdFormatInt16:
+    case HdFormatInt16Vec2:
+    case HdFormatInt16Vec3:
+    case HdFormatInt16Vec4:
+        return HdFormatInt16;
+    case HdFormatUInt16:
+    case HdFormatUInt16Vec2:
+    case HdFormatUInt16Vec3:
+    case HdFormatUInt16Vec4:
+        return HdFormatUInt16;
     case HdFormatInt32:
     case HdFormatInt32Vec2:
     case HdFormatInt32Vec3:
     case HdFormatInt32Vec4:
         return HdFormatInt32;
+    case HdFormatFloat32UInt8:
+        return HdFormatFloat32UInt8; // treat as a single component
     default:
         return HdFormatInvalid;
     }
@@ -457,18 +453,24 @@ size_t HdGetComponentCount(HdFormat f)
     case HdFormatSNorm8Vec2:
     case HdFormatFloat16Vec2:
     case HdFormatFloat32Vec2:
+    case HdFormatInt16Vec2:
+    case HdFormatUInt16Vec2:
     case HdFormatInt32Vec2:
         return 2;
     case HdFormatUNorm8Vec3:
     case HdFormatSNorm8Vec3:
     case HdFormatFloat16Vec3:
     case HdFormatFloat32Vec3:
+    case HdFormatInt16Vec3:
+    case HdFormatUInt16Vec3:
     case HdFormatInt32Vec3:
         return 3;
     case HdFormatUNorm8Vec4:
     case HdFormatSNorm8Vec4:
     case HdFormatFloat16Vec4:
     case HdFormatFloat32Vec4:
+    case HdFormatInt16Vec4:
+    case HdFormatUInt16Vec4:
     case HdFormatInt32Vec4:
         return 4;
     default:
@@ -492,12 +494,20 @@ size_t HdDataSizeOfFormat(HdFormat f)
     case HdFormatSNorm8Vec4:
         return 4;
     case HdFormatFloat16:
+    case HdFormatInt16:
+    case HdFormatUInt16:
         return 2;
     case HdFormatFloat16Vec2:
+    case HdFormatInt16Vec2:
+    case HdFormatUInt16Vec2:
         return 4;
     case HdFormatFloat16Vec3:
+    case HdFormatInt16Vec3:
+    case HdFormatUInt16Vec3:
         return 6;
     case HdFormatFloat16Vec4:
+    case HdFormatInt16Vec4:
+    case HdFormatUInt16Vec4:
         return 8;
     case HdFormatFloat32:
     case HdFormatInt32:

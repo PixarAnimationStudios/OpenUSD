@@ -1,0 +1,155 @@
+Loading @SpecializesAndDuplicateArcs/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+     shading.usda
+
+------------------------------------------------------------------------
+Results for composing </FishPlateA_defaultShadingVariant>
+
+Prim Stack:
+    shading.usda         /FishPlateA_defaultShadingVariant
+
+Child names:
+     ['Test', 'Test_Child']
+
+------------------------------------------------------------------------
+Results for composing </FishPlateA_defaultShadingVariant/Test>
+
+Prim Stack:
+    shading.usda         /FishPlateA_defaultShadingVariant/Test
+
+Property names:
+     ['inputs:albedo']
+
+Property stacks:
+/FishPlateA_defaultShadingVariant/Test.inputs:albedo:
+    shading.usda         /FishPlateA_defaultShadingVariant/Test.inputs:albedo
+
+------------------------------------------------------------------------
+Results for composing </FishPlateA_defaultShadingVariant/Test_Child>
+
+Prim Stack:
+    shading.usda         /FishPlateA_defaultShadingVariant/Test_Child
+    shading.usda         /FishPlateA_defaultShadingVariant/Test
+
+Property names:
+     ['inputs:albedo']
+
+Property stacks:
+/FishPlateA_defaultShadingVariant/Test_Child.inputs:albedo:
+    shading.usda         /FishPlateA_defaultShadingVariant/Test.inputs:albedo
+
+------------------------------------------------------------------------
+Results for composing </FishPlateA>
+
+Prim Stack:
+    root.usda            /FishPlateA
+    shading.usda         /FishPlateA
+    root.usda            /Blue
+    shading.usda         /Blue
+    shading.usda         /Blue
+    shading.usda         /FishPlateA_defaultShadingVariant
+    shading.usda         /FishPlateA_defaultShadingVariant
+    shading.usda         /FishPlateA_defaultShadingVariant
+
+Child names:
+     ['Test', 'Test_Child']
+
+------------------------------------------------------------------------
+Results for composing </FishPlateA/Test>
+
+Prim Stack:
+    shading.usda         /Blue/Test
+    shading.usda         /Blue/Test
+    shading.usda         /FishPlateA_defaultShadingVariant/Test
+    shading.usda         /FishPlateA_defaultShadingVariant/Test
+    shading.usda         /FishPlateA_defaultShadingVariant/Test
+
+Property names:
+     ['inputs:albedo']
+
+Property stacks:
+/FishPlateA/Test.inputs:albedo:
+    shading.usda         /Blue/Test.inputs:albedo
+    shading.usda         /Blue/Test.inputs:albedo
+    shading.usda         /FishPlateA_defaultShadingVariant/Test.inputs:albedo
+    shading.usda         /FishPlateA_defaultShadingVariant/Test.inputs:albedo
+    shading.usda         /FishPlateA_defaultShadingVariant/Test.inputs:albedo
+
+------------------------------------------------------------------------
+Results for composing </FishPlateA/Test_Child>
+
+Prim Stack:
+    shading.usda         /FishPlateA_defaultShadingVariant/Test_Child
+    shading.usda         /FishPlateA_defaultShadingVariant/Test_Child
+    shading.usda         /FishPlateA_defaultShadingVariant/Test_Child
+    shading.usda         /Blue/Test
+    shading.usda         /Blue/Test
+    shading.usda         /FishPlateA_defaultShadingVariant/Test
+    shading.usda         /FishPlateA_defaultShadingVariant/Test
+
+Property names:
+     ['inputs:albedo']
+
+Property stacks:
+/FishPlateA/Test_Child.inputs:albedo:
+    shading.usda         /Blue/Test.inputs:albedo
+    shading.usda         /Blue/Test.inputs:albedo
+    shading.usda         /FishPlateA_defaultShadingVariant/Test.inputs:albedo
+    shading.usda         /FishPlateA_defaultShadingVariant/Test.inputs:albedo
+
+------------------------------------------------------------------------
+Results for composing </Blue>
+
+Prim Stack:
+    root.usda            /Blue
+    shading.usda         /Blue
+    shading.usda         /Blue
+    shading.usda         /FishPlateA_defaultShadingVariant
+    shading.usda         /FishPlateA_defaultShadingVariant
+
+Child names:
+     ['Test', 'Test_Child']
+
+------------------------------------------------------------------------
+Results for composing </Blue/Test>
+
+Prim Stack:
+    shading.usda         /Blue/Test
+    shading.usda         /Blue/Test
+    shading.usda         /FishPlateA_defaultShadingVariant/Test
+    shading.usda         /FishPlateA_defaultShadingVariant/Test
+
+Property names:
+     ['inputs:albedo']
+
+Property stacks:
+/Blue/Test.inputs:albedo:
+    shading.usda         /Blue/Test.inputs:albedo
+    shading.usda         /Blue/Test.inputs:albedo
+    shading.usda         /FishPlateA_defaultShadingVariant/Test.inputs:albedo
+    shading.usda         /FishPlateA_defaultShadingVariant/Test.inputs:albedo
+
+------------------------------------------------------------------------
+Results for composing </Blue/Test_Child>
+
+Prim Stack:
+    shading.usda         /FishPlateA_defaultShadingVariant/Test_Child
+    shading.usda         /FishPlateA_defaultShadingVariant/Test_Child
+    shading.usda         /Blue/Test
+    shading.usda         /Blue/Test
+    shading.usda         /FishPlateA_defaultShadingVariant/Test
+    shading.usda         /FishPlateA_defaultShadingVariant/Test
+
+Property names:
+     ['inputs:albedo']
+
+Property stacks:
+/Blue/Test_Child.inputs:albedo:
+    shading.usda         /Blue/Test.inputs:albedo
+    shading.usda         /Blue/Test.inputs:albedo
+    shading.usda         /FishPlateA_defaultShadingVariant/Test.inputs:albedo
+    shading.usda         /FishPlateA_defaultShadingVariant/Test.inputs:albedo
+

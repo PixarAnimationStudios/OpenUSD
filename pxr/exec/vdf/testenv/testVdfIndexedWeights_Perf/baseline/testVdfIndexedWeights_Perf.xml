@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+<?perfstats version="1.0" ?>
+<perfcollection>
+   <perfstats>
+      <perfstat metric="solve_time">
+         <samples>1</samples>
+         <value>0.165548</value>
+      </perfstat>
+      <branch>main</branch>
+      <build>localbuild</build>
+      <cpus>8</cpus>
+      <cpuspeed>2.66 GHz</cpuspeed>
+      <cputype>x86_64</cputype>
+      <date>200711071145</date>
+      <flavor>fedora-gcc64-opt</flavor>
+      <gpu>Quadro FX 4600</gpu>
+      <host>octopussy</host>
+      <memory>7.71999999999999 GB</memory>
+      <os>Linux</os>
+      <osver>2.6.18</osver>
+      <p4change>345822</p4change>
+      <project>Menv30</project>
+      <testname>menv/Core/lib/Vdf/testVdfIndexedWeights_Perf</testname>
+      <user>florian</user>
+   </perfstats>
+</perfcollection>

@@ -2,29 +2,15 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 from pxr import Sdf, Pcp, Tf
-import unittest
+import os, unittest
 from contextlib import contextmanager
+
+INCREMENTAL_CHANGES = Tf.GetEnvSetting(
+    'PCP_ENABLE_MINIMAL_CHANGES_FOR_LAYER_OPERATIONS')
 
 class TestPcpChanges(unittest.TestCase):
     def test_EmptySublayerChanges(self):
@@ -67,7 +53,7 @@ class TestPcpChanges(unittest.TestCase):
         self.assertNotEqual(revCount, pcp.GetUsedLayersRevision())
 
     def test_InvalidSublayerAdd(self):
-        invalidSublayerId = "/tmp/testPcpChanges_invalidSublayer.sdf"
+        invalidSublayerId = "/tmp/testPcpChanges_invalidSublayer.usda"
 
         layer = Sdf.Layer.CreateAnonymous()
         layerStackId = Pcp.LayerStackIdentifier(layer)
@@ -92,7 +78,7 @@ class TestPcpChanges(unittest.TestCase):
         self.assertTrue(pcp.UsesLayerStack(layerStack))
 
     def test_InvalidSublayerRemoval(self):
-        invalidSublayerId = "/tmp/testPcpChanges_invalidSublayer.sdf"
+        invalidSublayerId = "/tmp/testPcpChanges_invalidSublayer.usda"
 
         layer = Sdf.Layer.CreateAnonymous()
         layer.subLayerPaths.append(invalidSublayerId)
@@ -113,6 +99,72 @@ class TestPcpChanges(unittest.TestCase):
         self.assertEqual(len(layerStack.localErrors), 0)
         self.assertFalse(pcp.IsInvalidSublayerIdentifier(invalidSublayerId))
         self.assertTrue(pcp.UsesLayerStack(layerStack))
+
+    def test_AddAndRemoveSublayers(self):
+        sub1Layer = Sdf.Layer.CreateAnonymous('sub1')
+        sub1Layer.ImportFromString('''
+        #usda 1.0
+        
+        def "A"
+        {
+        }
+        ''')
+
+        sub2Layer = Sdf.Layer.CreateAnonymous('sub2')
+        sub2Layer.ImportFromString('''
+        #usda 1.0
+        
+        def "B"
+        {
+        }
+        ''')
+
+        defLayer = Sdf.Layer.CreateAnonymous('def')
+        defLayer.ImportFromString('''
+        #usda 1.0
+
+        def "A"
+        {
+        }
+
+        def "B"
+        {
+        }
+        ''')
+
+        rootLayer = Sdf.Layer.CreateAnonymous('root')
+        rootLayer.ImportFromString(f'''\
+        #usda 1.0
+        (
+            subLayers = [
+                @{sub1Layer.identifier}@,
+                @{defLayer.identifier}@
+            ]
+        )
+        ''')
+
+        layerStackId = Pcp.LayerStackIdentifier(rootLayer)
+        pcp = Pcp.Cache(layerStackId)
+
+        (pi, err) = pcp.ComputePrimIndex('/A')
+        (pi, err) = pcp.ComputePrimIndex('/B')
+
+        with Pcp._TestChangeProcessor(pcp) as cp:
+            with Sdf.ChangeBlock():
+                rootLayer.subLayerPaths.insert(0, sub2Layer.identifier)
+                del rootLayer.subLayerPaths[1]
+
+            # With incremental changes these changes should only cause a resync
+            # of /A and /B.
+            if INCREMENTAL_CHANGES:
+                self.assertEqual(cp.GetSignificantChanges(), 
+                                 [Sdf.Path('/A'), Sdf.Path('/B')])
+            else:
+                self.assertEqual(cp.GetSignificantChanges(),
+                                 [Sdf.Path('/')])
+
+            self.assertEqual(cp.GetSpecChanges(), [])
+            self.assertEqual(cp.GetPrimChanges(), [])
 
     def test_UnusedVariantChanges(self):
         layer = Sdf.Layer.CreateAnonymous()
@@ -136,11 +188,11 @@ class TestPcpChanges(unittest.TestCase):
         self.assertTrue(pcp.FindPrimIndex('/Root'))
 
     def test_SublayerOffsetChanges(self):
-        rootLayerPath = 'TestSublayerOffsetChanges/root.sdf'
-        rootSublayerPath = 'TestSublayerOffsetChanges/root-sublayer.sdf'
-        refLayerPath = 'TestSublayerOffsetChanges/ref.sdf'
-        refSublayerPath = 'TestSublayerOffsetChanges/ref-sublayer.sdf'
-        ref2LayerPath = 'TestSublayerOffsetChanges/ref2.sdf'
+        rootLayerPath = 'TestSublayerOffsetChanges/root.usda'
+        rootSublayerPath = 'TestSublayerOffsetChanges/root-sublayer.usda'
+        refLayerPath = 'TestSublayerOffsetChanges/ref.usda'
+        refSublayerPath = 'TestSublayerOffsetChanges/ref-sublayer.usda'
+        ref2LayerPath = 'TestSublayerOffsetChanges/ref2.usda'
         
         rootLayer = Sdf.Layer.FindOrOpen(rootLayerPath)
         pcp = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
@@ -326,9 +378,6 @@ class TestPcpChanges(unittest.TestCase):
         _ChangeAndVerify({'tcps' : 24.0, 'fps' : 24.0}, True, 24.0)
         _ChangeAndVerify({'tcps' : None, 'fps' : None}, False, 24.0)
 
-    @unittest.skipIf(
-        Tf.GetEnvSetting('PCP_DISABLE_TIME_SCALING_BY_LAYER_TCPS'),
-        "Test requires layer TCPS time scaling enabled")
     def test_TcpsChanges(self):
         """
         Tests change processing for changes that affect the time codes per
@@ -336,11 +385,11 @@ class TestPcpChanges(unittest.TestCase):
         """
 
         # Use the same layers as the sublayer offset test case.
-        rootLayerPath = 'TestSublayerOffsetChanges/root.sdf'
-        rootSublayerPath = 'TestSublayerOffsetChanges/root-sublayer.sdf'
-        refLayerPath = 'TestSublayerOffsetChanges/ref.sdf'
-        refSublayerPath = 'TestSublayerOffsetChanges/ref-sublayer.sdf'
-        ref2LayerPath = 'TestSublayerOffsetChanges/ref2.sdf'
+        rootLayerPath = 'TestSublayerOffsetChanges/root.usda'
+        rootSublayerPath = 'TestSublayerOffsetChanges/root-sublayer.usda'
+        refLayerPath = 'TestSublayerOffsetChanges/ref.usda'
+        refSublayerPath = 'TestSublayerOffsetChanges/ref-sublayer.usda'
+        ref2LayerPath = 'TestSublayerOffsetChanges/ref2.usda'
 
         rootLayer = Sdf.Layer.FindOrOpen(rootLayerPath)
         sessionLayer = Sdf.Layer.CreateAnonymous()
@@ -672,7 +721,7 @@ class TestPcpChanges(unittest.TestCase):
         pcp.ComputePrimIndex('/Variant')
         with Pcp._TestChangeProcessor(pcp) as cp:
             varSpec.primSpec.referenceList.Add(
-                Sdf.Reference('./dummy.sdf', '/Dummy'))
+                Sdf.Reference('./dummy.usda', '/Dummy'))
             self.assertEqual(cp.GetSignificantChanges(), ['/Variant'])
             self.assertEqual(cp.GetSpecChanges(), [])
             self.assertEqual(cp.GetPrimChanges(), [])
@@ -959,7 +1008,7 @@ class TestPcpChanges(unittest.TestCase):
         self.assertEqual(pi.propertyStack, [subAttrSpec])
 
     def test_ChangesToCulledAncestralNodes(self):
-        layer = Sdf.Layer.FindOrOpen('TestCulledAncestralNodes/root.sdf')
+        layer = Sdf.Layer.FindOrOpen('TestCulledAncestralNodes/root.usda')
         pcp = Pcp.Cache(Pcp.LayerStackIdentifier(layer))
 
         (pi, err) = pcp.ComputePrimIndex(
@@ -983,6 +1032,109 @@ class TestPcpChanges(unittest.TestCase):
             self.assertEqual(cp.GetPrimChanges(),
                              ['/FSToyCarA/Looks/PaintedWood_PaintedYellow'])
 
+    def test_MuteCulledAncestralReferences(self):
+        """Tests that muting an ancestrally-referenced layer and invalidates
+        affected prim indexes when the corresponding node is culled."""
+
+        rootLayer = Sdf.Layer.FindOrOpen(
+            'TestMuteCulledAncestralReference/root.usda')
+        refLayer = Sdf.Layer.FindOrOpenRelativeToLayer(rootLayer, 'ref.usda')
+        pcp = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
+
+        # Compute the initial prim index and verify that all reference
+        # nodes pointing to ref.usda have been culled from the graph.
+        # All nodes should be in the root layer stack.
+        pi, err = pcp.ComputePrimIndex(
+            '/FSToyCarA/Looks/PaintedWood_PaintedYellow')
+
+        nodes = [pi.rootNode]
+        while nodes:
+            node = nodes[0]
+            nodes = nodes[1:] + node.children
+            self.assertEqual(node.layerStack.layers[0], rootLayer)
+
+        # However, we should have a dependency registered on ref.usda.
+        refLayerStack = pcp.FindAllLayerStacksUsingLayer(refLayer)[0]
+        self.assertEqual(
+            [dep.indexPath for dep in pcp.FindSiteDependencies(
+                refLayerStack, '/FSToyCarA_defaultShadingVariant')],
+            ['/FSToyCarA'])
+
+        # Mute ref.usda and verify that the prim index is invalidated
+        # and that recomputing the prim index results in a composition
+        # error due to the muted reference layer.
+        pcp.RequestLayerMuting([refLayer.identifier], [])
+        self.assertTrue(pcp.IsLayerMuted(refLayer.identifier))
+
+        self.assertFalse(pcp.FindPrimIndex(
+            '/FSToyCarA/Looks/PaintedWood_PaintedYellow'))
+        pi, err = pcp.ComputePrimIndex(
+            '/FSToyCarA/Looks/PaintedWood_PaintedYellow')
+
+        self.assertTrue(err)
+
+    def test_MuteRemoveSublayerWithSublayers(self):
+        """Tests that muting/removing sublayers that also have sublayers
+        invalidate affected cache prim indexes."""
+
+        def _Test(rootLayerId, layerOperationFn):
+            rootLayer = Sdf.Layer.FindOrOpen(rootLayerId)
+            pcp = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer))
+
+            def _ComputePrimIndex(path):
+                pi, err = pcp.ComputePrimIndex(path)
+                self.assertFalse(err, f"Unexpected errors for {path}: {err}")
+                return (pi, path)
+
+            def _FindPrimIndex(indexAndPath):
+                return True if pcp.FindPrimIndex(indexAndPath[1]) else False
+
+            # These prim indexes either have all of their opinions or a def
+            # in the sublayers that will be removed from composition.
+            overInSublayers = _ComputePrimIndex('/Parent/OverInSublayers')
+            overAndDefInSublayers = _ComputePrimIndex('/Parent/OverAndDefInSublayers')
+            overInRootDefInSublayer = _ComputePrimIndex('/Parent/OverInRootDefInSublayer')
+
+            # This prim index has an over in the root layer and another over in
+            # a sublayer that will be removed from composition.
+            overInSublayerAndRoot = _ComputePrimIndex('/Parent/OverInSublayerAndRoot')
+
+            layerOperationFn(pcp)
+
+            # After the layer operation, all of these prim indexes should be
+            # resync'd.
+            self.assertFalse(_FindPrimIndex(overInSublayers))
+            self.assertFalse(_FindPrimIndex(overAndDefInSublayers))
+            self.assertFalse(_FindPrimIndex(overInRootDefInSublayer))
+
+            if INCREMENTAL_CHANGES:
+                # This prim index does not need to be recomputed, it just has an
+                # updated prim stack.
+                self.assertTrue(_FindPrimIndex(overInSublayerAndRoot))
+                self.assertEqual(
+                    overInSublayerAndRoot[0].primStack,
+                    [rootLayer.GetPrimAtPath('/Parent/OverInSublayerAndRoot')])
+            else:
+                self.assertFalse(_FindPrimIndex(overInSublayerAndRoot))
+
+        # Test cases for muting a sublayer that itself has sublayers.
+        def _MuteSublayer(pcp):
+            subLayer = pcp.layerStack.layers[1]
+            self.assertEqual(os.path.basename(subLayer.identifier), 'sub.usda')
+            pcp.RequestLayerMuting([subLayer.identifier], [])
+
+        _Test('TestMuteRemoveWithNestedSublayers/root.usda', _MuteSublayer)
+        _Test('TestMuteRemoveWithSiblingSublayers/root.usda', _MuteSublayer)
+
+        # Test cases for removing a sublayer that itself has sublayers.
+        def _RemoveSublayer(pcp):
+            with Pcp._TestChangeProcessor(pcp):
+                rootLayer = pcp.GetLayerStackIdentifier().rootLayer
+                rootLayer.subLayerPaths.clear()
+
+        _Test('TestMuteRemoveWithNestedSublayers/root.usda', _RemoveSublayer)
+        _Test('TestMuteRemoveWithSiblingSublayers/root.usda', _RemoveSublayer)
+
     def test_AddMuteRemoveSublayerWithRelocates(self):
         """Tests that adding/muting/removing sublayers that only define layer 
            relocates will invalidate affected cached prim indexes."""
@@ -991,7 +1143,7 @@ class TestPcpChanges(unittest.TestCase):
         # a simple hierarchy in ref layer
         refLayer = Sdf.Layer.CreateAnonymous()
         refLayer.ImportFromString(
-            '''#sdf 1.4.32
+            '''#usda 1.0
                 def "Ref" {
                     def "A" {
                         def "B" {
@@ -1003,7 +1155,7 @@ class TestPcpChanges(unittest.TestCase):
 
         rootLayer = Sdf.Layer.CreateAnonymous()
         rootLayer.ImportFromString(
-            '''#sdf 1.4.32
+            '''#usda 1.0
                 def "Root" (
                     references = @''' + refLayer.identifier + '''@</Ref>
                 ) {}''')
@@ -1046,7 +1198,7 @@ class TestPcpChanges(unittest.TestCase):
         # /Root/Foo.
         subLayer1 = Sdf.Layer.CreateAnonymous()
         subLayer1.ImportFromString(
-            '''#sdf 1.4.32
+            '''#usda 1.0
                 (
                     relocates = {
                         </Root/A> : </Root/Foo>
@@ -1082,7 +1234,7 @@ class TestPcpChanges(unittest.TestCase):
         # /Root/Foo/B to /Root/Foo/Bar.
         subLayer2 = Sdf.Layer.CreateAnonymous()
         subLayer2.ImportFromString(
-            '''#sdf 1.4.32
+            '''#usda 1.0
                 (
                     relocates = {
                         </Root/Foo/B> : </Root/Foo/Bar>
@@ -1172,6 +1324,26 @@ class TestPcpChanges(unittest.TestCase):
         self.assertFalse(len(err))
         self.assertEqual(pi.ComputePrimChildNames(), (['C'], []))
 
+    def test_SublayerOperationOnNonUsdLayerWithRelocates(self):
+        """Tests that when a cache is not in USD mode, a full resync is
+        performed for sublayer operations with layers that contain
+        relocates specified with the 'relocates' property """
+
+        rootLayer = Sdf.Layer.CreateAnonymous('root.usda')
+        Sdf.PrimSpec(rootLayer, 'Root', Sdf.SpecifierDef)
+
+        subLayer = Sdf.Layer.CreateAnonymous('subLayer.usda')
+        Sdf.PrimSpec(subLayer, 'Sub', Sdf.SpecifierDef)
+        subLayer.relocates = [("/foo/bar", "/foo/baz")]
+
+        pcpCache = Pcp.Cache(Pcp.LayerStackIdentifier(rootLayer, None))
+        pcpCache.ComputePrimIndex('/Root')
+
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            rootLayer.subLayerPaths = [subLayer.identifier]
+            self.assertEqual(changes.GetSignificantChanges(), ['/'])
+
+
     def test_RelocatesMapFunctionChanges(self):
         """Tests that adding/removing relocates correctly updates map functions
         in reference nodes that are needed for target path mapping. Also tests
@@ -1187,7 +1359,7 @@ class TestPcpChanges(unittest.TestCase):
         # the specific cache invalidation effects when relocates are added
         # for the first time.
         modelLayer = Sdf.Layer.CreateAnonymous()
-        modelLayer.ImportFromString('''#sdf 1.4.32
+        modelLayer.ImportFromString('''#usda 1.0
             def "Model" {
                 def "PreRelo" {
                     def "PreReloChild" {
@@ -1196,7 +1368,7 @@ class TestPcpChanges(unittest.TestCase):
             }''')
 
         refLayer = Sdf.Layer.CreateAnonymous()
-        refLayer.ImportFromString('''#sdf 1.4.32
+        refLayer.ImportFromString('''#usda 1.0
             def "Ref" (
                 references = @''' + modelLayer.identifier + '''@</Model>
             ) {}
@@ -1207,7 +1379,7 @@ class TestPcpChanges(unittest.TestCase):
             ''')
 
         rootLayer = Sdf.Layer.CreateAnonymous()
-        rootLayer.ImportFromString('''#sdf 1.4.32
+        rootLayer.ImportFromString('''#usda 1.0
             def "Root" (
                 references = @''' + refLayer.identifier + '''@</Ref>
             ) {}
@@ -1469,6 +1641,152 @@ class TestPcpChanges(unittest.TestCase):
             refNode1Map = { '/Ref': '/Root' },
             refNode2Map = { '/Model': '/Ref' }
         )
+
+    def test_NestedRelocatesChanges(self):
+        """Regression test for a bug where the changes to relocate would not
+        invalidate prim indexes that were affected by nested relocates of the
+        changed relocate. In this particular test example, the /GrandChild
+        prim index was previously not being invalidated for the relocates 
+        changes made here. This case particularly makes sure that it is now
+        correctly invalidated."""
+
+        # First a layer with prims /World/Foo and /World/FooBar each with the 
+        # same Child and GrandChild prims.
+        layer1 = Sdf.Layer.CreateAnonymous("layer1.usda")
+        layer1.ImportFromString('''#usda 1.0
+        def "World" {
+            def "Foo" {
+                def "Child" {
+                    def "GrandChild" {           
+                    }
+                }    
+            }
+        
+            def "FooBar" {
+                def "Child" {
+                    def "GrandChild" {           
+                    }
+                }    
+            }   
+        }
+        ''')
+        
+        # Second a layer that has a prim that references /World and then 
+        # relocates that flatten the "Foo" hierarchy to individual root prims
+        layer2 = Sdf.Layer.CreateAnonymous("layer2.usda")
+        layer2.ImportFromString('''#usda 1.0
+        (
+            relocates = {
+                </Prim/Foo> : </Foo>,
+                </Foo/Child> : </Child>,
+                </Child/GrandChild> : </GrandChild>
+            }
+        )
+        
+        
+        def "Prim" (
+            references = @''' + layer1.identifier + '''@</World>
+        ) {
+        }
+        
+        
+        ''') 
+
+        # Create a cache with layer2 root
+        layerStackId = Pcp.LayerStackIdentifier(layer2)
+        cache = Pcp.Cache(layerStackId, usd=True)
+
+        # Compute the prim indexes for the flattened relocated prims.
+        # The prim stacks for each contains the correct spec under /World/Foo
+        # for each relocated reference prim.
+        foo, _ = cache.ComputePrimIndex('/Foo')
+        child, _ = cache.ComputePrimIndex('/Child')
+        grandChild, _ = cache.ComputePrimIndex('/GrandChild')
+
+        self.assertEqual(foo.primStack, 
+                         [layer1.GetPrimAtPath('/World/Foo')])
+        self.assertEqual(child.primStack, 
+                         [layer1.GetPrimAtPath('/World/Foo/Child')])
+        self.assertEqual(grandChild.primStack, 
+                         [layer1.GetPrimAtPath('/World/Foo/Child/GrandChild')])
+        
+        # Update the relocates so that /Foo is relocated from /Prim/FooBar 
+        # instead of /Prim/Foo.
+        with Pcp._TestChangeProcessor(cache):
+            layer2.relocates = [
+                ('/Prim/FooBar', '/Foo'), 
+                ('/Foo/Child', '/Child'), 
+                ('/Child/GrandChild', '/GrandChild')]
+
+        # Verify the prim index for each relocated prim has been invalidated.
+        self.assertFalse(cache.FindPrimIndex('/Foo'))
+        self.assertFalse(cache.FindPrimIndex('/Child'))
+        self.assertFalse(cache.FindPrimIndex('/GrandChild'))
+
+        # Compute the prim indexes for the flattened relocated prims.
+        # The prim stacks for each now contains the new correct spec under 
+        # /World/FooBar for each relocated reference prim.
+        foo, _ = cache.ComputePrimIndex('/Foo')
+        child, _ = cache.ComputePrimIndex('/Child')
+        grandChild, _ = cache.ComputePrimIndex('/GrandChild')
+
+        self.assertEqual(foo.primStack, 
+                         [layer1.GetPrimAtPath('/World/FooBar')])
+        self.assertEqual(child.primStack, 
+                         [layer1.GetPrimAtPath('/World/FooBar/Child')])
+        self.assertEqual(grandChild.primStack, 
+                         [layer1.GetPrimAtPath('/World/FooBar/Child/GrandChild')])
+        
+        # Update the relocates so that /Foo is relocated from /Prim/Bogus 
+        # which does not exist..
+        with Pcp._TestChangeProcessor(cache):
+            layer2.relocates = [
+                ('/Prim/Bogus', '/Foo'), 
+                ('/Foo/Child', '/Child'), 
+                ('/Child/GrandChild', '/GrandChild')]
+
+        # Verify the prim index for each relocated prim has been invalidated.
+        self.assertFalse(cache.FindPrimIndex('/Foo'))
+        self.assertFalse(cache.FindPrimIndex('/Child'))
+        self.assertFalse(cache.FindPrimIndex('/GrandChild'))
+
+        # Compute the prim indexes for the flattened relocated prims.
+        # The prim stacks for each are now all empty because of the bogus
+        # relocates.
+        foo, _ = cache.ComputePrimIndex('/Foo')
+        child, _ = cache.ComputePrimIndex('/Child')
+        grandChild, _ = cache.ComputePrimIndex('/GrandChild')
+
+        self.assertEqual(foo.primStack, [])
+        self.assertEqual(child.primStack, [])
+        self.assertEqual(grandChild.primStack, [])
+        
+        # Update the relocates so that /Foo is relocated from /Prim/Foo again 
+        # like at the start
+        with Pcp._TestChangeProcessor(cache):
+            layer2.relocates = [
+                ('/Prim/Foo', '/Foo'), 
+                ('/Foo/Child', '/Child'), 
+                ('/Child/GrandChild', '/GrandChild')]
+
+        # Verify the prim index for each relocated prim has been invalidated.
+        self.assertFalse(cache.FindPrimIndex('/Foo'))
+        self.assertFalse(cache.FindPrimIndex('/Child'))
+        self.assertFalse(cache.FindPrimIndex('/GrandChild'))
+
+        # Compute the prim indexes for the flattened relocated prims.
+        # The prim stacks for each contains the correct spec under /World/Foo
+        # again for each relocated reference prim.
+        foo, _ = cache.ComputePrimIndex('/Foo')
+        child, _ = cache.ComputePrimIndex('/Child')
+        grandChild, _ = cache.ComputePrimIndex('/GrandChild')
+
+        self.assertEqual(foo.primStack, 
+                         [layer1.GetPrimAtPath('/World/Foo')])
+        self.assertEqual(child.primStack, 
+                         [layer1.GetPrimAtPath('/World/Foo/Child')])
+        self.assertEqual(grandChild.primStack, 
+                         [layer1.GetPrimAtPath('/World/Foo/Child/GrandChild')])
 
 if __name__ == "__main__":
     unittest.main()

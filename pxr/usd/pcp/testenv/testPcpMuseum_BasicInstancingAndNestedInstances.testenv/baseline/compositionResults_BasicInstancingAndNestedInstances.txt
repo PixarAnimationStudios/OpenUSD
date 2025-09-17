@@ -1,15 +1,15 @@
-Loading @BasicInstancingAndNestedInstances/root.sdf@
+Loading @BasicInstancingAndNestedInstances/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Set_1>
 
 Prim Stack:
-    root.sdf             /Set_1
-    set.sdf              /Set
+    root.usda            /Set_1
+    set.usda             /Set
 
 Child names:
      ['PropInstance_1', 'PropInstance2', 'PropNotAnInstance_1']
@@ -18,8 +18,8 @@ Child names:
 Results for composing </Set_1/PropInstance_1>
 
 Prim Stack:
-    set.sdf              /Set/PropInstance_1
-    prop.sdf             /Prop
+    set.usda             /Set/PropInstance_1
+    prop.usda            /Prop
 
 Child names:
      ['geom']
@@ -28,14 +28,14 @@ Child names:
 Results for composing </Set_1/PropInstance_1/geom>
 
 Prim Stack:
-    prop.sdf             /Prop/geom
+    prop.usda            /Prop/geom
 
 ------------------------------------------------------------------------
 Results for composing </Set_1/PropInstance2>
 
 Prim Stack:
-    set.sdf              /Set/PropInstance2
-    prop.sdf             /Prop
+    set.usda             /Set/PropInstance2
+    prop.usda            /Prop
 
 Child names:
      ['geom']
@@ -44,14 +44,14 @@ Child names:
 Results for composing </Set_1/PropInstance2/geom>
 
 Prim Stack:
-    prop.sdf             /Prop/geom
+    prop.usda            /Prop/geom
 
 ------------------------------------------------------------------------
 Results for composing </Set_1/PropNotAnInstance_1>
 
 Prim Stack:
-    set.sdf              /Set/PropNotAnInstance_1
-    prop.sdf             /Prop
+    set.usda             /Set/PropNotAnInstance_1
+    prop.usda            /Prop
 
 Child names:
      ['geom']
@@ -60,6 +60,6 @@ Child names:
 Results for composing </Set_1/PropNotAnInstance_1/geom>
 
 Prim Stack:
-    set.sdf              /Set/PropNotAnInstance_1/geom
-    prop.sdf             /Prop/geom
+    set.usda             /Set/PropNotAnInstance_1/geom
+    prop.usda            /Prop/geom
 

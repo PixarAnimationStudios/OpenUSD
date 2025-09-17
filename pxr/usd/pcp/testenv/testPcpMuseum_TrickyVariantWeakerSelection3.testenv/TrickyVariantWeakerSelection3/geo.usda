@@ -1,0 +1,20 @@
+#usda 1.0
+
+def Model "Model" (
+    add variantSets = "K_hierarchy"
+    variants = {
+        string K_hierarchy = "expanded"
+    }
+)
+{
+    variantSet "K_hierarchy" = {
+        "expanded" (
+        ) {
+
+        }
+        "full" (
+        ) {
+
+        }
+    }
+}

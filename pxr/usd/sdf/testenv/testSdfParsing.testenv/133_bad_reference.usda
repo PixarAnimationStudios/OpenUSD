@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    framesPerSecond = 24
+    framePrecision = 3
+)
+
+def MfScope "TestPrim" (
+    references = [
+        @@
+    ]
+)
+{
+}
+
+def MfScope "TestPrim2"
+{
+}
+

@@ -1,15 +1,15 @@
-Loading @BasicInherits/root.sdf@
+Loading @BasicInherits/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Group>
 
 Prim Stack:
-    root.sdf             /Group
-    group.sdf            /Group
+    root.usda            /Group
+    group.usda           /Group
 
 Child names:
      ['Model_1', 'Model_2', 'Model_Special']
@@ -18,84 +18,84 @@ Child names:
 Results for composing </Group/Model_1>
 
 Prim Stack:
-    root.sdf             /_class_Model
-    group.sdf            /Group/Model_1
-    group.sdf            /_class_Model
-    model.sdf            /Model
-    model.sdf            /_class_Model
+    root.usda            /_class_Model
+    group.usda           /Group/Model_1
+    group.usda           /_class_Model
+    model.usda           /Model
+    model.usda           /_class_Model
 
 Property names:
      ['value']
 
 Property stacks:
 /Group/Model_1.value:
-    root.sdf             /_class_Model.value
-    group.sdf            /_class_Model.value
-    model.sdf            /Model.value
-    model.sdf            /_class_Model.value
+    root.usda            /_class_Model.value
+    group.usda           /_class_Model.value
+    model.usda           /Model.value
+    model.usda           /_class_Model.value
 
 ------------------------------------------------------------------------
 Results for composing </Group/Model_2>
 
 Prim Stack:
-    root.sdf             /Group/Model_2
-    root.sdf             /_class_Model
-    group.sdf            /Group/Model_2
-    group.sdf            /_class_Model
-    model.sdf            /Model
-    model.sdf            /_class_Model
+    root.usda            /Group/Model_2
+    root.usda            /_class_Model
+    group.usda           /Group/Model_2
+    group.usda           /_class_Model
+    model.usda           /Model
+    model.usda           /_class_Model
 
 Property names:
      ['value']
 
 Property stacks:
 /Group/Model_2.value:
-    root.sdf             /Group/Model_2.value
-    root.sdf             /_class_Model.value
-    group.sdf            /_class_Model.value
-    model.sdf            /Model.value
-    model.sdf            /_class_Model.value
+    root.usda            /Group/Model_2.value
+    root.usda            /_class_Model.value
+    group.usda           /_class_Model.value
+    model.usda           /Model.value
+    model.usda           /_class_Model.value
 
 ------------------------------------------------------------------------
 Results for composing </Group/Model_Special>
 
 Prim Stack:
-    root.sdf             /_class_Model
-    group.sdf            /Group/Model_Special
-    group.sdf            /_class_Model
-    model.sdf            /Model
-    model.sdf            /_class_Model
+    root.usda            /_class_Model
+    group.usda           /Group/Model_Special
+    group.usda           /_class_Model
+    model.usda           /Model
+    model.usda           /_class_Model
 
 Property names:
      ['value']
 
 Property stacks:
 /Group/Model_Special.value:
-    root.sdf             /_class_Model.value
-    group.sdf            /Group/Model_Special.value
-    group.sdf            /_class_Model.value
-    model.sdf            /Model.value
-    model.sdf            /_class_Model.value
+    root.usda            /_class_Model.value
+    group.usda           /Group/Model_Special.value
+    group.usda           /_class_Model.value
+    model.usda           /Model.value
+    model.usda           /_class_Model.value
 
 ------------------------------------------------------------------------
 Results for composing </_class_Model>
 
 Prim Stack:
-    root.sdf             /_class_Model
+    root.usda            /_class_Model
 
 Property names:
      ['value']
 
 Property stacks:
 /_class_Model.value:
-    root.sdf             /_class_Model.value
+    root.usda            /_class_Model.value
 
 ------------------------------------------------------------------------
 Results for composing </NonExistentInherit>
 
 Prim Stack:
-    root.sdf             /NonExistentInherit
-    nonexistent.sdf      /NonExistentInherit
+    root.usda            /NonExistentInherit
+    nonexistent.usda     /NonExistentInherit
 
 Child names:
      ['Child']
@@ -104,19 +104,19 @@ Child names:
 Results for composing </NonExistentInherit/Child>
 
 Prim Stack:
-    nonexistent.sdf      /NonExistentInherit/Child
+    nonexistent.usda     /NonExistentInherit/Child
 
 ------------------------------------------------------------------------
 Results for composing </RootClass>
 
 Prim Stack:
-    root.sdf             /RootClass
+    root.usda            /RootClass
 
 ------------------------------------------------------------------------
 Results for composing </ParentClass>
 
 Prim Stack:
-    root.sdf             /ParentClass
+    root.usda            /ParentClass
 
 Child names:
      ['SubrootClass']
@@ -125,30 +125,30 @@ Child names:
 Results for composing </ParentClass/SubrootClass>
 
 Prim Stack:
-    root.sdf             /ParentClass/SubrootClass
+    root.usda            /ParentClass/SubrootClass
 
 ------------------------------------------------------------------------
 Results for composing </InheritsOrder1>
 
 Prim Stack:
-    root.sdf             /InheritsOrder1
-    root.sdf             /RootClass
-    root.sdf             /ParentClass/SubrootClass
+    root.usda            /InheritsOrder1
+    root.usda            /RootClass
+    root.usda            /ParentClass/SubrootClass
 
 ------------------------------------------------------------------------
 Results for composing </InheritsOrder2>
 
 Prim Stack:
-    root.sdf             /InheritsOrder2
-    root.sdf             /ParentClass/SubrootClass
-    root.sdf             /RootClass
+    root.usda            /InheritsOrder2
+    root.usda            /ParentClass/SubrootClass
+    root.usda            /RootClass
 
 ------------------------------------------------------------------------
 Results for composing </ModelWithVariant>
 
 Prim Stack:
-    root.sdf             /ModelWithVariant
-    root.sdf             /ModelWithVariant{vset=vsel}
+    root.usda            /ModelWithVariant
+    root.usda            /ModelWithVariant{vset=vsel}
 
 Variant Selections:
     {vset = vsel}
@@ -160,18 +160,18 @@ Child names:
 Results for composing </ModelWithVariant/_class>
 
 Prim Stack:
-    root.sdf             /ModelWithVariant{vset=vsel}_class
+    root.usda            /ModelWithVariant{vset=vsel}_class
 
 ------------------------------------------------------------------------
 Results for composing </ModelWithVariant/InvalidInherit>
 
 Prim Stack:
-    root.sdf             /ModelWithVariant{vset=vsel}InvalidInherit
+    root.usda            /ModelWithVariant{vset=vsel}InvalidInherit
 
 ------------------------------------------------------------------------
 Results for composing </ModelWithVariant/ValidInherit>
 
 Prim Stack:
-    root.sdf             /ModelWithVariant{vset=vsel}ValidInherit
-    root.sdf             /ModelWithVariant{vset=vsel}_class
+    root.usda            /ModelWithVariant{vset=vsel}ValidInherit
+    root.usda            /ModelWithVariant{vset=vsel}_class
 

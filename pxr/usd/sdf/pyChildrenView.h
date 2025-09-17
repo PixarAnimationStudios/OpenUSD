@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_SDF_PY_CHILDREN_VIEW_H
 #define PXR_USD_SDF_PY_CHILDREN_VIEW_H
@@ -31,7 +14,7 @@
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
-#include <boost/python.hpp>
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -53,32 +36,32 @@ public:
 
 private:
     struct _ExtractItem {
-        static boost::python::object Get(const View& x, const const_iterator& i)
+        static pxr_boost::python::object Get(const View& x, const const_iterator& i)
         {
-            return boost::python::make_tuple(x.key(i), *i);
+            return pxr_boost::python::make_tuple(x.key(i), *i);
         }
     };
 
     struct _ExtractKey {
-        static boost::python::object Get(const View& x, const const_iterator& i)
+        static pxr_boost::python::object Get(const View& x, const const_iterator& i)
         {
-            return boost::python::object(x.key(i));
+            return pxr_boost::python::object(x.key(i));
         }
     };
 
     struct _ExtractValue {
-        static boost::python::object Get(const View& x, const const_iterator& i)
+        static pxr_boost::python::object Get(const View& x, const const_iterator& i)
         {
-            return boost::python::object(*i);
+            return pxr_boost::python::object(*i);
         }
     };
 
     template <class E>
     class _Iterator {
     public:
-        _Iterator(const boost::python::object& object) :
+        _Iterator(const pxr_boost::python::object& object) :
             _object(object),
-            _owner(boost::python::extract<const View&>(object)),
+            _owner(pxr_boost::python::extract<const View&>(object)),
             _cur(_owner.begin()),
             _end(_owner.end())
         {
@@ -90,18 +73,18 @@ private:
             return *this;
         }
 
-        boost::python::object GetNext()
+        pxr_boost::python::object GetNext()
         {
             if (_cur == _end) {
                 TfPyThrowStopIteration("End of ChildrenProxy iteration");
             }
-            boost::python::object result = E::Get(_owner, _cur);
+            pxr_boost::python::object result = E::Get(_owner, _cur);
             ++_cur;
             return result;
         }
 
     private:
-        boost::python::object _object;
+        pxr_boost::python::object _object;
         const View& _owner;
         const_iterator _cur;
         const_iterator _end;
@@ -109,7 +92,7 @@ private:
 
     static void _Wrap()
     {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
 
         std::string name = _GetName();
         
@@ -202,11 +185,11 @@ private:
         return x[index];
     }
 
-    static boost::python::object _PyGet(const View& x, const key_type& key)
+    static pxr_boost::python::object _PyGet(const View& x, const key_type& key)
     {
         const_iterator i = x.find(key);
-        return i == x.end() ? boost::python::object() :
-                              boost::python::object(*i);
+        return i == x.end() ? pxr_boost::python::object() :
+                              pxr_boost::python::object(*i);
     }
 
     static bool _HasKey(const View& x, const key_type& key)
@@ -220,27 +203,27 @@ private:
     }
 
     static
-    _Iterator<_ExtractItem> _GetItemIterator(const boost::python::object& x)
+    _Iterator<_ExtractItem> _GetItemIterator(const pxr_boost::python::object& x)
     {
         return _Iterator<_ExtractItem>(x);
     }
 
     static
-    _Iterator<_ExtractKey> _GetKeyIterator(const boost::python::object& x)
+    _Iterator<_ExtractKey> _GetKeyIterator(const pxr_boost::python::object& x)
     {
         return _Iterator<_ExtractKey>(x);
     }
 
     static
-    _Iterator<_ExtractValue> _GetValueIterator(const boost::python::object& x)
+    _Iterator<_ExtractValue> _GetValueIterator(const pxr_boost::python::object& x)
     {
         return _Iterator<_ExtractValue>(x);
     }
 
     template <class E>
-    static boost::python::list _Get(const View& x)
+    static pxr_boost::python::list _Get(const View& x)
     {
-        boost::python::list result;
+        pxr_boost::python::list result;
         for (const_iterator i = x.begin(), n = x.end(); i != n; ++i) {
             result.append(E::Get(x, i));
         }

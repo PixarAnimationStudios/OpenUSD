@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -54,6 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (refineLevel) \
     (flatShadingEnabled) \
     (displacementEnabled) \
+    (displayInOverlay) \
     (occludedSelectionShowsThrough) \
     (pointsShadingEnabled) \
     (materialIsFinal) \
@@ -67,6 +51,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdLegacyDisplayStyleSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdLegacyDisplayStyleSchema
+///
 class HdLegacyDisplayStyleSchema : public HdSchema
 {
 public:
@@ -101,6 +87,9 @@ public:
 
     HD_API
     HdBoolDataSourceHandle GetDisplacementEnabled() const;
+
+    HD_API
+    HdBoolDataSourceHandle GetDisplayInOverlay() const;
 
     HD_API
     HdBoolDataSourceHandle GetOccludedSelectionShowsThrough() const;
@@ -146,6 +135,38 @@ public:
     /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
     /// @{
 
+    /// Prim-level relative data source locator to locate refineLevel.
+    HD_API
+    static const HdDataSourceLocator &GetRefineLevelLocator();
+
+    /// Prim-level relative data source locator to locate flatShadingEnabled.
+    HD_API
+    static const HdDataSourceLocator &GetFlatShadingEnabledLocator();
+
+    /// Prim-level relative data source locator to locate displacementEnabled.
+    HD_API
+    static const HdDataSourceLocator &GetDisplacementEnabledLocator();
+
+    /// Prim-level relative data source locator to locate displayInOverlay.
+    HD_API
+    static const HdDataSourceLocator &GetDisplayInOverlayLocator();
+
+    /// Prim-level relative data source locator to locate occludedSelectionShowsThrough.
+    HD_API
+    static const HdDataSourceLocator &GetOccludedSelectionShowsThroughLocator();
+
+    /// Prim-level relative data source locator to locate pointsShadingEnabled.
+    HD_API
+    static const HdDataSourceLocator &GetPointsShadingEnabledLocator();
+
+    /// Prim-level relative data source locator to locate materialIsFinal.
+    HD_API
+    static const HdDataSourceLocator &GetMaterialIsFinalLocator();
+
+    /// Prim-level relative data source locator to locate shadingStyle.
+    HD_API
+    static const HdDataSourceLocator &GetShadingStyleLocator();
+
     /// Prim-level relative data source locator to locate reprSelector.
     HD_API
     static const HdDataSourceLocator &GetReprSelectorLocator();
@@ -171,6 +192,7 @@ public:
         const HdIntDataSourceHandle &refineLevel,
         const HdBoolDataSourceHandle &flatShadingEnabled,
         const HdBoolDataSourceHandle &displacementEnabled,
+        const HdBoolDataSourceHandle &displayInOverlay,
         const HdBoolDataSourceHandle &occludedSelectionShowsThrough,
         const HdBoolDataSourceHandle &pointsShadingEnabled,
         const HdBoolDataSourceHandle &materialIsFinal,
@@ -198,6 +220,9 @@ public:
         Builder &SetDisplacementEnabled(
             const HdBoolDataSourceHandle &displacementEnabled);
         HD_API
+        Builder &SetDisplayInOverlay(
+            const HdBoolDataSourceHandle &displayInOverlay);
+        HD_API
         Builder &SetOccludedSelectionShowsThrough(
             const HdBoolDataSourceHandle &occludedSelectionShowsThrough);
         HD_API
@@ -224,6 +249,7 @@ public:
         HdIntDataSourceHandle _refineLevel;
         HdBoolDataSourceHandle _flatShadingEnabled;
         HdBoolDataSourceHandle _displacementEnabled;
+        HdBoolDataSourceHandle _displayInOverlay;
         HdBoolDataSourceHandle _occludedSelectionShowsThrough;
         HdBoolDataSourceHandle _pointsShadingEnabled;
         HdBoolDataSourceHandle _materialIsFinal;

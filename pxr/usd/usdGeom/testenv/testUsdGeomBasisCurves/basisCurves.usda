@@ -41,3 +41,65 @@ def BasisCurves "TimeSampledAndDefaultVertexCounts"
         1: [4, 4, 4, 4, 4]
     }
 }
+
+def BasisCurves "LinearNonperiodic"
+{
+    uniform token type = "linear"
+    uniform token wrap = "nonperiodic"
+    int[] curveVertexCounts = [2, 3, 2, 5]
+}
+
+def BasisCurves "LinearPeriodic"
+{
+    uniform token type = "linear"
+    uniform token wrap = "periodic"
+    int[] curveVertexCounts = [3, 7]
+}
+
+def BasisCurves "CubicNonperiodicBezier"
+{
+    uniform token type = "cubic"
+    uniform token wrap = "nonperiodic"
+    uniform token basis = "bezier"
+    int[] curveVertexCounts = [4, 7, 10, 4, 7]
+}
+
+def BasisCurves "CubicNonperiodicBspline"
+{
+    uniform token type = "cubic"
+    uniform token wrap = "nonperiodic"
+    uniform token basis = "bspline"
+    int[] curveVertexCounts = [5, 4, 6, 7]
+}
+
+def BasisCurves "CubicPeriodicBezier"
+{
+    uniform token type = "cubic"
+    uniform token wrap = "periodic"
+    uniform token basis = "bezier"
+    int[] curveVertexCounts = [6, 9, 6]
+}
+
+def BasisCurves "CubicPeriodicBspline"
+{
+    uniform token type = "cubic"
+    uniform token wrap = "periodic"
+    uniform token basis = "bspline"
+    int[] curveVertexCounts = [6, 9, 6]
+}
+
+def BasisCurves "CubicPinnedCatmullRom"
+{
+    uniform token type = "cubic"
+    uniform token wrap = "pinned"
+    uniform token basis = "catmullRom"
+    int[] curveVertexCounts = [2, 3, 2, 5]
+}
+
+def BasisCurves "CubicPinnedBezier"
+{
+    uniform token type = "cubic"
+    uniform token wrap = "pinned"
+    uniform token basis = "bezier"
+    int[] curveVertexCounts = [4, 7, 10, 4, 7]
+}

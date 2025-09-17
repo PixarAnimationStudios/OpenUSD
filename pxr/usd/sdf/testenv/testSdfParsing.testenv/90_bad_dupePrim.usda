@@ -1,0 +1,11 @@
+#usda 1.0
+#tagged-as-never-update
+
+# This file has two root prims with same name
+def MfScope "A"
+{
+}
+
+def MfScope "A"
+{
+}

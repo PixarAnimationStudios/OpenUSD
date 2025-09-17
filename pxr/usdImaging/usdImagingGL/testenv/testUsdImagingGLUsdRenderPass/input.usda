@@ -1,0 +1,219 @@
+#usda 1.0
+(
+    '''USD scene demonstrating a render pass'''
+    upAxis = "Z"
+)
+
+def Xform "World" (
+    kind = "group"
+)
+{
+    def Xform "Lights" (
+        kind = "lightpivot"
+    )
+    {
+        def DiskLight "DiskLight"
+        {
+            float inputs:exposure = 5
+            float inputs:radius = 1
+            double3 xformOp:translate = (2.574339921486688, 2.472, 5.285239027561428)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:rotateZ:spin", "xformOp:scale"]
+        }
+    }
+
+    def Xform "Geom"
+    {
+        float3 xformOp:rotateXYZ = (90, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+
+        def Cone "Cone" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            uniform token axis = "Y"
+            float3[] extent = [(-0.6, -0.6, -0.6), (0.6, 0.6, 0.6)]
+            double height = 1.2
+            rel material:binding = </World/Materials/Blue>
+            color3f[] primvars:displayColor = [(0.0436, 0.1311, 0.3634)]
+            double radius = 0.6
+            double3 xformOp:translate = (-3.85, 0.65, 3.85)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Cube "Cube" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            float3[] extent = [(-0.6, -0.6, -0.6), (0.6, 0.6, 0.6)]
+            rel material:binding = </World/Materials/Red>
+            color3f[] primvars:displayColor = [(0.8763, 0.2168, 0.2168)]
+            double size = 1.2
+            double3 xformOp:translate = (3.85, 0.65, 3.85)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Sphere "GraySphere" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+            rel material:binding = </World/Materials/Gray>
+            double radius = 0.5
+            double3 xformOp:translate = (-1.5, 0.55, 3.5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+
+        def Sphere "WhiteSphere" (
+            apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+            rel material:binding = </World/Materials/White>
+            double radius = 0.5
+            double3 xformOp:translate = (1.5, 0.55, 3.5)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
+    def Scope "Materials"
+    {
+        def Material "Blue"
+        {
+            token outputs:ri:surface.connect = </World/Materials/Blue/Surface.outputs:out>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "PxrSurface" (
+                    hidden = true
+                )
+                color3f inputs:diffuseColor = (0.0436, 0.1311, 0.3634) (
+                    displayName = "Color"
+                )
+                token outputs:out
+            }
+        }
+
+        def Material "Gray"
+        {
+            token outputs:ri:surface.connect = </World/Materials/Gray/Surface.outputs:out>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "PxrSurface" (
+                    hidden = true
+                )
+                token outputs:out
+            }
+        }
+
+        def Material "Red"
+        {
+            token outputs:ri:surface.connect = </World/Materials/Red/Surface.outputs:out>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "PxrSurface" (
+                    hidden = true
+                )
+                color3f inputs:diffuseColor = (0.8763, 0.2168, 0.2168) (
+                    displayName = "Color"
+                )
+                token outputs:out
+            }
+        }
+
+        def Material "White"
+        {
+            token outputs:ri:surface.connect = </World/Materials/White/Surface.outputs:out>
+
+            def Shader "Surface"
+            {
+                uniform token info:id = "PxrSurface" (
+                    hidden = true
+                )
+                color3f inputs:diffuseColor = (1, 1, 1) (
+                    displayName = "Color"
+                )
+                float inputs:diffuseGain = 0.5 (
+                    displayName = "Gain"
+                )
+                token outputs:out
+            }
+        }
+    }
+
+    def Camera "main_cam"
+    {
+        float2 clippingRange = (0.1, 100000)
+        float focalLength = 45
+        float focusDistance = 19.9
+        float horizontalAperture = 30
+        float verticalAperture = 30
+        matrix4d xformOp:transform = ( (0.9449953579588863, 0.32708374070894497, 0, 0), (-0.11732135652794735, 0.33895948807496856, 0.9334571038598387, 0), (0.3053186413218142, -0.8821126300012936, 0.35868905092517456, 0), (5.6679354094312115, -17.521744856862256, 7.548357629197747, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+
+def Scope "Render"
+{
+    def Scope "Vars"
+    {
+        def RenderVar "alpha"
+        {
+            uniform token dataType = "float"
+            uniform string sourceName = "a"
+        }
+
+        def RenderVar "color"
+        {
+            uniform string sourceName = "Ci"
+        }
+    }
+
+    def Scope "Outputs"
+    {
+        def RenderProduct "Default" (
+            apiSchemas = ["PxrDspyOpenExrAPI"]
+        )
+        {
+            rel orderedVars = [
+                </Render/Vars/color>,
+                </Render/Vars/alpha>,
+            ]
+        }
+
+        def RenderProduct "nospheres" (
+            inherits = </Render/Outputs/Default>
+        )
+        {
+            token productName = "nospheres.exr"
+        }
+    }
+
+    def Scope "Settings"
+    {
+        def RenderSettings "Default"
+        {
+            rel camera = </World/main_cam>
+            uniform int2 resolution = (128, 128)
+        }
+
+        def RenderSettings "nospheres" (
+            inherits = </Render/Settings/Default>
+        )
+        {
+            rel products = </Render/Outputs/nospheres>
+        }
+    }
+
+    def Scope "Passes"
+    {
+        def RenderPass "nospheres"
+        {
+            uniform pathExpression collection:prune:membershipExpression = "/World/Geom/*Sphere"
+            uniform token passType = "render"
+            rel renderSource = </Render/Settings/nospheres>
+        }
+    }
+}
+

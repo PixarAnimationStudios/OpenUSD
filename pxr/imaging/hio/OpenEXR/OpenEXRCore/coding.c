@@ -41,13 +41,10 @@ internal_coding_fill_channel_info (
 
         decc->channel_name = curc->name.str;
 
-        decc->height = compute_sampled_lines (
+        decc->height = compute_sampled_height (
             cinfo->height, curc->y_sampling, cinfo->start_y);
-
-        if (curc->x_sampling > 1)
-            decc->width = cinfo->width / curc->x_sampling;
-        else
-            decc->width = cinfo->width;
+        decc->width = compute_sampled_width (
+            cinfo->width, curc->x_sampling, cinfo->start_x);
 
         decc->x_samples         = curc->x_sampling;
         decc->y_samples         = curc->y_sampling;
@@ -99,13 +96,11 @@ internal_coding_update_channel_info (
 
         ccic->channel_name = curc->name.str;
 
-        ccic->height = compute_sampled_lines (
+        ccic->height = compute_sampled_height (
             cinfo->height, curc->y_sampling, cinfo->start_y);
+        ccic->width = compute_sampled_width (
+            cinfo->width, curc->x_sampling, cinfo->start_x);
 
-        if (curc->x_sampling > 1)
-            ccic->width = cinfo->width / curc->x_sampling;
-        else
-            ccic->width = cinfo->width;
         ccic->x_samples = curc->x_sampling;
         ccic->y_samples = curc->y_sampling;
 

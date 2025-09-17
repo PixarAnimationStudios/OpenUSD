@@ -1,28 +1,13 @@
 #
-# Copyright 2023 Pixar
+# Copyright 2024 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 
 from . import TsTest_SplineData as SData
+
+from pxr import Ts
 
 import sys
 
@@ -30,11 +15,12 @@ import sys
 class TsTest_Grapher(object):
 
     class Spline(object):
-        def __init__(self, name, data, samples, baked):
+        def __init__(self, name, data, samples, baked, colorIndex):
             self.data = data
             self.name = name
             self.baked = baked
             self.samples = samples
+            self.colorIndex = colorIndex
 
     class Diff(object):
         def __init__(self, time, value):
@@ -66,6 +52,7 @@ class TsTest_Grapher(object):
                 return
 
             # After first knot: normal
+            # XXX: incorrect if the earliest knot is from looping
             self._regions.append(self._Region(
                 knots[0].time,
                 openStart = False, isDim = False))
@@ -73,10 +60,12 @@ class TsTest_Grapher(object):
             # Looping regions
             if lp.enabled:
 
+                protoLen = lp.protoEnd - lp.protoStart
+
                 # Prepeats: dim
-                if lp.preLoopStart < lp.protoStart:
+                if lp.numPreLoops:
                     self._regions.append(self._Region(
-                        lp.preLoopStart,
+                        lp.protoStart - protoLen * lp.numPreLoops,
                         openStart = False, isDim = True))
 
                 # Prototype: normal
@@ -85,15 +74,18 @@ class TsTest_Grapher(object):
                     openStart = False, isDim = False))
 
                 # Repeats: dim
-                if lp.postLoopEnd > lp.protoEnd:
+                if lp.numPostLoops:
                     self._regions.append(self._Region(
                         lp.protoEnd,
                         openStart = False, isDim = True))
+                    loopEnd = lp.protoEnd + protoLen * lp.numPostLoops
+                else:
+                    loopEnd = lp.protoEnd
 
                 # After: normal.  A knot exactly on the boundary belongs to the
                 # prior region (openStart).
                 self._regions.append(self._Region(
-                    lp.postLoopEnd,
+                    loopEnd,
                     openStart = forKnots, isDim = False))
 
             # After last knot: dim.  A knot exactly on the boundary belongs to
@@ -121,7 +113,7 @@ class TsTest_Grapher(object):
 
             assert False, "Can't find region"
 
-    class _KeyframeData(object):
+    class _KnotData(object):
 
         def __init__(self, splineData):
 
@@ -169,25 +161,54 @@ class TsTest_Grapher(object):
             return False
 
     def __init__(
-            self, title,
-            widthPx = 1000, heightPx = 750,
-            includeScales = True):
+            self, title = None,
+            widthPx = 1000, heightPx = 750, dataAspect = None,
+            includeScales = True, includeBox = True):
+        """
+        Set up a Grapher.
 
+        'title', if supplied, is rendered as the graph title.
+
+        'widthPx' and 'heightPx' set the size of the overall graph image.
+
+        'dataAspect' sets the data aspect ratio.  This scales the horizontal or
+        vertical extent of the data to squash or stretch the spline curves.
+        This can be useful if, for example, a graph is stretched too tall to see
+        well.  If unspecified, the horizontal and vertical scales will both be
+        determined automatically, so that the curves occupy most of the
+        available space.  If a float value, specifies how many pixels one unit
+        in the Y-axis (the value axis) will occupy, as a multiple of how many
+        pixels one unit in the X-axis (the time axis) occupies; the overall
+        curves will be scaled so that the larger of the data extents of the two
+        axes occupies most of the available space on its drawing axis.  Higher
+        values stretch the curve height; lower values squash it.  For test
+        splines that use similarly scaled coordinates for time and value, a data
+        apsect of 1 is a reasonable starting point.  Currently, dataAspect only
+        affects the main graph, not the diff graph, if present.
+
+        'includeScales' controls whether ticks and labels are drawn along the
+        axes.
+
+        'includeBox' controls whether an overall box appears around the graph.
+        """
         self._title = title
         self._widthPx = widthPx
         self._heightPx = heightPx
+        self._dataAspect = dataAspect
         self._includeScales = includeScales
+        self._includeBox = includeBox
 
         self._splines = []
         self._diffs = None
         self._figure = None
 
-    def AddSpline(self, name, splineData, samples, baked = None):
+    def AddSpline(self, name, splineData, samples, baked = None,
+                  colorIndex = None):
 
         self._splines.append(
             TsTest_Grapher.Spline(
                 name, splineData, samples,
-                baked or splineData))
+                baked or splineData, colorIndex))
 
         # Reset the graph in case we're working incrementally.
         self._ClearGraph()
@@ -199,10 +220,12 @@ class TsTest_Grapher(object):
         self._MakeGraph()
         from matplotlib import pyplot
         pyplot.show()
+        self._ClearGraph()
 
     def Write(self, filePath):
         self._MakeGraph()
         self._figure.savefig(filePath)
+        self._ClearGraph()
 
     @staticmethod
     def _DimColor(colorStr):
@@ -217,10 +240,18 @@ class TsTest_Grapher(object):
         from matplotlib import ticker
 
         if not self._includeScales:
+            # Turn off all ticks and labels.
             axes.get_xaxis().set_major_locator(ticker.NullLocator())
             axes.get_xaxis().set_minor_locator(ticker.NullLocator())
             axes.get_yaxis().set_major_locator(ticker.NullLocator())
             axes.get_yaxis().set_major_locator(ticker.NullLocator())
+        else:
+            # Turn on X-axis labels.  Axis sharing causes these to be off by
+            # default for the top graph if there are two graphs.
+            axes.get_xaxis().set_tick_params(labelbottom = True)
+
+        if not self._includeBox:
+            axes.set_frame_on(False)
 
     def _MakeGraph(self):
         """
@@ -238,10 +269,15 @@ class TsTest_Grapher(object):
         # strings.
         colorCycle = pyplot.rcParams['axes.prop_cycle'].by_key()['color']
 
-        # Figure, with one or two graphs
+        # Figure, with one or two graphs.  The 'sharex' flag says that if there
+        # are two graphs, they should share an X-axis, so that they scale
+        # identically, both to the bounds of the unioned data.  This is helpful
+        # because sometimes the diff graph has a lesser data extent than the
+        # main graph, since the main graph displays tangents while the diff
+        # graph does not.
         numGraphs = 2 if self._diffs else 1
         self._figure, axSet = pyplot.subplots(
-            nrows = numGraphs, squeeze = False)
+            nrows = numGraphs, squeeze = False, sharex = True)
         self._figure.set(
             dpi = 100.0,
             figwidth = self._widthPx / 100.0,
@@ -249,7 +285,10 @@ class TsTest_Grapher(object):
 
         # Main graph
         axMain = axSet[0][0]
-        axMain.set_title(self._title)
+        if self._title:
+            axMain.set_title(self._title)
+        if self._dataAspect is not None:
+            axMain.set_aspect(self._dataAspect)
         self._ConfigureAxes(axMain)
 
         legendNames = []
@@ -259,7 +298,10 @@ class TsTest_Grapher(object):
         for splineIdx in range(len(self._splines)):
 
             # Determine drawing color for this spline.
-            splineColor = colorCycle[splineIdx]
+            colorIndex = self._splines[splineIdx].colorIndex
+            if colorIndex is None:
+                colorIndex = splineIdx
+            splineColor = colorCycle[colorIndex]
 
             # Collect legend data.  Fake up a Line2D artist.
             legendNames.append(self._splines[splineIdx].name)
@@ -281,77 +323,115 @@ class TsTest_Grapher(object):
             # regions include vertical discontinuities, extrapolation, and
             # looping.
             samples = self._splines[splineIdx].samples
-            for sampleIdx in range(len(samples)):
 
-                # Determine whether we have a vertical discontinuity.  That is
-                # signaled by two consecutive samples with identical times.
-                # Allow some fuzz in the detection of "identical", since
-                # left-side evaluation in Maya is emulated with a small delta.
-                sample = samples[sampleIdx]
-                nextSample = samples[sampleIdx + 1] \
-                    if sampleIdx < len(samples) - 1 else None
-                isCliff = (nextSample
-                           and abs(nextSample.time - sample.time) < 1e-4)
+            if isinstance(samples, (Ts.SplineSamples,
+                                    Ts.SplineSamplesWithSources)):
+                # These samples were produced by Ts.Spline.Sample. Use it
+                # directly.
+                prevValue = None
+                prevTime = None
+                color = splineColor
 
-                # Determine whether we have crossed into a different style
-                # region.
-                isRegionEnd = (
-                    nextSample
-                    and styleTable.IsDim(nextSample.time) !=
-                    styleTable.IsDim(sample.time))
+                useSources = hasattr(samples, "sources")
+                
+                for i, polyline in enumerate(samples.polylines):
 
-                # Append this sample for drawing.
-                sampleTimes.append(sample.time)
-                sampleValues.append(sample.value)
+                    if (polyline[0][0] == prevTime
+                        and polyline[0][1] != prevValue):
+                        
+                        # We have a cliff, draw it.
+                        axMain.plot(
+                            [prevTime, polyline[0][0]],
+                            [prevValue, polyline[0][1]],
+                            color = color,
+                            linestyle = "dotted")
 
-                # If this is the end of a region, and sample times have been set
-                # up correctly, then the next sample falls exactly on a region
-                # boundary.  Include that sample to end this region... unless
-                # this is also a cliff, in which case the vertical will span the
-                # gap instead.
-                if isRegionEnd and not isCliff:
-                    sampleTimes.append(nextSample.time)
-                    sampleValues.append(nextSample.value)
+                    if useSources:
+                        source = samples.sources[i]
 
-                # At the end of each region, draw.
-                if (not nextSample) or isCliff or isRegionEnd:
+                        color = splineColor
+                        if source not in (Ts.SourceInnerLoopProto,
+                                          Ts.SourceKnotInterp):
+                            color = self._DimColor(color)
 
-                    # Use this spline's color, possibly dimmed.
-                    color = splineColor
-                    if styleTable.IsDim(sample.time):
-                        color = self._DimColor(color)
+                    sampleTimes, sampleValues = zip(*polyline)
+                    axMain.plot(sampleTimes, sampleValues, color=color)
 
-                    # Draw.
-                    axMain.plot(sampleTimes, sampleValues, color = color)
+                    # Save the last vertext for a possible "cliff"
+                    prevTime, prevValue = polyline[-1]
 
-                    # Reset data for next region.
-                    sampleTimes = []
-                    sampleValues = []
+            else:
+                for sampleIdx in range(len(samples)):
 
-                # At discontinuities, draw a dashed vertical.
-                if isCliff:
+                    # Determine whether we have a vertical discontinuity.  That is
+                    # signaled by two consecutive samples with identical times.
+                    # Allow some fuzz in the detection of "identical", since
+                    # left-side evaluation in Maya is emulated with a small delta.
+                    sample = samples[sampleIdx]
+                    nextSample = samples[sampleIdx + 1] \
+                        if sampleIdx < len(samples) - 1 else None
+                    isCliff = (nextSample
+                               and abs(nextSample.time - sample.time) < 1e-4)
 
-                    # Verticals span no time, so the region rules are the same
-                    # as for knots.
-                    color = splineColor
-                    if knotStyleTable.IsDim(sample.time):
-                        color = self._DimColor(color)
+                    # Determine whether we have crossed into a different style
+                    # region.
+                    isRegionEnd = (
+                        nextSample
+                        and styleTable.IsDim(nextSample.time) !=
+                        styleTable.IsDim(sample.time))
 
-                    axMain.plot(
-                        [sample.time, nextSample.time],
-                        [sample.value, nextSample.value],
-                        color = color,
-                        linestyle = "dashed")
+                    # Append this sample for drawing.
+                    sampleTimes.append(sample.time)
+                    sampleValues.append(sample.value)
+
+                    # If this is the end of a region, and sample times have been set
+                    # up correctly, then the next sample falls exactly on a region
+                    # boundary.  Include that sample to end this region... unless
+                    # this is also a cliff, in which case the vertical will span the
+                    # gap instead.
+                    if isRegionEnd and not isCliff:
+                        sampleTimes.append(nextSample.time)
+                        sampleValues.append(nextSample.value)
+
+                    # At the end of each region, draw.
+                    if (not nextSample) or isCliff or isRegionEnd:
+
+                        # Use this spline's color, possibly dimmed.
+                        color = splineColor
+                        if styleTable.IsDim(sample.time):
+                            color = self._DimColor(color)
+
+                        # Draw.
+                        axMain.plot(sampleTimes, sampleValues, color = color)
+
+                        # Reset data for next region.
+                        sampleTimes = []
+                        sampleValues = []
+
+                    # At discontinuities, draw a dashed vertical.
+                    if isCliff:
+
+                        # Verticals span no time, so the region rules are the same
+                        # as for knots.
+                        color = splineColor
+                        if knotStyleTable.IsDim(sample.time):
+                            color = self._DimColor(color)
+
+                        axMain.plot(
+                            [sample.time, nextSample.time],
+                            [sample.value, nextSample.value],
+                            color = color,
+                            linestyle = "dashed")
 
         # Legend, if multiple splines
         if len(legendNames) > 1:
             axMain.legend(legendLines, legendNames)
 
-        # Determine if all splines have the same keyframes and parameters.
+        # Determine if all splines have the same knots and parameters.
         sharedData = not any(
             s for s in self._splines[1:] if s.baked != self._splines[0].baked)
 
-        # Keyframe points and tangents
+        # Knot points and tangents
         knotSplines = [self._splines[0]] if sharedData else self._splines
         for splineIdx in range(len(knotSplines)):
             splineData = knotSplines[splineIdx].baked
@@ -361,8 +441,8 @@ class TsTest_Grapher(object):
                 knotSplines[splineIdx].data,
                 forKnots = True)
 
-            normalKnotData = self._KeyframeData(splineData)
-            dimKnotData = self._KeyframeData(splineData)
+            normalKnotData = self._KnotData(splineData)
+            dimKnotData = self._KnotData(splineData)
 
             knots = list(splineData.GetKnots())
             for knotIdx in range(len(knots)):
@@ -433,10 +513,18 @@ class TsTest_Grapher(object):
                         knotData.tanLineValues[1].append(
                             knotData.tanPtValues[-1])
 
-            # Draw keyframes and tangents.
-            color = 'black' if sharedData else colorCycle[splineIdx]
-            normalKnotData.Draw(axMain, color)
-            dimKnotData.Draw(axMain, self._DimColor(color))
+            # Determine drawing color for this spline's knots.
+            if sharedData:
+                knotColor = 'black'
+            else:
+                colorIndex = knotSplines[splineIdx].colorIndex
+                if colorIndex is None:
+                    colorIndex = splineIdx
+                knotColor = colorCycle[colorIndex]
+
+            # Draw knots and tangents.
+            normalKnotData.Draw(axMain, knotColor)
+            dimKnotData.Draw(axMain, self._DimColor(knotColor))
 
         # Diff graph
         if self._diffs:
@@ -447,9 +535,12 @@ class TsTest_Grapher(object):
             diffValues = [d.value for d in self._diffs]
             axDiffs.plot(diffTimes, diffValues)
 
+        self._figure.tight_layout()
+
     def _ClearGraph(self):
 
         if self._figure:
-            self._figure = None
             from matplotlib import pyplot
+            pyplot.close(self._figure)
             pyplot.clf()
+            self._figure = None

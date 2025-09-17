@@ -1,16 +1,16 @@
-Loading @TypicalReferenceToChargroup/root.sdf@
+Loading @TypicalReferenceToChargroup/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Group>
 
 Prim Stack:
-    root.sdf             /Group
-    group.sdf            /Group
-    group.sdf            /Group{standin=sim}
+    root.usda            /Group
+    group.usda           /Group
+    group.usda           /Group{standin=sim}
 
 Variant Selections:
     {standin = sim}
@@ -23,17 +23,17 @@ Property names:
 
 Property stacks:
 /Group.standin_name:
-    group.sdf            /Group{standin=sim}.standin_name
+    group.usda           /Group{standin=sim}.standin_name
 
 ------------------------------------------------------------------------
 Results for composing </Group/Model>
 
 Prim Stack:
-    root.sdf             /Group/Model
-    group.sdf            /Group/Model
-    group.sdf            /Group{standin=sim}Model
-    model.sdf            /Model
-    model.sdf            /Model{standin=sim}
+    root.usda            /Group/Model
+    group.usda           /Group/Model
+    group.usda           /Group{standin=sim}Model
+    model.usda           /Model
+    model.usda           /Model{standin=sim}
 
 Variant Selections:
     {standin = sim}
@@ -43,5 +43,5 @@ Property names:
 
 Property stacks:
 /Group/Model.standin_name:
-    model.sdf            /Model{standin=sim}.standin_name
+    model.usda           /Model{standin=sim}.standin_name
 

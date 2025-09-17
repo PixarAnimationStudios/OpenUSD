@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <materialx version="1.38" colorspace="lin_rec709" >
 
-  <standard_surface name="SR_copper" type="surfaceshader" colorspace="srgb_texture">
+  <standard_surface name="Surface" type="surfaceshader" colorspace="srgb_texture">
     <input name="base" type="float" value="0.25" />
     <input name="base_color" type="color3" value="1, 1, 1" />
     <input name="specular" type="float" value="0" />
@@ -13,7 +13,7 @@
   </standard_surface>
   
   <surfacematerial name="Copper" type="material">
-    <input name="surfaceshader" type="surfaceshader" nodename="SR_copper" />
+    <input name="surfaceshader" type="surfaceshader" nodename="Surface" />
   </surfacematerial>
 
 </materialx>

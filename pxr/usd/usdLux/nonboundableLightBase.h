@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef USDLUX_GENERATED_NONBOUNDABLELIGHTBASE_H
 #define USDLUX_GENERATED_NONBOUNDABLELIGHTBASE_H
@@ -128,26 +111,36 @@ private:
     const TfType &_GetTfType() const override;
 
 public:
-    // ===================================================================== //
-    // Feel free to add custom code below this line, it will be preserved by 
-    // the code generator. 
-    //
-    // Just remember to: 
-    //  - Close the class declaration with }; 
-    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
-    //  - Close the include guard with #endif
-    // ===================================================================== //
-    // --(BEGIN CUSTOM CODE)--
-
     /// \name LightAPI
     /// 
-    /// Convenience accessors for the light's built-in UsdLuxLightAPI
+    /// Convenience accessors for the built-in UsdLuxLightAPI
     /// 
     /// @{
 
-    /// Contructs and returns a UsdLuxLightAPI object for this light.
+    /// Constructs and returns a UsdLuxLightAPI object.
+    /// Use this object to access UsdLuxLightAPI custom methods.
     USDLUX_API
     UsdLuxLightAPI LightAPI() const;
+
+    /// See UsdLuxLightAPI::GetShaderIdAttr().
+    USDLUX_API
+    UsdAttribute GetShaderIdAttr() const;
+
+    /// See UsdLuxLightAPI::CreateShaderIdAttr().
+    USDLUX_API
+    UsdAttribute CreateShaderIdAttr(
+        VtValue const &defaultValue = VtValue(), 
+        bool writeSparsely=false) const;
+
+    /// See UsdLuxLightAPI::GetMaterialSyncModeAttr().
+    USDLUX_API
+    UsdAttribute GetMaterialSyncModeAttr() const;
+
+    /// See UsdLuxLightAPI::CreateMaterialSyncModeAttr().
+    USDLUX_API
+    UsdAttribute CreateMaterialSyncModeAttr(
+        VtValue const &defaultValue = VtValue(), 
+        bool writeSparsely=false) const;
 
     /// See UsdLuxLightAPI::GetIntensityAttr().
     USDLUX_API
@@ -238,6 +231,17 @@ public:
     UsdRelationship CreateFiltersRel() const;
 
     /// @}
+public:
+    // ===================================================================== //
+    // Feel free to add custom code below this line, it will be preserved by 
+    // the code generator. 
+    //
+    // Just remember to: 
+    //  - Close the class declaration with }; 
+    //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
+    //  - Close the include guard with #endif
+    // ===================================================================== //
+    // --(BEGIN CUSTOM CODE)--
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

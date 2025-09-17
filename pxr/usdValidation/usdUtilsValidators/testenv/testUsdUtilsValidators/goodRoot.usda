@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    metersPerUnit = 1
+    upAxis = "Y"
+    defaultPrim = "Root"
+)
+
+def Xform "Root" (
+    kind = "group"
+    references = @includedDirectory/layer.usda@</Layer>
+)
+{
+    def Cube "MyCube"
+    {
+    }
+
+    asset file = @includedDirectory/image.jpg@
+}

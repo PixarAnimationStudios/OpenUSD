@@ -2,27 +2,10 @@
 #                                                                                   
 # Copyright 2017 Pixar                                                              
 #                                                                                   
-# Licensed under the Apache License, Version 2.0 (the "Apache License")             
-# with the following modification; you may not use this file except in              
-# compliance with the Apache License and the following modification to it:          
-# Section 6. Trademarks. is deleted and replaced with:                              
-#                                                                                   
-# 6. Trademarks. This License does not grant permission to use the trade            
-#    names, trademarks, service marks, or product names of the Licensor             
-#    and its affiliates, except as required to comply with Section 4(c) of          
-#    the License and to reproduce the content of the NOTICE file.                   
-#                                                                                   
-# You may obtain a copy of the Apache License at                                    
-#                                                                                   
-#     http://www.apache.org/licenses/LICENSE-2.0                                    
-#                                                                                   
-# Unless required by applicable law or agreed to in writing, software               
-# distributed under the Apache License with the above modification is               
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY          
-# KIND, either express or implied. See the Apache License for the specific          
-# language governing permissions and limitations under the Apache License. 
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
-from pxr import Ndr, Sdf, Sdr, Usd, UsdShade
+from pxr import Sdf, Sdr, Usd, UsdShade
 from pxr.Sdr import shaderParserTestUtils as utils
 
 import unittest
@@ -96,18 +79,18 @@ class TestUsdShadeShaderDef(unittest.TestCase):
         result2Output = shaderPrim.CreateOutput('result2', 
                 Sdf.ValueTypeNames.Float2)
 
-        discoveryResults = UsdShade.ShaderDefUtils.GetNodeDiscoveryResults(
+        discoveryResults = UsdShade.ShaderDefUtils.GetDiscoveryResults(
                 shaderPrim, stage.GetRootLayer().realPath)
         self.assertEqual(len(discoveryResults), 2)
 
         parserPlugin = UsdShade.ShaderDefParserPlugin()
 
-        nodes = [parserPlugin.Parse(discResult) for discResult in 
+        nodes = [parserPlugin.ParseShaderNode(discResult) for discResult in 
                  discoveryResults]
         self.assertEqual(len(nodes), 2)
 
         for n in nodes:
-            self.assertEqual(n.GetVersion(), Ndr.Version(2, 0))
+            self.assertEqual(n.GetShaderVersion(), Sdr.Version(2, 0))
             self.assertTrue(n.IsValid())
             self.assertEqual(n.GetFamily(), 'Primvar')
             self.assertEqual(n.GetIdentifier(), 'Primvar_float_2')
@@ -123,11 +106,11 @@ class TestUsdShadeShaderDef(unittest.TestCase):
             self.assertEqual(n.GetMetadata(), 
                     {'primvars': '$primvarName',
                      'role': 'primvar'})
-            self.assertEqual(n.GetInputNames(), 
+            self.assertEqual(n.GetShaderInputNames(), 
                 ['fallback', 'float2Val', 'float3Val', 
                  'float4Val', 'normalVector', 'primvarFile', 'primvarName', 
                  'someColor', 'someVector'])
-            self.assertEqual(n.GetOutputNames(), ['result', 'result2'])
+            self.assertEqual(n.GetShaderOutputNames(), ['result', 'result2'])
             if n.GetSourceType() == "OSL":
                 self.assertEqual(
                     os.path.normcase(n.GetResolvedImplementationURI()),
@@ -153,12 +136,12 @@ class TestUsdShadeShaderDef(unittest.TestCase):
         shaderDef = UsdShade.Shader.Get(stage,
                                            "/TestShaderPropertiesNodeUSD")
 
-        discoveryResults = UsdShade.ShaderDefUtils.GetNodeDiscoveryResults(
+        discoveryResults = UsdShade.ShaderDefUtils.GetDiscoveryResults(
                 shaderDef, stage.GetRootLayer().realPath)
         self.assertEqual(len(discoveryResults), 1)
 
         discoveryResult = discoveryResults[0]
-        node = UsdShade.ShaderDefParserPlugin().Parse(discoveryResult)
+        node = UsdShade.ShaderDefParserPlugin().ParseShaderNode(discoveryResult)
         assert node is not None
 
         self.assertEqual(os.path.basename(node.GetResolvedImplementationURI()),
@@ -169,9 +152,11 @@ class TestUsdShadeShaderDef(unittest.TestCase):
         # Test GetOptions on an attribute via allowdTokens and 
         # sdrMetadata["options"]
         expectedOptionsList = [('token1', ''), ('token2', '')]
-        self.assertEqual(node.GetInput("testAllowedTokens").GetOptions(), 
+        self.assertEqual(
+                node.GetShaderInput("testAllowedTokens").GetOptions(),
                 expectedOptionsList)
-        self.assertEqual(node.GetInput("testMetadataOptions").GetOptions(), 
+        self.assertEqual(
+                node.GetShaderInput("testMetadataOptions").GetOptions(), 
                 expectedOptionsList)
 
         # sdrMetadata options will win over explicitly specified allowedTokens
@@ -181,21 +166,23 @@ class TestUsdShadeShaderDef(unittest.TestCase):
         expectedMetdataOptions = "token3|token4"
         expectedAttrAllowedTokens = ["token1", "token2"]
         expectedOptionsList = [('token3', ''), ('token4', '')]
-        self.assertEqual(node.GetInput("testAllowedTokenAndMetdataOptions"). \
+        self.assertEqual(
+                node.GetShaderInput("testAllowedTokenAndMetdataOptions"). \
                 GetMetadata()["options"], expectedMetdataOptions)
         self.assertEqual([t for t in attr.GetMetadata('allowedTokens')], 
                 expectedAttrAllowedTokens)
-        self.assertEqual(node.GetInput("testAllowedTokenAndMetdataOptions"). \
+        self.assertEqual(
+                node.GetShaderInput("testAllowedTokenAndMetdataOptions"). \
                 GetOptions(), expectedOptionsList)
 
         # UsdShadeShaderDef already have the types in SdfValueTypeNames
         # conformance, so we do not need any sdrUsdDefinitionType mapping. A
         # bool type gets mapped to int in UsdShadeShaderDef appropriately.
-        actualBoolInput = node.GetInput('actualBool')
+        actualBoolInput = node.GetShaderInput('actualBool')
         attr = shaderDef.GetPrim(). \
                 GetAttribute('inputs:actualBool')
         self.assertEqual(attr.GetTypeName(), Sdf.ValueTypeNames.Bool)
-        self.assertEqual(actualBoolInput.GetTypeAsSdfType()[0], 
+        self.assertEqual(actualBoolInput.GetTypeAsSdfType().GetSdfType(),
                 Sdf.ValueTypeNames.Bool) 
         self.assertEqual(actualBoolInput.GetType(), Sdf.ValueTypeNames.Int)
 

@@ -1,0 +1,19 @@
+#usda 1.0
+(
+    relocates = {
+        </Group/Subgroup/Char>: </Group/Subgroup/Char_Renamed>, 
+        </Group/Subgroup/Char_Renamed/Rig>: </Group/Subgroup/Char_Renamed/Rig_Renamed>
+    }
+)
+
+def Scope "Group" (
+    references = @./group.usda@</Group>
+)
+{
+    over "Subgroup"
+    {
+        over "Char_Renamed"
+        {
+        }
+    }
+}

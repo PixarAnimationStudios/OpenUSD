@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 /// \file simpleLightingContext.cpp
 
@@ -348,12 +331,13 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
             GlfSimpleLight const &light = _lights[i];
 
             setVec4(lightingData->lightSource[i].position,
-                    light.GetPosition() * _worldToViewMatrix);
+                    GfVec4f(light.GetPosition() * _worldToViewMatrix));
             setVec4(lightingData->lightSource[i].diffuse, light.GetDiffuse());
             setVec4(lightingData->lightSource[i].ambient, light.GetAmbient());
             setVec4(lightingData->lightSource[i].specular, light.GetSpecular());
             setVec3(lightingData->lightSource[i].spotDirection,
-                    _worldToViewMatrix.TransformDir(light.GetSpotDirection()));
+                    GfVec3f(_worldToViewMatrix.TransformDir(
+                                light.GetSpotDirection())));
             setVec3(lightingData->lightSource[i].attenuation,
                     light.GetAttenuation());
             lightingData->lightSource[i].spotCutoff = light.GetSpotCutoff();
@@ -497,7 +481,7 @@ GlfSimpleLightingContext::SetStateFromOpenGL()
             GLfloat position[4], color[4];
 
             glGetLightfv(lightName, GL_POSITION, position);
-            light.SetPosition(GfVec4f(position)*viewToWorldMatrix);
+            light.SetPosition(GfVec4f(GfVec4f(position)*viewToWorldMatrix));
             
             glGetLightfv(lightName, GL_AMBIENT, color);
             light.SetAmbient(GfVec4f(color));
@@ -511,7 +495,7 @@ GlfSimpleLightingContext::SetStateFromOpenGL()
             GLfloat spotDirection[3];
             glGetLightfv(lightName, GL_SPOT_DIRECTION, spotDirection);
             light.SetSpotDirection(
-                viewToWorldMatrix.TransformDir(GfVec3f(spotDirection)));
+                GfVec3f(viewToWorldMatrix.TransformDir(GfVec3f(spotDirection))));
 
             GLfloat floatValue;
 

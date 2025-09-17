@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_PCP_PRIM_INDEX_GRAPH_H
 #define PXR_USD_PCP_PRIM_INDEX_GRAPH_H
@@ -236,6 +219,7 @@ private:
     friend class PcpNodeRef_PrivateChildrenConstReverseIterator;
     friend class PcpNodeRef_PrivateSubtreeConstIterator;
     template <class T> friend class Pcp_TraversalCache;
+    friend bool Pcp_IsPropagatedSpecializesNode(const PcpNodeRef& node);
 
     // NOTE: These accessors assume the consumer will be changing the node
     //       and may cause shared node data to be copied locally.
@@ -255,6 +239,10 @@ private:
     const _Node& _GetNode(const PcpNodeRef& node) const
     {
         return _GetNode(node._GetNodeIndex());
+    }
+
+    inline PcpArcType GetArcType(size_t nodeIdx) const {
+        return _GetNode(nodeIdx).smallInts.arcType;
     }
 
 private:
@@ -287,6 +275,7 @@ private:
             , arcType(PcpArcTypeRoot)
             , permission(SdfPermissionPublic)
             , hasSymmetry(false)
+            , hasValueClips(false)
             , inert(false)
             , permissionDenied(false)
         */
@@ -364,6 +353,11 @@ private:
             // or at any of its namespace ancestors contain symmetry 
             // information.
             bool hasSymmetry:1;
+            // Whether this node may contribute value clips information
+            // during composition. This implies that prims at this node's
+            // site or at any of its namespace ancestors contain value clips
+            // information.
+            bool hasValueClips:1;
             // Whether this node is inert. This is set to true in cases
             // where a node is needed to represent a structural dependency
             // but no opinions are allowed to be added.

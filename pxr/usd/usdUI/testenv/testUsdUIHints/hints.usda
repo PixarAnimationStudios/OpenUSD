@@ -1,0 +1,55 @@
+#usda 1.0
+
+def "HintsPrim" (
+    uiHints = {
+        dictionary displayGroupsExpanded = {
+            bool "a group" = 1
+            bool "a group:a nested group" = 0
+        }
+        dictionary displayGroupsShownIf = {
+            string "a group" = "x == 1"
+        }
+        string displayName = "a prim"
+        bool hidden = 1
+    }
+)
+{
+    int attribute = 1 (
+        uiHints = {
+            string displayGroup = "a group"
+            string displayName = "an attr"
+            bool hidden = 1
+            string shownIf = "x == 2"
+            dictionary valueLabels = {
+                int high = 3
+                int low = 1
+                int med = 2
+            }
+            token[] valueLabelsOrder = ["low", "med", "high"]
+        }
+    )
+
+    rel relationship (
+        uiHints = {
+            string displayGroup = "a group:a nested group"
+            string displayName = "a rel"
+            bool hidden = 1
+            string shownIf = "x == 3"
+        }
+    )
+
+    token[] tokenArrayAttr = [] (
+        uiHints = {
+            dictionary valueLabels = {
+                token[] foo = ['bar', 'baz']
+                token[] bleep = ['bloop', 'blorp']
+            }
+        }
+    )
+}
+
+def "HintlessPrim"
+{
+    int hintlessAttribute = 1
+    rel hintlessRelationship
+}

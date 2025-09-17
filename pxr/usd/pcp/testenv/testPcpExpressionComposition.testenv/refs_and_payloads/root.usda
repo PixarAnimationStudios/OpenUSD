@@ -1,0 +1,30 @@
+#usda 1.0
+(
+    expressionVariables = {
+        string REF = "A"
+    }
+)
+
+def "NoExpressionRef" (
+    references = @./A.usda@
+)
+{
+}
+
+def "NoExpressionPayload" (
+    references = @./A.usda@
+)
+{
+}
+
+def "Ref" (
+    references = @`"./${REF}.usda"`@
+)
+{
+}
+
+def "Payload" (
+    payload = @`"./${REF}.usda"`@
+)
+{
+}

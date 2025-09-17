@@ -1,25 +1,8 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include <algorithm>
 #include <iostream>
@@ -1174,6 +1157,8 @@ bool TestDependencyForwardingSceneIndex()
     return true;
 }
 
+//-----------------------------------------------------------------------------
+
 void TestDependencyForwardingSceneIndexEviction_InitScenes(
     HdRetainedSceneIndexRefPtr * retainedSceneP,
     HdDependencyForwardingSceneIndexRefPtr * dependencyForwardingSceneP)
@@ -1401,6 +1386,311 @@ bool TestDependencyForwardingSceneIndexEviction()
 
 //-----------------------------------------------------------------------------
 
+// Setup a scene wherein the caller provides the prim container for "/Human".
+// This is to allow mutations of the data sources, specifically the one
+// corresponding to the __dependencies locator.
+//
+void TestDependencyForwardingSceneIndexForDependentDependencies_InitScenes(
+    const HdContainerDataSourceHandle &humanPrimDs,
+    HdRetainedSceneIndexRefPtr * retainedSceneP,
+    HdDependencyForwardingSceneIndexRefPtr * dependencyForwardingSceneP)
+{
+    using LocatorDS = HdRetainedTypedSampledDataSource<HdDataSourceLocator>;
+    using PathDS = HdRetainedTypedSampledDataSource<SdfPath>;
+    using PathsDS = HdRetainedTypedSampledDataSource<VtArray<SdfPath>>;
+    using BoolDS = HdRetainedTypedSampledDataSource<bool>;
+
+    HdRetainedSceneIndexRefPtr retainedScene = HdRetainedSceneIndex::New();
+
+    retainedScene->AddPrims(
+        {{SdfPath("/Human"), TfToken("group"), humanPrimDs}});
+
+    retainedScene->AddPrims({{
+        SdfPath("/Dog"), TfToken("group"),
+        HdRetainedContainerDataSource::New(
+            TfToken("hungry"), BoolDS::New(false),
+            TfToken("bark"), BoolDS::New(false))}});
+
+    retainedScene->AddPrims({{
+        SdfPath("/Cat"), TfToken("group"),
+        HdRetainedContainerDataSource::New(
+            TfToken("hungry"), BoolDS::New(false),
+            TfToken("meow"), BoolDS::New(false))}});
+
+    retainedScene->AddPrims({{
+        SdfPath("/Tiger"), TfToken("group"),
+        HdRetainedContainerDataSource::New(
+            TfToken("hungry"), BoolDS::New(false),
+            TfToken("growl"), BoolDS::New(false))}});
+
+    HdDependencyForwardingSceneIndexRefPtr dependencyForwardingScene =
+            HdDependencyForwardingSceneIndex::New(retainedScene);
+
+    // pull on all prims to seed the cache
+    PrintSceneIndexPrim(*dependencyForwardingScene, SdfPath("/"), true);
+
+    *retainedSceneP = retainedScene;
+    *dependencyForwardingSceneP = dependencyForwardingScene;
+}
+
+using _TokenDsPair = std::pair<TfToken, HdDataSourceBaseHandle>;
+using _TokenDsPairVector = std::vector<_TokenDsPair>;
+
+// A retained container data source that allows updates to the data source 
+// corresponding to a locator token.
+//
+class _MutableRetainedContainerDataSource : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_MutableRetainedContainerDataSource);
+
+    TfTokenVector GetNames() override
+    {
+        TfTokenVector names;
+        names.reserve(_entries.size());
+        for (const auto &[name, value] : _entries) {
+            names.push_back(name);
+        }
+        return names;
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &_name) override
+    {
+        for (const auto &[name, value] : _entries) {
+            if (name == _name) {
+                return value;
+            }
+        }
+        return nullptr;
+    }
+
+    void Set(const TfToken &_name, const HdDataSourceBaseHandle &_value)
+    {
+        for (auto &[name, value] : _entries) {
+            if (name == _name) {
+                value = _value;
+                break;
+            }
+        }
+    }
+
+private:
+    _MutableRetainedContainerDataSource(
+        const _TokenDsPairVector &entries)
+    {
+        _entries = entries;
+    }
+
+    _TokenDsPairVector _entries;
+};
+
+// A retained data source for strongly typed sampled data that allows mutations
+// of the stored value.
+// 
+template <typename T>
+class _MutableRetainedTypedSampledDataSource :
+    public HdRetainedTypedSampledDataSource<T>
+{
+public:
+    HD_DECLARE_DATASOURCE(_MutableRetainedTypedSampledDataSource<T>);
+
+    void SetValue(const T &value)
+    {
+        this->_value = value;
+    }
+
+private:
+    _MutableRetainedTypedSampledDataSource(const T &value)
+    : HdRetainedTypedSampledDataSource<T>(value) {}
+};
+
+// Returns a mutable container with a dependency on each pet prim path and
+// an entry to declare that the dependencies depend on the prim's 'pets' 
+// locator.
+//
+_MutableRetainedContainerDataSource::Handle
+_BuildHumanDependenciesDs(const HdPathArrayDataSourceHandle &petsDs)
+{
+    using PathDS = HdRetainedTypedSampledDataSource<SdfPath>;
+    using LocatorDS = HdRetainedTypedSampledDataSource<HdDataSourceLocator>;
+
+    _TokenDsPairVector deps;
+    const VtArray<SdfPath> petPaths = petsDs->GetTypedValue(0.0);
+
+    for (const SdfPath &petPath : petPaths) {
+        deps.push_back({
+            // .feed -> <Pet>.hungry
+            TfToken(std::string("dep_feed_") + petPath.GetAsString()),
+            HdDependencySchema::Builder()
+                .SetDependedOnPrimPath(
+                    PathDS::New(petPath))
+                .SetDependedOnDataSourceLocator(
+                    LocatorDS::New(HdDataSourceLocator(TfToken("hungry"))))
+                .SetAffectedDataSourceLocator(
+                    LocatorDS::New(HdDataSourceLocator(TfToken("feed"))))
+                .Build()});
+    }
+
+    // .__dependencies -> .pets
+    deps.push_back({
+        TfToken("dep_deps"),
+        HdDependencySchema::Builder()
+            .SetDependedOnPrimPath(/*self */nullptr)
+            .SetDependedOnDataSourceLocator(
+                LocatorDS::New(HdDataSourceLocator(TfToken("pets"))))
+            .SetAffectedDataSourceLocator(
+                LocatorDS::New(HdDataSourceLocator(
+                    HdDependenciesSchema::GetSchemaToken())))
+            .Build()});
+        
+    return _MutableRetainedContainerDataSource::New(deps);
+}
+
+bool TestDependencyForwardingSceneIndexForDependentDependencies()
+{
+    using EventType = RecordingSceneIndexObserver::EventType;
+    using Event = RecordingSceneIndexObserver::Event;
+    using EventSet = RecordingSceneIndexObserver::EventSet;
+
+    HdRetainedSceneIndexRefPtr retainedScene;
+    HdDependencyForwardingSceneIndexRefPtr dependencyForwardingScene;
+
+    //---------------------
+    {
+        using BoolDS = HdRetainedTypedSampledDataSource<bool>;
+        using MutablePathsDS =
+            _MutableRetainedTypedSampledDataSource<VtArray<SdfPath>>;
+
+        MutablePathsDS::Handle petsDs = MutablePathsDS::New(
+            VtArray<SdfPath>({SdfPath("/Dog"), SdfPath("/Cat")}));
+        
+        _MutableRetainedContainerDataSource::Handle humanContainer =
+            _MutableRetainedContainerDataSource::New(
+                _TokenDsPairVector({
+                    {TfToken("pets"), petsDs},
+                    
+                    {TfToken("feed"), BoolDS::New(false)},
+
+                    {HdDependenciesSchema::GetSchemaToken(),
+                    _BuildHumanDependenciesDs(petsDs)}
+        }));
+
+        TestDependencyForwardingSceneIndexForDependentDependencies_InitScenes(
+                humanContainer, &retainedScene, &dependencyForwardingScene);
+        
+        RecordingSceneIndexObserver recordingScene;
+        dependencyForwardingScene->AddObserver(
+            HdSceneIndexObserverPtr(&recordingScene));
+        
+        // We started with 2 pets, /Dog and /Cat.
+        // /Human realizes that s/he is a cat person.
+        // Add /Tiger and remove /Dog from the pets,
+        // and update /Human.__dependencies to reflect this change.
+        // This needs to be done before we send the dirty notice, below.
+        petsDs->SetValue({SdfPath("/Cat"), SdfPath("/Tiger")});
+        humanContainer->Set(
+            HdDependenciesSchema::GetSchemaToken(),
+            _BuildHumanDependenciesDs(petsDs));
+
+        retainedScene->DirtyPrims({
+            {SdfPath("/Human"), HdDataSourceLocator(TfToken("pets"))}});
+
+        // Validate recorded events.
+        // /Human.__dependencies depends on /Human.pets, so we should see
+        // an additional dirty event.
+        {
+            auto baseline = EventSet{
+                Event{
+                    EventType::EventType_PrimDirtied,
+                    SdfPath("/Human"), TfToken(),
+                    HdDataSourceLocator(TfToken("pets"))
+                },
+                Event{
+                    EventType::EventType_PrimDirtied,
+                    SdfPath("/Human"), TfToken(),
+                    HdDataSourceLocator(HdDependenciesSchema::GetSchemaToken())
+                },
+            };
+
+            if (!_CompareValue("Dirty \"/Human.pets\" ->",
+                    recordingScene.GetEventsAsSet(), baseline)) {
+                return false;
+            }
+        }
+
+        // Validate bookkeeping. /Human no longer depends on /Dog.
+        {
+            SdfPathVector removedAffectedPrimPaths;
+            SdfPathVector removedDependedOnPrimPaths;
+            dependencyForwardingScene->RemoveDeletedEntries(
+                    &removedAffectedPrimPaths,
+                    &removedDependedOnPrimPaths);
+
+            SdfPathVector baselineAffected = {};
+            SdfPathVector baselineDependedOn = {SdfPath("/Dog")};
+
+            if (!_CompareValue("Remove Affected (affected paths): ",
+                    removedAffectedPrimPaths, baselineAffected)) {
+                return false;
+            }
+            if (!_CompareValue("Remove Affected (depended on paths): ",
+                    removedDependedOnPrimPaths, baselineDependedOn)) {
+                return false;
+            }
+        }
+
+        // Validate that the tables have been updated correctly.
+        // 1.
+        {
+            recordingScene.Clear();
+            retainedScene->DirtyPrims({
+                {SdfPath("/Tiger"), HdDataSourceLocator(TfToken("hungry"))}});
+            
+            auto baseline = EventSet{
+                Event{
+                    EventType::EventType_PrimDirtied,
+                    SdfPath("/Tiger"), TfToken(),
+                    HdDataSourceLocator(TfToken("hungry"))
+                },
+                Event{
+                    EventType::EventType_PrimDirtied,
+                    SdfPath("/Human"), TfToken(),
+                    HdDataSourceLocator(TfToken("feed"))
+                },
+            };
+
+            if (!_CompareValue("Dirty \"/Tiger.hungry\" ->",
+                    recordingScene.GetEventsAsSet(), baseline)) {
+                return false;
+            }
+        }
+        // 2.
+        {
+            recordingScene.Clear();
+            retainedScene->DirtyPrims({
+                {SdfPath("/Dog"), HdDataSourceLocator(TfToken("hungry"))}});
+            
+            auto baseline = EventSet{
+                Event{
+                    EventType::EventType_PrimDirtied,
+                    SdfPath("/Dog"), TfToken(),
+                    HdDataSourceLocator(TfToken("hungry"))
+                }
+            };
+
+            if (!_CompareValue("Dirty \"/Dog.hungry\" ->",
+                    recordingScene.GetEventsAsSet(), baseline)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+
+//-----------------------------------------------------------------------------
+
 #define xstr(s) str(s)
 #define str(s) #s
 #define TEST(X) std::cout << (++i) << ") " <<  str(X) << "..." << std::endl; \
@@ -1420,6 +1710,7 @@ main(int argc, char**argv)
     TEST(TestMergingSceneIndexPrimAddedNotices);
     TEST(TestDependencyForwardingSceneIndex);
     TEST(TestDependencyForwardingSceneIndexEviction);
+    TEST(TestDependencyForwardingSceneIndexForDependentDependencies);
 
     //--------------------------------------------------------------------------
     std::cout << "DONE testHdSceneIndex" << std::endl;

@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -59,26 +42,28 @@ TF_DECLARE_PUBLIC_TOKENS(HdInstancedBySchemaTokens, HD_API,
 
 //-----------------------------------------------------------------------------
 
-// A schema marking a prim as instanced by another prim.
-//
-// Many renderers need to know not what prototypes an instancer has, but
-// rather what instancers a prototype has; this is encoded in "instancedBy". A
-// prim is "instancedBy" /Instancer if /Instancer has a prototype path that's
-// a parent of the prim. A complicating exception is if /A instances /A/B,
-// which instances /A/B/C, we don't consider /A to be instancing /A/B/C
-// directly; this is to support nested explicit instancing of things like
-// leaves/trees/forests.
-//
-// This value is computed based on the instancer topology of instancer prims
-// in the scene.
-//
-// Note: if multiple instancers reference a prototype, it's possible for
-// instancedBy to contain multiple entries. Some renderers may be able to read
-// this directly, but some may need to duplicate prims with an op so that each
-// prim has a single instancer, depending on how the renderer exposes
-// instancing.
-//
 
+/// \class HdInstancedBySchema
+///
+/// A schema marking a prim as instanced by another prim.
+///
+/// Many renderers need to know not what prototypes an instancer has, but
+/// rather what instancers a prototype has; this is encoded in "instancedBy". A
+/// prim is "instancedBy" /Instancer if /Instancer has a prototype path that's
+/// a parent of the prim. A complicating exception is if /A instances /A/B,
+/// which instances /A/B/C, we don't consider /A to be instancing /A/B/C
+/// directly; this is to support nested explicit instancing of things like
+/// leaves/trees/forests.
+///
+/// This value is computed based on the instancer topology of instancer prims
+/// in the scene.
+///
+/// Note: if multiple instancers reference a prototype, it's possible for
+/// instancedBy to contain multiple entries. Some renderers may be able to read
+/// this directly, but some may need to duplicate prims with an op so that each
+/// prim has a single instancer, depending on how the renderer exposes
+/// instancing.
+///
 class HdInstancedBySchema : public HdSchema
 {
 public:
@@ -126,6 +111,20 @@ public:
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
+    /// @}
+
+    /// \name Data source locators for members
+    ///
+    /// The following methods return an HdDataSourceLocator (relative to the
+    /// prim-level data source) where the data source for a member can be found.
+    ///
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    /// @{
+
+    /// Prim-level relative data source locator to locate paths.
+    HD_API
+    static const HdDataSourceLocator &GetPathsLocator();
     /// @} 
 
     /// \name Schema construction

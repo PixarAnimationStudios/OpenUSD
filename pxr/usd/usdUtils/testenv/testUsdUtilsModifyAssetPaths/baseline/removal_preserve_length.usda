@@ -1,0 +1,47 @@
+#usda 1.0
+
+def Xform "Model" (
+    assetInfo = {
+        asset[] payloadAssetDependencies = [@@, @@]
+    }
+    customData = {
+        dictionary d = {
+            asset[] bar = [@@, @@]
+        }
+        dictionary emptyDict = {
+        }
+    }
+    payload = None
+    references = None
+)
+{
+    asset[] bar = [@@, @@]
+    asset[] emptyArr = []
+    asset foo (
+        customData = {
+            asset[] bar = [@@, @@]
+        }
+    )
+    asset[] varBar.timeSamples = {
+        1: [@@, @@],
+        2: [@@, @@],
+    }
+    asset varFoo
+}
+
+def Xform "Variants" (
+    add variantSets = "standin"
+)
+{
+    variantSet "standin" = {
+        "render" {
+            asset foo
+
+        }
+    }
+}
+
+def "PrependPayload"
+{
+}
+

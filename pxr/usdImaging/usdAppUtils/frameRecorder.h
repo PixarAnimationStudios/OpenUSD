@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_IMAGING_USD_APP_UTILS_FRAME_RECORDER_H
 #define PXR_USD_IMAGING_USD_APP_UTILS_FRAME_RECORDER_H
@@ -62,15 +45,14 @@ public:
     /// plugin will be chosen depending on the value of \p gpuEnabled.
     /// The \p gpuEnabled argument determines if the UsdAppUtilsFrameRecorder
     /// instance will allow Hydra to use the GPU to produce images.
-    /// The \p renderSettingsPrimPath argument is used to set the active 
-    /// render settings prim path in Hydra.
-    /// The \p defaultLights argument determines if the
-    /// UsdAppUtilsFrameRecorder will add a default set of lights,
-    /// in addition to any present in the scene.
+    /// The \p enableUsdDrawModes argument determines whether the frame
+    /// recorder instance will respect USD draw modes as authored. Setting
+    /// this to false causes the frame recorder to ignore draw modes.
     USDAPPUTILS_API
     UsdAppUtilsFrameRecorder(
         const TfToken& rendererPluginId = TfToken(),
-        bool gpuEnabled = true);
+        bool gpuEnabled = true,
+        bool enableUsdDrawModes = true);
 
     /// Gets the ID of the Hydra renderer plugin that will be used for
     /// recording.
@@ -139,6 +121,13 @@ public:
     USDAPPUTILS_API
     void SetCameraLightEnabled(bool cameraLightEnabled);
 
+    /// Sets the camera visibility of dome lights.
+    ///
+    /// When on, dome light textures will be drawn to the background as if
+    /// mapped onto a sphere infinitely far away.
+    USDAPPUTILS_API
+    void SetDomeLightVisibility(bool domeLightsVisible);
+
     /// Sets the UsdGeomImageable purposes to be used for rendering
     ///
     /// We will __always__ include "default" purpose, and by default,
@@ -148,6 +137,10 @@ public:
     USDAPPUTILS_API
     void SetIncludedPurposes(const TfTokenVector& purposes);
 
+    /// Sets the primary camera prim path.
+    USDAPPUTILS_API
+    void SetPrimaryCameraPrimPath(const SdfPath& cameraPath);
+
     /// Records an image and writes the result to \p outputImagePath.
     ///
     /// The recorded image will represent the view from \p usdCamera looking at
@@ -156,11 +149,11 @@ public:
     /// If \p usdCamera is not a valid camera, a camera will be computed
     /// to automatically frame the stage geometry.
     ///
-    /// When we are using a RenderSettings prim, the generated image will be 
-    /// written to the file indicated on the connected RenderProducts, 
+    /// When we are using a RenderSettings prim, the generated image will be
+    /// written to the file indicated on the connected RenderProducts,
     /// instead of the given \p outputImagePath. Note that in this case the
-    /// given \p usdCamera will later be overridden by the one authored on the 
-    /// RenderSettings Prim. 
+    /// given \p usdCamera will later be overridden by the one authored on the
+    /// RenderSettings Prim.
     ///
     /// Returns true if the image was generated and written successfully, or
     /// false otherwise.
@@ -180,6 +173,7 @@ private:
     SdfPath _renderPassPrimPath;
     SdfPath _renderSettingsPrimPath;
     bool _cameraLightEnabled;
+    bool _domeLightsVisible;
 };
 
 

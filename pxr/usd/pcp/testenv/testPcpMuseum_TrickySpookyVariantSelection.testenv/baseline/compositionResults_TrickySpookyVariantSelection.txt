@@ -1,15 +1,15 @@
-Loading @TrickySpookyVariantSelection/root.sdf@
+Loading @TrickySpookyVariantSelection/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </CharRig>
 
 Prim Stack:
-    root.sdf             /CharRig
-    FaceRig.sdf          /FaceRig
+    root.usda            /CharRig
+    FaceRig.usda         /FaceRig
 
 Child names:
      ['Anim', 'Rig']
@@ -18,8 +18,8 @@ Child names:
 Results for composing </CharRig/Anim>
 
 Prim Stack:
-    root.sdf             /CharRig/Anim
-    FaceRig.sdf          /FaceRig/Anim
+    root.usda            /CharRig/Anim
+    FaceRig.usda         /FaceRig/Anim
 
 Child names:
      ['Lip']
@@ -28,27 +28,27 @@ Child names:
 Results for composing </CharRig/Anim/Lip>
 
 Prim Stack:
-    root.sdf             /CharRig/Anim/Lip
-    FaceRig.sdf          /FaceRig/Anim/Lip
-    LipRig.sdf           /LipRig/Anim
-    TwoLips.sdf          /LipsRig/Anim
-    SingleLip.sdf        /LipsRig/Anim
+    root.usda            /CharRig/Anim/Lip
+    FaceRig.usda         /FaceRig/Anim/Lip
+    LipRig.usda          /LipRig/Anim
+    TwoLips.usda         /LipsRig/Anim
+    SingleLip.usda       /LipsRig/Anim
 
 Property names:
      ['Lip1', 'Lip2']
 
 Property stacks:
 /CharRig/Anim/Lip.Lip1:
-    SingleLip.sdf        /LipsRig/Anim.Lip1
+    SingleLip.usda       /LipsRig/Anim.Lip1
 /CharRig/Anim/Lip.Lip2:
-    TwoLips.sdf          /LipsRig/Anim.Lip2
+    TwoLips.usda         /LipsRig/Anim.Lip2
 
 ------------------------------------------------------------------------
 Results for composing </CharRig/Rig>
 
 Prim Stack:
-    root.sdf             /CharRig/Rig
-    FaceRig.sdf          /FaceRig/Rig
+    root.usda            /CharRig/Rig
+    FaceRig.usda         /FaceRig/Rig
 
 Child names:
      ['LipRig']
@@ -57,12 +57,12 @@ Child names:
 Results for composing </CharRig/Rig/LipRig>
 
 Prim Stack:
-    root.sdf             /CharRig/Rig/LipRig
-    FaceRig.sdf          /FaceRig/Rig/LipRig
-    LipRig.sdf           /LipRig
-    LipRig.sdf           /LipRig{LipRigStyle=TwoLips}
-    TwoLips.sdf          /LipsRig
-    SingleLip.sdf        /LipsRig
+    root.usda            /CharRig/Rig/LipRig
+    FaceRig.usda         /FaceRig/Rig/LipRig
+    LipRig.usda          /LipRig
+    LipRig.usda          /LipRig{LipRigStyle=TwoLips}
+    TwoLips.usda         /LipsRig
+    SingleLip.usda       /LipsRig
 
 Variant Selections:
     {LipRigStyle = TwoLips}
@@ -77,8 +77,8 @@ Prohibited child names:
 Results for composing </CharRig/Rig/LipRig/Rig>
 
 Prim Stack:
-    TwoLips.sdf          /LipsRig/Rig
-    SingleLip.sdf        /LipsRig/Rig
+    TwoLips.usda         /LipsRig/Rig
+    SingleLip.usda       /LipsRig/Rig
 
 Child names:
      ['Lip1Sculpt', 'Lip2Sculpt']
@@ -87,14 +87,14 @@ Child names:
 Results for composing </CharRig/Rig/LipRig/Rig/Lip1Sculpt>
 
 Prim Stack:
-    SingleLip.sdf        /LipsRig/Rig/Lip1Sculpt
+    SingleLip.usda       /LipsRig/Rig/Lip1Sculpt
 
 Property names:
      ['amount']
 
 Property stacks:
 /CharRig/Rig/LipRig/Rig/Lip1Sculpt.amount:
-    SingleLip.sdf        /LipsRig/Rig/Lip1Sculpt.amount
+    SingleLip.usda       /LipsRig/Rig/Lip1Sculpt.amount
 
 Attribute connections:
 /CharRig/Rig/LipRig/Rig/Lip1Sculpt.amount:
@@ -104,14 +104,14 @@ Attribute connections:
 Results for composing </CharRig/Rig/LipRig/Rig/Lip2Sculpt>
 
 Prim Stack:
-    TwoLips.sdf          /LipsRig/Rig/Lip2Sculpt
+    TwoLips.usda         /LipsRig/Rig/Lip2Sculpt
 
 Property names:
      ['amount']
 
 Property stacks:
 /CharRig/Rig/LipRig/Rig/Lip2Sculpt.amount:
-    TwoLips.sdf          /LipsRig/Rig/Lip2Sculpt.amount
+    TwoLips.usda         /LipsRig/Rig/Lip2Sculpt.amount
 
 Attribute connections:
 /CharRig/Rig/LipRig/Rig/Lip2Sculpt.amount:

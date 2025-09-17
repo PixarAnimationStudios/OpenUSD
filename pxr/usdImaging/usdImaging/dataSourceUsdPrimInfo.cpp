@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/usdImaging/usdImaging/dataSourceUsdPrimInfo.h"
@@ -76,8 +59,11 @@ TfTokenVector
 UsdImagingDataSourceUsdPrimInfo::GetNames()
 {
     TfTokenVector result = { 
+        UsdImagingUsdPrimInfoSchemaTokens->specifier,
+        UsdImagingUsdPrimInfoSchemaTokens->typeName,
         UsdImagingUsdPrimInfoSchemaTokens->isLoaded,
-        UsdImagingUsdPrimInfoSchemaTokens->specifier
+        UsdImagingUsdPrimInfoSchemaTokens->apiSchemas,
+        UsdImagingUsdPrimInfoSchemaTokens->kind,
     };
 
     if (_usdPrim.IsInstance()) {
@@ -94,12 +80,34 @@ UsdImagingDataSourceUsdPrimInfo::GetNames()
 HdDataSourceBaseHandle
 UsdImagingDataSourceUsdPrimInfo::Get(const TfToken &name)
 {
-    if (name == UsdImagingUsdPrimInfoSchemaTokens->isLoaded) {
-        return HdRetainedTypedSampledDataSource<bool>::New(
-            _usdPrim.IsLoaded());
-    }
+    using BoolDataSource = HdRetainedTypedSampledDataSource<bool>;
+    using TokenDataSource = HdRetainedTypedSampledDataSource<TfToken>;
+    using TokenArrayDataSource =
+        HdRetainedTypedSampledDataSource<VtArray<TfToken>>;
+
     if (name == UsdImagingUsdPrimInfoSchemaTokens->specifier) {
         return _SpecifierToDataSource(_usdPrim.GetSpecifier());
+    }
+    if (name == UsdImagingUsdPrimInfoSchemaTokens->typeName) {
+        return TokenDataSource::New(_usdPrim.GetTypeName());
+    }
+    if (name == UsdImagingUsdPrimInfoSchemaTokens->isLoaded) {
+        return BoolDataSource::New(_usdPrim.IsLoaded());
+    }
+    if (name == UsdImagingUsdPrimInfoSchemaTokens->apiSchemas) {
+        const TfTokenVector appliedSchemas = _usdPrim.GetAppliedSchemas();
+        if (!appliedSchemas.empty()) {
+            return TokenArrayDataSource::New(
+                VtArray<TfToken>(appliedSchemas.begin(), appliedSchemas.end()));
+        }
+        return nullptr;
+    }
+    if (name == UsdImagingUsdPrimInfoSchemaTokens->kind) {
+        TfToken kind;
+        if (_usdPrim.GetKind(&kind)) {
+            return TokenDataSource::New(kind);
+        }
+        return nullptr;
     }
     if (name == UsdImagingUsdPrimInfoSchemaTokens->niPrototypePath) {
         if (!_usdPrim.IsInstance()) {
@@ -116,7 +124,7 @@ UsdImagingDataSourceUsdPrimInfo::Get(const TfToken &name)
         if (!_usdPrim.IsPrototype()) {
             return nullptr;
         }
-        return HdRetainedTypedSampledDataSource<bool>::New(true);
+        return BoolDataSource::New(true);
     }
     return nullptr;
 }

@@ -1,30 +1,14 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/plugin/hdEmbree/renderDelegate.h"
 
 #include "pxr/imaging/plugin/hdEmbree/config.h"
 #include "pxr/imaging/plugin/hdEmbree/instancer.h"
+#include "pxr/imaging/plugin/hdEmbree/light.h"
 #include "pxr/imaging/plugin/hdEmbree/renderParam.h"
 #include "pxr/imaging/plugin/hdEmbree/renderPass.h"
 
@@ -52,6 +36,10 @@ const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
     HdPrimTypeTokens->camera,
     HdPrimTypeTokens->extComputation,
+    HdPrimTypeTokens->cylinderLight,
+    HdPrimTypeTokens->diskLight,
+    HdPrimTypeTokens->rectLight,
+    HdPrimTypeTokens->sphereLight,
 };
 
 const TfTokenVector HdEmbreeRenderDelegate::SUPPORTED_BPRIM_TYPES =
@@ -116,19 +104,25 @@ void
 HdEmbreeRenderDelegate::_Initialize()
 {
     // Initialize the settings and settings descriptors.
-    _settingDescriptors.resize(4);
+    _settingDescriptors.resize(6);
     _settingDescriptors[0] = { "Enable Scene Colors",
         HdEmbreeRenderSettingsTokens->enableSceneColors,
         VtValue(HdEmbreeConfig::GetInstance().useFaceColors) };
     _settingDescriptors[1] = { "Enable Ambient Occlusion",
         HdEmbreeRenderSettingsTokens->enableAmbientOcclusion,
         VtValue(HdEmbreeConfig::GetInstance().ambientOcclusionSamples > 0) };
-    _settingDescriptors[2] = { "Ambient Occlusion Samples",
+    _settingDescriptors[2] = { "Enable Scene Lighting",
+        HdEmbreeRenderSettingsTokens->enableLighting,
+        VtValue(HdEmbreeConfig::GetInstance().useLighting) };
+    _settingDescriptors[3] = { "Ambient Occlusion Samples",
         HdEmbreeRenderSettingsTokens->ambientOcclusionSamples,
         VtValue(int(HdEmbreeConfig::GetInstance().ambientOcclusionSamples)) };
-    _settingDescriptors[3] = { "Samples To Convergence",
+    _settingDescriptors[4] = { "Samples To Convergence",
         HdRenderSettingsTokens->convergedSamplesPerPixel,
         VtValue(int(HdEmbreeConfig::GetInstance().samplesToConvergence)) };
+    _settingDescriptors[5] = { "Random Number Seed",
+        HdEmbreeRenderSettingsTokens->randomNumberSeed,
+        VtValue(HdEmbreeConfig::GetInstance().randomNumberSeed) };
     _PopulateDefaultSettings(_settingDescriptors);
 
     // Initialize the embree library handle (_rtcDevice).
@@ -158,10 +152,13 @@ HdEmbreeRenderDelegate::_Initialize()
     // the rtcSetGeometryBuildQuality function.
     rtcSetSceneBuildQuality(_rtcScene, RTC_BUILD_QUALITY_LOW);
 
+    // std::atomic does not default-initialize; do so here.
+    _sceneVersion.store(0);
+
     // Store top-level embree objects inside a render param that can be
     // passed to prims during Sync(). Also pass a handle to the render thread.
     _renderParam = std::make_shared<HdEmbreeRenderParam>(
-        _rtcDevice, _rtcScene, &_renderThread, &_sceneVersion);
+        _rtcDevice, _rtcScene, &_renderThread, &_renderer, &_sceneVersion);
 
     // Pass the scene handle to the renderer.
     _renderer.SetScene(_rtcScene);
@@ -244,7 +241,7 @@ HdAovDescriptor
 HdEmbreeRenderDelegate::GetDefaultAovDescriptor(TfToken const& name) const
 {
     if (name == HdAovTokens->color) {
-        return HdAovDescriptor(HdFormatUNorm8Vec4, true,
+        return HdAovDescriptor(HdFormatFloat32Vec4, true,
                                VtValue(GfVec4f(0.0f)));
     } else if (name == HdAovTokens->normal || name == HdAovTokens->Neye) {
         return HdAovDescriptor(HdFormatFloat32Vec3, false,
@@ -345,6 +342,12 @@ HdEmbreeRenderDelegate::CreateSprim(TfToken const& typeId,
         return new HdCamera(sprimId);
     } else if (typeId == HdPrimTypeTokens->extComputation) {
         return new HdExtComputation(sprimId);
+    } else if (typeId == HdPrimTypeTokens->light ||
+               typeId == HdPrimTypeTokens->diskLight ||
+               typeId == HdPrimTypeTokens->rectLight ||
+               typeId == HdPrimTypeTokens->sphereLight ||
+               typeId == HdPrimTypeTokens->cylinderLight) {
+        return new HdEmbree_Light(sprimId, typeId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -361,6 +364,12 @@ HdEmbreeRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
         return new HdCamera(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->extComputation) {
         return new HdExtComputation(SdfPath::EmptyPath());
+    } else if (typeId == HdPrimTypeTokens->light ||
+               typeId == HdPrimTypeTokens->diskLight ||
+               typeId == HdPrimTypeTokens->rectLight ||
+               typeId == HdPrimTypeTokens->sphereLight ||
+               typeId == HdPrimTypeTokens->cylinderLight) {
+        return new HdEmbree_Light(SdfPath::EmptyPath(), typeId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }

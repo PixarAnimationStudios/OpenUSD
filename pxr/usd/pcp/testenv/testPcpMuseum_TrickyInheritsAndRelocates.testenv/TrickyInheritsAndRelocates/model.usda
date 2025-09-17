@@ -1,0 +1,20 @@
+#usda 1.0
+
+def Model "Model"
+{
+    class Scope "A"
+    {
+    }
+
+    class Scope "B" (
+        add inherits = </Model/A>
+    )
+    {
+    }
+
+    def Scope "Scope" (
+        add inherits = </Model/B>
+    )
+    {
+    }
+}

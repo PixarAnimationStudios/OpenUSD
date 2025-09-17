@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_SCHEMA_TYPE_DEFS_H
 #define PXR_IMAGING_HD_SCHEMA_TYPE_DEFS_H
@@ -36,41 +19,45 @@ class HdMaterialConnectionSchema;
 
 // Vectors of numeric types
 using HdIntArrayVectorSchema = 
-    HdTypedVectorSchema<HdIntArrayDataSource>;
+    HdVectorOfTypedSampledDataSourcesSchema<HdIntArrayDataSource>;
 
 // Vectors of Schemas
 using HdRenderProductVectorSchema =
-    HdSchemaBasedVectorSchema<class HdRenderProductSchema>;
+    HdVectorOfSchemasSchema<class HdRenderProductSchema>;
 using HdRenderVarVectorSchema =
-    HdSchemaBasedVectorSchema<class HdRenderVarSchema>;
+    HdVectorOfSchemasSchema<class HdRenderVarSchema>;
 using HdInstanceIndicesVectorSchema =
-    HdSchemaBasedVectorSchema<class HdInstanceIndicesSchema>;
+    HdVectorOfSchemasSchema<class HdInstanceIndicesSchema>;
 using HdMaterialInterfaceMappingVectorSchema =
-    HdSchemaBasedVectorSchema<class HdMaterialInterfaceMappingSchema>;
+    HdVectorOfSchemasSchema<class HdMaterialInterfaceMappingSchema>;
 using HdMaterialConnectionVectorSchema =
-    HdSchemaBasedVectorSchema<HdMaterialConnectionSchema>;
+    HdVectorOfSchemasSchema<HdMaterialConnectionSchema>;
 
 // Containers of sampled data sources
 using HdSampledDataSourceContainerSchema =
-    HdTypedContainerSchema<HdSampledDataSource>;
+    HdContainerOfTypedSampledDataSourcesSchema<HdSampledDataSource>;
 
 // Containers of schemas
 using HdMaterialNodeContainerSchema =
-    HdSchemaBasedContainerSchema<class HdMaterialNodeSchema>;
+    HdContainerOfSchemasSchema<class HdMaterialNodeSchema>;
 using HdMaterialNodeParameterContainerSchema =
-    HdSchemaBasedContainerSchema<class HdMaterialNodeParameterSchema>;
+    HdContainerOfSchemasSchema<class HdMaterialNodeParameterSchema>;
 using HdMaterialNetworkContainerSchema =
-    HdSchemaBasedContainerSchema<class HdMaterialNetworkSchema>;
+    HdContainerOfSchemasSchema<class HdMaterialNetworkSchema>;
 using HdMaterialConnectionContainerSchema =
     HdSchemaBasedContainerSchema<HdMaterialConnectionSchema>;
+using HdMaterialInterfaceParameterContainerSchema =
+    HdContainerOfSchemasSchema<class HdMaterialInterfaceParameterSchema>;
+using HdExtComputationInputComputationContainerSchema =
+    HdContainerOfSchemasSchema<class HdExtComputationInputComputationSchema>;
+using HdExtComputationOutputContainerSchema =
+    HdContainerOfSchemasSchema<class HdExtComputationOutputSchema>;
 using HdSampledDataSourceContainerContainerSchema =
-    HdSchemaBasedContainerSchema<HdSampledDataSourceContainerSchema>;
+    HdContainerOfSchemasSchema<HdSampledDataSourceContainerSchema>;
 
 // Containers of vectors of schemas
 using HdMaterialConnectionVectorContainerSchema =
-    HdSchemaBasedContainerSchema<HdMaterialConnectionVectorSchema>;
-using HdMaterialInterfaceMappingsContainerSchema =
-    HdSchemaBasedContainerSchema<HdMaterialInterfaceMappingVectorSchema>;
+    HdContainerOfSchemasSchema<HdMaterialConnectionVectorSchema>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

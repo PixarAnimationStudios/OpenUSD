@@ -1,0 +1,8 @@
+#usda 1.0
+#tagged-as-never-update
+
+def MfScope "Test"
+{
+    # This attribute has a scalar type but a shaped value
+    string scalarAttr = ["shaped", "shaped"]
+}

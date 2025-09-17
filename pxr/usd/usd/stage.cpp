@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
@@ -46,7 +29,6 @@
 #include "pxr/usd/usd/stageCache.h"
 #include "pxr/usd/usd/stageCacheContext.h"
 #include "pxr/usd/usd/tokens.h"
-#include "pxr/usd/usd/usdFileFormat.h"
 #include "pxr/usd/usd/valueUtils.h"
 
 #include "pxr/usd/pcp/changes.h"
@@ -56,6 +38,7 @@
 #include "pxr/usd/pcp/layerStackIdentifier.h"
 #include "pxr/usd/pcp/site.h"
 
+#include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/layerUtils.h"
@@ -64,6 +47,7 @@
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/types.h" 
+#include "pxr/usd/sdf/usdFileFormat.h"
 #include "pxr/usd/sdf/variableExpression.h"
 
 #include "pxr/base/trace/trace.h"
@@ -72,6 +56,7 @@
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/usd/ar/resolverScopedCache.h"
 
+#include "pxr/base/gf/half.h"
 #include "pxr/base/gf/interval.h"
 #include "pxr/base/gf/multiInterval.h"
 
@@ -92,6 +77,9 @@
 #include "pxr/base/tf/span.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/ts/spline.h"
+#include "pxr/base/ts/types.h"
+#include "pxr/base/ts/valueTypeDispatch.h"
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/utils.h"
@@ -343,20 +331,29 @@ _MapPathExpressionToPrim(
     
     auto mapPattern =
         [&stack, &map, &unmappedPatterns](PathPattern const &pattern) {
-        SdfPath mapped = map(pattern.GetPrefix());
-        // If the prefix path is outside the domain, push the Nothing()
-        // subexpression.
-        if (mapped.IsEmpty()) {
-            if (unmappedPatterns) {
-                unmappedPatterns->push_back(pattern);
-            }
-            stack.push_back(SdfPathExpression::Nothing());
+        // If the pattern starts with '//' we persist it unchanged, as we deem
+        // the intent to be "search everything" regardless of context.  This is
+        // as opposed to any kind of non-speculative prefix, which refers to a
+        // specific prim or property in the originating context.
+        if (pattern.HasLeadingStretch()) {
+            stack.push_back(SdfPathExpression::MakeAtom(pattern));
         }
-        // Otherwise push the mapped pattern.
         else {
-            PathPattern mappedPattern(pattern);
-            mappedPattern.SetPrefix(mapped);
-            stack.push_back(PathExpr::MakeAtom(mappedPattern));
+            SdfPath mapped = map(pattern.GetPrefix());
+            // If the prefix path is outside the domain, push the Nothing()
+            // subexpression.
+            if (mapped.IsEmpty()) {
+                if (unmappedPatterns) {
+                    unmappedPatterns->push_back(pattern);
+                }
+                stack.push_back(SdfPathExpression::Nothing());
+            }
+            // Otherwise push the mapped pattern.
+            else {
+                PathPattern mappedPattern(pattern);
+                mappedPattern.SetPrefix(mapped);
+                stack.push_back(PathExpr::MakeAtom(mappedPattern));
+            }
         }
     };
 
@@ -382,7 +379,46 @@ public:
     using PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
     PathsToChangesMap recomposeChanges, otherResyncChanges, otherInfoChanges;
     PathsToChangesMap primTypeInfoChanges, assetPathResyncChanges;
+
+    // When a _NamespaceEditsChangeBlock is opened by a UsdNamespaceEditor this
+    // will be populated with the edits we expect to be able to process as 
+    // namespace edits for notice handling.
+    _NamespaceEditsChangeBlock::ExpectedNamespaceEditChangeVector 
+        expectedNamespaceEditChanges;
 };
+
+UsdStage::_NamespaceEditsChangeBlock::_NamespaceEditsChangeBlock(
+    const UsdStagePtr &stage,
+    ExpectedNamespaceEditChangeVector &&expectedChanges) 
+    : _stage(stage)
+    , _localPendingChanges(std::make_unique<_PendingChanges>())
+{
+    if (_stage->_pendingChanges) {
+        TF_CODING_ERROR("Cannot open a namespace editing change block while "
+            "a stage still has pending changes to process.");
+        return;
+    }
+
+    // Opening the change block creates pending changes for the stage and pre-
+    // populates it with expected namespace edit changes.
+    _stage->_pendingChanges = _localPendingChanges.get();
+    _stage->_pendingChanges->expectedNamespaceEditChanges = 
+        std::move(expectedChanges);
+}
+
+UsdStage::_NamespaceEditsChangeBlock::_NamespaceEditsChangeBlock(
+    _NamespaceEditsChangeBlock &&other) = default;
+
+UsdStage::_NamespaceEditsChangeBlock::~_NamespaceEditsChangeBlock() 
+{
+    // It's possible that we end up closing this change block without the stage
+    // having received any change notifications. In that case, the stage will 
+    // not have cleared the pending changes we created for it when opening the
+    // block so we have to make sure to do it here.
+    if (_stage && _stage->_pendingChanges == _localPendingChanges.get()) {
+        _stage->_pendingChanges = nullptr;
+    }
+}
 
 // Object containing information used when resolving an asset path value.
 class Usd_AssetPathContext
@@ -442,33 +478,6 @@ _CreatePathResolverContext(
     return ArGetResolver().CreateDefaultContext();
 }
 
-static std::string
-_AnchorAssetPathRelativeToLayer(
-    const SdfLayerHandle& anchor,
-    const std::string& assetPath)
-{
-    if (assetPath.empty() ||
-        SdfLayer::IsAnonymousLayerIdentifier(assetPath)) {
-        return assetPath;
-    }
-
-    return SdfComputeAssetPathRelativeToLayer(anchor, assetPath);
-}
-
-static std::string
-_ResolveAssetPathRelativeToLayer(
-    const SdfLayerHandle& anchor,
-    const std::string& assetPath)
-{
-    const std::string computedAssetPath = 
-        _AnchorAssetPathRelativeToLayer(anchor, assetPath);
-    if (computedAssetPath.empty()) {
-        return computedAssetPath;
-    }
-
-    return ArGetResolver().Resolve(computedAssetPath);
-}
-
 // If forFlattening is true, this function will only
 // update the authored assetPaths by anchoring them to the
 // anchor layer; it will not fill in the resolved path field.
@@ -480,48 +489,23 @@ _MakeResolvedAssetPathsImpl(const Usd_AssetPathContext &assetContext,
                             bool forFlattening)
 {
     ArResolverContextBinder binder(resolverContext);
-    for (size_t i = 0; i != numAssetPaths; ++i) {
 
-        if (SdfVariableExpression::IsExpression(assetPaths[i].GetAssetPath())) {
-            const PcpExpressionVariables& exprVars =
+    if (assetContext) {
+        const PcpExpressionVariables& exprVars =
                 assetContext.node.GetLayerStack()->GetExpressionVariables();
-
-            SdfVariableExpression::Result r = 
-                SdfVariableExpression(assetPaths[i].GetAssetPath())
-                .EvaluateTyped<std::string>(exprVars.GetVariables());
-
-            if (!r.errors.empty()) {
-                assetContext.ReportErrors(r.errors);
-                continue;
-            }
-
-            assetPaths[i] = SdfAssetPath(
-                r.value.IsHolding<std::string>() ? 
-                r.value.UncheckedGet<std::string>() : std::string());
-        }
-
-        // When flattening, if the resolver can't handle this path 
-        // (e.g., it's a URI and no associated URI resolver is registered),
-        // the result of anchoring may be non-sensical. We try to detect this 
-        // by comparing the anchored result to the unanchored identifier.  
-        // If they're the same, then we assume the path is absolute since the 
-        // anchor had no effect, and we can just leave the path as-is.
+        std::vector<std::string> errors;
         if (forFlattening) {
-            const std::string anchoredPath = _AnchorAssetPathRelativeToLayer(
-                    assetContext.layer, assetPaths[i].GetAssetPath());
-
-            const std::string unanchoredPath = ArGetResolver().CreateIdentifier(
-                    assetPaths[i].GetAssetPath());
-
-            if (anchoredPath != unanchoredPath) {
-                assetPaths[i] = SdfAssetPath(anchoredPath);
-            }
+            SdfAnchorAssetPaths(
+                assetContext.layer, exprVars.GetVariables(), 
+                TfSpan<SdfAssetPath>(assetPaths, numAssetPaths), &errors);
+        } else {
+            SdfResolveAssetPaths(
+                assetContext.layer, exprVars.GetVariables(), 
+                TfSpan<SdfAssetPath>(assetPaths, numAssetPaths), &errors);
         }
-        else {
-            assetPaths[i] = SdfAssetPath(
-                assetPaths[i].GetAssetPath(),
-                _ResolveAssetPathRelativeToLayer(
-                    assetContext.layer, assetPaths[i].GetAssetPath()));
+
+        if (!errors.empty()) {
+            assetContext.ReportErrors(errors);
         }
     }
 }
@@ -661,7 +645,7 @@ UsdStage::UsdStage(const SdfLayerRefPtr& rootLayer,
     , _editTargetIsLocalLayer(true)
     , _cache(new PcpCache(PcpLayerStackIdentifier(
                               _rootLayer, _sessionLayer, pathResolverContext),
-                          UsdUsdFileFormatTokens->Target,
+                          SdfUsdFileFormatTokens->Target,
                           /*usdMode=*/true))
     , _clipCache(new Usd_ClipCache)
     , _instanceCache(new Usd_InstanceCache)
@@ -1042,7 +1026,7 @@ _OpenLayer(
 
     SdfLayer::FileFormatArguments args;
     args[SdfFileFormatTokens->TargetArg] =
-        UsdUsdFileFormatTokens->Target.GetString();
+        SdfUsdFileFormatTokens->Target.GetString();
 
     return SdfLayer::FindOrOpen(filePath, args);
 }
@@ -1826,6 +1810,96 @@ _SetMappedValueForEditTarget(UsdObject const &obj,
     return setValueImpl(in);
 }
 
+class Usd_TypeQueryAccess
+{
+public:
+    static TfType GetAttributeValueType(
+        const UsdAttribute &attr)
+    {
+        return attr.GetStage()->_GetAttributeValueType(attr);
+    }
+};
+
+// Set handler for splines.  Verifies that value types match, then applies layer
+// offsets to knot times, tangent widths, and (for timecode-valued attributes)
+// values.  Of these two jobs, type validation is unusual for a SetMappedValue
+// handler, but this is a convenient place for it.
+//
+template <typename Fn>
+static bool
+_SetMappedValueForEditTarget(UsdObject const &obj,
+                             const TsSpline &spline,
+                             const UsdEditTarget &editTarget,
+                             const Fn &setValueImpl)
+{
+    if (!obj.Is<UsdAttribute>()) {
+        TF_CODING_ERROR("Splines can only be set on attributes");
+        return false;
+    }
+
+    static const TfType doubleType = TfType::Find<double>();
+    static const TfType timecodeType = TfType::Find<SdfTimeCode>();
+
+    // Find the attribute's value type.
+    const UsdAttribute attr = obj.As<UsdAttribute>();
+    const TfType attrType = Usd_TypeQueryAccess::GetAttributeValueType(attr);
+    if (!attrType) {
+        TF_CODING_ERROR("Spline on attr <%s> not compatible: attribute has no "
+                        "value type", attr.GetPath().GetText());
+        return false;
+    }
+    const bool attrIsTimeValued = (attrType == timecodeType);
+
+    // Verify splines are supported for this value type.
+    if (!TsSpline::IsSupportedValueType(attrType)
+            && attrType != timecodeType) {
+        TF_CODING_ERROR("Can't set spline on <%s>: splines are only "
+                        "supported on scalar floating-point attributes",
+                        attr.GetPath().GetText());
+        return false;
+    }
+
+    // Verify a spline of the correct value type has been provided.
+    const TfType expectedSplineValueType =
+        (attrIsTimeValued ? doubleType : attrType);
+    if (spline.GetValueType() != expectedSplineValueType) {
+        TF_CODING_ERROR("Can't set spline of type '%s' on <%s>, "
+                        "which requires splines of type '%s'",
+                        spline.GetValueType().GetTypeName().c_str(),
+                        attr.GetPath().GetText(),
+                        expectedSplineValueType.GetTypeName().c_str());
+        return false;
+    }
+
+    // Verify we don't have a mismatch in time-valued-ness.
+    if (attrIsTimeValued && !spline.IsTimeValued()) {
+        TF_CODING_ERROR("Can't set non-time-valued spline on <%s>, "
+                        "which is time-valued",
+                        attr.GetPath().GetText());
+        return false;
+    }
+    if (!attrIsTimeValued && spline.IsTimeValued()) {
+        TF_CODING_ERROR("Can't non-time-valued spline on <%s>, "
+                        "which is not time-valued",
+                        attr.GetPath().GetText());
+        return false;
+    }
+
+    // Make a copy of the spline to modify.
+    TsSpline mappedSpline = spline;
+
+    // Apply layer offset.
+    const SdfLayerOffset &layerOffset =
+        editTarget.GetMapFunction().GetTimeOffset();
+    if (!layerOffset.IsIdentity()) {
+        Usd_ApplyLayerOffsetToValue(&mappedSpline, layerOffset.GetInverse());
+    }
+
+    // Pass to setter.
+    SdfAbstractDataConstTypedValue<TsSpline> splineValue(&mappedSpline);
+    return setValueImpl(splineValue);
+}
+
 template <class T>
 bool UsdStage::_SetEditTargetMappedMetadata(
     const UsdObject &obj, const TfToken& fieldName,
@@ -1975,6 +2049,13 @@ UsdStage::_SetValue(
 bool
 UsdStage::_ClearValue(UsdTimeCode time, const UsdAttribute &attr)
 {
+    if (time.IsPreTime()) {
+        TF_CODING_ERROR("Cannot clear value on <%s> at the pre-time %lf. "
+                        "Pre-time is meant only for retrieving values at the "
+                        "limit when approaching time from the left.",
+                        attr.GetPath().GetText(), time.GetValue());
+        return false;
+    }
     if (ARCH_UNLIKELY(!_ValidateEditPrim(attr.GetPrim(), "clear attribute value"))) {
         return false;
     }
@@ -2092,6 +2173,7 @@ _IsPrivateFieldKey(const TfToken& fieldKey)
         // Value keys.
         ignoredKeys.insert(SdfFieldKeys->Default);
         ignoredKeys.insert(SdfFieldKeys->TimeSamples);
+        ignoredKeys.insert(SdfFieldKeys->Spline);
     });
 
     // First look-up the field in the exclude/ignore table.
@@ -2172,17 +2254,12 @@ UsdStage::GetObjectAtPath(const SdfPath &path) const
         return UsdObject();
     }
 
-    const bool isPrimPath = path.IsPrimPath();
-    const bool isPropPath = !isPrimPath && path.IsPropertyPath();
-    if (!isPrimPath && !isPropPath) {
-        return UsdObject();
+    if (path.IsAbsoluteRootOrPrimPath()) {
+        return GetPrimAtPath(path);
     }
 
-    // A valid prim must be found to return either a prim or prop
-    if (isPrimPath) {
-        return GetPrimAtPath(path);
-    } else if (isPropPath) {
-        if (auto prim = GetPrimAtPath(path.GetPrimPath())) {
+    if (path.IsPrimPropertyPath()) {
+        if (const auto prim = GetPrimAtPath(path.GetPrimPath())) {
             return prim.GetProperty(path.GetNameToken());
         }
     }
@@ -3538,7 +3615,7 @@ UsdStage::IsSupportedFile(const std::string& filePath)
 
     // if the extension is valid we'll get a non null FileFormatPtr
     return SdfFileFormat::FindByExtension(fileExtension, 
-                                          UsdUsdFileFormatTokens->Target);
+                                          SdfUsdFileFormatTokens->Target);
 }
 
 namespace {
@@ -3884,6 +3961,27 @@ UsdStage::GetPathResolverContext() const
     return _GetPcpCache()->GetLayerStackIdentifier().pathResolverContext;
 }
 
+PcpErrorVector 
+UsdStage::GetCompositionErrors() const
+{
+    PcpErrorVector errors;
+
+    auto _ExtractErrorsFromPrimIndices = [&errors](
+        const PcpPrimIndex &primIndex) {
+            const PcpErrorVector &localErrors = primIndex.GetLocalErrors();
+            errors.insert(errors.end(), localErrors.begin(), localErrors.end());
+    };
+    _GetPcpCache()->ForEachPrimIndex(_ExtractErrorsFromPrimIndices);
+
+    auto _ExtractErrorsFromPcpLayerStack = [&errors](
+        const PcpLayerStackPtr layerStackPtr) {
+            const PcpErrorVector &localErrors = layerStackPtr->GetLocalErrors();
+            errors.insert(errors.end(), localErrors.begin(), localErrors.end());
+    };
+    _GetPcpCache()->ForEachLayerStack(_ExtractErrorsFromPcpLayerStack);
+    return errors;
+}
+
 SdfLayerHandleVector
 UsdStage::GetLayerStack(bool includeSessionLayers) const
 {
@@ -3956,10 +4054,14 @@ UsdStage::MuteAndUnmuteLayers(const std::vector<std::string> &muteLayers,
     TRACE_FUNCTION();
     TfAutoMallocTag tag("Usd", _GetMallocTagId());
 
-    PcpChanges changes;
+    _PendingChanges localPendingChanges;
+    if (!_pendingChanges) {
+        _pendingChanges = &localPendingChanges;
+    }
+
     std::vector<std::string> newMutedLayers, newUnMutedLayers;
-    _cache->RequestLayerMuting(muteLayers, unmuteLayers, &changes, 
-            &newMutedLayers, &newUnMutedLayers);
+    _cache->RequestLayerMuting(muteLayers, unmuteLayers,
+            &_pendingChanges->pcpChanges, &newMutedLayers, &newUnMutedLayers);
 
     UsdStageWeakPtr self(this);
 
@@ -3970,21 +4072,29 @@ UsdStage::MuteAndUnmuteLayers(const std::vector<std::string> &muteLayers,
             .Send(self);
     }
 
-    if (changes.IsEmpty()) {
+    if (_pendingChanges->pcpChanges.IsEmpty()) {
+        _pendingChanges = nullptr;
         return;
     }
 
-    using _PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
-    _PathsToChangesMap resyncChanges;
-    _Recompose(changes, &resyncChanges);
-
-    {
-        TRACE_FUNCTION_SCOPE("sending UsdNotice::ObjectsChanged");
-        UsdNotice::ObjectsChanged(self, &resyncChanges).Send(self);
-    }
-    {
-        TRACE_FUNCTION_SCOPE("sending UsdNotice::StageContentsChanged");
-        UsdNotice::StageContentsChanged(self).Send(self);
+    // Note: we need to compute and process changes for all layers that were
+    // affected by muting.  This operation may have resulted in additional
+    // changelists being generated for sublayers of such layers.  All relevant
+    // changelists are computed and processed below.
+    const auto& cacheChanges = _pendingChanges->pcpChanges.GetCacheChanges();
+    const auto result = cacheChanges.find(_cache.get());
+    if (result != cacheChanges.end()) {
+            _ComputePendingChanges(result->second.layerChangeListVec);
+            const bool noticesDispatched = _ProcessPendingChanges();
+        
+        // In order to preserve behavior that existed before finer grained 
+        // change notifications, if all layers that were muted and unmuted were
+        // empty, we still trigger Objects/StageContents changed notifications.
+        if (!noticesDispatched) {
+            UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges;
+            UsdNotice::ObjectsChanged(self, &resyncChanges).Send(self);
+            UsdNotice::StageContentsChanged(self).Send(self);
+        }
     }
 }
 
@@ -4102,7 +4212,9 @@ _Stringify(const ChangedPaths& paths)
 // the vector and extraData is ignored.
 template <class ChangedPaths, class... ExtraData>
 static void
-_AddAffectedStagePaths(const SdfLayerHandle &layer, const SdfPath &path,
+_AddAffectedStagePaths(const PcpChanges &pcpChanges,
+                       const SdfLayerHandle &layer,
+                       const SdfPath &path,
                        const PcpCache &cache,
                        ChangedPaths *changedPaths,
                        const ExtraData&... extraData)
@@ -4120,16 +4232,31 @@ _AddAffectedStagePaths(const SdfLayerHandle &layer, const SdfPath &path,
     const bool filterForExistingCachesOnly = false;
 
     // If this site is in the cache's layerStack, we always add it here.
+    // unless the path contains a variant selection as variant selections
+    // are never part of a valid namespace path.
     // We do this instead of including PcpDependencyTypeRoot in depTypes
     // because we do not want to include root deps on those sites, just
     // the other kinds of inbound deps.
-    if (cache.GetLayerStack()->HasLayer(layer)) {
-        const SdfPath depPath = path.StripAllVariantSelections();
-        _AddToChangedPaths(changedPaths, depPath, extraData...);
+    // Note: if searching the cache's layer stack does not contain the layer
+    // in question we use FindAllLayerStacksUsingLayer which will consider
+    // stacks for which the layer will be added to (in the case of sublayer
+    // insertion or layer unmuting)
+    if (!path.ContainsPrimVariantSelection()) {
+        if (cache.GetLayerStack()->HasLayer(layer)) {
+            _AddToChangedPaths(changedPaths, path, extraData...);
+        } else {
+            const PcpLayerStackPtrVector& layerStackVec = 
+                pcpChanges.FindAllLayerStacksUsingLayer(&cache, layer);
+
+            if (std::find(layerStackVec.begin(), layerStackVec.end(),
+                cache.GetLayerStack()) != layerStackVec.end()) {
+                _AddToChangedPaths(changedPaths, path, extraData...);
+            }
+        }
     }
 
     for (const PcpDependency& dep:
-         cache.FindSiteDependencies(layer, path, depTypes,
+        pcpChanges.FindSiteDependencies(&cache, layer, path, depTypes,
                                     /* recurseOnSite */ true,
                                     /* recurseOnIndex */ false,
                                     filterForExistingCachesOnly)) {
@@ -4268,14 +4395,50 @@ UsdStage::_HandleLayersDidChange(
     TF_DEBUG(USD_CHANGES).Msg(
         "\nHandleLayersDidChange received (%s)\n", UsdDescribe(this).c_str());
 
-    // If a function up the call stack has set up _PendingChanges, merge in
-    // all of the information from layer changes so it can be processed later.
-    // Otherwise, fill in our own _PendingChanges and process it at the end
-    // of this function.
     _PendingChanges localPendingChanges;
     if (!_pendingChanges) {
         _pendingChanges = &localPendingChanges;
     }
+
+    // Push changes through Pcp to determine further invalidation based on 
+    // composition metadata (reference, inherits, variant selections, etc).
+    _pendingChanges->pcpChanges.DidChange(_cache.get(), n.GetChangeListVec());
+
+    _ComputePendingChanges(n.GetChangeListVec());
+
+    // It is possible that some additional computation may be necessary if
+    // the changes contained sublayer operations such as layer muting / unmuting
+    // or sublayer insertion / removal.  In this case, there will be additional
+    // changelists for affected sublayers.  We want to ensure that we compute
+    // pending changes for these lists as well.
+    const auto& cacheChanges = _pendingChanges->pcpChanges.GetCacheChanges();
+    const auto result = cacheChanges.find(_cache.get());
+    if (result != cacheChanges.end()) {
+        _ComputePendingChanges(result->second.layerChangeListVec);
+    }
+
+    // Normally we'd call _ProcessPendingChanges only if _pendingChanges
+    // pointed to localPendingChanges. If it didn't, it would mean that an
+    // upstream caller initialized _pendingChanges and that caller would be
+    // expected to call _ProcessPendingChanges itself.
+    // 
+    // However, the _PathsToChangesMap objects in _pendingChanges may hold
+    // raw pointers to entries stored in the notice, so we must process these
+    // changes immediately while the notice is still alive.
+    _ProcessPendingChanges();
+}
+
+void UsdStage::_ComputePendingChanges(
+    const SdfLayerChangeListVec & changeListVec)
+{
+    // Callers of this function are expected to have  set up _PendingChanges.
+    // We will merge in all of the information from layer changes so it can 
+    // be processed later.
+    if (!TF_VERIFY(_pendingChanges)) {
+        return;
+    }
+
+    const PcpChanges& pcpChanges = _pendingChanges->pcpChanges;
 
     // Keep track of paths to USD objects that need to be recomposed or
     // have otherwise changed.
@@ -4310,10 +4473,11 @@ UsdStage::_HandleLayersDidChange(
 
     // Add dependent paths for any PrimSpecs whose fields have changed that may
     // affect cached prim information.
-    for(const auto& layerAndChangelist : n.GetChangeListVec()) {
+    for(const auto& layerAndChangelist : changeListVec) {
         // If this layer does not pertain to us, skip.
         const SdfLayerHandle &layer = layerAndChangelist.first;
-        if (_cache->FindAllLayerStacksUsingLayer(layer).empty()) {
+        if (pcpChanges.FindAllLayerStacksUsingLayer(
+            _cache.get(), layer).empty()) {
             continue;
         }
 
@@ -4387,14 +4551,14 @@ UsdStage::_HandleLayersDidChange(
                 }
 
                 if (willRecompose) {
-                    _AddAffectedStagePaths(layer, sdfPath, 
+                    _AddAffectedStagePaths(pcpChanges, layer, sdfPath, 
                                            *_cache, &recomposeChanges, &entry);
                 } else if (willChangePrimTypeInfo) {
-                    _AddAffectedStagePaths(layer, sdfPath, 
+                    _AddAffectedStagePaths(pcpChanges, layer, sdfPath, 
                                            *_cache, &primTypeInfoChanges, &entry);
                 }
                 if (didChangeActive) {
-                    _AddAffectedStagePaths(layer, sdfPath, 
+                    _AddAffectedStagePaths(pcpChanges, layer, sdfPath, 
                                            *_cache, &changedActivePaths);
                 }
             }
@@ -4406,8 +4570,8 @@ UsdStage::_HandleLayersDidChange(
                      entry.flags.didRemoveProperty);
 
                 if (willRecompose) {
-                    _AddAffectedStagePaths(
-                        layer, sdfPath, *_cache, &otherResyncChanges, &entry);
+                    _AddAffectedStagePaths(pcpChanges, layer, sdfPath,
+                         *_cache, &otherResyncChanges, &entry);
                 }
             }
 
@@ -4415,20 +4579,59 @@ UsdStage::_HandleLayersDidChange(
             // scene paths separately so we can notify clients about the
             // changes.
             if (!willRecompose) {
-                _AddAffectedStagePaths(layer, sdfPath, 
-                                  *_cache, &otherInfoChanges, &entry);
+                _AddAffectedStagePaths(pcpChanges, layer, sdfPath, 
+                        *_cache, &otherInfoChanges, &entry);
+
+                // In the special case where a variant spec was added or 
+                // deleted, but no prim index in the cache depends on the
+                // particular variant selection, we need to notify that the
+                // parent prim may have had its composed variant options
+                // changed. We do this by spoofing a "variantChildren" info
+                // changed entry for the parent prim which to reflect that
+                // that it has composed info change that doesn't affect its
+                // actual composition.
+                if (sdfPath.IsPrimVariantSelectionPath() && 
+                    (entry.flags.didAddInertPrim || 
+                     entry.flags.didAddNonInertPrim || 
+                     entry.flags.didRemoveInertPrim ||
+                     entry.flags.didRemoveNonInertPrim))  {
+
+                    // Create a spoofed entry that just indicates that
+                    // variantChildren has changed but has no info about the
+                    // old or new values. This is sufficient to provide the
+                    // ObjectsChanged notice with info needed to notify clients
+                    // that its composed variants may have changed.
+                    static SdfChangeList::Entry variantEntry = [](){
+                        SdfChangeList::Entry entry;
+                        entry.infoChanged.emplace_back(
+                            SdfChildrenKeys->VariantChildren,
+                            std::make_pair(VtValue(), VtValue()));
+                        return entry;
+                    }();
+                        
+                    // If the changed layer is in the caches root layer stack
+                    // log this as info change on the equivalent namespace path
+                    // of the variant selection path. This is similar to finding
+                    // the "root" dependency.
+                    if (_cache->GetLayerStack()->HasLayer(layer)) {
+                        _AddToChangedPaths(&otherInfoChanges, 
+                            sdfPath.GetPrimPath().StripAllVariantSelections(), 
+                            &variantEntry);
+                    }
+
+                    // Add any paths that depend on the prim path of the variant
+                    // selection as these will have their composed variants 
+                    // potentially changed.
+                    _AddAffectedStagePaths(pcpChanges, layer,  
+                        sdfPath.GetPrimPath(), *_cache, &otherInfoChanges,
+                        &variantEntry);
+                }
             }
         }
     }
 
-    // Now we have collected the affected paths in UsdStage namespace in
-    // recomposeChanges, otherResyncChanges, otherInfoChanges and
-    // changedActivePaths.  Push changes through Pcp to determine further
-    // invalidation based on composition metadata (reference, inherits, variant
-    // selections, etc).
-    PcpChanges& changes = _pendingChanges->pcpChanges;
     const PcpCache *cache = _cache.get();
-    changes.DidChange(cache, n.GetChangeListVec());
+    PcpChanges& changes = _pendingChanges->pcpChanges;
 
     // Pcp does not consider activation changes to be significant since
     // it doesn't look at activation during composition. However, UsdStage
@@ -4460,22 +4663,15 @@ UsdStage::_HandleLayersDidChange(
         }
     }
 
-    // Normally we'd call _ProcessPendingChanges only if _pendingChanges
-    // pointed to localPendingChanges. If it didn't, it would mean that an
-    // upstream caller initialized _pendingChanges and that caller would be
-    // expected to call _ProcessPendingChanges itself.
-    // 
-    // However, the _PathsToChangesMap objects in _pendingChanges may hold
-    // raw pointers to entries stored in the notice, so we must process these
-    // changes immediately while the notice is still alive.
-    _ProcessPendingChanges();
 }
 
-void
+bool
 UsdStage::_ProcessPendingChanges()
 {
+    TRACE_FUNCTION();
+
     if (!TF_VERIFY(_pendingChanges)) {
-        return;
+        return false;
     }
 
     TF_DEBUG(USD_CHANGES).Msg(
@@ -4489,6 +4685,8 @@ UsdStage::_ProcessPendingChanges()
     _PathsToChangesMap& otherInfoChanges = _pendingChanges->otherInfoChanges;
     _PathsToChangesMap& primTypeInfoChanges = _pendingChanges->primTypeInfoChanges;
     _PathsToChangesMap& assetPathResyncChanges = _pendingChanges->assetPathResyncChanges;
+
+    UsdNotice::ObjectsChanged::_NamespaceEditsInfo namespaceEditsInfo;
 
     _Recompose(changes, &recomposeChanges);
 
@@ -4526,6 +4724,7 @@ UsdStage::_ProcessPendingChanges()
     remapChangesToPrototypes(&assetPathResyncChanges);
     remapChangesToPrototypes(&otherResyncChanges);
     remapChangesToPrototypes(&otherInfoChanges);
+
 
     // Before processing any prim type info changes, remove any that would
     // already have been covered by the recomposed prims.
@@ -4599,6 +4798,77 @@ UsdStage::_ProcessPendingChanges()
         _editTargetIsLocalLayer = HasLocalLayer(_editTarget.GetLayer());
     }
 
+    // If the UsdNamespaceEditor triggered the changes, there will be expected
+    // namespace edit changes that we have to process before sending notices. We 
+    // process them to generate a map of resync classifications that we add
+    // to the ObjectsChanged notice that downstream clients can use to parse
+    // determine the nature of the resyncs they receive.
+    for (const auto &namespaceChange : 
+            _pendingChanges->expectedNamespaceEditChanges) {
+        TRACE_SCOPE("Process expected namespace edit changes");
+
+        const SdfPath &oldPath = namespaceChange.oldPath;
+        const SdfPath &newPath = namespaceChange.newPath;
+
+        // Skip deletes.
+        if (newPath.IsEmpty()) {
+            continue;
+        }
+
+        // If the changed path is a property, see if it was namespace editor
+        // renamed. We only add property renames to the ObjectsChanged notice.
+        if (oldPath.IsPrimPropertyPath()) {
+            const SdfPath primPath = oldPath.GetPrimPath();
+            if (newPath != oldPath && newPath.GetPrimPath() == primPath) {
+                namespaceEditsInfo.renamedProperties.push_back(
+                    {oldPath, newPath.GetNameToken()});
+            }
+            continue;
+        }
+
+        // Get the recomposed prim at the new path and compare its prim 
+        // stack with the original prim stack at the old path (which we cached).
+        // The prim not existing or a differing prim stack indicates that we
+        // weren't able to completely perform the namespace edit as desired. 
+        // Skip this change as we can't classify the resyncs of the prims in 
+        // this case.
+        const UsdPrim newPrim = GetPrimAtPath(newPath);
+        if (!newPrim ||
+            newPrim.GetPrimStack() != namespaceChange.oldPrimStack) {
+            continue;
+        }
+
+        using PrimResyncType = UsdNotice::ObjectsChanged::PrimResyncType;
+        using _PrimResyncInfo = UsdNotice::ObjectsChanged::_PrimResyncInfo;
+
+        if (oldPath == newPath) {
+            // If the old and new prim paths match we have an effective no-op
+            // resync.
+            namespaceEditsInfo.primResyncsInfo.emplace(oldPath, 
+                _PrimResyncInfo({PrimResyncType::UnchangedPrimStack, SdfPath()}));
+        } else {
+            // Otherwise figure out the actual type of namespace edit we have.
+            // We classify and store both the source and destination resync 
+            // types resulting from the edit, providing the complementary
+            // destination and source paths respectively.
+            PrimResyncType sourceType, destType;
+            if (oldPath.GetNameToken() == newPath.GetNameToken()) {
+                sourceType = PrimResyncType::ReparentSource;
+                destType = PrimResyncType::ReparentDestination;
+            } else if (oldPath.GetParentPath() == newPath.GetParentPath()) {
+                sourceType = PrimResyncType::RenameSource;
+                destType = PrimResyncType::RenameDestination;
+            } else {
+                sourceType = PrimResyncType::RenameAndReparentSource;
+                destType = PrimResyncType::RenameAndReparentDestination;
+            }
+            namespaceEditsInfo.primResyncsInfo.emplace(oldPath, 
+                _PrimResyncInfo({sourceType, newPath}));
+            namespaceEditsInfo.primResyncsInfo.emplace(newPath, 
+                _PrimResyncInfo({destType, oldPath}));
+        }
+    }
+
     // Reset _pendingChanges before sending notices so that any changes to
     // this stage that happen in response to the notices are handled
     // properly. The object that _pendingChanges referred to should remain
@@ -4612,12 +4882,15 @@ UsdStage::_ProcessPendingChanges()
 
         // Notify about changed objects.
         UsdNotice::ObjectsChanged(
-            self, &recomposeChanges, &otherInfoChanges, &assetPathResyncChanges)
+            self, &recomposeChanges, &otherInfoChanges, &assetPathResyncChanges,
+            &namespaceEditsInfo)
             .Send(self);
 
         // Receivers can now refresh their caches... or just dirty them
         UsdNotice::StageContentsChanged(self).Send(self);
+        return true;
     }
+    return false;
 }
 
 void
@@ -5373,21 +5646,35 @@ _CopyProperty(const UsdProperty &prop,
 
         _CopyAuthoredMetadata(attr, sdfAttr);
 
-        // Copy the default & time samples, if present. We get the
-        // correct timeSamples/default value resolution here because
-        // GetBracketingTimeSamples sets hasSamples=false when the
-        // default value is stronger.
+        // Following composition strength order, if the resolve info value
+        // source is samples or clips, we write out samples.  Otherwise if the
+        // source is a spline, we write out the spline.  We always write out the
+        // default if one is authored, to handle calls to Get() with the default
+        // time.
 
-        double lower = 0.0, upper = 0.0;
-        bool hasSamples = false;
-        if (attr.GetBracketingTimeSamples(
-            0.0, &lower, &upper, &hasSamples) && hasSamples) {
+        UsdResolveInfo resolveInfo = attr.GetResolveInfo();
+
+        if (resolveInfo.GetSource() == UsdResolveInfoSourceTimeSamples ||
+            resolveInfo.GetSource() == UsdResolveInfoSourceValueClips) {
             SdfTimeSampleMap ts;
             if (Usd_FlattenAccess::MakeTimeSampleMapForFlatten(
                     attr, timeOffset, &ts)) {
                 sdfAttr->SetInfo(SdfFieldKeys->TimeSamples, VtValue::Take(ts));
             }
         }
+        else if (resolveInfo.GetSource() == UsdResolveInfoSourceSpline) {
+            TsSpline spline = attr.GetSpline();
+
+            if (!timeOffset.IsIdentity()) {
+                TsSpline mappedSpline = spline;
+                // Apply layer offset.
+                Usd_ApplyLayerOffsetToValue(&mappedSpline, timeOffset);
+                spline = std::move(mappedSpline);
+            }
+            sdfAttr->SetInfo(SdfFieldKeys->Spline, VtValue::Take(spline));
+        }
+
+        // Always write default if we have one.
         if (attr.HasAuthoredMetadata(SdfFieldKeys->Default)) {
             VtValue defaultValue;
             if (attr.Get(&defaultValue)) {
@@ -5779,7 +6066,12 @@ static const T &_UncheckedGet(const VtValue *val) {
 template <class T>
 void _UncheckedSwap(SdfAbstractDataValue *dv, T& val) {
     using namespace std;
-    swap(*static_cast<T*>(dv->value), val);
+    // Move the stored value aside, then swap, and move the result back by way
+    // of StoreValue() -- this lets us pick up StoreValue()'s type-mismatch and
+    // value-block detection logic.
+    T tmp = std::move(*static_cast<T*>(dv->value));
+    swap(tmp, val);
+    dv->StoreValue(std::move(tmp));
 }
 template <class T>
 void _UncheckedSwap(VtValue *value, T& val) {
@@ -5938,24 +6230,30 @@ _TryResolvePathExprs(Storage storage, UsdObject const &obj,
 {
     // Resolve.
     if (_IsHolding<SdfPathExpression>(storage)) {
-        SdfPathExpression expr;
-        _UncheckedSwap(storage, expr);
-        expr = _MapPathExpressionToPrim(
-            expr, node.GetMapToRoot().Evaluate(),
-            Usd_StageImplAccess::GetPrimProtoToInstancePathMap(obj.GetPrim()));
-        _UncheckedSwap(storage, expr);
+        if (node) {
+            SdfPathExpression expr;
+            _UncheckedSwap(storage, expr);
+            expr = _MapPathExpressionToPrim(
+                expr, node.GetMapToRoot().Evaluate(),
+                Usd_StageImplAccess::GetPrimProtoToInstancePathMap(
+                    obj.GetPrim()));
+            _UncheckedSwap(storage, expr);
+        }
         return true;
     }
     else if (_IsHolding<VtArray<SdfPathExpression>>(storage)) {
-        VtArray<SdfPathExpression> exprs;
-        _UncheckedSwap(storage, exprs);
-        auto protoToInstMap =
-            Usd_StageImplAccess::GetPrimProtoToInstancePathMap(obj.GetPrim());
-        PcpMapFunction const &mapFn = node.GetMapToRoot().Evaluate();
-        for (SdfPathExpression &expr: exprs) {
-            expr = _MapPathExpressionToPrim(expr, mapFn, protoToInstMap);
+        if (node) {
+            VtArray<SdfPathExpression> exprs;
+            _UncheckedSwap(storage, exprs);
+            auto protoToInstMap =
+                Usd_StageImplAccess::GetPrimProtoToInstancePathMap(
+                    obj.GetPrim());
+            PcpMapFunction const &mapFn = node.GetMapToRoot().Evaluate();
+            for (SdfPathExpression &expr: exprs) {
+                expr = _MapPathExpressionToPrim(expr, mapFn, protoToInstMap);
+            }
+            _UncheckedSwap(storage, exprs);
         }
-        _UncheckedSwap(storage, exprs);
         return true;
     }
     return false;
@@ -6042,6 +6340,7 @@ protected:
                       bool forFlattening = false)
         : _value(s)
         , _object(object)
+        , _foundAComposingValue(false)
         , _done(false)
         , _forFlattening(forFlattening) 
         {}
@@ -6094,10 +6393,13 @@ protected:
                     _object, _value, { &stage, layer, specPath, node },
                     context, &layerOffsetAccess, _forFlattening)) {
                 // Merge the resolved dictionary.
-                VtDictionaryOverRecursive(
-                    &tmpDict, _UncheckedGet<VtDictionary>(_value));
-                _UncheckedSwap(_value, tmpDict);
-            } 
+                if (_foundAComposingValue) {
+                    VtDictionaryOverRecursive(
+                        &tmpDict, _UncheckedGet<VtDictionary>(_value));
+                    _UncheckedSwap(_value, tmpDict);
+                }
+            }
+            _foundAComposingValue = true;
             return true;
         }
         return false;
@@ -6119,22 +6421,21 @@ protected:
         if (_GetFallbackValue(primDef, propName, fieldName, keyPath)) {
             // Always done after reading the fallback value.
             _done = true;
-            if (_IsHolding<VtDictionary>(_value)) {
+            if (_IsHolding<VtDictionary>(_value) && _foundAComposingValue) {
                 // Merge dictionaries: _value is weaker, tmpDict stronger.
                 VtDictionaryOverRecursive(&tmpDict, 
                                           _UncheckedGet<VtDictionary>(_value));
                 _UncheckedSwap(_value, tmpDict);
             }
+            _foundAComposingValue = true;
         }
     }
 
-    // Consumes an authored pathExpression value and merges it into the current
-    // strongest pathExpression value.
-    bool _ConsumeAndMergeAuthoredPathExpressions(const PcpNodeRef &node,
-                                                 const SdfLayerRefPtr &layer,
-                                                 const SdfPath &specPath,
-                                                 const TfToken &fieldName,
-                                                 const TfToken &keyPath) {
+    // Consumes an authored or fallback pathExpression value and merges it into
+    // the current strongest pathExpression value.
+    template <class GetValueFn>
+    bool _ConsumeAndMergePathExpressionsImpl(GetValueFn &&getValue,
+                                             PcpNodeRef node) {
         SdfPathExpression tmpExpr;
         VtArray<SdfPathExpression> tmpExprs;
         bool array = false;
@@ -6150,13 +6451,24 @@ protected:
         }
 
         // Try to read value from scene description.
-        if (_GetValue(layer, specPath, fieldName, keyPath)) {
-            // Try resolving the values in the dictionary.
-            if (_TryResolvePathExprs(_value, _object, node)) {
+        if (std::forward<GetValueFn>(getValue)()) {
+            // If this is a value block or an animation block, set _done to 
+            // stop composing, and swap back the composed value so far.
+            if (Usd_ValueContainsBlock<SdfValueBlock>(_value) || 
+                    Usd_ValueContainsBlock<SdfAnimationBlock>(_value)) {
+                if (array) {
+                    _UncheckedSwap(_value, tmpExprs);
+                }
+                else {
+                    _UncheckedSwap(_value, tmpExpr);
+                }
+                _done = true;
+            } // Otherwise try resolving the path expressions.
+            else if (_TryResolvePathExprs(_value, _object, node)) {
                 // Merge the resolved expr.
                 if (array) {
                     // If the arrays are the same size, merge index-wise.
-                    // Otherwise just take the strongest?
+                    // Otherwise take the strongest.
                     VtArray<SdfPathExpression> weaker =
                         _UncheckedGet<VtArray<SdfPathExpression>>(_value);
                     if (weaker.size() == tmpExprs.size()) {
@@ -6171,14 +6483,31 @@ protected:
                     _UncheckedSwap(_value, tmpExprs);
                 }
                 else {
-                    tmpExpr = std::move(tmpExpr)
-                        .ComposeOver(_UncheckedGet<SdfPathExpression>(_value));
-                    _UncheckedSwap(_value, tmpExpr);
+                    if (_foundAComposingValue) {
+                        tmpExpr = std::move(tmpExpr).ComposeOver(
+                            _UncheckedGet<SdfPathExpression>(_value));
+                        _UncheckedSwap(_value, tmpExpr);
+                    }
                 }
             }
+            _foundAComposingValue = true;
             return true;
         }
         return false;
+    }
+
+    // Consumes an authored pathExpression value and merges it into the current
+    // strongest pathExpression value.
+    bool _ConsumeAndMergeAuthoredPathExpressions(const PcpNodeRef &node,
+                                                 const SdfLayerRefPtr &layer,
+                                                 const SdfPath &specPath,
+                                                 const TfToken &fieldName,
+                                                 const TfToken &keyPath) {
+
+        return _ConsumeAndMergePathExpressionsImpl(
+            [&]() {
+                return _GetValue(layer, specPath, fieldName, keyPath);
+            }, node);
     }
 
     // Consumes the fallback pathExpression value and merges it into the current
@@ -6187,54 +6516,17 @@ protected:
         const UsdPrimDefinition &primDef,
         const TfToken &propName,
         const TfToken &fieldName,
-        const TfToken &keyPath) 
-    {
-        SdfPathExpression tmpExpr;
-        VtArray<SdfPathExpression> tmpExprs;
-        bool array = false;
-        
-        // Copy to the side since we'll have to merge if the next opinion is
-        // also an expression.
-        if (_IsHolding<SdfPathExpression>(_value)) {
-            tmpExpr = _UncheckedGet<SdfPathExpression>(_value);
-        }
-        else {
-            array = true;
-            tmpExprs = _UncheckedGet<VtArray<SdfPathExpression>>(_value);
-        }
+        const TfToken &keyPath) {
 
-        // Try to read value from scene description.
-        if (_GetFallbackValue(primDef, propName, fieldName, keyPath)) {
-            // Always done after reading fallback value.
-            _done = true;
-            // No need to resolve a fallback value...
-            // Merge the resolved expr.
-            if (array) {
-                // If the arrays are the same size, merge index-wise.
-                // Otherwise just take the strongest?
-                VtArray<SdfPathExpression> weaker =
-                    _UncheckedGet<VtArray<SdfPathExpression>>(_value);
-                if (weaker.size() == tmpExprs.size()) {
-                    std::transform(
-                        tmpExprs.begin(), tmpExprs.end(), weaker.begin(),
-                        tmpExprs.begin(),
-                        [](SdfPathExpression const &stronger,
-                           SdfPathExpression const &weaker) {
-                            return stronger.ComposeOver(weaker);
-                        });
-                }
-                _UncheckedSwap(_value, tmpExprs);
-            }
-            else {
-                tmpExpr = std::move(tmpExpr)
-                    .ComposeOver(_UncheckedGet<SdfPathExpression>(_value));
-                _UncheckedSwap(_value, tmpExpr);
-            }
-        }
+        _ConsumeAndMergePathExpressionsImpl(
+            [&]() {
+                return _GetFallbackValue(primDef, propName, fieldName, keyPath);
+            }, /*node=*/{});
     }
 
     Storage _value;
     UsdObject _object;
+    bool _foundAComposingValue;
     bool _done;
     bool _forFlattening;
 };
@@ -6276,7 +6568,10 @@ struct UntypedValueComposer : public ValueComposerBase<VtValue *>
                 // We're done if we got value and it's not a dictionary or path
                 // expressions. For those types we'll continue to merge in
                 // weaker opinions.
-                if (!_IsHoldingDictionary() && !_IsHoldingPathExpressions()) {
+                if (_IsHoldingDictionary() || _IsHoldingPathExpressions()) {
+                    this->_foundAComposingValue = true;
+                }
+                else {
                     this->_done = true;
                 }
                 _ResolveValue(stage, node, layer, specPath);
@@ -6348,6 +6643,8 @@ protected:
             // Otherwise try resolving each of the the other resolvable 
             // types.
             _TryApplyLayerOffsetToValue<SdfTimeSampleMap>(
+                this->_value, layerOffsetAccess) ||
+            _TryApplyLayerOffsetToValue<TsSpline>(
                 this->_value, layerOffsetAccess) ||
             _TryResolveAssetPaths(
                 this->_value, context,
@@ -6528,6 +6825,18 @@ TypeSpecificValueComposer<SdfTimeSampleMap>::_ResolveValue(
     _UncheckedApplyLayerOffsetToValue<SdfTimeSampleMap>(_value, offset);
 }
 
+template <>
+void 
+TypeSpecificValueComposer<TsSpline>::_ResolveValue(
+    const UsdStage &stage,
+    const PcpNodeRef &node,
+    const SdfLayerRefPtr &layer,
+    const SdfPath &specPath)
+{
+    SdfLayerOffset offset = _GetLayerToStageOffset(node, layer);
+    _UncheckedApplyLayerOffsetToValue<TsSpline>(_value, offset);
+}
+
 // The TypeSpecificValueComposer for SdfPathExpression has additional
 // specialization for consuming values as it merges in weaker values unlike most
 // types that only consume the strongest value.
@@ -6688,37 +6997,60 @@ protected:
 
 }
 
+TfType
+UsdStage::_GetAttributeValueType(
+    const UsdAttribute &attr) const
+{
+    // Obtain typeName.
+    TfToken typeName;
+    SdfAbstractDataTypedValue<TfToken> abstrToken(&typeName);
+    TypeSpecificValueComposer<TfToken> composer(&abstrToken, attr);
+    _GetMetadataImpl(attr, SdfFieldKeys->TypeName, TfToken(),
+                     /*useFallbacks=*/true, &composer);
+
+    if (typeName.IsEmpty()) {
+        TF_RUNTIME_ERROR("Empty typeName for <%s>",
+                         attr.GetPath().GetText());
+        return TfType();
+    }
+
+    // Emit an error if this typeName is not known to our schema.
+    const TfType valType =
+        SdfSchema::GetInstance().FindType(typeName).GetType();
+    if (valType.IsUnknown()) {
+        TF_RUNTIME_ERROR("Unknown typename for <%s>: '%s'",
+                         typeName.GetText(), attr.GetPath().GetText());
+    }
+
+    return valType;
+}
+
 template <class T>
 bool
 UsdStage::_SetValueImpl(
     UsdTimeCode time, const UsdAttribute &attr, const T& newValue)
 {
-    // if we are setting a value block, we don't want type checking
-    if (!Usd_ValueContainsBlock(&newValue)) {
-        // Do a type check.  Obtain typeName.
-        TfToken typeName;
-        SdfAbstractDataTypedValue<TfToken> abstrToken(&typeName);
-        TypeSpecificValueComposer<TfToken> composer(&abstrToken, attr);
-        _GetMetadataImpl(attr, SdfFieldKeys->TypeName, TfToken(), 
-                         /*useFallbacks=*/true, &composer);
-
-        if (typeName.IsEmpty()) {
-                TF_RUNTIME_ERROR("Empty typeName for <%s>", 
-                                 attr.GetPath().GetText());
-            return false;
-        }
-        // Ensure this typeName is known to our schema.
-        TfType valType = SdfSchema::GetInstance().FindType(typeName).GetType();
-        if (valType.IsUnknown()) {
-            TF_RUNTIME_ERROR("Unknown typename for <%s>: '%s'",
-                             typeName.GetText(), attr.GetPath().GetText());
+    if (time.IsPreTime()) {
+        TF_CODING_ERROR("Cannot set value on <%s> at the pre-time %lf. "
+                        "Pre-time is meant only for retrieving values at the "
+                        "limit when approaching time from the left.",
+                        attr.GetPath().GetText(), time.GetValue());
+        return false;
+    }
+    // if we are setting a value block or an animation block, we don't want 
+    // type checking
+    if (! (Usd_ValueContainsBlock<SdfValueBlock>(&newValue) ||
+           Usd_ValueContainsBlock<SdfAnimationBlock>(&newValue))) {
+        // Find the attribute's value type.
+        const TfType valType = _GetAttributeValueType(attr);
+        if (!valType) {
             return false;
         }
         static const TfType opaqueType = TfType::Find<SdfOpaqueValue>();
         if (valType == opaqueType) {
-            TF_CODING_ERROR("Can't set value on <%s>: %s-typed attributes "
+            TF_CODING_ERROR("Can't set value on <%s>: opaque-typed attributes "
                             "cannot have an authored default value",
-                            attr.GetPath().GetText(), typeName.GetText());
+                            attr.GetPath().GetText());
             return false;
         }
         // Check that the passed value is the expected type.
@@ -7812,8 +8144,19 @@ public:
                 attr, SdfFieldKeys->Default, TfToken(), 
                 /*useFallbacks=*/true, &composer);
 
-            return valueFound && 
-                (!Usd_ClearValueIfBlocked<SdfAbstractDataValue>(&out));
+            if (!out.isAnimationBlock) {
+                // We can only stop here if the value is not an animation block,
+                // as if the strongest value is an animation block, we must walk
+                // the node graph to get the next stronger non-animation block
+                // value.
+                return valueFound && 
+                    (!Usd_ClearValueIfBlocked<
+                        SdfValueBlock, SdfAbstractDataValue>(&out));
+            }
+            // Clear the animation block and continue walking to find next
+            // stronger non-animation block default.
+            Usd_ClearValueIfBlocked<
+                SdfAnimationBlock, SdfAbstractDataValue>(&out);
         }
 
         // Otherwise we have numeric time and need to get the value with
@@ -7978,7 +8321,17 @@ struct Usd_AttrGetUntypedValueHelper {
             bool valueFound = stage._GetMetadata(
                 attr, SdfFieldKeys->Default, TfToken(), 
                 /*useFallbacks=*/true, result);
-            return valueFound && (!Usd_ClearValueIfBlocked(result));
+            if (!result->IsHolding<SdfAnimationBlock>()) {
+                // We can only stop here if the value is not an animation block,
+                // as if the strongest value is an animation block, we must walk
+                // the node graph to get the next stronger non-animation block
+                // value.
+                return valueFound && 
+                    (!Usd_ClearValueIfBlocked<SdfValueBlock>(result));
+            }
+            // Clear the animation block and continue walking to find next
+            // stronger non-animation block default.
+            Usd_ClearValueIfBlocked<SdfAnimationBlock>(result);
         }
 
         Usd_UntypedInterpolator interpolator(attr, result);
@@ -8041,6 +8394,35 @@ UsdStage::_GetValue(UsdTimeCode time, const UsdAttribute &attr,
         *this, time, attr, result);
 }
 
+// Define a helper struct which is used with TsDispatchToValueTypeTemplate
+// to dispatch to the appropriate Eval function based on the value type.
+template <typename S>
+struct _EvalSplineFunctor
+{
+    template <typename T>
+    void operator()(const TsSpline& spline, UsdTimeCode localTime,
+                    const SdfLayerOffset& layerToStageOffset, T* result,
+                    bool* successOut)
+    {
+        S val;
+        auto evalFunc = !localTime.IsPreTime() ?
+                            &TsSpline::Eval<S> : &TsSpline::EvalPreValue<S>;
+        if (!(spline.*evalFunc)(localTime.GetValue(), &val)) {
+            return;
+        }
+        *successOut = true;
+        if (spline.IsTimeValued()) {
+            val = layerToStageOffset * val;
+        }
+        // save the values in the result
+        if constexpr (std::is_base_of<SdfAbstractDataValue, T>::value) {
+            *successOut = result->StoreValue(val);
+        } else {
+            *result = val;
+        }
+    }
+};
+
 class UsdStage_ResolveInfoAccess
 {
 public:
@@ -8077,20 +8459,66 @@ public:
             }
         }
 
+        const char* preTimeDebug = time.IsPreTime() ? " (pretime)" : "";
         TF_DEBUG(USD_VALUE_RESOLUTION).Msg(
             "RESOLVE: reading field %s:%s from @%s@, "
-            "with requested time = %.3f (local time = %.3f) "
+            "with requested time = %.3f%s (local time = %.3f) "
             "reading from sample %.3f \n",
             specPath.GetText(),
             SdfFieldKeys->TimeSamples.GetText(),
             layer->GetIdentifier().c_str(),
             time.GetValue(),
+            preTimeDebug,
             localTime,
             lower);
 
+        if (time.IsPreTime() && lower == upper) {
+            // We should update our lower and upper to represent the previous
+            // time sample segment, upper is already set to lower.
+            if (!layer->GetPreviousTimeSampleForPath(
+                    specPath, localTime, &lower)) {
+                // Trying to access a previous sample before the first sample.
+                lower = upper;
+            }
+        }
+
         return Usd_GetOrInterpolateValue(
             layer, specPath, localTime, lower, upper, interpolator, result);
-    } 
+    }
+
+    template <class T>
+    static bool _GetSplineValue(
+        UsdTimeCode time, const UsdAttribute& attr,
+        const UsdResolveInfo &info, T *result)
+    {
+        const SdfPath specPath =
+            info._primPathInLayerStack.AppendProperty(attr.GetName());
+        const SdfLayerHandle& layer = info._layer;
+        const double localTime =
+            info._layerToStageOffset.GetInverse() * time.GetValue();
+
+        TF_DEBUG(USD_VALUE_RESOLUTION).Msg(
+            "RESOLVE: reading field %s:%s from @%s@, "
+            "with requested time = %.3f (local time = %.3f)\n",
+            specPath.GetText(),
+            SdfFieldKeys->Spline.GetText(),
+            layer->GetIdentifier().c_str(),
+            time.GetValue(),
+            localTime);
+
+        const TsSpline& spline = *(info._spline);
+
+        bool success = false;
+
+        const UsdTimeCode localTimeCode = time.IsPreTime() ?
+            UsdTimeCode::PreTime(localTime) : UsdTimeCode(localTime);
+        // Use the Spline's value type to dispatch to the appropriate Evaluator.
+        TsDispatchToValueTypeTemplate<_EvalSplineFunctor>(
+            spline.GetValueType(), spline, localTimeCode, 
+            info._layerToStageOffset, result, &success);
+
+        return success;
+    }
 
     template <class T>
     static bool _GetClipValue(
@@ -8131,6 +8559,26 @@ public:
             localTime,
             lower);
 
+        if (time.IsPreTime() && lower == upper) {
+
+            if (clipSet->QueryPreTimeSampleWithJumpDiscontinuity(
+                    specPath, UsdTimeCode::PreTime(lower), interpolator, 
+                    result)) {
+                // If we have a jump discontinuity at this time, we query the 
+                // appropriate time sample from the jump discontinuity and we
+                // return the result.
+                return true;
+            }
+            
+            // We should update our lower and upper to represent the previous
+            // time sample segment, upper is already set to lower.
+            if (!clipSet->GetPreviousTimeSampleForPath(
+                    specPath, localTime, &lower)) {
+                // Trying to access a previous sample before the first sample.
+                lower = upper;
+            }
+        }
+
         return Usd_GetOrInterpolateValue(
             clipSet, specPath, localTime, lower, upper, interpolator, result);
     }
@@ -8157,6 +8605,14 @@ struct UsdStage::_ExtraResolveInfo
     // If the resolve info source is UsdResolveInfoSourceValueClips this will 
     // be the Usd_ClipSet containing values for the attribute.
     Usd_ClipSetRefPtr clipSet;
+
+    // If we found a default value of animation block as the strongest value
+    // source, we need to keep walking the pcp node graph, until we have found a 
+    // non-animation block default value and ignoring any animation via spline 
+    // or time samples in weaker layer. processingAnimationBlock helps us keep
+    // track of this strongest animation block value source, to ignore any
+    // spline / time sample value sources in the weaker layers.
+    bool processingAnimationBlock = false;
 };
 
 Usd_AssetPathContext
@@ -8178,8 +8634,22 @@ UsdStage::_GetAssetPathContext(UsdTimeCode time, const UsdAttribute &attr) const
     }
     else if (resolveInfo._source == UsdResolveInfoSourceValueClips) {
         const Usd_ClipSetRefPtr& clipSet = extraResolveInfo.clipSet;
-        const Usd_ClipRefPtr& activeClip = 
-            clipSet->GetActiveClip(time.GetValue());
+
+        // Get the active clip assuming no jump discontinuity or time not at any
+        // clip boundary.
+        Usd_ClipRefPtr activeClip = clipSet->GetActiveClip(time, false);
+
+        // If we are querying for a pre-time, and land on a time sample, and the
+        // active clip we retrieved has it start time same as the time, that
+        // means we are on a clip boundary, and we should use the previous
+        // clip as the active clip. This will automatically also cover jump 
+        // discontinuity scenarios.
+        if (time.IsPreTime() && 
+                extraResolveInfo.lowerSample == extraResolveInfo.upperSample &&
+                activeClip->startTime == time.GetValue()) {
+            activeClip = clipSet->GetPreviousClip(activeClip);
+        }
+
         resultSpecPath =
             resolveInfo._primPathInLayerStack.AppendProperty(attr.GetName());
 
@@ -8203,8 +8673,7 @@ UsdStage::_GetAssetPathContext(UsdTimeCode time, const UsdAttribute &attr) const
 template <class T>
 bool
 UsdStage::_GetValueImpl(UsdTimeCode time, const UsdAttribute &attr, 
-                        Usd_InterpolatorBase* interpolator,
-                        T *result) const
+                        Usd_InterpolatorBase* interpolator, T *result) const
 {
     UsdResolveInfo resolveInfo;
     _ExtraResolveInfo<T> extraResolveInfo;
@@ -8225,6 +8694,10 @@ UsdStage::_GetValueImpl(UsdTimeCode time, const UsdAttribute &attr,
             extraResolveInfo.clipSet,
             &extraResolveInfo.lowerSample, &extraResolveInfo.upperSample,
             interpolator, result);
+    }
+    else if (resolveInfo._source == UsdResolveInfoSourceSpline) {
+        return UsdStage_ResolveInfoAccess::_GetSplineValue(
+            time, attr, resolveInfo, result);
     }
     else if (resolveInfo._source == UsdResolveInfoSourceDefault ||
              resolveInfo._source == UsdResolveInfoSourceFallback) {
@@ -8252,7 +8725,7 @@ struct UsdStage::_PropertyStackResolver {
     ProcessLayerAtTime(const SdfLayerRefPtr &layer,
                        const SdfPath& specPath,
                        const PcpNodeRef& node,
-                       const double *) 
+                       const UsdTimeCode *) 
     {
         // Processing layers for the property stack does not depend on time.
         return ProcessLayerAtDefault(layer, specPath, node);
@@ -8280,17 +8753,34 @@ struct UsdStage::_PropertyStackResolver {
     ProcessClips(const Usd_ClipSetRefPtr& clipSet,
                  const SdfPath& specPath,
                  const PcpNodeRef& node,
-                 const double* time) 
+                 const UsdTimeCode* time) 
     {
         // Look through clips to see if they have a time sample for
         // this attribute. If a time is given, examine just the clips
         // that are active at that time.
         double lowerSample = 0.0, upperSample = 0.0;
-
+        std::optional<double> localTime;
+        if (time) {
+            localTime = time->GetValue();
+        }
         if (_HasTimeSamples(
-                clipSet, specPath, time, &lowerSample, &upperSample)) {
+                clipSet, specPath, 
+                localTime ? std::addressof(*localTime) : nullptr, 
+                &lowerSample, &upperSample)) {
 
-            const Usd_ClipRefPtr& activeClip = clipSet->GetActiveClip(*time);
+            // Get the active clip assuming no jump discontinuity or time not at
+            // any clip boundary.
+            Usd_ClipRefPtr activeClip = clipSet->GetActiveClip(*time, false);
+
+            // If we are querying for a pre-time, and land on a time sample, and
+            // the active clip we retrieved has it start time same as the time,
+            // that means we are on a clip boundary, and we should use the
+            // previous clip as the active clip. This will automatically also
+            // cover jump discontinuity scenarios.
+            if (time->IsPreTime() && lowerSample == upperSample &&
+                    activeClip->startTime == time->GetValue()) {
+                activeClip = clipSet->GetPreviousClip(activeClip);
+            }
 
             // If the active clip has authored time samples, the value will
             // come from it (or at least be interpolated from it) so use the
@@ -8337,9 +8827,8 @@ UsdStage::_GetPropertyStack(const UsdProperty &prop,
     if (time.IsDefault()) {
         _GetResolvedValueAtDefaultImpl(prop, &resolver, makeUsdResolverFn);
     } else {
-        double localTime = time.GetValue();
         _GetResolvedValueAtTimeImpl(
-            prop, &resolver, &localTime, makeUsdResolverFn);
+            prop, &resolver, &time, makeUsdResolverFn);
     }
     return resolver.propertyStack; 
 }
@@ -8356,9 +8845,8 @@ UsdStage::_GetPropertyStackWithLayerOffsets(
     if (time.IsDefault()) {
         _GetResolvedValueAtDefaultImpl(prop, &resolver, makeUsdResolverFn);
     } else {
-        double localTime = time.GetValue();
         _GetResolvedValueAtTimeImpl(
-            prop, &resolver, &localTime, makeUsdResolverFn);
+            prop, &resolver, &time, makeUsdResolverFn);
     }
     return resolver.propertyStackWithLayerOffsets; 
 }
@@ -8434,22 +8922,33 @@ struct UsdStage::_ResolveInfoResolver
     ProcessLayerAtTime(const SdfLayerRefPtr& layer,
                        const SdfPath& specPath,
                        const PcpNodeRef& node,
-                       const double *time) 
+                       const UsdTimeCode *time) 
     {
         const SdfLayerOffset layerToStageOffset =
             _GetLayerToStageOffset(node, layer);
         std::optional<double> localTime;
         if (time) {
-            localTime = layerToStageOffset.GetInverse() * (*time);
+            localTime = layerToStageOffset.GetInverse() * time->GetValue();
         }
 
-        if (_HasTimeSamples(layer, specPath,
+        if (!_extraInfo->processingAnimationBlock &&
+            _HasTimeSamples(layer, specPath,
                             localTime ? std::addressof(*localTime) : nullptr,
                             &_extraInfo->lowerSample, 
                             &_extraInfo->upperSample)) {
             _resolveInfo->_source = UsdResolveInfoSourceTimeSamples;
-        }
-        else { 
+        } else if (!_extraInfo->processingAnimationBlock &&
+                layer->HasField(specPath, SdfFieldKeys->Spline)) {
+            _resolveInfo->_source = UsdResolveInfoSourceSpline;
+            // In order to optimize read only / playback workflow, we save the
+            // spline in the resolve info. Do note that with every resync /
+            // info change (which could potentially have modified this spline), 
+            // resolve info should be invalidated, which in directly means the 
+            // attribute query should be invalidated, since it holds the 
+            // resolveInfo).
+            _resolveInfo->_spline = layer->GetFieldAs<TsSpline>(
+                specPath, SdfFieldKeys->Spline);
+        } else { 
             Usd_DefaultValueResult defValue = Usd_HasDefault(
                 layer, specPath, _extraInfo->defaultOrFallbackValue);
             if (defValue == Usd_DefaultValueResult::Found) {
@@ -8458,6 +8957,17 @@ struct UsdStage::_ResolveInfoResolver
             else if (defValue == Usd_DefaultValueResult::Blocked) {
                 _resolveInfo->_valueIsBlocked = true;
                 return ProcessFallback();
+            }
+            else if (defValue == Usd_DefaultValueResult::BlockedAnimation) {
+                // We need to keep on walking back and only consider default
+                // values, since we found an AnimationBlock, which blocks any
+                // spline or time samples value and will only allow default
+                // values on the attribute to shine through.
+                // Note that since AnimationBlock is itself a default, we keep
+                // on walking up the node graph until a non-animation block
+                // default is found.
+                _extraInfo->processingAnimationBlock = true;
+                return false;
             }
         }
 
@@ -8494,6 +9004,11 @@ struct UsdStage::_ResolveInfoResolver
             _resolveInfo->_valueIsBlocked = true;
             return ProcessFallback();
         }
+        else if (defValue == Usd_DefaultValueResult::BlockedAnimation) {
+            // We need to keep on walking back and only consider non animation
+            // block default values.
+            return false;
+        }
 
         return false;
     }
@@ -8502,10 +9017,15 @@ struct UsdStage::_ResolveInfoResolver
     ProcessClips(const Usd_ClipSetRefPtr& clipSet,
                  const SdfPath& specPath,
                  const PcpNodeRef& node,
-                 const double* time)
+                 const UsdTimeCode* time)
     {
+        std::optional<double> localTime;
+        if (time) {
+            localTime = time->GetValue();
+        }
         if (!_HasTimeSamples(
-                clipSet, specPath, time,
+                clipSet, specPath, 
+                localTime ? std::addressof(*localTime) : nullptr,
                 &_extraInfo->lowerSample, &_extraInfo->upperSample)) {
             return false;
         }
@@ -8576,19 +9096,19 @@ UsdStage::_GetResolveInfoImpl(
     } else if (time->IsDefault()) {
         _GetResolvedValueAtDefaultImpl(attr, &resolver, makeUsdResolverFn);
     } else {
-        double localTime = time->GetValue();
         _GetResolvedValueAtTimeImpl(
-            attr, &resolver, &localTime, makeUsdResolverFn);
+            attr, &resolver, time, makeUsdResolverFn);
     }
     
     if (TfDebug::IsEnabled(USD_VALIDATE_VARIABILITY) &&
         (resolveInfo->_source == UsdResolveInfoSourceTimeSamples ||
+         resolveInfo->_source == UsdResolveInfoSourceSpline ||
          resolveInfo->_source == UsdResolveInfoSourceValueClips) &&
         _GetVariability(attr) == SdfVariabilityUniform) {
 
         TF_DEBUG(USD_VALIDATE_VARIABILITY)
-            .Msg("Warning: detected time sample value on "
-                 "uniform attribute <%s>\n", 
+            .Msg("Warning: detected time-varying value on uniform "
+                 "attribute <%s>\n", 
                  UsdDescribe(attr).c_str());
     }
 }
@@ -8631,7 +9151,7 @@ _GetResolvedValueAtTimeNoClipsImpl(
     Usd_Resolver *res,
     const TfToken &propName,
     Resolver *resolver,
-    const double *localTime)
+    const UsdTimeCode *localTime)
 {
     SdfPath specPath;
     for (bool isNewNode = true; res->IsValid(); isNewNode = res->NextLayer()) {
@@ -8653,7 +9173,7 @@ _GetResolvedValueAtTimeWithClipsImpl(
     Usd_Resolver *res,
     const TfToken &propName,
     Resolver *resolver,
-    const double *localTime,
+    const UsdTimeCode *localTime,
     const std::vector<Usd_ClipSetRefPtr> &clipsAffectingPrim)
 {
     bool nodeHasSpecs;
@@ -8714,7 +9234,7 @@ void
 UsdStage::_GetResolvedValueAtTimeImpl(
     const UsdProperty &prop,
     Resolver *resolver,
-    const double *localTime,
+    const UsdTimeCode *localTime,
     const MakeUsdResolverFn &makeUsdResolverFn) const
 {
     auto primHandle = prop._Prim();
@@ -8768,6 +9288,10 @@ UsdStage::_GetValueFromResolveInfoImpl(const UsdResolveInfo &info,
     if (info._source == UsdResolveInfoSourceTimeSamples) {
         return UsdStage_ResolveInfoAccess::_GetTimeSampleValue(
             time, attr, info, nullptr, nullptr, interpolator, result);
+    }
+    else if (info._source == UsdResolveInfoSourceSpline) {
+        return UsdStage_ResolveInfoAccess::_GetSplineValue(
+            time, attr, info, result);
     }
     else if (info._source == UsdResolveInfoSourceDefault) {
         const SdfPath specPath =
@@ -9155,6 +9679,13 @@ bool
 UsdStage::_ValueMightBeTimeVaryingFromResolveInfo(const UsdResolveInfo &info,
                                                   const UsdAttribute &attr) const
 {
+    if (info._source == UsdResolveInfoSourceSpline) {
+        // Although a spline could represent a constant function, determining
+        // this would require analyzing the spline, which is potentially 
+        // expensive. Hence, all splines are deemed as possibly time varying.
+        return true;
+    }
+
     if (info._source == UsdResolveInfoSourceValueClips) {
         // Do a specialized check for value clips instead of falling through
         // to calling _GetNumTimeSamplesFromResolveInfo, which requires opening
@@ -9654,7 +10185,7 @@ UsdStage::ResolveIdentifierToEditTarget(std::string const &identifier) const
 
     // Handles non-relative paths also
     const std::string resolved = 
-        _ResolveAssetPathRelativeToLayer(anchor, identifier);
+        SdfResolveAssetPathRelativeToLayer(anchor, identifier);
     TF_DEBUG(USD_PATH_RESOLUTION).Msg("Resolved identifier \"%s\" against layer "
                                       "@%s@ to: \"%s\"\n",
                                       identifier.c_str(), 
@@ -9743,9 +10274,11 @@ TF_PP_SEQ_FOR_EACH(_INSTANTIATE_GET, ~, SDF_VALUE_TYPES)
 #undef _INSTANTIATE_GET
 
 // In addition to the Sdf value types, _SetValue can also be called with an 
-// SdfValueBlock.
+// SdfValueBlock or SdfAnimationBlock
 template bool UsdStage::_SetValue(
     UsdTimeCode, const UsdAttribute&, const SdfValueBlock &);
+template bool UsdStage::_SetValue(
+    UsdTimeCode, const UsdAttribute&, const SdfAnimationBlock &);
 
 // Explicitly instantiate the templated _SetEditTargetMappedMetadata and
 // _GetTypeSpecificResolvedMetadata functions for the types that support each. 
@@ -9774,6 +10307,7 @@ INSTANTIATE_GET_TYPE_RESOLVED_AND_SET_MAPPED_METADATA(
 // SdfTimeSampleMap because we provide a specialization instead.
 INSTANTIATE_SET_MAPPED_METADATA(SdfTimeSampleMap);
 INSTANTIATE_GET_TYPE_RESOLVED_AND_SET_MAPPED_METADATA(VtDictionary);
+INSTANTIATE_GET_TYPE_RESOLVED_AND_SET_MAPPED_METADATA(TsSpline);
 
 #undef INSTANTIATE_GET_TYPE_RESOLVED_AND_SET_MAPPED_METADATA
 #undef INSTANTIATE_GET_TYPE_RESOLVED_METADATA

@@ -1,0 +1,28 @@
+#usda 1.0
+(
+    """
+    This example tests error handling for properties with specs
+    that conflict in various ways.
+    """
+)
+
+def "InconsistentPropertyType" (
+    references = @./ref.usda@</InconsistentPropType>
+)
+{
+    double x = 1.0
+}
+
+def "InconsistentValueType" (
+    references = @./ref.usda@</InconsistentValType>
+)
+{
+    double x = 1.0
+}
+
+def "InconsistentVariability" (
+    references = @./ref.usda@</InconsistentVar>
+)
+{
+    double x = 1.0
+}

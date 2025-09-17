@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdx/oitVolumeRenderTask.h"
 #include "pxr/imaging/hdx/package.h"
@@ -39,12 +22,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static const HioGlslfxSharedPtr &
+_GetRenderPassOitVolumeGlslfx()
+{
+    static const HioGlslfxSharedPtr glslfx =
+        std::make_shared<HioGlslfx>(HdxPackageRenderPassOitVolumeShader());
+    return glslfx;
+}
+
 HdxOitVolumeRenderTask::HdxOitVolumeRenderTask(
                 HdSceneDelegate* delegate, SdfPath const& id)
     : HdxRenderTask(delegate, id)
     , _oitVolumeRenderPassShader(
         std::make_shared<HdStRenderPassShader>(
-            HdxPackageRenderPassOitVolumeShader()))
+            _GetRenderPassOitVolumeGlslfx()))
     , _isOitEnabled(HdxOitBufferAccessor::IsOitEnabled())
 {
 }
@@ -88,6 +79,16 @@ HdxOitVolumeRenderTask::Prepare(HdTaskContext* ctx,
     }
 }
 
+static
+bool
+_HasColorAov(HdRenderPassAovBindingVector const& aovBindings)
+{
+    return std::find_if(aovBindings.begin(), aovBindings.end(),
+        [](HdRenderPassAovBinding const& binding){
+            return binding.aovName == HdAovTokens->color; })
+                != aovBindings.end();
+}
+
 void
 HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
 {
@@ -99,15 +100,6 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
     if (!_isOitEnabled || !HdxRenderTask::_HasDrawItems()) {
         return;
     }
-    
-    //
-    // Pre Execute Setup
-    //
-
-    HdxOitBufferAccessor oitBufferAccessor(ctx);
-
-    oitBufferAccessor.RequestOitBuffers();
-    oitBufferAccessor.InitializeOitBuffersIfNecessary(_GetHgi());
 
     HdRenderPassStateSharedPtr renderPassState = _GetRenderPassState(ctx);
     if (!TF_VERIFY(renderPassState)) return;
@@ -118,17 +110,33 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
         return;
     }
 
-    extendedState->SetUseSceneMaterials(true);
-    renderPassState->SetDepthFunc(HdCmpFuncAlways);
-    // Setting cull style for consistency even though it is hard-coded in
-    // shaders/volume.glslfx.
-    renderPassState->SetCullStyle(HdCullStyleBack);
+    // If there are aovs, but none of them are color, skip rendering for this 
+    // task.
+    HdRenderPassAovBindingVector const& aovBindings =
+        renderPassState->GetAovBindings();
+    if (!aovBindings.empty() && !_HasColorAov(aovBindings)) {
+        return;
+    }
 
+    //
+    // Pre Execute Setup
+    //
+
+    HdxOitBufferAccessor oitBufferAccessor(ctx);
+
+    oitBufferAccessor.RequestOitBuffers();
+    oitBufferAccessor.InitializeOitBuffersIfNecessary(_GetHgi());
     if(!oitBufferAccessor.AddOitBufferBindings(_oitVolumeRenderPassShader)) {
         TF_CODING_ERROR(
             "No OIT buffers allocated but needed by OIT volume render task");
         return;
     }
+
+    extendedState->SetUseSceneMaterials(true);
+    renderPassState->SetEnableDepthTest(false);
+    // Setting cull style for consistency even though it is hard-coded in
+    // shaders/volume.glslfx.
+    renderPassState->SetCullStyle(HdCullStyleBack);
 
     // We render into an SSBO -- not MSSA compatible
     renderPassState->SetMultiSampleEnabled(false);
@@ -144,7 +152,22 @@ HdxOitVolumeRenderTask::Execute(HdTaskContext* ctx)
     extendedState->SetRenderPassShader(_oitVolumeRenderPassShader);
     renderPassState->SetEnableDepthMask(false);
     renderPassState->SetColorMasks({HdRenderPassState::ColorMaskNone});
+
+    // Transition depth texture (if it exists) to shader read layout.
+    HgiTextureUsage oldLayout {};
+    HgiTextureHandle depthTexture {};
+    if (_HasTaskContextData(ctx, HdAovTokens->depth)) {
+        _GetTaskContextData(ctx, HdAovTokens->depth, &depthTexture);
+        oldLayout =
+            depthTexture->SubmitLayoutChange(HgiTextureUsageBitsShaderRead);
+    }
+    
     HdxRenderTask::Execute(ctx);
+
+    // Restore old layout.
+    if (oldLayout) {
+        depthTexture->SubmitLayoutChange(oldLayout);
+    }
 }
 
 

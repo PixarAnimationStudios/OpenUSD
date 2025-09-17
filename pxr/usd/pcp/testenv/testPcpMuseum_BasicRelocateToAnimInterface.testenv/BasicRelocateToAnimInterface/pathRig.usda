@@ -1,0 +1,16 @@
+#usda 1.0
+
+def Prim "PathRig"
+{
+    def Path "Path"
+    {
+        def Scope "Anim"
+        {
+            custom double track
+        }
+    }
+
+    rel relationshipToPathAvar = <Path/Anim.track> (
+        doc = "This relationship needs to target the path prim even after it gets relocated."
+    )
+}

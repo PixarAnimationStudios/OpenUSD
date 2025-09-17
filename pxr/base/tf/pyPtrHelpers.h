@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_TF_PY_PTR_HELPERS_H
 #define PXR_BASE_TF_PY_PTR_HELPERS_H
@@ -40,17 +23,17 @@
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/tf/anyWeakPtr.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/converter/from_python.hpp>
-#include <boost/python/converter/registered.hpp>
-#include <boost/python/converter/registrations.hpp>
-#include <boost/python/converter/registry.hpp>
-#include <boost/python/converter/rvalue_from_python_data.hpp>
-#include <boost/python/converter/to_python_function_type.hpp>
-#include <boost/python/def_visitor.hpp>
-#include <boost/python/handle.hpp>
-#include <boost/python/implicit.hpp>
-#include <boost/python/to_python_converter.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/converter/from_python.hpp"
+#include "pxr/external/boost/python/converter/registered.hpp"
+#include "pxr/external/boost/python/converter/registrations.hpp"
+#include "pxr/external/boost/python/converter/registry.hpp"
+#include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
+#include "pxr/external/boost/python/converter/to_python_function_type.hpp"
+#include "pxr/external/boost/python/def_visitor.hpp"
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/implicit.hpp"
+#include "pxr/external/boost/python/to_python_converter.hpp"
 
 #include <memory>
 #include <type_traits>
@@ -77,7 +60,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 template <typename Ptr>
 struct TfMakePyPtr {
     typedef typename Ptr::DataType Pointee;
-    typedef boost::python::objects::pointer_holder<Ptr, Pointee> Holder;
+    typedef pxr_boost::python::objects::pointer_holder<Ptr, Pointee> Holder;
     typedef std::pair<PyObject*, bool> Result;
 
     // Return an existing PyObject for the pointer paired with false or
@@ -87,7 +70,7 @@ struct TfMakePyPtr {
     {
         // null pointers -> python None.
         if (!p.GetUniqueIdentifier())
-            return Result(boost::python::detail::none(), false);
+            return Result(pxr_boost::python::detail::none(), false);
 
         // Force instantiation.  We must do this before checking if we
         // have a python identity, otherwise the identity might be set
@@ -100,7 +83,7 @@ struct TfMakePyPtr {
 
         // Just make a new python object holding this pointer.
         // TODO: use existing to-python conversion?
-        PyObject *res = boost::python::objects::make_ptr_instance
+        PyObject *res = pxr_boost::python::objects::make_ptr_instance
                             <Pointee, Holder>::execute(p);
         // If we got back Py_None, no new object was made, so make sure
         // to pass back false in result.
@@ -110,7 +93,7 @@ struct TfMakePyPtr {
 
 namespace Tf_PyDefHelpers {
 
-using namespace boost::python;
+using namespace pxr_boost::python;
 
 template <typename Ptr>
 struct _PtrInterface {
@@ -133,7 +116,7 @@ bool _IsPtrExpired(object const &self) {
     try {
         PtrType p = extract<PtrType>(self);
         return !p;
-    } catch (boost::python::error_already_set const &) {
+    } catch (pxr_boost::python::error_already_set const &) {
         PyErr_Clear();
         return true;
     }
@@ -290,7 +273,7 @@ struct _PtrToPythonWrapper {
 
     // This signature has to match to_python_function_t
     static PyObject *Convert(void const *x) {
-        // See boost/python/converter/as_to_python_function.hpp
+        // See pxr/external/boost/python/converter/as_to_python_function.hpp
         Ptr const &p = *static_cast<Ptr const *>(x);
 
         std::pair<PyObject*, bool> ret = TfMakePyPtr<Ptr>::Execute(p);

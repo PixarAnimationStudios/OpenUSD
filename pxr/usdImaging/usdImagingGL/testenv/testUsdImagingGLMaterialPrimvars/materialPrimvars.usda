@@ -1,0 +1,197 @@
+#usda 1.0
+
+def Scope "Materials"
+{
+    class Material "BaseMaterial"
+    {
+        token outputs:surface.connect = <PreviewSurface.outputs:surface>
+
+        def Shader "PreviewSurface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = <../PrimvarReader.outputs:result>
+            token outputs:surface
+        }
+
+        def Shader "PrimvarReader"
+        {
+             uniform token info:id = "UsdPrimvarReader_float3"
+             float3 outputs:result
+        }
+    }
+
+    def Material "DisplayColor" (inherits=<../BaseMaterial>)
+    {
+        over "PrimvarReader"
+        {
+             string inputs:varname = "displayColor"
+        }
+    }
+
+    def Material "RedDisplayColor" (inherits=<../DisplayColor>)
+    {
+        color3f primvars:displayColor = (1, 0, 0)
+    }
+
+    def Material "GreenDisplayColor" (inherits=<../DisplayColor>)
+    {
+        color3f primvars:displayColor = (0, 1, 0)
+    }
+
+    def Material "MyColor" (inherits=<../BaseMaterial>)
+    {
+        over "PrimvarReader"
+        {
+             string inputs:varname = "myColor"
+        }
+    }
+
+    def Material "RedMyColor" (inherits=<../MyColor>)
+    {
+        color3f primvars:myColor = (1, 0, 0)
+    }
+
+    def Material "GreenMyColor" (inherits=<../MyColor>)
+    {
+        color3f primvars:myColor = (0, 1, 0)
+    }
+}
+
+def Xform "BlackCubes"
+{
+    def Cube "DisplayColorCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/DisplayColor>
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cube "MyColorCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/MyColor>
+        double3 xformOp:translate = (4, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Xform "RedCubes"
+{
+    def Cube "RedDisplayColorCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        # Color is coming from primvars:displayColor on the Material.
+        rel material:binding = </Materials/RedDisplayColor>
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cube "RedMyColorCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        # Color is coming from primvars:myColor on the Material.
+        rel material:binding = </Materials/RedMyColor>
+        double3 xformOp:translate = (4, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    double3 xformOp:translate = (0, 0, 4)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "GreenCubes"
+{
+    def Cube "GreenDisplayColorCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        # Color is coming from primvars:displayColor on the Material.
+        rel material:binding = </Materials/GreenDisplayColor>
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cube "GreenMyColorCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        # Color is coming from primvars:myColor on the Material.
+        rel material:binding = </Materials/GreenMyColor>
+        double3 xformOp:translate = (4, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    double3 xformOp:translate = (0, 0, 8)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Xform "BlueCubes"
+{
+
+    def Cube "DisplayColorBlueCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        color3f[] primvars:displayColor (interpolation = "constant")
+        # Determines color - Material has no opinion for primvars:displayColor.
+        color3f[] primvars:displayColor = [(0, 0, 1)]
+
+        rel material:binding = </Materials/DisplayColor>
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cube "RedDisplayColorBlueCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        color3f[] primvars:displayColor (interpolation = "constant")
+        # Our opinion for primvars:displayColor is stronger than the primvars:displayColor on the Material.
+        color3f[] primvars:displayColor = [(0, 0, 1)]
+
+        rel material:binding = </Materials/RedDisplayColor>
+        double3 xformOp:translate = (4, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cube "MyColorBlueCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        color3f[] primvars:myColor (interpolation = "constant")
+        # Determines color - Material has no opinion for primvars:displayColor.
+        color3f[] primvars:myColor = [(0, 0, 1)]
+
+        rel material:binding = </Materials/MyColor>
+        double3 xformOp:translate = (8, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cube "RedMyColorBlueCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        color3f[] primvars:myColor (interpolation = "constant")
+        # Our opinion for primvars:myColor is stronger than the primvars:myColor on the Material.
+        color3f[] primvars:myColor = [(0, 0, 1)]
+
+        rel material:binding = </Materials/RedMyColor>
+        double3 xformOp:translate = (12, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    double3 xformOp:translate = (0, 0, 12)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Camera "main_cam"
+{
+    double xformOp:rotateX = 90
+    double3 xformOp:translate = (6, -60, 6)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX"]
+}

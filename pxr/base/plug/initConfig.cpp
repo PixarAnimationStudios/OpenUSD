@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -59,7 +42,18 @@ _AppendPathList(
         // Anchor all relative paths to the shared library path.
         const bool isLibraryRelativePath = TfIsRelativePath(path);
         if (isLibraryRelativePath) {
-            result->push_back(TfStringCatPaths(sharedLibPath, path));
+            std::string libraryRelativePath = 
+                TfStringCatPaths(sharedLibPath, path);
+            // TfStringCatPaths will strip a trailing '/' character in path 
+            // via ArchNormPath. This can cause the library relative path
+            // to be treated as a file path downstream. Here we detect that case
+            // and add the trailing '/' back if necessary. Note: trailing '\' is
+            // converted to '/' on Windows.
+            if (path.back() == '/') {
+                libraryRelativePath += path.back();
+            }
+            
+            result->push_back(libraryRelativePath);
         }
         else {
             result->push_back(path);
@@ -67,7 +61,7 @@ _AppendPathList(
     }
 }
 
-ARCH_CONSTRUCTOR(Plug_InitConfig, 2, void)
+ARCH_CONSTRUCTOR(Plug_InitConfig, 2)
 {
     std::vector<std::string> result;
 

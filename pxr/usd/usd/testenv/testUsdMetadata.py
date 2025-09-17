@@ -2,25 +2,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 from __future__ import print_function
 
@@ -351,6 +334,35 @@ class TestUsdMetadata(unittest.TestCase):
                 self.assertEqual(prop.GetDisplayGroup(), "")
                 self.assertFalse(prop.HasAuthoredDisplayGroup())
                 self.assertEqual(prop.GetMetadata("displayGroup"), None)
+
+    def test_ArraySizeConstraint(self):
+        print("Test array size constraint metadata and explicit API...")
+        for fmt in allFormats:
+            stage = Usd.Stage.CreateInMemory('TestArraySizeConstraint.'+fmt)
+            stageRoot = stage.GetPseudoRoot()
+            prim = stage.OverridePrim("/Prim")
+            attr = prim.CreateAttribute("attr", Sdf.ValueTypeNames.StringArray)
+
+            for val in (10, -10, 0):
+                # Unauthored
+                self.assertEqual(attr.GetArraySizeConstraint(), 0)
+                self.assertFalse(attr.HasAuthoredArraySizeConstraint())
+
+                # Set
+                self.assertEqual(attr.SetArraySizeConstraint(val), True)
+                self.assertEqual(attr.GetArraySizeConstraint(), val)
+                self.assertTrue(attr.HasAuthoredArraySizeConstraint())
+                self.assertEqual(
+                    attr.GetMetadata(Sdf.AttributeSpec.ArraySizeConstraintKey),
+                    val)
+
+                # Clear
+                self.assertEqual(attr.ClearArraySizeConstraint(), True)
+                self.assertEqual(attr.GetArraySizeConstraint(), 0)
+                self.assertFalse(attr.HasAuthoredArraySizeConstraint())
+                self.assertEqual(
+                    attr.GetMetadata(Sdf.AttributeSpec.ArraySizeConstraintKey),
+                    None)
 
     def test_BasicCustomData(self):
         '''Test basic CustomData API, including by-key-path API'''

@@ -1,25 +1,8 @@
 //
 // Copyright 2017 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 // WARNING: THIS FILE IS GENERATED.  DO NOT EDIT.
 //
@@ -35,17 +18,20 @@
 #include <sys/malloc.h>
 #include <sys/mount.h>
 #include <sys/param.h>
+#include <sys/ptrace.h>
 #include <sys/resource.h>
 #include <sys/sysctl.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 #include <unistd.h>
+#include <mach-o/arch.h>
 #include <mach-o/dyld.h>
 #include <mach-o/loader.h>
 #include <mach-o/swap.h>
 #include <mach/mach_time.h>
 #endif
 #if defined(ARCH_OS_LINUX)
-#include <csignal>
+#include <chrono>
 #include <dlfcn.h>
 #include <glob.h>
 #include <limits.h>
@@ -76,20 +62,25 @@
 #include <intrin.h>
 #include <io.h>
 #include <process.h>
+#include <stringapiset.h>
 #endif
 #include <algorithm>
 #include <atomic>
 #include <cctype>
 #include <cerrno>
+#include <charconv>
 #include <cinttypes>
 #include <cmath>
+#include <csignal>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <errno.h>
 #include <fcntl.h>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <inttypes.h>
@@ -99,6 +90,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <numeric>
 #include <ostream>
 #include <regex>
 #include <set>
@@ -110,10 +102,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
+#include <string_view>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <system_error>
 #include <thread>
 #include <time.h>
+#include <type_traits>
 #include <typeindex>
 #include <typeinfo>
 #include <utility>

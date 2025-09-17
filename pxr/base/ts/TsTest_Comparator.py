@@ -1,28 +1,12 @@
 #
-# Copyright 2023 Pixar
+# Copyright 2024 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 
 from .TsTest_Grapher import TsTest_Grapher
+from pxr.Ts import TsTest_SampleTimes
 
 class TsTest_Comparator(object):
 
@@ -36,6 +20,11 @@ class TsTest_Comparator(object):
         self._haveCompared = False
 
     def AddSpline(self, name, splineData, samples, baked = None):
+        """
+        Must always add at least two splines.  The first two will be compared.
+        Additional splines will be graphed, but will not participate in the
+        diff.
+        """
         self._sampleSets.append(samples)
         self._grapher.AddSpline(name, splineData, samples, baked)
 
@@ -51,6 +40,22 @@ class TsTest_Comparator(object):
         self._Compare()
         return self._maxDiff
 
+    def GetMaxDiffSamples(self):
+        self._Compare()
+        return (self._maxDiffSampleTime, self._maxDiffSamples)
+
+    def VerifyDiffs(self, label, tolerance):
+        self._Compare()
+        if self._maxDiff > tolerance:
+            preStr = " (pre)" if self._maxDiffSampleTime.pre else ""
+            print(f"{label}: max diff {self._maxDiff} "
+                  f"exceeds {tolerance} "
+                  f"at time {self._maxDiffSampleTime.time}{preStr}, "
+                  f"values {self._maxDiffSamples[0].value} "
+                  f"and {self._maxDiffSamples[1].value}")
+            return False
+        return True
+
     def _Compare(self):
 
         if self._haveCompared:
@@ -65,13 +70,14 @@ class TsTest_Comparator(object):
         self._diffs = []
         self._maxDiff = 0
 
-        if len(self._sampleSets) != 2:
-            raise Exception("Comparator: must call AddSpline exactly twice")
+        if len(self._sampleSets) < 2:
+            raise Exception("Comparator: must call AddSpline at least twice")
 
         if len(self._sampleSets[0]) != len(self._sampleSets[1]):
             raise Exception("Mismatched eval results")
 
-        for i in range(len(self._sampleSets[0])):
+        numSamples = len(self._sampleSets[0])
+        for i in range(numSamples):
 
             sample1 = self._sampleSets[0][i]
             sample2 = self._sampleSets[1][i]
@@ -80,5 +86,16 @@ class TsTest_Comparator(object):
                 raise Exception("Mismatched eval times at index %d" % i)
 
             diff = sample2.value - sample1.value
-            self._maxDiff = max(self._maxDiff, abs(diff))
             self._diffs.append(TsTest_Grapher.Diff(sample1.time, diff))
+
+            absDiff = abs(diff)
+            if absDiff > self._maxDiff:
+
+                self._maxDiff = absDiff
+                self._maxDiffSamples = (sample1, sample2)
+
+                isPre = (i < numSamples - 1
+                         and abs(self._sampleSets[0][i + 1].time - sample1.time)
+                         < 1e-4)
+                self._maxDiffSampleTime = \
+                    TsTest_SampleTimes.SampleTime(sample1.time, isPre)

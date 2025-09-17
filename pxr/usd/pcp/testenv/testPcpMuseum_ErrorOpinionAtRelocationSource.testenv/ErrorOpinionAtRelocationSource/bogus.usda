@@ -1,0 +1,8 @@
+#usda 1.0
+
+def "Bogus" (
+    doc = """This is a placeholder target for a bogus reference under a
+    relocation source.  It should be ignored."""
+)
+{
+}

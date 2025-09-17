@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_TF_REGISTRY_MANAGER_H
 #define PXR_BASE_TF_REGISTRY_MANAGER_H
@@ -162,8 +145,8 @@ public:
 // the body of the function inside braces.  KEY_TYPE and TAG must be types.
 #define TF_REGISTRY_DEFINE_WITH_TYPE(KEY_TYPE, TAG)                            \
     static void _Tf_RegistryFunction(KEY_TYPE*, TAG*);                         \
-    ARCH_CONSTRUCTOR(TF_PP_CAT(_Tf_RegistryAdd, __LINE__),                     \
-                     TF_REGISTRY_PRIORITY, KEY_TYPE*, TAG*)                    \
+    ARCH_CONSTRUCTOR(TF_PP_CAT(_Tf_RegistryAdd, __COUNTER__),                  \
+                     TF_REGISTRY_PRIORITY)                                     \
     {                                                                          \
         Tf_RegistryInit::Add(TF_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME),            \
                              (void(*)(KEY_TYPE*, TAG*))_Tf_RegistryFunction,   \
@@ -177,8 +160,7 @@ public:
 // must be a valid C++ name.
 #define TF_REGISTRY_DEFINE(KEY_TYPE, NAME)                                     \
     static void TF_PP_CAT(_Tf_RegistryFunction, NAME)(KEY_TYPE*, void*);       \
-    ARCH_CONSTRUCTOR(TF_PP_CAT(_Tf_RegistryAdd, NAME),                         \
-                     TF_REGISTRY_PRIORITY, KEY_TYPE*)                          \
+    ARCH_CONSTRUCTOR(TF_PP_CAT(_Tf_RegistryAdd, NAME), TF_REGISTRY_PRIORITY)   \
     {                                                                          \
         Tf_RegistryInit::Add(TF_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME),            \
                              (void(*)(KEY_TYPE*, void*))                       \
@@ -217,7 +199,7 @@ public:
 ///
 /// \hideinitializer
 #define TF_REGISTRY_FUNCTION(KEY_TYPE) \
-    TF_REGISTRY_DEFINE(KEY_TYPE, __LINE__)
+    TF_REGISTRY_DEFINE(KEY_TYPE, __COUNTER__)
 
 /// Define a function that is called on demand by \c TfRegistryManager.
 ///
@@ -258,7 +240,7 @@ public:
 ///
 /// \hideinitializer
 #define TF_REGISTRY_FUNCTION_WITH_TAG(KEY_TYPE, TAG) \
-    TF_REGISTRY_DEFINE(KEY_TYPE, TF_PP_CAT(TAG, __LINE__))
+    TF_REGISTRY_DEFINE(KEY_TYPE, TF_PP_CAT(TAG, __COUNTER__))
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

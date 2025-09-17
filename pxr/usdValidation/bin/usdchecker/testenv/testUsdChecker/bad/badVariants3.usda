@@ -1,0 +1,24 @@
+#usda 1.0
+(
+    defaultPrim = "World"
+    metersPerUnit = 1
+    upAxis = "Y"
+)
+
+def "World" (
+    variants = {
+        string set1 = "ref1"
+    }
+    add variantSets = ["set1"]
+)
+{
+    variantSet "set1" = {
+        "ref2" (
+            references = @./foo.usda@</foo>
+        )
+        {
+        }
+        "ref1" {
+        }
+    }
+}

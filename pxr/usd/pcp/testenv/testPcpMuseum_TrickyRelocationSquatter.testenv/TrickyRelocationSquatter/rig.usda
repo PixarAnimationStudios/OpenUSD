@@ -1,0 +1,13 @@
+#usda 1.0
+
+def Scope "Y"
+{
+    def Scope "A"
+    {
+    }
+
+    def Scope "A2"
+    {
+    }
+}
+

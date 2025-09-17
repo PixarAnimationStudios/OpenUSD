@@ -2,25 +2,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 from pxr import Sdf, Pcp, Tf
 import os, unittest
@@ -38,9 +21,9 @@ class TestPcpLayerMuting(unittest.TestCase):
 
     def test_MutingSublayers(self):
         """Tests muting sublayers"""
-        layer = self._LoadLayer(os.path.join(os.getcwd(), 'sublayers/root.sdf'))
-        sublayer = self._LoadLayer(os.path.join(os.getcwd(), 'sublayers/sublayer.sdf'))
-        anonymousSublayer = Sdf.Layer.CreateAnonymous('.sdf')
+        layer = self._LoadLayer(os.path.join(os.getcwd(), 'sublayers/root.usda'))
+        sublayer = self._LoadLayer(os.path.join(os.getcwd(), 'sublayers/sublayer.usda'))
+        anonymousSublayer = Sdf.Layer.CreateAnonymous('.usda')
 
         # Add a prim in an anonymous sublayer to the root layer for 
         # testing purposes.
@@ -163,8 +146,8 @@ class TestPcpLayerMuting(unittest.TestCase):
     def test_MutingSessionLayer(self):
         """Tests ability to mute a cache's session layer."""
         
-        layer = self._LoadLayer(os.path.join(os.getcwd(), 'session/root.sdf'))
-        sessionLayer = self._LoadLayer(os.path.join(os.getcwd(), 'session/session.sdf'))
+        layer = self._LoadLayer(os.path.join(os.getcwd(), 'session/root.usda'))
+        sessionLayer = self._LoadLayer(os.path.join(os.getcwd(), 'session/session.usda'))
 
         pcp = self._LoadPcpCache(layer.identifier, sessionLayer.identifier)
 
@@ -199,51 +182,55 @@ class TestPcpLayerMuting(unittest.TestCase):
         """Tests behavior when muting and unmuting the root layer of 
         a referenced layer stack."""
 
-        rootLayer = self._LoadLayer(os.path.join(os.getcwd(), 'refs/root.sdf'))
-        refLayer = self._LoadLayer(os.path.join(os.getcwd(), 'refs/ref.sdf'))
+        rootLayer = self._LoadLayer(os.path.join(os.getcwd(), 'refs/root.usda'))
+        refLayer = self._LoadLayer(os.path.join(os.getcwd(), 'refs/ref.usda'))
 
-        pcp = self._LoadPcpCache(rootLayer.identifier)
-        pcp2 = self._LoadPcpCache(rootLayer.identifier)
+        def _Test(path):
+            pcp = self._LoadPcpCache(rootLayer.identifier)
+            pcp2 = self._LoadPcpCache(rootLayer.identifier)
 
-        (pi, err) = pcp.ComputePrimIndex('/Root')
-        self.assertTrue(not err)
-        self.assertEqual(pi.rootNode.children[0].arcType, Pcp.ArcTypeReference)
-        self.assertEqual(pi.rootNode.children[0].layerStack.layers[0], refLayer)
+            (pi, err) = pcp.ComputePrimIndex(path)
+            self.assertTrue(not err)
+            self.assertEqual(pi.rootNode.children[0].arcType, Pcp.ArcTypeReference)
+            self.assertEqual(pi.rootNode.children[0].layerStack.layers[0], refLayer)
 
-        (pi2, err2) = pcp2.ComputePrimIndex('/Root')
-        self.assertTrue(not err2)
-        self.assertEqual(pi2.rootNode.children[0].arcType, Pcp.ArcTypeReference)
-        self.assertEqual(pi2.rootNode.children[0].layerStack.layers[0], refLayer)
+            (pi2, err2) = pcp2.ComputePrimIndex(path)
+            self.assertTrue(not err2)
+            self.assertEqual(pi2.rootNode.children[0].arcType, Pcp.ArcTypeReference)
+            self.assertEqual(pi2.rootNode.children[0].layerStack.layers[0], refLayer)
 
-        # Mute the root layer of the referenced layer stack. This should
-        # result in change processing, a composition error when recomposing
-        # /Root, and no reference node on the prim index.
-        pcp.RequestLayerMuting([refLayer.identifier], [])
-        self.assertEqual(pcp.GetMutedLayers(), [refLayer.identifier])
+            # Mute the root layer of the referenced layer stack. This should
+            # result in change processing, a composition error when recomposing
+            # /Root, and no reference node on the prim index.
+            pcp.RequestLayerMuting([refLayer.identifier], [])
+            self.assertEqual(pcp.GetMutedLayers(), [refLayer.identifier])
 
-        (pi, err) = pcp.ComputePrimIndex('/Root')
-        self.assertTrue(err)
-        self.assertEqual(len(pi.rootNode.children), 0)
+            (pi, err) = pcp.ComputePrimIndex(path)
+            self.assertTrue(err)
+            self.assertEqual(len(pi.rootNode.children), 0)
 
-        (pi2, err2) = pcp2.ComputePrimIndex('/Root')
-        self.assertTrue(not err2)
-        self.assertEqual(pi2.rootNode.children[0].arcType, Pcp.ArcTypeReference)
-        self.assertEqual(pi2.rootNode.children[0].layerStack.layers[0], refLayer)
+            (pi2, err2) = pcp2.ComputePrimIndex(path)
+            self.assertTrue(not err2)
+            self.assertEqual(pi2.rootNode.children[0].arcType, Pcp.ArcTypeReference)
+            self.assertEqual(pi2.rootNode.children[0].layerStack.layers[0], refLayer)
 
-        # Unmute the layer and verify that the composition error is resolved
-        # and the reference is restored to the prim index.
-        pcp.RequestLayerMuting([], [refLayer.identifier])
-        self.assertEqual(pcp.GetMutedLayers(), [])
+            # Unmute the layer and verify that the composition error is resolved
+            # and the reference is restored to the prim index.
+            pcp.RequestLayerMuting([], [refLayer.identifier])
+            self.assertEqual(pcp.GetMutedLayers(), [])
 
-        (pi, err) = pcp.ComputePrimIndex('/Root')
-        self.assertTrue(not err)
-        self.assertEqual(pi.rootNode.children[0].arcType, Pcp.ArcTypeReference)
-        self.assertEqual(pi.rootNode.children[0].layerStack.layers[0], refLayer)
+            (pi, err) = pcp.ComputePrimIndex(path)
+            self.assertTrue(not err)
+            self.assertEqual(pi.rootNode.children[0].arcType, Pcp.ArcTypeReference)
+            self.assertEqual(pi.rootNode.children[0].layerStack.layers[0], refLayer)
 
-        (pi2, err2) = pcp2.ComputePrimIndex('/Root')
-        self.assertTrue(not err2)
-        self.assertEqual(pi2.rootNode.children[0].arcType, Pcp.ArcTypeReference)
-        self.assertEqual(pi2.rootNode.children[0].layerStack.layers[0], refLayer)
+            (pi2, err2) = pcp2.ComputePrimIndex(path)
+            self.assertTrue(not err2)
+            self.assertEqual(pi2.rootNode.children[0].arcType, Pcp.ArcTypeReference)
+            self.assertEqual(pi2.rootNode.children[0].layerStack.layers[0], refLayer)
+
+        _Test('/ReferenceToDef')
+        _Test('/ReferenceToOver')
 
     def test_MutingWithFileFormatTarget(self):
         """Tests layer muting for a Pcp.Cache with a file format target."""
@@ -261,10 +248,10 @@ class TestPcpLayerMuting(unittest.TestCase):
             # Create a Pcp.Cache with a 'bogus' file format target. This
             # target will be used for loading layers during composition.
             pcp = self._LoadPcpCache(
-                'sublayers/root.sdf', fileFormatTarget='bogus')
+                'sublayers/root.usda', fileFormatTarget='bogus')
 
             # Normally, we'd be unable to load the sublayer specified in
-            # root.sdf because there is no file format plugin that handles
+            # root.usda because there is no file format plugin that handles
             # the 'bogus' file format target. This would cause an invalid
             # sublayer error during composition.
             #
@@ -285,7 +272,7 @@ class TestPcpLayerMuting(unittest.TestCase):
             if not expectInvalidSublayerError:
                 self.assertFalse(_HasInvalidSublayerError(err))
 
-        sublayerPath = os.path.join(os.getcwd(), 'sublayers/sublayer.sdf')
+        sublayerPath = os.path.join(os.getcwd(), 'sublayers/sublayer.usda')
 
         # Test using an identifier with no target specified.
         _TestMuting(sublayerPath, expectMutedLayerId=sublayerPath)

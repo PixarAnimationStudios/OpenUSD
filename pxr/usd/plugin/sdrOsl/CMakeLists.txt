@@ -19,7 +19,6 @@ pxr_plugin(sdrOsl
         tf
         vt
         ar
-        ndr
         sdr
         ${OSL_QUERY_LIBRARY}
         ${OIIO_LIBRARIES}
@@ -35,9 +34,6 @@ pxr_plugin(sdrOsl
 
     PRIVATE_HEADERS
         api.h
-
-    PYTHON_CPPFILES
-        moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp

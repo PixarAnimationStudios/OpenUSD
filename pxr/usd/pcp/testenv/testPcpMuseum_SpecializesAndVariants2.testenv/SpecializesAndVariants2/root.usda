@@ -1,0 +1,51 @@
+#usda 1.0
+(
+    """
+    Museum case showing combinations of specializes and variants.
+
+    In this test, /element and /middleman should have the same
+    properties 'referencedAttr' and 'variantAttr' composed from
+    /referencedMiddleman and /implementation{testVariantSet=testVariant}.
+    """
+)
+
+def "element" (
+    prepend specializes = </_element_class>
+)
+{
+}
+
+class "_element_class" (
+    prepend specializes = </middleman>
+)
+{
+}
+
+class "middleman" (
+    prepend references = </referencedMiddleman>
+)
+{
+}
+
+class "referencedMiddleman" (
+    prepend specializes = </implementation>
+)
+{
+    uniform string referencedAttr = "referencedValue"
+}
+
+class "implementation" (
+    variants = {
+        string testVariantSet = "testVariant"
+    }
+    prepend variantSets = "testVariantSet"
+)
+{
+    variantSet "testVariantSet" = {
+        "testVariant" {
+            uniform string variantAttr = "variantValue"
+
+        }
+    }
+}
+

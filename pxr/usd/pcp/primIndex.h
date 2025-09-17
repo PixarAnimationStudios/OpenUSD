@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_PCP_PRIM_INDEX_H
 #define PXR_USD_PCP_PRIM_INDEX_H
@@ -57,6 +40,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(PcpPrimIndex_Graph);
 
 class ArResolver;
 class PcpCache;
+class PcpCacheChanges;
 class PcpPrimIndex;
 class PcpPrimIndexInputs;
 class PcpPrimIndexOutputs;
@@ -111,6 +95,19 @@ public:
     void SetGraph(const PcpPrimIndex_GraphRefPtr& graph) {
         _graph = graph;
     }
+
+    /// Add the nodes in \p childPrimIndex to this prim index; \p arcToParent
+    /// specifies the node in this prim index where the root node of \p
+    /// childPrimIndex will be added, along with other information about the
+    /// composition arc connecting the two prim indexes.
+    ///
+    /// Return the node in this prim index corresponding to the root node
+    /// of \p childPrimIndex.
+    ///
+    PcpNodeRef AddChildPrimIndex(
+        const PcpArc &arcToParent, 
+        PcpPrimIndex &&childPrimIndex,
+        PcpErrorBasePtr *error);
 
     const PcpPrimIndex_GraphRefPtr &GetGraph() const {
         return _graph;
@@ -245,6 +242,14 @@ public:
     void ComputePrimChildNames(TfTokenVector *nameOrder,
                                PcpTokenSet *prohibitedNameSet) const;
 
+    /// Compute the prim child names for this prim when composed from only the
+    /// subtree starting at \p subtreeRootNode.
+    PCP_API
+    void ComputePrimChildNamesInSubtree(
+        const PcpNodeRef &subtreeRootNode,
+        TfTokenVector *nameOrder,
+        PcpTokenSet *prohibitedNameSet) const;
+
     /// Compute the prim property names for the given path. \p errors will
     /// contain any errors encountered while performing this operation.  The
     /// \p nameOrder vector must not contain any duplicate entries.
@@ -274,8 +279,10 @@ public:
 private:
     friend class PcpPrimIterator;
     friend struct Pcp_PrimIndexer;
-    friend void Pcp_RescanForSpecs(PcpPrimIndex*, bool usd,
-                                   bool updateHasSpecs);
+    friend void Pcp_RescanForSpecs(
+                    PcpPrimIndex*, bool usd,
+                    bool updateHasSpecs,
+                    const PcpCacheChanges *cacheChanges);
 
     // The node graph representing the compositional structure of this prim.
     PcpPrimIndex_GraphRefPtr _graph;
@@ -429,14 +436,14 @@ PcpComputePrimIndex(
     PcpPrimIndexOutputs* outputs,
     ArResolver* pathResolver = NULL);
 
-/// Returns true if the 'new' default standin behavior is enabled.
+/// Computes the list of prim specs that contribute opinions for the given
+/// \p primIndex in order from strongest to weakest. This should only be used
+/// when it is needed to be known what all the specs are that contribute to the
+/// prim index and it makes sense to potentially cache the result. This should
+/// never be used for value resolution as it is ineffecient for that purpose.
 PCP_API
-bool
-PcpIsNewDefaultStandinBehaviorEnabled();
-
-// Sets the prim stack in \p index.
-void
-Pcp_RescanForSpecs(PcpPrimIndex* index, bool usd);
+SdfPrimSpecHandleVector
+PcpComputePrimStackForPrimIndex(const PcpPrimIndex &primIndex);
 
 // Returns true if \p index should be recomputed due to changes to
 // any computed asset paths that were used to find or open layers

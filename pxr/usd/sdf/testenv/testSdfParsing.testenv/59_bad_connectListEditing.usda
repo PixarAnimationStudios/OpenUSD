@@ -1,0 +1,12 @@
+#usda 1.0
+#tagged-as-never-update
+
+def MfScope "foo"
+{
+    # test using None in a list op for connections
+    delete double badAttr.connect = None
+    
+    # test invalid relative connection path
+    double badRelAttr.connect = <../../iam.nowhere>
+}
+

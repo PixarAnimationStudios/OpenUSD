@@ -1,24 +1,24 @@
-Loading @BasicSpecializesAndVariants/root.sdf@
+Loading @BasicSpecializesAndVariants/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </Specializes>
 
 Prim Stack:
-    root.sdf             /Specializes
+    root.usda            /Specializes
 
 ------------------------------------------------------------------------
 Results for composing </Root>
 
 Prim Stack:
-    root.sdf             /Root
-    ref.sdf              /Ref
-    ref.sdf              /Ref{v=ref}
-    root.sdf             /Specializes
-    ref.sdf              /Specializes
+    root.usda            /Root
+    ref.usda             /Ref
+    ref.usda             /Ref{v=ref}
+    root.usda            /Specializes
+    ref.usda             /Specializes
 
 Variant Selections:
     {v = ref}
@@ -27,7 +27,7 @@ Variant Selections:
 Results for composing </Model>
 
 Prim Stack:
-    root.sdf             /Model
+    root.usda            /Model
 
 Child names:
      ['Looks']
@@ -36,8 +36,8 @@ Child names:
 Results for composing </Model/Looks>
 
 Prim Stack:
-    root.sdf             /Model/Looks
-    looks.sdf            /Looks
+    root.usda            /Model/Looks
+    looks.usda           /Looks
 
 Child names:
      ['Metal', 'Brass']
@@ -46,9 +46,9 @@ Child names:
 Results for composing </Model/Looks/Metal>
 
 Prim Stack:
-    root.sdf             /Model/Looks/Metal
-    looks.sdf            /Looks/Metal
-    looks.sdf            /Looks/Metal{v=from_metal}
+    root.usda            /Model/Looks/Metal
+    looks.usda           /Looks/Metal
+    looks.usda           /Looks/Metal{v=from_metal}
 
 Variant Selections:
     {v = from_metal}
@@ -57,11 +57,11 @@ Variant Selections:
 Results for composing </Model/Looks/Brass>
 
 Prim Stack:
-    root.sdf             /Model/Looks/Brass
-    looks.sdf            /Looks/Brass
-    root.sdf             /Model/Looks/Metal
-    looks.sdf            /Looks/Metal
-    looks.sdf            /Looks/Metal{v=from_brass}
+    root.usda            /Model/Looks/Brass
+    looks.usda           /Looks/Brass
+    root.usda            /Model/Looks/Metal
+    looks.usda           /Looks/Metal
+    looks.usda           /Looks/Metal{v=from_brass}
 
 Variant Selections:
     {v = from_brass}

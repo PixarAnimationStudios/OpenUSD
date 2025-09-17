@@ -1,29 +1,14 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/prim.h"
+#include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/stl.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -50,6 +35,20 @@ TF_REGISTRY_FUNCTION(TfType)
         TfType::Bases<UsdNotice::StageNotice> >();
 }
 
+TF_REGISTRY_FUNCTION(TfEnum)
+{
+    using PrimResyncType = UsdNotice::ObjectsChanged::PrimResyncType;
+    TF_ADD_ENUM_NAME(PrimResyncType::RenameSource);
+    TF_ADD_ENUM_NAME(PrimResyncType::RenameDestination);
+    TF_ADD_ENUM_NAME(PrimResyncType::ReparentSource);
+    TF_ADD_ENUM_NAME(PrimResyncType::ReparentDestination);
+    TF_ADD_ENUM_NAME(PrimResyncType::RenameAndReparentSource);
+    TF_ADD_ENUM_NAME(PrimResyncType::RenameAndReparentDestination);
+    TF_ADD_ENUM_NAME(PrimResyncType::Delete);
+    TF_ADD_ENUM_NAME(PrimResyncType::UnchangedPrimStack);
+    TF_ADD_ENUM_NAME(PrimResyncType::Other);
+    TF_ADD_ENUM_NAME(PrimResyncType::Invalid);
+}
 
 UsdNotice::StageNotice::StageNotice(const UsdStageWeakPtr& stage) :
     _stage(stage)
@@ -98,11 +97,19 @@ UsdNotice::ObjectsChanged::_GetEmptyChangesMap()
     return empty;
 }
 
+const UsdNotice::ObjectsChanged::_NamespaceEditsInfo&
+UsdNotice::ObjectsChanged::_GetEmptyNamespaceEditsInfo()
+{
+    static const _NamespaceEditsInfo empty;
+    return empty;
+}
+
 UsdNotice::ObjectsChanged::ObjectsChanged(
     const UsdStageWeakPtr &stage,
     const _PathsToChangesMap *resyncChanges)
     : ObjectsChanged(
-        stage, resyncChanges, &_GetEmptyChangesMap(), &_GetEmptyChangesMap())
+        stage, resyncChanges, &_GetEmptyChangesMap(), &_GetEmptyChangesMap(), 
+        &_GetEmptyNamespaceEditsInfo())
 {
 }
 
@@ -198,6 +205,51 @@ UsdNotice::ObjectsChanged::HasChangedFields(const SdfPath &path) const
 
     return false;
 }
+
+UsdNotice::ObjectsChanged::PrimResyncType 
+UsdNotice::ObjectsChanged::GetPrimResyncType(
+    const SdfPath &primPath,
+    SdfPath *associateObjectPath) const
+{
+    // We only classify prim resync types.
+    if (!primPath.IsAbsoluteRootOrPrimPath()) {
+        return PrimResyncType::Invalid;
+    }
+
+    // If the prim was not resynced at all, return an invalid resync type.
+    const auto closestResyncPathIt = SdfPathFindLongestPrefix(
+        *_resyncChanges, primPath);
+    if (closestResyncPathIt == _resyncChanges->end()) {
+        return PrimResyncType::Invalid;
+    }
+
+    // The absolute root is always Other since it can't be formally namespace
+    // edited.
+    if (primPath.IsAbsoluteRootPath()) {
+        return PrimResyncType::Other;
+    }
+
+    // Successful namespace edits done through the UsdNamespaceEditor will have
+    // a resync info
+    const _PrimResyncInfo *resyncInfo = _namespaceEditsInfo ? 
+        TfMapLookupPtr(_namespaceEditsInfo->primResyncsInfo, primPath) : nullptr;
+    if (resyncInfo) {
+        if (associateObjectPath) {
+            *associateObjectPath = resyncInfo->associatePath;
+        }
+        return resyncInfo->resyncType;
+    }
+
+    // Otherwise, we don't know anything else about the resync other than 
+    // whether the prim exists or not so it's either a remove or an "Other" 
+    // resync.
+    if (GetStage()->GetPrimAtPath(primPath)) {
+        return PrimResyncType::Other;
+    } else {
+        return PrimResyncType::Delete;
+    }
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

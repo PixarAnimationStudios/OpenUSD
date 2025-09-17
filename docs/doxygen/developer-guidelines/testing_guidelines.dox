@@ -1,0 +1,413 @@
+/*!
+\page Page_Testing_Guidelines Testing Guidelines for OpenUSD
+
+All USD code changes should have proper test coverage to ensure code quality. 
+USD uses CMake's built-in CTest program for testing. Use the following 
+guidelines to understand how to write and run USD tests.
+
+\section Testing_Writing_Unit_Tests Writing Unit Tests
+
+Unit tests are required for all changes to a USD module. Unit tests can be 
+written in C++ and/or Python. USD unit test source files and asset files are 
+located in a testenv directory in the appropriate USD module's directory,
+and are added to the USD module's CMakeLists.txt, as described below.
+
+\subsection Testing_Naming_Conventions Test Naming Conventions
+
+Tests should be named using the format "test<USD module><Thing Being Tested>". 
+For example, "testUsdFlatten", or "testUsdGeomExtentTransform".  
+
+Within the test code, test methods should be named using the format 
+"test_<Some Behavior>". For example, "test_Flatten", "test_Export", etc.
+
+\subsection Testing_Adding_Test_Files Adding or Updating Test Files
+
+Test source files and resources (such as USD files, images, etc) should be 
+located as follows.
+
+<ul>
+<li>Test source (C++, Python) files should be added to the `testenv` directory for 
+a given USD module. For example, all test source files for usdLux are in 
+`pxr/usd/usdLux/testenv/`.</li>
+<li>Test resources, if needed, should be added to a subdirectory in `testenv` named 
+for the test. For example, USD files needed for the testUsdLuxLightListAPI test 
+are in `pxr/usd/usdLux/testenv/testUsdLuxLightListAPI/`.</li>
+</ul>
+
+\note Some test resource directories in USD currently are named with `.testenv` 
+appended to the test name. Appending `.testenv` is an older convention that is 
+not needed anymore.
+
+\subsection Testing_Registering_Tests Registering Tests
+
+Register your test in the USD module's CMakeLists.txt to ensure the CTest 
+harness runs your test. Tests are registered using the 
+`pxr_register_test wrapper` function, which also provides a list of steps the 
+harness will do to run your test. A list of common options for 
+`pxr_register_test` follows (note this is not a complete list of options, see 
+`cmake/macros/Public.cmake` for details on `pxr_register_test`):
+
+Option                      | Meaning
+--------------------------- | -------------
+`STDOUT_REDIRECT <file-name>` | Redirect stdout from a test to the file name specified.
+`STDERR_REDIRECT <file-name>` | Redirect stderr from a test to the file name specified.
+`DIFF_COMPARE <file-name>+`   | After the test has completed, diff file-name(s) against the corresponding file(s) in `<pxr_install_test_dir dir>/baseline/`
+`ENV <key=value>+`            | A set of key-value pairs specifying environment configuration to set.
+`EXPECTED_RETURN_CODE <num>`  | An exit code to match against after running the test.
+`PYTHON`                      | Indicates that the test is Python based.
+`REQUIRES_DISPLAY`            | Indicates that the test requires a connected display to run. If there is no display at the time of running the test, the wrapper will skip it.
+`COMMAND <cmd>`               | The main command to run.
+`PRE_COMMAND <cmd>` / `POST_COMMAND <cmd>` | Commands to run before or after the main command. These currently don't provide output redirection and expect an exit code of 0.
+
+<b>Example</b>
+
+The test registration for the testUsdFlatten Python test looks as follows:
+
+\code{.unparsed}
+pxr_register_test(testUsdFlatten
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdFlatten"
+    EXPECTED_RETURN_CODE 0
+)
+\endcode
+
+\subsection Testing_Test_InstallationTest Installation
+
+Use `pxr_install_test_dir` to specify where test assets should get installed 
+when the test harness is run. Note that the name used for `DEST` must exactly 
+match the name used in test registration. If your test does not use any 
+additional assets, you don't need to add a `pxr_install_test_dir` call nor add 
+the "<your test name>" directory to `testenv/`. 
+
+<b>Example</b>
+
+The install for testUsdFlatten assets looks like:
+
+\code{.unparsed}
+pxr_install_test_dir(
+    SRC testenv/testUsdFlatten
+    DEST testUsdFlatten
+)
+\endcode
+
+\subsection Testing_Python_Unit_Tests Python Unit Tests
+
+Python tests need to be added to CMakeLists.txt using the `pxr_test_scripts` 
+function. Python unit tests should use Python's <a href="https://docs.python.org/3/library/unittest.html">unittest module</a>. 
+
+\subsection Testing_CPP_Unit_Tests C++ Unit Tests
+
+Use the `pxr_build_test` function to CMakeLists.txt to specify how your C++ 
+test is built. Test binaries will be installed to 
+`${CMAKE_INSTALL_PREFIX}/tests/`. Any libraries needed by the test itself must 
+be explicitly listed in the `LIBRARIES` section.
+
+<b>Example</b>
+
+The `pxr_build_test` for the C++ testUsdAttributeBlockingCpp test looks like:
+
+\code{.unparsed}
+pxr_build_test(testUsdAttributeBlockingCpp
+    LIBRARIES
+        tf
+        usd
+    CPPFILES
+        testenv/testUsdAttributeBlocking.cpp
+)
+\endcode
+
+\section Testing_Building_Tests Building Tests
+
+To build the USD tests, use the `PXR_BUILD_TESTS` CMake build configuration 
+(this defaults to `ON` if not set), or use the `--tests` command line argument 
+if you are building using the build_usd.py script.
+
+\section Testing_Running_Tests Running Tests
+
+To run tests, use CMake's <a href="https://cmake.org/cmake/help/latest/manual/ctest.1.html">ctest command</a>
+and run from the build directory. 
+    
+To run all tests:
+
+\code{.unparsed}
+$ cd /my-build-directory/build/USD
+$ ctest -C Release
+\endcode
+
+To run an individual test:
+
+\code{.unparsed}
+$ cd /my-build-directory/build/USD
+$ ctest -C Release -R test-to-run
+\endcode
+
+An example individual test run will look something like the following:
+
+\code{.unparsed}
+$ ctest -C Release -R testUsdFlatten
+Test project /Users/dsyu/temp/tests-build/build/USD
+    Start 452: testUsdFlatten
+1/5 Test #452: testUsdFlatten ...................   Passed    0.55 sec
+    Start 453: testUsdFlatten2
+2/5 Test #453: testUsdFlatten2 ..................   Passed    0.33 sec
+    Start 454: testUsdFlatten3
+3/5 Test #454: testUsdFlatten3 ..................   Passed    0.31 sec
+    Start 455: testUsdFlatten4
+4/5 Test #455: testUsdFlatten4 ..................   Passed    0.33 sec
+    Start 456: testUsdFlattenLayerStack
+5/5 Test #456: testUsdFlattenLayerStack .........   Passed    0.33 sec
+
+100% tests passed, 0 tests failed out of 5
+
+Total Test time (real) =   1.92 sec
+\endcode
+
+\section Testing_Walkthroughs Unit Test Example Walkthroughs
+
+\subsection Testing_Python_Walkthrough Python Unit Test Example Walkthrough
+
+The following simple walkthrough describes the basic steps for adding a new 
+"testUsdGeomMyFeature" Python unit test to the usdGeom module.
+
+We add our Python test code by creating a new Python script, 
+testUsdGeomMyFeature.py, in `pxr/usd/usdGeom/testenv/`.
+
+\code{.py}
+#!/pxrpythonsubst
+#
+# Copyright 2024 Pixar
+#
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
+
+import unittest
+
+from pxr import Vt, Gf, Sdf, Usd, UsdGeom
+
+class TestUsdGeomMyFeature(unittest.TestCase):
+
+    def test_MyFeaturePart1(self):
+        stage = Usd.Stage.CreateInMemory()
+
+        # ...various test and verification code...
+        # Use unittest asserts (assertTrue, assertFalse, assertEquals, etc) 
+        # for verifying test conditions
+        self.assertTrue(myTestCondition)
+
+    # ...more test methods as needed...
+
+if __name__ == "__main__":
+    unittest.main()
+\endcode
+
+We create a testUsdGeomMyFeature directory in `testenv/` for any test resources, 
+such as USD files, images, etc. We configure CTest to copy test resources from 
+this directory by adding the following to `pxr/usd/usdGeom/CMakeLists.txt`.
+
+\code{.unparsed}
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomMyFeature
+    DEST testUsdGeomMyFeature
+)
+\endcode
+
+In CMakeLists.txt we register our new test by adding the following registration 
+steps:
+
+\code{.unparsed}
+pxr_register_test(testUsdGeomMyFeature
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomMyFeature"
+    EXPECTED_RETURN_CODE 0
+)
+\endcode
+
+We then add our test to `pxr_test_scripts`:
+
+\code{.unparsed}
+pxr_test_scripts(
+    ...
+    testenv/testUsdGeomMyFeature.py
+)
+\endcode
+
+At this point, we can now build USD with our new test:
+
+\code{.unparsed}
+$ python3 build_scripts/build_usd.py /my-build-directory --no-examples --no-tutorials --tools --python --no-docs --tests
+  ...
+  Building                      Shared libraries
+    Variant                     Release
+    Target                      native
+    Imaging                     On
+      Ptex support:             Off
+      OpenVDB support:          Off
+      OpenImageIO support:      On 
+      OpenColorIO support:      Off 
+      PRMan support:            Off
+    UsdImaging                  On
+      usdview:                  On
+    MaterialX support           On
+    Python support              On
+      Python Debug:             Off
+      Python docs:              Off
+    Documentation               Off
+    Tests                       On
+    ...
+\endcode
+
+Once the build is complete and we've set the appropriate environment variables 
+(`PYTHONPATH` and `PATH`) for our build, we can cd to our build directory and 
+run our test:
+
+\code{.unparsed}
+$ cd /my-build-directory/build/USD
+$ ctest -C Release -R testUsdGeomMyFeature
+Test project /my-build-directory/build/USD
+    Start 501: testUsdGeomMyFeature
+1/1 Test #501: testUsdGeomMyFeature .............   Passed    0.48 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.53 sec
+\endcode
+
+\subsection Testing_CPP_Walkthrough C++ Unit Test Example Walkthrough
+
+The following simple walkthrough describes the basic steps for adding a new 
+"testUsdGeomMyFeature" C++ unit test to the usdGeom module.
+
+We start by adding our C++ test code to a new testUsdGeomMyFeature.cpp file in 
+`pxr/usd/usdGeom/testenv/`.
+
+\code{.c}
+//
+// Copyright 2024 Pixar
+//
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
+//
+
+#include "pxr/pxr.h"
+#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/sdf/layer.h"
+#include "pxr/base/vt/value.h" 
+#include "pxr/base/arch/fileSystem.h"
+// ...other includes as needed...
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+void
+TestMyFeature()
+{
+    // ...various test and verification code...
+    // You can use Tf macros like TF_VERIFY to verify test conditions 
+    TF_VERIFY(myTestCondition);
+}
+
+int main()
+{
+    TestMyFeature();
+
+    printf("\n\n>>> Test SUCCEEDED\n");
+}
+\endcode
+
+We create a testUsdGeomMyFeature directory in `testenv/` for any test resources, 
+such as USD files, images, etc. We configure CTest to copy test resources from 
+this directory by adding the following to `pxr/usd/usdGeom/CMakeLists.txt`.
+
+\code{.unparsed}
+pxr_install_test_dir(
+    SRC testenv/testUsdGeomMyFeature
+    DEST testUsdGeomMyFeature
+)
+\endcode
+
+In CMakeLists.txt we register our new test by adding the following registration 
+steps:
+
+\code{.unparsed}
+pxr_register_test(testUsdGeomMyFeature
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomMyFeature"
+    EXPECTED_RETURN_CODE 0
+)
+\endcode
+
+We add the build steps for our test to CMakeLists.txt using `pxr_build_test`:
+
+\code{.unparsed}
+pxr_build_test(testUsdGeomMyFeature
+    LIBRARIES
+        usd
+        usdGeom
+    CPPFILES
+        testenv/testUsdGeomMyFeature.cpp
+)
+\endcode
+
+At this point, we can now build USD with our new test:
+
+\code{.unparsed}
+$ python3 build_scripts/build_usd.py /my-build-directory --no-examples --no-tutorials --tools --python --no-docs --tests
+
+  ...
+  Building                      Shared libraries
+    Variant                     Release
+    Target                      native
+    Imaging                     On
+      Ptex support:             Off
+      OpenVDB support:          Off
+      OpenImageIO support:      On 
+      OpenColorIO support:      Off 
+      PRMan support:            Off
+    UsdImaging                  On
+      usdview:                  On
+    MaterialX support           On
+    Python support              On
+      Python Debug:             Off
+      Python docs:              Off
+    Documentation               Off
+    Tests                       On
+    ...
+\endcode
+
+Once the build is complete and we've set the appropriate environment variables 
+(`PYTHONPATH` and `PATH`) for our build, we can cd to our build directory and 
+run our test:
+
+\code{.unparsed}
+$ cd /my-build-directory/build/USD
+$ ctest -C Release -R testUsdGeomMyFeature
+Test project /my-build-directory/build/USD
+    Start 501: testUsdGeomMyFeature
+1/1 Test #501: testUsdGeomMyFeature .............   Passed    0.48 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.53 sec
+\endcode
+
+\section Testing_Expectations Test Expectations for Open Source Submissions
+
+Please include unit tests for your changes in your submission. Don't forget to 
+include any additional resources (USD files, image files, etc) that your tests 
+use with your submission.
+
+Please make sure all unit tests are passing (including any tests you have added) 
+before submitting a PR. Note that currently the USD github CI/CD for PRs only 
+does verification builds and does not run tests. Please run and verify tests on 
+all platforms (Linux, macOS, Windows) if possible.
+
+If you do any additional testing, using your own test integrations, please note 
+the types of tests run and their results in the comments submitted with your 
+commits/PRs. This helps inform code reviewers and helps with troubleshooting 
+down the line.
+
+For submissions, Pixar will run an internal suite of tests to try to find 
+correctness or performance regressions before code is checked into the central 
+code repository. These tests often take several hours to complete. If test 
+issues crop up, a Pixar developer will do initial research into the errors and 
+reach out for help if needed.
+
+*/

@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdSt/simpleLightingShader.h"
 #include "pxr/imaging/hdSt/binding.h"
@@ -32,18 +15,15 @@
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/domeLightComputations.h"
-#include "pxr/imaging/hdSt/dynamicUvTextureObject.h"
 #include "pxr/imaging/hdSt/renderBuffer.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
 
 #include "pxr/imaging/hio/glslfx.h"
 
-#include "pxr/imaging/glf/bindingMap.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 
 #include "pxr/base/tf/staticTokens.h"
@@ -56,6 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (domeLightCubemap)
     (domeLightIrradiance)
     (domeLightPrefilter) 
     (domeLightBRDF)
@@ -66,6 +47,12 @@ HdStSimpleLightingShader::HdStSimpleLightingShader()
     : _lightingContext(GlfSimpleLightingContext::New())
     , _useLighting(true)
     , _glslfx(std::make_unique<HioGlslfx>(HdStPackageSimpleLightingShader()))
+    , _shadowTextureHandle(
+        NamedTextureHandle{ 
+            HdStTokens->shadowCompareTextures,
+            HdStTextureType::Uv,
+            {},
+            HdStTokens->shadowCompareTextures.Hash()})
     , _renderParam(nullptr)
 {
 }
@@ -221,6 +208,14 @@ HdStSimpleLightingShader::AddBindings(HdStBindingRequestVector *customBindings)
     // For now we assume that the only simple light with a texture is
     // a domeLight (ignoring RectLights, and multiple domeLights)
     if (_HasDomeLight(_lightingContext) && _domeLightEnvironmentTextureHandle) {
+        // cubemap generated from texture
+        _lightTextureParams.push_back(
+            HdSt_MaterialParam(
+                HdSt_MaterialParam::ParamTypeTexture,
+                _tokens->domeLightCubemap,
+                VtValue(GfVec4f(0.0)),
+                TfTokenVector(),
+                HdStTextureType::Cubemap));
         // irradiance map
         _lightTextureParams.push_back(
             HdSt_MaterialParam(
@@ -228,7 +223,7 @@ HdStSimpleLightingShader::AddBindings(HdStBindingRequestVector *customBindings)
                 _tokens->domeLightIrradiance,
                 VtValue(GfVec4f(0.0)),
                 TfTokenVector(),
-                HdStTextureType::Uv));
+                HdStTextureType::Cubemap));
         // prefilter map
         _lightTextureParams.push_back(
             HdSt_MaterialParam(
@@ -236,7 +231,7 @@ HdStSimpleLightingShader::AddBindings(HdStBindingRequestVector *customBindings)
                 _tokens->domeLightPrefilter,
                 VtValue(GfVec4f(0.0)),
                 TfTokenVector(),
-                HdStTextureType::Uv));
+                HdStTextureType::Cubemap));
         // BRDF texture
         _lightTextureParams.push_back(
             HdSt_MaterialParam(
@@ -310,9 +305,11 @@ _GetResolvedDomeLightEnvironmentFilePath(
 const HdStTextureHandleSharedPtr &
 HdStSimpleLightingShader::GetTextureHandle(const TfToken &name) const
 {
+    // This is used specfically for dome lights, so ok to just return first 
+    // handle.
     for (auto const & namedTextureHandle : _namedTextureHandles) {
         if (namedTextureHandle.name == name) {
-            return namedTextureHandle.handle;
+            return namedTextureHandle.handles[0];
         }
     }
 
@@ -320,7 +317,32 @@ HdStSimpleLightingShader::GetTextureHandle(const TfToken &name) const
     return empty;
 }
 
-static
+const HdStTextureHandleSharedPtr &
+HdStSimpleLightingShader::GetDomeLightEnvironmentCubemapTextureHandle() const
+{
+    return GetTextureHandle(_tokens->domeLightCubemap);
+}
+
+namespace {
+
+template<HdStTextureType textureType>
+struct _SubtextureIdTypeHelper;
+
+template<HdStTextureType textureType>
+using _SubtextureIdType =
+    typename _SubtextureIdTypeHelper<textureType>::type;
+
+template<>
+struct _SubtextureIdTypeHelper<HdStTextureType::Uv> {
+    using type = HdStDynamicUvSubtextureIdentifier;
+};
+
+template<>
+struct _SubtextureIdTypeHelper<HdStTextureType::Cubemap> {
+    using type = HdStDynamicCubemapSubtextureIdentifier;
+};
+
+template <HdStTextureType textureType>
 HdStShaderCode::NamedTextureHandle
 _MakeNamedTextureHandle(
     const TfToken &name,
@@ -334,24 +356,29 @@ _MakeNamedTextureHandle(
 {
     const HdStTextureIdentifier textureId(
         TfToken(texturePath + "[" + name.GetString() + "]"),
-        std::make_unique<HdStDynamicUvSubtextureIdentifier>());
+        std::make_unique<_SubtextureIdType<textureType>>());
 
     const HdSamplerParameters samplerParameters(
         wrapModeS, wrapModeT, wrapModeR,
-        minFilter, HdMagFilterLinear);
+        minFilter, HdMagFilterLinear,
+        HdBorderColorTransparentBlack,
+        /*enableCompare*/false, HdCmpFuncNever,
+        /*maxAnisotropy*/1);
 
     HdStTextureHandleSharedPtr const textureHandle =
         resourceRegistry->AllocateTextureHandle(
             textureId,
-            HdStTextureType::Uv,
+            textureType,
             samplerParameters,
             /* memoryRequest = */ 0,
             shader);
 
     return { name,
-             HdStTextureType::Uv,
-             textureHandle,
+             textureType,
+             { textureHandle },
              name.Hash() };
+}
+
 }
 
 SdfPath
@@ -424,7 +451,7 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdRenderIndex const &renderInde
 
     if (!useShadows) {
         _CleanupAovBindings();
-        _shadowTextureHandles.clear();
+        _shadowTextureHandle.handles.clear();
     }
 
     if (resolvedPath.empty() && !useShadows) {
@@ -468,7 +495,10 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdRenderIndex const &renderInde
 
         static const HdSamplerParameters envSamplerParameters(
             HdWrapRepeat, HdWrapClamp, HdWrapClamp,
-            HdMinFilterLinearMipmapLinear, HdMagFilterLinear);
+            HdMinFilterLinearMipmapLinear, HdMagFilterLinear,
+            HdBorderColorTransparentBlack,
+            /*enableCompare*/false, HdCmpFuncNever,
+            /*maxAnisotropy*/1);
 
         _domeLightEnvironmentTextureHandle =
             resourceRegistry->AllocateTextureHandle(
@@ -479,23 +509,34 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdRenderIndex const &renderInde
                 shared_from_this());
 
         _domeLightTextureHandles = {
-            _MakeNamedTextureHandle(
-                _tokens->domeLightIrradiance,
+            _MakeNamedTextureHandle<HdStTextureType::Cubemap>(
+                _tokens->domeLightCubemap,
                 resolvedPath,
-                HdWrapRepeat, HdWrapClamp, HdWrapRepeat,
-                HdMinFilterLinear,
-                resourceRegistry,
-                shared_from_this()),
-
-            _MakeNamedTextureHandle(
-                _tokens->domeLightPrefilter,
-                resolvedPath,
-                HdWrapRepeat, HdWrapClamp, HdWrapRepeat,
+                // Wrap modes irrelevant for seamless cubemaps
+                HdWrapClamp, HdWrapClamp, HdWrapClamp,
                 HdMinFilterLinearMipmapLinear,
                 resourceRegistry,
                 shared_from_this()),
 
-            _MakeNamedTextureHandle(
+            _MakeNamedTextureHandle<HdStTextureType::Cubemap>(
+                _tokens->domeLightIrradiance,
+                resolvedPath,
+                // Wrap modes irrelevant for seamless cubemaps
+                HdWrapClamp, HdWrapClamp, HdWrapClamp,
+                HdMinFilterLinear,
+                resourceRegistry,
+                shared_from_this()),
+
+            _MakeNamedTextureHandle<HdStTextureType::Cubemap>(
+                _tokens->domeLightPrefilter,
+                resolvedPath,
+                // Wrap modes irrelevant for seamless cubemaps
+                HdWrapClamp, HdWrapClamp, HdWrapClamp,
+                HdMinFilterLinearMipmapLinear,
+                resourceRegistry,
+                shared_from_this()),
+
+            _MakeNamedTextureHandle<HdStTextureType::Uv>(
                 _tokens->domeLightBRDF,
                 resolvedPath,
                 HdWrapClamp, HdWrapClamp, HdWrapClamp,
@@ -558,7 +599,7 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdRenderIndex const &renderInde
                 HdWrapClamp, HdWrapClamp, HdWrapClamp,
                 HdMinFilterLinear, HdMagFilterLinear,
                 HdBorderColorOpaqueWhite, /*enableCompare*/true, 
-                HdCmpFuncLEqual};
+                HdCmpFuncLEqual, /*maxAnisotropy*/16};
 
             for (size_t i = prevNumShadowPasses; i < numShadowPasses; i++) {
                 HdStTextureHandleSharedPtr const textureHandle =
@@ -568,26 +609,16 @@ HdStSimpleLightingShader::AllocateTextureHandles(HdRenderIndex const &renderInde
                         shadowSamplerParameters,
                         /* memoryRequest = */ 0,
                         shared_from_this());
-
-                TfToken const shadowTextureName = TfToken(
-                    HdStTokens->shadowCompareTextures.GetString() + 
-                    std::to_string(i));
-                _shadowTextureHandles.push_back(
-                    NamedTextureHandle{ 
-                        shadowTextureName,
-                        HdStTextureType::Uv,
-                        textureHandle,
-                        shadowTextureName.Hash()});
+                _shadowTextureHandle.handles.push_back(textureHandle);
             }
         } else if (prevNumShadowPasses > numShadowPasses) {
-            _shadowTextureHandles.resize(numShadowPasses);
+            _shadowTextureHandle.handles.resize(numShadowPasses);
         }
     }
 
-    _namedTextureHandles.insert(
-        _namedTextureHandles.end(), 
-        _shadowTextureHandles.begin(),
-        _shadowTextureHandles.end());
+    if (useShadows) {
+        _namedTextureHandles.push_back(_shadowTextureHandle);
+    }
 }
 
 void
@@ -604,19 +635,9 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
             std::const_pointer_cast<HdStShaderCode, const HdStShaderCode>(
                 shared_from_this()));
 
-    // Irriadiance map computations.
-    ctx.AddComputation(
-        nullptr,
-        std::make_shared<HdSt_DomeLightComputationGPU>(
-            _tokens->domeLightIrradiance,
-            thisShader),
-        HdStComputeQueueZero);
-    
-    // Calculate the number of mips for the prefilter texture
-    // Note that the size of the prefilter texture is half the size of the 
-    // original Environment Map (srcTextureObject)
-    const HdStUvTextureObject * const srcTextureObject = 
-        dynamic_cast<HdStUvTextureObject*>(
+    // Calculate the number of mips for the cubemap texture.
+    const auto * const srcTextureObject = 
+        dynamic_cast<HdStAssetUvTextureObject*>(
             _domeLightEnvironmentTextureHandle->GetTextureObject().get());
     if (!TF_VERIFY(srcTextureObject)) {
         return;
@@ -629,9 +650,51 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
         return;
     }
     const GfVec3i srcDim = srcTexture->GetDescriptor().dimensions;
+    const int cubemapDim = HdSt_ComputeDomeLightCubemapDimensions(srcDim)[0];
+    const auto numCubemapLevels = (unsigned int)(std::log2(cubemapDim) + 1);
 
-    const unsigned int numPrefilterLevels = 
-        std::max((unsigned int)(std::log2(std::max(srcDim[0], srcDim[1]))), 1u);
+    // Cubemap generation from latlong texture.
+    ctx.AddComputation(
+        nullptr,
+        std::make_shared<HdSt_DomeLightComputationGPU>(
+            _tokens->domeLightCubemap,
+            /*useCubemapAsSourceTexture =*/false,
+            thisShader,
+            numCubemapLevels),
+        HdStComputeQueueZero
+    );
+
+    // BRDF computation.
+    ctx.AddComputation(
+        nullptr,
+        std::make_shared<HdSt_DomeLightComputationGPU>(
+            _tokens->domeLightBRDF,
+            /*useCubemapAsSourceTexture =*/false,
+            thisShader),
+        HdStComputeQueueZero
+    );
+
+    // Generate mipmaps the for the generated cubemap.
+    ctx.AddComputation(
+        nullptr,
+        std::make_shared<HdSt_DomeLightMipmapComputationGPU>(
+            thisShader),
+        HdStComputeQueueOne
+    );
+
+    // Irradiance map computation.
+    ctx.AddComputation(
+        nullptr,
+        std::make_shared<HdSt_DomeLightComputationGPU>(
+            _tokens->domeLightIrradiance,
+            /*useCubemapAsSourceTexture =*/true,
+            thisShader),
+        HdStComputeQueueTwo
+    );
+
+    // Note that since the prefilter texture is downsized, it has one less
+    // mip level than the cubemap.
+    const unsigned int numPrefilterLevels = std::max(numCubemapLevels - 1, 1u);
 
     // Prefilter map computations. mipLevel = 0 allocates texture.
     for (unsigned int mipLevel = 0; mipLevel < numPrefilterLevels; ++mipLevel) {
@@ -641,21 +704,15 @@ HdStSimpleLightingShader::AddResourcesFromTextures(ResourceContext &ctx) const
         ctx.AddComputation(
             nullptr,
             std::make_shared<HdSt_DomeLightComputationGPU>(
-                _tokens->domeLightPrefilter, 
+                _tokens->domeLightPrefilter,
+                /*useCubemapAsSourceTexture =*/true,
                 thisShader,
                 numPrefilterLevels,
                 mipLevel,
                 roughness),
-            HdStComputeQueueZero);
+            HdStComputeQueueTwo
+        );
     }
-
-    // Brdf map computation
-    ctx.AddComputation(
-        nullptr,
-        std::make_shared<HdSt_DomeLightComputationGPU>(
-            _tokens->domeLightBRDF,
-            thisShader),
-        HdStComputeQueueZero);
 }
 
 HdStShaderCode::NamedTextureHandleVector const &

@@ -1,0 +1,23 @@
+#usda 1.0
+
+def "MaterialX"
+{
+    def "Materials"
+    {
+        def Material "StdSurface"
+        {
+            float inputs:base = 0.2
+            color3f inputs:base_color = (0.2, 0.4, 0.2)
+            token outputs:mtlx:surface.connect = </MaterialX/Materials/StdSurface/StandardSurface.outputs:surface>
+
+            def Shader "StandardSurface" 
+            {
+                uniform token info:id = "ND_standard_surface_surfaceshader"
+                float inputs:base.connect = </MaterialX/Materials/StdSurface.inputs:base>
+                color3f inputs:base_color.connect = </MaterialX/Materials/StdSurface.inputs:base_color>
+                token outputs:surface
+            }
+        }
+    }
+}
+

@@ -1,0 +1,41 @@
+{
+    "Plugins": [
+        {
+            "Type": "resource",
+            "ResourcePath": ".", 
+            "Name": "testUsdValidationContext",
+            "Info": {
+                "Types": {
+                    "testBaseType": {
+                        "bases": ["UsdTyped"],
+                        "alias": {
+                            "UsdSchemaBase": "BaseTypeTest"
+                        }, 
+                        "schemaKind": "concreteTyped"
+                    },
+                    "testDerivedType": {
+                        "bases": ["testBaseType"],
+                        "alias": {
+                            "UsdSchemaBase": "DerivedTypeTest"
+                        }, 
+                        "schemaKind": "concreteTyped"
+                    },
+                    "testNestedDerivedType": {
+                        "bases": ["testDerivedType"],
+                        "alias": {
+                            "UsdSchemaBase": "NestedDerivedTypeTest"
+                        }, 
+                        "schemaKind": "concreteTyped"
+                    },
+                    "testAPISchemaAPI": {
+                        "schemaKind": "singleApplyAPI",
+                        "alias": {
+                            "UsdSchemaBase": "APISchemaTestAPI"
+                        }, 
+                        "bases": ["UsdAPISchemaBase"]
+                    }
+                }
+            }
+        }
+    ]
+}

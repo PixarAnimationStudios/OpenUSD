@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -28,113 +11,191 @@
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/debugCodes.h"
 #include "pxr/base/tf/instantiateSingleton.h"
-#include "pxr/base/tf/iterator.h"
+#include "pxr/base/tf/pyError.h"
+#include "pxr/base/tf/pyExceptionState.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/stackTrace.h"
-#include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include "pxr/base/arch/fileSystem.h"
 
-#include <boost/python/borrowed.hpp>
-#include <boost/python/dict.hpp>
-#include <boost/python/handle.hpp>
+#include "pxr/external/boost/python/borrowed.hpp"
+#include "pxr/external/boost/python/dict.hpp"
+#include "pxr/external/boost/python/handle.hpp"
 
-#include <deque>
+/*
+
+Notes for those who venture into this dark crevice:
+
+We build C++ libs that have python bindings into two shared libraries: 1, the
+shared library with the compiled C++ code (`libFoo.so`), and 2, a shared library
+with the C++/Python bindings (`_foo.so`).  We do this so that we can write pure
+C++ programs that link `libFoo.so` and do not pay to load the Python bindings.
+The bindings libraries (`_foo.so`) have a shared library link dependency on
+their corresponding C++ library (`libFoo.so`) so whenever a bindings lib loads,
+the shared library loader automatically loads the main C++ lib.
+
+The job of the code in this file is to ensure that the Python bindings for
+loaded C++ libraries are loaded whenever they are needed.
+
+When are they needed?  There are a few scenarios.
+
+The most obvious is when a Python module is imported.  Suppose libFoo depends on
+libBar, and both have Python bindings.  If we do `import Foo` in Python, we need
+to ensure that the `Bar` module is imported and registers its bindings before
+Foo registers its bindings, since Foo's bindings may depend on Bar's.  For
+example, if Foo wraps a class that derives a base class from Bar, that base
+class must be wrapped first.  This scenario could in principle be handled by
+manually writing `import Bar` in Foo's __init__.py.  But, that is prone both to
+being forgotten, and to going undetected if Bar happens to be already loaded in
+most of the scenarios when Foo is imported.  And, as we'll see, that doesn't
+solve the other main scenario.
+
+The other main scenario is when a C++ program initializes Python at some point
+during its execution.  In this case all currently loaded C++ libraries that have
+Python bindings must load them immediately.  Further, any C++ library that loads
+in the future (via dlopen()) must also immediately import its bindings at load
+time.  This might sound surprising.  Why should we need to eagerly import all
+bindings like this?  Surely if Python code needs to use the bindings it will
+`import` those modules itself, no?  Yes this is true, but there can be hidden,
+indirect, undetectable dependencies that this does not handle due to
+type-erasure.
+
+Consider a type-erased opaque 'box' container, analogous to `std::any`.  Let's
+call it `Any`.  When an Any is converted to Python, it unboxes its held object
+and converts that object to Python.  So for example if an Any holding a string
+is returned to Python, Python gets a string.  An Any holding a double unboxes as
+a Python float.  An Any holding a FooObject unboxes it and uses its bindings to
+convert it to Python.
+
+Now suppose we have libFoo and libBar.  Bar has an Any-valued variable, and
+provides a Python binding to access it: `Bar.GetAny()`.  Foo depends on Bar, and
+stores an Any holding a FooObject to Bar's Any.  Now suppose a Python script
+does `import Bar; Bar.GetAny()`.  The call to `Bar.GetAny()` will fail unless
+the bindings for the held FooObject have been imported.
+
+Whose responsibility is it to ensure they have been imported?  Bar cannot know
+to import them, since Bar does not depend on Foo -- it has no knowledge of Foo's
+existence.  The Python code that imported Bar similarly cannot have done it --
+there's no way for it to know ahead of time what type of object is stored in the
+Any, and it may not know of Foo's existence either.  The answer is that the
+_only_ place that we can know for sure the bindings are needed is at the very
+moment that a FooObject is requested to be converted to Python.  Unfortunately,
+we do not have a hook available for this today.  It might be possible to build
+one now that we have our own copy of boost.python interred, but that's not the
+world we currently live in.
+
+In the meantime, we must do as we said above and load _all_ bindings when Python
+is initialized, and then continue to load any bindings for any later-loaded C++
+libraries when they are loaded.
+
+The Mechanism:
+
+We build a small bit of initialization code into each C++ library with bindings
+to advertise themselves to the TfScriptModuleLoader.  These are the
+`moduleDeps.cpp` files in `pxr/...`.  The initializer calls
+TfScriptModuleLoader::RegisterLibrary(), passing the lib name, its python module
+name (suitable for `import`), and a list of the lib's direct dependencies.  This
+way the the loader knows both which libraries have bindings, and what they
+directly depend on.
+
+Then, in a few key places, code calls LoadModules() or LoadModulesForLibrary()
+to achieve the goals above.
+
+- Tf_PyInitWrapModule(), in tf/pyModule.cpp calls LoadModulesForLibrary().  This
+  function is called by Python when a bindings library is imported.  This covers
+  the "import" scenario above.
+
+- TfPyInitialize(), in tf/pyInterpreter.cpp calls LoadModules() to ensure that
+  all bindings are loaded if a C++ program starts up the Python interpreter at
+  some point.
+
+- TfDlopen(), in tf/dl.cpp calls LoadModules() to ensure that all bindings are
+  loaded for any newly loaded C++ libraries if Python is already initialized.
+
+*/
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(TfScriptModuleLoader);
 
-using std::deque;
+using std::pair;
 using std::string;
 using std::vector;
 
-using boost::python::borrowed;
-using boost::python::dict;
-using boost::python::handle;
-using boost::python::object;
+using pxr_boost::python::borrowed;
+using pxr_boost::python::dict;
+using pxr_boost::python::handle;
+using pxr_boost::python::object;
 
-
-TfScriptModuleLoader::TfScriptModuleLoader()
-{
-}
-
-// CODE_COVERAGE_OFF_GCOV_BUG
-TfScriptModuleLoader::~TfScriptModuleLoader()
-// CODE_COVERAGE_ON_GCOV_BUG
-{
-}
+TfScriptModuleLoader::TfScriptModuleLoader() = default;
+TfScriptModuleLoader::~TfScriptModuleLoader() = default;
 
 void
 TfScriptModuleLoader::
-RegisterLibrary(TfToken const &name, TfToken const &moduleName,
+RegisterLibrary(TfToken const &lib, TfToken const &moduleName,
                 vector<TfToken> const &predecessors)
 {
-
     if (TfDebug::IsEnabled(TF_SCRIPT_MODULE_LOADER)) {
         TF_DEBUG(TF_SCRIPT_MODULE_LOADER)
-            .Msg("Registering library %s with predecessors: ", name.GetText());
-        TF_FOR_ALL(pred, predecessors) {
-            TF_DEBUG(TF_SCRIPT_MODULE_LOADER).Msg("%s, ", pred->GetText());
-        }
-        TF_DEBUG(TF_SCRIPT_MODULE_LOADER).Msg("\n");
+            .Msg("SML: Registering lib %s with %spredecessors%s%s\n",
+                 lib.GetText(),
+                 predecessors.empty() ? "no " : "",
+                 predecessors.empty() ? "" : " ",
+                 TfStringJoin(predecessors.begin(),
+                              predecessors.end(), ", ").c_str());
     }
 
+    vector<TfToken> mutablePreds = predecessors;
+    std::sort(mutablePreds.begin(), mutablePreds.end());
+    
     // Add library with predecessors.
-    vector<TfToken> &predsInTable = _libInfo[name].predecessors;
-    predsInTable = predecessors;
-    std::sort(predsInTable.begin(), predsInTable.end());
-    _libsToModules[name] = moduleName;
+    TfSpinRWMutex::ScopedLock lock(_mutex);
+    bool success = _libInfo.emplace(
+        std::piecewise_construct,
+        std::make_tuple(lib),
+        std::make_tuple(moduleName, std::move(mutablePreds))).second;
+    lock.Release();
 
-    // Add this library as a successor to all predecessors.
-    TF_FOR_ALL(pred, predecessors)
-        _AddSuccessor(*pred, name);
-}
-
-vector<string>
-TfScriptModuleLoader::GetModuleNames() const
-{
-    vector<TfToken> order;
-    vector<string> ret;
-    _TopologicalSort(&order);
-    ret.reserve(order.size());
-    TF_FOR_ALL(lib, order) {
-        _TokenToTokenMap::const_iterator i = _libsToModules.find(*lib);
-        if (i != _libsToModules.end())
-            ret.push_back(i->second.GetString());
+    if (!success) {
+        TF_WARN("Library %s (with module '%s') already registered, repeated "
+                "registration ignored", lib.GetText(), moduleName.GetText());
     }
-    return ret;
 }
 
 dict
 TfScriptModuleLoader::GetModulesDict() const
 {
     if (!TfPyIsInitialized()) {
-        TF_CODING_ERROR("Python is not initialized!");
+        TF_CODING_ERROR("Python is not initialized.");
         return dict();
     }
 
-    // Kick the registry function so any loaded libraries with script
-    // bindings register themselves with the script module loading system.
+    // Subscribe to the registry function so any loaded libraries with script
+    // bindings publish to this singleton.
     TfRegistryManager::GetInstance().SubscribeTo<TfScriptModuleLoader>();
 
-    TfPyLock lock;
+    // Collect the libs & module names, then release the lock.
+    TfSpinRWMutex::ScopedLock lock(_mutex, /*write=*/false);
+    // Make paired lib & module names.
+    vector<pair<TfToken, TfToken>> libAndModNames;
+    libAndModNames.reserve(_libInfo.size());
+    for (auto const &[lib, info]: _libInfo) {
+        libAndModNames.emplace_back(lib, info.moduleName);
+    }
+    lock.Release();
+
+    // Take the python lock and build a dict.
+    TfPyLock pyLock;
 
     // Get the sys.modules dict from python, so we can see if modules are
     // already loaded.
     dict modulesDict(handle<>(borrowed(PyImport_GetModuleDict())));
-
-    vector<TfToken> order;
     dict ret;
-    _TopologicalSort(&order);
-    TF_FOR_ALL(lib, order) {
-        _TokenToTokenMap::const_iterator i = _libsToModules.find(*lib);
-        if (i != _libsToModules.end() &&
-            modulesDict.has_key(i->second.GetText())) {
-            handle<> modHandle(PyImport_ImportModule(const_cast<char *>
-                                                     (i->second.GetText())));
+
+    for (auto const &[lib, mod]: libAndModNames) {
+        if (modulesDict.has_key(mod.GetText())) {
+            handle<> modHandle(PyImport_ImportModule(mod.GetText()));
 
             // Use the upper-cased form of the library name as
             // the Python module name.
@@ -159,9 +220,7 @@ TfScriptModuleLoader::GetModulesDict() const
             //
             // For now, we just upper-case the library name.
             //
-            string moduleName = TfStringCapitalize(lib->GetString());
-
-            ret[moduleName] = object(modHandle);
+            ret[TfStringCapitalize(lib.GetString())] = object(modHandle);
         }
     }
     return ret;
@@ -175,16 +234,13 @@ TfScriptModuleLoader::WriteDotFile(string const &file) const
         TF_RUNTIME_ERROR("Could not open '%s' for writing.\n", file.c_str());
         return;
     }
-
     fprintf(out, "digraph Modules {\n");
-    
-    TF_FOR_ALL(info, _libInfo) {
-        TF_FOR_ALL(successor, info->second.successors) {
-            fprintf(out, "\t%s -> %s;\n", info->first.GetText(),
-                    successor->GetText());
+    TfSpinRWMutex::ScopedLock lock(_mutex, /*write=*/false);
+    for (auto const &[lib, info]: _libInfo) {
+        for (TfToken const &pred: info.predecessors) {
+            fprintf(out, "\t%s -> %s;\n", lib.GetText(), pred.GetText());
         }
     }
-
     fprintf(out, "}\n");
     fclose(out);
 }
@@ -192,257 +248,147 @@ TfScriptModuleLoader::WriteDotFile(string const &file) const
 void
 TfScriptModuleLoader::LoadModules()
 {
-    _LoadModulesFor(TfToken());
-}
-
-void
-TfScriptModuleLoader::LoadModulesForLibrary(TfToken const &name) {
-    _LoadModulesFor(name);
-}
-
-bool
-TfScriptModuleLoader::_HasTransitiveSuccessor(TfToken const &predecessor,
-                                              TfToken const &successor) const
-{
-    // This function does a simple DFS of the dependency dag, to determine if \a
-    // predecessor has \a successor somewhere in the transitive closure.
-
-    vector<TfToken> predStack(1, predecessor);
-    TfToken::HashSet seenPreds;
-
-    while (!predStack.empty()) {
-        TfToken pred = predStack.back();
-        predStack.pop_back();
-
-        // A name counts as its own successor.
-        if (pred == successor)
-            return true;
-
-        // Look up successors, and push ones not yet visted as possible
-        // predecessors.
-        _TokenToInfoMap::const_iterator i = _libInfo.find(pred);
-        if (i != _libInfo.end()) {
-            // Walk all the successors.
-            TF_FOR_ALL(j, i->second.successors) {
-                // Push those that haven't yet been visited on the stack.
-                if (seenPreds.insert(pred).second)
-                    predStack.push_back(pred);
-            }
-        }
-    }
-    return false;
-}
-
-static bool _DidPyErrorOccur()
-{
-    TfPyLock pyLock;
-    return PyErr_Occurred();
-}
-
-void
-TfScriptModuleLoader::_LoadUpTo(TfToken const &name)
-{
-    static size_t indent = 0;
-    string indentString;
-    char const *indentTxt = 0;
-
-    if (TfDebug::IsEnabled(TF_SCRIPT_MODULE_LOADER)) {
-        indentString = std::string(indent * 2, ' ');
-        indentTxt = indentString.c_str();
-    }
-
-    // Don't do anything if the name isn't empty and it's not a name we know
-    // about.
-    if (!name.IsEmpty() && !_libInfo.count(name)) {
-        TF_DEBUG(TF_SCRIPT_MODULE_LOADER)
-            .Msg("%s*** Not loading modules for unknown lib '%s'\n",
-                 indentTxt, name.GetText());
+    // Do nothing if Python is not initialized.
+    if (!TfPyIsInitialized()) {
         return;
     }
-
-    // Otherwise load modules in topological dependency order until we
-    // encounter the requested module.
-    vector<TfToken> order;
-    if (name.IsEmpty()) {
-        _TopologicalSort(&order);
-    } else {
-        _GetOrderedDependencies(vector<TfToken>(1, name), &order);
-    }
-
-    TF_DEBUG(TF_SCRIPT_MODULE_LOADER)
-        .Msg("%s_LoadUpTo('%s') {\n", indentTxt, name.GetText());
-    TF_FOR_ALL(lib, order) {
-        // If we encounter the library we're loading on behalf of, quit.
-        // Mostly this is the last library in the order, but it may not be.
-        if (*lib == name)
-            break;
-
-        if (_libsToModules.count(*lib) && !_loadedSet.count(*lib)) {
-            TF_DEBUG(TF_SCRIPT_MODULE_LOADER)
-                .Msg("%s  Load('%s');\n", indentTxt, lib->GetText());
-            _loadedSet.insert(*lib);
-            ++indent;
-            Tf_PyLoadScriptModule(_libsToModules[*lib]);
-            --indent;
-        }
-
-        if (_DidPyErrorOccur()) {
-            TF_DEBUG(TF_SCRIPT_MODULE_LOADER).Msg("%s  *error*\n", indentTxt);
-            break;
-        }
-    }
-
-    TF_DEBUG(TF_SCRIPT_MODULE_LOADER).Msg("%s}\n", indentTxt);
-}
-
-void
-TfScriptModuleLoader::_LoadModulesFor(TfToken const &inName)
-{
-    // Don't load anything if python isn't initialized.
-    if (!TfPyIsInitialized())
-        return;
-    if (_DidPyErrorOccur())
-        return;
-
-    //////////////////////////////////////////////////////////////////////////
-    // This function handles requests to load modules in topological dependency
-    // order up to \a inName.  Doing so may cause reentrant calls to this
-    // function.  Handling reentrancy works as follows.  There are two cases to
-    // consider.
-    //
-    // -----------------------------------------------------------------------
-    // Case 1: The reentrant request is for a module that depends (transitively)
-    // on the module we're currently loading (or is a request to load all
-    // modules).
-    //
-    //     In this case, we defer until after the current request is completed.
-    //     We do this because the dependent library may attempt to load the
-    //     library we're currently loading, which would fail.
-    //
-    // ------------------------------------------------------------------------
-    // Case 2: The reentrant request is for a module that does not depend on the
-    // module we're currently loading.
-    //
-    //     In this case, we immediately load the module and its dependencies.
-    //     This is a dynamically discovered dependency of the module we're
-    //     currently loading.
-    //
-    // We achieve this by keeping a queue of requests.  We always push the
-    // request on the back of the queue.  If we're the outermost call (i.e. not
-    // reentrant) we loop, processing the queue from the front to the back.  For
-    // a reentrant call, in case 1 (above), we return immediately, deferring the
-    // work.  In case 2 (above) we process the element on the back of the queue
-    // immediately and pop it.
-    //
-
-    // Add this request to the remaining work to do.
-    _remainingLoadWork.push_back(inName);
-
-    // Kick the registry function so any loaded libraries with script bindings
-    // register themselves with the script module loading system.
+    
+    // Subscribe to the registry function so any loaded libraries with script
+    // bindings publish to this singleton.
     TfRegistryManager::GetInstance().SubscribeTo<TfScriptModuleLoader>();
 
-    // If this is the outermost caller initiating loading, start processing the
-    // queue.
-    if (_remainingLoadWork.size() == 1) {
-        while (!_remainingLoadWork.empty() && !_DidPyErrorOccur()) {
-            // Note: we copy the front of the deque here, since _LoadUpTo may
-            // add items into the deque.  _LoadUpTo currently doesn't access the
-            // reference-to-token it's passed after it might have modified the
-            // deque, but this is good defensive coding in case it's changed in
-            // the future to do so.
-            TfToken name = _remainingLoadWork.front();
-            _LoadUpTo(name);
-            // We must pop the queue *after* processing, since reentrant calls
-            // need to see \a name on the front of the queue.  See the access of
-            // _remainingLoadWork.front() below.
-            _remainingLoadWork.pop_front();
+    TF_DEBUG(TF_SCRIPT_MODULE_LOADER).Msg("SML: Begin loading all modules\n");
+
+    // Take the lock, then collect all the modules that aren't yet loaded into a
+    // vector.  Then release the lock and call _LoadLibModules() to do the work.
+    TfSpinRWMutex::ScopedLock lock(_mutex);
+    vector<_LibAndInfo const *> toLoad;
+    for (auto iter = _libInfo.begin(), end = _libInfo.end();
+         iter != end; ++iter) {
+        if (!iter->second.isLoaded) {
+            toLoad.push_back(std::addressof(*iter));
         }
-
-        // Otherwise, this is a reentrant load request.  If the reentrant
-        // request is not to load everything (empty token) and it's also not a
-        // (transitive) dependency of the library we're currently working on,
-        // then load it immediately.
-    } else if (!_remainingLoadWork.back().IsEmpty() &&
-               !_HasTransitiveSuccessor(_remainingLoadWork.front(),
-                                        _remainingLoadWork.back())) {
-        TfToken name = _remainingLoadWork.back();
-        _remainingLoadWork.pop_back();
-        _LoadUpTo(name);
+        else {
+            TF_DEBUG(TF_SCRIPT_MODULE_LOADER_EXTRA)
+                .Msg("SML: Skipping already-loaded %s\n",
+                     iter->first.GetText());
+        }
     }
-}
+    lock.Release();
 
-void
-TfScriptModuleLoader::
-_AddSuccessor(TfToken const &lib, TfToken const &successor)
-{
-    if (ARCH_UNLIKELY(lib == successor)) {
-        // CODE_COVERAGE_OFF Can only happen if there's a bug.
-        TF_FATAL_ERROR("Library '%s' cannot depend on itself.", lib.GetText());
-        return;
-        // CODE_COVERAGE_ON
-    }
+    // Sort modules by lib name to provide a consistent load order.  This isn't
+    // required for correctness but eliminates a source of nondeterminism.
+    std::sort(toLoad.begin(), toLoad.end(),
+              [](_LibAndInfo const *l, _LibAndInfo const *r) {
+                  return l->first < r->first;
+              });
+    _LoadLibModules(toLoad);
 
-    // Add dependent as a dependent of lib.
-    vector<TfToken> *successors = &(_libInfo[lib].successors);
-    successors->insert(std::lower_bound(successors->begin(),
-                                        successors->end(), successor),
-                       successor);
+    TF_DEBUG(TF_SCRIPT_MODULE_LOADER).Msg("SML: End loading all modules\n");
 }
 
 void
 TfScriptModuleLoader
-::_GetOrderedDependenciesRecursive(TfToken const &lib,
-                                   TfToken::HashSet *seenLibs,
-                                   vector<TfToken> *result) const
+::_LoadLibModules(vector<_LibAndInfo const *> const &toLoad) const
 {
-    // If we've not yet visited this library, then visit its predecessors, and
-    // finally add it to the order.
-    if (seenLibs->insert(lib).second) {
-        TF_FOR_ALL(i, _libInfo.find(lib)->second.predecessors)
-            _GetOrderedDependenciesRecursive(*i, seenLibs, result);
+    if (toLoad.empty()) {
+        return;
+    }
+    
+    TfPyLock pyLock;
+    
+    for (_LibAndInfo const *libAndInfo: toLoad) {
+        auto const &[lib, info] = *libAndInfo;
 
-        result->push_back(lib);
+        if (info.moduleName.IsEmpty()) {
+            TF_DEBUG(TF_SCRIPT_MODULE_LOADER)
+                .Msg("SML: Not loading unknown module for lib %s\n",
+                     lib.GetText());
+            continue;
+        }
+        if (info.isLoaded) {
+            TF_DEBUG(TF_SCRIPT_MODULE_LOADER_EXTRA)
+                .Msg("SML: Lib %s's module '%s' is already loaded\n",
+                     lib.GetText(), info.moduleName.GetText());
+            continue;
+        }
+        
+        TF_DEBUG(TF_SCRIPT_MODULE_LOADER)
+            .Msg("SML: Loading lib %s's module '%s'\n",
+                 lib.GetText(), info.moduleName.GetText());
+
+        // Try to load the module.
+        if (!PyImport_ImportModule(info.moduleName.GetText())) {
+            // If an error occurred, warn about it with the python traceback,
+            // and continue.
+            TF_DEBUG(TF_SCRIPT_MODULE_LOADER)
+                .Msg("SML: Error loading lib %s's module '%s'\n",
+                     lib.GetText(), info.moduleName.GetText());
+            TfPyExceptionState exc = TfPyExceptionState::Fetch();
+            string traceback = exc.GetExceptionString();
+            TF_WARN("Error loading lib %s's module '%s':\n%s",
+                    lib.GetText(), info.moduleName.GetText(),
+                    traceback.c_str());
+        }
+        
+        // Mark the module loaded, even if there was an error.  Otherwise we'll
+        // keep trying to load it and keep generating the same error.
+        info.isLoaded = true;
     }
 }
 
-void
-TfScriptModuleLoader::
-_GetOrderedDependencies(vector<TfToken> const &input,
-                        vector<TfToken> *result) const
+TfScriptModuleLoader::_LibInfo const *
+TfScriptModuleLoader::_FindInfo(TfToken const &lib) const
 {
-    TfToken::HashSet seenLibs;
-    TF_FOR_ALL(i, input) {
-        // If we haven't seen the current input yet, add its predecessors (and
-        // their dependencies) to the result.
-        if (seenLibs.insert(*i).second) {
-            TF_FOR_ALL(j, _libInfo.find(*i)->second.predecessors)
-                _GetOrderedDependenciesRecursive(*j, &seenLibs, result);
+    auto iter = _libInfo.find(lib);
+    return iter != _libInfo.end() ? &iter->second : nullptr;
+}
+
+void
+TfScriptModuleLoader::LoadModulesForLibrary(TfToken const &lib)
+{
+    // Do nothing if Python is not running.
+    if (!TfPyIsInitialized()) {
+        return;
+    }
+
+    // Special-case calling LoadModulesForLibrary with empty token means all.
+    if (lib.IsEmpty()) {
+        TF_DEBUG(TF_SCRIPT_MODULE_LOADER).Msg(
+            "SML: Request to load modules for empty lib name -> load all\n");
+        return LoadModules();
+    }
+
+    // Subscribe to the registry function so any loaded libraries with script
+    // bindings publish to this singleton.
+    TfRegistryManager::GetInstance().SubscribeTo<TfScriptModuleLoader>();
+    
+    // We only load direct dependencies, since when we run the initializer for
+    // the python bindings lib, it will call back into here to load _its_
+    // dependencies, and we get the transitive loading that way.
+
+    TF_DEBUG(TF_SCRIPT_MODULE_LOADER).Msg(
+        "SML: Begin loading %s's predecessors\n", lib.GetText());
+
+    // Take the lock, then collect all the modules that this lib directly
+    // depends on that aren't already loaded, add them to `toLoad`, then release
+    // the lock and load all the modules.
+    TfSpinRWMutex::ScopedLock lock(_mutex);
+    vector<_LibAndInfo const *> toLoad;
+    if (_LibInfo const *libInfo = _FindInfo(lib)) {
+        for (TfToken const &pred: libInfo->predecessors) {
+            auto iter = _libInfo.find(pred);
+            if (iter != _libInfo.end() && !iter->second.isLoaded) {
+                toLoad.push_back(std::addressof(*iter));
+            }
         }
     }
-}
+    lock.Release();
+    
+    _LoadLibModules(toLoad);
 
-
-void
-TfScriptModuleLoader::
-_TopologicalSort(vector<TfToken> *result) const
-{
-    // Find all libs with no successors, then produce all ordered dependencies
-    // from them.
-    vector<TfToken> leaves;
-    TF_FOR_ALL(i, _libInfo) {
-        if (i->second.successors.empty())
-            leaves.push_back(i->first);
-    }
-
-    // Sort to ensure determinism.
-    std::sort(leaves.begin(), leaves.end());
-
-    // Find all the leaves' dependencies.
-    _GetOrderedDependencies(leaves, result);
-
-    // Add the leaves themselves, at the end.
-    result->insert(result->end(), leaves.begin(), leaves.end());
+    TF_DEBUG(TF_SCRIPT_MODULE_LOADER).Msg(
+        "SML: End loading %s's predecessors\n", lib.GetText());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

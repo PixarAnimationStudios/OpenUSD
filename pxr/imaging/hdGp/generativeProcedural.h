@@ -1,29 +1,13 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HD_GP_GENERATIVE_PROCEDURAL_H
 #define PXR_IMAGING_HD_GP_GENERATIVE_PROCEDURAL_H
 
+#include "pxr/pxr.h"
 #include "pxr/imaging/hdGp/api.h"
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/base/tf/denseHashMap.h"
@@ -71,6 +55,7 @@ public:
     //
     // For a single instance, UpdateDependencies will not be called from
     // multiple threads -- nor concurrent to Update
+    HDGP_API
     virtual DependencyMap UpdateDependencies(
         const HdSceneIndexBaseRefPtr &inputScene) = 0;
 
@@ -111,6 +96,7 @@ public:
     //
     // For a single instance, Update will not be called from
     // multiple threads -- nor concurrent to UpdateDependencies
+    HDGP_API
     virtual ChildPrimTypeMap Update(
         const HdSceneIndexBaseRefPtr &inputScene,
         const ChildPrimTypeMap &previousResult,
@@ -121,12 +107,14 @@ public:
     // added or invalidated from the Update method.
     // 
     // This should expect to be called from multiple threads
+    HDGP_API
     virtual HdSceneIndexPrim GetChildPrim(
         const HdSceneIndexBaseRefPtr &inputScene,
         const SdfPath &childPrimPath) = 0;
 
     // Returns a locator which can be used in the UpdateDependencies result to
     // declare a dependency on the set of immediate children for a prim path.
+    HDGP_API
     static const HdDataSourceLocator &GetChildNamesDependencyKey();
 
 
@@ -146,8 +134,8 @@ public:
     // indicated that they are finished via a return value from AsyncUpdate)
     // are given an opportunity begin asynchronous processing (via receiving
     // another call to this method) following any call to UpdateDependencies.
+    HDGP_API
     virtual bool AsyncBegin(bool asyncEnabled);
-
 
     enum AsyncState
     {
@@ -185,12 +173,11 @@ public:
     // changing. Should a procedural wish to continue receiving the AsyncUpdate
     // call regardless of whether declared dependencies are dirtied, it should
     // return Continuing or ContinuingWithNewChanges;
+    HDGP_API
     virtual AsyncState AsyncUpdate(
         const ChildPrimTypeMap &previousResult,
         ChildPrimTypeMap *outputPrimTypes,
         HdSceneIndexObserver::DirtiedPrimEntries *outputDirtiedPrims);
-
-
 
 protected:
     HDGP_API

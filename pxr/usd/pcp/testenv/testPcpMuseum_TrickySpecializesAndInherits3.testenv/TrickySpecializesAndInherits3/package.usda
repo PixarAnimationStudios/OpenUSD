@@ -1,0 +1,27 @@
+#usda 1.0
+
+class "SetClass" (
+    prepend references = @model.usda@</SetModel>
+)
+{
+    over "Metal"
+    {
+    }
+
+    over "CorrodedMetal"
+    {
+    }
+}
+
+def "SetPackage" (
+    prepend inherits = </SetClass>
+)
+{
+    over "Metal"
+    {
+    }
+
+    over "CorrodedMetal"
+    {
+    }
+}

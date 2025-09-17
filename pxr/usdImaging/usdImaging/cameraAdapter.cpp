@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdImaging/cameraAdapter.h"
 
@@ -259,9 +242,30 @@ UsdImagingCameraAdapter::Get(UsdPrim const& prim,
         cam.GetShutterCloseAttr().Get(&vShutterClose, time); // conversion n/a
         return vShutterClose;
     } else if (key == HdCameraTokens->exposure) {
-        VtValue v;
-        cam.GetExposureAttr().Get(&v, time); // conversion n/a
-        return v;
+        // The raw exponential compensation attribute.
+        // See "linearExposureScale" below for the computed linear multiplier.
+        VtValue vExposureExponent;
+        cam.GetExposureAttr().Get(&vExposureExponent, time); // conversion n/a
+        return vExposureExponent;
+    } else if (key == HdCameraTokens->exposureTime) {
+        VtValue vExposureTime;
+        cam.GetExposureTimeAttr().Get(&vExposureTime, time); // conversion n/a
+        return vExposureTime;
+    } else if (key == HdCameraTokens->exposureIso) {
+        VtValue vExposureIso;
+        cam.GetExposureIsoAttr().Get(&vExposureIso, time); // conversion n/a
+        return vExposureIso;
+    } else if (key == HdCameraTokens->exposureFStop) {
+        VtValue vExposureFStop;
+        cam.GetExposureFStopAttr().Get(&vExposureFStop, time); // conversion n/a
+        return vExposureFStop;
+    } else if (key == HdCameraTokens->exposureResponsivity) {
+        VtValue vExposureResponsivity;
+        cam.GetExposureResponsivityAttr().Get(&vExposureResponsivity, time); // conversion n/a
+        return vExposureResponsivity;
+    } else if (key == HdCameraTokens->linearExposureScale) {
+        // The computed linear exposure multiplier.
+        return VtValue(cam.ComputeLinearExposureScale(time));
     }
 
     VtValue v;
@@ -293,7 +297,11 @@ UsdImagingCameraAdapter::ProcessPropertyChange(UsdPrim const& prim,
         propertyName == UsdGeomTokens->focusDistance ||
         propertyName == UsdGeomTokens->shutterOpen ||
         propertyName == UsdGeomTokens->shutterClose ||
-        propertyName == UsdGeomTokens->exposure)
+        propertyName == UsdGeomTokens->exposure ||
+        propertyName == UsdGeomTokens->exposureTime ||
+        propertyName == UsdGeomTokens->exposureIso ||
+        propertyName == UsdGeomTokens->exposureFStop ||
+        propertyName == UsdGeomTokens->exposureResponsivity)
         
         return HdCamera::DirtyParams;
 

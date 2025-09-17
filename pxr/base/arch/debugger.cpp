@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 /// \file debugger.cpp
 
@@ -39,20 +22,27 @@
 #endif
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <charconv>
 #include <cstdio>
 #include <cstdlib>
 #include <csignal>
 #include <cstring>
 #include <errno.h>
 #include <fcntl.h>
+#include <fstream>
 #include <unistd.h>
 #include <string>
+#include <string_view>
+#include <system_error>
 #endif
 #if defined(ARCH_OS_DARWIN)
 #include <sys/sysctl.h>
 #endif
 #if defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
+#endif
+#if defined(ARCH_OS_WASM_VM)
+#include <emscripten.h>
 #endif
 #include <atomic>
 
@@ -344,50 +334,61 @@ Arch_DebuggerAttachExecPosix(void* data)
 
 #if defined(ARCH_OS_LINUX)
 
+// Reads /proc/self/status, finds the line starting with "field:", and
+// returns the portion following the ":".
+// Note that the returned string will generally include leading whitespace
+static
+std::string Arch_ReadProcStatusField(const std::string_view field)
+{
+    std::ifstream procStatusFile("/proc/self/status");
+    if (!procStatusFile) {
+        ARCH_WARNING("Unable to open /proc/self/status");
+        return std::string();
+    }
+    for (std::string line; std::getline(procStatusFile, line);) {
+        // the field needs to start with the given fieldLen AND the ':' char
+        if (line.size() < field.size() + 1) {
+            continue;
+        }
+
+        if (line.compare(0, field.size(), field) == 0 &&
+            line[field.size()] == ':') {
+            // We found our "field:" line
+            return line.substr(field.size() + 1);
+        }
+    }
+
+    ARCH_WARNING((std::string("Unable to find given field in "
+                              "/proc/self/status: ") += field).c_str());
+    return std::string();
+}
+
+// Reads the "TracerPid:" field from /proc/self/status
+// Returns a result < 0 if there was an error.
+static
+int Arch_ReadTracerPid() {
+
+    const std::string field = Arch_ReadProcStatusField("TracerPid");
+
+    // Trim any leading spaces or tabs in a locale-independent way.
+    char const *b = field.c_str();
+    char const * const e = field.c_str() + field.size();
+    while (b != e && (*b == '\t' || *b == ' ')) {
+        ++b;
+    }
+
+    // Try to convert to int.
+    int tracerPid = 0;
+    auto [ptr, err] = std::from_chars(b, e, tracerPid);
+
+    return err == std::errc() ? tracerPid : -1;
+}
+
 static
 bool
 Arch_DebuggerIsAttachedPosix()
 {
-    // Check for a ptrace based debugger by trying to ptrace.
-    pid_t parent = getpid();
-    pid_t pid = nonLockingFork();
-    if (pid < 0) {
-        // fork failed.  We'll guess there's no debugger.
-        return false;
-    }
-
-    // Child process.
-    if (pid == 0) {
-        // Attach to the parent with ptrace() this will fail if the
-        // parent is already being traced.
-        if (ptrace(PTRACE_ATTACH, parent, NULL, NULL) == -1) {
-            // A debugger is probably attached if the error is EPERM.
-            _exit(errno == EPERM ? 1 : 0);
-        }
-
-        // Wait for the parent to stop as a result of the attach.
-        int status;
-        while (waitpid(parent, &status, 0) == -1 && errno == EINTR) {
-            // Do nothing
-        }
-
-        // Detach and continue the parent.
-        ptrace(PTRACE_DETACH, parent, 0, SIGCONT);
-
-        // A debugger was not attached.
-        _exit(0);
-    }
-
-    // Parent process
-    int status;
-    while (waitpid(pid, &status, 0) == -1 && errno == EINTR) {
-        // Do nothing
-    }
-    if (WIFEXITED(status)) {
-        return WEXITSTATUS(status) != 0;
-    }
-    return false;
-
+    return Arch_ReadTracerPid() > 0;
 }
 
 #elif defined(ARCH_OS_DARWIN)
@@ -593,6 +594,8 @@ ArchDebuggerTrap()
             DebugBreak();
 #elif defined(ARCH_CPU_INTEL)
             asm("int $3");
+#elif defined(ARCH_OS_WASM_VM)
+            emscripten_debugger();
 #else
             raise(SIGTRAP);
 #endif
@@ -640,7 +643,7 @@ ArchAbort(bool logging)
 {
     if (!_ArchAvoidJIT() || ArchDebuggerIsAttached()) {
         if (!logging) {
-#if !defined(ARCH_OS_WINDOWS)
+#if !defined(ARCH_OS_WINDOWS) && !defined(ARCH_OS_WASM_VM)
             // Remove signal handler.
             struct sigaction act;
             act.sa_handler = SIG_DFL;
@@ -650,11 +653,19 @@ ArchAbort(bool logging)
 #endif
         }
 
+#if defined(ARCH_OS_WASM_VM)
+        emscripten_force_exit(134);
+#else
         abort();
+#endif
     }
 
     // The exit code for abort() (128 + SIGABRT).
-    _exit(134);
+    #if defined(ARCH_OS_WASM_VM)
+        emscripten_force_exit(134);
+    #else
+        _exit(134);
+    #endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

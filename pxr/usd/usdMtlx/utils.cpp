@@ -1,25 +1,8 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usdMtlx/utils.h"
@@ -27,8 +10,8 @@
 #include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolvedPath.h"
-#include "pxr/usd/ndr/debugCodes.h"
-#include "pxr/usd/ndr/filesystemDiscoveryHelpers.h"
+#include "pxr/usd/sdr/debugCodes.h"
+#include "pxr/usd/sdr/filesystemDiscoveryHelpers.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdr/shaderProperty.h"
@@ -44,6 +27,8 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/thisPlugin.h"
 #include <MaterialXCore/Util.h>
 #include <MaterialXFormat/Util.h>
 #include <MaterialXFormat/XmlIo.h>
@@ -54,15 +39,14 @@ namespace mx = MaterialX;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(UsdMtlxTokens, USD_MTLX_TOKENS);
-
 namespace {
 
+std::mutex documentCacheMutex;
 using DocumentCache = std::map<std::string, mx::DocumentPtr>;
 
 static
 DocumentCache&
-_GetCache()
+_GetDocumentCache()
 {
     static DocumentCache cache;
     return cache;
@@ -167,31 +151,31 @@ _GetUsdValue(const std::string& valueString, const std::string& type)
 // Return the contents of a search path environment variable
 // as a vector of strings.  The path is split on the platform's
 // native path list separator.
-static const NdrStringVec
+static const SdrStringVec
 _GetSearchPathsFromEnvVar(const char* name)
 {
     const std::string paths = TfGetenv(name);
     return !paths.empty() 
                 ? TfStringSplit(paths, ARCH_PATH_LIST_SEP) 
-                : NdrStringVec();
+                : SdrStringVec();
 }
 
 // Combines two search path lists.
-static const NdrStringVec
-_MergeSearchPaths(const NdrStringVec& stronger, const NdrStringVec& weaker)
+static const SdrStringVec
+_MergeSearchPaths(const SdrStringVec& stronger, const SdrStringVec& weaker)
 {
-    NdrStringVec result = stronger;
+    SdrStringVec result = stronger;
     result.insert(result.end(), weaker.begin(), weaker.end());
     return result;
 }
 
-static const NdrStringVec
+static const SdrStringVec
 _ComputeStdlibSearchPaths()
 {
     // Get the MaterialX/libraries path(s)
     // This is used to indicate the location of the MaterialX/libraries folder 
     // if moved/changed from the path initialized in PXR_MATERIALX_STDLIB_DIR.
-    NdrStringVec stdlibSearchPaths =
+    SdrStringVec stdlibSearchPaths =
         _GetSearchPathsFromEnvVar("PXR_MTLX_STDLIB_SEARCH_PATHS");
 
     // Add path to the MaterialX standard library discovered at build time.
@@ -199,17 +183,29 @@ _ComputeStdlibSearchPaths()
     stdlibSearchPaths =
         _MergeSearchPaths(stdlibSearchPaths, { PXR_MATERIALX_STDLIB_DIR });
 #endif
+
+    // The MaterialX plugin contains the MaterialX standard
+    // library under the libraries location in its resource folder
+    // Append it as the lowest priority path so it can be overridden
+    // with environment variables
+    static PlugPluginPtr plugin = PLUG_THIS_PLUGIN;
+    const std::string resourceMtlxLibrary = PlugFindPluginResource(plugin,
+            "libraries");
+    if (! resourceMtlxLibrary.empty()) {
+        stdlibSearchPaths =
+            _MergeSearchPaths(stdlibSearchPaths, { resourceMtlxLibrary });
+    }
     return stdlibSearchPaths;
 }
 
-const NdrStringVec&
+const SdrStringVec&
 UsdMtlxStandardLibraryPaths()
 {
     static const auto materialxLibraryPaths = _ComputeStdlibSearchPaths();
     return materialxLibraryPaths;
 }
 
-const NdrStringVec&
+const SdrStringVec&
 UsdMtlxCustomSearchPaths()
 {
     // Get the location of any additional custom mtlx files outside 
@@ -219,7 +215,7 @@ UsdMtlxCustomSearchPaths()
     return materialxCustomSearchPaths;
 }
 
-const NdrStringVec&
+const SdrStringVec&
 UsdMtlxSearchPaths()
 {
     static const auto materialxSearchPaths = 
@@ -228,10 +224,10 @@ UsdMtlxSearchPaths()
     return materialxSearchPaths;
 }
 
-NdrStringVec
+SdrStringVec
 UsdMtlxStandardFileExtensions()
 {
-    static const auto extensions = NdrStringVec{ "mtlx" };
+    static const auto extensions = SdrStringVec{ "mtlx" };
     return extensions;
 }
 
@@ -371,20 +367,22 @@ UsdMtlxReadDocument(const std::string& resolvedPath)
 mx::ConstDocumentPtr 
 UsdMtlxGetDocumentFromString(const std::string &mtlxXml)
 {
+    std::lock_guard<std::mutex> docLoc(documentCacheMutex);
+
     const std::string hashStr =
         std::to_string(std::hash<std::string>{}(mtlxXml));
     // Look up in the cache, inserting a null document if missing.
-    auto insertResult = _GetCache().emplace(hashStr, nullptr);
-    auto& document = insertResult.first->second;
-    if (insertResult.second) {       
+    auto insertResult = _GetDocumentCache().emplace(hashStr, nullptr);
+    mx::DocumentPtr& document = insertResult.first->second;
+    if (insertResult.second) {
         // cache miss
         try {
-            auto doc = mx::createDocument();
+            mx::DocumentPtr doc = mx::createDocument();
             _ReadFromString(doc, mtlxXml);
             document = doc;
         }
         catch (mx::Exception& x) {
-            TF_DEBUG(NDR_PARSING).Msg("MaterialX error reading source XML: %s",
+            TF_DEBUG(SDR_PARSING).Msg("MaterialX error reading source XML: %s",
                                     x.what());
         }
     }
@@ -393,9 +391,9 @@ UsdMtlxGetDocumentFromString(const std::string &mtlxXml)
 }
 
 static void
-_ImportLibraries(const NdrStringVec& searchPaths, mx::Document* document)
+_ImportLibraries(const SdrStringVec& searchPaths, mx::Document* document)
 {
-    for (auto&& fileResult : NdrFsHelpersDiscoverFiles(searchPaths,
+    for (auto&& fileResult : SdrFsHelpersDiscoverFiles(searchPaths,
                                 UsdMtlxStandardFileExtensions(), false)) {
 
         // Read the file. If this fails due to an exception, a runtime
@@ -422,9 +420,11 @@ _ImportLibraries(const NdrStringVec& searchPaths, mx::Document* document)
 mx::ConstDocumentPtr
 UsdMtlxGetDocument(const std::string& resolvedUri)
 {
+    std::lock_guard<std::mutex> docLoc(documentCacheMutex);
+
     // Look up in the cache, inserting a null document if missing.
-    auto insertResult = _GetCache().emplace(resolvedUri, nullptr);
-    auto& document = insertResult.first->second;
+    auto insertResult = _GetDocumentCache().emplace(resolvedUri, nullptr);
+    mx::DocumentPtr& document = insertResult.first->second;
     if (!insertResult.second) {
         // Cache hit.
         return document;
@@ -444,7 +444,7 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
 
     if (!m.IsClean()) {
         for (const auto& error : m) {
-            TF_DEBUG(NDR_PARSING).Msg("%s\n", error.GetCommentary().c_str());
+            TF_DEBUG(SDR_PARSING).Msg("%s\n", error.GetCommentary().c_str());
         }
         m.Clear();
     }
@@ -452,14 +452,14 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
     return document;
 }
 
-NdrVersion
+SdrVersion
 UsdMtlxGetVersion(
     const mx::ConstInterfaceElementPtr& mtlx, bool* implicitDefault)
 {
     TfErrorMark mark;
 
     // Use the default invalid version by default.
-    auto version = NdrVersion().GetAsDefault();
+    auto version = SdrVersion().GetAsDefault();
 
     // Get the version, if any, otherwise use the invalid version.
     std::string versionString = mtlx->getVersionString();
@@ -467,7 +467,7 @@ UsdMtlxGetVersion(
         // No version specified.  Use the default.
     }
     else {
-        if (auto tmp = NdrVersion(versionString)) {
+        if (auto tmp = SdrVersion(versionString)) {
             version = tmp;
         }
         else {
@@ -527,8 +527,6 @@ UsdMtlxGetUsdType(const std::string& mtlxTypeName)
     static const auto table =
         std::unordered_map<std::string, UsdMtlxUsdTypeInfo>{
            { "boolean",       TUPLEX(Bool,          true,  noMatch) },
-           { "color2array",   TUPLEX(Float2Array,   false, noMatch) },
-           { "color2",        TUPLEN(Float2,        false, Float, 2)},
            { "color3array",   TUPLE3(Color3fArray,  true,  Color)   },
            { "color3",        TUPLE3(Color3f,       true,  Color)   },
            { "color4array",   TUPLE3(Color4fArray,  true,  Color4)  },

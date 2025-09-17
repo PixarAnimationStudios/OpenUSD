@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HGIVULKAN_DEVICE_H
 #define PXR_IMAGING_HGIVULKAN_DEVICE_H
@@ -29,6 +12,8 @@
 #include "pxr/imaging/hgiVulkan/api.h"
 #include "pxr/imaging/hgiVulkan/vulkan.h"
 
+#include <mutex>
+#include <unordered_map>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -59,6 +44,15 @@ public:
     /// Returns the vulkan memory allocator.
     HGIVULKAN_API
     VmaAllocator GetVulkanMemoryAllocator() const;
+
+    /// Returns a VMA pool for images that use API Interop.
+    HGIVULKAN_API
+    VmaPool GetVMAPoolForInterop(VkImageCreateInfo imageInfo);
+
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    HGIVULKAN_API
+    HANDLE GetWin32HandleForMemory(VkDeviceMemory memory);
+#endif
 
     /// Returns the command queue which manages command buffers submission.
     HGIVULKAN_API
@@ -91,6 +85,14 @@ public:
 
     /// Device extension function pointers
     PFN_vkCreateRenderPass2KHR vkCreateRenderPass2KHR = 0;
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    PFN_vkGetMemoryWin32HandleKHR vkGetMemoryWin32HandleKHR = 0;
+    PFN_vkGetSemaphoreWin32HandleKHR vkGetSemaphoreWin32HandleKHR = 0;
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
+    PFN_vkGetMemoryFdKHR vkGetMemoryFdKHR = 0;
+    PFN_vkGetSemaphoreFdKHR vkGetSemaphoreFdKHR = 0;
+#elif defined(VK_USE_PLATFORM_METAL_EXT)
+#endif
     PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT = 0;
     PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabelEXT = 0;
     PFN_vkCmdInsertDebugUtilsLabelEXT vkCmdInsertDebugUtilsLabelEXT = 0;
@@ -108,6 +110,14 @@ private:
     VkDevice _vkDevice;
     std::vector<VkExtensionProperties> _vkExtensions;
     VmaAllocator _vmaAllocator;
+    std::mutex _vmaInteropPoolsLock;
+    std::unordered_map<uint32_t, VmaPool> _vmaInteropPoolsForMemoryType;
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    // A temporary fix until we bump the Vulkan SDK to have VMA v3.2.0+
+    // (Vulkan SDK 1.4.304.0+)
+    std::mutex _vmaInteropWin32HandleLock;
+    std::unordered_map<VkDeviceMemory, HANDLE> _vmaInteropWin32HandleForMemory;
+#endif
     uint32_t _vkGfxsQueueFamilyIndex;
     HgiVulkanCommandQueue* _commandQueue;
     HgiVulkanCapabilities* _capabilities;

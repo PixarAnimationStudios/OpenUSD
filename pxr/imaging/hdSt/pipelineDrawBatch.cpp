@@ -1,25 +1,8 @@
 //
 // Copyright 2021 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hdSt/pipelineDrawBatch.h"
 
@@ -113,7 +96,15 @@ HdSt_PipelineDrawBatch::HdSt_PipelineDrawBatch(
     _Init(drawItemInstance);
 }
 
-HdSt_PipelineDrawBatch::~HdSt_PipelineDrawBatch() = default;
+HdSt_PipelineDrawBatch::~HdSt_PipelineDrawBatch()
+{
+    if (_resultBuffer) {
+        _DestroyBuffer(_resultBuffer);
+    }
+    if (_tessFactorsBuffer) {
+        _DestroyBuffer(_tessFactorsBuffer);
+    }
+}
 
 /*virtual*/
 void
@@ -961,6 +952,9 @@ HdSt_PipelineDrawBatch::PrepareDraw(
 {
     TRACE_FUNCTION();
 
+    // Needed to cleanup resources in the destructor
+    _resourceRegistry = resourceRegistry;
+
     if (!_dispatchBuffer) {
         _CompileBatch(resourceRegistry);
     }
@@ -1063,6 +1057,9 @@ _BindingState::GetBindingsForViewTransformation(
     binder.GetInterleavedBufferArrayBindingDesc(
         bindingsDesc, constantBar, _tokens->constantPrimvars);
 
+    binder.GetInterleavedBufferArrayBindingDesc(
+        bindingsDesc, topVisBar, HdTokens->topologyVisibility);
+
     // Bind the instance buffers to support instance transformations.
     if (instanceIndexBar) {
         for (size_t level = 0; level < instancePrimvarBars.size(); ++level) {
@@ -1082,9 +1079,6 @@ _BindingState::GetBindingsForDrawing(
     GetBindingsForViewTransformation(bindingsDesc);
 
     bindingsDesc->debugName = "PipelineDrawBatch.Drawing";
-
-    binder.GetInterleavedBufferArrayBindingDesc(
-        bindingsDesc, topVisBar, HdTokens->topologyVisibility);
 
     binder.GetBufferArrayBindingDesc(bindingsDesc, indexBar);
     if (!geometricShader->IsPrimTypePoints()) {
@@ -1289,6 +1283,7 @@ _GetDrawPipeline(
 
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
         pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
+        pipeDesc.debugName = "Draw Pipeline";
 
         Hgi* hgi = resourceRegistry->GetHgi();
         HgiGraphicsPipelineHandle pso = hgi->CreateGraphicsPipeline(pipeDesc);
@@ -1335,6 +1330,7 @@ _GetPTCSPipeline(
         pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
         pipeDesc.tessellationState.tessFactorMode =
             HgiTessellationState::TessControl;
+        pipeDesc.debugName = "PTCS Pipeline";
 
         Hgi* hgi = resourceRegistry->GetHgi();
         HgiGraphicsPipelineHandle pso = hgi->CreateGraphicsPipeline(pipeDesc);
@@ -1557,7 +1553,7 @@ _GetCullPipeline(
         // Create a points primitive, vertex shader only pipeline that uses
         // a uniform block data for the 'cullParams' in the shader.
         HgiComputePipelineDesc pipeDesc;
-        pipeDesc.debugName = "FrustumCulling";
+        pipeDesc.debugName = "FrustumCulling Pipeline";
         pipeDesc.shaderProgram = programHandle;
         pipeDesc.shaderConstantsDesc.byteSize = byteSizeUniforms;
 
@@ -1672,6 +1668,7 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
         GfMatrix4f cullMatrix;
         GfVec2f drawRangeNDC;
         uint32_t drawCommandNumUints;
+        uint32_t indexEnd;
     };
 
     // We perform frustum culling in a compute shader, stomping the
@@ -1746,17 +1743,19 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
     HdStBufferResourceSharedPtr paramBuffer = _dispatchBuffer->
         GetBufferArrayRange()->GetResource(HdTokens->drawDispatch);
 
+    int const inputCount = _dispatchBufferCullInput->GetCount();
+
     // set instanced cull parameters
     Uniforms cullParams;
     cullParams.cullMatrix = cullMatrix;
     cullParams.drawRangeNDC = drawRangeNdc;
     cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
+    cullParams.indexEnd = inputCount;
 
     computeCmds->SetConstantValues(
         psoHandle, 0,
         sizeof(Uniforms), &cullParams);
 
-    int const inputCount = _dispatchBufferCullInput->GetCount();
     computeCmds->Dispatch(inputCount, 1);
     computeCmds->PopDebugGroup();
 
@@ -1891,7 +1890,8 @@ HdSt_PipelineDrawBatch::_BeginGPUCountVisibleInstances(
 
         _resultBuffer =
             resourceRegistry->RegisterBufferResource(
-                _tokens->drawIndirectResult, tupleType, HgiBufferUsageStorage);
+                _tokens->drawIndirectResult, tupleType, HgiBufferUsageStorage,
+                "PipelineDrawBatch Visible Instances");
     }
 
     // Reset visible item count
@@ -1934,6 +1934,19 @@ HdSt_PipelineDrawBatch::_EndGPUCountVisibleInstances(
     resourceRegistry->SubmitBlitWork(HgiSubmitWaitTypeWaitUntilCompleted);
 
     *result = count;
+}
+
+void
+HdSt_PipelineDrawBatch::_DestroyBuffer(
+    const HdStBufferResourceSharedPtr & bufferResource)
+{
+    if (!TF_VERIFY(bufferResource) || !TF_VERIFY(_resourceRegistry)) {
+        return;
+    }
+
+    HgiBufferHandle& buffer = bufferResource->GetHandle();
+    _resourceRegistry->GetHgi()->DestroyBuffer(&buffer);
+    bufferResource->SetAllocation(HgiBufferHandle(), 0);
 }
 
 void

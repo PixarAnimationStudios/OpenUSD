@@ -1,0 +1,28 @@
+#usda 1.0
+(
+    """
+    In this museum case, /FishPlateA/Test_Child has multiple ancestral
+    reference arcs that ultimately cause the same specializes arc to
+    be introduced at different parts of the prim index, which affects
+    their strength ordering. 
+
+    This test verifies we get opinions from the specializes arcs in
+    the desired order. In particular, we expect /Blue/Test.inputs:albedo
+    to be the strongest opinion for /FishPlateA/Test_Child.inputs:albedo.
+    """
+    subLayers = [
+        @./shading.usda@
+    ]
+)
+
+over "FishPlateA"
+{
+}
+
+over "Blue" (
+    prepend references = [
+        @./shading.usda@</Blue>
+    ]
+)
+{
+}

@@ -3,31 +3,18 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 -- configuration
 {
     "techniques": {
         "default": {
+            "domeLightCubemap": {
+                "source": [ "DomeLight.Common",
+                            "DomeLight.Cubemap" ]
+            },
             "domeLightIrradiance": {
                 "source": [ "DomeLight.Common",
                             "DomeLight.Irradiance" ]
@@ -51,6 +38,19 @@
 
 const float PI = 3.1415926536;
 
+ivec3 GetCubemapCoords()
+{
+    // x and y coords specify texel within a face of the cubemap
+    // z coord specifies the cubemap face
+    //   0 -> +X, 1 -> -X, 2 -> +Y, 3 -> -Y, 4 -> +Z, 5 -> -Z
+    const ivec2 invocationCoords = ivec2(hd_GlobalInvocationID.xy);
+    const int outTextureWidth = HgiGetSize_outTexture().x;
+    return ivec3(
+        mod(invocationCoords.x, outTextureWidth),
+        invocationCoords.y,
+        invocationCoords.x / outTextureWidth);
+}
+
 // compute texture coords based on the size of the output image/texture
 vec2 GetTexCoords(ivec2 outCoords)
 {
@@ -60,11 +60,65 @@ vec2 GetTexCoords(ivec2 outCoords)
     return texCoords;
 }
 
-// sample lat/long env map input texture
-vec3 SampleEnvMapLod(vec3 sampleVec, float sampleLod) {
-    vec2 coord = vec2((atan(sampleVec.z, sampleVec.x) + PI) / (2.0 * PI),
-                      acos(sampleVec.y) / PI);
-    return HgiTextureLod_inTexture(coord, sampleLod).rgb;
+vec3 GetCubemapVec(ivec3 coords)
+{
+    const vec2 uv = GetTexCoords(coords.xy);
+
+    vec3 dir = vec3(0);
+
+    // This uses the OpenGL convention for cubemaps, which is a left-handed
+    // coordinate system.
+    //
+    // So if +X is to the right, and +Y is up, then +Z is into the screen.
+
+    if (coords.z == 0) {
+        // Positive X
+        const float z = mix(1.0, -1.0, uv.x);
+        const float y = mix(1.0, -1.0, uv.y);
+        dir = vec3(1.0, y, z);
+    } else if (coords.z == 1) {
+        // Negative X
+        const float z = mix(-1.0, 1.0, uv.x);
+        const float y = mix(1.0, -1.0, uv.y);
+        dir = vec3(-1.0, y, z);
+    } else if (coords.z == 2) {
+        // Positive Y
+        const float x = mix(-1.0, 1.0, uv.x);
+        const float z = mix(-1.0, 1.0, uv.y);
+        dir = vec3(x, 1.0, z);
+    } else if (coords.z == 3) {
+        // Negative Y
+        const float x = mix(-1.0, 1.0, uv.x);
+        const float z = mix(1.0, -1.0, uv.y);
+        dir = vec3(x, -1.0, z);
+    } else if (coords.z == 4) {
+        // Positive Z
+        const float x = mix(-1.0, 1.0, uv.x);
+        const float y = mix(1.0, -1.0, uv.y);
+        dir = vec3(x, y, 1.0);
+    } else {
+        // Negative Z
+        const float x = mix(1.0, -1.0, uv.x);
+        const float y = mix(1.0, -1.0, uv.y);
+        dir = vec3(x, y, -1.0);
+    }
+
+    return normalize(dir);
+}
+
+float SanitizeValue(float value)
+{
+    if (isnan(value) || isinf(value)) {
+        return 0;
+    }
+    return value;
+}
+
+vec3 SanitizeChannels(vec3 value)
+{
+    return vec3(SanitizeValue(value.r),
+                SanitizeValue(value.g),
+                SanitizeValue(value.b));
 }
 
 // compute world position from texture coords
@@ -98,7 +152,12 @@ vec3 ImportanceSample_GGX(vec2 Xi, float roughness, vec3 normal)
     // Maps a 2D point to a hemisphere with spread based on roughness
     float alpha = roughness * roughness;
     float phi = 2.0 * PI * Xi.x;
-    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (alpha*alpha - 1.0) * Xi.y));
+    
+    // Clamp cosTheta to at most 1. Values larger than 1 (arising from floating 
+    // point imprecision perhaps) can cause NaNs in the sinTheta term.
+    float cosTheta = min(
+        1.0, sqrt((1.0 - Xi.y) / (1.0 + (alpha*alpha - 1.0) * Xi.y)));
+    
     float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
     vec3 H = vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
 
@@ -112,6 +171,20 @@ vec3 ImportanceSample_GGX(vec2 Xi, float roughness, vec3 normal)
 }
 
 --- --------------------------------------------------------------------------
+-- glsl DomeLight.Cubemap
+
+void main(void)
+{
+    ivec3 outCoords = GetCubemapCoords();
+    vec3 dir = GetCubemapVec(outCoords);
+    vec2 coord2D = vec2((atan(dir.z, dir.x) + 0.5 * PI) / (2.0 * PI),
+                        acos(dir.y) / PI);
+    vec4 outColor = HgiTextureLod_inTexture(coord2D, 0);
+
+    HgiSet_outTexture(outCoords, outColor);
+}
+
+--- --------------------------------------------------------------------------
 -- glsl DomeLight.Irradiance
 
 const float deltaPhi = (2.0f * float(PI)) / 180.0f;
@@ -119,18 +192,31 @@ const float deltaTheta = (0.5f * float(PI)) / 64.0f;
 
 vec3 SampleEnvMap(vec3 sampleVec)
 {
-    // sample from a mipmap level of the environment map determined by the
-    // size of the environment map and the number of samples we are taking
+    // Sample from a mipmap level of the environment cubemap determined by the
+    // size of the environment map and the number of samples we are taking.
+    //
+    // Since inDims will be the dimensions of one cubemap face, we need to
+    // multiply inDims.x by 4 to get the correct number of horizontal pixels.
+    // We further offset the mip level by adding 2 to the logarithm result
+    // to mitigate artifacts that arise with this convolution approach.
     ivec2 inDims = HgiGetSize_inTexture();
-    float mipLevel = ceil(log2(inDims.x * deltaPhi/(2.0 * PI)) * 2.0f);
+    float mipLevel = ceil(log2(4.0f * inDims.x * deltaPhi/(2.0 * PI)) + 2.0f);
 
-    return SampleEnvMapLod(sampleVec, mipLevel);
+    vec3 color = HgiTextureLod_inTexture(sampleVec, mipLevel).rgb;
+    return SanitizeChannels(color);
 }
 
 vec3 ComputeIrradiance(vec3 inPos)
 {
-    vec3 N = normalize(inPos);
-    vec3 up = vec3(0.0, 1.0, 0.0);
+    vec3 N = inPos;
+    // Depending on the cubemap face we are computing an irradiance value for,
+    // we want to ensure we pick an up vector sufficiently distinct from the
+    // N vector to avoid taking the cross product of nearly parallel vectors.
+    // So the +X, -X, +Z, and -Z faces use the +Y-axis as the up vector, and the
+    // +Y and -Y faces use the +Z-axis as the up vector.
+    const int face = GetCubemapCoords().z;
+    vec3 up = face == 2 || face == 3 ? vec3(0.0, 0.0, 1.0)
+                                     : vec3(0.0, 1.0, 0.0);
     vec3 right = normalize(cross(up, N));
     up = cross(N, right);
 
@@ -152,11 +238,9 @@ vec3 ComputeIrradiance(vec3 inPos)
 
 void main(void)
 {
-    ivec2 outCoords = ivec2(hd_GlobalInvocationID.xy);
-
-    vec2 texCoords = GetTexCoords(outCoords);
-    vec3 pos3D = GetWorldPos(texCoords);
-    vec4 outColor = vec4(ComputeIrradiance(pos3D), 1.0);
+    ivec3 outCoords = GetCubemapCoords();
+    vec3 dir = GetCubemapVec(outCoords);
+    vec4 outColor = vec4(ComputeIrradiance(dir), 1.0);
 
     HgiSet_outTexture(outCoords, outColor);
 }
@@ -201,7 +285,8 @@ vec3 PrefilterEnvMap(vec3 R, float roughness)
             // Biased (+1.0) mip level for better result
             float mipLevel = roughness == 0.0
                            ? 0.0 : max(0.5 * log2(omegaS / omegaP) + 1.0, 0.0f);
-            color += SampleEnvMapLod(L, mipLevel).rgb * dotNL;
+            vec3 value = HgiTextureLod_inTexture(L, mipLevel).rgb;
+            color += SanitizeChannels(value) * dotNL;
             totalWeight += dotNL;
 
         }
@@ -211,11 +296,8 @@ vec3 PrefilterEnvMap(vec3 R, float roughness)
 
 void main(void)
 {
-    ivec2 outCoords = ivec2(hd_GlobalInvocationID.xy);
-
-    vec2 texCoords = GetTexCoords(outCoords);
-    vec3 pos3D = GetWorldPos(texCoords);
-    vec3 R = normalize(pos3D);
+    ivec3 outCoords = GetCubemapCoords();
+    vec3 R = GetCubemapVec(outCoords);
     vec4 outColor = vec4(PrefilterEnvMap(R, inRoughness), 1.0);
 
     HgiSet_outTexture(outCoords, outColor);

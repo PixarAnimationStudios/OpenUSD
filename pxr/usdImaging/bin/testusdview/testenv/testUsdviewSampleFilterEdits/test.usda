@@ -1,6 +1,7 @@
 #usda 1.0
 (
     upAxis = "Y"
+    renderSettingsPrimPath = "/Render/RenderSettings"
 )
 
 def Scope "World"
@@ -139,11 +140,12 @@ def Scope "Render"
 {
     def RenderSettings "RenderSettings"
     {
-        token outputs:ri:sampleFilters.connect = </Render/MurkFilter1.outputs:result>
+        rel ri:sampleFilters = </Render/MurkFilter1>
         float ri:Ri:PixelVariance = 0.0
         int ri:hider:minsamples = 32
         int ri:hider:maxsamples = 32
         int ri:hider:incremental = 0
+        bool ri:hider:jitter = 0
     }
 
     def PxrMurkFilter "MurkFilter1"

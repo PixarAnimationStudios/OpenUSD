@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/imaging/hgiMetal/shaderSection.h"
@@ -230,9 +213,8 @@ HgiMetalTextureShaderSection::HgiMetalTextureShaderSection(
     const HgiMetalSamplerShaderSection *samplerShaderSectionDependency,
     uint32_t dimensions,
     HgiFormat format,
-    bool textureArray,
+    HgiShaderTextureType textureType,
     uint32_t arrayOfTexturesSize,
-    bool shadow,
     bool writable,
     const std::string &defaultValue)
   : HgiMetalShaderSection(
@@ -243,9 +225,8 @@ HgiMetalTextureShaderSection::HgiMetalTextureShaderSection(
   , _samplerShaderSectionDependency(samplerShaderSectionDependency)
   , _dimensionsVar(dimensions)
   , _format(format)
-  , _textureArray(textureArray)
+  , _textureType(textureType)
   , _arrayOfTexturesSize(arrayOfTexturesSize)
-  , _shadow(shadow)
   , _writable(writable)
   , _parentScopeIdentifier(parentScopeIdentifier)
 {
@@ -283,7 +264,7 @@ HgiMetalTextureShaderSection::HgiMetalTextureShaderSection(
         break;
     }
 
-    if (shadow) {
+    if (_textureType == HgiShaderTextureTypeShadowTexture) {
         _baseType = "float";
         _returnType = "float";
     }
@@ -293,37 +274,30 @@ void
 HgiMetalTextureShaderSection::WriteType(std::ostream& ss) const
 {
     if (_arrayOfTexturesSize > 0) {
-        if (_shadow) {
+        if (_textureType == HgiShaderTextureTypeShadowTexture) {
             ss << "array<depth" << _dimensionsVar << "d";
-            ss << "<" << _baseType;
-            ss << ">, " << _samplerSharedIdentifier << "_SIZE>";
+        } else if (_textureType == HgiShaderTextureTypeCubemapTexture) {
+            ss << "array<texturecube";
         } else {
             ss << "array<texture" << _dimensionsVar << "d";
-            ss << "<" << _baseType;
-            ss << ">, " << _samplerSharedIdentifier << "_SIZE>";
         }
+        ss << "<" << _baseType << ">, " << _samplerSharedIdentifier << "_SIZE>";
     } else {
-        if (_shadow) {
+        if (_textureType == HgiShaderTextureTypeShadowTexture) {
             ss << "depth" << _dimensionsVar << "d";
-            if (_textureArray) {
-                ss << "_array";
-            }
-            ss << "<" << _baseType;
-            if (_writable) {
-                ss  << ", access::write";
-            }
-            ss << ">";
+        } else if (_textureType == HgiShaderTextureTypeCubemapTexture) {
+            ss << "texturecube";
         } else {
             ss << "texture" << _dimensionsVar << "d";
-            if (_textureArray) {
+            if (_textureType == HgiShaderTextureTypeArrayTexture) {
                 ss << "_array";
             }
-            ss << "<" << _baseType;
-            if (_writable) {
-                ss  << ", access::write";
-            }
-            ss << ">";
         }
+        ss << "<" << _baseType;
+        if (_writable) {
+            ss  << ", access::write";
+        }
+        ss << ">";
     }
 }
 
@@ -384,18 +358,17 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
         : _GetDefaultValue();
 
     if (_arrayOfTexturesSize > 0) {
-        if (_shadow) {
+        if (_textureType == HgiShaderTextureTypeShadowTexture) {
             ss << "depth" << _dimensionsVar << "d";
-            ss << "<" << _baseType;
-            ss << ">";
+        } else if (_textureType == HgiShaderTextureTypeCubemapTexture) {
+            ss << "texturecube";
         } else {
             ss << "texture" << _dimensionsVar << "d";
-            ss << "<" << _baseType;
-            ss << ">";
         }
-        ss << " HgiGetSampler_" << _samplerSharedIdentifier
-        << "(uint index) {\n"
-        << "    return ";
+        ss << "<" << _baseType << ">"
+           << " HgiGetSampler_" << _samplerSharedIdentifier
+           << "(uint index) {\n"
+           << "    return ";
         WriteIdentifier(ss);
         ss << "[index];\n}\n";
     } else {
@@ -404,29 +377,45 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
         WriteIdentifier(ss);
         ss << "\n";
     }
-   
-    uint32_t dimensions = _textureArray ? (_dimensionsVar + 1) : _dimensionsVar;
-   
-    const std::string intType = _dimensionsVar == 1 ?
+
+    const uint32_t sizeDim =
+        (_textureType == HgiShaderTextureTypeArrayTexture) ?
+        (_dimensionsVar + 1) : _dimensionsVar;
+
+    const uint32_t coordDim =
+        (_textureType == HgiShaderTextureTypeShadowTexture ||
+         _textureType == HgiShaderTextureTypeArrayTexture  ||
+         _textureType == HgiShaderTextureTypeCubemapTexture) ? 
+        (_dimensionsVar + 1) : _dimensionsVar;
+
+    const std::string sizeType = sizeDim == 1 ?
         "int" :
-        "ivec" + std::to_string(_dimensionsVar);
+        "ivec" + std::to_string(sizeDim);
+
+    const std::string intCoordType = coordDim == 1 ?
+        "int" :
+        "ivec" + std::to_string(coordDim);
 
     if (_writable) {
         // Write a function that lets you write to the texture with
         // HgiSet_texName(uv, data).
         ss << "void HgiSet_";
         ss << _samplerSharedIdentifier;
-        ss << "(" << intType << " uv, vec4 data) {\n";
+        ss << "(" << intCoordType << " uv, vec4 data) {\n";
         ss << "    ";
         ss << "imageStore(";
         WriteIdentifier(ss);
-        ss << ", uv, ";
+        if (_textureType == HgiShaderTextureTypeCubemapTexture) {
+            ss << ", uv.xy, uv.z, ";
+        } else {
+            ss << ", uv, ";
+        }
         ss << _baseType;
         ss << "4(data));\n";
         ss << "}\n";
 
         // HgiGetSize_texName()
-        ss << intType << " HgiGetSize_";
+        ss << sizeType << " HgiGetSize_";
         ss << _samplerSharedIdentifier;
         ss << "() {\n";
         ss << "    ";
@@ -447,16 +436,20 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
     //     return result;
     // }
    
-    const std::string returnType = _shadow ? "float" : _returnType + "4";
-    const std::string coordType = 
-        dimensions > 1 ? "vec" + std::to_string(dimensions) : "float";
-    const std::string shadowCoordType = "vec" + std::to_string(dimensions + 1);
+    const std::string returnType =
+        _textureType == HgiShaderTextureTypeShadowTexture ?
+            "float" :
+            _returnType + "4";
 
-    if (_shadow) {
+    const std::string floatCoordType = coordDim == 1 ?
+        "float" :
+        "vec" + std::to_string(coordDim);
+
+    if (_textureType == HgiShaderTextureTypeShadowTexture) {
         if (_arrayOfTexturesSize > 0) {
             ss << returnType << " HgiGet_" << _samplerSharedIdentifier;
             ss << "(uint index, ";
-            ss << shadowCoordType << " coord) {\n";
+            ss << floatCoordType << " coord) {\n";
             ss << "    " << returnType << " result = is_null_texture(";
             WriteIdentifier(ss);
             ss << "[index]) ? " << defValue << " : "
@@ -467,7 +460,7 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
             ss << "[index], coord.xy, coord.z" << "));\n";
         } else {
             ss << returnType << " HgiGet_" << _samplerSharedIdentifier;
-            ss << "(" << shadowCoordType << " coord) {\n";
+            ss << "(" << floatCoordType << " coord) {\n";
             ss << "    " << returnType << " result = is_null_texture(";
             WriteIdentifier(ss);
             ss << ") ? " << defValue << " : "
@@ -481,7 +474,7 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
         if (_arrayOfTexturesSize > 0) {
             ss << returnType << " HgiGet_" << _samplerSharedIdentifier;
             ss << "(uint index, ";
-            ss << coordType << " coord) {\n";
+            ss << floatCoordType << " coord) {\n";
             ss << "    " << returnType << " result = is_null_texture(";
             WriteIdentifier(ss);
             ss << "[index]) ? " << defValue << " : "
@@ -492,7 +485,7 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
             ss << "[index], coord));\n";
         } else {
             ss << returnType << " HgiGet_" << _samplerSharedIdentifier;
-            ss << "(" << coordType << " coord) {\n";
+            ss << "(" << floatCoordType << " coord) {\n";
             ss << "    " << returnType << " result = is_null_texture(";
             WriteIdentifier(ss);
             ss << ") ? " << defValue << " : "
@@ -500,7 +493,7 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
             WriteIdentifier(ss);
             ss << ".sample(";
             _samplerShaderSectionDependency->WriteIdentifier(ss);
-            if (_textureArray) {
+            if (_textureType == HgiShaderTextureTypeArrayTexture) {
                 if (_dimensionsVar == 2) {
                     ss << ", coord.xy, coord.z));\n";
                 }
@@ -517,7 +510,7 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
     ss << "}\n";
 
     // HgiGetSize_texName()
-    ss << intType << " HgiGetSize_";
+    ss << sizeType << " HgiGetSize_";
     ss << _samplerSharedIdentifier;
     if (_arrayOfTexturesSize > 0) {
         ss << "(uint index) {\n";
@@ -541,8 +534,7 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
     //     vec4 result =  textureBind_diffuse.read(ushort2(coord.x, coord.y));
     //     return result;
     // }
-    const std::string intCoordType = 
-        dimensions > 1 ? "ivec" + std::to_string(dimensions) : "int";
+
     ss << returnType << " HgiTexelFetch_" << _samplerSharedIdentifier;
     if (_arrayOfTexturesSize > 0) {
         ss << "(uint index, " << intCoordType << " coord) {\n";
@@ -555,12 +547,13 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
     if (_arrayOfTexturesSize > 0) {
         ss << "[index]";
     }
-    if (_textureArray) {
+    if (_textureType == HgiShaderTextureTypeArrayTexture ||
+        _textureType == HgiShaderTextureTypeCubemapTexture) {
         if (_dimensionsVar == 2) {
-            ss << ".read(ushort2(coord.x, coord.y), coord.z));\n";
+            ss << ".read(ushort2(coord.x, coord.y), ushort(coord.z)));\n";
         }
         else {
-            ss << ".read(ushort(coord.x), coord.y));\n";
+            ss << ".read(ushort(coord.x), ushort(coord.y)));\n";
         }
     }
     else {
@@ -583,12 +576,12 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
     //     vec4 result =  textureBind_diffuse.sample(coord, level(lod));
     //     return result;
     // }
-    if (_shadow) {
+    if (_textureType == HgiShaderTextureTypeShadowTexture) {
         ss << returnType << " HgiTextureLod_" << _samplerSharedIdentifier;
         if (_arrayOfTexturesSize > 0) {
-            ss << "(uint index, " << shadowCoordType << " coord";
+            ss << "(uint index, " << floatCoordType << " coord";
         } else {
-            ss << "(" << shadowCoordType << " coord";
+            ss << "(" << floatCoordType << " coord";
         }
         ss << ", float lod) {\n"
            << "    " << returnType << " result = "
@@ -608,9 +601,9 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
     } else {
         ss << returnType << " HgiTextureLod_" << _samplerSharedIdentifier;
         if (_arrayOfTexturesSize > 0) {
-            ss << "(uint index, " << coordType << " coord";
+            ss << "(uint index, " << floatCoordType << " coord";
         } else {
-            ss << "(" << coordType << " coord";
+            ss << "(" << floatCoordType << " coord";
         }
         ss << ", float lod) {\n"
            << "    " << returnType << " result = "
@@ -624,7 +617,7 @@ HgiMetalTextureShaderSection::VisitScopeFunctionDefinitions(std::ostream &ss)
         if (_arrayOfTexturesSize > 0) {
             ss << "[index]";
         }
-        if (_textureArray) {
+        if (_textureType == HgiShaderTextureTypeArrayTexture) {
             if (_dimensionsVar == 2) {
                 ss << ", coord.xy, coord.z";
             }

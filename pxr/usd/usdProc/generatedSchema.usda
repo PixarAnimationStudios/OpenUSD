@@ -4,94 +4,54 @@
 )
 
 class GenerativeProcedural "GenerativeProcedural" (
-    doc = """
-    Represents an abstract generative procedural prim which delivers its input
-    parameters via properties (including relationships) within the \"primvars:\"
-    namespace.
- 
-    It does not itself have any awareness or participation in the execution of
-    the procedural but rather serves as a means of delivering a procedural's
-    definition and input parameters.
- 
-    The value of its \"proceduralSystem\" property (either authored or provided
-    by API schema fallback) indicates to which system the procedural definition
-    is meaningful.
-    """
+    customData = {
+        string userDocBrief = '''Represents an abstract generative procedural prim which delivers its input
+    parameters via properties (including relationships) within the "primvars:"
+    namespace.'''
+    }
 )
 {
     float3[] extent (
-        doc = """Extent is a three dimensional range measuring the geometric
-        extent of the authored gprim in its own local space (i.e. its own
-        transform not applied), without accounting for any shader-induced
-        displacement. If __any__ extent value has been authored for a given 
-        Boundable, then it should be authored at every timeSample at which 
-        geometry-affecting properties are authored, to ensure correct 
-        evaluation via ComputeExtent(). If __no__ extent value has been 
-        authored, then ComputeExtent() will call the Boundable's registered 
-        ComputeExtentFunction(), which may be expensive, which is why we 
-        strongly encourage proper authoring of extent.
-        \\sa ComputeExtent()
-        \\sa \\ref UsdGeom_Boundable_Extent.
-        
-        An authored extent on a prim which has children is expected to include
-        the extent of all children, as they will be pruned from BBox computation
-        during traversal."""
+        customData = {
+            string userDocBrief = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e."""
+        }
     )
     token proceduralSystem (
-        doc = """The name or convention of the system responsible for evaluating
-        the procedural.
-        NOTE: A fallback value for this is typically set via an API schema."""
+        customData = {
+            string userDocBrief = """The name or convention of the system responsible for evaluating
+        the procedural."""
+        }
     )
     rel proxyPrim (
-        doc = '''The proxyPrim relationship allows us to link a
+        customData = {
+            string userDocBrief = '''The proxyPrim relationship allows us to link a
         prim whose purpose is "render" to its (single target)
-        purpose="proxy" prim.  This is entirely optional, but can be
-        useful in several scenarios:
-        
-        - In a pipeline that does pruning (for complexity management)
-        by deactivating prims composed from asset references, when we
-        deactivate a purpose="render" prim, we will be able to discover
-        and additionally deactivate its associated purpose="proxy" prim,
-        so that preview renders reflect the pruning accurately.
-        
-        - DCC importers may be able to make more aggressive optimizations
-        for interactive processing and display if they can discover the proxy
-        for a given render prim.
-        
-        - With a little more work, a Hydra-based application will be able
-        to map a picked proxy prim back to its render geometry for selection.
-
-        \\note It is only valid to author the proxyPrim relationship on
-        prims whose purpose is "render".'''
+        purpose="proxy" prim.'''
+        }
     )
     uniform token purpose = "default" (
         allowedTokens = ["default", "render", "proxy", "guide"]
-        doc = """Purpose is a classification of geometry into categories that 
+        customData = {
+            string userDocBrief = """Purpose is a classification of geometry into categories that 
         can each be independently included or excluded from traversals of prims 
-        on a stage, such as rendering or bounding-box computation traversals.
-
-        See for more detail about how 
-        purpose is computed and used."""
+        on a stage, such as rendering or bounding-box computation traversals."""
+        }
     )
     token visibility = "inherited" (
         allowedTokens = ["inherited", "invisible"]
-        doc = '''Visibility is meant to be the simplest form of "pruning" 
-        visibility that is supported by most DCC apps.  Visibility is 
-        animatable, allowing a sub-tree of geometry to be present for some 
-        segment of a shot, and absent from others; unlike the action of 
-        deactivating geometry prims, invisible geometry is still 
-        available for inspection, for positioning, for defining volumes, etc.'''
+        customData = {
+            string userDocBrief = '''Visibility is meant to be the simplest form of "pruning" 
+        visibility that is supported by most DCC apps.'''
+        }
     )
     uniform token[] xformOpOrder (
-        doc = """Encodes the sequence of transformation operations in the
+        customData = {
+            string userDocBrief = """Encodes the sequence of transformation operations in the
         order in which they should be pushed onto a transform stack while
         visiting a UsdStage's prims in a graph traversal that will effect
-        the desired positioning for this prim and its descendant prims.
-        
-        You should rarely, if ever, need to manipulate this attribute directly.
-        It is managed by the AddXformOp(), SetResetXformStack(), and
-        SetXformOpOrder(), and consulted by GetOrderedXformOps() and
-        GetLocalTransformation()."""
+        the desired positioning for this prim and its descendant prims."""
+        }
     )
 }
 

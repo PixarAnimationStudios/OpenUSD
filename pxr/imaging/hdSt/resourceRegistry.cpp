@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/base/work/loops.h"
 
@@ -28,6 +11,7 @@
 #include "pxr/imaging/hdSt/dispatchBuffer.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/interleavedMemoryManager.h"
+#include "pxr/imaging/hdSt/renderPassShader.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/stagingBuffer.h"
 #include "pxr/imaging/hdSt/vboMemoryManager.h"
@@ -149,11 +133,13 @@ HdStResourceRegistry::~HdStResourceRegistry()
     // they cleanup all GPU resources. Since that mechanism isn't in place
     // yet, we call GarbageCollect to emulate this behavior.
     GarbageCollect();
+    _hgi->GarbageCollect();
 }
 
 void HdStResourceRegistry::InvalidateShaderRegistry()
 {
     _geometricShaderRegistry.Invalidate();
+    _renderPassShaderRegistry.Invalidate();
     _glslfxFileRegistry.Invalidate();
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
     _materialXShaderRegistry.Invalidate();
@@ -536,7 +522,8 @@ HdStBufferResourceSharedPtr
 HdStResourceRegistry::RegisterBufferResource(
     TfToken const &role, 
     HdTupleType tupleType,
-    HgiBufferUsage bufferUsage)
+    HgiBufferUsage bufferUsage,
+    std::string debugName)
 {
     HdStBufferResourceSharedPtr const result =
         std::make_shared<HdStBufferResource>(
@@ -547,6 +534,7 @@ HdStResourceRegistry::RegisterBufferResource(
     HgiBufferDesc bufDesc;
     bufDesc.usage = bufferUsage;
     bufDesc.byteSize = byteSize;
+    bufDesc.debugName = std::move(debugName);
     HgiBufferHandle buffer = _hgi->CreateBuffer(bufDesc);
 
     result->SetAllocation(buffer, byteSize);
@@ -564,8 +552,9 @@ HdStResourceRegistry::GarbageCollectDispatchBuffers()
     _dispatchBufferRegistry.erase(
         std::remove_if(
             _dispatchBufferRegistry.begin(), _dispatchBufferRegistry.end(),
-            std::bind(&HdStDispatchBufferSharedPtr::unique,
-                      std::placeholders::_1)),
+            [](const HdStDispatchBufferSharedPtr& ptr) {
+                return ptr.use_count() == 1;
+            }),
         _dispatchBufferRegistry.end());
 }
 
@@ -577,8 +566,9 @@ HdStResourceRegistry::GarbageCollectBufferResources()
     _bufferResourceRegistry.erase(
         std::remove_if(
             _bufferResourceRegistry.begin(), _bufferResourceRegistry.end(),
-            std::bind(&HdStBufferResourceSharedPtr::unique,
-                      std::placeholders::_1)),
+            [](const HdStBufferResourceSharedPtr& ptr) {
+                return ptr.use_count() == 1;
+            }),
         _bufferResourceRegistry.end());
 }
 
@@ -646,6 +636,13 @@ HdStResourceRegistry::RegisterGeometricShader(
         HdInstance<HdSt_GeometricShaderSharedPtr>::ID id)
 {
     return _geometricShaderRegistry.GetInstance(id);
+}
+
+HdInstance<HdStRenderPassShaderSharedPtr>
+HdStResourceRegistry::RegisterRenderPassShader(
+    HdInstance<HdStRenderPassShaderSharedPtr>::ID id)
+{
+    return _renderPassShaderRegistry.GetInstance(id);
 }
 
 HdInstance<HdStGLSLProgramSharedPtr>
@@ -1112,12 +1109,15 @@ HdStResourceRegistry::_GarbageCollect()
 
     // Cleanup Shader registries
     _geometricShaderRegistry.GarbageCollect();
+    _renderPassShaderRegistry.GarbageCollect();
     _glslProgramRegistry.GarbageCollect();
     _glslfxFileRegistry.GarbageCollect();
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
     _materialXShaderRegistry.GarbageCollect();
 #endif
 
+    _textureHandleRegistry->GarbageCollect();
+    
     // Cleanup Hgi resources
     _resourceBindingsRegistry.GarbageCollect(
         std::bind(&_DestroyResourceBindings, _hgi, std::placeholders::_1));

@@ -3,25 +3,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 --- This is what an import might look like.
@@ -339,17 +322,6 @@ lightSpotAttenuation(vec3 l, int index)
     return spotAtten;
 }
 
-vec2
-projectSphericalToLatLong(vec3 sample3D)
-{
-    // project spherical coord onto latitude-longitude map with
-    // latitude: +y == pi/2 and longitude: +z == 0, +x == pi/2
-    const float PI = 3.1415;
-    vec2 coord = vec2((atan(sample3D.z, sample3D.x) + 0.5 * PI) / (2.0 * PI),
-                      acos(sample3D.y) / PI);
-    return coord;
-}
-
 float
 schlickFresnel(float EdotH)
 {
@@ -378,8 +350,7 @@ evaluateIndirectLight(vec3 Neye, vec3 Reye, float NdotE, float EdotH,
 
     // Diffuse Component
     vec3 dir = normalize((transformationMatrix * vec4(Neye,0.0)).xyz);
-    vec2 coord = projectSphericalToLatLong(dir);
-    vec3 diffuse = HdGet_domeLightIrradiance(coord).rgb;
+    vec3 diffuse = HdGet_domeLightIrradiance(dir).rgb;
 
     // Specular Component 
     const float MAX_REFLECTION_LOD = 
@@ -387,8 +358,7 @@ evaluateIndirectLight(vec3 Neye, vec3 Reye, float NdotE, float EdotH,
     const float roughness = props.roughness;
     const float lod = roughness * MAX_REFLECTION_LOD;
     vec3 Rdir = normalize((transformationMatrix * vec4(Reye,0.0)).xyz);
-    vec2 Rcoord = projectSphericalToLatLong(Rdir);
-    vec3 prefilter = HdTextureLod_domeLightPrefilter(Rcoord, lod).rgb;
+    vec3 prefilter = HdTextureLod_domeLightPrefilter(Rdir, lod).rgb;
     vec2 brdf = HdGet_domeLightBRDF(vec2(NdotE, roughness)).rg;
     vec3 specular = prefilter * (F * brdf.x + brdf.y);
 
@@ -463,9 +433,11 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 #else
             float shadow = 1.0;
 #endif
+
+            const float PI = 3.1415;
             result.ambient += atten * light.ambient.rgb;
-            result.diffuse += atten * shadow * d * light.diffuse.rgb;
-            result.specular += atten * shadow * s * light.specular.rgb;
+            result.diffuse += atten * shadow * d * light.diffuse.rgb / PI;
+            result.specular += atten * shadow * s * light.specular.rgb / PI;
         }
     }
 

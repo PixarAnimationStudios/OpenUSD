@@ -2,25 +2,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 from __future__ import print_function
 
@@ -59,7 +42,7 @@ class TestPcpInstanceKey(unittest.TestCase):
     def test_Basic(self):
         """Test instance key functionality on simple
         asset structure including references and inherits"""
-        cache = self._LoadPcpCache('basic.sdf')
+        cache = self._LoadPcpCache('basic.usda')
 
         prop1Key = self._GetInstanceKey(cache, '/Set_1/Prop_1')
         prop2Key = self._GetInstanceKey(cache, '/Set_1/Prop_2')
@@ -77,7 +60,7 @@ class TestPcpInstanceKey(unittest.TestCase):
         self.assertEqual(notAnInstanceKey, Pcp.InstanceKey())
 
     def test_Hashing(self):
-        cache = self._LoadPcpCache("basic.sdf")
+        cache = self._LoadPcpCache("basic.usda")
 
         self.assertEqual(
             hash(self._GetInstanceKey(cache, "/Set_1")),
@@ -87,7 +70,7 @@ class TestPcpInstanceKey(unittest.TestCase):
     def test_Variants(self):
         """Test instance key functionality on asset
         structure involving references and variants."""
-        cache = self._LoadPcpCache('variants.sdf')
+        cache = self._LoadPcpCache('variants.usda')
 
         key1 = self._GetInstanceKey(cache, '/Model_1')
         key2 = self._GetInstanceKey(cache, '/Model_2')
@@ -117,7 +100,7 @@ class TestPcpInstanceKey(unittest.TestCase):
     def test_ImpliedArcsWithNoSpecs(self):
         """Test instance key functionality with implied inherits and
         specializes."""
-        cache = self._LoadPcpCache('implied_arcs/root.sdf')
+        cache = self._LoadPcpCache('implied_arcs/root.usda')
 
         # Both Model prims should share the same instance key even though
         # they are referenced from two different assets. This is because
@@ -134,7 +117,7 @@ class TestPcpInstanceKey(unittest.TestCase):
         "ancestral" but must be considered as they are brought in through 
         the subtree that is composed for direct subroot arc."""
 
-        cache = self._LoadPcpCache('subroot_arcs.sdf')
+        cache = self._LoadPcpCache('subroot_arcs.usda')
 
         # For each instance it's useful to know the basic prim index graph
         # ---> = direct reference

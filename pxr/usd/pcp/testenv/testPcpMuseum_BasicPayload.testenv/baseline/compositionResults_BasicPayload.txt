@@ -1,19 +1,19 @@
-Loading session @BasicPayload/session.sdf@
+Loading session @BasicPayload/session.usda@
 
-Loading @BasicPayload/root.sdf@
+Loading @BasicPayload/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     session.sdf
-     root.sdf
-     sublayer.sdf
+     session.usda
+     root.usda
+     sublayer.usda
 
 ------------------------------------------------------------------------
 Results for composing </InternalSublayerPayload>
 
 Prim Stack:
-    root.sdf             /InternalSublayerPayload
-    sublayer.sdf         /InternalSublayerPayload
+    root.usda            /InternalSublayerPayload
+    sublayer.usda        /InternalSublayerPayload
 
 Child names:
      ['InternalSublayerPayload_Child']
@@ -22,16 +22,16 @@ Child names:
 Results for composing </InternalSublayerPayload/InternalSublayerPayload_Child>
 
 Prim Stack:
-    root.sdf             /InternalSublayerPayload/InternalSublayerPayload_Child
-    sublayer.sdf         /InternalSublayerPayload/InternalSublayerPayload_Child
+    root.usda            /InternalSublayerPayload/InternalSublayerPayload_Child
+    sublayer.usda        /InternalSublayerPayload/InternalSublayerPayload_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimInSublayerWithInternalPayload>
 
 Prim Stack:
-    sublayer.sdf         /PrimInSublayerWithInternalPayload
-    root.sdf             /InternalSublayerPayload
-    sublayer.sdf         /InternalSublayerPayload
+    sublayer.usda        /PrimInSublayerWithInternalPayload
+    root.usda            /InternalSublayerPayload
+    sublayer.usda        /InternalSublayerPayload
 
 Child names:
      ['InternalSublayerPayload_Child']
@@ -40,28 +40,28 @@ Child names:
 Results for composing </PrimInSublayerWithInternalPayload/InternalSublayerPayload_Child>
 
 Prim Stack:
-    root.sdf             /InternalSublayerPayload/InternalSublayerPayload_Child
-    sublayer.sdf         /InternalSublayerPayload/InternalSublayerPayload_Child
+    root.usda            /InternalSublayerPayload/InternalSublayerPayload_Child
+    sublayer.usda        /InternalSublayerPayload/InternalSublayerPayload_Child
 
 ------------------------------------------------------------------------
 Results for composing </SublayerPrim>
 
 Prim Stack:
-    sublayer.sdf         /SublayerPrim
+    sublayer.usda        /SublayerPrim
 
 ------------------------------------------------------------------------
 Results for composing </PrimInSublayerWithInternalPayload2>
 
 Prim Stack:
-    sublayer.sdf         /PrimInSublayerWithInternalPayload2
-    sublayer.sdf         /SublayerPrim
+    sublayer.usda        /PrimInSublayerWithInternalPayload2
+    sublayer.usda        /SublayerPrim
 
 ------------------------------------------------------------------------
 Results for composing </SimplePayload>
 
 Prim Stack:
-    root.sdf             /SimplePayload
-    payload.sdf          /SimplePayload
+    root.usda            /SimplePayload
+    payload.usda         /SimplePayload
 
 Child names:
      ['Child']
@@ -70,24 +70,24 @@ Child names:
 Results for composing </SimplePayload/Child>
 
 Prim Stack:
-    payload.sdf          /SimplePayload/Child
+    payload.usda         /SimplePayload/Child
 
 ------------------------------------------------------------------------
 Results for composing </SimpleSubrootPayload>
 
 Prim Stack:
-    root.sdf             /SimpleSubrootPayload
-    payload.sdf          /SimplePayload/Child
+    root.usda            /SimpleSubrootPayload
+    payload.usda         /SimplePayload/Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithPayloads>
 
 Prim Stack:
-    root.sdf             /PrimWithPayloads
-    payload.sdf          /SimplePayload
-    ref.sdf              /PayloadPrimA
-    ref2.sdf             /PrimC
-    ref2.sdf             /PrimB
+    root.usda            /PrimWithPayloads
+    payload.usda         /SimplePayload
+    ref.usda             /PayloadPrimA
+    ref2.usda            /PrimC
+    ref2.usda            /PrimB
 
 Child names:
      ['PrimB_Child', 'PrimC_Child', 'PrimA_Child', 'Child']
@@ -96,31 +96,31 @@ Child names:
 Results for composing </PrimWithPayloads/PrimB_Child>
 
 Prim Stack:
-    ref2.sdf             /PrimB/PrimB_Child
+    ref2.usda            /PrimB/PrimB_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithPayloads/PrimC_Child>
 
 Prim Stack:
-    ref2.sdf             /PrimC/PrimC_Child
+    ref2.usda            /PrimC/PrimC_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithPayloads/PrimA_Child>
 
 Prim Stack:
-    ref.sdf              /PayloadPrimA/PrimA_Child
+    ref.usda             /PayloadPrimA/PrimA_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithPayloads/Child>
 
 Prim Stack:
-    payload.sdf          /SimplePayload/Child
+    payload.usda         /SimplePayload/Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimB>
 
 Prim Stack:
-    root.sdf             /PrimB
+    root.usda            /PrimB
 
 Child names:
      ['PrimB_Child']
@@ -129,15 +129,15 @@ Child names:
 Results for composing </PrimB/PrimB_Child>
 
 Prim Stack:
-    root.sdf             /PrimB/PrimB_Child
+    root.usda            /PrimB/PrimB_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithSelfPayload>
 
 Prim Stack:
-    root.sdf             /PrimWithSelfPayload
-    root.sdf             /InternalPayload
-    sublayer.sdf         /InternalSublayerPayload
+    root.usda            /PrimWithSelfPayload
+    root.usda            /InternalPayload
+    sublayer.usda        /InternalSublayerPayload
 
 Child names:
      ['InternalSublayerPayload_Child', 'InternalPayload_Child']
@@ -146,21 +146,21 @@ Child names:
 Results for composing </PrimWithSelfPayload/InternalSublayerPayload_Child>
 
 Prim Stack:
-    sublayer.sdf         /InternalSublayerPayload/InternalSublayerPayload_Child
+    sublayer.usda        /InternalSublayerPayload/InternalSublayerPayload_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithSelfPayload/InternalPayload_Child>
 
 Prim Stack:
-    root.sdf             /InternalPayload/InternalPayload_Child
+    root.usda            /InternalPayload/InternalPayload_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithInternalPayload>
 
 Prim Stack:
-    root.sdf             /PrimWithInternalPayload
-    root.sdf             /InternalPayload
-    session.sdf          /InternalPayload2
+    root.usda            /PrimWithInternalPayload
+    root.usda            /InternalPayload
+    session.usda         /InternalPayload2
 
 Child names:
      ['InternalPayload_Child']
@@ -169,13 +169,13 @@ Child names:
 Results for composing </PrimWithInternalPayload/InternalPayload_Child>
 
 Prim Stack:
-    root.sdf             /InternalPayload/InternalPayload_Child
+    root.usda            /InternalPayload/InternalPayload_Child
 
 ------------------------------------------------------------------------
 Results for composing </InternalPayload>
 
 Prim Stack:
-    root.sdf             /InternalPayload
+    root.usda            /InternalPayload
 
 Child names:
      ['InternalPayload_Child']
@@ -184,14 +184,14 @@ Child names:
 Results for composing </InternalPayload/InternalPayload_Child>
 
 Prim Stack:
-    root.sdf             /InternalPayload/InternalPayload_Child
+    root.usda            /InternalPayload/InternalPayload_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithDefaultPayloadTarget>
 
 Prim Stack:
-    root.sdf             /PrimWithDefaultPayloadTarget
-    defaultRef.sdf       /Default
+    root.usda            /PrimWithDefaultPayloadTarget
+    defaultRef.usda      /Default
 
 Child names:
      ['Default_Child']
@@ -200,14 +200,14 @@ Child names:
 Results for composing </PrimWithDefaultPayloadTarget/Default_Child>
 
 Prim Stack:
-    defaultRef.sdf       /Default/Default_Child
+    defaultRef.usda      /Default/Default_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithDefaultPayloadTarget2>
 
 Prim Stack:
-    root.sdf             /PrimWithDefaultPayloadTarget2
-    root.sdf             /InternalPayload
+    root.usda            /PrimWithDefaultPayloadTarget2
+    root.usda            /InternalPayload
 
 Child names:
      ['InternalPayload_Child']
@@ -216,37 +216,37 @@ Child names:
 Results for composing </PrimWithDefaultPayloadTarget2/InternalPayload_Child>
 
 Prim Stack:
-    root.sdf             /InternalPayload/InternalPayload_Child
+    root.usda            /InternalPayload/InternalPayload_Child
 
 ------------------------------------------------------------------------
 Results for composing </PayloadPrimWithSubrootInReference>
 
 Prim Stack:
-    root.sdf             /PayloadPrimWithSubrootInReference
-    ref.sdf              /RefPrimA/PrimA_Child
-    ref2.sdf             /PrimC/PrimC_Child
+    root.usda            /PayloadPrimWithSubrootInReference
+    ref.usda             /RefPrimA/PrimA_Child
+    ref2.usda            /PrimC/PrimC_Child
 
 ------------------------------------------------------------------------
 Results for composing </RefPrimWithSubrootInReference>
 
 Prim Stack:
-    root.sdf             /RefPrimWithSubrootInReference
-    ref.sdf              /RefPrimA/PrimA_Child
-    ref2.sdf             /PrimC/PrimC_Child
+    root.usda            /RefPrimWithSubrootInReference
+    ref.usda             /RefPrimA/PrimA_Child
+    ref2.usda            /PrimC/PrimC_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithInternalSubrootPayload>
 
 Prim Stack:
-    root.sdf             /PrimWithInternalSubrootPayload
-    root.sdf             /InternalPayload/InternalPayload_Child
+    root.usda            /PrimWithInternalSubrootPayload
+    root.usda            /InternalPayload/InternalPayload_Child
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithPayloadsInVariants>
 
 Prim Stack:
-    root.sdf             /PrimWithPayloadsInVariants
-    root.sdf             /PrimWithPayloadsInVariants{v=ref}
+    root.usda            /PrimWithPayloadsInVariants
+    root.usda            /PrimWithPayloadsInVariants{v=ref}
 
 Variant Selections:
     {v = ref}
@@ -258,41 +258,41 @@ Child names:
 Results for composing </PrimWithPayloadsInVariants/Ref>
 
 Prim Stack:
-    root.sdf             /PrimWithPayloadsInVariants{v=ref}Ref
+    root.usda            /PrimWithPayloadsInVariants{v=ref}Ref
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithPayloadsInVariants/A>
 
 Prim Stack:
-    root.sdf             /PrimWithPayloadsInVariants{v=ref}A
-    root.sdf             /PrimWithPayloadsInVariants{v=ref}Ref
+    root.usda            /PrimWithPayloadsInVariants{v=ref}A
+    root.usda            /PrimWithPayloadsInVariants{v=ref}Ref
 
 ------------------------------------------------------------------------
 Results for composing </PrimWithPayloadsInVariants/B>
 
 Prim Stack:
-    root.sdf             /PrimWithPayloadsInVariants/B
-    root.sdf             /PrimWithPayloadsInVariants{v=ref}Ref
+    root.usda            /PrimWithPayloadsInVariants/B
+    root.usda            /PrimWithPayloadsInVariants{v=ref}Ref
 
 ------------------------------------------------------------------------
 Results for composing </PayloadPrimWithSubrootInPayload>
 
 Prim Stack:
-    root.sdf             /PayloadPrimWithSubrootInPayload
-    ref.sdf              /PayloadPrimA/PrimA_Child
-    ref2.sdf             /PrimC/PrimC_Child
+    root.usda            /PayloadPrimWithSubrootInPayload
+    ref.usda             /PayloadPrimA/PrimA_Child
+    ref2.usda            /PrimC/PrimC_Child
 
 ------------------------------------------------------------------------
 Results for composing </RefPrimWithSubrootInPayload>
 
 Prim Stack:
-    root.sdf             /RefPrimWithSubrootInPayload
-    ref.sdf              /PayloadPrimA/PrimA_Child
-    ref2.sdf             /PrimC/PrimC_Child
+    root.usda            /RefPrimWithSubrootInPayload
+    ref.usda             /PayloadPrimA/PrimA_Child
+    ref2.usda            /PrimC/PrimC_Child
 
 ------------------------------------------------------------------------
 Results for composing </InternalPayload2>
 
 Prim Stack:
-    session.sdf          /InternalPayload2
+    session.usda         /InternalPayload2
 

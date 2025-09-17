@@ -1,31 +1,15 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/vt/array.h"
+#include "pxr/base/vt/arrayEdit.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/valueFromPython.h"
@@ -41,14 +25,14 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 
-#include <boost/python/class.hpp>
-#include <boost/python/copy_const_reference.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python/object.hpp>
-#include <boost/python/operators.hpp>
-#include <boost/python/return_arg.hpp>
-#include <boost/python/type_id.hpp>
-#include <boost/python/str.hpp>
+#include "pxr/external/boost/python/class.hpp"
+#include "pxr/external/boost/python/copy_const_reference.hpp"
+#include "pxr/external/boost/python/def.hpp"
+#include "pxr/external/boost/python/object.hpp"
+#include "pxr/external/boost/python/operators.hpp"
+#include "pxr/external/boost/python/return_arg.hpp"
+#include "pxr/external/boost/python/type_id.hpp"
+#include "pxr/external/boost/python/str.hpp"
 
 #include <iostream>
 #include <limits>
@@ -56,12 +40,12 @@
 #include <string>
 #include <vector>
 
-using namespace boost::python;
-
 using std::string;
 using std::map;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_boost::python;
 
 TF_REGISTRY_FUNCTION(VtValue)
 {
@@ -133,7 +117,7 @@ struct Vt_ValueWrapperFromPython {
     Vt_ValueWrapperFromPython() {
         converter::registry::
             push_back(&_convertible, &_construct,
-                      boost::python::type_id<VtValue>());
+                      pxr_boost::python::type_id<VtValue>());
     }
 
   private:
@@ -157,7 +141,7 @@ struct Vt_ValueFromPython {
     Vt_ValueFromPython() {
         converter::registry::
             push_back(&_convertible, &_construct,
-                      boost::python::type_id<VtValue>());
+                      pxr_boost::python::type_id<VtValue>());
     }
 
   private:
@@ -318,14 +302,15 @@ void wrapValue()
                        "from-python conversions!");
     }
 
-    // register conversion types in reverse order, because the extractor
-    // iterates through the registered list backwards
-    // Repetitively register conversions for each known class value type.
+    // Register conversion types in reverse order, because the extractor
+    // iterates through the registered list backwards.
 #define REGISTER_VALUE_FROM_PYTHON(unused, elem) \
     VtValueFromPythonLValue< VT_TYPE(elem) >();
-    TF_PP_SEQ_FOR_EACH(REGISTER_VALUE_FROM_PYTHON, ~, VT_ARRAY_VALUE_TYPES)
+    TF_PP_SEQ_FOR_EACH(REGISTER_VALUE_FROM_PYTHON, ~,
+                       VT_ARRAY_EDIT_VALUE_TYPES VT_ARRAY_VALUE_TYPES)
 #undef REGISTER_VALUE_FROM_PYTHON
 
+    // Register conversions for each known class value type.
 #define REGISTER_VALUE_FROM_PYTHON(unused, elem) \
     VtValueFromPython< VT_TYPE(elem) >();
     TF_PP_SEQ_FOR_EACH(REGISTER_VALUE_FROM_PYTHON, ~,

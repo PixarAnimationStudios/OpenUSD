@@ -8,12 +8,6 @@ if (NOT ${PXR_ENABLE_GL_SUPPORT})
 endif()
 
 set(optionalPublicClasses "")
-if (X11_FOUND)
-    list(APPEND optionalPublicClasses testGLContext)
-endif()
-
-set(optionalLibs "")
-set(optionalIncludeDirs "")
 
 pxr_library(glf
     LIBRARIES
@@ -27,14 +21,6 @@ pxr_library(glf
         tf
         trace
         sdf
-        ${Boost_PYTHON_LIBRARY}
-        ${OPENGL_gl_LIBRARY}
-        ${X11_LIBRARIES}
-        ${optionalLibs}
-
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
-        ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
         bindingMap
@@ -48,6 +34,7 @@ pxr_library(glf
         simpleLightingContext
         simpleMaterial
         simpleShadowArray
+        testGLContext
         texture
         uniformBlock
         utils
@@ -59,12 +46,6 @@ pxr_library(glf
 
     PUBLIC_HEADERS
         api.h
-
-    CPPFILES
-        ${optionalCppFiles}
-
-    PYTHON_CPPFILES
-        moduleDeps.cpp
 
     PYMODULE_CPPFILES
         module.cpp

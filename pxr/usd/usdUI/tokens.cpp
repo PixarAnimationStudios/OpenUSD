@@ -1,59 +1,68 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usd/usdUI/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdUITokensType::UsdUITokensType() :
+    accessibility("accessibility", TfToken::Immortal),
+    accessibility_MultipleApplyTemplate_Description("accessibility:__INSTANCE_NAME__:description", TfToken::Immortal),
+    accessibility_MultipleApplyTemplate_Label("accessibility:__INSTANCE_NAME__:label", TfToken::Immortal),
+    accessibility_MultipleApplyTemplate_Priority("accessibility:__INSTANCE_NAME__:priority", TfToken::Immortal),
     closed("closed", TfToken::Immortal),
+    default_("default", TfToken::Immortal),
+    description("description", TfToken::Immortal),
+    high("high", TfToken::Immortal),
+    label("label", TfToken::Immortal),
+    low("low", TfToken::Immortal),
     minimized("minimized", TfToken::Immortal),
     open("open", TfToken::Immortal),
+    priority("priority", TfToken::Immortal),
+    standard("standard", TfToken::Immortal),
     uiDescription("ui:description", TfToken::Immortal),
     uiDisplayGroup("ui:displayGroup", TfToken::Immortal),
     uiDisplayName("ui:displayName", TfToken::Immortal),
     uiNodegraphNodeDisplayColor("ui:nodegraph:node:displayColor", TfToken::Immortal),
+    uiNodegraphNodeDocURI("ui:nodegraph:node:docURI", TfToken::Immortal),
     uiNodegraphNodeExpansionState("ui:nodegraph:node:expansionState", TfToken::Immortal),
     uiNodegraphNodeIcon("ui:nodegraph:node:icon", TfToken::Immortal),
     uiNodegraphNodePos("ui:nodegraph:node:pos", TfToken::Immortal),
     uiNodegraphNodeSize("ui:nodegraph:node:size", TfToken::Immortal),
     uiNodegraphNodeStackingOrder("ui:nodegraph:node:stackingOrder", TfToken::Immortal),
+    AccessibilityAPI("AccessibilityAPI", TfToken::Immortal),
     Backdrop("Backdrop", TfToken::Immortal),
     NodeGraphNodeAPI("NodeGraphNodeAPI", TfToken::Immortal),
     SceneGraphPrimAPI("SceneGraphPrimAPI", TfToken::Immortal),
     allTokens({
+        accessibility,
+        accessibility_MultipleApplyTemplate_Description,
+        accessibility_MultipleApplyTemplate_Label,
+        accessibility_MultipleApplyTemplate_Priority,
         closed,
+        default_,
+        description,
+        high,
+        label,
+        low,
         minimized,
         open,
+        priority,
+        standard,
         uiDescription,
         uiDisplayGroup,
         uiDisplayName,
         uiNodegraphNodeDisplayColor,
+        uiNodegraphNodeDocURI,
         uiNodegraphNodeExpansionState,
         uiNodegraphNodeIcon,
         uiNodegraphNodePos,
         uiNodegraphNodeSize,
         uiNodegraphNodeStackingOrder,
+        AccessibilityAPI,
         Backdrop,
         NodeGraphNodeAPI,
         SceneGraphPrimAPI

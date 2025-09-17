@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usd/usdSkel/animQueryImpl.h"
 
@@ -90,6 +73,10 @@ public:
     bool BlendShapeWeightsMightBeTimeVarying() const override;
 
 private:
+    bool _VerifyAnimation() const {
+        return TF_VERIFY(_anim, "PackedJointAnimation schema object is invalid.");
+    }
+
     template <typename Matrix4>
     bool _ComputeJointLocalTransforms(VtArray<Matrix4>* xforms,
                                       UsdTimeCode time) const;
@@ -173,7 +160,9 @@ UsdSkel_SkelAnimationQueryImpl::ComputeJointLocalTransformComponents(
     UsdTimeCode time) const
 {
     TRACE_FUNCTION();
-
+    if (!_translations || !_rotations || !_scales) {
+        return false;
+    }
     return _translations.Get(translations, time) &&
            _rotations.Get(rotations, time) &&
            _scales.Get(scales, time);
@@ -185,6 +174,10 @@ UsdSkel_SkelAnimationQueryImpl::GetJointTransformTimeSamples(
     const GfInterval& interval,
     std::vector<double>* times) const
 {
+    if (!_VerifyAnimation()) {
+        return false;
+    }
+    
     return UsdAttribute::GetUnionedTimeSamplesInInterval(
         {_translations.GetAttribute(),
          _rotations.GetAttribute(),
@@ -195,6 +188,10 @@ bool
 UsdSkel_SkelAnimationQueryImpl::GetJointTransformAttributes(
     std::vector<UsdAttribute>* attrs) const
 {
+    if (!_VerifyAnimation()) {
+        return false;
+    }
+
     attrs->push_back(_translations.GetAttribute());
     attrs->push_back(_rotations.GetAttribute());
     attrs->push_back(_scales.GetAttribute());
@@ -205,6 +202,10 @@ UsdSkel_SkelAnimationQueryImpl::GetJointTransformAttributes(
 bool
 UsdSkel_SkelAnimationQueryImpl::JointTransformsMightBeTimeVarying() const
 {
+    if (!_VerifyAnimation()) {
+        return false;
+    }
+    
     return _translations.ValueMightBeTimeVarying() ||
            _rotations.ValueMightBeTimeVarying() ||
            _scales.ValueMightBeTimeVarying();
@@ -216,10 +217,10 @@ UsdSkel_SkelAnimationQueryImpl::ComputeBlendShapeWeights(
     VtFloatArray* weights,
     UsdTimeCode time) const
 {
-    if (TF_VERIFY(_anim, "PackedJointAnimation schema object is invalid.")) {
-        return _blendShapeWeights.Get(weights, time);
+    if (!_VerifyAnimation()) {
+        return false;
     }
-    return false;
+    return _blendShapeWeights.Get(weights, time);
 }
 
 
@@ -228,6 +229,9 @@ UsdSkel_SkelAnimationQueryImpl::GetBlendShapeWeightTimeSamples(
     const GfInterval& interval,
     std::vector<double>* times) const
 {
+    if (!_VerifyAnimation()) {
+        return false;
+    }
     return _blendShapeWeights.GetTimeSamplesInInterval(interval, times);
 }
 
@@ -236,6 +240,9 @@ bool
 UsdSkel_SkelAnimationQueryImpl::GetBlendShapeWeightAttributes(
     std::vector<UsdAttribute>* attrs) const
 {
+    if (!_VerifyAnimation()) {
+        return false;
+    }
     attrs->push_back(_blendShapeWeights.GetAttribute());
     return true;
 }
@@ -243,6 +250,9 @@ UsdSkel_SkelAnimationQueryImpl::GetBlendShapeWeightAttributes(
 bool
 UsdSkel_SkelAnimationQueryImpl::BlendShapeWeightsMightBeTimeVarying() const
 {
+    if (!_VerifyAnimation()) {
+        return false;
+    }
     return _blendShapeWeights.ValueMightBeTimeVarying();
 }
 

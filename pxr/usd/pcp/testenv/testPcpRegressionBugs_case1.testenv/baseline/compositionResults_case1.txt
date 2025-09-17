@@ -1,17 +1,17 @@
-Loading @case1/root.sdf@
+Loading @case1/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </FergusCloak>
 
 Prim Stack:
-    root.sdf             /FergusCloak
-    FergusCloak_standins.sdf /FergusCloak
-    FergusCloak_standins.sdf /FergusCloak{standin=render}
-    FergusCloak_render.sdf /FergusCloak
+    root.usda            /FergusCloak
+    FergusCloak_standins.usda /FergusCloak
+    FergusCloak_standins.usda /FergusCloak{standin=render}
+    FergusCloak_render.usda /FergusCloak
 
 Variant Selections:
     {standin = render}
@@ -23,7 +23,7 @@ Child names:
 Results for composing </FergusCloak/rig>
 
 Prim Stack:
-    FergusCloak_render.sdf /FergusCloak/rig
+    FergusCloak_render.usda /FergusCloak/rig
 
 Child names:
      ['LEdgeRig']
@@ -32,8 +32,8 @@ Child names:
 Results for composing </FergusCloak/rig/LEdgeRig>
 
 Prim Stack:
-    FergusCloak_render.sdf /FergusCloak/rig/LEdgeRig
-    CurveTrackRig.sdf    /CurveTrackRig
+    FergusCloak_render.usda /FergusCloak/rig/LEdgeRig
+    CurveTrackRig.usda   /CurveTrackRig
 
 Child names:
      ['rig']
@@ -42,7 +42,7 @@ Child names:
 Results for composing </FergusCloak/rig/LEdgeRig/rig>
 
 Prim Stack:
-    CurveTrackRig.sdf    /CurveTrackRig/rig
+    CurveTrackRig.usda   /CurveTrackRig/rig
 
 Child names:
      ['PatchWeightRig']
@@ -51,7 +51,7 @@ Child names:
 Results for composing </FergusCloak/rig/LEdgeRig/rig/PatchWeightRig>
 
 Prim Stack:
-    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig
+    CurveTrackRig.usda   /CurveTrackRig/rig/PatchWeightRig
 
 Child names:
      ['PatchWeightsClass', 'SimPatchWeights']
@@ -60,7 +60,7 @@ Child names:
 Results for composing </FergusCloak/rig/LEdgeRig/rig/PatchWeightRig/PatchWeightsClass>
 
 Prim Stack:
-    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass
+    CurveTrackRig.usda   /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass
 
 Child names:
      ['PatchClass_math', 'Patch0_math']
@@ -69,21 +69,21 @@ Child names:
 Results for composing </FergusCloak/rig/LEdgeRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass_math>
 
 Prim Stack:
-    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass_math
+    CurveTrackRig.usda   /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass_math
 
 ------------------------------------------------------------------------
 Results for composing </FergusCloak/rig/LEdgeRig/rig/PatchWeightRig/PatchWeightsClass/Patch0_math>
 
 Prim Stack:
-    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/Patch0_math
-    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass_math
+    CurveTrackRig.usda   /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/Patch0_math
+    CurveTrackRig.usda   /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass_math
 
 ------------------------------------------------------------------------
 Results for composing </FergusCloak/rig/LEdgeRig/rig/PatchWeightRig/SimPatchWeights>
 
 Prim Stack:
-    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/SimPatchWeights
-    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass
+    CurveTrackRig.usda   /CurveTrackRig/rig/PatchWeightRig/SimPatchWeights
+    CurveTrackRig.usda   /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass
 
 Child names:
      ['PatchClass_math', 'Patch0_math']
@@ -92,12 +92,12 @@ Child names:
 Results for composing </FergusCloak/rig/LEdgeRig/rig/PatchWeightRig/SimPatchWeights/PatchClass_math>
 
 Prim Stack:
-    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass_math
+    CurveTrackRig.usda   /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass_math
 
 ------------------------------------------------------------------------
 Results for composing </FergusCloak/rig/LEdgeRig/rig/PatchWeightRig/SimPatchWeights/Patch0_math>
 
 Prim Stack:
-    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/Patch0_math
-    CurveTrackRig.sdf    /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass_math
+    CurveTrackRig.usda   /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/Patch0_math
+    CurveTrackRig.usda   /CurveTrackRig/rig/PatchWeightRig/PatchWeightsClass/PatchClass_math
 

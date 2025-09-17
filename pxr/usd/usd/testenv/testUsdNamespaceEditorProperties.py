@@ -2,30 +2,51 @@
 #
 # Copyright 2023 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 import sys, os, unittest
 from pxr import Sdf, Usd, Tf, Plug
 
 class TestUsdNamespaceEditorProperties(unittest.TestCase):
+
+    # Calls CanApplyEdits and ApplyEdits on the given editor and verifies both
+    # succeed. If expectedObjectsChangedRenamedProperties is provided, this also verifies 
+    # that listening to the ObjectsChanged notice will send a notice holding 
+    # the expected renamed properties specified.
+    def _ApplyEditWithVerification(self, editor, 
+            expectedObjectsChangedRenamedProperties = None):
+
+        # receivedObjectsChanged is used for sanity checking that the notice
+        # handler was indeed called as expected.
+        receivedObjectsChanged = False
+        def _OnObjectsChangedVerifyRenamedPropertiesNotices(notice, sender):
+            nonlocal receivedObjectsChanged
+            receivedObjectsChanged = True
+
+            # Compare the notice's renamed properties with the expected
+            # properties or verify that renamed properties is empty if we don't
+            # expect renamed properties
+            if expectedObjectsChangedRenamedProperties is None:
+                self.assertEqual(notice.GetRenamedProperties(), [])
+            else:
+                self.assertEqual(notice.GetRenamedProperties(),
+                                 expectedObjectsChangedRenamedProperties)
+
+        # Register the ObjectsChange listener; we revoke it after applying the
+        # edits
+        objectsChanged = Tf.Notice.RegisterGlobally(
+            Usd.Notice.ObjectsChanged, 
+            _OnObjectsChangedVerifyRenamedPropertiesNotices)
+
+        try:
+            # Verify CanApply and Apply
+            self.assertTrue(editor.CanApplyEdits())
+            self.assertTrue(editor.ApplyEdits())
+            # Sanity check on the notice listener being called.
+            self.assertTrue(receivedObjectsChanged)
+        finally:
+            objectsChanged.Revoke()
 
     # Verifies the fields and property stack of the property at path 
     # /C.C_Root_Attr when the basic stage is loaded. The fields we verify here
@@ -198,8 +219,7 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
                     self.assertTrue(editor.DeletePropertyAtPath(propPath))
                 else:
                     self.assertTrue(editor.DeleteProperty(prop))
-                self.assertTrue(editor.CanApplyEdits())
-                self.assertTrue(editor.ApplyEdits())
+                self._ApplyEditWithVerification(editor)
 
                 # Verify the property no longer exists.
                 self.assertFalse(prop)
@@ -269,8 +289,8 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
                         propPath, newPropPath))
                 else:
                     self.assertTrue(editor.RenameProperty(prop, newName))
-                self.assertTrue(editor.CanApplyEdits())
-                self.assertTrue(editor.ApplyEdits())
+                self._ApplyEditWithVerification(editor,
+                    expectedObjectsChangedRenamedProperties = [(propPath, newName)])
 
                 # Verify the original property no longer exists.
                 self.assertFalse(prop)
@@ -341,8 +361,7 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
                     else:
                         self.assertTrue(
                             editor.ReparentProperty(prop, newParent))
-                    self.assertTrue(editor.CanApplyEdits())
-                    self.assertTrue(editor.ApplyEdits())
+                    self._ApplyEditWithVerification(editor)
 
                     # Verify the original property no longer exists.
                     self.assertFalse(prop)
@@ -466,8 +485,7 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
                     else:
                         self.assertTrue(editor.ReparentProperty(
                             prop, newParent, newName))
-                    self.assertTrue(editor.CanApplyEdits())
-                    self.assertTrue(editor.ApplyEdits())
+                    self._ApplyEditWithVerification(editor)
 
                     # Verify the original property no longer exists.
                     self.assertFalse(prop)
@@ -829,7 +847,7 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
             # identifier regardless of platform
             def getFormattedCwd():
                 drive, tail = os.path.splitdrive(os.getcwd())
-                return drive.lower() + tail.replace('\\', '/')
+                return drive + tail.replace('\\', '/')
 
             uneditableLayerMessage = (
                 "The spec @{cwd}/basic/sub_1.usda@<{propPath}> cannot be "
@@ -879,9 +897,11 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
             # Helper for verifying that the following edits to the properties 
             # that aren't affected by sublayer1 were performed followed by 
             # resetting the stage for the next edit.
-            def _VerifyPropertyWasEditedAndReset(propPath, newPropPath = None):
-                self.assertTrue(editor.CanApplyEdits())
-                self.assertTrue(editor.ApplyEdits())
+            def _VerifyPropertyWasEditedAndReset(propPath, newPropPath = None,
+                    expectedObjectsChangedRenamedProperties = None):
+                self._ApplyEditWithVerification(editor,
+                    expectedObjectsChangedRenamedProperties = \
+                        expectedObjectsChangedRenamedProperties)
 
                 # The successful edits on these properties will affect the root 
                 # layer but won't affect sublayer1
@@ -898,7 +918,7 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
                 # again
                 stage.GetRootLayer().Reload()
                 nonlocal prop
-                primA = stage.GetPropertyAtPath(propPath)
+                prop = stage.GetPropertyAtPath(propPath)
                 self.assertTrue(prop)
 
             # Can delete the property
@@ -911,7 +931,8 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
             # Can rename the property
             newPropPath = propPath + "_New"
             self.assertTrue(editor.RenameProperty(prop, newPropName))
-            _VerifyPropertyWasEditedAndReset(propPath, newPropPath)
+            _VerifyPropertyWasEditedAndReset(propPath, newPropPath,
+                expectedObjectsChangedRenamedProperties = [(propPath, newPropName)])
 
             # Can reparent property without rename
             newPropPath = newParentPrim.GetPath().AppendProperty(propName)
@@ -994,8 +1015,7 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
 
             # Verify we can delete the property
             self.assertTrue(editor.DeleteProperty(prop))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor)
 
             # Verify the property is deleted then reset
             self.assertFalse(stage.GetPropertyAtPath(propPath))
@@ -1009,8 +1029,8 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
             # Verify we can renanme the property
             newName = "NewName"    
             self.assertTrue(editor.RenameProperty(prop, newName))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor,
+                expectedObjectsChangedRenamedProperties = [(prop.GetPath(), newName)])
 
             # Verify the property is moved then reset
             self.assertFalse(stage.GetPropertyAtPath(propPath))
@@ -1025,8 +1045,7 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
             # Verify we can renparent the property
             newParent = stage.GetPrimAtPath("/C")
             self.assertTrue(editor.ReparentProperty(prop, newParent))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor)
 
             # Verify the property is moved then reset
             self.assertFalse(stage.GetPropertyAtPath(propPath))
@@ -1166,8 +1185,7 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
             # Verify that we can delete the property, delete it, and make sure
             # it no longer exists on the stage.
             self.assertTrue(editor.DeleteProperty(prop))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor)
             self.assertFalse(stage.GetPropertyAtPath(propPath))
 
             # Reset the stage for the next case.
@@ -1175,7 +1193,8 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
 
         # Helper to verify that the property at that path can be successfully
         # moved to a new path. Resets the stage to be unedited afterward.
-        def _VerifyCanMovePropertyAtPath(propPath, newPropPath):
+        def _VerifyCanMovePropertyAtPath(propPath, newPropPath,
+                expectedObjectsChangedRenamedProperties = None):
             # Verify the property actually exists first, and make sure the 
             # new property does not exist.
             prop = stage.GetPropertyAtPath(propPath)
@@ -1186,8 +1205,9 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
             # no longer exists at the old path but does exist at the new path.
             self.assertTrue(
                 editor.MovePropertyAtPath(propPath, newPropPath))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor,
+                expectedObjectsChangedRenamedProperties = \
+                    expectedObjectsChangedRenamedProperties)
             self.assertFalse(stage.GetPropertyAtPath(propPath))
             self.assertTrue(stage.GetPropertyAtPath(newPropPath))
 
@@ -1198,19 +1218,14 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
         # necessitating relocates as opposed to any requirements related to
         # instancing.
         def _VerifyCannotEditPropertyWithoutRelocates(prop):
-            _VerifyCannotApplyDeleteProperty(prop, 
-                "The property to delete must be deactivated rather than "
-                "deleted since it composes opinions introduced by ancestral "
-                "composition arcs; deletion via deactivation is not yet "
-                "supported")
-            _VerifyCannotApplyRenameProperty(prop, "New_Attr", 
-                "The property to move requires authoring relocates since it "
-                "composes opinions introduced by ancestral composition arcs; "
-                "authoring relocates is not supported for properties")
+            expectedMessage = "The property to edit requires authoring " \
+                "relocates since it composes opinions introduced by " \
+                "ancestral composition arcs; authoring relocates is not " \
+                "supported for properties"
+            _VerifyCannotApplyDeleteProperty(prop, expectedMessage)
+            _VerifyCannotApplyRenameProperty(prop, "New_Attr", expectedMessage)
             _VerifyCannotApplyReparentProperty(prop, basicRootPrim, 
-                "The property to move requires authoring relocates since it "
-                "composes opinions introduced by ancestral composition arcs; "
-                "authoring relocates is not supported for properties")
+                                               expectedMessage)
 
         # Open the stage and get the prims to test.
         stage, instance1, instance2, nonInstancePrim, prototypePrim = \
@@ -1242,11 +1257,17 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
         # Like with delete, we can rename these same instance and non-instance 
         # properties (as long as the new name is valid).
         _VerifyCanMovePropertyAtPath(
-            "/Instance1.Instance1_Attr", "/Instance1.NewAttr")
+            "/Instance1.Instance1_Attr", "/Instance1.NewAttr",
+                expectedObjectsChangedRenamedProperties = [
+                    ('/Instance1.Instance1_Attr', 'NewAttr')])
         _VerifyCanMovePropertyAtPath(
-            "/Instance2.Instance2_Attr", "/Instance2.NewAttr")
+            "/Instance2.Instance2_Attr", "/Instance2.NewAttr",
+                expectedObjectsChangedRenamedProperties = [
+                    ('/Instance2.Instance2_Attr', 'NewAttr')])
         _VerifyCanMovePropertyAtPath(
-            "/NonInstancePrim.NonInstance_Attr", "/NonInstancePrim.NewAttr")
+            "/NonInstancePrim.NonInstance_Attr", "/NonInstancePrim.NewAttr",
+                expectedObjectsChangedRenamedProperties = [
+                    ('/NonInstancePrim.NonInstance_Attr', 'NewAttr')])
 
         # We can also reparent these properties...
         # ...from an instance to another instance
@@ -1361,8 +1382,7 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
             # Verify that we can delete the property, delete it, and make sure
             # it no longer exists on the stage.
             self.assertTrue(editor.DeleteProperty(prop))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor)
             self.assertFalse(stage.GetPropertyAtPath(propPath))
 
             # Reset the stage for the next case.
@@ -1370,7 +1390,8 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
 
         # Helper to verify that the property at that path can be successfully
         # moved to a new path. Resets the stage to be unedited afterward.
-        def _VerifyCanMovePropertyAtPath(propPath, newPropPath):
+        def _VerifyCanMovePropertyAtPath(propPath, newPropPath,
+                expectedObjectsChangedRenamedProperties = None):
             # Verify the property actually exists first, and make sure the 
             # new property does not exist.
             prop = stage.GetPropertyAtPath(propPath)
@@ -1381,8 +1402,9 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
             # no longer exists at the old path but does exist at the new path.
             self.assertTrue(
                 editor.MovePropertyAtPath(propPath, newPropPath))
-            self.assertTrue(editor.CanApplyEdits())
-            self.assertTrue(editor.ApplyEdits())
+            self._ApplyEditWithVerification(editor,
+                expectedObjectsChangedRenamedProperties = \
+                    expectedObjectsChangedRenamedProperties)
             self.assertFalse(stage.GetPropertyAtPath(propPath))
             self.assertTrue(stage.GetPropertyAtPath(newPropPath))
 
@@ -1396,7 +1418,8 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
             reparentedPropPath = \
                 Sdf.Path("/BasicRootPrim").AppendProperty(propPath.name)
             _VerifyCanDeletePropertyAtPath(propPath)
-            _VerifyCanMovePropertyAtPath(propPath, renamedPropPath)
+            _VerifyCanMovePropertyAtPath(propPath, renamedPropPath,
+                expectedObjectsChangedRenamedProperties = [(propPath, "NewPropName")])
             _VerifyCanMovePropertyAtPath(propPath, reparentedPropPath)
 
         # Helper functions for testing prims that we expect to NOT be able to 
@@ -1467,19 +1490,15 @@ class TestUsdNamespaceEditorProperties(unittest.TestCase):
             reparentedPropPath = \
                 Sdf.Path("/BasicRootPrim").AppendProperty(propPath.name)
 
-            _VerifyCannotApplyDeletePropertyAtPath(propPath,
-                "The property to delete must be deactivated rather than "
-                "deleted since it composes opinions introduced by ancestral "
-                "composition arcs; deletion via deactivation is not yet "
-                "supported")
-            _VerifyCannotApplyMovePropertyAtPath(propPath, renamedPropPath,
-                "The property to move requires authoring relocates since it "
-                "composes opinions introduced by ancestral composition arcs; "
-                "authoring relocates is not supported for properties")
-            _VerifyCannotApplyMovePropertyAtPath(propPath, reparentedPropPath,
-                "The property to move requires authoring relocates since it "
-                "composes opinions introduced by ancestral composition arcs; "
-                "authoring relocates is not supported for properties")
+            expectedMessage = "The property to edit requires authoring " \
+                "relocates since it composes opinions introduced by " \
+                "ancestral composition arcs; authoring relocates is not " \
+                "supported for properties"
+            _VerifyCannotApplyDeletePropertyAtPath(propPath, expectedMessage)
+            _VerifyCannotApplyMovePropertyAtPath(propPath, renamedPropPath, 
+                                                 expectedMessage)
+            _VerifyCannotApplyMovePropertyAtPath(propPath, reparentedPropPath, 
+                                                 expectedMessage)
 
         # /PrimWithReference has a direct reference to @ref.usda@</ReferencePrim>
 

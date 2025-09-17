@@ -5,7 +5,7 @@ Usdz File Format Specification
 .. include:: rolesAndUtils.rst
 .. include:: <isonum.txt>
 
-Copyright |copy| 2018, Pixar Animation Studios,  *version 1.2*
+Copyright |copy| 2018, Pixar Animation Studios,  *version 1.3*
 
 .. contents:: :local:
 
@@ -48,9 +48,9 @@ other formats embedded within the archive. This document provides the
 specification for such a format, for which we will assign the . **usdz**
 extension; we refer to the format as "the usdz format", as we similarly refer to
 the usda and usdc file formats; only when forming the start of a sentence or
-word in a class name do we capitalize it, such as UsdUsdzFileFormat. We refer
+word in a class name do we capitalize it, such as SdfUsdzFileFormat. We refer
 to usdz files as :bi:`packages`, and the design rests on a new Ar-level
-abstraction of a package, of which the UsdUsdzFileFormat is the first
+abstraction of a package, of which the SdfUsdzFileFormat is the first
 implementation, but we retain the architecture required to easily add others in
 the future, if needed.
 
@@ -60,15 +60,15 @@ Usdz Specification
 A usdz package is an uncompressed zip archive that is allowed to contain the
 following file types:
 
- +-------------+--------------------------------+
- | Kind        | Allowed File Types             |
- +=============+================================+
- | USD         | **usda**, **usdc**, **usd**    |
- +-------------+--------------------------------+
- | Image       | **png**, **jpeg**, **exr**     |
- +-------------+--------------------------------+
- | Audio       | **M4A**, **MP3**, **WAV**      |
- +-------------+--------------------------------+
+ +-------------+----------------------------------------+
+ | Kind        | Allowed File Types                     |
+ +=============+========================================+
+ | USD         | **usda**, **usdc**, **usd**            |
+ +-------------+----------------------------------------+
+ | Image       | **png**, **jpeg**, **exr**, **avif**   |
+ +-------------+----------------------------------------+
+ | Audio       | **M4A**, **MP3**, **WAV**              |
+ +-------------+----------------------------------------+
 
 The rest of the section goes into more detail about the specification.
 
@@ -198,6 +198,7 @@ Clients wishing to deliver "streamable content" `may wish to consider other layo
         * Otherwise, the packaging API will fail to run unless the Default
           Layer is manually specified.
 
+.. _spec_usdz_file_types:
 
 File Types
 ----------
@@ -211,8 +212,8 @@ currently. Allowable file types are currently:
       OS updates)  
 
     * **png**, **jpeg** (any of the multiple common extensions for 
-      jpeg), and **OpenEXR** files for images/textures. See 
-      :ref:`Working With Image File Formats<image_file_formats>` for more 
+      jpeg), **OpenEXR** and **AV1 Image (AVIF)** files for images/textures. 
+      See :ref:`Working With Image File Formats<image_file_formats>` for more 
       details on supported image file formats.
 
     * **M4A, MP3, WAV** files for embedded audio (given in order of preferred 
@@ -262,7 +263,7 @@ metadata (see next item).
     FileFormat itself will attempt to pre-resolve any path to other files 
     within the package using a specialzed *ArPackageResolver* , because a
     generic ArResolver cannot "see inside" a package, and therefore cannot
-    resolve to files inside a package.  The behavior of the *UsdUsdzResolver*
+    resolve to files inside a package.  The behavior of the *SdfUsdzResolver*
     can be described as follows:
 
         * First attempt to anchor the path to the layer-within-the-package in
@@ -408,3 +409,13 @@ constraints. The toolset also includes:
       enforce stricter "web-compliant" rules that disallow certain advanced USD
       features that web-browsers do not yet support.
 
+Changes, by Version
+===================
+
+Version 1.3 - Current Head
+--------------------------
+
+From version 1.2:
+
+    * :ref:`Adds AV1 Image (AVIF) file support <spec_usdz_file_types>`. 
+      AVIF is now a supported file type for images/textures.

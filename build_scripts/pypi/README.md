@@ -3,8 +3,8 @@
 This directory contains scripts and other files used to make wheel packages for
 distributing via standard python applications like pip.
 
-The build is set up to run on azure-pipelines, and can be triggered by changing
-any of the files here and committing to dev or release.
+The build is set up to run on GitHub PyPiPackaging workflow, and can be 
+triggered by changing any of the files here and committing to dev or release.
 
 ## Generating New Packages
 
@@ -27,9 +27,9 @@ and specifying the post-release tag as a parameter in the UI.
 Other parameters in setup.py are 
 [documented here](https://packaging.python.org/guides/distributing-packages-using-setuptools).
 
-Once these changes are committed run the pipeline. It will create an artifact
-called `dist` that contains the wheel packages for each platform and python
-version. The pipeline tests that these can be installed and used, to test
+When the PyPIPackaging GitHub workflow is run, it will create an artifact 
+called `dist` that contains the wheel packages for each platform and python 
+version. The workflow tests that these can be installed and used, to test 
 locally you can download the dist artifact, extract it, and run
 
 ```
@@ -38,8 +38,10 @@ python -m pip install --no-index --find-links=file:///path/to/dist usd-core
 
 ## Steps to Publish
 
-From the azure pipeline download the artifact file called dist.zip. On a Linux
-host you could publish like so, in the directory with the dist file.
+Download the artifact file called dist.zip from the [GiHub PyPiPackaging 
+workflow](https://github.com/PixarAnimationStudios/OpenUSD/actions/workflows/pypi.yml)
+for the build you want to publish. On a Linux host you could publish like so, in 
+the directory with the dist file.
 
 ```
 unzip dist.zip
@@ -59,8 +61,6 @@ support for the python version, just updating those string parameters should be
 all it takes. setup.py should also be updated to indicate that this package 
 supports the new version of python.
 
-Support for python 2.7 would be similar, but on Windows it may require getting
-a [specific version of visual studio](https://wiki.python.org/moin/WindowsCompilers)
 
 ## Steps to Update Docker Container on Linux
 
@@ -68,29 +68,11 @@ Linux builds are done in [Python's manylinux build
 environment](https://github.com/pypa/manylinux). This helps guarantee that we
 can run the binaries on many different linux distros. The default build
 environment can be used in a docker container, but the container does not
-include cmake in a compatible version for building USD. Also, azure pipelines
+include cmake in a compatible version for building USD. Also, GitHub workflow
 has some specific requirements for docker images that need to be met to build
 there.
 
 For that reason we have a docker environment defined in the docker folder in
 this directory. If that Dockerfile is updated, it must also be built, uploaded
-to a docker registry where azure can find it, and the pipeline xml file may
-need to be updated to point to the new docker image when building.
+to a docker registry where GitHub workflow can find it.
 
-For example, after editing the Dockerfile
-```
-cd build_scripts/pypi/docker
-docker build . -t usd-build-env-name:v2.0
-docker push usd-build-env-name:v2.0
-```
-Then update the azure pipeline xml file to change from
-```
-container:
-  image: old-env:latest
-```
-To
-```
-container:
-  image: usd-build-env-name:v2.0
-```
-That should kick off a new packaging build using the new docker image.

@@ -1,25 +1,8 @@
 #
 # Copyright 2016 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 from pxr import Usd
 from .qt import QtCore, QtWidgets
@@ -41,8 +24,10 @@ class AttributeValueEditor(QtWidgets.QWidget):
         self._defaultView = self._ui.valueViewer
 
         from .arrayAttributeView import ArrayAttributeView
+        from .splineViewer import SplineViewer
         self._extraAttrViews = [
                 ArrayAttributeView(self),
+                SplineViewer(parent=self),
                 ]
 
         for attrView in self._extraAttrViews:
@@ -54,6 +39,15 @@ class AttributeValueEditor(QtWidgets.QWidget):
         # pass the appController instance from which to retrieve
         # variable data.
         self._appController = appController
+        for attrView in self._extraAttrViews:
+            self._appController._dataModel.selection \
+                .signalPrimSelectionChanged.connect(self.clear)
+            from .splineViewer import SplineViewer
+            if isinstance(attrView, SplineViewer):
+                self._appController._dataModel.currentFrameChanged.connect(
+                    attrView.SetCurrentFrame)
+                self._appController._dataModel.frameRangeChanged.connect(
+                    attrView.SetStartAndEndTime)
 
     def populate(self, primPath, propName):
         # called when the selected attribute has changed
@@ -92,6 +86,8 @@ class AttributeValueEditor(QtWidgets.QWidget):
         # If the current attribute doesn't belong to the current prim, don't
         # display its value.
         if self._attribute.GetPrimPath() != self._primPath:
+            if whichView := self._FindView(self._attribute):
+                whichView.Clear()
             self._ui.valueViewer.setText("")
             return
 
@@ -125,5 +121,7 @@ class AttributeValueEditor(QtWidgets.QWidget):
         # set the value editor to 'no attribute selected' mode
         self._isSet = False
         self._ui.valueViewer.setText("")
+        for attrView in self._extraAttrViews:
+            attrView.Clear()
         # make sure we're showing the default view
         self._ui.stackedWidget.setCurrentWidget(self._defaultView)

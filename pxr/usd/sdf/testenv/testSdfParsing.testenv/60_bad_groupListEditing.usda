@@ -1,0 +1,10 @@
+#usda 1.0
+#tagged-as-never-update
+
+def MfScope "foo" (
+    # test using None in a list op for inherit paths
+    add inherits = None
+)
+{
+}
+

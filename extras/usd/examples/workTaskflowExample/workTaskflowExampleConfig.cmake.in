@@ -1,0 +1,15 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Set Taskflow_DIR to point to the directory containing the Taskflow
+# package config file used to build this library originally so that the
+# find_dependency call will pick up that file. Downstream consumers
+# can override this by setting Taskflow_DIR themselves.
+if (NOT Taskflow_DIR)
+    set_and_check(Taskflow_DIR [[@PACKAGE_Taskflow_DIR@]])
+endif()
+find_dependency(Taskflow)
+
+include("${CMAKE_CURRENT_LIST_DIR}/workTaskflowExampleTargets.cmake")
+check_required_components(workTaskflowExample)

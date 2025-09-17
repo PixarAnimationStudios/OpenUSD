@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
@@ -47,6 +30,8 @@ using std::string;
 using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+static constexpr char theNamespaceDelimiter = SDF_PATH_NS_DELIMITER_CHAR;
 
 namespace {
 
@@ -146,26 +131,41 @@ SdfPath::SdfPath(const std::string &path) {
     }
 }
 
+static TfStaticData<const SdfPath> theEmptyPath;
 const SdfPath &
 SdfPath::EmptyPath()
 {
-    static SdfPath theEmptyPath;
-    return theEmptyPath;
+    return *theEmptyPath;
+}
+
+class Sdf_PathInitAccess
+{
+public:
+    static SdfPath NewAbsoluteRootPath() {
+        return SdfPath { Sdf_PathNode::GetAbsoluteRootNode(), nullptr };
+    }
+    static SdfPath NewReflexiveRelativePath() {
+        return SdfPath { Sdf_PathNode::GetRelativeRootNode(), nullptr };
+    }
+};      
+
+TF_MAKE_STATIC_DATA(const SdfPath, theAbsoluteRootPath) {
+    *theAbsoluteRootPath = Sdf_PathInitAccess::NewAbsoluteRootPath();
+}
+
+TF_MAKE_STATIC_DATA(const SdfPath, theReflexiveRelativePath) {
+    *theReflexiveRelativePath = Sdf_PathInitAccess::NewReflexiveRelativePath();
 }
 
 const SdfPath &
 SdfPath::AbsoluteRootPath()
 {
-    static SdfPath *theAbsoluteRootPath =
-        new SdfPath(Sdf_PathNode::GetAbsoluteRootNode(), nullptr);
     return *theAbsoluteRootPath;
 }
 
 const SdfPath &
 SdfPath::ReflexiveRelativePath()
 {
-    static SdfPath *theReflexiveRelativePath =
-        new SdfPath(Sdf_PathNode::GetRelativeRootNode(), nullptr);
     return *theReflexiveRelativePath;
 }
 
@@ -393,25 +393,38 @@ SdfPath::GetPrefixes(SdfPathVector *prefixes) const
 void
 SdfPath::GetPrefixes(SdfPathVector *prefixes, size_t numPrefixes) const
 {
-    Sdf_PathNode const *prop = _propPart.get();
-    Sdf_PathNode const *prim = _primPart.get();
-
     const size_t elemCount = GetPathElementCount();
     if (numPrefixes == 0 || numPrefixes > elemCount) {
         numPrefixes = elemCount;
     }
-
     prefixes->resize(numPrefixes);
+    GetPrefixes(TfSpan<SdfPath>(*prefixes));
+}
 
-    SdfPathVector::reverse_iterator iter = prefixes->rbegin();
+TfSpan<SdfPath>
+SdfPath::GetPrefixes(TfSpan<SdfPath> prefixes) const
+{
+    // We can fill up to prefixes.size() elements.
+    size_t numPrefixes = std::min(prefixes.size(), GetPathElementCount());
+    // If we are not filling the whole span, cut it to the subspan we will fill.
+    if (numPrefixes < prefixes.size()) {
+        prefixes = prefixes.first(numPrefixes);
+    }
+    
+    Sdf_PathNode const *prim = _primPart.get();
+    Sdf_PathNode const *prop = _propPart.get();
+
+    TfSpan<SdfPath>::reverse_iterator iter = prefixes.rbegin();
     for (; prop && numPrefixes; --numPrefixes) {
         *iter++ = SdfPath(prim, prop);
         prop = prop->GetParentNode();
     }
-    for (; prim && numPrefixes; --numPrefixes) {
+    // no need to check 'prim' in the loop since we range-checked above.
+    for (; numPrefixes; --numPrefixes) {
         *iter++ = SdfPath(prim, nullptr);
         prim = prim->GetParentNode();
     }
+    return prefixes;
 }
 
 SdfPathAncestorsRange
@@ -853,17 +866,24 @@ SdfPath::AppendChild(TfToken const &childName) const {
         }
         return true;
     };
+    
     Sdf_PathPrimNodeHandle childNode = 
         Sdf_PathNode::FindOrCreatePrim(_primPart.get(), childName, isValid);
 
     if (ARCH_UNLIKELY(!childNode)) {
         if (childName == SdfPathTokens->parentPathElement) {
-            return GetParentPath();
+            ret = GetParentPath();
+        }
+        else {
+            ret._primPart = nullptr;
         }
     }
+    else {
+        ret._primPart = std::move(childNode);
+        cache.Store(_primPart, childName, ret._primPart, storeIndex);
+    }
 
-    return { std::move(childNode), {} };
-    
+    return ret;
 }
 
 
@@ -1096,6 +1116,19 @@ SdfPath::AppendElementString(const std::string &element) const
     return AppendElementToken(TfToken(element));
 }
 
+TF_MAKE_STATIC_DATA(const string, theMapperElementString) {
+    *theMapperElementString =
+        SdfPathTokens->propertyDelimiter.GetString() +
+        SdfPathTokens->mapperIndicator.GetString() +
+        SdfPathTokens->relationshipTargetStart.GetString();
+}
+
+TF_MAKE_STATIC_DATA(const string, theExpressionElementString) {
+    *theExpressionElementString =
+        SdfPathTokens->propertyDelimiter.GetString() +
+        SdfPathTokens->expressionIndicator.GetString();
+}
+
 SdfPath
 SdfPath::AppendElementToken(const TfToken &elementTok) const
 {
@@ -1134,21 +1167,12 @@ SdfPath::AppendElementToken(const TfToken &elementTok) const
         // This is the ambiguous one.  First check for the special symbols,
         // and if it looks like a "plain old property", consult parent type
         // to determine what the property sub-type should be.
-
         if (IsPropertyPath()) {
-            static string mapperStr =
-                SdfPathTokens->propertyDelimiter.GetString() +
-                SdfPathTokens->mapperIndicator.GetString() +
-                SdfPathTokens->relationshipTargetStart.GetString();
-            static string expressionStr =
-                SdfPathTokens->propertyDelimiter.GetString() +
-                SdfPathTokens->expressionIndicator.GetString();
-        
-            if (element == expressionStr) {
+            if (element == *theExpressionElementString) {
                 return AppendExpression();
             }
-            else if (TfStringStartsWith(element, mapperStr)) {
-                const size_t prefixSz(mapperStr.length());
+            else if (TfStringStartsWith(element, *theMapperElementString)) {
+                const size_t prefixSz(theMapperElementString->length());
                 SdfPath target(element.substr(prefixSz, 
                                               element.length()-(prefixSz+1)));
                 return AppendMapper(target);
@@ -1886,12 +1910,8 @@ SdfPath::TokenizeIdentifier(const std::string &name)
 {
     std::vector<std::string> result;
 
-    // This code currently assumes the namespace delimiter is one character.
-    const char namespaceDelimiter =
-        SdfPathTokens->namespaceDelimiter.GetText()[0];
-
     // Empty or last character is namespace delimiter
-    if (name.empty() || name.back() == namespaceDelimiter)
+    if (name.empty() || name.back() == theNamespaceDelimiter)
     {
         return result;
     }
@@ -1907,13 +1927,13 @@ SdfPath::TokenizeIdentifier(const std::string &name)
     }
 
     // Count delimiters and reserve space in result.
-    result.reserve(1 + std::count(name.begin(), name.end(),
-        namespaceDelimiter));
+    result.reserve(
+        1 + std::count(name.begin(), name.end(), theNamespaceDelimiter));
 
     for (++iterator; iterator != view.end(); ++iterator)
     {
         // Allow a namespace delimiter.
-        if (*iterator == TfUtf8CodePointFromAscii(SDF_PATH_NS_DELIMITER_CHAR))
+        if (*iterator == TfUtf8CodePointFromAscii(theNamespaceDelimiter))
         {
             // Record token.
             result.push_back(std::string(anchor.GetBase(), iterator.GetBase()));
@@ -2013,9 +2033,7 @@ std::string
 SdfPath::StripNamespace(const std::string &name)
 {
     // This code currently assumes the namespace delimiter is one character.
-    const char namespaceDelimiter =
-        SdfPathTokens->namespaceDelimiter.GetText()[0];
-    const std::string::size_type n = name.rfind(namespaceDelimiter);
+    const std::string::size_type n = name.rfind(theNamespaceDelimiter);
     return n == std::string::npos ? name : name.substr(n + 1);
 }
 
@@ -2029,9 +2047,6 @@ std::pair<std::string, bool>
 SdfPath::StripPrefixNamespace(const std::string &name, 
                               const std::string &matchNamespace)
 {
-    static const char namespaceDelimiter =
-        SdfPathTokens->namespaceDelimiter.GetText()[0];
-
     if (matchNamespace.empty()) {
         return std::make_pair(name, false);
     }
@@ -2041,7 +2056,7 @@ SdfPath::StripPrefixNamespace(const std::string &name,
         size_t matchNamespaceLen = matchNamespace.size();
 
         // Now check to make sure the next character is the namespace delimiter
-        if (matchNamespace[matchNamespaceLen - 1] == namespaceDelimiter) {
+        if (matchNamespace[matchNamespaceLen - 1] == theNamespaceDelimiter) {
 
             // The matched namespace already contained the end delimiter,
             // nothing more to do.
@@ -2051,7 +2066,7 @@ SdfPath::StripPrefixNamespace(const std::string &name,
 
             // The matched namespace needs an extra delimiter ':' so check for
             // it now.
-            if (name[matchNamespaceLen] == namespaceDelimiter) {
+            if (name[matchNamespaceLen] == theNamespaceDelimiter) {
                 return std::make_pair(name.substr(matchNamespaceLen + 1), true);
             }
 

@@ -8,14 +8,65 @@
 
 This module provides schemas for encoding information on USD prims
 for client graphical user interface tools to use in deciding how to 
-organize and present the prims in GUI layouts.  This information does
-\em not guide the 3D rendering of a data contained in ascene, rather it's 
+organize and present the prims in UI layouts.  This information does
+\em not guide the 3D rendering of data contained in a scene, rather it's 
 about how to visualize the nodes in the graph that comprises a UsdStage.
 
 The primary classes are:
 
-\li UsdUINodeGraphNodeAPI - encodes layout information for prims that 
+\li UsdUINodeGraphNodeAPI - Encodes layout information for prims that 
 participate in an interconnected (via relationships) graph, as would
 prims in a shading network.
+\li UsdUIObjectHints - Provides API for reading and writing fields in
+UsdObject's \c uiHints metadata dictionary.
+\li UsdUIPrimHints - Provides API for reading and writing fields in UsdPrim's
+\c uiHints metadata dictionary.
+\li UsdUIPropertyHints - Provides API for reading and writing fields in
+UsdProperty's \c uiHints metadata dictionary.
+\li UsdUIAttributeHints - Provides API for reading and writing fields in
+UsdAttribute's \c uiHints metadata dictionary.
+
+\section usdUI_hintsOverview UI Hints
+
+UI hints are, broadly speaking, metadata fields that pertain to presentation of
+scene data in a UI. Most such fields in USD are held in the \c uiHints metadata
+dictionary belonging to prims and properties. UsdUI provides API for reading
+and writing these values in the form of "hints" objects corresponding to the
+relevant core object types: UsdUIObjectHints, UsdUIPrimHints,
+UsdUIPropertyHints, and UsdUIAttributeHints. No unique hints apply only to
+UsdRelationship, so there is no UsdUIRelationshipHints.
+
+These objects provide access to the following hint fields:
+
+\li displayName (UsdUIObjectHints) - The user-facing name of a prim or
+property
+\li hidden (UsdUIObjectHints) - Flag indicating whether an object should be
+hidden from the UI
+\li displayGroup (UsdUIPropertyHints) - The name of the display group to which
+a property belongs
+\li shownIf (UsdUIPropertyHints) - An expression for determining whether to
+hide or show a property in the UI
+\li valueLabels (UsdUIAttributeHints) - A dictionary associating display labels
+with attribute values
+\li valueLabelsOrder (UsdUIAttributeHints) - User-facing order that valueLabels
+should appear in (typically in a combo box)
+\li displayGroupsExpanded (UsdUIPrimHints) - Flag dictionary indicating which
+of a prim's display groups should be expanded by default
+\li displayGroupsShownIf (UsdUIPrimHints) - Dictionary associating \c shownIf
+expressions with a prim's display groups
+
+Other UI-relevant metadata fields that are, for various reasons, not part of
+the \c uiHints dictionary include:
+
+\li userDoc and userDocBrief (provided by UsdPrimDefinition) - User-facing
+documentation and tooltip strings
+\li allowedTokens (UsdAttribute) - Valid values for token-valued attributes
+\li propertyOrder (UsdPrim) - The user-facing order a prim's properties should
+appear in
+\li displayGroupOrder (UsdPrim) - The user-facing order a prim's display groups
+should appear in (note: this field is now considered deprecated -- display group
+order should be determined by property order)
+\li limits (UsdAttribute) - Minimum and maximum values for an attribute
+\li arraySizeConstraint (UsdAttribute) - Array size and encoding information
 
 */

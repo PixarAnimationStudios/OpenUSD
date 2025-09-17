@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -69,6 +52,70 @@ HdMaterialSchema::GetMaterialNetwork(TfToken const &context)
         HdMaterialNetworkSchema(
             _GetTypedDataSource<HdContainerDataSource>(
                 HdMaterialSchemaTokens->universalRenderContext));
+}
+
+HdMaterialNetworkSchema
+HdMaterialSchema::GetMaterialNetwork(TfTokenVector const &contexts)
+{
+    for (TfToken const &context : contexts) {
+        if (auto b = _GetTypedDataSource<HdContainerDataSource>(context)) {
+            return HdMaterialNetworkSchema(b);
+        }
+    }
+
+    // If we can't find the context-specific binding, return the fallback.
+    return
+        HdMaterialNetworkSchema(
+            _GetTypedDataSource<HdContainerDataSource>(
+                HdMaterialSchemaTokens->universalRenderContext));
+}
+
+/*static*/
+TfToken
+HdMaterialSchema::GetLocatorTerminal(HdDataSourceLocator const& locator)
+{
+    return GetLocatorTerminal(locator, TfTokenVector());
+}
+
+/*static*/
+TfToken
+HdMaterialSchema::GetLocatorTerminal(HdDataSourceLocator const& locator, TfToken const &context)
+{
+    return GetLocatorTerminal(locator, TfTokenVector({context}));
+}
+
+/*static*/
+TfToken
+HdMaterialSchema::GetLocatorTerminal(
+        HdDataSourceLocator const& locator, TfTokenVector const& contexts)
+{
+    if (locator.GetElementCount() >= 4) {
+
+        // Always check the universal render context
+        static const HdDataSourceLocator universalTerminalLocator(
+            HdMaterialSchema::GetSchemaToken(),
+            HdMaterialSchemaTokens->universalRenderContext,
+            HdMaterialSchemaTokens->terminals
+        );
+        if (locator.Intersects(universalTerminalLocator)) {
+            return locator.GetElement(3);
+        }
+
+        // Check the render specific contexts
+        for (const TfToken& context : contexts) {
+            const HdDataSourceLocator terminalLocator(
+                HdMaterialSchema::GetSchemaToken(),
+                context,
+                HdMaterialSchemaTokens->terminals
+            );
+            if (locator.Intersects(terminalLocator)) {
+                return locator.GetElement(3);
+            }
+        }
+
+    }
+
+    return TfToken();
 }
 
 // --(END CUSTOM CODE: Schema Methods)--

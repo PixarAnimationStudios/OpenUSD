@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+
+    <!-- Custom Node - Outputting a mix of the input two colors  -->
+    <nodedef name="ND_colorMix" node="colorMix">
+        <input name="color1" type="color3" value="1,0,0" />
+        <input name="color2" type="color3" value="0,0,1" />
+        <input name="color1_amt" type="float" value="1" />
+        <input name="color2_amt" type="float" value="1" />
+        <output name="out" type="color3" />
+    </nodedef>
+
+    <nodegraph name="NG_colorMix" nodedef="ND_colorMix">
+        <multiply name="multi1" type="color3">
+            <input name="in1" type="color3" interfacename="color1" />
+            <input name="in2" type="float" interfacename="color1_amt" />
+        </multiply>
+        <multiply name="multi2" type="color3">
+            <input name="in1" type="color3" interfacename="color2" />
+            <input name="in2" type="float" interfacename="color2_amt" />
+        </multiply>
+        <add name="add1" type="color3">
+            <input name="in1" type="color3" nodename="multi1" />
+            <input name="in2" type="color3" nodename="multi2" />
+        </add>
+        <output name="out" type="color3" nodename="add1" />
+    </nodegraph>
+
+</materialx>

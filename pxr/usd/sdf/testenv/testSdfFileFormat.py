@@ -2,25 +2,8 @@
 #
 # Copyright 2018 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 from __future__ import print_function
 
@@ -33,39 +16,39 @@ class TestSdfFileFormat(unittest.TestCase):
 
         # FindById
         # Note that the id and extension are the same in our case
-        sdfFileFormat = Sdf.FileFormat.FindById('sdf')
+        sdfFileFormat = Sdf.FileFormat.FindById('usda')
         self.assertTrue(sdfFileFormat)
-        self.assertEqual(sdfFileFormat.GetFileExtensions(), ['sdf'])
+        self.assertEqual(sdfFileFormat.GetFileExtensions(), ['usda'])
 
         # FindByExtension
-        sdfFileFormat = Sdf.FileFormat.FindByExtension('sdf')
+        sdfFileFormat = Sdf.FileFormat.FindByExtension('usda')
         self.assertTrue(sdfFileFormat)
-        self.assertEqual(sdfFileFormat.GetFileExtensions(), ['sdf'])
+        self.assertEqual(sdfFileFormat.GetFileExtensions(), ['usda'])
         sdfFileFormatWithArgs = Sdf.FileFormat.FindByExtension(
-            'foo.sdf', {'target': 'sdf', 'documentation': 'doc string'})
+            'foo.usda', {'target': 'usd', 'documentation': 'doc string'})
         self.assertTrue(sdfFileFormatWithArgs)
-        self.assertEqual(sdfFileFormatWithArgs.GetFileExtensions(), ['sdf'])
+        self.assertEqual(sdfFileFormatWithArgs.GetFileExtensions(), ['usda'])
 
-        self.assertEqual(Sdf.FileFormat.FindByExtension('SDF'), sdfFileFormat)
-        self.assertEqual(Sdf.FileFormat.FindByExtension('Sdf'), sdfFileFormat)
-        self.assertEqual(Sdf.FileFormat.FindByExtension('sDF'), sdfFileFormat)
+        self.assertEqual(Sdf.FileFormat.FindByExtension('USDA'), sdfFileFormat)
+        self.assertEqual(Sdf.FileFormat.FindByExtension('Usda'), sdfFileFormat)
+        self.assertEqual(Sdf.FileFormat.FindByExtension('uSDA'), sdfFileFormat)
 
         # GetFileExtension
-        self.assertEqual(Sdf.FileFormat.GetFileExtension('foo.sdf'), 'sdf')
-        self.assertEqual(Sdf.FileFormat.GetFileExtension('/something/bar/foo.sdf'), 'sdf')
-        self.assertEqual(Sdf.FileFormat.GetFileExtension('./bar/baz/foo.sdf'), 'sdf')
+        self.assertEqual(Sdf.FileFormat.GetFileExtension('foo.usda'), 'usda')
+        self.assertEqual(Sdf.FileFormat.GetFileExtension('/something/bar/foo.usda'), 'usda')
+        self.assertEqual(Sdf.FileFormat.GetFileExtension('./bar/baz/foo.usda'), 'usda')
         fileWithArgs = Sdf.Layer.CreateIdentifier(
-            'foo.sdf', {'documentation' : 'doc string'})
-        self.assertEqual(Sdf.FileFormat.GetFileExtension(fileWithArgs), 'sdf')
+            'foo.usda', {'documentation' : 'doc string'})
+        self.assertEqual(Sdf.FileFormat.GetFileExtension(fileWithArgs), 'usda')
          
         # FindAllFileFormatExtensions
         exts = Sdf.FileFormat.FindAllFileFormatExtensions()
-        self.assertTrue('sdf' in exts)
+        self.assertTrue('usda' in exts)
 
         # FindAllDerivedFileFormatExtensions
         exts = Sdf.FileFormat.FindAllDerivedFileFormatExtensions(
-            Tf.Type.FindByName('SdfTextFileFormat'))
-        self.assertTrue('sdf' in exts)
+            Tf.Type.FindByName('SdfUsdaFileFormat'))
+        self.assertTrue('usda' in exts)
         with self.assertRaises(Tf.ErrorException):
             Sdf.FileFormat.FindAllDerivedFileFormatExtensions(Tf.Type())
 

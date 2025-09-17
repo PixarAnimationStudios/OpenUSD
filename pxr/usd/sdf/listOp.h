@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_SDF_LIST_OP_H
 #define PXR_USD_SDF_LIST_OP_H
@@ -65,11 +48,23 @@ struct Sdf_ListOpTraits
 
 /// \class SdfListOp
 ///
-/// Value type representing a list-edit operation.
-///
 /// SdfListOp is a value type representing an operation that edits a list.
-/// It may add or remove items, reorder them, or replace the list entirely.
+/// It may append or prepend items, delete them, or replace the list entirely.
 ///
+/// SdfListOp maintains lists of items to be prepended, appended, deleted, or 
+/// used explicitly. If used in explicit mode, the ApplyOperations method replaces the given list
+/// with the set explicit items. Otherwise, the ApplyOperations
+/// method is used to apply the list-editing options in the input list in the
+/// following order:
+/// - Delete
+/// - Prepend
+/// - Append
+///
+/// Lists are meant to contain unique values, and all list operations
+/// will remove duplicates if encountered. Prepending items and using
+/// explicit mode will preserve the position of the first of the duplicates 
+/// to be encountered, while appending items will preserve the last.
+
 template <typename T>
 class SdfListOp {
 public:
@@ -129,12 +124,6 @@ public:
     }
 
     /// Returns the explicit items.
-    const ItemVector& GetAddedItems() const
-    {
-        return _addedItems;
-    }
-
-    /// Returns the explicit items.
     const ItemVector& GetPrependedItems() const
     {
         return _prependedItems;
@@ -152,12 +141,6 @@ public:
         return _deletedItems;
     }
 
-    /// Returns the ordered items.
-    const ItemVector& GetOrderedItems() const
-    {
-        return _orderedItems;
-    }
-
     /// Return the item vector identified by \p type.
     SDF_API const ItemVector& GetItems(SdfListOpType type) const;
 
@@ -169,15 +152,36 @@ public:
     /// This is equivalent to calling ApplyOperations on an empty item vector.
     SDF_API ItemVector GetAppliedItems() const;
 
-    SDF_API void SetExplicitItems(const ItemVector &items);
-    SDF_API void SetAddedItems(const ItemVector &items);
-    SDF_API void SetPrependedItems(const ItemVector &items);
-    SDF_API void SetAppendedItems(const ItemVector &items);
-    SDF_API void SetDeletedItems(const ItemVector &items);
-    SDF_API void SetOrderedItems(const ItemVector &items);
+    /// Sets the explicit items. If duplicates are present in \p items, 
+    /// preserves the first occurence.
+    /// Returns true if no duplicates were present, false otherwise. If
+    /// duplicates were present, errMsg is set to indicate which item was duplicated.
+    SDF_API bool SetExplicitItems(const ItemVector &items, std::string* errMsg = nullptr);
+
+    /// Sets the prepended items. If duplicates are present in \p items, 
+    /// preserves the first occurence.
+    /// Returns true if no duplicates were present, false otherwise. If
+    /// duplicates were present, errMsg is set to indicate which item was duplicated.
+    SDF_API bool SetPrependedItems(const ItemVector &items, std::string* errMsg = nullptr);
+
+    /// Sets the appended items. If duplicates are present in \p items, 
+    /// preserves the last occurence.
+    /// Returns true if no duplicates were present, false otherwise. If
+    /// duplicates were present, errMsg is set to indicate which item was duplicated.
+    SDF_API bool SetAppendedItems(const ItemVector &items, std::string* errMsg = nullptr);
+
+    /// Sets the deleted items. If duplicates are present in \p items, 
+    /// preserves the first occurence.
+    /// Returns true if no duplicates were present, false otherwise. If
+    /// duplicates were present, errMsg is set to indicate which item was duplicated.
+    SDF_API bool SetDeletedItems(const ItemVector &items, std::string* errMsg = nullptr);
 
     /// Sets the item vector for the given operation \p type.
-    SDF_API void SetItems(const ItemVector &items, SdfListOpType type);
+    /// Removes duplicates in \p items if present.
+    /// Returns true if no duplicates were present, false otherwise. If
+    /// duplicates were present, errMsg is set to indicate which item was duplicated.
+    SDF_API bool SetItems(const ItemVector &items, SdfListOpType type, 
+                            std::string* errMsg = nullptr);
 
     /// Removes all items and changes the list to be non-explicit.
     SDF_API void Clear();
@@ -223,14 +227,19 @@ public:
     /// returned key is empty then the key is removed, otherwise it's replaced 
     /// with the returned key.
     /// 
-    /// If \p removeDuplicates is \c true and \p callback returns a key that was
-    /// previously returned for the current operation vector being processed,
-    /// the returned key will be removed.
+    /// If \p callback returns a key that was previously returned for the
+    /// current operation vector being processed, the returned key will be
+    /// removed.
     ///
     /// Returns true if a change was made, false otherwise.
     SDF_API
+    bool ModifyOperations(const ModifyCallback& callback);
+
+    /// \deprecated Please use ModifyOperations(const ModifyCallback& callback)
+    /// instead.
+    SDF_API
     bool ModifyOperations(const ModifyCallback& callback,
-                          bool removeDuplicates = false);
+                          bool unusedRemoveDuplicates);
 
     /// Replaces the items in the specified operation vector in the range
     /// (index, index + n] with the given \p newItems. If \p newItems is empty
@@ -243,6 +252,27 @@ public:
     /// over this one.
     SDF_API 
     void ComposeOperations(const SdfListOp<T>& stronger, SdfListOpType op);
+
+    /// \deprecated The add and reorder operations have been deprecated in favor 
+    /// of the append and prepend operations.
+    const ItemVector& GetAddedItems() const
+    {
+        return _addedItems;
+    }
+
+    /// \deprecated The add and reorder operations have been deprecated in favor 
+    /// of the append and prepend operations.
+    const ItemVector& GetOrderedItems() const
+    {
+        return _orderedItems;
+    }
+    /// \deprecated The add and reorder operations have been deprecated in favor 
+    /// of the append and prepend operations.
+    SDF_API void SetAddedItems(const ItemVector &items);
+
+    /// \deprecated The add and reorder operations have been deprecated in favor 
+    /// of the append and prepend operations.
+    SDF_API void SetOrderedItems(const ItemVector &items);
 
     friend inline size_t hash_value(const SdfListOp &op) {
         return TfHash::Combine(
@@ -278,16 +308,29 @@ private:
     typedef std::map<ItemType, typename _ApplyList::iterator, _ItemComparator>
         _ApplyMap;
 
+    void _PrependKeys(const ApplyCallback& cb,
+                      _ApplyList* result, _ApplyMap* search) const;
+    void _AppendKeys(const ApplyCallback& cb,
+                     _ApplyList* result, _ApplyMap* search) const;
+    void _DeleteKeys(const ApplyCallback& cb,
+                     _ApplyList* result, _ApplyMap* search) const;
+
+    /// \deprecated 
+    /// Use _PrependKeys or _AppendKeys instead.
     void _AddKeys(SdfListOpType, const ApplyCallback& cb,
                   _ApplyList* result, _ApplyMap* search) const;
-    void _PrependKeys(SdfListOpType, const ApplyCallback& cb,
+
+    /// \deprecated 
+    /// Use _PrependKeys or _AppendKeys instead.
+    void _ReorderKeys(const ApplyCallback& cb,
                       _ApplyList* result, _ApplyMap* search) const;
-    void _AppendKeys(SdfListOpType, const ApplyCallback& cb,
-                     _ApplyList* result, _ApplyMap* search) const;
-    void _DeleteKeys(SdfListOpType, const ApplyCallback& cb,
-                     _ApplyList* result, _ApplyMap* search) const;
-    void _ReorderKeys(SdfListOpType, const ApplyCallback& cb,
-                      _ApplyList* result, _ApplyMap* search) const;
+    static void _ReorderKeysHelper(ItemVector order, const ApplyCallback& cb,
+                                   _ApplyList *result, _ApplyMap *search);
+    template <class ItemType>
+    friend void SdfApplyListOrdering(std::vector<ItemType> *v,
+                                    const std::vector<ItemType> &order);
+    bool _MakeUnique(std::vector<T>& items, bool reverse=false, 
+                    std::string* errMsg = nullptr);
 
 private:
     bool _isExplicit;

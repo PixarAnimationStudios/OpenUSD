@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ///
 /// \file sdf/fileIO.cpp
@@ -32,6 +15,7 @@
 #include "pxr/usd/sdf/fileIO_Common.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
+#include "pxr/usd/sdf/usdaFileFormat.h"
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/variantSpec.h"
 
@@ -41,12 +25,122 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// virtual
 Sdf_StreamWritableAsset::~Sdf_StreamWritableAsset() = default;
+
+static std::string
+_ComposeHeader(const std::string cookie,
+               const SdfFileVersion& version)
+{
+    TF_AXIOM(version);
+
+    // Compose a suitable header string. See the long comment above titled
+    // "Caveat developer!". This is the place to add padding or format the
+    // version in base-16 or ...
+    const std::string versionString = version.AsString();
+
+    // Note that cookie includes a leading "#" (e.g., "#usda")
+    std::string header = cookie + " " + versionString + "\n";
+
+    return header;
+}
+
+bool
+Sdf_TextOutput::WriteHeader(const std::string& cookie,
+                            const SdfFileVersion version /*= SdfFileVersion()*/)
+{
+    SdfFileVersion outputVersion = version;
+    if (!outputVersion) {
+        // No explicit version, fall back to the default output version.
+        outputVersion = SdfUsdaFileFormat::GetDefaultOutputVersion();
+    }
+
+    // XXX: should this be a TF_AXIOM instead?
+    if (!TF_VERIFY(outputVersion,
+                   "Could not get usda file version when writing to '%s'",
+                   _name.c_str()))
+    {
+        return false;
+    }
+
+    if (!_FlushBuffer()) {
+        return false;
+    }
+
+    // Remember what we're writing so we can tell if it has been upgraded
+    _cookie = cookie;
+    _requestedVersion = _writtenVersion = outputVersion;
+
+    std::string header = _ComposeHeader(_cookie, _requestedVersion);
+
+    return Write(header);
+}
+
+bool
+Sdf_TextOutput::RequestWriteVersionUpgrade(const SdfFileVersion& ver,
+                                           std::string reason)
+{
+    if (ver > SdfUsdaFileFormat::GetMaxOutputVersion()) {
+        // The requested version cannot be written by this version of the
+        // software. This is a coding error.
+        TF_CODING_ERROR(
+            "Failed upgrade of usda file '%s' to version %s. Version %s is the"
+            " highest version that can be written.",
+            _name.c_str(),
+            ver.AsString().c_str(),
+            SdfUsdaFileFormat::GetMaxOutputVersion().AsString().c_str());
+        return false;
+    }
+
+    if (!_requestedVersion.CanRead(ver)) {
+        TF_WARN("Upgrading usda file '%s' from version %s to %s: %s",
+                _name.c_str(),
+                _requestedVersion.AsString().c_str(),
+                ver.AsString().c_str(),
+                reason.c_str());
+        _requestedVersion = ver;
+    }
+
+    return true;
+}
+
+bool
+Sdf_TextOutput::_UpdateHeader()
+{
+    if (_writtenVersion && _requestedVersion > _writtenVersion) {
+        bool ok = true;
+        // Seek to the beginning (which flushes pending output first) and try to
+        // write the header at the top of the file.
+        if (_Seek(0)) {
+            std::string header = _ComposeHeader(_cookie, _requestedVersion);
+            ok = Write(header);
+        } else {
+            ok = false;
+        }
+
+        ok = _FlushBuffer() && ok;
+        if (!ok) {
+            TF_RUNTIME_ERROR("Failed to update the usda layer '%s' from"
+                             " version '%s' to version '%s'.",
+                             _name.c_str(),
+                             _writtenVersion.AsString().c_str(),
+                             _requestedVersion.AsString().c_str());
+            return false;
+        }
+
+        _writtenVersion = _requestedVersion;
+
+        return true;
+    }
+
+    // _UpdateHeader always flushes output.
+    return _FlushBuffer();
+}
 
 bool
 Sdf_WriteToStream(const SdfSpec &baseSpec, std::ostream& o, size_t indent)
 {
-    Sdf_TextOutput out(o);
+    Sdf_TextOutput out(o, "<ostream>");
 
     const SdfSpecType type = baseSpec.GetSpecType();
 

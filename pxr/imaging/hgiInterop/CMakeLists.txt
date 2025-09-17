@@ -27,7 +27,12 @@ endif()
 
 if (PXR_ENABLE_METAL_SUPPORT)
     add_compile_options(-x objective-c++)
-    list(APPEND optionalLibraries "-framework CoreVideo" hgiMetal)
+    list(APPEND optionalLibraries hgiMetal)
+endif()
+
+if (PXR_ENABLE_METAL_SUPPORT AND NOT PXR_APPLE_EMBEDDED)
+    list(APPEND optionalLibraries "-framework Foundation")
+    list(APPEND optionalLibraries "-framework CoreVideo")
     list(APPEND optionalCppFiles metal.mm)
     list(APPEND optionalPrivateHeaders metal.h)
 endif()

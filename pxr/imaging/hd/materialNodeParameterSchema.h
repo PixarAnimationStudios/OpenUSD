@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 ////////////////////////////////////////////////////////////////////////
 
@@ -52,6 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_MATERIAL_NODE_PARAMETER_SCHEMA_TOKENS \
     (value) \
     (colorSpace) \
+    (typeName) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdMaterialNodeParameterSchemaTokens, HD_API,
     HD_MATERIAL_NODE_PARAMETER_SCHEMA_TOKENS);
@@ -59,6 +43,11 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialNodeParameterSchemaTokens, HD_API,
 //-----------------------------------------------------------------------------
 
 
+/// \class HdMaterialNodeParameterSchema
+///
+/// The MaterialNodeParameter schema defines the value data source for the
+/// parameter.
+///
 class HdMaterialNodeParameterSchema : public HdSchema
 {
 public:
@@ -80,7 +69,10 @@ public:
     HdSampledDataSourceHandle GetValue() const;
 
     HD_API
-    HdTokenDataSourceHandle GetColorSpace() const; 
+    HdTokenDataSourceHandle GetColorSpace() const;
+
+    HD_API
+    HdTokenDataSourceHandle GetTypeName() const; 
 
     /// @} 
 
@@ -98,7 +90,8 @@ public:
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdSampledDataSourceHandle &value,
-        const HdTokenDataSourceHandle &colorSpace
+        const HdTokenDataSourceHandle &colorSpace,
+        const HdTokenDataSourceHandle &typeName
     );
 
     /// \class HdMaterialNodeParameterSchema::Builder
@@ -116,6 +109,9 @@ public:
         HD_API
         Builder &SetColorSpace(
             const HdTokenDataSourceHandle &colorSpace);
+        HD_API
+        Builder &SetTypeName(
+            const HdTokenDataSourceHandle &typeName);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -124,6 +120,7 @@ public:
     private:
         HdSampledDataSourceHandle _value;
         HdTokenDataSourceHandle _colorSpace;
+        HdTokenDataSourceHandle _typeName;
 
     };
 

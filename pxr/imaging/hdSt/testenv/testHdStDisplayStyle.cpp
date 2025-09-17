@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/imaging/hd/tokens.h"
@@ -49,6 +32,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (wireframeBack)
     (wireframeFront)
     (wireOnSurfUnlit)
+    (solidWireOnSurf)
     (points)
     (pointsAndSurf)
     );
@@ -74,7 +58,7 @@ protected:
 private:
     TfToken _reprName;
     int _refineLevel;
-    HdSt_TestDriver* _driver;
+    HdSt_TestDriverUniquePtr _driver;
     std::string _outputFilePath;
 };
 
@@ -85,7 +69,7 @@ My_TestGLDrawing::InitTest()
 {
     std::cout << "My_TestGLDrawing::InitTest()\n";
 
-    _driver = new HdSt_TestDriver(_reprName);
+    _driver = std::make_unique<HdSt_TestDriver>(_reprName);
     HdUnitTestDelegate &delegate = _driver->GetDelegate();
     delegate.SetRefineLevel(_refineLevel);
 
@@ -136,6 +120,15 @@ My_TestGLDrawing::InitTest()
                                  HdBasisCurvesGeomStyleWire);
     HdPoints::ConfigureRepr(_tokens->wireOnSurfUnlit,
                             HdPointsGeomStylePoints);
+
+    // wireframe on surface, force opaque edges
+    HdMesh::ConfigureRepr(_tokens->solidWireOnSurf,
+                          HdMeshReprDesc(HdMeshGeomStyleEdgeOnSurf,
+                                         HdCullStyleDontCare,
+                                         HdMeshReprDescTokens->surfaceShader,
+                                         /*flatShadingEnabled=*/true,
+                                         /*blendWireframeColor=*/false,
+                                         /*forceOpaqueEdges=*/true));
 
     // 2-pass FeyRay
     HdMesh::ConfigureRepr(_tokens->feyRay,
@@ -238,6 +231,18 @@ My_TestGLDrawing::InitTest()
         delegate.SetReprSelector(SdfPath("/cube9"),
                 HdReprSelector(_tokens->pointsAndSurf));
         pos[0] += 3.0;
+
+        dmat.SetTranslate(pos);
+        delegate.AddCube(SdfPath("/cube10"), GfMatrix4f(dmat), /*guide*/false,
+            /*instancerId*/SdfPath(),
+            /*scheme*/PxOsdOpenSubdivTokens->catmullClark,
+            VtValue(GfVec3f(1,1,1)),
+            HdInterpolationConstant,
+            VtValue(0.5f),
+            HdInterpolationConstant);
+        delegate.SetReprSelector(SdfPath("/cube10"),
+                HdReprSelector(_tokens->solidWireOnSurf));
+        pos[0] += 3.0;
     }
     GfVec3f center(7.5f, 0, 1.5f);
 
@@ -246,7 +251,8 @@ My_TestGLDrawing::InitTest()
 
     _driver->SetClearColor(GfVec4f(0.1f, 0.1f, 0.1f, 1.0f));
     _driver->SetClearDepth(1.0f);
-    _driver->SetupAovs(GetWidth(), GetHeight());
+    _driver->SetupAovs(GetWidth(), GetHeight(), /*multisampled*/true);
+    _driver->SetWireframeColor(GfVec4f(1, 0, 0, 1));
 }
 
 void

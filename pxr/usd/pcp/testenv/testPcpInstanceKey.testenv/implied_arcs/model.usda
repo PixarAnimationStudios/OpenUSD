@@ -1,0 +1,17 @@
+#usda 1.0
+
+class "Inherit" 
+{
+}
+
+class "Specializes"
+{
+}
+
+def "Model" (
+    instanceable = True
+    inherits = </Inherit>
+    specializes = </Specializes>
+)
+{
+}

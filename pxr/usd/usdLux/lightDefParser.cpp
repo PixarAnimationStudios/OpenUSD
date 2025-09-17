@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usd/usdLux/lightDefParser.h"
 
@@ -79,19 +62,22 @@ UsdLux_LightDefParserPlugin::_GetShaderIdToAPITypeNameMap() {
 }
 
 static
-NdrTokenMap
+SdrTokenMap
 _GetSdrMetadata(const UsdShadeConnectableAPI &connectable,
-                const NdrTokenMap &discoveryResultMetadata) 
+                const SdrTokenMap &discoveryResultMetadata) 
 {
-    NdrTokenMap metadata = discoveryResultMetadata;
+    SdrTokenMap metadata = discoveryResultMetadata;
 
     metadata[SdrNodeMetadata->Help] = TfStringPrintf(
         "Fallback shader node generated from the USD %s schema",
         connectable.GetPrim().GetTypeName().GetText());
 
-    metadata[SdrNodeMetadata->Primvars] = 
-        UsdShadeShaderDefUtils::GetPrimvarNamesMetadataString(
-            metadata, connectable);
+    const std::string primvarsStr = 
+        UsdShadeShaderDefUtils::GetPrimvarNamesMetadataString(metadata, 
+                                                              connectable);
+    if (!primvarsStr.empty()) {
+        metadata[SdrNodeMetadata->Primvars] = primvarsStr;
+    }
 
     return metadata;
 }
@@ -139,9 +125,9 @@ _CopyPropertiesFromSchema(
     return true;
 }
 
-NdrNodeUniquePtr
-UsdLux_LightDefParserPlugin::Parse(
-    const NdrNodeDiscoveryResult &discoveryResult)
+SdrShaderNodeUniquePtr
+UsdLux_LightDefParserPlugin::ParseShaderNode(
+    const SdrShaderNodeDiscoveryResult &discoveryResult)
 {
     TRACE_FUNCTION();
 
@@ -175,7 +161,7 @@ UsdLux_LightDefParserPlugin::Parse(
     // Find and open the generated schema layer.
     SdfLayerRefPtr schemaLayer = _GetGeneratedSchema();
     if (!schemaLayer) {
-        return NdrParserPlugin::GetInvalidNode(discoveryResult);
+        return SdrParserPlugin::GetInvalidShaderNode(discoveryResult);
     }
 
     // Since we're composing the prim ourselves create a new layer and prim
@@ -201,7 +187,7 @@ UsdLux_LightDefParserPlugin::Parse(
         // the typeName, apiSchemas, and the property children can affect what 
         // properties are included when we open this prim on a USD stage.
         if (!_CopyPropertiesFromSchema(schemaLayer, schemaName, primSpec)) {
-            return NdrParserPlugin::GetInvalidNode(discoveryResult);
+            return SdrParserPlugin::GetInvalidShaderNode(discoveryResult);
         }
     }
 
@@ -209,11 +195,11 @@ UsdLux_LightDefParserPlugin::Parse(
     // which we'll create the node from.
     UsdStageRefPtr stage = UsdStage::Open(layer, nullptr);
     if (!stage) {
-        return NdrParserPlugin::GetInvalidNode(discoveryResult);
+        return SdrParserPlugin::GetInvalidShaderNode(discoveryResult);
     }
     UsdPrim prim = stage->GetPrimAtPath(primSpec->GetPath());
     if (!prim) {
-        return NdrParserPlugin::GetInvalidNode(discoveryResult);
+        return SdrParserPlugin::GetInvalidShaderNode(discoveryResult);
     }
     // Note that we don't check the "conformance" of this prim to the 
     // connectable API because the prim is untyped and will not conform. But 
@@ -222,7 +208,7 @@ UsdLux_LightDefParserPlugin::Parse(
     // functions called below.
     UsdShadeConnectableAPI connectable(prim);
 
-    return NdrNodeUniquePtr(new SdrShaderNode(
+    return SdrShaderNodeUniquePtr(new SdrShaderNode(
         discoveryResult.identifier,
         discoveryResult.version,
         discoveryResult.name,
@@ -231,16 +217,16 @@ UsdLux_LightDefParserPlugin::Parse(
         discoveryResult.sourceType,
         /*nodeUriAssetPath=*/ std::string(),
         /*resolvedImplementationUri=*/ std::string(),
-        UsdShadeShaderDefUtils::GetShaderProperties(connectable),
+        UsdShadeShaderDefUtils::GetProperties(connectable),
         _GetSdrMetadata(connectable, discoveryResult.metadata),
         discoveryResult.sourceCode
     ));
 }
 
-const NdrTokenVec &
+const SdrTokenVec &
 UsdLux_LightDefParserPlugin::GetDiscoveryTypes() const 
 {
-    static const NdrTokenVec discoveryTypes{_GetDiscoveryType()};
+    static const SdrTokenVec discoveryTypes{_GetDiscoveryType()};
     return discoveryTypes;
 }
 
@@ -250,6 +236,6 @@ UsdLux_LightDefParserPlugin::GetSourceType() const
     return _GetSourceType();
 }
 
-NDR_REGISTER_PARSER_PLUGIN(UsdLux_LightDefParserPlugin);
+SDR_REGISTER_PARSER_PLUGIN(UsdLux_LightDefParserPlugin);
 
 PXR_NAMESPACE_CLOSE_SCOPE

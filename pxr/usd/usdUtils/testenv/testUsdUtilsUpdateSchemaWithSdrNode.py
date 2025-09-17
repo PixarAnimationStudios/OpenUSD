@@ -2,25 +2,8 @@
 #
 # Copyright 2021 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 from pxr import UsdUtils, Sdf, Usd, Sdr, UsdShade, Tf, Plug
 import os, sys
@@ -45,13 +28,13 @@ class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
         stage = Usd.Stage.Open(assetFile)
         self.assertTrue(stage)
         shaderDef = UsdShade.Shader.Get(stage, shaderDefPrimPath)
-        results = UsdShade.ShaderDefUtils.GetNodeDiscoveryResults(shaderDef, 
+        results = UsdShade.ShaderDefUtils.GetDiscoveryResults(shaderDef, 
                 stage.GetRootLayer().realPath)
         self.assertEqual(len(results), 1)
-        node = UsdShade.ShaderDefParserPlugin().Parse(results[0])
+        node = UsdShade.ShaderDefParserPlugin().ParseShaderNode(results[0])
         self.assertTrue(node)
         return node
-    
+
     def test_APISchemaGen(self):
         if self.ErrorHandlingTest:
             self.skipTest("Running Error Handling Test, skipping.");
@@ -100,6 +83,32 @@ class TestUsdUpdateSchemaWithSdrNode(unittest.TestCase):
                 "/TestDuplicatePropsAPI")
         self.assertTrue(sdrNode)
         resultLayer = Sdf.Layer.CreateNew("./duplicatePropTypeMisMatch.usda")
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
+
+    def test_PropertyOrder(self):
+        # Param order from the source shader should be maintained in the
+        # output schema via the `propertyOrder` metadata field
+        if self.ErrorHandlingTest:
+            self.skipTest("Running Error Handling Test, skipping.");
+            return
+        sdrNode = self._GetSdrNode("testPropertyOrder.usda",
+                "/TestPropertyOrderAPI")
+        self.assertTrue(sdrNode)
+        resultLayer = Sdf.Layer.CreateNew("./resultPropertyOrder.usda")
+        UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
+
+    def test_PropertyOrderMultipleApplySchema(self):
+        # usdGenSchema does not allow multiple-apply schemas to specify
+        # `propertyOrder` metadata. Verify UpdateSchemaWithSdrNode doesn't try
+        # to author it in this case.
+        if self.ErrorHandlingTest:
+            self.skipTest("Running Error Handling Test, skipping.");
+            return
+        sdrNode = self._GetSdrNode("testPropertyOrderMultipleApplySchema.usda",
+                "/TestPropertyOrderMultipleApplySchemaAPI")
+        self.assertTrue(sdrNode)
+        resultLayer = Sdf.Layer.CreateNew(
+            "./resultPropertyOrderMultipleApplySchema.usda")
         UsdUtils.UpdateSchemaWithSdrNode(resultLayer, sdrNode, "myRenderContext")
 
     def test_rmanConcreteSchema(self):

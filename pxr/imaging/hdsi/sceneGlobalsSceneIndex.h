@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICEN SE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HDSI_SCENE_GLOBALS_SCENE_INDEX_H
 #define PXR_IMAGING_HDSI_SCENE_GLOBALS_SCENE_INDEX_H
@@ -28,6 +11,7 @@
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/usd/sdf/path.h"
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,8 +22,9 @@ TF_DECLARE_WEAK_AND_REF_PTRS(HdsiSceneGlobalsSceneIndex);
 
 /// \class HdsiSceneGlobalsSceneIndex
 ///
-/// Scene index that populates a "sceneGlobals" data source as modeled
+/// Scene index that populates the "sceneGlobals" data source as modeled
 /// by HdSceneGlobalsSchema and provides public API to mutate it.
+/// This provides a way for applications to control high-level scene behavior.
 ///
 class HdsiSceneGlobalsSceneIndex : public HdSingleInputFilteringSceneIndexBase
 {
@@ -63,6 +48,29 @@ public:
     ///
     HDSI_API
     void SetActiveRenderSettingsPrimPath(const SdfPath &);
+    
+    /// Set the path to use as the primaryCameraPrim in the scene
+    /// globals schema.
+    HDSI_API
+    void SetPrimaryCameraPrimPath(const SdfPath &);
+
+    /// Set the frame number to use the as the currentFrame in the
+    /// scene globals schema.
+    HDSI_API
+    void SetCurrentFrame(double);
+
+    /// Set the timeCodesPerSecond to use the as the currentFrame in the
+    /// scene globals schema.
+    HDSI_API
+    void SetTimeCodesPerSecond(double);
+
+    /// Injects an arbitrary value that identifies the state of the input scene
+    /// at that point in time. This value ends up in the render index scene
+    /// globals once that state is processed by Hydra. This is useful for the
+    /// client to identify when certain scene edits have been processed by
+    /// Hydra.
+    HDSI_API
+    void SetSceneStateId(int);
 
     // ------------------------------------------------------------------------
     // Satisfying HdSceneIndexBase
@@ -101,7 +109,11 @@ private:
     friend class _SceneGlobalsDataSource;
 
     SdfPath _activeRenderPassPrimPath;
-    SdfPath _activeRenderSettingsPrimPath;
+    std::optional<SdfPath> _activeRenderSettingsPrimPath;
+    std::optional<SdfPath> _primaryCameraPrimPath;
+    double _time = std::numeric_limits<double>::quiet_NaN();
+    double _timeCodesPerSecond = 24.0;
+    int _sceneStateId = 0;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

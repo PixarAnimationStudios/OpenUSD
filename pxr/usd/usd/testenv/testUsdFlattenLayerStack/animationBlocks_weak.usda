@@ -1,0 +1,32 @@
+#usda 1.0
+
+over "Human"
+{
+    #spline and animation block together in the layer, spline should win.
+    int a = AnimationBlock
+    int a.timeSamples = {
+        1: 5,
+        2: 18,
+    }
+
+    #stronger layer has spline, and animation block corresponding to this in
+    #weaker layer. Spline should win.
+    double b.spline = {
+        1: 5; post held,
+        2: 18; post held,
+    }
+
+    # Animation Block will block time samples and let the default value in
+    # weaker layer shine through.
+    int c.timeSamples = {
+        0: 456,
+        1: 789
+    }
+
+    # Animation Block will block the spline and let the default value in weaker
+    # layer shine through.
+    double d.spline = {
+        1: 5; post held,
+        2: 18; post held,
+    }
+}

@@ -1,0 +1,27 @@
+#usda 1.0
+
+def "Group" (
+    variants = {
+        string v = "y"
+    }
+    variantSets = "v"
+)
+{
+    variantSet "v" = {
+        "x" {
+            over "Model"
+            {
+                string a = "v_x"
+            }
+
+        }
+        "y" {
+            over "Model"
+            {
+                string a = "v_y"
+            }
+
+        }
+    }
+}
+

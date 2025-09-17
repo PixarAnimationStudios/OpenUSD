@@ -1,25 +1,8 @@
 //
 // Copyright 2018 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -28,11 +11,11 @@
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 
-#include <boost/python.hpp>
-
-using namespace boost::python;
+#include "pxr/external/boost/python.hpp"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace pxr_boost::python;
 
 namespace {
 
@@ -73,8 +56,21 @@ void wrapShaderProperty()
     to_python_converter<SdrShaderPropertyConstPtr,
                         SdrShaderPropertyConstPtrToPythonConverter>();
 
-    class_<This, ThisPtr, bases<NdrProperty>,
-           boost::noncopyable>("ShaderProperty", no_init)
+    class_<This, ThisPtr, noncopyable>("ShaderProperty", no_init)
+        .def("__repr__", &This::GetInfoString)
+        .def("GetName", &This::GetName, copyRefPolicy)
+        .def("GetType", &This::GetType, copyRefPolicy)
+        .def("GetDefaultValue", &This::GetDefaultValue, copyRefPolicy)
+        .def("IsOutput", &This::IsOutput)
+        .def("IsArray", &This::IsArray)
+        .def("IsDynamicArray", &This::IsDynamicArray)
+        .def("GetArraySize", &This::GetArraySize)
+        .def("GetInfoString", &This::GetInfoString)
+        .def("GetMetadata", &This::GetMetadata,
+            return_value_policy<TfPyMapToDictionary>())
+        .def("IsConnectable", &This::IsConnectable)
+        .def("CanConnectTo", &This::CanConnectTo)
+        .def("GetTypeAsSdfType", &This::GetTypeAsSdfType)
         .def("GetDefaultValueAsSdfType", &This::GetDefaultValueAsSdfType,
                 copyRefPolicy)
         .def("GetLabel", &This::GetLabel, copyRefPolicy)
@@ -86,6 +82,7 @@ void wrapShaderProperty()
         .def("GetOptions", &This::GetOptions,
             return_value_policy<TfPySequenceToList>())
         .def("GetImplementationName", &This::GetImplementationName)
+        .def("GetShownIf", &This::GetShownIf)
         .def("GetVStructMemberOf", &This::GetVStructMemberOf, copyRefPolicy)
         .def("GetVStructMemberName", &This::GetVStructMemberName, copyRefPolicy)
         .def("GetVStructConditionalExpr",

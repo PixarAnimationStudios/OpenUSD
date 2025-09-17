@@ -151,12 +151,24 @@ and :usda:`opacity`.
   Roughness for the second specular lobe. Clearcoat results are 
   calculated using the same normal map data used by the primary specular lobe.
 
+.. _updateopacity:
+
 * **opacity - float - 1.0** 
 
   When *opacity* is 1.0 then the gprim is fully opaque, if it is smaller than
-  1.0 then the prim is translucent, when it is 0 the gprim is transparent. Note
-  that even a fully transparent object still receives lighting as, for example,
-  perfectly clear glass still has a specular response.
+  1.0 then the prim is translucent, when it is 0 the gprim is fully transparent.
+  Fully transparent objects will still receive a lighting response when the
+  *opacityMode* is *transparent*, however they will not receive any lighting
+  when the *opacityMode* is set to *presence*.
+
+* **opacityMode - token - transparent**
+
+  This input dictates how materials with zero opacity are interpreted and 
+  takes one of two inputs: *transparent* or *presence*. When the value is 
+  *transparent* materials with zero opacity still receive a lighting response 
+  as, for example, perfectly clear glass still has a specular response.
+  However, when set to *presence* these materials will not receive any 
+  lighting and thus they always serve as cutouts.
 
 .. _addopacitythreshold:
 
@@ -174,10 +186,9 @@ and :usda:`opacity`.
   greater than or equal to the *opacityThreshold* will be fully visible.  Thus,
   the *opacityThreshold* serves as a switch for how the *opacity* input is
   interpreted; this "translucent or masked" behavior is common in engines and
-  renderers, and makes the UsdPreviewSurface easier to interchange. It does
-  imply, however, that it is not possible to faithfully recreate a
-  glassy/translucent material that also provides an opacity-based mask... so no
-  single-polygon glass leaves.
+  renderers, and makes the UsdPreviewSurface easier to interchange. Recreating 
+  a translucent material that also provides a zero opacity-based mask, can be 
+  achieved by setting *opacityThreshold* to zero and *opacityMode* to *presence*.
 
 .. _updateior:
 
@@ -1073,10 +1084,20 @@ From version 2.3...
       of specular components, including the clearcoat when
       :math:`UsdPreviewSurface.clearcoat > 0`.
 
-Version 2.5 - Current Head
-##########################
+Version 2.5
+###########
 
 From version 2.4...
     * :ref:`Updates UDIM specification to include tile 1100.<updateudim>`
       Changes the baseline UDIM tile support from 1001-1099, inclusive, to 
       1001-1100.  This allows for a 10x10 grid of UDIM tiles.
+
+Version 2.6 - Current Head
+##########################
+
+From version 2.5...
+    * :ref:`Adds opacityMode for different handling of materials with zero opacity. <updateopacity>`
+      `opacityMode` of `transparent` is the previous 2.5 spec behavior in which 
+      materials with opacity = 0 still receive a specular reflection, 
+      an `opacityMode` of `presence` causes fully transparent materials to 
+      receive no lighting response.

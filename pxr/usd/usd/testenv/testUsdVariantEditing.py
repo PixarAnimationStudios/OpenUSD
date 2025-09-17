@@ -2,25 +2,8 @@
 #
 # Copyright 2017 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 from __future__ import print_function
 
@@ -159,6 +142,84 @@ def TestNewPayloadAutoLoading():
     assert not stage.GetPrimAtPath('/main/child')
 
 TestNewPayloadAutoLoading()
+
+def TestVariantChangeResyncNotification():
+    """Test that changes to variants only resync prims that actually
+    depend on the variant"""
+
+    # /PrimVariants has a variantSet "primVariant" with two variants 
+    # "one" and "two" but no variant selection set.
+    # 
+    # /Prim1 references /PrimVariants and sets the primVariant variant
+    # selection to "one"
+    #
+    # /Prim2 references /PrimVariants and sets the primVariant variant
+    # selection to "two"
+    layer = Sdf.Layer.CreateAnonymous("layer.usda")
+    layer.ImportFromString('''#usda 1.0
+
+        def "PrimVariants" (
+            variantSets = ["primVariant"]
+        ) {
+            variantSet "primVariant" = {
+                "one" {
+                    def "VariantOneChild" {
+                        int variantOneChildAttr
+                    }
+                }
+                "two" {
+                    def "VariantTwoChild" {
+                        int variantTwoChildAttr
+                    }
+                }
+            }
+        }
+        
+        def "Prim1" (
+            references = </PrimVariants>
+            variants = {
+                string primVariant = "one"
+            }
+        ) {
+        }
+        
+        def "Prim2" (
+            references = </PrimVariants>
+            variants = {
+                string primVariant = "two"
+            }
+        ) {
+        }
+        
+    ''')
+
+    stage = Usd.Stage.Open(layer)
+
+    # Register ObjectsChanged notice handler that prints the resynced paths.
+    resyncedPaths = None
+    def _OnObjectsChanged(notice, sender):
+        nonlocal resyncedPaths
+        resyncedPaths = notice.GetResyncedPaths()
+    objectsChanged = Tf.Notice.RegisterGlobally(
+        Usd.Notice.ObjectsChanged, _OnObjectsChanged)
+
+    # Make changes to the variants in /PrimVariants{primVariant=}
+    primVariantsPrim = layer.GetPrimAtPath("/PrimVariants")
+    vSet = primVariantsPrim.variantSets['primVariant']
+
+    # Add a new variant "three" that isn't selected by any prims. This should
+    # result in no resyncs.
+    resyncedPaths = None
+    Sdf.VariantSpec(vSet, "three")
+    assert resyncedPaths == []
+
+    # Delete the varint "one" which is selected by /Prim1. /Prim1 only should
+    # be resynced.
+    resyncedPaths = None
+    vSet.RemoveVariant( vSet.variants["one"])
+    assert resyncedPaths == ["/Prim1"]
+
+TestVariantChangeResyncNotification()
 
 print('OK')
 

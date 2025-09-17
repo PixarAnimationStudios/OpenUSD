@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/usdImaging/usdImaging/materialParamUtils.h"
 
@@ -35,6 +18,11 @@
 #include "pxr/usd/usdLux/lightFilter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (typeName)
+);
 
 // We need to find the first layer that changes the value
 // of the parameter so that we anchor relative paths to that.
@@ -191,7 +179,7 @@ _ExtractPrimvarsFromNode(
     if (sdrNode) {
         // GetPrimvars and GetAdditionalPrimvarProperties together give us the
         // complete set of primvars needed by this shader node.
-        NdrTokenVec const& primvars = sdrNode->GetPrimvars();
+        SdrTokenVec const& primvars = sdrNode->GetPrimvars();
         materialNetwork->primvars.insert( 
             materialNetwork->primvars.end(), primvars.begin(), primvars.end());
 
@@ -337,6 +325,15 @@ void _WalkGraph(
                     node.parameters[colorSpaceInputName] =
                         VtValue(attr.GetColorSpace());
                 }
+
+                // Store the usdtype as an additional parameter of the form 
+                // 'typeName:inputName'
+                // We are using the GetAsToken() here since we do not expect an 
+                // alias other than the "official" type name.
+                const TfToken typeNameInputName(SdfPath::JoinIdentifier(
+                    _tokens->typeName, inputName));
+                node.parameters[typeNameInputName] = 
+                    VtValue(attr.GetTypeName().GetAsToken());
             }
         }
     }
@@ -391,7 +388,7 @@ UsdImagingBuildHdMaterialNetworkFromTerminal(
     // Validate that idenfitier (info:id) is known to Sdr.
     // Return empty network if it fails so backend can use fallback material.
     SdrRegistry &shaderReg = SdrRegistry::GetInstance();
-    if (!shaderReg.GetNodeByIdentifier(terminalNode.identifier)) {
+    if (!shaderReg.GetShaderNodeByIdentifier(terminalNode.identifier)) {
         TF_WARN("Invalid info:id %s node: %s", 
                 terminalNode.identifier.GetText(),
                 terminalNode.path.GetText());

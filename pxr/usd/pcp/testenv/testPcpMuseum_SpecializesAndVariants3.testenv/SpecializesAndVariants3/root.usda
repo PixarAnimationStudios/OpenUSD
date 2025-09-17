@@ -1,0 +1,50 @@
+#usda 1.0
+(
+    """
+    Museum case showing combinations of specializes and variants.
+
+    This test verifies that /element composes in the opinions from
+    the various variant sets defined across the specializes arcs.
+    """
+)
+
+def "implementation" (
+    prepend specializes = </_class_defaultVariantSelections>
+    prepend variantSets = "testVariantSet"
+)
+{
+    variantSet "testVariantSet" = {
+        "testVariant" {
+            custom string variantAttr = "hello world"
+
+        }
+    }
+}
+
+def "middleman" (
+    prepend specializes = </implementation>
+)
+{
+}
+
+class "_class_defaultVariantSelections" (
+    variants = {
+        string testVariantSet = "testVariant"
+    }
+    prepend variantSets = "testVariantSet"
+)
+{
+    variantSet "testVariantSet" = {
+        "testVariant" {
+            custom string classVariantAttr = "foo bar"
+
+        }
+    }
+}
+
+def "element" (
+    prepend specializes = </middleman>
+)
+{
+}
+

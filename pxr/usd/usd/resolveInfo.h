@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_USD_USD_RESOLVE_INFO_H
 #define PXR_USD_USD_RESOLVE_INFO_H
@@ -29,6 +12,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
 #include "pxr/usd/usd/stage.h"
+#include "pxr/base/ts/spline.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/pcp/node.h"
@@ -36,6 +20,7 @@
 #include "pxr/base/tf/declarePtrs.h"
 
 #include <limits>
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -56,6 +41,7 @@ enum UsdResolveInfoSource
     UsdResolveInfoSourceDefault,         ///< Attribute default value
     UsdResolveInfoSourceTimeSamples,     ///< Attribute time samples
     UsdResolveInfoSourceValueClips,      ///< Value clips
+    UsdResolveInfoSourceSpline,          ///< Spline value
 };
 
 /// \class UsdResolveInfo
@@ -89,6 +75,7 @@ public:
             _source == UsdResolveInfoSourceDefault ||
             _source == UsdResolveInfoSourceTimeSamples ||
             _source == UsdResolveInfoSourceValueClips ||
+            _source == UsdResolveInfoSourceSpline ||
             _valueIsBlocked;
     }
 
@@ -98,7 +85,8 @@ public:
         return
             _source == UsdResolveInfoSourceDefault ||
             _source == UsdResolveInfoSourceTimeSamples ||
-            _source == UsdResolveInfoSourceValueClips;
+            _source == UsdResolveInfoSourceValueClips ||
+            _source == UsdResolveInfoSourceSpline;
     }
 
     /// Return the node within the containing PcpPrimIndex that provided
@@ -114,13 +102,25 @@ public:
     bool ValueIsBlocked() const {
         return _valueIsBlocked;
     }
-    
+
+    /// Returns true if the resolve info source might be time-varying; false
+    /// otherwise.
+    ///
+    /// Note that this is different from UsdAttribute::ValueMightBeTimeVarying()
+    /// which provides more granular answer since it has additional context from
+    /// the attribute itself.
+    bool ValueSourceMightBeTimeVarying() const {
+        return _source == UsdResolveInfoSourceTimeSamples ||
+            _source == UsdResolveInfoSourceSpline ||
+            _source == UsdResolveInfoSourceValueClips;
+    }
+
 private:
     /// The LayerStack that provides the strongest value opinion. 
     /// 
     /// If \p source is either \p UsdResolveInfoSourceDefault
-    /// or \p UsdResolveInfoTimeSamples, the source will be a layer
-    /// in this LayerStack (\sa _layer). 
+    /// or \p UsdResolveInfoSourceTimeSamples or \p UsdResolveInfoSourceSpline, 
+    /// the source will be a layer in this LayerStack (\sa _layer). 
     ///
     /// If \p source is UsdResolveInfoSourceValueClips, the source clips 
     /// will have been introduced in this LayerStack.
@@ -132,7 +132,8 @@ private:
     /// default opinion.
     ///
     /// This is valid only if \p source is either 
-    /// \p UsdResolveInfoSourceDefault or \p UsdResolveInfoTimeSamples.
+    /// \p UsdResolveInfoSourceDefault or \p UsdResolveInfoSourceTimeSamples or
+    /// \p UsdResolveInfoSourceSpline.
     SdfLayerHandle _layer;
 
     /// The node within the containing PcpPrimIndex that provided
@@ -149,9 +150,9 @@ private:
     /// \p layerStack to retrieve the strongest value opinion.
     ///
     /// If \p source is either \p UsdResolveInfoSourceDefault or
-    /// \p UsdResolveInfoTimeSamples, this is the path to the prim
-    /// specs in \p layerStack that own the attribute spec containing
-    /// strongest value opinion.
+    /// \p UsdResolveInfoTimeSamples or \p UsdResolveInfoSourceSpline, this is 
+    /// the path to the prim specs in \p layerStack that own the attribute spec 
+    /// containing strongest value opinion.
     ///
     /// If \p source is UsdResolveInfoSourceValueClips, this is the
     /// path to the prim that should be used to query clips for attribute
@@ -160,6 +161,10 @@ private:
 
     /// The source of the associated attribute's value.
     UsdResolveInfoSource _source;
+
+    /// If the source is UsdResolveInfoSourceSpline, then _spline represents the
+    /// underlying spline data. If not, this will be nullopt.
+    std::optional<TsSpline> _spline;
 
     /// If \p source is \p UsdResolveInfoSourceNone or 
     /// \p UsdResolveInfoSourceFallback, this indicates whether or not

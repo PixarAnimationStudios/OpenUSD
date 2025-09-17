@@ -1,0 +1,52 @@
+#usda 1.0
+
+class "_class_Prop"
+{
+    double a = 2.5
+
+    def "From_class_in_set"
+    {
+    }
+
+    over "geom"
+    {
+        double x = 2.5
+    }
+}
+
+def "Set"
+{
+    def "InstancedProp" (
+        references = @./prop.usda@</Prop>
+        instanceable = True
+    )
+    {
+        double a = 2.0
+
+        def "From_set"
+        {
+        }
+
+        over "geom"
+        {
+            double x = 2.0
+        }
+    }
+
+    def "UninstancedProp" (
+        references = @./prop.usda@</Prop>
+        instanceable = False
+    )
+    {
+        double a = 2.0
+
+        def "From_set"
+        {
+        }
+
+        over "geom"
+        {
+            double x = 2.0
+        }
+    }
+}

@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hgiVulkan/capabilities.h"
 #include "pxr/imaging/hgiVulkan/commandQueue.h"
@@ -35,12 +18,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_ENV_SETTING(HGIVULKAN_PREFERRED_DEVICE_TYPE,
+    VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU,
+    "Preferred device type. Use VkPhysicalDeviceType enum values.");
+
+// VMA links this to the interop pool
+static VkExportMemoryAllocateInfoKHR _exportInfo =
+{
+    VK_STRUCTURE_TYPE_EXPORT_MEMORY_ALLOCATE_INFO,
+    nullptr,
+    VK_EXTERNAL_MEMORY_HANDLE_AUTO
+};
 
 static uint32_t
 _GetGraphicsQueueFamilyIndex(VkPhysicalDevice physicalDevice)
 {
     uint32_t queueCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueCount, 0);
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueCount,
+        nullptr);
 
     std::vector<VkQueueFamilyProperties> queues(queueCount);
     vkGetPhysicalDeviceQueueFamilyProperties(
@@ -62,22 +57,22 @@ _SupportsPresentation(
     VkPhysicalDevice physicalDevice,
     uint32_t familyIndex)
 {
-    #if defined(VK_USE_PLATFORM_WIN32_KHR)
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
         return vkGetPhysicalDeviceWin32PresentationSupportKHR(
                     physicalDevice, familyIndex);
-    #elif defined(VK_USE_PLATFORM_XLIB_KHR)
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
         Display* dsp = XOpenDisplay(nullptr);
         VisualID visualID = XVisualIDFromVisual(
             DefaultVisual(dsp, DefaultScreen(dsp)));
         return vkGetPhysicalDeviceXlibPresentationSupportKHR(
                     physicalDevice, familyIndex, dsp, visualID);
-    #elif defined(VK_USE_PLATFORM_MACOS_MVK)
+#elif defined(VK_USE_PLATFORM_METAL_EXT)
         // Presentation currently always supported on Metal / MoltenVk
         return true;
-    #else
+#else
         #error Unsupported Platform
         return true;
-    #endif
+#endif
 }
 
 HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
@@ -86,6 +81,7 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     , _vmaAllocator(nullptr)
     , _commandQueue(nullptr)
     , _capabilities(nullptr)
+    , _pipelineCache(nullptr)
 {
     //
     // Determine physical device
@@ -94,13 +90,15 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     const uint32_t maxDevices = 64;
     VkPhysicalDevice physicalDevices[maxDevices];
     uint32_t physicalDeviceCount = maxDevices;
-    TF_VERIFY(
+    HGIVULKAN_VERIFY_VK_RESULT(
         vkEnumeratePhysicalDevices(
             instance->GetVulkanInstance(),
             &physicalDeviceCount,
-            physicalDevices) == VK_SUCCESS
+            physicalDevices)
     );
 
+    const auto preferredDeviceType = static_cast<VkPhysicalDeviceType>(
+        TfGetEnvSetting(HGIVULKAN_PREFERRED_DEVICE_TYPE));
     for (uint32_t i = 0; i < physicalDeviceCount; i++) {
         VkPhysicalDeviceProperties props;
         vkGetPhysicalDeviceProperties(physicalDevices[i], &props);
@@ -111,20 +109,22 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         if (familyIndex == VK_QUEUE_FAMILY_IGNORED) continue;
 
         // Assume we always want a presentation capable device for now.
-        if (!_SupportsPresentation(physicalDevices[i], familyIndex)) {
+        if (instance->HasPresentation() &&
+            !_SupportsPresentation(physicalDevices[i], familyIndex)) {
             continue;
         }
 
         if (props.apiVersion < VK_API_VERSION_1_0) continue;
 
-        // Try to find a discrete device. Until we find a discrete device,
-        // store the first non-discrete device as fallback in case we never
-        // find a discrete device at all.
-        if (props.deviceType==VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+        // Try to find a preferred device type. Until we find one, store the
+        // first non-preferred device as fallback in case we never find a
+        // preferred device at all.
+        if (props.deviceType == preferredDeviceType) {
             _vkPhysicalDevice = physicalDevices[i];
             _vkGfxsQueueFamilyIndex = familyIndex;
             break;
-        } else if (!_vkPhysicalDevice) {
+        }
+        if (!_vkPhysicalDevice) {
             _vkPhysicalDevice = physicalDevices[i];
             _vkGfxsQueueFamilyIndex = familyIndex;
         }
@@ -140,22 +140,22 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     //
 
     uint32_t extensionCount = 0;
-    TF_VERIFY(
+    HGIVULKAN_VERIFY_VK_RESULT(
         vkEnumerateDeviceExtensionProperties(
             _vkPhysicalDevice,
             nullptr,
             &extensionCount,
-            nullptr) == VK_SUCCESS
+            nullptr)
     );
 
     _vkExtensions.resize(extensionCount);
 
-    TF_VERIFY(
+    HGIVULKAN_VERIFY_VK_RESULT(
         vkEnumerateDeviceExtensionProperties(
             _vkPhysicalDevice,
             nullptr,
             &extensionCount,
-            _vkExtensions.data()) == VK_SUCCESS
+            _vkExtensions.data())
     );
 
     //
@@ -170,9 +170,12 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     queueInfo.queueCount = 1;
     queueInfo.pQueuePriorities = queuePriorities;
 
-    std::vector<const char*> extensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
+    std::vector<const char*> extensions;
+
+    // Not available if we're surfaceless (minimal Lavapipe build for example).
+    if (IsSupportedExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
+        extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    }
 
     // Allow certain buffers/images to have dedicated memory allocations to
     // improve performance on some GPUs.
@@ -185,13 +188,32 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         extensions.push_back(VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME);
     }
 
-    // Allow OpenGL interop - Note requires two extensions in HgiVulkanInstance.
+    // Allow OpenGL interop
+    // Note requires four extensions in HgiVulkanInstance.
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
     if (IsSupportedExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME) &&
-        IsSupportedExtension(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME))
-    {
+        IsSupportedExtension(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME) &&
+        IsSupportedExtension(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME) &&
+        IsSupportedExtension(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME)) {
         extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
         extensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
+        extensions.push_back(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME);
+        extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);
     }
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
+    if (IsSupportedExtension(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME) &&
+        IsSupportedExtension(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME) &&
+        IsSupportedExtension(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME) &&
+        IsSupportedExtension(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME)) {
+        extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
+        extensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
+        extensions.push_back(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
+        extensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
+    }
+#elif defined(VK_USE_PLATFORM_METAL_EXT)
+    // To be added, either through MoltenVK adding GL interop,
+    // or a later change if necessary
+#endif
 
     // Memory budget query extension
     bool supportsMemExtension = false;
@@ -237,74 +259,111 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         extensions.push_back(VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME);
     }
 
+    // Allow use of line rasterization ext
+    if (IsSupportedExtension(VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME)) {
+        extensions.push_back(VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME);
+    }
+
     // This extension is needed to allow the viewport to be flipped in Y so that
     // shaders and vertex data can remain the same between opengl and vulkan.
     extensions.push_back(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
 
+#ifdef VK_USE_PLATFORM_METAL_EXT
+    if (IsSupportedExtension(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME)) {
+        extensions.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+    }
+#endif
+
     // Enabling certain features may incure a performance hit
     // (e.g. robustBufferAccess), so only enable the features we will use.
+
+    VkPhysicalDeviceFeatures2 features2 =
+        {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+
+    features2.features.multiDrawIndirect =
+        _capabilities->vkDeviceFeatures2.features.multiDrawIndirect;
+    features2.features.samplerAnisotropy =
+        _capabilities->vkDeviceFeatures2.features.samplerAnisotropy;
+    features2.features.shaderSampledImageArrayDynamicIndexing =
+        _capabilities->vkDeviceFeatures2.features.shaderSampledImageArrayDynamicIndexing;
+    features2.features.shaderStorageImageArrayDynamicIndexing =
+        _capabilities->vkDeviceFeatures2.features.shaderStorageImageArrayDynamicIndexing;
+    features2.features.sampleRateShading =
+        _capabilities->vkDeviceFeatures2.features.sampleRateShading;
+    features2.features.shaderClipDistance =
+        _capabilities->vkDeviceFeatures2.features.shaderClipDistance;
+    features2.features.tessellationShader =
+        _capabilities->vkDeviceFeatures2.features.tessellationShader;
+    features2.features.depthClamp =
+        _capabilities->vkDeviceFeatures2.features.depthClamp;
+    features2.features.shaderFloat64 =
+        _capabilities->vkDeviceFeatures2.features.shaderFloat64;
+    features2.features.fillModeNonSolid =
+        _capabilities->vkDeviceFeatures2.features.fillModeNonSolid;
+    features2.features.alphaToOne =
+        _capabilities->vkDeviceFeatures2.features.alphaToOne;
+    // Needed to write to storage buffers from vertex shader (eg. GPU culling).
+    features2.features.vertexPipelineStoresAndAtomics =
+        _capabilities->vkDeviceFeatures2.features.vertexPipelineStoresAndAtomics;
+    // Needed to write to storage buffers from fragment shader (eg. OIT).
+    features2.features.fragmentStoresAndAtomics =
+        _capabilities->vkDeviceFeatures2.features.fragmentStoresAndAtomics;
+    // Needed for buffer address feature
+    features2.features.shaderInt64 =
+        _capabilities->vkDeviceFeatures2.features.shaderInt64;
+    // Needed for gl_primtiveID
+    features2.features.geometryShader =
+        _capabilities->vkDeviceFeatures2.features.geometryShader;
+
     VkPhysicalDeviceVulkan11Features vulkan11Features =
         {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
-    vulkan11Features.pNext = _capabilities->vkVulkan11Features.pNext;
     vulkan11Features.shaderDrawParameters =
         _capabilities->vkVulkan11Features.shaderDrawParameters;
+    vulkan11Features.pNext = features2.pNext;
+    features2.pNext = &vulkan11Features;
 
-    VkPhysicalDeviceFeatures2 features =
-        {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
-    features.pNext = &vulkan11Features;
+    // Vertex attribute divisor features ext
+    VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT vertexAttributeDivisorFeatures
+    { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT };
+    vertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor =
+        _capabilities->vkVertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor;
+    vertexAttributeDivisorFeatures.pNext = features2.pNext;
+    features2.pNext = &vertexAttributeDivisorFeatures;
 
-    features.features.multiDrawIndirect =
-        _capabilities->vkDeviceFeatures.multiDrawIndirect;
-    features.features.samplerAnisotropy =
-        _capabilities->vkDeviceFeatures.samplerAnisotropy;
-    features.features.shaderSampledImageArrayDynamicIndexing =
-        _capabilities->vkDeviceFeatures.shaderSampledImageArrayDynamicIndexing;
-    features.features.shaderStorageImageArrayDynamicIndexing =
-        _capabilities->vkDeviceFeatures.shaderStorageImageArrayDynamicIndexing;
-    features.features.sampleRateShading =
-        _capabilities->vkDeviceFeatures.sampleRateShading;
-    features.features.shaderClipDistance =
-        _capabilities->vkDeviceFeatures.shaderClipDistance;
-    features.features.tessellationShader =
-        _capabilities->vkDeviceFeatures.tessellationShader;
-    features.features.depthClamp =
-        _capabilities->vkDeviceFeatures.depthClamp;
-    features.features.shaderFloat64 =
-        _capabilities->vkDeviceFeatures.shaderFloat64;
-    features.features.fillModeNonSolid =
-        _capabilities->vkDeviceFeatures.fillModeNonSolid;
-    features.features.alphaToOne =
-        _capabilities->vkDeviceFeatures.alphaToOne;
+    // Barycentric features
+    VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR barycentricFeatures {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR
+    };
+    if (IsSupportedExtension(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME)) {
+        barycentricFeatures.fragmentShaderBarycentric =
+            _capabilities->vkBarycentricFeatures.fragmentShaderBarycentric;
+        barycentricFeatures.pNext = features2.pNext;
+        features2.pNext = &barycentricFeatures;
+    }
 
-    // Needed to write to storage buffers from vertex shader (eg. GPU culling).
-    features.features.vertexPipelineStoresAndAtomics =
-        _capabilities->vkDeviceFeatures.vertexPipelineStoresAndAtomics;
-    // Needed to write to storage buffers from fragment shader (eg. OIT).
-    features.features.fragmentStoresAndAtomics =
-        _capabilities->vkDeviceFeatures.fragmentStoresAndAtomics;
-
-    #if !defined(VK_USE_PLATFORM_MACOS_MVK)
-        // Needed for buffer address feature
-        features.features.shaderInt64 =
-            _capabilities->vkDeviceFeatures.shaderInt64;
-        // Needed for gl_primtiveID
-        features.features.geometryShader =
-            _capabilities->vkDeviceFeatures.geometryShader;
-    #endif
+    // Line rasterization features needed for Bresenham line rasterization
+    VkPhysicalDeviceLineRasterizationFeaturesKHR lineRasterFeatures {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_KHR };
+    if (IsSupportedExtension(VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME)) {
+        lineRasterFeatures.bresenhamLines =
+            _capabilities->vkLineRasterizationFeatures.bresenhamLines;
+        lineRasterFeatures.pNext = features2.pNext;
+        features2.pNext = &lineRasterFeatures;
+    }
 
     VkDeviceCreateInfo createInfo = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
     createInfo.queueCreateInfoCount = 1;
     createInfo.pQueueCreateInfos = &queueInfo;
     createInfo.ppEnabledExtensionNames = extensions.data();
     createInfo.enabledExtensionCount = (uint32_t) extensions.size();
-    createInfo.pNext = &features;
+    createInfo.pNext = &features2;
 
-    TF_VERIFY(
+    HGIVULKAN_VERIFY_VK_RESULT(
         vkCreateDevice(
             _vkPhysicalDevice,
             &createInfo,
             HgiVulkanAllocator(),
-            &_vkDevice) == VK_SUCCESS
+            &_vkDevice)
     );
 
     HgiVulkanSetupDeviceDebug(instance, this);
@@ -315,6 +374,23 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
 
     vkCreateRenderPass2KHR = (PFN_vkCreateRenderPass2KHR)
     vkGetDeviceProcAddr(_vkDevice, "vkCreateRenderPass2KHR");
+
+    if (_capabilities->supportsNativeInterop) {
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+        vkGetMemoryWin32HandleKHR = (PFN_vkGetMemoryWin32HandleKHR)
+        vkGetDeviceProcAddr(_vkDevice, "vkGetMemoryWin32HandleKHR");
+
+        vkGetSemaphoreWin32HandleKHR = (PFN_vkGetSemaphoreWin32HandleKHR)
+        vkGetDeviceProcAddr(_vkDevice, "vkGetSemaphoreWin32HandleKHR");
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
+        vkGetMemoryFdKHR = (PFN_vkGetMemoryFdKHR)
+        vkGetDeviceProcAddr(_vkDevice, "vkGetMemoryFdKHR");
+
+        vkGetSemaphoreFdKHR = (PFN_vkGetSemaphoreFdKHR)
+        vkGetDeviceProcAddr(_vkDevice, "vkGetSemaphoreFdKHR");
+#elif defined(VK_USE_PLATFORM_METAL_EXT)
+#endif
+    }
 
     //
     // Memory allocator
@@ -332,8 +408,8 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         allocatorInfo.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
     }
 
-    TF_VERIFY(
-        vmaCreateAllocator(&allocatorInfo, &_vmaAllocator) == VK_SUCCESS
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vmaCreateAllocator(&allocatorInfo, &_vmaAllocator)
     );
 
     //
@@ -351,8 +427,18 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
 
 HgiVulkanDevice::~HgiVulkanDevice()
 {
-    // Make sure device is idle before destroying objects.
-    TF_VERIFY(vkDeviceWaitIdle(_vkDevice) == VK_SUCCESS);
+    if (_vkDevice) {
+        // Make sure device is idle before destroying objects.
+        HGIVULKAN_VERIFY_VK_RESULT(
+            vkDeviceWaitIdle(_vkDevice)
+        );
+    }
+
+    std::lock_guard<std::mutex> lock(_vmaInteropPoolsLock);
+    for (auto& entry : _vmaInteropPoolsForMemoryType)
+    {
+        vmaDestroyPool(_vmaAllocator, entry.second);
+    }
 
     delete _pipelineCache;
     delete _commandQueue;
@@ -372,6 +458,72 @@ HgiVulkanDevice::GetVulkanMemoryAllocator() const
 {
     return _vmaAllocator;
 }
+
+VmaPool
+HgiVulkanDevice::GetVMAPoolForInterop(VkImageCreateInfo imageInfo)
+{
+    TF_VERIFY(_capabilities->supportsNativeInterop,
+        "Device doesn't support native interop!");
+    VmaAllocationCreateInfo allocInfo = {};
+    allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    
+    uint32_t memoryTypeIndex;
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vmaFindMemoryTypeIndexForImageInfo(
+        GetVulkanMemoryAllocator(),
+        &imageInfo,
+        &allocInfo,
+        &memoryTypeIndex));
+
+    std::lock_guard<std::mutex> lock(_vmaInteropPoolsLock);
+    auto iter = _vmaInteropPoolsForMemoryType.find(memoryTypeIndex);
+    if (iter == _vmaInteropPoolsForMemoryType.end()) {
+        VmaPoolCreateInfo poolInfo = {};
+        poolInfo.pMemoryAllocateNext = &_exportInfo;
+        poolInfo.memoryTypeIndex = memoryTypeIndex;
+
+        VmaPool pool;
+        HGIVULKAN_VERIFY_VK_RESULT(
+            vmaCreatePool(
+                _vmaAllocator,
+                &poolInfo, 
+                &pool));
+        iter = _vmaInteropPoolsForMemoryType.insert({ memoryTypeIndex, pool }).first;
+    }
+    return iter->second;
+}
+
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+HANDLE
+HgiVulkanDevice::GetWin32HandleForMemory(VkDeviceMemory memory)
+{
+    // A temporary workaround for vkGetMemoryWin32HandleKHR being invalid to
+    // call on the same VkDeviceMemory and handleType twice. To be replaced
+    // with direct VMA call on SDK update (see header for details)
+    std::lock_guard<std::mutex> lock(_vmaInteropWin32HandleLock);
+    auto iter = _vmaInteropWin32HandleForMemory.find(memory);
+    if (iter == _vmaInteropWin32HandleForMemory.end()) {
+        VkMemoryGetWin32HandleInfoKHR getInfo { VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR };
+        getInfo.memory = memory;
+        getInfo.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT_KHR;
+
+        HANDLE handle;
+        HGIVULKAN_VERIFY_VK_RESULT(
+            vkGetMemoryWin32HandleKHR(
+                GetVulkanDevice(),
+                &getInfo,
+                &handle));
+        iter = _vmaInteropWin32HandleForMemory.insert({ memory, handle }).first;
+    }
+    HANDLE curProc = GetCurrentProcess();
+    HANDLE duplicateHandle;
+    if (!DuplicateHandle(curProc, iter->second, curProc,
+        &duplicateHandle, 0, false, DUPLICATE_SAME_ACCESS)) {
+        TF_CODING_ERROR("Couldn't duplicate Windows Handle!");
+    }
+    return duplicateHandle;
+}
+#endif
 
 HgiVulkanCommandQueue*
 HgiVulkanDevice::GetCommandQueue() const
@@ -406,8 +558,8 @@ HgiVulkanDevice::GetPipelineCache() const
 void
 HgiVulkanDevice::WaitForIdle()
 {
-    TF_VERIFY(
-        vkDeviceWaitIdle(_vkDevice) == VK_SUCCESS
+    HGIVULKAN_VERIFY_VK_RESULT(
+        vkDeviceWaitIdle(_vkDevice)
     );
 }
 

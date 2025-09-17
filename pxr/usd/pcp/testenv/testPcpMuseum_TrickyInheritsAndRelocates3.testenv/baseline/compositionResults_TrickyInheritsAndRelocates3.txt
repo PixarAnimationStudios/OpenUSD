@@ -1,15 +1,15 @@
-Loading @TrickyInheritsAndRelocates3/root.sdf@
+Loading @TrickyInheritsAndRelocates3/root.usda@
 
 ------------------------------------------------------------------------
 Layer Stack:
-     root.sdf
+     root.usda
 
 ------------------------------------------------------------------------
 Results for composing </GuitarRigX>
 
 Prim Stack:
-    root.sdf             /GuitarRigX
-    rig.sdf              /GuitarRig
+    root.usda            /GuitarRigX
+    rig.usda             /GuitarRig
 
 Child names:
      ['Anim', 'Rig']
@@ -18,7 +18,7 @@ Child names:
 Results for composing </GuitarRigX/Anim>
 
 Prim Stack:
-    rig.sdf              /GuitarRig/Anim
+    rig.usda             /GuitarRig/Anim
 
 Child names:
      ['Strings']
@@ -27,8 +27,8 @@ Child names:
 Results for composing </GuitarRigX/Anim/Strings>
 
 Prim Stack:
-    rig.sdf              /GuitarRig/Anim/Strings
-    strings_rig.sdf      /StringsRig/Strings
+    rig.usda             /GuitarRig/Anim/Strings
+    strings_rig.usda     /StringsRig/Strings
 
 Child names:
      ['String1', 'String2']
@@ -37,21 +37,21 @@ Child names:
 Results for composing </GuitarRigX/Anim/Strings/String1>
 
 Prim Stack:
-    rig.sdf              /GuitarRig/Anim/Strings/String1
-    strings_rig.sdf      /StringsRig/_Class_StringRig/String
+    rig.usda             /GuitarRig/Anim/Strings/String1
+    strings_rig.usda     /StringsRig/_Class_StringRig/String
 
 ------------------------------------------------------------------------
 Results for composing </GuitarRigX/Anim/Strings/String2>
 
 Prim Stack:
-    rig.sdf              /GuitarRig/Anim/Strings/String2
-    strings_rig.sdf      /StringsRig/_Class_StringRig/String
+    rig.usda             /GuitarRig/Anim/Strings/String2
+    strings_rig.usda     /StringsRig/_Class_StringRig/String
 
 ------------------------------------------------------------------------
 Results for composing </GuitarRigX/Rig>
 
 Prim Stack:
-    rig.sdf              /GuitarRig/Rig
+    rig.usda             /GuitarRig/Rig
 
 Child names:
      ['StringsRig']
@@ -60,8 +60,8 @@ Child names:
 Results for composing </GuitarRigX/Rig/StringsRig>
 
 Prim Stack:
-    rig.sdf              /GuitarRig/Rig/StringsRig
-    strings_rig.sdf      /StringsRig
+    rig.usda             /GuitarRig/Rig/StringsRig
+    strings_rig.usda     /StringsRig
 
 Child names:
      ['_Class_StringRig', 'String1Rig', 'String2Rig']
@@ -73,7 +73,7 @@ Prohibited child names:
 Results for composing </GuitarRigX/Rig/StringsRig/_Class_StringRig>
 
 Prim Stack:
-    strings_rig.sdf      /StringsRig/_Class_StringRig
+    strings_rig.usda     /StringsRig/_Class_StringRig
 
 Child names:
      ['String', 'Vibrate']
@@ -82,27 +82,27 @@ Child names:
 Results for composing </GuitarRigX/Rig/StringsRig/_Class_StringRig/String>
 
 Prim Stack:
-    strings_rig.sdf      /StringsRig/_Class_StringRig/String
+    strings_rig.usda     /StringsRig/_Class_StringRig/String
 
 ------------------------------------------------------------------------
 Results for composing </GuitarRigX/Rig/StringsRig/_Class_StringRig/Vibrate>
 
 Prim Stack:
-    strings_rig.sdf      /StringsRig/_Class_StringRig/Vibrate
+    strings_rig.usda     /StringsRig/_Class_StringRig/Vibrate
 
 Property names:
      ['amount']
 
 Property stacks:
 /GuitarRigX/Rig/StringsRig/_Class_StringRig/Vibrate.amount:
-    strings_rig.sdf      /StringsRig/_Class_StringRig/Vibrate.amount
+    strings_rig.usda     /StringsRig/_Class_StringRig/Vibrate.amount
 
 ------------------------------------------------------------------------
 Results for composing </GuitarRigX/Rig/StringsRig/String1Rig>
 
 Prim Stack:
-    rig.sdf              /GuitarRig/Rig/StringsRig/String1Rig
-    strings_rig.sdf      /StringsRig/_Class_StringRig
+    rig.usda             /GuitarRig/Rig/StringsRig/String1Rig
+    strings_rig.usda     /StringsRig/_Class_StringRig
 
 Child names:
      ['Vibrate']
@@ -114,21 +114,21 @@ Prohibited child names:
 Results for composing </GuitarRigX/Rig/StringsRig/String1Rig/Vibrate>
 
 Prim Stack:
-    strings_rig.sdf      /StringsRig/_Class_StringRig/Vibrate
+    strings_rig.usda     /StringsRig/_Class_StringRig/Vibrate
 
 Property names:
      ['amount']
 
 Property stacks:
 /GuitarRigX/Rig/StringsRig/String1Rig/Vibrate.amount:
-    strings_rig.sdf      /StringsRig/_Class_StringRig/Vibrate.amount
+    strings_rig.usda     /StringsRig/_Class_StringRig/Vibrate.amount
 
 ------------------------------------------------------------------------
 Results for composing </GuitarRigX/Rig/StringsRig/String2Rig>
 
 Prim Stack:
-    rig.sdf              /GuitarRig/Rig/StringsRig/String2Rig
-    strings_rig.sdf      /StringsRig/_Class_StringRig
+    rig.usda             /GuitarRig/Rig/StringsRig/String2Rig
+    strings_rig.usda     /StringsRig/_Class_StringRig
 
 Child names:
      ['Vibrate']
@@ -140,12 +140,12 @@ Prohibited child names:
 Results for composing </GuitarRigX/Rig/StringsRig/String2Rig/Vibrate>
 
 Prim Stack:
-    strings_rig.sdf      /StringsRig/_Class_StringRig/Vibrate
+    strings_rig.usda     /StringsRig/_Class_StringRig/Vibrate
 
 Property names:
      ['amount']
 
 Property stacks:
 /GuitarRigX/Rig/StringsRig/String2Rig/Vibrate.amount:
-    strings_rig.sdf      /StringsRig/_Class_StringRig/Vibrate.amount
+    strings_rig.usda     /StringsRig/_Class_StringRig/Vibrate.amount
 

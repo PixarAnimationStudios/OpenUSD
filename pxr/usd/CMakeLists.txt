@@ -2,7 +2,6 @@ set(DIRS
     ar
     kind
     sdf
-    ndr
     sdr
     pcp
     usd
@@ -15,6 +14,7 @@ set(DIRS
     usdRender
     usdHydra
     usdRi
+    usdSemantics
     usdSkel
     usdUI
     usdUtils

@@ -1,0 +1,50 @@
+#usda 1.0
+(
+    timeCodesPerSecond = 48.0
+)
+
+over "AddRefs2" 
+(
+    prepend references = [
+        # This reference will resolve to the same layer offset during
+        # composition as @./ref.usda@</Ref> (offset = 100.0) in the base.usda
+        # layer, but its identity is different so it still gets added to this
+        # prim's prim index as a new reference.
+        @./ref.usda@</Ref> (offset = 200.0; scale = 1.0),
+        
+        # This matches the same reference in base.usda, so this will move that
+        # reference in the list op during composition. However, this will also
+        # resolve to a different layer offset because of the automatic scaling
+        # that is used to match this 48tcps layer to the 24tcps root.usda layer
+        # that sublayers this layer.
+        @./ref.usda@</Ref> (offset = 10.0; scale = 2.0)
+    ]
+    append references = [
+        # This matches the same reference in base.usda, so this will move that
+        # reference in the list op during composition. However, this will also
+        # resolve to a different layer offset because of the automatic scaling
+        # that is used to match this 48tcps layer to the 24tcps root.usda layer
+        # that sublayers this layer.
+        @./ref.usda@</Ref>
+    ]
+)
+{
+}
+
+over "DeleteRefs2" 
+(
+    delete references = [
+        # This reference will resolve to the same layer offset during
+        # composition as @./ref.usda@</Ref> (offset = 100.0) in the base.usda
+        # layer, but its identity is different so it will not remove that 
+        # reference during composition.
+        @./ref.usda@</Ref> (offset = 200.0; scale = 1.0),
+
+        # These match the same references in base.usda, so they will be removed
+        # from list op during composition..
+        @./ref.usda@</Ref> (offset = 10.0; scale = 2.0),
+        @./ref.usda@</Ref>
+    ]
+)
+{
+}

@@ -1,25 +1,8 @@
 //
 // Copyright 2023 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/imaging/hd/utils.h"
@@ -53,9 +36,6 @@ HasActiveRenderSettingsPrim(
 
     HdSceneGlobalsSchema sgSchema =
         HdSceneGlobalsSchema::GetFromSceneIndex(si);
-    if (!sgSchema) {
-        return false;
-    }
 
     if (auto pathHandle = sgSchema.GetActiveRenderSettingsPrim()) {
         const SdfPath rspPath = pathHandle->GetTypedValue(0);
@@ -68,6 +48,60 @@ HasActiveRenderSettingsPrim(
             }
             return true;
         }
+    }
+
+    return false;
+}
+
+/* static */
+bool
+HasActiveRenderPassPrim(
+    const HdSceneIndexBaseRefPtr &si,
+    SdfPath *primPath /* = nullptr */)
+{
+    if (!si) {
+        return false;
+    }
+
+    HdSceneGlobalsSchema sgSchema =
+        HdSceneGlobalsSchema::GetFromSceneIndex(si);
+
+    if (auto pathHandle = sgSchema.GetActiveRenderPassPrim()) {
+        const SdfPath rpPath = pathHandle->GetTypedValue(0);
+        // Validate prim.
+        HdSceneIndexPrim prim = si->GetPrim(rpPath);
+        if (prim.primType == HdPrimTypeTokens->renderPass &&
+            prim.dataSource) {
+            if (primPath) {
+                *primPath = rpPath;
+            }
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/* static */
+bool
+GetCurrentFrame(const HdSceneIndexBaseRefPtr &si, double *frame)
+{
+    if (!si) {
+        return false;
+    }
+
+    HdSceneGlobalsSchema sgSchema = HdSceneGlobalsSchema::GetFromSceneIndex(si);
+    if (!sgSchema) {
+        return false;
+    }
+
+    if (auto frameHandle = sgSchema.GetCurrentFrame()) {
+        const double frameValue = frameHandle->GetTypedValue(0);
+        if (std::isnan(frameValue)) {
+            return false;
+        }
+        *frame = frameValue;
+        return true;
     }
 
     return false;
@@ -140,6 +174,7 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
     struct ParamData {
         VtValue value;
         TfToken colorSpace;
+        TfToken typeName;
     };
 
     for (auto const &iter: hdNetworkMap.map) {
@@ -159,20 +194,28 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
             std::vector<TfToken> paramsNames;
             std::vector<HdDataSourceBaseHandle> paramsValues;
 
-            // Gather parameter value and colorspace metadata in paramsInfo, a 
-            // mapping of the parameter name to its value and colorspace data.
+            // Gather parameter value, colorspace and typename metadata in 
+            // paramsInfo, a mapping of the parameter name to its value and 
+            // metadata.
             std::map<std::string, ParamData> paramsInfo;
             for (const auto &p : node.parameters) {
 
-                // Strip "colorSpace" prefix 
-                const std::pair<std::string, bool> res = 
+                // Colorspace metadata - strip "colorSpace" prefix 
+                const std::pair<std::string, bool> csRes = 
                     SdfPath::StripPrefixNamespace(p.first, 
                         HdMaterialNodeParameterSchemaTokens->colorSpace);
-
-                // Colorspace metadata
-                if (res.second) {
-                    paramsInfo[res.first].colorSpace = p.second.Get<TfToken>();
+                if (csRes.second) {
+                    paramsInfo[csRes.first].colorSpace = p.second.Get<TfToken>();
                 }
+
+                // TypeName metadata - strip "typeName" prefix 
+                const std::pair<std::string, bool> vtRes = 
+                    SdfPath::StripPrefixNamespace(p.first, 
+                        HdMaterialNodeParameterSchemaTokens->typeName);
+                if (vtRes.second) {
+                    paramsInfo[vtRes.first].typeName = p.second.Get<TfToken>();
+                }
+
                 // Value 
                 else {
                     paramsInfo[p.first].value = p.second.Get<VtValue>();
@@ -192,6 +235,11 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
                             ? nullptr
                             : HdRetainedTypedSampledDataSource<TfToken>::New(
                                 item.second.colorSpace))
+                        .SetTypeName(
+                            item.second.typeName.IsEmpty()
+                            ? nullptr
+                            : HdRetainedTypedSampledDataSource<TfToken>::New(
+                                item.second.typeName))
                         .Build()
                 );
             }
@@ -278,9 +326,13 @@ ConvertHdMaterialNetworkToHdMaterialNetworkSchema(
             terminalsNames.data(),
             terminalsValues.data());
 
+    HdContainerDataSourceHandle configDefaultContext =
+        ConvertVtDictionaryToContainerDS(hdNetworkMap.config);
+
     return HdMaterialNetworkSchema::Builder()
         .SetNodes(nodesDefaultContext)
         .SetTerminals(terminalsDefaultContext)
+        .SetConfig(configDefaultContext)
         .Build();
 }
 
@@ -297,6 +349,23 @@ ConvertHdMaterialNetworkToHdMaterialSchema(
         1, 
         &defaultContext, 
         &network);
+}
+
+HdContainerDataSourceHandle
+ConvertVtDictionaryToContainerDS(const VtDictionary &dict)
+{
+    TfTokenVector names;
+    std::vector<HdDataSourceBaseHandle> values;
+    const size_t numDictEntries = dict.size();
+    names.reserve(numDictEntries);
+    values.reserve(numDictEntries);
+
+    for (const auto &pair : dict) {
+        names.push_back(TfToken(pair.first));
+        values.push_back(HdCreateTypedRetainedDataSource(pair.second));
+    }
+    return HdRetainedContainerDataSource::New(
+        names.size(), names.data(), values.data());
 }
 
 }

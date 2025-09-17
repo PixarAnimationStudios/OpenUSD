@@ -15,10 +15,7 @@ pxr_library(hd
         hf
         pxOsd
         sdr
-        ${TBB_tbb_LIBRARY}
-
-    INCLUDE_DIRS
-        ${TBB_INCLUDE_DIRS}
+        TBB::tbb
 
     PUBLIC_CLASSES
         aov
@@ -31,6 +28,7 @@ pxr_library(hd
         bufferArrayRange
         bufferSource
         bufferSpec
+        cachingSceneIndex
         camera
         cameraSchema
         capsuleSchema
@@ -52,6 +50,7 @@ pxr_library(hd
         dataSource
         dataSourceHash
         dataSourceLegacyPrim
+        dataSourceLegacyTaskPrim
         dataSourceLocator
         dataSourceMaterialNetworkInterface
         debugCodes
@@ -68,6 +67,7 @@ pxr_library(hd
         extComputation
         extComputationContext
         extComputationContextInternal
+        extComputationCpuCallback
         extComputationInputComputationSchema
         extComputationOutputSchema
         extComputationPrimvarSchema
@@ -88,7 +88,6 @@ pxr_library(hd
         flatNormals
         geomSubset
         geomSubsetSchema
-        geomSubsetsSchema
         imageShader
         imageShaderSchema
         instanceCategoriesSchema
@@ -101,7 +100,10 @@ pxr_library(hd
         integratorSchema
         lazyContainerDataSource
         legacyDisplayStyleSchema
+        legacyGeomSubsetSceneIndex
         legacyPrimSceneIndex
+        legacyTaskFactory
+        legacyTaskSchema
         lensDistortionSchema
         light
         lightSchema
@@ -112,10 +114,13 @@ pxr_library(hd
         materialConnectionSchema
         materialFilteringSceneIndexBase
         materialInterfaceMappingSchema
+        materialInterfaceParameterSchema
+        materialInterfaceSchema
         materialNetworkSchema
         materialNetwork2Interface
         materialNodeSchema
         materialNodeParameterSchema
+        materialOverrideSchema
         materialSchema
         mergingSceneIndex
         mesh
@@ -129,10 +134,10 @@ pxr_library(hd
         nurbsPatchTrimCurveSchema
         overlayContainerDataSource
         perfLog
+        planeSchema
         pluginRenderDelegateUniqueHandle
         points
         prefixingSceneIndex
-        primDataSourceOverlayCache
         primGather
         primOriginSchema
         primTypeIndex
@@ -171,6 +176,7 @@ pxr_library(hd
         sceneIndexPlugin
         sceneIndexPluginRegistry
         sceneIndexPrimView
+        sceneIndexUtil
         schema
         selection
         selectionSchema
@@ -329,6 +335,16 @@ pxr_build_test(testHdDataSource
        testenv/testHdDataSource.cpp
 )
 
+pxr_build_test(testHdMergingSceneIndex
+   LIBRARIES
+       hd
+       sdf
+       tf
+
+   CPPFILES
+       testenv/testHdMergingSceneIndex.cpp
+)
+
 pxr_build_test(testHdSceneIndex
    LIBRARIES
        hd
@@ -347,6 +363,17 @@ pxr_build_test(testHdSortedIds
 
    CPPFILES
        testenv/testHdSortedIds.cpp
+)
+
+pxr_build_test(testHdSortedIdsPerf
+   LIBRARIES
+       hd
+       sdf
+       tf
+       arch
+
+   CPPFILES
+       testenv/testHdSortedIdsPerf.cpp
 )
 
 pxr_build_test(testHdTimeSampleArray
@@ -419,6 +446,10 @@ pxr_register_test(testHdPerfLog
 
 pxr_register_test(testHdDataSource
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDataSource"
+)
+
+pxr_register_test(testHdMergingSceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdMergingSceneIndex"
 )
 
 pxr_register_test(testHdSceneIndex

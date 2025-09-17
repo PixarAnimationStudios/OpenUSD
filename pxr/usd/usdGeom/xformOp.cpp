@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/xformOp.h"
@@ -45,7 +28,13 @@ TF_REGISTRY_FUNCTION(TfEnum)
 {
     // Type
     TF_ADD_ENUM_NAME(UsdGeomXformOp::TypeInvalid,   "");
+    TF_ADD_ENUM_NAME(UsdGeomXformOp::TypeTranslateX, "translateX");
+    TF_ADD_ENUM_NAME(UsdGeomXformOp::TypeTranslateY, "translateY");
+    TF_ADD_ENUM_NAME(UsdGeomXformOp::TypeTranslateZ, "translateZ");
     TF_ADD_ENUM_NAME(UsdGeomXformOp::TypeTranslate, "translate");
+    TF_ADD_ENUM_NAME(UsdGeomXformOp::TypeScaleX,     "scaleX");
+    TF_ADD_ENUM_NAME(UsdGeomXformOp::TypeScaleY,     "scaleY");
+    TF_ADD_ENUM_NAME(UsdGeomXformOp::TypeScaleZ,     "scaleZ");
     TF_ADD_ENUM_NAME(UsdGeomXformOp::TypeScale,     "scale");
     TF_ADD_ENUM_NAME(UsdGeomXformOp::TypeRotateX,   "rotateX");
     TF_ADD_ENUM_NAME(UsdGeomXformOp::TypeRotateY,   "rotateY");
@@ -75,6 +64,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Tokens for the xformOps that are missing here (eg, RotateXYZ, translate,
     // scale etc.)are added in UsdGeomXformCommonAPI.
     ((xformOpTransform, "xformOp:transform"))
+    ((xformOpTranslateX, "xformOp:translateX"))
+    ((xformOpTranslateY, "xformOp:translateY"))
+    ((xformOpTranslateZ, "xformOp:translateZ"))
+    ((xformOpScaleX, "xformOp:scaleX"))
+    ((xformOpScaleY, "xformOp:scaleY"))
+    ((xformOpScaleZ, "xformOp:scaleZ"))
     ((xformOpRotateX, "xformOp:rotateX"))
     ((xformOpRotateY, "xformOp:rotateY"))
     ((xformOpRotateZ, "xformOp:rotateZ"))
@@ -255,7 +250,13 @@ UsdGeomXformOp::GetOpTypeToken(UsdGeomXformOp::Type const opType)
 {
     switch(opType) {
         case TypeTransform: return UsdGeomXformOpTypes->transform;
+        case TypeTranslateX: return UsdGeomXformOpTypes->translateX;
+        case TypeTranslateY: return UsdGeomXformOpTypes->translateY;
+        case TypeTranslateZ: return UsdGeomXformOpTypes->translateZ;
         case TypeTranslate: return UsdGeomXformOpTypes->translate;
+        case TypeScaleX: return UsdGeomXformOpTypes->scaleX;
+        case TypeScaleY: return UsdGeomXformOpTypes->scaleY;
+        case TypeScaleZ: return UsdGeomXformOpTypes->scaleZ;
         case TypeScale: return UsdGeomXformOpTypes->scale;
         case TypeRotateX: return UsdGeomXformOpTypes->rotateX;
         case TypeRotateY: return UsdGeomXformOpTypes->rotateY;
@@ -278,35 +279,48 @@ UsdGeomXformOp::GetOpTypeToken(UsdGeomXformOp::Type const opType)
 UsdGeomXformOp::Type 
 UsdGeomXformOp::GetOpTypeEnum(TfToken const &opTypeToken)
 {
-    if (opTypeToken == UsdGeomXformOpTypes->transform)
+    if (opTypeToken == UsdGeomXformOpTypes->transform) {
         return TypeTransform;
-    else if (opTypeToken == UsdGeomXformOpTypes->translate)
+    } else if (opTypeToken == UsdGeomXformOpTypes->translate) {
         return TypeTranslate;
-    // RotateXYZ is expected to be more common than the remaining ops.
-    else if (opTypeToken == UsdGeomXformOpTypes->rotateXYZ)
+    } else if (opTypeToken == UsdGeomXformOpTypes->translateX) {
+        return TypeTranslateX;
+    } else if (opTypeToken == UsdGeomXformOpTypes->translateY) {
+        return TypeTranslateY;
+    } else if (opTypeToken == UsdGeomXformOpTypes->translateZ) {
+        return TypeTranslateZ;
+    } else if (opTypeToken == UsdGeomXformOpTypes->rotateXYZ) {
+        // RotateXYZ is expected to be more common than the remaining ops.
         return TypeRotateXYZ;
-    else if (opTypeToken == UsdGeomXformOpTypes->scale)
+    } else if (opTypeToken == UsdGeomXformOpTypes->scale) {
         return TypeScale;
-    else if (opTypeToken == UsdGeomXformOpTypes->rotateX)
+    } else if (opTypeToken == UsdGeomXformOpTypes->scaleX) {
+        return TypeScaleX;
+    } else if (opTypeToken == UsdGeomXformOpTypes->scaleY) {
+        return TypeScaleY;
+    } else if (opTypeToken == UsdGeomXformOpTypes->scaleZ) {
+        return TypeScaleZ;
+    } else if (opTypeToken == UsdGeomXformOpTypes->rotateX) {
         return TypeRotateX;
-    else if (opTypeToken == UsdGeomXformOpTypes->rotateY)
+    } else if (opTypeToken == UsdGeomXformOpTypes->rotateY) {
         return TypeRotateY;
-    else if (opTypeToken == UsdGeomXformOpTypes->rotateZ)
+    } else if (opTypeToken == UsdGeomXformOpTypes->rotateZ) {
         return TypeRotateZ;
-    else if (opTypeToken == UsdGeomXformOpTypes->rotateXZY)
+    } else if (opTypeToken == UsdGeomXformOpTypes->rotateXZY) {
         return TypeRotateXZY;
-    else if (opTypeToken == UsdGeomXformOpTypes->rotateYXZ)
+    } else if (opTypeToken == UsdGeomXformOpTypes->rotateYXZ) {
         return TypeRotateYXZ;
-    else if (opTypeToken == UsdGeomXformOpTypes->rotateYZX)
+    } else if (opTypeToken == UsdGeomXformOpTypes->rotateYZX) {
         return TypeRotateYZX;
-    else if (opTypeToken == UsdGeomXformOpTypes->rotateZXY)
+    } else if (opTypeToken == UsdGeomXformOpTypes->rotateZXY) {
         return TypeRotateZXY;
-    else if (opTypeToken == UsdGeomXformOpTypes->rotateZYX)
+    } else if (opTypeToken == UsdGeomXformOpTypes->rotateZYX) {
         return TypeRotateZYX;
-    else if (opTypeToken == UsdGeomXformOpTypes->orient)
+    } else if (opTypeToken == UsdGeomXformOpTypes->orient) {
         return TypeOrient;
-    else if (opTypeToken == "")
+    } else if (opTypeToken == "") {
         return TypeInvalid;
+    }
     
     TF_CODING_ERROR("Invalid xform opType token '%s'.", opTypeToken.GetText());
     return TypeInvalid;
@@ -320,36 +334,49 @@ UsdGeomXformOp::_GetOpTypeEnumFromCString(char const *str, size_t len)
     auto check = [str, len](char const *name) {
         return (strlen(name) == len) && (strncmp(name, str, len) == 0);
     };
-    if (check("transform"))
+    if (check("transform")) {
         return TypeTransform;
-    else if (check("translate"))
+    } else if (check("translate")) {
         return TypeTranslate;
-    else if (check("rotateXYZ"))
+    } else if (check("translateX")) {
+        return TypeTranslateX;
+    } else if (check("translateY")) {
+        return TypeTranslateY;
+    } else if (check("translateZ")) {
+        return TypeTranslateZ;
+    } else if (check("rotateXYZ")) {
         return TypeRotateXYZ;
-    else if (check("scale"))
+    } else if (check("scale")) {
         return TypeScale;
-    else if (check("rotateX"))
+    } else if (check("scaleX")) {
+        return TypeScaleX;
+    } else if (check("scaleY")) {
+        return TypeScaleY;
+    } else if (check("scaleZ")) {
+        return TypeScaleZ;
+    } else if (check("rotateX")) {
         return TypeRotateX;
-    else if (check("rotateY"))
+    } else if (check("rotateY")) {
         return TypeRotateY;
-    else if (check("rotateZ"))
+    } else if (check("rotateZ")) {
         return TypeRotateZ;
-    else if (check("rotateXZY"))
+    } else if (check("rotateXZY")) {
         return TypeRotateXZY;
-    else if (check("rotateYXZ"))
+    } else if (check("rotateYXZ")) {
         return TypeRotateYXZ;
-    else if (check("rotateYZX"))
+    } else if (check("rotateYZX")) {
         return TypeRotateYZX;
-    else if (check("rotateZXY"))
+    } else if (check("rotateZXY")) {
         return TypeRotateZXY;
-    else if (check("rotateZYX"))
+    } else if (check("rotateZYX")) {
         return TypeRotateZYX;
-    else if (check("orient"))
+    } else if (check("orient")) {
         return TypeOrient;
-    else if (check(""))
+    } else if (check("")) {
         return TypeInvalid;
-    else
+    } else {
         return TypeInvalid;
+    }
 }
 
 /* static */
@@ -383,6 +410,12 @@ UsdGeomXformOp::GetValueTypeName(
                     return SdfValueTypeNames->Double3;
             }
         }
+        case TypeTranslateX:
+        case TypeTranslateY:
+        case TypeTranslateZ:
+        case TypeScaleX:
+        case TypeScaleY:
+        case TypeScaleZ:
         case TypeRotateX: 
         case TypeRotateY: 
         case TypeRotateZ: {
@@ -527,15 +560,36 @@ UsdGeomXformOp::GetOpTransform(UsdGeomXformOp::Type const opType,
     }
 
     if (isScalarVal) {
-        if (isInverseOp) 
+        if (isInverseOp) {
             doubleVal = -doubleVal;
+        }
 
-        if (opType == TypeRotateX) {
-            return GfMatrix4d(1.).SetRotate(GfRotation(GfVec3d::XAxis(), doubleVal));
+        if (opType == TypeTranslateX) {
+            return GfMatrix4d(1.).SetTranslate(GfVec3d(doubleVal, 0, 0));
+        } else if (opType == TypeTranslateY) {
+            return GfMatrix4d(1.).SetTranslate(GfVec3d(0, doubleVal, 0));
+        } else if (opType == TypeTranslateZ) {
+            return GfMatrix4d(1.).SetTranslate(GfVec3d(0, 0, doubleVal));
+        } else if (opType == TypeScaleX) {
+            return GfMatrix4d(GfVec4d(doubleVal, 1, 1, 1));
+        } else if (opType == TypeScaleY) {
+            return GfMatrix4d(GfVec4d(1, doubleVal, 1, 1));
+        } else if (opType == TypeScaleZ) {
+            return GfMatrix4d(GfVec4d(1, 1, doubleVal, 1));
+        } else if (opType == TypeRotateX) {
+            return GfMatrix4d(GfRotation(GfVec3d::XAxis(), doubleVal), 
+                              GfVec3d(0.));
         } else if (opType == TypeRotateY) {
-            return GfMatrix4d(1.).SetRotate(GfRotation(GfVec3d::YAxis(), doubleVal));
+            return GfMatrix4d(GfRotation(GfVec3d::YAxis(), doubleVal),
+                              GfVec3d(0.));
         } else if (opType == TypeRotateZ) {
-            return GfMatrix4d(1.).SetRotate(GfRotation(GfVec3d::ZAxis(), doubleVal));
+            return GfMatrix4d(GfRotation(GfVec3d::ZAxis(), doubleVal),
+                              GfVec3d(0.));
+        } else {
+            TF_CODING_ERROR("Invalid combination of opType (%s) and opVal (%s). "
+                "Returning identity matrix.", TfEnum::GetName(opType).c_str(), 
+                TfStringify(opVal).c_str());
+            return GfMatrix4d(1.);
         }
     }
 
@@ -554,8 +608,9 @@ UsdGeomXformOp::GetOpTransform(UsdGeomXformOp::Type const opType,
     if (isVecVal) {
         switch(opType) {
             case TypeTranslate:
-                if (isInverseOp) 
+                if (isInverseOp) {
                     vec3dVal = -vec3dVal;
+                }
                 return GfMatrix4d(1.).SetTranslate(vec3dVal);
             case TypeScale:
                 if (isInverseOp) {
@@ -563,10 +618,12 @@ UsdGeomXformOp::GetOpTransform(UsdGeomXformOp::Type const opType,
                                        1/vec3dVal[1], 
                                        1/vec3dVal[2]);
                 }
-                return GfMatrix4d(1.).SetScale(vec3dVal);
+                return GfMatrix4d(GfVec4d(vec3dVal[0], vec3dVal[1], 
+                                          vec3dVal[2], 1));
             default: {
-                if (isInverseOp) 
+                if (isInverseOp) {
                     vec3dVal = -vec3dVal;
+                }
                 // Must be one of the 3-axis rotates.
                 GfMatrix3d xRot(GfRotation(GfVec3d::XAxis(), vec3dVal[0]));
                 GfMatrix3d yRot(GfRotation(GfVec3d::YAxis(), vec3dVal[1]));
@@ -605,7 +662,7 @@ UsdGeomXformOp::GetOpTransform(UsdGeomXformOp::Type const opType,
                             TfStringify(opVal).c_str());
                         return GfMatrix4d(1.);
                 }
-                return GfMatrix4d(1.).SetRotate(rotationMat);
+                return GfMatrix4d(rotationMat, GfVec3d(0.));
             }
         }
     }

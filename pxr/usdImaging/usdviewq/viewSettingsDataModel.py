@@ -1,25 +1,8 @@
 #
 # Copyright 2018 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 
 from .qt import QtCore
@@ -143,6 +126,7 @@ class ViewSettingsDataModel(StateSource, QtCore.QObject):
         self._defaultMaterialAmbient = self.stateProperty("defaultMaterialAmbient", default=DEFAULT_AMBIENT)
         self._defaultMaterialSpecular = self.stateProperty("defaultMaterialSpecular", default=DEFAULT_SPECULAR)
         self._redrawOnScrub = self.stateProperty("redrawOnScrub", default=True)
+        self._stepSize = self.stateProperty("stepSize", default=1.0)
         self._renderMode = self.stateProperty("renderMode", default=RenderModes.SMOOTH_SHADED)
         self._freeCameraFOV = self.stateProperty("freeCameraFOV", default=60.0)
         self._freeCameraAspect = self.stateProperty("freeCameraAspect", default=1.0)
@@ -181,7 +165,6 @@ class ViewSettingsDataModel(StateSource, QtCore.QObject):
         self._displayGuide = self.stateProperty("displayGuide", default=False)
         self._displayProxy = self.stateProperty("displayProxy", default=True)
         self._displayRender = self.stateProperty("displayRender", default=False)
-        self._displayPrimId = self.stateProperty("displayPrimId", default=False)
         self._enableSceneMaterials = self.stateProperty("enableSceneMaterials", default=True)
         self._enableSceneLights = self.stateProperty("enableSceneLights", default=True)
         self._cullBackfaces = self.stateProperty("cullBackfaces", default=False)
@@ -225,6 +208,7 @@ class ViewSettingsDataModel(StateSource, QtCore.QObject):
         state["defaultMaterialAmbient"] = self._defaultMaterialAmbient
         state["defaultMaterialSpecular"] = self._defaultMaterialSpecular
         state["redrawOnScrub"] = self._redrawOnScrub
+        state["stepSize"] = self._stepSize
         state["renderMode"] = self._renderMode
         state["freeCameraFOV"] = self._freeCameraFOV
         freeCameraOverrideNear = self._freeCameraOverrideNear
@@ -253,7 +237,6 @@ class ViewSettingsDataModel(StateSource, QtCore.QObject):
         state["displayGuide"] = self._displayGuide
         state["displayProxy"] = self._displayProxy
         state["displayRender"] = self._displayRender
-        state["displayPrimId"] = self._displayPrimId
         state["enableSceneMaterials"] = self._enableSceneMaterials
         state["enableSceneLights"] = self._enableSceneLights
         state["cullBackfaces"] = self._cullBackfaces
@@ -568,15 +551,6 @@ class ViewSettingsDataModel(StateSource, QtCore.QObject):
         self._displayCameraOracles = value
 
     @property
-    def displayPrimId(self):
-        return self._displayPrimId
-
-    @displayPrimId.setter
-    @visibleViewSetting
-    def displayPrimId(self, value):
-        self._displayPrimId = value
-
-    @property
     def enableSceneMaterials(self):
         return self._enableSceneMaterials
 
@@ -822,6 +796,15 @@ class ViewSettingsDataModel(StateSource, QtCore.QObject):
     @visibleViewSetting
     def redrawOnScrub(self, value):
         self._redrawOnScrub = value
+
+    @property
+    def stepSize(self):
+        return self._stepSize
+
+    @stepSize.setter
+    @visibleViewSetting
+    def stepSize(self, value):
+        self._stepSize = value
 
     @property
     def freeCamera(self):

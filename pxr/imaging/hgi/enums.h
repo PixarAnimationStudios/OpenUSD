@@ -1,25 +1,8 @@
 //
 // Copyright 2019 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_IMAGING_HGI_ENUMS_H
 #define PXR_IMAGING_HGI_ENUMS_H
@@ -75,28 +58,32 @@ using HgiBits = uint32_t;
 ///   The device requires workaround for primitive id</li>
 /// <li>HgiDeviceCapabilitiesBitsIndirectCommandBuffers:
 ///   Indirect command buffers are supported</li>
+/// <li>HgiDeviceCapabilitiesBitsRoundPoints:
+///   Points can be natively rasterized as disks</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
 {
-    HgiDeviceCapabilitiesBitsPresentation            = 1 << 0,
-    HgiDeviceCapabilitiesBitsBindlessBuffers         = 1 << 1,
-    HgiDeviceCapabilitiesBitsConcurrentDispatch      = 1 << 2,
-    HgiDeviceCapabilitiesBitsUnifiedMemory           = 1 << 3,
-    HgiDeviceCapabilitiesBitsBuiltinBarycentrics     = 1 << 4,
-    HgiDeviceCapabilitiesBitsShaderDrawParameters    = 1 << 5,
-    HgiDeviceCapabilitiesBitsMultiDrawIndirect       = 1 << 6,
-    HgiDeviceCapabilitiesBitsBindlessTextures        = 1 << 7,
-    HgiDeviceCapabilitiesBitsShaderDoublePrecision   = 1 << 8,
-    HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne = 1 << 9,
-    HgiDeviceCapabilitiesBitsCppShaderPadding        = 1 << 10,
-    HgiDeviceCapabilitiesBitsConservativeRaster      = 1 << 11,
-    HgiDeviceCapabilitiesBitsStencilReadback         = 1 << 12,
-    HgiDeviceCapabilitiesBitsCustomDepthRange        = 1 << 13,
-    HgiDeviceCapabilitiesBitsMetalTessellation       = 1 << 14,
-    HgiDeviceCapabilitiesBitsBasePrimitiveOffset     = 1 << 15,
-    HgiDeviceCapabilitiesBitsPrimitiveIdEmulation    = 1 << 16,
-    HgiDeviceCapabilitiesBitsIndirectCommandBuffers  = 1 << 17,
+    HgiDeviceCapabilitiesBitsPresentation             = 1 << 0,
+    HgiDeviceCapabilitiesBitsBindlessBuffers          = 1 << 1,
+    HgiDeviceCapabilitiesBitsConcurrentDispatch       = 1 << 2,
+    HgiDeviceCapabilitiesBitsUnifiedMemory            = 1 << 3,
+    HgiDeviceCapabilitiesBitsBuiltinBarycentrics      = 1 << 4,
+    HgiDeviceCapabilitiesBitsShaderDrawParameters     = 1 << 5,
+    HgiDeviceCapabilitiesBitsMultiDrawIndirect        = 1 << 6,
+    HgiDeviceCapabilitiesBitsBindlessTextures         = 1 << 7,
+    HgiDeviceCapabilitiesBitsShaderDoublePrecision    = 1 << 8,
+    HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne  = 1 << 9,
+    HgiDeviceCapabilitiesBitsCppShaderPadding         = 1 << 10,
+    HgiDeviceCapabilitiesBitsConservativeRaster       = 1 << 11,
+    HgiDeviceCapabilitiesBitsStencilReadback          = 1 << 12,
+    HgiDeviceCapabilitiesBitsCustomDepthRange         = 1 << 13,
+    HgiDeviceCapabilitiesBitsMetalTessellation        = 1 << 14,
+    HgiDeviceCapabilitiesBitsBasePrimitiveOffset      = 1 << 15,
+    HgiDeviceCapabilitiesBitsPrimitiveIdEmulation     = 1 << 16,
+    HgiDeviceCapabilitiesBitsIndirectCommandBuffers   = 1 << 17,
+    HgiDeviceCapabilitiesBitsRoundPoints              = 1 << 18,
+    HgiDeviceCapabilitiesBitsSingleSlotResourceArrays = 1 << 19,
 };
 
 using HgiDeviceCapabilities = HgiBits;
@@ -112,6 +99,8 @@ using HgiDeviceCapabilities = HgiBits;
 ///   A two-dimensional texture.</li>
 /// <li>HgiTextureType3D:
 ///   A three-dimensional texture.</li>
+/// <li>HgiTextureTypeCubemap:
+///   A cubemap texture.</li>
 /// <li>HgiTextureType1DArray:
 ///   An array of one-dimensional textures.</li>
 /// <li>HgiTextureType2DArray:
@@ -123,6 +112,7 @@ enum HgiTextureType
     HgiTextureType1D = 0,
     HgiTextureType2D,
     HgiTextureType3D,
+    HgiTextureTypeCubemap,
     HgiTextureType1DArray,
     HgiTextureType2DArray,
 
@@ -803,13 +793,16 @@ enum HgiStorageType
 ///   Indicates a shadow texture.</li>
 /// <li>HgiShaderTextureTypeArrayTexture:
 ///   Indicates an array texture.</li>
+/// <li>HgiShaderTextureTypeCubemapTexture:
+///   Indicates a cubemap texture.</li>
 /// </ul>
 ///
 enum HgiShaderTextureType
 {
     HgiShaderTextureTypeTexture = 0,
     HgiShaderTextureTypeShadowTexture,
-    HgiShaderTextureTypeArrayTexture
+    HgiShaderTextureTypeArrayTexture,
+    HgiShaderTextureTypeCubemapTexture
 };
 
 /// \enum HgiComputeDispatch

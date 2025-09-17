@@ -1,0 +1,22 @@
+#usda 1.0
+(
+    relocates = {
+        </Ref/PayloadChild>: </Ref/Child>
+    }
+)
+
+def "Payload"
+{
+    def "PayloadChild"
+    {
+    }
+}
+
+def "Ref" (
+    payload = </Payload>
+)
+{
+    def "Child"
+    {
+    }
+}

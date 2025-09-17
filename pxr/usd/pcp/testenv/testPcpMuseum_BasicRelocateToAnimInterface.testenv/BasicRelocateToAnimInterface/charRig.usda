@@ -1,0 +1,34 @@
+#usda 1.0
+(
+    relocates = {
+        </CharRig/Anim/Path/Anim>: </CharRig/Anim/Path/AnimScope>, 
+        </CharRig/Rig/PathRig/Path>: </CharRig/Anim/Path>
+    }
+)
+
+def Prim "CharRig"
+{
+    def Scope "Anim" (
+        doc = "This scope has an additional relocation that must compose together with the ancestral relocation above."
+    )
+    {
+        over "Path" (
+            doc = "This path prim is relocated out from the PathRig into charRig's anim interface."
+        )
+        {
+            over "AnimScope"
+            {
+                custom double track
+            }
+        }
+    }
+
+    def Scope "Rig"
+    {
+        def Scope "PathRig" (
+            add references = @./pathRig.usda@</PathRig>
+        )
+        {
+        }
+    }
+}

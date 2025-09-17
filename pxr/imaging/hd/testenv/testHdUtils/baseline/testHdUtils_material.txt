@@ -1,4 +1,5 @@
 []
+	[config]
 	[nodes]
 		[/Asset/Looks/Material/MaterialLayer]
 			[inputConnections]

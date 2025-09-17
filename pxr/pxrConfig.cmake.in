@@ -16,6 +16,8 @@ set(PXR_MINOR_VERSION "@PXR_MINOR_VERSION@")
 set(PXR_PATCH_VERSION "@PXR_PATCH_VERSION@")
 set(PXR_VERSION "@PXR_VERSION@")
 
+include(CMakeFindDependencyMacro)
+
 # If Python support was enabled for this USD build, find the import
 # targets by invoking the appropriate FindPython module. Use the same
 # LIBRARY and INCLUDE_DIR settings from the original build if they
@@ -41,10 +43,38 @@ if(@PXR_ENABLE_PYTHON_SUPPORT@)
     endif()
 
     if (NOT DEFINED Python3_VERSION)
-        find_package(Python3 "@Python3_VERSION@" EXACT COMPONENTS Development REQUIRED)
+        find_dependency(Python3 "@Python3_VERSION@" EXACT COMPONENTS Development)
     else()
-        find_package(Python3 COMPONENTS Development REQUIRED)
+        find_dependency(Python3 COMPONENTS Development)
     endif()
+endif()
+
+if (NOT DEFINED PXR_FIND_TBB_IN_CONFIG)
+    set(PXR_FIND_TBB_IN_CONFIG "@PXR_FIND_TBB_IN_CONFIG@")
+endif()
+if (PXR_FIND_TBB_IN_CONFIG)
+    find_dependency(TBB @TBB_VERSION@ CONFIG)
+else()
+    add_library(TBB::tbb SHARED IMPORTED)
+
+    macro(_add_property name value)
+        if (NOT "${value}" STREQUAL "")
+            set_target_properties(TBB::tbb PROPERTIES ${name} "${value}")
+        endif()
+    endmacro()
+
+    _add_property(INTERFACE_INCLUDE_DIRECTORIES "@tbb_INTERFACE_INCLUDE_DIRECTORIES@")
+    _add_property(INTERFACE_COMPILE_DEFINITIONS "@tbb_INTERFACE_COMPILE_DEFINITIONS@")
+    _add_property(INTERFACE_LINK_DIRECTORIES "@tbb_INTERFACE_LINK_DIRECTORIES@")
+    _add_property(IMPORTED_IMPLIB "@tbb_IMPORTED_IMPLIB@")
+    _add_property(IMPORTED_LOCATION "@tbb_IMPORTED_LOCATION@")
+endif()
+
+if (NOT DEFINED PXR_FIND_OPENSUBDIV_IN_CONFIG)
+    set(PXR_FIND_OPENSUBDIV_IN_CONFIG "@PXR_FIND_OPENSUBDIV_IN_CONFIG@")
+endif()
+if (PXR_FIND_OPENSUBDIV_IN_CONFIG)
+    find_dependency(OpenSubdiv @OpenSubdiv_VERSION@ CONFIG)
 endif()
 
 # If MaterialX support was enabled for this USD build, try to find the
@@ -57,7 +87,7 @@ if(@PXR_ENABLE_MATERIALX_SUPPORT@)
             set(MaterialX_DIR [[@MaterialX_DIR@]])
         endif()
     endif()
-    find_package(MaterialX REQUIRED)
+    find_dependency(MaterialX)
 endif()
 
 # Similar to MaterialX above, we are using Imath's cmake package config, so set
@@ -71,7 +101,18 @@ if(@Imath_FOUND@)
             set(Imath_DIR [[@Imath_DIR@]])
         endif()
     endif()
-    find_package(Imath REQUIRED)
+    find_dependency(Imath)
+endif()
+
+# If this build is using a custom work implementation, find the package
+# providing that implementation.
+if(NOT "@PXR_WORK_IMPL_PACKAGE@" STREQUAL "")
+    if (NOT DEFINED @PXR_WORK_IMPL_CONFIG_DIR_VAR@)
+        if (NOT [[@PXR_WORK_IMPL_CONFIG_DIR@]] STREQUAL "")
+            set(@PXR_WORK_IMPL_CONFIG_DIR_VAR@ [[@PXR_WORK_IMPL_CONFIG_DIR@]])
+        endif()
+    endif()
+    find_dependency(@PXR_WORK_IMPL_PACKAGE@)
 endif()
 
 include("${PXR_CMAKE_DIR}/cmake/pxrTargets.cmake")

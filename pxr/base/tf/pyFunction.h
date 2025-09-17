@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_TF_PY_FUNCTION_H
 #define PXR_BASE_TF_PY_FUNCTION_H
@@ -31,14 +14,12 @@
 #include "pxr/base/tf/pyObjWrapper.h"
 #include "pxr/base/tf/pyUtils.h"
 
-#include <boost/python/converter/from_python.hpp>
-#include <boost/python/converter/registered.hpp>
-#include <boost/python/converter/rvalue_from_python_data.hpp>
-#include <boost/python/extract.hpp>
-#include <boost/python/handle.hpp>
-#include <boost/python/object.hpp>
-
-#include <boost/function.hpp>
+#include "pxr/external/boost/python/converter/from_python.hpp"
+#include "pxr/external/boost/python/converter/registered.hpp"
+#include "pxr/external/boost/python/converter/rvalue_from_python_data.hpp"
+#include "pxr/external/boost/python/extract.hpp"
+#include "pxr/external/boost/python/handle.hpp"
+#include "pxr/external/boost/python/object.hpp"
 
 #include <functional>
 
@@ -65,7 +46,7 @@ struct TfPyFunctionFromPython<Ret (Args...)>
         TfPyObjWrapper weak;
 
         Ret operator()(Args... args) {
-            using namespace boost::python;
+            using namespace pxr_boost::python;
             // Attempt to get the referenced callable object.
             TfPyLock lock;
             object callable(handle<>(borrowed(PyWeakref_GetObject(weak.ptr()))));
@@ -83,7 +64,7 @@ struct TfPyFunctionFromPython<Ret (Args...)>
         TfPyObjWrapper weakSelf;
 
         Ret operator()(Args... args) {
-            using namespace boost::python;
+            using namespace pxr_boost::python;
             // Attempt to get the referenced self parameter, then build a new
             // instance method and call it.
             TfPyLock lock;
@@ -98,14 +79,13 @@ struct TfPyFunctionFromPython<Ret (Args...)>
     };
 
     TfPyFunctionFromPython() {
-        RegisterFunctionType<boost::function<Ret (Args...)>>();
         RegisterFunctionType<std::function<Ret (Args...)>>();
     }
 
     template <typename FuncType>
     static void
     RegisterFunctionType() {
-        using namespace boost::python;
+        using namespace pxr_boost::python;
         converter::registry::
             insert(&convertible, &construct<FuncType>, type_id<FuncType>());
     }
@@ -115,10 +95,10 @@ struct TfPyFunctionFromPython<Ret (Args...)>
     }
 
     template <typename FuncType>
-    static void construct(PyObject *src, boost::python::converter::
+    static void construct(PyObject *src, pxr_boost::python::converter::
                           rvalue_from_python_stage1_data *data) {
         using std::string;
-        using namespace boost::python;
+        using namespace pxr_boost::python;
         
         void *storage = ((converter::rvalue_from_python_storage<FuncType> *)
                          data)->storage.bytes;

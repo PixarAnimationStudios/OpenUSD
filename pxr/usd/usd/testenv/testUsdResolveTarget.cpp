@@ -1,25 +1,8 @@
 //
 // Copyright 2022 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 
 #include "pxr/pxr.h"
@@ -71,20 +54,22 @@ static void _VerifyResolveTargetSite(
 }
 
 // Helper for _VerifyResolveTarget
-static void _VerifyResolverTargetLayer(
+static void _VerifyResolveTargetLayer(
     const SdfLayerHandle &layer, 
     const std::string &expectedLayerName)
 {
-    std::string layerName = TfGetBaseName(layer->GetIdentifier());
     // Special case for expecting the session layer as the session layer created
     // in this test will be an anonymous layer without a consistent identifier
     // between runs. But it will always end in "root-session.usda"
     if (expectedLayerName == "session") {
-        TF_VERIFY(TfStringEndsWith(layerName, "root-session.usda"),
-            "Layer name '%s' does not end with expected session layer suffix "
+        TF_VERIFY(
+            layer->IsAnonymous() &&
+            TfStringEndsWith(layer->GetIdentifier(), "root-session.usda"),
+            "Layer '%s' does not end with expected session layer suffix "
             "'root-session.usda'",
-            layerName.c_str());
+            layer->GetIdentifier().c_str());
     } else {
+        std::string layerName = TfGetBaseName(layer->GetIdentifier());
         TF_VERIFY(layerName == expectedLayerName,
             "Layer name '%s' does not match expected layer name '%s'",
             layerName.c_str(), 
@@ -102,13 +87,13 @@ static void _VerifyResolveTarget(
 {
     _VerifyResolveTargetSite(
         resolveTarget.GetStartNode(), expectedStart.first);
-    _VerifyResolverTargetLayer(
+    _VerifyResolveTargetLayer(
         resolveTarget.GetStartLayer(), expectedStart.second);
 
     if (expectedStop) {
         _VerifyResolveTargetSite(
             resolveTarget.GetStopNode(), expectedStop->first);
-        _VerifyResolverTargetLayer(
+        _VerifyResolveTargetLayer(
             resolveTarget.GetStopLayer(), expectedStop->second);
     } else {
         TF_VERIFY(!resolveTarget.GetStopNode());

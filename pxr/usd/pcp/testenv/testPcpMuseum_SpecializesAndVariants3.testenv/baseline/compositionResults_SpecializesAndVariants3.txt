@@ -1,0 +1,89 @@
+Loading @SpecializesAndVariants3/root.usda@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.usda
+
+------------------------------------------------------------------------
+Results for composing </implementation>
+
+Prim Stack:
+    root.usda            /implementation
+    root.usda            /implementation{testVariantSet=testVariant}
+    root.usda            /_class_defaultVariantSelections
+    root.usda            /_class_defaultVariantSelections{testVariantSet=testVariant}
+
+Variant Selections:
+    {testVariantSet = testVariant}
+
+Property names:
+     ['classVariantAttr', 'variantAttr']
+
+Property stacks:
+/implementation.classVariantAttr:
+    root.usda            /_class_defaultVariantSelections{testVariantSet=testVariant}.classVariantAttr
+/implementation.variantAttr:
+    root.usda            /implementation{testVariantSet=testVariant}.variantAttr
+
+------------------------------------------------------------------------
+Results for composing </middleman>
+
+Prim Stack:
+    root.usda            /middleman
+    root.usda            /implementation
+    root.usda            /implementation{testVariantSet=testVariant}
+    root.usda            /_class_defaultVariantSelections
+    root.usda            /_class_defaultVariantSelections{testVariantSet=testVariant}
+
+Variant Selections:
+    {testVariantSet = testVariant}
+
+Property names:
+     ['classVariantAttr', 'variantAttr']
+
+Property stacks:
+/middleman.classVariantAttr:
+    root.usda            /_class_defaultVariantSelections{testVariantSet=testVariant}.classVariantAttr
+/middleman.variantAttr:
+    root.usda            /implementation{testVariantSet=testVariant}.variantAttr
+
+------------------------------------------------------------------------
+Results for composing </_class_defaultVariantSelections>
+
+Prim Stack:
+    root.usda            /_class_defaultVariantSelections
+    root.usda            /_class_defaultVariantSelections{testVariantSet=testVariant}
+
+Variant Selections:
+    {testVariantSet = testVariant}
+
+Property names:
+     ['classVariantAttr']
+
+Property stacks:
+/_class_defaultVariantSelections.classVariantAttr:
+    root.usda            /_class_defaultVariantSelections{testVariantSet=testVariant}.classVariantAttr
+
+------------------------------------------------------------------------
+Results for composing </element>
+
+Prim Stack:
+    root.usda            /element
+    root.usda            /middleman
+    root.usda            /implementation
+    root.usda            /implementation{testVariantSet=testVariant}
+    root.usda            /_class_defaultVariantSelections
+    root.usda            /_class_defaultVariantSelections{testVariantSet=testVariant}
+
+Variant Selections:
+    {testVariantSet = testVariant}
+
+Property names:
+     ['classVariantAttr', 'variantAttr']
+
+Property stacks:
+/element.classVariantAttr:
+    root.usda            /_class_defaultVariantSelections{testVariantSet=testVariant}.classVariantAttr
+/element.variantAttr:
+    root.usda            /implementation{testVariantSet=testVariant}.variantAttr
+

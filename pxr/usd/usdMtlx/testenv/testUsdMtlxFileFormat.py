@@ -2,25 +2,8 @@
 #
 # Copyright 2018 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 from __future__ import print_function
 from pxr import Ar, Tf, Sdf, Usd, UsdMtlx, UsdShade
@@ -61,15 +44,14 @@ class TestFileFormat(unittest.TestCase):
 
     def test_MissingMaterialXDocument(self):
         """
-        Verify that a MaterialX file without a materialx element is okay.
+        Verify that a MaterialX file without a materialx element fails.
         """
-        stage = UsdMtlx._TestString(
+        with self.assertRaises(Tf.ErrorException) as e:
+            UsdMtlx._TestString(
             '''<?xml version="1.0" ?>
                <not_materialx version="1.35">
                </not_materialx>
             ''')
-        self.assertEqual(stage.GetRootLayer().ExportToString(),
-                         _EmptyLayer())
 
     def test_EmptyMaterialXDocument(self):
         """
@@ -126,24 +108,59 @@ class TestFileFormat(unittest.TestCase):
         
         # Get the node graph and make sure there are exactly 3 inputs
         nodeGraph = UsdShade.NodeGraph.Get(stage,
-                        Sdf.Path('/MaterialX/Materials/layered/ND_layerShader'))
+                        Sdf.Path('/MaterialX/Materials/layered/layered_sr'))
         inputs = nodeGraph.GetInputs()
         self.assertEqual(len(inputs), 3)
 
         # Make sure each input is connected as expected
         inputToSource = {
             'weight_1':
-            '/MaterialX/Materials/layered/NodeGraphs/layered_layer1_gradient',
+                ('/MaterialX/Materials/layered/NodeGraphs','o_layered_layer1_gradient'),
             'weight_2':
-            '/MaterialX/Materials/layered/NodeGraphs/layered_layer2_gradient',
+                ('/MaterialX/Materials/layered/NodeGraphs','o_layered_layer2_gradient'),
             'weight_3':
-            '/MaterialX/Materials/layered/NodeGraphs/layered_layer3_gradient'
+                ('/MaterialX/Materials/layered/NodeGraphs','o_layered_layer3_gradient')
         }
         for inputName, source in inputToSource.items():
             input = nodeGraph.GetInput(inputName)
             self.assertEqual(input.HasConnectedSource(), True)
             self.assertEqual(
-                input.GetConnectedSources()[0][0].source.GetPath(), source)
+                input.GetConnectedSources()[0][0].source.GetPath(), source[0])
+            self.assertEqual(
+                input.GetConnectedSources()[0][0].sourceName, source[1])
+
+    def test_OutputSources(self):
+        """
+        Test MaterialX conversion of shader inputs coming from a variety of
+        output sources.
+        """
+        stage = UsdMtlx._TestFile("OutputSources.mtlx")
+        path = Sdf.Path('/MaterialX/Materials/layered/layered_sr')
+        node = UsdShade.Shader.Get(stage, path)
+
+        # Make sure each input is connected as expected
+        inputToSource = {
+            'weight_1': (
+                '/MaterialX/Materials/layered/test_ng',
+                'o_layered_layer1_gradient'
+            ),
+            'weight_2': (
+                '/MaterialX/Materials/layered/NodeGraphs',
+                'o_layered_layer2_gradient'
+            ),
+            'weight_3': (
+                '/MaterialX/Materials/layered/NodeGraphs/layered_layer3_gradient',
+                'out'
+            )
+        }
+        stage.GetRootLayer().Export('OutputSources.usda')
+        for inputName, source in inputToSource.items():
+            input = node.GetInput(inputName)
+            self.assertEqual(input.HasConnectedSource(), True)
+            self.assertEqual(
+                input.GetConnectedSources()[0][0].source.GetPath(), source[0])
+            self.assertEqual(
+                input.GetConnectedSources()[0][0].sourceName, source[1])
 
     def test_MultiOutputNodes(self):
         """
@@ -211,13 +228,16 @@ class TestFileFormat(unittest.TestCase):
         self.assertTrue(input)
         self.assertEqual(input.GetFullName(),"inputs:specularColor")
     
-    def test_customNodeDefs(self):
+    def test_localCustomNodes(self):
         """
-        Test that custom nodedefs are flattend out and replaced with 
-        their associated nodegraph
+        Test that locally defined custom nodes are flattend out and replaced
+        with their associated nodegraph, or we add the appropriate sourceAsset 
+        information for custom surface shader nodes. 
         """
-        stage = UsdMtlx._TestFile('CustomNodeDef.mtlx')
-        stage.GetRootLayer().Export('CustomNodeDef.usda')
+        stage = UsdMtlx._TestFile('LocalCustomNodes.mtlx')
+        stage.GetRootLayer().Export('LocalCustomNodes.usda')
+        stage = UsdMtlx._TestFile('NestedLocalCustomNodes.mtlx')
+        stage.GetRootLayer().Export('NestedLocalCustomNodes.usda')
 
     @unittest.skipIf(not hasattr(Ar.Resolver, "CreateIdentifier"),
                      "Requires Ar 2.0")

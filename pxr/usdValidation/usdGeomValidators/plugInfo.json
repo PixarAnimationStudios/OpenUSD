@@ -1,0 +1,39 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Validators": {
+                    "StageMetadataChecker": {
+                        "doc": "All stages must declare their 'upAxis' and 'metersPerUnit'."
+                    }, 
+                    "SubsetFamilies": {
+                        "doc": "Validates all of the geom subset families authored beneath an Imageable prim.", 
+                        "keywords": [
+                            "UsdGeomSubset"
+                        ], 
+                        "schemaTypes": [
+                            "UsdGeomImageable"
+                        ]
+                    }, 
+                    "SubsetParentIsImageable": {
+                        "doc": "Validates that GeomSubset prims are direct descendants of an Imageable prim.", 
+                        "keywords": [
+                            "UsdGeomSubset"
+                        ], 
+                        "schemaTypes": [
+                            "UsdGeomSubset"
+                        ]
+                    }, 
+                    "keywords": [
+                        "UsdGeomValidators"
+                    ]
+                }
+            }, 
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@", 
+            "Name": "usdGeomValidators", 
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@", 
+            "Root": "@PLUG_INFO_ROOT@", 
+            "Type": "library"
+        }
+    ]
+}

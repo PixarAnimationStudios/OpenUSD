@@ -1,25 +1,8 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef USDGEOM_GENERATED_SUBSET_H
 #define USDGEOM_GENERATED_SUBSET_H
@@ -37,6 +20,7 @@
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/usd/usdGeom/mesh.h"
 #include "pxr/usd/usdGeom/tetMesh.h"
+#include "pxr/usd/usdGeom/basisCurves.h"
 
 
 #include "pxr/base/vt/value.h"
@@ -60,7 +44,7 @@ class SdfAssetPath;
 ///
 /// Encodes a subset of a piece of geometry (i.e. a UsdGeomImageable) 
 /// as a set of indices. Currently supports encoding subsets of faces, 
-/// points, edges, and tetrahedrons.
+/// points, edges, segments, and tetrahedrons.
 /// 
 /// To apply to a geometric prim, a GeomSubset prim must be the prim's direct 
 /// child in namespace, and possess a concrete defining specifier (i.e. def). 
@@ -198,6 +182,11 @@ public:
     /// attribute. Edges are not currently defined for a UsdGeomTetMesh, but
     /// could be derived from all tetrahedron edges or surface face edges only 
     /// if a specific use-case arises.</li>
+    /// <li><b>segment</b>: for any Curve, each pair of elements 
+    /// in the _indices_ attribute would refer to a pair of indices 
+    /// (_curveIndex_, _segmentIndex_) where _curveIndex_ is the position of 
+    /// the specified curve in the Curve's _curveVertexCounts_ attribute, and 
+    /// _segmentIndex_ is the index of the segment within that curve.</li>
     /// <li><b>tetrahedron</b>: for any UsdGeomTetMesh, each element of the 
     /// _indices_ attribute would refer to an element of the TetMesh's 
     /// _tetVertexIndices_ attribute.
@@ -209,7 +198,7 @@ public:
     /// | C++ Type | TfToken |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    /// | \ref UsdGeomTokens "Allowed Values" | face, point, edge, tetrahedron |
+    /// | \ref UsdGeomTokens "Allowed Values" | face, point, edge, segment, tetrahedron |
     USDGEOM_API
     UsdAttribute GetElementTypeAttr() const;
 
@@ -474,11 +463,13 @@ public:
         std::string * const reason);
 
 private:
-    /// Utility to get edges at time \p t from the indices attribute 
-    /// where every sequential pair of indices is interpreted as an edge.
-    /// Returned edges are stored in the order (lowIndex, highIndex).
-    /// Assumes the elementType is edge.
-    VtVec2iArray _GetEdges(const UsdTimeCode t) const;
+    /// Utility to get index pairs at time \p t from the indices attribute 
+    /// where every sequential pair of indices is interpreted as an edge or segment.
+    /// If \p preserveOrder is true (used for segments), the pairs are directly 
+    /// interpreted from the indices attribute with no order modification. If 
+    /// \p preserveOrder is false (used for edges), returned pairs are stored in
+    /// the order (lowIndex, highIndex). Assumes the elementType is edge or segment.
+    VtVec2iArray _GetIndexPairs(const UsdTimeCode t, bool preserveOrder) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

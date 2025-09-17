@@ -2,25 +2,8 @@
 #
 # Copyright 2021 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 
 import contextlib
 import unittest
@@ -44,23 +27,12 @@ def StageChangeListener(stage):
     yield l
 
 class TestUsdAttributeQuery(unittest.TestCase):
-    def test_NoInvalidationForInsignificantChange(self):
+    def layerContentTest(self, layerContent, expectedValueAtZero):
         """Test that insignificant layer stack changes do not invalidate
         an attribute query."""
 
         sublayer = Sdf.Layer.CreateAnonymous("source.usda")
-        sublayer.ImportFromString('''
-#usda 1.0
-        
-def "Prim"
-{
-    double attr = 1.0
-    double attr.timeSamples = {
-        0.0: 2.0
-    }
-}
-'''
-        .strip())
+        sublayer.ImportFromString(layerContent)
 
         emptySublayerBefore = Sdf.Layer.CreateAnonymous("empty_before.usda")
         emptySublayerAfter = Sdf.Layer.CreateAnonymous("empty_after.usda")
@@ -73,7 +45,7 @@ def "Prim"
         query = Usd.AttributeQuery(stage.GetAttributeAtPath("/Prim.attr"))
         self.assertTrue(query)
         self.assertEqual(query.Get(), 1.0)
-        self.assertEqual(query.Get(0), 2.0)
+        self.assertEqual(query.Get(0), expectedValueAtZero)
 
         # Test that adding and removing empty sublayers before and after the
         # sublayer with attribute values does not invalidate the attribute
@@ -86,7 +58,7 @@ def "Prim"
 
             self.assertTrue(query)
             self.assertEqual(query.Get(), 1.0)
-            self.assertEqual(query.Get(0), 2.0)
+            self.assertEqual(query.Get(0), expectedValueAtZero)
 
         with _Validate():
             rootLayer.subLayerPaths.insert(0, emptySublayerBefore.identifier)
@@ -100,5 +72,33 @@ def "Prim"
         with _Validate():
             rootLayer.subLayerPaths.remove(emptySublayerAfter.identifier)
 
+    def test_NoInvalidationForInsignificantChangeWithTimeSamples(self):
+        self.layerContentTest('''
+            #usda 1.0
+                    
+            def "Prim"
+            {
+                double attr = 1.0
+                double attr.timeSamples = {
+                    0.0: 2.0
+                }
+            }
+            '''.strip(), 2.0)
+
+    def test_NoInvalidationForInsignificantChangeWithSplines(self):
+        self.layerContentTest('''
+            #usda 1.0
+
+            def "Prim"
+            {
+                double attr = 1.0
+                double attr.spline = {
+                    loop: (1, 10, 0, 1, 0),
+                    1: 5; pre (1, 1); post curve (1, 1),
+                }
+            }
+            '''.strip(), 5.0)
+
 if __name__ == "__main__":
     unittest.main()
+

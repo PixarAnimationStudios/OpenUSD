@@ -1,25 +1,8 @@
 //
 // Copyright 2020 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #include "pxr/imaging/hgiGL/buffer.h"
 #include "pxr/imaging/hgiGL/conversions.h"
@@ -55,28 +38,33 @@ HgiGLResourceBindings::BindResources()
     for (HgiTextureBindDesc const& texDesc : _descriptor.textures) {
         // OpenGL does not support arrays-of-textures bound to a unit.
         // (Which is different from texture-arrays. See Vulkan/Metal)
-        if (!TF_VERIFY(texDesc.textures.size() == 1)) continue;
+        // We use the specified binding index for the first texture in a bind 
+        // desc, then increment by one for each subsequent.
 
-        uint32_t unit = texDesc.bindingIndex;
-        if (textures.size() <= unit) {
-            textures.resize(unit+1, 0);
-            samplers.resize(unit+1, 0);
-            images.resize(unit+1, 0);
+        const uint32_t unit = texDesc.bindingIndex + texDesc.textures.size();
+        if (textures.size() < unit) {
+            textures.resize(unit, 0);
+            samplers.resize(unit, 0);
+            images.resize(unit, 0);
         }
 
         if (texDesc.resourceType == HgiBindResourceTypeSampledImage ||
             texDesc.resourceType == HgiBindResourceTypeCombinedSamplerImage) {
             // Texture sampling (for graphics pipeline)
             hasTex = true;
-            HgiTextureHandle const& texHandle = texDesc.textures.front();
-            HgiGLTexture* glTex = static_cast<HgiGLTexture*>(texHandle.Get());
-            textures[texDesc.bindingIndex] = glTex->GetTextureId();
+            uint32_t bindingIndex = texDesc.bindingIndex;
+            for (const HgiTextureHandle& texHandle : texDesc.textures) {
+                HgiGLTexture* glTex = static_cast<HgiGLTexture*>(texHandle.Get());
+                textures[bindingIndex++] = glTex->GetTextureId();
+            }
         } else if (texDesc.resourceType == HgiBindResourceTypeStorageImage) {
             // Image load/store (usually for compute pipeline)
             hasImage = true;
-            HgiTextureHandle const& texHandle = texDesc.textures.front();
-            HgiGLTexture* glTex = static_cast<HgiGLTexture*>(texHandle.Get());
-            images[texDesc.bindingIndex] = glTex->GetTextureId();
+            uint32_t bindingIndex = texDesc.bindingIndex;
+            for (const HgiTextureHandle& texHandle : texDesc.textures) {
+                HgiGLTexture* glTex = static_cast<HgiGLTexture*>(texHandle.Get());
+                images[bindingIndex++] = glTex->GetTextureId();
+            }
         } else {
             TF_CODING_ERROR("Unsupported texture bind resource type");
         }
@@ -84,9 +72,11 @@ HgiGLResourceBindings::BindResources()
         // 'StorageImage' types do not need a sampler, so check if we have one.
         if (!texDesc.samplers.empty()) {
             hasSampler = true;
-            HgiSamplerHandle const& smpHandle = texDesc.samplers.front();
-            HgiGLSampler* glSmp = static_cast<HgiGLSampler*>(smpHandle.Get());
-            samplers[texDesc.bindingIndex] = glSmp->GetSamplerId();
+            uint32_t bindingIndex = texDesc.bindingIndex;
+            for (const HgiSamplerHandle& smpHandle : texDesc.samplers) {
+                HgiGLSampler* glSmp = static_cast<HgiGLSampler*>(smpHandle.Get());
+                samplers[bindingIndex++] = glSmp->GetSamplerId();
+            }
         }
     }
 

@@ -1,28 +1,17 @@
 #
 # Copyright 2020 Pixar
 #
-# Licensed under the Apache License, Version 2.0 (the "Apache License")
-# with the following modification; you may not use this file except in
-# compliance with the Apache License and the following modification to it:
-# Section 6. Trademarks. is deleted and replaced with:
-#
-# 6. Trademarks. This License does not grant permission to use the trade
-#    names, trademarks, service marks, or product names of the Licensor
-#    and its affiliates, except as required to comply with Section 4(c) of
-#    the License and to reproduce the content of the NOTICE file.
-#
-# You may obtain a copy of the Apache License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the Apache License with the above modification is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied. See the Apache License for the specific
-# language governing permissions and limitations under the Apache License.
+# Licensed under the terms set forth in the LICENSE.txt file available at
+# https://openusd.org/license.
 #
 import setuptools
-import argparse, glob, os, platform, re, shutil, sys
+import argparse
+import glob
+import os
+import platform
+import re
+import shutil
+import sys
 
 # This setup.py script expects to be run from an inst directory in a typical
 # USD build run from build_usd.py.
@@ -105,12 +94,12 @@ with open("README.md", "r") as fh:
 # Get the library version number from the installed pxr.h header.
 with open(os.path.join(USD_BUILD_OUTPUT, "include/pxr/pxr.h"), "r") as fh:
     for line in fh:
-        m = re.match("#define PXR_MINOR_VERSION (\d+)", line)
+        m = re.match(r"#define PXR_MINOR_VERSION (\d+)", line)
         if m:
             minorVersion = m.groups(1)[0]
             continue
 
-        m = re.match("#define PXR_PATCH_VERSION (\d+)", line)
+        m = re.match(r"#define PXR_PATCH_VERSION (\d+)", line)
         if m:
             patchVersion = m.groups(1)[0]
             continue
@@ -129,6 +118,7 @@ setuptools.setup(
     description="Pixar's Universal Scene Description",
     long_description=long_description,
     long_description_content_type="text/markdown",
+    license="LicenseRef-TOST-1.0",
     url="https://openusd.org",
     project_urls={
         "Documentation": "https://openusd.org",
@@ -144,12 +134,11 @@ setuptools.setup(
     },
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: Other/Proprietary License",
         "Operating System :: POSIX :: Linux",
         "Operating System :: MacOS :: MacOS X",
         "Operating System :: Microsoft :: Windows :: Windows 10",
         "Environment :: Console",
         "Topic :: Multimedia :: Graphics",
     ],
-    python_requires='>=3.6, <3.12',
+    python_requires='>=3.8, <3.14',
 )

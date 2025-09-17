@@ -1,40 +1,21 @@
 //
 // Copyright 2016 Pixar
 //
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
+// Licensed under the terms set forth in the LICENSE.txt file available at
+// https://openusd.org/license.
 //
 #ifndef PXR_BASE_WORK_DISPATCHER_H
 #define PXR_BASE_WORK_DISPATCHER_H
 
-/// \file work/dispatcher.h
+/// \file
 
 #include "pxr/pxr.h"
-#include "pxr/base/work/threadLimits.h"
 #include "pxr/base/work/api.h"
+#include "pxr/base/work/impl.h"
+#include "pxr/base/work/threadLimits.h"
 
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/errorTransport.h"
-
-#include <tbb/concurrent_vector.h>
-#include <tbb/task.h>
 
 #include <functional>
 #include <type_traits>
@@ -42,47 +23,23 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class WorkDispatcher
-///
-/// A work dispatcher runs concurrent tasks.  The dispatcher supports adding
-/// new tasks from within running tasks.  This suits problems that exhibit
-/// hierarchical structured parallelism: tasks that discover additional tasks
-/// during their execution.
-///
-/// Typical use is to create a dispatcher and invoke Run() to begin doing
-/// work, then Wait() for the work to complete.  Tasks may invoke Run() during
-/// their execution as they discover additional tasks to perform.
-///
-/// For example,
-///
-/// \code
-/// WorkDispatcher dispatcher;
-/// for (i = 0; i != N; ++i) {
-///     dispatcher.Run(DoSomeWork, workItem[i]);
-/// }
-/// dispatcher.Wait();
-/// \endcode
-///
-/// Calls to Run() and Cancel() may be made concurrently.  Calls to Wait() may
-/// also be made concurrently.  However, once any calls to Wait() are in-flight,
-/// calls to Run() and Cancel() must only be made by tasks already added by
-/// Run().  This means that users of this class are responsible to synchronize
-/// concurrent calls to Wait() to ensure this requirement is met.
-///
-/// Additionally, Wait() must never be called by a task added by Run(), since
-/// that task could never complete.
-///
-class WorkDispatcher
+// The Work_Dispatcher interface, specialized with a dispatcher impl template
+// argument.
+// 
+// Clients expected to use the WorkDispatcher type instead.
+template <class Impl>
+class Work_Dispatcher
 {
+protected:
+    // Prevent construction of the work dispatcher base class.
+    WORK_API Work_Dispatcher();
+
 public:
-    /// Construct a new dispatcher.
-    WORK_API WorkDispatcher();
-
     /// Wait() for any pending tasks to complete, then destroy the dispatcher.
-    WORK_API ~WorkDispatcher();
+    WORK_API ~Work_Dispatcher() noexcept;
 
-    WorkDispatcher(WorkDispatcher const &) = delete;
-    WorkDispatcher &operator=(WorkDispatcher const &) = delete;
+    Work_Dispatcher(Work_Dispatcher const &) = delete;
+    Work_Dispatcher &operator=(Work_Dispatcher const &) = delete;
 
 #ifdef doxygen
 
@@ -103,7 +60,9 @@ public:
 
     template <class Callable>
     inline void Run(Callable &&c) {
-        _rootTask->spawn(_MakeInvokerTask(std::forward<Callable>(c)));
+        _dispatcher.Run(
+            _InvokerTask<typename std::remove_reference<Callable>::type>(
+                std::forward<Callable>(c), &_errors));
     }
 
     template <class Callable, class A0, class ... Args>
@@ -130,6 +89,10 @@ public:
     /// pending tasks to complete.
     WORK_API void Cancel();
 
+    /// Returns true if Cancel() has been called.  Calling Wait() will reset the
+    /// cancel state.
+    WORK_API bool IsCancelled() const;
+
 private:
     typedef tbb::concurrent_vector<TfErrorTransport> _ErrorTransports;
 
@@ -137,43 +100,37 @@ private:
     // can transmit errors that occur back to the thread that Wait() s for tasks
     // to complete.
     template <class Fn>
-    struct _InvokerTask : public tbb::task {
+    struct _InvokerTask {
         explicit _InvokerTask(Fn &&fn, _ErrorTransports *err) 
             : _fn(std::move(fn)), _errors(err) {}
 
         explicit _InvokerTask(Fn const &fn, _ErrorTransports *err) 
             : _fn(fn), _errors(err) {}
 
-        virtual tbb::task* execute() {
+        // Ensure only moves happen, no copies.
+        _InvokerTask(_InvokerTask &&other) = default;
+        _InvokerTask(const _InvokerTask &other) = delete;
+        _InvokerTask &operator=(const _InvokerTask &other) = delete;
+
+        void operator()() const {
             TfErrorMark m;
             _fn();
             if (!m.IsClean())
-                WorkDispatcher::_TransportErrors(m, _errors);
-            return NULL;
+                Work_Dispatcher::_TransportErrors(m, _errors);
         }
     private:
         Fn _fn;
         _ErrorTransports *_errors;
     };
 
-    // Make an _InvokerTask instance, letting the function template deduce Fn.
-    template <class Fn>
-    _InvokerTask<typename std::remove_reference<Fn>::type>&
-    _MakeInvokerTask(Fn &&fn) { 
-        return *new( _rootTask->allocate_additional_child_of(*_rootTask) )
-            _InvokerTask<typename std::remove_reference<Fn>::type>(
-                std::forward<Fn>(fn), &_errors);
-    }
-
     // Helper function that removes errors from \p m and stores them in a new
     // entry in \p errors.
     WORK_API static void
     _TransportErrors(const TfErrorMark &m, _ErrorTransports *errors);
 
-    // Task group context and associated root task that allows us to cancel
-    // tasks invoked directly by this dispatcher.
-    tbb::task_group_context _context;
-    tbb::empty_task* _rootTask;
+    // WorkDispatcher implementation
+    Impl _dispatcher;
+    std::atomic<bool> _isCancelled;
 
     // The error transports we use to transmit errors in other threads back to
     // this thread.
@@ -182,6 +139,75 @@ private:
     // Concurrent calls to Wait() have to serialize certain cleanup operations.
     std::atomic_flag _waitCleanupFlag;
 };
+
+/// \class WorkDispatcher
+/// \extends Work_Dispatcher
+///
+/// A work dispatcher runs concurrent tasks.  The dispatcher supports adding
+/// new tasks from within running tasks.  This suits problems that exhibit
+/// hierarchical structured parallelism: tasks that discover additional tasks
+/// during their execution.
+///
+/// Typical use is to create a dispatcher and invoke Run() to begin doing
+/// work, then Wait() for the work to complete.  Tasks may invoke Run() during
+/// their execution as they discover additional tasks to perform.
+///
+/// For example,
+///
+/// \code
+/// WorkDispatcher dispatcher;
+/// for (i = 0; i != N; ++i) {
+///     dispatcher.Run(DoSomeWork, workItem[i]);
+/// }
+/// dispatcher.Wait();
+/// \endcode
+///
+/// Calls to Run() and Cancel() may be made concurrently. Calls to Wait() may
+/// also be made concurrently.  However, once any calls to Wait() are in-flight,
+/// calls to Run() and Cancel() must only be made by tasks already added by
+/// Run().  This means that users of this class are responsible to synchronize
+/// concurrent calls to Wait() to ensure this requirement is met.
+///
+/// Additionally, Wait() must never be called by a task added by Run(), since
+/// that task could never complete.
+///
+class WorkDispatcher 
+    : public Work_Dispatcher<PXR_WORK_IMPL_NS::WorkImpl_Dispatcher>
+{};
+
+// Wrapper class for non-const tasks.
+template <class Fn>
+struct Work_DeprecatedMutableTask {
+    explicit Work_DeprecatedMutableTask(Fn &&fn) 
+        : _fn(std::move(fn)) {}
+
+    explicit Work_DeprecatedMutableTask(Fn const &fn) 
+        : _fn(fn) {}
+
+    // Ensure only moves happen, no copies.
+    Work_DeprecatedMutableTask
+        (Work_DeprecatedMutableTask &&other) = default;
+    Work_DeprecatedMutableTask
+        (const Work_DeprecatedMutableTask &other) = delete;
+    Work_DeprecatedMutableTask
+        &operator= (const Work_DeprecatedMutableTask &other) = delete;
+
+    void operator()() const {
+        _fn();
+    }
+private:
+    mutable Fn _fn;
+};
+
+// Wrapper function to convert non-const tasks to a Work_DeprecatedMutableTask. 
+// When adding new tasks refrain from using this wrapper, instead ensure the 
+// call operator of the task is const such that it is compatible with oneTBB.
+template <typename Fn>
+Work_DeprecatedMutableTask<typename std::remove_reference_t<Fn>> 
+WorkMakeDeprecatedMutableTask(Fn &&fn) {
+    return Work_DeprecatedMutableTask<typename std::remove_reference_t<Fn>>
+            (std::forward<Fn>(fn));
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
