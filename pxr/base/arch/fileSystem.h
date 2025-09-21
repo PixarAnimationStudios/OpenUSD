@@ -15,6 +15,7 @@
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/inttypes.h"
+#include <algorithm>
 #include <memory>
 #include <cstdio>
 #include <string>
@@ -414,6 +415,14 @@ ARCH_API std::string ArchWindowsUtf16ToUtf8(const std::wstring &wstr);
 
 /// Converts regular std::string to UTF-16 windows string - Windows-only
 ARCH_API std::wstring ArchWindowsUtf8ToUtf16(const std::string &str);
+
+/// Converts all forward slashes to back slashes - Windows-only
+inline std::string ArchWindowsPreferredPath(const std::string& inPath)
+{
+    std::string path = inPath;
+    std::replace(path.begin(), path.end(), '/', '\\');
+    return path;
+}
 
 #endif
 
