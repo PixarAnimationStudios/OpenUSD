@@ -328,7 +328,7 @@ _GetArticulationErrors(const UsdPrim &usdPrim,
             }
         }
 
-        // rigid body static or kinematic error
+        // rigid body static error
         {
             const UsdPhysicsRigidBodyAPI rboAPI = UsdPhysicsRigidBodyAPI(usdPrim);
 
@@ -345,22 +345,6 @@ _GetArticulationErrors(const UsdPrim &usdPrim,
                         TfStringPrintf(
                             "ArticulationRootAPI definition on a "
                             "static rigid body is not allowed. "                            
-                            "Prim: %s",
-                            usdPrim.GetPrimPath().GetText())
-                    );
-                }
-
-                bool kinematicEnabled = false;
-                rboAPI.GetKinematicEnabledAttr().Get(&kinematicEnabled);
-                if (kinematicEnabled)
-                {
-                    errors.emplace_back(
-                        UsdPhysicsValidationErrorNameTokens->articulationOnKinematicBody,
-                        UsdValidationErrorType::Error,
-                        primErrorSites,
-                        TfStringPrintf(
-                            "ArticulationRootAPI definition on a "
-                            "kinematic rigid body is not allowed. "
                             "Prim: %s",
                             usdPrim.GetPrimPath().GetText())
                     );

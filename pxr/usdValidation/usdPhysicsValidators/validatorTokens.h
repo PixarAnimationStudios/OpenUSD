@@ -27,7 +27,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define USD_PHYSICS_VALIDATION_ERROR_NAME_TOKENS                        \
     ((nestedArticulation, "NestedArticulation"))                        \
     ((articulationOnStaticBody, "ArticulationOnStaticBody"))            \
-    ((articulationOnKinematicBody, "ArticulationOnKinematicBody"))      \
     ((rigidBodyOrientationScale,  "RigidBodyOrientationScale"))         \
     ((rigidBodyNonXformable,  "RigidBodyNonXformable"))                 \
     ((rigidBodyNonInstanceable,  "RigidBodyNonInstanceable"))           \

@@ -132,15 +132,14 @@ class TestUsdPhysicsValidation(unittest.TestCase):
         rboAPI.GetRigidBodyEnabledAttr().Set(False)
 
         errors = validator.Validate(articulation.GetPrim())
-        self.assertTrue(len(errors) == 1)        
-        self.assertTrue(errors[0].GetName() == "ArticulationOnStaticBody")        
+        self.assertTrue(len(errors) == 1)
+        self.assertTrue(errors[0].GetName() == "ArticulationOnStaticBody")
 
         rboAPI.GetRigidBodyEnabledAttr().Set(True)
         rboAPI.GetKinematicEnabledAttr().Set(True)
 
         errors = validator.Validate(articulation.GetPrim())
-        self.assertTrue(len(errors) == 1)        
-        self.assertTrue(errors[0].GetName() == "ArticulationOnKinematicBody")        
+        self.assertTrue(len(errors) == 0)
 
     def test_physics_joint_invalid_rel(self):
         validationRegistry = UsdValidation.ValidationRegistry()
