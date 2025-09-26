@@ -213,15 +213,26 @@ multi-scene simulation scenario.
 \subsubsection usdPhysics_interaction_with_usd Interaction with the USD hierarchy
 
 If a prim in a USD scene graph hierarchy is marked with UsdPhysicsRigidBodyAPI, 
-the behavior is such that with UsdPhysicsRigidBodyAPI, all chidlren of the 
-marked prim are assumed to be part of this rigid body, and move rigidly along 
-with the body. This is consistent with the common behavior one expects during 
-hand-animation of a sub-tree. If aggregate properties of the entire rigid body 
-must be computed, such as total mass or the entirety of its collision volume, 
-then the contents of the entire subtree are considered. 
+all prims in the subtree of the marked prim are assumed to be part of this
+rigid body, and move rigidly along with the body. This is consistent with the
+common behavior one expects during hand-animation of a subtree.
+
+The exception to this is when a prim in a rigid body’s subtree has its own
+nested UsdPhysicsRigidBodyAPI. This prim creates a separate rigid body and forms
+the root of its own subtree. For all UsdPhysics purposes, this prim and all
+prims below it are not considered parts of bodies higher up in the hierarchy.
+The phrase “subtree belonging to a rigid body” is defined as all child prims
+of a rigid body that are not parts of other rigid bodies. Multiple rigid bodies
+in a subtree move completely independently, even if their transforms are stored
+relative to one another.  
+
+If aggregate properties of the entire rigid body must be computed, such as
+total mass or the entirety of its collision volume, then the contents of the
+entire subtree are considered, taking care to exclude the contents of any
+nested body subtrees.
 
 Note that it is of course permitted to change/animate the transforms in such 
-a sub-tree, in which case any derived quantities in the physics engine such 
+a subtree, in which case any derived quantities in the physics engine such 
 as center of mass or relative shape poses will be updated. Such animation 
 will however not generate momentum. For example, rapidly animating rigid 
 portions of Luxo Jr. will not cause the lamp to jump, since to compute such 
@@ -230,12 +241,6 @@ portions of the lamp, which is not possible if the whole is treated as
 a single rigid assembly. The correct approach would be to model each of the 
 rigid portions of the lamp as independent rigid bodies, and connect these 
 with joints, which we will discuss later.
-
-It is not possible to have nested bodies. PhysicsRigidBodyAPIs applied to 
-anything in the subtree under a prim that already has a UsdPhysicsRigidBodyAPI 
-are ignored. An exception is if a prim has an resetXformStack op. In this case
-it ignores rigid body parenting, and a rigid body API can then be used to make 
-it dynamic.
 
 \subsubsection usdPhysics_rb_sleep Sleep
 
@@ -283,30 +288,32 @@ where the mass properties of an object can be derived from collision geometry
 (discussed further down in this document) and the UsdPhysicsMaterialAPI. Most 
 commonly, UsdPhysicsMassAPI is applied in addition to UsdPhysicsRigidBodyAPI.
 
-Unlike UsdPhysicsRigidBodyAPI, it is also possible to apply UsdPhysicsMassAPI 
-multiple times in a USD scene graph subtree, in order to make it possible to 
-accumulate the mass of rigid components.
+It is possible to apply UsdPhysicsMassAPI multiple times and at multiple levels
+in a USD scene graph subtree, in order to make it possible to accumulate the
+total mass of rigid bodies from the settings of individual shapes.
 
 The mass of an object may be specified in multiple ways, and several 
 conflicting settings are resolved using a precedence system that will initially 
 seem rather complex yet but is actually intuitive and practical:
 
-\li Parents' explicit total masses override any mass properties specified 
-further down in the subtree.
+\li Rigid bodies' explicit total masses override any mass properties in the
+subtree belonging to the rigid body.
 
 \li Density has lower precedence than mass, so explicit mass always overrides 
 implicit mass that can be computed from volume and density.
 
-\li A density in a child overrides a density specified in a parent for all of 
-the subtree under the child.
+\li A density in a child collider overrides a density specified in a parent
+rigid body for the child.
 
-\li A density specified via UsdPhysicsMassAPI, even if it is inherited from a 
-prim higher in the tree, overrides any density specified via a material 
+\li A density specified via UsdPhysicsMassAPI, even if it is inherited from
+a prim higher in the tree, overrides any density specified via a material
 (see UsdPhysicsMaterialAPI later in this document).
 
-\li Implicit mass at any prim is the computed volume of collision geometry at 
-that prim times the locally effective density, plus the implicit masses of 
-all children in the subtree.
+\li The implicit mass of a collider is the computed volume of collider geometry
+times the locally effective density.
+
+\li Implicit mass of a rigid body is the total implicit mass of all children in
+the subtree belonging to the rigid body.
 
 \li Density is assumed to be 1000.0 kg/m3 (approximately the density of water) 
 for volume computation when no other density is specified locally, or in bound 
@@ -317,9 +324,8 @@ into the collider's native units prior to being used for mass computation.
 explicitly, and there are no collision volumes to derive from.
 
 Implementing this rule set is potentially nontrivial, but it's important to get 
-right. We plan to make the pseudocode of a mass computation system available 
-that relies on the underlying physics system to compute the volume of collision 
-geometry.
+right. See UsdPhysicsRigidBodyAPI::ComputeMassProperties for a working
+implementation.
 
 \subsubsection usdPhysics_collision_shapes Collision Shapes
 
@@ -627,16 +633,21 @@ rotors are attached to), or a direct or indirect parent prim. For fixed
 articulations (robotics jargon for e.g. a robot arm for welding that is bolted 
 to the floor), this API can be on a direct or indirect parent of the root joint 
 which is connected to the world, or on the joint itself. If there are multiple 
-qualifying bodies or joints under an UsdPhysicsArticulationRootAPI prim, each 
-is made into a separate articulation root.
+qualifying bodies or joints identified while parsing, each is made into a separate
+articulation root.
 
 This should in general make it possible to uniquely identify a distinguished 
 root body or root joint for the articulation. From this root, a tree of bodies 
 and joints is identified that is not to contain loops (which may be closed by 
-joint collections). If loops are found, they may be broken at an arbitrary 
-location. Alternatively, a joint in the loop may use its 
-excludeFromArticulation attribute flag to denote that it wishes to remain a 
-maximal joint, and at this point the loop is then broken.
+joints). If loops are found, they may be broken at an arbitrary location.
+Alternatively, a joint in the loop may use its excludeFromArticulation attribute
+flag to denote that it wishes to remain a maximal joint, and at this point the
+loop is then broken.
+
+It is possible to specify a kinematic articulation (e.g. a chain of bodies & joints
+which is driven by motion capture or other time sampled animation) by setting the
+UsdPhysicsTokensType::physicsKinematicEnabled flag on all bodies within the
+articulation.
 
 \subsection usdPhysics_examples Examples
 
