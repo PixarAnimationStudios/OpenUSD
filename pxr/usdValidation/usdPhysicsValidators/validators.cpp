@@ -27,10 +27,13 @@
 #include "pxr/usd/usdGeom/points.h"
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdPhysics/rigidBodyAPI.h"
+#include "pxr/usd/usdPhysics/massAPI.h"
 #include "pxr/usd/usdPhysics/collisionAPI.h"
 #include "pxr/usd/usdPhysics/articulationRootAPI.h"
 #include "pxr/usd/usdPhysics/joint.h"
 #include "pxr/base/gf/transform.h"
+#include "pxr/base/gf/quatf.h"
+#include "pxr/base/gf/vec3f.h"
 
 #include <algorithm>
 #include <string>
@@ -129,6 +132,116 @@ bool CheckNestedArticulationRoot(const UsdPrim& usdPrim)
     return false;
 }
 
+void CheckMassAPI(const UsdPrim& usdPrim, UsdValidationErrorVector* errors)
+{
+    const UsdPhysicsMassAPI massAPI = UsdPhysicsMassAPI(usdPrim);
+    if (!massAPI)
+    {
+        return;
+    }
+
+    const UsdValidationErrorSites primErrorSites = {
+        UsdValidationErrorSite(usdPrim.GetStage(), usdPrim.GetPath())
+    };
+
+    float mass = 0.0f;
+    massAPI.GetMassAttr().Get(&mass);
+    if (mass < 0.0)
+    {
+        errors->emplace_back(
+            UsdPhysicsValidationErrorNameTokens->massInvalidValues,
+            UsdValidationErrorType::Error,
+            primErrorSites,
+            TfStringPrintf("Mass is negative, prim path: %s", usdPrim.GetPath().GetText())
+        );
+    }
+
+    float density = 0.0f;
+    massAPI.GetDensityAttr().Get(&density);
+    if (density < 0.0)
+    {
+        errors->emplace_back(
+            UsdPhysicsValidationErrorNameTokens->densityInvalidValues,
+            UsdValidationErrorType::Error,
+            primErrorSites,
+            TfStringPrintf("Density is negative, prim path: %s", usdPrim.GetPath().GetText())
+        );
+    }
+
+    UsdAttribute principalAxesAttr = massAPI.GetPrincipalAxesAttr();
+    UsdAttribute diagonalInertiaAttr = massAPI.GetDiagonalInertiaAttr();
+    
+    bool principalAxesAuthored = principalAxesAttr.HasAuthoredValue();
+    bool diagonalInertiaAuthored = diagonalInertiaAttr.HasAuthoredValue();
+    
+    // Check that both are authored or neither is authored
+    if (principalAxesAuthored != diagonalInertiaAuthored)
+    {
+        errors->emplace_back(
+            UsdPhysicsValidationErrorNameTokens->inertiaInvalidValues,
+            UsdValidationErrorType::Error,
+            primErrorSites,
+            TfStringPrintf(
+                "principalAxes and diagonalInertia must both be authored or neither authored, prim path: %s",
+                usdPrim.GetPath().GetText())
+        );
+    }
+    
+    // If both are authored, validate their values
+    if (principalAxesAuthored && diagonalInertiaAuthored)
+    {
+        // Check principalAxes is a valid unit quaternion
+        GfQuatf principalAxes;
+        principalAxesAttr.Get(&principalAxes);
+        GfVec3f diagonalInertia;
+        diagonalInertiaAttr.Get(&diagonalInertia);
+
+        bool principalAxesFallbackAuthored = principalAxes == GfQuatf(0.0f, 0.0f, 0.0f, 0.0f);
+        bool diagonalInertiaFallbackAuthored = diagonalInertia == GfVec3f(0.0f, 0.0f, 0.0f);
+        
+        // If the fallback values are explicitly authored, both attrs must match the fallbacks
+        if (principalAxesFallbackAuthored != diagonalInertiaFallbackAuthored)
+        {
+            errors->emplace_back(
+                UsdPhysicsValidationErrorNameTokens->inertiaInvalidValues,
+                UsdValidationErrorType::Error,
+                primErrorSites,
+                TfStringPrintf(
+                    "principalAxes and diagonalInertia must both be authored in the valid range or neither authored, prim path: %s",
+                    usdPrim.GetPath().GetText())
+                );
+        }
+
+        if (!principalAxesFallbackAuthored && !diagonalInertiaFallbackAuthored)
+        {
+            // Check principalAxes is a valid unit quaternion
+            if (std::abs(principalAxes.GetLength() - 1.0f) > 1e-5f)
+            {
+                errors->emplace_back(
+                    UsdPhysicsValidationErrorNameTokens->inertiaInvalidValues,
+                    UsdValidationErrorType::Error,
+                    primErrorSites,
+                    TfStringPrintf(
+                        "principalAxes must be a valid unit quaternion, prim path: %s",
+                        usdPrim.GetPath().GetText())
+                );
+            }
+            
+            // Check diagonalInertia has positive values
+            if (diagonalInertia[0] <= 0.0f || diagonalInertia[1] <= 0.0f || diagonalInertia[2] <= 0.0f)
+            {
+                errors->emplace_back(
+                    UsdPhysicsValidationErrorNameTokens->inertiaInvalidValues,
+                    UsdValidationErrorType::Error,
+                    primErrorSites,
+                    TfStringPrintf(
+                        "diagonalInertia elements must be positive, prim path: %s",
+                        usdPrim.GetPath().GetText())
+                );
+            }
+        }
+    }
+}
 
 static
 UsdValidationErrorVector
@@ -213,6 +326,8 @@ _GetRigidBodyErrors(const UsdPrim &usdPrim,
                 );
             }
         }
+
+        CheckMassAPI(usdPrim, &errors);
     }
 
     return errors;
@@ -289,6 +404,7 @@ _GetColliderErrors(const UsdPrim &usdPrim,
             }
         }
 
+        CheckMassAPI(usdPrim, &errors);
     }
 
     return errors;
