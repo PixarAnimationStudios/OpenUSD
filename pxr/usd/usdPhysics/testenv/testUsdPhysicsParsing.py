@@ -953,6 +953,83 @@ class TestUsdPhysicsParsing(unittest.TestCase):
             self.assertTrue(scene_found)
             self.assertTrue(articulation_found)
 
+    def test_nested_bodies_articulation_parse(self):
+        stage = Usd.Stage.CreateInMemory()
+        self.assertTrue(stage)
+
+        scene = UsdPhysics.Scene.Define(stage, '/physicsScene')
+        self.assertTrue(scene)
+
+        # top level xform
+        top_xform = UsdGeom.Xform.Define(stage, "/xform")
+
+        rigid_body_0 = UsdGeom.Xform.Define(stage, "/xform/rigidBody0")
+        UsdPhysics.RigidBodyAPI.Apply(rigid_body_0.GetPrim())
+        rigid_body_1 = UsdGeom.Xform.Define(stage, "/xform/rigidBody0/rigidBody1")
+        UsdPhysics.RigidBodyAPI.Apply(rigid_body_1.GetPrim())
+        rigid_body_2 = UsdGeom.Xform.Define(stage, "/xform/rigidBody0/rigidBody1/rigidBody2")
+        UsdPhysics.RigidBodyAPI.Apply(rigid_body_2.GetPrim())
+
+        joint_0 = UsdPhysics.RevoluteJoint.Define(stage, "/xform/revoluteJoint0")
+        joint_0.GetBody0Rel().AddTarget(rigid_body_0.GetPrim().GetPrimPath())
+        joint_0.GetBody1Rel().AddTarget(rigid_body_1.GetPrim().GetPrimPath())
+
+        joint_1 = UsdPhysics.RevoluteJoint.Define(stage, "/xform/revoluteJoint1")
+        joint_1.GetBody0Rel().AddTarget(rigid_body_1.GetPrim().GetPrimPath())
+        joint_1.GetBody1Rel().AddTarget(rigid_body_2.GetPrim().GetPrimPath())
+
+        articulation_api_prim = None
+        articulations = ["floating", "auto", "fixed"]
+        for type in articulations:
+            if articulation_api_prim is not None:
+                articulation_api_prim.RemoveAPI(UsdPhysics.ArticulationRootAPI)
+                articulation_api_prim = None
+
+            if type == "fixed":
+                fixed_joint = UsdPhysics.FixedJoint.Define(stage, 
+                                                           "/xform/fixedJoint")
+                fixed_joint.GetBody1Rel().AddTarget(
+                    rigid_body_0.GetPrim().GetPrimPath())
+                UsdPhysics.ArticulationRootAPI.Apply(fixed_joint.GetPrim())
+                articulation_api_prim = fixed_joint.GetPrim()
+            elif type == "floating":
+                UsdPhysics.ArticulationRootAPI.Apply(rigid_body_0.GetPrim())
+                articulation_api_prim = rigid_body_0.GetPrim()
+            elif type == "auto" or type == "auto_fixed":
+                UsdPhysics.ArticulationRootAPI.Apply(top_xform.GetPrim())
+                articulation_api_prim = top_xform.GetPrim()
+
+            ret_dict = UsdPhysics.LoadUsdPhysicsFromRange(stage, ["/"])
+
+            scene_found = False
+            articulation_found = False
+
+            for key, value in ret_dict.items():
+                prim_paths, descs = value
+                if key == UsdPhysics.ObjectType.Scene:
+                    scene_found = True
+                elif key == UsdPhysics.ObjectType.Articulation:
+                    for prim_path, desc in zip(prim_paths, descs):
+                        articulation_found = True
+
+                        self.assertTrue(len(desc.rootPrims) == 1)
+
+                        if type == "floating" or type == "auto":
+                            self.assertTrue(len(desc.articulatedJoints) == 2)
+                            self.assertTrue(len(desc.articulatedBodies) == 3)                            
+                            self.assertTrue(desc.rootPrims[0] == 
+                                            rigid_body_0.GetPrim().GetPrimPath())
+                        else:
+                            self.assertTrue(len(desc.articulatedJoints) == 3)
+                            # SdfPath returned for the static body
+                            self.assertTrue(len(desc.articulatedBodies) == 4)
+
+                            self.assertTrue(desc.rootPrims[0] == 
+                                            fixed_joint.GetPrim().GetPrimPath())
+
+            self.assertTrue(scene_found)
+            self.assertTrue(articulation_found)
+
     def test_collision_groups_parse(self):
         stage = Usd.Stage.CreateInMemory()
         self.assertTrue(stage)
